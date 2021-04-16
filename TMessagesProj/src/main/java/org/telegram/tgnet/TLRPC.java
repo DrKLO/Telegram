@@ -8,10 +8,13 @@
 
 package org.telegram.tgnet;
 
+import android.graphics.drawable.BitmapDrawable;
+import android.os.Build;
 import android.text.TextUtils;
 
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.Utilities;
 
 import java.util.ArrayList;
@@ -402,6 +405,7 @@ public class TLRPC {
         public FileLocation photo_big;
         public byte[] stripped_thumb;
         public int dc_id;
+        public BitmapDrawable strippedBitmap;
 
         public static ChatPhoto TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
             ChatPhoto result = null;
@@ -508,6 +512,13 @@ public class TLRPC {
             photo_big = FileLocation.TLdeserialize(stream, stream.readInt32(exception), exception);
             if ((flags & 2) != 0) {
                 stripped_thumb = stream.readByteArray(exception);
+                if (Build.VERSION.SDK_INT >= 21) {
+                    try {
+                        strippedBitmap = new BitmapDrawable(ImageLoader.getStrippedPhotoBitmap(stripped_thumb, "b"));
+                    } catch (Throwable e) {
+                        FileLog.e(e);
+                    }
+                }
             }
             dc_id = stream.readInt32(exception);
         }
@@ -26858,6 +26869,7 @@ public class TLRPC {
         public FileLocation photo_big;
         public byte[] stripped_thumb;
         public int dc_id;
+        public BitmapDrawable strippedBitmap;
 
         public static UserProfilePhoto TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
             UserProfilePhoto result = null;
@@ -26927,6 +26939,13 @@ public class TLRPC {
             photo_big = FileLocation.TLdeserialize(stream, stream.readInt32(exception), exception);
             if ((flags & 2) != 0) {
                 stripped_thumb = stream.readByteArray(exception);
+                if (Build.VERSION.SDK_INT >= 21) {
+                    try {
+                        strippedBitmap = new BitmapDrawable(ImageLoader.getStrippedPhotoBitmap(stripped_thumb, "b"));
+                    } catch (Throwable e) {
+                        FileLog.e(e);
+                    }
+                }
             }
             dc_id = stream.readInt32(exception);
         }

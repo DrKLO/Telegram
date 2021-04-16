@@ -76,7 +76,7 @@ public class MentionCell extends LinearLayout {
         }
         avatarDrawable.setInfo(user);
         if (user.photo != null && user.photo.photo_small != null) {
-            imageView.setImage(ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, user);
+            imageView.setForUserOrChat(user, avatarDrawable);
         } else {
             imageView.setImageDrawable(avatarDrawable);
         }
@@ -99,7 +99,7 @@ public class MentionCell extends LinearLayout {
         }
         avatarDrawable.setInfo(chat);
         if (chat.photo != null && chat.photo.photo_small != null) {
-            imageView.setImage(ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, chat);
+            imageView.setForUserOrChat(chat, avatarDrawable);
         } else {
             imageView.setImageDrawable(avatarDrawable);
         }
@@ -140,7 +140,7 @@ public class MentionCell extends LinearLayout {
             imageView.setVisibility(VISIBLE);
             avatarDrawable.setInfo(user);
             if (user.photo != null && user.photo.photo_small != null) {
-                imageView.setImage(ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, user);
+                imageView.setForUserOrChat(user, avatarDrawable);
             } else {
                 imageView.setImageDrawable(avatarDrawable);
             }

@@ -284,7 +284,7 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
             BackupImageView imageView = new BackupImageView(getContext());
             imageView.setLayerNum(1);
             imageView.setRoundRadius(AndroidUtilities.dp(15));
-            imageView.setImage(ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, chat);
+            imageView.setForUserOrChat(chat, avatarDrawable);
             imageView.setAspectFit(true);
             tab.addView(imageView, LayoutHelper.createFrame(30, 30, Gravity.CENTER));
         }

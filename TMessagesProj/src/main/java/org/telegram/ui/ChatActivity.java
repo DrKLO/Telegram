@@ -1832,9 +1832,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                 if (revoke && currentUser != null) {
                                     getMessagesStorage().getMessagesCount(currentUser.id, (count) -> {
                                         if (count >= 50) {
-                                            AlertsCreator.createClearOrDeleteDialogAlert(ChatActivity.this, true, false, true, null, currentUser, false, false, (param) -> {
-                                                performHistoryClear(true);
-                                            });
+                                            AlertsCreator.createClearOrDeleteDialogAlert(ChatActivity.this, true, false, true, null, currentUser, false, false, (param) -> performHistoryClear(true));
                                         } else {
                                             performHistoryClear(true);
                                         }
@@ -5789,6 +5787,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             @Override
             public void didPressUrl(CharacterStyle span) {
                 didPressMessageUrl(span, false, null, null);
+            }
+
+            @Override
+            public void showWithAction(long did, int action, Object infoObject, Object infoObject2, Runnable actionRunnable, Runnable cancelRunnable) {
+                setAdditionalTranslationY(fragmentContextView != null && fragmentContextView.isCallTypeVisible() ? AndroidUtilities.dp(fragmentContextView.getStyleHeight()) : 0);
+                super.showWithAction(did, action, infoObject, infoObject2, actionRunnable, cancelRunnable);
             }
         };
         contentView.addView(topUndoView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 8, 8, 8, 0));

@@ -204,6 +204,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
     private FrameLayout googlePayContainer;
     private FrameLayout googlePayButton;
     private LinearLayout linearLayout2;
+    private TextPriceCell totalCell;
 
     private EditTextSettingsCell codeFieldCell;
 
@@ -239,6 +240,8 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
     private BaseFragment parentFragment;
 
     private LinearLayout tipLayout;
+
+    private ArrayList<TLRPC.TL_labeledPrice> prices;
 
     private int currentStep;
     private boolean passwordOk;
@@ -1684,14 +1687,14 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
             sectionCell[0] = new ShadowSectionCell(context);
             linearLayout2.addView(sectionCell[0], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-            ArrayList<TLRPC.TL_labeledPrice> arrayList = new ArrayList<>(paymentForm.invoice.prices);
+            prices = new ArrayList<>(paymentForm.invoice.prices);
             if (shippingOption != null) {
-                arrayList.addAll(shippingOption.prices);
+                prices.addAll(shippingOption.prices);
             }
             totalPrice = new String[1];
 
-            for (int a = 0; a < arrayList.size(); a++) {
-                TLRPC.TL_labeledPrice price = arrayList.get(a);
+            for (int a = 0; a < prices.size(); a++) {
+                TLRPC.TL_labeledPrice price = prices.get(a);
 
                 TextPriceCell priceCell = new TextPriceCell(context);
                 priceCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
@@ -1706,10 +1709,10 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 linearLayout2.addView(priceCell);
             }
 
-            TextPriceCell priceCell = new TextPriceCell(context);
-            priceCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-            totalPrice[0] = getTotalPriceString(arrayList);
-            priceCell.setTextAndValue(LocaleController.getString("PaymentTransactionTotal", R.string.PaymentTransactionTotal), totalPrice[0], true);
+            totalCell = new TextPriceCell(context);
+            totalCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            totalPrice[0] = getTotalPriceString(prices);
+            totalCell.setTextAndValue(LocaleController.getString("PaymentTransactionTotal", R.string.PaymentTransactionTotal), totalPrice[0], true);
 
             if (currentStep == 4 && (paymentForm.invoice.flags & 256) != 0) {
                 ViewGroup container = new FrameLayout(context);
@@ -1746,7 +1749,22 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
 
                     private boolean anyBefore;
                     private String overrideText;
-                    private boolean dotEntered;
+                    private boolean isDeletedChar;
+                    private int beforeTextLength;
+                    private int enteredCharacterStart;
+                    private boolean lastDotEntered;
+
+                    char[] commas = new char[]{',', '.', '٫', '、', '\u2E41', '︐', '︑', '﹐', '﹑', '，', '､', 'ʻ'};
+
+                    private int indexOfComma(String text) {
+                        for (int a = 0; a < commas.length; a++) {
+                            int idx = text.indexOf(commas[a]);
+                            if (idx >= 0) {
+                                return idx;
+                            }
+                        }
+                        return -1;
+                    }
 
                     @Override
                     public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -1755,17 +1773,24 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                         }
                         anyBefore = !TextUtils.isEmpty(s);
                         overrideText = null;
-                        if (count == 1 && after == 0) {
+                        beforeTextLength = s == null ? 0 : s.length();
+                        enteredCharacterStart = start;
+                        if (isDeletedChar = (count == 1 && after == 0)) {
                             String fixed = LocaleController.fixNumbers(s);
                             char actionCh = fixed.charAt(start);
-                            if (actionCh < '0' || actionCh > '9') {
-                                while (--start > 0) {
+                            int idx = indexOfComma(fixed);
+                            String reminderStr = idx >= 0 ? fixed.substring(idx + 1) : "";
+                            long reminder = Utilities.parseLong(PhoneFormat.stripExceptNumbers(reminderStr));
+                            if ((actionCh < '0' || actionCh > '9') && (reminderStr.length() == 0 || reminder != 0)) {
+                                while (--start >= 0) {
                                     actionCh = fixed.charAt(start);
                                     if (actionCh >= '0' && actionCh <= '9') {
                                         overrideText = fixed.substring(0, start) + fixed.substring(start + 1);
                                         break;
                                     }
                                 }
+                            } else if (idx > 0 && start > idx && reminder == 0) {
+                                overrideText = fixed.substring(0, idx - 1);
                             }
                         }
                     }
@@ -1788,42 +1813,54 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                         } else {
                             text = LocaleController.fixNumbers(s.toString());
                         }
-                        tipAmount = Utilities.parseLong(PhoneFormat.stripExceptNumbers(text));
-                        /*if (!dotEntered) {
-
+                        int idx = indexOfComma(text);
+                        boolean dotEntered = idx >= 0;
+                        int exp = LocaleController.getCurrencyExpDivider(paymentForm.invoice.currency);
+                        String wholeStr = idx >= 0 ? text.substring(0, idx) : text;
+                        String reminderStr = idx >= 0 ? text.substring(idx + 1) : "";
+                        long whole = Utilities.parseLong(PhoneFormat.stripExceptNumbers(wholeStr)) * exp;
+                        long reminder = Utilities.parseLong(PhoneFormat.stripExceptNumbers(reminderStr));
+                        reminderStr = "" + reminder;
+                        String expStr = "" + (exp - 1);
+                        if (idx > 0 && reminderStr.length() > expStr.length()) {
+                            if (enteredCharacterStart - idx < reminderStr.length()) {
+                                reminderStr = reminderStr.substring(0, expStr.length());
+                            } else {
+                                reminderStr = reminderStr.substring(reminderStr.length() - expStr.length());
+                            }
+                            reminder = Utilities.parseLong(reminderStr);
                         }
-                        if (text.endsWith(",") || text.endsWith(".")) {
-                            dotEntered = true;
-                        }
-                        if (tipAmount == 0) {
-                            dotEntered = false;
-                        }*/
+                        tipAmount = whole + reminder;
                         if (paymentForm.invoice.max_tip_amount != 0 && tipAmount > paymentForm.invoice.max_tip_amount) {
                             tipAmount = paymentForm.invoice.max_tip_amount;
                         }
                         int start = inputFields[0].getSelectionStart();
-                        String phoneChars = "0123456789,.";
-                        String str = inputFields[0].getText().toString();
-                        StringBuilder builder = new StringBuilder(str.length());
-                        for (int a = 0; a < str.length(); a++) {
-                            String ch = str.substring(a, a + 1);
-                            if (phoneChars.contains(ch)) {
-                                builder.append(ch);
-                            }
-                        }
                         ignoreOnTextChange = true;
-                        inputFields[0].setText(LocaleController.getInstance().formatCurrencyString(tipAmount, false, paymentForm.invoice.currency));
+                        String newText;
+                        if (tipAmount == 0) {
+                            inputFields[0].setText(newText = "");
+                        } else {
+                            inputFields[0].setText(newText = LocaleController.getInstance().formatCurrencyString(tipAmount, false, dotEntered, true, paymentForm.invoice.currency));
+                        }
                         if (oldAmount < tipAmount && oldAmount != 0 && anyBefore && start >= 0) {
                             inputFields[0].setSelection(Math.min(start, inputFields[0].length()));
+                        } else if (!isDeletedChar || beforeTextLength == inputFields[0].length()) {
+                            if (!lastDotEntered && dotEntered && idx >= 0) {
+                                idx = indexOfComma(newText);
+                                if (idx > 0) {
+                                    inputFields[0].setSelection(idx + 1);
+                                } else {
+                                    inputFields[0].setSelection(inputFields[0].length());
+                                }
+                            } else {
+                                inputFields[0].setSelection(inputFields[0].length());
+                            }
                         } else {
-                            inputFields[0].setSelection(inputFields[0].length());
+                            inputFields[0].setSelection(Math.max(0, Math.min(start, inputFields[0].length())));
                         }
-                        totalPrice[0] = getTotalPriceString(arrayList);
-                        priceCell.setTextAndValue(LocaleController.getString("PaymentTransactionTotal", R.string.PaymentTransactionTotal), totalPrice[0], true);
-                        if (payTextView != null) {
-                            payTextView.setText(LocaleController.formatString("PaymentCheckoutPay", R.string.PaymentCheckoutPay, totalPrice[0]));
-                        }
-                        checkSelectedTip();
+                        lastDotEntered = dotEntered;
+                        updateTotalPrice();
+                        overrideText = null;
                         ignoreOnTextChange = false;
                     }
                 });
@@ -1932,9 +1969,13 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                         valueTextView.setOnClickListener(v -> {
                             long amoumt = (Long) valueTextView.getTag();
                             if (tipAmount != null && amoumt == tipAmount) {
-                                inputFields[0].setText(LocaleController.getInstance().formatCurrencyString(0, false, paymentForm.invoice.currency));
+                                ignoreOnTextChange = true;
+                                inputFields[0].setText("");
+                                ignoreOnTextChange = false;
+                                tipAmount = 0L;
+                                updateTotalPrice();
                             } else {
-                                inputFields[0].setText(LocaleController.getInstance().formatCurrencyString(amount, false, paymentForm.invoice.currency));
+                                inputFields[0].setText(LocaleController.getInstance().formatCurrencyString(amount, false, true, true, paymentForm.invoice.currency));
                             }
                             inputFields[0].setSelection(inputFields[0].length());
                         });
@@ -1946,7 +1987,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 }
             }
 
-            linearLayout2.addView(priceCell);
+            linearLayout2.addView(totalCell);
 
             sectionCell[2] = new ShadowSectionCell(context);
             sectionCell[2].setBackgroundDrawable(Theme.getThemedDrawable(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
@@ -2381,16 +2422,6 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
         return fragmentView;
     }
 
-    private void checkSelectedTip() {
-        int color = Theme.getColor(Theme.key_contacts_inviteBackground);
-        for (int b = 0, N2 = tipLayout.getChildCount(); b < N2; b++) {
-            View child = tipLayout.getChildAt(b);
-            int alpha = child.getTag().equals(tipAmount) ? 0x3fffffff : 0x1fffffff;
-            Theme.setDrawableColor(child.getBackground(), color & alpha);
-            child.invalidate();
-        }
-    }
-
     private void setAddressFields() {
         if (validateRequest.info.shipping_address != null) {
             String address = String.format("%s %s, %s, %s, %s, %s", validateRequest.info.shipping_address.street_line1, validateRequest.info.shipping_address.street_line2, validateRequest.info.shipping_address.city, validateRequest.info.shipping_address.state, validateRequest.info.shipping_address.country_iso2, validateRequest.info.shipping_address.post_code);
@@ -2407,6 +2438,28 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
 
         if (validateRequest.info.email != null) {
             detailSettingsCell[5].setTextAndValueAndIcon(validateRequest.info.email, LocaleController.getString("PaymentCheckoutEmail", R.string.PaymentCheckoutEmail), R.drawable.payment_email, shippingOption != null);
+        }
+    }
+
+    private void updateTotalPrice() {
+        totalPrice[0] = getTotalPriceString(prices);
+        totalCell.setTextAndValue(LocaleController.getString("PaymentTransactionTotal", R.string.PaymentTransactionTotal), totalPrice[0], true);
+        if (payTextView != null) {
+            payTextView.setText(LocaleController.formatString("PaymentCheckoutPay", R.string.PaymentCheckoutPay, totalPrice[0]));
+        }
+        if (tipLayout != null) {
+            int color = Theme.getColor(Theme.key_contacts_inviteBackground);
+            for (int b = 0, N2 = tipLayout.getChildCount(); b < N2; b++) {
+                TextView child = (TextView) tipLayout.getChildAt(b);
+                if (child.getTag().equals(tipAmount)) {
+                    Theme.setDrawableColor(child.getBackground(), color);
+                    child.setTextColor(Theme.getColor(Theme.key_contacts_inviteText));
+                } else {
+                    Theme.setDrawableColor(child.getBackground(), color & 0x1fffffff);
+                    child.setTextColor(Theme.getColor(Theme.key_chats_secretName));
+                }
+                child.invalidate();
+            }
         }
     }
 
@@ -2617,7 +2670,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
     private void showPayAlert(final String totalPrice) {
         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
         builder.setTitle(LocaleController.getString("PaymentTransactionReview", R.string.PaymentTransactionReview));
-        builder.setMessage(LocaleController.formatString("PaymentTransactionMessage", R.string.PaymentTransactionMessage, totalPrice, currentBotName, currentItemName));
+        builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("PaymentTransactionMessage2", R.string.PaymentTransactionMessage2, totalPrice, currentBotName, currentItemName)));
         builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialogInterface, i) -> {
             setDonePressed(true);
             sendData();

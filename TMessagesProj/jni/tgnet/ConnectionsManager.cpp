@@ -1185,6 +1185,9 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
     } else if (typeInfo == typeid(TL_rpc_result)) {
         TL_rpc_result *response = (TL_rpc_result *) message;
         int64_t resultMid = response->req_msg_id;
+        if (resultMid == lastInvokeAfterMessageId) {
+            lastInvokeAfterMessageId = 0;
+        }
 
         bool hasResult = response->result.get() != nullptr;
         bool ignoreResult = false;
@@ -1270,13 +1273,21 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
                             }
                         } else if ((request->requestFlags & RequestFlagFailOnServerErrors) == 0 || processEvenFailed) {
                             if (error->error_code == 500 || error->error_code < 0) {
-                                discardResponse = true;
-                                if (isWorkerBusy) {
-                                    request->minStartTime = 0;
+                                static std::string waitFailed = "MSG_WAIT_FAILED";
+                                if (error->error_message.find(waitFailed) != std::string::npos) {
+                                    request->minStartTime = (int32_t) (getCurrentTimeMonotonicMillis() / 1000 + 1);
+                                    request->startTime = 0;
+                                    request->startTimeMillis = 0;
+                                    request->requestFlags &=~ RequestFlagInvokeAfter;
                                 } else {
-                                    request->minStartTime = request->startTime + (request->serverFailureCount > 10 ? 10 : request->serverFailureCount);
+                                    if (isWorkerBusy) {
+                                        request->minStartTime = 0;
+                                    } else {
+                                        request->minStartTime = request->startTime + (request->serverFailureCount > 10 ? 10 : request->serverFailureCount);
+                                    }
+                                    request->serverFailureCount++;
                                 }
-                                request->serverFailureCount++;
+                                discardResponse = true;
                             } else if (error->error_code == 420) {
                                 int32_t waitTime = 2;
                                 static std::string floodWait = "FLOOD_WAIT_";
@@ -2618,7 +2629,7 @@ void ConnectionsManager::processRequestQueue(uint32_t connectionTypes, uint32_t 
                         int64_t maxRequestId = 0;
                         if (lastInvokeAfterMessageId != 0) {
                             int64_t timeMessage = (int64_t) (lastInvokeAfterMessageId / 4294967296.0);
-                            if (getCurrentTime() - timeMessage <= 30) {
+                            if (getCurrentTime() - timeMessage <= 5) {
                                 maxRequestId = lastInvokeAfterMessageId;
                             }
                         }

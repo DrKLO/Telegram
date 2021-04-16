@@ -1319,11 +1319,11 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                 if (peerId > 0) {
                     TLRPC.User user = accountInstance.getMessagesController().getUser(peerId);
                     accountSwitchAvatarDrawable.setInfo(user);
-                    accountSwitchImageView.setImage(ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_STRIPPED), "50_50", accountSwitchAvatarDrawable, user);
+                    accountSwitchImageView.setForUserOrChat(user, accountSwitchAvatarDrawable);
                 } else {
                     TLRPC.Chat chat = accountInstance.getMessagesController().getChat(-peerId);
                     accountSwitchAvatarDrawable.setInfo(chat);
-                    accountSwitchImageView.setImage(ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_STRIPPED), "50_50", accountSwitchAvatarDrawable, chat);
+                    accountSwitchImageView.setForUserOrChat(chat, accountSwitchAvatarDrawable);
                 }
                 accountSelectCell.setVisibility(View.GONE);
                 accountGap.setVisibility(View.GONE);
@@ -3748,7 +3748,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                             invites[b] = null;
                         }
                     }
-                    if (ChatObject.canManageCalls(currentChat) && !call.call.join_muted) {
+                    if (!copy && ChatObject.canManageCalls(currentChat) && !call.call.join_muted) {
                         invites[0] = null;
                     }
                     if (invites[0] == null && invites[1] == null && !TextUtils.isEmpty(currentChat.username)) {
@@ -3763,7 +3763,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
 
     private void openShareAlert(boolean withMessage, String urlMuted, String urlUnmuted, boolean copy) {
         if (copy) {
-            AndroidUtilities.addToClipboard(invites[0]);
+            AndroidUtilities.addToClipboard(urlMuted != null ? urlMuted : urlUnmuted);
             getUndoView().showWithAction(0, UndoView.ACTION_VOIP_LINK_COPIED, null, null, null, null);
         } else {
             boolean keyboardIsOpen = false;
@@ -4507,11 +4507,11 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             String name;
             if (object instanceof TLRPC.User) {
                 TLRPC.User user = (TLRPC.User) object;
-                imageView.setImage(ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, user);
+                imageView.setForUserOrChat(user, avatarDrawable);
                 name = UserObject.getFirstName(user);
             } else {
                 TLRPC.Chat chat = (TLRPC.Chat) object;
-                imageView.setImage(ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, chat);
+                imageView.setForUserOrChat(chat, avatarDrawable);
                 name = chat.title;
             }
 

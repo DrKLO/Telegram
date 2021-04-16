@@ -1130,10 +1130,10 @@ public class LocaleController {
     }
 
     public String formatCurrencyString(long amount, String type) {
-        return formatCurrencyString(amount, true, type);
+        return formatCurrencyString(amount, true, true, false, type);
     }
 
-    public String formatCurrencyString(long amount, boolean fixAnything, String type) {
+    public String formatCurrencyString(long amount, boolean fixAnything, boolean withExp, boolean editText, String type) {
         type = type.toUpperCase();
         String customFormat;
         double doubleAmount;
@@ -1200,14 +1200,24 @@ public class LocaleController {
                 doubleAmount = amount / 100.0;
                 break;
         }
-        String result;
+        if (!withExp) {
+            customFormat = " %.0f";
+        }
         if (currency != null) {
             NumberFormat format = NumberFormat.getCurrencyInstance(currentLocale != null ? currentLocale : systemDefaultLocale);
             format.setCurrency(currency);
-            if (fixAnything && type.equals("IRR")) {
+            if (editText) {
+                format.setGroupingUsed(false);
+            }
+            if (!withExp || fixAnything && type.equals("IRR")) {
                 format.setMaximumFractionDigits(0);
             }
-            return (discount ? "-" : "") + format.format(doubleAmount);
+            String result = (discount ? "-" : "") + format.format(doubleAmount);
+            int idx = result.indexOf(type);
+            if (idx >= 0 && result.charAt(idx + type.length()) != ' ') {
+                result = result.substring(0, idx + type.length()) + " " + result.substring(idx + type.length());
+            }
+            return result;
         }
         return (discount ? "-" : "") + String.format(Locale.US, type + customFormat, doubleAmount);
     }

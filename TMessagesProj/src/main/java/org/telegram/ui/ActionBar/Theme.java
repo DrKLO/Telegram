@@ -5357,6 +5357,7 @@ public class Theme {
                 if (isCurrentThemeNight()) {
                     switchNightThemeDelay = 2000;
                     lastDelayUpdateTime = SystemClock.elapsedRealtime();
+                    AndroidUtilities.runOnUIThread(Theme::checkAutoNightThemeConditions, 2100);
                 }
             }
             currentTheme = themeInfo;

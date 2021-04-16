@@ -1101,6 +1101,10 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         return currentStyle == 4 ? 48 : 36;
     }
 
+    public boolean isCallTypeVisible() {
+        return (currentStyle == 1 || currentStyle == 3) && visible;
+    }
+
     private void checkLiveLocation(boolean create) {
         View fragmentView = fragment.getFragmentView();
         if (!create && fragmentView != null) {
@@ -1765,7 +1769,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                     } else {
                         titleTextView.setText(LocaleController.getString("VoipGroupScheduledVoiceChat", R.string.VoipGroupScheduledVoiceChat), false);
                     }
-                    subtitleTextView.setText(LocaleController.formatStartsTime(call.call.schedule_date, 2), false);
+                    subtitleTextView.setText(LocaleController.formatStartsTime(call.call.schedule_date, 4), false);
                     if (!scheduleRunnableScheduled) {
                         scheduleRunnableScheduled = true;
                         updateScheduleTimeRunnable.run();

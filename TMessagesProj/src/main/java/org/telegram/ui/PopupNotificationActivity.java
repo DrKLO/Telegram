@@ -1372,7 +1372,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             currentChat = chat;
             if (avatarImageView != null) {
                 AvatarDrawable avatarDrawable = new AvatarDrawable(currentChat);
-                avatarImageView.setImage(ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, chat);
+                avatarImageView.setForUserOrChat(chat, avatarDrawable);
             }
         } else if (currentUser != null) {
             TLRPC.User user = MessagesController.getInstance(currentMessageObject.currentAccount).getUser(currentUser.id);
@@ -1382,7 +1382,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             currentUser = user;
             if (avatarImageView != null) {
                 AvatarDrawable avatarDrawable = new AvatarDrawable(currentUser);
-                avatarImageView.setImage(ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, user);
+                avatarImageView.setForUserOrChat(user, avatarDrawable);
             }
         }
     }

@@ -2113,11 +2113,11 @@ public class DialogCell extends BaseCell {
                         avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_SAVED);
                         avatarImage.setImage(null, null, avatarDrawable, null, user, 0);
                     } else {
-                        avatarImage.setImage(ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, user, 0);
+                        avatarImage.setForUserOrChat(user, avatarDrawable);
                     }
                 } else if (chat != null) {
                     avatarDrawable.setInfo(chat);
-                    avatarImage.setImage(ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, chat, 0);
+                    avatarImage.setForUserOrChat(chat, avatarDrawable);
                 }
             }
 

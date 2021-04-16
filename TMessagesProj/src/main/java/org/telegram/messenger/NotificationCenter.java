@@ -405,7 +405,7 @@ public class NotificationCenter {
     }
 
     public void postNotificationName(int id, Object... args) {
-        boolean allowDuringAnimation = id == startAllHeavyOperations || id == stopAllHeavyOperations || id == didReplacedPhotoInMemCache;
+        boolean allowDuringAnimation = id == startAllHeavyOperations || id == stopAllHeavyOperations || id == didReplacedPhotoInMemCache || id == closeChats;
         ArrayList<Integer> expiredIndices = null;
         if (!allowDuringAnimation && !allowedNotifications.isEmpty()) {
             int size = allowedNotifications.size();

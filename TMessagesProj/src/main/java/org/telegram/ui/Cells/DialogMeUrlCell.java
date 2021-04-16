@@ -129,7 +129,7 @@ public class DialogMeUrlCell extends BaseCell {
             }
             nameString = chat.title;
             avatarDrawable.setInfo(chat);
-            avatarImage.setImage(ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, recentMeUrl, 0);
+            avatarImage.setForUserOrChat(chat, avatarDrawable, recentMeUrl);
         } else if (recentMeUrl instanceof TLRPC.TL_recentMeUrlUser) {
             TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(recentMeUrl.user_id);
             if (!LocaleController.isRTL) {
@@ -153,7 +153,7 @@ public class DialogMeUrlCell extends BaseCell {
             }
             nameString = UserObject.getUserName(user);
             avatarDrawable.setInfo(user);
-            avatarImage.setImage(ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, recentMeUrl, 0);
+            avatarImage.setForUserOrChat(user, avatarDrawable, recentMeUrl);
         } else if (recentMeUrl instanceof TLRPC.TL_recentMeUrlStickerSet) {
             if (!LocaleController.isRTL) {
                 nameLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline);
@@ -180,7 +180,7 @@ public class DialogMeUrlCell extends BaseCell {
                     nameLockTop = AndroidUtilities.dp(17.5f);
                 }
                 drawVerified = recentMeUrl.chat_invite.chat.verified;
-                avatarImage.setImage(ImageLocation.getForUserOrChat(recentMeUrl.chat_invite.chat, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(recentMeUrl.chat_invite.chat, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, recentMeUrl, 0);
+                avatarImage.setForUserOrChat(recentMeUrl.chat_invite.chat, avatarDrawable, recentMeUrl);
             } else {
                 nameString = recentMeUrl.chat_invite.title;
                 avatarDrawable.setInfo(5, recentMeUrl.chat_invite.title, null);

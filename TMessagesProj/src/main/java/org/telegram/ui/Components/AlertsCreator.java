@@ -1161,11 +1161,11 @@ public class AlertsCreator {
             } else {
                 avatarDrawable.setSmallSize(false);
                 avatarDrawable.setInfo(user);
-                imageView.setImage(ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, user);
+                imageView.setForUserOrChat(user, avatarDrawable);
             }
         } else {
             avatarDrawable.setInfo(chat);
-            imageView.setImage(ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, chat);
+            imageView.setForUserOrChat(chat, avatarDrawable);
         }
 
         messageTextView.setText(AndroidUtilities.replaceTags(message));
@@ -1329,11 +1329,11 @@ public class AlertsCreator {
             } else {
                 avatarDrawable.setSmallSize(false);
                 avatarDrawable.setInfo(user);
-                imageView.setImage(ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, user);
+                imageView.setForUserOrChat(user, avatarDrawable);
             }
         } else {
             avatarDrawable.setInfo(chat);
-            imageView.setImage(ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, chat);
+            imageView.setForUserOrChat(chat, avatarDrawable);
         }
 
         if (second) {
@@ -1499,7 +1499,7 @@ public class AlertsCreator {
 
         BackupImageView imageView = new BackupImageView(context);
         imageView.setRoundRadius(AndroidUtilities.dp(20));
-        imageView.setImage(ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, user);
+        imageView.setForUserOrChat(user, avatarDrawable);
         frameLayout.addView(imageView, LayoutHelper.createFrame(40, 40, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 22, 5, 22, 0));
 
         TextView textView = new TextView(context);
@@ -2032,9 +2032,9 @@ public class AlertsCreator {
                 t = LocaleController.formatPluralString("SecondsSchedule", diff);
             }
             if (infoText.getTag() != null) {
-                infoText.setText(LocaleController.formatString("VoipGroupScheduleInfo", R.string.VoipGroupScheduleInfo, t));
-            } else {
                 infoText.setText(LocaleController.formatString("VoipChannelScheduleInfo", R.string.VoipChannelScheduleInfo, t));
+            } else {
+                infoText.setText(LocaleController.formatString("VoipGroupScheduleInfo", R.string.VoipGroupScheduleInfo, t));
             }
         }
         return currentTime - systemTime > 60000L;
@@ -3361,7 +3361,7 @@ public class AlertsCreator {
 
         BackupImageView imageView = new BackupImageView(activity);
         imageView.setRoundRadius(AndroidUtilities.dp(26));
-        imageView.setImage(ImageLocation.getForUserOrChat(selfUser, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(selfUser, ImageLocation.TYPE_STRIPPED), "50_50", (Drawable) null, selfUser);
+        imageView.setForUserOrChat(selfUser, new AvatarDrawable(selfUser));
         frameLayout.addView(imageView, LayoutHelper.createFrame(52, 52, Gravity.CENTER, 0, 0, 0, 11));
 
         builder.setTopView(frameLayout);

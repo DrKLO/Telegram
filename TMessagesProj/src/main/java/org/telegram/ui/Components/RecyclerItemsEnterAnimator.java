@@ -134,16 +134,24 @@ public class RecyclerItemsEnterAnimator {
     }
 
     public void onDetached() {
-        for (int i = 0; i < currentAnimations.size(); i++) {
-            currentAnimations.get(i).cancel();
+        cancel();
+    }
+
+    public void cancel() {
+        if (!currentAnimations.isEmpty()) {
+            ArrayList<AnimatorSet> animations = new ArrayList<>(currentAnimations);
+            for (int i = 0; i < animations.size(); i++) {
+                animations.get(i).end();
+                animations.get(i).cancel();
+            }
         }
         currentAnimations.clear();
         for (int i = 0; i < preDrawListeners.size(); i++) {
             listView.getViewTreeObserver().removeOnPreDrawListener(preDrawListeners.get(i));
         }
         preDrawListeners.clear();
-
         listAlphaItems.clear();
+        listView.invalidate();
         invalidateAlpha = true;
     }
 }

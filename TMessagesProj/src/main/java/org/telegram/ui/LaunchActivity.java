@@ -3380,7 +3380,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         if (!force && BuildVars.DEBUG_VERSION || !force && !BuildVars.CHECK_UPDATES) {
             return;
         }
-        if (!force && Math.abs(System.currentTimeMillis() - UserConfig.getInstance(0).lastUpdateCheckTime) < 24 * 60 * 60 * 1000) {
+        if (!force && Math.abs(System.currentTimeMillis() - UserConfig.getInstance(0).lastUpdateCheckTime) < MessagesController.getInstance(0).updateCheckDelay * 1000) {
             return;
         }
         TLRPC.TL_help_getAppUpdate req = new TLRPC.TL_help_getAppUpdate();

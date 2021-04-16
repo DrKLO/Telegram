@@ -3165,10 +3165,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                                     }
                                     if (user != null) {
                                         commentAvatarDrawables[a].setInfo(user);
-                                        commentAvatarImages[a].setImage(ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_STRIPPED), "50_50", commentAvatarDrawables[a], user, 0);
+                                        commentAvatarImages[a].setForUserOrChat(user, commentAvatarDrawables[a]);
                                     } else if (chat != null) {
                                         commentAvatarDrawables[a].setInfo(chat);
-                                        commentAvatarImages[a].setImage(ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_STRIPPED), "50_50", commentAvatarDrawables[a], chat, 0);
+                                        commentAvatarImages[a].setForUserOrChat(chat, commentAvatarDrawables[a]);
                                     } else {
                                         commentAvatarDrawables[a].setInfo(id, "", "");
                                     }
@@ -4236,7 +4236,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 } else {
                     hasName = false;
                 }
-                photoImage.setImage(ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_STRIPPED), "50_50", hasName ? contactAvatarDrawable : Theme.chat_contactDrawable[messageObject.isOutOwner() ? 1 : 0], messageObject, 0);
+                photoImage.setForUserOrChat(user, hasName ? contactAvatarDrawable : Theme.chat_contactDrawable[messageObject.isOutOwner() ? 1 : 0], messageObject);
 
                 CharSequence phone;
                 if (!TextUtils.isEmpty(messageObject.vCardData)) {
@@ -4428,7 +4428,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(id);
                             if (user != null) {
                                 pollAvatarDrawables[a].setInfo(user);
-                                pollAvatarImages[a].setImage(ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_STRIPPED), "50_50", pollAvatarDrawables[a], user, 0);
+                                pollAvatarImages[a].setForUserOrChat(user, pollAvatarDrawables[a]);
                             } else {
                                 pollAvatarDrawables[a].setInfo(id, "", "");
                             }
@@ -4762,13 +4762,13 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         updateCurrentUserAndChat();
                         if (currentUser != null) {
                             contactAvatarDrawable.setInfo(currentUser);
-                            locationImageReceiver.setImage(ImageLocation.getForUserOrChat(currentUser, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(currentUser, ImageLocation.TYPE_STRIPPED), "50_50", contactAvatarDrawable, currentUser, 0);
+                            locationImageReceiver.setForUserOrChat(currentUser, contactAvatarDrawable);
                         } else if (currentChat != null) {
                             if (currentChat.photo != null) {
                                 currentPhoto = currentChat.photo.photo_small;
                             }
                             contactAvatarDrawable.setInfo(currentChat);
-                            locationImageReceiver.setImage(ImageLocation.getForUserOrChat(currentChat, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(currentChat, ImageLocation.TYPE_STRIPPED), "50_50", contactAvatarDrawable, currentChat, 0);
+                            locationImageReceiver.setForUserOrChat(currentChat, contactAvatarDrawable);
                         } else {
                             locationImageReceiver.setImage(null, null, contactAvatarDrawable, null, null, 0);
                         }
@@ -9198,7 +9198,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     currentPhoto = null;
                 }
                 avatarDrawable.setInfo(currentUser);
-                avatarImage.setImage(ImageLocation.getForUserOrChat(currentUser, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(currentUser, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, currentUser, 0);
+                avatarImage.setForUserOrChat(currentUser, avatarDrawable);
             } else if (currentChat != null) {
                 if (currentChat.photo != null) {
                     currentPhoto = currentChat.photo.photo_small;
@@ -9206,7 +9206,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     currentPhoto = null;
                 }
                 avatarDrawable.setInfo(currentChat);
-                avatarImage.setImage(ImageLocation.getForUserOrChat(currentChat, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(currentUser, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, currentChat, 0);
+                avatarImage.setForUserOrChat(currentChat, avatarDrawable);
             } else {
                 currentPhoto = null;
                 avatarDrawable.setInfo(messageObject.getFromChatId(), null, null);

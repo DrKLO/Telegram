@@ -114,7 +114,7 @@ public class ShareDialogCell extends FrameLayout {
                 } else {
                     nameTextView.setText("");
                 }
-                imageView.setImage(ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, user);
+                imageView.setForUserOrChat(user, avatarDrawable);
             }
         } else {
             user = null;
@@ -127,7 +127,7 @@ public class ShareDialogCell extends FrameLayout {
                 nameTextView.setText("");
             }
             avatarDrawable.setInfo(chat);
-            imageView.setImage(ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, chat);
+            imageView.setForUserOrChat(chat, avatarDrawable);
         }
         currentDialog = uid;
         checkBox.setChecked(checked, false);
@@ -192,6 +192,6 @@ public class ShareDialogCell extends FrameLayout {
         int cy = imageView.getTop() + imageView.getMeasuredHeight() / 2;
         Theme.checkboxSquare_checkPaint.setColor(Theme.getColor(Theme.key_dialogRoundCheckBox));
         Theme.checkboxSquare_checkPaint.setAlpha((int) (checkBox.getProgress() * 255));
-        canvas.drawCircle(cx, cy, AndroidUtilities.dp(24), Theme.checkboxSquare_checkPaint);
+        canvas.drawCircle(cx, cy, AndroidUtilities.dp(currentType == TYPE_CREATE ? 24 : 28), Theme.checkboxSquare_checkPaint);
     }
 }

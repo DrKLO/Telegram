@@ -85,7 +85,7 @@
     <string name="PaymentCardSavePaymentInformationInfoLine1">You can save your payment info for future use.</string>
     <string name="PaymentCardSavePaymentInformationInfoLine2">Please *turn on Two-Step Verification* to enable this.</string>
     <string name="PaymentTransactionReview">Transaction Review</string>
-    <string name="PaymentTransactionMessage">Do you really want to transfer %1$s to the %2$s bot for %3$s?</string>
+    <string name="PaymentTransactionMessage2">Transfer **%1$s** to the %2$s bot for **%3$s**?</string>
     <string name="PaymentTransactionTotal">Total</string>
     <string name="PaymentInvoice">INVOICE</string>
     <string name="PaymentTestInvoice">TEST INVOICE</string>

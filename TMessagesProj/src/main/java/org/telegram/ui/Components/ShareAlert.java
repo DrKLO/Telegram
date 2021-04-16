@@ -864,7 +864,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         gridView = new RecyclerListView(context) {
             @Override
             protected boolean allowSelectChildAtPosition(float x, float y) {
-                return y >= scrollOffsetY + AndroidUtilities.dp(48) + (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0);
+                return y >= AndroidUtilities.dp(darkTheme && linkToCopy[1] != null ? 111 : 58) + (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0);
             }
 
             @Override

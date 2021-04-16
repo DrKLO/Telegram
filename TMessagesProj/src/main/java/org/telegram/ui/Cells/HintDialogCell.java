@@ -128,7 +128,7 @@ public class HintDialogCell extends FrameLayout {
                 nameTextView.setText("");
             }
             avatarDrawable.setInfo(currentUser);
-            imageView.setImage(ImageLocation.getForUserOrChat(currentUser, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(currentUser, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, currentUser);
+            imageView.setForUserOrChat(currentUser, avatarDrawable);
         } else {
             TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-uid);
             if (name != null) {
@@ -140,7 +140,7 @@ public class HintDialogCell extends FrameLayout {
             }
             avatarDrawable.setInfo(chat);
             currentUser = null;
-            imageView.setImage(ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, chat);
+            imageView.setForUserOrChat(chat, avatarDrawable);
         }
         if (counter) {
             update(0);

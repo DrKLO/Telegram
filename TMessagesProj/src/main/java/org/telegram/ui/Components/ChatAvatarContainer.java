@@ -589,7 +589,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
     public void setChatAvatar(TLRPC.Chat chat) {
         avatarDrawable.setInfo(chat);
         if (avatarImageView != null) {
-            avatarImageView.setImage(ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, chat);
+            avatarImageView.setForUserOrChat(chat, avatarDrawable);
         }
     }
 
@@ -615,7 +615,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         } else {
             avatarDrawable.setSmallSize(false);
             if (avatarImageView != null) {
-                avatarImageView.setImage(ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, user);
+                avatarImageView.setForUserOrChat(user, avatarDrawable);
             }
         }
     }
@@ -643,13 +643,13 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             } else {
                 avatarDrawable.setSmallSize(false);
                 if (avatarImageView != null) {
-                    avatarImageView.setImage(ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, user);
+                    avatarImageView.setForUserOrChat(user, avatarDrawable);
                 }
             }
         } else if (chat != null) {
             avatarDrawable.setInfo(chat);
             if (avatarImageView != null) {
-                avatarImageView.setImage(ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, chat);
+                avatarImageView.setForUserOrChat(chat, avatarDrawable);
             }
         }
     }

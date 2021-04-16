@@ -1526,7 +1526,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         passwordAvatarContainer.addView(avatarImageView, LayoutHelper.createFrame(64, 64, Gravity.CENTER, 0, 8, 0, 0));
 
         AvatarDrawable avatarDrawable = new AvatarDrawable(botUser);
-        avatarImageView.setImage(ImageLocation.getForUserOrChat(botUser, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(botUser, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, botUser);
+        avatarImageView.setForUserOrChat(botUser, avatarDrawable);
 
         passwordRequestTextView = new TextInfoPrivacyCell(context);
         passwordRequestTextView.getTextView().setGravity(Gravity.CENTER_HORIZONTAL);
@@ -2001,7 +2001,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             avatarContainer.addView(avatarImageView, LayoutHelper.createFrame(64, 64, Gravity.CENTER, 0, 8, 0, 0));
 
             AvatarDrawable avatarDrawable = new AvatarDrawable(botUser);
-            avatarImageView.setImage(ImageLocation.getForUserOrChat(botUser, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(botUser, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, botUser);
+            avatarImageView.setForUserOrChat(botUser, avatarDrawable);
 
             bottomCell = new TextInfoPrivacyCell(context);
             bottomCell.setBackgroundDrawable(Theme.getThemedDrawable(context, R.drawable.greydivider_top, Theme.key_windowBackgroundGrayShadow));

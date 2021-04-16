@@ -3432,6 +3432,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     canEditAdmin = false;
                 }
                 allowKick = canRestrict = ChatObject.canBlockUsers(currentChat) && (!(channelParticipant instanceof TLRPC.TL_channelParticipantAdmin || channelParticipant instanceof TLRPC.TL_channelParticipantCreator) || channelParticipant.can_edit);
+                if (currentChat.gigagroup) {
+                    canRestrict = false;
+                }
                 editingAdmin = channelParticipant instanceof TLRPC.TL_channelParticipantAdmin;
             } else {
                 channelParticipant = null;
@@ -3634,9 +3637,17 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (i == 0) {
                     try {
                         android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                        android.content.ClipData clip = android.content.ClipData.newPlainText("label", "https://" + MessagesController.getInstance(UserConfig.selectedAccount).linkPrefix + "/" + username);
+                        String text;
+                        if (user_id != 0) {
+                            text = "@" + username;
+                            BulletinFactory.of(this).createCopyBulletin(LocaleController.getString("UsernameCopied", R.string.UsernameCopied)).show();
+                        } else {
+                            text = "https://" + MessagesController.getInstance(UserConfig.selectedAccount).linkPrefix + "/" + username;
+                            BulletinFactory.of(this).createCopyBulletin(LocaleController.getString("LinkCopied", R.string.LinkCopied)).show();
+                        }
+                        android.content.ClipData clip = android.content.ClipData.newPlainText("label", text);
                         clipboard.setPrimaryClip(clip);
-                        BulletinFactory.of(this).createCopyBulletin(LocaleController.getString("LinkCopied", R.string.LinkCopied)).show();
+
                     } catch (Exception e) {
                         FileLog.e(e);
                     }

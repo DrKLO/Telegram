@@ -58,7 +58,7 @@ public class JoinSheetUserCell extends FrameLayout {
     public void setUser(TLRPC.User user) {
         nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
         avatarDrawable.setInfo(user);
-        imageView.setImage(ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, user);
+        imageView.setForUserOrChat(user, avatarDrawable);
     }
 
     public void setCount(int count) {

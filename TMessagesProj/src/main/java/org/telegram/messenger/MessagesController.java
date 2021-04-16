@@ -273,6 +273,7 @@ public class MessagesController extends BaseController implements NotificationCe
     public int maxFolderPinnedDialogsCount;
     public int mapProvider;
     public int availableMapProviders;
+    public int updateCheckDelay;
     public String mapKey;
     public int maxMessageLength;
     public int maxCaptionLength;
@@ -716,6 +717,7 @@ public class MessagesController extends BaseController implements NotificationCe
         callRingTimeout = mainPreferences.getInt("callRingTimeout", 90000);
         callConnectTimeout = mainPreferences.getInt("callConnectTimeout", 30000);
         callPacketTimeout = mainPreferences.getInt("callPacketTimeout", 10000);
+        updateCheckDelay = mainPreferences.getInt("updateCheckDelay", 24 * 60 * 60);
         maxPinnedDialogsCount = mainPreferences.getInt("maxPinnedDialogsCount", 5);
         maxFolderPinnedDialogsCount = mainPreferences.getInt("maxFolderPinnedDialogsCount", 100);
         maxMessageLength = mainPreferences.getInt("maxMessageLength", 4096);
@@ -1578,6 +1580,25 @@ public class MessagesController extends BaseController implements NotificationCe
                                 if (bool.value != autoarchiveAvailable) {
                                     autoarchiveAvailable = bool.value;
                                     editor.putBoolean("autoarchiveAvailable", autoarchiveAvailable);
+                                    changed = true;
+                                }
+                            }
+                            break;
+                        }
+                        case "inapp_update_check_delay": {
+                            if (value.value instanceof TLRPC.TL_jsonNumber) {
+                                TLRPC.TL_jsonNumber number = (TLRPC.TL_jsonNumber) value.value;
+                                if (number.value != updateCheckDelay) {
+                                    updateCheckDelay = (int) number.value;
+                                    editor.putInt("updateCheckDelay", updateCheckDelay);
+                                    changed = true;
+                                }
+                            } else if (value.value instanceof TLRPC.TL_jsonString) {
+                                TLRPC.TL_jsonString number = (TLRPC.TL_jsonString) value.value;
+                                int delay = Utilities.parseInt(number.value);
+                                if (delay != updateCheckDelay) {
+                                    updateCheckDelay = delay;
+                                    editor.putInt("updateCheckDelay", updateCheckDelay);
                                     changed = true;
                                 }
                             }
@@ -13702,7 +13723,7 @@ public class MessagesController extends BaseController implements NotificationCe
             }
             dialog = new TLRPC.TL_dialog();
             dialog.id = uid;
-            dialog.top_message = lastMessage.getId();
+            int mid = dialog.top_message = lastMessage.getId();
             dialog.last_message_date = lastMessage.messageOwner.date;
             dialog.flags = ChatObject.isChannel(chat) ? 1 : 0;
             dialogs_dict.put(uid, dialog);
@@ -13724,7 +13745,7 @@ public class MessagesController extends BaseController implements NotificationCe
                         sortDialogs(null);
                         getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload, true);
                     }
-                } else {
+                } else if (mid > 0) {
                     int lowerId = (int) uid;
                     if (lowerId != 0) {
                         loadUnknownDialog(getInputPeer(lowerId), 0);
