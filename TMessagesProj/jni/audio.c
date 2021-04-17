@@ -219,7 +219,7 @@ static int writeOggPage(ogg_page *page, FILE *os) {
     return written;
 }
 
-const opus_int32 bitrate = 25000;
+const opus_int32 bitrate = 30 * 1024;
 const opus_int32 frame_size = 960;
 const int with_cvbr = 1;
 const int max_ogg_delay = 0;

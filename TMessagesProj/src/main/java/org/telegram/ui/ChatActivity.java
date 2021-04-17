@@ -17743,7 +17743,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         CharSequence draftMessage = null;
         MessageObject replyMessage = null;
         boolean searchWebpage = true;
-        if (!ignoreAttachOnPause && chatActivityEnterView != null && bottomOverlayChat.getVisibility() != View.VISIBLE) {
+        if (!ignoreAttachOnPause && chatActivityEnterView != null && bottomOverlayChat != null && bottomOverlayChat.getVisibility() != View.VISIBLE) {
             chatActivityEnterView.onPause();
             replyMessage = replyingMessageObject;
             if (!chatActivityEnterView.isEditingMessage()) {

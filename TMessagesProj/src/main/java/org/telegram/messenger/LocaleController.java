@@ -1214,8 +1214,11 @@ public class LocaleController {
             }
             String result = (discount ? "-" : "") + format.format(doubleAmount);
             int idx = result.indexOf(type);
-            if (idx >= 0 && result.charAt(idx + type.length()) != ' ') {
-                result = result.substring(0, idx + type.length()) + " " + result.substring(idx + type.length());
+            if (idx >= 0) {
+                idx += type.length();
+                if (idx < result.length() && result.charAt(idx + type.length()) != ' ') {
+                    result = result.substring(0, idx + type.length()) + " " + result.substring(idx + type.length());
+                }
             }
             return result;
         }

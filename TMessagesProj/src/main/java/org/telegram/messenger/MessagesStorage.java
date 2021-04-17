@@ -6686,14 +6686,18 @@ public class MessagesStorage extends BaseController {
                     }
                     cursor.dispose();
                 }
-                if (messageIdsToFix != null) { //TODO remove later
+                if (messageIdsToFix != null) {
                     SQLitePreparedStatement state = database.executeFast("UPDATE messages SET mid = ? WHERE mid = ?");
-                    for (int a = 0, N = messageIdsToFix.size(); a < N; a++) {
-                        long id = messageIdsToFix.get(a);
-                        state.requery();
-                        state.bindLong(1, (int) id);
-                        state.bindLong(2, id);
-                        state.step();
+                    try {
+                        for (int a = 0, N = messageIdsToFix.size(); a < N; a++) {
+                            long id = messageIdsToFix.get(a);
+                            state.requery();
+                            state.bindLong(1, (int) id);
+                            state.bindLong(2, id);
+                            state.step();
+                        }
+                    } catch (Exception e) {
+                        FileLog.e(e);
                     }
                     state.dispose();
                 }
