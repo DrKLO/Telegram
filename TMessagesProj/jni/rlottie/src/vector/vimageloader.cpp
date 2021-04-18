@@ -1,12 +1,13 @@
 #include "vimageloader.h"
 #include "config.h"
 #include "vdebug.h"
-#ifndef WIN32
-#include <dlfcn.h>
-#else
-#include <Windows.h>
-#endif
 #include <cstring>
+
+#ifdef _WIN32
+# include <windows.h>
+#else
+# include <dlfcn.h>
+#endif  // _WIN32
 
 using lottie_image_load_f = unsigned char *(*)(const char *filename, int *x,
                                                int *y, int *comp, int req_comp);
@@ -35,12 +36,12 @@ struct VImageLoader::Impl {
     lottie_image_free_f      imageFree{nullptr};
     lottie_image_load_data_f imageFromData{nullptr};
 
-#ifndef LOTTIE_STATIC_IMAGE_LOADER
-#ifdef WIN32
+#ifdef LOTTIE_IMAGE_MODULE_SUPPORT
+# ifdef _WIN32
     HMODULE dl_handle{nullptr};
     bool    moduleLoad()
     {
-        dl_handle = LoadLibraryA("librlottie-image-loader.dll");
+        dl_handle = LoadLibraryA(LOTTIE_IMAGE_MODULE_PLUGIN);
         return (dl_handle == nullptr);
     }
     void moduleFree()
@@ -49,43 +50,36 @@ struct VImageLoader::Impl {
     }
     void init()
     {
-        imageLoad =
-            (lottie_image_load_f)GetProcAddress(dl_handle, "lottie_image_load");
-        imageFree =
-            (lottie_image_free_f)GetProcAddress(dl_handle, "lottie_image_free");
-        imageFromData = (lottie_image_load_data_f)GetProcAddress(
-            dl_handle, "lottie_image_load_from_data");
+        imageLoad = reinterpret_cast<lottie_image_load_f>(
+                    GetProcAddress(dl_handle, "lottie_image_load"));
+        imageFree = reinterpret_cast<lottie_image_free_f>(
+                    GetProcAddress(dl_handle, "lottie_image_free"));
+        imageFromData = reinterpret_cast<lottie_image_load_data_f>(
+                        GetProcAddress(dl_handle, "lottie_image_load_from_data"));
     }
-#else
+# else  // _WIN32
     void *dl_handle{nullptr};
     void  init()
     {
-        imageLoad = (lottie_image_load_f)dlsym(dl_handle, "lottie_image_load");
-        imageFree = (lottie_image_free_f)dlsym(dl_handle, "lottie_image_free");
-        imageFromData = (lottie_image_load_data_f)dlsym(
-            dl_handle, "lottie_image_load_from_data");
+        imageLoad = reinterpret_cast<lottie_image_load_f>(
+                    dlsym(dl_handle, "lottie_image_load"));
+        imageFree = reinterpret_cast<lottie_image_free_f>(
+                    dlsym(dl_handle, "lottie_image_free"));
+        imageFromData = reinterpret_cast<lottie_image_load_data_f>(
+                    dlsym(dl_handle, "lottie_image_load_from_data"));
     }
 
     void moduleFree()
     {
         if (dl_handle) dlclose(dl_handle);
     }
-#ifdef __APPLE__
     bool moduleLoad()
     {
-        dl_handle = dlopen("librlottie-image-loader.dylib", RTLD_LAZY);
+        dl_handle = dlopen(LOTTIE_IMAGE_MODULE_PLUGIN, RTLD_LAZY);
         return (dl_handle == nullptr);
     }
-#else
-    bool moduleLoad()
-    {
-        dl_handle = dlopen("librlottie-image-loader.so", RTLD_LAZY);
-        return (dl_handle == nullptr);
-    }
-#endif
-#endif
-#else
-    void *dl_handle{nullptr};
+# endif  // _WIN32
+#else  // LOTTIE_IMAGE_MODULE_SUPPORT
     void  init()
     {
         imageLoad = lottie_image_load;
@@ -94,7 +88,7 @@ struct VImageLoader::Impl {
     }
     void moduleFree() {}
     bool moduleLoad() { return false; }
-#endif
+#endif  // LOTTIE_IMAGE_MODULE_SUPPORT
 
     Impl()
     {
@@ -131,7 +125,7 @@ struct VImageLoader::Impl {
 
         // create a bitmap of same size.
         VBitmap result =
-            VBitmap(width, height, VBitmap::Format::ARGB32);
+            VBitmap(width, height, VBitmap::Format::ARGB32_Premultiplied);
 
         // copy the data to bitmap buffer
         memcpy(result.data(), data, width * height * 4);
@@ -156,13 +150,13 @@ struct VImageLoader::Impl {
         return createBitmap(data, width, height, n);
     }
 
-    VBitmap load(const char *imageData, int len)
+    VBitmap load(const char *imageData, size_t len)
     {
         if (!imageFromData) return VBitmap();
 
         int            width, height, n;
         unsigned char *data =
-            imageFromData(imageData, len, &width, &height, &n, 4);
+            imageFromData(imageData, static_cast<int>(len), &width, &height, &n, 4);
 
         if (!data) {
             return VBitmap();
@@ -220,7 +214,7 @@ VBitmap VImageLoader::load(const char *fileName)
     return mImpl->load(fileName);
 }
 
-VBitmap VImageLoader::load(const char *data, int len)
+VBitmap VImageLoader::load(const char *data, size_t len)
 {
-    return mImpl->load(data, len);
+    return mImpl->load(data, int(len));
 }

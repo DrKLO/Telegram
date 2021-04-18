@@ -1,6 +1,6 @@
 // Tencent is pleased to support the open source community by making RapidJSON available.
 // 
-// Copyright (C) 2015 THL A29 Limited, a Tencent company, and Milo Yip. All rights reserved.
+// Copyright (C) 2015 THL A29 Limited, a Tencent company, and Milo Yip.
 //
 // Licensed under the MIT License (the "License"); you may not use this file except
 // in compliance with the License. You may obtain a copy of the License at
@@ -17,7 +17,7 @@
 
 #include "../rapidjson.h"
 
-#if defined(_MSC_VER) && !__INTEL_COMPILER && defined(_M_AMD64)
+#if defined(_MSC_VER) && !defined(__INTEL_COMPILER) && defined(_M_AMD64)
 #include <intrin.h> // for _umul128
 #pragma intrinsic(_umul128)
 #endif

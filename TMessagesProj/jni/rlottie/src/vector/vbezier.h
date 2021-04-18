@@ -1,19 +1,23 @@
-/* 
- * Copyright (c) 2018 Samsung Electronics Co., Ltd. All rights reserved.
- * 
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- * 
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+/*
+ * Copyright (c) 2020 Samsung Electronics Co., Ltd. All rights reserved.
+
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 #ifndef VBEZIER_H
@@ -35,7 +39,8 @@ public:
                               const VPointF &cp2, const VPointF &end);
     inline void    parameterSplitLeft(float t, VBezier *left);
     inline void    split(VBezier *firstHalf, VBezier *secondHalf) const;
-    float          tAtLength(float len) const;
+    float          tAtLength(float len) const { return tAtLength(len , length());}
+    float          tAtLength(float len, float totalLength) const;
     void           splitAtLength(float len, VBezier *left, VBezier *right);
     VPointF        pt1() const { return {x1, y1}; }
     VPointF        pt2() const { return {x2, y2}; }
@@ -50,13 +55,13 @@ private:
 inline void VBezier::coefficients(float t, float &a, float &b, float &c,
                                   float &d)
 {
-    float m_t = 1. - t;
+    float m_t = 1.0f - t;
     b = m_t * m_t;
     c = t * t;
     d = c * t;
     a = b * m_t;
-    b *= 3. * t;
-    c *= 3. * m_t;
+    b *= 3.0f * t;
+    c *= 3.0f * m_t;
 }
 
 inline VPointF VBezier::pointAt(float t) const
@@ -64,7 +69,7 @@ inline VPointF VBezier::pointAt(float t) const
     // numerically more stable:
     float x, y;
 
-    float m_t = 1. - t;
+    float m_t = 1.0f - t;
     {
         float a = x1 * m_t + x2 * t;
         float b = x2 * m_t + x3 * t;
@@ -110,23 +115,23 @@ inline void VBezier::parameterSplitLeft(float t, VBezier *left)
 
 inline void VBezier::split(VBezier *firstHalf, VBezier *secondHalf) const
 {
-    float c = (x2 + x3) * .5;
-    firstHalf->x2 = (x1 + x2) * .5;
-    secondHalf->x3 = (x3 + x4) * .5;
+    float c = (x2 + x3) * 0.5f;
+    firstHalf->x2 = (x1 + x2) * 0.5f;
+    secondHalf->x3 = (x3 + x4) * 0.5f;
     firstHalf->x1 = x1;
     secondHalf->x4 = x4;
-    firstHalf->x3 = (firstHalf->x2 + c) * .5;
-    secondHalf->x2 = (secondHalf->x3 + c) * .5;
-    firstHalf->x4 = secondHalf->x1 = (firstHalf->x3 + secondHalf->x2) * .5;
+    firstHalf->x3 = (firstHalf->x2 + c) * 0.5f;
+    secondHalf->x2 = (secondHalf->x3 + c) * 0.5f;
+    firstHalf->x4 = secondHalf->x1 = (firstHalf->x3 + secondHalf->x2) * 0.5f;
 
     c = (y2 + y3) / 2;
-    firstHalf->y2 = (y1 + y2) * .5;
-    secondHalf->y3 = (y3 + y4) * .5;
+    firstHalf->y2 = (y1 + y2) * 0.5f;
+    secondHalf->y3 = (y3 + y4) * 0.5f;
     firstHalf->y1 = y1;
     secondHalf->y4 = y4;
-    firstHalf->y3 = (firstHalf->y2 + c) * .5;
-    secondHalf->y2 = (secondHalf->y3 + c) * .5;
-    firstHalf->y4 = secondHalf->y1 = (firstHalf->y3 + secondHalf->y2) * .5;
+    firstHalf->y3 = (firstHalf->y2 + c) * 0.5f;
+    secondHalf->y2 = (secondHalf->y3 + c) * 0.5f;
+    firstHalf->y4 = secondHalf->y1 = (firstHalf->y3 + secondHalf->y2) * 0.5f;
 }
 
 V_END_NAMESPACE

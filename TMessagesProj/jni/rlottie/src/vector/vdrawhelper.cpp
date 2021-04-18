@@ -1,54 +1,24 @@
 /*
- * Copyright (c) 2018 Samsung Electronics Co., Ltd. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
- */
+ * Copyright (c) 2020 Samsung Electronics Co., Ltd. All rights reserved.
 
-/****************************************************************************
-**
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
-** All rights reserved.
-** Contact: Nokia Corporation (qt-info@nokia.com)
-**
-** This file is part of the QtGui module of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:LGPL$
-** No Commercial Usage
-** This file contains pre-release code and may not be distributed.
-** You may use this file in accordance with the terms and conditions
-** contained in the Technology Preview License Agreement accompanying
-** this package.
-**
-** GNU Lesser General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU Lesser
-** General Public License version 2.1 as published by the Free Software
-** Foundation and appearing in the file LICENSE.LGPL included in the
-** packaging of this file.  Please review the following information to
-** ensure the GNU Lesser General Public License version 2.1 requirements
-** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
-**
-** In addition, as a special exception, Nokia gives you certain additional
-** rights.  These rights are described in the Nokia Qt LGPL Exception
-** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
-**
-** If you have questions regarding the use of this file, please contact
-** Nokia at qt-info@nokia.com.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 #include "vdrawhelper.h"
 #include <algorithm>
@@ -56,6 +26,17 @@
 #include <cstring>
 #include <mutex>
 #include <unordered_map>
+#include <array>
+
+static RenderFuncTable RenderTable;
+
+void VTextureData::setClip(const VRect &clip)
+{
+    left = clip.left();
+    top = clip.top();
+    right = std::min(clip.right(), int(width())) - 1;
+    bottom = std::min(clip.bottom(), int(height())) - 1;
+}
 
 class VGradientCache {
 public:
@@ -76,7 +57,8 @@ public:
         VCacheData            info;
         const VGradientStops &stops = gradient.mStops;
         for (uint i = 0; i < stops.size() && i <= 2; i++)
-            hash_val += (stops[i].second.premulARGB() * gradient.alpha());
+            hash_val +=
+                VCacheKey(stops[i].second.premulARGB() * gradient.alpha());
 
         {
             std::lock_guard<std::mutex> guard(mMutex);
@@ -111,6 +93,12 @@ public:
         return info;
     }
 
+    static VGradientCache &instance()
+    {
+        static VGradientCache CACHE;
+        return CACHE;
+    }
+
 protected:
     uint       maxCacheSize() const { return 60; }
     VCacheData addCacheElement(VCacheKey hash_val, const VGradient &gradient)
@@ -129,6 +117,9 @@ protected:
         return cache_entry;
     }
 
+private:
+    VGradientCache() = default;
+
     VGradientColorTableHash mCache;
     std::mutex              mMutex;
 };
@@ -137,12 +128,10 @@ bool VGradientCache::generateGradientColorTable(const VGradientStops &stops,
                                                 float                 opacity,
                                                 uint32_t *colorTable, int size)
 {
-    if (stops.empty()) {
-        return false;
-    }
-    int                  dist, idist, pos = 0, i;
+    int                  dist, idist, pos = 0;
+    size_t               i;
     bool                 alpha = false;
-    int                  stopCount = stops.size();
+    size_t               stopCount = stops.size();
     const VGradientStop *curr, *next, *start;
     uint32_t             curColor, nextColor;
     float                delta, t, incr, fpos;
@@ -153,12 +142,12 @@ bool VGradientCache::generateGradientColorTable(const VGradientStops &stops,
     curr = start;
     if (!curr->second.isOpaque()) alpha = true;
     curColor = curr->second.premulARGB(opacity);
-    incr = 1.0 / (float)size;
-    fpos = 1.5 * incr;
+    incr = 1.0f / (float)size;
+    fpos = 1.5f * incr;
 
     colorTable[pos++] = curColor;
 
-    while (fpos <= curr->first && pos < size) {
+    while (fpos <= curr->first) {
         colorTable[pos] = colorTable[pos - 1];
         pos++;
         fpos += incr;
@@ -175,7 +164,7 @@ bool VGradientCache::generateGradientColorTable(const VGradientStops &stops,
             dist = (int)(255 * t);
             idist = 255 - dist;
             colorTable[pos] =
-                INTERPOLATE_PIXEL_255(curColor, idist, nextColor, dist);
+                interpolate_pixel(curColor, idist, nextColor, dist);
             ++pos;
             fpos += incr;
         }
@@ -189,14 +178,12 @@ bool VGradientCache::generateGradientColorTable(const VGradientStops &stops,
     return alpha;
 }
 
-static VGradientCache VGradientCacheInstance;
-
 void VRasterBuffer::clear()
 {
     memset(mBuffer, 0, mHeight * mBytesPerLine);
 }
 
-VBitmap::Format VRasterBuffer::prepare(VBitmap *image)
+VBitmap::Format VRasterBuffer::prepare(const VBitmap *image)
 {
     mBuffer = image->data();
     mWidth = image->width();
@@ -211,17 +198,11 @@ VBitmap::Format VRasterBuffer::prepare(VBitmap *image)
 void VSpanData::init(VRasterBuffer *image)
 {
     mRasterBuffer = image;
-    setDrawRegion(VRect(0, 0, image->width(), image->height()));
+    setDrawRegion(VRect(0, 0, int(image->width()), int(image->height())));
     mType = VSpanData::Type::None;
     mBlendFunc = nullptr;
     mUnclippedBlendFunc = nullptr;
 }
-
-extern CompositionFunction             COMP_functionForMode_C[];
-extern CompositionFunctionSolid        COMP_functionForModeSolid_C[];
-static const CompositionFunction *     functionForMode = COMP_functionForMode_C;
-static const CompositionFunctionSolid *functionForModeSolid =
-    COMP_functionForModeSolid_C;
 
 /*
  *  Gradient Draw routines
@@ -351,9 +332,9 @@ void fetch_linear_gradient(uint32_t *buffer, const Operator *op,
         float rw = data->m23 * (y + float(0.5)) + data->m13 * (x + float(0.5)) +
                    data->m33;
         while (buffer < end) {
-            float x = rx / rw;
-            float y = ry / rw;
-            t = (op->linear.dx * x + op->linear.dy * y) + op->linear.off;
+            float xt = rx / rw;
+            float yt = ry / rw;
+            t = (op->linear.dx * xt + op->linear.dy * yt) + op->linear.off;
 
             *buffer = gradientPixel(gradient, t);
             rx += data->m11;
@@ -500,8 +481,7 @@ void fetch_radial_gradient(uint32_t *buffer, const Operator *op,
     }
 }
 
-static inline Operator getOperator(const VSpanData *data, const VRle::Span *,
-                                   size_t)
+static inline Operator getOperator(const VSpanData *data)
 {
     Operator op;
     bool     solidSource = false;
@@ -526,70 +506,61 @@ static inline Operator getOperator(const VSpanData *data, const VRle::Span *,
         break;
     }
 
-    op.mode = data->mCompositionMode;
-    if (op.mode == VPainter::CompModeSrcOver && solidSource)
-        op.mode = VPainter::CompModeSrc;
+    op.mode = data->mBlendMode;
+    if (op.mode == BlendMode::SrcOver && solidSource) op.mode = BlendMode::Src;
 
-    op.funcSolid = functionForModeSolid[op.mode];
-    op.func = functionForMode[op.mode];
+    op.funcSolid = RenderTable.color(op.mode);
+    op.func = RenderTable.src(op.mode);
 
     return op;
 }
 
-static void blendColorARGB(size_t count, const VRle::Span *spans,
-                           void *userData)
+static void blend_color(size_t size, const VRle::Span *array, void *userData)
 {
     VSpanData *data = (VSpanData *)(userData);
-    Operator   op = getOperator(data, spans, count);
+    Operator   op = getOperator(data);
     const uint color = data->mSolid;
 
-    if (op.mode == VPainter::CompModeSrc) {
-        // inline for performance
-        while (count--) {
-            uint *target = data->buffer(spans->x, spans->y);
-            if (spans->coverage == 255) {
-                memfill32(target, color, spans->len);
-            } else {
-                uint c = BYTE_MUL(color, spans->coverage);
-                int  ialpha = 255 - spans->coverage;
-                for (int i = 0; i < spans->len; ++i)
-                    target[i] = c + BYTE_MUL(target[i], ialpha);
-            }
-            ++spans;
-        }
-        return;
-    }
-
-    while (count--) {
-        uint *target = data->buffer(spans->x, spans->y);
-        op.funcSolid(target, spans->len, color, spans->coverage);
-        ++spans;
+    for (size_t i = 0 ; i < size; ++i) {
+        const auto &span = array[i];
+        op.funcSolid(data->buffer(span.x, span.y), span.len, color, span.coverage);
     }
 }
 
-#define BLEND_GRADIENT_BUFFER_SIZE 2048
-static void blendGradientARGB(size_t count, const VRle::Span *spans,
-                              void *userData)
+// Signature of Process Object
+//  void Pocess(uint* scratchBuffer, size_t x, size_t y, uchar cov)
+template <class Process>
+static inline void process_in_chunk(const VRle::Span *array, size_t size,
+                                    Process process)
+{
+    std::array<uint, 2048> buf;
+    for (size_t i = 0; i < size; i++) {
+        const auto &span = array[i];
+        size_t      len = span.len;
+        auto        x = span.x;
+        while (len) {
+            auto l = std::min(len, buf.size());
+            process(buf.data(), x, span.y, l, span.coverage);
+            x += l;
+            len -= l;
+        }
+    }
+}
+
+static void blend_gradient(size_t size, const VRle::Span *array,
+                           void *userData)
 {
     VSpanData *data = (VSpanData *)(userData);
-    Operator   op = getOperator(data, spans, count);
-
-    unsigned int buffer[BLEND_GRADIENT_BUFFER_SIZE];
+    Operator   op = getOperator(data);
 
     if (!op.srcFetch) return;
 
-    while (count--) {
-        uint *target = data->buffer(spans->x, spans->y);
-        int   length = spans->len;
-        while (length) {
-            int l = std::min(length, BLEND_GRADIENT_BUFFER_SIZE);
-            op.srcFetch(buffer, &op, data, spans->y, spans->x, l);
-            op.func(target, buffer, l, spans->coverage);
-            target += l;
-            length -= l;
-        }
-        ++spans;
-    }
+    process_in_chunk(
+        array, size,
+        [&](uint *scratch, size_t x, size_t y, size_t len, uchar cov) {
+            op.srcFetch(scratch, &op, data, (int)y, (int)x, (int)len);
+            op.func(data->buffer((int)x, (int)y), (int)len, scratch, cov);
+        });
 }
 
 template <class T>
@@ -598,156 +569,82 @@ constexpr const T &clamp(const T &v, const T &lo, const T &hi)
     return v < lo ? lo : hi < v ? hi : v;
 }
 
-static const int buffer_size = 1024;
-static const int fixed_scale = 1 << 16;
-static void      blend_transformed_argb(size_t count, const VRle::Span *spans,
-                                        void *userData)
+static constexpr inline uchar alpha_mul(uchar a, uchar b)
 {
-    VSpanData *data = reinterpret_cast<VSpanData *>(userData);
-    if (data->mBitmap.format != VBitmap::Format::ARGB32_Premultiplied &&
-        data->mBitmap.format != VBitmap::Format::ARGB32) {
+    return ((a * b) >> 8);
+}
+
+static void blend_image_xform(size_t size, const VRle::Span *array,
+                              void *userData)
+{
+    const auto  data = reinterpret_cast<const VSpanData *>(userData);
+    const auto &src = data->texture();
+
+    if (src.format() != VBitmap::Format::ARGB32_Premultiplied &&
+        src.format() != VBitmap::Format::ARGB32) {
         //@TODO other formats not yet handled.
         return;
     }
 
-    Operator op = getOperator(data, spans, count);
-    uint     buffer[buffer_size];
+    Operator op = getOperator(data);
 
-    const int image_x1 = data->mBitmap.x1;
-    const int image_y1 = data->mBitmap.y1;
-    const int image_x2 = data->mBitmap.x2 - 1;
-    const int image_y2 = data->mBitmap.y2 - 1;
-
-    if (data->fast_matrix) {
-        // The increment pr x in the scanline
-        int fdx = (int)(data->m11 * fixed_scale);
-        int fdy = (int)(data->m12 * fixed_scale);
-
-        while (count--) {
-            uint *target = data->buffer(spans->x, spans->y);
-
-            const float cx = spans->x + float(0.5);
-            const float cy = spans->y + float(0.5);
-
-            int x =
-                int((data->m21 * cy + data->m11 * cx + data->dx) * fixed_scale);
-            int y =
-                int((data->m22 * cy + data->m12 * cx + data->dy) * fixed_scale);
-
-            int       length = spans->len;
-            const int coverage =
-                (spans->coverage * data->mBitmap.const_alpha) >> 8;
-            while (length) {
-                int         l = std::min(length, buffer_size);
-                const uint *end = buffer + l;
-                uint *      b = buffer;
-                while (b < end) {
-                    int px = clamp(x >> 16, image_x1, image_x2);
-                    int py = clamp(y >> 16, image_y1, image_y2);
-                    *b = reinterpret_cast<const uint *>(
-                        data->mBitmap.scanLine(py))[px];
-
-                    x += fdx;
-                    y += fdy;
-                    ++b;
-                }
-                op.func(target, buffer, l, coverage);
-                target += l;
-                length -= l;
+    process_in_chunk(
+        array, size,
+        [&](uint *scratch, size_t x, size_t y, size_t len, uchar cov) {
+            const auto  coverage = (cov * src.alpha()) >> 8;
+            const float xfactor = y * data->m21 + data->dx + data->m11;
+            const float yfactor = y * data->m22 + data->dy + data->m12;
+            for (size_t i = 0; i < len; i++) {
+                const float fx = (x + i) * data->m11 + xfactor;
+                const float fy = (x + i) * data->m12 + yfactor;
+                const int   px = clamp(int(fx), src.left, src.right);
+                const int   py = clamp(int(fy), src.top, src.bottom);
+                scratch[i] = src.pixel(px, py);
             }
-            ++spans;
-        }
-    } else {
-        const float fdx = data->m11;
-        const float fdy = data->m12;
-        const float fdw = data->m13;
-        while (count--) {
-            uint *target = data->buffer(spans->x, spans->y);
-
-            const float cx = spans->x + float(0.5);
-            const float cy = spans->y + float(0.5);
-
-            float x = data->m21 * cy + data->m11 * cx + data->dx;
-            float y = data->m22 * cy + data->m12 * cx + data->dy;
-            float w = data->m23 * cy + data->m13 * cx + data->m33;
-
-            int       length = spans->len;
-            const int coverage =
-                (spans->coverage * data->mBitmap.const_alpha) >> 8;
-            while (length) {
-                int         l = std::min(length, buffer_size);
-                const uint *end = buffer + l;
-                uint *      b = buffer;
-                while (b < end) {
-                    const float iw = w == 0 ? 1 : 1 / w;
-                    const float tx = x * iw;
-                    const float ty = y * iw;
-                    const int   px =
-                        clamp(int(tx) - (tx < 0), image_x1, image_x2);
-                    const int py =
-                        clamp(int(ty) - (ty < 0), image_y1, image_y2);
-
-                    *b = reinterpret_cast<const uint *>(
-                        data->mBitmap.scanLine(py))[px];
-                    x += fdx;
-                    y += fdy;
-                    w += fdw;
-
-                    ++b;
-                }
-                op.func(target, buffer, l, coverage);
-                target += l;
-                length -= l;
-            }
-            ++spans;
-        }
-    }
+            op.func(data->buffer((int)x, (int)y), (int)len, scratch, coverage);
+        });
 }
 
-static void blend_untransformed_argb(size_t count, const VRle::Span *spans,
-                                     void *userData)
+static void blend_image(size_t size, const VRle::Span *array, void *userData)
 {
-    VSpanData *data = reinterpret_cast<VSpanData *>(userData);
-    if (data->mBitmap.format != VBitmap::Format::ARGB32_Premultiplied &&
-        data->mBitmap.format != VBitmap::Format::ARGB32) {
+    const auto  data = reinterpret_cast<const VSpanData *>(userData);
+    const auto &src = data->texture();
+
+    if (src.format() != VBitmap::Format::ARGB32_Premultiplied &&
+        src.format() != VBitmap::Format::ARGB32) {
         //@TODO other formats not yet handled.
         return;
     }
 
-    Operator op = getOperator(data, spans, count);
+    Operator op = getOperator(data);
 
-    const int image_width = data->mBitmap.width;
-    const int image_height = data->mBitmap.height;
+    for (size_t i = 0; i < size; i++) {
+        const auto &span = array[i];
+        int         x = span.x;
+        int         length = span.len;
+        int         sx = x + int(data->dx);
+        int         sy = span.y + int(data->dy);
 
-    int xoff = data->dx;
-    int yoff = data->dy;
+        // notyhing to copy.
+        if (sy < 0 || sy >= int(src.height()) || sx >= int(src.width()) ||
+            (sx + length) <= 0)
+            continue;
 
-    while (count--) {
-        int x = spans->x;
-        int length = spans->len;
-        int sx = xoff + x;
-        int sy = yoff + spans->y;
-        if (sy >= 0 && sy < image_height && sx < image_width) {
-            if (sx < 0) {
-                x -= sx;
-                length += sx;
-                sx = 0;
-            }
-            if (sx + length > image_width) length = image_width - sx;
-            if (length > 0) {
-                const int coverage =
-                    (spans->coverage * data->mBitmap.const_alpha) >> 8;
-                const uint *src = (const uint *)data->mBitmap.scanLine(sy) + sx;
-                uint *      dest = data->buffer(x, spans->y);
-                op.func(dest, src, length, coverage);
-            }
+        // intersecting left edge of image
+        if (sx < 0) {
+            x -= sx;
+            length += sx;
+            sx = 0;
         }
-        ++spans;
+        // intersecting right edge of image
+        if (sx + length > int(src.width())) length = (int)src.width() - sx;
+
+        op.func(data->buffer(x, span.y), length, src.pixelRef(sx, sy),
+                alpha_mul(span.coverage, src.alpha()));
     }
 }
 
-void VSpanData::setup(const VBrush &brush, VPainter::CompositionMode /*mode*/,
-                      int /*alpha*/)
+void VSpanData::setup(const VBrush &brush, BlendMode /*mode*/, int /*alpha*/)
 {
     transformType = VMatrix::MatrixType::None;
 
@@ -761,7 +658,7 @@ void VSpanData::setup(const VBrush &brush, VPainter::CompositionMode /*mode*/,
         break;
     case VBrush::Type::LinearGradient: {
         mType = VSpanData::Type::LinearGradient;
-        mColorTable = VGradientCacheInstance.getBuffer(*brush.mGradient);
+        mColorTable = VGradientCache::instance().getBuffer(*brush.mGradient);
         mGradient.mColorTable = mColorTable->buffer32;
         mGradient.mColorTableAlpha = mColorTable->alpha;
         mGradient.linear.x1 = brush.mGradient->linear.x1;
@@ -774,7 +671,7 @@ void VSpanData::setup(const VBrush &brush, VPainter::CompositionMode /*mode*/,
     }
     case VBrush::Type::RadialGradient: {
         mType = VSpanData::Type::RadialGradient;
-        mColorTable = VGradientCacheInstance.getBuffer(*brush.mGradient);
+        mColorTable = VGradientCache::instance().getBuffer(*brush.mGradient);
         mGradient.mColorTable = mColorTable->buffer32;
         mGradient.mColorTableAlpha = mColorTable->alpha;
         mGradient.radial.cx = brush.mGradient->radial.cx;
@@ -789,10 +686,9 @@ void VSpanData::setup(const VBrush &brush, VPainter::CompositionMode /*mode*/,
     }
     case VBrush::Type::Texture: {
         mType = VSpanData::Type::Texture;
-        initTexture(
-            &brush.mTexture, 255, VBitmapData::Plain,
-            VRect(0, 0, brush.mTexture.width(), brush.mTexture.height()));
-        setupMatrix(brush.mMatrix);
+        initTexture(&brush.mTexture->mBitmap, brush.mTexture->mAlpha,
+                    brush.mTexture->mBitmap.rect());
+        setupMatrix(brush.mTexture->mMatrix);
         break;
     }
     default:
@@ -823,23 +719,12 @@ void VSpanData::setupMatrix(const VMatrix &matrix)
 }
 
 void VSpanData::initTexture(const VBitmap *bitmap, int alpha,
-                            VBitmapData::Type type, const VRect &sourceRect)
+                            const VRect &sourceRect)
 {
     mType = VSpanData::Type::Texture;
-
-    mBitmap.imageData = bitmap->data();
-    mBitmap.width = bitmap->width();
-    mBitmap.height = bitmap->height();
-    mBitmap.bytesPerLine = bitmap->stride();
-    mBitmap.format = bitmap->format();
-    mBitmap.x1 = sourceRect.x();
-    mBitmap.y1 = sourceRect.y();
-    mBitmap.x2 = std::min(mBitmap.x1 + sourceRect.width(), mBitmap.width);
-    mBitmap.y2 = std::min(mBitmap.y1 + sourceRect.height(), mBitmap.height);
-
-    mBitmap.const_alpha = alpha;
-    mBitmap.type = type;
-
+    mTexture.prepare(bitmap);
+    mTexture.setClip(sourceRect);
+    mTexture.setAlpha(alpha);
     updateSpanFunc();
 }
 
@@ -850,79 +735,32 @@ void VSpanData::updateSpanFunc()
         mUnclippedBlendFunc = nullptr;
         break;
     case VSpanData::Type::Solid:
-        mUnclippedBlendFunc = &blendColorARGB;
+        mUnclippedBlendFunc = &blend_color;
         break;
     case VSpanData::Type::LinearGradient:
     case VSpanData::Type::RadialGradient: {
-        mUnclippedBlendFunc = &blendGradientARGB;
+        mUnclippedBlendFunc = &blend_gradient;
         break;
     }
     case VSpanData::Type::Texture: {
         //@TODO update proper image function.
         if (transformType <= VMatrix::MatrixType::Translate) {
-            mUnclippedBlendFunc = &blend_untransformed_argb;
+            mUnclippedBlendFunc = &blend_image;
         } else {
-            mUnclippedBlendFunc = &blend_transformed_argb;
+            mUnclippedBlendFunc = &blend_image_xform;
         }
         break;
     }
     }
 }
 
-#if !defined(__ARM_NEON__) && !defined(__ARM64_NEON__)
-
+#if !defined(__SSE2__) && !defined(__ARM_NEON__) && !defined(__ARM64_NEON__)
 void memfill32(uint32_t *dest, uint32_t value, int length)
 {
-    int n;
-
-    if (length <= 0) return;
-
-    // Cute hack to align future memcopy operation
-    // and do unroll the loop a bit. Not sure it is
-    // the most efficient, but will do for now.
-    n = (length + 7) / 8;
-    switch (length & 0x07) {
-    case 0:
-        do {
-            *dest++ = value;
-            VECTOR_FALLTHROUGH;
-        case 7:
-            *dest++ = value;
-            VECTOR_FALLTHROUGH;
-        case 6:
-            *dest++ = value;
-            VECTOR_FALLTHROUGH;
-        case 5:
-            *dest++ = value;
-            VECTOR_FALLTHROUGH;
-        case 4:
-            *dest++ = value;
-            VECTOR_FALLTHROUGH;
-        case 3:
-            *dest++ = value;
-            VECTOR_FALLTHROUGH;
-        case 2:
-            *dest++ = value;
-            VECTOR_FALLTHROUGH;
-        case 1:
-            *dest++ = value;
-        } while (--n > 0);
+    // let compiler do the auto vectorization.
+    for (int i = 0 ; i < length; i++) {
+        *dest++ = value;
     }
 }
 #endif
 
-void vInitDrawhelperFunctions()
-{
-    vInitBlendFunctions();
-
-#if defined(__ARM_NEON__) || defined(__ARM64_NEON__)
-    // update fast path for NEON
-    extern void comp_func_solid_SourceOver_neon(
-        uint32_t * dest, int length, uint32_t color, uint32_t const_alpha);
-
-    COMP_functionForModeSolid_C[VPainter::CompModeSrcOver] =
-        comp_func_solid_SourceOver_neon;
-#endif
-}
-
-V_CONSTRUCTOR_FUNCTION(vInitDrawhelperFunctions)

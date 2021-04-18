@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2018 Samsung Electronics Co., Ltd. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
- */
+ * Copyright (c) 2020 Samsung Electronics Co., Ltd. All rights reserved.
 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 #include "vpath.h"
 #include <cassert>
 #include <iterator>
@@ -144,7 +147,7 @@ void VPath::VPathData::reserve(size_t pts, size_t elms)
 
 static VPointF curvesForArc(const VRectF &, float, float, VPointF *, size_t *);
 static constexpr float PATH_KAPPA = 0.5522847498f;
-static constexpr float K_PI = float(M_PI);
+static constexpr float K_PI = 3.141592f;
 
 void VPath::VPathData::arcTo(const VRectF &rect, float startAngle,
                              float sweepLength, bool forceMoveTo)
@@ -216,12 +219,12 @@ void VPath::VPathData::addOval(const VRectF &rect, VPath::Direction dir)
 
 void VPath::VPathData::addRect(const VRectF &rect, VPath::Direction dir)
 {
-    if (rect.empty()) return;
-
     float x = rect.x();
     float y = rect.y();
     float w = rect.width();
     float h = rect.height();
+
+    if (vCompare(w, 0.f) && vCompare(h, 0.f)) return;
 
     reserve(5, 6);  // 1Move + 4Line + 1Close
     if (dir == VPath::Direction::CW) {
@@ -524,7 +527,7 @@ void VPath::VPathData::addPolystar(float points, float innerRadius,
     float              partialPointAmount = points - floorf(points);
     bool               longSegment = false;
     size_t             numPoints = size_t(ceilf(points) * 2);
-    float              angleDir = ((dir == VPath::Direction::CW) ? 1.0 : -1.0);
+    float              angleDir = ((dir == VPath::Direction::CW) ? 1.0f : -1.0f);
     bool               hasRoundness = false;
 
     innerRoundness /= 100.0f;
@@ -625,7 +628,7 @@ void VPath::VPathData::addPolygon(float points, float radius, float roundness,
     float              y;
     float              anglePerPoint = 2.0f * K_PI / floorf(points);
     size_t             numPoints = size_t(floorf(points));
-    float              angleDir = ((dir == VPath::Direction::CW) ? 1.0 : -1.0);
+    float              angleDir = ((dir == VPath::Direction::CW) ? 1.0f : -1.0f);
     bool               hasRoundness = false;
 
     roundness /= 100.0f;
@@ -676,7 +679,7 @@ void VPath::VPathData::addPolygon(float points, float radius, float roundness,
     close();
 }
 
-void VPath::VPathData::addPath(const VPathData &path)
+void VPath::VPathData::addPath(const VPathData &path, const VMatrix *m)
 {
     size_t segment = path.segments();
 
@@ -687,8 +690,15 @@ void VPath::VPathData::addPath(const VPathData &path)
     if (m_elements.capacity() < m_elements.size() + path.m_elements.size())
         m_elements.reserve(m_elements.size() + path.m_elements.size());
 
-    std::copy(path.m_points.begin(), path.m_points.end(),
-              back_inserter(m_points));
+    if (m) {
+        for (const auto &i : path.m_points) {
+            m_points.push_back(m->map(i));
+        }
+    } else {
+        std::copy(path.m_points.begin(), path.m_points.end(),
+                  back_inserter(m_points));
+    }
+
     std::copy(path.m_elements.begin(), path.m_elements.end(),
               back_inserter(m_elements));
 

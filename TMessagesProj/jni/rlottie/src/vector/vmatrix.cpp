@@ -1,26 +1,29 @@
 /*
- * Copyright (c) 2018 Samsung Electronics Co., Ltd. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
+ * Copyright (c) 2020 Samsung Electronics Co., Ltd. All rights reserved.
+
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 #include "vmatrix.h"
 #include <vglobal.h>
 #include <cassert>
 #include <cmath>
-#include <cstring>
 
 V_BEGIN_NAMESPACE
 
@@ -511,8 +514,8 @@ VMatrix VMatrix::inverted(bool *invertible) const
         inv = !vIsZero(m11);
         inv &= !vIsZero(m22);
         if (inv) {
-            invert.m11 = 1. / m11;
-            invert.m22 = 1. / m22;
+            invert.m11 = 1.0f / m11;
+            invert.m22 = 1.0f / m22;
             invert.mtx = -mtx * invert.m11;
             invert.mty = -mty * invert.m22;
         }
@@ -554,7 +557,7 @@ bool VMatrix::fuzzyCompare(const VMatrix &o) const
            vCompare(mtx, o.mtx) && vCompare(mty, o.mty);
 }
 
-#define V_NEAR_CLIP 0.000001
+#define V_NEAR_CLIP 0.000001f
 #ifdef MAP
 #undef MAP
 #endif
@@ -594,13 +597,13 @@ VRect VMatrix::map(const VRect &rect) const
 {
     VMatrix::MatrixType t = type();
     if (t <= MatrixType::Translate)
-        return rect.translated(round(mtx), round(mty));
+        return rect.translated(std::lround(mtx), std::lround(mty));
 
     if (t <= MatrixType::Scale) {
-        int x = round(m11 * rect.x() + mtx);
-        int y = round(m22 * rect.y() + mty);
-        int w = round(m11 * rect.width());
-        int h = round(m22 * rect.height());
+        int x = std::lround(m11 * rect.x() + mtx);
+        int y = std::lround(m22 * rect.y() + mty);
+        int w = std::lround(m11 * rect.width());
+        int h = std::lround(m22 * rect.height());
         if (w < 0) {
             w = -w;
             x -= w;
@@ -633,32 +636,14 @@ VRect VMatrix::map(const VRect &rect) const
         ymin = vMin(ymin, y);
         xmax = vMax(xmax, x);
         ymax = vMax(ymax, y);
-        return VRect(round(xmin), round(ymin),
-                     round(xmax) - round(xmin),
-                     round(ymax) - round(ymin));
+        return VRect(std::lround(xmin), std::lround(ymin),
+                     std::lround(xmax) - std::lround(xmin),
+                     std::lround(ymax) - std::lround(ymin));
     } else {
         // Not supported
         assert(0);
+        return {};
     }
-    return {0, 0, 0, 0};
-}
-
-VRegion VMatrix::map(const VRegion &r) const
-{
-    VMatrix::MatrixType t = type();
-    if (t == MatrixType::None) return r;
-
-    if (t == MatrixType::Translate) {
-        VRegion copy(r);
-        copy.translate(round(mtx), round(mty));
-        return copy;
-    }
-
-    if (t == MatrixType::Scale && r.rectCount() == 1)
-        return VRegion(map(r.boundingRect()));
-    // handle mapping of region properly
-    assert(0);
-    return r;
 }
 
 VPointF VMatrix::map(const VPointF &p) const
@@ -688,45 +673,12 @@ VPointF VMatrix::map(const VPointF &p) const
         x = m11 * fx + m21 * fy + mtx;
         y = m12 * fx + m22 * fy + mty;
         if (t == MatrixType::Project) {
-            float w = 1. / (m13 * fx + m23 * fy + m33);
+            float w = 1.0f / (m13 * fx + m23 * fy + m33);
             x *= w;
             y *= w;
         }
     }
     return {x, y};
-}
-static std::string type_helper(VMatrix::MatrixType t)
-{
-    switch (t) {
-    case VMatrix::MatrixType::None:
-        return "MatrixType::None";
-        break;
-    case VMatrix::MatrixType::Translate:
-        return "MatrixType::Translate";
-        break;
-    case VMatrix::MatrixType::Scale:
-        return "MatrixType::Scale";
-        break;
-    case VMatrix::MatrixType::Rotate:
-        return "MatrixType::Rotate";
-        break;
-    case VMatrix::MatrixType::Shear:
-        return "MatrixType::Shear";
-        break;
-    case VMatrix::MatrixType::Project:
-        return "MatrixType::Project";
-        break;
-    }
-    return "";
-}
-std::ostream &operator<<(std::ostream &os, const VMatrix &o)
-{
-    os << "[Matrix: "
-       << "type =" << type_helper(o.type()) << ", Data : " << o.m11 << " "
-       << o.m12 << " " << o.m13 << " " << o.m21 << " " << o.m22 << " " << o.m23
-       << " " << o.mtx << " " << o.mty << " " << o.m33 << " "
-       << "]" << std::endl;
-    return os;
 }
 
 V_END_NAMESPACE

@@ -1,6 +1,6 @@
 // Tencent is pleased to support the open source community by making RapidJSON available.
 //
-// Copyright (C) 2015 THL A29 Limited, a Tencent company, and Milo Yip. All rights reserved.
+// Copyright (C) 2015 THL A29 Limited, a Tencent company, and Milo Yip.
 //
 // Licensed under the MIT License (the "License"); you may not use this file except
 // in compliance with the License. You may obtain a copy of the License at
@@ -188,9 +188,7 @@ template <typename Encoding>
 struct GenericInsituStringStream {
     typedef typename Encoding::Ch Ch;
 
-    GenericInsituStringStream(Ch *src) : src_(src), dst_(0), head_(src) {
-        SkipBOM();
-    }
+    GenericInsituStringStream(Ch *src) : src_(src), dst_(0), head_(src) {}
 
     // Read
     Ch Peek() { return *src_; }
@@ -206,31 +204,6 @@ struct GenericInsituStringStream {
 
     Ch* Push(size_t count) { Ch* begin = dst_; dst_ += count; return begin; }
     void Pop(size_t count) { dst_ -= count; }
-
-    /*
-       Detect encoding type with BOM or RFC 4627
-       BOM (Byte Order Mark):
-       00 00 FE FF  UTF-32BE
-       FF FE 00 00  UTF-32LE
-       FE FF        UTF-16BE
-       FF FE        UTF-16LE
-       EF BB BF     UTF-8
-     */
-    void SkipBOM() {
-
-        unsigned char *c = reinterpret_cast<unsigned char *>(src_);
-        if (!c) return;
-
-        unsigned bom = (c[0] | (c[1] << 8) | (c[2] << 16) | (c[3] << 24));
-
-        if (bom == 0xFFFE0000)                  { Take(); Take(); Take(); Take(); }
-        else if (bom == 0x0000FEFF)             { Take(); Take(); Take(); Take(); }
-        else if ((bom & 0xFFFF) == 0xFFFE)      { Take(); Take(); }
-        else if ((bom & 0xFFFF) == 0xFEFF)      { Take(); Take(); }
-        else if ((bom & 0xFFFFFF) == 0xBFBBEF)  { Take(); Take(); Take(); }
-
-        //It might need to clarify this file is a type of RFC 4627?
-    }
 
     Ch* src_;
     Ch* dst_;

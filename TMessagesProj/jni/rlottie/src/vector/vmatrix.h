@@ -1,26 +1,30 @@
-/* 
- * Copyright (c) 2018 Samsung Electronics Co., Ltd. All rights reserved.
- * 
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- * 
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+/*
+ * Copyright (c) 2020 Samsung Electronics Co., Ltd. All rights reserved.
+
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 #ifndef VMATRIX_H
 #define VMATRIX_H
 #include "vglobal.h"
 #include "vpoint.h"
-#include "vregion.h"
+#include "vrect.h"
 
 V_BEGIN_NAMESPACE
 
@@ -58,9 +62,9 @@ public:
     float        m_ty() const { return mty;}
     float        m_33() const { return m33;}
 
-    VMatrix &translate(VPointF pos) { return translate(pos.x(), pos.y()); };
+    VMatrix &translate(VPointF pos) { return translate(pos.x(), pos.y()); }
     VMatrix &translate(float dx, float dy);
-    VMatrix &scale(VPointF s) { return scale(s.x(), s.y()); };
+    VMatrix &scale(VPointF s) { return scale(s.x(), s.y()); }
     VMatrix &scale(float sx, float sy);
     VMatrix &shear(float sh, float sv);
     VMatrix &rotate(float a, Axis axis = VMatrix::Axis::Z);
@@ -69,7 +73,6 @@ public:
     VPointF        map(const VPointF &p) const;
     inline VPointF map(float x, float y) const;
     VRect          map(const VRect &r) const;
-    VRegion        map(const VRegion &r) const;
 
     V_REQUIRED_RESULT VMatrix inverted(bool *invertible = nullptr) const;
     V_REQUIRED_RESULT VMatrix adjoint() const;
@@ -81,8 +84,7 @@ public:
     bool                 operator==(const VMatrix &) const;
     bool                 operator!=(const VMatrix &) const;
     bool                 fuzzyCompare(const VMatrix &) const;
-    friend std::ostream &operator<<(std::ostream &os, const VMatrix &o);
-
+    float                scale() const;
 private:
     friend struct VSpanData;
     float              m11{1}, m12{0}, m13{0};
@@ -91,6 +93,18 @@ private:
     mutable MatrixType mType{MatrixType::None};
     mutable MatrixType dirty{MatrixType::None};
 };
+
+inline float VMatrix::scale() const
+{
+    constexpr float SQRT_2 = 1.41421f;
+    VPointF         p1(0, 0);
+    VPointF         p2(SQRT_2, SQRT_2);
+    p1 = map(p1);
+    p2 = map(p2);
+    VPointF final = p2 - p1;
+
+    return std::sqrt(final.x() * final.x() + final.y() * final.y()) / 2.0f;
+}
 
 inline VPointF VMatrix::map(float x, float y) const
 {

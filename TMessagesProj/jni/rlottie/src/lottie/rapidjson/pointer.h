@@ -1,6 +1,6 @@
 // Tencent is pleased to support the open source community by making RapidJSON available.
 // 
-// Copyright (C) 2015 THL A29 Limited, a Tencent company, and Milo Yip. All rights reserved.
+// Copyright (C) 2015 THL A29 Limited, a Tencent company, and Milo Yip.
 //
 // Licensed under the MIT License (the "License"); you may not use this file except
 // in compliance with the License. You may obtain a copy of the License at
@@ -488,10 +488,11 @@ public:
                     v = &((*v)[t->index]);
                 }
                 else {
-                    typename ValueType::MemberIterator m = v->FindMember(GenericStringRef<Ch>(t->name, t->length));
+                    typename ValueType::MemberIterator m = v->FindMember(GenericValue<EncodingType>(GenericStringRef<Ch>(t->name, t->length)));
                     if (m == v->MemberEnd()) {
                         v->AddMember(ValueType(t->name, t->length, allocator).Move(), ValueType().Move(), allocator);
-                        v = &(--v->MemberEnd())->value; // Assumes AddMember() appends at the end
+                        m = v->MemberEnd();
+                        v = &(--m)->value; // Assumes AddMember() appends at the end
                         exist = false;
                     }
                     else
@@ -543,7 +544,7 @@ public:
             switch (v->GetType()) {
             case kObjectType:
                 {
-                    typename ValueType::MemberIterator m = v->FindMember(GenericStringRef<Ch>(t->name, t->length));
+                    typename ValueType::MemberIterator m = v->FindMember(GenericValue<EncodingType>(GenericStringRef<Ch>(t->name, t->length)));
                     if (m == v->MemberEnd())
                         break;
                     v = &m->value;
@@ -779,7 +780,7 @@ public:
             switch (v->GetType()) {
             case kObjectType:
                 {
-                    typename ValueType::MemberIterator m = v->FindMember(GenericStringRef<Ch>(t->name, t->length));
+                    typename ValueType::MemberIterator m = v->FindMember(GenericValue<EncodingType>(GenericStringRef<Ch>(t->name, t->length)));
                     if (m == v->MemberEnd())
                         return false;
                     v = &m->value;

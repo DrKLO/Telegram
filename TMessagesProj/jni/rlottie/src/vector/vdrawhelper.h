@@ -1,30 +1,33 @@
-/* 
- * Copyright (c) 2018 Samsung Electronics Co., Ltd. All rights reserved.
- * 
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- * 
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+/*
+ * Copyright (c) 2020 Samsung Electronics Co., Ltd. All rights reserved.
+
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 #ifndef VDRAWHELPER_H
 #define VDRAWHELPER_H
 
-#include <cstring>
 #include <memory>
+#include <array>
 #include "assert.h"
 #include "vbitmap.h"
 #include "vbrush.h"
-#include "vpainter.h"
 #include "vrect.h"
 #include "vrle.h"
 
@@ -33,10 +36,54 @@ V_USE_NAMESPACE
 struct VSpanData;
 struct Operator;
 
-typedef void (*CompositionFunctionSolid)(uint32_t *dest, int length,
-                                         uint32_t color, uint32_t const_alpha);
-typedef void (*CompositionFunction)(uint32_t *dest, const uint32_t *src,
-                                    int length, uint32_t const_alpha);
+struct RenderFunc
+{
+    using Color = void (*)(uint32_t *dest, int length, uint32_t color, uint32_t alpha);
+    using Src   = void (*)(uint32_t *dest, int length, const uint32_t *src, uint32_t alpha);
+    enum class Type {
+        Invalid,
+        Color,
+        Src,
+    };
+    RenderFunc() = default;
+    RenderFunc(Type t, Color f):type_(t), color_(f){assert(t == Type::Color);}
+    RenderFunc(Type t, Src f):type_(t), src_(f){ assert(t == Type::Src);}
+
+    Type   type_{Type::Invalid};
+    union {
+        Color color_;
+        Src   src_;
+    };
+};
+
+class RenderFuncTable
+{
+public:
+    RenderFuncTable();
+    RenderFunc::Color color(BlendMode mode) const
+    {
+        return colorTable[uint32_t(mode)].color_;
+    }
+    RenderFunc::Src   src(BlendMode mode) const
+    {
+        return srcTable[uint32_t(mode)].src_;
+    }
+private:
+    void neon();
+    void sse();
+    void updateColor(BlendMode mode, RenderFunc::Color f)
+    {
+        colorTable[uint32_t(mode)] = {RenderFunc::Type::Color, f};
+    }
+    void updateSrc(BlendMode mode, RenderFunc::Src f)
+    {
+        srcTable[uint32_t(mode)] = {RenderFunc::Type::Src, f};
+    }
+private:
+    std::array<RenderFunc, uint32_t(BlendMode::Last)> colorTable;
+    std::array<RenderFunc, uint32_t(BlendMode::Last)> srcTable;
+};
+
 typedef void (*SourceFetchProc)(uint32_t *buffer, const Operator *o,
                                 const VSpanData *data, int y, int x,
                                 int length);
@@ -63,10 +110,10 @@ struct RadialGradientValues {
 };
 
 struct Operator {
-    VPainter::CompositionMode mode;
-    SourceFetchProc           srcFetch;
-    CompositionFunctionSolid  funcSolid;
-    CompositionFunction       func;
+    BlendMode                mode;
+    SourceFetchProc          srcFetch;
+    RenderFunc::Color        funcSolid;
+    RenderFunc::Src          func;
     union {
         LinearGradientValues linear;
         RadialGradientValues radial;
@@ -75,7 +122,7 @@ struct Operator {
 
 class VRasterBuffer {
 public:
-    VBitmap::Format prepare(VBitmap *image);
+    VBitmap::Format prepare(const VBitmap *image);
     void            clear();
 
     void resetBuffer(int val = 0);
@@ -83,63 +130,60 @@ public:
     inline uchar *scanLine(int y)
     {
         assert(y >= 0);
-        assert(y < mHeight);
+        assert(size_t(y) < mHeight);
         return mBuffer + y * mBytesPerLine;
     }
+    uint32_t *pixelRef(int x, int y) const
+    {
+        return (uint32_t *)(mBuffer + y * mBytesPerLine + x * mBytesPerPixel);
+    }
 
-    int width() const { return mWidth; }
-    int height() const { return mHeight; }
-    int bytesPerLine() const { return mBytesPerLine; }
-    int bytesPerPixel() const { return mBytesPerPixel; }
+    size_t          width() const { return mWidth; }
+    size_t          height() const { return mHeight; }
+    size_t          bytesPerLine() const { return mBytesPerLine; }
+    size_t          bytesPerPixel() const { return mBytesPerPixel; }
+    VBitmap::Format format() const { return mFormat; }
 
-    VBitmap::Format           mFormat{VBitmap::Format::ARGB32};
 private:
-    int    mWidth{0};
-    int    mHeight{0};
-    int    mBytesPerLine{0};
-    int    mBytesPerPixel{0};
-    uchar *mBuffer{nullptr};
+    VBitmap::Format mFormat{VBitmap::Format::ARGB32_Premultiplied};
+    size_t          mWidth{0};
+    size_t          mHeight{0};
+    size_t          mBytesPerLine{0};
+    size_t          mBytesPerPixel{0};
+    mutable uchar * mBuffer{nullptr};
 };
 
 struct VGradientData {
     VGradient::Spread mSpread;
+    struct Linear {
+        float x1, y1, x2, y2;
+    };
+    struct Radial {
+        float cx, cy, fx, fy, cradius, fradius;
+    };
     union {
-        struct {
-            float x1, y1, x2, y2;
-        } linear;
-        struct {
-            float cx, cy, fx, fy, cradius, fradius;
-        } radial;
+        Linear linear;
+        Radial radial;
     };
     const uint32_t *mColorTable;
     bool            mColorTableAlpha;
 };
 
-struct VBitmapData
-{
-    const uchar *imageData;
-    const uchar *scanLine(int y) const { return imageData + y*bytesPerLine; }
-
-    int width;
-    int height;
+struct VTextureData : public VRasterBuffer {
+    uint32_t pixel(int x, int y) const { return *pixelRef(x, y); };
+    uchar    alpha() const { return mAlpha; }
+    void     setAlpha(uchar alpha) { mAlpha = alpha; }
+    void     setClip(const VRect &clip);
     // clip rect
-    int x1;
-    int y1;
-    int x2;
-    int y2;
-    uint bytesPerLine;
-    VBitmap::Format format;
-    bool hasAlpha;
-    enum Type {
-        Plain,
-        Tiled
-    };
-    Type type;
-    int const_alpha;
+    int   left;
+    int   right;
+    int   top;
+    int   bottom;
+    bool  hasAlpha;
+    uchar mAlpha;
 };
 
-struct VColorTable
-{
+struct VColorTable {
     uint32_t buffer32[VGradient::colorTableSize];
     bool     alpha{true};
 };
@@ -147,12 +191,11 @@ struct VColorTable
 struct VSpanData {
     enum class Type { None, Solid, LinearGradient, RadialGradient, Texture };
 
-    void  updateSpanFunc();
-    void  init(VRasterBuffer *image);
-    void  setup(const VBrush &            brush,
-                VPainter::CompositionMode mode = VPainter::CompModeSrcOver,
-                int                       alpha = 255);
-    void  setupMatrix(const VMatrix &matrix);
+    void updateSpanFunc();
+    void init(VRasterBuffer *image);
+    void setup(const VBrush &brush, BlendMode mode = BlendMode::SrcOver,
+               int alpha = 255);
+    void setupMatrix(const VMatrix &matrix);
 
     VRect clipRect() const
     {
@@ -167,30 +210,27 @@ struct VSpanData {
 
     uint *buffer(int x, int y) const
     {
-        return (uint *)(mRasterBuffer->scanLine(y + mOffset.y())) + x + mOffset.x();
+        return mRasterBuffer->pixelRef(x + mOffset.x(), y + mOffset.y());
     }
-    void initTexture(const VBitmap *image, int alpha, VBitmapData::Type type, const VRect &sourceRect);
+    void initTexture(const VBitmap *image, int alpha, const VRect &sourceRect);
+    const VTextureData &texture() const { return mTexture; }
 
-    VPainter::CompositionMode            mCompositionMode{VPainter::CompositionMode::CompModeSrcOver};
-    VRasterBuffer *                      mRasterBuffer;
-    ProcessRleSpan                       mBlendFunc;
-    ProcessRleSpan                       mUnclippedBlendFunc;
-    VSpanData::Type                      mType;
-    std::shared_ptr<const VColorTable>   mColorTable{nullptr};
-    VPoint                               mOffset; // offset to the subsurface
-    VSize                                mDrawableSize;// suburface size
-    union {
-        uint32_t      mSolid;
-        VGradientData mGradient;
-        VBitmapData   mBitmap;
-    };
+    BlendMode                          mBlendMode{BlendMode::SrcOver};
+    VRasterBuffer *                    mRasterBuffer;
+    ProcessRleSpan                     mBlendFunc;
+    ProcessRleSpan                     mUnclippedBlendFunc;
+    VSpanData::Type                    mType;
+    std::shared_ptr<const VColorTable> mColorTable{nullptr};
+    VPoint                             mOffset;  // offset to the subsurface
+    VSize                              mDrawableSize;  // suburface size
+    uint32_t                           mSolid;
+    VGradientData                      mGradient;
+    VTextureData                       mTexture;
+
     float m11, m12, m13, m21, m22, m23, m33, dx, dy;  // inverse xform matrix
-    bool fast_matrix{true};
-    VMatrix::MatrixType   transformType{VMatrix::MatrixType::None};
+    bool  fast_matrix{true};
+    VMatrix::MatrixType transformType{VMatrix::MatrixType::None};
 };
-
-void        vInitDrawhelperFunctions();
-extern void vInitBlendFunctions();
 
 #define BYTE_MUL(c, a)                                  \
     ((((((c) >> 8) & 0x00ff00ff) * (a)) & 0xff00ff00) + \
@@ -216,7 +256,7 @@ inline constexpr int vAlpha(uint32_t c)
     return c >> 24;
 }
 
-static inline uint INTERPOLATE_PIXEL_255(uint x, uint a, uint y, uint b)
+static inline uint32_t interpolate_pixel(uint x, uint a, uint y, uint b)
 {
     uint t = (x & 0xff00ff) * a + (y & 0xff00ff) * b;
     t >>= 8;
@@ -226,23 +266,5 @@ static inline uint INTERPOLATE_PIXEL_255(uint x, uint a, uint y, uint b)
     x |= t;
     return x;
 }
-
-#define LOOP_ALIGNED_U1_A4(DEST, LENGTH, UOP, A4OP) \
-    {                                               \
-        while ((uintptr_t)DEST & 0xF && LENGTH)     \
-            UOP                                     \
-                                                    \
-                while (LENGTH)                      \
-            {                                       \
-                switch (LENGTH) {                   \
-                case 3:                             \
-                case 2:                             \
-                case 1:                             \
-                    UOP break;                      \
-                default:                            \
-                    A4OP break;                     \
-                }                                   \
-            }                                       \
-    }
 
 #endif  // QDRAWHELPER_P_H

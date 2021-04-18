@@ -1,29 +1,33 @@
 /*
- * Copyright (c) 2018 Samsung Electronics Co., Ltd. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
+ * Copyright (c) 2020 Samsung Electronics Co., Ltd. All rights reserved.
+
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 #include "config.h"
 #include "lottieitem.h"
-#include "lottieloader.h"
 #include "lottiemodel.h"
 #include "rlottie.h"
 
 #include <fstream>
 
 using namespace rlottie;
+using namespace rlottie::internal;
 
 struct RenderTask {
     RenderTask() { receiver = sender.get_future(); }
@@ -37,9 +41,9 @@ using SharedRenderTask = std::shared_ptr<RenderTask>;
 
 class AnimationImpl {
 public:
-    void    init(const std::shared_ptr<LOTModel> &model);
+    void    init(std::shared_ptr<model::Composition> composition);
     bool    update(size_t frameNo, const VSize &size);
-    VSize   size() const { return mCompItem->size(); }
+    VSize   size() const { return mModel->size(); }
     double  duration() const { return mModel->duration(); }
     double  frameRate() const { return mModel->frameRate(); }
     size_t  totalFrame() const { return mModel->totalFrame(); }
@@ -49,36 +53,40 @@ public:
 
     const LayerInfoList &layerInfoList() const
     {
-        return mModel->layerInfoList();
+        if (mLayerList.empty()) {
+            mLayerList = mModel->layerInfoList();
+        }
+        return mLayerList;
     }
-    void setValue(const std::string &keypath, LOTVariant &&value);
-    void removeFilter(const std::string &keypath, Property prop);
+    const MarkerList &markers() const { return mModel->markers(); }
+    void              setValue(const std::string &keypath, LOTVariant &&value);
+    void              removeFilter(const std::string &keypath, Property prop);
     void resetCurrentFrame();
 
 private:
-    std::string                  mFilePath;
-    std::shared_ptr<LOTModel>    mModel;
-    std::unique_ptr<LOTCompItem> mCompItem;
-    SharedRenderTask             mTask;
-    std::atomic<bool>            mRenderInProgress;
+    mutable LayerInfoList                  mLayerList;
+    model::Composition *                   mModel;
+    SharedRenderTask                       mTask;
+    std::atomic<bool>                      mRenderInProgress;
+    std::unique_ptr<renderer::Composition> mRenderer{nullptr};
 };
 
 void AnimationImpl::setValue(const std::string &keypath, LOTVariant &&value)
 {
     if (keypath.empty()) return;
-    mCompItem->setValue(keypath, value);
+    mRenderer->setValue(keypath, value);
 }
 
 void AnimationImpl::resetCurrentFrame() {
-    mCompItem->resetCurrentFrame();
+    mRenderer->resetCurrentFrame();
 }
 
 const LOTLayerNode *AnimationImpl::renderTree(size_t frameNo, const VSize &size)
 {
     if (update(frameNo, size)) {
-        mCompItem->buildRenderTree();
+        mRenderer->buildRenderTree();
     }
-    return mCompItem->renderTree();
+    return mRenderer->renderTree();
 }
 
 bool AnimationImpl::update(size_t frameNo, const VSize &size)
@@ -89,8 +97,7 @@ bool AnimationImpl::update(size_t frameNo, const VSize &size)
 
     if (frameNo < mModel->startFrame()) frameNo = mModel->startFrame();
 
-    mCompItem->resize(size);
-    return mCompItem->update(frameNo);
+    return mRenderer->update(int(frameNo), size);
 }
 
 Surface AnimationImpl::render(size_t frameNo, const Surface &surface, bool clear)
@@ -102,20 +109,22 @@ Surface AnimationImpl::render(size_t frameNo, const Surface &surface, bool clear
     }
 
     mRenderInProgress.store(true);
-    update(frameNo,
-           VSize(surface.drawRegionWidth(), surface.drawRegionHeight()));
-    mCompItem->render(surface, clear);
+    update(
+        frameNo,
+        VSize(int(surface.drawRegionWidth()), int(surface.drawRegionHeight())));
+    mRenderer->render(surface, clear);
     mRenderInProgress.store(false);
 
     return surface;
 }
 
-void AnimationImpl::init(const std::shared_ptr<LOTModel> &model)
+void AnimationImpl::init(std::shared_ptr<model::Composition> composition)
 {
-    mModel = model;
-    mCompItem = std::make_unique<LOTCompItem>(mModel.get());
+    mModel = composition.get();
+    mRenderer = std::make_unique<renderer::Composition>(composition);
     mRenderInProgress = false;
 }
+
 
 /**
  * \breif Brief abput the Api.
@@ -132,13 +141,12 @@ std::unique_ptr<Animation> Animation::loadFromData(
         return nullptr;
     }
 
-    LottieLoader loader;
-    if (loader.loadFromData(std::move(jsonData), key,
-                            colorReplacement,
-                            (resourcePath.empty() ? " " : resourcePath))) {
+    auto composition = model::loadFromData(std::move(jsonData), key,
+                                           colorReplacement, resourcePath);
+    if (composition) {
         auto animation = std::unique_ptr<Animation>(new Animation);
         animation->colorMap = colorReplacement;
-        animation->d->init(loader.model());
+        animation->d->init(std::move(composition));
         return animation;
     }
     if (colorReplacement != nullptr) {
@@ -154,11 +162,11 @@ std::unique_ptr<Animation> Animation::loadFromFile(const std::string &path, std:
         return nullptr;
     }
 
-    LottieLoader loader;
-    if (loader.load(path, colorReplacement)) {
+    auto composition = model::loadFromFile(path, colorReplacement);
+    if (composition) {
         auto animation = std::unique_ptr<Animation>(new Animation);
         animation->colorMap = colorReplacement;
-        animation->d->init(loader.model());
+        animation->d->init(std::move(composition));
         return animation;
     }
     if (colorReplacement != nullptr) {
@@ -198,7 +206,7 @@ size_t Animation::frameAtPos(double pos)
 const LOTLayerNode *Animation::renderTree(size_t frameNo, size_t width,
                                           size_t height) const
 {
-    return d->renderTree(frameNo, VSize(width, height));
+    return d->renderTree(frameNo, VSize(int(width), int(height)));
 }
 
 void Animation::renderSync(size_t frameNo, Surface &surface, bool clear)
@@ -209,6 +217,11 @@ void Animation::renderSync(size_t frameNo, Surface &surface, bool clear)
 const LayerInfoList &Animation::layers() const
 {
     return d->layerInfoList();
+}
+
+const MarkerList &Animation::markers() const
+{
+    return d->markers();
 }
 
 void Animation::setValue(Color_Type, Property prop, const std::string &keypath,
@@ -304,7 +317,7 @@ void Surface::setDrawRegion(size_t x, size_t y, size_t width, size_t height)
 #ifdef LOTTIE_LOGGING_SUPPORT
 void initLogging()
 {
-#if defined(__ARM_NEON__)
+#if defined(__ARM_NEON__) || defined(__ARM64_NEON__)
     set_log_level(LogLevel::OFF);
 #else
     initialize(GuaranteedLogger(), "/tmp/", "rlottie", 1);

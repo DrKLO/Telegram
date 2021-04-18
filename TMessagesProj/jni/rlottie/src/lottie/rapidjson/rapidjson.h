@@ -1,6 +1,6 @@
 // Tencent is pleased to support the open source community by making RapidJSON available.
 // 
-// Copyright (C) 2015 THL A29 Limited, a Tencent company, and Milo Yip. All rights reserved.
+// Copyright (C) 2015 THL A29 Limited, a Tencent company, and Milo Yip.
 //
 // Licensed under the MIT License (the "License"); you may not use this file except
 // in compliance with the License. You may obtain a copy of the License at
@@ -403,7 +403,7 @@ RAPIDJSON_NAMESPACE_END
 */
 #ifndef RAPIDJSON_ASSERT
 #include <cassert>
-#define RAPIDJSON_ASSERT(x) /*assert(x)*/
+#define RAPIDJSON_ASSERT(x) assert(x)
 #endif // RAPIDJSON_ASSERT
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -489,6 +489,12 @@ RAPIDJSON_NAMESPACE_END
 // adopted from Boost
 #define RAPIDJSON_VERSION_CODE(x,y,z) \
   (((x)*100000) + ((y)*100) + (z))
+
+#if defined(__has_builtin)
+#define RAPIDJSON_HAS_BUILTIN(x) __has_builtin(x)
+#else
+#define RAPIDJSON_HAS_BUILTIN(x) 0
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 // RAPIDJSON_DIAG_PUSH/POP, RAPIDJSON_DIAG_OFF
@@ -591,6 +597,19 @@ RAPIDJSON_NAMESPACE_END
 #endif
 #endif // RAPIDJSON_HAS_CXX11_RANGE_FOR
 
+///////////////////////////////////////////////////////////////////////////////
+// C++17 features
+
+#if defined(__has_cpp_attribute)
+# if __has_cpp_attribute(fallthrough)
+#  define RAPIDJSON_DELIBERATE_FALLTHROUGH [[fallthrough]]
+# else
+#  define RAPIDJSON_DELIBERATE_FALLTHROUGH
+# endif
+#else
+# define RAPIDJSON_DELIBERATE_FALLTHROUGH
+#endif
+
 //!@endcond
 
 //! Assertion (in non-throwing contexts).
@@ -612,12 +631,29 @@ RAPIDJSON_NAMESPACE_END
 #if RAPIDJSON_HAS_CXX11_NOEXCEPT
 #define RAPIDJSON_NOEXCEPT_ASSERT(x)
 #else
-#define RAPIDJSON_NOEXCEPT_ASSERT(x) RAPIDJSON_ASSERT(x)
+#include <cassert>
+#define RAPIDJSON_NOEXCEPT_ASSERT(x) assert(x)
 #endif // RAPIDJSON_HAS_CXX11_NOEXCEPT
 #else
 #define RAPIDJSON_NOEXCEPT_ASSERT(x) RAPIDJSON_ASSERT(x)
 #endif // RAPIDJSON_ASSERT_THROWS
 #endif // RAPIDJSON_NOEXCEPT_ASSERT
+
+///////////////////////////////////////////////////////////////////////////////
+// malloc/realloc/free
+
+#ifndef RAPIDJSON_MALLOC
+///! customization point for global \c malloc
+#define RAPIDJSON_MALLOC(size) std::malloc(size)
+#endif
+#ifndef RAPIDJSON_REALLOC
+///! customization point for global \c realloc
+#define RAPIDJSON_REALLOC(ptr, new_size) std::realloc(ptr, new_size)
+#endif
+#ifndef RAPIDJSON_FREE
+///! customization point for global \c free
+#define RAPIDJSON_FREE(ptr) std::free(ptr)
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 // new/delete

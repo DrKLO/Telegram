@@ -1,19 +1,23 @@
 /*
- * Copyright (c) 2018 Samsung Electronics Co., Ltd. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
+ * Copyright (c) 2020 Samsung Electronics Co., Ltd. All rights reserved.
+
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 #include "vbezier.h"
@@ -39,23 +43,16 @@ VBezier VBezier::fromPoints(const VPointF &p1, const VPointF &p2,
 
 float VBezier::length() const
 {
-    VBezier left, right; /* bez poly splits */
-    float   len = 0.0;   /* arc length */
-    float   chord;       /* chord length */
-    float   length;
+    const auto len = VLine::length(x1, y1, x2, y2) +
+                     VLine::length(x2, y2, x3, y3) +
+                     VLine::length(x3, y3, x4, y4);
 
-    len = len + VLine::length(x1, y1, x2, y2);
-    len = len + VLine::length(x2, y2, x3, y3);
-    len = len + VLine::length(x3, y3, x4, y4);
-
-    chord = VLine::length(x1, y1, x4, y4);
+    const auto chord = VLine::length(x1, y1, x4, y4);
 
     if ((len - chord) > 0.01) {
-        split(&left, &right);    /* split in two */
-        length = left.length() + /* try left side */
-                 right.length(); /* try right side */
-
-        return length;
+        VBezier left, right;
+        split(&left, &right);
+        return left.length() + right.length();
     }
 
     return len;
@@ -75,12 +72,11 @@ VBezier VBezier::onInterval(float t0, float t1) const
     return result;
 }
 
-float VBezier::tAtLength(float l) const
+float VBezier::tAtLength(float l, float totalLength) const
 {
-    float       len = length();
     float       t = 1.0;
-    const float error = 0.01;
-    if (l > len || vCompare(l, len)) return t;
+    const float error = 0.01f;
+    if (l > totalLength || vCompare(l, totalLength)) return t;
 
     t *= 0.5;
 
@@ -93,10 +89,10 @@ float VBezier::tAtLength(float l) const
         if (fabs(lLen - l) < error) break;
 
         if (lLen < l) {
-            t += (lastBigger - t) * 0.5;
+            t += (lastBigger - t) * 0.5f;
         } else {
             lastBigger = t;
-            t -= t * 0.5;
+            t -= t * 0.5f;
         }
     }
     return t;
@@ -116,7 +112,7 @@ VPointF VBezier::derivative(float t) const
     // p'(t) = 3 * (-(1-2t+t^2) * p0 + (1 - 4 * t + 3 * t^2) * p1 + (2 * t - 3 *
     // t^2) * p2 + t^2 * p3)
 
-    float m_t = 1. - t;
+    float m_t = 1.0f - t;
 
     float d = t * t;
     float a = -m_t * m_t;

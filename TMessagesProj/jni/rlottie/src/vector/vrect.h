@@ -1,19 +1,23 @@
-/* 
- * Copyright (c) 2018 Samsung Electronics Co., Ltd. All rights reserved.
- * 
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- * 
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+/*
+ * Copyright (c) 2020 Samsung Electronics Co., Ltd. All rights reserved.
+
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 #ifndef VRECT_H
@@ -28,7 +32,8 @@ class VRect {
 public:
     VRect() = default;
     VRect(int x, int y, int w, int h):x1(x),y1(y),x2(x+w),y2(y+h){}
-    explicit VRect(const VRectF &r);
+    explicit VRect(VPoint pt, VSize sz):VRect(pt.x(), pt.y(), sz.width(), sz.height()){}
+    operator VRectF() const;
     V_CONSTEXPR bool empty() const {return x1 >= x2 || y1 >= y2;}
     V_CONSTEXPR int left() const {return x1;}
     V_CONSTEXPR int top() const {return y1;}
@@ -107,23 +112,21 @@ inline void VRect::translate(int dx, int dy)
 
 inline bool VRect::contains(const VRect &r, bool proper) const
 {
-    if (!proper) {
-        if ((x1 <= r.x1) && (x2 >= r.x2) && (y1 <= r.y1) && (y2 >= r.y2))
-            return true;
-        return false;
-    } else {
-        if ((x1 < r.x1) && (x2 > r.x2) && (y1 < r.y1) && (y2 > r.y2))
-            return true;
-        return false;
-    }
+    return proper ?
+           ((x1 < r.x1) && (x2 > r.x2) && (y1 < r.y1) && (y2 > r.y2)) :
+           ((x1 <= r.x1) && (x2 >= r.x2) && (y1 <= r.y1) && (y2 >= r.y2));
 }
 
 class VRectF {
 public:
     VRectF() = default;
-    VRectF(float x, float y, float w, float h):x1(x),y1(y),x2(x+w),y2(y+h){}
-    explicit VRectF(const VRect &r):x1(r.left()),y1(r.top()),
-                                    x2(r.right()),y2(r.bottom()){}
+
+    VRectF(double x, double y, double w, double h):
+        x1(float(x)),y1(float(y)),
+        x2(float(x+w)),y2(float(y+h)){}
+    operator VRect() const {
+        return {int(left()), int(right()), int(width()), int(height())};
+    }
 
     V_CONSTEXPR bool  empty() const {return x1 >= x2 || y1 >= y2;}
     V_CONSTEXPR float left() const {return x1;}
@@ -159,8 +162,11 @@ private:
     float y2{0};
 };
 
-inline VRect::VRect(const VRectF &r):x1(r.left()),y1(r.top()),
-                                     x2(r.right()),y2(r.bottom()){}
+inline VRect::operator VRectF() const
+{
+       return {double(left()), double(right()), double(width()), double(height())};
+}
+
 V_END_NAMESPACE
 
 #endif  // VRECT_H

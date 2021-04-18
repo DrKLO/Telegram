@@ -206,14 +206,16 @@ static void ft_trig_pseudo_rotate(SW_FT_Vector* vec, SW_FT_Angle theta)
 
     /* Pseudorotations, with right shifts */
     for (i = 1, b = 1; i < SW_FT_TRIG_MAX_ITERS; b <<= 1, i++) {
+        SW_FT_Fixed v1 = ((y + b) >> i);
+        SW_FT_Fixed v2 = ((x + b) >> i);
         if (theta < 0) {
-            xtemp = x + ((y + b) >> i);
-            y = y - ((x + b) >> i);
+            xtemp = x + v1;
+            y = y - v2;
             x = xtemp;
             theta += *arctanptr++;
         } else {
-            xtemp = x - ((y + b) >> i);
-            y = y + ((x + b) >> i);
+            xtemp = x - v1;
+            y = y + v2;
             x = xtemp;
             theta -= *arctanptr++;
         }
@@ -260,14 +262,16 @@ static void ft_trig_pseudo_polarize(SW_FT_Vector* vec)
 
     /* Pseudorotations, with right shifts */
     for (i = 1, b = 1; i < SW_FT_TRIG_MAX_ITERS; b <<= 1, i++) {
+        SW_FT_Fixed v1 = ((y + b) >> i);
+        SW_FT_Fixed v2 = ((x + b) >> i);
         if (y > 0) {
-            xtemp = x + ((y + b) >> i);
-            y = y - ((x + b) >> i);
+            xtemp = x + v1;
+            y = y - v2;
             x = xtemp;
             theta += *arctanptr++;
         } else {
-            xtemp = x - ((y + b) >> i);
-            y = y + ((x + b) >> i);
+            xtemp = x - v1;
+            y = y + v2;
             x = xtemp;
             theta -= *arctanptr++;
         }
@@ -441,16 +445,17 @@ void SW_FT_Vector_From_Polar(SW_FT_Vector* vec, SW_FT_Fixed length,
 
 /* documentation is in fttrigon.h */
 
-SW_FT_Angle SW_FT_Angle_Diff(SW_FT_Angle angle1, SW_FT_Angle angle2)
+SW_FT_Angle SW_FT_Angle_Diff( SW_FT_Angle  angle1, SW_FT_Angle  angle2 )
 {
-    SW_FT_Angle delta = angle2 - angle1;
+  SW_FT_Angle  delta = angle2 - angle1;
 
-    delta %= SW_FT_ANGLE_2PI;
-    if (delta < 0) delta += SW_FT_ANGLE_2PI;
+  while ( delta <= -SW_FT_ANGLE_PI )
+    delta += SW_FT_ANGLE_2PI;
 
-    if (delta > SW_FT_ANGLE_PI) delta -= SW_FT_ANGLE_2PI;
+  while ( delta > SW_FT_ANGLE_PI )
+    delta -= SW_FT_ANGLE_2PI;
 
-    return delta;
+  return delta;
 }
 
 /* END */

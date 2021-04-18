@@ -71,7 +71,6 @@
 #include <setjmp.h>
 #include <stddef.h>
 #include <string.h>
-
 #define SW_FT_UINT_MAX UINT_MAX
 #define SW_FT_INT_MAX INT_MAX
 #define SW_FT_ULONG_MAX ULONG_MAX
@@ -188,8 +187,7 @@ typedef struct SW_FT_Outline_Funcs_ {
 #define ONE_PIXEL (1L << PIXEL_BITS)
 #define PIXEL_MASK (-1L << PIXEL_BITS)
 #define TRUNC(x) ((TCoord)((x) >> PIXEL_BITS))
-#define FRACT( x )      (TCoord)( (x) & ( ONE_PIXEL - 1 ) )
-
+#define SUBPIXELS(x) ((TPos)(x) << PIXEL_BITS)
 #define FLOOR(x) ((x) & -ONE_PIXEL)
 #define CEILING(x) (((x) + ONE_PIXEL - 1) & -ONE_PIXEL)
 #define ROUND(x) (((x) + ONE_PIXEL / 2) & -ONE_PIXEL)
@@ -233,12 +231,11 @@ typedef struct SW_FT_Outline_Funcs_ {
 
 /* These macros speed up repetitive divisions by replacing them */
 /* with multiplications and right shifts.                       */
-#define SW_FT_UDIVPREP( c, b )                                        \
-  long  b ## _r = c ? (long)( SW_FT_ULONG_MAX >> PIXEL_BITS ) / ( b ) \
-                    : 0
-#define SW_FT_UDIV( a, b )                                                \
-  (TCoord)( ( (unsigned long)( a ) * (unsigned long)( b ## _r ) ) >>   \
-            ( sizeof( long ) * SW_FT_CHAR_BIT - PIXEL_BITS ) )
+#define SW_FT_UDIVPREP(b) \
+    long b##_r = (long)(SW_FT_ULONG_MAX >> PIXEL_BITS) / (b)
+#define SW_FT_UDIV(a, b)                              \
+    (((unsigned long)(a) * (unsigned long)(b##_r)) >> \
+     (sizeof(long) * SW_FT_CHAR_BIT - PIXEL_BITS))
 
 /*************************************************************************/
 /*                                                                       */
@@ -293,8 +290,6 @@ typedef struct TCell_ {
 #endif /* _MSC_VER */
 
 typedef struct gray_TWorker_ {
-    ft_jmp_buf jump_buffer;
-
     TCoord ex, ey;
     TPos   min_ex, max_ex;
     TPos   min_ey, max_ey;
@@ -329,6 +324,8 @@ typedef struct gray_TWorker_ {
 
     int band_size;
     int band_shoot;
+
+    ft_jmp_buf jump_buffer;
 
     void* buffer;
     long  buffer_size;
@@ -445,7 +442,7 @@ static PCell gray_find_cell(RAS_ARG)
     cell->next = *pcell;
     *pcell = cell;
 
-    Exit:
+Exit:
     return cell;
 }
 
@@ -496,7 +493,7 @@ static void gray_set_cell(RAS_ARG_ TCoord ex, TCoord ey)
     }
 
     ras.invalid =
-            ((unsigned)ey >= (unsigned)ras.count_ey || ex >= ras.count_ex);
+        ((unsigned)ey >= (unsigned)ras.count_ey || ex >= ras.count_ex);
 }
 
 /*************************************************************************/
@@ -522,143 +519,125 @@ static void gray_start_cell(RAS_ARG_ TCoord ex, TCoord ey)
 /*                                                                       */
 /* Render a straight line across multiple cells in any direction.        */
 /*                                                                       */
-static void
-gray_render_line( RAS_ARG_ TPos  to_x,
-                  TPos  to_y )
+static void gray_render_line(RAS_ARG_ TPos to_x, TPos to_y)
 {
-    TPos    dx, dy;
-    TCoord  fx1, fy1, fx2, fy2;
-    TCoord  ex1, ey1, ex2, ey2;
+    TPos   dx, dy, fx1, fy1, fx2, fy2;
+    TCoord ex1, ex2, ey1, ey2;
 
-
-    ey1 = TRUNC( ras.y );
-    ey2 = TRUNC( to_y );
+    ex1 = TRUNC(ras.x);
+    ex2 = TRUNC(to_x);
+    ey1 = TRUNC(ras.y);
+    ey2 = TRUNC(to_y);
 
     /* perform vertical clipping */
-    if ( ( ey1 >= ras.max_ey && ey2 >= ras.max_ey ) ||
-         ( ey1 <  ras.min_ey && ey2 <  ras.min_ey ) )
+    if ((ey1 >= ras.max_ey && ey2 >= ras.max_ey) ||
+        (ey1 < ras.min_ey && ey2 < ras.min_ey))
         goto End;
-
-    ex1 = TRUNC( ras.x );
-    ex2 = TRUNC( to_x );
-
-    fx1 = FRACT( ras.x );
-    fy1 = FRACT( ras.y );
 
     dx = to_x - ras.x;
     dy = to_y - ras.y;
 
-    if ( ex1 == ex2 && ey1 == ey2 )       /* inside one cell */
+    fx1 = ras.x - SUBPIXELS(ex1);
+    fy1 = ras.y - SUBPIXELS(ey1);
+
+    if (ex1 == ex2 && ey1 == ey2) /* inside one cell */
         ;
-    else if ( dy == 0 ) /* ex1 != ex2 */  /* any horizontal line */
+    else if (dy == 0) /* ex1 != ex2 */ /* any horizontal line */
     {
-        gray_set_cell( RAS_VAR_ ex2, ey2 );
-        goto End;
-    }
-    else if ( dx == 0 )
-    {
-        if ( dy > 0 )                       /* vertical line up */
-            do
-            {
+        ex1 = ex2;
+        gray_set_cell(RAS_VAR_ ex1, ey1);
+    } else if (dx == 0) {
+        if (dy > 0) /* vertical line up */
+            do {
                 fy2 = ONE_PIXEL;
-                ras.cover += ( fy2 - fy1 );
-                ras.area  += ( fy2 - fy1 ) * fx1 * 2;
+                ras.cover += (fy2 - fy1);
+                ras.area += (fy2 - fy1) * fx1 * 2;
                 fy1 = 0;
                 ey1++;
-                gray_set_cell( RAS_VAR_ ex1, ey1 );
-            } while ( ey1 != ey2 );
-        else                                /* vertical line down */
-            do
-            {
+                gray_set_cell(RAS_VAR_ ex1, ey1);
+            } while (ey1 != ey2);
+        else /* vertical line down */
+            do {
                 fy2 = 0;
-                ras.cover += ( fy2 - fy1 );
-                ras.area  += ( fy2 - fy1 ) * fx1 * 2;
+                ras.cover += (fy2 - fy1);
+                ras.area += (fy2 - fy1) * fx1 * 2;
                 fy1 = ONE_PIXEL;
                 ey1--;
-                gray_set_cell( RAS_VAR_ ex1, ey1 );
-            } while ( ey1 != ey2 );
-    }
-    else                                  /* any other line */
+                gray_set_cell(RAS_VAR_ ex1, ey1);
+            } while (ey1 != ey2);
+    } else /* any other line */
     {
-        TPos  prod = dx * (TPos)fy1 - dy * (TPos)fx1;
-        SW_FT_UDIVPREP( ex1 != ex2, dx );
-        SW_FT_UDIVPREP( ey1 != ey2, dy );
-
+        TArea prod = dx * fy1 - dy * fx1;
+        SW_FT_UDIVPREP(dx);
+        SW_FT_UDIVPREP(dy);
 
         /* The fundamental value `prod' determines which side and the  */
         /* exact coordinate where the line exits current cell.  It is  */
         /* also easily updated when moving from one cell to the next.  */
-        do
-        {
-            if      ( prod                                   <= 0 &&
-                      prod - dx * ONE_PIXEL                  >  0 ) /* left */
+        do {
+            if (prod <= 0 && prod - dx * ONE_PIXEL > 0) /* left */
             {
                 fx2 = 0;
-                fy2 = SW_FT_UDIV( -prod, -dx );
+                fy2 = (TPos)SW_FT_UDIV(-prod, -dx);
                 prod -= dy * ONE_PIXEL;
-                ras.cover += ( fy2 - fy1 );
-                ras.area  += ( fy2 - fy1 ) * ( fx1 + fx2 );
+                ras.cover += (fy2 - fy1);
+                ras.area += (fy2 - fy1) * (fx1 + fx2);
                 fx1 = ONE_PIXEL;
                 fy1 = fy2;
                 ex1--;
-            }
-            else if ( prod - dx * ONE_PIXEL                  <= 0 &&
-                      prod - dx * ONE_PIXEL + dy * ONE_PIXEL >  0 ) /* up */
+            } else if (prod - dx * ONE_PIXEL <= 0 &&
+                       prod - dx * ONE_PIXEL + dy * ONE_PIXEL > 0) /* up */
             {
                 prod -= dx * ONE_PIXEL;
-                fx2 = SW_FT_UDIV( -prod, dy );
+                fx2 = (TPos)SW_FT_UDIV(-prod, dy);
                 fy2 = ONE_PIXEL;
-                ras.cover += ( fy2 - fy1 );
-                ras.area  += ( fy2 - fy1 ) * ( fx1 + fx2 );
+                ras.cover += (fy2 - fy1);
+                ras.area += (fy2 - fy1) * (fx1 + fx2);
                 fx1 = fx2;
                 fy1 = 0;
                 ey1++;
-            }
-            else if ( prod - dx * ONE_PIXEL + dy * ONE_PIXEL <= 0 &&
-                      prod                  + dy * ONE_PIXEL >= 0 ) /* right */
+            } else if (prod - dx * ONE_PIXEL + dy * ONE_PIXEL <= 0 &&
+                       prod + dy * ONE_PIXEL >= 0) /* right */
             {
                 prod += dy * ONE_PIXEL;
                 fx2 = ONE_PIXEL;
-                fy2 = SW_FT_UDIV( prod, dx );
-                ras.cover += ( fy2 - fy1 );
-                ras.area  += ( fy2 - fy1 ) * ( fx1 + fx2 );
+                fy2 = (TPos)SW_FT_UDIV(prod, dx);
+                ras.cover += (fy2 - fy1);
+                ras.area += (fy2 - fy1) * (fx1 + fx2);
                 fx1 = 0;
                 fy1 = fy2;
                 ex1++;
-            }
-            else /* ( prod                  + dy * ONE_PIXEL <  0 &&
-                  prod                                   >  0 )    down */
+            } else /* ( prod                  + dy * ONE_PIXEL <  0 &&
+                        prod                                   >  0 )    down */
             {
-                fx2 = SW_FT_UDIV( prod, -dy );
+                fx2 = (TPos)SW_FT_UDIV(prod, -dy);
                 fy2 = 0;
                 prod += dx * ONE_PIXEL;
-                ras.cover += ( fy2 - fy1 );
-                ras.area  += ( fy2 - fy1 ) * ( fx1 + fx2 );
+                ras.cover += (fy2 - fy1);
+                ras.area += (fy2 - fy1) * (fx1 + fx2);
                 fx1 = fx2;
                 fy1 = ONE_PIXEL;
                 ey1--;
             }
 
-            gray_set_cell( RAS_VAR_ ex1, ey1 );
-        } while ( ex1 != ex2 || ey1 != ey2 );
+            gray_set_cell(RAS_VAR_ ex1, ey1);
+        } while (ex1 != ex2 || ey1 != ey2);
     }
 
-    fx2 = FRACT( to_x );
-    fy2 = FRACT( to_y );
+    fx2 = to_x - SUBPIXELS(ex2);
+    fy2 = to_y - SUBPIXELS(ey2);
 
-    ras.cover += ( fy2 - fy1 );
-    ras.area  += ( fy2 - fy1 ) * ( fx1 + fx2 );
+    ras.cover += (fy2 - fy1);
+    ras.area += (fy2 - fy1) * (fx1 + fx2);
 
-    End:
-    ras.x       = to_x;
-    ras.y       = to_y;
+End:
+    ras.x = to_x;
+    ras.y = to_y;
 }
 
-static void
-gray_split_conic( SW_FT_Vector*  base )
+static void gray_split_conic(SW_FT_Vector* base)
 {
     TPos  a, b;
-
 
     base[4].x = base[2].x;
     a = base[0].x + base[1].x;
@@ -675,71 +654,72 @@ gray_split_conic( SW_FT_Vector*  base )
     base[1].y = a >> 1;
 }
 
-static void
-gray_render_conic( RAS_ARG_ const SW_FT_Vector*  control,
-                   const SW_FT_Vector*  to )
+static void gray_render_conic(RAS_ARG_ const SW_FT_Vector* control,
+                              const SW_FT_Vector*          to)
 {
-    SW_FT_Vector   bez_stack[16 * 2 + 1];  /* enough to accommodate bisections */
-    SW_FT_Vector*  arc = bez_stack;
-    TPos        dx, dy;
-    int         draw, split;
+    TPos          dx, dy;
+    TPos          min, max, y;
+    int           top, level;
+    int*          levels;
+    SW_FT_Vector* arc;
 
+    levels = ras.lev_stack;
 
-    arc[0].x = UPSCALE( to->x );
-    arc[0].y = UPSCALE( to->y );
-    arc[1].x = UPSCALE( control->x );
-    arc[1].y = UPSCALE( control->y );
+    arc = ras.bez_stack;
+    arc[0].x = UPSCALE(to->x);
+    arc[0].y = UPSCALE(to->y);
+    arc[1].x = UPSCALE(control->x);
+    arc[1].y = UPSCALE(control->y);
     arc[2].x = ras.x;
     arc[2].y = ras.y;
+    top = 0;
+
+    dx = SW_FT_ABS(arc[2].x + arc[0].x - 2 * arc[1].x);
+    dy = SW_FT_ABS(arc[2].y + arc[0].y - 2 * arc[1].y);
+    if (dx < dy) dx = dy;
+
+    if (dx < ONE_PIXEL / 4) goto Draw;
 
     /* short-cut the arc that crosses the current band */
-    if ( ( TRUNC( arc[0].y ) >= ras.max_ey &&
-           TRUNC( arc[1].y ) >= ras.max_ey &&
-           TRUNC( arc[2].y ) >= ras.max_ey ) ||
-         ( TRUNC( arc[0].y ) <  ras.min_ey &&
-           TRUNC( arc[1].y ) <  ras.min_ey &&
-           TRUNC( arc[2].y ) <  ras.min_ey ) )
-    {
-        ras.x = arc[0].x;
-        ras.y = arc[0].y;
-        return;
-    }
+    min = max = arc[0].y;
 
-    dx = SW_FT_ABS( arc[2].x + arc[0].x - 2 * arc[1].x );
-    dy = SW_FT_ABS( arc[2].y + arc[0].y - 2 * arc[1].y );
-    if ( dx < dy )
-        dx = dy;
+    y = arc[1].y;
+    if (y < min) min = y;
+    if (y > max) max = y;
 
-    /* We can calculate the number of necessary bisections because  */
-    /* each bisection predictably reduces deviation exactly 4-fold. */
-    /* Even 32-bit deviation would vanish after 16 bisections.      */
-    draw = 1;
-    while ( dx > ONE_PIXEL / 4 )
-    {
-        dx   >>= 2;
-        draw <<= 1;
-    }
+    y = arc[2].y;
+    if (y < min) min = y;
+    if (y > max) max = y;
 
-    /* We use decrement counter to count the total number of segments */
-    /* to draw starting from 2^level. Before each draw we split as    */
-    /* many times as there are trailing zeros in the counter.         */
-    do
-    {
-        split = draw & ( -draw );  /* isolate the rightmost 1-bit */
-        while ( ( split >>= 1 ) )
-        {
-            gray_split_conic( arc );
+    if (TRUNC(min) >= ras.max_ey || TRUNC(max) < ras.min_ey) goto Draw;
+
+    level = 0;
+    do {
+        dx >>= 2;
+        level++;
+    } while (dx > ONE_PIXEL / 4);
+
+    levels[0] = level;
+
+    do {
+        level = levels[top];
+        if (level > 0) {
+            gray_split_conic(arc);
             arc += 2;
+            top++;
+            levels[top] = levels[top - 1] = level - 1;
+            continue;
         }
 
-        gray_render_line( RAS_VAR_ arc[0].x, arc[0].y );
+    Draw:
+        gray_render_line(RAS_VAR_ arc[0].x, arc[0].y);
+        top--;
         arc -= 2;
 
-    } while ( --draw );
+    } while (top >= 0);
 }
 
-static void
-gray_split_cubic( SW_FT_Vector*  base )
+static void gray_split_cubic(SW_FT_Vector* base)
 {
     TPos  a, b, c;
 
@@ -769,16 +749,13 @@ gray_split_cubic( SW_FT_Vector*  base )
     base[3].y = ( a + c ) >> 3;
 }
 
-static void
-gray_render_cubic( RAS_ARG_ const SW_FT_Vector*  control1,
-                   const SW_FT_Vector*  control2,
-                   const SW_FT_Vector*  to )
-{
-    const int count = 16 * 3 + 1;
-    int num = 0;
-    SW_FT_Vector   bez_stack[count];  /* enough to accommodate bisections */
-    SW_FT_Vector*  arc = bez_stack;
 
+static void
+gray_render_cubic(RAS_ARG_ const SW_FT_Vector* control1,
+                              const SW_FT_Vector*          control2,
+                              const SW_FT_Vector*          to)
+{
+    SW_FT_Vector* arc = ras.bez_stack;
 
     arc[0].x = UPSCALE( to->x );
     arc[0].y = UPSCALE( to->y );
@@ -799,38 +776,33 @@ gray_render_cubic( RAS_ARG_ const SW_FT_Vector*  control1,
            TRUNC( arc[2].y ) <  ras.min_ey &&
            TRUNC( arc[3].y ) <  ras.min_ey ) )
     {
-        ras.x = arc[0].x;
-        ras.y = arc[0].y;
-        return;
+      ras.x = arc[0].x;
+      ras.y = arc[0].y;
+      return;
     }
 
     for (;;)
     {
-        /* with each split, control points quickly converge towards  */
-        /* chord trisection points and the vanishing distances below */
-        /* indicate when the segment is flat enough to draw          */
-        if (num < 0 || num >= count) {
-            return;
-        }
-        if ( SW_FT_ABS( 2 * arc[0].x - 3 * arc[1].x + arc[3].x ) > ONE_PIXEL / 2 ||
-             SW_FT_ABS( 2 * arc[0].y - 3 * arc[1].y + arc[3].y ) > ONE_PIXEL / 2 ||
-             SW_FT_ABS( arc[0].x - 3 * arc[2].x + 2 * arc[3].x ) > ONE_PIXEL / 2 ||
-             SW_FT_ABS( arc[0].y - 3 * arc[2].y + 2 * arc[3].y ) > ONE_PIXEL / 2 )
-            goto Split;
+      /* with each split, control points quickly converge towards  */
+      /* chord trisection points and the vanishing distances below */
+      /* indicate when the segment is flat enough to draw          */
+      if ( SW_FT_ABS( 2 * arc[0].x - 3 * arc[1].x + arc[3].x ) > ONE_PIXEL / 2 ||
+           SW_FT_ABS( 2 * arc[0].y - 3 * arc[1].y + arc[3].y ) > ONE_PIXEL / 2 ||
+           SW_FT_ABS( arc[0].x - 3 * arc[2].x + 2 * arc[3].x ) > ONE_PIXEL / 2 ||
+           SW_FT_ABS( arc[0].y - 3 * arc[2].y + 2 * arc[3].y ) > ONE_PIXEL / 2 )
+        goto Split;
 
-        gray_render_line( RAS_VAR_ arc[0].x, arc[0].y );
+      gray_render_line( RAS_VAR_ arc[0].x, arc[0].y );
 
-        if ( arc == bez_stack )
-            return;
+      if ( arc == ras.bez_stack )
+        return;
 
-        arc -= 3;
-        num -= 3;
-        continue;
+      arc -= 3;
+      continue;
 
-        Split:
-        gray_split_cubic( arc );
-        arc += 3;
-        num += 3;
+    Split:
+      gray_split_cubic( arc );
+      arc += 3;
     }
 }
 
@@ -932,7 +904,7 @@ static void gray_hline(RAS_ARG_ TCoord x, TCoord y, TPos area, TCoord acount)
 
 #ifdef DEBUG_GRAYS
 
-                if (1) {
+            if (1) {
                 int n;
 
                 fprintf(stderr, "count = %3d ", count);
@@ -1058,11 +1030,7 @@ static int SW_FT_Outline_Decompose(const SW_FT_Outline*       outline,
     int  shift;
     TPos delta;
 
-    if ( !outline )
-        return SW_FT_THROW( Invalid_Outline );
-
-    if ( !func_interface )
-        return SW_FT_THROW( Invalid_Argument );
+    if (!outline || !func_interface) return SW_FT_THROW(Invalid_Argument);
 
     shift = func_interface->shift;
     delta = func_interface->delta;
@@ -1119,95 +1087,95 @@ static int SW_FT_Outline_Decompose(const SW_FT_Outline*       outline,
 
             tag = SW_FT_CURVE_TAG(tags[0]);
             switch (tag) {
-                case SW_FT_CURVE_TAG_ON: /* emit a single line_to */
-                {
+            case SW_FT_CURVE_TAG_ON: /* emit a single line_to */
+            {
+                SW_FT_Vector vec;
+
+                vec.x = SCALED(point->x);
+                vec.y = SCALED(point->y);
+
+                error = func_interface->line_to(&vec, user);
+                if (error) goto Exit;
+                continue;
+            }
+
+            case SW_FT_CURVE_TAG_CONIC: /* consume conic arcs */
+                v_control.x = SCALED(point->x);
+                v_control.y = SCALED(point->y);
+
+            Do_Conic:
+                if (point < limit) {
+                    SW_FT_Vector vec;
+                    SW_FT_Vector v_middle;
+
+                    point++;
+                    tags++;
+                    tag = SW_FT_CURVE_TAG(tags[0]);
+
+                    vec.x = SCALED(point->x);
+                    vec.y = SCALED(point->y);
+
+                    if (tag == SW_FT_CURVE_TAG_ON) {
+                        error =
+                            func_interface->conic_to(&v_control, &vec, user);
+                        if (error) goto Exit;
+                        continue;
+                    }
+
+                    if (tag != SW_FT_CURVE_TAG_CONIC) goto Invalid_Outline;
+
+                    v_middle.x = (v_control.x + vec.x) / 2;
+                    v_middle.y = (v_control.y + vec.y) / 2;
+
+                    error =
+                        func_interface->conic_to(&v_control, &v_middle, user);
+                    if (error) goto Exit;
+
+                    v_control = vec;
+                    goto Do_Conic;
+                }
+
+                error = func_interface->conic_to(&v_control, &v_start, user);
+                goto Close;
+
+            default: /* SW_FT_CURVE_TAG_CUBIC */
+            {
+                SW_FT_Vector vec1, vec2;
+
+                if (point + 1 > limit ||
+                    SW_FT_CURVE_TAG(tags[1]) != SW_FT_CURVE_TAG_CUBIC)
+                    goto Invalid_Outline;
+
+                point += 2;
+                tags += 2;
+
+                vec1.x = SCALED(point[-2].x);
+                vec1.y = SCALED(point[-2].y);
+
+                vec2.x = SCALED(point[-1].x);
+                vec2.y = SCALED(point[-1].y);
+
+                if (point <= limit) {
                     SW_FT_Vector vec;
 
                     vec.x = SCALED(point->x);
                     vec.y = SCALED(point->y);
 
-                    error = func_interface->line_to(&vec, user);
+                    error = func_interface->cubic_to(&vec1, &vec2, &vec, user);
                     if (error) goto Exit;
                     continue;
                 }
 
-                case SW_FT_CURVE_TAG_CONIC: /* consume conic arcs */
-                    v_control.x = SCALED(point->x);
-                    v_control.y = SCALED(point->y);
-
-                Do_Conic:
-                    if (point < limit) {
-                        SW_FT_Vector vec;
-                        SW_FT_Vector v_middle;
-
-                        point++;
-                        tags++;
-                        tag = SW_FT_CURVE_TAG(tags[0]);
-
-                        vec.x = SCALED(point->x);
-                        vec.y = SCALED(point->y);
-
-                        if (tag == SW_FT_CURVE_TAG_ON) {
-                            error =
-                                    func_interface->conic_to(&v_control, &vec, user);
-                            if (error) goto Exit;
-                            continue;
-                        }
-
-                        if (tag != SW_FT_CURVE_TAG_CONIC) goto Invalid_Outline;
-
-                        v_middle.x = (v_control.x + vec.x) / 2;
-                        v_middle.y = (v_control.y + vec.y) / 2;
-
-                        error =
-                                func_interface->conic_to(&v_control, &v_middle, user);
-                        if (error) goto Exit;
-
-                        v_control = vec;
-                        goto Do_Conic;
-                    }
-
-                    error = func_interface->conic_to(&v_control, &v_start, user);
-                    goto Close;
-
-                default: /* SW_FT_CURVE_TAG_CUBIC */
-                {
-                    SW_FT_Vector vec1, vec2;
-
-                    if (point + 1 > limit ||
-                        SW_FT_CURVE_TAG(tags[1]) != SW_FT_CURVE_TAG_CUBIC)
-                        goto Invalid_Outline;
-
-                    point += 2;
-                    tags += 2;
-
-                    vec1.x = SCALED(point[-2].x);
-                    vec1.y = SCALED(point[-2].y);
-
-                    vec2.x = SCALED(point[-1].x);
-                    vec2.y = SCALED(point[-1].y);
-
-                    if (point <= limit) {
-                        SW_FT_Vector vec;
-
-                        vec.x = SCALED(point->x);
-                        vec.y = SCALED(point->y);
-
-                        error = func_interface->cubic_to(&vec1, &vec2, &vec, user);
-                        if (error) goto Exit;
-                        continue;
-                    }
-
-                    error = func_interface->cubic_to(&vec1, &vec2, &v_start, user);
-                    goto Close;
-                }
+                error = func_interface->cubic_to(&vec1, &vec2, &v_start, user);
+                goto Close;
+            }
             }
         }
 
         /* close the contour with a line segment */
         error = func_interface->line_to(&v_start, user);
 
-        Close:
+    Close:
         if (error) goto Exit;
 
         first = last + 1;
@@ -1215,10 +1183,10 @@ static int SW_FT_Outline_Decompose(const SW_FT_Outline*       outline,
 
     return 0;
 
-    Exit:
+Exit:
     return error;
 
-    Invalid_Outline:
+Invalid_Outline:
     return SW_FT_THROW(Invalid_Outline);
 }
 
@@ -1336,7 +1304,7 @@ static int gray_convert_glyph(RAS_ARG)
             } else if (error != ErrRaster_Memory_Overflow)
                 return 1;
 
-            ReduceBands:
+        ReduceBands:
             /* render pool overflow; we will reduce the render band by half */
             bottom = band->min;
             top = band->max;

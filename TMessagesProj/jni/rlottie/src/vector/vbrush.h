@@ -1,19 +1,23 @@
-/* 
- * Copyright (c) 2018 Samsung Electronics Co., Ltd. All rights reserved.
- * 
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- * 
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+/*
+ * Copyright (c) 2020 Samsung Electronics Co., Ltd. All rights reserved.
+
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 #ifndef VBRUSH_H
@@ -27,67 +31,60 @@
 
 V_BEGIN_NAMESPACE
 
-typedef std::pair<float, VColor>   VGradientStop;
-typedef std::vector<VGradientStop> VGradientStops;
+using VGradientStop = std::pair<float, VColor>;
+using VGradientStops = std::vector<VGradientStop>;
 class VGradient {
 public:
     enum class Mode { Absolute, Relative };
     enum class Spread { Pad, Repeat, Reflect };
     enum class Type { Linear, Radial };
-    VGradient(VGradient::Type type);
+    explicit VGradient(VGradient::Type type);
     void setStops(const VGradientStops &stops);
     void setAlpha(float alpha) {mAlpha = alpha;}
     float alpha() const {return mAlpha;}
-    VGradient() = default;
 
 public:
     static constexpr int colorTableSize = 1024;
-    VGradient::Type      mType;
-    VGradient::Spread    mSpread;
-    VGradient::Mode      mMode;
+    VGradient::Type      mType{Type::Linear};
+    VGradient::Spread    mSpread{Spread::Pad};
+    VGradient::Mode      mMode{Mode::Absolute};
     VGradientStops       mStops;
     float                mAlpha{1.0};
+    struct Linear{
+        float x1{0}, y1{0}, x2{0}, y2{0};
+    };
+    struct Radial{
+        float cx{0}, cy{0}, fx{0}, fy{0}, cradius{0}, fradius{0};
+    };
     union {
-        struct {
-            float x1, y1, x2, y2;
-        } linear;
-        struct {
-            float cx, cy, fx, fy, cradius, fradius;
-        } radial;
+        Linear linear;
+        Radial radial;
     };
     VMatrix mMatrix;
 };
 
-class VLinearGradient : public VGradient {
-public:
-    VLinearGradient(const VPointF &start, const VPointF &stop);
-    VLinearGradient(float xStart, float yStart, float xStop, float yStop);
-};
-
-class VRadialGradient : public VGradient {
-public:
-    VRadialGradient(const VPointF &center, float cradius,
-                    const VPointF &focalPoint, float fradius);
-    VRadialGradient(float cx, float cy, float cradius, float fx, float fy,
-                    float fradius);
+struct VTexture {
+    VBitmap  mBitmap;
+    VMatrix  mMatrix;
+    int      mAlpha{255};
 };
 
 class VBrush {
 public:
     enum class Type { NoBrush, Solid, LinearGradient, RadialGradient, Texture };
-    VBrush() = default;
-    VBrush(const VColor &color);
-    VBrush(const VGradient *gradient);
-    VBrush(int r, int g, int b, int a);
-    VBrush(const VBitmap &texture);
+    VBrush():mType(Type::NoBrush),mColor(){};
+    explicit VBrush(const VColor &color);
+    explicit VBrush(const VGradient *gradient);
+    explicit VBrush(uchar r, uchar g, uchar b, uchar a);
+    explicit VBrush(const VTexture *texture);
     inline VBrush::Type type() const { return mType; }
-    void setMatrix(const VMatrix &m);
 public:
     VBrush::Type     mType{Type::NoBrush};
-    VColor           mColor;
-    const VGradient *mGradient{nullptr};
-    VBitmap          mTexture;
-    VMatrix          mMatrix;
+    union {
+        VColor           mColor{};
+        const VGradient *mGradient;
+        const VTexture  *mTexture;
+    };
 };
 
 V_END_NAMESPACE

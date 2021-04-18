@@ -1,37 +1,75 @@
 /*
- * Copyright (c) 2018 Samsung Electronics Co., Ltd. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
+ * Copyright (c) 2020 Samsung Electronics Co., Ltd. All rights reserved.
+
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 #include "vdrawable.h"
 #include "vdasher.h"
 #include "vraster.h"
 
+VDrawable::VDrawable(VDrawable::Type type)
+{
+    setType(type);
+}
+
+VDrawable::~VDrawable() noexcept
+{
+    if (mStrokeInfo) {
+        if (mType == Type::StrokeWithDash) {
+            delete static_cast<StrokeWithDashInfo *>(mStrokeInfo);
+        } else {
+            delete mStrokeInfo;
+        }
+    }
+}
+
+void VDrawable::setType(VDrawable::Type type)
+{
+    mType = type;
+    if (mType == VDrawable::Type::Stroke) {
+        mStrokeInfo = new StrokeInfo();
+    } else if (mType == VDrawable::Type::StrokeWithDash) {
+        mStrokeInfo = new StrokeWithDashInfo();
+    }
+}
+
+void VDrawable::applyDashOp()
+{
+    if (mStrokeInfo && (mType == Type::StrokeWithDash)) {
+        auto obj = static_cast<StrokeWithDashInfo *>(mStrokeInfo);
+        if (!obj->mDash.empty()) {
+            VDasher dasher(obj->mDash.data(), obj->mDash.size());
+            mPath.clone(dasher.dashed(mPath));
+        }
+    }
+}
+
 void VDrawable::preprocess(const VRect &clip)
 {
     if (mFlag & (DirtyState::Path)) {
-        if (mStroke.enable) {
-            if (mStroke.mDash.size()) {
-                VDasher dasher(mStroke.mDash.data(), mStroke.mDash.size());
-                mPath = dasher.dashed(mPath);
-            }
-            mRasterizer.rasterize(std::move(mPath), mStroke.cap, mStroke.join,
-                                  mStroke.width, mStroke.meterLimit, clip);
-        } else {
+        if (mType == Type::Fill) {
             mRasterizer.rasterize(std::move(mPath), mFillRule, clip);
+        } else {
+            applyDashOp();
+            mRasterizer.rasterize(std::move(mPath), mStrokeInfo->cap, mStrokeInfo->join,
+                                  mStrokeInfo->width, mStrokeInfo->miterLimit, clip);
         }
         mPath = {};
         mFlag &= ~DirtyFlag(DirtyState::Path);
@@ -43,29 +81,33 @@ VRle VDrawable::rle()
     return mRasterizer.rle();
 }
 
-void VDrawable::setStrokeInfo(CapStyle cap, JoinStyle join, float meterLimit,
+void VDrawable::setStrokeInfo(CapStyle cap, JoinStyle join, float miterLimit,
                               float strokeWidth)
 {
-    if ((mStroke.cap == cap) && (mStroke.join == join) &&
-        vCompare(mStroke.meterLimit, meterLimit) &&
-        vCompare(mStroke.width, strokeWidth))
+    assert(mStrokeInfo);
+    if ((mStrokeInfo->cap == cap) && (mStrokeInfo->join == join) &&
+        vCompare(mStrokeInfo->miterLimit, miterLimit) &&
+        vCompare(mStrokeInfo->width, strokeWidth))
         return;
 
-    mStroke.enable = true;
-    mStroke.cap = cap;
-    mStroke.join = join;
-    mStroke.meterLimit = meterLimit;
-    mStroke.width = strokeWidth;
+    mStrokeInfo->cap = cap;
+    mStrokeInfo->join = join;
+    mStrokeInfo->miterLimit = miterLimit;
+    mStrokeInfo->width = strokeWidth;
     mFlag |= DirtyState::Path;
 }
 
-void VDrawable::setDashInfo(float *array, uint size)
+void VDrawable::setDashInfo(std::vector<float> &dashInfo)
 {
+    assert(mStrokeInfo);
+    assert(mType == VDrawable::Type::StrokeWithDash);
+
+    auto obj = static_cast<StrokeWithDashInfo *>(mStrokeInfo);
     bool hasChanged = false;
 
-    if (mStroke.mDash.size() == size) {
-        for (uint i = 0; i < size; i++) {
-            if (!vCompare(mStroke.mDash[i], array[i])) {
+    if (obj->mDash.size() == dashInfo.size()) {
+        for (uint i = 0; i < dashInfo.size(); ++i) {
+            if (!vCompare(obj->mDash[i], dashInfo[i])) {
                 hasChanged = true;
                 break;
             }
@@ -76,14 +118,8 @@ void VDrawable::setDashInfo(float *array, uint size)
 
     if (!hasChanged) return;
 
-    mStroke.mDash.clear();
+    obj->mDash = dashInfo;
 
-    for (uint i = 0; i < size; i++) {
-        mStroke.mDash.push_back(array[i]);
-    }
-    if (mStroke.mDash.size() == 1) {
-        mStroke.mDash.push_back(20);
-    }
     mFlag |= DirtyState::Path;
 }
 

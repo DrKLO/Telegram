@@ -1,6 +1,6 @@
 // Tencent is pleased to support the open source community by making RapidJSON available.
 // 
-// Copyright (C) 2015 THL A29 Limited, a Tencent company, and Milo Yip. All rights reserved.
+// Copyright (C) 2015 THL A29 Limited, a Tencent company, and Milo Yip.
 //
 // Licensed under the MIT License (the "License"); you may not use this file except
 // in compliance with the License. You may obtain a copy of the License at
@@ -23,7 +23,6 @@
 RAPIDJSON_DIAG_PUSH
 RAPIDJSON_DIAG_OFF(padded)
 RAPIDJSON_DIAG_OFF(switch-enum)
-RAPIDJSON_DIAG_OFF(implicit-fallthrough)
 #elif defined(_MSC_VER)
 RAPIDJSON_DIAG_PUSH
 RAPIDJSON_DIAG_OFF(4512) // assignment operator could not be generated
@@ -32,9 +31,6 @@ RAPIDJSON_DIAG_OFF(4512) // assignment operator could not be generated
 #ifdef __GNUC__
 RAPIDJSON_DIAG_PUSH
 RAPIDJSON_DIAG_OFF(effc++)
-#if __GNUC__ >= 7
-RAPIDJSON_DIAG_OFF(implicit-fallthrough)
-#endif
 #endif
 
 #ifndef RAPIDJSON_REGEX_VERBOSE
@@ -291,6 +287,7 @@ private:
                     if (!CharacterEscape(ds, &codepoint))
                         return; // Unsupported escape character
                     // fall through to default
+                    RAPIDJSON_DELIBERATE_FALLTHROUGH;
 
                 default: // Pattern character
                     PushOperand(operandStack, codepoint);
@@ -520,6 +517,7 @@ private:
                 else if (!CharacterEscape(ds, &codepoint))
                     return false;
                 // fall through to default
+                RAPIDJSON_DELIBERATE_FALLTHROUGH;
 
             default:
                 switch (step) {
@@ -529,6 +527,7 @@ private:
                         break;
                     }
                     // fall through to step 0 for other characters
+                    RAPIDJSON_DELIBERATE_FALLTHROUGH;
 
                 case 0:
                     {

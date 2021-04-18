@@ -1,19 +1,23 @@
-/* 
- * Copyright (c) 2018 Samsung Electronics Co., Ltd. All rights reserved.
- * 
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- * 
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+/*
+ * Copyright (c) 2020 Samsung Electronics Co., Ltd. All rights reserved.
+
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 #ifndef VGLOBAL_H
@@ -25,9 +29,9 @@
 #include <type_traits>
 #include <utility>
 
-typedef uint32_t uint;
-typedef uint16_t ushort;
-typedef uint8_t  uchar;
+using uint   = uint32_t;
+using ushort = uint16_t;
+using uchar  = uint8_t;
 
 #if !defined(V_NAMESPACE)
 
@@ -69,47 +73,13 @@ typedef uint8_t  uchar;
 #else
 #define VECTOR_FALLTHROUGH
 #endif
+#define vthread_local
 
-#include <atomic>
-class RefCount {
-public:
-    inline RefCount(int i) : atomic(i) {}
-    inline bool ref()
-    {
-        int count = atomic.load();
-        if (count == 0)  // !isSharable
-            return false;
-        if (count != -1)  // !isStatic
-            atomic.fetch_add(1);
-        return true;
-    }
-    inline bool deref()
-    {
-        int count = atomic.load();
-        if (count == 0)  // !isSharable
-            return false;
-        if (count == -1)  // isStatic
-            return true;
-        atomic.fetch_sub(1);
-        return --count;
-    }
-    bool isShared() const
-    {
-        int count = atomic.load();
-        return (count != 1) && (count != 0);
-    }
-    bool isStatic() const
-    {
-        // Persistent object, never deleted
-        int count = atomic.load();
-        return count == -1;
-    }
-    inline int count() const { return atomic; }
-    void       setOwned() { atomic.store(1); }
-
-private:
-    std::atomic<int> atomic;
-};
+#if defined(_MSC_VER)
+    #define V_ALWAYS_INLINE __forceinline
+#else
+    #define V_ALWAYS_INLINE __attribute__((always_inline))
+#endif
 
 template <typename T>
 V_CONSTEXPR inline const T &vMin(const T &a, const T &b)
@@ -144,12 +114,12 @@ class vFlagHelper {
     int i;
 
 public:
-    constexpr inline vFlagHelper(int ai) noexcept : i(ai) {}
+    explicit constexpr inline vFlagHelper(int ai) noexcept : i(ai) {}
     constexpr inline operator int() const noexcept { return i; }
 
-    constexpr inline vFlagHelper(uint ai) noexcept : i(int(ai)) {}
-    constexpr inline vFlagHelper(short ai) noexcept : i(int(ai)) {}
-    constexpr inline vFlagHelper(ushort ai) noexcept : i(int(uint(ai))) {}
+    explicit constexpr inline vFlagHelper(uint ai) noexcept : i(int(ai)) {}
+    explicit constexpr inline vFlagHelper(short ai) noexcept : i(int(ai)) {}
+    explicit constexpr inline vFlagHelper(ushort ai) noexcept : i(int(uint(ai))) {}
     constexpr inline operator uint() const noexcept { return uint(i); }
 };
 
@@ -162,16 +132,16 @@ public:
     static_assert((std::is_enum<Enum>::value),
                   "vFlag is only usable on enumeration types.");
 
-    typedef typename std::conditional<
+    using Int = typename std::conditional<
         std::is_unsigned<typename std::underlying_type<Enum>::type>::value,
-        unsigned int, signed int>::type Int;
+        unsigned int, signed int>::type;
 
-    typedef Enum enum_type;
+    using  enum_type = Enum;
     // compiler-generated copy/move ctor/assignment operators are fine!
 
-    constexpr inline vFlag(Enum f) noexcept : i(Int(f)) {}
-    constexpr inline vFlag() noexcept : i(0) {}
-    constexpr inline vFlag(vFlagHelper f) noexcept : i(f) {}
+    vFlag() = default;
+    constexpr vFlag(Enum f) noexcept : i(Int(f)) {}
+    explicit constexpr vFlag(vFlagHelper f) noexcept : i(f) {}
 
     inline vFlag &operator&=(int mask) noexcept
     {
@@ -255,28 +225,24 @@ public:
         return on ? (*this |= f) : (*this &= ~f);
     }
 
-    Int i;
+    Int i{0};
 };
 
 class VColor {
 public:
-    inline VColor() noexcept { a = r = g = b = 0; }
-    inline VColor(int red, int green, int blue, int alpha = 255) noexcept
-    {
-        r = red;
-        g = green;
-        b = blue;
-        a = alpha;
-    }
-    inline int  red() const noexcept { return r; }
-    inline int  green() const noexcept { return g; }
-    inline int  blue() const noexcept { return b; }
-    inline int  alpha() const noexcept { return a; }
-    inline void setRed(int red) noexcept { r = red; }
-    inline void setGreen(int green) noexcept { g = green; }
-    inline void setBlue(int blue) noexcept { b = blue; }
-    inline void setAlpha(int alpha) noexcept { a = alpha; }
+    VColor() = default;
+    explicit VColor(uchar red, uchar green, uchar blue, uchar alpha = 255) noexcept
+        :a(alpha), r(red), g(green), b(blue){}
+    inline uchar  red() const noexcept { return r; }
+    inline uchar  green() const noexcept { return g; }
+    inline uchar  blue() const noexcept { return b; }
+    inline uchar  alpha() const noexcept { return a; }
+    inline void setRed(uchar red) noexcept { r = red; }
+    inline void setGreen(uchar green) noexcept { g = green; }
+    inline void setBlue(uchar blue) noexcept { b = blue; }
+    inline void setAlpha(uchar alpha) noexcept { a = alpha; }
     inline bool isOpaque() const { return a == 255; }
+    inline bool isTransparent() const { return a == 0; }
     inline bool operator==(const VColor &o) const
     {
         return ((a == o.a) && (r == o.r) && (g == o.g) && (b == o.b));
@@ -291,7 +257,7 @@ public:
 
     uint premulARGB(float opacity) const
     {
-        int alpha = a * opacity;
+        int alpha = int(a * opacity);
         int pr = (r * alpha) / 255;
         int pg = (g * alpha) / 255;
         int pb = (b * alpha) / 255;
@@ -299,15 +265,23 @@ public:
     }
 
 public:
-    uchar a;
-    uchar r;
-    uchar g;
-    uchar b;
+    uchar a{0};
+    uchar r{0};
+    uchar g{0};
+    uchar b{0};
 };
 
 enum class FillRule: unsigned char { EvenOdd, Winding };
 enum class JoinStyle: unsigned char { Miter, Bevel, Round };
 enum class CapStyle: unsigned char { Flat, Square, Round };
+
+enum class BlendMode {
+    Src,
+    SrcOver,
+    DestIn,
+    DestOut,
+    Last,
+};
 
 #ifndef V_CONSTRUCTOR_FUNCTION
 #define V_CONSTRUCTOR_FUNCTION0(AFUNC)            \

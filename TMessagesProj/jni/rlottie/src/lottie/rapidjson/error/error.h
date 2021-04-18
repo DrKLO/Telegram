@@ -1,6 +1,6 @@
 // Tencent is pleased to support the open source community by making RapidJSON available.
 // 
-// Copyright (C) 2015 THL A29 Limited, a Tencent company, and Milo Yip. All rights reserved.
+// Copyright (C) 2015 THL A29 Limited, a Tencent company, and Milo Yip.
 //
 // Licensed under the MIT License (the "License"); you may not use this file except
 // in compliance with the License. You may obtain a copy of the License at
@@ -151,6 +151,61 @@ private:
 \endcode
 */
 typedef const RAPIDJSON_ERROR_CHARTYPE* (*GetParseErrorFunc)(ParseErrorCode);
+
+///////////////////////////////////////////////////////////////////////////////
+// ValidateErrorCode
+
+//! Error codes when validating.
+/*! \ingroup RAPIDJSON_ERRORS
+    \see GenericSchemaValidator
+*/
+enum ValidateErrorCode {
+    kValidateErrors    = -1,                   //!< Top level error code when kValidateContinueOnErrorsFlag set.
+    kValidateErrorNone = 0,                    //!< No error.
+
+    kValidateErrorMultipleOf,                  //!< Number is not a multiple of the 'multipleOf' value.
+    kValidateErrorMaximum,                     //!< Number is greater than the 'maximum' value.
+    kValidateErrorExclusiveMaximum,            //!< Number is greater than or equal to the 'maximum' value.
+    kValidateErrorMinimum,                     //!< Number is less than the 'minimum' value.
+    kValidateErrorExclusiveMinimum,            //!< Number is less than or equal to the 'minimum' value.
+
+    kValidateErrorMaxLength,                   //!< String is longer than the 'maxLength' value.
+    kValidateErrorMinLength,                   //!< String is longer than the 'maxLength' value.
+    kValidateErrorPattern,                     //!< String does not match the 'pattern' regular expression.
+
+    kValidateErrorMaxItems,                    //!< Array is longer than the 'maxItems' value.
+    kValidateErrorMinItems,                    //!< Array is shorter than the 'minItems' value.
+    kValidateErrorUniqueItems,                 //!< Array has duplicate items but 'uniqueItems' is true.
+    kValidateErrorAdditionalItems,             //!< Array has additional items that are not allowed by the schema.
+
+    kValidateErrorMaxProperties,               //!< Object has more members than 'maxProperties' value.
+    kValidateErrorMinProperties,               //!< Object has less members than 'minProperties' value.
+    kValidateErrorRequired,                    //!< Object is missing one or more members required by the schema.
+    kValidateErrorAdditionalProperties,        //!< Object has additional members that are not allowed by the schema.
+    kValidateErrorPatternProperties,           //!< See other errors.
+    kValidateErrorDependencies,                //!< Object has missing property or schema dependencies.
+
+    kValidateErrorEnum,                        //!< Property has a value that is not one of its allowed enumerated values
+    kValidateErrorType,                        //!< Property has a type that is not allowed by the schema..
+
+    kValidateErrorOneOf,                       //!< Property did not match any of the sub-schemas specified by 'oneOf'.
+    kValidateErrorOneOfMatch,                  //!< Property matched more than one of the sub-schemas specified by 'oneOf'.
+    kValidateErrorAllOf,                       //!< Property did not match all of the sub-schemas specified by 'allOf'.
+    kValidateErrorAnyOf,                       //!< Property did not match any of the sub-schemas specified by 'anyOf'.
+    kValidateErrorNot                          //!< Property matched the sub-schema specified by 'not'.
+};
+
+//! Function pointer type of GetValidateError().
+/*! \ingroup RAPIDJSON_ERRORS
+
+    This is the prototype for \c GetValidateError_X(), where \c X is a locale.
+    User can dynamically change locale in runtime, e.g.:
+\code
+    GetValidateErrorFunc GetValidateError = GetValidateError_En; // or whatever
+    const RAPIDJSON_ERROR_CHARTYPE* s = GetValidateError(validator.GetInvalidSchemaCode());
+\endcode
+*/
+typedef const RAPIDJSON_ERROR_CHARTYPE* (*GetValidateErrorFunc)(ValidateErrorCode);
 
 RAPIDJSON_NAMESPACE_END
 

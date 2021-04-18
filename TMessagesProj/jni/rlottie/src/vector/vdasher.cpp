@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2018 Samsung Electronics Co., Ltd. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
- */
+ * Copyright (c) 2020 Samsung Electronics Co., Ltd. All rights reserved.
 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 #include "vbezier.h"
 
 #include <cmath>
@@ -25,6 +28,7 @@
 
 V_BEGIN_NAMESPACE
 
+static constexpr float tolerance = 0.1f;
 VDasher::VDasher(const float *dashArray, size_t size)
 {
     mDashArray = reinterpret_cast<const VDasher::Dash *>(dashArray);
@@ -33,6 +37,15 @@ VDasher::VDasher(const float *dashArray, size_t size)
     mIndex = 0;
     mCurrentLength = 0;
     mDiscard = false;
+    //if the dash array contains ZERO length
+    // segments or ZERO lengths gaps we could
+    // optimize those usecase.
+    for (size_t i = 0; i < mArraySize; i++) {
+        if (!vCompare(mDashArray[i].length, 0.0f))
+            mNoLength = false;
+        if (!vCompare(mDashArray[i].gap, 0.0f))
+            mNoGap = false;
+    }
 }
 
 void VDasher::moveTo(const VPointF &p)
@@ -80,10 +93,10 @@ void VDasher::addLine(const VPointF &p)
     if (mDiscard) return;
 
     if (mStartNewSegment) {
-        mResult.moveTo(mCurPt);
+        mResult->moveTo(mCurPt);
         mStartNewSegment = false;
     }
-    mResult.lineTo(p);
+    mResult->lineTo(p);
 }
 
 void VDasher::updateActiveSegment()
@@ -122,13 +135,13 @@ void VDasher::lineTo(const VPointF &p)
             mCurPt = line.p1();
         }
         // handle remainder
-        if (length > 1.0f) {
+        if (length > tolerance) {
             mCurrentLength -= length;
             addLine(line.p2());
         }
     }
 
-    if (mCurrentLength < 1.0f) updateActiveSegment();
+    if (mCurrentLength < tolerance) updateActiveSegment();
 
     mCurPt = p;
 }
@@ -138,10 +151,10 @@ void VDasher::addCubic(const VPointF &cp1, const VPointF &cp2, const VPointF &e)
     if (mDiscard) return;
 
     if (mStartNewSegment) {
-        mResult.moveTo(mCurPt);
+        mResult->moveTo(mCurPt);
         mStartNewSegment = false;
     }
-    mResult.cubicTo(cp1, cp2, e);
+    mResult->cubicTo(cp1, cp2, e);
 }
 
 void VDasher::cubicTo(const VPointF &cp1, const VPointF &cp2, const VPointF &e)
@@ -165,23 +178,21 @@ void VDasher::cubicTo(const VPointF &cp1, const VPointF &cp2, const VPointF &e)
             mCurPt = b.pt1();
         }
         // handle remainder
-        if (bezLen > 1.0f) {
+        if (bezLen > tolerance) {
             mCurrentLength -= bezLen;
             addCubic(b.pt2(), b.pt3(), b.pt4());
         }
     }
 
-    if (mCurrentLength < 1.0f) updateActiveSegment();
+    if (mCurrentLength < tolerance) updateActiveSegment();
 
     mCurPt = e;
 }
 
-VPath VDasher::dashed(const VPath &path)
+void VDasher::dashHelper(const VPath &path, VPath &result)
 {
-    if (path.empty()) return VPath();
-
-    mResult = {};
-    mResult.reserve(path.points().size(), path.elements().size());
+    mResult = &result;
+    mResult->reserve(path.points().size(), path.elements().size());
     mIndex = 0;
     const std::vector<VPath::Element> &elms = path.elements();
     const std::vector<VPointF> &       pts = path.points();
@@ -209,10 +220,35 @@ VPath VDasher::dashed(const VPath &path)
         }
         }
     }
-    if (mResult.points().size() > SHRT_MAX) {
-        mResult.reset();
-    }
-    return std::move(mResult);
+    mResult = nullptr;
+}
+
+void VDasher::dashed(const VPath &path, VPath &result)
+{
+    if (mNoLength && mNoGap) return result.reset();
+
+    if (path.empty() || mNoLength) return result.reset();
+
+    if (mNoGap) return result.clone(path);
+
+    result.reset();
+
+    dashHelper(path, result);
+}
+
+VPath VDasher::dashed(const VPath &path)
+{
+    if (mNoLength && mNoGap) return path;
+
+    if (path.empty() || mNoLength) return VPath();
+
+    if (mNoGap) return path;
+
+    VPath result;
+
+    dashHelper(path, result);
+
+    return result;
 }
 
 V_END_NAMESPACE

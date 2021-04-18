@@ -1,6 +1,6 @@
 // Tencent is pleased to support the open source community by making RapidJSON available.
 // 
-// Copyright (C) 2015 THL A29 Limited, a Tencent company, and Milo Yip. All rights reserved.
+// Copyright (C) 2015 THL A29 Limited, a Tencent company, and Milo Yip.
 //
 // Licensed under the MIT License (the "License"); you may not use this file except
 // in compliance with the License. You may obtain a copy of the License at
@@ -24,6 +24,9 @@
 #include "encodedstream.h"
 #include <new>      // placement new
 #include <limits>
+#ifdef __cpp_lib_three_way_comparison
+#include <compare>
+#endif
 
 RAPIDJSON_DIAG_PUSH
 #ifdef __clang__
@@ -56,6 +59,48 @@ class GenericValue;
 template <typename Encoding, typename Allocator, typename StackAllocator>
 class GenericDocument;
 
+/*! \def RAPIDJSON_DEFAULT_ALLOCATOR
+    \ingroup RAPIDJSON_CONFIG
+    \brief Allows to choose default allocator.
+
+    User can define this to use CrtAllocator or MemoryPoolAllocator.
+*/
+#ifndef RAPIDJSON_DEFAULT_ALLOCATOR
+#define RAPIDJSON_DEFAULT_ALLOCATOR MemoryPoolAllocator<CrtAllocator>
+#endif
+
+/*! \def RAPIDJSON_DEFAULT_STACK_ALLOCATOR
+    \ingroup RAPIDJSON_CONFIG
+    \brief Allows to choose default stack allocator for Document.
+
+    User can define this to use CrtAllocator or MemoryPoolAllocator.
+*/
+#ifndef RAPIDJSON_DEFAULT_STACK_ALLOCATOR
+#define RAPIDJSON_DEFAULT_STACK_ALLOCATOR CrtAllocator
+#endif
+
+/*! \def RAPIDJSON_VALUE_DEFAULT_OBJECT_CAPACITY
+    \ingroup RAPIDJSON_CONFIG
+    \brief User defined kDefaultObjectCapacity value.
+
+    User can define this as any natural number.
+*/
+#ifndef RAPIDJSON_VALUE_DEFAULT_OBJECT_CAPACITY
+// number of objects that rapidjson::Value allocates memory for by default
+#define RAPIDJSON_VALUE_DEFAULT_OBJECT_CAPACITY 16
+#endif
+
+/*! \def RAPIDJSON_VALUE_DEFAULT_ARRAY_CAPACITY
+    \ingroup RAPIDJSON_CONFIG
+    \brief User defined kDefaultArrayCapacity value.
+
+    User can define this as any natural number.
+*/
+#ifndef RAPIDJSON_VALUE_DEFAULT_ARRAY_CAPACITY
+// number of array elements that rapidjson::Value allocates memory for by default
+#define RAPIDJSON_VALUE_DEFAULT_ARRAY_CAPACITY 16
+#endif
+
 //! Name-value pair in a JSON object value.
 /*!
     This class was internal to GenericValue. It used to be a inner struct.
@@ -63,15 +108,45 @@ class GenericDocument;
     https://code.google.com/p/rapidjson/issues/detail?id=64
 */
 template <typename Encoding, typename Allocator> 
-struct GenericMember { 
+class GenericMember {
+public:
     GenericValue<Encoding, Allocator> name;     //!< name of member (must be a string)
     GenericValue<Encoding, Allocator> value;    //!< value of member.
+
+#if RAPIDJSON_HAS_CXX11_RVALUE_REFS
+    //! Move constructor in C++11
+    GenericMember(GenericMember&& rhs) RAPIDJSON_NOEXCEPT
+        : name(std::move(rhs.name)),
+          value(std::move(rhs.value))
+    {
+    }
+
+    //! Move assignment in C++11
+    GenericMember& operator=(GenericMember&& rhs) RAPIDJSON_NOEXCEPT {
+        return *this = static_cast<GenericMember&>(rhs);
+    }
+#endif
+
+    //! Assignment with move semantics.
+    /*! \param rhs Source of the assignment. Its name and value will become a null value after assignment.
+    */
+    GenericMember& operator=(GenericMember& rhs) RAPIDJSON_NOEXCEPT {
+        if (RAPIDJSON_LIKELY(this != &rhs)) {
+            name = rhs.name;
+            value = rhs.value;
+        }
+        return *this;
+    }
 
     // swap() for std::sort() and other potential use in STL.
     friend inline void swap(GenericMember& a, GenericMember& b) RAPIDJSON_NOEXCEPT {
         a.name.Swap(b.name);
         a.value.Swap(b.value);
     }
+
+private:
+    //! Copy constructor is not permitted.
+    GenericMember(const GenericMember& rhs);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -175,12 +250,16 @@ public:
 
     //! @name relations
     //@{
-    bool operator==(ConstIterator that) const { return ptr_ == that.ptr_; }
-    bool operator!=(ConstIterator that) const { return ptr_ != that.ptr_; }
-    bool operator<=(ConstIterator that) const { return ptr_ <= that.ptr_; }
-    bool operator>=(ConstIterator that) const { return ptr_ >= that.ptr_; }
-    bool operator< (ConstIterator that) const { return ptr_ < that.ptr_; }
-    bool operator> (ConstIterator that) const { return ptr_ > that.ptr_; }
+    template <bool Const_> bool operator==(const GenericMemberIterator<Const_, Encoding, Allocator>& that) const { return ptr_ == that.ptr_; }
+    template <bool Const_> bool operator!=(const GenericMemberIterator<Const_, Encoding, Allocator>& that) const { return ptr_ != that.ptr_; }
+    template <bool Const_> bool operator<=(const GenericMemberIterator<Const_, Encoding, Allocator>& that) const { return ptr_ <= that.ptr_; }
+    template <bool Const_> bool operator>=(const GenericMemberIterator<Const_, Encoding, Allocator>& that) const { return ptr_ >= that.ptr_; }
+    template <bool Const_> bool operator< (const GenericMemberIterator<Const_, Encoding, Allocator>& that) const { return ptr_ < that.ptr_; }
+    template <bool Const_> bool operator> (const GenericMemberIterator<Const_, Encoding, Allocator>& that) const { return ptr_ > that.ptr_; }
+
+#ifdef __cpp_lib_three_way_comparison
+    template <bool Const_> std::strong_ordering operator<=>(const GenericMemberIterator<Const_, Encoding, Allocator>& that) const { return ptr_ <=> that.ptr_; }
+#endif
     //@}
 
     //! @name dereference
@@ -205,17 +284,19 @@ private:
 // class-based member iterator implementation disabled, use plain pointers
 
 template <bool Const, typename Encoding, typename Allocator>
-struct GenericMemberIterator;
+class GenericMemberIterator;
 
 //! non-const GenericMemberIterator
 template <typename Encoding, typename Allocator>
-struct GenericMemberIterator<false,Encoding,Allocator> {
+class GenericMemberIterator<false,Encoding,Allocator> {
+public:
     //! use plain pointer as iterator type
     typedef GenericMember<Encoding,Allocator>* Iterator;
 };
 //! const GenericMemberIterator
 template <typename Encoding, typename Allocator>
-struct GenericMemberIterator<true,Encoding,Allocator> {
+class GenericMemberIterator<true,Encoding,Allocator> {
+public:
     //! use plain const pointer as iterator type
     typedef const GenericMember<Encoding,Allocator>* Iterator;
 };
@@ -574,7 +655,7 @@ template <bool, typename> class GenericObject;
     \tparam Encoding    Encoding of the value. (Even non-string values need to have the same encoding in a document)
     \tparam Allocator   Allocator type for allocating memory of object, array and string.
 */
-template <typename Encoding, typename Allocator = MemoryPoolAllocator<> > 
+template <typename Encoding, typename Allocator = RAPIDJSON_DEFAULT_ALLOCATOR >
 class GenericValue {
 public:
     //! Name-value pair in an object.
@@ -1922,25 +2003,26 @@ private:
 
         // Initial flags of different types.
         kNullFlag = kNullType,
-        kTrueFlag = kTrueType | kBoolFlag,
-        kFalseFlag = kFalseType | kBoolFlag,
-        kNumberIntFlag = kNumberType | kNumberFlag | kIntFlag | kInt64Flag,
-        kNumberUintFlag = kNumberType | kNumberFlag | kUintFlag | kUint64Flag | kInt64Flag,
-        kNumberInt64Flag = kNumberType | kNumberFlag | kInt64Flag,
-        kNumberUint64Flag = kNumberType | kNumberFlag | kUint64Flag,
-        kNumberDoubleFlag = kNumberType | kNumberFlag | kDoubleFlag,
-        kNumberAnyFlag = kNumberType | kNumberFlag | kIntFlag | kInt64Flag | kUintFlag | kUint64Flag | kDoubleFlag,
-        kConstStringFlag = kStringType | kStringFlag,
-        kCopyStringFlag = kStringType | kStringFlag | kCopyFlag,
-        kShortStringFlag = kStringType | kStringFlag | kCopyFlag | kInlineStrFlag,
+        // These casts are added to suppress the warning on MSVC about bitwise operations between enums of different types.
+        kTrueFlag = static_cast<int>(kTrueType) | static_cast<int>(kBoolFlag),
+        kFalseFlag = static_cast<int>(kFalseType) | static_cast<int>(kBoolFlag),
+        kNumberIntFlag = static_cast<int>(kNumberType) | static_cast<int>(kNumberFlag | kIntFlag | kInt64Flag),
+        kNumberUintFlag = static_cast<int>(kNumberType) | static_cast<int>(kNumberFlag | kUintFlag | kUint64Flag | kInt64Flag),
+        kNumberInt64Flag = static_cast<int>(kNumberType) | static_cast<int>(kNumberFlag | kInt64Flag),
+        kNumberUint64Flag = static_cast<int>(kNumberType) | static_cast<int>(kNumberFlag | kUint64Flag),
+        kNumberDoubleFlag = static_cast<int>(kNumberType) | static_cast<int>(kNumberFlag | kDoubleFlag),
+        kNumberAnyFlag = static_cast<int>(kNumberType) | static_cast<int>(kNumberFlag | kIntFlag | kInt64Flag | kUintFlag | kUint64Flag | kDoubleFlag),
+        kConstStringFlag = static_cast<int>(kStringType) | static_cast<int>(kStringFlag),
+        kCopyStringFlag = static_cast<int>(kStringType) | static_cast<int>(kStringFlag | kCopyFlag),
+        kShortStringFlag = static_cast<int>(kStringType) | static_cast<int>(kStringFlag | kCopyFlag | kInlineStrFlag),
         kObjectFlag = kObjectType,
         kArrayFlag = kArrayType,
 
         kTypeMask = 0x07
     };
 
-    static const SizeType kDefaultArrayCapacity = 16;
-    static const SizeType kDefaultObjectCapacity = 16;
+    static const SizeType kDefaultArrayCapacity = RAPIDJSON_VALUE_DEFAULT_ARRAY_CAPACITY;
+    static const SizeType kDefaultObjectCapacity = RAPIDJSON_VALUE_DEFAULT_OBJECT_CAPACITY;
 
     struct Flag {
 #if RAPIDJSON_48BITPOINTER_OPTIMIZATION
@@ -2120,7 +2202,7 @@ typedef GenericValue<UTF8<> > Value;
     \tparam StackAllocator Allocator for allocating memory for stack during parsing.
     \warning Although GenericDocument inherits from GenericValue, the API does \b not provide any virtual functions, especially no virtual destructor.  To avoid memory leaks, do not \c delete a GenericDocument object via a pointer to a GenericValue.
 */
-template <typename Encoding, typename Allocator = MemoryPoolAllocator<>, typename StackAllocator = CrtAllocator>
+template <typename Encoding, typename Allocator = RAPIDJSON_DEFAULT_ALLOCATOR, typename StackAllocator = RAPIDJSON_DEFAULT_STACK_ALLOCATOR >
 class GenericDocument : public GenericValue<Encoding, Allocator> {
 public:
     typedef typename Encoding::Ch Ch;                       //!< Character type derived from Encoding.
@@ -2505,6 +2587,7 @@ private:
 //! GenericDocument with UTF8 encoding
 typedef GenericDocument<UTF8<> > Document;
 
+
 //! Helper class for accessing Value of array type.
 /*!
     Instance of this helper class is obtained by \c GenericValue::GetArray().
@@ -2529,6 +2612,7 @@ public:
     GenericArray& operator=(const GenericArray& rhs) { value_ = rhs.value_; return *this; }
     ~GenericArray() {}
 
+    operator ValueType&() const { return value_; }
     SizeType Size() const { return value_.Size(); }
     SizeType Capacity() const { return value_.Capacity(); }
     bool Empty() const { return value_.Empty(); }
@@ -2584,6 +2668,7 @@ public:
     GenericObject& operator=(const GenericObject& rhs) { value_ = rhs.value_; return *this; }
     ~GenericObject() {}
 
+    operator ValueType&() const { return value_; }
     SizeType MemberCount() const { return value_.MemberCount(); }
     SizeType MemberCapacity() const { return value_.MemberCapacity(); }
     bool ObjectEmpty() const { return value_.ObjectEmpty(); }

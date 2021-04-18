@@ -1,6 +1,6 @@
 // Tencent is pleased to support the open source community by making RapidJSON available.
 // 
-// Copyright (C) 2015 THL A29 Limited, a Tencent company, and Milo Yip. All rights reserved.
+// Copyright (C) 2015 THL A29 Limited, a Tencent company, and Milo Yip.
 //
 // Licensed under the MIT License (the "License"); you may not use this file except
 // in compliance with the License. You may obtain a copy of the License at
@@ -60,6 +60,54 @@ inline const RAPIDJSON_ERROR_CHARTYPE* GetParseError_En(ParseErrorCode parseErro
 
         case kParseErrorTermination:                    return RAPIDJSON_ERROR_STRING("Terminate parsing due to Handler error.");
         case kParseErrorUnspecificSyntaxError:          return RAPIDJSON_ERROR_STRING("Unspecific syntax error.");
+
+        default:                                        return RAPIDJSON_ERROR_STRING("Unknown error.");
+    }
+}
+
+//! Maps error code of validation into error message.
+/*!
+    \ingroup RAPIDJSON_ERRORS
+    \param validateErrorCode Error code obtained from validator.
+    \return the error message.
+    \note User can make a copy of this function for localization.
+        Using switch-case is safer for future modification of error codes.
+*/
+inline const RAPIDJSON_ERROR_CHARTYPE* GetValidateError_En(ValidateErrorCode validateErrorCode) {
+    switch (validateErrorCode) {
+        case kValidateErrors:                           return RAPIDJSON_ERROR_STRING("One or more validation errors have occurred");
+        case kValidateErrorNone:                        return RAPIDJSON_ERROR_STRING("No error.");
+
+        case kValidateErrorMultipleOf:                  return RAPIDJSON_ERROR_STRING("Number '%actual' is not a multiple of the 'multipleOf' value '%expected'.");
+        case kValidateErrorMaximum:                     return RAPIDJSON_ERROR_STRING("Number '%actual' is greater than the 'maximum' value '%expected'.");
+        case kValidateErrorExclusiveMaximum:            return RAPIDJSON_ERROR_STRING("Number '%actual' is greater than or equal to the 'exclusiveMaximum' value '%expected'.");
+        case kValidateErrorMinimum:                     return RAPIDJSON_ERROR_STRING("Number '%actual' is less than the 'minimum' value '%expected'.");
+        case kValidateErrorExclusiveMinimum:            return RAPIDJSON_ERROR_STRING("Number '%actual' is less than or equal to the 'exclusiveMinimum' value '%expected'.");
+
+        case kValidateErrorMaxLength:                   return RAPIDJSON_ERROR_STRING("String '%actual' is longer than the 'maxLength' value '%expected'.");
+        case kValidateErrorMinLength:                   return RAPIDJSON_ERROR_STRING("String '%actual' is shorter than the 'minLength' value '%expected'.");
+        case kValidateErrorPattern:                     return RAPIDJSON_ERROR_STRING("String '%actual' does not match the 'pattern' regular expression.");
+
+        case kValidateErrorMaxItems:                    return RAPIDJSON_ERROR_STRING("Array of length '%actual' is longer than the 'maxItems' value '%expected'.");
+        case kValidateErrorMinItems:                    return RAPIDJSON_ERROR_STRING("Array of length '%actual' is shorter than the 'minItems' value '%expected'.");
+        case kValidateErrorUniqueItems:                 return RAPIDJSON_ERROR_STRING("Array has duplicate items at indices '%duplicates' but 'uniqueItems' is true.");
+        case kValidateErrorAdditionalItems:             return RAPIDJSON_ERROR_STRING("Array has an additional item at index '%disallowed' that is not allowed by the schema.");
+
+        case kValidateErrorMaxProperties:               return RAPIDJSON_ERROR_STRING("Object has '%actual' members which is more than 'maxProperties' value '%expected'.");
+        case kValidateErrorMinProperties:               return RAPIDJSON_ERROR_STRING("Object has '%actual' members which is less than 'minProperties' value '%expected'.");
+        case kValidateErrorRequired:                    return RAPIDJSON_ERROR_STRING("Object is missing the following members required by the schema: '%missing'.");
+        case kValidateErrorAdditionalProperties:        return RAPIDJSON_ERROR_STRING("Object has an additional member '%disallowed' that is not allowed by the schema.");
+        case kValidateErrorPatternProperties:           return RAPIDJSON_ERROR_STRING("Object has 'patternProperties' that are not allowed by the schema.");
+        case kValidateErrorDependencies:                return RAPIDJSON_ERROR_STRING("Object has missing property or schema dependencies, refer to following errors.");
+
+        case kValidateErrorEnum:                        return RAPIDJSON_ERROR_STRING("Property has a value that is not one of its allowed enumerated values.");
+        case kValidateErrorType:                        return RAPIDJSON_ERROR_STRING("Property has a type '%actual' that is not in the following list: '%expected'.");
+
+        case kValidateErrorOneOf:                       return RAPIDJSON_ERROR_STRING("Property did not match any of the sub-schemas specified by 'oneOf', refer to following errors.");
+        case kValidateErrorOneOfMatch:                  return RAPIDJSON_ERROR_STRING("Property matched more than one of the sub-schemas specified by 'oneOf'.");
+        case kValidateErrorAllOf:                       return RAPIDJSON_ERROR_STRING("Property did not match all of the sub-schemas specified by 'allOf', refer to following errors.");
+        case kValidateErrorAnyOf:                       return RAPIDJSON_ERROR_STRING("Property did not match any of the sub-schemas specified by 'anyOf', refer to following errors.");
+        case kValidateErrorNot:                         return RAPIDJSON_ERROR_STRING("Property matched the sub-schema specified by 'not'.");
 
         default:                                        return RAPIDJSON_ERROR_STRING("Unknown error.");
     }

@@ -1,6 +1,6 @@
 // Tencent is pleased to support the open source community by making RapidJSON available.
 // 
-// Copyright (C) 2015 THL A29 Limited, a Tencent company, and Milo Yip. All rights reserved.
+// Copyright (C) 2015 THL A29 Limited, a Tencent company, and Milo Yip.
 //
 // Licensed under the MIT License (the "License"); you may not use this file except
 // in compliance with the License. You may obtain a copy of the License at
@@ -16,6 +16,7 @@
 #define RAPIDJSON_WRITER_H_
 
 #include "stream.h"
+#include "internal/clzll.h"
 #include "internal/meta.h"
 #include "internal/stack.h"
 #include "internal/strfunc.h"
@@ -226,7 +227,7 @@ public:
       return Key(str.data(), SizeType(str.size()));
     }
 #endif
-	
+
     bool EndObject(SizeType memberCount = 0) {
         (void)memberCount;
         RAPIDJSON_ASSERT(level_stack_.GetSize() >= sizeof(Level)); // not inside an Object
@@ -282,6 +283,8 @@ public:
         os_->Flush();
     }
 
+    static const size_t kDefaultLevelDepth = 32;
+
 protected:
     //! Information for each nested level
     struct Level {
@@ -289,8 +292,6 @@ protected:
         size_t valueCount;  //!< number of values in this level
         bool inArray;       //!< true if in array, otherwise in object
     };
-
-    static const size_t kDefaultLevelDepth = 32;
 
     bool WriteNull()  {
         PutReserve(*os_, 4);
@@ -668,19 +669,19 @@ inline bool Writer<StringBuffer>::ScanWriteUnescapedString(StringStream& is, siz
         x = vorrq_u8(x, vcltq_u8(s, s3));
 
         x = vrev64q_u8(x);                     // Rev in 64
-        uint64_t low = vgetq_lane_u64(reinterpret_cast<uint64x2_t>(x), 0);   // extract
-        uint64_t high = vgetq_lane_u64(reinterpret_cast<uint64x2_t>(x), 1);  // extract
+        uint64_t low = vgetq_lane_u64(vreinterpretq_u64_u8(x), 0);   // extract
+        uint64_t high = vgetq_lane_u64(vreinterpretq_u64_u8(x), 1);  // extract
 
         SizeType len = 0;
         bool escaped = false;
         if (low == 0) {
             if (high != 0) {
-                unsigned lz = (unsigned)__builtin_clzll(high);
+                uint32_t lz = internal::clzll(high);
                 len = 8 + (lz >> 3);
                 escaped = true;
             }
         } else {
-            unsigned lz = (unsigned)__builtin_clzll(low);
+            uint32_t lz = internal::clzll(low);
             len = lz >> 3;
             escaped = true;
         }

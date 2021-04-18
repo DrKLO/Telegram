@@ -191,7 +191,8 @@ JNIEXPORT void Java_org_telegram_ui_Components_RLottieDrawable_setLayerColor(JNI
     }
     LottieInfo *info = (LottieInfo *) (intptr_t) ptr;
     char const *layerString = env->GetStringUTFChars(layer, 0);
-    info->animation->setValue<Property::Color>(layerString, Color(((color) & 0xff) / 255.0f, ((color >> 8) & 0xff) / 255.0f, ((color >> 16) & 0xff) / 255.0f));
+    info->animation->setValue<Property::FillColor>(layerString, Color(((color) & 0xff) / 255.0f, ((color >> 8) & 0xff) / 255.0f, ((color >> 16) & 0xff) / 255.0f));
+    info->animation->setValue<Property::StrokeColor>(layerString, Color(((color) & 0xff) / 255.0f, ((color >> 8) & 0xff) / 255.0f, ((color >> 16) & 0xff) / 255.0f));
     if (layerString != 0) {
         env->ReleaseStringUTFChars(layer, layerString);
     }

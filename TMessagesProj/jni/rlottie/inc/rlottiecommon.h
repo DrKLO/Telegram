@@ -1,44 +1,40 @@
-/* 
- * Copyright (c) 2018 Samsung Electronics Co., Ltd. All rights reserved.
- * 
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- * 
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+/*
+ * Copyright (c) 2020 Samsung Electronics Co., Ltd. All rights reserved.
+
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 #ifndef _RLOTTIE_COMMON_H_
 #define _RLOTTIE_COMMON_H_
 
-#ifdef _WIN32
-#ifdef LOT_BUILD
-#ifdef DLL_EXPORT
-#define LOT_EXPORT __declspec(dllexport)
+#if defined _WIN32 || defined __CYGWIN__
+  #ifdef RLOTTIE_BUILD
+    #define RLOTTIE_API __declspec(dllexport)
+  #else
+    #define RLOTTIE_API __declspec(dllimport)
+  #endif
 #else
-#define LOT_EXPORT
-#endif
-#else
-#define LOT_EXPORT __declspec(dllimport)
-#endif
-#else
-#ifdef __GNUC__
-#if __GNUC__ >= 4
-#define LOT_EXPORT __attribute__((visibility("default")))
-#else
-#define LOT_EXPORT
-#endif
-#else
-#define LOT_EXPORT
-#endif
+  #ifdef RLOTTIE_BUILD
+      #define RLOTTIE_API __attribute__ ((visibility ("default")))
+  #else
+      #define RLOTTIE_API
+  #endif
 #endif
 
 
@@ -59,22 +55,6 @@
 /**
  * @ingroup Lottie_Animation
  */
-
-
-/**
- * @brief Enumeration for Lottie Player error code.
- */
-typedef enum
-{
-   //TODO: Coding convention??
-    LOT_ANIMATION_ERROR_NONE = 0,
-    LOT_ANIMATION_ERROR_NOT_PERMITTED,
-    LOT_ANIMATION_ERROR_OUT_OF_MEMORY,
-    LOT_ANIMATION_ERROR_INVALID_PARAMETER,
-    LOT_ANIMATION_ERROR_RESULT_OUT_OF_RANGE,
-    LOT_ANIMATION_ERROR_ALREADY_IN_PROGRESS,
-    LOT_ANIMATION_ERROR_UNKNOWN
-} LOTErrorType;
 
 typedef enum
 {
@@ -125,12 +105,12 @@ typedef enum
 typedef struct LOTMask {
     struct {
         const float *ptPtr;
-        int          ptCount;
+        size_t       ptCount;
         const char*  elmPtr;
-        int          elmCount;
+        size_t       elmCount;
     } mPath;
     LOTMaskType mMode;
-    int mAlpha;
+    unsigned char mAlpha;
 }LOTMask;
 
 typedef enum
@@ -142,6 +122,17 @@ typedef enum
     MatteLumaInv
 } LOTMatteType;
 
+typedef struct LOTMarker {
+   char *name;
+   size_t startframe;
+   size_t endframe;
+} LOTMarker;
+
+typedef struct LOTMarkerList {
+   LOTMarker *ptr;
+   size_t size;
+} LOTMarkerList;
+
 typedef struct LOTNode {
 
 #define ChangeFlagNone 0x0000
@@ -151,9 +142,9 @@ typedef struct LOTNode {
 
     struct {
         const float *ptPtr;
-        int          ptCount;
-        const char*  elmPtr;
-        int          elmCount;
+        size_t       ptCount;
+        const char  *elmPtr;
+        size_t       elmCount;
     } mPath;
 
     struct {
@@ -162,18 +153,18 @@ typedef struct LOTNode {
 
     struct {
         unsigned char  enable;
-        int       width;
+        float       width;
         LOTCapStyle  cap;
         LOTJoinStyle join;
-        int       meterLimit;
-        float*    dashArray;
+        float       miterLimit;
+        float    *dashArray;
         int       dashArraySize;
     } mStroke;
 
     struct {
-        LOTGradientType type;
+        LOTGradientType  type;
         LOTGradientStop *stopPtr;
-        unsigned int stopCount;
+        size_t           stopCount;
         struct {
             float x, y;
         } start, end, center, focal;
@@ -182,9 +173,10 @@ typedef struct LOTNode {
     } mGradient;
 
     struct {
-        unsigned char* data;
-        int width;
-        int height;
+        unsigned char *data;
+        size_t width;
+        size_t height;
+        unsigned char mAlpha;
         struct {
            float m11; float m12; float m13;
            float m21; float m22; float m23;
@@ -195,6 +187,8 @@ typedef struct LOTNode {
     int       mFlag;
     LOTBrushType mBrushType;
     LOTFillRule  mFillRule;
+
+    const char  *keypath;
 } LOTNode;
 
 
@@ -203,30 +197,30 @@ typedef struct LOTLayerNode {
 
     struct {
         LOTMask        *ptr;
-        unsigned int    size;
+        size_t          size;
     } mMaskList;
 
     struct {
         const float *ptPtr;
-        int          ptCount;
-        const char*  elmPtr;
-        int          elmCount;
+        size_t       ptCount;
+        const char  *elmPtr;
+        size_t       elmCount;
     } mClipPath;
 
     struct {
         struct LOTLayerNode   **ptr;
-        unsigned int          size;
+        size_t                  size;
     } mLayerList;
 
     struct {
         LOTNode        **ptr;
-        unsigned int   size;
+        size_t           size;
     } mNodeList;
 
     LOTMatteType mMatte;
     int          mVisible;
-    int          mAlpha;
-    const char  *name;
+    unsigned char mAlpha;
+    const char  *keypath;
 
 } LOTLayerNode;
 

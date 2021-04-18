@@ -1,6 +1,6 @@
 // Tencent is pleased to support the open source community by making RapidJSON available.
 // 
-// Copyright (C) 2015 THL A29 Limited, a Tencent company, and Milo Yip. All rights reserved.
+// Copyright (C) 2015 THL A29 Limited, a Tencent company, and Milo Yip.
 //
 // Licensed under the MIT License (the "License"); you may not use this file except
 // in compliance with the License. You may obtain a copy of the License at
@@ -77,19 +77,19 @@ public:
     static const bool kNeedFree = true;
     void* Malloc(size_t size) { 
         if (size) //  behavior of malloc(0) is implementation defined.
-            return std::malloc(size);
+            return RAPIDJSON_MALLOC(size);
         else
             return NULL; // standardize to returning NULL.
     }
     void* Realloc(void* originalPtr, size_t originalSize, size_t newSize) {
         (void)originalSize;
         if (newSize == 0) {
-            std::free(originalPtr);
+            RAPIDJSON_FREE(originalPtr);
             return NULL;
         }
-        return std::realloc(originalPtr, newSize);
+        return RAPIDJSON_REALLOC(originalPtr, newSize);
     }
-    static void Free(void *ptr) { std::free(ptr); }
+    static void Free(void *ptr) { RAPIDJSON_FREE(ptr); }
 };
 
 ///////////////////////////////////////////////////////////////////////////////

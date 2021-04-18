@@ -1,19 +1,24 @@
 /*
- * Copyright (c) 2018 Samsung Electronics Co., Ltd. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
+ * Copyright (c) 2020 Samsung Electronics Co., Ltd. All rights reserved.
+
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in
+ all
+ * copies or substantial portions of the Software.
+
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 #include "vrle.h"
@@ -21,59 +26,53 @@
 #include <algorithm>
 #include <array>
 #include <cstdlib>
+#include <cstring>
+#include <limits>
 #include <vector>
 #include "vdebug.h"
 #include "vglobal.h"
-#include "vregion.h"
 
 V_BEGIN_NAMESPACE
 
-enum class Operation { Add, Xor };
-
-struct VRleHelper {
-    size_t      alloc;
-    size_t      size;
-    VRle::Span *spans;
-};
-static void rleIntersectWithRle(VRleHelper *, int, int, VRleHelper *,
-                                VRleHelper *);
-static void rleIntersectWithRect(const VRect &, VRleHelper *, VRleHelper *);
-static void rleOpGeneric(VRleHelper *, VRleHelper *, VRleHelper *,
-                         Operation op);
-static void rleSubstractWithRle(VRleHelper *, VRleHelper *, VRleHelper *);
+using Result = std::array<VRle::Span, 255>;
+using rle_view = VRle::View;
+static size_t _opGeneric(rle_view &a, rle_view &b, Result &result,
+                         VRle::Data::Op op);
+static size_t _opIntersect(const VRect &, rle_view &, Result &);
+static size_t _opIntersect(rle_view &, rle_view &, Result &);
 
 static inline uchar divBy255(int x)
 {
     return (x + (x >> 8) + 0x80) >> 8;
 }
 
-inline static void copyArrayToVector(const VRle::Span *span, size_t count,
-                                     std::vector<VRle::Span> &v)
+inline static void copy(const VRle::Span *span, size_t count,
+                        std::vector<VRle::Span> &v)
 {
     // make sure enough memory available
     if (v.capacity() < v.size() + count) v.reserve(v.size() + count);
     std::copy(span, span + count, back_inserter(v));
 }
 
-void VRle::VRleData::addSpan(const VRle::Span *span, size_t count)
+void VRle::Data::addSpan(const VRle::Span *span, size_t count)
 {
-    copyArrayToVector(span, count, mSpans);
+    copy(span, count, mSpans);
     mBboxDirty = true;
 }
 
-VRect VRle::VRleData::bbox() const
+VRect VRle::Data::bbox() const
 {
     updateBbox();
     return mBbox;
 }
 
-void VRle::VRleData::setBbox(const VRect &bbox) const
+void VRle::Data::setBbox(const VRect &bbox) const
 {
     mBboxDirty = false;
     mBbox = bbox;
 }
 
-void VRle::VRleData::reset()
+void VRle::Data::reset()
 {
     mSpans.clear();
     mBbox = VRect();
@@ -81,12 +80,12 @@ void VRle::VRleData::reset()
     mBboxDirty = false;
 }
 
-void VRle::VRleData::clone(const VRle::VRleData &o)
+void VRle::Data::clone(const VRle::Data &o)
 {
     *this = o;
 }
 
-void VRle::VRleData::translate(const VPoint &p)
+void VRle::Data::translate(const VPoint &p)
 {
     // take care of last offset if applied
     mOffset = p - mOffset;
@@ -100,7 +99,7 @@ void VRle::VRleData::translate(const VPoint &p)
     mBbox.translate(mOffset.x(), mOffset.y());
 }
 
-void VRle::VRleData::addRect(const VRect &rect)
+void VRle::Data::addRect(const VRect &rect)
 {
     int x = rect.left();
     int y = rect.top();
@@ -117,10 +116,10 @@ void VRle::VRleData::addRect(const VRect &rect)
         span.coverage = 255;
         mSpans.push_back(span);
     }
-    updateBbox();
+    mBbox = rect;
 }
 
-void VRle::VRleData::updateBbox() const
+void VRle::Data::updateBbox() const
 {
     if (!mBboxDirty) return;
 
@@ -143,23 +142,15 @@ void VRle::VRleData::updateBbox() const
     }
 }
 
-void VRle::VRleData::invert()
+void VRle::Data::operator*=(uchar alpha)
 {
-    for (auto &i : mSpans) {
-        i.coverage = 255 - i.coverage;
-    }
-}
-
-void VRle::VRleData::operator*=(int alpha)
-{
-    alpha &= 0xff;
     for (auto &i : mSpans) {
         i.coverage = divBy255(i.coverage * alpha);
     }
 }
 
-void VRle::VRleData::opIntersect(const VRect &r, VRle::VRleSpanCb cb,
-                                 void *userData) const
+void VRle::Data::opIntersect(const VRect &r, VRle::VRleSpanCb cb,
+                             void *userData) const
 {
     if (empty()) return;
 
@@ -168,206 +159,162 @@ void VRle::VRleData::opIntersect(const VRect &r, VRle::VRleSpanCb cb,
         return;
     }
 
-    VRect                       clip = r;
-    VRleHelper                  tresult, tmp_obj;
-    std::array<VRle::Span, 256> array;
-
-    // setup the tresult object
-    tresult.size = array.size();
-    tresult.alloc = array.size();
-    tresult.spans = array.data();
-
-    // setup tmp object
-    tmp_obj.size = mSpans.size();
-    tmp_obj.spans = const_cast<VRle::Span *>(mSpans.data());
-
+    auto   obj = view();
+    Result result;
     // run till all the spans are processed
-    while (tmp_obj.size) {
-        rleIntersectWithRect(clip, &tmp_obj, &tresult);
-        if (tresult.size) {
-            cb(tresult.size, tresult.spans, userData);
-        }
-        tresult.size = 0;
+    while (obj.size()) {
+        auto count = _opIntersect(r, obj, result);
+        if (count) cb(count, result.data(), userData);
     }
 }
 
 // res = a - b;
-void VRle::VRleData::opSubstract(const VRle::VRleData &a,
-                                 const VRle::VRleData &b)
+void VRle::Data::opSubstract(const VRle::Data &aObj, const VRle::Data &bObj)
 {
     // if two rle are disjoint
-    if (!a.bbox().intersects(b.bbox())) {
-        mSpans = a.mSpans;
+    if (!aObj.bbox().intersects(bObj.bbox())) {
+        mSpans = aObj.mSpans;
     } else {
-        VRle::Span *      aPtr = const_cast<VRle::Span *>(a.mSpans.data());
-        const VRle::Span *aEnd = a.mSpans.data() + a.mSpans.size();
-        VRle::Span *      bPtr = const_cast<VRle::Span *>(b.mSpans.data());
-        const VRle::Span *bEnd = b.mSpans.data() + b.mSpans.size();
+        auto a = aObj.view();
+        auto b = bObj.view();
 
-        // 1. forward till both y intersect
+        auto aPtr = a.data();
+        auto aEnd = a.data() + a.size();
+        auto bPtr = b.data();
+        auto bEnd = b.data() + b.size();
+
+        // 1. forward a till it intersects with b
         while ((aPtr != aEnd) && (aPtr->y < bPtr->y)) aPtr++;
-        size_t sizeA = size_t(aPtr - a.mSpans.data());
-        if (sizeA) copyArrayToVector(a.mSpans.data(), sizeA, mSpans);
+        auto count = aPtr - a.data();
+        if (count) copy(a.data(), count, mSpans);
 
-        // 2. forward b till it intersect with a.
-        while ((bPtr != bEnd) && (bPtr->y < aPtr->y)) bPtr++;
-        size_t sizeB = size_t(bPtr - b.mSpans.data());
+        // 2. forward b till it intersects with a
+        if (aPtr != aEnd)
+            while ((bPtr != bEnd) && (bPtr->y < aPtr->y)) bPtr++;
 
-        // 2. calculate the intersect region
-        VRleHelper                  tresult, aObj, bObj;
-        std::array<VRle::Span, 256> array;
+        // update a and b object
+        a = {aPtr, size_t(aEnd - aPtr)};
+        b = {bPtr, size_t(bEnd - bPtr)};
 
-        // setup the tresult object
-        tresult.size = array.size();
-        tresult.alloc = array.size();
-        tresult.spans = array.data();
-
-        // setup a object
-        aObj.size = a.mSpans.size() - sizeA;
-        aObj.spans = aPtr;
-
-        // setup b object
-        bObj.size = b.mSpans.size() - sizeB;
-        bObj.spans = bPtr;
+        // 3. calculate the intersect region
+        Result result;
 
         // run till all the spans are processed
-        while (aObj.size && bObj.size) {
-            rleSubstractWithRle(&aObj, &bObj, &tresult);
-            if (tresult.size) {
-                copyArrayToVector(tresult.spans, tresult.size, mSpans);
-            }
-            tresult.size = 0;
+        while (a.size() && b.size()) {
+            auto count = _opGeneric(a, b, result, Op::Substract);
+            if (count) copy(result.data(), count, mSpans);
         }
-        // 3. copy the rest of a
-        if (aObj.size) copyArrayToVector(aObj.spans, aObj.size, mSpans);
+
+        // 4. copy the rest of a
+        if (a.size()) copy(a.data(), a.size(), mSpans);
     }
 
     mBboxDirty = true;
 }
 
-void VRle::VRleData::opGeneric(const VRle::VRleData &a, const VRle::VRleData &b,
-                               OpCode code)
+void VRle::Data::opGeneric(const VRle::Data &aObj, const VRle::Data &bObj,
+                           Op op)
 {
     // This routine assumes, obj1(span_y) < obj2(span_y).
 
+    auto a = aObj.view();
+    auto b = bObj.view();
+
     // reserve some space for the result vector.
-    mSpans.reserve(a.mSpans.size() + b.mSpans.size());
+    mSpans.reserve(a.size() + b.size());
 
     // if two rle are disjoint
-    if (!a.bbox().intersects(b.bbox())) {
-        if (a.mSpans[0].y < b.mSpans[0].y) {
-            copyArrayToVector(a.mSpans.data(), a.mSpans.size(), mSpans);
-            copyArrayToVector(b.mSpans.data(), b.mSpans.size(), mSpans);
+    if (!aObj.bbox().intersects(bObj.bbox())) {
+        if (a.data()[0].y < b.data()[0].y) {
+            copy(a.data(), a.size(), mSpans);
+            copy(b.data(), b.size(), mSpans);
         } else {
-            copyArrayToVector(b.mSpans.data(), b.mSpans.size(), mSpans);
-            copyArrayToVector(a.mSpans.data(), a.mSpans.size(), mSpans);
+            copy(b.data(), b.size(), mSpans);
+            copy(a.data(), a.size(), mSpans);
         }
     } else {
-        VRle::Span *      aPtr = const_cast<VRle::Span *>(a.mSpans.data());
-        const VRle::Span *aEnd = a.mSpans.data() + a.mSpans.size();
-        VRle::Span *      bPtr = const_cast<VRle::Span *>(b.mSpans.data());
-        const VRle::Span *bEnd = b.mSpans.data() + b.mSpans.size();
+        auto aPtr = a.data();
+        auto aEnd = a.data() + a.size();
+        auto bPtr = b.data();
+        auto bEnd = b.data() + b.size();
 
         // 1. forward a till it intersects with b
         while ((aPtr != aEnd) && (aPtr->y < bPtr->y)) aPtr++;
-        size_t sizeA = size_t(aPtr - a.mSpans.data());
-        if (sizeA) copyArrayToVector(a.mSpans.data(), sizeA, mSpans);
+
+        auto count = aPtr - a.data();
+        if (count) copy(a.data(), count, mSpans);
 
         // 2. forward b till it intersects with a
-        while ((bPtr != bEnd) && (bPtr->y < aPtr->y)) bPtr++;
-        size_t sizeB = size_t(bPtr - b.mSpans.data());
-        if (sizeB) copyArrayToVector(b.mSpans.data(), sizeB, mSpans);
+        if (aPtr != aEnd)
+            while ((bPtr != bEnd) && (bPtr->y < aPtr->y)) bPtr++;
+
+        count = bPtr - b.data();
+        if (count) copy(b.data(), count, mSpans);
+
+        // update a and b object
+        a = {aPtr, size_t(aEnd - aPtr)};
+        b = {bPtr, size_t(bEnd - bPtr)};
 
         // 3. calculate the intersect region
-        VRleHelper                  tresult, aObj, bObj;
-        std::array<VRle::Span, 256> array;
+        Result result;
 
-        // setup the tresult object
-        tresult.size = array.size();
-        tresult.alloc = array.size();
-        tresult.spans = array.data();
-
-        // setup a object
-        aObj.size = a.mSpans.size() - sizeA;
-        aObj.spans = aPtr;
-
-        // setup b object
-        bObj.size = b.mSpans.size() - sizeB;
-        bObj.spans = bPtr;
-
-        Operation op = Operation::Add;
-        switch (code) {
-        case OpCode::Add:
-            op = Operation::Add;
-            break;
-        case OpCode::Xor:
-            op = Operation::Xor;
-            break;
-        }
         // run till all the spans are processed
-        while (aObj.size && bObj.size) {
-            rleOpGeneric(&aObj, &bObj, &tresult, op);
-            if (tresult.size) {
-                copyArrayToVector(tresult.spans, tresult.size, mSpans);
-            }
-            tresult.size = 0;
+        while (a.size() && b.size()) {
+            auto count = _opGeneric(a, b, result, op);
+            if (count) copy(result.data(), count, mSpans);
         }
         // 3. copy the rest
-        if (bObj.size) copyArrayToVector(bObj.spans, bObj.size, mSpans);
-        if (aObj.size) copyArrayToVector(aObj.spans, aObj.size, mSpans);
+        if (b.size()) copy(b.data(), b.size(), mSpans);
+        if (a.size()) copy(a.data(), a.size(), mSpans);
     }
 
-    // update result bounding box
-    VRegion reg(a.bbox());
-    reg += b.bbox();
-    mBbox = reg.boundingRect();
-    mBboxDirty = false;
+    mBboxDirty = true;
 }
 
-static void rle_cb(size_t count, const VRle::Span *spans, void *userData)
+static inline V_ALWAYS_INLINE void _opIntersectPrepare(VRle::View &a,
+                                                       VRle::View &b)
 {
-    auto vector = static_cast<std::vector<VRle::Span> *>(userData);
-    copyArrayToVector(spans, count, *vector);
+    auto aPtr = a.data();
+    auto aEnd = a.data() + a.size();
+    auto bPtr = b.data();
+    auto bEnd = b.data() + b.size();
+
+    // 1. advance a till it intersects with b
+    while ((aPtr != aEnd) && (aPtr->y < bPtr->y)) aPtr++;
+
+    // 2. advance b till it intersects with a
+    if (aPtr != aEnd)
+        while ((bPtr != bEnd) && (bPtr->y < aPtr->y)) bPtr++;
+
+    // update a and b object
+    a = {aPtr, size_t(aEnd - aPtr)};
+    b = {bPtr, size_t(bEnd - bPtr)};
 }
 
-void opIntersectHelper(const VRle::VRleData &obj1, const VRle::VRleData &obj2,
-                       VRle::VRleSpanCb cb, void *userData)
+void VRle::Data::opIntersect(VRle::View a, VRle::View b)
 {
-    VRleHelper                  result, source, clip;
-    std::array<VRle::Span, 256> array;
-
-    // setup the tresult object
-    result.size = array.size();
-    result.alloc = array.size();
-    result.spans = array.data();
-
-    // setup tmp object
-    source.size = obj1.mSpans.size();
-    source.spans = const_cast<VRle::Span *>(obj1.mSpans.data());
-
-    // setup tmp clip object
-    clip.size = obj2.mSpans.size();
-    clip.spans = const_cast<VRle::Span *>(obj2.mSpans.data());
-
-    // run till all the spans are processed
-    while (source.size) {
-        rleIntersectWithRle(&clip, 0, 0, &source, &result);
-        if (result.size) {
-            cb(result.size, result.spans, userData);
-        }
-        result.size = 0;
+    _opIntersectPrepare(a, b);
+    Result result;
+    while (a.size()) {
+        auto count = _opIntersect(a, b, result);
+        if (count) copy(result.data(), count, mSpans);
     }
-}
 
-void VRle::VRleData::opIntersect(const VRle::VRleData &obj1,
-                                 const VRle::VRleData &obj2)
-{
-    opIntersectHelper(obj1, obj2, rle_cb, &mSpans);
     updateBbox();
 }
 
-#define VMIN(a, b) ((a) < (b) ? (a) : (b))
-#define VMAX(a, b) ((a) > (b) ? (a) : (b))
+static void _opIntersect(rle_view a, rle_view b, VRle::VRleSpanCb cb,
+                         void *userData)
+{
+    if (!cb) return;
+
+    _opIntersectPrepare(a, b);
+    Result result;
+    while (a.size()) {
+        auto count = _opIntersect(a, b, result);
+        if (count) cb(count, result.data(), userData);
+    }
+}
 
 /*
  * This function will clip a rle list with another rle object
@@ -379,35 +326,34 @@ void VRle::VRleData::opIntersect(const VRle::VRleData &obj1,
  *       that are yet to be processed as well as the tpm_clip object
  *       with the unprocessed clip spans.
  */
-static void rleIntersectWithRle(VRleHelper *tmp_clip, int clip_offset_x,
-                                int clip_offset_y, VRleHelper *tmp_obj,
-                                VRleHelper *result)
+
+static size_t _opIntersect(rle_view &obj, rle_view &clip, Result &result)
 {
-    VRle::Span *out = result->spans;
-    int         available = result->alloc;
-    VRle::Span *spans = tmp_obj->spans;
-    VRle::Span *end = tmp_obj->spans + tmp_obj->size;
-    VRle::Span *clipSpans = tmp_clip->spans;
-    VRle::Span *clipEnd = tmp_clip->spans + tmp_clip->size;
-    int         sx1, sx2, cx1, cx2, x, len;
+    auto out = result.data();
+    auto available = result.max_size();
+    auto spans = obj.data();
+    auto end = obj.data() + obj.size();
+    auto clipSpans = clip.data();
+    auto clipEnd = clip.data() + clip.size();
+    int  sx1, sx2, cx1, cx2, x, len;
 
     while (available && spans < end) {
         if (clipSpans >= clipEnd) {
             spans = end;
             break;
         }
-        if ((clipSpans->y + clip_offset_y) > spans->y) {
+        if (clipSpans->y > spans->y) {
             ++spans;
             continue;
         }
-        if (spans->y != (clipSpans->y + clip_offset_y)) {
+        if (spans->y != clipSpans->y) {
             ++clipSpans;
             continue;
         }
         // assert(spans->y == (clipSpans->y + clip_offset_y));
         sx1 = spans->x;
         sx2 = sx1 + spans->len;
-        cx1 = (clipSpans->x + clip_offset_x);
+        cx1 = clipSpans->x;
         cx2 = cx1 + clipSpans->len;
 
         if (cx1 < sx1 && cx2 < sx1) {
@@ -434,16 +380,13 @@ static void rleIntersectWithRle(VRleHelper *tmp_clip, int clip_offset_x,
         }
     }
 
-    // update the span list that yet to be processed
-    tmp_obj->spans = spans;
-    tmp_obj->size = end - spans;
+    // update the obj view yet to be processed
+    obj = {spans, size_t(end - spans)};
 
-    // update the clip list that yet to be processed
-    tmp_clip->spans = clipSpans;
-    tmp_clip->size = clipEnd - clipSpans;
+    // update the clip view yet to be processed
+    clip = {clipSpans, size_t(clipEnd - clipSpans)};
 
-    // update the result
-    result->size = result->alloc - available;
+    return result.max_size() - available;
 }
 
 /*
@@ -455,62 +398,55 @@ static void rleIntersectWithRle(VRleHelper *tmp_clip, int clip_offset_x,
  *       it will stop and update the tmp_obj with the span list
  *       that are yet to be processed
  */
-static void rleIntersectWithRect(const VRect &clip, VRleHelper *tmp_obj,
-                                 VRleHelper *result)
+static size_t _opIntersect(const VRect &clip, rle_view &obj, Result &result)
 {
-    VRle::Span *out = result->spans;
-    int         available = result->alloc;
-    VRle::Span *spans = tmp_obj->spans;
-    VRle::Span *end = tmp_obj->spans + tmp_obj->size;
-    short       minx, miny, maxx, maxy;
+    auto out = result.data();
+    auto available = result.max_size();
+    auto ptr = obj.data();
+    auto end = obj.data() + obj.size();
 
-    minx = clip.left();
-    miny = clip.top();
-    maxx = clip.right() - 1;
-    maxy = clip.bottom() - 1;
+    const auto minx = clip.left();
+    const auto miny = clip.top();
+    const auto maxx = clip.right() - 1;
+    const auto maxy = clip.bottom() - 1;
 
-    while (available && spans < end) {
-        if (spans->y > maxy) {
-            spans = end;  // update spans so that we can breakout
+    while (available && ptr < end) {
+        const auto &span = *ptr;
+        if (span.y > maxy) {
+            ptr = end;  // update spans so that we can breakout
             break;
         }
-        if (spans->y < miny || spans->x > maxx ||
-            spans->x + spans->len <= minx) {
-            ++spans;
+        if (span.y < miny || span.x > maxx || span.x + span.len <= minx) {
+            ++ptr;
             continue;
         }
-        if (spans->x < minx) {
-            out->len = VMIN(spans->len - (minx - spans->x), maxx - minx + 1);
+        if (span.x < minx) {
+            out->len = std::min(span.len - (minx - span.x), maxx - minx + 1);
             out->x = minx;
         } else {
-            out->x = spans->x;
-            out->len = VMIN(spans->len, (maxx - spans->x + 1));
+            out->x = span.x;
+            out->len = std::min(span.len, ushort(maxx - span.x + 1));
         }
         if (out->len != 0) {
-            out->y = spans->y;
-            out->coverage = spans->coverage;
+            out->y = span.y;
+            out->coverage = span.coverage;
             ++out;
             --available;
         }
-        ++spans;
+        ++ptr;
     }
 
     // update the span list that yet to be processed
-    tmp_obj->spans = spans;
-    tmp_obj->size = end - spans;
+    obj = {ptr, size_t(end - ptr)};
 
-    // update the result
-    result->size = result->alloc - available;
+    return result.max_size() - available;
 }
 
-void blitXor(VRle::Span *spans, int count, uchar *buffer, int len, int offsetX)
+static void blitXor(VRle::Span *spans, int count, uchar *buffer, int offsetX)
 {
     while (count--) {
         int    x = spans->x + offsetX;
         int    l = spans->len;
-        if (x + l >= len) {
-            return;
-        }
         uchar *ptr = buffer + x;
         while (l--) {
             int da = *ptr;
@@ -522,14 +458,12 @@ void blitXor(VRle::Span *spans, int count, uchar *buffer, int len, int offsetX)
     }
 }
 
-void blitDestinationOut(VRle::Span *spans, int count, uchar *buffer, int len, int offsetX)
+static void blitDestinationOut(VRle::Span *spans, int count, uchar *buffer,
+                               int offsetX)
 {
     while (count--) {
         int    x = spans->x + offsetX;
         int    l = spans->len;
-        if (x + l >= len) {
-            return;
-        }
         uchar *ptr = buffer + x;
         while (l--) {
             *ptr = divBy255((255 - spans->coverage) * (*ptr));
@@ -539,14 +473,12 @@ void blitDestinationOut(VRle::Span *spans, int count, uchar *buffer, int len, in
     }
 }
 
-void blitSrcOver(VRle::Span *spans, int count, uchar *buffer, int len, int offsetX)
+static void blitSrcOver(VRle::Span *spans, int count, uchar *buffer,
+                        int offsetX)
 {
     while (count--) {
         int    x = spans->x + offsetX;
         int    l = spans->len;
-        if (x + l >= len) {
-            return;
-        }
         uchar *ptr = buffer + x;
         while (l--) {
             *ptr = spans->coverage + divBy255((255 - spans->coverage) * (*ptr));
@@ -556,14 +488,11 @@ void blitSrcOver(VRle::Span *spans, int count, uchar *buffer, int len, int offse
     }
 }
 
-void blit(VRle::Span *spans, int count, uchar *buffer, int len, int offsetX)
+void blitSrc(VRle::Span *spans, int count, uchar *buffer, int offsetX)
 {
     while (count--) {
         int    x = spans->x + offsetX;
         int    l = spans->len;
-        if (x + l < 0 || x + l > len) {
-            return;
-        }
         uchar *ptr = buffer + x;
         while (l--) {
             *ptr = std::max(spans->coverage, *ptr);
@@ -573,16 +502,13 @@ void blit(VRle::Span *spans, int count, uchar *buffer, int len, int offsetX)
     }
 }
 
-size_t bufferToRle(uchar *buffer, int len, int size, int offsetX, int y, VRle::Span *out)
+size_t bufferToRle(uchar *buffer, int size, int offsetX, int y, VRle::Span *out)
 {
     size_t count = 0;
     uchar  value = buffer[0];
     int    curIndex = 0;
 
-    size = offsetX < 0 ? size + offsetX : size;
-    if (size > len) {
-        return count;
-    }
+    // size = offsetX < 0 ? size + offsetX : size;
     for (int i = 0; i < size; i++) {
         uchar curValue = buffer[0];
         if (value != curValue) {
@@ -609,137 +535,214 @@ size_t bufferToRle(uchar *buffer, int len, int size, int offsetX, int y, VRle::S
     return count;
 }
 
-static void rleOpGeneric(VRleHelper *a, VRleHelper *b, VRleHelper *result,
-                         Operation op)
-{
-    std::array<VRle::Span, 256> temp;
-    VRle::Span *                out = result->spans;
-    size_t                      available = result->alloc;
-    VRle::Span *                aPtr = a->spans;
-    VRle::Span *                aEnd = a->spans + a->size;
-    VRle::Span *                bPtr = b->spans;
-    VRle::Span *                bEnd = b->spans + b->size;
-
-    while (available && aPtr < aEnd && bPtr < bEnd) {
-        if (aPtr->y < bPtr->y) {
-            *out++ = *aPtr++;
-            available--;
-        } else if (bPtr->y < aPtr->y) {
-            *out++ = *bPtr++;
-            available--;
-        } else {  // same y
-            VRle::Span *aStart = aPtr;
-            VRle::Span *bStart = bPtr;
-
-            int y = aPtr->y;
-
-            while (aPtr < aEnd && aPtr->y == y) aPtr++;
-            while (bPtr < bEnd && bPtr->y == y) bPtr++;
-
-            int aLength = (aPtr - 1)->x + (aPtr - 1)->len;
-            int bLength = (bPtr - 1)->x + (bPtr - 1)->len;
-            int offset = std::min(aStart->x, bStart->x);
-
-            std::array<uchar, 1024> array = {{0}};
-            blit(aStart, (aPtr - aStart), array.data(), 1024, -offset);
-            if (op == Operation::Add)
-                blitSrcOver(bStart, (bPtr - bStart), array.data(), 1024, -offset);
-            else if (op == Operation::Xor)
-                blitXor(bStart, (bPtr - bStart), array.data(), 1024, -offset);
-            VRle::Span *tResult = temp.data();
-            size_t size = bufferToRle(array.data(), 1024, std::max(aLength, bLength),
-                                      offset, y, tResult);
-            if (available >= size) {
-                while (size--) {
-                    *out++ = *tResult++;
-                    available--;
-                }
-            } else {
-                aPtr = aStart;
-                bPtr = bStart;
-                break;
-            }
+struct SpanMerger {
+    explicit SpanMerger(VRle::Data::Op op)
+    {
+        switch (op) {
+        case VRle::Data::Op::Add:
+            _blitter = &blitSrcOver;
+            break;
+        case VRle::Data::Op::Xor:
+            _blitter = &blitXor;
+            break;
+        case VRle::Data::Op::Substract:
+            _blitter = &blitDestinationOut;
+            break;
         }
     }
-    // update the span list that yet to be processed
-    a->spans = aPtr;
-    a->size = aEnd - aPtr;
+    using blitter = void (*)(VRle::Span *, int, uchar *, int);
+    blitter                     _blitter;
+    std::array<VRle::Span, 256> _result;
+    std::array<uchar, 1024>     _buffer;
+    VRle::Span *                _aStart{nullptr};
+    VRle::Span *                _bStart{nullptr};
 
-    // update the clip list that yet to be processed
-    b->spans = bPtr;
-    b->size = bEnd - bPtr;
+    void revert(VRle::Span *&aPtr, VRle::Span *&bPtr)
+    {
+        aPtr = _aStart;
+        bPtr = _bStart;
+    }
+    VRle::Span *data() { return _result.data(); }
+    size_t merge(VRle::Span *&aPtr, const VRle::Span *aEnd, VRle::Span *&bPtr,
+                 const VRle::Span *bEnd);
+};
 
-    // update the result
-    result->size = result->alloc - available;
+size_t SpanMerger::merge(VRle::Span *&aPtr, const VRle::Span *aEnd,
+                         VRle::Span *&bPtr, const VRle::Span *bEnd)
+{
+    assert(aPtr->y == bPtr->y);
+
+    _aStart = aPtr;
+    _bStart = bPtr;
+    int lb = std::min(aPtr->x, bPtr->x);
+    int y = aPtr->y;
+
+    while (aPtr < aEnd && aPtr->y == y) aPtr++;
+    while (bPtr < bEnd && bPtr->y == y) bPtr++;
+
+    int ub = std::max((aPtr - 1)->x + (aPtr - 1)->len,
+                      (bPtr - 1)->x + (bPtr - 1)->len);
+    int length = (lb < 0) ? ub + lb : ub - lb;
+
+    if (length <= 0 || size_t(length) >= _buffer.max_size()) {
+        // can't handle merge . skip
+        return 0;
+    }
+
+    // clear buffer
+    memset(_buffer.data(), 0, length);
+
+    // blit a to buffer
+    blitSrc(_aStart, aPtr - _aStart, _buffer.data(), -lb);
+
+    // blit b to buffer
+    _blitter(_bStart, bPtr - _bStart, _buffer.data(), -lb);
+
+    // convert buffer to span
+    return bufferToRle(_buffer.data(), length, lb, y, _result.data());
 }
 
-static void rleSubstractWithRle(VRleHelper *a, VRleHelper *b,
-                                VRleHelper *result)
+static size_t _opGeneric(rle_view &a, rle_view &b, Result &result,
+                         VRle::Data::Op op)
 {
-    std::array<VRle::Span, 256> temp;
-    VRle::Span *                out = result->spans;
-    size_t                      available = result->alloc;
-    VRle::Span *                aPtr = a->spans;
-    VRle::Span *                aEnd = a->spans + a->size;
-    VRle::Span *                bPtr = b->spans;
-    VRle::Span *                bEnd = b->spans + b->size;
+    SpanMerger merger{op};
+
+    auto   out = result.data();
+    size_t available = result.max_size();
+    auto   aPtr = a.data();
+    auto   aEnd = a.data() + a.size();
+    auto   bPtr = b.data();
+    auto   bEnd = b.data() + b.size();
+
+    // only logic change for substract operation.
+    const bool keep = op != (VRle::Data::Op::Substract);
 
     while (available && aPtr < aEnd && bPtr < bEnd) {
         if (aPtr->y < bPtr->y) {
             *out++ = *aPtr++;
             available--;
         } else if (bPtr->y < aPtr->y) {
+            if (keep) {
+                *out++ = *bPtr;
+                available--;
+            }
             bPtr++;
         } else {  // same y
-            VRle::Span *aStart = aPtr;
-            VRle::Span *bStart = bPtr;
-
-            int y = aPtr->y;
-
-            while (aPtr < aEnd && aPtr->y == y) aPtr++;
-            while (bPtr < bEnd && bPtr->y == y) bPtr++;
-
-            int aLength = (aPtr - 1)->x + (aPtr - 1)->len;
-            int bLength = (bPtr - 1)->x + (bPtr - 1)->len;
-            int offset = std::min(aStart->x, bStart->x);
-
-            std::array<uchar, 1024> array = {{0}};
-            blit(aStart, (aPtr - aStart), array.data(), 1024, -offset);
-            blitDestinationOut(bStart, (bPtr - bStart), array.data(), 1024, -offset);
-            VRle::Span *tResult = temp.data();
-            size_t size = bufferToRle(array.data(), 1024, std::max(aLength, bLength),
-                                      offset, y, tResult);
-            if (available >= size) {
-                while (size--) {
-                    *out++ = *tResult++;
-                    available--;
+            auto count = merger.merge(aPtr, aEnd, bPtr, bEnd);
+            if (available >= count) {
+                if (count) {
+                    memcpy(out, merger.data(), count * sizeof(VRle::Span));
+                    out += count;
+                    available -= count;
                 }
             } else {
-                aPtr = aStart;
-                bPtr = bStart;
+                // not enough space try next time.
+                merger.revert(aPtr, bPtr);
                 break;
             }
         }
     }
     // update the span list that yet to be processed
-    a->spans = aPtr;
-    a->size = size_t(aEnd - aPtr);
+    a = {aPtr, size_t(aEnd - aPtr)};
+    b = {bPtr, size_t(bEnd - bPtr)};
 
-    // update the clip list that yet to be processed
-    b->spans = bPtr;
-    b->size = size_t(bEnd - bPtr);
-
-    // update the result
-    result->size = result->alloc - available;
+    return result.max_size() - available;
 }
 
-VRle VRle::toRle(const VRect &rect)
+/*
+ * this api makes use of thread_local temporary
+ * buffer to avoid creating intermediate temporary rle buffer
+ * the scratch buffer object will grow its size on demand
+ * so that future call won't need any more memory allocation.
+ * this function is thread safe as it uses thread_local variable
+ * which is unique per thread.
+ */
+static vthread_local VRle::Data Scratch_Object;
+
+VRle VRle::opGeneric(const VRle &o, Data::Op op) const
 {
-    if (rect.empty()) return VRle();
+    if (empty()) return o;
+    if (o.empty()) return *this;
+
+    Scratch_Object.reset();
+    Scratch_Object.opGeneric(d.read(), o.d.read(), op);
 
     VRle result;
-    result.d.write().addRect(rect);
+    result.d.write() = Scratch_Object;
+
     return result;
+}
+
+VRle VRle::operator-(const VRle &o) const
+{
+    if (empty()) return {};
+    if (o.empty()) return *this;
+
+    Scratch_Object.reset();
+    Scratch_Object.opSubstract(d.read(), o.d.read());
+
+    VRle result;
+    result.d.write() = Scratch_Object;
+
+    return result;
+}
+
+VRle VRle::operator&(const VRle &o) const
+{
+    if (empty() || o.empty()) return {};
+
+    Scratch_Object.reset();
+    Scratch_Object.opIntersect(d.read().view(), o.d.read().view());
+
+    VRle result;
+    result.d.write() = Scratch_Object;
+
+    return result;
+}
+
+void VRle::operator&=(const VRle &o)
+{
+    if (empty()) return;
+    if (o.empty()) {
+        reset();
+        return;
+    }
+    Scratch_Object.reset();
+    Scratch_Object.opIntersect(d.read().view(), o.d.read().view());
+    d.write() = Scratch_Object;
+}
+
+VRle operator-(const VRect &rect, const VRle &o)
+{
+    if (rect.empty()) return {};
+
+    Scratch_Object.reset();
+    Scratch_Object.addRect(rect);
+
+    VRle result;
+    result.d.write().opSubstract(Scratch_Object, o.d.read());
+
+    return result;
+}
+
+VRle operator&(const VRect &rect, const VRle &o)
+{
+    if (rect.empty() || o.empty()) return {};
+
+    Scratch_Object.reset();
+    Scratch_Object.addRect(rect);
+
+    VRle result;
+    result.d.write().opIntersect(Scratch_Object.view(), o.d.read().view());
+
+    return result;
+}
+
+void VRle::intersect(const VRle &clip, VRleSpanCb cb, void *userData) const
+{
+    if (empty() || clip.empty()) return;
+
+    _opIntersect(d.read().view(), clip.d.read().view(), cb, userData);
 }
 
 V_END_NAMESPACE

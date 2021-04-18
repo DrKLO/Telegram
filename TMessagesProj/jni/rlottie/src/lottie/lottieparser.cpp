@@ -1,26 +1,26 @@
 /*
- * Copyright (c) 2018 Samsung Electronics Co., Ltd. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
+ * Copyright (c) 2020 Samsung Electronics Co., Ltd. All rights reserved.
+
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
-#include "lottieparser.h"
-
 //#define DEBUG_PARSER
-
-//#define DEBUG_PRINT_TREE
 
 // This parser implements JSON token-by-token parsing with an API that is
 // more direct; we don't have to create  handler object and
@@ -54,8 +54,6 @@
 // the parse.
 
 #include <array>
-#include <sstream>
-#include <tgnet/FileLog.h>
 
 #include "lottiemodel.h"
 #include "rapidjson/document.h"
@@ -67,13 +65,7 @@ RAPIDJSON_DIAG_OFF(effc++)
 
 using namespace rapidjson;
 
-template <typename T>
-std::string to_string(T value)
-{
-    std::ostringstream os ;
-    os << value ;
-    return os.str() ;
-}
+using namespace rlottie::internal;
 
 class LookaheadParserHandler {
 public:
@@ -107,7 +99,7 @@ public:
         v_.SetInt64(i);
         return true;
     }
-    bool Uint64(uint64_t u)
+    bool Uint64(int64_t u)
     {
         st_ = kHasNumber;
         v_.SetUint64(u);
@@ -155,7 +147,6 @@ public:
 
 protected:
     explicit LookaheadParserHandler(char *str);
-    void ParseNext();
 
 protected:
     enum LookaheadParsingState {
@@ -180,143 +171,235 @@ protected:
     static const int parseFlags = kParseDefaultFlags | kParseInsituFlag;
 };
 
-class LottieParserImpl : protected LookaheadParserHandler {
+class LottieParserImpl : public LookaheadParserHandler {
 public:
-    LottieParserImpl(char *str, const char *dir_path, std::map<int32_t, int32_t> *colorReplacement)
-        : LookaheadParserHandler(str), mDirPath(dir_path), colorMap(colorReplacement)
+    LottieParserImpl(char *str, std::string dir_path, std::map<int32_t, int32_t> *colorReplacement)
+        : LookaheadParserHandler(str),
+          colorMap(colorReplacement),
+          mDirPath(std::move(dir_path))
     {
     }
+    bool VerifyType();
+    bool ParseNext();
 
 public:
-    bool        EnterObject();
-    bool        EnterArray();
-    const char *NextObjectKey();
-    bool        NextArrayValue();
-    int         GetInt();
-    double      GetDouble();
-    const char *GetString();
-    bool        GetBool();
-    void        GetNull();
+    VArenaAlloc &allocator() { return compRef->mArenaAlloc; }
+    bool         EnterObject();
+    bool         EnterArray();
+    const char * NextObjectKey();
+    bool         NextArrayValue();
+    int          GetInt();
+    double       GetDouble();
+    const char * GetString();
+    bool         GetBool();
+    void         GetNull();
 
     void   SkipObject();
     void   SkipArray();
     void   SkipValue();
     Value *PeekValue();
-    int PeekType();  // returns a rapidjson::Type, or -1 for no value (at end of
-                     // object/array)
-
-    bool IsValid() { return st_ != kError; }
+    int    PeekType() const;
+    bool   IsValid() { return st_ != kError; }
 
     void                  Skip(const char *key);
-    LottieBlendMode       getBlendMode();
+    model::BlendMode      getBlendMode();
     CapStyle              getLineCap();
     JoinStyle             getLineJoin();
     FillRule              getFillRule();
-    LOTTrimData::TrimType getTrimType();
-    MatteType             getMatteType();
-    LayerType             getLayerType();
+    model::Trim::TrimType getTrimType();
+    model::MatteType      getMatteType();
+    model::Layer::Type    getLayerType();
 
-    std::shared_ptr<LOTCompositionData> composition() const
+    std::shared_ptr<model::Composition> composition() const
     {
         return mComposition;
     }
-    void                         parseComposition();
-    void                         parseAssets(LOTCompositionData *comp);
-    std::shared_ptr<LOTAsset>    parseAsset();
-    void                         parseLayers(LOTCompositionData *comp);
-    std::shared_ptr<LOTData>     parseLayer(bool record = false);
-    void                         parseMaskProperty(LOTLayerData *layer);
-    void                         parseShapesAttr(LOTLayerData *layer);
-    void                         parseObject(LOTGroupData *parent);
-    std::shared_ptr<LOTMaskData> parseMaskObject();
-    std::shared_ptr<LOTData>     parseObjectTypeAttr();
-    std::shared_ptr<LOTData>     parseGroupObject();
-    std::shared_ptr<LOTData>     parseRectObject();
-    std::shared_ptr<LOTData>     parseEllipseObject();
-    std::shared_ptr<LOTData>     parseShapeObject();
-    std::shared_ptr<LOTData>     parsePolystarObject();
+    void             parseComposition();
+    void             parseMarkers();
+    void             parseMarker();
+    void             parseAssets(model::Composition *comp);
+    model::Asset *   parseAsset();
+    void             parseLayers(model::Composition *comp);
+    model::Layer *   parseLayer();
+    void             parseMaskProperty(model::Layer *layer);
+    void             parseShapesAttr(model::Layer *layer);
+    void             parseObject(model::Group *parent);
+    model::Mask *    parseMaskObject();
+    model::Object *  parseObjectTypeAttr();
+    model::Object *  parseGroupObject();
+    model::Rect *    parseRectObject();
+    model::RoundedCorner *    parseRoundedCorner();
+    void updateRoundedCorner(model::Group *parent, model::RoundedCorner *rc);
 
-    std::shared_ptr<LOTTransformData> parseTransformObject(bool ddd = false);
-    std::shared_ptr<LOTData>          parseFillObject();
-    std::shared_ptr<LOTData>          parseGFillObject();
-    std::shared_ptr<LOTData>          parseStrokeObject();
-    std::shared_ptr<LOTData>          parseGStrokeObject();
-    std::shared_ptr<LOTData>          parseTrimObject();
-    std::shared_ptr<LOTData>          parseReapeaterObject();
+    model::Ellipse * parseEllipseObject();
+    model::Path *    parseShapeObject();
+    model::Polystar *parsePolystarObject();
 
-    void parseGradientProperty(LOTGradient *gradient, const char *key);
+    model::Transform *     parseTransformObject(bool ddd = false);
+    model::Fill *          parseFillObject();
+    model::GradientFill *  parseGFillObject();
+    model::Stroke *        parseStrokeObject();
+    model::GradientStroke *parseGStrokeObject();
+    model::Trim *          parseTrimObject();
+    model::Repeater *      parseReapeaterObject();
+
+    void parseGradientProperty(model::Gradient *gradient, const char *key);
 
     VPointF parseInperpolatorPoint();
 
-    void getValue(VPointF &val);
-    void getValue(float &val);
-    void getValue(LottieColor &val);
-    void getValue(int &val);
-    void getValue(LottieShapeData &shape);
-    void getValue(LottieGradient &gradient);
+    void getValue(VPointF &pt);
+    void getValue(float &fval);
+    void getValue(model::Color &color);
+    void getValue(int &ival);
+    void getValue(model::PathData &shape);
+    void getValue(model::Gradient::Data &gradient);
     void getValue(std::vector<VPointF> &v);
-    void getValue(LOTRepeaterTransform &);
+    void getValue(model::Repeater::Transform &);
+
+    template <typename T, typename Tag>
+    bool parseKeyFrameValue(const char *, model::Value<T, Tag> &)
+    {
+        return false;
+    }
 
     template <typename T>
-    bool parseKeyFrameValue(const char *key, LOTKeyFrameValue<T> &value);
+    bool parseKeyFrameValue(const char *                      key,
+                            model::Value<T, model::Position> &value);
+    template <typename T, typename Tag>
+    void parseKeyFrame(model::KeyFrames<T, Tag> &obj);
     template <typename T>
-    void parseKeyFrame(LOTAnimInfo<T> &obj);
-    template <typename T>
-    void parseProperty(LOTAnimatable<T> &obj);
-    template <typename T>
-    void parsePropertyHelper(LOTAnimatable<T> &obj);
+    void parseProperty(model::Property<T> &obj);
+    template <typename T, typename Tag>
+    void parsePropertyHelper(model::Property<T, Tag> &obj);
 
-    void parseShapeKeyFrame(LOTAnimInfo<LottieShapeData> &obj);
-    void parseShapeProperty(LOTAnimatable<LottieShapeData> &obj);
-    void parseDashProperty(LOTDashProperty &dash);
+    void parseShapeProperty(model::Property<model::PathData> &obj);
+    void parseDashProperty(model::Dash &dash);
 
-    std::shared_ptr<VInterpolator> interpolator(VPointF, VPointF, std::string);
+    VInterpolator *interpolator(VPointF, VPointF, std::string);
 
-    LottieColor toColor(const char *str);
+    model::Color toColor(const char *str);
 
     void resolveLayerRefs();
-    
-    bool hasParsingError();
+    void parsePathInfo();
+
+private:
+    std::map<int32_t, int32_t> *colorMap;
+    struct {
+        std::vector<VPointF> mInPoint;  /* "i" */
+        std::vector<VPointF> mOutPoint; /* "o" */
+        std::vector<VPointF> mVertices; /* "v" */
+        std::vector<VPointF> mResult;
+        bool                 mClosed{false};
+
+        void convert()
+        {
+            // shape data could be empty.
+            if (mInPoint.empty() || mOutPoint.empty() || mVertices.empty()) {
+                mResult.clear();
+                return;
+            }
+
+            /*
+             * Convert the AE shape format to
+             * list of bazier curves
+             * The final structure will be Move +size*Cubic + Cubic (if the path
+             * is closed one)
+             */
+            if (mInPoint.size() != mOutPoint.size() ||
+                mInPoint.size() != mVertices.size()) {
+                mResult.clear();
+            } else {
+                auto size = mVertices.size();
+                mResult.push_back(mVertices[0]);
+                for (size_t i = 1; i < size; i++) {
+                    mResult.push_back(
+                        mVertices[i - 1] +
+                        mOutPoint[i - 1]);  // CP1 = start + outTangent
+                    mResult.push_back(mVertices[i] +
+                                      mInPoint[i]);   // CP2 = end + inTangent
+                    mResult.push_back(mVertices[i]);  // end point
+                }
+
+                if (mClosed) {
+                    mResult.push_back(
+                        mVertices[size - 1] +
+                        mOutPoint[size - 1]);  // CP1 = start + outTangent
+                    mResult.push_back(mVertices[0] +
+                                      mInPoint[0]);   // CP2 = end + inTangent
+                    mResult.push_back(mVertices[0]);  // end point
+                }
+            }
+        }
+        void reset()
+        {
+            mInPoint.clear();
+            mOutPoint.clear();
+            mVertices.clear();
+            mResult.clear();
+            mClosed = false;
+        }
+        void updatePath(VPath &out)
+        {
+            if (mResult.empty()) return;
+
+            auto size = mResult.size();
+            auto points = mResult.data();
+            /* reserve exact memory requirement at once
+             * ptSize = size + 1(size + close)
+             * elmSize = size/3 cubic + 1 move + 1 close
+             */
+            out.reserve(size + 1, size / 3 + 2);
+            out.moveTo(points[0]);
+            for (size_t i = 1; i < size; i += 3) {
+                out.cubicTo(points[i], points[i + 1], points[i + 2]);
+            }
+            if (mClosed) out.close();
+        }
+    } mPathInfo;
 
 protected:
-    std::unordered_map<std::string, std::shared_ptr<VInterpolator>>
-                                               mInterpolatorCache;
-    std::shared_ptr<LOTCompositionData>        mComposition;
-    LOTCompositionData *                       compRef{nullptr};
-    LOTLayerData *                             curLayerRef{nullptr};
-    std::vector<std::shared_ptr<LOTLayerData>> mLayersToUpdate;
-    std::string                                mDirPath;
-    std::vector<LayerInfo>                     mLayerInfoList;
-    std::map<int32_t, int32_t>                 *colorMap;
-
-    void                                       SkipOut(int depth);
-    bool                                       parsingError{false};
+    std::unordered_map<std::string, VInterpolator *> mInterpolatorCache;
+    std::shared_ptr<model::Composition>              mComposition;
+    model::Composition *                             compRef{nullptr};
+    model::Layer *                                   curLayerRef{nullptr};
+    std::vector<model::Layer *>                      mLayersToUpdate;
+    std::string                                      mDirPath;
+    void                                             SkipOut(int depth);
 };
 
 LookaheadParserHandler::LookaheadParserHandler(char *str)
-    : v_(), st_(kInit), r_(), ss_(str)
+    : v_(), st_(kInit), ss_(str)
 {
     r_.IterativeParseInit();
-    ParseNext();
 }
 
-void LookaheadParserHandler::ParseNext()
+bool LottieParserImpl::VerifyType()
+{
+    /* Verify the media type is lottie json.
+       Could add more strict check. */
+    return ParseNext();
+}
+
+bool LottieParserImpl::ParseNext()
 {
     if (r_.HasParseError()) {
         st_ = kError;
-        return;
+        return false;
     }
 
     if (!r_.IterativeParseNext<parseFlags>(ss_, *this)) {
         vCritical << "Lottie file parsing error";
         st_ = kError;
+        return false;
     }
+    return true;
 }
 
 bool LottieParserImpl::EnterObject()
 {
     if (st_ != kEnteringObject) {
         st_ = kError;
+        RAPIDJSON_ASSERT(false);
         return false;
     }
 
@@ -328,6 +411,7 @@ bool LottieParserImpl::EnterArray()
 {
     if (st_ != kEnteringArray) {
         st_ = kError;
+        RAPIDJSON_ASSERT(false);
         return false;
     }
 
@@ -353,16 +437,17 @@ const char *LottieParserImpl::NextObjectKey()
         // #ifdef DEBUG_PARSER
         //         vDebug<<"Object: Exiting nested loop";
         // #endif
-        return 0;
+        return nullptr;
     }
 
     if (st_ != kExitingObject) {
+        RAPIDJSON_ASSERT(false);
         st_ = kError;
-        return 0;
+        return nullptr;
     }
 
     ParseNext();
-    return 0;
+    return nullptr;
 }
 
 bool LottieParserImpl::NextArrayValue()
@@ -376,13 +461,11 @@ bool LottieParserImpl::NextArrayValue()
      * same as  NextObjectKey()
      */
     if (st_ == kExitingObject) {
-        // #ifdef DEBUG_PARSER
-        //         vDebug<<"Array: Exiting nested loop";
-        // #endif
-        return 0;
+        return false;
     }
 
     if (st_ == kError || st_ == kHasKey) {
+        RAPIDJSON_ASSERT(false);
         st_ = kError;
         return false;
     }
@@ -394,6 +477,7 @@ int LottieParserImpl::GetInt()
 {
     if (st_ != kHasNumber || !v_.IsInt()) {
         st_ = kError;
+        RAPIDJSON_ASSERT(false);
         return 0;
     }
 
@@ -406,6 +490,7 @@ double LottieParserImpl::GetDouble()
 {
     if (st_ != kHasNumber) {
         st_ = kError;
+        RAPIDJSON_ASSERT(false);
         return 0.;
     }
 
@@ -418,6 +503,7 @@ bool LottieParserImpl::GetBool()
 {
     if (st_ != kHasBool) {
         st_ = kError;
+        RAPIDJSON_ASSERT(false);
         return false;
     }
 
@@ -440,7 +526,8 @@ const char *LottieParserImpl::GetString()
 {
     if (st_ != kHasString) {
         st_ = kError;
-        return "";
+        RAPIDJSON_ASSERT(false);
+        return nullptr;
     }
 
     const char *result = v_.GetString();
@@ -456,6 +543,7 @@ void LottieParserImpl::SkipOut(int depth)
         } else if (st_ == kExitingArray || st_ == kExitingObject) {
             --depth;
         } else if (st_ == kError) {
+            RAPIDJSON_ASSERT(false);
             return;
         }
 
@@ -484,10 +572,12 @@ Value *LottieParserImpl::PeekValue()
         return &v_;
     }
 
-    return 0;
+    return nullptr;
 }
 
-int LottieParserImpl::PeekType()
+// returns a rapidjson::Type, or -1 for no value (at end of
+// object/array)
+int LottieParserImpl::PeekType() const
 {
     if (st_ >= kHasNull && st_ <= kHasKey) {
         return v_.GetType();
@@ -517,38 +607,35 @@ void LottieParserImpl::Skip(const char * /*key*/)
     }
 }
 
-LottieBlendMode LottieParserImpl::getBlendMode() {
-    LottieBlendMode mode = LottieBlendMode::Normal;
-    if (PeekType() != kNumberType) {
-        parsingError = true;
-        return mode;
-    }
+model::BlendMode LottieParserImpl::getBlendMode()
+{
+    RAPIDJSON_ASSERT(PeekType() == kNumberType);
+    auto mode = model::BlendMode::Normal;
 
     switch (GetInt()) {
-        case 1:
-            mode = LottieBlendMode::Multiply;
-            break;
-        case 2:
-            mode = LottieBlendMode::Screen;
-            break;
-        case 3:
-            mode = LottieBlendMode::OverLay;
-            break;
-        default:
-            break;
+    case 1:
+        mode = model::BlendMode::Multiply;
+        break;
+    case 2:
+        mode = model::BlendMode::Screen;
+        break;
+    case 3:
+        mode = model::BlendMode::OverLay;
+        break;
+    default:
+        break;
     }
     return mode;
 }
 
 void LottieParserImpl::resolveLayerRefs()
 {
-    for (const auto &i : mLayersToUpdate) {
-        LOTLayerData *layer = i.get();
-        auto          search = compRef->mAssets.find(layer->extra()->mPreCompRefId);
+    for (const auto &layer : mLayersToUpdate) {
+        auto search = compRef->mAssets.find(layer->extra()->mPreCompRefId);
         if (search != compRef->mAssets.end()) {
-            if (layer->mLayerType == LayerType::Image) {
+            if (layer->mLayerType == model::Layer::Type::Image) {
                 layer->extra()->mAsset = search->second;
-            } else if (layer->mLayerType == LayerType::Precomp) {
+            } else if (layer->mLayerType == model::Layer::Type::Precomp) {
                 layer->mChildren = search->second->mLayers;
                 layer->setStatic(layer->isStatic() &&
                                  search->second->isStatic());
@@ -557,60 +644,39 @@ void LottieParserImpl::resolveLayerRefs()
     }
 }
 
-bool LottieParserImpl::hasParsingError() {
-    return parsingError;
-}
-
-void LottieParserImpl::parseComposition() {
-    if (PeekType() != kObjectType) {
-        parsingError = true;
-        return;
-    }
+void LottieParserImpl::parseComposition()
+{
+    RAPIDJSON_ASSERT(PeekType() == kObjectType);
     EnterObject();
-    std::shared_ptr<LOTCompositionData> sharedComposition = std::make_shared<LOTCompositionData>();
-    LOTCompositionData *comp = sharedComposition.get();
+    std::shared_ptr<model::Composition> sharedComposition =
+        std::make_shared<model::Composition>();
+    model::Composition *comp = sharedComposition.get();
     compRef = comp;
     while (const char *key = NextObjectKey()) {
         if (0 == strcmp(key, "v")) {
-            if (PeekType() != kStringType) {
-                parsingError = true;
-                return;
-            }
+            RAPIDJSON_ASSERT(PeekType() == kStringType);
             comp->mVersion = std::string(GetString());
         } else if (0 == strcmp(key, "w")) {
-            if (PeekType() != kNumberType) {
-                parsingError = true;
-                return;
-            }
+            RAPIDJSON_ASSERT(PeekType() == kNumberType);
             comp->mSize.setWidth(GetInt());
         } else if (0 == strcmp(key, "h")) {
-            if (PeekType() != kNumberType) {
-                parsingError = true;
-                return;
-            }
+            RAPIDJSON_ASSERT(PeekType() == kNumberType);
             comp->mSize.setHeight(GetInt());
         } else if (0 == strcmp(key, "ip")) {
-            if (PeekType() != kNumberType) {
-                parsingError = true;
-                return;
-            }
+            RAPIDJSON_ASSERT(PeekType() == kNumberType);
             comp->mStartFrame = GetDouble();
         } else if (0 == strcmp(key, "op")) {
-            if (PeekType() != kNumberType) {
-                parsingError = true;
-                return;
-            }
+            RAPIDJSON_ASSERT(PeekType() == kNumberType);
             comp->mEndFrame = GetDouble();
         } else if (0 == strcmp(key, "fr")) {
-            if (PeekType() != kNumberType) {
-                parsingError = true;
-                return;
-            }
+            RAPIDJSON_ASSERT(PeekType() == kNumberType);
             comp->mFrameRate = GetDouble();
         } else if (0 == strcmp(key, "assets")) {
             parseAssets(comp);
         } else if (0 == strcmp(key, "layers")) {
             parseLayers(comp);
+        } else if (0 == strcmp(key, "markers")) {
+            parseMarkers();
         } else {
 #ifdef DEBUG_PARSER
             vWarning << "Composition Attribute Skipped : " << key;
@@ -618,43 +684,69 @@ void LottieParserImpl::parseComposition() {
             Skip(key);
         }
     }
-    if (!IsValid()) {
-        parsingError = true;
-        return;
-    }
+
     if (comp->mVersion.empty() || !comp->mRootLayer) {
         // don't have a valid bodymovin header
         return;
     }
+    if (!IsValid()) {
+        return;
+    }
+
     resolveLayerRefs();
     comp->setStatic(comp->mRootLayer->isStatic());
     comp->mRootLayer->mInFrame = comp->mStartFrame;
     comp->mRootLayer->mOutFrame = comp->mEndFrame;
 
-    comp->mLayerInfoList = std::move(mLayerInfoList);
-
     mComposition = sharedComposition;
 }
 
-void LottieParserImpl::parseAssets(LOTCompositionData *composition) {
-    if (PeekType() != kArrayType) {
-        parsingError = true;
-        return;
+void LottieParserImpl::parseMarker()
+{
+    RAPIDJSON_ASSERT(PeekType() == kObjectType);
+    EnterObject();
+    std::string comment;
+    int         timeframe{0};
+    int         duration{0};
+    while (const char *key = NextObjectKey()) {
+        if (0 == strcmp(key, "cm")) {
+            RAPIDJSON_ASSERT(PeekType() == kStringType);
+            comment = std::string(GetString());
+        } else if (0 == strcmp(key, "tm")) {
+            RAPIDJSON_ASSERT(PeekType() == kNumberType);
+            timeframe = GetDouble();
+        } else if (0 == strcmp(key, "dr")) {
+            RAPIDJSON_ASSERT(PeekType() == kNumberType);
+            duration = GetDouble();
+
+        } else {
+#ifdef DEBUG_PARSER
+            vWarning << "Marker Attribute Skipped : " << key;
+#endif
+            Skip(key);
+        }
     }
+    compRef->mMarkers.emplace_back(std::move(comment), timeframe,
+                                   timeframe + duration);
+}
+
+void LottieParserImpl::parseMarkers()
+{
+    RAPIDJSON_ASSERT(PeekType() == kArrayType);
     EnterArray();
     while (NextArrayValue()) {
-        if (parsingError) {
-            return;
-        }
-        std::shared_ptr<LOTAsset> asset = parseAsset();
-        if (asset == nullptr) {
-            return;
-        }
-        composition->mAssets[asset->mRefId] = asset;
+        parseMarker();
     }
-    if (!IsValid()) {
-        parsingError = true;
-        return;
+    // update the precomp layers with the actual layer object
+}
+
+void LottieParserImpl::parseAssets(model::Composition *composition)
+{
+    RAPIDJSON_ASSERT(PeekType() == kArrayType);
+    EnterArray();
+    while (NextArrayValue()) {
+        auto asset = parseAsset();
+        composition->mAssets[asset->mRefId] = asset;
     }
     // update the precomp layers with the actual layer object
 }
@@ -668,12 +760,12 @@ static constexpr const unsigned char B64index[256] = {
     25, 0,  0,  0,  0,  63, 0,  26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36,
     37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51};
 
-std::string b64decode(const void *data, const size_t len)
+std::string b64decode(const char *data, const size_t len)
 {
-    unsigned char *p = (unsigned char *)data;
-    int            pad = len > 0 && (len % 4 || p[len - 1] == '=');
-    const size_t   L = ((len + 3) / 4 - pad) * 4;
-    std::string    str(L / 4 * 3 + pad, '\0');
+    auto         p = reinterpret_cast<const unsigned char *>(data);
+    int          pad = len > 0 && (len % 4 || p[len - 1] == '=');
+    const size_t L = ((len + 3) / 4 - pad) * 4;
+    std::string  str(L / 4 * 3 + pad, '\0');
 
     for (size_t i = 0, j = 0; i < L; i += 4) {
         int n = B64index[p[i]] << 18 | B64index[p[i + 1]] << 12 |
@@ -698,9 +790,9 @@ static std::string convertFromBase64(const std::string &str)
 {
     // usual header look like "data:image/png;base64,"
     // so need to skip till ','.
-    int startIndex = str.find(",", 0);
+    size_t startIndex = str.find(",", 0);
     startIndex += 1;  // skip ","
-    int length = str.length() - startIndex;
+    size_t length = str.length() - startIndex;
 
     const char *b64Data = str.c_str() + startIndex;
 
@@ -708,45 +800,44 @@ static std::string convertFromBase64(const std::string &str)
 }
 
 /*
+ *  std::to_string() function is missing in VS2017
+ *  so this is workaround for windows build
+ */
+#include <sstream>
+template <class T>
+static std::string toString(const T &value)
+{
+    std::ostringstream os;
+    os << value;
+    return os.str();
+}
+
+/*
  * https://github.com/airbnb/lottie-web/blob/master/docs/json/layers/shape.json
  *
  */
-std::shared_ptr<LOTAsset> LottieParserImpl::parseAsset() {
-    std::shared_ptr<LOTAsset> sharedAsset = std::make_shared<LOTAsset>();
-    if (PeekType() != kObjectType) {
-        parsingError = true;
-        return sharedAsset;
-    }
-    LOTAsset *asset = sharedAsset.get();
+model::Asset *LottieParserImpl::parseAsset()
+{
+    RAPIDJSON_ASSERT(PeekType() == kObjectType);
+
+    auto        asset = allocator().make<model::Asset>();
     std::string filename;
     std::string relativePath;
-    bool embededResource = false;
+    bool        embededResource = false;
     EnterObject();
     while (const char *key = NextObjectKey()) {
         if (0 == strcmp(key, "w")) {
-            if (PeekType() != kNumberType) {
-                parsingError = true;
-                return sharedAsset;
-            }
+            RAPIDJSON_ASSERT(PeekType() == kNumberType);
             asset->mWidth = GetInt();
         } else if (0 == strcmp(key, "h")) {
-            if (PeekType() != kNumberType) {
-                parsingError = true;
-                return sharedAsset;
-            }
+            RAPIDJSON_ASSERT(PeekType() == kNumberType);
             asset->mHeight = GetInt();
         } else if (0 == strcmp(key, "p")) { /* image name */
-            asset->mAssetType = LOTAsset::Type::Image;
-            if (PeekType() != kStringType) {
-                parsingError = true;
-                return sharedAsset;
-            }
+            asset->mAssetType = model::Asset::Type::Image;
+            RAPIDJSON_ASSERT(PeekType() == kStringType);
             filename = std::string(GetString());
         } else if (0 == strcmp(key, "u")) { /* relative image path */
-            if (PeekType() != kStringType) {
-                parsingError = true;
-                return sharedAsset;
-            }
+            RAPIDJSON_ASSERT(PeekType() == kStringType);
             relativePath = std::string(GetString());
         } else if (0 == strcmp(key, "e")) { /* relative image path */
             embededResource = GetInt();
@@ -754,33 +845,20 @@ std::shared_ptr<LOTAsset> LottieParserImpl::parseAsset() {
             if (PeekType() == kStringType) {
                 asset->mRefId = std::string(GetString());
             } else {
-                if (PeekType() != kNumberType) {
-                    parsingError = true;
-                    return sharedAsset;
-                }
-                asset->mRefId = to_string(GetInt());
+                RAPIDJSON_ASSERT(PeekType() == kNumberType);
+                asset->mRefId = toString(GetInt());
             }
         } else if (0 == strcmp(key, "layers")) {
-            asset->mAssetType = LOTAsset::Type::Precomp;
-            if (PeekType() != kArrayType) {
-                parsingError = true;
-                return sharedAsset;
-            }
+            asset->mAssetType = model::Asset::Type::Precomp;
+            RAPIDJSON_ASSERT(PeekType() == kArrayType);
             EnterArray();
             bool staticFlag = true;
             while (NextArrayValue()) {
-                if (parsingError) {
-                    return sharedAsset;
-                }
-                std::shared_ptr<LOTData> layer = parseLayer();
+                auto layer = parseLayer();
                 if (layer) {
                     staticFlag = staticFlag && layer->isStatic();
                     asset->mLayers.push_back(layer);
                 }
-            }
-            if (!IsValid()) {
-                parsingError = true;
-                return sharedAsset;
             }
             asset->setStatic(staticFlag);
         } else {
@@ -790,12 +868,8 @@ std::shared_ptr<LOTAsset> LottieParserImpl::parseAsset() {
             Skip(key);
         }
     }
-    if (!IsValid()) {
-        parsingError = true;
-        return sharedAsset;
-    }
 
-    if (asset->mAssetType == LOTAsset::Type::Image) {
+    if (asset->mAssetType == model::Asset::Type::Image) {
         if (embededResource) {
             // embeder resource should start with "data:"
             if (filename.compare(0, 5, "data:") == 0) {
@@ -806,121 +880,99 @@ std::shared_ptr<LOTAsset> LottieParserImpl::parseAsset() {
         }
     }
 
-    return sharedAsset;
+    return asset;
 }
 
-void LottieParserImpl::parseLayers(LOTCompositionData *comp) {
-    comp->mRootLayer = std::make_shared<LOTLayerData>();
-    comp->mRootLayer->mLayerType = LayerType::Precomp;
+void LottieParserImpl::parseLayers(model::Composition *comp)
+{
+    comp->mRootLayer = allocator().make<model::Layer>();
+    comp->mRootLayer->mLayerType = model::Layer::Type::Precomp;
     comp->mRootLayer->setName("__");
     bool staticFlag = true;
-    if (PeekType() != kArrayType) {
-        parsingError = true;
-        return;
-    }
+    RAPIDJSON_ASSERT(PeekType() == kArrayType);
     EnterArray();
     while (NextArrayValue()) {
-        if (parsingError) {
-            return;
-        }
-        std::shared_ptr<LOTData> layer = parseLayer(true);
+        auto layer = parseLayer();
         if (layer) {
             staticFlag = staticFlag && layer->isStatic();
             comp->mRootLayer->mChildren.push_back(layer);
         }
     }
-    if (!IsValid()) {
-        parsingError = true;
-        return;
-    }
     comp->mRootLayer->setStatic(staticFlag);
 }
 
-LottieColor LottieParserImpl::toColor(const char *str)
+model::Color LottieParserImpl::toColor(const char *str)
 {
-    LottieColor color;
-    int         len = strlen(str);
+    model::Color color;
+    auto         len = strlen(str);
 
     // some resource has empty color string
     // return a default color for those cases.
-    if (!len) return color;
-
-    if (len != 7 || str[0] != '#') {
-        parsingError = true;
-        return color;
-    }
+    if (len != 7 || str[0] != '#') return color;
 
     char tmp[3] = {'\0', '\0', '\0'};
-
     tmp[0] = str[1];
     tmp[1] = str[2];
-    long b = std::strtol(tmp, NULL, 16);
+    color.r = std::strtol(tmp, nullptr, 16) / 255.0f;
+
     tmp[0] = str[3];
     tmp[1] = str[4];
-    long g = std::strtol(tmp, NULL, 16);
+    color.g = std::strtol(tmp, nullptr, 16) / 255.0f;
+
     tmp[0] = str[5];
     tmp[1] = str[6];
-    long r = std::strtol(tmp, NULL, 16);
-
-    color.r = r / 255.0f;
-    color.g = g / 255.0f;
-    color.b = b / 255.0f;
-    color.colorMap = colorMap;
+    color.b = std::strtol(tmp, nullptr, 16) / 255.0f;
 
     return color;
 }
 
-MatteType LottieParserImpl::getMatteType() {
-    if (PeekType() != kNumberType) {
-        parsingError = true;
-        return MatteType::None;
-    }
+model::MatteType LottieParserImpl::getMatteType()
+{
+    RAPIDJSON_ASSERT(PeekType() == kNumberType);
     switch (GetInt()) {
-        case 1:
-            return MatteType::Alpha;
-            break;
-        case 2:
-            return MatteType::AlphaInv;
-            break;
-        case 3:
-            return MatteType::Luma;
-            break;
-        case 4:
-            return MatteType::LumaInv;
-            break;
-        default:
-            return MatteType::None;
-            break;
+    case 1:
+        return model::MatteType::Alpha;
+        break;
+    case 2:
+        return model::MatteType::AlphaInv;
+        break;
+    case 3:
+        return model::MatteType::Luma;
+        break;
+    case 4:
+        return model::MatteType::LumaInv;
+        break;
+    default:
+        return model::MatteType::None;
+        break;
     }
 }
 
-LayerType LottieParserImpl::getLayerType() {
-    if (PeekType() != kNumberType) {
-        parsingError = true;
-        return LayerType::Null;
-    }
+model::Layer::Type LottieParserImpl::getLayerType()
+{
+    RAPIDJSON_ASSERT(PeekType() == kNumberType);
     switch (GetInt()) {
-        case 0:
-            return LayerType::Precomp;
-            break;
-        case 1:
-            return LayerType::Solid;
-            break;
-        case 2:
-            return LayerType::Image;
-            break;
-        case 3:
-            return LayerType::Null;
-            break;
-        case 4:
-            return LayerType::Shape;
-            break;
-        case 5:
-            return LayerType::Text;
-            break;
-        default:
-            return LayerType::Null;
-            break;
+    case 0:
+        return model::Layer::Type::Precomp;
+        break;
+    case 1:
+        return model::Layer::Type::Solid;
+        break;
+    case 2:
+        return model::Layer::Type::Image;
+        break;
+    case 3:
+        return model::Layer::Type::Null;
+        break;
+    case 4:
+        return model::Layer::Type::Shape;
+        break;
+    case 5:
+        return model::Layer::Type::Text;
+        break;
+    default:
+        return model::Layer::Type::Null;
+        break;
     }
 }
 
@@ -928,14 +980,10 @@ LayerType LottieParserImpl::getLayerType() {
  * https://github.com/airbnb/lottie-web/blob/master/docs/json/layers/shape.json
  *
  */
-std::shared_ptr<LOTData> LottieParserImpl::parseLayer(bool record) {
-    std::shared_ptr<LOTLayerData> sharedLayer =
-            std::make_shared<LOTLayerData>();
-    LOTLayerData *layer = sharedLayer.get();
-    if (PeekType() != kObjectType) {
-        parsingError = true;
-        return sharedLayer;
-    }
+model::Layer *LottieParserImpl::parseLayer()
+{
+    RAPIDJSON_ASSERT(PeekType() == kObjectType);
+    model::Layer *layer = allocator().make<model::Layer>();
     curLayerRef = layer;
     bool ddd = true;
     EnterObject();
@@ -943,73 +991,43 @@ std::shared_ptr<LOTData> LottieParserImpl::parseLayer(bool record) {
         if (0 == strcmp(key, "ty")) { /* Type of layer*/
             layer->mLayerType = getLayerType();
         } else if (0 == strcmp(key, "nm")) { /*Layer name*/
-            if (PeekType() != kStringType) {
-                parsingError = true;
-                return sharedLayer;
-            }
+            RAPIDJSON_ASSERT(PeekType() == kStringType);
             layer->setName(GetString());
         } else if (0 == strcmp(key, "ind")) { /*Layer index in AE. Used for
                                                  parenting and expressions.*/
-            if (PeekType() != kNumberType) {
-                parsingError = true;
-                return sharedLayer;
-            }
+            RAPIDJSON_ASSERT(PeekType() == kNumberType);
             layer->mId = GetInt();
         } else if (0 == strcmp(key, "ddd")) { /*3d layer */
-            if (PeekType() != kNumberType) {
-                parsingError = true;
-                return sharedLayer;
-            }
+            RAPIDJSON_ASSERT(PeekType() == kNumberType);
             ddd = GetInt();
         } else if (0 ==
                    strcmp(key,
                           "parent")) { /*Layer Parent. Uses "ind" of parent.*/
-            if (PeekType() != kNumberType) {
-                parsingError = true;
-                return sharedLayer;
-            }
+            RAPIDJSON_ASSERT(PeekType() == kNumberType);
             layer->mParentId = GetInt();
         } else if (0 == strcmp(key, "refId")) { /*preComp Layer reference id*/
-            if (PeekType() != kStringType) {
-                parsingError = true;
-                return sharedLayer;
-            }
+            RAPIDJSON_ASSERT(PeekType() == kStringType);
             layer->extra()->mPreCompRefId = std::string(GetString());
             layer->mHasGradient = true;
-            mLayersToUpdate.push_back(sharedLayer);
+            mLayersToUpdate.push_back(layer);
         } else if (0 == strcmp(key, "sr")) {  // "Layer Time Stretching"
-            if (PeekType() != kNumberType) {
-                parsingError = true;
-                return sharedLayer;
-            }
+            RAPIDJSON_ASSERT(PeekType() == kNumberType);
             layer->mTimeStreatch = GetDouble();
         } else if (0 == strcmp(key, "tm")) {  // time remapping
             parseProperty(layer->extra()->mTimeRemap);
         } else if (0 == strcmp(key, "ip")) {
-            if (PeekType() != kNumberType) {
-                parsingError = true;
-                return sharedLayer;
-            }
-            layer->mInFrame = round(GetDouble());
+            RAPIDJSON_ASSERT(PeekType() == kNumberType);
+            layer->mInFrame = std::lround(GetDouble());
         } else if (0 == strcmp(key, "op")) {
-            if (PeekType() != kNumberType) {
-                parsingError = true;
-                return sharedLayer;
-            }
-            layer->mOutFrame = round(GetDouble());
+            RAPIDJSON_ASSERT(PeekType() == kNumberType);
+            layer->mOutFrame = std::lround(GetDouble());
         } else if (0 == strcmp(key, "st")) {
-            if (PeekType() != kNumberType) {
-                parsingError = true;
-                return sharedLayer;
-            }
+            RAPIDJSON_ASSERT(PeekType() == kNumberType);
             layer->mStartFrame = GetDouble();
         } else if (0 == strcmp(key, "bm")) {
             layer->mBlendMode = getBlendMode();
         } else if (0 == strcmp(key, "ks")) {
-            if (PeekType() != kObjectType) {
-                parsingError = true;
-                return sharedLayer;
-            }
+            RAPIDJSON_ASSERT(PeekType() == kObjectType);
             EnterObject();
             layer->mTransform = parseTransformObject(ddd);
         } else if (0 == strcmp(key, "shapes")) {
@@ -1041,13 +1059,15 @@ std::shared_ptr<LOTData> LottieParserImpl::parseLayer(bool record) {
             Skip(key);
         }
     }
-    if (!IsValid() || layer->mTransform == nullptr) {
-        parsingError = true;
-        return sharedLayer;
+
+    if (!layer->mTransform) {
+        // not a valid layer
+        return nullptr;
     }
 
     // make sure layer data is not corrupted.
-    if (layer->hasParent() && (layer->id() == layer->parentId())) return nullptr;
+    if (layer->hasParent() && (layer->id() == layer->parentId()))
+        return nullptr;
 
     if (layer->mExtra) layer->mExtra->mCompRef = compRef;
 
@@ -1056,18 +1076,18 @@ std::shared_ptr<LOTData> LottieParserImpl::parseLayer(bool record) {
         // transform matrix(when it is a parent of some other layer)
         // so force it to be a Null Layer and release all resource.
         layer->setStatic(layer->mTransform->isStatic());
-        layer->mLayerType = LayerType::Null;
+        layer->mLayerType = model::Layer::Type::Null;
         layer->mChildren = {};
-        return sharedLayer;
+        return layer;
     }
 
     // update the static property of layer
     bool staticFlag = true;
     for (const auto &child : layer->mChildren) {
-        staticFlag &= child.get()->isStatic();
+        staticFlag &= child->isStatic();
     }
 
-    if (layer->hasMask() && layer->mExtra) {
+    if (layer->hasMask()) {
         for (const auto &mask : layer->mExtra->mMasks) {
             staticFlag &= mask->isStatic();
         }
@@ -1075,68 +1095,51 @@ std::shared_ptr<LOTData> LottieParserImpl::parseLayer(bool record) {
 
     layer->setStatic(staticFlag && layer->mTransform->isStatic());
 
-    if (record) {
-        mLayerInfoList.push_back(
-                LayerInfo(layer->name(), layer->mInFrame, layer->mOutFrame));
-    }
-    return sharedLayer;
+    return layer;
 }
 
-void LottieParserImpl::parseMaskProperty(LOTLayerData *layer) {
-    if (PeekType() != kArrayType) {
-        parsingError = true;
-        return;
-    }
+void LottieParserImpl::parseMaskProperty(model::Layer *layer)
+{
+    RAPIDJSON_ASSERT(PeekType() == kArrayType);
     EnterArray();
     while (NextArrayValue()) {
-        if (parsingError) {
-            return;
-        }
         layer->extra()->mMasks.push_back(parseMaskObject());
-    }
-    if (!IsValid()) {
-        parsingError = true;
-        return;
     }
 }
 
-std::shared_ptr<LOTMaskData> LottieParserImpl::parseMaskObject()
+model::Mask *LottieParserImpl::parseMaskObject()
 {
-    std::shared_ptr<LOTMaskData> sharedMask = std::make_shared<LOTMaskData>();
-    LOTMaskData *                obj = sharedMask.get();
+    auto obj = allocator().make<model::Mask>();
 
-    if (PeekType() != kObjectType) {
-        parsingError = true;
-        return sharedMask;
-    }
+    RAPIDJSON_ASSERT(PeekType() == kObjectType);
     EnterObject();
     while (const char *key = NextObjectKey()) {
         if (0 == strcmp(key, "inv")) {
             obj->mInv = GetBool();
         } else if (0 == strcmp(key, "mode")) {
             const char *str = GetString();
-            if (str == nullptr) {
-                parsingError = true;
-                return sharedMask;
+            if (!str) {
+                obj->mMode = model::Mask::Mode::None;
+                continue;
             }
             switch (str[0]) {
             case 'n':
-                obj->mMode = LOTMaskData::Mode::None;
+                obj->mMode = model::Mask::Mode::None;
                 break;
             case 'a':
-                obj->mMode = LOTMaskData::Mode::Add;
+                obj->mMode = model::Mask::Mode::Add;
                 break;
             case 's':
-                obj->mMode = LOTMaskData::Mode::Substarct;
+                obj->mMode = model::Mask::Mode::Substarct;
                 break;
             case 'i':
-                obj->mMode = LOTMaskData::Mode::Intersect;
+                obj->mMode = model::Mask::Mode::Intersect;
                 break;
             case 'f':
-                obj->mMode = LOTMaskData::Mode::Difference;
+                obj->mMode = model::Mask::Mode::Difference;
                 break;
             default:
-                obj->mMode = LOTMaskData::Mode::None;
+                obj->mMode = model::Mask::Mode::None;
                 break;
             }
         } else if (0 == strcmp(key, "pt")) {
@@ -1147,43 +1150,31 @@ std::shared_ptr<LOTMaskData> LottieParserImpl::parseMaskObject()
             Skip(key);
         }
     }
-    if (!IsValid()) {
-        parsingError = true;
-        return sharedMask;
-    }
     obj->mIsStatic = obj->mShape.isStatic() && obj->mOpacity.isStatic();
-    return sharedMask;
+    return obj;
 }
 
-void LottieParserImpl::parseShapesAttr(LOTLayerData *layer) {
-    if (PeekType() != kArrayType) {
-        parsingError = true;
-        return;
-    }
+void LottieParserImpl::parseShapesAttr(model::Layer *layer)
+{
+    RAPIDJSON_ASSERT(PeekType() == kArrayType);
     EnterArray();
     while (NextArrayValue()) {
-        if (parsingError) {
-            return;
-        }
         parseObject(layer);
-    }
-    if (!IsValid()) {
-        parsingError = true;
-        return;
     }
 }
 
-std::shared_ptr<LOTData> LottieParserImpl::parseObjectTypeAttr() {
-    if (PeekType() != kStringType) {
-        parsingError = true;
-        return nullptr;
-    }
+model::Object *LottieParserImpl::parseObjectTypeAttr()
+{
+    RAPIDJSON_ASSERT(PeekType() == kStringType);
     const char *type = GetString();
     if (0 == strcmp(type, "gr")) {
         return parseGroupObject();
     } else if (0 == strcmp(type, "rc")) {
         return parseRectObject();
-    } else if (0 == strcmp(type, "el")) {
+    } else if (0 == strcmp(type, "rd")) {
+        curLayerRef->mHasRoundedCorner = true;
+        return parseRoundedCorner();
+    }  else if (0 == strcmp(type, "el")) {
         return parseEllipseObject();
     } else if (0 == strcmp(type, "tr")) {
         return parseTransformObject();
@@ -1218,86 +1209,84 @@ std::shared_ptr<LOTData> LottieParserImpl::parseObjectTypeAttr() {
     }
 }
 
-void LottieParserImpl::parseObject(LOTGroupData *parent)
+void LottieParserImpl::parseObject(model::Group *parent)
 {
-    if (PeekType() != kObjectType) {
-        parsingError = true;
-        return;
-    }
+    RAPIDJSON_ASSERT(PeekType() == kObjectType);
     EnterObject();
     while (const char *key = NextObjectKey()) {
         if (0 == strcmp(key, "ty")) {
             auto child = parseObjectTypeAttr();
-            if (child && !child->hidden()) parent->mChildren.push_back(child);
+            if (child && !child->hidden()) {
+                if (child->type() == model::Object::Type::RoundedCorner) {
+                    updateRoundedCorner(parent, static_cast<model::RoundedCorner *>(child));
+                }
+                parent->mChildren.push_back(child);
+            }
         } else {
             Skip(key);
         }
     }
-    if (!IsValid()) {
-        parsingError = true;
+}
+
+void LottieParserImpl::updateRoundedCorner(model::Group *group, model::RoundedCorner *rc)
+{
+    for(auto &e : group->mChildren)
+    {
+        if (e->type() == model::Object::Type::Rect) {
+            static_cast<model::Rect *>(e)->mRoundedCorner = rc;
+            if (!rc->isStatic()) {
+                e->setStatic(false);
+                group->setStatic(false);
+                //@TODO need to propagate.
+            }
+        } else if ( e->type() == model::Object::Type::Group) {
+            updateRoundedCorner(static_cast<model::Group *>(e), rc);
+        }
     }
 }
 
-std::shared_ptr<LOTData> LottieParserImpl::parseGroupObject() {
-    std::shared_ptr<LOTShapeGroupData> sharedGroup =
-            std::make_shared<LOTShapeGroupData>();
+model::Object *LottieParserImpl::parseGroupObject()
+{
+    auto group = allocator().make<model::Group>();
 
-    LOTShapeGroupData *group = sharedGroup.get();
     while (const char *key = NextObjectKey()) {
         if (0 == strcmp(key, "nm")) {
             group->setName(GetString());
         } else if (0 == strcmp(key, "it")) {
-            if (PeekType() != kArrayType) {
-                parsingError = true;
-                return sharedGroup;
-            }
+            RAPIDJSON_ASSERT(PeekType() == kArrayType);
             EnterArray();
             while (NextArrayValue()) {
-                if (parsingError) {
-                    return sharedGroup;
-                }
-                if (PeekType() != kObjectType) {
-                    parsingError = true;
-                    return sharedGroup;
-                }
+                RAPIDJSON_ASSERT(PeekType() == kObjectType);
                 parseObject(group);
             }
-            if (!IsValid()) {
-                parsingError = true;
-                return sharedGroup;
-            }
-            if (!group->mChildren.empty() && group->mChildren.back()->type() == LOTData::Type::Transform) {
-                group->mTransform = std::static_pointer_cast<LOTTransformData>(
-                        group->mChildren.back());
+            if (group->mChildren.back()->type() ==
+                model::Object::Type::Transform) {
+                group->mTransform =
+                    static_cast<model::Transform *>(group->mChildren.back());
                 group->mChildren.pop_back();
             }
         } else {
             Skip(key);
         }
     }
-    if (!IsValid()) {
-        parsingError = true;
-        return sharedGroup;
-    }
     bool staticFlag = true;
     for (const auto &child : group->mChildren) {
-        staticFlag &= child.get()->isStatic();
+        staticFlag &= child->isStatic();
     }
 
     if (group->mTransform) {
         group->setStatic(staticFlag && group->mTransform->isStatic());
     }
 
-    return sharedGroup;
+    return group;
 }
 
 /*
  * https://github.com/airbnb/lottie-web/blob/master/docs/json/shapes/rect.json
  */
-std::shared_ptr<LOTData> LottieParserImpl::parseRectObject()
+model::Rect *LottieParserImpl::parseRectObject()
 {
-    std::shared_ptr<LOTRectData> sharedRect = std::make_shared<LOTRectData>();
-    LOTRectData *                obj = sharedRect.get();
+    auto obj = allocator().make<model::Rect>();
 
     while (const char *key = NextObjectKey()) {
         if (0 == strcmp(key, "nm")) {
@@ -1316,23 +1305,39 @@ std::shared_ptr<LOTData> LottieParserImpl::parseRectObject()
             Skip(key);
         }
     }
-    if (!IsValid()) {
-        parsingError = true;
-        return sharedRect;
-    }
     obj->setStatic(obj->mPos.isStatic() && obj->mSize.isStatic() &&
                    obj->mRound.isStatic());
-    return sharedRect;
+    return obj;
+}
+
+/*
+ * https://github.com/airbnb/lottie-web/blob/master/docs/json/shapes/rect.json
+ */
+model::RoundedCorner *LottieParserImpl::parseRoundedCorner()
+{
+    auto obj = allocator().make<model::RoundedCorner>();
+
+    while (const char *key = NextObjectKey()) {
+        if (0 == strcmp(key, "nm")) {
+            obj->setName(GetString());
+        } else if (0 == strcmp(key, "r")) {
+            parseProperty(obj->mRadius);
+        } else if (0 == strcmp(key, "hd")) {
+            obj->setHidden(GetBool());
+        } else {
+            Skip(key);
+        }
+    }
+    obj->setStatic(obj->mRadius.isStatic());
+    return obj;
 }
 
 /*
  * https://github.com/airbnb/lottie-web/blob/master/docs/json/shapes/ellipse.json
  */
-std::shared_ptr<LOTData> LottieParserImpl::parseEllipseObject()
+model::Ellipse *LottieParserImpl::parseEllipseObject()
 {
-    std::shared_ptr<LOTEllipseData> sharedEllipse =
-        std::make_shared<LOTEllipseData>();
-    LOTEllipseData *obj = sharedEllipse.get();
+    auto obj = allocator().make<model::Ellipse>();
 
     while (const char *key = NextObjectKey()) {
         if (0 == strcmp(key, "nm")) {
@@ -1349,22 +1354,16 @@ std::shared_ptr<LOTData> LottieParserImpl::parseEllipseObject()
             Skip(key);
         }
     }
-    if (!IsValid()) {
-        parsingError = true;
-        return sharedEllipse;
-    }
     obj->setStatic(obj->mPos.isStatic() && obj->mSize.isStatic());
-    return sharedEllipse;
+    return obj;
 }
 
 /*
  * https://github.com/airbnb/lottie-web/blob/master/docs/json/shapes/shape.json
  */
-std::shared_ptr<LOTData> LottieParserImpl::parseShapeObject()
+model::Path *LottieParserImpl::parseShapeObject()
 {
-    std::shared_ptr<LOTShapeData> sharedShape =
-        std::make_shared<LOTShapeData>();
-    LOTShapeData *obj = sharedShape.get();
+    auto obj = allocator().make<model::Path>();
 
     while (const char *key = NextObjectKey()) {
         if (0 == strcmp(key, "nm")) {
@@ -1382,23 +1381,17 @@ std::shared_ptr<LOTData> LottieParserImpl::parseShapeObject()
             Skip(key);
         }
     }
-    if (!IsValid()) {
-        parsingError = true;
-        return sharedShape;
-    }
     obj->setStatic(obj->mShape.isStatic());
 
-    return sharedShape;
+    return obj;
 }
 
 /*
  * https://github.com/airbnb/lottie-web/blob/master/docs/json/shapes/star.json
  */
-std::shared_ptr<LOTData> LottieParserImpl::parsePolystarObject()
+model::Polystar *LottieParserImpl::parsePolystarObject()
 {
-    std::shared_ptr<LOTPolystarData> sharedPolystar =
-        std::make_shared<LOTPolystarData>();
-    LOTPolystarData *obj = sharedPolystar.get();
+    auto obj = allocator().make<model::Polystar>();
 
     while (const char *key = NextObjectKey()) {
         if (0 == strcmp(key, "nm")) {
@@ -1419,8 +1412,9 @@ std::shared_ptr<LOTData> LottieParserImpl::parsePolystarObject()
             parseProperty(obj->mRotation);
         } else if (0 == strcmp(key, "sy")) {
             int starType = GetInt();
-            if (starType == 1) obj->mType = LOTPolystarData::PolyType::Star;
-            if (starType == 2) obj->mType = LOTPolystarData::PolyType::Polygon;
+            if (starType == 1) obj->mPolyType = model::Polystar::PolyType::Star;
+            if (starType == 2)
+                obj->mPolyType = model::Polystar::PolyType::Polygon;
         } else if (0 == strcmp(key, "d")) {
             obj->mDirection = GetInt();
         } else if (0 == strcmp(key, "hd")) {
@@ -1432,43 +1426,38 @@ std::shared_ptr<LOTData> LottieParserImpl::parsePolystarObject()
             Skip(key);
         }
     }
-    if (!IsValid()) {
-        parsingError = true;
-        return sharedPolystar;
-    }
     obj->setStatic(
         obj->mPos.isStatic() && obj->mPointCount.isStatic() &&
         obj->mInnerRadius.isStatic() && obj->mInnerRoundness.isStatic() &&
         obj->mOuterRadius.isStatic() && obj->mOuterRoundness.isStatic() &&
         obj->mRotation.isStatic());
 
-    return sharedPolystar;
+    return obj;
 }
 
-LOTTrimData::TrimType LottieParserImpl::getTrimType() {
-    if (PeekType() != kNumberType) {
-        parsingError = true;
-        return LOTTrimData::TrimType::Individually;
-    }
+model::Trim::TrimType LottieParserImpl::getTrimType()
+{
+    RAPIDJSON_ASSERT(PeekType() == kNumberType);
     switch (GetInt()) {
-        case 1:
-            return LOTTrimData::TrimType::Simultaneously;
-        case 2:
-            return LOTTrimData::TrimType::Individually;
-        default:
-            parsingError = true;
-            break;
+    case 1:
+        return model::Trim::TrimType::Simultaneously;
+        break;
+    case 2:
+        return model::Trim::TrimType::Individually;
+        break;
+    default:
+        RAPIDJSON_ASSERT(0);
+        return model::Trim::TrimType::Simultaneously;
+        break;
     }
-    return LOTTrimData::TrimType::Individually;
 }
 
 /*
  * https://github.com/airbnb/lottie-web/blob/master/docs/json/shapes/trim.json
  */
-std::shared_ptr<LOTData> LottieParserImpl::parseTrimObject()
+model::Trim *LottieParserImpl::parseTrimObject()
 {
-    std::shared_ptr<LOTTrimData> sharedTrim = std::make_shared<LOTTrimData>();
-    LOTTrimData *                obj = sharedTrim.get();
+    auto obj = allocator().make<model::Trim>();
 
     while (const char *key = NextObjectKey()) {
         if (0 == strcmp(key, "nm")) {
@@ -1490,16 +1479,12 @@ std::shared_ptr<LOTData> LottieParserImpl::parseTrimObject()
             Skip(key);
         }
     }
-    if (!IsValid()) {
-        parsingError = true;
-        return sharedTrim;
-    }
     obj->setStatic(obj->mStart.isStatic() && obj->mEnd.isStatic() &&
                    obj->mOffset.isStatic());
-    return sharedTrim;
+    return obj;
 }
 
-void LottieParserImpl::getValue(LOTRepeaterTransform &obj)
+void LottieParserImpl::getValue(model::Repeater::Transform &obj)
 {
     EnterObject();
 
@@ -1520,16 +1505,13 @@ void LottieParserImpl::getValue(LOTRepeaterTransform &obj)
             Skip(key);
         }
     }
-    if (!IsValid()) {
-        parsingError = true;
-    }
 }
 
-std::shared_ptr<LOTData> LottieParserImpl::parseReapeaterObject()
+model::Repeater *LottieParserImpl::parseReapeaterObject()
 {
-    std::shared_ptr<LOTRepeaterData> sharedRepeater =
-        std::make_shared<LOTRepeaterData>();
-    LOTRepeaterData *obj = sharedRepeater.get();
+    auto obj = allocator().make<model::Repeater>();
+
+    obj->setContent(allocator().make<model::Group>());
 
     while (const char *key = NextObjectKey()) {
         if (0 == strcmp(key, "nm")) {
@@ -1538,11 +1520,11 @@ std::shared_ptr<LOTData> LottieParserImpl::parseReapeaterObject()
             parseProperty(obj->mCopies);
             float maxCopy = 0.0;
             if (!obj->mCopies.isStatic()) {
-                for (auto &keyFrame : obj->mCopies.animation().mKeyFrames) {
-                    if (maxCopy < keyFrame.mValue.mStartValue)
-                        maxCopy = keyFrame.mValue.mStartValue;
-                    if (maxCopy < keyFrame.mValue.mEndValue)
-                        maxCopy = keyFrame.mValue.mEndValue;
+                for (auto &keyFrame : obj->mCopies.animation().frames_) {
+                    if (maxCopy < keyFrame.value_.start_)
+                        maxCopy = keyFrame.value_.start_;
+                    if (maxCopy < keyFrame.value_.end_)
+                        maxCopy = keyFrame.value_.end_;
                 }
             } else {
                 maxCopy = obj->mCopies.value();
@@ -1561,51 +1543,47 @@ std::shared_ptr<LOTData> LottieParserImpl::parseReapeaterObject()
             Skip(key);
         }
     }
-    if (!IsValid()) {
-        parsingError = true;
-        return sharedRepeater;
-    }
     obj->setStatic(obj->mCopies.isStatic() && obj->mOffset.isStatic() &&
                    obj->mTransform.isStatic());
 
-    return sharedRepeater;
+    return obj;
 }
 
 /*
  * https://github.com/airbnb/lottie-web/blob/master/docs/json/shapes/transform.json
  */
-std::shared_ptr<LOTTransformData> LottieParserImpl::parseTransformObject(
-    bool ddd)
+model::Transform *LottieParserImpl::parseTransformObject(bool ddd)
 {
-    std::shared_ptr<LOTTransformData> sharedTransform =
-        std::make_shared<LOTTransformData>();
+    auto objT = allocator().make<model::Transform>();
 
-    auto obj = std::make_unique<TransformData>();
-    if (ddd) obj->m3D = std::make_unique<LOT3DData>();
+    auto obj = allocator().make<model::Transform::Data>();
+    if (ddd) {
+        obj->createExtraData();
+        obj->mExtra->m3DData = true;
+    }
 
     while (const char *key = NextObjectKey()) {
         if (0 == strcmp(key, "nm")) {
-            sharedTransform->setName(GetString());
+            objT->setName(GetString());
         } else if (0 == strcmp(key, "a")) {
             parseProperty(obj->mAnchor);
         } else if (0 == strcmp(key, "p")) {
             EnterObject();
+            bool separate = false;
             while (const char *key = NextObjectKey()) {
                 if (0 == strcmp(key, "k")) {
                     parsePropertyHelper(obj->mPosition);
                 } else if (0 == strcmp(key, "s")) {
-                    obj->mSeparate = GetBool();
-                } else if (obj->mSeparate && (0 == strcmp(key, "x"))) {
-                    parseProperty(obj->mX);
-                } else if (obj->mSeparate && (0 == strcmp(key, "y"))) {
-                    parseProperty(obj->mY);
+                    obj->createExtraData();
+                    obj->mExtra->mSeparate = GetBool();
+                    separate = true;
+                } else if (separate && (0 == strcmp(key, "x"))) {
+                    parseProperty(obj->mExtra->mSeparateX);
+                } else if (separate && (0 == strcmp(key, "y"))) {
+                    parseProperty(obj->mExtra->mSeparateY);
                 } else {
                     Skip(key);
                 }
-            }
-            if (!IsValid()) {
-                parsingError = true;
-                return sharedTransform;
             }
         } else if (0 == strcmp(key, "r")) {
             parseProperty(obj->mRotation);
@@ -1614,54 +1592,39 @@ std::shared_ptr<LOTTransformData> LottieParserImpl::parseTransformObject(
         } else if (0 == strcmp(key, "o")) {
             parseProperty(obj->mOpacity);
         } else if (0 == strcmp(key, "hd")) {
-            sharedTransform->setHidden(GetBool());
+            objT->setHidden(GetBool());
         } else if (0 == strcmp(key, "rx")) {
-            if (obj->m3D == nullptr) {
-                parsingError = true;
-                return sharedTransform;
-            }
-            parseProperty(obj->m3D->mRx);
+            parseProperty(obj->mExtra->m3DRx);
         } else if (0 == strcmp(key, "ry")) {
-            if (obj->m3D == nullptr) {
-                parsingError = true;
-                return sharedTransform;
-            }
-            parseProperty(obj->m3D->mRy);
+            parseProperty(obj->mExtra->m3DRy);
         } else if (0 == strcmp(key, "rz")) {
-            if (obj->m3D == nullptr) {
-                parsingError = true;
-                return sharedTransform;
-            }
-            parseProperty(obj->m3D->mRz);
+            parseProperty(obj->mExtra->m3DRz);
         } else {
             Skip(key);
         }
     }
-    if (!IsValid()) {
-        parsingError = true;
-        return sharedTransform;
-    }
-    obj->mStatic = obj->mAnchor.isStatic() && obj->mPosition.isStatic() &&
-                   obj->mRotation.isStatic() && obj->mScale.isStatic() &&
-                   obj->mX.isStatic() && obj->mY.isStatic() &&
-                   obj->mOpacity.isStatic();
-    if (obj->m3D) {
-        obj->mStatic = obj->mStatic && obj->m3D->mRx.isStatic() &&
-                       obj->m3D->mRy.isStatic() && obj->m3D->mRz.isStatic();
+    bool isStatic = obj->mAnchor.isStatic() && obj->mPosition.isStatic() &&
+                    obj->mRotation.isStatic() && obj->mScale.isStatic() &&
+                    obj->mOpacity.isStatic();
+    if (obj->mExtra) {
+        isStatic = isStatic && obj->mExtra->m3DRx.isStatic() &&
+                   obj->mExtra->m3DRy.isStatic() &&
+                   obj->mExtra->m3DRz.isStatic() &&
+                   obj->mExtra->mSeparateX.isStatic() &&
+                   obj->mExtra->mSeparateY.isStatic();
     }
 
-    sharedTransform->set(std::move(obj));
+    objT->set(obj, isStatic);
 
-    return sharedTransform;
+    return objT;
 }
 
 /*
  * https://github.com/airbnb/lottie-web/blob/master/docs/json/shapes/fill.json
  */
-std::shared_ptr<LOTData> LottieParserImpl::parseFillObject()
+model::Fill *LottieParserImpl::parseFillObject()
 {
-    std::shared_ptr<LOTFillData> sharedFill = std::make_shared<LOTFillData>();
-    LOTFillData *                obj = sharedFill.get();
+    auto obj = allocator().make<model::Fill>();
 
     while (const char *key = NextObjectKey()) {
         if (0 == strcmp(key, "nm")) {
@@ -1683,82 +1646,71 @@ std::shared_ptr<LOTData> LottieParserImpl::parseFillObject()
             Skip(key);
         }
     }
-    if (!IsValid()) {
-        parsingError = true;
-        return sharedFill;
-    }
     obj->setStatic(obj->mColor.isStatic() && obj->mOpacity.isStatic());
 
-    return sharedFill;
+    return obj;
 }
 
 /*
  * https://github.com/airbnb/lottie-web/blob/master/docs/json/helpers/lineCap.json
  */
-CapStyle LottieParserImpl::getLineCap() {
-    if (PeekType() != kNumberType) {
-        parsingError = true;
-        return CapStyle::Square;
-    }
+CapStyle LottieParserImpl::getLineCap()
+{
+    RAPIDJSON_ASSERT(PeekType() == kNumberType);
     switch (GetInt()) {
-        case 1:
-            return CapStyle::Flat;
-            break;
-        case 2:
-            return CapStyle::Round;
-            break;
-        default:
-            return CapStyle::Square;
-            break;
+    case 1:
+        return CapStyle::Flat;
+        break;
+    case 2:
+        return CapStyle::Round;
+        break;
+    default:
+        return CapStyle::Square;
+        break;
     }
 }
 
-FillRule LottieParserImpl::getFillRule() {
-    if (PeekType() != kNumberType) {
-        parsingError = true;
-        return FillRule::Winding;
-    }
+FillRule LottieParserImpl::getFillRule()
+{
+    RAPIDJSON_ASSERT(PeekType() == kNumberType);
     switch (GetInt()) {
-        case 1:
-            return FillRule::Winding;
-            break;
-        case 2:
-            return FillRule::EvenOdd;
-            break;
-        default:
-            return FillRule::Winding;
-            break;
+    case 1:
+        return FillRule::Winding;
+        break;
+    case 2:
+        return FillRule::EvenOdd;
+        break;
+    default:
+        return FillRule::Winding;
+        break;
     }
 }
 
 /*
  * https://github.com/airbnb/lottie-web/blob/master/docs/json/helpers/lineJoin.json
  */
-JoinStyle LottieParserImpl::getLineJoin() {
-    if (PeekType() != kNumberType) {
-        parsingError = true;
-        return JoinStyle::Bevel;
-    }
+JoinStyle LottieParserImpl::getLineJoin()
+{
+    RAPIDJSON_ASSERT(PeekType() == kNumberType);
     switch (GetInt()) {
-        case 1:
-            return JoinStyle::Miter;
-            break;
-        case 2:
-            return JoinStyle::Round;
-            break;
-        default:
-            return JoinStyle::Bevel;
-            break;
+    case 1:
+        return JoinStyle::Miter;
+        break;
+    case 2:
+        return JoinStyle::Round;
+        break;
+    default:
+        return JoinStyle::Bevel;
+        break;
     }
 }
 
 /*
  * https://github.com/airbnb/lottie-web/blob/master/docs/json/shapes/stroke.json
  */
-std::shared_ptr<LOTData> LottieParserImpl::parseStrokeObject() {
-    std::shared_ptr<LOTStrokeData> sharedStroke =
-            std::make_shared<LOTStrokeData>();
-    LOTStrokeData *obj = sharedStroke.get();
+model::Stroke *LottieParserImpl::parseStrokeObject()
+{
+    auto obj = allocator().make<model::Stroke>();
 
     while (const char *key = NextObjectKey()) {
         if (0 == strcmp(key, "nm")) {
@@ -1776,11 +1728,8 @@ std::shared_ptr<LOTData> LottieParserImpl::parseStrokeObject() {
         } else if (0 == strcmp(key, "lj")) {
             obj->mJoinStyle = getLineJoin();
         } else if (0 == strcmp(key, "ml")) {
-            if (PeekType() != kNumberType) {
-                parsingError = true;
-                return sharedStroke;
-            }
-            obj->mMeterLimit = GetDouble();
+            RAPIDJSON_ASSERT(PeekType() == kNumberType);
+            obj->mMiterLimit = GetDouble();
         } else if (0 == strcmp(key, "d")) {
             parseDashProperty(obj->mDash);
         } else if (0 == strcmp(key, "hd")) {
@@ -1792,21 +1741,16 @@ std::shared_ptr<LOTData> LottieParserImpl::parseStrokeObject() {
             Skip(key);
         }
     }
-    if (!IsValid()) {
-        parsingError = true;
-        return sharedStroke;
-    }
     obj->setStatic(obj->mColor.isStatic() && obj->mOpacity.isStatic() &&
-                   obj->mWidth.isStatic() && obj->mDash.mStatic);
-    return sharedStroke;
+                   obj->mWidth.isStatic() && obj->mDash.isStatic());
+    return obj;
 }
 
-void LottieParserImpl::parseGradientProperty(LOTGradient *obj, const char *key) {
+void LottieParserImpl::parseGradientProperty(model::Gradient *obj,
+                                             const char *     key)
+{
     if (0 == strcmp(key, "t")) {
-        if (PeekType() != kNumberType) {
-            parsingError = true;
-            return;
-        }
+        RAPIDJSON_ASSERT(PeekType() == kNumberType);
         obj->mGradientType = GetInt();
     } else if (0 == strcmp(key, "o")) {
         parseProperty(obj->mOpacity);
@@ -1829,10 +1773,6 @@ void LottieParserImpl::parseGradientProperty(LOTGradient *obj, const char *key) 
                 Skip(nullptr);
             }
         }
-        if (!IsValid()) {
-            parsingError = true;
-            return;
-        }
     } else if (0 == strcmp(key, "hd")) {
         obj->setHidden(GetBool());
     } else {
@@ -1841,24 +1781,18 @@ void LottieParserImpl::parseGradientProperty(LOTGradient *obj, const char *key) 
 #endif
         Skip(key);
     }
-    if (!IsValid()) {
-        parsingError = true;
-        return;
-    }
     obj->setStatic(
-            obj->mOpacity.isStatic() && obj->mStartPoint.isStatic() &&
-            obj->mEndPoint.isStatic() && obj->mHighlightAngle.isStatic() &&
-            obj->mHighlightLength.isStatic() && obj->mGradient.isStatic());
+        obj->mOpacity.isStatic() && obj->mStartPoint.isStatic() &&
+        obj->mEndPoint.isStatic() && obj->mHighlightAngle.isStatic() &&
+        obj->mHighlightLength.isStatic() && obj->mGradient.isStatic());
 }
 
 /*
  * https://github.com/airbnb/lottie-web/blob/master/docs/json/shapes/gfill.json
  */
-std::shared_ptr<LOTData> LottieParserImpl::parseGFillObject()
+model::GradientFill *LottieParserImpl::parseGFillObject()
 {
-    std::shared_ptr<LOTGFillData> sharedGFill =
-        std::make_shared<LOTGFillData>();
-    LOTGFillData *obj = sharedGFill.get();
+    auto obj = allocator().make<model::GradientFill>();
 
     while (const char *key = NextObjectKey()) {
         if (0 == strcmp(key, "nm")) {
@@ -1869,55 +1803,23 @@ std::shared_ptr<LOTData> LottieParserImpl::parseGFillObject()
             parseGradientProperty(obj, key);
         }
     }
-    if (!IsValid()) {
-        parsingError = true;
-    }
-    return sharedGFill;
+    return obj;
 }
 
-void LottieParserImpl::parseDashProperty(LOTDashProperty &dash) {
-    dash.mDashCount = 0;
-    dash.mStatic = true;
-    if (PeekType() != kArrayType) {
-        parsingError = true;
-        return;
-    }
+void LottieParserImpl::parseDashProperty(model::Dash &dash)
+{
+    RAPIDJSON_ASSERT(PeekType() == kArrayType);
     EnterArray();
     while (NextArrayValue()) {
-        if (parsingError) {
-            return;
-        }
-        if (PeekType() != kObjectType) {
-            parsingError = true;
-            return;
-        }
+        RAPIDJSON_ASSERT(PeekType() == kObjectType);
         EnterObject();
         while (const char *key = NextObjectKey()) {
             if (0 == strcmp(key, "v")) {
-                if (dash.mDashCount > 4) {
-                    parsingError = true;
-                    return;
-                }
-                parseProperty(dash.mDashArray[dash.mDashCount++]);
+                dash.mData.emplace_back();
+                parseProperty(dash.mData.back());
             } else {
                 Skip(key);
             }
-        }
-        if (!IsValid()) {
-            parsingError = true;
-            return;
-        }
-    }
-    if (!IsValid()) {
-        parsingError = true;
-        return;
-    }
-
-    // update the staic proprty
-    for (int i = 0; i < dash.mDashCount; i++) {
-        if (!dash.mDashArray[i].isStatic()) {
-            dash.mStatic = false;
-            break;
         }
     }
 }
@@ -1925,10 +1827,9 @@ void LottieParserImpl::parseDashProperty(LOTDashProperty &dash) {
 /*
  * https://github.com/airbnb/lottie-web/blob/master/docs/json/shapes/gstroke.json
  */
-std::shared_ptr<LOTData> LottieParserImpl::parseGStrokeObject() {
-    std::shared_ptr<LOTGStrokeData> sharedGStroke =
-            std::make_shared<LOTGStrokeData>();
-    LOTGStrokeData *obj = sharedGStroke.get();
+model::GradientStroke *LottieParserImpl::parseGStrokeObject()
+{
+    auto obj = allocator().make<model::GradientStroke>();
 
     while (const char *key = NextObjectKey()) {
         if (0 == strcmp(key, "nm")) {
@@ -1940,49 +1841,30 @@ std::shared_ptr<LOTData> LottieParserImpl::parseGStrokeObject() {
         } else if (0 == strcmp(key, "lj")) {
             obj->mJoinStyle = getLineJoin();
         } else if (0 == strcmp(key, "ml")) {
-            if (PeekType() != kNumberType) {
-                parsingError = true;
-                return sharedGStroke;
-            }
-            obj->mMeterLimit = GetDouble();
+            RAPIDJSON_ASSERT(PeekType() == kNumberType);
+            obj->mMiterLimit = GetDouble();
         } else if (0 == strcmp(key, "d")) {
             parseDashProperty(obj->mDash);
         } else {
             parseGradientProperty(obj, key);
         }
     }
-    if (!IsValid()) {
-        parsingError = true;
-        return sharedGStroke;
-    }
 
     obj->setStatic(obj->isStatic() && obj->mWidth.isStatic() &&
-                   obj->mDash.mStatic);
-    return sharedGStroke;
+                   obj->mDash.isStatic());
+    return obj;
 }
 
-void LottieParserImpl::getValue(std::vector<VPointF> &v) {
-    if (PeekType() != kArrayType) {
-        parsingError = true;
-        return;
-    }
+void LottieParserImpl::getValue(std::vector<VPointF> &v)
+{
+    RAPIDJSON_ASSERT(PeekType() == kArrayType);
     EnterArray();
     while (NextArrayValue()) {
-        if (parsingError) {
-            return;
-        }
-        if (PeekType() != kArrayType) {
-            parsingError = true;
-            return;
-        }
+        RAPIDJSON_ASSERT(PeekType() == kArrayType);
         EnterArray();
         VPointF pt;
         getValue(pt);
         v.push_back(pt);
-    }
-    if (!IsValid()) {
-        parsingError = true;
-        return;
     }
 }
 
@@ -1994,19 +1876,11 @@ void LottieParserImpl::getValue(VPointF &pt)
     if (PeekType() == kArrayType) EnterArray();
 
     while (NextArrayValue()) {
-        if (parsingError) {
-            return;
-        }
         const auto value = GetDouble();
         if (i < 4) {
             val[i++] = value;
         }
     }
-    if (!IsValid()) {
-        parsingError = true;
-        return;
-    }
-
     pt.setX(val[0]);
     pt.setY(val[1]);
 }
@@ -2018,60 +1892,40 @@ void LottieParserImpl::getValue(float &val)
         if (NextArrayValue()) val = GetDouble();
         // discard rest
         while (NextArrayValue()) {
-            if (parsingError) {
-                return;
-            }
             GetDouble();
-        }
-        if (!IsValid()) {
-            parsingError = true;
-            return;
         }
     } else if (PeekType() == kNumberType) {
         val = GetDouble();
     } else {
-        parsingError = true;
+        RAPIDJSON_ASSERT(0);
     }
 }
 
-void LottieParserImpl::getValue(LottieColor &color)
+void LottieParserImpl::getValue(model::Color &color)
 {
     float val[4] = {0.f};
     int   i = 0;
     if (PeekType() == kArrayType) EnterArray();
 
     while (NextArrayValue()) {
-        if (parsingError) {
-            return;
-        }
         const auto value = GetDouble();
         if (i < 4) {
             val[i++] = value;
         }
     }
-    if (!IsValid()) {
-        parsingError = true;
-        return;
-    }
+
     color.r = val[2];
     color.g = val[1];
     color.b = val[0];
     color.colorMap = colorMap;
 }
 
-void LottieParserImpl::getValue(LottieGradient &grad)
+void LottieParserImpl::getValue(model::Gradient::Data &grad)
 {
     if (PeekType() == kArrayType) EnterArray();
 
     while (NextArrayValue()) {
-        if (parsingError) {
-            return;
-        }
         grad.mGradient.push_back(GetDouble());
-    }
-    if (!IsValid()) {
-        parsingError = true;
-        return;
     }
 }
 
@@ -2080,29 +1934,18 @@ void LottieParserImpl::getValue(int &val)
     if (PeekType() == kArrayType) {
         EnterArray();
         while (NextArrayValue()) {
-            if (parsingError) {
-                return;
-            }
             val = GetInt();
-        }
-        if (!IsValid()) {
-            parsingError = true;
-            return;
         }
     } else if (PeekType() == kNumberType) {
         val = GetInt();
     } else {
-        parsingError = true;
+        RAPIDJSON_ASSERT(0);
     }
 }
 
-void LottieParserImpl::getValue(LottieShapeData &obj)
+void LottieParserImpl::parsePathInfo()
 {
-    std::vector<VPointF> inPoint;  /* "i" */
-    std::vector<VPointF> outPoint; /* "o" */
-    std::vector<VPointF> vertices; /* "v" */
-    std::vector<VPointF> points;
-    bool                 closed = false;
+    mPathInfo.reset();
 
     /*
      * The shape object could be wrapped by a array
@@ -2111,76 +1954,39 @@ void LottieParserImpl::getValue(LottieShapeData &obj)
     bool arrayWrapper = (PeekType() == kArrayType);
     if (arrayWrapper) EnterArray();
 
-    if (PeekType() != kObjectType) {
-        parsingError = true;
-        return;
-    }
+    RAPIDJSON_ASSERT(PeekType() == kObjectType);
     EnterObject();
     while (const char *key = NextObjectKey()) {
         if (0 == strcmp(key, "i")) {
-            getValue(inPoint);
+            getValue(mPathInfo.mInPoint);
         } else if (0 == strcmp(key, "o")) {
-            getValue(outPoint);
+            getValue(mPathInfo.mOutPoint);
         } else if (0 == strcmp(key, "v")) {
-            getValue(vertices);
+            getValue(mPathInfo.mVertices);
         } else if (0 == strcmp(key, "c")) {
-            closed = GetBool();
+            mPathInfo.mClosed = GetBool();
         } else {
-            parsingError = true;
+            RAPIDJSON_ASSERT(0);
             Skip(nullptr);
         }
-    }
-    if (!IsValid()) {
-        parsingError = true;
-        return;
     }
     // exit properly from the array
     if (arrayWrapper) NextArrayValue();
 
-    // shape data could be empty.
-    if (inPoint.empty() || outPoint.empty() || vertices.empty()) return;
+    mPathInfo.convert();
+}
 
-    /*
-     * Convert the AE shape format to
-     * list of bazier curves
-     * The final structure will be Move +size*Cubic + Cubic (if the path is
-     * closed one)
-     */
-    if (inPoint.size() != outPoint.size() ||
-        inPoint.size() != vertices.size()) {
-        vCritical << "The Shape data are corrupted";
-        points = std::vector<VPointF>();
-    } else {
-        int size = vertices.size();
-        points.reserve(3 * size + 4);
-        points.push_back(vertices[0]);
-        for (int i = 1; i < size; i++) {
-            points.push_back(vertices[i - 1] +
-                             outPoint[i - 1]);  // CP1 = start + outTangent
-            points.push_back(vertices[i] +
-                             inPoint[i]);   // CP2 = end + inTangent
-            points.push_back(vertices[i]);  // end point
-        }
-
-        if (closed) {
-            points.push_back(vertices[size - 1] +
-                             outPoint[size - 1]);  // CP1 = start + outTangent
-            points.push_back(vertices[0] +
-                             inPoint[0]);   // CP2 = end + inTangent
-            points.push_back(vertices[0]);  // end point
-        }
-    }
-    obj.mPoints = std::move(points);
-    obj.mClosed = closed;
+void LottieParserImpl::getValue(model::PathData &obj)
+{
+    parsePathInfo();
+    obj.mPoints = mPathInfo.mResult;
+    obj.mClosed = mPathInfo.mClosed;
 }
 
 VPointF LottieParserImpl::parseInperpolatorPoint()
 {
     VPointF cp;
-    if (PeekType() != kObjectType) {
-        parsingError = true;
-        return cp;
-    }
+    RAPIDJSON_ASSERT(PeekType() == kObjectType);
     EnterObject();
     while (const char *key = NextObjectKey()) {
         if (0 == strcmp(key, "x")) {
@@ -2190,36 +1996,28 @@ VPointF LottieParserImpl::parseInperpolatorPoint()
             getValue(cp.ry());
         }
     }
-    if (!IsValid()) {
-        parsingError = true;
-    }
     return cp;
 }
 
 template <typename T>
-bool LottieParserImpl::parseKeyFrameValue(const char *, LOTKeyFrameValue<T> &)
-{
-    return false;
-}
-
-template <>
-bool LottieParserImpl::parseKeyFrameValue(const char *               key,
-                                          LOTKeyFrameValue<VPointF> &value)
+bool LottieParserImpl::parseKeyFrameValue(
+    const char *key, model::Value<T, model::Position> &value)
 {
     if (0 == strcmp(key, "ti")) {
-        value.mPathKeyFrame = true;
-        getValue(value.mInTangent);
+        value.hasTangent_ = true;
+        getValue(value.inTangent_);
     } else if (0 == strcmp(key, "to")) {
-        value.mPathKeyFrame = true;
-        getValue(value.mOutTangent);
+        value.hasTangent_ = true;
+        getValue(value.outTangent_);
     } else {
         return false;
     }
     return true;
 }
 
-std::shared_ptr<VInterpolator> LottieParserImpl::interpolator(
-    VPointF inTangent, VPointF outTangent, std::string key)
+VInterpolator *LottieParserImpl::interpolator(VPointF     inTangent,
+                                              VPointF     outTangent,
+                                              std::string key)
 {
     if (key.empty()) {
         std::array<char, 20> temp;
@@ -2229,34 +2027,35 @@ std::shared_ptr<VInterpolator> LottieParserImpl::interpolator(
     }
 
     auto search = mInterpolatorCache.find(key);
+
     if (search != mInterpolatorCache.end()) {
         return search->second;
-    } else {
-        auto obj = std::make_shared<VInterpolator>(
-            VInterpolator(outTangent, inTangent));
-        mInterpolatorCache[std::move(key)] = obj;
-        return obj;
     }
+
+    auto obj = allocator().make<VInterpolator>(outTangent, inTangent);
+    mInterpolatorCache[std::move(key)] = obj;
+    return obj;
 }
 
 /*
  * https://github.com/airbnb/lottie-web/blob/master/docs/json/properties/multiDimensionalKeyframed.json
  */
-template <typename T>
-void LottieParserImpl::parseKeyFrame(LOTAnimInfo<T> &obj) {
+template <typename T, typename Tag>
+void LottieParserImpl::parseKeyFrame(model::KeyFrames<T, Tag> &obj)
+{
     struct ParsedField {
         std::string interpolatorKey;
-        bool interpolator{false};
-        bool value{false};
-        bool hold{false};
-        bool noEndValue{true};
+        bool        interpolator{false};
+        bool        value{false};
+        bool        hold{false};
+        bool        noEndValue{true};
     };
 
     EnterObject();
-    ParsedField parsed;
-    LOTKeyFrame<T> keyframe;
-    VPointF inTangent;
-    VPointF outTangent;
+    ParsedField                              parsed;
+    typename model::KeyFrames<T, Tag>::Frame keyframe;
+    VPointF                                  inTangent;
+    VPointF                                  outTangent;
 
     while (const char *key = NextObjectKey()) {
         if (0 == strcmp(key, "i")) {
@@ -2265,32 +2064,23 @@ void LottieParserImpl::parseKeyFrame(LOTAnimInfo<T> &obj) {
         } else if (0 == strcmp(key, "o")) {
             outTangent = parseInperpolatorPoint();
         } else if (0 == strcmp(key, "t")) {
-            keyframe.mStartFrame = GetDouble();
+            keyframe.start_ = GetDouble();
         } else if (0 == strcmp(key, "s")) {
             parsed.value = true;
-            getValue(keyframe.mValue.mStartValue);
+            getValue(keyframe.value_.start_);
             continue;
         } else if (0 == strcmp(key, "e")) {
             parsed.noEndValue = false;
-            getValue(keyframe.mValue.mEndValue);
+            getValue(keyframe.value_.end_);
             continue;
         } else if (0 == strcmp(key, "n")) {
             if (PeekType() == kStringType) {
                 parsed.interpolatorKey = GetString();
             } else {
-                if (PeekType() != kArrayType) {
-                    parsingError = true;
-                    return;
-                }
+                RAPIDJSON_ASSERT(PeekType() == kArrayType);
                 EnterArray();
                 while (NextArrayValue()) {
-                    if (parsingError) {
-                        return;
-                    }
-                    if (PeekType() != kStringType) {
-                        parsingError = true;
-                        return;
-                    }
+                    RAPIDJSON_ASSERT(PeekType() == kStringType);
                     if (parsed.interpolatorKey.empty()) {
                         parsed.interpolatorKey = GetString();
                     } else {
@@ -2298,13 +2088,9 @@ void LottieParserImpl::parseKeyFrame(LOTAnimInfo<T> &obj) {
                         GetString();
                     }
                 }
-                if (!IsValid()) {
-                    parsingError = true;
-                    return;
-                }
             }
             continue;
-        } else if (parseKeyFrameValue(key, keyframe.mValue)) {
+        } else if (parseKeyFrameValue(key, keyframe.value_)) {
             continue;
         } else if (0 == strcmp(key, "h")) {
             parsed.hold = GetInt();
@@ -2316,29 +2102,25 @@ void LottieParserImpl::parseKeyFrame(LOTAnimInfo<T> &obj) {
             Skip(key);
         }
     }
-    if (!IsValid()) {
-        parsingError = true;
-        return;
-    }
 
-    if (!obj.mKeyFrames.empty()) {
+    auto &list = obj.frames_;
+    if (!list.empty()) {
         // update the endFrame value of current keyframe
-        obj.mKeyFrames.back().mEndFrame = keyframe.mStartFrame;
+        list.back().end_ = keyframe.start_;
         // if no end value provided, copy start value to previous frame
         if (parsed.value && parsed.noEndValue) {
-            obj.mKeyFrames.back().mValue.mEndValue =
-                    keyframe.mValue.mStartValue;
+            list.back().value_.end_ = keyframe.value_.start_;
         }
     }
 
     if (parsed.hold) {
-        keyframe.mValue.mEndValue = keyframe.mValue.mStartValue;
-        keyframe.mEndFrame = keyframe.mStartFrame;
-        obj.mKeyFrames.push_back(keyframe);
+        keyframe.value_.end_ = keyframe.value_.start_;
+        keyframe.end_ = keyframe.start_;
+        list.push_back(std::move(keyframe));
     } else if (parsed.interpolator) {
-        keyframe.mInterpolator = interpolator(
-                inTangent, outTangent, std::move(parsed.interpolatorKey));
-        obj.mKeyFrames.push_back(keyframe);
+        keyframe.interpolator_ = interpolator(
+            inTangent, outTangent, std::move(parsed.interpolatorKey));
+        list.push_back(std::move(keyframe));
     } else {
         // its the last frame discard.
     }
@@ -2351,29 +2133,20 @@ void LottieParserImpl::parseKeyFrame(LOTAnimInfo<T> &obj) {
 /*
  * https://github.com/airbnb/lottie-web/blob/master/docs/json/properties/shape.json
  */
-void LottieParserImpl::parseShapeProperty(LOTAnimatable<LottieShapeData> &obj) {
+void LottieParserImpl::parseShapeProperty(model::Property<model::PathData> &obj)
+{
     EnterObject();
     while (const char *key = NextObjectKey()) {
         if (0 == strcmp(key, "k")) {
             if (PeekType() == kArrayType) {
                 EnterArray();
                 while (NextArrayValue()) {
-                    if (parsingError) {
-                        return;
-                    }
-                    if (PeekType() != kObjectType) {
-                        parsingError = true;
-                        return;
-                    }
+                    RAPIDJSON_ASSERT(PeekType() == kObjectType);
                     parseKeyFrame(obj.animation());
-                }
-                if (!IsValid()) {
-                    parsingError = true;
-                    return;
                 }
             } else {
                 if (!obj.isStatic()) {
-                    parsingError = true;
+                    RAPIDJSON_ASSERT(false);
                     st_ = kError;
                     return;
                 }
@@ -2386,31 +2159,24 @@ void LottieParserImpl::parseShapeProperty(LOTAnimatable<LottieShapeData> &obj) {
             Skip(nullptr);
         }
     }
-    if (!IsValid()) {
-        parsingError = true;
-    }
+    obj.cache();
 }
 
-template <typename T>
-void LottieParserImpl::parsePropertyHelper(LOTAnimatable<T> &obj) {
+template <typename T, typename Tag>
+void LottieParserImpl::parsePropertyHelper(model::Property<T, Tag> &obj)
+{
     if (PeekType() == kNumberType) {
         if (!obj.isStatic()) {
-            parsingError = true;
+            RAPIDJSON_ASSERT(false);
             st_ = kError;
             return;
         }
         /*single value property with no animation*/
         getValue(obj.value());
     } else {
-        if (PeekType() != kArrayType) {
-            parsingError = true;
-            return;
-        }
+        RAPIDJSON_ASSERT(PeekType() == kArrayType);
         EnterArray();
         while (NextArrayValue()) {
-            if (parsingError) {
-                return;
-            }
             /* property with keyframe info*/
             if (PeekType() == kObjectType) {
                 parseKeyFrame(obj.animation());
@@ -2421,25 +2187,19 @@ void LottieParserImpl::parsePropertyHelper(LOTAnimatable<T> &obj) {
                  * or array of object without entering the array
                  * thats why this hack is there
                  */
-                if (PeekType() != kNumberType) {
-                    parsingError = true;
-                    return;
-                }
-                /*multi value property with no animation*/
+                RAPIDJSON_ASSERT(PeekType() == kNumberType);
                 if (!obj.isStatic()) {
-                    parsingError = true;
+                    RAPIDJSON_ASSERT(false);
                     st_ = kError;
                     return;
                 }
+                /*multi value property with no animation*/
                 getValue(obj.value());
                 /*break here as we already reached end of array*/
                 break;
             }
         }
-        if (!IsValid()) {
-            parsingError = true;
-            return;
-        }
+        obj.cache();
     }
 }
 
@@ -2447,29 +2207,23 @@ void LottieParserImpl::parsePropertyHelper(LOTAnimatable<T> &obj) {
  * https://github.com/airbnb/lottie-web/tree/master/docs/json/properties
  */
 template <typename T>
-void LottieParserImpl::parseProperty(LOTAnimatable<T> &obj)
+void LottieParserImpl::parseProperty(model::Property<T> &obj)
 {
     EnterObject();
     while (const char *key = NextObjectKey()) {
-        if (parsingError) {
-            return;
-        }
         if (0 == strcmp(key, "k")) {
             parsePropertyHelper(obj);
         } else {
             Skip(key);
         }
     }
-    if (!IsValid()) {
-        parsingError = true;
-    }
 }
 
-#ifdef DEBUG_PRINT_TREE
+#ifdef LOTTIE_DUMP_TREE_SUPPORT
 
-class LOTDataInspector {
+class ObjectInspector {
 public:
-    void visit(LOTCompositionData *obj, std::string level)
+    void visit(model::Composition *obj, std::string level)
     {
         vDebug << " { " << level << "Composition:: a: " << !obj->isStatic()
                << ", v: " << obj->mVersion << ", stFm: " << obj->startFrame()
@@ -2477,11 +2231,11 @@ public:
                << ", W: " << obj->size().width()
                << ", H: " << obj->size().height() << "\n";
         level.append("\t");
-        visit(obj->mRootLayer.get(), level);
+        visit(obj->mRootLayer, level);
         level.erase(level.end() - 1, level.end());
         vDebug << " } " << level << "Composition End\n";
     }
-    void visit(LOTLayerData *obj, std::string level)
+    void visit(model::Layer *obj, std::string level)
     {
         vDebug << level << "{ " << layerType(obj->mLayerType)
                << ", name: " << obj->name() << ", id:" << obj->mId
@@ -2490,101 +2244,105 @@ public:
                << ", mask:" << obj->hasMask() << ", inFm:" << obj->mInFrame
                << ", outFm:" << obj->mOutFrame << ", stFm:" << obj->mStartFrame
                << ", ts:" << obj->mTimeStreatch << ", ao:" << obj->autoOrient()
-               << ", ddd:" << (obj->mTransform ? obj->mTransform->ddd() : false)
                << ", W:" << obj->layerSize().width()
                << ", H:" << obj->layerSize().height();
 
-        if (obj->mLayerType == LayerType::Image)
+        if (obj->mLayerType == model::Layer::Type::Image)
             vDebug << level << "\t{ "
                    << "ImageInfo:"
-                   << " W :" << obj->mAsset->mWidth
-                   << ", H :" << obj->mAsset->mHeight << " }"
+                   << " W :" << obj->extra()->mAsset->mWidth
+                   << ", H :" << obj->extra()->mAsset->mHeight << " }"
                    << "\n";
         else {
             vDebug << level;
         }
-        visitChildren(static_cast<LOTGroupData *>(obj), level);
+        visitChildren(static_cast<model::Group *>(obj), level);
         vDebug << level << "} " << layerType(obj->mLayerType).c_str()
                << ", id: " << obj->mId << "\n";
     }
-    void visitChildren(LOTGroupData *obj, std::string level)
+    void visitChildren(model::Group *obj, std::string level)
     {
         level.append("\t");
-        for (const auto &child : obj->mChildren) visit(child.get(), level);
-        if (obj->mTransform) visit(obj->mTransform.get(), level);
+        for (const auto &child : obj->mChildren) visit(child, level);
+        if (obj->mTransform) visit(obj->mTransform, level);
     }
 
-    void visit(LOTData *obj, std::string level)
+    void visit(model::Object *obj, std::string level)
     {
-        switch (obj->mType) {
-        case LOTData::Type::Repeater: {
-            auto r = static_cast<LOTRepeaterData *>(obj);
+        switch (obj->type()) {
+        case model::Object::Type::Repeater: {
+            auto r = static_cast<model::Repeater *>(obj);
             vDebug << level << "{ Repeater: name: " << obj->name()
                    << " , a:" << !obj->isStatic()
                    << ", copies:" << r->maxCopies()
                    << ", offset:" << r->offset(0);
-            visitChildren(r->mContent.get(), level);
+            visitChildren(r->mContent, level);
             vDebug << level << "} Repeater";
             break;
         }
-        case LOTData::Type::ShapeGroup: {
-            vDebug << level << "{ ShapeGroup: name: " << obj->name()
+        case model::Object::Type::Group: {
+            vDebug << level << "{ Group: name: " << obj->name()
                    << " , a:" << !obj->isStatic();
-            visitChildren(static_cast<LOTGroupData *>(obj), level);
-            vDebug << level << "} ShapeGroup";
+            visitChildren(static_cast<model::Group *>(obj), level);
+            vDebug << level << "} Group";
             break;
         }
-        case LOTData::Type::Layer: {
-            visit(static_cast<LOTLayerData *>(obj), level);
+        case model::Object::Type::Layer: {
+            visit(static_cast<model::Layer *>(obj), level);
             break;
         }
-        case LOTData::Type::Trim: {
+        case model::Object::Type::Trim: {
             vDebug << level << "{ Trim: name: " << obj->name()
                    << " , a:" << !obj->isStatic() << " }";
             break;
         }
-        case LOTData::Type::Rect: {
+        case model::Object::Type::Rect: {
             vDebug << level << "{ Rect: name: " << obj->name()
                    << " , a:" << !obj->isStatic() << " }";
             break;
         }
-        case LOTData::Type::Ellipse: {
+        case model::Object::Type::RoundedCorner: {
+            vDebug << level << "{ RoundedCorner: name: " << obj->name()
+                   << " , a:" << !obj->isStatic() << " }";
+            break;
+        }
+        case model::Object::Type::Ellipse: {
             vDebug << level << "{ Ellipse: name: " << obj->name()
                    << " , a:" << !obj->isStatic() << " }";
             break;
         }
-        case LOTData::Type::Shape: {
+        case model::Object::Type::Path: {
             vDebug << level << "{ Shape: name: " << obj->name()
                    << " , a:" << !obj->isStatic() << " }";
             break;
         }
-        case LOTData::Type::Polystar: {
+        case model::Object::Type::Polystar: {
             vDebug << level << "{ Polystar: name: " << obj->name()
                    << " , a:" << !obj->isStatic() << " }";
             break;
         }
-        case LOTData::Type::Transform: {
+        case model::Object::Type::Transform: {
             vDebug << level << "{ Transform: name: " << obj->name()
                    << " , a: " << !obj->isStatic() << " }";
             break;
         }
-        case LOTData::Type::Stroke: {
+        case model::Object::Type::Stroke: {
             vDebug << level << "{ Stroke: name: " << obj->name()
                    << " , a:" << !obj->isStatic() << " }";
             break;
         }
-        case LOTData::Type::GStroke: {
+        case model::Object::Type::GStroke: {
             vDebug << level << "{ GStroke: name: " << obj->name()
                    << " , a:" << !obj->isStatic() << " }";
             break;
         }
-        case LOTData::Type::Fill: {
+        case model::Object::Type::Fill: {
             vDebug << level << "{ Fill: name: " << obj->name()
                    << " , a:" << !obj->isStatic() << " }";
             break;
         }
-        case LOTData::Type::GFill: {
-            auto f = static_cast<LOTGFillData *>(obj);
+        case model::Object::Type::GFill: {
+            auto f = static_cast<model::GradientFill *>(obj);
             vDebug << level << "{ GFill: name: " << obj->name()
                    << " , a:" << !f->isStatic() << ", ty:" << f->mGradientType
                    << ", s:" << f->mStartPoint.value(0)
@@ -2596,22 +2354,22 @@ public:
         }
     }
 
-    std::string matteType(MatteType type)
+    std::string matteType(model::MatteType type)
     {
         switch (type) {
-        case MatteType::None:
+        case model::MatteType::None:
             return "Matte::None";
             break;
-        case MatteType::Alpha:
+        case model::MatteType::Alpha:
             return "Matte::Alpha";
             break;
-        case MatteType::AlphaInv:
+        case model::MatteType::AlphaInv:
             return "Matte::AlphaInv";
             break;
-        case MatteType::Luma:
+        case model::MatteType::Luma:
             return "Matte::Luma";
             break;
-        case MatteType::LumaInv:
+        case model::MatteType::LumaInv:
             return "Matte::LumaInv";
             break;
         default:
@@ -2619,25 +2377,25 @@ public:
             break;
         }
     }
-    std::string layerType(LayerType type)
+    std::string layerType(model::Layer::Type type)
     {
         switch (type) {
-        case LayerType::Precomp:
+        case model::Layer::Type::Precomp:
             return "Layer::Precomp";
             break;
-        case LayerType::Null:
+        case model::Layer::Type::Null:
             return "Layer::Null";
             break;
-        case LayerType::Shape:
+        case model::Layer::Type::Shape:
             return "Layer::Shape";
             break;
-        case LayerType::Solid:
+        case model::Layer::Type::Solid:
             return "Layer::Solid";
             break;
-        case LayerType::Image:
+        case model::Layer::Type::Image:
             return "Layer::Image";
             break;
-        case LayerType::Text:
+        case model::Layer::Type::Text:
             return "Layer::Text";
             break;
         default:
@@ -2649,38 +2407,30 @@ public:
 
 #endif
 
-LottieParser::~LottieParser()
+std::shared_ptr<model::Composition> model::parse(char *             str,
+                                                 std::string        dir_path,
+                                                 std::map<int32_t, int32_t> *colorReplacement)
 {
-    delete d;
-}
+    LottieParserImpl obj(str, std::move(dir_path), colorReplacement);
 
-LottieParser::LottieParser(char *str, const char *dir_path, std::map<int32_t, int32_t> *colorReplacement)
-    : d(new LottieParserImpl(str, dir_path, colorReplacement))
-{
-    d->parseComposition();
-    if (d->hasParsingError()) {
-        parsingError = true;
-    }
-}
+    if (obj.VerifyType()) {
+        obj.parseComposition();
+        auto composition = obj.composition();
+        if (composition) {
+            composition->processRepeaterObjects();
+            composition->updateStats();
 
-std::shared_ptr<LOTModel> LottieParser::model()
-{
-    if (!d->composition()) return nullptr;
-
-    std::shared_ptr<LOTModel> model = std::make_shared<LOTModel>();
-    model->mRoot = d->composition();
-    model->mRoot->processRepeaterObjects();
-
-#ifdef DEBUG_PRINT_TREE
-    LOTDataInspector inspector;
-    inspector.visit(model->mRoot.get(), "");
+#ifdef LOTTIE_DUMP_TREE_SUPPORT
+            ObjectInspector inspector;
+            inspector.visit(composition.get(), "");
 #endif
 
-    return model;
-}
+            return composition;
+        }
+    }
 
-bool LottieParser::hasParsingError() {
-    return parsingError;
+    vWarning << "Input data is not Lottie format!";
+    return {};
 }
 
 RAPIDJSON_DIAG_POP

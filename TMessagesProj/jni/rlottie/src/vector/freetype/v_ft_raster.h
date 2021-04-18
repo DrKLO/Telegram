@@ -338,12 +338,6 @@ typedef struct  SW_FT_Outline_
 #define SW_FT_RASTER_FLAG_DIRECT   0x2
 #define SW_FT_RASTER_FLAG_CLIP     0x4
 
-  /* deprecated */
-#define ft_raster_flag_default  SW_FT_RASTER_FLAG_DEFAULT
-#define ft_raster_flag_aa       SW_FT_RASTER_FLAG_AA
-#define ft_raster_flag_direct   SW_FT_RASTER_FLAG_DIRECT
-#define ft_raster_flag_clip     SW_FT_RASTER_FLAG_CLIP
-
 
   /*************************************************************************/
   /*                                                                       */
