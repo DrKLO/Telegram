@@ -2242,6 +2242,21 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     return getMessagesController().dialogFilters.get(tabId).unreadCount;
                 }
 
+                public void markTabRead(int tabId) {
+                    ArrayList<TLRPC.Dialog> dialogs;
+                    if (tabId != Integer.MAX_VALUE) {
+                        dialogs = getMessagesController().dialogFilters.get(tabId).dialogs;
+                    } else {
+                        dialogs = getMessagesController().getAllDialogs();
+                    }
+                    for (TLRPC.Dialog dialog: dialogs) {
+                        if (dialog.unread_mark || dialog.unread_count != 0) {
+                            getMessagesController().markMentionsAsRead(dialog.id);
+                            getMessagesController().markDialogAsRead(dialog.id, dialog.top_message, dialog.top_message, dialog.last_message_date, false, 0, 0, true, 0);
+                        }
+                    }
+                }
+
                 @Override
                 public boolean didSelectTab(FilterTabsView.TabView tabView, boolean selected) {
                     if (actionBar.isActionModeShowed()) {
@@ -2315,8 +2330,13 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
                     linearLayout.setMinimumWidth(AndroidUtilities.dp(200));
                     linearLayout.setOrientation(LinearLayout.VERTICAL);
-                    scrimPopupWindowItems = new ActionBarMenuSubItem[3];
-                    for (int a = 0, N = (tabView.getId() == Integer.MAX_VALUE ? 2 : 3); a < N; a++) {
+                    scrimPopupWindowItems = new ActionBarMenuSubItem[4];
+                    int unreadCount = getTabCounter(tabView.getId());
+                    final int N = tabView.getId() == Integer.MAX_VALUE
+                            ? unreadCount == 0 ? 2 : 3
+                            : unreadCount == 0 ? 3 : 4;
+
+                    for (int a = 0; a < N; a++) {
                         ActionBarMenuSubItem cell = new ActionBarMenuSubItem(getParentActivity(), a == 0, a == N - 1);
                         if (a == 0) {
                             if (getMessagesController().dialogFilters.size() <= 1) {
@@ -2329,7 +2349,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                             } else {
                                 cell.setTextAndIcon(LocaleController.getString("FilterEdit", R.string.FilterEdit), R.drawable.msg_edit);
                             }
-                        } else {
+                        }  else if(a == 2 && unreadCount > 0) {
+                            cell.setTextAndIcon(LocaleController.getString("MarkAsRead", R.string.MarkAsRead), R.drawable.msg_markread);
+                        } else if((a == 3 && unreadCount > 0) || (a == 2 && unreadCount == 0)) {
                             cell.setTextAndIcon(LocaleController.getString("FilterDeleteItem", R.string.FilterDeleteItem), R.drawable.msg_delete);
                         }
                         scrimPopupWindowItems[a] = cell;
@@ -2341,12 +2363,14 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                                 filterTabsView.setIsEditing(true);
                                 showDoneItem(true);
                             } else if (i == 1) {
-                                if (N == 2) {
+                                if (N == 2 || (N == 3 && unreadCount > 0)) {
                                     presentFragment(new FiltersSetupActivity());
                                 } else {
                                     presentFragment(new FilterCreateActivity(dialogFilter));
                                 }
-                            } else if (i == 2) {
+                            } else if (i == 2 && unreadCount > 0) {
+                                markTabRead(tabView.getId());
+                            } else {
                                 showDeleteAlert(dialogFilter);
                             }
                             if (scrimPopupWindow != null) {
