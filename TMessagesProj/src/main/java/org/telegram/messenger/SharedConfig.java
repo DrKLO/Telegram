@@ -505,15 +505,18 @@ public class SharedConfig {
         lastKeepMediaCheckTime = time;
         File cacheDir = FileLoader.checkDirectory(FileLoader.MEDIA_DIR_CACHE);
         Utilities.globalQueue.postRunnable(() -> {
-            if (keepMedia != 2) {
+            if (keepMedia != 3) {
                 int days;
                 if (keepMedia == 0) {
-                    days = 7;
+                    days = 3;
                 } else if (keepMedia == 1) {
+                    days = 7;
+                } else if (keepMedia == 2) {
                     days = 30;
                 } else {
-                    days = 3;
+                    days = 1;
                 }
+
                 long currentTime = time - 60 * 60 * 24 * days;
                 final SparseArray<File> paths = ImageLoader.getInstance().createMediaPaths();
                 for (int a = 0; a < paths.size(); a++) {
