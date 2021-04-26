@@ -51,7 +51,9 @@ public class ContactsEmptyView extends LinearLayout implements NotificationCente
         stickerView = new BackupImageView(context);
         drawable = new LoadingStickerDrawable(stickerView, svg, AndroidUtilities.dp(130), AndroidUtilities.dp(130));
         stickerView.setImageDrawable(drawable);
-        addView(stickerView, LayoutHelper.createLinear(130, 130, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 2, 0, 0));
+        if (!AndroidUtilities.isTablet()) {
+            addView(stickerView, LayoutHelper.createLinear(130, 130, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 2, 0, 0));
+        }
 
         titleTextView = new TextView(context);
         titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);

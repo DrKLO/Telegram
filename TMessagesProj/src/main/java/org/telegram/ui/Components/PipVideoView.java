@@ -623,13 +623,21 @@ public class PipVideoView {
     @Keep
     public void setX(int value) {
         windowLayoutParams.x = value;
-        windowManager.updateViewLayout(windowView, windowLayoutParams);
+        try {
+            windowManager.updateViewLayout(windowView, windowLayoutParams);
+        } catch (Exception ignore) {
+
+        }
     }
 
     @Keep
     public void setY(int value) {
         windowLayoutParams.y = value;
-        windowManager.updateViewLayout(windowView, windowLayoutParams);
+        try {
+            windowManager.updateViewLayout(windowView, windowLayoutParams);
+        } catch (Exception ignore) {
+
+        }
     }
 
     @Keep

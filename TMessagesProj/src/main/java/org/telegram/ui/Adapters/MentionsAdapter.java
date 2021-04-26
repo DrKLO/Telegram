@@ -840,19 +840,29 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
                                 if (error == null) {
                                     TLRPC.TL_channels_channelParticipants res = (TLRPC.TL_channels_channelParticipants) response;
                                     messagesController.putUsers(res.users, false);
+                                    messagesController.putChats(res.chats, false);
                                     boolean hasResults = !searchResultUsernames.isEmpty();
                                     if (!res.participants.isEmpty()) {
                                         int currentUserId = UserConfig.getInstance(currentAccount).getClientUserId();
                                         for (int a = 0; a < res.participants.size(); a++) {
                                             TLRPC.ChannelParticipant participant = res.participants.get(a);
-                                            if (searchResultUsernamesMap.indexOfKey(participant.user_id) >= 0 || !isSearchingMentions && participant.user_id == currentUserId) {
+                                            int peerId = MessageObject.getPeerId(participant.peer);
+                                            if (searchResultUsernamesMap.indexOfKey(peerId) >= 0 || !isSearchingMentions && peerId == currentUserId) {
                                                 continue;
                                             }
-                                            TLRPC.User user = messagesController.getUser(participant.user_id);
-                                            if (user == null) {
-                                                return;
+                                            if (peerId > 0) {
+                                                TLRPC.User user = messagesController.getUser(peerId);
+                                                if (user == null) {
+                                                    return;
+                                                }
+                                                searchResultUsernames.add(user);
+                                            } else {
+                                                TLRPC.Chat chat = messagesController.getChat(-peerId);
+                                                if (chat == null) {
+                                                    return;
+                                                }
+                                                searchResultUsernames.add(chat);
                                             }
-                                            searchResultUsernames.add(user);
                                         }
                                     }
                                 }

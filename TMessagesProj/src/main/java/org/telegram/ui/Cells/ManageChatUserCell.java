@@ -260,7 +260,7 @@ public class ManageChatUserCell extends FrameLayout {
                 }
             }
             lastAvatar = photo;
-            avatarImageView.setImage(ImageLocation.getForUser(currentUser, false), "50_50", avatarDrawable, currentUser);
+            avatarImageView.setForUserOrChat(currentUser, avatarDrawable);
         } else if (currentObject instanceof TLRPC.Chat) {
             TLRPC.Chat currentChat = (TLRPC.Chat) currentObject;
 
@@ -317,7 +317,7 @@ public class ManageChatUserCell extends FrameLayout {
                 }
             }
             lastAvatar = photo;
-            avatarImageView.setImage(ImageLocation.getForChat(currentChat, false), "50_50", avatarDrawable, currentChat);
+            avatarImageView.setForUserOrChat(currentChat, avatarDrawable);
         } else if (currentObject instanceof Integer) {
             nameTextView.setText(currentName);
             statusTextView.setTextColor(statusColor);

@@ -330,7 +330,7 @@ public class GroupCreateUserCell extends FrameLayout {
                     }
                 }
 
-                avatarImageView.setImage(ImageLocation.getForUser(currentUser, false), "50_50", avatarDrawable, currentUser);
+                avatarImageView.setForUserOrChat(currentUser, avatarDrawable);
             } else {
                 TLRPC.Chat currentChat = (TLRPC.Chat) currentObject;
                 if (currentChat.photo != null) {
@@ -390,7 +390,7 @@ public class GroupCreateUserCell extends FrameLayout {
                     }
                 }
 
-                avatarImageView.setImage(ImageLocation.getForChat(currentChat, false), "50_50", avatarDrawable, currentChat);
+                avatarImageView.setForUserOrChat(currentChat, avatarDrawable);
             }
         }
 

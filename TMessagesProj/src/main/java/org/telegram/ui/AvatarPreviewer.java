@@ -163,15 +163,15 @@ public class AvatarPreviewer {
     public static class Data {
 
         public static Data of(TLRPC.User user, int classGuid, MenuItem... menuItems) {
-            final ImageLocation imageLocation = ImageLocation.getForUser(user, true);
-            final ImageLocation thumbImageLocation = ImageLocation.getForUser(user, false);
+            final ImageLocation imageLocation = ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_BIG);
+            final ImageLocation thumbImageLocation = ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_SMALL);
             final String thumbFilter = thumbImageLocation != null && thumbImageLocation.photoSize instanceof TLRPC.TL_photoStrippedSize ? "b" : null;
             return new Data(imageLocation, thumbImageLocation, null, null, thumbFilter, null, null, user, menuItems, new UserInfoLoadTask(user, classGuid));
         }
 
         public static Data of(TLRPC.UserFull userFull, MenuItem... menuItems) {
-            final ImageLocation imageLocation = ImageLocation.getForUser(userFull.user, true);
-            final ImageLocation thumbImageLocation = ImageLocation.getForUser(userFull.user, false);
+            final ImageLocation imageLocation = ImageLocation.getForUserOrChat(userFull.user, ImageLocation.TYPE_BIG);
+            final ImageLocation thumbImageLocation = ImageLocation.getForUserOrChat(userFull.user, ImageLocation.TYPE_SMALL);
             final String thumbFilter = thumbImageLocation != null && thumbImageLocation.photoSize instanceof TLRPC.TL_photoStrippedSize ? "b" : null;
             final ImageLocation videoLocation;
             final String videoFileName;
@@ -188,15 +188,15 @@ public class AvatarPreviewer {
         }
 
         public static Data of(TLRPC.Chat chat, int classGuid, MenuItem... menuItems) {
-            final ImageLocation imageLocation = ImageLocation.getForChat(chat, true);
-            final ImageLocation thumbImageLocation = ImageLocation.getForChat(chat, false);
+            final ImageLocation imageLocation = ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_BIG);
+            final ImageLocation thumbImageLocation = ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_SMALL);
             final String thumbFilter = thumbImageLocation != null && thumbImageLocation.photoSize instanceof TLRPC.TL_photoStrippedSize ? "b" : null;
             return new Data(imageLocation, thumbImageLocation, null, null, thumbFilter, null, null, chat, menuItems, new ChatInfoLoadTask(chat, classGuid));
         }
 
         public static Data of(TLRPC.Chat chat, TLRPC.ChatFull chatFull, MenuItem... menuItems) {
-            final ImageLocation imageLocation = ImageLocation.getForChat(chat, true);
-            final ImageLocation thumbImageLocation = ImageLocation.getForChat(chat, false);
+            final ImageLocation imageLocation = ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_BIG);
+            final ImageLocation thumbImageLocation = ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_SMALL);
             final String thumbFilter = thumbImageLocation != null && thumbImageLocation.photoSize instanceof TLRPC.TL_photoStrippedSize ? "b" : null;
             final ImageLocation videoLocation;
             final String videoFileName;

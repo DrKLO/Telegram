@@ -20,6 +20,7 @@ import android.view.View;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.SecureDocument;
+import org.telegram.tgnet.TLObject;
 
 public class BackupImageView extends View {
 
@@ -66,6 +67,14 @@ public class BackupImageView extends View {
             thumb = new BitmapDrawable(null, thumbBitmap);
         }
         imageReceiver.setImage(imageLocation, imageFilter, null, null, thumb, size, null, parentObject, cacheType);
+    }
+
+    public void setForUserOrChat(TLObject object, AvatarDrawable avatarDrawable) {
+        imageReceiver.setForUserOrChat(object, avatarDrawable);
+    }
+
+    public void setForUserOrChat(TLObject object, AvatarDrawable avatarDrawable, Object parent) {
+        imageReceiver.setForUserOrChat(object, avatarDrawable, parent);
     }
 
     public void setImageMedia(ImageLocation mediaLocation, String mediaFilter, ImageLocation imageLocation, String imageFilter, Bitmap thumbBitmap, int size, int cacheType, Object parentObject) {
@@ -132,6 +141,11 @@ public class BackupImageView extends View {
 
     public void setRoundRadius(int value) {
         imageReceiver.setRoundRadius(value);
+        invalidate();
+    }
+
+    public void setRoundRadius(int tl, int tr, int bl, int br) {
+        imageReceiver.setRoundRadius(tl, tr, bl ,br);
         invalidate();
     }
 

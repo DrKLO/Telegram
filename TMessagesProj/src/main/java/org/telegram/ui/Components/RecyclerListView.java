@@ -773,7 +773,7 @@ public class RecyclerListView extends RecyclerView {
     }
 
     protected void onChildPressed(View child, float x, float y, boolean pressed) {
-        if (disableHighlightState) {
+        if (disableHighlightState || child == null) {
             return;
         }
         child.setPressed(pressed);

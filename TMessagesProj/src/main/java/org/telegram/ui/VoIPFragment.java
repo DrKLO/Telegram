@@ -333,21 +333,20 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
     }
 
     public static void clearInstance() {
-        if (VoIPService.getSharedInstance() != null) {
-            int h = instance.windowView.getMeasuredHeight();
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH && instance.lastInsets != null) {
-                h -= instance.lastInsets.getSystemWindowInsetBottom();
-            }
-            if (instance.canSwitchToPip) {
-                VoIPPiPView.show(instance.activity, instance.currentAccount, instance.windowView.getMeasuredWidth(), h, VoIPPiPView.ANIMATION_ENTER_TYPE_SCALE);
+        if (instance != null) {
+            if (VoIPService.getSharedInstance() != null) {
+                int h = instance.windowView.getMeasuredHeight();
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH && instance.lastInsets != null) {
-                    VoIPPiPView.topInset = instance.lastInsets.getSystemWindowInsetTop();
-                    VoIPPiPView.bottomInset = instance.lastInsets.getSystemWindowInsetBottom();
+                    h -= instance.lastInsets.getSystemWindowInsetBottom();
+                }
+                if (instance.canSwitchToPip) {
+                    VoIPPiPView.show(instance.activity, instance.currentAccount, instance.windowView.getMeasuredWidth(), h, VoIPPiPView.ANIMATION_ENTER_TYPE_SCALE);
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH && instance.lastInsets != null) {
+                        VoIPPiPView.topInset = instance.lastInsets.getSystemWindowInsetTop();
+                        VoIPPiPView.bottomInset = instance.lastInsets.getSystemWindowInsetBottom();
+                    }
                 }
             }
-        }
-
-        if (instance != null) {
             instance.callingUserTextureView.renderer.release();
             instance.currentUserTextureView.renderer.release();
             instance.callingUserMiniTextureRenderer.release();
@@ -428,11 +427,9 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
                 initRenderers();
                 VoIPService.getSharedInstance().registerStateListener(this);
             }
-        }
-        if (id == NotificationCenter.emojiDidLoad) {
-            checkEmojiLoaded(true);
-        }
-        if (id == NotificationCenter.closeInCallActivity) {
+        } else if (id == NotificationCenter.emojiDidLoad) {
+            updateKeyView(true);
+        } else if (id == NotificationCenter.closeInCallActivity) {
             windowView.finish();
         }
     }
@@ -575,7 +572,7 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
             }
         });
 
-        callingUserPhotoView.setImage(ImageLocation.getForUser(callingUser, true), null, gradientDrawable, callingUser);
+        callingUserPhotoView.setImage(ImageLocation.getForUserOrChat(callingUser, ImageLocation.TYPE_BIG), null, gradientDrawable, callingUser);
 
         currentUserCameraFloatingLayout = new VoIPFloatingLayout(context);
         currentUserCameraFloatingLayout.setRelativePosition(1f, 1f);
@@ -697,7 +694,7 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
         statusLayout.setFocusableInTouchMode(true);
 
         callingUserPhotoViewMini = new BackupImageView(context);
-        callingUserPhotoViewMini.setImage(ImageLocation.getForUser(callingUser, false), null, Theme.createCircleDrawable(AndroidUtilities.dp(135), 0xFF000000), callingUser);
+        callingUserPhotoViewMini.setImage(ImageLocation.getForUserOrChat(callingUser, ImageLocation.TYPE_SMALL), null, Theme.createCircleDrawable(AndroidUtilities.dp(135), 0xFF000000), callingUser);
         callingUserPhotoViewMini.setRoundRadius(AndroidUtilities.dp(135) / 2);
         callingUserPhotoViewMini.setVisibility(View.GONE);
 
@@ -1671,20 +1668,23 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
     }
 
     private void updateKeyView(boolean animated) {
-        TLRPC.EncryptedChat encryptedChat = new TLRPC.TL_encryptedChat();
         VoIPService service = VoIPService.getSharedInstance();
         if (service == null) {
             return;
         }
+        byte[] auth_key = null;
         try {
             ByteArrayOutputStream buf = new ByteArrayOutputStream();
             buf.write(service.getEncryptionKey());
             buf.write(service.getGA());
-            encryptedChat.auth_key = buf.toByteArray();
+            auth_key = buf.toByteArray();
         } catch (Exception checkedExceptionsAreBad) {
             FileLog.e(checkedExceptionsAreBad);
         }
-        byte[] sha256 = Utilities.computeSHA256(encryptedChat.auth_key, 0, encryptedChat.auth_key.length);
+        if (auth_key == null) {
+            return;
+        }
+        byte[] sha256 = Utilities.computeSHA256(auth_key, 0, auth_key.length);
         String[] emoji = EncryptionKeyEmojifier.emojifyForCall(sha256);
         for (int i = 0; i < 4; i++) {
             Emoji.EmojiDrawable drawable = Emoji.getEmojiDrawable(emoji[i]);
@@ -1702,6 +1702,7 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
 
     private void checkEmojiLoaded(boolean animated) {
         int count = 0;
+
         for (int i = 0; i < 4; i++) {
             if (emojiDrawables[i] != null && emojiDrawables[i].isLoaded()) {
                 count++;

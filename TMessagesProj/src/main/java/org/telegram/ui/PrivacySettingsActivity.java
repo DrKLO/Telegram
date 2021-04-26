@@ -41,6 +41,8 @@ import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.AlertsCreator;
+import org.telegram.ui.Components.Bulletin;
+import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 
@@ -447,6 +449,17 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                         getConnectionsManager().sendRequest(req, (response, error) -> {
 
                         });
+                        String text;
+                        if (clear[0] && clear[1]) {
+                            text = LocaleController.getString("PrivacyPaymentsPaymentShippingCleared", R.string.PrivacyPaymentsPaymentShippingCleared);
+                        } else if (clear[0]) {
+                            text = LocaleController.getString("PrivacyPaymentsShippingInfoCleared", R.string.PrivacyPaymentsShippingInfoCleared);
+                        } else if (clear[1]) {
+                            text = LocaleController.getString("PrivacyPaymentsPaymentInfoCleared", R.string.PrivacyPaymentsPaymentInfoCleared);
+                        } else {
+                            return;
+                        }
+                        BulletinFactory.of(PrivacySettingsActivity.this).createSimpleBulletin(R.raw.chats_infotip, text).show();
                     });
                     builder1.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                     showDialog(builder1.create());

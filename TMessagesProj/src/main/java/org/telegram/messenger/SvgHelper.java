@@ -260,7 +260,11 @@ public class SvgHelper {
                 placeholderMatrix = new Matrix();
                 placeholderGradient.setLocalMatrix(placeholderMatrix);
                 for (Paint paint : paints.values()) {
-                    paint.setShader(new ComposeShader(placeholderGradient, backgroundGradient, PorterDuff.Mode.ADD));
+                    if (Build.VERSION.SDK_INT <= 22) {
+                        paint.setShader(backgroundGradient);
+                    } else {
+                        paint.setShader(new ComposeShader(placeholderGradient, backgroundGradient, PorterDuff.Mode.ADD));
+                    }
                 }
             }
         }

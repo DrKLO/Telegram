@@ -96,7 +96,7 @@ public class WearDataLayerListenerService extends WearableListenerService {
 							};
 							AndroidUtilities.runOnUIThread(() -> {
 								NotificationCenter.getInstance(currentAccount).addObserver(listener, NotificationCenter.fileDidLoad);
-								FileLoader.getInstance(currentAccount).loadFile(ImageLocation.getForUser(user, false), user, null, 1, 1);
+								FileLoader.getInstance(currentAccount).loadFile(ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_SMALL), user, null, 1, 1);
 							});
 							try {
 								barrier.await(10, TimeUnit.SECONDS);

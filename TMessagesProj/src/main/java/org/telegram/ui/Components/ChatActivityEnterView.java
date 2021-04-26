@@ -49,6 +49,7 @@ import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.style.ImageSpan;
+import android.util.Log;
 import android.util.Property;
 import android.util.TypedValue;
 import android.view.ActionMode;
@@ -3457,7 +3458,9 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             showKeyboardOnResume = true;
         }
         AndroidUtilities.runOnUIThread(hideKeyboardRunnable = () -> {
-            closeKeyboard();
+            if (parentFragment == null || parentFragment.isLastFragment()) {
+                closeKeyboard();
+            }
             hideKeyboardRunnable = null;
         }, 500);
     }
@@ -4819,7 +4822,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     slideText.setTranslationX(0);
 
                     recordCircle.showTooltipIfNeed();
-                    messageEditText.setVisibility(View.GONE);
+                    messageEditText.setAlpha(0f);
                 }
             });
             runningAnimationAudio.setInterpolator(new DecelerateInterpolator());

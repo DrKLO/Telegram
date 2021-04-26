@@ -68,7 +68,7 @@ public class JoinGroupAlert extends BottomSheet {
             avatarDrawable = new AvatarDrawable(invite.chat);
             title = invite.chat.title;
             participants_count = invite.chat.participants_count;
-            avatarImageView.setImage(ImageLocation.getForChat(invite.chat, false), "50_50", avatarDrawable, invite);
+            avatarImageView.setForUserOrChat(invite.chat, avatarDrawable, invite);
         } else {
             avatarDrawable = new AvatarDrawable();
             avatarDrawable.setInfo(0, invite.title, null);

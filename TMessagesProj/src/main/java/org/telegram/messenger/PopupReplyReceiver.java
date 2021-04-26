@@ -20,6 +20,10 @@ public class PopupReplyReceiver extends BroadcastReceiver {
             return;
         }
         ApplicationLoader.postInitApplication();
-        NotificationsController.getInstance(intent.getIntExtra("currentAccount", UserConfig.selectedAccount)).forceShowPopupForReply();
+        int currentAccount = intent.getIntExtra("currentAccount", UserConfig.selectedAccount);
+        if (!UserConfig.isValidAccount(currentAccount)) {
+            return;
+        }
+        NotificationsController.getInstance(currentAccount).forceShowPopupForReply();
     }
 }

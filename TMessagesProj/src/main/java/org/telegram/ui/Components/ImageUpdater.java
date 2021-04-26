@@ -88,6 +88,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
     private double videoTimestamp;
 
     private boolean canSelectVideo;
+    private boolean forceDarkTheme;
 
     private final static int attach_photo = 0;
 
@@ -208,6 +209,11 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
         useAttachMenu = searchAvailable = value;
     }
 
+    public void setSearchAvailable(boolean value, boolean useAttachMenu) {
+        this.useAttachMenu = useAttachMenu;
+        searchAvailable = value;
+    }
+
     public void setUploadAfterSelect(boolean value) {
         uploadAfterSelect = value;
     }
@@ -319,7 +325,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
             return;
         }
         if (chatAttachAlert == null) {
-            chatAttachAlert = new ChatAttachAlert(parentFragment.getParentActivity(), parentFragment);
+            chatAttachAlert = new ChatAttachAlert(parentFragment.getParentActivity(), parentFragment, forceDarkTheme);
             chatAttachAlert.setAvatarPicker(canSelectVideo ? 2 : 1, searchAvailable);
             chatAttachAlert.setDelegate(new ChatAttachAlert.ChatAttachViewDelegate() {
 
@@ -578,25 +584,27 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
     }
 
     private void startCrop(String path, Uri uri) {
-        try {
-            LaunchActivity activity = (LaunchActivity) parentFragment.getParentActivity();
-            if (activity == null) {
-                return;
+        AndroidUtilities.runOnUIThread(() -> {
+            try {
+                LaunchActivity activity = (LaunchActivity) parentFragment.getParentActivity();
+                if (activity == null) {
+                    return;
+                }
+                Bundle args = new Bundle();
+                if (path != null) {
+                    args.putString("photoPath", path);
+                } else if (uri != null) {
+                    args.putParcelable("photoUri", uri);
+                }
+                PhotoCropActivity photoCropActivity = new PhotoCropActivity(args);
+                photoCropActivity.setDelegate(this);
+                activity.presentFragment(photoCropActivity);
+            } catch (Exception e) {
+                FileLog.e(e);
+                Bitmap bitmap = ImageLoader.loadBitmap(path, uri, 800, 800, true);
+                processBitmap(bitmap, null);
             }
-            Bundle args = new Bundle();
-            if (path != null) {
-                args.putString("photoPath", path);
-            } else if (uri != null) {
-                args.putParcelable("photoUri", uri);
-            }
-            PhotoCropActivity photoCropActivity = new PhotoCropActivity(args);
-            photoCropActivity.setDelegate(this);
-            activity.presentFragment(photoCropActivity);
-        } catch (Exception e) {
-            FileLog.e(e);
-            Bitmap bitmap = ImageLoader.loadBitmap(path, uri, 800, 800, true);
-            processBitmap(bitmap, null);
-        }
+        });
     }
 
     public void openPhotoForEdit(String path, String thumb, int orientation, boolean isVideo) {
@@ -879,5 +887,9 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
             uploadingVideo = (String) args[1];
             parentFragment.getFileLoader().uploadFile(uploadingVideo, false, false, (int) convertingVideo.videoEditedInfo.estimatedSize, ConnectionsManager.FileTypeVideo, false);
         }
+    }
+
+    public void setForceDarkTheme(boolean forceDarkTheme) {
+        this.forceDarkTheme = forceDarkTheme;
     }
 }

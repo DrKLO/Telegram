@@ -17,6 +17,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.UserConfig;
@@ -24,6 +25,7 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ChatUsersActivity;
+import org.telegram.ui.Components.ShareAlert;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -70,7 +72,7 @@ public class SearchAdapterHelper {
     private SparseArray<TLObject> groupSearchMap = new SparseArray<>();
     private SparseArray<TLObject> phoneSearchMap = new SparseArray<>();
     private ArrayList<Object> phonesSearch = new ArrayList<>();
-    private ArrayList<TLObject> localSearchResults;
+    private ArrayList<Object> localSearchResults;
 
     private int currentAccount = UserConfig.selectedAccount;
 
@@ -149,17 +151,19 @@ public class SearchAdapterHelper {
                             TLRPC.TL_channels_channelParticipants res = (TLRPC.TL_channels_channelParticipants) response;
                             lastFoundChannel = query.toLowerCase();
                             MessagesController.getInstance(currentAccount).putUsers(res.users, false);
+                            MessagesController.getInstance(currentAccount).putChats(res.chats, false);
                             groupSearch.clear();
                             groupSearchMap.clear();
                             groupSearch.addAll(res.participants);
                             int currentUserId = UserConfig.getInstance(currentAccount).getClientUserId();
                             for (int a = 0, N = res.participants.size(); a < N; a++) {
                                 TLRPC.ChannelParticipant participant = res.participants.get(a);
-                                if (!allowSelf && participant.user_id == currentUserId) {
+                                int peerId = MessageObject.getPeerId(participant.peer);
+                                if (!allowSelf && peerId == currentUserId) {
                                     groupSearch.remove(participant);
                                     continue;
                                 }
-                                groupSearchMap.put(participant.user_id, participant);
+                                groupSearchMap.put(peerId, participant);
                             }
                             removeGroupSearchFromGlobal();
                             if (localSearchResults != null) {
@@ -383,20 +387,24 @@ public class SearchAdapterHelper {
             if (object instanceof TLRPC.ChatParticipant) {
                 groupSearchMap.put(((TLRPC.ChatParticipant) object).user_id, object);
             } else if (object instanceof TLRPC.ChannelParticipant) {
-                groupSearchMap.put(((TLRPC.ChannelParticipant) object).user_id, object);
+                groupSearchMap.put(MessageObject.getPeerId(((TLRPC.ChannelParticipant) object).peer), object);
             }
         }
         removeGroupSearchFromGlobal();
     }
 
-    public void mergeResults(ArrayList<TLObject> localResults) {
+    public void mergeResults(ArrayList<Object> localResults) {
         localSearchResults = localResults;
         if (globalSearchMap.size() == 0 || localResults == null) {
             return;
         }
         int count = localResults.size();
         for (int a = 0; a < count; a++) {
-            TLObject obj = localResults.get(a);
+            Object obj = localResults.get(a);
+            if (obj instanceof ShareAlert.DialogSearchResult) {
+                ShareAlert.DialogSearchResult searchResult = (ShareAlert.DialogSearchResult) obj;
+                obj = searchResult.object;
+            }
             if (obj instanceof TLRPC.User) {
                 TLRPC.User user = (TLRPC.User) obj;
                 TLRPC.User u = (TLRPC.User) globalSearchMap.get(user.id);

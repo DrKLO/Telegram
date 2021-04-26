@@ -68,6 +68,8 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
     private AnimatorSet[] shadowAnimation = new AnimatorSet[2];
     private int customViewOffset = 20;
 
+    private String dialogButtonColorKey = Theme.key_dialogButton;
+
     private OnCancelListener onCancelListener;
 
     private AlertDialog cancelDialog;
@@ -728,13 +730,13 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
                 textView.setMinWidth(AndroidUtilities.dp(64));
                 textView.setTag(Dialog.BUTTON_POSITIVE);
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-                textView.setTextColor(getThemeColor(Theme.key_dialogButton));
+                textView.setTextColor(getThemeColor(dialogButtonColorKey));
                 textView.setGravity(Gravity.CENTER);
                 textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
 //                textView.setLines(1);
 //                textView.setSingleLine(true); //TODO
                 textView.setText(positiveButtonText.toString().toUpperCase());
-                textView.setBackgroundDrawable(Theme.getRoundRectSelectorDrawable(getThemeColor(Theme.key_dialogButton)));
+                textView.setBackgroundDrawable(Theme.getRoundRectSelectorDrawable(getThemeColor(dialogButtonColorKey)));
                 textView.setPadding(AndroidUtilities.dp(10), 0, AndroidUtilities.dp(10), 0);
                 if (verticalButtons) {
                     buttonsLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 36, LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT));
@@ -768,13 +770,13 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
                 textView.setMinWidth(AndroidUtilities.dp(64));
                 textView.setTag(Dialog.BUTTON_NEGATIVE);
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-                textView.setTextColor(getThemeColor(Theme.key_dialogButton));
+                textView.setTextColor(getThemeColor(dialogButtonColorKey));
                 textView.setGravity(Gravity.CENTER);
                 textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
                 textView.setEllipsize(TextUtils.TruncateAt.END);
                 textView.setSingleLine(true);
                 textView.setText(negativeButtonText.toString().toUpperCase());
-                textView.setBackgroundDrawable(Theme.getRoundRectSelectorDrawable(getThemeColor(Theme.key_dialogButton)));
+                textView.setBackgroundDrawable(Theme.getRoundRectSelectorDrawable(getThemeColor(dialogButtonColorKey)));
                 textView.setPadding(AndroidUtilities.dp(10), 0, AndroidUtilities.dp(10), 0);
                 if (verticalButtons) {
                     buttonsLayout.addView(textView, 0, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 36, LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT));
@@ -808,13 +810,13 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
                 textView.setMinWidth(AndroidUtilities.dp(64));
                 textView.setTag(Dialog.BUTTON_NEUTRAL);
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-                textView.setTextColor(getThemeColor(Theme.key_dialogButton));
+                textView.setTextColor(getThemeColor(dialogButtonColorKey));
                 textView.setGravity(Gravity.CENTER);
                 textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
                 textView.setEllipsize(TextUtils.TruncateAt.END);
                 textView.setSingleLine(true);
                 textView.setText(neutralButtonText.toString().toUpperCase());
-                textView.setBackgroundDrawable(Theme.getRoundRectSelectorDrawable(getThemeColor(Theme.key_dialogButton)));
+                textView.setBackgroundDrawable(Theme.getRoundRectSelectorDrawable(getThemeColor(dialogButtonColorKey)));
                 textView.setPadding(AndroidUtilities.dp(10), 0, AndroidUtilities.dp(10), 0);
                 if (verticalButtons) {
                     buttonsLayout.addView(textView, 1, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 36, LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT));
@@ -1015,6 +1017,9 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
 
     @Override
     public void dismiss() {
+        if (onDismissListener != null) {
+            onDismissListener.onDismiss(this);
+        }
         if (cancelDialog != null) {
             cancelDialog.dismiss();
         }
@@ -1176,8 +1181,8 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
 
         private AlertDialog alertDialog;
 
-        protected Builder(AlertDialog alert){
-            alertDialog=alert;
+        protected Builder(AlertDialog alert) {
+            alertDialog = alert;
         }
 
         public Builder(Context context) {
@@ -1238,6 +1243,11 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
 
         public Builder setTopView(View view) {
             alertDialog.topView = view;
+            return this;
+        }
+
+        public Builder setDialogButtonColorKey(String key) {
+            alertDialog.dialogButtonColorKey = key;
             return this;
         }
 
@@ -1328,6 +1338,11 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
 
         public void setButtonsVertical(boolean vertical) {
             alertDialog.verticalButtons = vertical;
+        }
+
+        public Builder setOnPreDismissListener(OnDismissListener onDismissListener) {
+            alertDialog.onDismissListener = onDismissListener;
+            return this;
         }
     }
 }

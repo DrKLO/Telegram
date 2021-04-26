@@ -11,12 +11,15 @@ package org.telegram.ui.Components;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.RectF;
 import android.os.SystemClock;
 import android.view.MotionEvent;
 import android.view.View;
 
 import androidx.core.graphics.ColorUtils;
+
+import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.messenger.AndroidUtilities;
 
@@ -45,6 +48,9 @@ public class VideoPlayerSeekBar {
     private int backgroundSelectedColor;
     private RectF rect = new RectF();
     private boolean selected;
+    private float animateFromBufferedProgress;
+    private boolean animateResetBuffering;
+    private float bufferedAnimationValue = 1f;
     private float bufferedProgress;
     private float currentRadius;
     private long lastUpdateTime;
@@ -56,6 +62,9 @@ public class VideoPlayerSeekBar {
     private float transitionProgress;
     private int horizontalPadding;
     private int smallLineColor;
+
+    private int fromThumbX = 0;
+    private float animateThumbProgress = 1f;
 
     public VideoPlayerSeekBar(View parent) {
         if (paint == null) {
@@ -129,8 +138,21 @@ public class VideoPlayerSeekBar {
         this.smallLineColor = smallLineColor;
     }
 
-    public void setProgress(float progress) {
-        thumbX = (int) Math.ceil((width - thumbWidth) * progress);
+    public void setProgress(float progress, boolean animated) {
+        int newThumb = (int) Math.ceil((width - thumbWidth) * progress);
+
+        if (animated) {
+            if (Math.abs(newThumb - thumbX) > AndroidUtilities.dp(10)) {
+                float progressInterpolated = CubicBezierInterpolator.DEFAULT.getInterpolation(animateThumbProgress);
+                fromThumbX = (int) (thumbX * progressInterpolated + fromThumbX * (1f - progressInterpolated));
+                animateThumbProgress = 0;
+            } else if (animateThumbProgress == 1f) {
+                animateThumbProgress = 0;
+                fromThumbX = thumbX;
+            }
+        }
+        thumbX = newThumb;
+
         if (thumbX < 0) {
             thumbX = 0;
         } else if (thumbX > width - thumbWidth) {
@@ -138,8 +160,17 @@ public class VideoPlayerSeekBar {
         }
     }
 
+    public void setProgress(float progress) {
+        setProgress(progress, false);
+    }
+
     public void setBufferedProgress(float value) {
-        bufferedProgress = value;
+        if (value != bufferedProgress) {
+            animateFromBufferedProgress = bufferedProgress;
+            animateResetBuffering = value < bufferedProgress;
+            bufferedProgress = value;
+            bufferedAnimationValue = 0;
+        }
     }
 
     public float getProgress() {
@@ -187,26 +218,60 @@ public class VideoPlayerSeekBar {
         this.horizontalPadding = horizontalPadding;
     }
 
-    public void draw(Canvas canvas) {
+    public void draw(Canvas canvas, View view) {
         final float radius = AndroidUtilities.lerp(thumbWidth / 2f, smallLineHeight / 2f, transitionProgress);
         rect.left = horizontalPadding + AndroidUtilities.lerp(thumbWidth / 2f, 0, transitionProgress);
         rect.top = AndroidUtilities.lerp((height - lineHeight) / 2f, height - AndroidUtilities.dp(3) - smallLineHeight, transitionProgress);
         rect.bottom = AndroidUtilities.lerp((height + lineHeight) / 2f, height - AndroidUtilities.dp(3), transitionProgress);
 
+        float currentThumbX = thumbX;
+        if (animateThumbProgress != 1f) {
+            animateThumbProgress += 16 / 220f;
+            if (animateThumbProgress >= 1f) {
+                animateThumbProgress = 1f;
+            } else {
+                view.invalidate();
+                float progressInterpolated = CubicBezierInterpolator.DEFAULT.getInterpolation(animateThumbProgress);
+                currentThumbX = fromThumbX * (1f - progressInterpolated) + thumbX * progressInterpolated;
+            }
+        }
         // background
         rect.right = horizontalPadding + AndroidUtilities.lerp(width - thumbWidth / 2f, parentView.getWidth() - horizontalPadding * 2f, transitionProgress);
         setPaintColor(selected ? backgroundSelectedColor : backgroundColor, 1f - transitionProgress);
         canvas.drawRoundRect(rect, radius, radius, paint);
 
+        if (bufferedAnimationValue != 1f) {
+            bufferedAnimationValue += 16 / 100f;
+            if (bufferedAnimationValue > 1) {
+                bufferedAnimationValue = 1f;
+            } else {
+                parentView.invalidate();
+            }
+        }
+
         // buffered
-        if (bufferedProgress > 0) {
-            rect.right = horizontalPadding + AndroidUtilities.lerp(thumbWidth / 2f + bufferedProgress * (width - thumbWidth), parentView.getWidth() - horizontalPadding * 2f, transitionProgress);
-            setPaintColor(selected ? backgroundSelectedColor : cacheColor, 1f - transitionProgress);
-            canvas.drawRoundRect(rect, radius, radius, paint);
+        if (animateResetBuffering) {
+            if (animateFromBufferedProgress > 0) {
+                rect.right = horizontalPadding + AndroidUtilities.lerp(thumbWidth / 2f + animateFromBufferedProgress * (width - thumbWidth), parentView.getWidth() - horizontalPadding * 2f, transitionProgress);
+                setPaintColor(selected ? backgroundSelectedColor : cacheColor, (1f - transitionProgress) * (1f - bufferedAnimationValue));
+                canvas.drawRoundRect(rect, radius, radius, paint);
+            }
+            if (bufferedProgress > 0) {
+                rect.right = horizontalPadding + AndroidUtilities.lerp(thumbWidth / 2f + bufferedProgress * (width - thumbWidth), parentView.getWidth() - horizontalPadding * 2f, transitionProgress);
+                setPaintColor(selected ? backgroundSelectedColor : cacheColor, 1f - transitionProgress);
+                canvas.drawRoundRect(rect, radius, radius, paint);
+            }
+        } else {
+            float currentBufferedProgress = animateFromBufferedProgress * (1f - bufferedAnimationValue) + bufferedProgress * bufferedAnimationValue;
+            if (currentBufferedProgress > 0) {
+                rect.right = horizontalPadding + AndroidUtilities.lerp(thumbWidth / 2f + currentBufferedProgress * (width - thumbWidth), parentView.getWidth() - horizontalPadding * 2f, transitionProgress);
+                setPaintColor(selected ? backgroundSelectedColor : cacheColor, 1f - transitionProgress);
+                canvas.drawRoundRect(rect, radius, radius, paint);
+            }
         }
 
         // progress
-        rect.right = horizontalPadding + AndroidUtilities.lerp(thumbWidth / 2f + (pressed ? draggingThumbX : thumbX), (parentView.getWidth() - horizontalPadding * 2f) * getProgress(), transitionProgress);
+        rect.right = horizontalPadding + AndroidUtilities.lerp(thumbWidth / 2f + (pressed ? draggingThumbX : currentThumbX), (parentView.getWidth() - horizontalPadding * 2f) * getProgress(), transitionProgress);
         if (transitionProgress > 0f && rect.width() > 0) {
             // progress stroke
             strokePaint.setAlpha((int) (transitionProgress * 255 * 0.2f));

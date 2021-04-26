@@ -40,7 +40,6 @@ import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -49,7 +48,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.Locale;
 import java.util.regex.Matcher;
@@ -218,13 +216,13 @@ public class FiltersView extends RecyclerListView {
         return usersFilters.get(i);
     }
 
-    public void setUsersAndDates(ArrayList<TLObject> localUsers, ArrayList<DateData> dates) {
+    public void setUsersAndDates(ArrayList<Object> localUsers, ArrayList<DateData> dates) {
         oldItems.clear();
         oldItems.addAll(usersFilters);
         usersFilters.clear();
         if (localUsers != null) {
             for (int i = 0; i < localUsers.size(); i++) {
-                TLObject object = localUsers.get(i);
+                Object object = localUsers.get(i);
                 if (object instanceof TLRPC.User) {
                     TLRPC.User user = (TLRPC.User) object;
                     String title;
@@ -730,12 +728,12 @@ public class FiltersView extends RecyclerListView {
                         avatarImageView.setImageDrawable(combinedDrawable);
                     } else {
                         avatarImageView.getImageReceiver().setRoundRadius(AndroidUtilities.dp(16));
-                        avatarImageView.getImageReceiver().setImage(ImageLocation.getForUser(user, false), "50_50", thumbDrawable, null, user, 0);
+                        avatarImageView.getImageReceiver().setForUserOrChat(user, thumbDrawable);
                     }
                 } else if (data.chat instanceof TLRPC.Chat) {
                     TLRPC.Chat chat = (TLRPC.Chat) data.chat;
                     avatarImageView.getImageReceiver().setRoundRadius(AndroidUtilities.dp(16));
-                    avatarImageView.getImageReceiver().setImage(ImageLocation.getForChat(chat, false), "50_50", thumbDrawable, null, chat, 0);
+                    avatarImageView.getImageReceiver().setForUserOrChat(chat, thumbDrawable);
                 }
             } else {
                 avatarImageView.setImageDrawable(thumbDrawable);

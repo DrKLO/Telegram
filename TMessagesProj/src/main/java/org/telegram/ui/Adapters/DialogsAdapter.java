@@ -204,8 +204,6 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
         if (folderId == 0 && onlineContacts != null) {
             if (!hasContacts) {
                 onlineContacts = null;
-            } else {
-                MessagesController.getInstance(currentAccount).preloadGreetingsSticker();
             }
         }
         if (folderId == 1 && showArchiveHint) {
@@ -508,12 +506,6 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
                 }
                 cell.setChecked(selectedDialogs.contains(dialog.id), false);
                 cell.setDialog(dialog, dialogsType, folderId);
-                if ((int) dialog.id > 0) {
-                    MessageObject message = MessagesController.getInstance(currentAccount).dialogMessage.get(dialog.id);
-                    if (MessageObject.isSystemSignUp(message)) {
-                        MessagesController.getInstance(currentAccount).preloadGreetingsSticker();
-                    }
-                }
                 if (preloader != null && i < 10) {
                     preloader.add(dialog.id);
                 }

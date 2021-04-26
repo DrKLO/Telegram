@@ -77,7 +77,7 @@ public class CheckBoxUserCell extends FrameLayout {
         textView.setText(ContactsController.formatName(user.first_name, user.last_name));
         checkBox.setChecked(checked, false);
         avatarDrawable.setInfo(user);
-        imageView.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable, user);
+        imageView.setForUserOrChat(user, avatarDrawable);
         needDivider = divider;
         setWillNotDraw(!divider);
     }

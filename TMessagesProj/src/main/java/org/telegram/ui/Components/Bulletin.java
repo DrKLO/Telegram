@@ -61,6 +61,8 @@ public final class Bulletin {
 
     public static final int TYPE_STICKER = 0;
     public static final int TYPE_ERROR = 1;
+    public static final int TYPE_BIO_CHANGED = 2;
+    public static final int TYPE_NAME_CHANGED = 3;
 
     public static Bulletin make(@NonNull FrameLayout containerLayout, @NonNull Layout contentLayout, int duration) {
         return new Bulletin(containerLayout, contentLayout, duration);
@@ -139,7 +141,7 @@ public final class Bulletin {
     }
 
     public Bulletin show() {
-        if (!showing) {
+        if (!showing && containerLayout != null) {
             showing = true;
 
             if (layout.getParent() != parentLayout) {
@@ -1031,6 +1033,7 @@ public final class Bulletin {
             textView.setTypeface(Typeface.SANS_SERIF);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             textView.setEllipsize(TextUtils.TruncateAt.END);
+            textView.setPadding(0, AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8));
             addView(textView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 56, 0, 16, 0));
         }
 

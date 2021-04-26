@@ -331,12 +331,14 @@ public class HintView extends FrameLayout {
             top += AndroidUtilities.dp(4);
         } else if (currentType == 6) {
             top += view.getMeasuredHeight() + getMeasuredHeight() + AndroidUtilities.dp(10);
-        } else if (currentType == 7 || currentType == 8) {
+        } else if (currentType == 7 || currentType == 8 && isTopArrow) {
             top += view.getMeasuredHeight() + getMeasuredHeight() + AndroidUtilities.dp(8);
+        } else if (currentType == 8) {
+            top -= AndroidUtilities.dp(10);
         }
 
         int centerX;
-        if (currentType == 8) {
+        if (currentType == 8 && isTopArrow) {
             if (view instanceof SimpleTextView) {
                 SimpleTextView textView = (SimpleTextView) view;
                 Drawable drawable = textView.getRightDrawable();
@@ -374,7 +376,9 @@ public class HintView extends FrameLayout {
             leftMargin = ((MarginLayoutParams) getLayoutParams()).leftMargin;
             rightMargin = ((MarginLayoutParams) getLayoutParams()).rightMargin;
         }
-        if (centerX > parentView.getMeasuredWidth() / 2) {
+        if (currentType == 8 && !isTopArrow) {
+            offset = (parentWidth - leftMargin - rightMargin - getMeasuredWidth()) / 2;
+        } else if (centerX > parentView.getMeasuredWidth() / 2) {
             if (currentType == TYPE_SEARCH_AS_LIST) {
                 offset = (int) (parentWidth - getMeasuredWidth() * 1.5f);
             } else {

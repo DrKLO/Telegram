@@ -260,7 +260,7 @@ public class UserCell2 extends FrameLayout {
                     statusTextView.setText(LocaleController.formatUserStatus(currentAccount, currentUser));
                 }
             }
-            avatarImageView.setImage(ImageLocation.getForUser(currentUser, false), "50_50", avatarDrawable, currentUser);
+            avatarImageView.setForUserOrChat(currentUser, avatarDrawable);
         } else if (currentChat != null) {
             statusTextView.setTextColor(statusColor);
             if (ChatObject.isChannel(currentChat) && !currentChat.megagroup) {
@@ -282,7 +282,7 @@ public class UserCell2 extends FrameLayout {
                     statusTextView.setText(LocaleController.getString("MegaPublic", R.string.MegaPublic));
                 }
             }
-            avatarImageView.setImage(ImageLocation.getForChat(currentChat, false), "50_50", avatarDrawable, currentObject);
+            avatarImageView.setForUserOrChat(currentChat, avatarDrawable);
         } else {
             avatarImageView.setImageDrawable(avatarDrawable);
         }

@@ -81,7 +81,7 @@ public class AdminedChannelCell extends FrameLayout {
         SpannableStringBuilder stringBuilder = new SpannableStringBuilder(url + channel.username);
         stringBuilder.setSpan(new URLSpanNoUnderline(""), url.length(), stringBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         statusTextView.setText(stringBuilder);
-        avatarImageView.setImage(ImageLocation.getForChat(channel, false), "50_50", avatarDrawable, currentChannel);
+        avatarImageView.setForUserOrChat(channel, avatarDrawable);
         isLast = last;
     }
 

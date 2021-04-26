@@ -78,6 +78,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.StatsController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
@@ -90,6 +91,7 @@ import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.voip.VoIPHelper;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.VoIPPermissionActivity;
+import org.webrtc.voiceengine.WebRtcAudioTrack;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -178,6 +180,8 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 
 	protected Runnable onDestroyRunnable;
 
+	protected Runnable switchingStreamTimeoutRunnable;
+
 	protected boolean playedConnectedSound;
 	protected boolean switchingStream;
 
@@ -191,6 +195,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 	protected int mySource;
 	protected String myJson;
 	protected boolean createGroupCall;
+	protected int scheduleDate;
 	protected TLRPC.InputPeer groupCallPeer;
 	public boolean hasFewPeers;
 	protected String joinHash;
@@ -201,6 +206,8 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 	public boolean videoCall;
 	protected long videoCapturer;
 	protected Runnable timeoutRunnable;
+
+	protected int currentStreamType;
 
 	private Boolean mHasEarpiece;
 	private boolean wasEstablished;
@@ -439,9 +446,15 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 		if (object instanceof TLRPC.User) {
 			TLRPC.User user = (TLRPC.User) object;
 			req.participant = MessagesController.getInputPeer(user);
+			if (BuildVars.LOGS_ENABLED) {
+				FileLog.d("edit group call part id = " + req.participant.user_id + " access_hash = " + req.participant.user_id);
+			}
 		} else if (object instanceof TLRPC.Chat) {
 			TLRPC.Chat chat = (TLRPC.Chat) object;
 			req.participant = MessagesController.getInputPeer(chat);
+			if (BuildVars.LOGS_ENABLED) {
+				FileLog.d("edit group call part id = " + (req.participant.chat_id != 0 ? req.participant.chat_id : req.participant.channel_id)  + " access_hash = " + req.participant.access_hash);
+			}
 		}
 		req.muted = mute;
 		if (volume >= 0) {
@@ -451,6 +464,9 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 		if (raiseHand != null) {
 			req.raise_hand = raiseHand;
 			req.flags |= 4;
+		}
+		if (BuildVars.LOGS_ENABLED) {
+			FileLog.d("edit group call flags = " + req.flags);
 		}
 		int account = currentAccount;
 		AccountInstance.getInstance(account).getConnectionsManager().sendRequest(req, (response, error) -> {
@@ -694,7 +710,13 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 		boolean needRing = am.getRingerMode() != AudioManager.RINGER_MODE_SILENT;
 		if (needRing) {
 			ringtonePlayer = new MediaPlayer();
-			ringtonePlayer.setOnPreparedListener(mediaPlayer -> ringtonePlayer.start());
+			ringtonePlayer.setOnPreparedListener(mediaPlayer -> {
+				try {
+					ringtonePlayer.start();
+				} catch (Throwable e) {
+					FileLog.e(e);
+				}
+			});
 			ringtonePlayer.setLooping(true);
 			if (isHeadsetPlugged) {
 				ringtonePlayer.setAudioStreamType(AudioManager.STREAM_VOICE_CALL);
@@ -761,6 +783,10 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 		if (updateNotificationRunnable != null) {
 			Utilities.globalQueue.cancelRunnable(updateNotificationRunnable);
 			updateNotificationRunnable = null;
+		}
+		if (switchingStreamTimeoutRunnable != null) {
+			AndroidUtilities.cancelRunOnUIThread(switchingStreamTimeoutRunnable);
+			switchingStreamTimeoutRunnable = null;
 		}
 		unregisterReceiver(receiver);
 		if (timeoutRunnable != null) {
@@ -903,19 +929,6 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 			}
 			registerReceiver(receiver, filter);
 			fetchBluetoothDeviceName();
-			Utilities.globalQueue.postRunnable(() -> {
-				soundPool = new SoundPool(1, AudioManager.STREAM_VOICE_CALL, 0);
-				spConnectingId = soundPool.load(this, R.raw.voip_connecting, 1);
-				spRingbackID = soundPool.load(this, R.raw.voip_ringback, 1);
-				spFailedID = soundPool.load(this, R.raw.voip_failed, 1);
-				spEndId = soundPool.load(this, R.raw.voip_end, 1);
-				spBusyId = soundPool.load(this, R.raw.voip_busy, 1);
-				spVoiceChatEndId = soundPool.load(this, R.raw.voicechat_leave, 1);
-				spVoiceChatStartId = soundPool.load(this, R.raw.voicechat_join, 1);
-				spVoiceChatConnecting = soundPool.load(this, R.raw.voicechat_connecting, 1);
-				spAllowTalkId = soundPool.load(this, R.raw.voip_onallowtalk, 1);
-				spStartRecordId = soundPool.load(this, R.raw.voip_recordstart, 1);
-			});
 
 			am.registerMediaButtonEventReceiver(new ComponentName(this, VoIPMediaButtonReceiver.class));
 
@@ -950,6 +963,34 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 			}
 			callFailed();
 		}
+	}
+
+	protected void loadResources() {
+		if (chat != null && SharedConfig.useMediaStream) {
+			currentStreamType = AudioManager.STREAM_MUSIC;
+			if (Build.VERSION.SDK_INT >= 21) {
+				WebRtcAudioTrack.setAudioTrackUsageAttribute(AudioAttributes.USAGE_MEDIA);
+			}
+		} else {
+			currentStreamType = AudioManager.STREAM_VOICE_CALL;
+			if (Build.VERSION.SDK_INT >= 21) {
+				WebRtcAudioTrack.setAudioTrackUsageAttribute(AudioAttributes.USAGE_VOICE_COMMUNICATION);
+			}
+		}
+		WebRtcAudioTrack.setAudioStreamType(currentStreamType);
+		Utilities.globalQueue.postRunnable(() -> {
+			soundPool = new SoundPool(1, currentStreamType, 0);
+			spConnectingId = soundPool.load(this, R.raw.voip_connecting, 1);
+			spRingbackID = soundPool.load(this, R.raw.voip_ringback, 1);
+			spFailedID = soundPool.load(this, R.raw.voip_failed, 1);
+			spEndId = soundPool.load(this, R.raw.voip_end, 1);
+			spBusyId = soundPool.load(this, R.raw.voip_busy, 1);
+			spVoiceChatEndId = soundPool.load(this, R.raw.voicechat_leave, 1);
+			spVoiceChatStartId = soundPool.load(this, R.raw.voicechat_join, 1);
+			spVoiceChatConnecting = soundPool.load(this, R.raw.voicechat_connecting, 1);
+			spAllowTalkId = soundPool.load(this, R.raw.voip_onallowtalk, 1);
+			spStartRecordId = soundPool.load(this, R.raw.voip_recordstart, 1);
+		});
 	}
 
 	protected void dispatchStateChanged(int state) {
@@ -994,14 +1035,16 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 		needPlayEndSound = true;
 		AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
 		if (!USE_CONNECTION_SERVICE) {
-			Utilities.globalQueue.postRunnable(() -> {
-				try {
-					am.setMode(AudioManager.MODE_IN_COMMUNICATION);
-				} catch (Exception e) {
-					FileLog.e(e);
-				}
-			});
-			am.requestAudioFocus(this, AudioManager.STREAM_VOICE_CALL, AudioManager.AUDIOFOCUS_GAIN);
+			if (currentStreamType == AudioManager.STREAM_VOICE_CALL) {
+				Utilities.globalQueue.postRunnable(() -> {
+					try {
+						am.setMode(AudioManager.MODE_IN_COMMUNICATION);
+					} catch (Exception e) {
+						FileLog.e(e);
+					}
+				});
+			}
+			am.requestAudioFocus(this, currentStreamType, AudioManager.AUDIOFOCUS_GAIN);
 			if (isBluetoothHeadsetConnected() && hasEarpiece()) {
 				switch (audioRouteToSet) {
 					case AUDIO_ROUTE_BLUETOOTH:
@@ -1239,38 +1282,42 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 
 	protected Bitmap getRoundAvatarBitmap(TLObject userOrChat) {
 		Bitmap bitmap = null;
-		if (userOrChat instanceof TLRPC.User) {
-			TLRPC.User user = (TLRPC.User) userOrChat;
-			if (user.photo != null && user.photo.photo_small != null) {
-				BitmapDrawable img = ImageLoader.getInstance().getImageFromMemory(user.photo.photo_small, null, "50_50");
-				if (img != null) {
-					bitmap = img.getBitmap().copy(Bitmap.Config.ARGB_8888, true);
-				} else {
-					try {
-						BitmapFactory.Options opts = new BitmapFactory.Options();
-						opts.inMutable = true;
-						bitmap = BitmapFactory.decodeFile(FileLoader.getPathToAttach(user.photo.photo_small, true).toString(), opts);
-					} catch (Throwable e) {
-						FileLog.e(e);
+		try {
+			if (userOrChat instanceof TLRPC.User) {
+				TLRPC.User user = (TLRPC.User) userOrChat;
+				if (user.photo != null && user.photo.photo_small != null) {
+					BitmapDrawable img = ImageLoader.getInstance().getImageFromMemory(user.photo.photo_small, null, "50_50");
+					if (img != null) {
+						bitmap = img.getBitmap().copy(Bitmap.Config.ARGB_8888, true);
+					} else {
+						try {
+							BitmapFactory.Options opts = new BitmapFactory.Options();
+							opts.inMutable = true;
+							bitmap = BitmapFactory.decodeFile(FileLoader.getPathToAttach(user.photo.photo_small, true).toString(), opts);
+						} catch (Throwable e) {
+							FileLog.e(e);
+						}
+					}
+				}
+			} else {
+				TLRPC.Chat chat = (TLRPC.Chat) userOrChat;
+				if (chat.photo != null && chat.photo.photo_small != null) {
+					BitmapDrawable img = ImageLoader.getInstance().getImageFromMemory(chat.photo.photo_small, null, "50_50");
+					if (img != null) {
+						bitmap = img.getBitmap().copy(Bitmap.Config.ARGB_8888, true);
+					} else {
+						try {
+							BitmapFactory.Options opts = new BitmapFactory.Options();
+							opts.inMutable = true;
+							bitmap = BitmapFactory.decodeFile(FileLoader.getPathToAttach(chat.photo.photo_small, true).toString(), opts);
+						} catch (Throwable e) {
+							FileLog.e(e);
+						}
 					}
 				}
 			}
-		} else {
-			TLRPC.Chat chat = (TLRPC.Chat) userOrChat;
-			if (chat.photo != null && chat.photo.photo_small != null) {
-				BitmapDrawable img = ImageLoader.getInstance().getImageFromMemory(chat.photo.photo_small, null, "50_50");
-				if (img != null) {
-					bitmap = img.getBitmap().copy(Bitmap.Config.ARGB_8888, true);
-				} else {
-					try {
-						BitmapFactory.Options opts = new BitmapFactory.Options();
-						opts.inMutable = true;
-						bitmap = BitmapFactory.decodeFile(FileLoader.getPathToAttach(chat.photo.photo_small, true).toString(), opts);
-					} catch (Throwable e) {
-						FileLog.e(e);
-					}
-				}
-			}
+		} catch (Throwable e) {
+			FileLog.e(e);
 		}
 		if (bitmap == null) {
 			Theme.createDialogsResources(this);

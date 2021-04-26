@@ -62,7 +62,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
     private Context mContext;
     private Runnable searchRunnable;
     private Runnable searchRunnable2;
-    private ArrayList<TLObject> searchResult = new ArrayList<>();
+    private ArrayList<Object> searchResult = new ArrayList<>();
     private ArrayList<CharSequence> searchResultNames = new ArrayList<>();
     private ArrayList<MessageObject> searchResultMessages = new ArrayList<>();
     private ArrayList<String> searchResultHashtags = new ArrayList<>();
@@ -556,7 +556,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
             return;
         }
         MessagesStorage.getInstance(currentAccount).getStorageQueue().postRunnable(() -> {
-            ArrayList<TLObject> resultArray = new ArrayList<>();
+            ArrayList<Object> resultArray = new ArrayList<>();
             ArrayList<CharSequence> resultArrayNames = new ArrayList<>();
             ArrayList<TLRPC.User> encUsers = new ArrayList<>();
             MessagesStorage.getInstance(currentAccount).localSearch(dialogsType, q, resultArray, resultArrayNames, encUsers, -1);
@@ -571,7 +571,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
     }
 
 
-    private void updateSearchResults(final ArrayList<TLObject> result, final ArrayList<CharSequence> names, final ArrayList<TLRPC.User> encUsers, final int searchId) {
+    private void updateSearchResults(final ArrayList<Object> result, final ArrayList<CharSequence> names, final ArrayList<TLRPC.User> encUsers, final int searchId) {
         AndroidUtilities.runOnUIThread(() -> {
             waitingResponseCount--;
             if (searchId != lastSearchId) {
@@ -586,7 +586,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
             }
             searchWas = true;
             for (int a = 0; a < result.size(); a++) {
-                TLObject obj = result.get(a);
+                Object obj = result.get(a);
                 if (obj instanceof TLRPC.User) {
                     TLRPC.User user = (TLRPC.User) obj;
                     MessagesController.getInstance(currentAccount).putUser(user, true);
@@ -982,7 +982,6 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                         String foundUserName = searchAdapterHelper.getLastFoundUsername();
                         if (!TextUtils.isEmpty(foundUserName)) {
                             String nameSearch = null;
-                            String nameSearchLower = null;
                             int index;
                             if (user != null) {
                                 nameSearch = ContactsController.formatName(user.first_name, user.last_name);

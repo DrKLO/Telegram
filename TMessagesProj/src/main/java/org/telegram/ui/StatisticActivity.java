@@ -1305,12 +1305,8 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
 
             chartView.legendSignatureView.showProgress(false, false);
             chartView.legendSignatureView.setOnTouchListener(new RecyclerListView.FoucsableOnTouchListener());
-            chartView.legendSignatureView.setOnClickListener(v -> {
-                onZoomed();
-            });
-            zoomedChartView.legendSignatureView.setOnClickListener(v -> {
-                zoomedChartView.animateLegend(false);
-            });
+            chartView.legendSignatureView.setOnClickListener(v -> onZoomed());
+            zoomedChartView.legendSignatureView.setOnClickListener(v -> zoomedChartView.animateLegend(false));
             chartView.setVisibility(VISIBLE);
             zoomedChartView.setVisibility(INVISIBLE);
             chartView.setHeader(chartHeaderView);
@@ -2580,7 +2576,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                 }
                 TLRPC.TL_channels_getParticipant request = new TLRPC.TL_channels_getParticipant();
                 request.channel = MessagesController.getInstance(UserConfig.selectedAccount).getInputChannel(chat.id);
-                request.user_id = MessagesController.getInstance(UserConfig.selectedAccount).getInputUser(user.id);
+                request.participant = MessagesController.getInputPeer(user);
                 ConnectionsManager.getInstance(UserConfig.selectedAccount).sendRequest(request, (response, error) -> {
                     AndroidUtilities.runOnUIThread(() -> {
                         if (fragment.isFinishing() || fragment.getFragmentView() == null) {
@@ -2611,27 +2607,25 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                 }
                 TLRPC.TL_channels_getParticipant request = new TLRPC.TL_channels_getParticipant();
                 request.channel = MessagesController.getInstance(UserConfig.selectedAccount).getInputChannel(chat.id);
-                request.user_id = MessagesController.getInstance(UserConfig.selectedAccount).getInputUser(UserConfig.getInstance(UserConfig.selectedAccount).clientUserId);
-                ConnectionsManager.getInstance(UserConfig.selectedAccount).sendRequest(request, (response, error) -> {
-                    AndroidUtilities.runOnUIThread(() -> {
-                        if (fragment.isFinishing() || fragment.getFragmentView() == null) {
-                            return;
-                        }
-                        if (progressDialog[0] == null) {
-                            return;
-                        }
-                        if (error == null) {
-                            TLRPC.TL_channels_channelParticipant participant = (TLRPC.TL_channels_channelParticipant) response;
-                            TLRPC.TL_chatChannelParticipant chatChannelParticipant = new TLRPC.TL_chatChannelParticipant();
-                            chatChannelParticipant.channelParticipant = participant.participant;
-                            chatChannelParticipant.user_id = UserConfig.getInstance(UserConfig.selectedAccount).clientUserId;
-                            chat.participants.participants.add(0, chatChannelParticipant);
-                            onLongClick(chat, fragment, progressDialog);
-                        } else {
-                            onLongClick(chat, fragment, progressDialog, false);
-                        }
-                    });
-                });
+                request.participant = MessagesController.getInstance(UserConfig.selectedAccount).getInputPeer(UserConfig.getInstance(UserConfig.selectedAccount).clientUserId);
+                ConnectionsManager.getInstance(UserConfig.selectedAccount).sendRequest(request, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                    if (fragment.isFinishing() || fragment.getFragmentView() == null) {
+                        return;
+                    }
+                    if (progressDialog[0] == null) {
+                        return;
+                    }
+                    if (error == null) {
+                        TLRPC.TL_channels_channelParticipant participant = (TLRPC.TL_channels_channelParticipant) response;
+                        TLRPC.TL_chatChannelParticipant chatChannelParticipant = new TLRPC.TL_chatChannelParticipant();
+                        chatChannelParticipant.channelParticipant = participant.participant;
+                        chatChannelParticipant.user_id = UserConfig.getInstance(UserConfig.selectedAccount).clientUserId;
+                        chat.participants.participants.add(0, chatChannelParticipant);
+                        onLongClick(chat, fragment, progressDialog);
+                    } else {
+                        onLongClick(chat, fragment, progressDialog, false);
+                    }
+                }));
                 return;
             }
 

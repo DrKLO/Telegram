@@ -485,8 +485,28 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 return null;
             }
             final RecyclerListView listView = mediaPages[0].listView;
+            int firstVisiblePosition = -1;
+            int lastVisiblePosition = -1;
             for (int a = 0, count = listView.getChildCount(); a < count; a++) {
                 View view = listView.getChildAt(a);
+                int visibleHeight = mediaPages[0].listView.getMeasuredHeight();
+                View parent = (View) getParent();
+                if (parent != null) {
+                    if (getY() + getMeasuredHeight() > parent.getMeasuredHeight()) {
+                        visibleHeight -= getBottom() - parent.getMeasuredHeight();
+                    }
+                }
+
+                if (view.getTop() >= visibleHeight) {
+                    continue;
+                }
+                int adapterPosition = listView.getChildAdapterPosition(view);
+                if (adapterPosition < firstVisiblePosition || firstVisiblePosition == -1) {
+                    firstVisiblePosition = adapterPosition;
+                }
+                if (adapterPosition > lastVisiblePosition || lastVisiblePosition == -1) {
+                    lastVisiblePosition = adapterPosition;
+                }
                 int[] coords = new int[2];
                 ImageReceiver imageReceiver = null;
                 if (view instanceof SharedPhotoVideoCell) {
@@ -564,6 +584,18 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     return object;
                 }
             }
+            if (mediaPages[0].selectedType == 0 && firstVisiblePosition >= 0 && lastVisiblePosition >= 0) {
+                int position = photoVideoAdapter.getPositionForIndex(index);
+
+                if (position <= firstVisiblePosition) {
+                    mediaPages[0].layoutManager.scrollToPositionWithOffset(position, 0);
+                    profileActivity.scrollToSharedMedia();
+                } else if (position >= lastVisiblePosition && lastVisiblePosition >= 0) {
+                    mediaPages[0].layoutManager.scrollToPositionWithOffset(position, 0, true);
+                    profileActivity.scrollToSharedMedia();
+                }
+            }
+
             return null;
         }
     };
@@ -1090,7 +1122,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                         TLObject object = groupUsersSearchAdapter.getItem(position);
                         if (object instanceof TLRPC.ChannelParticipant) {
                             TLRPC.ChannelParticipant channelParticipant = (TLRPC.ChannelParticipant) object;
-                            user_id = channelParticipant.user_id;
+                            user_id = MessageObject.getPeerId(channelParticipant.peer);
                         } else if (object instanceof TLRPC.ChatParticipant) {
                             TLRPC.ChatParticipant chatParticipant = (TLRPC.ChatParticipant) object;
                             user_id = chatParticipant.user_id;
@@ -3487,6 +3519,10 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             mContext = context;
         }
 
+        public int getPositionForIndex(int i) {
+            return i / columnsCount;
+        }
+
         @Override
         public int getItemCount() {
             if (sharedMediaData[0].messages.size() == 0 && !sharedMediaData[0].loading) {
@@ -4258,7 +4294,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 TLRPC.ChannelParticipant channelParticipant = (TLRPC.ChannelParticipant) participant;
                 TLRPC.TL_chatChannelParticipant p = new TLRPC.TL_chatChannelParticipant();
                 p.channelParticipant = channelParticipant;
-                p.user_id = channelParticipant.user_id;
+                p.user_id = MessageObject.getPeerId(channelParticipant.peer);
                 p.inviter_id = channelParticipant.inviter_id;
                 p.date = channelParticipant.date;
                 participant = p;
@@ -4321,7 +4357,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                             if (o instanceof TLRPC.ChatParticipant) {
                                 userId = ((TLRPC.ChatParticipant) o).user_id;
                             } else if (o instanceof TLRPC.ChannelParticipant) {
-                                userId = ((TLRPC.ChannelParticipant) o).user_id;
+                                userId = MessageObject.getPeerId(((TLRPC.ChannelParticipant) o).peer);
                             } else {
                                 continue;
                             }
@@ -4446,7 +4482,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             TLObject object = getItem(position);
             TLRPC.User user;
             if (object instanceof TLRPC.ChannelParticipant) {
-                user = profileActivity.getMessagesController().getUser(((TLRPC.ChannelParticipant) object).user_id);
+                user = profileActivity.getMessagesController().getUser(MessageObject.getPeerId(((TLRPC.ChannelParticipant) object).peer));
             } else if (object instanceof TLRPC.ChatParticipant) {
                 user = profileActivity.getMessagesController().getUser(((TLRPC.ChatParticipant) object).user_id);
             } else {

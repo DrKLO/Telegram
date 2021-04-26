@@ -257,6 +257,7 @@ public:
     int64_t photo_id;
     std::unique_ptr<FileLocation> photo_small;
     std::unique_ptr<FileLocation> photo_big;
+    std::unique_ptr<ByteArray> stripped_thumb;
     int32_t dc_id;
 
     static UserProfilePhoto *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
@@ -273,7 +274,7 @@ public:
 class TL_userProfilePhoto : public UserProfilePhoto {
 
 public:
-    static const uint32_t constructor = 0x69d3ab26;
+    static const uint32_t constructor = 0xcc656077;
 
     void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);

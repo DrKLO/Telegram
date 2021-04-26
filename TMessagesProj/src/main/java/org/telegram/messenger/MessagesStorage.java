@@ -4752,7 +4752,7 @@ public class MessagesStorage extends BaseController {
                     TLRPC.ChannelParticipant participant = participants.get(a);
                     state.requery();
                     state.bindLong(1, did);
-                    state.bindInteger(2, participant.user_id);
+                    state.bindInteger(2, MessageObject.getPeerId(participant.peer));
                     state.bindInteger(3, date);
                     data = new NativeByteBuffer(participant.getObjectSize());
                     participant.serializeToStream(data);
@@ -5379,7 +5379,7 @@ public class MessagesStorage extends BaseController {
                             loadedUsers.add(user);
                             participant.date = cursor.intValue(3);
                             TLRPC.TL_chatChannelParticipant chatChannelParticipant = new TLRPC.TL_chatChannelParticipant();
-                            chatChannelParticipant.user_id = participant.user_id;
+                            chatChannelParticipant.user_id = MessageObject.getPeerId(participant.peer);
                             chatChannelParticipant.date = participant.date;
                             chatChannelParticipant.inviter_id = participant.inviter_id;
                             chatChannelParticipant.channelParticipant = participant;
@@ -6569,6 +6569,7 @@ public class MessagesStorage extends BaseController {
                 }
                 int minId = Integer.MAX_VALUE;
                 int maxId = Integer.MIN_VALUE;
+                ArrayList<Long> messageIdsToFix = null;
                 if (cursor != null) {
                     while (cursor.next()) {
                         messagesCount++;
@@ -6579,7 +6580,14 @@ public class MessagesStorage extends BaseController {
                         if (data != null) {
                             TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
                             message.send_state = cursor.intValue(2);
-                            message.id = cursor.intValue(3);
+                            long fullMid = cursor.longValue(3);
+                            message.id = (int) fullMid;
+                            if ((fullMid & 0xffffffff00000000L) == 0xffffffff00000000L && message.id > 0) {
+                                if (messageIdsToFix == null) {
+                                    messageIdsToFix = new ArrayList<>();
+                                }
+                                messageIdsToFix.add(fullMid);
+                            }
                             if (message.id > 0 && message.send_state != 0 && message.send_state != 3) {
                                 message.send_state = 0;
                             }
@@ -6685,6 +6693,22 @@ public class MessagesStorage extends BaseController {
                     }
                     cursor.dispose();
                 }
+                if (messageIdsToFix != null) {
+                    SQLitePreparedStatement state = database.executeFast("UPDATE messages SET mid = ? WHERE mid = ?");
+                    try {
+                        for (int a = 0, N = messageIdsToFix.size(); a < N; a++) {
+                            long id = messageIdsToFix.get(a);
+                            state.requery();
+                            state.bindLong(1, (int) id);
+                            state.bindLong(2, id);
+                            state.step();
+                        }
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                    state.dispose();
+                }
+
 
                 Collections.sort(res.messages, (lhs, rhs) -> {
                     if (lhs.id > 0 && rhs.id > 0) {
@@ -11549,7 +11573,7 @@ public class MessagesStorage extends BaseController {
     }
 
 
-    public void localSearch(int dialogsType, String query, ArrayList<TLObject> resultArray, ArrayList<CharSequence> resultArrayNames, ArrayList<TLRPC.User> encUsers, int folderId) {
+    public void localSearch(int dialogsType, String query, ArrayList<Object> resultArray, ArrayList<CharSequence> resultArrayNames, ArrayList<TLRPC.User> encUsers, int folderId) {
         int selfUserId = UserConfig.getInstance(currentAccount).getClientUserId();
         try {
             String search1 = query.trim().toLowerCase();

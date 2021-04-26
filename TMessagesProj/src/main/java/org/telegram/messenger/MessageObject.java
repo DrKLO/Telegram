@@ -1108,8 +1108,14 @@ public class MessageObject {
             TLRPC.TL_channelAdminLogEventActionParticipantInvite action = (TLRPC.TL_channelAdminLogEventActionParticipantInvite) event.action;
             messageOwner = new TLRPC.TL_messageService();
             messageOwner.action = new TLRPC.TL_messageActionChatAddUser();
-            TLRPC.User whoUser = MessagesController.getInstance(currentAccount).getUser(action.participant.user_id);
-            if (messageOwner.from_id instanceof TLRPC.TL_peerUser && action.participant.user_id == messageOwner.from_id.user_id) {
+            int peerId = getPeerId(action.participant.peer);
+            TLObject whoUser;
+            if (peerId > 0) {
+                whoUser = MessagesController.getInstance(currentAccount).getUser(peerId);
+            } else {
+                whoUser = MessagesController.getInstance(currentAccount).getChat(-peerId);
+            }
+            if (messageOwner.from_id instanceof TLRPC.TL_peerUser && peerId == messageOwner.from_id.user_id) {
                 if (chat.megagroup) {
                     messageText = replaceWithLink(LocaleController.getString("EventLogGroupJoined", R.string.EventLogGroupJoined), "un1", fromUser);
                 } else {
@@ -1133,7 +1139,13 @@ public class MessageObject {
                 new_participant = action.new_participant;
             }
             messageOwner = new TLRPC.TL_message();
-            TLRPC.User whoUser = MessagesController.getInstance(currentAccount).getUser(prev_participant.user_id);
+            int peerId = MessageObject.getPeerId(prev_participant.peer);
+            TLObject whoUser;
+            if (peerId > 0) {
+                whoUser = MessagesController.getInstance(currentAccount).getUser(peerId);
+            } else {
+                whoUser = MessagesController.getInstance(currentAccount).getUser(-peerId);
+            }
             StringBuilder rights;
             if (!(prev_participant instanceof TLRPC.TL_channelParticipantCreator) && new_participant instanceof TLRPC.TL_channelParticipantCreator) {
                 String str = LocaleController.getString("EventLogChangedOwnership", R.string.EventLogChangedOwnership);
@@ -1294,7 +1306,13 @@ public class MessageObject {
         } else if (event.action instanceof TLRPC.TL_channelAdminLogEventActionParticipantToggleBan) {
             TLRPC.TL_channelAdminLogEventActionParticipantToggleBan action = (TLRPC.TL_channelAdminLogEventActionParticipantToggleBan) event.action;
             messageOwner = new TLRPC.TL_message();
-            TLRPC.User whoUser = MessagesController.getInstance(currentAccount).getUser(action.prev_participant.user_id);
+            int peerId = getPeerId(action.prev_participant.peer);
+            TLObject whoUser;
+            if (peerId > 0) {
+                whoUser = MessagesController.getInstance(currentAccount).getUser(peerId);
+            } else {
+                whoUser = MessagesController.getInstance(currentAccount).getChat(-peerId);
+            }
             TLRPC.TL_chatBannedRights o = action.prev_participant.banned_rights;
             TLRPC.TL_chatBannedRights n = action.new_participant.banned_rights;
             if (chat.megagroup && (n == null || !n.view_messages || o != null && n.until_date != o.until_date)) {
@@ -1828,29 +1846,41 @@ public class MessageObject {
         checkMediaExistance();
     }
 
-    private String getUserName(TLRPC.User user, ArrayList<TLRPC.MessageEntity> entities, int offset) {
+    private String getUserName(TLObject object, ArrayList<TLRPC.MessageEntity> entities, int offset) {
         String name;
-        if (user == null) {
+        String username;
+        int id;
+        if (object == null) {
             name = "";
-        } else {
+            username = null;
+            id = 0;
+        } else if (object instanceof TLRPC.User) {
+            TLRPC.User user = (TLRPC.User) object;
             name = ContactsController.formatName(user.first_name, user.last_name);
+            username = user.username;
+            id = user.id;
+        } else {
+            TLRPC.Chat chat = (TLRPC.Chat) object;
+            name = chat.title;
+            username = chat.username;
+            id = -chat.id;
         }
         if (offset >= 0) {
             TLRPC.TL_messageEntityMentionName entity = new TLRPC.TL_messageEntityMentionName();
-            entity.user_id = user.id;
+            entity.user_id = id;
             entity.offset = offset;
             entity.length = name.length();
             entities.add(entity);
         }
-        if (!TextUtils.isEmpty(user.username)) {
+        if (!TextUtils.isEmpty(username)) {
             if (offset >= 0) {
                 TLRPC.TL_messageEntityMentionName entity = new TLRPC.TL_messageEntityMentionName();
-                entity.user_id = user.id;
+                entity.user_id = id;
                 entity.offset = offset + name.length() + 2;
-                entity.length = user.username.length() + 1;
+                entity.length = username.length() + 1;
                 entities.add(entity);
             }
-            return String.format("%1$s (@%2$s)", name, user.username);
+            return String.format("%1$s (@%2$s)", name, username);
         }
         return name;
     }
@@ -2394,7 +2424,10 @@ public class MessageObject {
 
         if (messageOwner instanceof TLRPC.TL_messageService) {
             if (messageOwner.action != null) {
-                if (messageOwner.action instanceof TLRPC.TL_messageActionGroupCall) {
+                if (messageOwner.action instanceof TLRPC.TL_messageActionGroupCallScheduled) {
+                    TLRPC.TL_messageActionGroupCallScheduled action = (TLRPC.TL_messageActionGroupCallScheduled) messageOwner.action;
+                    messageText = LocaleController.formatString("ActionGroupCallScheduled", R.string.ActionGroupCallScheduled, LocaleController.formatStartsTime(action.schedule_date, 3, false));
+                } else if (messageOwner.action instanceof TLRPC.TL_messageActionGroupCall) {
                     if (messageOwner.action.duration != 0) {
                         String time;
                         int days = messageOwner.action.duration / (3600 * 24);

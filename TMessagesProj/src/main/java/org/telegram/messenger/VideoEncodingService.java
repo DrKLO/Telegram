@@ -75,6 +75,10 @@ public class VideoEncodingService extends Service implements NotificationCenter.
         path = intent.getStringExtra("path");
         int oldAccount = currentAccount;
         currentAccount = intent.getIntExtra("currentAccount", UserConfig.selectedAccount);
+        if (!UserConfig.isValidAccount(currentAccount)) {
+            stopSelf();
+            return Service.START_NOT_STICKY;
+        }
         if (oldAccount != currentAccount) {
             NotificationCenter.getInstance(oldAccount).removeObserver(this, NotificationCenter.FileUploadProgressChanged);
             NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.FileUploadProgressChanged);

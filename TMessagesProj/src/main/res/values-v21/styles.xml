@@ -159,9 +159,11 @@
         <item name="android:windowIsTranslucent">true</item>
         <item name="android:windowFullscreen">false</item>
 
-        <item name="android:colorBackgroundCacheHint">@null</item>
-        <item name="android:windowFrame">@null</item>
-        <item name="android:backgroundDimEnabled">false</item>
+        <item name="android:colorAccent">#4991cc</item>
+        <item name="android:colorPrimary">#527da3</item>
+        <item name="android:colorControlActivated">#808080</item>
+        <item name="android:textColorHighlight">#60808080</item>
+        <item name="android:windowActionModeOverlay">true</item>
     </style>
 
 </resources>

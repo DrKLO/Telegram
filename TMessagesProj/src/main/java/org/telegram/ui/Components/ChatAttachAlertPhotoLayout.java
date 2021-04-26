@@ -190,6 +190,8 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
     private final static int compress = 1;
     private final static int open_in = 2;
 
+    boolean forceDarkTheme;
+
     private class BasePhotoProvider extends PhotoViewer.EmptyPhotoViewerProvider {
         @Override
         public boolean isPhotoChecked(int index) {
@@ -433,8 +435,9 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         return arrayList;
     }
 
-    public ChatAttachAlertPhotoLayout(ChatAttachAlert alert, Context context) {
+    public ChatAttachAlertPhotoLayout(ChatAttachAlert alert, Context context, boolean forceDarkTheme) {
         super(alert, context);
+        this.forceDarkTheme = forceDarkTheme;
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.albumsDidLoad);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.cameraInitied);
         FrameLayout container = alert.getContainer();
@@ -596,16 +599,15 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                 PhotoViewer.getInstance().setMaxSelectedPhotos(parentAlert.maxSelectedPhotos, parentAlert.allowOrder);
                 ChatActivity chatActivity;
                 int type;
-                if (parentAlert.baseFragment instanceof ChatActivity) {
+                if (parentAlert.avatarPicker != 0) {
+                    chatActivity = null;
+                    type = PhotoViewer.SELECT_TYPE_AVATAR;
+                } else if (parentAlert.baseFragment instanceof ChatActivity) {
                     chatActivity = (ChatActivity) parentAlert.baseFragment;
                     type = 0;
                 } else {
                     chatActivity = null;
-                    if (parentAlert.avatarPicker != 0) {
-                        type = PhotoViewer.SELECT_TYPE_AVATAR;
-                    } else {
-                        type = 4;
-                    }
+                    type = 4;
                 }
                 AndroidUtilities.hideKeyboard(parentAlert.baseFragment.getFragmentView().findFocus());
                 AndroidUtilities.hideKeyboard(parentAlert.getContainer().findFocus());
@@ -1247,16 +1249,15 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
 
         ChatActivity chatActivity;
         int type;
-        if (parentAlert.baseFragment instanceof ChatActivity) {
+        if (parentAlert.avatarPicker != 0) {
+            type = PhotoViewer.SELECT_TYPE_AVATAR;
+            chatActivity = null;
+        } else if (parentAlert.baseFragment instanceof ChatActivity) {
             chatActivity = (ChatActivity) parentAlert.baseFragment;
             type = 2;
         } else {
             chatActivity = null;
-            if (parentAlert.avatarPicker != 0) {
-                type = PhotoViewer.SELECT_TYPE_AVATAR;
-            } else {
-                type = 5;
-            }
+            type = 5;
         }
         ArrayList<Object> arrayList;
         int index;
@@ -1490,7 +1491,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
     }
 
     public void checkCamera(boolean request) {
-        if (parentAlert.baseFragment == null) {
+        if (parentAlert.baseFragment == null || parentAlert.baseFragment.getParentActivity() == null) {
             return;
         }
         boolean old = deviceHasGoodCamera;
@@ -2363,6 +2364,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         if (cameraIcon != null) {
             cameraIcon.invalidate();
         }
+        String textColor = forceDarkTheme ? Theme.key_voipgroup_actionBarItems : Theme.key_dialogTextBlack;
         Theme.setDrawableColor(cameraDrawable, Theme.getColor(Theme.key_dialogCameraIcon));
         progressView.setTextColor(Theme.getColor(Theme.key_emptyListPlaceholder));
         gridView.setGlowColor(Theme.getColor(Theme.key_dialogScrollGlow));
@@ -2371,11 +2373,11 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             ((PhotoAttachCameraCell) holder.itemView).getImageView().setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogCameraIcon), PorterDuff.Mode.MULTIPLY));
         }
 
-        dropDown.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
-        dropDownContainer.setPopupItemsColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem), false);
-        dropDownContainer.setPopupItemsColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem), true);
-        dropDownContainer.redrawPopup(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground));
-        Theme.setDrawableColor(dropDownDrawable, Theme.getColor(Theme.key_dialogTextBlack));
+        dropDown.setTextColor(Theme.getColor(textColor));
+        dropDownContainer.setPopupItemsColor(Theme.getColor(forceDarkTheme ? Theme.key_voipgroup_actionBarItems : Theme.key_actionBarDefaultSubmenuItem), false);
+        dropDownContainer.setPopupItemsColor(Theme.getColor(forceDarkTheme ? Theme.key_voipgroup_actionBarItems :Theme.key_actionBarDefaultSubmenuItem), true);
+        dropDownContainer.redrawPopup(Theme.getColor(forceDarkTheme ? Theme.key_voipgroup_actionBarUnscrolled : Theme.key_actionBarDefaultSubmenuBackground));
+        Theme.setDrawableColor(dropDownDrawable, Theme.getColor(textColor));
     }
 
     @Override
@@ -2389,7 +2391,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             cameraIcon.setAlpha(mediaEnabled ? 1.0f : 0.2f);
             cameraIcon.setEnabled(mediaEnabled);
         }
-        if (parentAlert.baseFragment instanceof ChatActivity) {
+        if (parentAlert.baseFragment instanceof ChatActivity && parentAlert.avatarPicker == 0) {
             galleryAlbumEntry = MediaController.allMediaAlbumEntry;
             if (mediaEnabled) {
                 progressView.setText(LocaleController.getString("NoPhotos", R.string.NoPhotos));

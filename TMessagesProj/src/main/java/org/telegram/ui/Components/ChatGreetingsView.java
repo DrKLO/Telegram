@@ -9,25 +9,20 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DocumentObject;
-import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SvgHelper;
-import org.telegram.messenger.UserConfig;
-import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 
-import java.util.ArrayList;
 import java.util.Locale;
-import java.util.Random;
 
-public class ChatGreetingsView extends LinearLayout implements NotificationCenter.NotificationCenterDelegate {
+public class ChatGreetingsView extends LinearLayout {
 
     private TLRPC.Document preloadedGreetingsSticker;
     private TextView titleView;
@@ -39,7 +34,7 @@ public class ChatGreetingsView extends LinearLayout implements NotificationCente
     public BackupImageView stickerToSendView;
 
 
-    public ChatGreetingsView(Context context, TLRPC.User user, int distance, int currentAccount, TLRPC.Document preloadedGreetingsSticker) {
+    public ChatGreetingsView(Context context, TLRPC.User user, int distance, int currentAccount, TLRPC.Document sticker) {
         super(context);
         setOrientation(VERTICAL);
         this.currentAccount = currentAccount;
@@ -70,16 +65,17 @@ public class ChatGreetingsView extends LinearLayout implements NotificationCente
             descriptionView.setText(LocaleController.getString("NearbyPeopleGreetingsDescription", R.string.NearbyPeopleGreetingsDescription));
         }
 
-        this.preloadedGreetingsSticker = preloadedGreetingsSticker;
-
+        preloadedGreetingsSticker = sticker;
         if (preloadedGreetingsSticker == null) {
-            MessagesController.getInstance(currentAccount).preloadGreetingsSticker();
-        } else {
-            setSticker(preloadedGreetingsSticker);
+            preloadedGreetingsSticker = MediaDataController.getInstance(currentAccount).getGreetingsSticker();
         }
+        setSticker(preloadedGreetingsSticker);
     }
 
     private void setSticker(TLRPC.Document sticker) {
+        if (sticker == null) {
+            return;
+        }
         SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(sticker, Theme.key_chat_serviceBackground, 1.0f);
         if (svgThumb != null) {
             stickerToSendView.setImage(ImageLocation.getForDocument(sticker), createFilter(sticker), svgThumb, 0, sticker);
@@ -177,26 +173,17 @@ public class ChatGreetingsView extends LinearLayout implements NotificationCente
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         fetchSticker();
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.greetingsStickerLoaded);
     }
 
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.greetingsStickerLoaded);
     }
 
     private void fetchSticker() {
         if (preloadedGreetingsSticker == null) {
-            preloadedGreetingsSticker = MessagesController.getInstance(currentAccount).getPreloadedSticker();
-            if (preloadedGreetingsSticker != null) {
-                setSticker(preloadedGreetingsSticker);
-            }
+            preloadedGreetingsSticker = MediaDataController.getInstance(currentAccount).getGreetingsSticker();
+            setSticker(preloadedGreetingsSticker);
         }
-    }
-
-    @Override
-    public void didReceivedNotification(int id, int account, Object... args) {
-        fetchSticker();
     }
 }

@@ -1185,6 +1185,9 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
     } else if (typeInfo == typeid(TL_rpc_result)) {
         TL_rpc_result *response = (TL_rpc_result *) message;
         int64_t resultMid = response->req_msg_id;
+        if (resultMid == lastInvokeAfterMessageId) {
+            lastInvokeAfterMessageId = 0;
+        }
 
         bool hasResult = response->result.get() != nullptr;
         bool ignoreResult = false;
@@ -1270,13 +1273,21 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
                             }
                         } else if ((request->requestFlags & RequestFlagFailOnServerErrors) == 0 || processEvenFailed) {
                             if (error->error_code == 500 || error->error_code < 0) {
-                                discardResponse = true;
-                                if (isWorkerBusy) {
-                                    request->minStartTime = 0;
+                                static std::string waitFailed = "MSG_WAIT_FAILED";
+                                if (error->error_message.find(waitFailed) != std::string::npos) {
+                                    request->minStartTime = (int32_t) (getCurrentTimeMonotonicMillis() / 1000 + 1);
+                                    request->startTime = 0;
+                                    request->startTimeMillis = 0;
+                                    request->requestFlags &=~ RequestFlagInvokeAfter;
                                 } else {
-                                    request->minStartTime = request->startTime + (request->serverFailureCount > 10 ? 10 : request->serverFailureCount);
+                                    if (isWorkerBusy) {
+                                        request->minStartTime = 0;
+                                    } else {
+                                        request->minStartTime = request->startTime + (request->serverFailureCount > 10 ? 10 : request->serverFailureCount);
+                                    }
+                                    request->serverFailureCount++;
                                 }
-                                request->serverFailureCount++;
+                                discardResponse = true;
                             } else if (error->error_code == 420) {
                                 int32_t waitTime = 2;
                                 static std::string floodWait = "FLOOD_WAIT_";
@@ -2494,6 +2505,7 @@ void ConnectionsManager::processRequestQueue(uint32_t connectionTypes, uint32_t 
         if (request->rawRequest->initFunc != nullptr) {
             request->rawRequest->initFunc(request->messageId);
         }
+        if (LOGS_ENABLED) DEBUG_D("messageId for token = %d, 0x%" PRIx64, request->requestToken, request->messageId);
 
         uint32_t requestLength = request->rpcRequest->getObjectSize();
         if (request->requestFlags & RequestFlagCanCompress) {
@@ -2593,8 +2605,8 @@ void ConnectionsManager::processRequestQueue(uint32_t connectionTypes, uint32_t 
         Datacenter *datacenter = getDatacenterWithId(iter->first);
         if (datacenter != nullptr) {
             bool scannedPreviousRequests = false;
-            int64_t lastSentMessageRpcId = 0;
             bool needQuickAck = false;
+            int64_t lastSentMessageRpcId = 0;
             std::vector<std::unique_ptr<NetworkMessage>> &array = iter->second;
             size_t count = array.size();
             for (uint32_t b = 0; b < count; b++) {
@@ -2609,13 +2621,18 @@ void ConnectionsManager::processRequestQueue(uint32_t connectionTypes, uint32_t 
                         std::vector<int64_t> currentRequests;
                         for (uint32_t a = 0; a < count; a++) {
                             NetworkMessage *currentNetworkMessage = array[a].get();
-                            TL_message *currentMessage = currentNetworkMessage->message.get();
                             if (currentNetworkMessage->invokeAfter) {
-                                currentRequests.push_back(currentMessage->msg_id);
+                                currentRequests.push_back(currentNetworkMessage->message->msg_id);
                             }
                         }
 
                         int64_t maxRequestId = 0;
+                        if (lastInvokeAfterMessageId != 0) {
+                            int64_t timeMessage = (int64_t) (lastInvokeAfterMessageId / 4294967296.0);
+                            if (getCurrentTime() - timeMessage <= 5) {
+                                maxRequestId = lastInvokeAfterMessageId;
+                            }
+                        }
                         for (requestsIter iter2 = runningRequests.begin(); iter2 != runningRequests.end(); iter2++) {
                             Request *request = iter2->get();
                             if (request->requestFlags & RequestFlagInvokeAfter) {
@@ -2634,11 +2651,11 @@ void ConnectionsManager::processRequestQueue(uint32_t connectionTypes, uint32_t 
                         TL_invokeAfterMsg *request = new TL_invokeAfterMsg();
                         request->msg_id = lastSentMessageRpcId;
                         if (message->outgoingBody != nullptr) {
-                            if (LOGS_ENABLED) DEBUG_D("wrap outgoingBody(%p, %s) to TL_invokeAfterMsg", message->outgoingBody, typeid(*message->outgoingBody).name());
+                            if (LOGS_ENABLED) DEBUG_D("wrap outgoingBody(%p, %s) to TL_invokeAfterMsg, token = %d, after 0x%" PRIx64, message->outgoingBody, typeid(*message->outgoingBody).name(), networkMessage->requestId, request->msg_id);
                             request->outgoingQuery = message->outgoingBody;
                             message->outgoingBody = nullptr;
                         } else {
-                            if (LOGS_ENABLED) DEBUG_D("wrap body(%p, %s) to TL_invokeAfterMsg", message->body.get(), typeid(*(message->body.get())).name());
+                            if (LOGS_ENABLED) DEBUG_D("wrap body(%p, %s) to TL_invokeAfterMsg, token = %d, after 0x%" PRIx64, message->body.get(), typeid(*(message->body.get())).name(), networkMessage->requestId, request->msg_id);
                             request->query = std::move(message->body);
                         }
                         message->body = std::unique_ptr<TLObject>(request);
@@ -2646,6 +2663,7 @@ void ConnectionsManager::processRequestQueue(uint32_t connectionTypes, uint32_t 
                     }
 
                     lastSentMessageRpcId = message->msg_id;
+                    lastInvokeAfterMessageId = message->msg_id;
                 }
             }
 
@@ -2762,6 +2780,13 @@ std::unique_ptr<TLObject> ConnectionsManager::wrapInLayer(TLObject *object, Data
             TL_jsonString *jsonString = new TL_jsonString();
             jsonString->value = installer;
             objectValue->key = "installer";
+            objectValue->value = std::unique_ptr<JSONValue>(jsonString);
+
+            objectValue = new TL_jsonObjectValue();
+            jsonObject->value.push_back(std::unique_ptr<TL_jsonObjectValue>(objectValue));
+            jsonString = new TL_jsonString();
+            jsonString->value = package;
+            objectValue->key = "package_id";
             objectValue->value = std::unique_ptr<JSONValue>(jsonString);
 
             objectValue = new TL_jsonObjectValue();
@@ -3212,7 +3237,7 @@ void ConnectionsManager::applyDnsConfig(NativeByteBuffer *buffer, std::string ph
     });
 }
 
-void ConnectionsManager::init(uint32_t version, int32_t layer, int32_t apiId, std::string deviceModel, std::string systemVersion, std::string appVersion, std::string langCode, std::string systemLangCode, std::string configPath, std::string logPath, std::string regId, std::string cFingerpting, std::string installerId, int32_t timezoneOffset, int32_t userId, bool isPaused, bool enablePushConnection, bool hasNetwork, int32_t networkType) {
+void ConnectionsManager::init(uint32_t version, int32_t layer, int32_t apiId, std::string deviceModel, std::string systemVersion, std::string appVersion, std::string langCode, std::string systemLangCode, std::string configPath, std::string logPath, std::string regId, std::string cFingerpting, std::string installerId, std::string packageId, int32_t timezoneOffset, int32_t userId, bool isPaused, bool enablePushConnection, bool hasNetwork, int32_t networkType) {
     currentVersion = version;
     currentLayer = layer;
     currentApiId = apiId;
@@ -3224,6 +3249,7 @@ void ConnectionsManager::init(uint32_t version, int32_t layer, int32_t apiId, st
     currentRegId = regId;
     certFingerprint = cFingerpting;
     installer = installerId;
+    package = packageId;
     currentDeviceTimezone = timezoneOffset;
     currentSystemLangCode = systemLangCode;
     currentUserId = userId;

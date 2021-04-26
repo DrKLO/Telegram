@@ -23,11 +23,9 @@ public class NotificationRepeat extends IntentService {
             return;
         }
         final int currentAccount = intent.getIntExtra("currentAccount", UserConfig.selectedAccount);
-        AndroidUtilities.runOnUIThread(new Runnable() {
-            @Override
-            public void run() {
-                NotificationsController.getInstance(currentAccount).repeatNotificationMaybe();
-            }
-        });
+        if (!UserConfig.isValidAccount(currentAccount)) {
+            return;
+        }
+        AndroidUtilities.runOnUIThread(() -> NotificationsController.getInstance(currentAccount).repeatNotificationMaybe());
     }
 }

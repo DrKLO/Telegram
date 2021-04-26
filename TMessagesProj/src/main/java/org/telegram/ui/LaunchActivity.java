@@ -28,6 +28,7 @@ import android.graphics.Point;
 import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
 import android.location.LocationManager;
+import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -134,6 +135,7 @@ import org.telegram.ui.Components.ThemeEditorView;
 import org.telegram.ui.Components.UndoView;
 import org.telegram.ui.Components.UpdateAppAlertDialog;
 import org.telegram.ui.Components.voip.VoIPHelper;
+import org.webrtc.voiceengine.WebRtcAudioTrack;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -169,7 +171,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
 
     private ActionMode visibleActionMode;
 
-    private boolean wasMutedByAdmin;
+    private boolean wasMutedByAdminRaisedHand;
 
     private ImageView themeSwitchImageView;
     private View themeSwitchSunView;
@@ -181,7 +183,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     private FrameLayout shadowTabletSide;
     private View backgroundTablet;
     private FrameLayout frameLayout;
-    protected DrawerLayoutContainer drawerLayoutContainer;
+    public DrawerLayoutContainer drawerLayoutContainer;
     private DrawerLayoutAdapter drawerLayoutAdapter;
     private PasscodeView passcodeView;
     private TermsOfServiceView termsOfServiceView;
@@ -582,6 +584,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                         presentFragment(new ActionIntroActivity(ActionIntroActivity.ACTION_TYPE_NEARBY_LOCATION_ENABLED));
                     }
                     drawerLayoutContainer.closeDrawer(false);
+                } else if (id == 13) {
+                    Browser.openUrl(LaunchActivity.this, LocaleController.getString("TelegramFeaturesUrl", R.string.TelegramFeaturesUrl));
+                    drawerLayoutContainer.closeDrawer(false);
                 }
             }
         });
@@ -890,7 +895,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     }
 
     public void switchToAccount(int account, boolean removeAll) {
-        if (account == UserConfig.selectedAccount) {
+        if (account == UserConfig.selectedAccount || !UserConfig.isValidAccount(account)) {
             return;
         }
 
@@ -2277,7 +2282,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 }
                 pushOpened = true;
             } else if (showGroupVoip) {
-                GroupCallActivity.create(this, AccountInstance.getInstance(currentAccount));
+                GroupCallActivity.create(this, AccountInstance.getInstance(currentAccount), null, null, false, null);
                 if (GroupCallActivity.groupCallInstance != null) {
                     GroupCallActivity.groupCallUiVisible = true;
                 }
@@ -2360,7 +2365,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         if (isVoipIntent) {
             VoIPFragment.show(this, intentAccount[0]);
         }
-        if (!showGroupVoip && GroupCallActivity.groupCallInstance != null) {
+        if (!showGroupVoip && GroupCallActivity.groupCallInstance != null && (intent == null || !Intent.ACTION_MAIN.equals(intent.getAction()))) {
             GroupCallActivity.groupCallInstance.dismiss();
         }
 
@@ -3375,7 +3380,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         if (!force && BuildVars.DEBUG_VERSION || !force && !BuildVars.CHECK_UPDATES) {
             return;
         }
-        if (!force && Math.abs(System.currentTimeMillis() - UserConfig.getInstance(0).lastUpdateCheckTime) < 24 * 60 * 60 * 1000) {
+        if (!force && Math.abs(System.currentTimeMillis() - UserConfig.getInstance(0).lastUpdateCheckTime) < MessagesController.getInstance(0).updateCheckDelay * 1000) {
             return;
         }
         TLRPC.TL_help_getAppUpdate req = new TLRPC.TL_help_getAppUpdate();
@@ -4228,6 +4233,8 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     }
                     Bitmap bitmap = Bitmap.createBitmap(drawerLayoutContainer.getMeasuredWidth(), drawerLayoutContainer.getMeasuredHeight(), Bitmap.Config.ARGB_8888);
                     Canvas canvas = new Canvas(bitmap);
+                    HashMap<View, Integer> viewLayerTypes = new HashMap<>();
+                    invalidateCachedViews(drawerLayoutContainer);
                     drawerLayoutContainer.draw(canvas);
                     frameLayout.removeView(themeSwitchImageView);
                     if (toDark) {
@@ -4388,12 +4395,39 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         } else if (id == NotificationCenter.showBulletin) {
             if (!mainFragmentsStack.isEmpty()) {
                 int type = (int) args[0];
-                BaseFragment fragment = mainFragmentsStack.get(mainFragmentsStack.size() - 1);
-                if (type == Bulletin.TYPE_STICKER) {
+
+                FrameLayout container = null;
+                BaseFragment fragment = null;
+                if (GroupCallActivity.groupCallUiVisible && GroupCallActivity.groupCallInstance != null) {
+                    container = GroupCallActivity.groupCallInstance.getContainer();
+                }
+
+                if (container == null) {
+                    fragment = mainFragmentsStack.get(mainFragmentsStack.size() - 1);
+                }
+
+                if (type == Bulletin.TYPE_NAME_CHANGED) {
+                    int peerId = (int) args[1];
+                    String text = peerId > 0 ? LocaleController.getString("YourNameChanged", R.string.YourNameChanged) : LocaleController.getString("CannelTitleChanged", R.string.ChannelTitleChanged);
+                    (container != null ? BulletinFactory.of(container) : BulletinFactory.of(fragment)).createErrorBulletin(text).show();
+                } else if (type == Bulletin.TYPE_BIO_CHANGED) {
+                    int peerId = (int) args[1];
+                    String text = peerId > 0 ? LocaleController.getString("YourBioChanged", R.string.YourBioChanged) : LocaleController.getString("CannelDescriptionChanged", R.string.ChannelDescriptionChanged);
+                    (container != null ? BulletinFactory.of(container) : BulletinFactory.of(fragment)).createErrorBulletin(text).show();
+                } else if (type == Bulletin.TYPE_STICKER) {
                     TLRPC.Document sticker = (TLRPC.Document) args[1];
-                    Bulletin.make(fragment, new StickerSetBulletinLayout(this, null, (int) args[2], sticker), Bulletin.DURATION_SHORT).show();
+                    StickerSetBulletinLayout layout = new StickerSetBulletinLayout(this, null, (int) args[2], sticker);
+                    if (fragment != null) {
+                        Bulletin.make(fragment, layout, Bulletin.DURATION_SHORT).show();
+                    } else {
+                        Bulletin.make(container, layout, Bulletin.DURATION_SHORT).show();
+                    }
                 } else if (type == Bulletin.TYPE_ERROR) {
-                    BulletinFactory.of(fragment).createErrorBulletin((String)args[1]).show();
+                    if (fragment != null) {
+                        BulletinFactory.of(fragment).createErrorBulletin((String) args[1]).show();
+                    } else {
+                        BulletinFactory.of(container).createErrorBulletin((String) args[1]).show();
+                    }
                 }
             }
         } else if (id == NotificationCenter.groupCallUpdated) {
@@ -4401,10 +4435,23 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         }
     }
 
+    private void invalidateCachedViews(View parent) {
+        int layerType = parent.getLayerType();
+        if (layerType != View.LAYER_TYPE_NONE) {
+            parent.invalidate();
+        }
+        if (parent instanceof ViewGroup) {
+            ViewGroup viewGroup = (ViewGroup) parent;
+            for (int i = 0; i < viewGroup.getChildCount(); i++) {
+                invalidateCachedViews(viewGroup.getChildAt(i));
+            }
+        }
+    }
+
     private void checkWasMutedByAdmin(boolean checkOnly) {
         VoIPService voIPService = VoIPService.getSharedInstance();
         if (voIPService != null && voIPService.groupCall != null) {
-            boolean wasMuted = wasMutedByAdmin;
+            boolean wasMuted = wasMutedByAdminRaisedHand;
             ChatObject.Call call = voIPService.groupCall;
             TLRPC.InputPeer peer = voIPService.getGroupCallPeer();
             int did;
@@ -4420,32 +4467,41 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 did = UserConfig.getInstance(currentAccount).clientUserId;
             }
             TLRPC.TL_groupCallParticipant participant = call.participants.get(did);
-            wasMutedByAdmin = participant != null && !participant.can_self_unmute && participant.muted && participant.raise_hand_rating != 0;
+            boolean mutedByAdmin = participant != null && !participant.can_self_unmute && participant.muted;
+            wasMutedByAdminRaisedHand = mutedByAdmin && participant.raise_hand_rating != 0;
 
-            if (!checkOnly && wasMuted && !wasMutedByAdmin && GroupCallActivity.groupCallInstance == null) {
-                if (!mainFragmentsStack.isEmpty()) {
-                    TLRPC.Chat chat = voIPService.getChat();
-                    BaseFragment fragment = actionBarLayout.fragmentsStack.get(actionBarLayout.fragmentsStack.size() - 1);
-                    if (fragment instanceof ChatActivity) {
-                        ChatActivity chatActivity = (ChatActivity) fragment;
-                        if (chatActivity.getDialogId() == -chat.id) {
-                            chat = null;
-                        }
-                        chatActivity.getUndoView().showWithAction(0, UndoView.ACTION_VOIP_CAN_NOW_SPEAK, chat);
-                    } else if (fragment instanceof DialogsActivity) {
-                        DialogsActivity dialogsActivity = (DialogsActivity) fragment;
-                        dialogsActivity.getUndoView().showWithAction(0, UndoView.ACTION_VOIP_CAN_NOW_SPEAK, chat);
-                    } else if (fragment instanceof ProfileActivity) {
-                        ProfileActivity profileActivity = (ProfileActivity) fragment;
-                        profileActivity.getUndoView().showWithAction(0, UndoView.ACTION_VOIP_CAN_NOW_SPEAK, chat);
-                    }
-                    if (VoIPService.getSharedInstance() != null) {
-                        VoIPService.getSharedInstance().playAllowTalkSound();
-                    }
-                }
+            if (!checkOnly && wasMuted && !wasMutedByAdminRaisedHand && !mutedByAdmin && GroupCallActivity.groupCallInstance == null) {
+                showVoiceChatTooltip(UndoView.ACTION_VOIP_CAN_NOW_SPEAK);
             }
         } else {
-            wasMutedByAdmin = false;
+            wasMutedByAdminRaisedHand = false;
+        }
+    }
+
+    private void showVoiceChatTooltip(int action) {
+        VoIPService voIPService = VoIPService.getSharedInstance();
+        if (voIPService == null || mainFragmentsStack.isEmpty() || voIPService.groupCall == null) {
+            return;
+        }
+        if (!mainFragmentsStack.isEmpty()) {
+            TLRPC.Chat chat = voIPService.getChat();
+            BaseFragment fragment = actionBarLayout.fragmentsStack.get(actionBarLayout.fragmentsStack.size() - 1);
+            if (fragment instanceof ChatActivity) {
+                ChatActivity chatActivity = (ChatActivity) fragment;
+                if (chatActivity.getDialogId() == -chat.id) {
+                    chat = null;
+                }
+                chatActivity.getUndoView().showWithAction(0, action, chat);
+            } else if (fragment instanceof DialogsActivity) {
+                DialogsActivity dialogsActivity = (DialogsActivity) fragment;
+                dialogsActivity.getUndoView().showWithAction(0, action, chat);
+            } else if (fragment instanceof ProfileActivity) {
+                ProfileActivity profileActivity = (ProfileActivity) fragment;
+                profileActivity.getUndoView().showWithAction(0, action, chat);
+            }
+            if (action == UndoView.ACTION_VOIP_CAN_NOW_SPEAK && VoIPService.getSharedInstance() != null) {
+                VoIPService.getSharedInstance().playAllowTalkSound();
+            }
         }
     }
 
@@ -4946,18 +5002,31 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
         int keyCode = event.getKeyCode();
-        if (VoIPService.getSharedInstance() == null && !mainFragmentsStack.isEmpty() && (!PhotoViewer.hasInstance() || !PhotoViewer.getInstance().isVisible()) && event.getRepeatCount() == 0 && event.getAction() == KeyEvent.ACTION_DOWN && (event.getKeyCode() == KeyEvent.KEYCODE_VOLUME_UP || event.getKeyCode() == KeyEvent.KEYCODE_VOLUME_DOWN)) {
-            BaseFragment fragment = mainFragmentsStack.get(mainFragmentsStack.size() - 1);
-            if (fragment instanceof ChatActivity) {
-                if (((ChatActivity) fragment).maybePlayVisibleVideo()) {
-                    return true;
+        if (event.getAction() == KeyEvent.ACTION_DOWN && (event.getKeyCode() == KeyEvent.KEYCODE_VOLUME_UP || event.getKeyCode() == KeyEvent.KEYCODE_VOLUME_DOWN)) {
+            if (VoIPService.getSharedInstance() != null) {
+                if (Build.VERSION.SDK_INT >= 31 && !SharedConfig.useMediaStream) {
+                    boolean oldValue = WebRtcAudioTrack.isSpeakerMuted();
+                    AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+                    int minVolume = am.getStreamMinVolume(AudioManager.STREAM_VOICE_CALL);
+                    boolean mute = am.getStreamVolume(AudioManager.STREAM_VOICE_CALL) == minVolume && event.getKeyCode() == KeyEvent.KEYCODE_VOLUME_DOWN;
+                    WebRtcAudioTrack.setSpeakerMute(mute);
+                    if (oldValue != WebRtcAudioTrack.isSpeakerMuted()) {
+                        showVoiceChatTooltip(mute ? UndoView.ACTION_VOIP_SOUND_MUTED : UndoView.ACTION_VOIP_SOUND_UNMUTED);
+                    }
                 }
-            }
-            if (AndroidUtilities.isTablet() && !rightFragmentsStack.isEmpty()) {
-                fragment = rightFragmentsStack.get(rightFragmentsStack.size() - 1);
+            } else if (!mainFragmentsStack.isEmpty() && (!PhotoViewer.hasInstance() || !PhotoViewer.getInstance().isVisible()) && event.getRepeatCount() == 0) {
+                BaseFragment fragment = mainFragmentsStack.get(mainFragmentsStack.size() - 1);
                 if (fragment instanceof ChatActivity) {
                     if (((ChatActivity) fragment).maybePlayVisibleVideo()) {
                         return true;
+                    }
+                }
+                if (AndroidUtilities.isTablet() && !rightFragmentsStack.isEmpty()) {
+                    fragment = rightFragmentsStack.get(rightFragmentsStack.size() - 1);
+                    if (fragment instanceof ChatActivity) {
+                        if (((ChatActivity) fragment).maybePlayVisibleVideo()) {
+                            return true;
+                        }
                     }
                 }
             }

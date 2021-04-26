@@ -17,7 +17,6 @@ import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
@@ -234,9 +233,9 @@ public class AvatarsImageView extends FrameLayout {
             animatingStates[index].id = -currentChat.id;
         }
         if (currentUser != null) {
-            animatingStates[index].imageReceiver.setImage(ImageLocation.getForUser(currentUser, false), "50_50", animatingStates[index].avatarDrawable, null, currentUser, 0);
+            animatingStates[index].imageReceiver.setForUserOrChat(currentUser, animatingStates[index].avatarDrawable);
         } else {
-            animatingStates[index].imageReceiver.setImage(ImageLocation.getForChat(currentChat, false), "50_50", animatingStates[index].avatarDrawable, null, currentChat, 0);
+            animatingStates[index].imageReceiver.setForUserOrChat(currentChat, animatingStates[index].avatarDrawable);
         }
         animatingStates[index].imageReceiver.setRoundRadius(AndroidUtilities.dp(currentStyle == 4 ? 16 : 12));
         int size = AndroidUtilities.dp(currentStyle == 4 ? 32 : 24);

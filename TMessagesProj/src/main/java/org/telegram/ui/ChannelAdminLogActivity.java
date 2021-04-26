@@ -1640,7 +1640,8 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
         int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             if (error == null) {
                 TLRPC.TL_channels_channelParticipants res = (TLRPC.TL_channels_channelParticipants) response;
-                MessagesController.getInstance(currentAccount).putUsers(res.users, false);
+                getMessagesController().putUsers(res.users, false);
+                getMessagesController().putChats(res.chats, false);
                 admins = res.participants;
                 if (visibleDialog instanceof AdminLogFilterAlert) {
                     ((AdminLogFilterAlert) visibleDialog).setCurrentAdmins(admins);
@@ -1961,7 +1962,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
         }
         for (int a = 0; a < admins.size(); a++) {
             TLRPC.ChannelParticipant channelParticipant = admins.get(a);
-            if (channelParticipant.user_id == uid) {
+            if (MessageObject.getPeerId(channelParticipant.peer) == uid) {
                 if (!channelParticipant.can_edit) {
                     return;
                 }
@@ -2165,9 +2166,17 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                             ((URLSpanMono) url).copyToClipboard();
                             Toast.makeText(getParentActivity(), LocaleController.getString("TextCopied", R.string.TextCopied), Toast.LENGTH_SHORT).show();
                         } else if (url instanceof URLSpanUserMention) {
-                            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(Utilities.parseInt(((URLSpanUserMention) url).getURL()));
-                            if (user != null) {
-                                MessagesController.openChatOrProfileWith(user, null, ChannelAdminLogActivity.this, 0, false);
+                            int peerId = Utilities.parseInt(((URLSpanUserMention) url).getURL());
+                            if (peerId > 0) {
+                                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(peerId);
+                                if (user != null) {
+                                    MessagesController.openChatOrProfileWith(user, null, ChannelAdminLogActivity.this, 0, false);
+                                }
+                            } else {
+                                TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-peerId);
+                                if (chat != null) {
+                                    MessagesController.openChatOrProfileWith(null, chat, ChannelAdminLogActivity.this, 0, false);
+                                }
                             }
                         } else if (url instanceof URLSpanNoUnderline) {
                             String str = ((URLSpanNoUnderline) url).getURL();
@@ -2745,7 +2754,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
         themeDescriptions.add(new ThemeDescription(chatListView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{ChatActionCell.class}, Theme.chat_actionTextPaint, null, null, Theme.key_chat_serviceText));
         themeDescriptions.add(new ThemeDescription(chatListView, ThemeDescription.FLAG_LINKCOLOR, new Class[]{ChatActionCell.class}, Theme.chat_actionTextPaint, null, null, Theme.key_chat_serviceLink));
 
-        themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_shareIconDrawable, Theme.chat_botInlineDrawable, Theme.chat_botLinkDrawalbe, Theme.chat_goIconDrawable, Theme.chat_commentStickerDrawable}, null, Theme.key_chat_serviceIcon));
+        themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_botCardDrawalbe, Theme.chat_shareIconDrawable, Theme.chat_botInlineDrawable, Theme.chat_botLinkDrawalbe, Theme.chat_goIconDrawable, Theme.chat_commentStickerDrawable}, null, Theme.key_chat_serviceIcon));
 
         themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class, ChatActionCell.class}, null, null, null, Theme.key_chat_serviceBackground));
         themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class, ChatActionCell.class}, null, null, null, Theme.key_chat_serviceBackgroundSelected));

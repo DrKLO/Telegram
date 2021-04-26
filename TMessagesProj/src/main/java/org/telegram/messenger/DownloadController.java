@@ -400,7 +400,7 @@ public class DownloadController extends BaseController implements NotificationCe
         if (type == AUTODOWNLOAD_TYPE_PHOTO) {
             return PRESET_SIZE_NUM_PHOTO;
         } else if (type == AUTODOWNLOAD_TYPE_AUDIO) {
-            return PRESET_SIZE_NUM_AUDIO;
+            return PRESET_SIZE_NUM_DOCUMENT;
         } else if (type == AUTODOWNLOAD_TYPE_VIDEO) {
             return PRESET_SIZE_NUM_VIDEO;
         } else if (type == AUTODOWNLOAD_TYPE_DOCUMENT) {
@@ -663,7 +663,12 @@ public class DownloadController extends BaseController implements NotificationCe
             preset = getCurrentMobilePreset();
         }
         int mask = preset.mask[index];
-        int maxSize = preset.sizes[typeToIndex(type)];
+        int maxSize;
+        if (type == AUTODOWNLOAD_TYPE_AUDIO) {
+            maxSize = Math.max(512 * 1024, preset.sizes[typeToIndex(type)]);
+        } else {
+            maxSize = preset.sizes[typeToIndex(type)];
+        }
         int size = MessageObject.getMessageSize(message);
         if (isVideo && preset.preloadVideo && size > maxSize && maxSize > 2 * 1024 * 1024) {
             return (mask & type) != 0 ? 2 : 0;

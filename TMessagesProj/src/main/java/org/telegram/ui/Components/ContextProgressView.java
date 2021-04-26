@@ -27,6 +27,8 @@ public class ContextProgressView extends View {
     private int currentColorType;
     private String innerKey;
     private String outerKey;
+    private int innerColor;
+    private int outerColor;
 
     public ContextProgressView(Context context, int colorType) {
         super(context);
@@ -51,9 +53,25 @@ public class ContextProgressView extends View {
         updateColors();
     }
 
+    public void setColors(int innerColor, int outerColor) {
+        innerKey = null;
+        outerKey = null;
+        this.innerColor = innerColor;
+        this.outerColor = outerColor;
+        updateColors();
+    }
+
     public void updateColors() {
-        innerPaint.setColor(Theme.getColor(innerKey));
-        outerPaint.setColor(Theme.getColor(outerKey));
+        if (innerKey != null) {
+            innerPaint.setColor(Theme.getColor(innerKey));
+        } else {
+            innerPaint.setColor(innerColor);
+        }
+        if (outerKey != null) {
+            outerPaint.setColor(Theme.getColor(outerKey));
+        } else {
+            outerPaint.setColor(outerColor);
+        }
         invalidate();
     }
 

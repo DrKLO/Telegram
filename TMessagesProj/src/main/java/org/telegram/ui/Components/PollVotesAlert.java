@@ -375,7 +375,7 @@ public class PollVotesAlert extends BottomSheet {
 
             lastAvatar = photo;
             if (currentUser != null) {
-                avatarImageView.setImage(ImageLocation.getForUser(currentUser, false), "50_50", avatarDrawable, currentUser);
+                avatarImageView.setForUserOrChat(currentUser, avatarDrawable);
             } else {
                 avatarImageView.setImageDrawable(avatarDrawable);
             }

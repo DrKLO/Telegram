@@ -32,9 +32,11 @@ class FakeAudioDeviceModule {
        return 10000;
     }
   };
+  using Task = std::function<double()>;
   struct Options {
     uint32_t samples_per_sec{48000};
     uint32_t num_channels{2};
+    std::function<void(Task)> scheduler_;
   };
   static std::function<rtc::scoped_refptr<webrtc::AudioDeviceModule>(webrtc::TaskQueueFactory *)> Creator(
       std::shared_ptr<Renderer> renderer, Options options);

@@ -124,7 +124,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
 
     private int searchIndex;
 
-    ArrayList<TLObject> localTipChats = new ArrayList<>();
+    ArrayList<Object> localTipChats = new ArrayList<>();
     ArrayList<FiltersView.DateData> localTipDates = new ArrayList<>();
 
     Runnable clearCurrentResultsRunnable = new Runnable() {
@@ -510,7 +510,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
         AndroidUtilities.runOnUIThread(searchRunnable = () -> {
             TLObject request;
 
-            ArrayList<TLObject> resultArray = null;
+            ArrayList<Object> resultArray = null;
             if (dialogId != 0) {
                 final TLRPC.TL_messages_search req = new TLRPC.TL_messages_search();
                 req.q = query;
@@ -574,7 +574,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
             lastMessagesSearchString = query;
             lastSearchFilterQueryString = currentSearchFilterQueryString;
 
-            ArrayList<TLObject> finalResultArray = resultArray;
+            ArrayList<Object> finalResultArray = resultArray;
             final ArrayList<FiltersView.DateData> dateData = new ArrayList<>();
             FiltersView.fillTipDates(lastMessagesSearchString, dateData);
             ConnectionsManager.getInstance(currentAccount).sendRequest(request, (response, error) -> {
@@ -1623,7 +1623,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
     }
 
     public interface Delegate {
-        void updateFiltersView(boolean showMediaFilters, ArrayList<TLObject> users, ArrayList<FiltersView.DateData> dates);
+        void updateFiltersView(boolean showMediaFilters, ArrayList<Object> users, ArrayList<FiltersView.DateData> dates);
     }
 
     public interface UiCallback {

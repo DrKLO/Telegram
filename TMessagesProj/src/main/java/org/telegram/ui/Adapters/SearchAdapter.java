@@ -46,7 +46,7 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
 
     private Context mContext;
     private SparseArray<TLRPC.User> ignoreUsers;
-    private ArrayList<TLObject> searchResult = new ArrayList<>();
+    private ArrayList<Object> searchResult = new ArrayList<>();
     private ArrayList<CharSequence> searchResultNames = new ArrayList<>();
     private SearchAdapterHelper searchAdapterHelper;
     private SparseArray<?> checkedMap;
@@ -156,7 +156,7 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
                     search[1] = search2;
                 }
 
-                ArrayList<TLObject> resultArray = new ArrayList<>();
+                ArrayList<Object> resultArray = new ArrayList<>();
                 ArrayList<CharSequence> resultArrayNames = new ArrayList<>();
 
                 for (int a = 0; a < contactsCopy.size(); a++) {
@@ -206,7 +206,7 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
         });
     }
 
-    private void updateSearchResults(int searchReqIdFinal, final ArrayList<TLObject> users, final ArrayList<CharSequence> names) {
+    private void updateSearchResults(int searchReqIdFinal, final ArrayList<Object> users, final ArrayList<CharSequence> names) {
         AndroidUtilities.runOnUIThread(() -> {
             if (searchReqIdFinal == searchReqId) {
                 searchResult = users;

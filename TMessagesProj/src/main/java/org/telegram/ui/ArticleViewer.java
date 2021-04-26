@@ -290,6 +290,8 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
     TextSelectionHelper.ArticleTextSelectionHelper textSelectionHelper;
     TextSelectionHelper.ArticleTextSelectionHelper textSelectionHelperBottomSheet;
 
+    PinchToZoomHelper pinchToZoomHelper;
+
     private int allowAnimationIndex = -1;
 
     private final String BOTTOM_SHEET_VIEW_TAG = "bottomSheet";
@@ -707,6 +709,10 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
 
         @Override
         public boolean dispatchTouchEvent(MotionEvent ev) {
+            if (pinchToZoomHelper.isInOverlayMode()) {
+                ev.offsetLocation(-containerView.getX(), -containerView.getY());
+                return pinchToZoomHelper.onTouchEvent(ev);
+            }
             TextSelectionHelper.TextSelectionOverlay selectionOverlay = textSelectionHelper.getOverlayView(getContext());
             MotionEvent textSelectionEv = MotionEvent.obtain(ev);
             textSelectionEv.offsetLocation(-containerView.getX(), -containerView.getY());
@@ -3657,6 +3663,22 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         });
         containerView.addView(textSelectionHelper.getOverlayView(activity));
 
+        pinchToZoomHelper = new PinchToZoomHelper(containerView);
+        pinchToZoomHelper.setClipBoundsListener(new PinchToZoomHelper.ClipBoundsListener() {
+            @Override
+            public void getClipTopBottom(float[] topBottom) {
+                topBottom[0] = currentHeaderHeight;
+                topBottom[1] = listView[0].getMeasuredHeight();
+            }
+        });
+        pinchToZoomHelper.setCallback(new PinchToZoomHelper.Callback() {
+            @Override
+            public void onZoomStarted(MessageObject messageObject) {
+                if (listView[0] != null) {
+                    listView[0].cancelClickRunnables(true);
+                }
+            }
+        });
         updatePaintColors();
     }
 
@@ -3966,6 +3988,9 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         }
 
         float heightDiff = maxHeight - minHeight;
+        if (heightDiff == 0) {
+            heightDiff = 1;
+        }
 
         currentHeaderHeight = newHeight;
         float scale = 0.8f + (currentHeaderHeight - minHeight) / heightDiff * 0.2f;
@@ -5949,6 +5974,9 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
 
         @Override
         public boolean onTouchEvent(MotionEvent event) {
+            if (pinchToZoomHelper.checkPinchToZoom(event, this, imageView, null)) {
+                return true;
+            }
             float x = event.getX();
             float y = event.getY();
             if (channelCell.getVisibility() == VISIBLE && y > channelCell.getTranslationY() && y < channelCell.getTranslationY() + AndroidUtilities.dp(39)) {
@@ -6115,9 +6143,11 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             if (!imageView.hasBitmapImage() || imageView.getCurrentAlpha() != 1.0f) {
                 canvas.drawRect(imageView.getDrawRegion(), photoBackgroundPaint);
             }
-            imageView.draw(canvas);
-            if (imageView.getVisible()) {
-                radialProgress.draw(canvas);
+            if (!pinchToZoomHelper.isInOverlayModeFor(this)) {
+                imageView.draw(canvas);
+                if (imageView.getVisible()) {
+                    radialProgress.draw(canvas);
+                }
             }
             int count = 0;
             if (captionLayout != null) {
@@ -9828,6 +9858,9 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
 
         @Override
         public boolean onTouchEvent(MotionEvent event) {
+            if (pinchToZoomHelper.checkPinchToZoom(event, this, imageView, null)) {
+                return true;
+            }
             float x = event.getX();
             float y = event.getY();
             if (channelCell.getVisibility() == VISIBLE && y > channelCell.getTranslationY() && y < channelCell.getTranslationY() + AndroidUtilities.dp(39)) {
@@ -9989,9 +10022,11 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             if (!imageView.hasBitmapImage() || imageView.getCurrentAlpha() != 1.0f) {
                 canvas.drawRect(imageView.getImageX(), imageView.getImageY(), imageView.getImageX2(), imageView.getImageY2(), photoBackgroundPaint);
             }
-            imageView.draw(canvas);
-            if (imageView.getVisible()) {
-                radialProgress.draw(canvas);
+            if (!pinchToZoomHelper.isInOverlayModeFor(this)) {
+                imageView.draw(canvas);
+                if (imageView.getVisible()) {
+                    radialProgress.draw(canvas);
+                }
             }
             if (!TextUtils.isEmpty(currentBlock.url)) {
                 int x = getMeasuredWidth() - AndroidUtilities.dp(11 + 24);

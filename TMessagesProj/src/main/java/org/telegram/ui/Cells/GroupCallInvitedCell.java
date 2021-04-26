@@ -91,7 +91,7 @@ public class GroupCallInvitedCell extends FrameLayout {
         nameTextView.setText(lastName);
 
         avatarImageView.getImageReceiver().setCurrentAccount(account);
-        avatarImageView.setImage(ImageLocation.getForUser(currentUser, false), "50_50", avatarDrawable, currentUser);
+        avatarImageView.setForUserOrChat(currentUser, avatarDrawable);
     }
 
     public void setDrawDivider(boolean draw) {
@@ -110,6 +110,10 @@ public class GroupCallInvitedCell extends FrameLayout {
 
     public TLRPC.User getUser() {
         return currentUser;
+    }
+
+    public boolean hasAvatarSet() {
+        return avatarImageView.getImageReceiver().hasNotThumb();
     }
 
     @Override

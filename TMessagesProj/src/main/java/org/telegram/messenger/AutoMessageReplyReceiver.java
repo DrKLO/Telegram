@@ -30,7 +30,7 @@ public class AutoMessageReplyReceiver extends BroadcastReceiver {
         long dialog_id = intent.getLongExtra("dialog_id", 0);
         int max_id = intent.getIntExtra("max_id", 0);
         int currentAccount = intent.getIntExtra("currentAccount", 0);
-        if (dialog_id == 0 || max_id == 0) {
+        if (dialog_id == 0 || max_id == 0 || !UserConfig.isValidAccount(currentAccount)) {
             return;
         }
         SendMessagesHelper.getInstance(currentAccount).sendMessage(text.toString(), dialog_id, null, null, null, true, null, null, null, true, 0);

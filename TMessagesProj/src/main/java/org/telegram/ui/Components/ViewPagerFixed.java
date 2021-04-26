@@ -180,6 +180,10 @@ public class ViewPagerFixed extends FrameLayout {
             } else {
                 viewsByType.remove(viewTypes[index]);
             }
+            if (v.getParent() != null) {
+                ViewGroup parent = (ViewGroup) v.getParent();
+                parent.removeView(v);
+            }
             addView(v);
             viewPages[index] = v;
             adapter.bindView(viewPages[index], adapterPosition, viewTypes[index]);

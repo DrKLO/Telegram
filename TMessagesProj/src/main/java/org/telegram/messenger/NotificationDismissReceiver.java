@@ -20,6 +20,9 @@ public class NotificationDismissReceiver extends BroadcastReceiver {
             return;
         }
         int currentAccount = intent.getIntExtra("currentAccount", UserConfig.selectedAccount);
+        if (!UserConfig.isValidAccount(currentAccount)) {
+            return;
+        }
         long dialogId = intent.getLongExtra("dialogId", 0);
         int date = intent.getIntExtra("messageDate", 0);
         if (dialogId == 0) {

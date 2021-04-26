@@ -691,7 +691,7 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
                     if (ChatObject.isNotInChat(chat)) {
                         getMessagesController().deleteDialog(dialogId, 0, revoke);
                     } else {
-                        getMessagesController().deleteUserFromChat((int) -dialogId, getMessagesController().getUser(getUserConfig().getClientUserId()), null, revoke, revoke);
+                        getMessagesController().deleteParticipantFromChat((int) -dialogId, getMessagesController().getUser(getUserConfig().getClientUserId()), null, null, revoke, revoke);
                     }
                 } else {
                     getMessagesController().deleteDialog(dialogId, 0, revoke);
@@ -741,7 +741,7 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
         }
     }
 
-    public class HeaderCellProgress extends HeaderCell {
+    public static class HeaderCellProgress extends HeaderCell {
 
         private RadialProgressView progressView;
 
