@@ -463,7 +463,7 @@ public class MessagesStorage extends BaseController {
         storageQueue.postRunnable(() -> {
             try {
                 int version = currentVersion;
-                if (version < 4) {
+                if (version <= 3) {
                     database.executeFast("CREATE TABLE IF NOT EXISTS user_photos(uid INTEGER, id INTEGER, data BLOB, PRIMARY KEY (uid, id))").stepThis().dispose();
 
                     database.executeFast("DROP INDEX IF EXISTS read_state_out_idx_messages;").stepThis().dispose();
