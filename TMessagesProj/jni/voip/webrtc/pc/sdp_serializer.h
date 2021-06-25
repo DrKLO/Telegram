@@ -17,6 +17,7 @@
 #include "api/rtc_error.h"
 #include "media/base/rid_description.h"
 #include "pc/session_description.h"
+#include "pc/simulcast_description.h"
 
 namespace webrtc {
 

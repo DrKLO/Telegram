@@ -129,7 +129,8 @@ class FakeNetworkInterface : public MediaChannel::NetworkInterface,
     rtp_packets_.push_back(*packet);
     if (conf_) {
       for (size_t i = 0; i < conf_sent_ssrcs_.size(); ++i) {
-        if (!SetRtpSsrc(packet->data(), packet->size(), conf_sent_ssrcs_[i])) {
+        if (!SetRtpSsrc(packet->MutableData(), packet->size(),
+                        conf_sent_ssrcs_[i])) {
           return false;
         }
         PostMessage(ST_RTP, *packet);

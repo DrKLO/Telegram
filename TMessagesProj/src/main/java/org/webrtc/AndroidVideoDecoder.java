@@ -540,7 +540,6 @@ class AndroidVideoDecoder implements VideoDecoder, VideoSink {
     final int vEnd = vPos + uvStride * chromaHeight;
 
     VideoFrame.I420Buffer frameBuffer = allocateI420Buffer(width, height);
-
     try { //don't crash
       buffer.limit(yEnd);
       buffer.position(yPos);
@@ -596,13 +595,21 @@ class AndroidVideoDecoder implements VideoDecoder, VideoSink {
     }
     // Compare to existing width, height, and save values under the dimension lock.
     synchronized (dimensionLock) {
-      if (hasDecodedFirstFrame && (width != newWidth || height != newHeight)) {
-        stopOnOutputThread(new RuntimeException("Unexpected size change. Configured " + width + "*"
-            + height + ". New " + newWidth + "*" + newHeight));
-        return;
+      if (newWidth != width || newHeight != height) {
+        if (hasDecodedFirstFrame) {
+          stopOnOutputThread(new RuntimeException("Unexpected size change. "
+              + "Configured " + width + "*" + height + ". "
+              + "New " + newWidth + "*" + newHeight));
+          return;
+        } else if (newWidth <= 0 || newHeight <= 0) {
+          Logging.w(TAG,
+              "Unexpected format dimensions. Configured " + width + "*" + height + ". "
+                  + "New " + newWidth + "*" + newHeight + ". Skip it");
+          return;
+        }
+        width = newWidth;
+        height = newHeight;
       }
-      width = newWidth;
-      height = newHeight;
     }
 
     // Note:  texture mode ignores colorFormat.  Hence, if the texture helper is non-null, skip

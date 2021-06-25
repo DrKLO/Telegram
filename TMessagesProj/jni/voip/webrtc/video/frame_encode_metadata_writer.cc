@@ -217,7 +217,7 @@ void FrameEncodeMetadataWriter::UpdateBitstream(
           buffer, encoded_image->ColorSpace());
 
   encoded_image->SetEncodedData(
-      new rtc::RefCountedObject<EncodedImageBufferWrapper>(
+      rtc::make_ref_counted<EncodedImageBufferWrapper>(
           std::move(modified_buffer)));
 }
 

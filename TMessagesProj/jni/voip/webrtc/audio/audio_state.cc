@@ -187,6 +187,6 @@ void AudioState::UpdateNullAudioPollerState() {
 
 rtc::scoped_refptr<AudioState> AudioState::Create(
     const AudioState::Config& config) {
-  return new rtc::RefCountedObject<internal::AudioState>(config);
+  return rtc::make_ref_counted<internal::AudioState>(config);
 }
 }  // namespace webrtc

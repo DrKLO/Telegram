@@ -12,6 +12,7 @@
 #define API_VIDEO_VIDEO_SOURCE_INTERFACE_H_
 
 #include <limits>
+#include <vector>
 
 #include "absl/types/optional.h"
 #include "api/video/video_sink_interface.h"
@@ -22,6 +23,15 @@ namespace rtc {
 // VideoSinkWants is used for notifying the source of properties a video frame
 // should have when it is delivered to a certain sink.
 struct RTC_EXPORT VideoSinkWants {
+  struct FrameSize {
+    FrameSize(int width, int height) : width(width), height(height) {}
+    FrameSize(const FrameSize&) = default;
+    ~FrameSize() = default;
+
+    int width;
+    int height;
+  };
+
   VideoSinkWants();
   VideoSinkWants(const VideoSinkWants&);
   ~VideoSinkWants();
@@ -49,7 +59,33 @@ struct RTC_EXPORT VideoSinkWants {
   // Note that this field is unrelated to any horizontal or vertical stride
   // requirements the encoder has on the incoming video frame buffers.
   int resolution_alignment = 1;
+
+  // The resolutions that sink is configured to consume. If the sink is an
+  // encoder this is what the encoder is configured to encode. In singlecast we
+  // only encode one resolution, but in simulcast and SVC this can mean multiple
+  // resolutions per frame.
+  //
+  // The sink is always configured to consume a subset of the
+  // webrtc::VideoFrame's resolution. In the case of encoding, we usually encode
+  // at webrtc::VideoFrame's resolution but this may not always be the case due
+  // to scaleResolutionDownBy or turning off simulcast or SVC layers.
+  //
+  // For example, we may capture at 720p and due to adaptation (e.g. applying
+  // |max_pixel_count| constraints) create webrtc::VideoFrames of size 480p, but
+  // if we do scaleResolutionDownBy:2 then the only resolution we end up
+  // encoding is 240p. In this case we still need to provide webrtc::VideoFrames
+  // of size 480p but we can optimize internal buffers for 240p, avoiding
+  // downsampling to 480p if possible.
+  //
+  // Note that the |resolutions| can change while frames are in flight and
+  // should only be used as a hint when constructing the webrtc::VideoFrame.
+  std::vector<FrameSize> resolutions;
 };
+
+inline bool operator==(const VideoSinkWants::FrameSize& a,
+                       const VideoSinkWants::FrameSize& b) {
+  return a.width == b.width && a.height == b.height;
+}
 
 template <typename VideoFrameT>
 class VideoSourceInterface {

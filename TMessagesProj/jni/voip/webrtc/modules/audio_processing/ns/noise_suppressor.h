@@ -41,12 +41,21 @@ class NoiseSuppressor {
   // Applies noise suppression.
   void Process(AudioBuffer* audio);
 
+  // Specifies whether the capture output will be used. The purpose of this is
+  // to allow the noise suppressor to deactivate some of the processing when the
+  // resulting output is anyway not used, for instance when the endpoint is
+  // muted.
+  void SetCaptureOutputUsage(bool capture_output_used) {
+    capture_output_used_ = capture_output_used;
+  }
+
  private:
   const size_t num_bands_;
   const size_t num_channels_;
   const SuppressionParams suppression_params_;
   int32_t num_analyzed_frames_ = -1;
   NrFft fft_;
+  bool capture_output_used_ = true;
 
   struct ChannelState {
     ChannelState(const SuppressionParams& suppression_params, size_t num_bands);

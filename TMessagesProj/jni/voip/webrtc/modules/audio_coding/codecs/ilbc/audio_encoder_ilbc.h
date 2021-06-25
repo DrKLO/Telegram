@@ -11,6 +11,9 @@
 #ifndef MODULES_AUDIO_CODING_CODECS_ILBC_AUDIO_ENCODER_ILBC_H_
 #define MODULES_AUDIO_CODING_CODECS_ILBC_AUDIO_ENCODER_ILBC_H_
 
+#include <stddef.h>
+#include <stdint.h>
+
 #include <utility>
 
 #include "absl/types/optional.h"

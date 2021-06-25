@@ -288,10 +288,10 @@ public class DownloadController extends BaseController implements NotificationCe
         }
 
         AndroidUtilities.runOnUIThread(() -> {
-            getNotificationCenter().addObserver(DownloadController.this, NotificationCenter.fileDidFailToLoad);
-            getNotificationCenter().addObserver(DownloadController.this, NotificationCenter.fileDidLoad);
-            getNotificationCenter().addObserver(DownloadController.this, NotificationCenter.FileLoadProgressChanged);
-            getNotificationCenter().addObserver(DownloadController.this, NotificationCenter.FileUploadProgressChanged);
+            getNotificationCenter().addObserver(DownloadController.this, NotificationCenter.fileLoadFailed);
+            getNotificationCenter().addObserver(DownloadController.this, NotificationCenter.fileLoaded);
+            getNotificationCenter().addObserver(DownloadController.this, NotificationCenter.fileLoadProgressChanged);
+            getNotificationCenter().addObserver(DownloadController.this, NotificationCenter.fileUploadProgressChanged);
             getNotificationCenter().addObserver(DownloadController.this, NotificationCenter.httpFileDidLoad);
             getNotificationCenter().addObserver(DownloadController.this, NotificationCenter.httpFileDidFailedLoad);
             loadAutoDownloadConfig(false);
@@ -960,7 +960,7 @@ public class DownloadController extends BaseController implements NotificationCe
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.fileDidFailToLoad || id == NotificationCenter.httpFileDidFailedLoad) {
+        if (id == NotificationCenter.fileLoadFailed || id == NotificationCenter.httpFileDidFailedLoad) {
             String fileName = (String) args[0];
             Integer canceled = (Integer) args[1];
             listenerInProgress = true;
@@ -982,7 +982,7 @@ public class DownloadController extends BaseController implements NotificationCe
             listenerInProgress = false;
             processLaterArrays();
             checkDownloadFinished(fileName, canceled);
-        } else if (id == NotificationCenter.fileDidLoad || id == NotificationCenter.httpFileDidLoad) {
+        } else if (id == NotificationCenter.fileLoaded || id == NotificationCenter.httpFileDidLoad) {
             listenerInProgress = true;
             String fileName = (String) args[0];
             ArrayList<MessageObject> messageObjects = loadingFileMessagesObservers.get(fileName);
@@ -1007,7 +1007,7 @@ public class DownloadController extends BaseController implements NotificationCe
             listenerInProgress = false;
             processLaterArrays();
             checkDownloadFinished(fileName, 0);
-        } else if (id == NotificationCenter.FileLoadProgressChanged) {
+        } else if (id == NotificationCenter.fileLoadProgressChanged) {
             listenerInProgress = true;
             String fileName = (String) args[0];
             ArrayList<WeakReference<FileDownloadProgressListener>> arrayList = loadingFileObservers.get(fileName);
@@ -1023,7 +1023,7 @@ public class DownloadController extends BaseController implements NotificationCe
             }
             listenerInProgress = false;
             processLaterArrays();
-        } else if (id == NotificationCenter.FileUploadProgressChanged) {
+        } else if (id == NotificationCenter.fileUploadProgressChanged) {
             listenerInProgress = true;
             String fileName = (String) args[0];
             ArrayList<WeakReference<FileDownloadProgressListener>> arrayList = loadingFileObservers.get(fileName);

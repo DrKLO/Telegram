@@ -31,16 +31,13 @@ ReportBlockStats::ReportBlockStats()
 
 ReportBlockStats::~ReportBlockStats() {}
 
-void ReportBlockStats::Store(uint32_t ssrc, const RtcpStatistics& rtcp_stats) {
+void ReportBlockStats::Store(uint32_t ssrc,
+                             int packets_lost,
+                             uint32_t extended_highest_sequence_number) {
   Report report;
-  report.packets_lost = rtcp_stats.packets_lost;
-  report.extended_highest_sequence_number =
-      rtcp_stats.extended_highest_sequence_number;
-  StoreAndAddPacketIncrement(ssrc, report);
-}
+  report.packets_lost = packets_lost;
+  report.extended_highest_sequence_number = extended_highest_sequence_number;
 
-void ReportBlockStats::StoreAndAddPacketIncrement(uint32_t ssrc,
-                                                  const Report& report) {
   // Get diff with previous report block.
   const auto prev_report = prev_reports_.find(ssrc);
   if (prev_report != prev_reports_.end()) {

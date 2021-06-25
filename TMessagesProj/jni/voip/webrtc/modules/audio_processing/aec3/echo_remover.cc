@@ -132,6 +132,10 @@ class EchoRemoverImpl final : public EchoRemover {
     echo_leakage_detected_ = leakage_detected;
   }
 
+  void SetCaptureOutputUsage(bool capture_output_used) override {
+    capture_output_used_ = capture_output_used;
+  }
+
  private:
   // Selects which of the coarse and refined linear filter outputs that is most
   // appropriate to pass to the suppressor and forms the linear filter output by
@@ -155,6 +159,7 @@ class EchoRemoverImpl final : public EchoRemover {
   RenderSignalAnalyzer render_signal_analyzer_;
   ResidualEchoEstimator residual_echo_estimator_;
   bool echo_leakage_detected_ = false;
+  bool capture_output_used_ = true;
   AecState aec_state_;
   EchoRemoverMetrics metrics_;
   std::vector<std::array<float, kFftLengthBy2>> e_old_;
@@ -391,42 +396,50 @@ void EchoRemoverImpl::ProcessCapture(
                         1);
   data_dumper_->DumpWav("aec3_output_linear2", kBlockSize, &e[0][0], 16000, 1);
 
-  // Estimate the residual echo power.
-  residual_echo_estimator_.Estimate(aec_state_, *render_buffer, S2_linear, Y2,
-                                    R2);
-
   // Estimate the comfort noise.
   cng_.Compute(aec_state_.SaturatedCapture(), Y2, comfort_noise,
                high_band_comfort_noise);
 
-  // Suppressor nearend estimate.
-  if (aec_state_.UsableLinearEstimate()) {
-    // E2 is bound by Y2.
-    for (size_t ch = 0; ch < num_capture_channels_; ++ch) {
-      std::transform(E2[ch].begin(), E2[ch].end(), Y2[ch].begin(),
-                     E2[ch].begin(),
-                     [](float a, float b) { return std::min(a, b); });
-    }
-  }
-  const auto& nearend_spectrum = aec_state_.UsableLinearEstimate() ? E2 : Y2;
-
-  // Suppressor echo estimate.
-  const auto& echo_spectrum =
-      aec_state_.UsableLinearEstimate() ? S2_linear : R2;
-
-  // Determine if the suppressor should assume clock drift.
-  const bool clock_drift = config_.echo_removal_control.has_clock_drift ||
-                           echo_path_variability.clock_drift;
-
-  // Compute preferred gains.
-  float high_bands_gain;
+  // Only do the below processing if the output of the audio processing module
+  // is used.
   std::array<float, kFftLengthBy2Plus1> G;
-  suppression_gain_.GetGain(nearend_spectrum, echo_spectrum, R2,
-                            cng_.NoiseSpectrum(), render_signal_analyzer_,
-                            aec_state_, x, clock_drift, &high_bands_gain, &G);
+  if (capture_output_used_) {
+    // Estimate the residual echo power.
+    residual_echo_estimator_.Estimate(aec_state_, *render_buffer, S2_linear, Y2,
+                                      suppression_gain_.IsDominantNearend(),
+                                      R2);
 
-  suppression_filter_.ApplyGain(comfort_noise, high_band_comfort_noise, G,
-                                high_bands_gain, Y_fft, y);
+    // Suppressor nearend estimate.
+    if (aec_state_.UsableLinearEstimate()) {
+      // E2 is bound by Y2.
+      for (size_t ch = 0; ch < num_capture_channels_; ++ch) {
+        std::transform(E2[ch].begin(), E2[ch].end(), Y2[ch].begin(),
+                       E2[ch].begin(),
+                       [](float a, float b) { return std::min(a, b); });
+      }
+    }
+    const auto& nearend_spectrum = aec_state_.UsableLinearEstimate() ? E2 : Y2;
+
+    // Suppressor echo estimate.
+    const auto& echo_spectrum =
+        aec_state_.UsableLinearEstimate() ? S2_linear : R2;
+
+    // Determine if the suppressor should assume clock drift.
+    const bool clock_drift = config_.echo_removal_control.has_clock_drift ||
+                             echo_path_variability.clock_drift;
+
+    // Compute preferred gains.
+    float high_bands_gain;
+    suppression_gain_.GetGain(nearend_spectrum, echo_spectrum, R2,
+                              cng_.NoiseSpectrum(), render_signal_analyzer_,
+                              aec_state_, x, clock_drift, &high_bands_gain, &G);
+
+    suppression_filter_.ApplyGain(comfort_noise, high_band_comfort_noise, G,
+                                  high_bands_gain, Y_fft, y);
+
+  } else {
+    G.fill(0.f);
+  }
 
   // Update the metrics.
   metrics_.Update(aec_state_, cng_.NoiseSpectrum()[0], G);

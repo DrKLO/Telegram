@@ -17,8 +17,9 @@
 
 #include "absl/types/optional.h"
 #include "api/array_view.h"
+#include "api/sequence_checker.h"
 #include "modules/include/module_common_types.h"
-#include "rtc_base/synchronization/sequence_checker.h"
+#include "rtc_base/system/no_unique_address.h"
 
 namespace webrtc {
 
@@ -102,7 +103,7 @@ class LossNotificationController {
   // (Naturally, later frames must also be assemblable to be decodable.)
   std::set<int64_t> decodable_frame_ids_ RTC_GUARDED_BY(sequence_checker_);
 
-  SequenceChecker sequence_checker_;
+  RTC_NO_UNIQUE_ADDRESS SequenceChecker sequence_checker_;
 };
 
 }  // namespace webrtc

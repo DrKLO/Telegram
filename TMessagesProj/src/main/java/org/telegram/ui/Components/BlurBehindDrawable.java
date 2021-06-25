@@ -119,7 +119,6 @@ public class BlurBehindDrawable {
                         blurredBitmapTmp[i] = Bitmap.createBitmap((int) (lastW / DOWN_SCALE), (int) (h / DOWN_SCALE), Bitmap.Config.ARGB_8888);
                         blurCanvas[i] = new Canvas(blurredBitmapTmp[i]);
                     } catch (Exception e) {
-                        e.printStackTrace();
                         FileLog.e(e);
                         AndroidUtilities.runOnUIThread(() -> {
                             error = true;
@@ -184,13 +183,21 @@ public class BlurBehindDrawable {
             queue.cleanupQueue();
             queue.postRunnable(() -> {
                 if (renderingBitmap != null) {
-                    renderingBitmap[0].recycle();
-                    renderingBitmap[1].recycle();
+                    if (renderingBitmap[0] != null) {
+                        renderingBitmap[0].recycle();
+                    }
+                    if (renderingBitmap[1] != null) {
+                        renderingBitmap[1].recycle();
+                    }
                     renderingBitmap = null;
                 }
                 if (backgroundBitmap != null) {
-                    backgroundBitmap[0].recycle();
-                    backgroundBitmap[1].recycle();
+                    if (backgroundBitmap[0] != null) {
+                        backgroundBitmap[0].recycle();
+                    }
+                    if (backgroundBitmap[1] != null) {
+                        backgroundBitmap[1].recycle();
+                    }
                     backgroundBitmap = null;
                 }
                 renderingBitmapCanvas = null;
@@ -307,13 +314,19 @@ public class BlurBehindDrawable {
                 long t = System.currentTimeMillis();
                 if (backgroundBitmap[i] == null) {
                     int w = width;
-                    backgroundBitmap[i] = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
-                    backgroundBitmapCanvas[i] = new Canvas(backgroundBitmap[i]);
-                    backgroundBitmapCanvas[i].scale(DOWN_SCALE, DOWN_SCALE);
+                    try {
+                        backgroundBitmap[i] = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+                        backgroundBitmapCanvas[i] = new Canvas(backgroundBitmap[i]);
+                        backgroundBitmapCanvas[i].scale(DOWN_SCALE, DOWN_SCALE);
+                    } catch (Throwable e) {
+                        FileLog.e(e);
+                    }
                 }
                 emptyPaint.setAlpha(255);
                 Utilities.stackBlurBitmap(blurredBitmapTmp[i], getBlurRadius());
-                backgroundBitmapCanvas[i].drawBitmap(blurredBitmapTmp[i], 0, 0, emptyPaint);
+                if (backgroundBitmapCanvas[i] != null) {
+                    backgroundBitmapCanvas[i].drawBitmap(blurredBitmapTmp[i], 0, 0, emptyPaint);
+                }
 
                 if (canceled) {
                     return;

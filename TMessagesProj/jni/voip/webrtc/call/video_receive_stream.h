@@ -215,6 +215,10 @@ class VideoReceiveStream {
       // Set if the stream is protected using FlexFEC.
       bool protected_by_flexfec = false;
 
+      // Optional callback sink to support additional packet handlsers such as
+      // FlexFec.
+      RtpPacketSinkInterface* packet_sink_ = nullptr;
+
       // Map from rtx payload type -> media payload type.
       // For RTX to be enabled, both an SSRC and this mapping are needed.
       std::map<int, int> rtx_associated_payload_types;
@@ -252,10 +256,6 @@ class VideoReceiveStream {
     // used for streaming instead of a real-time call.
     int target_delay_ms = 0;
 
-    // TODO(nisse): Used with VideoDecoderFactory::LegacyCreateVideoDecoder.
-    // Delete when that method is retired.
-    std::string stream_id;
-
     // An optional custom frame decryptor that allows the entire frame to be
     // decrypted in whatever way the caller choses. This is not required by
     // default.
@@ -276,13 +276,6 @@ class VideoReceiveStream {
 
   // TODO(pbos): Add info on currently-received codec to Stats.
   virtual Stats GetStats() const = 0;
-
-  // RtpDemuxer only forwards a given RTP packet to one sink. However, some
-  // sinks, such as FlexFEC, might wish to be informed of all of the packets
-  // a given sink receives (or any set of sinks). They may do so by registering
-  // themselves as secondary sinks.
-  virtual void AddSecondarySink(RtpPacketSinkInterface* sink) = 0;
-  virtual void RemoveSecondarySink(const RtpPacketSinkInterface* sink) = 0;
 
   virtual std::vector<RtpSource> GetSources() const = 0;
 
@@ -322,6 +315,16 @@ class VideoReceiveStream {
 
  protected:
   virtual ~VideoReceiveStream() {}
+};
+
+class DEPRECATED_VideoReceiveStream : public VideoReceiveStream {
+ public:
+  // RtpDemuxer only forwards a given RTP packet to one sink. However, some
+  // sinks, such as FlexFEC, might wish to be informed of all of the packets
+  // a given sink receives (or any set of sinks). They may do so by registering
+  // themselves as secondary sinks.
+  virtual void AddSecondarySink(RtpPacketSinkInterface* sink) = 0;
+  virtual void RemoveSecondarySink(const RtpPacketSinkInterface* sink) = 0;
 };
 
 }  // namespace webrtc

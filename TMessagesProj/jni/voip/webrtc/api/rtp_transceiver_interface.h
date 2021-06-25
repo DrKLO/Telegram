@@ -14,6 +14,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/types/optional.h"
 #include "api/array_view.h"
 #include "api/media_types.h"
@@ -111,8 +112,8 @@ class RTC_EXPORT RtpTransceiverInterface : public rtc::RefCountInterface {
   // https://w3c.github.io/webrtc-pc/#dom-rtcrtptransceiver-direction
   // TODO(hta): Deprecate SetDirection without error and rename
   // SetDirectionWithError to SetDirection, remove default implementations.
-  RTC_DEPRECATED virtual void SetDirection(
-      RtpTransceiverDirection new_direction);
+  ABSL_DEPRECATED("Use SetDirectionWithError instead")
+  virtual void SetDirection(RtpTransceiverDirection new_direction);
   virtual RTCError SetDirectionWithError(RtpTransceiverDirection new_direction);
 
   // The current_direction attribute indicates the current direction negotiated
@@ -140,7 +141,7 @@ class RTC_EXPORT RtpTransceiverInterface : public rtc::RefCountInterface {
   // This is an internal function, and is exposed for historical reasons.
   // https://w3c.github.io/webrtc-pc/#dfn-stop-the-rtcrtptransceiver
   virtual void StopInternal();
-  RTC_DEPRECATED virtual void Stop();
+  ABSL_DEPRECATED("Use StopStandard instead") virtual void Stop();
 
   // The SetCodecPreferences method overrides the default codec preferences used
   // by WebRTC for this transceiver.
@@ -154,6 +155,12 @@ class RTC_EXPORT RtpTransceiverInterface : public rtc::RefCountInterface {
   // called.
   // https://w3c.github.io/webrtc-extensions/#rtcrtptransceiver-interface
   virtual std::vector<RtpHeaderExtensionCapability> HeaderExtensionsToOffer()
+      const;
+
+  // Readonly attribute which is either empty if negotation has not yet
+  // happened, or a vector of the negotiated header extensions.
+  // https://w3c.github.io/webrtc-extensions/#rtcrtptransceiver-interface
+  virtual std::vector<RtpHeaderExtensionCapability> HeaderExtensionsNegotiated()
       const;
 
   // The SetOfferedRtpHeaderExtensions method modifies the next SDP negotiation

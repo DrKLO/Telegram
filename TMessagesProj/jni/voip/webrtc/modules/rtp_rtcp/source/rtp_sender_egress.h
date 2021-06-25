@@ -19,6 +19,7 @@
 #include "absl/types/optional.h"
 #include "api/call/transport.h"
 #include "api/rtc_event_log/rtc_event_log.h"
+#include "api/sequence_checker.h"
 #include "api/task_queue/task_queue_base.h"
 #include "api/units/data_rate.h"
 #include "modules/remote_bitrate_estimator/test/bwe_test_logging.h"
@@ -29,7 +30,7 @@
 #include "modules/rtp_rtcp/source/rtp_sequence_number_map.h"
 #include "rtc_base/rate_statistics.h"
 #include "rtc_base/synchronization/mutex.h"
-#include "rtc_base/synchronization/sequence_checker.h"
+#include "rtc_base/system/no_unique_address.h"
 #include "rtc_base/task_utils/pending_task_safety_flag.h"
 #include "rtc_base/task_utils/repeating_task.h"
 #include "rtc_base/thread_annotations.h"
@@ -127,7 +128,7 @@ class RtpSenderEgress {
   void PeriodicUpdate();
 
   TaskQueueBase* const worker_queue_;
-  SequenceChecker pacer_checker_;
+  RTC_NO_UNIQUE_ADDRESS SequenceChecker pacer_checker_;
   const uint32_t ssrc_;
   const absl::optional<uint32_t> rtx_ssrc_;
   const absl::optional<uint32_t> flexfec_ssrc_;

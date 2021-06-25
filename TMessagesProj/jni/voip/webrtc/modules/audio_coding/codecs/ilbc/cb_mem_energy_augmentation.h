@@ -19,6 +19,9 @@
 #ifndef MODULES_AUDIO_CODING_CODECS_ILBC_MAIN_SOURCE_CB_MEM_ENERGY_AUGMENTATION_H_
 #define MODULES_AUDIO_CODING_CODECS_ILBC_MAIN_SOURCE_CB_MEM_ENERGY_AUGMENTATION_H_
 
+#include <stddef.h>
+#include <stdint.h>
+
 void WebRtcIlbcfix_CbMemEnergyAugmentation(
     int16_t* interpSamples, /* (i) The interpolated samples */
     int16_t* CBmem,         /* (i) The CB memory */

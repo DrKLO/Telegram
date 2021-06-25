@@ -76,7 +76,7 @@ bool H265SpsParser::Parse() {
   RETURN_FALSE_ON_FAIL(parser.ConsumeBits(4));
   // sps_max_sub_layers_minus1: u(3)
   uint32_t sps_max_sub_layers_minus1 = 0;
-  RETURN_FALSE_ON_FAIL(parser.ReadBits(&sps_max_sub_layers_minus1, 3));
+  RETURN_FALSE_ON_FAIL(parser.ReadBits(3, sps_max_sub_layers_minus1));
   // sps_temporal_id_nesting_flag: u(1)
   RETURN_FALSE_ON_FAIL(parser.ConsumeBits(1));
   // profile_tier_level(1, sps_max_sub_layers_minus1). We are acutally not
@@ -101,8 +101,8 @@ bool H265SpsParser::Parse() {
   uint32_t sub_layer_level_present = 0;
   for (uint32_t i = 0; i < sps_max_sub_layers_minus1; i++) {
       //sublayer_profile_present_flag and sublayer_level_presnet_flag:  u(2)
-      RETURN_FALSE_ON_FAIL(parser.ReadBits(&sub_layer_profile_present, 1));
-      RETURN_FALSE_ON_FAIL(parser.ReadBits(&sub_layer_level_present, 1));
+      RETURN_FALSE_ON_FAIL(parser.ReadBits(1, sub_layer_profile_present));
+      RETURN_FALSE_ON_FAIL(parser.ReadBits(1, sub_layer_level_present));
       sub_layer_profile_present_flags.push_back(sub_layer_profile_present);
       sub_layer_level_present_flags.push_back(sub_layer_level_present);
   }
@@ -132,22 +132,22 @@ bool H265SpsParser::Parse() {
       }
   }
   //sps_seq_parameter_set_id: ue(v)
-  RETURN_FALSE_ON_FAIL(parser.ReadExponentialGolomb(&golomb_ignored));
+  RETURN_FALSE_ON_FAIL(parser.ReadExponentialGolomb(golomb_ignored));
   // chrome_format_idc: ue(v)
-  RETURN_FALSE_ON_FAIL(parser.ReadExponentialGolomb(&chroma_format_idc));
+  RETURN_FALSE_ON_FAIL(parser.ReadExponentialGolomb(chroma_format_idc));
   if (chroma_format_idc == 3) {
     // seperate_colour_plane_flag: u(1)
-    RETURN_FALSE_ON_FAIL(parser.ReadBits(&separate_colour_plane_flag, 1));
+    RETURN_FALSE_ON_FAIL(parser.ReadBits(1, separate_colour_plane_flag));
   }
   uint32_t pic_width_in_luma_samples = 0;
   uint32_t pic_height_in_luma_samples = 0;
   // pic_width_in_luma_samples: ue(v)
-  RETURN_FALSE_ON_FAIL(parser.ReadExponentialGolomb(&pic_width_in_luma_samples));
+  RETURN_FALSE_ON_FAIL(parser.ReadExponentialGolomb(pic_width_in_luma_samples));
   // pic_height_in_luma_samples: ue(v)
-  RETURN_FALSE_ON_FAIL(parser.ReadExponentialGolomb(&pic_height_in_luma_samples));
+  RETURN_FALSE_ON_FAIL(parser.ReadExponentialGolomb(pic_height_in_luma_samples));
   // conformance_window_flag: u(1)
   uint32_t conformance_window_flag = 0;
-  RETURN_FALSE_ON_FAIL(parser.ReadBits(&conformance_window_flag, 1));
+  RETURN_FALSE_ON_FAIL(parser.ReadBits(1, conformance_window_flag));
 
   uint32_t conf_win_left_offset = 0;
   uint32_t conf_win_right_offset = 0;
@@ -155,13 +155,13 @@ bool H265SpsParser::Parse() {
   uint32_t conf_win_bottom_offset = 0;
   if (conformance_window_flag) {
       // conf_win_left_offset: ue(v)
-      RETURN_FALSE_ON_FAIL(parser.ReadExponentialGolomb(&conf_win_left_offset));
+      RETURN_FALSE_ON_FAIL(parser.ReadExponentialGolomb(conf_win_left_offset));
       // conf_win_right_offset: ue(v)
-      RETURN_FALSE_ON_FAIL(parser.ReadExponentialGolomb(&conf_win_right_offset));
+      RETURN_FALSE_ON_FAIL(parser.ReadExponentialGolomb(conf_win_right_offset));
       // conf_win_top_offset: ue(v)
-      RETURN_FALSE_ON_FAIL(parser.ReadExponentialGolomb(&conf_win_top_offset));
+      RETURN_FALSE_ON_FAIL(parser.ReadExponentialGolomb(conf_win_top_offset));
       // conf_win_bottom_offset: ue(v)
-      RETURN_FALSE_ON_FAIL(parser.ReadExponentialGolomb(&conf_win_bottom_offset));
+      RETURN_FALSE_ON_FAIL(parser.ReadExponentialGolomb(conf_win_bottom_offset));
   }
 
   //For enough to get the resolution information. calcaluate according to HEVC spec 7.4.3.2

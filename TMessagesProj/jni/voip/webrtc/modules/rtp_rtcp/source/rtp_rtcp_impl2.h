@@ -21,6 +21,7 @@
 
 #include "absl/types/optional.h"
 #include "api/rtp_headers.h"
+#include "api/sequence_checker.h"
 #include "api/task_queue/task_queue_base.h"
 #include "api/video/video_bitrate_allocation.h"
 #include "modules/include/module_fec_types.h"
@@ -36,7 +37,7 @@
 #include "modules/rtp_rtcp/source/rtp_sender_egress.h"
 #include "rtc_base/gtest_prod_util.h"
 #include "rtc_base/synchronization/mutex.h"
-#include "rtc_base/synchronization/sequence_checker.h"
+#include "rtc_base/system/no_unique_address.h"
 #include "rtc_base/task_utils/pending_task_safety_flag.h"
 #include "rtc_base/task_utils/repeating_task.h"
 
@@ -199,14 +200,12 @@ class ModuleRtpRtcpImpl2 final : public RtpRtcpInterface,
       StreamDataCounters* rtp_counters,
       StreamDataCounters* rtx_counters) const override;
 
-  // Get received RTCP report, report block.
-  int32_t RemoteRTCPStat(
-      std::vector<RTCPReportBlock>* receive_blocks) const override;
   // A snapshot of the most recent Report Block with additional data of
   // interest to statistics. Used to implement RTCRemoteInboundRtpStreamStats.
   // Within this list, the ReportBlockData::RTCPReportBlock::source_ssrc(),
   // which is the SSRC of the corresponding outbound RTP stream, is unique.
   std::vector<ReportBlockData> GetLatestReportBlockData() const override;
+  absl::optional<SenderReportStats> GetSenderReportStats() const override;
 
   // (REMB) Receiver Estimated Max Bitrate.
   void SetRemb(int64_t bitrate_bps, std::vector<uint32_t> ssrcs) override;
@@ -230,25 +229,14 @@ class ModuleRtpRtcpImpl2 final : public RtpRtcpInterface,
   // requests.
   void SetStorePacketsStatus(bool enable, uint16_t number_to_store) override;
 
-  bool StorePackets() const override;
-
   void SendCombinedRtcpPacket(
       std::vector<std::unique_ptr<rtcp::RtcpPacket>> rtcp_packets) override;
-
-  // (XR) Receiver reference time report.
-  void SetRtcpXrRrtrStatus(bool enable) override;
-
-  bool RtcpXrRrtrStatus() const override;
 
   // Video part.
   int32_t SendLossNotification(uint16_t last_decoded_seq_num,
                                uint16_t last_received_seq_num,
                                bool decodability_flag,
                                bool buffering_allowed) override;
-
-  bool LastReceivedNTP(uint32_t* NTPsecs,
-                       uint32_t* NTPfrac,
-                       uint32_t* remote_sr) const;
 
   RtpSendRates GetSendRates() const override;
 
@@ -291,8 +279,11 @@ class ModuleRtpRtcpImpl2 final : public RtpRtcpInterface,
   // check if we need to send RTCP report, send TMMBR updates and fire events.
   void PeriodicUpdate();
 
+  // Returns true if the module is configured to store packets.
+  bool StorePackets() const;
+
   TaskQueueBase* const worker_queue_;
-  SequenceChecker process_thread_checker_;
+  RTC_NO_UNIQUE_ADDRESS SequenceChecker process_thread_checker_;
 
   std::unique_ptr<RtpSenderContext> rtp_sender_;
 
@@ -316,7 +307,7 @@ class ModuleRtpRtcpImpl2 final : public RtpRtcpInterface,
 
   // The processed RTT from RtcpRttStats.
   mutable Mutex mutex_rtt_;
-  int64_t rtt_ms_;
+  int64_t rtt_ms_ RTC_GUARDED_BY(mutex_rtt_);
 };
 
 }  // namespace webrtc

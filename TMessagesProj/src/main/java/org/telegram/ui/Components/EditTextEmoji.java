@@ -99,7 +99,7 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
         super(context);
         currentStyle = style;
 
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiDidLoad);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
         parentFragment = fragment;
         sizeNotifierLayout = parent;
         sizeNotifierLayout.setDelegate(this);
@@ -195,7 +195,7 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.emojiDidLoad) {
+        if (id == NotificationCenter.emojiLoaded) {
             if (emojiView != null) {
                 emojiView.invalidateViews();
             }
@@ -250,7 +250,7 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
 
     public void onDestroy() {
         destroyed = true;
-        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiDidLoad);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
         if (emojiView != null) {
             emojiView.onDestroy();
         }

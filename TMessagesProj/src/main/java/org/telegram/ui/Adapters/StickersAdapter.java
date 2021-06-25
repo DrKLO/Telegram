@@ -74,19 +74,19 @@ public class StickersAdapter extends RecyclerListView.SelectionAdapter implement
         MediaDataController.getInstance(currentAccount).checkStickers(MediaDataController.TYPE_IMAGE);
         MediaDataController.getInstance(currentAccount).checkStickers(MediaDataController.TYPE_MASK);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.newEmojiSuggestionsAvailable);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileDidLoad);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileDidFailToLoad);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileLoaded);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileLoadFailed);
     }
 
     public void onDestroy() {
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.newEmojiSuggestionsAvailable);
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileDidLoad);
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileDidFailToLoad);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileLoaded);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileLoadFailed);
     }
 
     @Override
     public void didReceivedNotification(int id, int account, final Object... args) {
-        if (id == NotificationCenter.fileDidLoad || id == NotificationCenter.fileDidFailToLoad) {
+        if (id == NotificationCenter.fileLoaded || id == NotificationCenter.fileLoadFailed) {
             if (stickers != null && !stickers.isEmpty() && !stickersToLoad.isEmpty() && visible) {
                 String fileName = (String) args[0];
                 stickersToLoad.remove(fileName);

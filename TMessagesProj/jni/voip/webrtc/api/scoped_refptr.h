@@ -104,6 +104,7 @@ class scoped_refptr {
 
   T* get() const { return ptr_; }
   operator T*() const { return ptr_; }
+  T& operator*() const { return *ptr_; }
   T* operator->() const { return ptr_; }
 
   // Returns the (possibly null) raw pointer, and makes the scoped_refptr hold a

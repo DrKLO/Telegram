@@ -100,18 +100,6 @@ static uint32_t AbsSumDiff16x1(__m128i acc_diff) {
   return sum_diff;
 }
 
-// TODO(jackychen): Optimize this function using SSE2.
-void DenoiserFilterSSE2::CopyMem16x16(const uint8_t* src,
-                                      int src_stride,
-                                      uint8_t* dst,
-                                      int dst_stride) {
-  for (int i = 0; i < 16; i++) {
-    memcpy(dst, src, 16);
-    src += src_stride;
-    dst += dst_stride;
-  }
-}
-
 uint32_t DenoiserFilterSSE2::Variance16x8(const uint8_t* src,
                                           int src_stride,
                                           const uint8_t* ref,

@@ -141,7 +141,8 @@ static base::android::ScopedJavaLocalRef<jobject> Java_Encoding_Constructor(JNIE
     const base::android::JavaRef<jobject>& maxFramerate,
     const base::android::JavaRef<jobject>& numTemporalLayers,
     const base::android::JavaRef<jobject>& scaleResolutionDownBy,
-    const base::android::JavaRef<jobject>& ssrc) {
+    const base::android::JavaRef<jobject>& ssrc,
+    jboolean adaptiveAudioPacketTime) {
   jclass clazz = org_webrtc_RtpParameters_00024Encoding_clazz(env);
   CHECK_CLAZZ(env, clazz,
       org_webrtc_RtpParameters_00024Encoding_clazz(env), NULL);
@@ -152,14 +153,14 @@ static base::android::ScopedJavaLocalRef<jobject> Java_Encoding_Constructor(JNIE
           env,
           clazz,
           "<init>",
-"(Ljava/lang/String;ZDILjava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Double;Ljava/lang/Long;)V",
+"(Ljava/lang/String;ZDILjava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Double;Ljava/lang/Long;Z)V",
           &g_org_webrtc_RtpParameters_00024Encoding_Constructor);
 
   jobject ret =
       env->NewObject(clazz,
           call_context.base.method_id, rid.obj(), active, bitratePriority, as_jint(networkPriority),
               maxBitrateBps.obj(), minBitrateBps.obj(), maxFramerate.obj(), numTemporalLayers.obj(),
-              scaleResolutionDownBy.obj(), ssrc.obj());
+              scaleResolutionDownBy.obj(), ssrc.obj(), adaptiveAudioPacketTime);
   return base::android::ScopedJavaLocalRef<jobject>(env, ret);
 }
 
@@ -382,6 +383,28 @@ static base::android::ScopedJavaLocalRef<jobject> Java_Encoding_getSsrc(JNIEnv* 
       env->CallObjectMethod(obj.obj(),
           call_context.base.method_id);
   return base::android::ScopedJavaLocalRef<jobject>(env, ret);
+}
+
+static std::atomic<jmethodID> g_org_webrtc_RtpParameters_00024Encoding_getAdaptivePTime(nullptr);
+static jboolean Java_Encoding_getAdaptivePTime(JNIEnv* env, const base::android::JavaRef<jobject>&
+    obj) {
+  jclass clazz = org_webrtc_RtpParameters_00024Encoding_clazz(env);
+  CHECK_CLAZZ(env, obj.obj(),
+      org_webrtc_RtpParameters_00024Encoding_clazz(env), false);
+
+  jni_generator::JniJavaCallContextChecked call_context;
+  call_context.Init<
+      base::android::MethodID::TYPE_INSTANCE>(
+          env,
+          clazz,
+          "getAdaptivePTime",
+          "()Z",
+          &g_org_webrtc_RtpParameters_00024Encoding_getAdaptivePTime);
+
+  jboolean ret =
+      env->CallBooleanMethod(obj.obj(),
+          call_context.base.method_id);
+  return ret;
 }
 
 static std::atomic<jmethodID> g_org_webrtc_RtpParameters_00024Codec_Constructor(nullptr);

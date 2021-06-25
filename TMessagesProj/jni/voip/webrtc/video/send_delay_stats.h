@@ -27,6 +27,12 @@
 
 namespace webrtc {
 
+// Used to collect delay stats for video streams. The class gets callbacks
+// from more than one threads and internally uses a mutex for data access
+// synchronization.
+// TODO(bugs.webrtc.org/11993): OnSendPacket and OnSentPacket will eventually
+// be called consistently on the same thread. Once we're there, we should be
+// able to avoid locking (at least for the fast path).
 class SendDelayStats : public SendPacketObserver {
  public:
   explicit SendDelayStats(Clock* clock);

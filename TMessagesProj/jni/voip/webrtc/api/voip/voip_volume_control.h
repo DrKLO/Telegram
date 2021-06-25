@@ -36,17 +36,24 @@ class VoipVolumeControl {
   // Mute/unmutes the microphone input sample before encoding process. Note that
   // mute doesn't affect audio input level and energy values as input sample is
   // silenced after the measurement.
-  virtual void SetInputMuted(ChannelId channel_id, bool enable) = 0;
+  // Returns following VoipResult;
+  //  kOk - input source muted or unmuted as provided by |enable|.
+  //  kInvalidArgument - |channel_id| is invalid.
+  virtual VoipResult SetInputMuted(ChannelId channel_id, bool enable) = 0;
 
-  // Gets the microphone volume info.
-  // Returns absl::nullopt if |channel_id| is invalid.
-  virtual absl::optional<VolumeInfo> GetInputVolumeInfo(
-      ChannelId channel_id) = 0;
+  // Gets the microphone volume info via |volume_info| reference.
+  // Returns following VoipResult;
+  //  kOk - successfully set provided input volume info.
+  //  kInvalidArgument - |channel_id| is invalid.
+  virtual VoipResult GetInputVolumeInfo(ChannelId channel_id,
+                                        VolumeInfo& volume_info) = 0;
 
-  // Gets the speaker volume info.
-  // Returns absl::nullopt if |channel_id| is invalid.
-  virtual absl::optional<VolumeInfo> GetOutputVolumeInfo(
-      ChannelId channel_id) = 0;
+  // Gets the speaker volume info via |volume_info| reference.
+  // Returns following VoipResult;
+  //  kOk - successfully set provided output volume info.
+  //  kInvalidArgument - |channel_id| is invalid.
+  virtual VoipResult GetOutputVolumeInfo(ChannelId channel_id,
+                                         VolumeInfo& volume_info) = 0;
 
  protected:
   virtual ~VoipVolumeControl() = default;

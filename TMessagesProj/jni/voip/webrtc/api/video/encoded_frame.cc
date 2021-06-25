@@ -11,11 +11,9 @@
 #include "api/video/encoded_frame.h"
 
 namespace webrtc {
-namespace video_coding {
 
 bool EncodedFrame::delayed_by_retransmission() const {
   return 0;
 }
 
-}  // namespace video_coding
 }  // namespace webrtc

@@ -11,6 +11,9 @@
 #ifndef PC_SRTP_FILTER_H_
 #define PC_SRTP_FILTER_H_
 
+#include <stddef.h>
+#include <stdint.h>
+
 #include <list>
 #include <map>
 #include <memory>
@@ -21,11 +24,11 @@
 #include "api/array_view.h"
 #include "api/crypto_params.h"
 #include "api/jsep.h"
+#include "api/sequence_checker.h"
 #include "pc/session_description.h"
 #include "rtc_base/buffer.h"
 #include "rtc_base/constructor_magic.h"
 #include "rtc_base/ssl_stream_adapter.h"
-#include "rtc_base/thread_checker.h"
 
 // Forward declaration to avoid pulling in libsrtp headers here
 struct srtp_event_data_t;

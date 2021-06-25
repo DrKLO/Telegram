@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "api/rtp_headers.h"
+#include "api/sequence_checker.h"
 #include "api/video_codecs/video_codec.h"
 #include "api/video_codecs/video_decoder.h"
 #include "modules/utility/include/process_thread.h"
@@ -33,7 +34,6 @@
 #include "rtc_base/location.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/one_time_event.h"
-#include "rtc_base/thread_checker.h"
 #include "rtc_base/trace_event.h"
 #include "system_wrappers/include/clock.h"
 
@@ -173,8 +173,7 @@ int32_t VideoReceiver::RegisterPacketRequestCallback(
 // Should be called as often as possible to get the most out of the decoder.
 int32_t VideoReceiver::Decode(uint16_t maxWaitTimeMs) {
   RTC_DCHECK_RUN_ON(&decoder_thread_checker_);
-  VCMEncodedFrame* frame = _receiver.FrameForDecoding(
-      maxWaitTimeMs, _codecDataBase.PrefersLateDecoding());
+  VCMEncodedFrame* frame = _receiver.FrameForDecoding(maxWaitTimeMs, true);
 
   if (!frame)
     return VCM_FRAME_NOT_READY;
@@ -280,7 +279,7 @@ int32_t VideoReceiver::IncomingPacket(const uint8_t* incomingPayload,
   // Callers don't provide any ntp time.
   const VCMPacket packet(incomingPayload, payloadLength, rtp_header,
                          video_header, /*ntp_time_ms=*/0,
-                         clock_->TimeInMilliseconds());
+                         clock_->CurrentTime());
   int32_t ret = _receiver.InsertPacket(packet);
 
   // TODO(holmer): Investigate if this somehow should use the key frame

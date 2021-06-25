@@ -844,11 +844,15 @@ private:
 
                 std::vector<webrtc::RtpCodecCapability> codecs;
                 for (auto &codec : capabilities.codecs) {
+#ifndef WEBRTC_DISABLE_H265
                     if (codec.name == cricket::kH265CodecName) {
                         codecs.insert(codecs.begin(), codec);
                     } else {
                         codecs.push_back(codec);
                     }
+#else
+                    codecs.push_back(codec);
+#endif
                 }
                 it->SetCodecPreferences(codecs);
 

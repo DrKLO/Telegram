@@ -250,8 +250,7 @@ void RtpSenderEgress::SendPacket(RtpPacketToSend* packet,
     AddPacketToTransportFeedback(*packet_id, *packet, pacing_info);
   }
 
-  options.application_data.assign(packet->application_data().begin(),
-                                  packet->application_data().end());
+  options.additional_data = packet->additional_data();
 
   if (packet->packet_type() != RtpPacketMediaType::kPadding &&
       packet->packet_type() != RtpPacketMediaType::kRetransmission) {
@@ -413,6 +412,7 @@ void RtpSenderEgress::AddPacketToTransportFeedback(
     packet_info.ssrc = ssrc_;
     packet_info.transport_sequence_number = packet_id;
     packet_info.rtp_sequence_number = packet.SequenceNumber();
+    packet_info.rtp_timestamp = packet.Timestamp();
     packet_info.length = packet_size;
     packet_info.pacing_info = pacing_info;
     packet_info.packet_type = packet.packet_type();

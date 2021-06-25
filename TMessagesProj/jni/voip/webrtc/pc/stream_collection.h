@@ -22,16 +22,12 @@ namespace webrtc {
 class StreamCollection : public StreamCollectionInterface {
  public:
   static rtc::scoped_refptr<StreamCollection> Create() {
-    rtc::RefCountedObject<StreamCollection>* implementation =
-        new rtc::RefCountedObject<StreamCollection>();
-    return implementation;
+    return rtc::make_ref_counted<StreamCollection>();
   }
 
   static rtc::scoped_refptr<StreamCollection> Create(
       StreamCollection* streams) {
-    rtc::RefCountedObject<StreamCollection>* implementation =
-        new rtc::RefCountedObject<StreamCollection>(streams);
-    return implementation;
+    return rtc::make_ref_counted<StreamCollection>(streams);
   }
 
   virtual size_t count() { return media_streams_.size(); }

@@ -12,12 +12,12 @@
 #define MEDIA_BASE_VIDEO_BROADCASTER_H_
 
 #include "api/scoped_refptr.h"
+#include "api/sequence_checker.h"
 #include "api/video/video_frame_buffer.h"
 #include "api/video/video_source_interface.h"
 #include "media/base/video_source_base.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/thread_annotations.h"
-#include "rtc_base/thread_checker.h"
 
 namespace rtc {
 

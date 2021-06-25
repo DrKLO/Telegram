@@ -281,3 +281,53 @@ int32_t WebRtcSpl_MinValueW32Neon(const int32_t* vector, size_t length) {
   return minimum;
 }
 
+// Finds both the minimum and maximum elements in an array of 16-bit integers.
+void WebRtcSpl_MinMaxW16Neon(const int16_t* vector, size_t length,
+                             int16_t* min_val, int16_t* max_val) {
+  int16_t minimum = WEBRTC_SPL_WORD16_MAX;
+  int16_t maximum = WEBRTC_SPL_WORD16_MIN;
+  size_t i = 0;
+  size_t residual = length & 0x7;
+
+  RTC_DCHECK_GT(length, 0);
+
+  const int16_t* p_start = vector;
+  int16x8_t min16x8 = vdupq_n_s16(WEBRTC_SPL_WORD16_MAX);
+  int16x8_t max16x8 = vdupq_n_s16(WEBRTC_SPL_WORD16_MIN);
+
+  // First part, unroll the loop 8 times.
+  for (i = 0; i < length - residual; i += 8) {
+    int16x8_t in16x8 = vld1q_s16(p_start);
+    min16x8 = vminq_s16(min16x8, in16x8);
+    max16x8 = vmaxq_s16(max16x8, in16x8);
+    p_start += 8;
+  }
+
+#if defined(WEBRTC_ARCH_ARM64)
+  minimum = vminvq_s16(min16x8);
+  maximum = vmaxvq_s16(max16x8);
+#else
+  int16x4_t min16x4 = vmin_s16(vget_low_s16(min16x8), vget_high_s16(min16x8));
+  min16x4 = vpmin_s16(min16x4, min16x4);
+  min16x4 = vpmin_s16(min16x4, min16x4);
+
+  minimum = vget_lane_s16(min16x4, 0);
+
+  int16x4_t max16x4 = vmax_s16(vget_low_s16(max16x8), vget_high_s16(max16x8));
+  max16x4 = vpmax_s16(max16x4, max16x4);
+  max16x4 = vpmax_s16(max16x4, max16x4);
+
+  maximum = vget_lane_s16(max16x4, 0);
+#endif
+
+  // Second part, do the remaining iterations (if any).
+  for (i = residual; i > 0; i--) {
+    if (*p_start < minimum)
+      minimum = *p_start;
+    if (*p_start > maximum)
+      maximum = *p_start;
+    p_start++;
+  }
+  *min_val = minimum;
+  *max_val = maximum;
+}

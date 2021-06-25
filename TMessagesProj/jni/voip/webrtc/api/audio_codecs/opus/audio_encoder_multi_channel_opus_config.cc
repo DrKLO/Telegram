@@ -38,7 +38,7 @@ operator=(const AudioEncoderMultiChannelOpusConfig&) = default;
 bool AudioEncoderMultiChannelOpusConfig::IsOk() const {
   if (frame_size_ms <= 0 || frame_size_ms % 10 != 0)
     return false;
-  if (num_channels < 0 || num_channels >= 255) {
+  if (num_channels >= 255) {
     return false;
   }
   if (bitrate_bps < kMinBitrateBps || bitrate_bps > kMaxBitrateBps)
@@ -47,7 +47,7 @@ bool AudioEncoderMultiChannelOpusConfig::IsOk() const {
     return false;
 
   // Check the lengths:
-  if (num_channels < 0 || num_streams < 0 || coupled_streams < 0) {
+  if (num_streams < 0 || coupled_streams < 0) {
     return false;
   }
   if (num_streams < coupled_streams) {

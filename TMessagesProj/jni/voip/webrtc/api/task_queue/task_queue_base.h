@@ -27,12 +27,14 @@ class RTC_LOCKABLE RTC_EXPORT TaskQueueBase {
   // Starts destruction of the task queue.
   // On return ensures no task are running and no new tasks are able to start
   // on the task queue.
-  // Responsible for deallocation. Deallocation may happen syncrhoniously during
+  // Responsible for deallocation. Deallocation may happen synchronously during
   // Delete or asynchronously after Delete returns.
   // Code not running on the TaskQueue should not make any assumption when
   // TaskQueue is deallocated and thus should not call any methods after Delete.
   // Code running on the TaskQueue should not call Delete, but can assume
   // TaskQueue still exists and may call other methods, e.g. PostTask.
+  // Should be called on the same task queue or thread that this task queue
+  // was created on.
   virtual void Delete() = 0;
 
   // Schedules a task to execute. Tasks are executed in FIFO order.
@@ -43,17 +45,20 @@ class RTC_LOCKABLE RTC_EXPORT TaskQueueBase {
   // TaskQueue or it may happen asynchronously after TaskQueue is deleted.
   // This may vary from one implementation to the next so assumptions about
   // lifetimes of pending tasks should not be made.
+  // May be called on any thread or task queue, including this task queue.
   virtual void PostTask(std::unique_ptr<QueuedTask> task) = 0;
 
   // Schedules a task to execute a specified number of milliseconds from when
   // the call is made. The precision should be considered as "best effort"
   // and in some cases, such as on Windows when all high precision timers have
   // been used up, can be off by as much as 15 millseconds.
+  // May be called on any thread or task queue, including this task queue.
   virtual void PostDelayedTask(std::unique_ptr<QueuedTask> task,
                                uint32_t milliseconds) = 0;
 
   // Returns the task queue that is running the current thread.
   // Returns nullptr if this thread is not associated with any task queue.
+  // May be called on any thread or task queue, including this task queue.
   static TaskQueueBase* Current();
   bool IsCurrent() const { return Current() == this; }
 

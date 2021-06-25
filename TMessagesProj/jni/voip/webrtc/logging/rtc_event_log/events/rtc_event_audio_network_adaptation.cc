@@ -31,14 +31,6 @@ RtcEventAudioNetworkAdaptation::RtcEventAudioNetworkAdaptation(
 
 RtcEventAudioNetworkAdaptation::~RtcEventAudioNetworkAdaptation() = default;
 
-RtcEvent::Type RtcEventAudioNetworkAdaptation::GetType() const {
-  return RtcEvent::Type::AudioNetworkAdaptation;
-}
-
-bool RtcEventAudioNetworkAdaptation::IsConfigEvent() const {
-  return false;
-}
-
 std::unique_ptr<RtcEventAudioNetworkAdaptation>
 RtcEventAudioNetworkAdaptation::Copy() const {
   return absl::WrapUnique(new RtcEventAudioNetworkAdaptation(*this));

@@ -18,6 +18,7 @@
 #ifndef MODULES_AUDIO_CODING_CODECS_ILBC_MAIN_SOURCE_DEFINES_H_
 #define MODULES_AUDIO_CODING_CODECS_ILBC_MAIN_SOURCE_DEFINES_H_
 
+#include <stdint.h>
 #include <string.h>
 
 #include "common_audio/signal_processing/include/signal_processing_library.h"

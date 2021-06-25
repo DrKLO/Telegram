@@ -74,6 +74,7 @@ enum RTPExtensionType : int {
   kRtpExtensionGenericFrameDescriptor = kRtpExtensionGenericFrameDescriptor00,
   kRtpExtensionGenericFrameDescriptor02,
   kRtpExtensionColorSpace,
+  kRtpExtensionVideoFrameTrackingId,
   kRtpExtensionNumberOfExtensions  // Must be the last entity in the enum.
 };
 
@@ -228,6 +229,7 @@ struct RtpPacketSendInfo {
   uint16_t transport_sequence_number = 0;
   uint32_t ssrc = 0;
   uint16_t rtp_sequence_number = 0;
+  uint32_t rtp_timestamp = 0;
   size_t length = 0;
   absl::optional<RtpPacketMediaType> packet_type;
   PacedPacketInfo pacing_info;

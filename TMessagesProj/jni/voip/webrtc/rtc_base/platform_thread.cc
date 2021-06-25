@@ -10,131 +10,37 @@
 
 #include "rtc_base/platform_thread.h"
 
+#include <algorithm>
+#include <memory>
+
 #if !defined(WEBRTC_WIN)
 #include <sched.h>
 #endif
-#include <stdint.h>
-#include <time.h>
-
-#include <algorithm>
 
 #include "rtc_base/checks.h"
 
 namespace rtc {
 namespace {
-#if !defined(WEBRTC_WIN)
-struct ThreadAttributes {
-  ThreadAttributes() { pthread_attr_init(&attr); }
-  ~ThreadAttributes() { pthread_attr_destroy(&attr); }
-  pthread_attr_t* operator&() { return &attr; }
-  pthread_attr_t attr;
-};
-#endif  // defined(WEBRTC_WIN)
-}  // namespace
-
-PlatformThread::PlatformThread(ThreadRunFunction func,
-                               void* obj,
-                               absl::string_view thread_name,
-                               ThreadPriority priority /*= kNormalPriority*/)
-    : run_function_(func), priority_(priority), obj_(obj), name_(thread_name) {
-  RTC_DCHECK(func);
-  RTC_DCHECK(!name_.empty());
-  // TODO(tommi): Consider lowering the limit to 15 (limit on Linux).
-  RTC_DCHECK(name_.length() < 64);
-  spawned_thread_checker_.Detach();
-}
-
-PlatformThread::~PlatformThread() {
-  RTC_DCHECK(thread_checker_.IsCurrent());
-#if defined(WEBRTC_WIN)
-  RTC_DCHECK(!thread_);
-  RTC_DCHECK(!thread_id_);
-#endif  // defined(WEBRTC_WIN)
-}
 
 #if defined(WEBRTC_WIN)
-DWORD WINAPI PlatformThread::StartThread(void* param) {
-  // The GetLastError() function only returns valid results when it is called
-  // after a Win32 API function that returns a "failed" result. A crash dump
-  // contains the result from GetLastError() and to make sure it does not
-  // falsely report a Windows error we call SetLastError here.
-  ::SetLastError(ERROR_SUCCESS);
-  static_cast<PlatformThread*>(param)->Run();
-  return 0;
+int Win32PriorityFromThreadPriority(ThreadPriority priority) {
+  switch (priority) {
+    case ThreadPriority::kLow:
+      return THREAD_PRIORITY_BELOW_NORMAL;
+    case ThreadPriority::kNormal:
+      return THREAD_PRIORITY_NORMAL;
+    case ThreadPriority::kHigh:
+      return THREAD_PRIORITY_ABOVE_NORMAL;
+    case ThreadPriority::kRealtime:
+      return THREAD_PRIORITY_TIME_CRITICAL;
+  }
 }
-#else
-void* PlatformThread::StartThread(void* param) {
-  static_cast<PlatformThread*>(param)->Run();
-  return 0;
-}
-#endif  // defined(WEBRTC_WIN)
+#endif
 
-void PlatformThread::Start() {
-  RTC_DCHECK(thread_checker_.IsCurrent());
-  RTC_DCHECK(!thread_) << "Thread already started?";
+bool SetPriority(ThreadPriority priority) {
 #if defined(WEBRTC_WIN)
-  // See bug 2902 for background on STACK_SIZE_PARAM_IS_A_RESERVATION.
-  // Set the reserved stack stack size to 1M, which is the default on Windows
-  // and Linux.
-  thread_ = ::CreateThread(nullptr, 1024 * 1024, &StartThread, this,
-                           STACK_SIZE_PARAM_IS_A_RESERVATION, &thread_id_);
-  RTC_CHECK(thread_) << "CreateThread failed";
-  RTC_DCHECK(thread_id_);
-#else
-  ThreadAttributes attr;
-  // Set the stack stack size to 1M.
-  pthread_attr_setstacksize(&attr, 1024 * 1024);
-  RTC_CHECK_EQ(0, pthread_create(&thread_, &attr, &StartThread, this));
-#endif  // defined(WEBRTC_WIN)
-}
-
-bool PlatformThread::IsRunning() const {
-  RTC_DCHECK(thread_checker_.IsCurrent());
-#if defined(WEBRTC_WIN)
-  return thread_ != nullptr;
-#else
-  return thread_ != 0;
-#endif  // defined(WEBRTC_WIN)
-}
-
-PlatformThreadRef PlatformThread::GetThreadRef() const {
-#if defined(WEBRTC_WIN)
-  return thread_id_;
-#else
-  return thread_;
-#endif  // defined(WEBRTC_WIN)
-}
-
-void PlatformThread::Stop() {
-  RTC_DCHECK(thread_checker_.IsCurrent());
-  if (!IsRunning())
-    return;
-
-#if defined(WEBRTC_WIN)
-  WaitForSingleObject(thread_, INFINITE);
-  CloseHandle(thread_);
-  thread_ = nullptr;
-  thread_id_ = 0;
-#else
-  RTC_CHECK_EQ(0, pthread_join(thread_, nullptr));
-  thread_ = 0;
-#endif  // defined(WEBRTC_WIN)
-  spawned_thread_checker_.Detach();
-}
-
-void PlatformThread::Run() {
-  // Attach the worker thread checker to this thread.
-  RTC_DCHECK(spawned_thread_checker_.IsCurrent());
-  rtc::SetCurrentThreadName(name_.c_str());
-  SetPriority(priority_);
-  run_function_(obj_);
-}
-
-bool PlatformThread::SetPriority(ThreadPriority priority) {
-  RTC_DCHECK(spawned_thread_checker_.IsCurrent());
-
-#if defined(WEBRTC_WIN)
-  return SetThreadPriority(thread_, priority) != FALSE;
+  return SetThreadPriority(GetCurrentThread(),
+                           Win32PriorityFromThreadPriority(priority)) != FALSE;
 #elif defined(__native_client__) || defined(WEBRTC_FUCHSIA)
   // Setting thread priorities is not supported in NaCl or Fuchsia.
   return true;
@@ -158,35 +64,148 @@ bool PlatformThread::SetPriority(ThreadPriority priority) {
   const int top_prio = max_prio - 1;
   const int low_prio = min_prio + 1;
   switch (priority) {
-    case kLowPriority:
+    case ThreadPriority::kLow:
       param.sched_priority = low_prio;
       break;
-    case kNormalPriority:
+    case ThreadPriority::kNormal:
       // The -1 ensures that the kHighPriority is always greater or equal to
       // kNormalPriority.
       param.sched_priority = (low_prio + top_prio - 1) / 2;
       break;
-    case kHighPriority:
+    case ThreadPriority::kHigh:
       param.sched_priority = std::max(top_prio - 2, low_prio);
       break;
-    case kHighestPriority:
-      param.sched_priority = std::max(top_prio - 1, low_prio);
-      break;
-    case kRealtimePriority:
+    case ThreadPriority::kRealtime:
       param.sched_priority = top_prio;
       break;
   }
-  return pthread_setschedparam(thread_, policy, &param) == 0;
+  return pthread_setschedparam(pthread_self(), policy, &param) == 0;
 #endif  // defined(WEBRTC_WIN)
 }
 
 #if defined(WEBRTC_WIN)
-bool PlatformThread::QueueAPC(PAPCFUNC function, ULONG_PTR data) {
-  RTC_DCHECK(thread_checker_.IsCurrent());
-  RTC_DCHECK(IsRunning());
+DWORD WINAPI RunPlatformThread(void* param) {
+  // The GetLastError() function only returns valid results when it is called
+  // after a Win32 API function that returns a "failed" result. A crash dump
+  // contains the result from GetLastError() and to make sure it does not
+  // falsely report a Windows error we call SetLastError here.
+  ::SetLastError(ERROR_SUCCESS);
+  auto function = static_cast<std::function<void()>*>(param);
+  (*function)();
+  delete function;
+  return 0;
+}
+#else
+void* RunPlatformThread(void* param) {
+  auto function = static_cast<std::function<void()>*>(param);
+  (*function)();
+  delete function;
+  return 0;
+}
+#endif  // defined(WEBRTC_WIN)
 
-  return QueueUserAPC(function, thread_, data) != FALSE;
+}  // namespace
+
+PlatformThread::PlatformThread(Handle handle, bool joinable)
+    : handle_(handle), joinable_(joinable) {}
+
+PlatformThread::PlatformThread(PlatformThread&& rhs)
+    : handle_(rhs.handle_), joinable_(rhs.joinable_) {
+  rhs.handle_ = absl::nullopt;
+}
+
+PlatformThread& PlatformThread::operator=(PlatformThread&& rhs) {
+  Finalize();
+  handle_ = rhs.handle_;
+  joinable_ = rhs.joinable_;
+  rhs.handle_ = absl::nullopt;
+  return *this;
+}
+
+PlatformThread::~PlatformThread() {
+  Finalize();
+}
+
+PlatformThread PlatformThread::SpawnJoinable(
+    std::function<void()> thread_function,
+    absl::string_view name,
+    ThreadAttributes attributes) {
+  return SpawnThread(std::move(thread_function), name, attributes,
+                     /*joinable=*/true);
+}
+
+PlatformThread PlatformThread::SpawnDetached(
+    std::function<void()> thread_function,
+    absl::string_view name,
+    ThreadAttributes attributes) {
+  return SpawnThread(std::move(thread_function), name, attributes,
+                     /*joinable=*/false);
+}
+
+absl::optional<PlatformThread::Handle> PlatformThread::GetHandle() const {
+  return handle_;
+}
+
+#if defined(WEBRTC_WIN)
+bool PlatformThread::QueueAPC(PAPCFUNC function, ULONG_PTR data) {
+  RTC_DCHECK(handle_.has_value());
+  return handle_.has_value() ? QueueUserAPC(function, *handle_, data) != FALSE
+                             : false;
 }
 #endif
+
+void PlatformThread::Finalize() {
+  if (!handle_.has_value())
+    return;
+#if defined(WEBRTC_WIN)
+  if (joinable_)
+    WaitForSingleObject(*handle_, INFINITE);
+  CloseHandle(*handle_);
+#else
+  if (joinable_)
+    RTC_CHECK_EQ(0, pthread_join(*handle_, nullptr));
+#endif
+  handle_ = absl::nullopt;
+}
+
+PlatformThread PlatformThread::SpawnThread(
+    std::function<void()> thread_function,
+    absl::string_view name,
+    ThreadAttributes attributes,
+    bool joinable) {
+  RTC_DCHECK(thread_function);
+  RTC_DCHECK(!name.empty());
+  // TODO(tommi): Consider lowering the limit to 15 (limit on Linux).
+  RTC_DCHECK(name.length() < 64);
+  auto start_thread_function_ptr =
+      new std::function<void()>([thread_function = std::move(thread_function),
+                                 name = std::string(name), attributes] {
+        rtc::SetCurrentThreadName(name.c_str());
+        SetPriority(attributes.priority);
+        thread_function();
+      });
+#if defined(WEBRTC_WIN)
+  // See bug 2902 for background on STACK_SIZE_PARAM_IS_A_RESERVATION.
+  // Set the reserved stack stack size to 1M, which is the default on Windows
+  // and Linux.
+  DWORD thread_id = 0;
+  PlatformThread::Handle handle = ::CreateThread(
+      nullptr, 1024 * 1024, &RunPlatformThread, start_thread_function_ptr,
+      STACK_SIZE_PARAM_IS_A_RESERVATION, &thread_id);
+  RTC_CHECK(handle) << "CreateThread failed";
+#else
+  pthread_attr_t attr;
+  pthread_attr_init(&attr);
+  // Set the stack stack size to 1M.
+  pthread_attr_setstacksize(&attr, 1024 * 1024);
+  pthread_attr_setdetachstate(
+      &attr, joinable ? PTHREAD_CREATE_JOINABLE : PTHREAD_CREATE_DETACHED);
+  PlatformThread::Handle handle;
+  RTC_CHECK_EQ(0, pthread_create(&handle, &attr, &RunPlatformThread,
+                                 start_thread_function_ptr));
+  pthread_attr_destroy(&attr);
+#endif  // defined(WEBRTC_WIN)
+  return PlatformThread(handle, joinable);
+}
 
 }  // namespace rtc

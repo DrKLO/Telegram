@@ -19,6 +19,7 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/types/optional.h"
+#include "api/sequence_checker.h"
 #include "api/task_queue/queued_task.h"
 #include "api/task_queue/task_queue_base.h"
 #include "api/video/encoded_image.h"
@@ -37,11 +38,12 @@
 #include "rtc_base/constructor_magic.h"
 #include "rtc_base/event.h"
 #include "rtc_base/experiments/alr_experiment.h"
+#include "rtc_base/experiments/encoder_info_settings.h"
 #include "rtc_base/experiments/rate_control_settings.h"
 #include "rtc_base/location.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/strings/string_builder.h"
-#include "rtc_base/synchronization/sequence_checker.h"
+#include "rtc_base/system/no_unique_address.h"
 #include "rtc_base/thread_annotations.h"
 #include "rtc_base/trace_event.h"
 #include "system_wrappers/include/field_trial.h"
@@ -224,12 +226,12 @@ VideoLayersAllocation CreateVideoLayersAllocation(
     return layers_allocation;
   }
 
-  if (encoder_config.numberOfSimulcastStreams > 0) {
+  if (encoder_config.numberOfSimulcastStreams > 1) {
     layers_allocation.resolution_and_frame_rate_is_valid = true;
     for (int si = 0; si < encoder_config.numberOfSimulcastStreams; ++si) {
       if (!target_bitrate.IsSpatialLayerUsed(si) ||
           target_bitrate.GetSpatialLayerSum(si) == 0) {
-        break;
+        continue;
       }
       layers_allocation.active_spatial_layers.emplace_back();
       VideoLayersAllocation::SpatialLayer& spatial_layer =
@@ -264,17 +266,241 @@ VideoLayersAllocation CreateVideoLayersAllocation(
         }
       }
       // Encoder may drop frames internally if `maxFramerate` is set.
-      spatial_layer.frame_rate_fps = std::min(
-          static_cast<uint8_t>(encoder_config.simulcastStream[si].maxFramerate),
-          static_cast<uint8_t>(
+      spatial_layer.frame_rate_fps = std::min<uint8_t>(
+          encoder_config.simulcastStream[si].maxFramerate,
+          rtc::saturated_cast<uint8_t>(
               (current_rate.framerate_fps * frame_rate_fraction) /
               VideoEncoder::EncoderInfo::kMaxFramerateFraction));
     }
-  } else {
-    // TODO(bugs.webrtc.org/12000): Implement support for kSVC and full SVC.
+  } else if (encoder_config.numberOfSimulcastStreams == 1) {
+    // TODO(bugs.webrtc.org/12000): Implement support for AV1 with
+    // scalability.
+    const bool higher_spatial_depend_on_lower =
+        encoder_config.codecType == kVideoCodecVP9 &&
+        encoder_config.VP9().interLayerPred == InterLayerPredMode::kOn;
+    layers_allocation.resolution_and_frame_rate_is_valid = true;
+
+    std::vector<DataRate> aggregated_spatial_bitrate(
+        webrtc::kMaxTemporalStreams, DataRate::Zero());
+    for (int si = 0; si < webrtc::kMaxSpatialLayers; ++si) {
+      layers_allocation.resolution_and_frame_rate_is_valid = true;
+      if (!target_bitrate.IsSpatialLayerUsed(si) ||
+          target_bitrate.GetSpatialLayerSum(si) == 0) {
+        break;
+      }
+      layers_allocation.active_spatial_layers.emplace_back();
+      VideoLayersAllocation::SpatialLayer& spatial_layer =
+          layers_allocation.active_spatial_layers.back();
+      spatial_layer.width = encoder_config.spatialLayers[si].width;
+      spatial_layer.height = encoder_config.spatialLayers[si].height;
+      spatial_layer.rtp_stream_index = 0;
+      spatial_layer.spatial_id = si;
+      auto frame_rate_fraction =
+          VideoEncoder::EncoderInfo::kMaxFramerateFraction;
+      if (encoder_info.fps_allocation[si].size() == 1) {
+        // One TL is signalled to be used by the encoder. Do not distribute
+        // bitrate allocation across TLs (use sum at tl:0).
+        DataRate aggregated_temporal_bitrate =
+            DataRate::BitsPerSec(target_bitrate.GetSpatialLayerSum(si));
+        aggregated_spatial_bitrate[0] += aggregated_temporal_bitrate;
+        if (higher_spatial_depend_on_lower) {
+          spatial_layer.target_bitrate_per_temporal_layer.push_back(
+              aggregated_spatial_bitrate[0]);
+        } else {
+          spatial_layer.target_bitrate_per_temporal_layer.push_back(
+              aggregated_temporal_bitrate);
+        }
+        frame_rate_fraction = encoder_info.fps_allocation[si][0];
+      } else {  // Temporal layers are supported.
+        DataRate aggregated_temporal_bitrate = DataRate::Zero();
+        for (size_t ti = 0;
+             ti < encoder_config.spatialLayers[si].numberOfTemporalLayers;
+             ++ti) {
+          if (!target_bitrate.HasBitrate(si, ti)) {
+            break;
+          }
+          if (ti < encoder_info.fps_allocation[si].size()) {
+            // Use frame rate of the top used temporal layer.
+            frame_rate_fraction = encoder_info.fps_allocation[si][ti];
+          }
+          aggregated_temporal_bitrate +=
+              DataRate::BitsPerSec(target_bitrate.GetBitrate(si, ti));
+          if (higher_spatial_depend_on_lower) {
+            spatial_layer.target_bitrate_per_temporal_layer.push_back(
+                aggregated_temporal_bitrate + aggregated_spatial_bitrate[ti]);
+            aggregated_spatial_bitrate[ti] += aggregated_temporal_bitrate;
+          } else {
+            spatial_layer.target_bitrate_per_temporal_layer.push_back(
+                aggregated_temporal_bitrate);
+          }
+        }
+      }
+      // Encoder may drop frames internally if `maxFramerate` is set.
+      spatial_layer.frame_rate_fps = std::min<uint8_t>(
+          encoder_config.spatialLayers[si].maxFramerate,
+          rtc::saturated_cast<uint8_t>(
+              (current_rate.framerate_fps * frame_rate_fraction) /
+              VideoEncoder::EncoderInfo::kMaxFramerateFraction));
+    }
   }
 
   return layers_allocation;
+}
+
+VideoEncoder::EncoderInfo GetEncoderInfoWithBitrateLimitUpdate(
+    const VideoEncoder::EncoderInfo& info,
+    const VideoEncoderConfig& encoder_config,
+    bool default_limits_allowed) {
+  if (!default_limits_allowed || !info.resolution_bitrate_limits.empty() ||
+      encoder_config.simulcast_layers.size() <= 1) {
+    return info;
+  }
+  // Bitrate limits are not configured and more than one layer is used, use
+  // the default limits (bitrate limits are not used for simulcast).
+  VideoEncoder::EncoderInfo new_info = info;
+  new_info.resolution_bitrate_limits =
+      EncoderInfoSettings::GetDefaultSinglecastBitrateLimits(
+          encoder_config.codec_type);
+  return new_info;
+}
+
+int NumActiveStreams(const std::vector<VideoStream>& streams) {
+  int num_active = 0;
+  for (const auto& stream : streams) {
+    if (stream.active)
+      ++num_active;
+  }
+  return num_active;
+}
+
+void ApplyVp9BitrateLimits(const VideoEncoder::EncoderInfo& encoder_info,
+                           const VideoEncoderConfig& encoder_config,
+                           VideoCodec* codec) {
+  if (codec->codecType != VideoCodecType::kVideoCodecVP9 ||
+      encoder_config.simulcast_layers.size() <= 1 ||
+      VideoStreamEncoderResourceManager::IsSimulcast(encoder_config)) {
+    // Resolution bitrate limits usage is restricted to singlecast.
+    return;
+  }
+
+  // Get bitrate limits for active stream.
+  absl::optional<uint32_t> pixels =
+      VideoStreamAdapter::GetSingleActiveLayerPixels(*codec);
+  if (!pixels.has_value()) {
+    return;
+  }
+  absl::optional<VideoEncoder::ResolutionBitrateLimits> bitrate_limits =
+      encoder_info.GetEncoderBitrateLimitsForResolution(*pixels);
+  if (!bitrate_limits.has_value()) {
+    return;
+  }
+
+  // Index for the active stream.
+  absl::optional<size_t> index;
+  for (size_t i = 0; i < encoder_config.simulcast_layers.size(); ++i) {
+    if (encoder_config.simulcast_layers[i].active)
+      index = i;
+  }
+  if (!index.has_value()) {
+    return;
+  }
+
+  int min_bitrate_bps;
+  if (encoder_config.simulcast_layers[*index].min_bitrate_bps <= 0) {
+    min_bitrate_bps = bitrate_limits->min_bitrate_bps;
+  } else {
+    min_bitrate_bps =
+        std::max(bitrate_limits->min_bitrate_bps,
+                 encoder_config.simulcast_layers[*index].min_bitrate_bps);
+  }
+  int max_bitrate_bps;
+  if (encoder_config.simulcast_layers[*index].max_bitrate_bps <= 0) {
+    max_bitrate_bps = bitrate_limits->max_bitrate_bps;
+  } else {
+    max_bitrate_bps =
+        std::min(bitrate_limits->max_bitrate_bps,
+                 encoder_config.simulcast_layers[*index].max_bitrate_bps);
+  }
+  if (min_bitrate_bps >= max_bitrate_bps) {
+    RTC_LOG(LS_WARNING) << "Bitrate limits not used, min_bitrate_bps "
+                        << min_bitrate_bps << " >= max_bitrate_bps "
+                        << max_bitrate_bps;
+    return;
+  }
+
+  for (int i = 0; i < codec->VP9()->numberOfSpatialLayers; ++i) {
+    if (codec->spatialLayers[i].active) {
+      codec->spatialLayers[i].minBitrate = min_bitrate_bps / 1000;
+      codec->spatialLayers[i].maxBitrate = max_bitrate_bps / 1000;
+      codec->spatialLayers[i].targetBitrate =
+          std::min(codec->spatialLayers[i].targetBitrate,
+                   codec->spatialLayers[i].maxBitrate);
+      break;
+    }
+  }
+}
+
+void ApplyEncoderBitrateLimitsIfSingleActiveStream(
+    const VideoEncoder::EncoderInfo& encoder_info,
+    const std::vector<VideoStream>& encoder_config_layers,
+    std::vector<VideoStream>* streams) {
+  // Apply limits if simulcast with one active stream (expect lowest).
+  bool single_active_stream =
+      streams->size() > 1 && NumActiveStreams(*streams) == 1 &&
+      !streams->front().active && NumActiveStreams(encoder_config_layers) == 1;
+  if (!single_active_stream) {
+    return;
+  }
+
+  // Index for the active stream.
+  size_t index = 0;
+  for (size_t i = 0; i < encoder_config_layers.size(); ++i) {
+    if (encoder_config_layers[i].active)
+      index = i;
+  }
+  if (streams->size() < (index + 1) || !(*streams)[index].active) {
+    return;
+  }
+
+  // Get bitrate limits for active stream.
+  absl::optional<VideoEncoder::ResolutionBitrateLimits> encoder_bitrate_limits =
+      encoder_info.GetEncoderBitrateLimitsForResolution(
+          (*streams)[index].width * (*streams)[index].height);
+  if (!encoder_bitrate_limits) {
+    return;
+  }
+
+  // If bitrate limits are set by RtpEncodingParameters, use intersection.
+  int min_bitrate_bps;
+  if (encoder_config_layers[index].min_bitrate_bps <= 0) {
+    min_bitrate_bps = encoder_bitrate_limits->min_bitrate_bps;
+  } else {
+    min_bitrate_bps = std::max(encoder_bitrate_limits->min_bitrate_bps,
+                               (*streams)[index].min_bitrate_bps);
+  }
+  int max_bitrate_bps;
+  if (encoder_config_layers[index].max_bitrate_bps <= 0) {
+    max_bitrate_bps = encoder_bitrate_limits->max_bitrate_bps;
+  } else {
+    max_bitrate_bps = std::min(encoder_bitrate_limits->max_bitrate_bps,
+                               (*streams)[index].max_bitrate_bps);
+  }
+  if (min_bitrate_bps >= max_bitrate_bps) {
+    RTC_LOG(LS_WARNING) << "Encoder bitrate limits"
+                        << " (min=" << encoder_bitrate_limits->min_bitrate_bps
+                        << ", max=" << encoder_bitrate_limits->max_bitrate_bps
+                        << ") do not intersect with stream limits"
+                        << " (min=" << (*streams)[index].min_bitrate_bps
+                        << ", max=" << (*streams)[index].max_bitrate_bps
+                        << "). Encoder bitrate limits not used.";
+    return;
+  }
+
+  (*streams)[index].min_bitrate_bps = min_bitrate_bps;
+  (*streams)[index].max_bitrate_bps = max_bitrate_bps;
+  (*streams)[index].target_bitrate_bps =
+      std::min((*streams)[index].target_bitrate_bps,
+               encoder_bitrate_limits->max_bitrate_bps);
 }
 
 }  //  namespace
@@ -354,7 +580,7 @@ class VideoStreamEncoder::DegradationPreferenceManager
     }
   }
 
-  SequenceChecker sequence_checker_;
+  RTC_NO_UNIQUE_ADDRESS SequenceChecker sequence_checker_;
   DegradationPreference degradation_preference_
       RTC_GUARDED_BY(&sequence_checker_);
   bool is_screenshare_ RTC_GUARDED_BY(&sequence_checker_);
@@ -369,12 +595,13 @@ VideoStreamEncoder::VideoStreamEncoder(
     VideoStreamEncoderObserver* encoder_stats_observer,
     const VideoStreamEncoderSettings& settings,
     std::unique_ptr<OveruseFrameDetector> overuse_detector,
-    TaskQueueFactory* task_queue_factory)
+    TaskQueueFactory* task_queue_factory,
+    BitrateAllocationCallbackType allocation_cb_type)
     : main_queue_(TaskQueueBase::Current()),
       number_of_cores_(number_of_cores),
-      quality_scaling_experiment_enabled_(QualityScalingExperiment::Enabled()),
       sink_(nullptr),
       settings_(settings),
+      allocation_cb_type_(allocation_cb_type),
       rate_control_settings_(RateControlSettings::ParseFromFieldTrials()),
       encoder_selector_(settings.encoder_factory->GetEncoderSelector()),
       encoder_stats_observer_(encoder_stats_observer),
@@ -412,10 +639,8 @@ VideoStreamEncoder::VideoStreamEncoder(
       next_frame_types_(1, VideoFrameType::kVideoFrameDelta),
       frame_encode_metadata_writer_(this),
       experiment_groups_(GetExperimentGroups()),
-      encoder_switch_experiment_(ParseEncoderSwitchFieldTrial()),
       automatic_animation_detection_experiment_(
           ParseAutomatincAnimationDetectionFieldTrial()),
-      encoder_switch_requested_(false),
       input_state_provider_(encoder_stats_observer),
       video_stream_adapter_(
           std::make_unique<VideoStreamAdapter>(&input_state_provider_,
@@ -435,6 +660,10 @@ VideoStreamEncoder::VideoStreamEncoder(
                                degradation_preference_manager_.get()),
       video_source_sink_controller_(/*sink=*/this,
                                     /*source=*/nullptr),
+      default_limits_allowed_(
+          !field_trial::IsEnabled("WebRTC-DefaultBitrateLimitsKillSwitch")),
+      qp_parsing_allowed_(
+          !field_trial::IsEnabled("WebRTC-QpParsingKillSwitch")),
       encoder_queue_(task_queue_factory->CreateTaskQueue(
           "EncoderQueue",
           TaskQueueFactory::Priority::NORMAL)) {
@@ -454,6 +683,7 @@ VideoStreamEncoder::VideoStreamEncoder(
         &stream_resource_manager_);
     video_stream_adapter_->AddRestrictionsListener(&stream_resource_manager_);
     video_stream_adapter_->AddRestrictionsListener(this);
+    stream_resource_manager_.MaybeInitializePixelLimitResource();
 
     // Add the stream resource manager's resources to the processor.
     adaptation_constraints_ = stream_resource_manager_.AdaptationConstraints();
@@ -572,6 +802,7 @@ void VideoStreamEncoder::SetSink(EncoderSink* sink, bool rotation_applied) {
 void VideoStreamEncoder::SetStartBitrate(int start_bitrate_bps) {
   encoder_queue_.PostTask([this, start_bitrate_bps] {
     RTC_DCHECK_RUN_ON(&encoder_queue_);
+    RTC_LOG(LS_INFO) << "SetStartBitrate " << start_bitrate_bps;
     encoder_target_bitrate_bps_ =
         start_bitrate_bps != 0 ? absl::optional<uint32_t>(start_bitrate_bps)
                                : absl::nullopt;
@@ -622,19 +853,6 @@ void VideoStreamEncoder::ReconfigureEncoder() {
   // Running on the encoder queue.
   RTC_DCHECK(pending_encoder_reconfiguration_);
 
-  if (!encoder_selector_ &&
-      encoder_switch_experiment_.IsPixelCountBelowThreshold(
-          last_frame_info_->width * last_frame_info_->height) &&
-      !encoder_switch_requested_ && settings_.encoder_switch_request_callback) {
-    EncoderSwitchRequestCallback::Config conf;
-    conf.codec_name = encoder_switch_experiment_.to_codec;
-    conf.param = encoder_switch_experiment_.to_param;
-    conf.value = encoder_switch_experiment_.to_value;
-    QueueRequestEncoderSwitch(conf);
-
-    encoder_switch_requested_ = true;
-  }
-
   bool encoder_reset_required = false;
   if (pending_encoder_creation_) {
     // Destroy existing encoder instance before creating a new one. Otherwise
@@ -662,12 +880,16 @@ void VideoStreamEncoder::ReconfigureEncoder() {
 
   // Possibly adjusts scale_resolution_down_by in |encoder_config_| to limit the
   // alignment value.
-  int alignment = AlignmentAdjuster::GetAlignmentAndMaybeAdjustScaleFactors(
-      encoder_->GetEncoderInfo(), &encoder_config_);
+  AlignmentAdjuster::GetAlignmentAndMaybeAdjustScaleFactors(
+      encoder_->GetEncoderInfo(), &encoder_config_, absl::nullopt);
 
   std::vector<VideoStream> streams =
       encoder_config_.video_stream_factory->CreateEncoderStreams(
           last_frame_info_->width, last_frame_info_->height, encoder_config_);
+
+  // Get alignment when actual number of layers are known.
+  int alignment = AlignmentAdjuster::GetAlignmentAndMaybeAdjustScaleFactors(
+      encoder_->GetEncoderInfo(), &encoder_config_, streams.size());
 
   // Check that the higher layers do not try to set number of temporal layers
   // to less than 1.
@@ -697,52 +919,58 @@ void VideoStreamEncoder::ReconfigureEncoder() {
   crop_width_ = last_frame_info_->width - highest_stream_width;
   crop_height_ = last_frame_info_->height - highest_stream_height;
 
-  encoder_bitrate_limits_ =
+  absl::optional<VideoEncoder::ResolutionBitrateLimits> encoder_bitrate_limits =
       encoder_->GetEncoderInfo().GetEncoderBitrateLimitsForResolution(
           last_frame_info_->width * last_frame_info_->height);
 
-  if (streams.size() == 1 && encoder_bitrate_limits_) {
-    // Bitrate limits can be set by app (in SDP or RtpEncodingParameters) or/and
-    // can be provided by encoder. In presence of both set of limits, the final
-    // set is derived as their intersection.
-    int min_bitrate_bps;
-    if (encoder_config_.simulcast_layers.empty() ||
-        encoder_config_.simulcast_layers[0].min_bitrate_bps <= 0) {
-      min_bitrate_bps = encoder_bitrate_limits_->min_bitrate_bps;
-    } else {
-      min_bitrate_bps = std::max(encoder_bitrate_limits_->min_bitrate_bps,
-                                 streams.back().min_bitrate_bps);
-    }
+  if (encoder_bitrate_limits) {
+    if (streams.size() == 1 && encoder_config_.simulcast_layers.size() == 1) {
+      // Bitrate limits can be set by app (in SDP or RtpEncodingParameters)
+      // or/and can be provided by encoder. In presence of both set of limits,
+      // the final set is derived as their intersection.
+      int min_bitrate_bps;
+      if (encoder_config_.simulcast_layers.empty() ||
+          encoder_config_.simulcast_layers[0].min_bitrate_bps <= 0) {
+        min_bitrate_bps = encoder_bitrate_limits->min_bitrate_bps;
+      } else {
+        min_bitrate_bps = std::max(encoder_bitrate_limits->min_bitrate_bps,
+                                   streams.back().min_bitrate_bps);
+      }
 
-    int max_bitrate_bps;
-    // We don't check encoder_config_.simulcast_layers[0].max_bitrate_bps
-    // here since encoder_config_.max_bitrate_bps is derived from it (as
-    // well as from other inputs).
-    if (encoder_config_.max_bitrate_bps <= 0) {
-      max_bitrate_bps = encoder_bitrate_limits_->max_bitrate_bps;
-    } else {
-      max_bitrate_bps = std::min(encoder_bitrate_limits_->max_bitrate_bps,
-                                 streams.back().max_bitrate_bps);
-    }
+      int max_bitrate_bps;
+      // We don't check encoder_config_.simulcast_layers[0].max_bitrate_bps
+      // here since encoder_config_.max_bitrate_bps is derived from it (as
+      // well as from other inputs).
+      if (encoder_config_.max_bitrate_bps <= 0) {
+        max_bitrate_bps = encoder_bitrate_limits->max_bitrate_bps;
+      } else {
+        max_bitrate_bps = std::min(encoder_bitrate_limits->max_bitrate_bps,
+                                   streams.back().max_bitrate_bps);
+      }
 
-    if (min_bitrate_bps < max_bitrate_bps) {
-      streams.back().min_bitrate_bps = min_bitrate_bps;
-      streams.back().max_bitrate_bps = max_bitrate_bps;
-      streams.back().target_bitrate_bps =
-          std::min(streams.back().target_bitrate_bps,
-                   encoder_bitrate_limits_->max_bitrate_bps);
-    } else {
-      RTC_LOG(LS_WARNING) << "Bitrate limits provided by encoder"
-                          << " (min="
-                          << encoder_bitrate_limits_->min_bitrate_bps
-                          << ", max="
-                          << encoder_bitrate_limits_->min_bitrate_bps
-                          << ") do not intersect with limits set by app"
-                          << " (min=" << streams.back().min_bitrate_bps
-                          << ", max=" << encoder_config_.max_bitrate_bps
-                          << "). The app bitrate limits will be used.";
+      if (min_bitrate_bps < max_bitrate_bps) {
+        streams.back().min_bitrate_bps = min_bitrate_bps;
+        streams.back().max_bitrate_bps = max_bitrate_bps;
+        streams.back().target_bitrate_bps =
+            std::min(streams.back().target_bitrate_bps,
+                     encoder_bitrate_limits->max_bitrate_bps);
+      } else {
+        RTC_LOG(LS_WARNING)
+            << "Bitrate limits provided by encoder"
+            << " (min=" << encoder_bitrate_limits->min_bitrate_bps
+            << ", max=" << encoder_bitrate_limits->max_bitrate_bps
+            << ") do not intersect with limits set by app"
+            << " (min=" << streams.back().min_bitrate_bps
+            << ", max=" << encoder_config_.max_bitrate_bps
+            << "). The app bitrate limits will be used.";
+      }
     }
   }
+
+  ApplyEncoderBitrateLimitsIfSingleActiveStream(
+      GetEncoderInfoWithBitrateLimitUpdate(
+          encoder_->GetEncoderInfo(), encoder_config_, default_limits_allowed_),
+      encoder_config_.simulcast_layers, &streams);
 
   VideoCodec codec;
   if (!VideoCodecInitializer::SetupCodec(encoder_config_, streams, &codec)) {
@@ -754,6 +982,10 @@ void VideoStreamEncoder::ReconfigureEncoder() {
     // thus some cropping might be needed.
     crop_width_ = last_frame_info_->width - codec.width;
     crop_height_ = last_frame_info_->height - codec.height;
+    ApplyVp9BitrateLimits(GetEncoderInfoWithBitrateLimitUpdate(
+                              encoder_->GetEncoderInfo(), encoder_config_,
+                              default_limits_allowed_),
+                          encoder_config_, &codec);
   }
 
   char log_stream_buf[4 * 1024];
@@ -805,14 +1037,29 @@ void VideoStreamEncoder::ReconfigureEncoder() {
     max_framerate = std::max(stream.max_framerate, max_framerate);
   }
 
-  main_queue_->PostTask(
-      ToQueuedTask(task_safety_, [this, max_framerate, alignment]() {
+  // The resolutions that we're actually encoding with.
+  std::vector<rtc::VideoSinkWants::FrameSize> encoder_resolutions;
+  // TODO(hbos): For the case of SVC, also make use of |codec.spatialLayers|.
+  // For now, SVC layers are handled by the VP9 encoder.
+  for (const auto& simulcastStream : codec.simulcastStream) {
+    if (!simulcastStream.active)
+      continue;
+    encoder_resolutions.emplace_back(simulcastStream.width,
+                                     simulcastStream.height);
+  }
+  main_queue_->PostTask(ToQueuedTask(
+      task_safety_, [this, max_framerate, alignment,
+                     encoder_resolutions = std::move(encoder_resolutions)]() {
         RTC_DCHECK_RUN_ON(main_queue_);
         if (max_framerate !=
                 video_source_sink_controller_.frame_rate_upper_limit() ||
-            alignment != video_source_sink_controller_.resolution_alignment()) {
+            alignment != video_source_sink_controller_.resolution_alignment() ||
+            encoder_resolutions !=
+                video_source_sink_controller_.resolutions()) {
           video_source_sink_controller_.SetFrameRateUpperLimit(max_framerate);
           video_source_sink_controller_.SetResolutionAlignment(alignment);
+          video_source_sink_controller_.SetResolutions(
+              std::move(encoder_resolutions));
           video_source_sink_controller_.PushSourceSinkSettings();
         }
       }));
@@ -846,8 +1093,6 @@ void VideoStreamEncoder::ReconfigureEncoder() {
         send_codec_, codec, was_encode_called_since_last_initialization_);
   }
   send_codec_ = codec;
-
-  encoder_switch_experiment_.SetCodec(send_codec_.codecType);
 
   // Keep the same encoder, as long as the video_format is unchanged.
   // Encoder creation block is split in two since EncoderInfo needed to start
@@ -899,7 +1144,7 @@ void VideoStreamEncoder::ReconfigureEncoder() {
   }
 
   if (pending_encoder_creation_) {
-    stream_resource_manager_.EnsureEncodeUsageResourceStarted();
+    stream_resource_manager_.ConfigureEncodeUsageResource();
     pending_encoder_creation_ = false;
   }
 
@@ -976,8 +1221,10 @@ void VideoStreamEncoder::ReconfigureEncoder() {
 }
 
 void VideoStreamEncoder::OnEncoderSettingsChanged() {
-  EncoderSettings encoder_settings(encoder_->GetEncoderInfo(),
-                                   encoder_config_.Copy(), send_codec_);
+  EncoderSettings encoder_settings(
+      GetEncoderInfoWithBitrateLimitUpdate(
+          encoder_->GetEncoderInfo(), encoder_config_, default_limits_allowed_),
+      encoder_config_.Copy(), send_codec_);
   stream_resource_manager_.SetEncoderSettings(encoder_settings);
   input_state_provider_.OnEncoderSettingsChanged(encoder_settings);
   bool is_screenshare = encoder_settings.encoder_config().content_type ==
@@ -1057,7 +1304,7 @@ void VideoStreamEncoder::OnFrame(const VideoFrame& video_frame) {
           MaybeEncodeVideoFrame(incoming_frame, post_time_us);
         } else {
           if (cwnd_frame_drop) {
-            // Frame drop by congestion window pusback. Do not encode this
+            // Frame drop by congestion window pushback. Do not encode this
             // frame.
             ++dropped_frame_cwnd_pushback_count_;
             encoder_stats_observer_->OnFrameDropped(
@@ -1194,7 +1441,7 @@ void VideoStreamEncoder::SetEncoderRates(
   // |bitrate_allocation| is 0 it means that the network is down or the send
   // pacer is full. We currently only report this if the encoder has an internal
   // source. If the encoder does not have an internal source, higher levels
-  // are expected to not call AddVideoFrame. We do this since its unclear
+  // are expected to not call AddVideoFrame. We do this since it is unclear
   // how current encoder implementations behave when given a zero target
   // bitrate.
   // TODO(perkj): Make sure all known encoder implementations handle zero
@@ -1214,21 +1461,18 @@ void VideoStreamEncoder::SetEncoderRates(
         static_cast<uint32_t>(rate_settings.rate_control.framerate_fps + 0.5));
     stream_resource_manager_.SetEncoderRates(rate_settings.rate_control);
     if (layer_allocation_changed &&
-        settings_.allocation_cb_type ==
-            VideoStreamEncoderSettings::BitrateAllocationCallbackType::
-                kVideoLayersAllocation) {
+        allocation_cb_type_ ==
+            BitrateAllocationCallbackType::kVideoLayersAllocation) {
       sink_->OnVideoLayersAllocationUpdated(CreateVideoLayersAllocation(
           send_codec_, rate_settings.rate_control, encoder_->GetEncoderInfo()));
     }
   }
-  if ((settings_.allocation_cb_type ==
-       VideoStreamEncoderSettings::BitrateAllocationCallbackType::
-           kVideoBitrateAllocation) ||
+  if ((allocation_cb_type_ ==
+       BitrateAllocationCallbackType::kVideoBitrateAllocation) ||
       (encoder_config_.content_type ==
            VideoEncoderConfig::ContentType::kScreen &&
-       settings_.allocation_cb_type ==
-           VideoStreamEncoderSettings::BitrateAllocationCallbackType::
-               kVideoBitrateAllocationWhenScreenSharing)) {
+       allocation_cb_type_ == BitrateAllocationCallbackType::
+                                  kVideoBitrateAllocationWhenScreenSharing)) {
     sink_->OnBitrateAllocationUpdated(
         // Update allocation according to info from encoder. An encoder may
         // choose to not use all layers due to for example HW.
@@ -1258,7 +1502,7 @@ void VideoStreamEncoder::MaybeEncodeVideoFrame(const VideoFrame& video_frame,
         VideoFrame::UpdateRect{0, 0, video_frame.width(), video_frame.height()};
   }
 
-  // We have to create then encoder before the frame drop logic,
+  // We have to create the encoder before the frame drop logic,
   // because the latter depends on encoder_->GetScalingSettings.
   // According to the testcase
   // InitialFrameDropOffWhenEncoderDisabledScaling, the return value
@@ -1342,8 +1586,8 @@ void VideoStreamEncoder::MaybeEncodeVideoFrame(const VideoFrame& video_frame,
   // Frame dropping is enabled iff frame dropping is not force-disabled, and
   // rate controller is not trusted.
   const bool frame_dropping_enabled = false;
-      //!force_disable_frame_dropper_ &&
-      //!encoder_info_.has_trusted_rate_controller;
+  //    !force_disable_frame_dropper_ &&
+  //    !encoder_info_.has_trusted_rate_controller;
   frame_dropper_.Enable(frame_dropping_enabled);
   if (frame_dropping_enabled && frame_dropper_.DropFrame()) {
     RTC_LOG(LS_VERBOSE)
@@ -1388,6 +1632,7 @@ void VideoStreamEncoder::EncodeVideoFrame(const VideoFrame& video_frame,
 
   if (encoder_info_ != info) {
     OnEncoderSettingsChanged();
+    stream_resource_manager_.ConfigureEncodeUsageResource();
     RTC_LOG(LS_INFO) << "Encoder settings changed from "
                      << encoder_info_.ToString() << " to " << info.ToString();
   }
@@ -1404,45 +1649,12 @@ void VideoStreamEncoder::EncodeVideoFrame(const VideoFrame& video_frame,
   last_encode_info_ms_ = clock_->TimeInMilliseconds();
 
   VideoFrame out_frame(video_frame);
-  if (out_frame.video_frame_buffer()->type() ==
-          VideoFrameBuffer::Type::kNative &&
-      !info.supports_native_handle) {
-    // This module only supports software encoding.
-    rtc::scoped_refptr<VideoFrameBuffer> buffer =
-        out_frame.video_frame_buffer()->GetMappedFrameBuffer(
-            info.preferred_pixel_formats);
-    bool buffer_was_converted = false;
-    if (!buffer) {
-      buffer = out_frame.video_frame_buffer()->ToI420();
-      // TODO(https://crbug.com/webrtc/12021): Once GetI420 is pure virtual,
-      // this just true as an I420 buffer would return from
-      // GetMappedFrameBuffer.
-      buffer_was_converted =
-          (out_frame.video_frame_buffer()->GetI420() == nullptr);
-    }
-    if (!buffer) {
-      RTC_LOG(LS_ERROR) << "Frame conversion failed, dropping frame.";
-      return;
-    }
-
-    VideoFrame::UpdateRect update_rect = out_frame.update_rect();
-    if (!update_rect.IsEmpty() &&
-        out_frame.video_frame_buffer()->GetI420() == nullptr) {
-      // UpdatedRect is reset to full update if it's not empty, and buffer was
-      // converted, therefore we can't guarantee that pixels outside of
-      // UpdateRect didn't change comparing to the previous frame.
-      update_rect =
-          VideoFrame::UpdateRect{0, 0, out_frame.width(), out_frame.height()};
-    }
-    out_frame.set_video_frame_buffer(buffer);
-    out_frame.set_update_rect(update_rect);
-  }
-
-  // Crop frame if needed.
+  // Crop or scale the frame if needed. Dimension may be reduced to fit encoder
+  // requirements, e.g. some encoders may require them to be divisible by 4.
   if ((crop_width_ > 0 || crop_height_ > 0) &&
-      out_frame.video_frame_buffer()->type() !=
-          VideoFrameBuffer::Type::kNative) {
-    // If the frame can't be converted to I420, drop it.
+      (out_frame.video_frame_buffer()->type() !=
+           VideoFrameBuffer::Type::kNative ||
+       !info.supports_native_handle)) {
     int cropped_width = video_frame.width() - crop_width_;
     int cropped_height = video_frame.height() - crop_height_;
     rtc::scoped_refptr<VideoFrameBuffer> cropped_buffer;
@@ -1450,6 +1662,7 @@ void VideoStreamEncoder::EncodeVideoFrame(const VideoFrame& video_frame,
     // happen after SinkWants signaled correctly from ReconfigureEncoder.
     VideoFrame::UpdateRect update_rect = video_frame.update_rect();
     if (crop_width_ < 4 && crop_height_ < 4) {
+      // The difference is small, crop without scaling.
       cropped_buffer = video_frame.video_frame_buffer()->CropAndScale(
           crop_width_ / 2, crop_height_ / 2, cropped_width, cropped_height,
           cropped_width, cropped_height);
@@ -1459,6 +1672,7 @@ void VideoStreamEncoder::EncodeVideoFrame(const VideoFrame& video_frame,
           VideoFrame::UpdateRect{0, 0, cropped_width, cropped_height});
 
     } else {
+      // The difference is large, scale it.
       cropped_buffer = video_frame.video_frame_buffer()->Scale(cropped_width,
                                                                cropped_height);
       if (!update_rect.IsEmpty()) {
@@ -1503,14 +1717,12 @@ void VideoStreamEncoder::EncodeVideoFrame(const VideoFrame& video_frame,
 
   stream_resource_manager_.OnEncodeStarted(out_frame, time_when_posted_us);
 
-  RTC_DCHECK_LE(send_codec_.width, out_frame.width());
-  RTC_DCHECK_LE(send_codec_.height, out_frame.height());
-  // Native frames should be scaled by the client.
-  // For internal encoders we scale everything in one place here.
-  RTC_DCHECK((out_frame.video_frame_buffer()->type() ==
-              VideoFrameBuffer::Type::kNative) ||
-             (send_codec_.width == out_frame.width() &&
-              send_codec_.height == out_frame.height()));
+  // The encoder should get the size that it expects.
+  RTC_DCHECK(send_codec_.width <= out_frame.width() &&
+             send_codec_.height <= out_frame.height())
+      << "Encoder configured to " << send_codec_.width << "x"
+      << send_codec_.height << " received a too small frame "
+      << out_frame.width() << "x" << out_frame.height();
 
   TRACE_EVENT1("webrtc", "VCMGenericEncoder::Encode", "timestamp",
                out_frame.timestamp());
@@ -1618,6 +1830,18 @@ EncodedImageCallback::Result VideoStreamEncoder::OnEncodedImage(
   frame_encode_metadata_writer_.UpdateBitstream(codec_specific_info,
                                                 &image_copy);
 
+  VideoCodecType codec_type = codec_specific_info
+                                  ? codec_specific_info->codecType
+                                  : VideoCodecType::kVideoCodecGeneric;
+
+  if (image_copy.qp_ < 0 && qp_parsing_allowed_) {
+    // Parse encoded frame QP if that was not provided by encoder.
+    image_copy.qp_ = qp_parser_
+                         .Parse(codec_type, spatial_idx, image_copy.data(),
+                                image_copy.size())
+                         .value_or(-1);
+  }
+
   // Piggyback ALR experiment group id and simulcast id into the content type.
   const uint8_t experiment_id =
       experiment_groups_[videocontenttypehelpers::IsScreenshare(
@@ -1640,12 +1864,9 @@ EncodedImageCallback::Result VideoStreamEncoder::OnEncodedImage(
   // Post a task because |send_codec_| requires |encoder_queue_| lock.
   unsigned int image_width = image_copy._encodedWidth;
   unsigned int image_height = image_copy._encodedHeight;
-  VideoCodecType codec = codec_specific_info
-                             ? codec_specific_info->codecType
-                             : VideoCodecType::kVideoCodecGeneric;
-  encoder_queue_.PostTask([this, codec, image_width, image_height] {
+  encoder_queue_.PostTask([this, codec_type, image_width, image_height] {
     RTC_DCHECK_RUN_ON(&encoder_queue_);
-    if (codec == VideoCodecType::kVideoCodecVP9 &&
+    if (codec_type == VideoCodecType::kVideoCodecVP9 &&
         send_codec_.VP9()->automaticResizeOn) {
       unsigned int expected_width = send_codec_.width;
       unsigned int expected_height = send_codec_.height;
@@ -1791,22 +2012,10 @@ void VideoStreamEncoder::OnBitrateUpdated(DataRate target_bitrate,
   const bool video_is_suspended = target_bitrate == DataRate::Zero();
   const bool video_suspension_changed = video_is_suspended != EncoderPaused();
 
-  if (!video_is_suspended && settings_.encoder_switch_request_callback) {
-    if (encoder_selector_) {
-      if (auto encoder =
-              encoder_selector_->OnAvailableBitrate(link_allocation)) {
-        QueueRequestEncoderSwitch(*encoder);
-      }
-    } else if (encoder_switch_experiment_.IsBitrateBelowThreshold(
-                   target_bitrate) &&
-               !encoder_switch_requested_) {
-      EncoderSwitchRequestCallback::Config conf;
-      conf.codec_name = encoder_switch_experiment_.to_codec;
-      conf.param = encoder_switch_experiment_.to_param;
-      conf.value = encoder_switch_experiment_.to_value;
-      QueueRequestEncoderSwitch(conf);
-
-      encoder_switch_requested_ = true;
+  if (!video_is_suspended && settings_.encoder_switch_request_callback &&
+      encoder_selector_) {
+    if (auto encoder = encoder_selector_->OnAvailableBitrate(link_allocation)) {
+      QueueRequestEncoderSwitch(*encoder);
     }
   }
 
@@ -1852,30 +2061,43 @@ void VideoStreamEncoder::OnBitrateUpdated(DataRate target_bitrate,
 }
 
 bool VideoStreamEncoder::DropDueToSize(uint32_t pixel_count) const {
-  bool simulcast_or_svc =
-      (send_codec_.codecType == VideoCodecType::kVideoCodecVP9 &&
-       send_codec_.VP9().numberOfSpatialLayers > 1) ||
-      send_codec_.numberOfSimulcastStreams > 1 ||
-      encoder_config_.simulcast_layers.size() > 1;
-
-  if (simulcast_or_svc || !stream_resource_manager_.DropInitialFrames() ||
+  if (!stream_resource_manager_.DropInitialFrames() ||
       !encoder_target_bitrate_bps_.has_value()) {
     return false;
   }
 
+  bool simulcast_or_svc =
+      (send_codec_.codecType == VideoCodecType::kVideoCodecVP9 &&
+       send_codec_.VP9().numberOfSpatialLayers > 1) ||
+      (send_codec_.numberOfSimulcastStreams > 1 ||
+       encoder_config_.simulcast_layers.size() > 1);
+
+  if (simulcast_or_svc) {
+    if (stream_resource_manager_.SingleActiveStreamPixels()) {
+      pixel_count = stream_resource_manager_.SingleActiveStreamPixels().value();
+    } else {
+      return false;
+    }
+  }
+
+  uint32_t bitrate_bps =
+      stream_resource_manager_.UseBandwidthAllocationBps().value_or(
+          encoder_target_bitrate_bps_.value());
+
   absl::optional<VideoEncoder::ResolutionBitrateLimits> encoder_bitrate_limits =
-      encoder_->GetEncoderInfo().GetEncoderBitrateLimitsForResolution(
-          pixel_count);
+      GetEncoderInfoWithBitrateLimitUpdate(
+          encoder_->GetEncoderInfo(), encoder_config_, default_limits_allowed_)
+          .GetEncoderBitrateLimitsForResolution(pixel_count);
 
   if (encoder_bitrate_limits.has_value()) {
     // Use bitrate limits provided by encoder.
-    return encoder_target_bitrate_bps_.value() <
+    return bitrate_bps <
            static_cast<uint32_t>(encoder_bitrate_limits->min_start_bitrate_bps);
   }
 
-  if (encoder_target_bitrate_bps_.value() < 300000 /* qvga */) {
+  if (bitrate_bps < 300000 /* qvga */) {
     return pixel_count > 320 * 240;
-  } else if (encoder_target_bitrate_bps_.value() < 500000 /* vga */) {
+  } else if (bitrate_bps < 500000 /* vga */) {
     return pixel_count > 640 * 480;
   }
   return false;
@@ -1943,7 +2165,8 @@ void VideoStreamEncoder::RunPostEncode(const EncodedImage& encoded_image,
   stream_resource_manager_.OnEncodeCompleted(encoded_image, time_sent_us,
                                              encode_duration_us);
   if (bitrate_adjuster_) {
-    bitrate_adjuster_->OnEncodedFrame(encoded_image, temporal_index);
+    bitrate_adjuster_->OnEncodedFrame(
+        frame_size, encoded_image.SpatialIndex().value_or(0), temporal_index);
   }
 }
 
@@ -1960,113 +2183,6 @@ void VideoStreamEncoder::ReleaseEncoder() {
   encoder_->Release();
   encoder_initialized_ = false;
   TRACE_EVENT0("webrtc", "VCMGenericEncoder::Release");
-}
-
-bool VideoStreamEncoder::EncoderSwitchExperiment::IsBitrateBelowThreshold(
-    const DataRate& target_bitrate) {
-  DataRate rate = DataRate::KilobitsPerSec(
-      bitrate_filter.Apply(1.0, target_bitrate.kbps()));
-  return current_thresholds.bitrate && rate < *current_thresholds.bitrate;
-}
-
-bool VideoStreamEncoder::EncoderSwitchExperiment::IsPixelCountBelowThreshold(
-    int pixel_count) const {
-  return current_thresholds.pixel_count &&
-         pixel_count < *current_thresholds.pixel_count;
-}
-
-void VideoStreamEncoder::EncoderSwitchExperiment::SetCodec(
-    VideoCodecType codec) {
-  auto it = codec_thresholds.find(codec);
-  if (it == codec_thresholds.end()) {
-    current_thresholds = {};
-  } else {
-    current_thresholds = it->second;
-  }
-}
-
-VideoStreamEncoder::EncoderSwitchExperiment
-VideoStreamEncoder::ParseEncoderSwitchFieldTrial() const {
-  EncoderSwitchExperiment result;
-
-  // Each "codec threshold" have the format
-  // "<codec name>;<bitrate kbps>;<pixel count>", and are separated by the "|"
-  // character.
-  webrtc::FieldTrialOptional<std::string> codec_thresholds_string{
-      "codec_thresholds"};
-  webrtc::FieldTrialOptional<std::string> to_codec{"to_codec"};
-  webrtc::FieldTrialOptional<std::string> to_param{"to_param"};
-  webrtc::FieldTrialOptional<std::string> to_value{"to_value"};
-  webrtc::FieldTrialOptional<double> window{"window"};
-
-  webrtc::ParseFieldTrial(
-      {&codec_thresholds_string, &to_codec, &to_param, &to_value, &window},
-      webrtc::field_trial::FindFullName(
-          "WebRTC-NetworkCondition-EncoderSwitch"));
-
-  if (!codec_thresholds_string || !to_codec || !window) {
-    return {};
-  }
-
-  result.bitrate_filter.Reset(1.0 - 1.0 / *window);
-  result.to_codec = *to_codec;
-  result.to_param = to_param.GetOptional();
-  result.to_value = to_value.GetOptional();
-
-  std::vector<std::string> codecs_thresholds;
-  if (rtc::split(*codec_thresholds_string, '|', &codecs_thresholds) == 0) {
-    return {};
-  }
-
-  for (const std::string& codec_threshold : codecs_thresholds) {
-    std::vector<std::string> thresholds_split;
-    if (rtc::split(codec_threshold, ';', &thresholds_split) != 3) {
-      return {};
-    }
-
-    VideoCodecType codec = PayloadStringToCodecType(thresholds_split[0]);
-    int bitrate_kbps;
-    rtc::FromString(thresholds_split[1], &bitrate_kbps);
-    int pixel_count;
-    rtc::FromString(thresholds_split[2], &pixel_count);
-
-    if (bitrate_kbps > 0) {
-      result.codec_thresholds[codec].bitrate =
-          DataRate::KilobitsPerSec(bitrate_kbps);
-    }
-
-    if (pixel_count > 0) {
-      result.codec_thresholds[codec].pixel_count = pixel_count;
-    }
-
-    if (!result.codec_thresholds[codec].bitrate &&
-        !result.codec_thresholds[codec].pixel_count) {
-      return {};
-    }
-  }
-
-  rtc::StringBuilder ss;
-  ss << "Successfully parsed WebRTC-NetworkCondition-EncoderSwitch field "
-        "trial."
-        " to_codec:"
-     << result.to_codec << " to_param:" << result.to_param.value_or("<none>")
-     << " to_value:" << result.to_value.value_or("<none>")
-     << " codec_thresholds:";
-
-  for (auto kv : result.codec_thresholds) {
-    std::string codec_name = CodecTypeToPayloadString(kv.first);
-    std::string bitrate = kv.second.bitrate
-                              ? std::to_string(kv.second.bitrate->kbps())
-                              : "<none>";
-    std::string pixels = kv.second.pixel_count
-                             ? std::to_string(*kv.second.pixel_count)
-                             : "<none>";
-    ss << " (" << codec_name << ":" << bitrate << ":" << pixels << ")";
-  }
-
-  RTC_LOG(LS_INFO) << ss.str();
-
-  return result;
 }
 
 VideoStreamEncoder::AutomaticAnimationDetectionExperiment

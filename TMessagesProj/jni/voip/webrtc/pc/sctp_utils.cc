@@ -13,8 +13,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "absl/types/optional.h"
 #include "api/priority.h"
 #include "rtc_base/byte_buffer.h"
+#include "rtc_base/checks.h"
 #include "rtc_base/copy_on_write_buffer.h"
 #include "rtc_base/logging.h"
 
@@ -226,35 +228,6 @@ bool WriteDataChannelOpenMessage(const std::string& label,
 void WriteDataChannelOpenAckMessage(rtc::CopyOnWriteBuffer* payload) {
   uint8_t data = DATA_CHANNEL_OPEN_ACK_MESSAGE_TYPE;
   payload->SetData(&data, sizeof(data));
-}
-
-cricket::DataMessageType ToCricketDataMessageType(DataMessageType type) {
-  switch (type) {
-    case DataMessageType::kText:
-      return cricket::DMT_TEXT;
-    case DataMessageType::kBinary:
-      return cricket::DMT_BINARY;
-    case DataMessageType::kControl:
-      return cricket::DMT_CONTROL;
-    default:
-      return cricket::DMT_NONE;
-  }
-  return cricket::DMT_NONE;
-}
-
-DataMessageType ToWebrtcDataMessageType(cricket::DataMessageType type) {
-  switch (type) {
-    case cricket::DMT_TEXT:
-      return DataMessageType::kText;
-    case cricket::DMT_BINARY:
-      return DataMessageType::kBinary;
-    case cricket::DMT_CONTROL:
-      return DataMessageType::kControl;
-    case cricket::DMT_NONE:
-    default:
-      RTC_NOTREACHED();
-  }
-  return DataMessageType::kControl;
 }
 
 }  // namespace webrtc

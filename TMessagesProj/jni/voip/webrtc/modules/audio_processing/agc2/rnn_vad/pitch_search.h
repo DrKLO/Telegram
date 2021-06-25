@@ -15,6 +15,7 @@
 #include <vector>
 
 #include "api/array_view.h"
+#include "modules/audio_processing/agc2/cpu_features.h"
 #include "modules/audio_processing/agc2/rnn_vad/auto_correlation.h"
 #include "modules/audio_processing/agc2/rnn_vad/common.h"
 #include "modules/audio_processing/agc2/rnn_vad/pitch_search_internal.h"
@@ -26,7 +27,7 @@ namespace rnn_vad {
 // Pitch estimator.
 class PitchEstimator {
  public:
-  PitchEstimator();
+  explicit PitchEstimator(const AvailableCpuFeatures& cpu_features);
   PitchEstimator(const PitchEstimator&) = delete;
   PitchEstimator& operator=(const PitchEstimator&) = delete;
   ~PitchEstimator();
@@ -39,6 +40,7 @@ class PitchEstimator {
     return last_pitch_48kHz_.strength;
   }
 
+  const AvailableCpuFeatures cpu_features_;
   PitchInfo last_pitch_48kHz_{};
   AutoCorrelationCalculator auto_corr_calculator_;
   std::vector<float> y_energy_24kHz_;

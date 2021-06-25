@@ -13,6 +13,7 @@ import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
@@ -53,6 +54,7 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.ShareLocationDrawable;
 import org.telegram.ui.Components.URLSpanNoUnderline;
+import org.telegram.ui.Components.voip.CellFlickerDrawable;
 
 import java.util.ArrayList;
 
@@ -73,6 +75,7 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
     private int[] colors;
 
     private int currentType;
+    private boolean flickerButton;
 
     private String currentGroupCreateAddress;
     private String currentGroupCreateDisplayAddress;
@@ -138,7 +141,7 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
                             imageView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec((int) (height * 0.399f), MeasureSpec.EXACTLY));
                             titleTextView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED));
                             descriptionText.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED));
-                            buttonTextView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(42), MeasureSpec.EXACTLY));
+                            buttonTextView.measure(MeasureSpec.makeMeasureSpec(width - AndroidUtilities.dp(86), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(42), MeasureSpec.EXACTLY));
                         }
                         break;
                     }
@@ -486,7 +489,26 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
         }
         viewGroup.addView(descriptionText2);
 
-        buttonTextView = new TextView(context);
+        buttonTextView = new TextView(context) {
+            CellFlickerDrawable cellFlickerDrawable;
+
+            @Override
+            protected void onDraw(Canvas canvas) {
+                super.onDraw(canvas);
+                if (flickerButton) {
+                    if (cellFlickerDrawable == null) {
+                        cellFlickerDrawable = new CellFlickerDrawable();
+                        cellFlickerDrawable.drawFrame = false;
+                        cellFlickerDrawable.repeatProgress = 2f;
+                    }
+                    cellFlickerDrawable.setParentWidth(getMeasuredWidth());
+                    AndroidUtilities.rectTmp.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
+                    cellFlickerDrawable.draw(canvas, AndroidUtilities.rectTmp, AndroidUtilities.dp(4));
+                    invalidate();
+                }
+            }
+        };
+
         buttonTextView.setPadding(AndroidUtilities.dp(34), 0, AndroidUtilities.dp(34), 0);
         buttonTextView.setGravity(Gravity.CENTER);
         buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
@@ -562,6 +584,7 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
                 descriptionText.setText(LocaleController.getString("ChannelAlertText", R.string.ChannelAlertText));
                 buttonTextView.setText(LocaleController.getString("ChannelAlertCreate2", R.string.ChannelAlertCreate2));
                 imageView.playAnimation();
+                flickerButton = true;
                 break;
             }
             case ACTION_TYPE_NEARBY_LOCATION_ACCESS: {
@@ -625,6 +648,11 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
                 buttonTextView.setText(LocaleController.getString("PhoneNumberChange2", R.string.PhoneNumberChange2));
                 break;
             }
+        }
+
+        if (flickerButton) {
+            buttonTextView.setPadding(AndroidUtilities.dp(34), AndroidUtilities.dp(8), AndroidUtilities.dp(34), AndroidUtilities.dp(8));
+            buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         }
 
         return fragmentView;

@@ -39,7 +39,7 @@ public class VideoEncodingService extends Service implements NotificationCenter.
         }
         NotificationManagerCompat.from(ApplicationLoader.applicationContext).cancel(4);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.stopEncodingService);
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.FileUploadProgressChanged);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileUploadProgressChanged);
         if (BuildVars.LOGS_ENABLED) {
             FileLog.d("destroy video service");
         }
@@ -47,7 +47,7 @@ public class VideoEncodingService extends Service implements NotificationCenter.
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.FileUploadProgressChanged) {
+        if (id == NotificationCenter.fileUploadProgressChanged) {
             String fileName = (String) args[0];
             if (account == currentAccount && path != null && path.equals(fileName)) {
                 Long loadedSize = (Long) args[1];
@@ -80,8 +80,8 @@ public class VideoEncodingService extends Service implements NotificationCenter.
             return Service.START_NOT_STICKY;
         }
         if (oldAccount != currentAccount) {
-            NotificationCenter.getInstance(oldAccount).removeObserver(this, NotificationCenter.FileUploadProgressChanged);
-            NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.FileUploadProgressChanged);
+            NotificationCenter.getInstance(oldAccount).removeObserver(this, NotificationCenter.fileUploadProgressChanged);
+            NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileUploadProgressChanged);
         }
         boolean isGif = intent.getBooleanExtra("gif", false);
         if (path == null) {

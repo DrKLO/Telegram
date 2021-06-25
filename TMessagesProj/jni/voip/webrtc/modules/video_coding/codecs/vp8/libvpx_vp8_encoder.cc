@@ -21,6 +21,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "api/scoped_refptr.h"
 #include "api/video/video_content_type.h"
 #include "api/video/video_frame_buffer.h"
@@ -48,11 +49,6 @@ constexpr char kVP8IosMaxNumberOfThreadFieldTrial[] =
     "WebRTC-VP8IosMaxNumberOfThread";
 constexpr char kVP8IosMaxNumberOfThreadFieldTrialParameter[] = "max_thread";
 #endif
-
-constexpr char kVp8GetEncoderInfoOverrideFieldTrial[] =
-    "WebRTC-VP8-GetEncoderInfoOverride";
-constexpr char kVp8RequestedResolutionAlignmentFieldTrialParameter[] =
-    "requested_resolution_alignment";
 
 constexpr char kVp8ForcePartitionResilience[] =
     "WebRTC-VP8-ForcePartitionResilience";
@@ -165,25 +161,63 @@ void ApplyVp8EncoderConfigToVpxConfig(const Vp8EncoderConfig& encoder_config,
   }
 }
 
-absl::optional<int> GetRequestedResolutionAlignmentOverride() {
-  const std::string trial_string =
-      field_trial::FindFullName(kVp8GetEncoderInfoOverrideFieldTrial);
-  FieldTrialOptional<int> requested_resolution_alignment(
-      kVp8RequestedResolutionAlignmentFieldTrialParameter);
-  ParseFieldTrial({&requested_resolution_alignment}, trial_string);
-  return requested_resolution_alignment.GetOptional();
+bool IsCompatibleVideoFrameBufferType(VideoFrameBuffer::Type left,
+                                      VideoFrameBuffer::Type right) {
+  if (left == VideoFrameBuffer::Type::kI420 ||
+      left == VideoFrameBuffer::Type::kI420A) {
+    // LibvpxVp8Encoder does not care about the alpha channel, I420A and I420
+    // are considered compatible.
+    return right == VideoFrameBuffer::Type::kI420 ||
+           right == VideoFrameBuffer::Type::kI420A;
+  }
+  return left == right;
+}
+
+void SetRawImagePlanes(vpx_image_t* raw_image, VideoFrameBuffer* buffer) {
+  switch (buffer->type()) {
+    case VideoFrameBuffer::Type::kI420:
+    case VideoFrameBuffer::Type::kI420A: {
+      const I420BufferInterface* i420_buffer = buffer->GetI420();
+      RTC_DCHECK(i420_buffer);
+      raw_image->planes[VPX_PLANE_Y] =
+          const_cast<uint8_t*>(i420_buffer->DataY());
+      raw_image->planes[VPX_PLANE_U] =
+          const_cast<uint8_t*>(i420_buffer->DataU());
+      raw_image->planes[VPX_PLANE_V] =
+          const_cast<uint8_t*>(i420_buffer->DataV());
+      raw_image->stride[VPX_PLANE_Y] = i420_buffer->StrideY();
+      raw_image->stride[VPX_PLANE_U] = i420_buffer->StrideU();
+      raw_image->stride[VPX_PLANE_V] = i420_buffer->StrideV();
+      break;
+    }
+    case VideoFrameBuffer::Type::kNV12: {
+      const NV12BufferInterface* nv12_buffer = buffer->GetNV12();
+      RTC_DCHECK(nv12_buffer);
+      raw_image->planes[VPX_PLANE_Y] =
+          const_cast<uint8_t*>(nv12_buffer->DataY());
+      raw_image->planes[VPX_PLANE_U] =
+          const_cast<uint8_t*>(nv12_buffer->DataUV());
+      raw_image->planes[VPX_PLANE_V] = raw_image->planes[VPX_PLANE_U] + 1;
+      raw_image->stride[VPX_PLANE_Y] = nv12_buffer->StrideY();
+      raw_image->stride[VPX_PLANE_U] = nv12_buffer->StrideUV();
+      raw_image->stride[VPX_PLANE_V] = nv12_buffer->StrideUV();
+      break;
+    }
+    default:
+      RTC_NOTREACHED();
+  }
 }
 
 }  // namespace
 
 std::unique_ptr<VideoEncoder> VP8Encoder::Create() {
-  return std::make_unique<LibvpxVp8Encoder>(LibvpxInterface::CreateEncoder(),
+  return std::make_unique<LibvpxVp8Encoder>(LibvpxInterface::Create(),
                                             VP8Encoder::Settings());
 }
 
 std::unique_ptr<VideoEncoder> VP8Encoder::Create(
     VP8Encoder::Settings settings) {
-  return std::make_unique<LibvpxVp8Encoder>(LibvpxInterface::CreateEncoder(),
+  return std::make_unique<LibvpxVp8Encoder>(LibvpxInterface::Create(),
                                             std::move(settings));
 }
 
@@ -193,7 +227,7 @@ std::unique_ptr<VideoEncoder> VP8Encoder::Create(
   VP8Encoder::Settings settings;
   settings.frame_buffer_controller_factory =
       std::move(frame_buffer_controller_factory);
-  return std::make_unique<LibvpxVp8Encoder>(LibvpxInterface::CreateEncoder(),
+  return std::make_unique<LibvpxVp8Encoder>(LibvpxInterface::Create(),
                                             std::move(settings));
 }
 
@@ -230,8 +264,6 @@ LibvpxVp8Encoder::LibvpxVp8Encoder(std::unique_ptr<LibvpxInterface> interface,
                                    VP8Encoder::Settings settings)
     : libvpx_(std::move(interface)),
       rate_control_settings_(RateControlSettings::ParseFromFieldTrials()),
-      requested_resolution_alignment_override_(
-          GetRequestedResolutionAlignmentOverride()),
       frame_buffer_controller_factory_(
           std::move(settings.frame_buffer_controller_factory)),
       resolution_bitrate_limits_(std::move(settings.resolution_bitrate_limits)),
@@ -945,40 +977,29 @@ int LibvpxVp8Encoder::Encode(const VideoFrame& frame,
     flags[i] = send_key_frame ? VPX_EFLAG_FORCE_KF : EncodeFlags(tl_configs[i]);
   }
 
-  rtc::scoped_refptr<VideoFrameBuffer> input_image = frame.video_frame_buffer();
-  // Since we are extracting raw pointers from |input_image| to
-  // |raw_images_[0]|, the resolution of these frames must match.
-  RTC_DCHECK_EQ(input_image->width(), raw_images_[0].d_w);
-  RTC_DCHECK_EQ(input_image->height(), raw_images_[0].d_h);
-  switch (input_image->type()) {
-    case VideoFrameBuffer::Type::kI420:
-      PrepareI420Image(input_image->GetI420());
-      break;
-    case VideoFrameBuffer::Type::kNV12:
-      PrepareNV12Image(input_image->GetNV12());
-      break;
-    default: {
-      rtc::scoped_refptr<I420BufferInterface> i420_image =
-          input_image->ToI420();
-      if (!i420_image) {
-        RTC_LOG(LS_ERROR) << "Failed to convert "
-                          << VideoFrameBufferTypeToString(input_image->type())
-                          << " image to I420. Can't encode frame.";
-        return WEBRTC_VIDEO_CODEC_ERROR;
-      }
-      input_image = i420_image;
-      PrepareI420Image(i420_image);
-    }
+  // Scale and map buffers and set |raw_images_| to hold pointers to the result.
+  // Because |raw_images_| are set to hold pointers to the prepared buffers, we
+  // need to keep these buffers alive through reference counting until after
+  // encoding is complete.
+  std::vector<rtc::scoped_refptr<VideoFrameBuffer>> prepared_buffers =
+      PrepareBuffers(frame.video_frame_buffer());
+  if (prepared_buffers.empty()) {
+    return WEBRTC_VIDEO_CODEC_ERROR;
   }
   struct CleanUpOnExit {
-    explicit CleanUpOnExit(vpx_image_t& raw_image) : raw_image_(raw_image) {}
+    explicit CleanUpOnExit(
+        vpx_image_t* raw_image,
+        std::vector<rtc::scoped_refptr<VideoFrameBuffer>> prepared_buffers)
+        : raw_image_(raw_image),
+          prepared_buffers_(std::move(prepared_buffers)) {}
     ~CleanUpOnExit() {
-      raw_image_.planes[VPX_PLANE_Y] = nullptr;
-      raw_image_.planes[VPX_PLANE_U] = nullptr;
-      raw_image_.planes[VPX_PLANE_V] = nullptr;
+      raw_image_->planes[VPX_PLANE_Y] = nullptr;
+      raw_image_->planes[VPX_PLANE_U] = nullptr;
+      raw_image_->planes[VPX_PLANE_V] = nullptr;
     }
-    vpx_image_t& raw_image_;
-  } clean_up_on_exit(raw_images_[0]);
+    vpx_image_t* raw_image_;
+    std::vector<rtc::scoped_refptr<VideoFrameBuffer>> prepared_buffers_;
+  } clean_up_on_exit(&raw_images_[0], std::move(prepared_buffers));
 
   if (send_key_frame) {
     // Adapt the size of the key frame when in screenshare with 1 temporal
@@ -1062,9 +1083,25 @@ void LibvpxVp8Encoder::PopulateCodecSpecific(CodecSpecificInfo* codec_specific,
 
   int qp = 0;
   vpx_codec_control(&encoders_[encoder_idx], VP8E_GET_LAST_QUANTIZER_64, &qp);
-  frame_buffer_controller_->OnEncodeDone(
-      stream_idx, timestamp, encoded_images_[encoder_idx].size(),
-      (pkt.data.frame.flags & VPX_FRAME_IS_KEY) != 0, qp, codec_specific);
+  bool is_keyframe = (pkt.data.frame.flags & VPX_FRAME_IS_KEY) != 0;
+  frame_buffer_controller_->OnEncodeDone(stream_idx, timestamp,
+                                         encoded_images_[encoder_idx].size(),
+                                         is_keyframe, qp, codec_specific);
+  if (is_keyframe && codec_specific->template_structure != absl::nullopt) {
+    // Number of resolutions must match number of spatial layers, VP8 structures
+    // expected to use single spatial layer. Templates must be ordered by
+    // spatial_id, so assumption there is exactly one spatial layer is same as
+    // assumption last template uses spatial_id = 0.
+    // This check catches potential scenario where template_structure is shared
+    // across multiple vp8 streams and they are distinguished using spatial_id.
+    // Assigning single resolution doesn't support such scenario, i.e. assumes
+    // vp8 simulcast is sent using multiple ssrcs.
+    RTC_DCHECK(!codec_specific->template_structure->templates.empty());
+    RTC_DCHECK_EQ(
+        codec_specific->template_structure->templates.back().spatial_id, 0);
+    codec_specific->template_structure->resolutions = {
+        RenderResolution(pkt.data.frame.width[0], pkt.data.frame.height[0])};
+  }
 }
 
 int LibvpxVp8Encoder::GetEncodedPartitions(const VideoFrame& input_image,
@@ -1173,9 +1210,15 @@ VideoEncoder::EncoderInfo LibvpxVp8Encoder::GetEncoderInfo() const {
   if (!resolution_bitrate_limits_.empty()) {
     info.resolution_bitrate_limits = resolution_bitrate_limits_;
   }
-  if (requested_resolution_alignment_override_) {
+  if (encoder_info_override_.requested_resolution_alignment()) {
     info.requested_resolution_alignment =
-        *requested_resolution_alignment_override_;
+        *encoder_info_override_.requested_resolution_alignment();
+    info.apply_alignment_to_all_simulcast_layers =
+        encoder_info_override_.apply_alignment_to_all_simulcast_layers();
+  }
+  if (!encoder_info_override_.resolution_bitrate_limits().empty()) {
+    info.resolution_bitrate_limits =
+        encoder_info_override_.resolution_bitrate_limits();
   }
 
   const bool enable_scaling =
@@ -1256,61 +1299,114 @@ void LibvpxVp8Encoder::MaybeUpdatePixelFormat(vpx_img_fmt fmt) {
   }
 }
 
-void LibvpxVp8Encoder::PrepareI420Image(const I420BufferInterface* frame) {
-  RTC_DCHECK(!raw_images_.empty());
-  MaybeUpdatePixelFormat(VPX_IMG_FMT_I420);
-  // Image in vpx_image_t format.
-  // Input image is const. VP8's raw image is not defined as const.
-  raw_images_[0].planes[VPX_PLANE_Y] = const_cast<uint8_t*>(frame->DataY());
-  raw_images_[0].planes[VPX_PLANE_U] = const_cast<uint8_t*>(frame->DataU());
-  raw_images_[0].planes[VPX_PLANE_V] = const_cast<uint8_t*>(frame->DataV());
+std::vector<rtc::scoped_refptr<VideoFrameBuffer>>
+LibvpxVp8Encoder::PrepareBuffers(rtc::scoped_refptr<VideoFrameBuffer> buffer) {
+  RTC_DCHECK_EQ(buffer->width(), raw_images_[0].d_w);
+  RTC_DCHECK_EQ(buffer->height(), raw_images_[0].d_h);
+  absl::InlinedVector<VideoFrameBuffer::Type, kMaxPreferredPixelFormats>
+      supported_formats = {VideoFrameBuffer::Type::kI420,
+                           VideoFrameBuffer::Type::kNV12};
 
-  raw_images_[0].stride[VPX_PLANE_Y] = frame->StrideY();
-  raw_images_[0].stride[VPX_PLANE_U] = frame->StrideU();
-  raw_images_[0].stride[VPX_PLANE_V] = frame->StrideV();
-
-  for (size_t i = 1; i < encoders_.size(); ++i) {
-    // Scale the image down a number of times by downsampling factor
-    libyuv::I420Scale(
-        raw_images_[i - 1].planes[VPX_PLANE_Y],
-        raw_images_[i - 1].stride[VPX_PLANE_Y],
-        raw_images_[i - 1].planes[VPX_PLANE_U],
-        raw_images_[i - 1].stride[VPX_PLANE_U],
-        raw_images_[i - 1].planes[VPX_PLANE_V],
-        raw_images_[i - 1].stride[VPX_PLANE_V], raw_images_[i - 1].d_w,
-        raw_images_[i - 1].d_h, raw_images_[i].planes[VPX_PLANE_Y],
-        raw_images_[i].stride[VPX_PLANE_Y], raw_images_[i].planes[VPX_PLANE_U],
-        raw_images_[i].stride[VPX_PLANE_U], raw_images_[i].planes[VPX_PLANE_V],
-        raw_images_[i].stride[VPX_PLANE_V], raw_images_[i].d_w,
-        raw_images_[i].d_h, libyuv::kFilterBilinear);
+  rtc::scoped_refptr<VideoFrameBuffer> mapped_buffer;
+  if (buffer->type() != VideoFrameBuffer::Type::kNative) {
+    // |buffer| is already mapped.
+    mapped_buffer = buffer;
+  } else {
+    // Attempt to map to one of the supported formats.
+    mapped_buffer = buffer->GetMappedFrameBuffer(supported_formats);
   }
-}
-
-void LibvpxVp8Encoder::PrepareNV12Image(const NV12BufferInterface* frame) {
-  RTC_DCHECK(!raw_images_.empty());
-  MaybeUpdatePixelFormat(VPX_IMG_FMT_NV12);
-  // Image in vpx_image_t format.
-  // Input image is const. VP8's raw image is not defined as const.
-  raw_images_[0].planes[VPX_PLANE_Y] = const_cast<uint8_t*>(frame->DataY());
-  raw_images_[0].planes[VPX_PLANE_U] = const_cast<uint8_t*>(frame->DataUV());
-  raw_images_[0].planes[VPX_PLANE_V] = raw_images_[0].planes[VPX_PLANE_U] + 1;
-  raw_images_[0].stride[VPX_PLANE_Y] = frame->StrideY();
-  raw_images_[0].stride[VPX_PLANE_U] = frame->StrideUV();
-  raw_images_[0].stride[VPX_PLANE_V] = frame->StrideUV();
-
-  for (size_t i = 1; i < encoders_.size(); ++i) {
-    // Scale the image down a number of times by downsampling factor
-    libyuv::NV12Scale(
-        raw_images_[i - 1].planes[VPX_PLANE_Y],
-        raw_images_[i - 1].stride[VPX_PLANE_Y],
-        raw_images_[i - 1].planes[VPX_PLANE_U],
-        raw_images_[i - 1].stride[VPX_PLANE_U], raw_images_[i - 1].d_w,
-        raw_images_[i - 1].d_h, raw_images_[i].planes[VPX_PLANE_Y],
-        raw_images_[i].stride[VPX_PLANE_Y], raw_images_[i].planes[VPX_PLANE_U],
-        raw_images_[i].stride[VPX_PLANE_U], raw_images_[i].d_w,
-        raw_images_[i].d_h, libyuv::kFilterBilinear);
-    raw_images_[i].planes[VPX_PLANE_V] = raw_images_[i].planes[VPX_PLANE_U] + 1;
+  if (!mapped_buffer ||
+      (absl::c_find(supported_formats, mapped_buffer->type()) ==
+           supported_formats.end() &&
+       mapped_buffer->type() != VideoFrameBuffer::Type::kI420A)) {
+    // Unknown pixel format or unable to map, convert to I420 and prepare that
+    // buffer instead to ensure Scale() is safe to use.
+    auto converted_buffer = buffer->ToI420();
+    if (!converted_buffer) {
+      RTC_LOG(LS_ERROR) << "Failed to convert "
+                        << VideoFrameBufferTypeToString(buffer->type())
+                        << " image to I420. Can't encode frame.";
+      return {};
+    }
+    // The buffer should now be a mapped I420 or I420A format, but some buffer
+    // implementations incorrectly return the wrong buffer format, such as
+    // kNative. As a workaround to this, we perform ToI420() a second time.
+    // TODO(https://crbug.com/webrtc/12602): When Android buffers have a correct
+    // ToI420() implementaion, remove his workaround.
+    if (converted_buffer->type() != VideoFrameBuffer::Type::kI420 &&
+        converted_buffer->type() != VideoFrameBuffer::Type::kI420A) {
+      converted_buffer = converted_buffer->ToI420();
+      RTC_CHECK(converted_buffer->type() == VideoFrameBuffer::Type::kI420 ||
+                converted_buffer->type() == VideoFrameBuffer::Type::kI420A);
+    }
+    // Because |buffer| had to be converted, use |converted_buffer| instead...
+    buffer = mapped_buffer = converted_buffer;
   }
+
+  // Maybe update pixel format.
+  absl::InlinedVector<VideoFrameBuffer::Type, kMaxPreferredPixelFormats>
+      mapped_type = {mapped_buffer->type()};
+  switch (mapped_buffer->type()) {
+    case VideoFrameBuffer::Type::kI420:
+    case VideoFrameBuffer::Type::kI420A:
+      MaybeUpdatePixelFormat(VPX_IMG_FMT_I420);
+      break;
+    case VideoFrameBuffer::Type::kNV12:
+      MaybeUpdatePixelFormat(VPX_IMG_FMT_NV12);
+      break;
+    default:
+      RTC_NOTREACHED();
+  }
+
+  // Prepare |raw_images_| from |mapped_buffer| and, if simulcast, scaled
+  // versions of |buffer|.
+  std::vector<rtc::scoped_refptr<VideoFrameBuffer>> prepared_buffers;
+  SetRawImagePlanes(&raw_images_[0], mapped_buffer);
+  prepared_buffers.push_back(mapped_buffer);
+  for (size_t i = 1; i < encoders_.size(); ++i) {
+    // Native buffers should implement optimized scaling and is the preferred
+    // buffer to scale. But if the buffer isn't native, it should be cheaper to
+    // scale from the previously prepared buffer which is smaller than |buffer|.
+    VideoFrameBuffer* buffer_to_scale =
+        buffer->type() == VideoFrameBuffer::Type::kNative
+            ? buffer.get()
+            : prepared_buffers.back().get();
+
+    auto scaled_buffer =
+        buffer_to_scale->Scale(raw_images_[i].d_w, raw_images_[i].d_h);
+    if (scaled_buffer->type() == VideoFrameBuffer::Type::kNative) {
+      auto mapped_scaled_buffer =
+          scaled_buffer->GetMappedFrameBuffer(mapped_type);
+      RTC_DCHECK(mapped_scaled_buffer) << "Unable to map the scaled buffer.";
+      if (!mapped_scaled_buffer) {
+        RTC_LOG(LS_ERROR) << "Failed to map scaled "
+                          << VideoFrameBufferTypeToString(scaled_buffer->type())
+                          << " image to "
+                          << VideoFrameBufferTypeToString(mapped_buffer->type())
+                          << ". Can't encode frame.";
+        return {};
+      }
+      scaled_buffer = mapped_scaled_buffer;
+    }
+    if (!IsCompatibleVideoFrameBufferType(scaled_buffer->type(),
+                                          mapped_buffer->type())) {
+      RTC_LOG(LS_ERROR) << "When scaling "
+                        << VideoFrameBufferTypeToString(buffer_to_scale->type())
+                        << ", the image was unexpectedly converted to "
+                        << VideoFrameBufferTypeToString(scaled_buffer->type())
+                        << " instead of "
+                        << VideoFrameBufferTypeToString(mapped_buffer->type())
+                        << ". Can't encode frame.";
+      RTC_NOTREACHED() << "Scaled buffer type "
+                       << VideoFrameBufferTypeToString(scaled_buffer->type())
+                       << " is not compatible with mapped buffer type "
+                       << VideoFrameBufferTypeToString(mapped_buffer->type());
+      return {};
+    }
+    SetRawImagePlanes(&raw_images_[i], scaled_buffer);
+    prepared_buffers.push_back(scaled_buffer);
+  }
+  return prepared_buffers;
 }
 
 // static

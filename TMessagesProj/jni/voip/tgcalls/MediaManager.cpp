@@ -205,6 +205,7 @@ _platformContext(platformContext) {
 		"WebRTC-Audio-OpusMinPacketLossRate/Enabled-1/"
 		"WebRTC-FlexFEC-03/Enabled/"
 		"WebRTC-FlexFEC-03-Advertised/Enabled/"
+        "WebRTC-Turn-AllowSystemPorts/Enabled/"
 	);
 
 	PlatformInterface::SharedInstance()->configurePlatformAudio();
@@ -391,7 +392,7 @@ void MediaManager::start() {
 
     beginStatsTimer(3000);
     if (_audioLevelUpdated != nullptr) {
-        beginLevelsTimer(50);
+        beginLevelsTimer(100);
     }
 }
 
@@ -504,7 +505,7 @@ void MediaManager::beginLevelsTimer(int timeoutMs) {
         float effectiveLevel = fmaxf(strong->_currentAudioLevel, strong->_currentMyAudioLevel);
         strong->_audioLevelUpdated(effectiveLevel);
 
-        strong->beginLevelsTimer(50);
+        strong->beginLevelsTimer(100);
     }, timeoutMs);
 }
 
@@ -746,7 +747,9 @@ void MediaManager::checkIsReceivingVideoChanged(bool wasReceiving) {
         const auto codecs = {
             cricket::kFlexfecCodecName,
             cricket::kH264CodecName,
+#ifndef WEBRTC_DISABLE_H265
             cricket::kH265CodecName,
+#endif
             cricket::kVp8CodecName,
             cricket::kVp9CodecName,
             cricket::kAv1CodecName,

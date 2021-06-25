@@ -40,25 +40,18 @@ class TaskQueue;
 }  // namespace rtc
 namespace webrtc {
 
-class CallStatsObserver;
 class FrameEncryptorInterface;
 class TargetTransferRateObserver;
 class Transport;
-class Module;
-class PacedSender;
 class PacketRouter;
 class RtpVideoSenderInterface;
-class RateLimiter;
 class RtcpBandwidthObserver;
 class RtpPacketSender;
-class SendDelayStats;
-class SendStatisticsProxy;
 
 struct RtpSenderObservers {
   RtcpRttStats* rtcp_rtt_stats;
   RtcpIntraFrameObserver* intra_frame_callback;
   RtcpLossNotificationObserver* rtcp_loss_notification_observer;
-  RtcpStatisticsCallback* rtcp_stats;
   ReportBlockDataObserver* report_block_data_observer;
   StreamDataCountersCallback* rtp_stats;
   BitrateStatisticsObserver* bitrate_observer;
@@ -141,7 +134,13 @@ class RtpTransportControllerSendInterface {
   virtual int64_t GetPacerQueuingDelayMs() const = 0;
   virtual absl::optional<Timestamp> GetFirstPacketTime() const = 0;
   virtual void EnablePeriodicAlrProbing(bool enable) = 0;
+
+  // Called when a packet has been sent.
+  // The call should arrive on the network thread, but may not in all cases
+  // (some tests don't adhere to this). Implementations today should not block
+  // the calling thread or make assumptions about the thread context.
   virtual void OnSentPacket(const rtc::SentPacket& sent_packet) = 0;
+
   virtual void OnReceivedPacket(const ReceivedPacket& received_packet) = 0;
 
   virtual void SetSdpBitrateParameters(

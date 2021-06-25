@@ -62,7 +62,6 @@ class ExtendedReports : public RtcpPacket {
 
   void ParseRrtrBlock(const uint8_t* block, uint16_t block_length);
   void ParseDlrrBlock(const uint8_t* block, uint16_t block_length);
-  void ParseVoipMetricBlock(const uint8_t* block, uint16_t block_length);
   void ParseTargetBitrateBlock(const uint8_t* block, uint16_t block_length);
 
   absl::optional<Rrtr> rrtr_block_;

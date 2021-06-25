@@ -123,7 +123,7 @@ public class Camera2Enumerator implements CameraEnumerator {
       // On Android OS pre 4.4.2, a class will not load because of VerifyError if it contains a
       // catch statement with an Exception from a newer API, even if the code is never executed.
       // https://code.google.com/p/android/issues/detail?id=209129
-    } catch (/* CameraAccessException */ AndroidException e) {
+    } catch (/* CameraAccessException */ Throwable e) {
       Logging.e(TAG, "Camera access exception: " + e);
       return false;
     }

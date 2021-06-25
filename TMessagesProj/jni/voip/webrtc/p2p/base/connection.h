@@ -237,6 +237,8 @@ class Connection : public CandidatePairInterface,
   // that the remote peer has received, if it is indicated in the incoming
   // connectivity check from the peer.
   void HandlePiggybackCheckAcknowledgementIfAny(StunMessage* msg);
+  // Timestamp when data was last sent (or attempted to be sent).
+  int64_t last_send_data() const { return last_send_data_; }
   int64_t last_data_received() const { return last_data_received_; }
 
   // Debugging description of this connection
@@ -378,6 +380,7 @@ class Connection : public CandidatePairInterface,
   ConnectionInfo stats_;
   rtc::RateTracker recv_rate_tracker_;
   rtc::RateTracker send_rate_tracker_;
+  int64_t last_send_data_ = 0;
 
  private:
   // Update the local candidate based on the mapped address attribute.

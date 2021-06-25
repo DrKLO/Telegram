@@ -35,6 +35,8 @@ enum class SctpTransportState {
 // http://w3c.github.io/webrtc-pc/#rtcsctptransport-interface
 class RTC_EXPORT SctpTransportInformation {
  public:
+  SctpTransportInformation() = default;
+  SctpTransportInformation(const SctpTransportInformation&) = default;
   explicit SctpTransportInformation(SctpTransportState state);
   SctpTransportInformation(
       SctpTransportState state,

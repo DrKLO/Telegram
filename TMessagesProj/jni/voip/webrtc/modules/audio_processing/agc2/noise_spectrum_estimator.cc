@@ -63,8 +63,8 @@ void NoiseSpectrumEstimator::Update(rtc::ArrayView<const float> spectrum,
     v = std::max(v, kMinNoisePower);
   }
 
-  data_dumper_->DumpRaw("lc_noise_spectrum", 65, noise_spectrum_);
-  data_dumper_->DumpRaw("lc_signal_spectrum", spectrum);
+  data_dumper_->DumpRaw("agc2_noise_spectrum", 65, noise_spectrum_);
+  data_dumper_->DumpRaw("agc2_signal_spectrum", spectrum);
 }
 
 }  // namespace webrtc

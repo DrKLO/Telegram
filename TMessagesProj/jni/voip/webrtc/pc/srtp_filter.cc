@@ -11,8 +11,8 @@
 #include "pc/srtp_filter.h"
 
 #include <string.h>
-
 #include <cstdint>
+#include <memory>
 
 #include "absl/strings/match.h"
 #include "rtc_base/logging.h"
@@ -210,9 +210,9 @@ bool SrtpFilter::ApplySendParams(const CryptoParams& send_params) {
   int send_key_len, send_salt_len;
   if (!rtc::GetSrtpKeyAndSaltLengths(*send_cipher_suite_, &send_key_len,
                                      &send_salt_len)) {
-    RTC_LOG(LS_WARNING) << "Could not get lengths for crypto suite(s):"
-                           " send cipher_suite "
-                        << send_params.cipher_suite;
+    RTC_LOG(LS_ERROR) << "Could not get lengths for crypto suite(s):"
+                         " send cipher_suite "
+                      << send_params.cipher_suite;
     return false;
   }
 
@@ -241,9 +241,9 @@ bool SrtpFilter::ApplyRecvParams(const CryptoParams& recv_params) {
   int recv_key_len, recv_salt_len;
   if (!rtc::GetSrtpKeyAndSaltLengths(*recv_cipher_suite_, &recv_key_len,
                                      &recv_salt_len)) {
-    RTC_LOG(LS_WARNING) << "Could not get lengths for crypto suite(s):"
-                           " recv cipher_suite "
-                        << recv_params.cipher_suite;
+    RTC_LOG(LS_ERROR) << "Could not get lengths for crypto suite(s):"
+                         " recv cipher_suite "
+                      << recv_params.cipher_suite;
     return false;
   }
 

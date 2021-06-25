@@ -65,7 +65,7 @@ public class PasscodeView extends FrameLayout {
         void didAcceptedPassword();
     }
 
-    private class AnimatingTextView extends FrameLayout {
+    private static class AnimatingTextView extends FrameLayout {
 
         private ArrayList<TextView> characterTextViews;
         private ArrayList<TextView> dotTextViews;
@@ -1237,7 +1237,7 @@ public class PasscodeView extends FrameLayout {
             return;
         }
         if (backgroundDrawable != null) {
-            if (backgroundDrawable instanceof ColorDrawable || backgroundDrawable instanceof GradientDrawable) {
+            if (backgroundDrawable instanceof MotionBackgroundDrawable || backgroundDrawable instanceof ColorDrawable || backgroundDrawable instanceof GradientDrawable) {
                 backgroundDrawable.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
                 backgroundDrawable.draw(canvas);
             } else {

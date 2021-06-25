@@ -35,13 +35,16 @@ class AudioMixerImpl : public AudioMixer {
 
   // AudioProcessing only accepts 10 ms frames.
   static const int kFrameDurationInMs = 10;
-  enum : int { kMaximumAmountOfMixedAudioSources = 3 };
 
-  static rtc::scoped_refptr<AudioMixerImpl> Create();
+  static const int kDefaultNumberOfMixedAudioSources = 3;
+
+  static rtc::scoped_refptr<AudioMixerImpl> Create(
+      int max_sources_to_mix = kDefaultNumberOfMixedAudioSources);
 
   static rtc::scoped_refptr<AudioMixerImpl> Create(
       std::unique_ptr<OutputRateCalculator> output_rate_calculator,
-      bool use_limiter);
+      bool use_limiter,
+      int max_sources_to_mix = kDefaultNumberOfMixedAudioSources);
 
   ~AudioMixerImpl() override;
 
@@ -60,7 +63,8 @@ class AudioMixerImpl : public AudioMixer {
 
  protected:
   AudioMixerImpl(std::unique_ptr<OutputRateCalculator> output_rate_calculator,
-                 bool use_limiter);
+                 bool use_limiter,
+                 int max_sources_to_mix);
 
  private:
   struct HelperContainers;
@@ -75,6 +79,8 @@ class AudioMixerImpl : public AudioMixer {
   // removal, which can be done from any thread. The race checker
   // checks that mixing is done sequentially.
   mutable Mutex mutex_;
+
+  const int max_sources_to_mix_;
 
   std::unique_ptr<OutputRateCalculator> output_rate_calculator_;
 

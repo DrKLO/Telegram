@@ -70,18 +70,15 @@ public class PhotoEditRadioCell extends FrameLayout {
             radioButton.setSize(AndroidUtilities.dp(20));
             radioButton.setTag(a);
             tintButtonsContainer.addView(radioButton, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f / tintShadowColors.length));
-            radioButton.setOnClickListener(new OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    RadioButton radioButton = (RadioButton) v;
-                    if (currentType == 0) {
-                        currentColor = tintShadowColors[(Integer) radioButton.getTag()];
-                    } else {
-                        currentColor = tintHighlighsColors[(Integer) radioButton.getTag()];
-                    }
-                    updateSelectedTintButton(true);
-                    onClickListener.onClick(PhotoEditRadioCell.this);
+            radioButton.setOnClickListener(v -> {
+                RadioButton radioButton1 = (RadioButton) v;
+                if (currentType == 0) {
+                    currentColor = tintShadowColors[(Integer) radioButton1.getTag()];
+                } else {
+                    currentColor = tintHighlighsColors[(Integer) radioButton1.getTag()];
                 }
+                updateSelectedTintButton(true);
+                onClickListener.onClick(PhotoEditRadioCell.this);
             });
         }
         addView(tintButtonsContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 40, Gravity.LEFT | Gravity.TOP, 96, 0, 24, 0));

@@ -39,12 +39,6 @@ class EncoderSwitchRequestCallback {
 };
 
 struct VideoStreamEncoderSettings {
-  enum class BitrateAllocationCallbackType {
-    kVideoBitrateAllocation,
-    kVideoBitrateAllocationWhenScreenSharing,
-    kVideoLayersAllocation
-  };
-
   explicit VideoStreamEncoderSettings(
       const VideoEncoder::Capabilities& capabilities)
       : capabilities(capabilities) {}
@@ -65,11 +59,6 @@ struct VideoStreamEncoderSettings {
   // Negotiated capabilities which the VideoEncoder may expect the other
   // side to use.
   VideoEncoder::Capabilities capabilities;
-
-  // TODO(bugs.webrtc.org/12000): Reporting of VideoBitrateAllocation is beeing
-  // deprecated. Instead VideoLayersAllocation should be reported.
-  BitrateAllocationCallbackType allocation_cb_type =
-      BitrateAllocationCallbackType::kVideoBitrateAllocationWhenScreenSharing;
 };
 
 }  // namespace webrtc

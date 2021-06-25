@@ -78,7 +78,7 @@ AimdRateControl::AimdRateControl(const WebRtcKeyValueConfig* key_value_config,
       current_bitrate_(max_configured_bitrate_),
       latest_estimated_throughput_(current_bitrate_),
       link_capacity_(),
-      rate_control_state_(kRcHold),
+      rate_control_state_(RateControlState::kRcHold),
       time_last_bitrate_change_(Timestamp::MinusInfinity()),
       time_last_bitrate_decrease_(Timestamp::MinusInfinity()),
       time_first_throughput_estimate_(Timestamp::MinusInfinity()),
@@ -280,10 +280,10 @@ void AimdRateControl::ChangeBitrate(const RateControlInput& input,
       1.5 * estimated_throughput + DataRate::KilobitsPerSec(10);
 
   switch (rate_control_state_) {
-    case kRcHold:
+    case RateControlState::kRcHold:
       break;
 
-    case kRcIncrease:
+    case RateControlState::kRcIncrease:
       if (estimated_throughput > link_capacity_.UpperBound())
         link_capacity_.Reset();
 
@@ -316,7 +316,7 @@ void AimdRateControl::ChangeBitrate(const RateControlInput& input,
       time_last_bitrate_change_ = at_time;
       break;
 
-    case kRcDecrease: {
+    case RateControlState::kRcDecrease: {
       DataRate decreased_bitrate = DataRate::PlusInfinity();
 
       // Set bit rate to something slightly lower than the measured throughput
@@ -356,7 +356,7 @@ void AimdRateControl::ChangeBitrate(const RateControlInput& input,
       bitrate_is_initialized_ = true;
       link_capacity_.OnOveruseDetected(estimated_throughput);
       // Stay on hold until the pipes are cleared.
-      rate_control_state_ = kRcHold;
+      rate_control_state_ = RateControlState::kRcHold;
       time_last_bitrate_change_ = at_time;
       time_last_bitrate_decrease_ = at_time;
       break;
@@ -403,18 +403,18 @@ void AimdRateControl::ChangeState(const RateControlInput& input,
                                   Timestamp at_time) {
   switch (input.bw_state) {
     case BandwidthUsage::kBwNormal:
-      if (rate_control_state_ == kRcHold) {
+      if (rate_control_state_ == RateControlState::kRcHold) {
         time_last_bitrate_change_ = at_time;
-        rate_control_state_ = kRcIncrease;
+        rate_control_state_ = RateControlState::kRcIncrease;
       }
       break;
     case BandwidthUsage::kBwOverusing:
-      if (rate_control_state_ != kRcDecrease) {
-        rate_control_state_ = kRcDecrease;
+      if (rate_control_state_ != RateControlState::kRcDecrease) {
+        rate_control_state_ = RateControlState::kRcDecrease;
       }
       break;
     case BandwidthUsage::kBwUnderusing:
-      rate_control_state_ = kRcHold;
+      rate_control_state_ = RateControlState::kRcHold;
       break;
     default:
       assert(false);

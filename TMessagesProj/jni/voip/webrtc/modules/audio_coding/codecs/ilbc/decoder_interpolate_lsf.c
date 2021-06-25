@@ -16,10 +16,12 @@
 
 ******************************************************************/
 
-#include "modules/audio_coding/codecs/ilbc/lsf_interpolate_to_poly_dec.h"
+#include "modules/audio_coding/codecs/ilbc/decoder_interpolate_lsf.h"
+
 #include "modules/audio_coding/codecs/ilbc/bw_expand.h"
-#include "modules/audio_coding/codecs/ilbc/defines.h"
 #include "modules/audio_coding/codecs/ilbc/constants.h"
+#include "modules/audio_coding/codecs/ilbc/defines.h"
+#include "modules/audio_coding/codecs/ilbc/lsf_interpolate_to_poly_dec.h"
 
 /*----------------------------------------------------------------*
  *  obtain synthesis and weighting filters form lsf coefficients

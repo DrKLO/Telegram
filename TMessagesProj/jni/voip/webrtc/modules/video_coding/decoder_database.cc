@@ -56,7 +56,6 @@ bool VCMDecoderDataBase::DeregisterExternalDecoder(uint8_t payload_type) {
     // Release it if it was registered and in use.
     ptr_decoder_.reset();
   }
-  DeregisterReceiveCodec(payload_type);
   delete it->second;
   dec_external_map_.erase(it);
   return true;
@@ -71,6 +70,12 @@ void VCMDecoderDataBase::RegisterExternalDecoder(VideoDecoder* external_decoder,
       new VCMExtDecoderMapItem(external_decoder, payload_type);
   DeregisterExternalDecoder(payload_type);
   dec_external_map_[payload_type] = ext_decoder;
+}
+
+bool VCMDecoderDataBase::IsExternalDecoderRegistered(
+    uint8_t payload_type) const {
+  return payload_type == current_payload_type_ ||
+         FindExternalDecoderItem(payload_type);
 }
 
 bool VCMDecoderDataBase::RegisterReceiveCodec(uint8_t payload_type,
@@ -131,10 +136,6 @@ VCMGenericDecoder* VCMDecoderDataBase::GetDecoder(
     return nullptr;
   }
   return ptr_decoder_.get();
-}
-
-bool VCMDecoderDataBase::PrefersLateDecoding() const {
-  return ptr_decoder_ ? ptr_decoder_->PrefersLateDecoding() : true;
 }
 
 std::unique_ptr<VCMGenericDecoder> VCMDecoderDataBase::CreateAndInitDecoder(

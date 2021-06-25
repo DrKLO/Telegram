@@ -604,7 +604,7 @@ public class TextureRenderer {
                     if (entity.type == 0) {
                         if ((entity.subType & 1) != 0) {
                             entity.metadata = new int[3];
-                            entity.ptr = RLottieDrawable.create(entity.text, 512, 512, entity.metadata, false, null, false);
+                            entity.ptr = RLottieDrawable.create(entity.text, null, 512, 512, entity.metadata, false, null, false);
                             entity.framesPerDraw = entity.metadata[1] / videoFps;
                         } else {
                             if (Build.VERSION.SDK_INT >= 19) {

@@ -19,10 +19,16 @@
 #include "modules/audio_processing/logging/apm_data_dumper.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/numerics/safe_minmax.h"
+#include "system_wrappers/include/field_trial.h"
 
 namespace webrtc {
 
 namespace {
+
+bool UseCoarseFilterResetHangover() {
+  return !field_trial::IsEnabled(
+      "WebRTC-Aec3CoarseFilterResetHangoverKillSwitch");
+}
 
 void PredictionError(const Aec3Fft& fft,
                      const FftData& S,
@@ -66,12 +72,14 @@ Subtractor::Subtractor(const EchoCanceller3Config& config,
       optimization_(optimization),
       config_(config),
       num_capture_channels_(num_capture_channels),
+      use_coarse_filter_reset_hangover_(UseCoarseFilterResetHangover()),
       refined_filters_(num_capture_channels_),
       coarse_filter_(num_capture_channels_),
       refined_gains_(num_capture_channels_),
       coarse_gains_(num_capture_channels_),
       filter_misadjustment_estimators_(num_capture_channels_),
       poor_coarse_filter_counters_(num_capture_channels_, 0),
+      coarse_filter_reset_hangover_(num_capture_channels_, 0),
       refined_frequency_responses_(
           num_capture_channels_,
           std::vector<std::array<float, kFftLengthBy2Plus1>>(
@@ -83,7 +91,20 @@ Subtractor::Subtractor(const EchoCanceller3Config& config,
           std::vector<float>(GetTimeDomainLength(std::max(
                                  config_.filter.refined_initial.length_blocks,
                                  config_.filter.refined.length_blocks)),
-                             0.f)) {
+                             0.f)),
+      coarse_impulse_responses_(0) {
+  // Set up the storing of coarse impulse responses if data dumping is
+  // available.
+  if (ApmDataDumper::IsAvailable()) {
+    coarse_impulse_responses_.resize(num_capture_channels_);
+    const size_t filter_size = GetTimeDomainLength(
+        std::max(config_.filter.coarse_initial.length_blocks,
+                 config_.filter.coarse.length_blocks));
+    for (std::vector<float>& impulse_response : coarse_impulse_responses_) {
+      impulse_response.resize(filter_size, 0.f);
+    }
+  }
+
   for (size_t ch = 0; ch < num_capture_channels_; ++ch) {
     refined_filters_[ch] = std::make_unique<AdaptiveFirFilter>(
         config_.filter.refined.length_blocks,
@@ -228,11 +249,19 @@ void Subtractor::Process(const RenderBuffer& render_buffer,
 
     // Update the refined filter.
     if (!refined_filters_adjusted) {
+      // Do not allow the performance of the coarse filter to affect the
+      // adaptation speed of the refined filter just after the coarse filter has
+      // been reset.
+      const bool disallow_leakage_diverged =
+          coarse_filter_reset_hangover_[ch] > 0 &&
+          use_coarse_filter_reset_hangover_;
+
       std::array<float, kFftLengthBy2Plus1> erl;
       ComputeErl(optimization_, refined_frequency_responses_[ch], erl);
       refined_gains_[ch]->Compute(X2_refined, render_signal_analyzer, output,
                                   erl, refined_filters_[ch]->SizePartitions(),
-                                  aec_state.SaturatedCapture(), &G);
+                                  aec_state.SaturatedCapture(),
+                                  disallow_leakage_diverged, &G);
     } else {
       G.re.fill(0.f);
       G.im.fill(0.f);
@@ -256,6 +285,8 @@ void Subtractor::Process(const RenderBuffer& render_buffer,
       coarse_gains_[ch]->Compute(X2_coarse, render_signal_analyzer, E_coarse,
                                  coarse_filter_[ch]->SizePartitions(),
                                  aec_state.SaturatedCapture(), &G);
+      coarse_filter_reset_hangover_[ch] =
+          std::max(coarse_filter_reset_hangover_[ch] - 1, 0);
     } else {
       poor_coarse_filter_counters_[ch] = 0;
       coarse_filter_[ch]->SetFilter(refined_filters_[ch]->SizePartitions(),
@@ -263,9 +294,18 @@ void Subtractor::Process(const RenderBuffer& render_buffer,
       coarse_gains_[ch]->Compute(X2_coarse, render_signal_analyzer, E_refined,
                                  coarse_filter_[ch]->SizePartitions(),
                                  aec_state.SaturatedCapture(), &G);
+      coarse_filter_reset_hangover_[ch] =
+          config_.filter.coarse_reset_hangover_blocks;
     }
 
-    coarse_filter_[ch]->Adapt(render_buffer, G);
+    if (ApmDataDumper::IsAvailable()) {
+      RTC_DCHECK_LT(ch, coarse_impulse_responses_.size());
+      coarse_filter_[ch]->Adapt(render_buffer, G,
+                                &coarse_impulse_responses_[ch]);
+    } else {
+      coarse_filter_[ch]->Adapt(render_buffer, G);
+    }
+
     if (ch == 0) {
       data_dumper_->DumpRaw("aec3_subtractor_G_coarse", G.re);
       data_dumper_->DumpRaw("aec3_subtractor_G_coarse", G.im);

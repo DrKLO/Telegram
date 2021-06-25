@@ -14,7 +14,9 @@
 
 namespace webrtc {
 
-CallConfig::CallConfig(RtcEventLog* event_log) : event_log(event_log) {
+CallConfig::CallConfig(RtcEventLog* event_log,
+                       TaskQueueBase* network_task_queue /* = nullptr*/)
+    : event_log(event_log), network_task_queue_(network_task_queue) {
   RTC_DCHECK(event_log);
 }
 

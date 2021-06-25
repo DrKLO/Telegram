@@ -20,6 +20,7 @@
 #include "api/crypto/crypto_options.h"
 #include "api/rtp_parameters.h"
 #include "api/scoped_refptr.h"
+#include "api/sequence_checker.h"
 #include "api/video_codecs/video_codec.h"
 #include "call/rtp_transport_controller_send_interface.h"
 #include "call/video_send_stream.h"
@@ -32,8 +33,6 @@
 #include "rtc_base/experiments/rate_control_settings.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/numerics/safe_conversions.h"
-#include "rtc_base/synchronization/sequence_checker.h"
-#include "rtc_base/thread_checker.h"
 #include "rtc_base/trace_event.h"
 #include "system_wrappers/include/clock.h"
 #include "system_wrappers/include/field_trial.h"
@@ -147,7 +146,6 @@ RtpSenderObservers CreateObservers(RtcpRttStats* call_stats,
   observers.rtcp_rtt_stats = call_stats;
   observers.intra_frame_callback = encoder_feedback;
   observers.rtcp_loss_notification_observer = encoder_feedback;
-  observers.rtcp_stats = stats_proxy;
   observers.report_block_data_observer = stats_proxy;
   observers.rtp_stats = stats_proxy;
   observers.bitrate_observer = stats_proxy;
@@ -403,7 +401,7 @@ void VideoSendStreamImpl::StartupVideoSendStream() {
 
 void VideoSendStreamImpl::Stop() {
   RTC_DCHECK_RUN_ON(worker_queue_);
-  RTC_LOG(LS_INFO) << "VideoSendStream::Stop";
+  RTC_LOG(LS_INFO) << "VideoSendStreamImpl::Stop";
   if (!rtp_video_sender_->IsActive())
     return;
   TRACE_EVENT_INSTANT0("webrtc", "VideoSendStream::Stop");
@@ -481,15 +479,8 @@ void VideoSendStreamImpl::OnBitrateAllocationUpdated(
 
 void VideoSendStreamImpl::OnVideoLayersAllocationUpdated(
     VideoLayersAllocation allocation) {
-  if (!worker_queue_->IsCurrent()) {
-    auto ptr = weak_ptr_;
-    worker_queue_->PostTask([allocation = std::move(allocation), ptr] {
-      if (!ptr.get())
-        return;
-      ptr->OnVideoLayersAllocationUpdated(allocation);
-    });
-    return;
-  }
+  // OnVideoLayersAllocationUpdated is handled on the encoder task queue in
+  // order to not race with OnEncodedImage callbacks.
   rtp_video_sender_->OnVideoLayersAllocationUpdated(allocation);
 }
 

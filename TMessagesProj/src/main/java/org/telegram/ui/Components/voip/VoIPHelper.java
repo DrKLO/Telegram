@@ -723,35 +723,6 @@ public class VoIPHelper {
 		if (fragment == null || fragment.getParentActivity() == null) {
 			return;
 		}
-		JoinCallAlert.checkFewUsers(fragment.getParentActivity(), -currentChat.id, accountInstance, param -> {
-			/*if (param) {
-				if (fragment.getParentActivity() == null) {
-					return;
-				}
-				AlertDialog.Builder builder = new AlertDialog.Builder(fragment.getParentActivity());
-
-				builder.setTitle(LocaleController.getString("StartVoipChatTitle", R.string.StartVoipChatTitle));
-				if (recreate) {
-					builder.setMessage(LocaleController.getString("VoipGroupEndedStartNew", R.string.VoipGroupEndedStartNew));
-				} else {
-					if (ChatObject.isChannel(currentChat) && !currentChat.megagroup) {
-						builder.setMessage(LocaleController.getString("StartVoipChannelAlertText", R.string.StartVoipChannelAlertText));
-					} else {
-						builder.setMessage(LocaleController.getString("StartVoipChatAlertText", R.string.StartVoipChatAlertText));
-					}
-				}
-
-				builder.setPositiveButton(LocaleController.getString("Start", R.string.Start), (dialogInterface, i) -> {
-					if (fragment.getParentActivity() == null) {
-						return;
-					}
-					startCall(currentChat, peer, null, true, fragment.getParentActivity(), fragment, accountInstance);
-				});
-				builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-				fragment.showDialog(builder.create());
-			} else {*/
-				startCall(currentChat, peer, null, true, fragment.getParentActivity(), fragment, accountInstance);
-			//}
-		});
+		JoinCallAlert.checkFewUsers(fragment.getParentActivity(), -currentChat.id, accountInstance, param -> startCall(currentChat, peer, null, true, fragment.getParentActivity(), fragment, accountInstance));
     }
 }

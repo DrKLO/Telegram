@@ -20,6 +20,7 @@
 #include "api/array_view.h"
 #include "api/frame_transformer_interface.h"
 #include "api/scoped_refptr.h"
+#include "api/sequence_checker.h"
 #include "api/task_queue/task_queue_base.h"
 #include "api/transport/rtp/dependency_descriptor.h"
 #include "api/video/video_codec_type.h"
@@ -37,7 +38,6 @@
 #include "rtc_base/race_checker.h"
 #include "rtc_base/rate_statistics.h"
 #include "rtc_base/synchronization/mutex.h"
-#include "rtc_base/synchronization/sequence_checker.h"
 #include "rtc_base/thread_annotations.h"
 
 namespace webrtc {
@@ -159,6 +159,12 @@ class RTPSenderVideo {
     int64_t last_frame_time_ms;
   };
 
+  enum class SendVideoLayersAllocation {
+    kSendWithResolution,
+    kSendWithoutResolution,
+    kDontSend
+  };
+
   void SetVideoStructureInternal(
       const FrameDependencyStructure* video_structure);
   void SetVideoLayersAllocationInternal(VideoLayersAllocation allocation);
@@ -202,7 +208,7 @@ class RTPSenderVideo {
   absl::optional<VideoLayersAllocation> allocation_
       RTC_GUARDED_BY(send_checker_);
   // Flag indicating if we should send |allocation_|.
-  bool send_allocation_ RTC_GUARDED_BY(send_checker_);
+  SendVideoLayersAllocation send_allocation_ RTC_GUARDED_BY(send_checker_);
 
   // Current target playout delay.
   VideoPlayoutDelay current_playout_delay_ RTC_GUARDED_BY(send_checker_);

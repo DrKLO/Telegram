@@ -20,10 +20,11 @@
 #define MODULES_AUDIO_CODING_CODECS_ILBC_MAIN_SOURCE_DECODE_RESIDUAL_H_
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
+#include "absl/base/attributes.h"
 #include "modules/audio_coding/codecs/ilbc/defines.h"
-#include "rtc_base/system/unused.h"
 
 /*----------------------------------------------------------------*
  *  frame residual decoder function (subrutine to iLBC_decode)
@@ -31,6 +32,7 @@
 
 // Returns true on success, false on failure. In case of failure, the decoder
 // state may be corrupted and needs resetting.
+ABSL_MUST_USE_RESULT
 bool WebRtcIlbcfix_DecodeResidual(
     IlbcDecoder* iLBCdec_inst, /* (i/o) the decoder state structure */
     iLBC_bits* iLBC_encbits,   /* (i/o) Encoded bits, which are used
@@ -38,6 +40,6 @@ bool WebRtcIlbcfix_DecodeResidual(
     int16_t* decresidual,      /* (o) decoded residual frame */
     int16_t* syntdenum         /* (i) the decoded synthesis filter
                                                          coefficients */
-    ) RTC_WARN_UNUSED_RESULT;
+);
 
 #endif

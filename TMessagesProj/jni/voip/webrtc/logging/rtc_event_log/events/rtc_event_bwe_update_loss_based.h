@@ -21,14 +21,15 @@ namespace webrtc {
 
 class RtcEventBweUpdateLossBased final : public RtcEvent {
  public:
+  static constexpr Type kType = Type::BweUpdateLossBased;
+
   RtcEventBweUpdateLossBased(int32_t bitrate_bps_,
                              uint8_t fraction_loss_,
                              int32_t total_packets_);
   ~RtcEventBweUpdateLossBased() override;
 
-  Type GetType() const override;
-
-  bool IsConfigEvent() const override;
+  Type GetType() const override { return kType; }
+  bool IsConfigEvent() const override { return false; }
 
   std::unique_ptr<RtcEventBweUpdateLossBased> Copy() const;
 
@@ -42,6 +43,26 @@ class RtcEventBweUpdateLossBased final : public RtcEvent {
   const int32_t bitrate_bps_;
   const uint8_t fraction_loss_;
   const int32_t total_packets_;
+};
+
+struct LoggedBweLossBasedUpdate {
+  LoggedBweLossBasedUpdate() = default;
+  LoggedBweLossBasedUpdate(int64_t timestamp_us,
+                           int32_t bitrate_bps,
+                           uint8_t fraction_lost,
+                           int32_t expected_packets)
+      : timestamp_us(timestamp_us),
+        bitrate_bps(bitrate_bps),
+        fraction_lost(fraction_lost),
+        expected_packets(expected_packets) {}
+
+  int64_t log_time_us() const { return timestamp_us; }
+  int64_t log_time_ms() const { return timestamp_us / 1000; }
+
+  int64_t timestamp_us;
+  int32_t bitrate_bps;
+  uint8_t fraction_lost;
+  int32_t expected_packets;
 };
 
 }  // namespace webrtc

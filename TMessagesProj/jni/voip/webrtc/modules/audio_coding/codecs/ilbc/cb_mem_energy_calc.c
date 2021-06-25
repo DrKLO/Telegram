@@ -16,6 +16,8 @@
 
 ******************************************************************/
 
+#include "modules/audio_coding/codecs/ilbc/cb_mem_energy_calc.h"
+
 #include "modules/audio_coding/codecs/ilbc/defines.h"
 
 /* Compute the energy of the rest of the cb memory

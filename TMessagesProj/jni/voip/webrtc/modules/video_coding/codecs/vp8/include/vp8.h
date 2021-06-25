@@ -14,10 +14,10 @@
 #include <memory>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "api/video_codecs/video_encoder.h"
 #include "api/video_codecs/vp8_frame_buffer_controller.h"
 #include "modules/video_coding/include/video_codec_interface.h"
-#include "rtc_base/deprecation.h"
 
 namespace webrtc {
 
@@ -40,7 +40,8 @@ class VP8Encoder {
   static std::unique_ptr<VideoEncoder> Create();
   static std::unique_ptr<VideoEncoder> Create(Settings settings);
 
-  RTC_DEPRECATED static std::unique_ptr<VideoEncoder> Create(
+  ABSL_DEPRECATED("")
+  static std::unique_ptr<VideoEncoder> Create(
       std::unique_ptr<Vp8FrameBufferControllerFactory>
           frame_buffer_controller_factory);
 };

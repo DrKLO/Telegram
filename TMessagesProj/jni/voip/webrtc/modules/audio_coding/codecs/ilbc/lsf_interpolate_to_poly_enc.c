@@ -16,6 +16,8 @@
 
 ******************************************************************/
 
+#include "modules/audio_coding/codecs/ilbc/lsf_interpolate_to_poly_enc.h"
+
 #include "modules/audio_coding/codecs/ilbc/defines.h"
 #include "modules/audio_coding/codecs/ilbc/interpolate.h"
 #include "modules/audio_coding/codecs/ilbc/lsf_to_poly.h"

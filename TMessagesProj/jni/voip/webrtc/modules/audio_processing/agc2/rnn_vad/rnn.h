@@ -18,106 +18,33 @@
 #include <vector>
 
 #include "api/array_view.h"
-#include "api/function_view.h"
+#include "modules/audio_processing/agc2/cpu_features.h"
 #include "modules/audio_processing/agc2/rnn_vad/common.h"
-#include "rtc_base/system/arch.h"
+#include "modules/audio_processing/agc2/rnn_vad/rnn_fc.h"
+#include "modules/audio_processing/agc2/rnn_vad/rnn_gru.h"
 
 namespace webrtc {
 namespace rnn_vad {
 
-// Maximum number of units for a fully-connected layer. This value is used to
-// over-allocate space for fully-connected layers output vectors (implemented as
-// std::array). The value should equal the number of units of the largest
-// fully-connected layer.
-constexpr int kFullyConnectedLayersMaxUnits = 24;
-
-// Maximum number of units for a recurrent layer. This value is used to
-// over-allocate space for recurrent layers state vectors (implemented as
-// std::array). The value should equal the number of units of the largest
-// recurrent layer.
-constexpr int kRecurrentLayersMaxUnits = 24;
-
-// Fully-connected layer.
-class FullyConnectedLayer {
+// Recurrent network with hard-coded architecture and weights for voice activity
+// detection.
+class RnnVad {
  public:
-  FullyConnectedLayer(int input_size,
-                      int output_size,
-                      rtc::ArrayView<const int8_t> bias,
-                      rtc::ArrayView<const int8_t> weights,
-                      rtc::FunctionView<float(float)> activation_function,
-                      Optimization optimization);
-  FullyConnectedLayer(const FullyConnectedLayer&) = delete;
-  FullyConnectedLayer& operator=(const FullyConnectedLayer&) = delete;
-  ~FullyConnectedLayer();
-  int input_size() const { return input_size_; }
-  int output_size() const { return output_size_; }
-  Optimization optimization() const { return optimization_; }
-  rtc::ArrayView<const float> GetOutput() const;
-  // Computes the fully-connected layer output.
-  void ComputeOutput(rtc::ArrayView<const float> input);
-
- private:
-  const int input_size_;
-  const int output_size_;
-  const std::vector<float> bias_;
-  const std::vector<float> weights_;
-  rtc::FunctionView<float(float)> activation_function_;
-  // The output vector of a recurrent layer has length equal to |output_size_|.
-  // However, for efficiency, over-allocation is used.
-  std::array<float, kFullyConnectedLayersMaxUnits> output_;
-  const Optimization optimization_;
-};
-
-// Recurrent layer with gated recurrent units (GRUs) with sigmoid and ReLU as
-// activation functions for the update/reset and output gates respectively.
-class GatedRecurrentLayer {
- public:
-  GatedRecurrentLayer(int input_size,
-                      int output_size,
-                      rtc::ArrayView<const int8_t> bias,
-                      rtc::ArrayView<const int8_t> weights,
-                      rtc::ArrayView<const int8_t> recurrent_weights,
-                      Optimization optimization);
-  GatedRecurrentLayer(const GatedRecurrentLayer&) = delete;
-  GatedRecurrentLayer& operator=(const GatedRecurrentLayer&) = delete;
-  ~GatedRecurrentLayer();
-  int input_size() const { return input_size_; }
-  int output_size() const { return output_size_; }
-  Optimization optimization() const { return optimization_; }
-  rtc::ArrayView<const float> GetOutput() const;
+  explicit RnnVad(const AvailableCpuFeatures& cpu_features);
+  RnnVad(const RnnVad&) = delete;
+  RnnVad& operator=(const RnnVad&) = delete;
+  ~RnnVad();
   void Reset();
-  // Computes the recurrent layer output and updates the status.
-  void ComputeOutput(rtc::ArrayView<const float> input);
-
- private:
-  const int input_size_;
-  const int output_size_;
-  const std::vector<float> bias_;
-  const std::vector<float> weights_;
-  const std::vector<float> recurrent_weights_;
-  // The state vector of a recurrent layer has length equal to |output_size_|.
-  // However, to avoid dynamic allocation, over-allocation is used.
-  std::array<float, kRecurrentLayersMaxUnits> state_;
-  const Optimization optimization_;
-};
-
-// Recurrent network based VAD.
-class RnnBasedVad {
- public:
-  RnnBasedVad();
-  RnnBasedVad(const RnnBasedVad&) = delete;
-  RnnBasedVad& operator=(const RnnBasedVad&) = delete;
-  ~RnnBasedVad();
-  void Reset();
-  // Compute and returns the probability of voice (range: [0.0, 1.0]).
+  // Observes `feature_vector` and `is_silence`, updates the RNN and returns the
+  // current voice probability.
   float ComputeVadProbability(
       rtc::ArrayView<const float, kFeatureVectorSize> feature_vector,
       bool is_silence);
 
  private:
-  FullyConnectedLayer input_layer_;
-  GatedRecurrentLayer hidden_layer_;
-  FullyConnectedLayer output_layer_;
+  FullyConnectedLayer input_;
+  GatedRecurrentLayer hidden_;
+  FullyConnectedLayer output_;
 };
 
 }  // namespace rnn_vad

@@ -10,7 +10,7 @@
 namespace tgcalls {
 
 VideoCaptureInterfaceObject::VideoCaptureInterfaceObject(std::string deviceId, std::shared_ptr<PlatformContext> platformContext, Threads &threads)
-: _videoSource(PlatformInterface::SharedInstance()->makeVideoSource(threads.getMediaThread(), threads.getWorkerThread())) {
+: _videoSource(PlatformInterface::SharedInstance()->makeVideoSource(threads.getMediaThread(), threads.getWorkerThread(), deviceId == "screen")) {
 	_platformContext = platformContext;
     
 	switchToDevice(deviceId);
@@ -26,8 +26,16 @@ webrtc::VideoTrackSourceInterface *VideoCaptureInterfaceObject::source() {
 	return _videoSource;
 }
 
+int VideoCaptureInterfaceObject::getRotation() {
+    if (_videoCapturer) {
+        return _videoCapturer->getRotation();
+    } else {
+        return 0;
+    }
+}
+
 void VideoCaptureInterfaceObject::switchToDevice(std::string deviceId) {
-    if (_videoCapturer && _currentUncroppedSink) {
+    if (_videoCapturer && _currentUncroppedSink != nullptr) {
 		_videoCapturer->setUncroppedOutput(nullptr);
     }
 	if (_videoSource) {
@@ -37,22 +45,51 @@ void VideoCaptureInterfaceObject::switchToDevice(std::string deviceId) {
 			if (this->_stateUpdated) {
 				this->_stateUpdated(state);
 			}
+            if (this->_onIsActiveUpdated) {
+                switch (state) {
+                    case VideoState::Active: {
+                        this->_onIsActiveUpdated(true);
+                        break;
+                    }
+                    default: {
+                        this->_onIsActiveUpdated(false);
+                        break;
+                    }
+                }
+            }
         }, [this](PlatformCaptureInfo info) {
             if (this->_shouldBeAdaptedToReceiverAspectRate != info.shouldBeAdaptedToReceiverAspectRate) {
                 this->_shouldBeAdaptedToReceiverAspectRate = info.shouldBeAdaptedToReceiverAspectRate;
-                this->updateAspectRateAdaptation();
             }
+            if (this->_rotationUpdated) {
+                this->_rotationUpdated(info.rotation);
+            }
+            this->updateAspectRateAdaptation();
         }, _platformContext, _videoCapturerResolution);
 	}
 	if (_videoCapturer) {
-//        if (_preferredAspectRatio > 0) {
-//            _videoCapturer->setPreferredCaptureAspectRatio(_preferredAspectRatio);
-//        }
+//		if (_preferredAspectRatio > 0) {
+//			_videoCapturer->setPreferredCaptureAspectRatio(_preferredAspectRatio);
+//		}
 		if (_currentUncroppedSink) {
 			_videoCapturer->setUncroppedOutput(_currentUncroppedSink);
 		}
+        if (_onFatalError) {
+            _videoCapturer->setOnFatalError(_onFatalError);
+        }
+        if (_onPause) {
+            _videoCapturer->setOnPause(_onPause);
+        }
 		_videoCapturer->setState(_state);
 	}
+}
+
+void VideoCaptureInterfaceObject::withNativeImplementation(std::function<void(void *)> completion) {
+    if (_videoCapturer) {
+        _videoCapturer->withNativeImplementation(completion);
+    } else {
+        completion(nullptr);
+    }
 }
 
 void VideoCaptureInterfaceObject::setState(VideoState state) {
@@ -84,10 +121,10 @@ void VideoCaptureInterfaceObject::updateAspectRateAdaptation() {
                 float height = (originalWidth > aspectRatio * originalHeight)
                     ? originalHeight
                     : int(std::round(originalHeight / aspectRatio));
-                
-                PlatformInterface::SharedInstance()->adaptVideoSource(_videoSource, (int)width, (int)height, 30);
+
+                PlatformInterface::SharedInstance()->adaptVideoSource(_videoSource, (int)width, (int)height, 25);
             } else {
-                PlatformInterface::SharedInstance()->adaptVideoSource(_videoSource, _videoCapturerResolution.first, _videoCapturerResolution.second, 30);
+                PlatformInterface::SharedInstance()->adaptVideoSource(_videoSource, _videoCapturerResolution.first, _videoCapturerResolution.second, 25);
             }
         }
     }
@@ -100,8 +137,29 @@ void VideoCaptureInterfaceObject::setOutput(std::shared_ptr<rtc::VideoSinkInterf
 	_currentUncroppedSink = sink;
 }
 
+void VideoCaptureInterfaceObject::setOnFatalError(std::function<void()> error) {
+    if (_videoCapturer) {
+        _videoCapturer->setOnFatalError(error);
+    }
+    _onFatalError = error;
+}
+void VideoCaptureInterfaceObject::setOnPause(std::function<void(bool)> pause) {
+    if (_videoCapturer) {
+        _videoCapturer->setOnPause(pause);
+    }
+    _onPause = pause;
+}
+
+void VideoCaptureInterfaceObject::setOnIsActiveUpdated(std::function<void(bool)> onIsActiveUpdated) {
+    _onIsActiveUpdated = onIsActiveUpdated;
+}
+
 void VideoCaptureInterfaceObject::setStateUpdated(std::function<void(VideoState)> stateUpdated) {
 	_stateUpdated = stateUpdated;
+}
+
+void VideoCaptureInterfaceObject::setRotationUpdated(std::function<void(int)> rotationUpdated) {
+    _rotationUpdated = rotationUpdated;
 }
 
 VideoCaptureInterfaceImpl::VideoCaptureInterfaceImpl(std::string deviceId,
@@ -120,6 +178,12 @@ void VideoCaptureInterfaceImpl::switchToDevice(std::string deviceId) {
 	});
 }
 
+void VideoCaptureInterfaceImpl::withNativeImplementation(std::function<void(void *)> completion) {
+    _impl.perform(RTC_FROM_HERE, [completion](VideoCaptureInterfaceObject *impl) {
+        impl->withNativeImplementation(completion);
+    });
+}
+
 void VideoCaptureInterfaceImpl::setState(VideoState state) {
 	_impl.perform(RTC_FROM_HERE, [state](VideoCaptureInterfaceObject *impl) {
 		impl->setState(state);
@@ -129,6 +193,22 @@ void VideoCaptureInterfaceImpl::setState(VideoState state) {
 void VideoCaptureInterfaceImpl::setPreferredAspectRatio(float aspectRatio) {
     _impl.perform(RTC_FROM_HERE, [aspectRatio](VideoCaptureInterfaceObject *impl) {
         impl->setPreferredAspectRatio(aspectRatio);
+    });
+}
+void VideoCaptureInterfaceImpl::setOnFatalError(std::function<void()> error) {
+    _impl.perform(RTC_FROM_HERE, [error](VideoCaptureInterfaceObject *impl) {
+        impl->setOnFatalError(error);
+    });
+}
+void VideoCaptureInterfaceImpl::setOnPause(std::function<void(bool)> pause) {
+    _impl.perform(RTC_FROM_HERE, [pause](VideoCaptureInterfaceObject *impl) {
+        impl->setOnPause(pause);
+    });
+}
+
+void VideoCaptureInterfaceImpl::setOnIsActiveUpdated(std::function<void(bool)> onIsActiveUpdated) {
+    _impl.perform(RTC_FROM_HERE, [onIsActiveUpdated](VideoCaptureInterfaceObject *impl) {
+        impl->setOnIsActiveUpdated(onIsActiveUpdated);
     });
 }
 

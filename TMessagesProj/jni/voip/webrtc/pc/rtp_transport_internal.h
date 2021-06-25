@@ -57,11 +57,11 @@ class RtpTransportInternal : public sigslot::has_slots<> {
   // the RtpDemuxer callback.
   sigslot::signal2<rtc::CopyOnWriteBuffer*, int64_t> SignalRtcpPacketReceived;
 
-  sigslot::signal3<rtc::CopyOnWriteBuffer*, int64_t, bool> SignalRtpPacketReceived;
-
   // Called whenever the network route of the P2P layer transport changes.
   // The argument is an optional network route.
   sigslot::signal1<absl::optional<rtc::NetworkRoute>> SignalNetworkRouteChanged;
+
+  sigslot::signal3<rtc::CopyOnWriteBuffer*, int64_t, bool> SignalRtpPacketReceived;
 
   // Called whenever a transport's writable state might change. The argument is
   // true if the transport is writable, otherwise it is false.

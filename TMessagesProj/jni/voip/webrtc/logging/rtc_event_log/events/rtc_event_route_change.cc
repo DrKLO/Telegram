@@ -24,14 +24,6 @@ RtcEventRouteChange::RtcEventRouteChange(const RtcEventRouteChange& other)
 
 RtcEventRouteChange::~RtcEventRouteChange() = default;
 
-RtcEvent::Type RtcEventRouteChange::GetType() const {
-  return RtcEvent::Type::RouteChangeEvent;
-}
-
-bool RtcEventRouteChange::IsConfigEvent() const {
-  return false;
-}
-
 std::unique_ptr<RtcEventRouteChange> RtcEventRouteChange::Copy() const {
   return absl::WrapUnique<RtcEventRouteChange>(new RtcEventRouteChange(*this));
 }

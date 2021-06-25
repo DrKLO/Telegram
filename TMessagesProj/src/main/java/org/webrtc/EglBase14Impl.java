@@ -37,6 +37,7 @@ class EglBase14Impl implements EglBase14 {
   @Nullable private EGLConfig eglConfig;
   private EGLDisplay eglDisplay;
   private EGLSurface eglSurface = EGL14.EGL_NO_SURFACE;
+  private EGLSurface eglSurfaceBackground = EGL14.EGL_NO_SURFACE;
 
   // EGL 1.4 is supported from API 17. But EGLExt that is used for setting presentation
   // time stamp on a surface is supported from 18 so we require 18.
@@ -81,29 +82,48 @@ class EglBase14Impl implements EglBase14 {
   // Create EGLSurface from the Android Surface.
   @Override
   public void createSurface(Surface surface) {
-    createSurfaceInternal(surface);
+    createSurfaceInternal(surface, false);
   }
+
+  // Create EGLSurface from the Android Surface.
+  @Override
+  public void createBackgroundSurface(SurfaceTexture surface) {
+    createSurfaceInternal(surface, true);
+  }
+
 
   // Create EGLSurface from the Android SurfaceTexture.
   @Override
   public void createSurface(SurfaceTexture surfaceTexture) {
-    createSurfaceInternal(surfaceTexture);
+    createSurfaceInternal(surfaceTexture, false);
   }
 
   // Create EGLSurface from either Surface or SurfaceTexture.
-  private void createSurfaceInternal(Object surface) {
+  private void createSurfaceInternal(Object surface, boolean background) {
     if (!(surface instanceof Surface) && !(surface instanceof SurfaceTexture)) {
       throw new IllegalStateException("Input must be either a Surface or SurfaceTexture");
     }
     checkIsNotReleased();
-    if (eglSurface != EGL14.EGL_NO_SURFACE) {
-      throw new RuntimeException("Already has an EGLSurface");
-    }
-    int[] surfaceAttribs = {EGL14.EGL_NONE};
-    eglSurface = EGL14.eglCreateWindowSurface(eglDisplay, eglConfig, surface, surfaceAttribs, 0);
-    if (eglSurface == EGL14.EGL_NO_SURFACE) {
-      throw new RuntimeException(
-          "Failed to create window surface: 0x" + Integer.toHexString(EGL14.eglGetError()));
+    if (background) {
+      if (eglSurfaceBackground != EGL14.EGL_NO_SURFACE) {
+        throw new RuntimeException("Already has an EGLSurface");
+      }
+      int[] surfaceAttribs = {EGL14.EGL_NONE};
+      eglSurfaceBackground = EGL14.eglCreateWindowSurface(eglDisplay, eglConfig, surface, surfaceAttribs, 0);
+      if (eglSurfaceBackground == EGL14.EGL_NO_SURFACE) {
+        throw new RuntimeException(
+                "Failed to create window surface: 0x" + Integer.toHexString(EGL14.eglGetError()));
+      }
+    } else {
+      if (eglSurface != EGL14.EGL_NO_SURFACE) {
+        throw new RuntimeException("Already has an EGLSurface");
+      }
+      int[] surfaceAttribs = {EGL14.EGL_NONE};
+      eglSurface = EGL14.eglCreateWindowSurface(eglDisplay, eglConfig, surface, surfaceAttribs, 0);
+      if (eglSurface == EGL14.EGL_NO_SURFACE) {
+        throw new RuntimeException(
+                "Failed to create window surface: 0x" + Integer.toHexString(EGL14.eglGetError()));
+      }
     }
   }
 
@@ -151,10 +171,17 @@ class EglBase14Impl implements EglBase14 {
   }
 
   @Override
-  public void releaseSurface() {
-    if (eglSurface != EGL14.EGL_NO_SURFACE) {
-      EGL14.eglDestroySurface(eglDisplay, eglSurface);
-      eglSurface = EGL14.EGL_NO_SURFACE;
+  public void releaseSurface(boolean background) {
+    if (background) {
+      if (eglSurfaceBackground != EGL14.EGL_NO_SURFACE) {
+        EGL14.eglDestroySurface(eglDisplay, eglSurfaceBackground);
+        eglSurfaceBackground = EGL14.EGL_NO_SURFACE;
+      }
+    } else {
+      if (eglSurface != EGL14.EGL_NO_SURFACE) {
+        EGL14.eglDestroySurface(eglDisplay, eglSurface);
+        eglSurface = EGL14.EGL_NO_SURFACE;
+      }
     }
   }
 
@@ -168,7 +195,8 @@ class EglBase14Impl implements EglBase14 {
   @Override
   public void release() {
     checkIsNotReleased();
-    releaseSurface();
+    releaseSurface(false);
+    releaseSurface(true);
     detachCurrent();
     synchronized (EglBase.lock) {
       EGL14.eglDestroyContext(eglDisplay, eglContext);
@@ -194,6 +222,25 @@ class EglBase14Impl implements EglBase14 {
     }
   }
 
+    @Override
+    public void makeBackgroundCurrent() {
+        checkIsNotReleased();
+        if (eglSurfaceBackground == EGL14.EGL_NO_SURFACE) {
+            throw new RuntimeException("No EGLSurface - can't make current");
+        }
+        synchronized (EglBase.lock) {
+            if (!EGL14.eglMakeCurrent(eglDisplay, eglSurfaceBackground, eglSurfaceBackground, eglContext)) {
+                throw new RuntimeException(
+                        "eglMakeCurrent failed: 0x" + Integer.toHexString(EGL14.eglGetError()));
+            }
+        }
+    }
+
+  @Override
+  public boolean hasBackgroundSurface() {
+    return eglSurfaceBackground != EGL14.EGL_NO_SURFACE;
+  }
+
   // Detach the current EGL context, so that it can be made current on another thread.
   @Override
   public void detachCurrent() {
@@ -207,27 +254,29 @@ class EglBase14Impl implements EglBase14 {
   }
 
   @Override
-  public void swapBuffers() {
+  public void swapBuffers(boolean background) {
     checkIsNotReleased();
-    if (eglSurface == EGL14.EGL_NO_SURFACE) {
+    EGLSurface surface = background ? eglSurfaceBackground : eglSurface;
+    if (surface == EGL14.EGL_NO_SURFACE) {
       throw new RuntimeException("No EGLSurface - can't swap buffers");
     }
     synchronized (EglBase.lock) {
-      EGL14.eglSwapBuffers(eglDisplay, eglSurface);
+      EGL14.eglSwapBuffers(eglDisplay, surface);
     }
   }
 
   @Override
-  public void swapBuffers(long timeStampNs) {
+  public void swapBuffers(long timeStampNs, boolean background) {
     checkIsNotReleased();
-    if (eglSurface == EGL14.EGL_NO_SURFACE) {
+    EGLSurface surface = background ? eglSurfaceBackground : eglSurface;
+    if (surface == EGL14.EGL_NO_SURFACE) {
       throw new RuntimeException("No EGLSurface - can't swap buffers");
     }
     synchronized (EglBase.lock) {
       // See
       // https://android.googlesource.com/platform/frameworks/native/+/tools_r22.2/opengl/specs/EGL_ANDROID_presentation_time.txt
-      EGLExt.eglPresentationTimeANDROID(eglDisplay, eglSurface, timeStampNs);
-      EGL14.eglSwapBuffers(eglDisplay, eglSurface);
+      EGLExt.eglPresentationTimeANDROID(eglDisplay, surface, timeStampNs);
+      EGL14.eglSwapBuffers(eglDisplay, surface);
     }
   }
 

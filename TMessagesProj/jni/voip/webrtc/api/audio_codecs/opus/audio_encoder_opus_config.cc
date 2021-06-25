@@ -61,7 +61,7 @@ bool AudioEncoderOpusConfig::IsOk() const {
     // well; we can add support for them when needed.)
     return false;
   }
-  if (num_channels < 0 || num_channels >= 255) {
+  if (num_channels >= 255) {
     return false;
   }
   if (!bitrate_bps)

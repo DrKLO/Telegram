@@ -134,7 +134,7 @@ void RtpPacketHistory::PutRtpPacket(std::unique_ptr<RtpPacketToSend> packet,
   // Store packet.
   const uint16_t rtp_seq_no = packet->SequenceNumber();
   int packet_index = GetPacketIndex(rtp_seq_no);
-  if (packet_index >= 0u &&
+  if (packet_index >= 0 &&
       static_cast<size_t>(packet_index) < packet_history_.size() &&
       packet_history_[packet_index].packet_ != nullptr) {
     RTC_LOG(LS_WARNING) << "Duplicate packet inserted: " << rtp_seq_no;

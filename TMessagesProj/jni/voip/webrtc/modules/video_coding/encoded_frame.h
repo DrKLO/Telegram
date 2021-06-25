@@ -21,7 +21,7 @@
 
 namespace webrtc {
 
-class RTC_EXPORT VCMEncodedFrame : protected EncodedImage {
+class RTC_EXPORT VCMEncodedFrame : public EncodedImage {
  public:
   VCMEncodedFrame();
   VCMEncodedFrame(const VCMEncodedFrame&);
@@ -52,7 +52,6 @@ class RTC_EXPORT VCMEncodedFrame : protected EncodedImage {
   using EncodedImage::GetEncodedData;
   using EncodedImage::NtpTimeMs;
   using EncodedImage::PacketInfos;
-  using EncodedImage::Retain;
   using EncodedImage::set_size;
   using EncodedImage::SetColorSpace;
   using EncodedImage::SetEncodedData;

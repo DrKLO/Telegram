@@ -45,29 +45,31 @@ enum SpsValidEvent {
   kSpsRewrittenMax = 8
 };
 
-#define RETURN_FALSE_ON_FAIL(x)                                      \
-  if (!(x)) {                                                        \
-    RTC_LOG_F(LS_ERROR) << " (line:" << __LINE__ << ") FAILED: " #x; \
-    return false;                                                    \
-  }
+#define RETURN_FALSE_ON_FAIL(x)                                        \
+  do {                                                                 \
+    if (!(x)) {                                                        \
+      RTC_LOG_F(LS_ERROR) << " (line:" << __LINE__ << ") FAILED: " #x; \
+      return false;                                                    \
+    }                                                                  \
+  } while (0)
 
 #define COPY_UINT8(src, dest, tmp)                   \
   do {                                               \
-    RETURN_FALSE_ON_FAIL((src)->ReadUInt8(&tmp));    \
+    RETURN_FALSE_ON_FAIL((src)->ReadUInt8(tmp));     \
     if (dest)                                        \
       RETURN_FALSE_ON_FAIL((dest)->WriteUInt8(tmp)); \
   } while (0)
 
 #define COPY_EXP_GOLOMB(src, dest, tmp)                          \
   do {                                                           \
-    RETURN_FALSE_ON_FAIL((src)->ReadExponentialGolomb(&tmp));    \
+    RETURN_FALSE_ON_FAIL((src)->ReadExponentialGolomb(tmp));     \
     if (dest)                                                    \
       RETURN_FALSE_ON_FAIL((dest)->WriteExponentialGolomb(tmp)); \
   } while (0)
 
 #define COPY_BITS(src, dest, tmp, bits)                   \
   do {                                                    \
-    RETURN_FALSE_ON_FAIL((src)->ReadBits(&tmp, bits));    \
+    RETURN_FALSE_ON_FAIL((src)->ReadBits(bits, tmp));     \
     if (dest)                                             \
       RETURN_FALSE_ON_FAIL((dest)->WriteBits(tmp, bits)); \
   } while (0)
@@ -369,7 +371,7 @@ bool CopyAndRewriteVui(const SpsParser::SpsState& sps,
 
     // bitstream_restriction_flag: u(1)
     uint32_t bitstream_restriction_flag;
-    RETURN_FALSE_ON_FAIL(source->ReadBits(&bitstream_restriction_flag, 1));
+    RETURN_FALSE_ON_FAIL(source->ReadBits(1, bitstream_restriction_flag));
     RETURN_FALSE_ON_FAIL(destination->WriteBits(1, 1));
     if (bitstream_restriction_flag == 0) {
       // We're adding one from scratch.
@@ -396,9 +398,9 @@ bool CopyAndRewriteVui(const SpsParser::SpsState& sps,
       // want, then we don't need to be rewriting.
       uint32_t max_num_reorder_frames, max_dec_frame_buffering;
       RETURN_FALSE_ON_FAIL(
-          source->ReadExponentialGolomb(&max_num_reorder_frames));
+          source->ReadExponentialGolomb(max_num_reorder_frames));
       RETURN_FALSE_ON_FAIL(
-          source->ReadExponentialGolomb(&max_dec_frame_buffering));
+          source->ReadExponentialGolomb(max_dec_frame_buffering));
       RETURN_FALSE_ON_FAIL(destination->WriteExponentialGolomb(0));
       RETURN_FALSE_ON_FAIL(
           destination->WriteExponentialGolomb(sps.max_num_ref_frames));
@@ -511,15 +513,15 @@ bool CopyOrRewriteVideoSignalTypeInfo(
   uint8_t colour_primaries = 3;          // H264 default: unspecified
   uint8_t transfer_characteristics = 3;  // H264 default: unspecified
   uint8_t matrix_coefficients = 3;       // H264 default: unspecified
-  RETURN_FALSE_ON_FAIL(source->ReadBits(&video_signal_type_present_flag, 1));
+  RETURN_FALSE_ON_FAIL(source->ReadBits(1, video_signal_type_present_flag));
   if (video_signal_type_present_flag) {
-    RETURN_FALSE_ON_FAIL(source->ReadBits(&video_format, 3));
-    RETURN_FALSE_ON_FAIL(source->ReadBits(&video_full_range_flag, 1));
-    RETURN_FALSE_ON_FAIL(source->ReadBits(&colour_description_present_flag, 1));
+    RETURN_FALSE_ON_FAIL(source->ReadBits(3, video_format));
+    RETURN_FALSE_ON_FAIL(source->ReadBits(1, video_full_range_flag));
+    RETURN_FALSE_ON_FAIL(source->ReadBits(1, colour_description_present_flag));
     if (colour_description_present_flag) {
-      RETURN_FALSE_ON_FAIL(source->ReadUInt8(&colour_primaries));
-      RETURN_FALSE_ON_FAIL(source->ReadUInt8(&transfer_characteristics));
-      RETURN_FALSE_ON_FAIL(source->ReadUInt8(&matrix_coefficients));
+      RETURN_FALSE_ON_FAIL(source->ReadUInt8(colour_primaries));
+      RETURN_FALSE_ON_FAIL(source->ReadUInt8(transfer_characteristics));
+      RETURN_FALSE_ON_FAIL(source->ReadUInt8(matrix_coefficients));
     }
   }
 

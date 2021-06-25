@@ -123,7 +123,7 @@ public class FilterShaders {
             "}";
     
     private static String vertexShaderForOptimizedBlurOfRadius(int blurRadius, float sigma) {
-        float[] standardGaussianWeights = new float[blurRadius + 1];
+        float[] standardGaussianWeights = new float[blurRadius * 2 + 1];
         float sumOfWeights = 0.0f;
         for (int currentGaussianWeightIndex = 0; currentGaussianWeightIndex < blurRadius + 1; currentGaussianWeightIndex++) {
             standardGaussianWeights[currentGaussianWeightIndex] = (float) ((1.0 / Math.sqrt(2.0 * Math.PI * Math.pow(sigma, 2.0))) * Math.exp(-Math.pow(currentGaussianWeightIndex, 2.0) / (2.0 * Math.pow(sigma, 2.0))));
@@ -165,7 +165,7 @@ public class FilterShaders {
     }
 
     private static String fragmentShaderForOptimizedBlurOfRadius(int blurRadius, float sigma) {
-        float[] standardGaussianWeights = new float[blurRadius + 1];
+        float[] standardGaussianWeights = new float[blurRadius * 2 + 1];
         float sumOfWeights = 0.0f;
         for (int currentGaussianWeightIndex = 0; currentGaussianWeightIndex < blurRadius + 1; currentGaussianWeightIndex++) {
             standardGaussianWeights[currentGaussianWeightIndex] = (float) ((1.0 / Math.sqrt(2.0 * Math.PI * Math.pow(sigma, 2.0))) * Math.exp(-Math.pow(currentGaussianWeightIndex, 2.0) / (2.0 * Math.pow(sigma, 2.0))));

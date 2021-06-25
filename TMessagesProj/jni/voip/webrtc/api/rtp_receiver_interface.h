@@ -26,7 +26,6 @@
 #include "api/rtp_parameters.h"
 #include "api/scoped_refptr.h"
 #include "api/transport/rtp/rtp_source.h"
-#include "rtc_base/deprecation.h"
 #include "rtc_base/ref_count.h"
 #include "rtc_base/system/rtc_export.h"
 
@@ -101,11 +100,13 @@ class RTC_EXPORT RtpReceiverInterface : public rtc::RefCountInterface {
   // before it is sent across the network. This will decrypt the entire frame
   // using the user provided decryption mechanism regardless of whether SRTP is
   // enabled or not.
+  // TODO(bugs.webrtc.org/12772): Remove.
   virtual void SetFrameDecryptor(
       rtc::scoped_refptr<FrameDecryptorInterface> frame_decryptor);
 
   // Returns a pointer to the frame decryptor set previously by the
   // user. This can be used to update the state of the object.
+  // TODO(bugs.webrtc.org/12772): Remove.
   virtual rtc::scoped_refptr<FrameDecryptorInterface> GetFrameDecryptor() const;
 
   // Sets a frame transformer between the depacketizer and the decoder to enable
@@ -121,27 +122,31 @@ class RTC_EXPORT RtpReceiverInterface : public rtc::RefCountInterface {
 // Define proxy for RtpReceiverInterface.
 // TODO(deadbeef): Move this to .cc file and out of api/. What threads methods
 // are called on is an implementation detail.
-BEGIN_SIGNALING_PROXY_MAP(RtpReceiver)
-PROXY_SIGNALING_THREAD_DESTRUCTOR()
-PROXY_CONSTMETHOD0(rtc::scoped_refptr<MediaStreamTrackInterface>, track)
+BEGIN_PROXY_MAP(RtpReceiver)
+PROXY_PRIMARY_THREAD_DESTRUCTOR()
+BYPASS_PROXY_CONSTMETHOD0(rtc::scoped_refptr<MediaStreamTrackInterface>, track)
 PROXY_CONSTMETHOD0(rtc::scoped_refptr<DtlsTransportInterface>, dtls_transport)
 PROXY_CONSTMETHOD0(std::vector<std::string>, stream_ids)
 PROXY_CONSTMETHOD0(std::vector<rtc::scoped_refptr<MediaStreamInterface>>,
                    streams)
 BYPASS_PROXY_CONSTMETHOD0(cricket::MediaType, media_type)
 BYPASS_PROXY_CONSTMETHOD0(std::string, id)
-PROXY_CONSTMETHOD0(RtpParameters, GetParameters)
+PROXY_SECONDARY_CONSTMETHOD0(RtpParameters, GetParameters)
 PROXY_METHOD1(void, SetObserver, RtpReceiverObserverInterface*)
-PROXY_METHOD1(void, SetJitterBufferMinimumDelay, absl::optional<double>)
-PROXY_CONSTMETHOD0(std::vector<RtpSource>, GetSources)
-PROXY_METHOD1(void,
-              SetFrameDecryptor,
-              rtc::scoped_refptr<FrameDecryptorInterface>)
-PROXY_CONSTMETHOD0(rtc::scoped_refptr<FrameDecryptorInterface>,
-                   GetFrameDecryptor)
-PROXY_METHOD1(void,
-              SetDepacketizerToDecoderFrameTransformer,
-              rtc::scoped_refptr<FrameTransformerInterface>)
+PROXY_SECONDARY_METHOD1(void,
+                        SetJitterBufferMinimumDelay,
+                        absl::optional<double>)
+PROXY_SECONDARY_CONSTMETHOD0(std::vector<RtpSource>, GetSources)
+// TODO(bugs.webrtc.org/12772): Remove.
+PROXY_SECONDARY_METHOD1(void,
+                        SetFrameDecryptor,
+                        rtc::scoped_refptr<FrameDecryptorInterface>)
+// TODO(bugs.webrtc.org/12772): Remove.
+PROXY_SECONDARY_CONSTMETHOD0(rtc::scoped_refptr<FrameDecryptorInterface>,
+                             GetFrameDecryptor)
+PROXY_SECONDARY_METHOD1(void,
+                        SetDepacketizerToDecoderFrameTransformer,
+                        rtc::scoped_refptr<FrameTransformerInterface>)
 END_PROXY_MAP()
 
 }  // namespace webrtc

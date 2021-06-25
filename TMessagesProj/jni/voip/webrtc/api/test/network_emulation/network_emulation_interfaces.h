@@ -222,10 +222,23 @@ class EmulatedEndpoint : public EmulatedNetworkReceiverInterface {
   // |desired_port| != 0 and is free or will be the one, selected by endpoint)
   // or absl::nullopt if desired_port in used. Also fails if there are no more
   // free ports to bind to.
+  //
+  // The Bind- and Unbind-methods must not be called from within a bound
+  // receiver's OnPacketReceived method.
   virtual absl::optional<uint16_t> BindReceiver(
       uint16_t desired_port,
       EmulatedNetworkReceiverInterface* receiver) = 0;
+  // Unbinds receiver from the specified port. Do nothing if no receiver was
+  // bound before. After this method returns, no more packets can be delivered
+  // to the receiver, and it is safe to destroy it.
   virtual void UnbindReceiver(uint16_t port) = 0;
+  // Binds receiver that will accept all packets which arrived on any port
+  // for which there are no bound receiver.
+  virtual void BindDefaultReceiver(
+      EmulatedNetworkReceiverInterface* receiver) = 0;
+  // Unbinds default receiver. Do nothing if no default receiver was bound
+  // before.
+  virtual void UnbindDefaultReceiver() = 0;
   virtual rtc::IPAddress GetPeerLocalAddress() const = 0;
 
  private:

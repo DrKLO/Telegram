@@ -45,7 +45,8 @@ class MessageDigestFactory {
   static MessageDigest* Create(const std::string& alg);
 };
 
-// A whitelist of approved digest algorithms from RFC 4572 (FIPS 180).
+// A check that an algorithm is in a list of approved digest algorithms
+// from RFC 4572 (FIPS 180).
 bool IsFips180DigestAlgorithm(const std::string& alg);
 
 // Functions to create hashes.

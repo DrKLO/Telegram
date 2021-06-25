@@ -151,6 +151,18 @@ int32_t AudioTrackJni::StopPlayout() {
   if (!initialized_ || !playing_) {
     return 0;
   }
+  // Log the difference in initial and current buffer level.
+  const int current_buffer_size_frames =
+      Java_WebRtcAudioTrack_getBufferSizeInFrames(env_, j_audio_track_);
+  const int initial_buffer_size_frames =
+      Java_WebRtcAudioTrack_getInitialBufferSizeInFrames(env_, j_audio_track_);
+  const int sample_rate_hz = audio_parameters_.sample_rate();
+  RTC_HISTOGRAM_COUNTS(
+      "WebRTC.Audio.AndroidNativeAudioBufferSizeDifferenceFromInitialMs",
+      (current_buffer_size_frames - initial_buffer_size_frames) * 1000 /
+          sample_rate_hz,
+      -500, 100, 100);
+
   if (!Java_WebRtcAudioTrack_stopPlayout(env_, j_audio_track_)) {
     RTC_LOG(LS_ERROR) << "StopPlayout failed";
     return -1;

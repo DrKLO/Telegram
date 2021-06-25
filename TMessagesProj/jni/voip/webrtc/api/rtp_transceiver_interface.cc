@@ -64,6 +64,11 @@ webrtc::RTCError RtpTransceiverInterface::SetOfferedRtpHeaderExtensions(
   return webrtc::RTCError(webrtc::RTCErrorType::UNSUPPORTED_OPERATION);
 }
 
+std::vector<RtpHeaderExtensionCapability>
+RtpTransceiverInterface::HeaderExtensionsNegotiated() const {
+  return {};
+}
+
 // TODO(bugs.webrtc.org/11839) Remove default implementations when clients
 // are updated.
 void RtpTransceiverInterface::SetDirection(

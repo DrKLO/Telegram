@@ -120,6 +120,18 @@ bool StunRequestManager::CheckResponse(StunMessage* msg) {
   }
 
   StunRequest* request = iter->second;
+
+  // Now that we know the request, we can see if the response is
+  // integrity-protected or not.
+  // For some tests, the message integrity is not set in the request.
+  // Complain, and then don't check.
+  bool skip_integrity_checking = false;
+  if (request->msg()->integrity() == StunMessage::IntegrityStatus::kNotSet) {
+    skip_integrity_checking = true;
+  } else {
+    msg->ValidateMessageIntegrity(request->msg()->password());
+  }
+
   if (!msg->GetNonComprehendedAttributes().empty()) {
     // If a response contains unknown comprehension-required attributes, it's
     // simply discarded and the transaction is considered failed. See RFC5389
@@ -129,6 +141,9 @@ bool StunRequestManager::CheckResponse(StunMessage* msg) {
     delete request;
     return false;
   } else if (msg->type() == GetStunSuccessResponseType(request->type())) {
+    if (!msg->IntegrityOk() && !skip_integrity_checking) {
+      return false;
+    }
     request->OnResponse(msg);
   } else if (msg->type() == GetStunErrorResponseType(request->type())) {
     request->OnErrorResponse(msg);

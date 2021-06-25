@@ -28,10 +28,11 @@ class ScalableVideoControllerNoLayering : public ScalableVideoController {
 
   std::vector<LayerFrameConfig> NextFrameConfig(bool restart) override;
   GenericFrameInfo OnEncodeDone(const LayerFrameConfig& config) override;
-  void OnRatesUpdated(const VideoBitrateAllocation& bitrates) override {}
+  void OnRatesUpdated(const VideoBitrateAllocation& bitrates) override;
 
  private:
   bool start_ = true;
+  bool enabled_ = true;
 };
 
 }  // namespace webrtc

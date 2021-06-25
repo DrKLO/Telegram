@@ -16,13 +16,16 @@
 
 ******************************************************************/
 
+#include "modules/audio_coding/codecs/ilbc/enhancer_interface.h"
+
+#include <stdlib.h>
 #include <string.h>
 
-#include "modules/audio_coding/codecs/ilbc/defines.h"
 #include "modules/audio_coding/codecs/ilbc/constants.h"
-#include "modules/audio_coding/codecs/ilbc/xcorr_coef.h"
+#include "modules/audio_coding/codecs/ilbc/defines.h"
 #include "modules/audio_coding/codecs/ilbc/enhancer.h"
 #include "modules/audio_coding/codecs/ilbc/hp_output.h"
+#include "modules/audio_coding/codecs/ilbc/xcorr_coef.h"
 
 
 
@@ -201,11 +204,13 @@ size_t  // (o) Estimated lag in end of in[]
     regressor=in+tlag-1;
 
     /* scaling */
-    max16 = WebRtcSpl_MaxAbsValueW16(regressor, plc_blockl + 3 - 1);
-    if (max16>5000)
-      shifts=2;
-    else
-      shifts=0;
+    // Note that this is not abs-max, so we will take the absolute value below.
+    max16 = WebRtcSpl_MaxAbsElementW16(regressor, plc_blockl + 3 - 1);
+    const int16_t max_target =
+        WebRtcSpl_MaxAbsElementW16(target, plc_blockl + 3 - 1);
+    const int64_t max_val = plc_blockl * abs(max16 * max_target);
+    const int32_t factor = max_val >> 31;
+    shifts = factor == 0 ? 0 : 31 - WebRtcSpl_NormW32(factor);
 
     /* compute cross correlation */
     WebRtcSpl_CrossCorrelation(corr32, target, regressor, plc_blockl, 3, shifts,

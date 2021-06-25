@@ -86,8 +86,8 @@ public class PhotoPickerSearchActivity extends BaseFragment {
     public PhotoPickerSearchActivity(HashMap<Object, Object> selectedPhotos, ArrayList<Object> selectedPhotosOrder, int selectPhotoType, boolean allowCaption, ChatActivity chatActivity) {
         super();
 
-        imagesSearch = new PhotoPickerActivity(0, null, selectedPhotos, selectedPhotosOrder, selectPhotoType, allowCaption, chatActivity);
-        gifsSearch = new PhotoPickerActivity(1, null, selectedPhotos, selectedPhotosOrder, selectPhotoType, allowCaption, chatActivity);
+        imagesSearch = new PhotoPickerActivity(0, null, selectedPhotos, selectedPhotosOrder, selectPhotoType, allowCaption, chatActivity, false);
+        gifsSearch = new PhotoPickerActivity(1, null, selectedPhotos, selectedPhotosOrder, selectPhotoType, allowCaption, chatActivity, false);
     }
 
     @Override

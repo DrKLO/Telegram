@@ -31,7 +31,7 @@ class DownSampler {
   void DownSample(rtc::ArrayView<const float> in, rtc::ArrayView<float> out);
 
  private:
-  ApmDataDumper* data_dumper_;
+  ApmDataDumper* const data_dumper_;
   int sample_rate_hz_;
   int down_sampling_factor_;
   BiQuadFilter low_pass_filter_;

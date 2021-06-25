@@ -11,32 +11,29 @@
 #ifndef MODULES_AUDIO_PROCESSING_AGC2_NOISE_LEVEL_ESTIMATOR_H_
 #define MODULES_AUDIO_PROCESSING_AGC2_NOISE_LEVEL_ESTIMATOR_H_
 
-#include "modules/audio_processing/agc2/signal_classifier.h"
+#include <memory>
+
 #include "modules/audio_processing/include/audio_frame_view.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 class ApmDataDumper;
 
+// Noise level estimator interface.
 class NoiseLevelEstimator {
  public:
-  NoiseLevelEstimator(ApmDataDumper* data_dumper);
-  ~NoiseLevelEstimator();
-  // Returns the estimated noise level in dBFS.
-  float Analyze(const AudioFrameView<const float>& frame);
-
- private:
-  void Initialize(int sample_rate_hz);
-
-  int sample_rate_hz_;
-  float min_noise_energy_;
-  bool first_update_;
-  float noise_energy_;
-  int noise_energy_hold_counter_;
-  SignalClassifier signal_classifier_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(NoiseLevelEstimator);
+  virtual ~NoiseLevelEstimator() = default;
+  // Analyzes a 10 ms `frame`, updates the noise level estimation and returns
+  // the value for the latter in dBFS.
+  virtual float Analyze(const AudioFrameView<const float>& frame) = 0;
 };
+
+// Creates a noise level estimator based on stationarity detection.
+std::unique_ptr<NoiseLevelEstimator> CreateStationaryNoiseEstimator(
+    ApmDataDumper* data_dumper);
+
+// Creates a noise level estimator based on noise floor detection.
+std::unique_ptr<NoiseLevelEstimator> CreateNoiseFloorEstimator(
+    ApmDataDumper* data_dumper);
 
 }  // namespace webrtc
 

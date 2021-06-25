@@ -53,7 +53,6 @@ import android.widget.TextView;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -713,7 +712,6 @@ public class ActionBarMenuItem extends FrameLayout {
             }
             return false;
         } else {
-            searchContainer.setTag(1);
             searchContainer.setVisibility(VISIBLE);
             searchContainer.setAlpha(0);
             if (searchContainerAnimator != null) {
@@ -737,6 +735,7 @@ public class ActionBarMenuItem extends FrameLayout {
             });
             searchContainerAnimator.start();
             setVisibility(GONE);
+            clearSearchFilters();
             searchField.setText("");
             searchField.requestFocus();
             if (openKeyboard) {
@@ -745,6 +744,7 @@ public class ActionBarMenuItem extends FrameLayout {
             if (listener != null) {
                 listener.onSearchExpand();
             }
+            searchContainer.setTag(1);
             return true;
         }
     }
@@ -762,7 +762,9 @@ public class ActionBarMenuItem extends FrameLayout {
     }
     public void addSearchFilter(FiltersView.MediaFilterData filter) {
         currentSearchFilters.add(filter);
-        selectedFilterIndex = currentSearchFilters.size() - 1;
+        if (searchContainer.getTag() != null) {
+            selectedFilterIndex = currentSearchFilters.size() - 1;
+        }
         onFiltersChanged();
     }
 
@@ -780,7 +782,7 @@ public class ActionBarMenuItem extends FrameLayout {
         boolean visible = !currentSearchFilters.isEmpty();
         ArrayList<FiltersView.MediaFilterData> localFilters = new ArrayList<>(currentSearchFilters);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT && searchContainer.getTag() != null) {
             TransitionSet transition = new TransitionSet();
             ChangeBounds changeBounds = new ChangeBounds();
             changeBounds.setDuration(150);
@@ -887,17 +889,19 @@ public class ActionBarMenuItem extends FrameLayout {
         searchFilterLayout.setTag(visible ? 1 : null);
 
         float oldX = searchField.getX();
-        searchField.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-            @Override
-            public boolean onPreDraw() {
-                searchField.getViewTreeObserver().removeOnPreDrawListener(this);
-                if (searchField.getX() != oldX) {
-                    searchField.setTranslationX(oldX - searchField.getX());
+        if (searchContainer.getTag() != null) {
+            searchField.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+                @Override
+                public boolean onPreDraw() {
+                    searchField.getViewTreeObserver().removeOnPreDrawListener(this);
+                    if (searchField.getX() != oldX) {
+                        searchField.setTranslationX(oldX - searchField.getX());
+                    }
+                    searchField.animate().translationX(0).setDuration(250).setStartDelay(0).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
+                    return true;
                 }
-                searchField.animate().translationX(0).setDuration(250).setStartDelay(0).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
-                return true;
-            }
-        });
+            });
+        }
         checkClearButton();
     }
 

@@ -42,7 +42,7 @@ import java.util.concurrent.TimeUnit;
 
 public class RLottieDrawable extends BitmapDrawable implements Animatable {
 
-    public static native long create(String src, int w, int h, int[] params, boolean precache, int[] colorReplacement, boolean limitFps);
+    public static native long create(String src, String json, int w, int h, int[] params, boolean precache, int[] colorReplacement, boolean limitFps);
     protected static native long createWithJson(String json, String name, int[] params, int[] colorReplacement);
     public static native void destroy(long ptr);
     private static native void setLayerColor(long ptr, String layer, int color);
@@ -363,7 +363,26 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable {
         shouldLimitFps = limitFps;
         getPaint().setFlags(Paint.FILTER_BITMAP_FLAG);
 
-        nativePtr = create(file.getAbsolutePath(), w, h, metaData, precache, colorReplacement, shouldLimitFps);
+        nativePtr = create(file.getAbsolutePath(), null, w, h, metaData, precache, colorReplacement, shouldLimitFps);
+        if (precache && lottieCacheGenerateQueue == null) {
+            lottieCacheGenerateQueue = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
+        }
+        if (nativePtr == 0) {
+            file.delete();
+        }
+        if (shouldLimitFps && metaData[1] < 60) {
+            shouldLimitFps = false;
+        }
+        timeBetweenFrames = Math.max(shouldLimitFps ? 33 : 16, (int) (1000.0f / metaData[1]));
+    }
+
+    public RLottieDrawable(File file, String json, int w, int h, boolean precache, boolean limitFps, int[] colorReplacement) {
+        width = w;
+        height = h;
+        shouldLimitFps = limitFps;
+        getPaint().setFlags(Paint.FILTER_BITMAP_FLAG);
+
+        nativePtr = create(file.getAbsolutePath(), json, w, h, metaData, precache, colorReplacement, shouldLimitFps);
         if (precache && lottieCacheGenerateQueue == null) {
             lottieCacheGenerateQueue = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
         }

@@ -93,16 +93,12 @@ void EventAssign(struct event* ev,
 rtc::ThreadPriority TaskQueuePriorityToThreadPriority(Priority priority) {
   switch (priority) {
     case Priority::HIGH:
-      return rtc::kRealtimePriority;
+      return rtc::ThreadPriority::kRealtime;
     case Priority::LOW:
-      return rtc::kLowPriority;
+      return rtc::ThreadPriority::kLow;
     case Priority::NORMAL:
-      return rtc::kNormalPriority;
-    default:
-      RTC_NOTREACHED();
-      break;
+      return rtc::ThreadPriority::kNormal;
   }
-  return rtc::kNormalPriority;
 }
 
 class TaskQueueLibevent final : public TaskQueueBase {
@@ -120,7 +116,6 @@ class TaskQueueLibevent final : public TaskQueueBase {
 
   ~TaskQueueLibevent() override = default;
 
-  static void ThreadMain(void* context);
   static void OnWakeup(int socket, short flags, void* context);  // NOLINT
   static void RunTimer(int fd, short flags, void* context);      // NOLINT
 
@@ -172,8 +167,7 @@ class TaskQueueLibevent::SetTimerTask : public QueuedTask {
 
 TaskQueueLibevent::TaskQueueLibevent(absl::string_view queue_name,
                                      rtc::ThreadPriority priority)
-    : event_base_(event_base_new()),
-      thread_(&TaskQueueLibevent::ThreadMain, this, queue_name, priority) {
+    : event_base_(event_base_new()) {
   int fds[2];
   RTC_CHECK(pipe(fds) == 0);
   SetNonBlocking(fds[0]);
@@ -184,7 +178,18 @@ TaskQueueLibevent::TaskQueueLibevent(absl::string_view queue_name,
   EventAssign(&wakeup_event_, event_base_, wakeup_pipe_out_,
               EV_READ | EV_PERSIST, OnWakeup, this);
   event_add(&wakeup_event_, 0);
-  thread_.Start();
+  thread_ = rtc::PlatformThread::SpawnJoinable(
+      [this] {
+        {
+          CurrentTaskQueueSetter set_current(this);
+          while (is_active_)
+            event_base_loop(event_base_, 0);
+        }
+
+        for (TimerEvent* timer : pending_timers_)
+          delete timer;
+      },
+      queue_name, rtc::ThreadAttributes().SetPriority(priority));
 }
 
 void TaskQueueLibevent::Delete() {
@@ -199,7 +204,7 @@ void TaskQueueLibevent::Delete() {
     nanosleep(&ts, nullptr);
   }
 
-  thread_.Stop();
+  thread_.Finalize();
 
   event_del(&wakeup_event_);
 
@@ -250,20 +255,6 @@ void TaskQueueLibevent::PostDelayedTask(std::unique_ptr<QueuedTask> task,
   } else {
     PostTask(std::make_unique<SetTimerTask>(std::move(task), milliseconds));
   }
-}
-
-// static
-void TaskQueueLibevent::ThreadMain(void* context) {
-  TaskQueueLibevent* me = static_cast<TaskQueueLibevent*>(context);
-
-  {
-    CurrentTaskQueueSetter set_current(me);
-    while (me->is_active_)
-      event_base_loop(me->event_base_, 0);
-  }
-
-  for (TimerEvent* timer : me->pending_timers_)
-    delete timer;
 }
 
 // static

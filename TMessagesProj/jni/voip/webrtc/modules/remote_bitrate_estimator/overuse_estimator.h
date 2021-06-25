@@ -14,7 +14,7 @@
 
 #include <deque>
 
-#include "modules/remote_bitrate_estimator/include/bwe_defines.h"
+#include "api/network_state_predictor.h"
 #include "rtc_base/constructor_magic.h"
 
 namespace webrtc {

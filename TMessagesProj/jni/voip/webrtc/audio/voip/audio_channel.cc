@@ -79,6 +79,12 @@ AudioChannel::~AudioChannel() {
   }
 
   audio_mixer_->RemoveSource(ingress_.get());
+
+  // AudioEgress could hold current global TaskQueueBase that we need to clear
+  // before ProcessThread::DeRegisterModule.
+  egress_.reset();
+  ingress_.reset();
+
   process_thread_->DeRegisterModule(rtp_rtcp_.get());
 }
 
@@ -157,6 +163,19 @@ IngressStatistics AudioChannel::GetIngressStatistics() {
       stats.totalInterruptionDurationMs;
   ingress_stats.total_duration = ingress_->GetOutputTotalDuration();
   return ingress_stats;
+}
+
+ChannelStatistics AudioChannel::GetChannelStatistics() {
+  ChannelStatistics channel_stat = ingress_->GetChannelStatistics();
+
+  StreamDataCounters rtp_stats, rtx_stats;
+  rtp_rtcp_->GetSendStreamDataCounters(&rtp_stats, &rtx_stats);
+  channel_stat.bytes_sent =
+      rtp_stats.transmitted.payload_bytes + rtx_stats.transmitted.payload_bytes;
+  channel_stat.packets_sent =
+      rtp_stats.transmitted.packets + rtx_stats.transmitted.packets;
+
+  return channel_stat;
 }
 
 }  // namespace webrtc

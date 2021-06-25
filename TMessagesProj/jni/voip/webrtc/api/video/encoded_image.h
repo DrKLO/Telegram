@@ -26,7 +26,6 @@
 #include "api/video/video_rotation.h"
 #include "api/video/video_timing.h"
 #include "rtc_base/checks.h"
-#include "rtc_base/deprecation.h"
 #include "rtc_base/ref_count.h"
 #include "rtc_base/system/rtc_export.h"
 
@@ -73,12 +72,10 @@ class RTC_EXPORT EncodedImage {
   EncodedImage();
   EncodedImage(EncodedImage&&);
   EncodedImage(const EncodedImage&);
-  RTC_DEPRECATED EncodedImage(uint8_t* buffer, size_t length, size_t capacity);
 
   ~EncodedImage();
 
   EncodedImage& operator=(EncodedImage&&);
-  // Discouraged: potentially expensive.
   EncodedImage& operator=(const EncodedImage&);
 
   // TODO(nisse): Change style to timestamp(), set_timestamp(), for consistency
@@ -112,6 +109,15 @@ class RTC_EXPORT EncodedImage {
     color_space_ = color_space;
   }
 
+  // These methods along with the private member video_frame_tracking_id_ are
+  // meant for media quality testing purpose only.
+  absl::optional<uint16_t> VideoFrameTrackingId() const {
+    return video_frame_tracking_id_;
+  }
+  void SetVideoFrameTrackingId(absl::optional<uint16_t> tracking_id) {
+    video_frame_tracking_id_ = tracking_id;
+  }
+
   const RtpPacketInfos& PacketInfos() const { return packet_infos_; }
   void SetPacketInfos(RtpPacketInfos packet_infos) {
     packet_infos_ = std::move(packet_infos);
@@ -128,33 +134,25 @@ class RTC_EXPORT EncodedImage {
     RTC_DCHECK_LE(new_size, new_size == 0 ? 0 : capacity());
     size_ = new_size;
   }
+
   void SetEncodedData(
       rtc::scoped_refptr<EncodedImageBufferInterface> encoded_data) {
     encoded_data_ = encoded_data;
     size_ = encoded_data->size();
-    buffer_ = nullptr;
   }
 
   void ClearEncodedData() {
     encoded_data_ = nullptr;
     size_ = 0;
-    buffer_ = nullptr;
-    capacity_ = 0;
   }
 
   rtc::scoped_refptr<EncodedImageBufferInterface> GetEncodedData() const {
-    RTC_DCHECK(buffer_ == nullptr);
     return encoded_data_;
   }
 
   const uint8_t* data() const {
-    return buffer_ ? buffer_
-                   : (encoded_data_ ? encoded_data_->data() : nullptr);
+    return encoded_data_ ? encoded_data_->data() : nullptr;
   }
-
-  // Hack to workaround lack of ownership of the encoded data. If we don't
-  // already own the underlying data, make an owned copy.
-  void Retain();
 
   uint32_t _encodedWidth = 0;
   uint32_t _encodedHeight = 0;
@@ -185,22 +183,17 @@ class RTC_EXPORT EncodedImage {
   } timing_;
 
  private:
-  size_t capacity() const {
-    return buffer_ ? capacity_ : (encoded_data_ ? encoded_data_->size() : 0);
-  }
+  size_t capacity() const { return encoded_data_ ? encoded_data_->size() : 0; }
 
-  // TODO(bugs.webrtc.org/9378): We're transitioning to always owning the
-  // encoded data.
   rtc::scoped_refptr<EncodedImageBufferInterface> encoded_data_;
   size_t size_ = 0;  // Size of encoded frame data.
-  // Non-null when used with an un-owned buffer.
-  uint8_t* buffer_ = nullptr;
-  // Allocated size of _buffer; relevant only if it's non-null.
-  size_t capacity_ = 0;
   uint32_t timestamp_rtp_ = 0;
   absl::optional<int> spatial_index_;
   std::map<int, size_t> spatial_layer_frame_size_bytes_;
   absl::optional<webrtc::ColorSpace> color_space_;
+  // This field is meant for media quality testing purpose only. When enabled it
+  // carries the webrtc::VideoFrame id field from the sender to the receiver.
+  absl::optional<uint16_t> video_frame_tracking_id_;
   // Information about packets used to assemble this video frame. This is needed
   // by |SourceTracker| when the frame is delivered to the RTCRtpReceiver's
   // MediaStreamTrack, in order to implement getContributingSources(). See:

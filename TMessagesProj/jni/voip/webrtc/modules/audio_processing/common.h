@@ -16,6 +16,10 @@
 
 namespace webrtc {
 
+constexpr int RuntimeSettingQueueSize() {
+  return 100;
+}
+
 static inline size_t ChannelsFromLayout(AudioProcessing::ChannelLayout layout) {
   switch (layout) {
     case AudioProcessing::kMono:

@@ -26,10 +26,10 @@ import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.FileLog;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.RLottieImageView;
 
 public class VoIPToggleButton extends FrameLayout {
 
@@ -37,6 +37,8 @@ public class VoIPToggleButton extends FrameLayout {
     private boolean drawBackground = true;
     private boolean animateBackground;
     Drawable[] icon = new Drawable[2];
+
+    FrameLayout textLayoutContainer;
     TextView[] textView = new TextView[2];
 
     int backgroundColor;
@@ -75,6 +77,8 @@ public class VoIPToggleButton extends FrameLayout {
     private float radius;
     private ValueAnimator checkAnimator;
 
+    private RLottieImageView lottieImageView;
+
     public VoIPToggleButton(@NonNull Context context) {
         this(context, 52f);
     }
@@ -83,16 +87,20 @@ public class VoIPToggleButton extends FrameLayout {
         this.radius = radius;
         setWillNotDraw(false);
 
+        textLayoutContainer = new FrameLayout(context);
+        addView(textLayoutContainer);
+
         for (int i = 0; i < 2; i++) {
             TextView textView = new TextView(context);
             textView.setGravity(Gravity.CENTER_HORIZONTAL);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
             textView.setTextColor(Color.WHITE);
             textView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
-            addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, radius + 4, 0, 0));
+            textLayoutContainer.addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, radius + 4, 0, 0));
             this.textView[i] = textView;
         }
         textView[1].setVisibility(View.GONE);
+
 
         xRefPaint.setColor(0xff000000);
         xRefPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
@@ -136,86 +144,88 @@ public class VoIPToggleButton extends FrameLayout {
         rippleDrawable.setBounds((int) (cx - radius), (int) (cy - radius), (int) (cx + radius), (int) (cy + radius));
         rippleDrawable.draw(canvas);
 
-        if (drawCross || crossProgress != 0) {
-            if (iconChangeColor) {
-                int color = ColorUtils.blendARGB(replaceColorFrom, currentIconColor, replaceProgress);
-                icon[0].setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
-                crossPaint.setColor(color);
-            }
-            icon[0].setAlpha(255);
-
-            if (replaceProgress != 0 && iconChangeColor) {
-                int color = ColorUtils.blendARGB(replaceColorFrom, currentIconColor, replaceProgress);
-                icon[0].setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
-                crossPaint.setColor(color);
-            }
-            icon[0].setAlpha(255);
-
-            if (drawCross && crossProgress < 1f) {
-                crossProgress += 0.08f;
-                if (crossProgress > 1f) {
-                    crossProgress = 1f;
-                } else {
-                    invalidate();
+        if (currentIconRes != 0) {
+            if (drawCross || crossProgress != 0) {
+                if (iconChangeColor) {
+                    int color = ColorUtils.blendARGB(replaceColorFrom, currentIconColor, replaceProgress);
+                    icon[0].setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
+                    crossPaint.setColor(color);
                 }
-            } else if (!drawCross) {
-                crossProgress -= 0.08f;
-                if (crossProgress < 0) {
-                    crossProgress = 0;
-                } else {
-                    invalidate();
+                icon[0].setAlpha(255);
+
+                if (replaceProgress != 0 && iconChangeColor) {
+                    int color = ColorUtils.blendARGB(replaceColorFrom, currentIconColor, replaceProgress);
+                    icon[0].setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
+                    crossPaint.setColor(color);
                 }
-            }
-            if (crossProgress > 0) {
-                int left = (int) (cx - icon[0].getIntrinsicWidth() / 2f);
-                int top = (int) (cy - icon[0].getIntrinsicHeight() / 2);
+                icon[0].setAlpha(255);
 
-                float startX = left + AndroidUtilities.dpf2(8) + crossOffset;
-                float startY = top + AndroidUtilities.dpf2(8);
-
-                float endX = startX - AndroidUtilities.dp(1) + AndroidUtilities.dp(17) * CubicBezierInterpolator.DEFAULT.getInterpolation(crossProgress);
-                float endY = startY + AndroidUtilities.dp(17) * CubicBezierInterpolator.DEFAULT.getInterpolation(crossProgress);
-
-                canvas.saveLayerAlpha(0, 0, getMeasuredWidth(), getMeasuredHeight(), 255, Canvas.ALL_SAVE_FLAG);
-                icon[0].setBounds(
-                        (int) (cx - icon[0].getIntrinsicWidth() / 2f), (int) (cy - icon[0].getIntrinsicHeight() / 2),
-                        (int) (cx + icon[0].getIntrinsicWidth() / 2), (int) (cy + icon[0].getIntrinsicHeight() / 2)
-                );
-                icon[0].draw(canvas);
-
-                canvas.drawLine(startX, startY - AndroidUtilities.dp(2f), endX, endY - AndroidUtilities.dp(2f), xRefPaint);
-                canvas.drawLine(startX, startY, endX, endY, crossPaint);
-                canvas.restore();
-            } else {
-                icon[0].setBounds(
-                        (int) (cx - icon[0].getIntrinsicWidth() / 2f), (int) (cy - icon[0].getIntrinsicHeight() / 2),
-                        (int) (cx + icon[0].getIntrinsicWidth() / 2), (int) (cy + icon[0].getIntrinsicHeight() / 2)
-                );
-                icon[0].draw(canvas);
-            }
-        } else {
-            for (int i = 0; i < ((replaceProgress == 0 || iconChangeColor) ? 1 : 2); i++) {
-                if (icon[i] != null) {
-                    canvas.save();
-                    if (replaceProgress != 0 && !iconChangeColor && icon[0] != null && icon[1] != null) {
-                        float p = i == 0 ? 1f - replaceProgress : replaceProgress;
-                        canvas.scale(p, p, cx, cy);
-                        icon[i].setAlpha((int) (255 * p));
+                if (drawCross && crossProgress < 1f) {
+                    crossProgress += 0.08f;
+                    if (crossProgress > 1f) {
+                        crossProgress = 1f;
                     } else {
-                        if (iconChangeColor) {
-                            int color = ColorUtils.blendARGB(replaceColorFrom, currentIconColor, replaceProgress);
-                            icon[i].setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
-                            crossPaint.setColor(color);
-                        }
-                        icon[i].setAlpha(255);
+                        invalidate();
                     }
-                    icon[i].setBounds(
-                            (int) (cx - icon[i].getIntrinsicWidth() / 2f), (int) (cy - icon[i].getIntrinsicHeight() / 2),
-                            (int) (cx + icon[i].getIntrinsicWidth() / 2), (int) (cy + icon[i].getIntrinsicHeight() / 2)
-                    );
-                    icon[i].draw(canvas);
+                } else if (!drawCross) {
+                    crossProgress -= 0.08f;
+                    if (crossProgress < 0) {
+                        crossProgress = 0;
+                    } else {
+                        invalidate();
+                    }
+                }
+                if (crossProgress > 0) {
+                    int left = (int) (cx - icon[0].getIntrinsicWidth() / 2f);
+                    int top = (int) (cy - icon[0].getIntrinsicHeight() / 2);
 
+                    float startX = left + AndroidUtilities.dpf2(8) + crossOffset;
+                    float startY = top + AndroidUtilities.dpf2(8);
+
+                    float endX = startX - AndroidUtilities.dp(1) + AndroidUtilities.dp(17) * CubicBezierInterpolator.DEFAULT.getInterpolation(crossProgress);
+                    float endY = startY + AndroidUtilities.dp(17) * CubicBezierInterpolator.DEFAULT.getInterpolation(crossProgress);
+
+                    canvas.saveLayerAlpha(0, 0, getMeasuredWidth(), getMeasuredHeight(), 255, Canvas.ALL_SAVE_FLAG);
+                    icon[0].setBounds(
+                            (int) (cx - icon[0].getIntrinsicWidth() / 2f), (int) (cy - icon[0].getIntrinsicHeight() / 2),
+                            (int) (cx + icon[0].getIntrinsicWidth() / 2), (int) (cy + icon[0].getIntrinsicHeight() / 2)
+                    );
+                    icon[0].draw(canvas);
+
+                    canvas.drawLine(startX, startY - AndroidUtilities.dp(2f), endX, endY - AndroidUtilities.dp(2f), xRefPaint);
+                    canvas.drawLine(startX, startY, endX, endY, crossPaint);
                     canvas.restore();
+                } else {
+                    icon[0].setBounds(
+                            (int) (cx - icon[0].getIntrinsicWidth() / 2f), (int) (cy - icon[0].getIntrinsicHeight() / 2),
+                            (int) (cx + icon[0].getIntrinsicWidth() / 2), (int) (cy + icon[0].getIntrinsicHeight() / 2)
+                    );
+                    icon[0].draw(canvas);
+                }
+            } else {
+                for (int i = 0; i < ((replaceProgress == 0 || iconChangeColor) ? 1 : 2); i++) {
+                    if (icon[i] != null) {
+                        canvas.save();
+                        if (replaceProgress != 0 && !iconChangeColor && icon[0] != null && icon[1] != null) {
+                            float p = i == 0 ? 1f - replaceProgress : replaceProgress;
+                            canvas.scale(p, p, cx, cy);
+                            icon[i].setAlpha((int) (255 * p));
+                        } else {
+                            if (iconChangeColor) {
+                                int color = ColorUtils.blendARGB(replaceColorFrom, currentIconColor, replaceProgress);
+                                icon[i].setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
+                                crossPaint.setColor(color);
+                            }
+                            icon[i].setAlpha(255);
+                        }
+                        icon[i].setBounds(
+                                (int) (cx - icon[i].getIntrinsicWidth() / 2f), (int) (cy - icon[i].getIntrinsicHeight() / 2),
+                                (int) (cx + icon[i].getIntrinsicWidth() / 2), (int) (cy + icon[i].getIntrinsicHeight() / 2)
+                        );
+                        icon[i].draw(canvas);
+
+                        canvas.restore();
+                    }
                 }
             }
         }
@@ -248,7 +258,7 @@ public class VoIPToggleButton extends FrameLayout {
             setVisibility(View.VISIBLE);
         }
 
-        if (currentIconRes == iconRes && currentIconColor == iconColor && (checkable || currentBackgroundColor == backgroundColor) && (currentText != null && currentText.equals(text))) {
+        if (currentIconRes == iconRes && currentIconColor == iconColor && (checkable || currentBackgroundColor == backgroundColor) && (currentText != null && currentText.equals(text)) && cross == this.drawCross) {
             return;
         }
 
@@ -278,8 +288,10 @@ public class VoIPToggleButton extends FrameLayout {
         drawCross = cross;
 
         if (!animated) {
-            icon[0] = ContextCompat.getDrawable(getContext(), iconRes).mutate();
-            icon[0].setColorFilter(new PorterDuffColorFilter(iconColor, PorterDuff.Mode.MULTIPLY));
+            if (iconRes != 0) {
+                icon[0] = ContextCompat.getDrawable(getContext(), iconRes).mutate();
+                icon[0].setColorFilter(new PorterDuffColorFilter(iconColor, PorterDuff.Mode.MULTIPLY));
+            }
             crossPaint.setColor(iconColor);
             if (!checkable) {
                 this.backgroundColor = backgroundColor;
@@ -290,7 +302,7 @@ public class VoIPToggleButton extends FrameLayout {
             replaceProgress = 0f;
             invalidate();
         } else {
-            if (!iconChangeColor) {
+            if (!iconChangeColor && iconRes != 0) {
                 icon[1] = ContextCompat.getDrawable(getContext(), iconRes).mutate();
                 icon[1].setColorFilter(new PorterDuffColorFilter(iconColor, PorterDuff.Mode.MULTIPLY));
             }
@@ -340,7 +352,9 @@ public class VoIPToggleButton extends FrameLayout {
                         icon[1] = null;
                     }
                     iconChangeColor = false;
-                    VoIPToggleButton.this.backgroundColor = animateToBackgroundColor;
+                    if (!checkable) {
+                        VoIPToggleButton.this.backgroundColor = animateToBackgroundColor;
+                    }
                     replaceProgress = 0f;
                     invalidate();
                 }
@@ -436,5 +450,17 @@ public class VoIPToggleButton extends FrameLayout {
     public void shakeView() {
         AndroidUtilities.shakeView(textView[0], 2, 0);
         AndroidUtilities.shakeView(textView[1], 2, 0);
+    }
+
+    public void showText(boolean show, boolean animated) {
+        if (animated) {
+            float a = show ? 1f : 0;
+            if (textLayoutContainer.getAlpha() != a) {
+                textLayoutContainer.animate().alpha(a).start();
+            }
+        } else {
+            textLayoutContainer.animate().cancel();
+            textLayoutContainer.setAlpha(show ? 1f : 0);
+        }
     }
 }

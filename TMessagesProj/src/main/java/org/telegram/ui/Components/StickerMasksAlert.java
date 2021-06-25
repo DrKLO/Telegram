@@ -289,7 +289,7 @@ public class StickerMasksAlert extends BottomSheet implements NotificationCenter
 
         currentType = MediaDataController.TYPE_IMAGE;
 
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiDidLoad);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.stickersDidLoad);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.recentDocumentsDidLoad);
         MediaDataController.getInstance(currentAccount).loadRecents(MediaDataController.TYPE_IMAGE, false, true, false);
@@ -901,7 +901,7 @@ public class StickerMasksAlert extends BottomSheet implements NotificationCenter
     @Override
     public void dismissInternal() {
         super.dismissInternal();
-        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiDidLoad);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.stickersDidLoad);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.recentDocumentsDidLoad);
     }
@@ -948,7 +948,7 @@ public class StickerMasksAlert extends BottomSheet implements NotificationCenter
             if (!isGif && (type == currentType || type == MediaDataController.TYPE_FAVE)) {
                 checkDocuments(false);
             }
-        } else if (id == NotificationCenter.emojiDidLoad) {
+        } else if (id == NotificationCenter.emojiLoaded) {
             if (gridView != null) {
                 int count = gridView.getChildCount();
                 for (int a = 0; a < count; a++) {
@@ -1506,7 +1506,7 @@ public class StickerMasksAlert extends BottomSheet implements NotificationCenter
                 case 0: {
                     TLRPC.Document sticker = (TLRPC.Document) cache.get(position);
                     StickerEmojiCell cell = (StickerEmojiCell) holder.itemView;
-                    cell.setSticker(sticker, cacheParent.get(position), positionToEmoji.get(position), false);
+                    cell.setSticker(sticker, null, cacheParent.get(position), positionToEmoji.get(position), false);
                     cell.setRecent(recentStickers[currentType].contains(sticker) || favouriteStickers.contains(sticker));
                     break;
                 }

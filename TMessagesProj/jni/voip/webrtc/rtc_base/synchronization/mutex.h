@@ -13,12 +13,17 @@
 
 #include <atomic>
 
+#include "absl/base/attributes.h"
 #include "absl/base/const_init.h"
 #include "rtc_base/checks.h"
-#include "rtc_base/system/unused.h"
 #include "rtc_base/thread_annotations.h"
 
-#if defined(WEBRTC_ABSL_MUTEX)
+#if defined(WEBRTC_RACE_CHECK_MUTEX)
+// To use the race check mutex, define WEBRTC_RACE_CHECK_MUTEX globally. This
+// also adds a dependency to absl::Mutex from logging.cc due to concurrent
+// invocation of the static logging system.
+#include "rtc_base/synchronization/mutex_race_check.h"
+#elif defined(WEBRTC_ABSL_MUTEX)
 #include "rtc_base/synchronization/mutex_abseil.h"  // nogncheck
 #elif defined(WEBRTC_WIN)
 #include "rtc_base/synchronization/mutex_critical_section.h"
@@ -41,7 +46,7 @@ class RTC_LOCKABLE Mutex final {
   void Lock() RTC_EXCLUSIVE_LOCK_FUNCTION() {
     impl_.Lock();
   }
-  RTC_WARN_UNUSED_RESULT bool TryLock() RTC_EXCLUSIVE_TRYLOCK_FUNCTION(true) {
+  ABSL_MUST_USE_RESULT bool TryLock() RTC_EXCLUSIVE_TRYLOCK_FUNCTION(true) {
     return impl_.TryLock();
   }
   void Unlock() RTC_UNLOCK_FUNCTION() {

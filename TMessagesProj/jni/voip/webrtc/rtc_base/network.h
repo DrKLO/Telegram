@@ -19,12 +19,12 @@
 #include <string>
 #include <vector>
 
+#include "api/sequence_checker.h"
 #include "rtc_base/ip_address.h"
 #include "rtc_base/mdns_responder_interface.h"
 #include "rtc_base/message_handler.h"
 #include "rtc_base/network_monitor.h"
 #include "rtc_base/network_monitor_factory.h"
-#include "rtc_base/synchronization/sequence_checker.h"
 #include "rtc_base/system/rtc_export.h"
 #include "rtc_base/third_party/sigslot/sigslot.h"
 #include "rtc_base/thread_annotations.h"
@@ -194,10 +194,10 @@ class RTC_EXPORT NetworkManagerBase : public NetworkManager {
   void set_default_local_addresses(const IPAddress& ipv4,
                                    const IPAddress& ipv6);
 
+  Network* GetNetworkFromAddress(const rtc::IPAddress& ip) const;
+
  private:
   friend class NetworkTest;
-
-  Network* GetNetworkFromAddress(const rtc::IPAddress& ip) const;
 
   EnumerationPermission enumeration_permission_;
 
@@ -225,6 +225,7 @@ class RTC_EXPORT NetworkManagerBase : public NetworkManager {
 // of networks using OS APIs.
 class RTC_EXPORT BasicNetworkManager : public NetworkManagerBase,
                                        public MessageHandlerAutoCleanup,
+                                       public NetworkBinderInterface,
                                        public sigslot::has_slots<> {
  public:
   BasicNetworkManager();
@@ -247,6 +248,15 @@ class RTC_EXPORT BasicNetworkManager : public NetworkManagerBase,
     RTC_DCHECK(thread_ == nullptr);
     network_ignore_list_ = list;
   }
+
+  // Bind a socket to interface that ip address belong to.
+  // Implementation look up interface name and calls
+  // BindSocketToNetwork on NetworkMonitor.
+  // The interface name is needed as e.g ipv4 over ipv6 addresses
+  // are not exposed using Android functions, but it is possible
+  // bind an ipv4 address to the interface.
+  NetworkBindingResult BindSocketToNetwork(int socket_fd,
+                                           const IPAddress& address) override;
 
  protected:
 #if defined(WEBRTC_POSIX)
@@ -293,6 +303,8 @@ class RTC_EXPORT BasicNetworkManager : public NetworkManagerBase,
       nullptr;
   std::unique_ptr<NetworkMonitorInterface> network_monitor_
       RTC_GUARDED_BY(thread_);
+  bool allow_mac_based_ipv6_ RTC_GUARDED_BY(thread_) = false;
+  bool bind_using_ifname_ RTC_GUARDED_BY(thread_) = false;
 };
 
 // Represents a Unix-type network interface, with a name and single address.

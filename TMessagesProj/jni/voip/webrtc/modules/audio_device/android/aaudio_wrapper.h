@@ -13,8 +13,8 @@
 
 #include <aaudio/AAudio.h>
 
+#include "api/sequence_checker.h"
 #include "modules/audio_device/include/audio_device_defines.h"
-#include "rtc_base/thread_checker.h"
 
 namespace webrtc {
 
@@ -113,8 +113,8 @@ class AAudioWrapper {
   bool VerifyStreamConfiguration();
   bool OptimizeBuffers();
 
-  rtc::ThreadChecker thread_checker_;
-  rtc::ThreadChecker aaudio_thread_checker_;
+  SequenceChecker thread_checker_;
+  SequenceChecker aaudio_thread_checker_;
   AudioParameters audio_parameters_;
   const aaudio_direction_t direction_;
   AAudioObserverInterface* observer_ = nullptr;

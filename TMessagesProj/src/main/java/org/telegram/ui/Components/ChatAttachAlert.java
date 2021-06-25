@@ -54,7 +54,6 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
-import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MediaDataController;
@@ -104,7 +103,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
     }
 
     public interface ChatAttachViewDelegate {
-        void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate);
+        void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate, boolean forceDocument);
         View getRevealView();
         void didSelectBot(TLRPC.User user);
         void onCameraOpened();
@@ -389,9 +388,11 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
 
     protected boolean paused;
 
-    private Paint attachButtonPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint attachButtonPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private float bottomPannelTranslation;
-    private boolean forceDarkTheme;
+    private final boolean forceDarkTheme;
+    private final boolean showingFromDialog;
+
 
     private class AttachButton extends FrameLayout {
 
@@ -564,9 +565,10 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
     float currentPanTranslationY;
 
     @SuppressLint("ClickableViewAccessibility")
-    public ChatAttachAlert(Context context, final BaseFragment parentFragment, boolean forceDarkTheme) {
+    public ChatAttachAlert(Context context, final BaseFragment parentFragment, boolean forceDarkTheme, boolean showingFromDialog) {
         super(context, false);
         this.forceDarkTheme = forceDarkTheme;
+        this.showingFromDialog = showingFromDialog;
         drawNavigationBar = true;
         inBubbleMode = parentFragment instanceof ChatActivity && parentFragment.isInBubbleMode();
         openInterpolator = new OvershootInterpolator(0.7f);
@@ -1141,7 +1143,11 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 }
             });
             fragment.setMaxSelectedPhotos(maxSelectedPhotos, allowOrder);
-            baseFragment.presentFragment(fragment);
+            if (showingFromDialog) {
+                baseFragment.showAsSheet(fragment);
+            } else {
+                baseFragment.presentFragment(fragment);
+            }
             dismiss();
         });
 
@@ -1246,7 +1252,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                     }
                     showLayout(pollLayout);
                 } else {
-                    delegate.didPressedButton((Integer) view.getTag(), true, true, 0);
+                    delegate.didPressedButton((Integer) view.getTag(), true, true, 0, false);
                 }
                 int left = view.getLeft();
                 int right = view.getRight();
@@ -1749,7 +1755,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         }
         applyCaption();
         buttonPressed = true;
-        delegate.didPressedButton(7, true, notify, scheduleDate);
+        delegate.didPressedButton(7, true, notify, scheduleDate, false);
     }
 
     private void showLayout(AttachAlertLayout layout) {
@@ -1880,9 +1886,9 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             layouts[4] = documentLayout = new ChatAttachAlertDocumentLayout(this, getContext(), false);
             documentLayout.setDelegate(new ChatAttachAlertDocumentLayout.DocumentSelectActivityDelegate() {
                 @Override
-                public void didSelectFiles(ArrayList<String> files, String caption, boolean notify, int scheduleDate) {
+                public void didSelectFiles(ArrayList<String> files, String caption, ArrayList<MessageObject> fmessages, boolean notify, int scheduleDate) {
                     if (baseFragment instanceof ChatActivity) {
-                        ((ChatActivity) baseFragment).didSelectFiles(files, caption, notify, scheduleDate);
+                        ((ChatActivity) baseFragment).didSelectFiles(files, caption, fmessages, notify, scheduleDate);
                     } else if (baseFragment instanceof PassportActivity) {
                         ((PassportActivity) baseFragment).didSelectFiles(files, caption, notify, scheduleDate);
                     }

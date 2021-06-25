@@ -166,7 +166,6 @@ void DtlsSrtpTransport::SetupRtpDtlsSrtp() {
                     static_cast<int>(send_key.size()), send_extension_ids,
                     selected_crypto_suite, &recv_key[0],
                     static_cast<int>(recv_key.size()), recv_extension_ids)) {
-    SignalDtlsSrtpSetupFailure(this, /*rtcp=*/false);
     RTC_LOG(LS_WARNING) << "DTLS-SRTP key installation for RTP failed";
   }
 }
@@ -198,7 +197,6 @@ void DtlsSrtpTransport::SetupRtcpDtlsSrtp() {
                      selected_crypto_suite, &rtcp_recv_key[0],
                      static_cast<int>(rtcp_recv_key.size()),
                      recv_extension_ids)) {
-    SignalDtlsSrtpSetupFailure(this, /*rtcp=*/true);
     RTC_LOG(LS_WARNING) << "DTLS-SRTP key installation for RTCP failed";
   }
 }
@@ -277,14 +275,17 @@ void DtlsSrtpTransport::SetDtlsTransport(
   }
 
   if (*old_dtls_transport) {
-    (*old_dtls_transport)->SignalDtlsState.disconnect(this);
+    (*old_dtls_transport)->UnsubscribeDtlsState(this);
   }
 
   *old_dtls_transport = new_dtls_transport;
 
   if (new_dtls_transport) {
-    new_dtls_transport->SignalDtlsState.connect(
-        this, &DtlsSrtpTransport::OnDtlsState);
+    new_dtls_transport->SubscribeDtlsState(
+        this, [this](cricket::DtlsTransportInternal* transport,
+                     cricket::DtlsTransportState state) {
+          OnDtlsState(transport, state);
+        });
   }
 }
 
@@ -303,7 +304,9 @@ void DtlsSrtpTransport::OnDtlsState(cricket::DtlsTransportInternal* transport,
   RTC_DCHECK(transport == rtp_dtls_transport_ ||
              transport == rtcp_dtls_transport_);
 
-  SignalDtlsStateChange();
+  if (on_dtls_state_change_) {
+    on_dtls_state_change_();
+  }
 
   if (state != cricket::DTLS_TRANSPORT_CONNECTED) {
     ResetParams();
@@ -318,4 +321,8 @@ void DtlsSrtpTransport::OnWritableState(
   MaybeSetupDtlsSrtp();
 }
 
+void DtlsSrtpTransport::SetOnDtlsStateChange(
+    std::function<void(void)> callback) {
+  on_dtls_state_change_ = std::move(callback);
+}
 }  // namespace webrtc

@@ -39,9 +39,7 @@ class RtpRtcpInterface;
 // module if possible (sender report), otherwise on receive module
 // (receiver report). For the latter case, we also keep track of the
 // receive modules.
-class PacketRouter : public RemoteBitrateObserver,
-                     public TransportFeedbackSenderInterface,
-                     public PacingController::PacketSender {
+class PacketRouter : public PacingController::PacketSender {
  public:
   PacketRouter();
   explicit PacketRouter(uint16_t start_transport_seq);
@@ -62,24 +60,12 @@ class PacketRouter : public RemoteBitrateObserver,
 
   uint16_t CurrentTransportSequenceNumber() const;
 
-  // Called every time there is a new bitrate estimate for a receive channel
-  // group. This call will trigger a new RTCP REMB packet if the bitrate
-  // estimate has decreased or if no RTCP REMB packet has been sent for
-  // a certain time interval.
-  // Implements RtpReceiveBitrateUpdate.
-  void OnReceiveBitrateChanged(const std::vector<uint32_t>& ssrcs,
-                               uint32_t bitrate_bps) override;
-
-  // Ensures remote party notified of the receive bitrate limit no larger than
-  // |bitrate_bps|.
-  void SetMaxDesiredReceiveBitrate(int64_t bitrate_bps);
-
   // Send REMB feedback.
-  bool SendRemb(int64_t bitrate_bps, const std::vector<uint32_t>& ssrcs);
+  void SendRemb(int64_t bitrate_bps, std::vector<uint32_t> ssrcs);
 
   // Sends |packets| in one or more IP packets.
-  bool SendCombinedRtcpPacket(
-      std::vector<std::unique_ptr<rtcp::RtcpPacket>> packets) override;
+  void SendCombinedRtcpPacket(
+      std::vector<std::unique_ptr<rtcp::RtcpPacket>> packets);
 
  private:
   void AddRembModuleCandidate(RtcpFeedbackSenderInterface* candidate_module,
@@ -106,16 +92,6 @@ class PacketRouter : public RemoteBitrateObserver,
   // Rtcp modules of the rtp receivers.
   std::vector<RtcpFeedbackSenderInterface*> rtcp_feedback_senders_
       RTC_GUARDED_BY(modules_mutex_);
-
-  // TODO(eladalon): remb_mutex_ only ever held from one function, and it's not
-  // clear if that function can actually be called from more than one thread.
-  Mutex remb_mutex_;
-  // The last time a REMB was sent.
-  int64_t last_remb_time_ms_ RTC_GUARDED_BY(remb_mutex_);
-  int64_t last_send_bitrate_bps_ RTC_GUARDED_BY(remb_mutex_);
-  // The last bitrate update.
-  int64_t bitrate_bps_ RTC_GUARDED_BY(remb_mutex_);
-  int64_t max_bitrate_bps_ RTC_GUARDED_BY(remb_mutex_);
 
   // Candidates for the REMB module can be RTP sender/receiver modules, with
   // the sender modules taking precedence.

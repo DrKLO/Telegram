@@ -16,8 +16,10 @@
 
 ******************************************************************/
 
-#include "modules/audio_coding/codecs/ilbc/defines.h"
+#include "modules/audio_coding/codecs/ilbc/cb_mem_energy_augmentation.h"
+
 #include "modules/audio_coding/codecs/ilbc/constants.h"
+#include "modules/audio_coding/codecs/ilbc/defines.h"
 
 void WebRtcIlbcfix_CbMemEnergyAugmentation(
     int16_t *interpSamples, /* (i) The interpolated samples */

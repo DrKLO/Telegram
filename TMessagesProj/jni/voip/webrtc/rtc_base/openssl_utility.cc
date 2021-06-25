@@ -14,6 +14,9 @@
 #include "rtc_base/win32.h"  // NOLINT
 #endif                       // WEBRTC_WIN
 
+#ifdef OPENSSL_IS_BORINGSSL
+#include <openssl/pool.h>
+#endif
 #include <openssl/err.h>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
@@ -23,7 +26,7 @@
 #include "rtc_base/logging.h"
 #include "rtc_base/numerics/safe_conversions.h"
 #include "rtc_base/openssl.h"
-#include "rtc_base/openssl_certificate.h"
+#include "rtc_base/ssl_identity.h"
 #ifndef WEBRTC_EXCLUDE_BUILT_IN_SSL_ROOT_CERTS
 #include "rtc_base/ssl_roots.h"
 #endif  // WEBRTC_EXCLUDE_BUILT_IN_SSL_ROOT_CERTS
@@ -33,6 +36,10 @@ namespace openssl {
 
 // Holds various helper methods.
 namespace {
+
+// TODO(crbug.com/webrtc/11710): When OS certificate verification is available,
+// and we don't need VerifyPeerCertMatchesHost, don't compile this in order to
+// avoid a dependency on OpenSSL X509 objects (see crbug.com/webrtc/11410).
 void LogCertificates(SSL* ssl, X509* certificate) {
 // Logging certificates is extremely verbose. So it is disabled by default.
 #ifdef LOG_CERTIFICATES
@@ -65,6 +72,118 @@ void LogCertificates(SSL* ssl, X509* certificate) {
 }
 }  // namespace
 
+#ifdef OPENSSL_IS_BORINGSSL
+bool ParseCertificate(CRYPTO_BUFFER* cert_buffer,
+                      CBS* signature_algorithm_oid,
+                      int64_t* expiration_time) {
+  CBS cbs;
+  CRYPTO_BUFFER_init_CBS(cert_buffer, &cbs);
+
+  //   Certificate  ::=  SEQUENCE  {
+  CBS certificate;
+  if (!CBS_get_asn1(&cbs, &certificate, CBS_ASN1_SEQUENCE)) {
+    return false;
+  }
+  //        tbsCertificate       TBSCertificate,
+  CBS tbs_certificate;
+  if (!CBS_get_asn1(&certificate, &tbs_certificate, CBS_ASN1_SEQUENCE)) {
+    return false;
+  }
+  //        signatureAlgorithm   AlgorithmIdentifier,
+  CBS signature_algorithm;
+  if (!CBS_get_asn1(&certificate, &signature_algorithm, CBS_ASN1_SEQUENCE)) {
+    return false;
+  }
+  if (!CBS_get_asn1(&signature_algorithm, signature_algorithm_oid,
+                    CBS_ASN1_OBJECT)) {
+    return false;
+  }
+  //        signatureValue       BIT STRING  }
+  if (!CBS_get_asn1(&certificate, nullptr, CBS_ASN1_BITSTRING)) {
+    return false;
+  }
+  if (CBS_len(&certificate)) {
+    return false;
+  }
+
+  // Now parse the inner TBSCertificate.
+  //        version         [0]  EXPLICIT Version DEFAULT v1,
+  if (!CBS_get_optional_asn1(
+          &tbs_certificate, nullptr, nullptr,
+          CBS_ASN1_CONSTRUCTED | CBS_ASN1_CONTEXT_SPECIFIC)) {
+    return false;
+  }
+  //        serialNumber         CertificateSerialNumber,
+  if (!CBS_get_asn1(&tbs_certificate, nullptr, CBS_ASN1_INTEGER)) {
+    return false;
+  }
+  //        signature            AlgorithmIdentifier
+  if (!CBS_get_asn1(&tbs_certificate, nullptr, CBS_ASN1_SEQUENCE)) {
+    return false;
+  }
+  //        issuer               Name,
+  if (!CBS_get_asn1(&tbs_certificate, nullptr, CBS_ASN1_SEQUENCE)) {
+    return false;
+  }
+  //        validity             Validity,
+  CBS validity;
+  if (!CBS_get_asn1(&tbs_certificate, &validity, CBS_ASN1_SEQUENCE)) {
+    return false;
+  }
+  // Skip over notBefore.
+  if (!CBS_get_any_asn1_element(&validity, nullptr, nullptr, nullptr)) {
+    return false;
+  }
+  // Parse notAfter.
+  CBS not_after;
+  unsigned not_after_tag;
+  if (!CBS_get_any_asn1(&validity, &not_after, &not_after_tag)) {
+    return false;
+  }
+  bool long_format;
+  if (not_after_tag == CBS_ASN1_UTCTIME) {
+    long_format = false;
+  } else if (not_after_tag == CBS_ASN1_GENERALIZEDTIME) {
+    long_format = true;
+  } else {
+    return false;
+  }
+  if (expiration_time) {
+    *expiration_time =
+        ASN1TimeToSec(CBS_data(&not_after), CBS_len(&not_after), long_format);
+  }
+  //        subject              Name,
+  if (!CBS_get_asn1_element(&tbs_certificate, nullptr, CBS_ASN1_SEQUENCE)) {
+    return false;
+  }
+  //        subjectPublicKeyInfo SubjectPublicKeyInfo,
+  if (!CBS_get_asn1(&tbs_certificate, nullptr, CBS_ASN1_SEQUENCE)) {
+    return false;
+  }
+  //        issuerUniqueID  [1]  IMPLICIT UniqueIdentifier OPTIONAL
+  if (!CBS_get_optional_asn1(&tbs_certificate, nullptr, nullptr,
+                             0x01 | CBS_ASN1_CONTEXT_SPECIFIC)) {
+    return false;
+  }
+  //        subjectUniqueID [2]  IMPLICIT UniqueIdentifier OPTIONAL
+  if (!CBS_get_optional_asn1(&tbs_certificate, nullptr, nullptr,
+                             0x02 | CBS_ASN1_CONTEXT_SPECIFIC)) {
+    return false;
+  }
+  //        extensions      [3]  EXPLICIT Extensions OPTIONAL
+  if (!CBS_get_optional_asn1(
+          &tbs_certificate, nullptr, nullptr,
+          0x03 | CBS_ASN1_CONSTRUCTED | CBS_ASN1_CONTEXT_SPECIFIC)) {
+    return false;
+  }
+  if (CBS_len(&tbs_certificate)) {
+    return false;
+  }
+
+  return true;
+}
+#endif  // OPENSSL_IS_BORINGSSL
+
 bool VerifyPeerCertMatchesHost(SSL* ssl, const std::string& host) {
   if (host.empty()) {
     RTC_DLOG(LS_ERROR) << "Hostname is empty. Cannot verify peer certificate.";
@@ -76,9 +195,28 @@ bool VerifyPeerCertMatchesHost(SSL* ssl, const std::string& host) {
     return false;
   }
 
+#ifdef OPENSSL_IS_BORINGSSL
+  // We can't grab a X509 object directly, as the SSL context may have been
+  // initialized with TLS_with_buffers_method.
+  const STACK_OF(CRYPTO_BUFFER)* chain = SSL_get0_peer_certificates(ssl);
+  if (chain == nullptr || sk_CRYPTO_BUFFER_num(chain) == 0) {
+    RTC_LOG(LS_ERROR)
+        << "SSL_get0_peer_certificates failed. This should never happen.";
+    return false;
+  }
+  CRYPTO_BUFFER* leaf = sk_CRYPTO_BUFFER_value(chain, 0);
+  bssl::UniquePtr<X509> x509(X509_parse_from_buffer(leaf));
+  if (!x509) {
+    RTC_LOG(LS_ERROR) << "Failed to parse certificate to X509 object.";
+    return false;
+  }
+  LogCertificates(ssl, x509.get());
+  return X509_check_host(x509.get(), host.c_str(), host.size(), 0, nullptr) ==
+         1;
+#else   // OPENSSL_IS_BORINGSSL
   X509* certificate = SSL_get_peer_certificate(ssl);
   if (certificate == nullptr) {
-    RTC_DLOG(LS_ERROR)
+    RTC_LOG(LS_ERROR)
         << "SSL_get_peer_certificate failed. This should never happen.";
     return false;
   }
@@ -89,6 +227,7 @@ bool VerifyPeerCertMatchesHost(SSL* ssl, const std::string& host) {
       X509_check_host(certificate, host.c_str(), host.size(), 0, nullptr) == 1;
   X509_free(certificate);
   return is_valid_cert_name;
+#endif  // !defined(OPENSSL_IS_BORINGSSL)
 }
 
 void LogSSLErrors(const std::string& prefix) {
@@ -122,6 +261,13 @@ bool LoadBuiltinSSLRootCertificates(SSL_CTX* ctx) {
   return count_of_added_certs > 0;
 }
 #endif  // WEBRTC_EXCLUDE_BUILT_IN_SSL_ROOT_CERTS
+
+#ifdef OPENSSL_IS_BORINGSSL
+CRYPTO_BUFFER_POOL* GetBufferPool() {
+  static CRYPTO_BUFFER_POOL* instance = CRYPTO_BUFFER_POOL_new();
+  return instance;
+}
+#endif
 
 }  // namespace openssl
 }  // namespace rtc

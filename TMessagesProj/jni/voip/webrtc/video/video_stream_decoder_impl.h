@@ -16,13 +16,13 @@
 #include <utility>
 
 #include "absl/types/optional.h"
+#include "api/sequence_checker.h"
 #include "api/video/video_stream_decoder.h"
 #include "modules/video_coding/frame_buffer2.h"
 #include "modules/video_coding/timing.h"
 #include "rtc_base/platform_thread.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/task_queue.h"
-#include "rtc_base/thread_checker.h"
 #include "system_wrappers/include/clock.h"
 
 namespace webrtc {
@@ -37,7 +37,7 @@ class VideoStreamDecoderImpl : public VideoStreamDecoderInterface {
 
   ~VideoStreamDecoderImpl() override;
 
-  void OnFrame(std::unique_ptr<video_coding::EncodedFrame> frame) override;
+  void OnFrame(std::unique_ptr<EncodedFrame> frame) override;
 
   void SetMinPlayoutDelay(TimeDelta min_delay) override;
   void SetMaxPlayoutDelay(TimeDelta max_delay) override;
@@ -69,11 +69,10 @@ class VideoStreamDecoderImpl : public VideoStreamDecoderInterface {
     VideoContentType content_type;
   };
 
-  void SaveFrameInfo(const video_coding::EncodedFrame& frame)
-      RTC_RUN_ON(bookkeeping_queue_);
+  void SaveFrameInfo(const EncodedFrame& frame) RTC_RUN_ON(bookkeeping_queue_);
   FrameInfo* GetFrameInfo(int64_t timestamp) RTC_RUN_ON(bookkeeping_queue_);
   void StartNextDecode() RTC_RUN_ON(bookkeeping_queue_);
-  void OnNextFrameCallback(std::unique_ptr<video_coding::EncodedFrame> frame,
+  void OnNextFrameCallback(std::unique_ptr<EncodedFrame> frame,
                            video_coding::FrameBuffer::ReturnReason res)
       RTC_RUN_ON(bookkeeping_queue_);
   void OnDecodedFrameCallback(VideoFrame& decodedImage,  // NOLINT
@@ -82,8 +81,7 @@ class VideoStreamDecoderImpl : public VideoStreamDecoderInterface {
 
   VideoDecoder* GetDecoder(int payload_type) RTC_RUN_ON(decode_queue_);
   VideoStreamDecoderImpl::DecodeResult DecodeFrame(
-      std::unique_ptr<video_coding::EncodedFrame> frame)
-      RTC_RUN_ON(decode_queue_);
+      std::unique_ptr<EncodedFrame> frame) RTC_RUN_ON(decode_queue_);
 
   VCMTiming timing_;
   DecodeCallbacks decode_callbacks_;
@@ -96,8 +94,7 @@ class VideoStreamDecoderImpl : public VideoStreamDecoderInterface {
   int next_frame_info_index_ RTC_GUARDED_BY(bookkeeping_queue_);
   VideoStreamDecoderInterface::Callbacks* const callbacks_
       RTC_PT_GUARDED_BY(bookkeeping_queue_);
-  video_coding::VideoLayerFrameId last_continuous_id_
-      RTC_GUARDED_BY(bookkeeping_queue_);
+  int64_t last_continuous_frame_id_ RTC_GUARDED_BY(bookkeeping_queue_) = -1;
   bool keyframe_required_ RTC_GUARDED_BY(bookkeeping_queue_);
 
   absl::optional<int> current_payload_type_ RTC_GUARDED_BY(decode_queue_);

@@ -18,6 +18,7 @@
 
 #include "absl/types/optional.h"
 #include "api/candidate.h"
+#include "api/rtc_error.h"
 #include "api/transport/enums.h"
 #include "p2p/base/connection.h"
 #include "p2p/base/packet_transport_internal.h"
@@ -73,6 +74,17 @@ enum class NominationMode {
   SEMI_AGGRESSIVE  // Our current implementation of the nomination algorithm.
                    // The details are described in P2PTransportChannel.
 };
+
+// Utility method that checks if various required Candidate fields are filled in
+// and contain valid values. If conditions are not met, an RTCError with the
+// appropriated error number and description is returned. If the configuration
+// is valid RTCError::OK() is returned.
+webrtc::RTCError VerifyCandidate(const Candidate& cand);
+
+// Runs through a list of cricket::Candidate instances and calls VerifyCandidate
+// for each one, stopping on the first error encounted and returning that error
+// value if so. On success returns RTCError::OK().
+webrtc::RTCError VerifyCandidates(const Candidates& candidates);
 
 // Information about ICE configuration.
 // TODO(deadbeef): Use absl::optional to represent unset values, instead of

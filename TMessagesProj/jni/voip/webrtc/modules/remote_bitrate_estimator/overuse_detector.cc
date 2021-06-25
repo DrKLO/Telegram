@@ -16,7 +16,6 @@
 #include <algorithm>
 #include <string>
 
-#include "modules/remote_bitrate_estimator/include/bwe_defines.h"
 #include "modules/remote_bitrate_estimator/test/bwe_test_logging.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/numerics/safe_minmax.h"

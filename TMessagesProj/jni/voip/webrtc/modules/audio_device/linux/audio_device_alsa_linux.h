@@ -155,10 +155,8 @@ class AudioDeviceLinuxALSA : public AudioDeviceGeneric {
 
   Mutex mutex_;
 
-  // TODO(pbos): Make plain members and start/stop instead of resetting these
-  // pointers. A thread can be reused.
-  std::unique_ptr<rtc::PlatformThread> _ptrThreadRec;
-  std::unique_ptr<rtc::PlatformThread> _ptrThreadPlay;
+  rtc::PlatformThread _ptrThreadRec;
+  rtc::PlatformThread _ptrThreadPlay;
 
   AudioMixerManagerLinuxALSA _mixerManager;
 

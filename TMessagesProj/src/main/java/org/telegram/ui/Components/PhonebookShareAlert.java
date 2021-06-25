@@ -286,7 +286,12 @@ public class PhonebookShareAlert extends BottomSheet {
                 }
             }
             if (!result.isEmpty()) {
-                vcard = result.get(0).restriction_reason;
+                TLRPC.User u = result.get(0);
+                vcard = u.restriction_reason;
+                if (TextUtils.isEmpty(firstName)) {
+                    firstName = u.first_name;
+                    lastName = u.last_name;
+                }
             }
         }
         currentUser = new TLRPC.TL_userContact_old2();
@@ -435,7 +440,7 @@ public class PhonebookShareAlert extends BottomSheet {
 
             @Override
             protected int computeScrollDeltaToGetChildRectOnScreen(Rect rect) {
-                if (linearLayout.getTop() != getPaddingTop()) {
+                if (focusingView == null || linearLayout.getTop() != getPaddingTop()) {
                     return 0;
                 }
                 int delta = super.computeScrollDeltaToGetChildRectOnScreen(rect);

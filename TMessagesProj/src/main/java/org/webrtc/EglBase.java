@@ -21,6 +21,7 @@ import javax.microedition.khronos.egl.EGL10;
  * and an EGLSurface.
  */
 public interface EglBase {
+
   // EGL wrapper for an actual EGLContext.
   public interface Context {
     public final static long NO_CONTEXT = 0;
@@ -242,7 +243,7 @@ public interface EglBase {
 
   int surfaceHeight();
 
-  void releaseSurface();
+  void releaseSurface(boolean background);
 
   void release();
 
@@ -251,7 +252,14 @@ public interface EglBase {
   // Detach the current EGL context, so that it can be made current on another thread.
   void detachCurrent();
 
-  void swapBuffers();
+  void swapBuffers(boolean background);
 
-  void swapBuffers(long presentationTimeStampNs);
+  void swapBuffers(long presentationTimeStampNs,boolean background);
+
+  // Create EGLSurface from the Android Surface.
+  void createBackgroundSurface(SurfaceTexture surface);
+
+  void makeBackgroundCurrent();
+
+  boolean hasBackgroundSurface();
 }

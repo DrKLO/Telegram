@@ -153,6 +153,7 @@ public class WebRtcAudioTrack {
         try {
           nativeGetPlayoutData(sizeInBytes, nativeAudioTrack);
         } catch (Throwable e) {
+          keepAlive = false;
           continue;
         }
         // Write data until all data has been written to the audio sink.

@@ -197,6 +197,10 @@ public class GroupVoipInviteAlert extends UsersAlertBase {
         contacts.addAll(ContactsController.getInstance(currentAccount).contacts);
         int selfId = UserConfig.getInstance(currentAccount).clientUserId;
         for (int a = 0, N = contacts.size(); a < N; a++) {
+            TLObject object = contacts.get(a);
+            if (!(object instanceof TLRPC.TL_contact)) {
+                continue;
+            }
             int userId = ((TLRPC.TL_contact) contacts.get(a)).user_id;
             if (userId == selfId || ignoredUsers.indexOfKey(userId) >= 0 || invitedUsers.contains(userId)) {
                 contacts.remove(a);

@@ -345,6 +345,7 @@ public class CameraSession {
                     cameraDisplayOrientation = temp;
                 }
                 camera.setDisplayOrientation(currentOrientation = cameraDisplayOrientation);
+                diffOrientation = currentOrientation - displayOrientation;
 
                 if (params != null) {
                     params.setPreviewSize(previewSize.getWidth(), previewSize.getHeight());
@@ -394,10 +395,6 @@ public class CameraSession {
                         camera.setParameters(params);
                     } catch (Exception e) {
                         //
-                    }
-
-                    if (params.getMaxNumMeteringAreas() > 0) {
-                        meteringAreaSupported = true;
                     }
                 }
             }

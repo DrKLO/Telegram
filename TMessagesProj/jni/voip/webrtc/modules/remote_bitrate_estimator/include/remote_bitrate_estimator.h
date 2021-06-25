@@ -38,14 +38,6 @@ class RemoteBitrateObserver {
   virtual ~RemoteBitrateObserver() {}
 };
 
-class TransportFeedbackSenderInterface {
- public:
-  virtual ~TransportFeedbackSenderInterface() = default;
-
-  virtual bool SendCombinedRtcpPacket(
-      std::vector<std::unique_ptr<rtcp::RtcpPacket>> packets) = 0;
-};
-
 // TODO(holmer): Remove when all implementations have been updated.
 struct ReceiveBandwidthEstimatorStats {};
 

@@ -302,8 +302,8 @@ int initRecorder(const char *path, opus_int32 sampleRate) {
     inopt.gain = 0;
     inopt.endianness = 0;
     inopt.copy_comments = 0;
-    inopt.rawmode = 1;
-    inopt.ignorelength = 1;
+    inopt.rawmode = 0;
+    inopt.ignorelength = 0;
     inopt.samplesize = 16;
     inopt.channels = 1;
     inopt.skip = 0;
@@ -332,7 +332,7 @@ int initRecorder(const char *path, opus_int32 sampleRate) {
     _packet = malloc(max_frame_bytes);
     
     result = opus_encoder_ctl(_encoder, OPUS_SET_BITRATE(bitrate));
-    result = opus_encoder_ctl(_encoder, OPUS_SET_COMPLEXITY(10));
+    //result = opus_encoder_ctl(_encoder, OPUS_SET_COMPLEXITY(10));
     if (result != OPUS_OK) {
         LOGE("Error OPUS_SET_BITRATE returned: %s", opus_strerror(result));
         return 0;

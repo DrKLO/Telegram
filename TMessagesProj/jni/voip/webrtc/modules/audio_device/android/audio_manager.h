@@ -16,6 +16,7 @@
 
 #include <memory>
 
+#include "api/sequence_checker.h"
 #include "modules/audio_device/android/audio_common.h"
 #include "modules/audio_device/android/opensles_common.h"
 #include "modules/audio_device/audio_device_config.h"
@@ -23,7 +24,6 @@
 #include "modules/audio_device/include/audio_device_defines.h"
 #include "modules/utility/include/helpers_android.h"
 #include "modules/utility/include/jvm_android.h"
-#include "rtc_base/thread_checker.h"
 
 namespace webrtc {
 
@@ -158,9 +158,9 @@ class AudioManager {
                               jint input_buffer_size);
 
   // Stores thread ID in the constructor.
-  // We can then use ThreadChecker::IsCurrent() to ensure that
+  // We can then use RTC_DCHECK_RUN_ON(&thread_checker_) to ensure that
   // other methods are called from the same thread.
-  rtc::ThreadChecker thread_checker_;
+  SequenceChecker thread_checker_;
 
   // Calls JavaVM::AttachCurrentThread() if this thread is not attached at
   // construction.

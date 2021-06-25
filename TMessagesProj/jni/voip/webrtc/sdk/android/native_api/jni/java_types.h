@@ -26,8 +26,8 @@
 
 #include "absl/types/optional.h"
 #include "api/array_view.h"
+#include "api/sequence_checker.h"
 #include "rtc_base/checks.h"
-#include "rtc_base/thread_checker.h"
 #include "sdk/android/native_api/jni/scoped_java_ref.h"
 
 // Abort the process if |jni| has a Java exception pending.
@@ -95,7 +95,7 @@ class Iterable {
     JNIEnv* jni_ = nullptr;
     ScopedJavaLocalRef<jobject> iterator_;
     ScopedJavaLocalRef<jobject> value_;
-    rtc::ThreadChecker thread_checker_;
+    SequenceChecker thread_checker_;
 
     RTC_DISALLOW_COPY_AND_ASSIGN(Iterator);
   };

@@ -73,6 +73,7 @@ void RefinedFilterUpdateGain::Compute(
     rtc::ArrayView<const float> erl,
     size_t size_partitions,
     bool saturated_capture_signal,
+    bool disallow_leakage_diverged,
     FftData* gain_fft) {
   RTC_DCHECK(gain_fft);
   // Introducing shorter notation to improve readability.
@@ -125,7 +126,7 @@ void RefinedFilterUpdateGain::Compute(
 
   // H_error = H_error + factor * erl.
   for (size_t k = 0; k < kFftLengthBy2Plus1; ++k) {
-    if (E2_coarse[k] >= E2_refined[k]) {
+    if (E2_refined[k] <= E2_coarse[k] || disallow_leakage_diverged) {
       H_error_[k] += current_config_.leakage_converged * erl[k];
     } else {
       H_error_[k] += current_config_.leakage_diverged * erl[k];

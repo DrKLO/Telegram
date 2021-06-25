@@ -19,9 +19,6 @@
 #include "rtc_base/logging.h"
 
 namespace webrtc {
-namespace {
-enum : int { kKey, kDelta };
-}  // namespace
 
 constexpr int ScalabilityStructureFullSvc::kMaxNumSpatialLayers;
 constexpr int ScalabilityStructureFullSvc::kMaxNumTemporalLayers;
@@ -29,9 +26,11 @@ constexpr absl::string_view ScalabilityStructureFullSvc::kFramePatternNames[];
 
 ScalabilityStructureFullSvc::ScalabilityStructureFullSvc(
     int num_spatial_layers,
-    int num_temporal_layers)
+    int num_temporal_layers,
+    ScalingFactor resolution_factor)
     : num_spatial_layers_(num_spatial_layers),
       num_temporal_layers_(num_temporal_layers),
+      resolution_factor_(resolution_factor),
       active_decode_targets_(
           (uint32_t{1} << (num_spatial_layers * num_temporal_layers)) - 1) {
   RTC_DCHECK_LE(num_spatial_layers, kMaxNumSpatialLayers);
@@ -48,8 +47,10 @@ ScalabilityStructureFullSvc::StreamConfig() const {
   result.scaling_factor_num[num_spatial_layers_ - 1] = 1;
   result.scaling_factor_den[num_spatial_layers_ - 1] = 1;
   for (int sid = num_spatial_layers_ - 1; sid > 0; --sid) {
-    result.scaling_factor_num[sid - 1] = 1;
-    result.scaling_factor_den[sid - 1] = 2 * result.scaling_factor_den[sid];
+    result.scaling_factor_num[sid - 1] =
+        resolution_factor_.num * result.scaling_factor_num[sid];
+    result.scaling_factor_den[sid - 1] =
+        resolution_factor_.den * result.scaling_factor_den[sid];
   }
   return result;
 }
@@ -98,6 +99,7 @@ ScalabilityStructureFullSvc::FramePattern
 ScalabilityStructureFullSvc::NextPattern() const {
   switch (last_pattern_) {
     case kNone:
+      return kKey;
     case kDeltaT2B:
       return kDeltaT0;
     case kDeltaT2A:
@@ -110,6 +112,7 @@ ScalabilityStructureFullSvc::NextPattern() const {
         return kDeltaT2B;
       }
       return kDeltaT0;
+    case kKey:
     case kDeltaT0:
       if (TemporalLayerIsActive(2)) {
         return kDeltaT2A;
@@ -119,6 +122,8 @@ ScalabilityStructureFullSvc::NextPattern() const {
       }
       return kDeltaT0;
   }
+  RTC_NOTREACHED();
+  return kNone;
 }
 
 std::vector<ScalableVideoController::LayerFrameConfig>
@@ -139,6 +144,7 @@ ScalabilityStructureFullSvc::NextFrameConfig(bool restart) {
   absl::optional<int> spatial_dependency_buffer_id;
   switch (current_pattern) {
     case kDeltaT0:
+    case kKey:
       // Disallow temporal references cross T0 on higher temporal layers.
       can_reference_t1_frame_for_spatial_id_.reset();
       for (int sid = 0; sid < num_spatial_layers_; ++sid) {
@@ -150,11 +156,11 @@ ScalabilityStructureFullSvc::NextFrameConfig(bool restart) {
         }
         configs.emplace_back();
         ScalableVideoController::LayerFrameConfig& config = configs.back();
-        config.Id(last_pattern_ == kNone ? kKey : kDelta).S(sid).T(0);
+        config.Id(current_pattern).S(sid).T(0);
 
         if (spatial_dependency_buffer_id) {
           config.Reference(*spatial_dependency_buffer_id);
-        } else if (last_pattern_ == kNone) {
+        } else if (current_pattern == kKey) {
           config.Keyframe();
         }
 
@@ -178,7 +184,7 @@ ScalabilityStructureFullSvc::NextFrameConfig(bool restart) {
         }
         configs.emplace_back();
         ScalableVideoController::LayerFrameConfig& config = configs.back();
-        config.Id(kDelta).S(sid).T(1);
+        config.Id(current_pattern).S(sid).T(1);
         // Temporal reference.
         config.Reference(BufferIndex(sid, /*tid=*/0));
         // Spatial reference unless this is the lowest active spatial layer.
@@ -188,7 +194,6 @@ ScalabilityStructureFullSvc::NextFrameConfig(bool restart) {
         // No frame reference top layer frame, so no need save it into a buffer.
         if (num_temporal_layers_ > 2 || sid < num_spatial_layers_ - 1) {
           config.Update(BufferIndex(sid, /*tid=*/1));
-          can_reference_t1_frame_for_spatial_id_.set(sid);
         }
         spatial_dependency_buffer_id = BufferIndex(sid, /*tid=*/1);
       }
@@ -202,7 +207,7 @@ ScalabilityStructureFullSvc::NextFrameConfig(bool restart) {
         }
         configs.emplace_back();
         ScalableVideoController::LayerFrameConfig& config = configs.back();
-        config.Id(kDelta).S(sid).T(2);
+        config.Id(current_pattern).S(sid).T(2);
         // Temporal reference.
         if (current_pattern == kDeltaT2B &&
             can_reference_t1_frame_for_spatial_id_[sid]) {
@@ -240,12 +245,20 @@ ScalabilityStructureFullSvc::NextFrameConfig(bool restart) {
     return NextFrameConfig(/*restart=*/true);
   }
 
-  last_pattern_ = current_pattern;
   return configs;
 }
 
 GenericFrameInfo ScalabilityStructureFullSvc::OnEncodeDone(
     const LayerFrameConfig& config) {
+  // When encoder drops all frames for a temporal unit, it is better to reuse
+  // old temporal pattern rather than switch to next one, thus switch to next
+  // pattern defered here from the `NextFrameConfig`.
+  // In particular creating VP9 references rely on this behavior.
+  last_pattern_ = static_cast<FramePattern>(config.Id());
+  if (config.TemporalId() == 1) {
+    can_reference_t1_frame_for_spatial_id_.set(config.SpatialId());
+  }
+
   GenericFrameInfo frame_info;
   frame_info.spatial_id = config.SpatialId();
   frame_info.temporal_id = config.TemporalId();
@@ -280,6 +293,106 @@ void ScalabilityStructureFullSvc::OnRatesUpdated(
       SetDecodeTargetIsActive(sid, tid, active);
     }
   }
+}
+
+FrameDependencyStructure ScalabilityStructureL1T2::DependencyStructure() const {
+  FrameDependencyStructure structure;
+  structure.num_decode_targets = 2;
+  structure.num_chains = 1;
+  structure.decode_target_protected_by_chain = {0, 0};
+  structure.templates.resize(3);
+  structure.templates[0].T(0).Dtis("SS").ChainDiffs({0});
+  structure.templates[1].T(0).Dtis("SS").ChainDiffs({2}).FrameDiffs({2});
+  structure.templates[2].T(1).Dtis("-D").ChainDiffs({1}).FrameDiffs({1});
+  return structure;
+}
+
+FrameDependencyStructure ScalabilityStructureL1T3::DependencyStructure() const {
+  FrameDependencyStructure structure;
+  structure.num_decode_targets = 3;
+  structure.num_chains = 1;
+  structure.decode_target_protected_by_chain = {0, 0, 0};
+  structure.templates.resize(5);
+  structure.templates[0].T(0).Dtis("SSS").ChainDiffs({0});
+  structure.templates[1].T(0).Dtis("SSS").ChainDiffs({4}).FrameDiffs({4});
+  structure.templates[2].T(1).Dtis("-DS").ChainDiffs({2}).FrameDiffs({2});
+  structure.templates[3].T(2).Dtis("--D").ChainDiffs({1}).FrameDiffs({1});
+  structure.templates[4].T(2).Dtis("--D").ChainDiffs({3}).FrameDiffs({1});
+  return structure;
+}
+
+FrameDependencyStructure ScalabilityStructureL2T1::DependencyStructure() const {
+  FrameDependencyStructure structure;
+  structure.num_decode_targets = 2;
+  structure.num_chains = 2;
+  structure.decode_target_protected_by_chain = {0, 1};
+  structure.templates.resize(4);
+  structure.templates[0].S(0).Dtis("SR").ChainDiffs({2, 1}).FrameDiffs({2});
+  structure.templates[1].S(0).Dtis("SS").ChainDiffs({0, 0});
+  structure.templates[2].S(1).Dtis("-S").ChainDiffs({1, 1}).FrameDiffs({2, 1});
+  structure.templates[3].S(1).Dtis("-S").ChainDiffs({1, 1}).FrameDiffs({1});
+  return structure;
+}
+
+FrameDependencyStructure ScalabilityStructureL2T2::DependencyStructure() const {
+  FrameDependencyStructure structure;
+  structure.num_decode_targets = 4;
+  structure.num_chains = 2;
+  structure.decode_target_protected_by_chain = {0, 0, 1, 1};
+  structure.templates.resize(6);
+  auto& templates = structure.templates;
+  templates[0].S(0).T(0).Dtis("SSSS").ChainDiffs({0, 0});
+  templates[1].S(0).T(0).Dtis("SSRR").ChainDiffs({4, 3}).FrameDiffs({4});
+  templates[2].S(0).T(1).Dtis("-D-R").ChainDiffs({2, 1}).FrameDiffs({2});
+  templates[3].S(1).T(0).Dtis("--SS").ChainDiffs({1, 1}).FrameDiffs({1});
+  templates[4].S(1).T(0).Dtis("--SS").ChainDiffs({1, 1}).FrameDiffs({4, 1});
+  templates[5].S(1).T(1).Dtis("---D").ChainDiffs({3, 2}).FrameDiffs({2, 1});
+  return structure;
+}
+
+FrameDependencyStructure ScalabilityStructureL3T1::DependencyStructure() const {
+  FrameDependencyStructure structure;
+  structure.num_decode_targets = 3;
+  structure.num_chains = 3;
+  structure.decode_target_protected_by_chain = {0, 1, 2};
+  auto& templates = structure.templates;
+  templates.resize(6);
+  templates[0].S(0).Dtis("SRR").ChainDiffs({3, 2, 1}).FrameDiffs({3});
+  templates[1].S(0).Dtis("SSS").ChainDiffs({0, 0, 0});
+  templates[2].S(1).Dtis("-SR").ChainDiffs({1, 1, 1}).FrameDiffs({3, 1});
+  templates[3].S(1).Dtis("-SS").ChainDiffs({1, 1, 1}).FrameDiffs({1});
+  templates[4].S(2).Dtis("--S").ChainDiffs({2, 1, 1}).FrameDiffs({3, 1});
+  templates[5].S(2).Dtis("--S").ChainDiffs({2, 1, 1}).FrameDiffs({1});
+  return structure;
+}
+
+FrameDependencyStructure ScalabilityStructureL3T3::DependencyStructure() const {
+  FrameDependencyStructure structure;
+  structure.num_decode_targets = 9;
+  structure.num_chains = 3;
+  structure.decode_target_protected_by_chain = {0, 0, 0, 1, 1, 1, 2, 2, 2};
+  auto& t = structure.templates;
+  t.resize(15);
+  // Templates are shown in the order frames following them appear in the
+  // stream, but in `structure.templates` array templates are sorted by
+  // (`spatial_id`, `temporal_id`) since that is a dependency descriptor
+  // requirement. Indexes are written in hex for nicer alignment.
+  t[0x1].S(0).T(0).Dtis("SSSSSSSSS").ChainDiffs({0, 0, 0});
+  t[0x6].S(1).T(0).Dtis("---SSSSSS").ChainDiffs({1, 1, 1}).FrameDiffs({1});
+  t[0xB].S(2).T(0).Dtis("------SSS").ChainDiffs({2, 1, 1}).FrameDiffs({1});
+  t[0x3].S(0).T(2).Dtis("--D--R--R").ChainDiffs({3, 2, 1}).FrameDiffs({3});
+  t[0x8].S(1).T(2).Dtis("-----D--R").ChainDiffs({4, 3, 2}).FrameDiffs({3, 1});
+  t[0xD].S(2).T(2).Dtis("--------D").ChainDiffs({5, 4, 3}).FrameDiffs({3, 1});
+  t[0x2].S(0).T(1).Dtis("-DS-RR-RR").ChainDiffs({6, 5, 4}).FrameDiffs({6});
+  t[0x7].S(1).T(1).Dtis("----DS-RR").ChainDiffs({7, 6, 5}).FrameDiffs({6, 1});
+  t[0xC].S(2).T(1).Dtis("-------DS").ChainDiffs({8, 7, 6}).FrameDiffs({6, 1});
+  t[0x4].S(0).T(2).Dtis("--D--R--R").ChainDiffs({9, 8, 7}).FrameDiffs({3});
+  t[0x9].S(1).T(2).Dtis("-----D--R").ChainDiffs({10, 9, 8}).FrameDiffs({3, 1});
+  t[0xE].S(2).T(2).Dtis("--------D").ChainDiffs({11, 10, 9}).FrameDiffs({3, 1});
+  t[0x0].S(0).T(0).Dtis("SSSRRRRRR").ChainDiffs({12, 11, 10}).FrameDiffs({12});
+  t[0x5].S(1).T(0).Dtis("---SSSRRR").ChainDiffs({1, 1, 1}).FrameDiffs({12, 1});
+  t[0xA].S(2).T(0).Dtis("------SSS").ChainDiffs({2, 1, 1}).FrameDiffs({12, 1});
+  return structure;
 }
 
 }  // namespace webrtc

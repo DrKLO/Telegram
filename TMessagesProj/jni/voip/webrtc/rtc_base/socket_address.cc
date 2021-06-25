@@ -178,6 +178,16 @@ std::string SocketAddress::ToSensitiveString() const {
   return sb.str();
 }
 
+std::string SocketAddress::ToResolvedSensitiveString() const {
+  if (IsUnresolvedIP()) {
+    return "";
+  }
+  char buf[1024];
+  rtc::SimpleStringBuilder sb(buf);
+  sb << ipaddr().ToSensitiveString() << ":" << port();
+  return sb.str();
+}
+
 bool SocketAddress::FromString(const std::string& str) {
   if (str.at(0) == '[') {
     std::string::size_type closebracket = str.rfind(']');

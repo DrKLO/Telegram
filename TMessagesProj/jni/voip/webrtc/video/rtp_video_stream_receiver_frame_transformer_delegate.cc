@@ -24,9 +24,8 @@ namespace {
 class TransformableVideoReceiverFrame
     : public TransformableVideoFrameInterface {
  public:
-  TransformableVideoReceiverFrame(
-      std::unique_ptr<video_coding::RtpFrameObject> frame,
-      uint32_t ssrc)
+  TransformableVideoReceiverFrame(std::unique_ptr<RtpFrameObject> frame,
+                                  uint32_t ssrc)
       : frame_(std::move(frame)),
         metadata_(frame_->GetRtpVideoHeader()),
         ssrc_(ssrc) {}
@@ -55,12 +54,12 @@ class TransformableVideoReceiverFrame
 
   const VideoFrameMetadata& GetMetadata() const override { return metadata_; }
 
-  std::unique_ptr<video_coding::RtpFrameObject> ExtractFrame() && {
+  std::unique_ptr<RtpFrameObject> ExtractFrame() && {
     return std::move(frame_);
   }
 
  private:
-  std::unique_ptr<video_coding::RtpFrameObject> frame_;
+  std::unique_ptr<RtpFrameObject> frame_;
   const VideoFrameMetadata metadata_;
   const uint32_t ssrc_;
 };
@@ -91,7 +90,7 @@ void RtpVideoStreamReceiverFrameTransformerDelegate::Reset() {
 }
 
 void RtpVideoStreamReceiverFrameTransformerDelegate::TransformFrame(
-    std::unique_ptr<video_coding::RtpFrameObject> frame) {
+    std::unique_ptr<RtpFrameObject> frame) {
   RTC_DCHECK_RUN_ON(&network_sequence_checker_);
   frame_transformer_->Transform(
       std::make_unique<TransformableVideoReceiverFrame>(std::move(frame),

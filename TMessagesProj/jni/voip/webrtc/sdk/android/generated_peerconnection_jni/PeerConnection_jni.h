@@ -244,6 +244,19 @@ JNI_GENERATOR_EXPORT void Java_org_webrtc_PeerConnection_nativeCreateAnswer(
       constraints));
 }
 
+static void JNI_PeerConnection_SetLocalDescriptionAutomatically(JNIEnv* env, const
+    base::android::JavaParamRef<jobject>& jcaller,
+    const base::android::JavaParamRef<jobject>& observer);
+
+JNI_GENERATOR_EXPORT void Java_org_webrtc_PeerConnection_nativeSetLocalDescriptionAutomatically(
+    JNIEnv* env,
+    jobject jcaller,
+    jobject observer) {
+  return JNI_PeerConnection_SetLocalDescriptionAutomatically(env,
+      base::android::JavaParamRef<jobject>(env, jcaller), base::android::JavaParamRef<jobject>(env,
+      observer));
+}
+
 static void JNI_PeerConnection_SetLocalDescription(JNIEnv* env, const
     base::android::JavaParamRef<jobject>& jcaller,
     const base::android::JavaParamRef<jobject>& observer,
@@ -272,6 +285,15 @@ JNI_GENERATOR_EXPORT void Java_org_webrtc_PeerConnection_nativeSetRemoteDescript
   return JNI_PeerConnection_SetRemoteDescription(env, base::android::JavaParamRef<jobject>(env,
       jcaller), base::android::JavaParamRef<jobject>(env, observer),
       base::android::JavaParamRef<jobject>(env, sdp));
+}
+
+static void JNI_PeerConnection_RestartIce(JNIEnv* env, const base::android::JavaParamRef<jobject>&
+    jcaller);
+
+JNI_GENERATOR_EXPORT void Java_org_webrtc_PeerConnection_nativeRestartIce(
+    JNIEnv* env,
+    jobject jcaller) {
+  return JNI_PeerConnection_RestartIce(env, base::android::JavaParamRef<jobject>(env, jcaller));
 }
 
 static void JNI_PeerConnection_SetAudioPlayout(JNIEnv* env, const
@@ -411,6 +433,26 @@ JNI_GENERATOR_EXPORT jboolean Java_org_webrtc_PeerConnection_nativeAddIceCandida
   return JNI_PeerConnection_AddIceCandidate(env, base::android::JavaParamRef<jobject>(env, jcaller),
       base::android::JavaParamRef<jstring>(env, sdpMid), sdpMLineIndex,
       base::android::JavaParamRef<jstring>(env, iceCandidateSdp));
+}
+
+static void JNI_PeerConnection_AddIceCandidateWithObserver(JNIEnv* env, const
+    base::android::JavaParamRef<jobject>& jcaller,
+    const base::android::JavaParamRef<jstring>& sdpMid,
+    jint sdpMLineIndex,
+    const base::android::JavaParamRef<jstring>& iceCandidateSdp,
+    const base::android::JavaParamRef<jobject>& observer);
+
+JNI_GENERATOR_EXPORT void Java_org_webrtc_PeerConnection_nativeAddIceCandidateWithObserver(
+    JNIEnv* env,
+    jobject jcaller,
+    jstring sdpMid,
+    jint sdpMLineIndex,
+    jstring iceCandidateSdp,
+    jobject observer) {
+  return JNI_PeerConnection_AddIceCandidateWithObserver(env,
+      base::android::JavaParamRef<jobject>(env, jcaller), base::android::JavaParamRef<jstring>(env,
+      sdpMid), sdpMLineIndex, base::android::JavaParamRef<jstring>(env, iceCandidateSdp),
+      base::android::JavaParamRef<jobject>(env, observer));
 }
 
 static jboolean JNI_PeerConnection_RemoveIceCandidates(JNIEnv* env, const
@@ -1740,6 +1782,30 @@ static base::android::ScopedJavaLocalRef<jobject>
 }
 
 static std::atomic<jmethodID>
+    g_org_webrtc_PeerConnection_00024RTCConfiguration_getStableWritableConnectionPingIntervalMs(nullptr);
+static base::android::ScopedJavaLocalRef<jobject>
+    Java_RTCConfiguration_getStableWritableConnectionPingIntervalMs(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj) {
+  jclass clazz = org_webrtc_PeerConnection_00024RTCConfiguration_clazz(env);
+  CHECK_CLAZZ(env, obj.obj(),
+      org_webrtc_PeerConnection_00024RTCConfiguration_clazz(env), NULL);
+
+  jni_generator::JniJavaCallContextChecked call_context;
+  call_context.Init<
+      base::android::MethodID::TYPE_INSTANCE>(
+          env,
+          clazz,
+          "getStableWritableConnectionPingIntervalMs",
+          "()Ljava/lang/Integer;",
+&g_org_webrtc_PeerConnection_00024RTCConfiguration_getStableWritableConnectionPingIntervalMs);
+
+  jobject ret =
+      env->CallObjectMethod(obj.obj(),
+          call_context.base.method_id);
+  return base::android::ScopedJavaLocalRef<jobject>(env, ret);
+}
+
+static std::atomic<jmethodID>
     g_org_webrtc_PeerConnection_00024RTCConfiguration_getDisableIPv6OnWifi(nullptr);
 static jboolean Java_RTCConfiguration_getDisableIPv6OnWifi(JNIEnv* env, const
     base::android::JavaRef<jobject>& obj) {
@@ -1870,29 +1936,6 @@ static jboolean Java_RTCConfiguration_getEnableCpuOveruseDetection(JNIEnv* env, 
           "getEnableCpuOveruseDetection",
           "()Z",
           &g_org_webrtc_PeerConnection_00024RTCConfiguration_getEnableCpuOveruseDetection);
-
-  jboolean ret =
-      env->CallBooleanMethod(obj.obj(),
-          call_context.base.method_id);
-  return ret;
-}
-
-static std::atomic<jmethodID>
-    g_org_webrtc_PeerConnection_00024RTCConfiguration_getEnableRtpDataChannel(nullptr);
-static jboolean Java_RTCConfiguration_getEnableRtpDataChannel(JNIEnv* env, const
-    base::android::JavaRef<jobject>& obj) {
-  jclass clazz = org_webrtc_PeerConnection_00024RTCConfiguration_clazz(env);
-  CHECK_CLAZZ(env, obj.obj(),
-      org_webrtc_PeerConnection_00024RTCConfiguration_clazz(env), false);
-
-  jni_generator::JniJavaCallContextChecked call_context;
-  call_context.Init<
-      base::android::MethodID::TYPE_INSTANCE>(
-          env,
-          clazz,
-          "getEnableRtpDataChannel",
-          "()Z",
-          &g_org_webrtc_PeerConnection_00024RTCConfiguration_getEnableRtpDataChannel);
 
   jboolean ret =
       env->CallBooleanMethod(obj.obj(),
@@ -2131,6 +2174,52 @@ static base::android::ScopedJavaLocalRef<jstring> Java_RTCConfiguration_getTurnL
       static_cast<jstring>(env->CallObjectMethod(obj.obj(),
           call_context.base.method_id));
   return base::android::ScopedJavaLocalRef<jstring>(env, ret);
+}
+
+static std::atomic<jmethodID>
+    g_org_webrtc_PeerConnection_00024RTCConfiguration_getEnableImplicitRollback(nullptr);
+static jboolean Java_RTCConfiguration_getEnableImplicitRollback(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj) {
+  jclass clazz = org_webrtc_PeerConnection_00024RTCConfiguration_clazz(env);
+  CHECK_CLAZZ(env, obj.obj(),
+      org_webrtc_PeerConnection_00024RTCConfiguration_clazz(env), false);
+
+  jni_generator::JniJavaCallContextChecked call_context;
+  call_context.Init<
+      base::android::MethodID::TYPE_INSTANCE>(
+          env,
+          clazz,
+          "getEnableImplicitRollback",
+          "()Z",
+          &g_org_webrtc_PeerConnection_00024RTCConfiguration_getEnableImplicitRollback);
+
+  jboolean ret =
+      env->CallBooleanMethod(obj.obj(),
+          call_context.base.method_id);
+  return ret;
+}
+
+static std::atomic<jmethodID>
+    g_org_webrtc_PeerConnection_00024RTCConfiguration_getOfferExtmapAllowMixed(nullptr);
+static jboolean Java_RTCConfiguration_getOfferExtmapAllowMixed(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj) {
+  jclass clazz = org_webrtc_PeerConnection_00024RTCConfiguration_clazz(env);
+  CHECK_CLAZZ(env, obj.obj(),
+      org_webrtc_PeerConnection_00024RTCConfiguration_clazz(env), false);
+
+  jni_generator::JniJavaCallContextChecked call_context;
+  call_context.Init<
+      base::android::MethodID::TYPE_INSTANCE>(
+          env,
+          clazz,
+          "getOfferExtmapAllowMixed",
+          "()Z",
+          &g_org_webrtc_PeerConnection_00024RTCConfiguration_getOfferExtmapAllowMixed);
+
+  jboolean ret =
+      env->CallBooleanMethod(obj.obj(),
+          call_context.base.method_id);
+  return ret;
 }
 
 static std::atomic<jmethodID> g_org_webrtc_PeerConnection_getNativeOwnedPeerConnection(nullptr);

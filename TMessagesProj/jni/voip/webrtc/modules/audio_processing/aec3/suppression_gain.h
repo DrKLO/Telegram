@@ -51,6 +51,10 @@ class SuppressionGain {
       float* high_bands_gain,
       std::array<float, kFftLengthBy2Plus1>* low_band_gain);
 
+  bool IsDominantNearend() {
+    return dominant_nearend_detector_->IsNearendState();
+  }
+
   // Toggles the usage of the initial state.
   void SetInitialState(bool state);
 

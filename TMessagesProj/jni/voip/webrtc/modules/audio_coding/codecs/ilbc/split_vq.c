@@ -16,8 +16,10 @@
 
 ******************************************************************/
 
-#include "modules/audio_coding/codecs/ilbc/defines.h"
+#include "modules/audio_coding/codecs/ilbc/split_vq.h"
+
 #include "modules/audio_coding/codecs/ilbc/constants.h"
+#include "modules/audio_coding/codecs/ilbc/defines.h"
 #include "modules/audio_coding/codecs/ilbc/vq3.h"
 #include "modules/audio_coding/codecs/ilbc/vq4.h"
 

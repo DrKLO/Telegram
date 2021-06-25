@@ -66,7 +66,8 @@ class Random {
   double Exponential(double lambda);
 
  private:
-  // Outputs a nonzero 64-bit random number.
+  // Outputs a nonzero 64-bit random number using Xorshift algorithm.
+  // https://en.wikipedia.org/wiki/Xorshift
   uint64_t NextOutput() {
     state_ ^= state_ >> 12;
     state_ ^= state_ << 25;

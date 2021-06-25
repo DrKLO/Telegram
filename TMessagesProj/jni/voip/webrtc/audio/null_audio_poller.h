@@ -13,9 +13,9 @@
 
 #include <stdint.h>
 
+#include "api/sequence_checker.h"
 #include "modules/audio_device/include/audio_device_defines.h"
 #include "rtc_base/message_handler.h"
-#include "rtc_base/thread_checker.h"
 
 namespace webrtc {
 namespace internal {
@@ -29,7 +29,7 @@ class NullAudioPoller final : public rtc::MessageHandler {
   void OnMessage(rtc::Message* msg) override;
 
  private:
-  rtc::ThreadChecker thread_checker_;
+  SequenceChecker thread_checker_;
   AudioTransport* const audio_transport_;
   int64_t reschedule_at_;
 };

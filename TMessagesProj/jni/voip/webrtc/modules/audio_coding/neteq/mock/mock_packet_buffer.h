@@ -22,11 +22,23 @@ class MockPacketBuffer : public PacketBuffer {
       : PacketBuffer(max_number_of_packets, tick_timer) {}
   ~MockPacketBuffer() override { Die(); }
   MOCK_METHOD(void, Die, ());
-  MOCK_METHOD(void, Flush, (), (override));
+  MOCK_METHOD(void, Flush, (StatisticsCalculator * stats), (override));
+  MOCK_METHOD(void,
+              PartialFlush,
+              (int target_level_ms,
+               size_t sample_rate,
+               size_t last_decoded_length,
+               StatisticsCalculator* stats),
+              (override));
   MOCK_METHOD(bool, Empty, (), (const, override));
   MOCK_METHOD(int,
               InsertPacket,
-              (Packet && packet, StatisticsCalculator* stats),
+              (Packet && packet,
+               StatisticsCalculator* stats,
+               size_t last_decoded_length,
+               size_t sample_rate,
+               int target_level_ms,
+               const DecoderDatabase& decoder_database),
               (override));
   MOCK_METHOD(int,
               InsertPacketList,
@@ -34,7 +46,10 @@ class MockPacketBuffer : public PacketBuffer {
                const DecoderDatabase& decoder_database,
                absl::optional<uint8_t>* current_rtp_payload_type,
                absl::optional<uint8_t>* current_cng_rtp_payload_type,
-               StatisticsCalculator* stats),
+               StatisticsCalculator* stats,
+               size_t last_decoded_length,
+               size_t sample_rate,
+               int target_level_ms),
               (override));
   MOCK_METHOD(int,
               NextTimestamp,

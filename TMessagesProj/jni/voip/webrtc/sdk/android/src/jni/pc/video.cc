@@ -16,6 +16,7 @@
 #include "api/video_codecs/video_decoder_factory.h"
 #include "api/video_codecs/video_encoder_factory.h"
 #include "rtc_base/logging.h"
+#include "rtc_base/ref_counted_object.h"
 #include "sdk/android/native_api/jni/java_types.h"
 #include "sdk/android/src/jni/android_video_track_source.h"
 #include "sdk/android/src/jni/video_decoder_factory_wrapper.h"
@@ -45,9 +46,8 @@ void* CreateVideoSource(JNIEnv* env,
                         rtc::Thread* worker_thread,
                         jboolean is_screencast,
                         jboolean align_timestamps) {
-  rtc::scoped_refptr<AndroidVideoTrackSource> source(
-      new rtc::RefCountedObject<AndroidVideoTrackSource>(
-          signaling_thread, env, is_screencast, align_timestamps));
+  auto source = rtc::make_ref_counted<AndroidVideoTrackSource>(
+      signaling_thread, env, is_screencast, align_timestamps);
   return source.release();
 }
 

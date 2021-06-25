@@ -11,7 +11,6 @@ package org.telegram.ui.Cells;
 import android.content.Context;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
-import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -26,7 +25,6 @@ import org.telegram.ui.Components.LayoutHelper;
 public class DrawerActionCell extends FrameLayout {
 
     private TextView textView;
-    private RectF rect = new RectF();
 
     public DrawerActionCell(Context context) {
         super(context);

@@ -37,8 +37,10 @@ class SignalDependentErleEstimator {
   void Reset();
 
   // Returns the Erle per frequency subband.
-  rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> Erle() const {
-    return erle_;
+  rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> Erle(
+      bool onset_compensated) const {
+    return onset_compensated && use_onset_detection_ ? erle_onset_compensated_
+                                                     : erle_;
   }
 
   // Updates the Erle estimate. The Erle that is passed as an input is required
@@ -51,6 +53,8 @@ class SignalDependentErleEstimator {
       rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> Y2,
       rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> E2,
       rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> average_erle,
+      rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>>
+          average_erle_onset_compensated,
       const std::vector<bool>& converged_filters);
 
   void Dump(const std::unique_ptr<ApmDataDumper>& data_dumper) const;
@@ -83,7 +87,9 @@ class SignalDependentErleEstimator {
   const std::array<size_t, kFftLengthBy2Plus1> band_to_subband_;
   const std::array<float, kSubbands> max_erle_;
   const std::vector<size_t> section_boundaries_blocks_;
+  const bool use_onset_detection_;
   std::vector<std::array<float, kFftLengthBy2Plus1>> erle_;
+  std::vector<std::array<float, kFftLengthBy2Plus1>> erle_onset_compensated_;
   std::vector<std::vector<std::array<float, kFftLengthBy2Plus1>>>
       S2_section_accum_;
   std::vector<std::vector<std::array<float, kSubbands>>> erle_estimators_;

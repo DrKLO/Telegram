@@ -45,6 +45,9 @@ class MatchedFilterLagAggregator {
   absl::optional<DelayEstimate> Aggregate(
       rtc::ArrayView<const MatchedFilter::LagEstimate> lag_estimates);
 
+  // Returns whether a reliable delay estimate has been found.
+  bool ReliableDelayFound() const { return significant_candidate_found_; }
+
  private:
   ApmDataDumper* const data_dumper_;
   std::vector<int> histogram_;

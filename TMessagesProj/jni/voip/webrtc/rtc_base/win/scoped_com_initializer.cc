@@ -10,6 +10,9 @@
 
 #include "rtc_base/win/scoped_com_initializer.h"
 
+#include "rtc_base/checks.h"
+#include "rtc_base/logging.h"
+
 namespace webrtc {
 
 ScopedCOMInitializer::ScopedCOMInitializer() {

@@ -10,10 +10,10 @@ package org.telegram.ui.Cells;
 
 import android.content.Context;
 import android.view.Gravity;
+import android.view.View;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.R;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.RadialProgressView;
@@ -23,12 +23,11 @@ public class ChatLoadingCell extends FrameLayout {
     private FrameLayout frameLayout;
     private RadialProgressView progressBar;
 
-    public ChatLoadingCell(Context context) {
+    public ChatLoadingCell(Context context, View parent) {
         super(context);
 
         frameLayout = new FrameLayout(context);
-        frameLayout.setBackgroundResource(R.drawable.system_loader);
-        frameLayout.getBackground().setColorFilter(Theme.colorFilter);
+        frameLayout.setBackground(Theme.createServiceDrawable(AndroidUtilities.dp(18), frameLayout, parent));
         addView(frameLayout, LayoutHelper.createFrame(36, 36, Gravity.CENTER));
 
         progressBar = new RadialProgressView(context);

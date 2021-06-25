@@ -24,6 +24,7 @@ import android.text.method.LinkMovementMethod;
 import android.text.style.CharacterStyle;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -44,6 +45,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
@@ -130,6 +132,7 @@ public class UndoView extends FrameLayout {
     public final static int ACTION_VOIP_INVITE_LINK_SENT = 41;
     public final static int ACTION_VOIP_SOUND_MUTED = 42;
     public final static int ACTION_VOIP_SOUND_UNMUTED = 43;
+    public final static int ACTION_VOIP_USER_JOINED = 44;
 
     public final static int ACTION_IMPORT_NOT_MUTUAL = 45;
     public final static int ACTION_IMPORT_GROUP_NOT_ADMIN = 46;
@@ -145,7 +148,8 @@ public class UndoView extends FrameLayout {
     public final static int ACTION_HASHTAG_COPIED = 57;
     public final static int ACTION_TEXT_COPIED = 58;
     public final static int ACTION_LINK_COPIED = 59;
-    public static final int ACTION_PHONE_COPIED = 60;
+    public final static int ACTION_PHONE_COPIED = 60;
+    public final static int ACTION_SHARE_BACKGROUND = 61;
 
     public final static int ACTION_AUTO_DELETE_ON = 70;
     public final static int ACTION_AUTO_DELETE_OFF = 71;
@@ -154,8 +158,11 @@ public class UndoView extends FrameLayout {
     public final static int ACTION_GIGAGROUP_SUCCESS = 76;
 
     public final static int ACTION_PAYMENT_SUCCESS = 77;
+    public final static int ACTION_PIN_DIALOGS = 78;
+    public final static int ACTION_UNPIN_DIALOGS = 79;
 
     private CharSequence infoText;
+    private int hideAnimationType = 1;
 
     public class LinkMovementMethodMy extends LinkMovementMethod {
         @Override
@@ -291,7 +298,8 @@ public class UndoView extends FrameLayout {
                 currentAction == ACTION_CHAT_UNARCHIVED || currentAction == ACTION_VOIP_MUTED || currentAction == ACTION_VOIP_UNMUTED || currentAction == ACTION_VOIP_REMOVED ||
                 currentAction == ACTION_VOIP_LINK_COPIED || currentAction == ACTION_VOIP_INVITED || currentAction == ACTION_VOIP_MUTED_FOR_YOU || currentAction == ACTION_VOIP_UNMUTED_FOR_YOU ||
                 currentAction == ACTION_REPORT_SENT || currentAction == ACTION_VOIP_USER_CHANGED || currentAction == ACTION_VOIP_CAN_NOW_SPEAK || currentAction == ACTION_VOIP_RECORDING_STARTED ||
-                currentAction == ACTION_VOIP_RECORDING_FINISHED || currentAction == ACTION_VOIP_SOUND_MUTED || currentAction == ACTION_VOIP_SOUND_UNMUTED || currentAction == ACTION_PAYMENT_SUCCESS;
+                currentAction == ACTION_VOIP_RECORDING_FINISHED || currentAction == ACTION_VOIP_SOUND_MUTED || currentAction == ACTION_VOIP_SOUND_UNMUTED || currentAction == ACTION_PAYMENT_SUCCESS ||
+                currentAction == ACTION_VOIP_USER_JOINED || currentAction == ACTION_PIN_DIALOGS || currentAction == ACTION_UNPIN_DIALOGS;
     }
 
     private boolean hasSubInfo() {
@@ -449,6 +457,22 @@ public class UndoView extends FrameLayout {
                 avatarDrawable.setTextSize(AndroidUtilities.dp(12));
                 avatarDrawable.setInfo(user);
                 avatarImageView.setForUserOrChat(user, avatarDrawable);
+                avatarImageView.setVisibility(VISIBLE);
+                timeLeft = 3000;
+            } else if (action == ACTION_VOIP_USER_JOINED) {
+                if (infoObject instanceof TLRPC.User) {
+                    TLRPC.User user = (TLRPC.User) infoObject;
+                    infoText = AndroidUtilities.replaceTags(LocaleController.formatString("VoipChatUserJoined", R.string.VoipChatUserJoined, UserObject.getFirstName(user)));
+                } else {
+                    TLRPC.Chat chat = (TLRPC.Chat) infoObject;
+                    infoText = AndroidUtilities.replaceTags(LocaleController.formatString("VoipChatChatJoined", R.string.VoipChatChatJoined, chat.title));
+                }
+                subInfoText = null;
+                icon = 0;
+                AvatarDrawable avatarDrawable = new AvatarDrawable();
+                avatarDrawable.setTextSize(AndroidUtilities.dp(12));
+                avatarDrawable.setInfo((TLObject) infoObject);
+                avatarImageView.setForUserOrChat((TLObject) infoObject, avatarDrawable);
                 avatarImageView.setVisibility(VISIBLE);
                 timeLeft = 3000;
             } else if (action == ACTION_VOIP_USER_CHANGED) {
@@ -710,6 +734,15 @@ public class UndoView extends FrameLayout {
                 infoText = this.infoText;
                 subInfoText = null;
                 icon = R.raw.chats_infotip;
+            } else if (action == ACTION_PIN_DIALOGS || action == ACTION_UNPIN_DIALOGS) {
+                int count = (Integer) infoObject;
+                if (action == ACTION_PIN_DIALOGS) {
+                    infoText = LocaleController.formatPluralString("PinnedDialogsCount", count);
+                } else {
+                    infoText = LocaleController.formatPluralString("UnpinnedDialogsCount", count);
+                }
+                subInfoText = null;
+                icon = currentAction == ACTION_PIN_DIALOGS ? R.raw.ic_pin :  R.raw.ic_unpin;
             } else {
                 if (action == ACTION_ARCHIVE_HINT) {
                     infoText = LocaleController.getString("ChatArchived", R.string.ChatArchived);
@@ -768,7 +801,7 @@ public class UndoView extends FrameLayout {
                 currentAction == ACTION_FWD_MESSAGES || currentAction == ACTION_NOTIFY_ON || currentAction == ACTION_NOTIFY_OFF ||  currentAction == ACTION_USERNAME_COPIED ||
                 currentAction == ACTION_HASHTAG_COPIED || currentAction == ACTION_TEXT_COPIED || currentAction == ACTION_LINK_COPIED || currentAction == ACTION_PHONE_COPIED ||
                 currentAction == ACTION_AUTO_DELETE_OFF || currentAction == ACTION_AUTO_DELETE_ON || currentAction == ACTION_GIGAGROUP_CANCEL || currentAction == ACTION_GIGAGROUP_SUCCESS ||
-                currentAction == ACTION_VOIP_INVITE_LINK_SENT) {
+                currentAction == ACTION_VOIP_INVITE_LINK_SENT || currentAction == ACTION_PIN_DIALOGS || currentAction == ACTION_UNPIN_DIALOGS || currentAction == ACTION_SHARE_BACKGROUND) {
             undoImageView.setVisibility(GONE);
             leftImageView.setVisibility(VISIBLE);
 
@@ -929,6 +962,29 @@ public class UndoView extends FrameLayout {
                     leftImageView.setAnimation(R.raw.forward, 30, 30);
                 }
                 timeLeft = 3000;
+            } else if (currentAction == ACTION_SHARE_BACKGROUND) {
+                Integer count = (Integer) infoObject;
+                if (infoObject2 == null) {
+                    if (did == UserConfig.getInstance(currentAccount).clientUserId) {
+                        infoTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString("BackgroundToSavedMessages", R.string.BackgroundToSavedMessages)));
+                        leftImageView.setAnimation(R.raw.saved_messages, 30, 30);
+                    } else {
+                        int lowerId = (int) did;
+                        if (lowerId < 0) {
+                            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lowerId);
+                            infoTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("BackgroundToGroup", R.string.BackgroundToGroup, chat.title)));
+                        } else {
+                            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(lowerId);
+                            infoTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("BackgroundToUser", R.string.BackgroundToUser, UserObject.getFirstName(user))));
+                        }
+                        leftImageView.setAnimation(R.raw.forward, 30, 30);
+                    }
+                } else {
+                    int amount = (Integer) infoObject2;
+                    infoTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("BackgroundToChats", R.string.BackgroundToChats, LocaleController.formatPluralString("Chats", amount))));
+                    leftImageView.setAnimation(R.raw.forward, 30, 30);
+                }
+                timeLeft = 3000;
             }
             subinfoTextView.setVisibility(GONE);
             undoTextView.setTextColor(Theme.getColor(Theme.key_undo_cancelColor));
@@ -939,6 +995,9 @@ public class UndoView extends FrameLayout {
 
             leftImageView.setProgress(0);
             leftImageView.playAnimation();
+            leftImageView.postDelayed(() -> {
+                leftImageView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+            }, 300);
         } else if (currentAction == ACTION_PROXIMITY_SET || currentAction == ACTION_PROXIMITY_REMOVED) {
             int radius = (Integer) infoObject;
             TLRPC.User user = (TLRPC.User) infoObject2;
@@ -1310,7 +1369,7 @@ public class UndoView extends FrameLayout {
         timeLeft -= dt;
         lastUpdateTime = newTime;
         if (timeLeft <= 0) {
-            hide(true, 1);
+            hide(true, hideAnimationType);
         }
 
         invalidate();
@@ -1325,5 +1384,9 @@ public class UndoView extends FrameLayout {
 
     public void setInfoText(CharSequence text) {
         infoText = text;
+    }
+
+    public void setHideAnimationType(int hideAnimationType) {
+        this.hideAnimationType = hideAnimationType;
     }
 }

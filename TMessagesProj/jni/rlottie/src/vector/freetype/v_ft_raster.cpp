@@ -679,63 +679,69 @@ static void
 gray_render_conic( RAS_ARG_ const SW_FT_Vector*  control,
                    const SW_FT_Vector*  to )
 {
-    SW_FT_Vector   bez_stack[16 * 2 + 1];  /* enough to accommodate bisections */
-    SW_FT_Vector*  arc = bez_stack;
-    TPos        dx, dy;
-    int         draw, split;
+    TPos          dx, dy;
+    TPos          min, max, y;
+    int           top, level;
+    int*          levels;
+    SW_FT_Vector* arc;
 
+    levels = ras.lev_stack;
 
-    arc[0].x = UPSCALE( to->x );
-    arc[0].y = UPSCALE( to->y );
-    arc[1].x = UPSCALE( control->x );
-    arc[1].y = UPSCALE( control->y );
+    arc = ras.bez_stack;
+    arc[0].x = UPSCALE(to->x);
+    arc[0].y = UPSCALE(to->y);
+    arc[1].x = UPSCALE(control->x);
+    arc[1].y = UPSCALE(control->y);
     arc[2].x = ras.x;
     arc[2].y = ras.y;
+    top = 0;
+
+    dx = SW_FT_ABS(arc[2].x + arc[0].x - 2 * arc[1].x);
+    dy = SW_FT_ABS(arc[2].y + arc[0].y - 2 * arc[1].y);
+    if (dx < dy) dx = dy;
+
+    if (dx < ONE_PIXEL / 4) goto Draw;
 
     /* short-cut the arc that crosses the current band */
-    if ( ( TRUNC( arc[0].y ) >= ras.max_ey &&
-           TRUNC( arc[1].y ) >= ras.max_ey &&
-           TRUNC( arc[2].y ) >= ras.max_ey ) ||
-         ( TRUNC( arc[0].y ) <  ras.min_ey &&
-           TRUNC( arc[1].y ) <  ras.min_ey &&
-           TRUNC( arc[2].y ) <  ras.min_ey ) )
-    {
-        ras.x = arc[0].x;
-        ras.y = arc[0].y;
-        return;
-    }
+    min = max = arc[0].y;
 
-    dx = SW_FT_ABS( arc[2].x + arc[0].x - 2 * arc[1].x );
-    dy = SW_FT_ABS( arc[2].y + arc[0].y - 2 * arc[1].y );
-    if ( dx < dy )
-        dx = dy;
+    y = arc[1].y;
+    if (y < min) min = y;
+    if (y > max) max = y;
 
-    /* We can calculate the number of necessary bisections because  */
-    /* each bisection predictably reduces deviation exactly 4-fold. */
-    /* Even 32-bit deviation would vanish after 16 bisections.      */
-    draw = 1;
-    while ( dx > ONE_PIXEL / 4 )
-    {
-        dx   >>= 2;
-        draw <<= 1;
-    }
+    y = arc[2].y;
+    if (y < min) min = y;
+    if (y > max) max = y;
 
-    /* We use decrement counter to count the total number of segments */
-    /* to draw starting from 2^level. Before each draw we split as    */
-    /* many times as there are trailing zeros in the counter.         */
-    do
-    {
-        split = draw & ( -draw );  /* isolate the rightmost 1-bit */
-        while ( ( split >>= 1 ) )
-        {
-            gray_split_conic( arc );
+    if (TRUNC(min) >= ras.max_ey || TRUNC(max) < ras.min_ey) goto Draw;
+
+    level = 0;
+    do {
+        dx >>= 2;
+        level++;
+    } while (dx > ONE_PIXEL / 4);
+
+    levels[0] = level;
+
+    do {
+        level = levels[top];
+        if (level > 0) {
+            gray_split_conic(arc);
             arc += 2;
+            top++;
+
+            if (top + 1 > 32) return;
+
+            levels[top] = levels[top - 1] = level - 1;
+            continue;
         }
 
-        gray_render_line( RAS_VAR_ arc[0].x, arc[0].y );
+        Draw:
+        gray_render_line(RAS_VAR_ arc[0].x, arc[0].y);
+        top--;
         arc -= 2;
 
-    } while ( --draw );
+    } while (top >= 0);
 }
 
 static void
@@ -809,7 +815,7 @@ gray_render_cubic( RAS_ARG_ const SW_FT_Vector*  control1,
         /* with each split, control points quickly converge towards  */
         /* chord trisection points and the vanishing distances below */
         /* indicate when the segment is flat enough to draw          */
-        if (num < 0 || num >= count) {
+        if (num < 0 || num + 7 >= count) {
             return;
         }
         if ( SW_FT_ABS( 2 * arc[0].x - 3 * arc[1].x + arc[3].x ) > ONE_PIXEL / 2 ||

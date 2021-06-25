@@ -16,6 +16,7 @@ import android.content.SharedPreferences;
 import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Looper;
 import android.os.SystemClock;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
@@ -43,6 +44,7 @@ import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.JoinCallAlert;
+import org.telegram.ui.Components.MotionBackgroundDrawable;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.EditWidgetActivity;
 import org.telegram.ui.LaunchActivity;
@@ -68,6 +70,8 @@ public class MessagesController extends BaseController implements NotificationCe
     private ConcurrentHashMap<Integer, TLRPC.EncryptedChat> encryptedChats = new ConcurrentHashMap<>(10, 1.0f, 2);
     private ConcurrentHashMap<Integer, TLRPC.User> users = new ConcurrentHashMap<>(100, 1.0f, 2);
     private ConcurrentHashMap<String, TLObject> objectsByUsernames = new ConcurrentHashMap<>(100, 1.0f, 2);
+
+    private HashMap<Integer, TLRPC.Chat> activeVoiceChatsMap = new HashMap<>();
 
     private ArrayList<Integer> joiningToChannels = new ArrayList<>();
 
@@ -299,6 +303,7 @@ public class MessagesController extends BaseController implements NotificationCe
     public Set<String> exportGroupUri;
     public Set<String> exportPrivateUri;
     public boolean autoarchiveAvailable;
+    public int groipCallVideoMaxParticipants;
     public boolean suggestStickersApiOnly;
     public ArrayList<String> gifSearchEmojies = new ArrayList<>();
     public HashSet<String> diceEmojies;
@@ -685,10 +690,10 @@ public class MessagesController extends BaseController implements NotificationCe
         getLocationController();
         AndroidUtilities.runOnUIThread(() -> {
             MessagesController messagesController = getMessagesController();
-            getNotificationCenter().addObserver(messagesController, NotificationCenter.FileDidUpload);
-            getNotificationCenter().addObserver(messagesController, NotificationCenter.FileDidFailUpload);
-            getNotificationCenter().addObserver(messagesController, NotificationCenter.fileDidLoad);
-            getNotificationCenter().addObserver(messagesController, NotificationCenter.fileDidFailToLoad);
+            getNotificationCenter().addObserver(messagesController, NotificationCenter.fileUploaded);
+            getNotificationCenter().addObserver(messagesController, NotificationCenter.fileUploadFailed);
+            getNotificationCenter().addObserver(messagesController, NotificationCenter.fileLoaded);
+            getNotificationCenter().addObserver(messagesController, NotificationCenter.fileLoadFailed);
             getNotificationCenter().addObserver(messagesController, NotificationCenter.messageReceivedByServer);
             getNotificationCenter().addObserver(messagesController, NotificationCenter.updateMessageMedia);
         });
@@ -753,6 +758,7 @@ public class MessagesController extends BaseController implements NotificationCe
         filtersEnabled = mainPreferences.getBoolean("filtersEnabled", false);
         showFiltersTooltip = mainPreferences.getBoolean("showFiltersTooltip", false);
         autoarchiveAvailable = mainPreferences.getBoolean("autoarchiveAvailable", false);
+        groipCallVideoMaxParticipants = mainPreferences.getInt("groipCallVideoMaxParticipants", 30);
         suggestStickersApiOnly = mainPreferences.getBoolean("suggestStickersApiOnly", false);
 
         pendingSuggestions = mainPreferences.getStringSet("pendingSuggestions", null);
@@ -1585,6 +1591,17 @@ public class MessagesController extends BaseController implements NotificationCe
                             }
                             break;
                         }
+                        case "groupcall_video_participants_max": {
+                            if (value.value instanceof TLRPC.TL_jsonNumber) {
+                                TLRPC.TL_jsonNumber number = (TLRPC.TL_jsonNumber) value.value;
+                                if (number.value != groipCallVideoMaxParticipants) {
+                                    groipCallVideoMaxParticipants = (int) number.value;
+                                    editor.putInt("groipCallVideoMaxParticipants", groipCallVideoMaxParticipants);
+                                    changed = true;
+                                }
+                            }
+                            break;
+                        }
                         case "inapp_update_check_delay": {
                             if (value.value instanceof TLRPC.TL_jsonNumber) {
                                 TLRPC.TL_jsonNumber number = (TLRPC.TL_jsonNumber) value.value;
@@ -2080,7 +2097,7 @@ public class MessagesController extends BaseController implements NotificationCe
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.FileDidUpload) {
+        if (id == NotificationCenter.fileUploaded) {
             final String location = (String) args[0];
             final TLRPC.InputFile file = (TLRPC.InputFile) args[1];
 
@@ -2133,7 +2150,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 settings.motion = overrideWallpaperInfo.isMotion;
                 req.settings = settings;
                 getConnectionsManager().sendRequest(req, (response, error) -> {
-                    TLRPC.TL_wallPaper wallPaper = (TLRPC.TL_wallPaper) response;
+                    TLRPC.WallPaper wallPaper = (TLRPC.WallPaper) response;
                     File path = new File(ApplicationLoader.getFilesDirFixed(), overrideWallpaperInfo.originalFileName);
                     if (wallPaper != null) {
                         try {
@@ -2238,17 +2255,27 @@ public class MessagesController extends BaseController implements NotificationCe
                             settings.wallpaper_settings.intensity = (int) (accent.patternIntensity * 100);
                             settings.wallpaper_settings.flags |= 8;
                         } else {
-                            settings.wallpaper = new TLRPC.TL_inputWallPaperNoFile();
+                            TLRPC.TL_inputWallPaperNoFile inputWallPaperNoFile = new TLRPC.TL_inputWallPaperNoFile();
+                            inputWallPaperNoFile.id = 0;
+                            settings.wallpaper = inputWallPaperNoFile;
                         }
                         settings.wallpaper_settings.motion = accent.patternMotion;
                         if (accent.backgroundOverrideColor != 0) {
                             settings.wallpaper_settings.background_color = (int) accent.backgroundOverrideColor;
                             settings.wallpaper_settings.flags |= 1;
                         }
-                        if (accent.backgroundGradientOverrideColor != 0) {
-                            settings.wallpaper_settings.second_background_color = (int) accent.backgroundGradientOverrideColor;
+                        if (accent.backgroundGradientOverrideColor1 != 0) {
+                            settings.wallpaper_settings.second_background_color = (int) accent.backgroundGradientOverrideColor1;
                             settings.wallpaper_settings.flags |= 16;
                             settings.wallpaper_settings.rotation = AndroidUtilities.getWallpaperRotation(accent.backgroundRotation, true);
+                        }
+                        if (accent.backgroundGradientOverrideColor2 != 0) {
+                            settings.wallpaper_settings.third_background_color = (int) accent.backgroundGradientOverrideColor2;
+                            settings.wallpaper_settings.flags |= 32;
+                        }
+                        if (accent.backgroundGradientOverrideColor3 != 0) {
+                            settings.wallpaper_settings.fourth_background_color = (int) accent.backgroundGradientOverrideColor3;
+                            settings.wallpaper_settings.flags |= 64;
                         }
                     } else {
                         themeInfo.uploadedFile = null;
@@ -2322,7 +2349,7 @@ public class MessagesController extends BaseController implements NotificationCe
                     });
                 }
             }
-        } else if (id == NotificationCenter.FileDidFailUpload) {
+        } else if (id == NotificationCenter.fileUploadFailed) {
             final String location = (String) args[0];
             if (uploadingAvatar != null && uploadingAvatar.equals(location)) {
                 uploadingAvatar = null;
@@ -2468,6 +2495,7 @@ public class MessagesController extends BaseController implements NotificationCe
         exportedChats.clear();
         fullUsers.clear();
         fullChats.clear();
+        activeVoiceChatsMap.clear();
         loadingGroupCalls.clear();
         groupCallsByChatId.clear();
         dialogsByFolder.clear();
@@ -2851,9 +2879,11 @@ public class MessagesController extends BaseController implements NotificationCe
                     if (chat.participants_count != 0) {
                         oldChat.participants_count = chat.participants_count;
                     }
+                    addOrRemoveActiveVoiceChat(oldChat);
                 }
             } else {
                 chats.put(chat.id, chat);
+                addOrRemoveActiveVoiceChat(chat);
             }
         } else {
             if (!fromCache) {
@@ -2927,6 +2957,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 }
                 chats.put(chat.id, chat);
             }
+            addOrRemoveActiveVoiceChat(chat);
         }
     }
 
@@ -2939,6 +2970,35 @@ public class MessagesController extends BaseController implements NotificationCe
             TLRPC.Chat chat = chats.get(a);
             putChat(chat, fromCache);
         }
+    }
+
+    private void addOrRemoveActiveVoiceChat(TLRPC.Chat chat) {
+        if (Thread.currentThread() != Looper.getMainLooper().getThread()) {
+            AndroidUtilities.runOnUIThread(() -> addOrRemoveActiveVoiceChatInternal(chat));
+        } else {
+            addOrRemoveActiveVoiceChatInternal(chat);
+        }
+    }
+
+    private void addOrRemoveActiveVoiceChatInternal(TLRPC.Chat chat) {
+        TLRPC.Chat currentChat = activeVoiceChatsMap.get(chat.id);
+        if (chat.call_active && chat.call_not_empty && chat.migrated_to == null && !ChatObject.isNotInChat(chat)) {
+            if (currentChat != null) {
+                return;
+            }
+            activeVoiceChatsMap.put(chat.id, chat);
+            getNotificationCenter().postNotificationName(NotificationCenter.activeGroupCallsUpdated);
+        } else {
+            if (currentChat == null) {
+                return;
+            }
+            activeVoiceChatsMap.remove(chat.id);
+            getNotificationCenter().postNotificationName(NotificationCenter.activeGroupCallsUpdated);
+        }
+    }
+
+    public ArrayList<Integer> getActiveGroupCalls() {
+        return new ArrayList<>(activeVoiceChatsMap.keySet());
     }
 
     public void setReferer(String referer) {
@@ -3136,7 +3196,7 @@ public class MessagesController extends BaseController implements NotificationCe
         if (array == null) {
             return null;
         }
-        TLRPC.ChannelParticipant participant = (TLRPC.ChannelParticipant) array.get(uid);
+        TLRPC.ChannelParticipant participant = array.get(uid);
         if (participant == null) {
             return null;
         }
@@ -3273,7 +3333,7 @@ public class MessagesController extends BaseController implements NotificationCe
                     applyDialogNotificationsSettings(-chat_id, res.full_chat.notify_settings);
                     for (int a = 0; a < res.full_chat.bot_info.size(); a++) {
                         TLRPC.BotInfo botInfo = res.full_chat.bot_info.get(a);
-                        getMediaDataController().putBotInfo(botInfo);
+                        getMediaDataController().putBotInfo(-chat_id, botInfo);
                     }
                     int index = blockePeers.indexOfKey(-chat_id);
                     if (res.full_chat.blocked) {
@@ -3339,7 +3399,7 @@ public class MessagesController extends BaseController implements NotificationCe
 
                     applyDialogNotificationsSettings(user.id, userFull.notify_settings);
                     if (userFull.bot_info instanceof TLRPC.TL_botInfo) {
-                        getMediaDataController().putBotInfo(userFull.bot_info);
+                        getMediaDataController().putBotInfo(user.id, userFull.bot_info);
                     }
                     int index = blockePeers.indexOfKey(user.id);
                     if (userFull.blocked) {
@@ -4189,7 +4249,7 @@ public class MessagesController extends BaseController implements NotificationCe
         }
         uploadingThemes.put(key, accent != null ? accent : themeInfo);
         Utilities.globalQueue.postRunnable(() -> {
-            String thumbPath = Theme.createThemePreviewImage(key, pathToWallpaper != null ? pathToWallpaper.getAbsolutePath() : null);
+            String thumbPath = Theme.createThemePreviewImage(key, pathToWallpaper != null ? pathToWallpaper.getAbsolutePath() : null, accent);
             AndroidUtilities.runOnUIThread(() -> {
                 if (thumbPath == null) {
                     uploadingThemes.remove(key);
@@ -4216,7 +4276,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 uploadingWallpaperInfo = info;
                 return;
             }
-            getFileLoader().cancelUploadFile(uploadingWallpaper, false);
+            getFileLoader().cancelFileUpload(uploadingWallpaper, false);
             uploadingWallpaper = null;
             uploadingWallpaperInfo = null;
         }
@@ -4224,23 +4284,40 @@ public class MessagesController extends BaseController implements NotificationCe
             uploadingWallpaper = path.getAbsolutePath();
             uploadingWallpaperInfo = info;
             getFileLoader().uploadFile(uploadingWallpaper, false, true, ConnectionsManager.FileTypePhoto);
-        } else if (!info.isDefault() && !info.isColor() && !info.isTheme()) {
-            TLRPC.TL_inputWallPaperSlug inputWallPaper = new TLRPC.TL_inputWallPaperSlug();
-            inputWallPaper.slug = info.slug;
+        } else if (!info.isDefault() && !info.isColor() && info.wallpaperId > 0 && !info.isTheme()) {
+            TLRPC.InputWallPaper inputWallPaper;
+            if (info.wallpaperId > 0) {
+                TLRPC.TL_inputWallPaper inputWallPaperId = new TLRPC.TL_inputWallPaper();
+                inputWallPaperId.id = info.wallpaperId;
+                inputWallPaperId.access_hash = info.accessHash;
+                inputWallPaper = inputWallPaperId;
+            } else {
+                TLRPC.TL_inputWallPaperSlug inputWallPaperSlug = new TLRPC.TL_inputWallPaperSlug();
+                inputWallPaperSlug.slug = info.slug;
+                inputWallPaper = inputWallPaperSlug;
+            }
 
             TLRPC.TL_wallPaperSettings settings = new TLRPC.TL_wallPaperSettings();
             settings.blur = info.isBlurred;
             settings.motion = info.isMotion;
             if (info.color != 0) {
-                settings.background_color = info.color;
+                settings.background_color = info.color & 0x00ffffff;
                 settings.flags |= 1;
                 settings.intensity = (int) (info.intensity * 100);
                 settings.flags |= 8;
             }
-            if (info.gradientColor != 0) {
-                settings.second_background_color = info.gradientColor;
+            if (info.gradientColor1 != 0) {
+                settings.second_background_color = info.gradientColor1 & 0x00ffffff;
                 settings.rotation = AndroidUtilities.getWallpaperRotation(info.rotation, true);
                 settings.flags |= 16;
+            }
+            if (info.gradientColor2 != 0) {
+                settings.third_background_color = info.gradientColor2 & 0x00ffffff;
+                settings.flags |= 32;
+            }
+            if (info.gradientColor3 != 0) {
+                settings.fourth_background_color = info.gradientColor3 & 0x00ffffff;
+                settings.flags |= 64;
             }
 
             TLObject req;
@@ -4267,7 +4344,7 @@ public class MessagesController extends BaseController implements NotificationCe
                     data.writeBool(info.isBlurred);
                     data.writeBool(info.isMotion);
                     data.writeInt32(info.color);
-                    data.writeInt32(info.gradientColor);
+                    data.writeInt32(info.gradientColor1);
                     data.writeInt32(info.rotation);
                     data.writeDouble(info.intensity);
                     data.writeBool(install);
@@ -4281,6 +4358,52 @@ public class MessagesController extends BaseController implements NotificationCe
             }
 
             getConnectionsManager().sendRequest(req, (response, error) -> getMessagesStorage().removePendingTask(newTaskId));
+        }
+        if ((info.isColor() || info.gradientColor2 != 0) && info.wallpaperId <= 0) {
+            TLRPC.WallPaper wallPaper;
+            if (info.isColor()) {
+                wallPaper = new TLRPC.TL_wallPaperNoFile();
+            } else {
+                wallPaper = new TLRPC.TL_wallPaper();
+                wallPaper.slug = info.slug;
+                wallPaper.document = new TLRPC.TL_documentEmpty();
+            }
+            if (info.wallpaperId == 0) {
+                wallPaper.id = Utilities.random.nextLong();
+                if (wallPaper.id > 0) {
+                    wallPaper.id = -wallPaper.id;
+                }
+            } else {
+                wallPaper.id = info.wallpaperId;
+            }
+            wallPaper.dark = MotionBackgroundDrawable.isDark(info.color, info.gradientColor1, info.gradientColor2, info.gradientColor3);
+            wallPaper.flags |= 4;
+            wallPaper.settings = new TLRPC.TL_wallPaperSettings();
+            wallPaper.settings.blur = info.isBlurred;
+            wallPaper.settings.motion = info.isMotion;
+            if (info.color != 0) {
+                wallPaper.settings.background_color = info.color;
+                wallPaper.settings.flags |= 1;
+                wallPaper.settings.intensity = (int) (info.intensity * 100);
+                wallPaper.settings.flags |= 8;
+            }
+            if (info.gradientColor1 != 0) {
+                wallPaper.settings.second_background_color = info.gradientColor1;
+                wallPaper.settings.rotation = AndroidUtilities.getWallpaperRotation(info.rotation, true);
+                wallPaper.settings.flags |= 16;
+            }
+            if (info.gradientColor2 != 0) {
+                wallPaper.settings.third_background_color = info.gradientColor2;
+                wallPaper.settings.flags |= 32;
+            }
+            if (info.gradientColor3 != 0) {
+                wallPaper.settings.fourth_background_color = info.gradientColor3;
+                wallPaper.settings.flags |= 64;
+            }
+            ArrayList<TLRPC.WallPaper> arrayList = new ArrayList<>();
+            arrayList.add(wallPaper);
+            getMessagesStorage().putWallpapers(arrayList, -3);
+            getMessagesStorage().getWallpapers();
         }
     }
 
@@ -4710,6 +4833,9 @@ public class MessagesController extends BaseController implements NotificationCe
         int max_id_delete = max_id;
 
         if (first != 0) {
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.d("delete dialog with id " + did);
+            }
             boolean isPromoDialog = false;
             getMessagesStorage().deleteDialog(did, onlyHistory);
             TLRPC.Dialog dialog = dialogs_dict.get(did);
@@ -4818,7 +4944,7 @@ public class MessagesController extends BaseController implements NotificationCe
                     getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload, true);
                 } else {
                     getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
-                    getNotificationCenter().postNotificationName(NotificationCenter.removeAllMessagesFromDialog, did, false);
+                    getNotificationCenter().postNotificationName(NotificationCenter.removeAllMessagesFromDialog, did, false, null);
                 }
             }
             getMessagesStorage().getStorageQueue().postRunnable(() -> AndroidUtilities.runOnUIThread(() -> getNotificationsController().removeNotificationsForDialog(did)));
@@ -6281,7 +6407,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 if (message.legacy && message.layer < TLRPC.LAYER) {
                     messagesToReload.add(message.id);
                 } else if (message.media instanceof TLRPC.TL_messageMediaUnsupported) {
-                    if (message.media.bytes != null && (message.media.bytes.length == 0 || message.media.bytes.length == 1 && message.media.bytes[0] < TLRPC.LAYER)) {
+                    if (message.media.bytes != null && (message.media.bytes.length == 0 || message.media.bytes.length == 1 && message.media.bytes[0] < TLRPC.LAYER || message.media.bytes.length == 4 && Utilities.bytesToInt(message.media.bytes) < TLRPC.LAYER)) {
                         messagesToReload.add(message.id);
                     }
                 }
@@ -10694,7 +10820,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 getMessagesStorage().putUsersAndChats(res.users, res.chats, true, true);
 
                 ArrayList<MessageObject> pushMessages;
-                if (createMessage && !getMessagesStorage().hasInviteMeMessage(chatId)) {
+                if (createMessage && Math.abs(getConnectionsManager().getCurrentTime() - res.participant.date) < 24 * 60 * 60 && !getMessagesStorage().hasInviteMeMessage(chatId)) {
                     TLRPC.TL_messageService message = new TLRPC.TL_messageService();
                     message.media_unread = true;
                     message.unread = true;
@@ -12410,6 +12536,8 @@ public class MessagesController extends BaseController implements NotificationCe
                     updatesOnMainThread = new ArrayList<>();
                 }
                 updatesOnMainThread.add(baseUpdate);
+            } else if (baseUpdate instanceof TLRPC.TL_updateGroupCallConnection) {
+
             } else if (baseUpdate instanceof TLRPC.TL_updatePhoneCallSignalingData) {
                 if (updatesOnMainThread == null) {
                     updatesOnMainThread = new ArrayList<>();

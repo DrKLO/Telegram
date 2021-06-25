@@ -21,8 +21,8 @@
 #include "api/test/peerconnection_quality_test_fixture.h"
 #include "api/test/simulated_network.h"
 #include "api/test/time_controller.h"
+#include "api/video_codecs/vp9_profile.h"
 #include "call/simulated_network.h"
-#include "media/base/vp9_profile.h"
 #include "modules/video_coding/codecs/vp9/include/vp9.h"
 #include "system_wrappers/include/field_trial.h"
 #include "test/field_trial.h"
@@ -1738,9 +1738,9 @@ TEST(PCFullStackTest, MAYBE_LargeRoomVP8_50thumb) {
 }
 */
 
+/*
 class PCDualStreamsTest : public ::testing::TestWithParam<int> {};
 
-/*
 // Disable dual video test on mobile device becuase it's too heavy.
 // TODO(bugs.webrtc.org/9840): Investigate why is this test flaky on MAC.
 #if !defined(WEBRTC_ANDROID) && !defined(WEBRTC_IOS) && !defined(WEBRTC_MAC)
@@ -1842,10 +1842,10 @@ TEST_P(PCDualStreamsTest, Conference_Restricted) {
   auto fixture = CreateVideoQualityTestFixture();
   fixture->RunWithAnalyzer(dual_streams);
 }
-*/
 
 INSTANTIATE_TEST_SUITE_P(PCFullStackTest,
                          PCDualStreamsTest,
                          ::testing::Values(0, 1));
+*/
 
 }  // namespace webrtc

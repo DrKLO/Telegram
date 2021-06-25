@@ -17,6 +17,7 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.animation.DecelerateInterpolator;
 
@@ -138,9 +139,9 @@ public class ShutterButton extends View {
                     redProgress = interpolator.getInterpolation(totalTime / 120.0f);
                     invalidate();
                 }
-                canvas.drawCircle(cx, cy, AndroidUtilities.dp(26) * scale * redProgress, redPaint);
+                canvas.drawCircle(cx, cy, AndroidUtilities.dp(26.5f) * scale * redProgress, redPaint);
             } else if (redProgress != 0) {
-                canvas.drawCircle(cx, cy, AndroidUtilities.dp(26) * scale, redPaint);
+                canvas.drawCircle(cx, cy, AndroidUtilities.dp(26.5f) * scale, redPaint);
             }
         } else if (redProgress != 0) {
             redProgress = 0;

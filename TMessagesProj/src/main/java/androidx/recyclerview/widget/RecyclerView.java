@@ -215,7 +215,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
 
     static final String TAG = "RecyclerView";
 
-    static final boolean DEBUG = BuildVars.DEBUG_VERSION;
+    static final boolean DEBUG = false;
 
     static final boolean VERBOSE_TRACING = false;
 

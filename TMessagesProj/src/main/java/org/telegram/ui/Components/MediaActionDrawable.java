@@ -34,6 +34,7 @@ public class MediaActionDrawable extends Drawable {
     public static final int ICON_CANCEL_NOPROFRESS = 12;
     public static final int ICON_CANCEL_PERCENT = 13;
     public static final int ICON_CANCEL_FILL = 14;
+    public static final int ICON_UPDATE = 15;
 
     private TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -80,6 +81,8 @@ public class MediaActionDrawable extends Drawable {
     private MediaActionDrawableDelegate delegate;
 
     private Theme.MessageDrawable messageDrawable;
+    private LinearGradient gradientDrawable;
+    private Matrix gradientMatrix;
     private boolean hasOverlayImage;
 
     public interface MediaActionDrawableDelegate {
@@ -221,7 +224,7 @@ public class MediaActionDrawable extends Drawable {
         return downloadProgress;
     }
 
-    private float getCircleValue(float value) {
+    public static float getCircleValue(float value) {
         while (value > 360) {
             value -= 360;
         }
@@ -238,6 +241,11 @@ public class MediaActionDrawable extends Drawable {
 
     public void setBackgroundDrawable(Theme.MessageDrawable drawable) {
         messageDrawable = drawable;
+    }
+
+    public void setBackgroundGradientDrawable(LinearGradient drawable) {
+        gradientDrawable = drawable;
+        gradientMatrix = new Matrix();
     }
 
     public void setHasOverlayImage(boolean value) {
@@ -273,6 +281,13 @@ public class MediaActionDrawable extends Drawable {
             paint.setShader(shader);
             paint2.setShader(shader);
             paint3.setShader(shader);
+        } else if (gradientDrawable != null && !hasOverlayImage) {
+            gradientMatrix.reset();
+            gradientMatrix.setTranslate(0, bounds.top);
+            gradientDrawable.setLocalMatrix(gradientMatrix);
+            paint.setShader(gradientDrawable);
+            paint2.setShader(gradientDrawable);
+            paint3.setShader(gradientDrawable);
         } else {
             paint.setShader(null);
             paint2.setShader(null);
@@ -435,7 +450,7 @@ public class MediaActionDrawable extends Drawable {
                     alpha = 0;
                 }
                 rotation = 0;
-            } else if (nextIcon == ICON_PLAY || nextIcon == ICON_PAUSE || nextIcon == ICON_FILE || nextIcon == ICON_GIF || nextIcon == ICON_SECRETCHECK || nextIcon == ICON_FIRE || nextIcon == ICON_CHECK) {
+            } else if (nextIcon == ICON_UPDATE || nextIcon == ICON_PLAY || nextIcon == ICON_PAUSE || nextIcon == ICON_FILE || nextIcon == ICON_GIF || nextIcon == ICON_SECRETCHECK || nextIcon == ICON_FIRE || nextIcon == ICON_CHECK) {
                 float progress;
                 float backProgress;
                 if (nextIcon == ICON_CHECK) {
@@ -560,6 +575,11 @@ public class MediaActionDrawable extends Drawable {
             previowsDrawableScale = Math.max(0.0f, 1.0f - transitionProgress / 0.5f);
         }
 
+        if (nextIcon == ICON_UPDATE) {
+            nextPath = Theme.chat_updatePath;
+        } else if (currentIcon == ICON_UPDATE) {
+            previousPath = Theme.chat_updatePath;
+        }
         if (nextIcon == ICON_FILE) {
             nextPath = Theme.chat_filePath;
         } else if (currentIcon == ICON_FILE) {
@@ -759,7 +779,9 @@ public class MediaActionDrawable extends Drawable {
             paint2.setAlpha(currentIcon == nextIcon ? 255 : (int) ((1.0f - transitionProgress) * 255));
             canvas.save();
             canvas.translate(cx - w / 2, cy - h / 2);
-            canvas.drawPath(previousPath[0], paint2);
+            if (previousPath[0] != null) {
+                canvas.drawPath(previousPath[0], paint2);
+            }
             if (previousPath[1] != null) {
                 canvas.drawPath(previousPath[1], backPaint);
             }
@@ -773,7 +795,12 @@ public class MediaActionDrawable extends Drawable {
             paint2.setAlpha(alpha);
             canvas.save();
             canvas.translate(cx - w / 2, cy - h / 2);
-            canvas.drawPath(nextPath[0], paint2);
+            if (nextPath[0] != null) {
+                canvas.drawPath(nextPath[0], paint2);
+            }
+            if (nextPath.length >= 3 && nextPath[2] != null) {
+                canvas.drawPath(nextPath[2], paint);
+            }
             if (nextPath[1] != null) {
                 if (alpha != 255) {
                     int backgroundAlpha = backPaint.getAlpha();

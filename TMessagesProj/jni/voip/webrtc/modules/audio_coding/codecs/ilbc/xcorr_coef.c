@@ -16,6 +16,8 @@
 
 ******************************************************************/
 
+#include "modules/audio_coding/codecs/ilbc/xcorr_coef.h"
+
 #include "modules/audio_coding/codecs/ilbc/defines.h"
 
 /*----------------------------------------------------------------*

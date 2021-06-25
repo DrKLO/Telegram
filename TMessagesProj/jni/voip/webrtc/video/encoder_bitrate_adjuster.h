@@ -47,7 +47,7 @@ class EncoderBitrateAdjuster {
   void OnEncoderInfo(const VideoEncoder::EncoderInfo& encoder_info);
 
   // Updates the overuse detectors according to the encoded image size.
-  void OnEncodedFrame(const EncodedImage& encoded_image, int temporal_index);
+  void OnEncodedFrame(DataSize size, int spatial_index, int temporal_index);
 
   void Reset();
 

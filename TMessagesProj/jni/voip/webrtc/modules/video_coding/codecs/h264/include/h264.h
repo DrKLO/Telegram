@@ -27,8 +27,8 @@ struct SdpVideoFormat;
 
 // Creates an H264 SdpVideoFormat entry with specified paramters.
 RTC_EXPORT SdpVideoFormat
-CreateH264Format(H264::Profile profile,
-                 H264::Level level,
+CreateH264Format(H264Profile profile,
+                 H264Level level,
                  const std::string& packetization_mode);
 
 // Set to disable the H.264 encoder/decoder implementations that are provided if

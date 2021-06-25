@@ -12,11 +12,14 @@ import android.animation.Animator;
 import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -36,6 +39,17 @@ public class TextSettingsCell extends FrameLayout {
     private ImageView valueImageView;
     private boolean needDivider;
     private boolean canDisable;
+    private boolean drawLoading;
+    private int padding;
+
+    private boolean incrementLoadingProgress;
+    private float loadingProgress;
+    private float drawLoadingProgress;
+    private int loadingSize;
+    private boolean measureDelay;
+    private int changeProgressStartDelay;
+
+    Paint paint;
 
     public TextSettingsCell(Context context) {
         this(context, 21);
@@ -43,6 +57,7 @@ public class TextSettingsCell extends FrameLayout {
 
     public TextSettingsCell(Context context, int padding) {
         super(context);
+        this.padding = padding;
 
         textView = new TextView(context);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
@@ -87,6 +102,14 @@ public class TextSettingsCell extends FrameLayout {
             width = availableWidth;
         }
         textView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.EXACTLY));
+    }
+
+    @Override
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
+        if (measureDelay && getParent() != null) {
+            changeProgressStartDelay = (int) ((getTop() / (float) ((View) getParent()).getMeasuredHeight()) * 150f);
+        }
     }
 
     public TextView getTextView() {
@@ -178,15 +201,76 @@ public class TextSettingsCell extends FrameLayout {
     }
 
     @Override
-    protected void onDraw(Canvas canvas) {
+    protected void dispatchDraw(Canvas canvas) {
+        if (drawLoading || drawLoadingProgress != 0) {
+            if (paint == null) {
+                paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                paint.setColor(Theme.getColor(Theme.key_dialogSearchBackground));
+            }
+            //LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT;
+            if (incrementLoadingProgress) {
+                loadingProgress += 16 / 1000f;
+                if (loadingProgress > 1f) {
+                    loadingProgress = 1f;
+                    incrementLoadingProgress = false;
+                }
+            } else {
+                loadingProgress -= 16 / 1000f;
+                if (loadingProgress < 0) {
+                    loadingProgress = 0;
+                    incrementLoadingProgress = true;
+                }
+            }
+
+            if (changeProgressStartDelay > 0) {
+                changeProgressStartDelay -= 15;
+            } else if (drawLoading && drawLoadingProgress != 1f) {
+                drawLoadingProgress += 16 / 150f;
+                if (drawLoadingProgress > 1f) {
+                    drawLoadingProgress = 1f;
+                }
+            } else if (!drawLoading && drawLoadingProgress != 0) {
+                drawLoadingProgress -= 16 / 150f;
+                if (drawLoadingProgress < 0) {
+                    drawLoadingProgress = 0;
+                }
+            }
+
+            float alpha = (0.6f + 0.4f * loadingProgress) * drawLoadingProgress;
+            paint.setAlpha((int) (255 * alpha));
+            int cy = getMeasuredHeight() >> 1;
+            AndroidUtilities.rectTmp.set(getMeasuredWidth() - AndroidUtilities.dp(padding) - AndroidUtilities.dp(loadingSize), cy - AndroidUtilities.dp(3), getMeasuredWidth() - AndroidUtilities.dp(padding), cy + AndroidUtilities.dp(3));
+            if (LocaleController.isRTL) {
+                AndroidUtilities.rectTmp.left = getMeasuredWidth() - AndroidUtilities.rectTmp.left;
+                AndroidUtilities.rectTmp.right = getMeasuredWidth() - AndroidUtilities.rectTmp.right;
+            }
+            canvas.drawRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(3), AndroidUtilities.dp(3), paint);
+            invalidate();
+        }
+        valueTextView.setAlpha(1f - drawLoadingProgress);
+        super.dispatchDraw(canvas);
+
         if (needDivider) {
             canvas.drawLine(LocaleController.isRTL ? 0 : AndroidUtilities.dp(20), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? AndroidUtilities.dp(20) : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
         }
     }
 
+
     @Override
     public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
         super.onInitializeAccessibilityNodeInfo(info);
         info.setEnabled(isEnabled());
+    }
+
+    public void setDrawLoading(boolean drawLoading, int size, boolean animated) {
+        this.drawLoading = drawLoading;
+        this.loadingSize = size;
+
+        if (!animated) {
+            drawLoadingProgress = drawLoading ? 1f : 0f;
+        } else {
+            measureDelay = true;
+        }
+        invalidate();
     }
 }

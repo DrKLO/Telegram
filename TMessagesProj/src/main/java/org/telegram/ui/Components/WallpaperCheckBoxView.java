@@ -4,12 +4,10 @@ import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
-import android.graphics.Shader;
 import android.text.TextPaint;
 import android.util.Property;
 import android.view.View;
@@ -35,9 +33,9 @@ public class WallpaperCheckBoxView extends View {
     private float progress;
     private ObjectAnimator checkAnimator;
 
-    private int backgroundColor;
-    private int backgroundGradientColor;
-    private LinearGradient colorGradient;
+    private View parentView;
+
+    private int[] colors = new int[4];
 
     private final static float progressBounceDiff = 0.2f;
 
@@ -54,7 +52,7 @@ public class WallpaperCheckBoxView extends View {
         }
     };
 
-    public WallpaperCheckBoxView(Context context, boolean check) {
+    public WallpaperCheckBoxView(Context context, boolean check, View parent) {
         super(context);
         rect = new RectF();
 
@@ -62,6 +60,8 @@ public class WallpaperCheckBoxView extends View {
             drawBitmap = Bitmap.createBitmap(AndroidUtilities.dp(18), AndroidUtilities.dp(18), Bitmap.Config.ARGB_4444);
             drawCanvas = new Canvas(drawBitmap);
         }
+
+        parentView = parent;
 
         textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         textPaint.setTextSize(AndroidUtilities.dp(14));
@@ -87,15 +87,11 @@ public class WallpaperCheckBoxView extends View {
         maxTextSize = max;
     }
 
-    public void setBackgroundColor(int color) {
-        colorGradient = null;
-        backgroundColor = color;
-        invalidate();
-    }
-
-    public void setBackgroundGradientColor(int color) {
-        colorGradient = null;
-        backgroundGradientColor = color;
+    public void setColor(int index, int color) {
+        if (colors == null) {
+            colors = new int[4];
+        }
+        colors[index] = color;
         invalidate();
     }
 
@@ -111,7 +107,12 @@ public class WallpaperCheckBoxView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         rect.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
-        canvas.drawRoundRect(rect, AndroidUtilities.dp(4), AndroidUtilities.dp(4), Theme.chat_actionBackgroundPaint);
+        Theme.applyServiceShaderMatrixForView(this, parentView);
+        canvas.drawRoundRect(rect, getMeasuredHeight() / 2, getMeasuredHeight() / 2, Theme.chat_actionBackgroundPaint);
+        if (Theme.hasGradientService()) {
+            canvas.drawRoundRect(rect, getMeasuredHeight() / 2, getMeasuredHeight() / 2, Theme.chat_actionBackgroundGradientDarkenPaint);
+        }
+
 
         textPaint.setColor(Theme.getColor(Theme.key_chat_serviceText));
         int x = (getMeasuredWidth() - currentTextSize - AndroidUtilities.dp(28)) / 2;
@@ -153,17 +154,25 @@ public class WallpaperCheckBoxView extends View {
             canvas.drawBitmap(drawBitmap, 0, 0, null);
         } else {
             rect.set(0, 0, AndroidUtilities.dp(18), AndroidUtilities.dp(18));
-            if (backgroundGradientColor != 0) {
-                if (colorGradient == null) {
-                    colorGradient = new LinearGradient(rect.left, rect.bottom, rect.left, rect.top, new int[]{backgroundColor, backgroundGradientColor}, null, Shader.TileMode.CLAMP);
-                    backgroundPaint.setShader(colorGradient);
+            if (colors[3] != 0) {
+                for (int a = 0; a < 4; a++) {
+                    backgroundPaint.setColor(colors[a]);
+                    canvas.drawArc(rect, -90 + 90 * a, 90, true, backgroundPaint);
                 }
-                backgroundPaint.setColor(backgroundColor);
+            } else if (colors[2] != 0) {
+                for (int a = 0; a < 3; a++) {
+                    backgroundPaint.setColor(colors[a]);
+                    canvas.drawArc(rect, -90 + 120 * a, 120, true, backgroundPaint);
+                }
+            } else if (colors[1] != 0) {
+                for (int a = 0; a < 2; a++) {
+                    backgroundPaint.setColor(colors[a]);
+                    canvas.drawArc(rect, -90 + 180 * a, 180, true, backgroundPaint);
+                }
             } else {
-                backgroundPaint.setColor(backgroundColor);
-                backgroundPaint.setShader(null);
+                backgroundPaint.setColor(colors[0]);
+                canvas.drawRoundRect(rect, rect.width() / 2, rect.height() / 2, backgroundPaint);
             }
-            canvas.drawRoundRect(rect, rect.width() / 2, rect.height() / 2, backgroundPaint);
         }
         canvas.restore();
     }

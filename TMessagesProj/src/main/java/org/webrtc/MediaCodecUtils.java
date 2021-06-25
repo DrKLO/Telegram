@@ -17,6 +17,7 @@ import android.media.MediaCodecList;
 import android.os.Build;
 
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.voip.VoIPService;
 
 import androidx.annotation.Nullable;
 
@@ -119,6 +120,7 @@ class MediaCodecUtils {
       case VP8:
       case VP9:
       case H265:
+      case AV1:
         return new HashMap<String, String>();
       case H264:
         return H264Utils.getDefaultH264Params(highProfile);

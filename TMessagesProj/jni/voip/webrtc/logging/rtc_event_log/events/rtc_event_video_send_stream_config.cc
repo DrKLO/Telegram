@@ -27,14 +27,6 @@ RtcEventVideoSendStreamConfig::RtcEventVideoSendStreamConfig(
 
 RtcEventVideoSendStreamConfig::~RtcEventVideoSendStreamConfig() = default;
 
-RtcEvent::Type RtcEventVideoSendStreamConfig::GetType() const {
-  return RtcEvent::Type::VideoSendStreamConfig;
-}
-
-bool RtcEventVideoSendStreamConfig::IsConfigEvent() const {
-  return true;
-}
-
 std::unique_ptr<RtcEventVideoSendStreamConfig>
 RtcEventVideoSendStreamConfig::Copy() const {
   return absl::WrapUnique<RtcEventVideoSendStreamConfig>(

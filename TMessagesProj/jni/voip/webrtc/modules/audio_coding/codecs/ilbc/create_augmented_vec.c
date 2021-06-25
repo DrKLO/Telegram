@@ -16,10 +16,12 @@
 
 ******************************************************************/
 
-#include "modules/audio_coding/codecs/ilbc/defines.h"
-#include "modules/audio_coding/codecs/ilbc/constants.h"
-#include "rtc_base/sanitizer.h"
+#include "modules/audio_coding/codecs/ilbc/create_augmented_vec.h"
+
 #include "common_audio/signal_processing/include/signal_processing_library.h"
+#include "modules/audio_coding/codecs/ilbc/constants.h"
+#include "modules/audio_coding/codecs/ilbc/defines.h"
+#include "rtc_base/sanitizer.h"
 
 /*----------------------------------------------------------------*
  *  Recreate a specific codebook vector from the augmented part.

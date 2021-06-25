@@ -10,11 +10,16 @@
 
 #include "pc/srtp_session.h"
 
+#include <iomanip>
+
 #include "absl/base/attributes.h"
 #include "media/base/rtp_utils.h"
 #include "pc/external_hmac.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/ssl_stream_adapter.h"
+#include "rtc_base/string_encode.h"
+#include "rtc_base/time_utils.h"
+#include "system_wrappers/include/field_trial.h"
 #include "system_wrappers/include/metrics.h"
 #include "third_party/libsrtp/include/srtp.h"
 #include "third_party/libsrtp/include/srtp_priv.h"
@@ -26,7 +31,9 @@ namespace cricket {
 // in srtp.h.
 constexpr int kSrtpErrorCodeBoundary = 28;
 
-SrtpSession::SrtpSession() {}
+SrtpSession::SrtpSession() {
+  dump_plain_rtp_ = webrtc::field_trial::IsEnabled("WebRTC-Debugging-RtpDump");
+}
 
 SrtpSession::~SrtpSession() {
   if (session_) {
@@ -73,11 +80,18 @@ bool SrtpSession::ProtectRtp(void* p, int in_len, int max_len, int* out_len) {
     return false;
   }
 
+  // Note: the need_len differs from the libsrtp recommendatіon to ensure
+  // SRTP_MAX_TRAILER_LEN bytes of free space after the data. WebRTC
+  // never includes a MKI, therefore the amount of bytes added by the
+  // srtp_protect call is known in advance and depends on the cipher suite.
   int need_len = in_len + rtp_auth_tag_len_;  // NOLINT
   if (max_len < need_len) {
     RTC_LOG(LS_WARNING) << "Failed to protect SRTP packet: The buffer length "
                         << max_len << " is less than the needed " << need_len;
     return false;
+  }
+  if (dump_plain_rtp_) {
+    DumpPacket(p, in_len, /*outbound=*/true);
   }
 
   *out_len = in_len;
@@ -112,11 +126,18 @@ bool SrtpSession::ProtectRtcp(void* p, int in_len, int max_len, int* out_len) {
     return false;
   }
 
+  // Note: the need_len differs from the libsrtp recommendatіon to ensure
+  // SRTP_MAX_TRAILER_LEN bytes of free space after the data. WebRTC
+  // never includes a MKI, therefore the amount of bytes added by the
+  // srtp_protect_rtp call is known in advance and depends on the cipher suite.
   int need_len = in_len + sizeof(uint32_t) + rtcp_auth_tag_len_;  // NOLINT
   if (max_len < need_len) {
     RTC_LOG(LS_WARNING) << "Failed to protect SRTCP packet: The buffer length "
                         << max_len << " is less than the needed " << need_len;
     return false;
+  }
+  if (dump_plain_rtp_) {
+    DumpPacket(p, in_len, /*outbound=*/true);
   }
 
   *out_len = in_len;
@@ -151,6 +172,9 @@ bool SrtpSession::UnprotectRtp(void* p, int in_len, int* out_len) {
                               static_cast<int>(err), kSrtpErrorCodeBoundary);
     return false;
   }
+  if (dump_plain_rtp_) {
+    DumpPacket(p, *out_len, /*outbound=*/false);
+  }
   return true;
 }
 
@@ -168,6 +192,9 @@ bool SrtpSession::UnprotectRtcp(void* p, int in_len, int* out_len) {
     RTC_HISTOGRAM_ENUMERATION("WebRTC.PeerConnection.SrtcpUnprotectError",
                               static_cast<int>(err), kSrtpErrorCodeBoundary);
     return false;
+  }
+  if (dump_plain_rtp_) {
+    DumpPacket(p, *out_len, /*outbound=*/false);
   }
   return true;
 }
@@ -242,42 +269,18 @@ bool SrtpSession::DoSetKey(int type,
 
   srtp_policy_t policy;
   memset(&policy, 0, sizeof(policy));
-  if (cs == rtc::SRTP_AES128_CM_SHA1_80) {
-    srtp_crypto_policy_set_aes_cm_128_hmac_sha1_80(&policy.rtp);
-    srtp_crypto_policy_set_aes_cm_128_hmac_sha1_80(&policy.rtcp);
-  } else if (cs == rtc::SRTP_AES128_CM_SHA1_32) {
-    // RTP HMAC is shortened to 32 bits, but RTCP remains 80 bits.
-    srtp_crypto_policy_set_aes_cm_128_hmac_sha1_32(&policy.rtp);
-    srtp_crypto_policy_set_aes_cm_128_hmac_sha1_80(&policy.rtcp);
-  } else if (cs == rtc::SRTP_AEAD_AES_128_GCM) {
-    srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy.rtp);
-    srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy.rtcp);
-  } else if (cs == rtc::SRTP_AEAD_AES_256_GCM) {
-    srtp_crypto_policy_set_aes_gcm_256_16_auth(&policy.rtp);
-    srtp_crypto_policy_set_aes_gcm_256_16_auth(&policy.rtcp);
-  } else {
-    RTC_LOG(LS_WARNING) << "Failed to " << (session_ ? "update" : "create")
-                        << " SRTP session: unsupported cipher_suite " << cs;
+  if (!(srtp_crypto_policy_set_from_profile_for_rtp(
+            &policy.rtp, (srtp_profile_t)cs) == srtp_err_status_ok &&
+        srtp_crypto_policy_set_from_profile_for_rtcp(
+            &policy.rtcp, (srtp_profile_t)cs) == srtp_err_status_ok)) {
+    RTC_LOG(LS_ERROR) << "Failed to " << (session_ ? "update" : "create")
+                      << " SRTP session: unsupported cipher_suite " << cs;
     return false;
   }
 
-  int expected_key_len;
-  int expected_salt_len;
-  if (!rtc::GetSrtpKeyAndSaltLengths(cs, &expected_key_len,
-                                     &expected_salt_len)) {
-    // This should never happen.
-    RTC_NOTREACHED();
-    RTC_LOG(LS_WARNING)
-        << "Failed to " << (session_ ? "update" : "create")
-        << " SRTP session: unsupported cipher_suite without length information"
-        << cs;
-    return false;
-  }
-
-  if (!key ||
-      len != static_cast<size_t>(expected_key_len + expected_salt_len)) {
-    RTC_LOG(LS_WARNING) << "Failed to " << (session_ ? "update" : "create")
-                        << " SRTP session: invalid key";
+  if (!key || len != static_cast<size_t>(policy.rtp.cipher_key_len)) {
+    RTC_LOG(LS_ERROR) << "Failed to " << (session_ ? "update" : "create")
+                      << " SRTP session: invalid key";
     return false;
   }
 
@@ -442,6 +445,28 @@ void SrtpSession::HandleEventThunk(srtp_event_data_t* ev) {
   if (session) {
     session->HandleEvent(ev);
   }
+}
+
+// Logs the unencrypted packet in text2pcap format. This can then be
+// extracted by searching for RTP_DUMP
+//   grep RTP_DUMP chrome_debug.log > in.txt
+// and converted to pcap using
+//   text2pcap -D -u 1000,2000 -t %H:%M:%S. in.txt out.pcap
+// The resulting file can be replayed using the WebRTC video_replay tool and
+// be inspected in Wireshark using the RTP, VP8 and H264 dissectors.
+void SrtpSession::DumpPacket(const void* buf, int len, bool outbound) {
+  int64_t time_of_day = rtc::TimeUTCMillis() % (24 * 3600 * 1000);
+  int64_t hours = time_of_day / (3600 * 1000);
+  int64_t minutes = (time_of_day / (60 * 1000)) % 60;
+  int64_t seconds = (time_of_day / 1000) % 60;
+  int64_t millis = time_of_day % 1000;
+  RTC_LOG(LS_VERBOSE) << "\n" << (outbound ? "O" : "I") << " "
+    << std::setfill('0') << std::setw(2) << hours << ":"
+    << std::setfill('0') << std::setw(2) << minutes << ":"
+    << std::setfill('0') << std::setw(2) << seconds << "."
+    << std::setfill('0') << std::setw(3) << millis << " "
+    << "000000 " << rtc::hex_encode_with_delimiter((const char *)buf, len, ' ')
+    << " # RTP_DUMP";
 }
 
 }  // namespace cricket

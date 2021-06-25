@@ -15,16 +15,30 @@
 #ifndef PC_RTP_SENDER_H_
 #define PC_RTP_SENDER_H_
 
+#include <stddef.h>
+#include <stdint.h>
 #include <memory>
 #include <string>
 #include <vector>
 
+#include "absl/types/optional.h"
+#include "api/crypto/frame_encryptor_interface.h"
+#include "api/dtls_transport_interface.h"
+#include "api/dtmf_sender_interface.h"
+#include "api/frame_transformer_interface.h"
 #include "api/media_stream_interface.h"
+#include "api/media_types.h"
+#include "api/rtc_error.h"
+#include "api/rtp_parameters.h"
 #include "api/rtp_sender_interface.h"
+#include "api/scoped_refptr.h"
 #include "media/base/audio_source.h"
 #include "media/base/media_channel.h"
 #include "pc/dtmf_sender.h"
+#include "pc/stats_collector_interface.h"
 #include "rtc_base/synchronization/mutex.h"
+#include "rtc_base/third_party/sigslot/sigslot.h"
+#include "rtc_base/thread.h"
 
 namespace webrtc {
 
@@ -237,12 +251,16 @@ class LocalAudioSinkAdapter : public AudioTrackSinkInterface,
            /*absolute_capture_timestamp_ms=*/absl::nullopt);
   }
 
+  // AudioSinkInterface implementation.
+  int NumPreferredChannels() const override { return num_preferred_channels_; }
+
   // cricket::AudioSource implementation.
   void SetSink(cricket::AudioSource::Sink* sink) override;
 
   cricket::AudioSource::Sink* sink_;
   // Critical section protecting |sink_|.
   Mutex lock_;
+  int num_preferred_channels_ = -1;
 };
 
 class AudioRtpSender : public DtmfProviderInterface, public RtpSenderBase {

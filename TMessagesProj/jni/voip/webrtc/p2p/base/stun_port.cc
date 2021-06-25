@@ -17,11 +17,11 @@
 #include "p2p/base/connection.h"
 #include "p2p/base/p2p_constants.h"
 #include "p2p/base/port_allocator.h"
+#include "rtc_base/async_resolver_interface.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/helpers.h"
 #include "rtc_base/ip_address.h"
 #include "rtc_base/logging.h"
-#include "rtc_base/net_helpers.h"
 #include "rtc_base/strings/string_builder.h"
 
 namespace cricket {
@@ -306,7 +306,9 @@ int UDPPort::SendTo(const void* data,
     if (send_error_count_ < kSendErrorLogLimit) {
       ++send_error_count_;
       RTC_LOG(LS_ERROR) << ToString() << ": UDP send of " << size
-                        << " bytes failed with error " << error_;
+                        << " bytes to host " << addr.ToSensitiveString() << " ("
+                        << addr.ToResolvedSensitiveString()
+                        << ") failed with error " << error_;
     }
   } else {
     send_error_count_ = 0;
@@ -593,7 +595,11 @@ void UDPPort::OnSendPacket(const void* data, size_t size, StunRequest* req) {
   options.info_signaled_after_sent.packet_type = rtc::PacketType::kStunMessage;
   CopyPortInformationToPacketInfo(&options.info_signaled_after_sent);
   if (socket_->SendTo(data, size, sreq->server_addr(), options) < 0) {
-    RTC_LOG_ERR_EX(LERROR, socket_->GetError()) << "sendto";
+    RTC_LOG_ERR_EX(LERROR, socket_->GetError())
+        << "UDP send of " << size << " bytes to host "
+        << sreq->server_addr().ToSensitiveString() << " ("
+        << sreq->server_addr().ToResolvedSensitiveString()
+        << ") failed with error " << error_;
   }
   stats_.stun_binding_requests_sent++;
 }

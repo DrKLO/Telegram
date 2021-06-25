@@ -380,7 +380,7 @@ public class ClearHistoryAlert extends BottomSheet {
                 int time;
                 int action;
                 if (newTimer == 2) {
-                    time = BuildVars.DEBUG_PRIVATE_VERSION ? 5 : 7 * 24 * 60 * 60;
+                    time = 7 * 24 * 60 * 60;
                     action = UndoView.ACTION_AUTO_DELETE_ON;
                 } else if (newTimer == 1) {
                     time = 24 * 60 * 60;

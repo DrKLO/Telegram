@@ -19,13 +19,12 @@
 #include <utility>
 #include <vector>
 
+#include "api/sequence_checker.h"
 #include "p2p/base/port_interface.h"
-#include "rtc_base/async_invoker.h"
 #include "rtc_base/async_packet_socket.h"
 #include "rtc_base/socket_address.h"
 #include "rtc_base/third_party/sigslot/sigslot.h"
 #include "rtc_base/thread.h"
-#include "rtc_base/thread_checker.h"
 
 namespace rtc {
 class ByteBufferWriter;
@@ -129,8 +128,8 @@ class TurnServerAllocation : public rtc::MessageHandlerAutoCleanup,
   void OnChannelDestroyed(Channel* channel);
   void OnMessage(rtc::Message* msg) override;
 
-  TurnServer* server_;
-  rtc::Thread* thread_;
+  TurnServer* const server_;
+  rtc::Thread* const thread_;
   TurnServerConnection conn_;
   std::unique_ptr<rtc::AsyncPacketSocket> external_socket_;
   std::string key_;
@@ -183,53 +182,53 @@ class TurnServer : public sigslot::has_slots<> {
 
   // Gets/sets the realm value to use for the server.
   const std::string& realm() const {
-    RTC_DCHECK(thread_checker_.IsCurrent());
+    RTC_DCHECK_RUN_ON(thread_);
     return realm_;
   }
   void set_realm(const std::string& realm) {
-    RTC_DCHECK(thread_checker_.IsCurrent());
+    RTC_DCHECK_RUN_ON(thread_);
     realm_ = realm;
   }
 
   // Gets/sets the value for the SOFTWARE attribute for TURN messages.
   const std::string& software() const {
-    RTC_DCHECK(thread_checker_.IsCurrent());
+    RTC_DCHECK_RUN_ON(thread_);
     return software_;
   }
   void set_software(const std::string& software) {
-    RTC_DCHECK(thread_checker_.IsCurrent());
+    RTC_DCHECK_RUN_ON(thread_);
     software_ = software;
   }
 
   const AllocationMap& allocations() const {
-    RTC_DCHECK(thread_checker_.IsCurrent());
+    RTC_DCHECK_RUN_ON(thread_);
     return allocations_;
   }
 
   // Sets the authentication callback; does not take ownership.
   void set_auth_hook(TurnAuthInterface* auth_hook) {
-    RTC_DCHECK(thread_checker_.IsCurrent());
+    RTC_DCHECK_RUN_ON(thread_);
     auth_hook_ = auth_hook;
   }
 
   void set_redirect_hook(TurnRedirectInterface* redirect_hook) {
-    RTC_DCHECK(thread_checker_.IsCurrent());
+    RTC_DCHECK_RUN_ON(thread_);
     redirect_hook_ = redirect_hook;
   }
 
   void set_enable_otu_nonce(bool enable) {
-    RTC_DCHECK(thread_checker_.IsCurrent());
+    RTC_DCHECK_RUN_ON(thread_);
     enable_otu_nonce_ = enable;
   }
 
   // If set to true, reject CreatePermission requests to RFC1918 addresses.
   void set_reject_private_addresses(bool filter) {
-    RTC_DCHECK(thread_checker_.IsCurrent());
+    RTC_DCHECK_RUN_ON(thread_);
     reject_private_addresses_ = filter;
   }
 
   void set_enable_permission_checks(bool enable) {
-    RTC_DCHECK(thread_checker_.IsCurrent());
+    RTC_DCHECK_RUN_ON(thread_);
     enable_permission_checks_ = enable;
   }
 
@@ -244,18 +243,22 @@ class TurnServer : public sigslot::has_slots<> {
                                 const rtc::SocketAddress& address);
   // For testing only.
   std::string SetTimestampForNextNonce(int64_t timestamp) {
-    RTC_DCHECK(thread_checker_.IsCurrent());
+    RTC_DCHECK_RUN_ON(thread_);
     ts_for_next_nonce_ = timestamp;
     return GenerateNonce(timestamp);
   }
 
   void SetStunMessageObserver(std::unique_ptr<StunMessageObserver> observer) {
-    RTC_DCHECK(thread_checker_.IsCurrent());
+    RTC_DCHECK_RUN_ON(thread_);
     stun_message_observer_ = std::move(observer);
   }
 
  private:
-  std::string GenerateNonce(int64_t now) const;
+  // All private member functions and variables should have access restricted to
+  // thread_. But compile-time annotations are missing for members access from
+  // TurnServerAllocation (via friend declaration), and the On* methods, which
+  // are called via sigslot.
+  std::string GenerateNonce(int64_t now) const RTC_RUN_ON(thread_);
   void OnInternalPacket(rtc::AsyncPacketSocket* socket,
                         const char* data,
                         size_t size,
@@ -265,29 +268,32 @@ class TurnServer : public sigslot::has_slots<> {
   void OnNewInternalConnection(rtc::AsyncSocket* socket);
 
   // Accept connections on this server socket.
-  void AcceptConnection(rtc::AsyncSocket* server_socket);
+  void AcceptConnection(rtc::AsyncSocket* server_socket) RTC_RUN_ON(thread_);
   void OnInternalSocketClose(rtc::AsyncPacketSocket* socket, int err);
 
   void HandleStunMessage(TurnServerConnection* conn,
                          const char* data,
-                         size_t size);
-  void HandleBindingRequest(TurnServerConnection* conn, const StunMessage* msg);
+                         size_t size) RTC_RUN_ON(thread_);
+  void HandleBindingRequest(TurnServerConnection* conn, const StunMessage* msg)
+      RTC_RUN_ON(thread_);
   void HandleAllocateRequest(TurnServerConnection* conn,
                              const TurnMessage* msg,
-                             const std::string& key);
+                             const std::string& key) RTC_RUN_ON(thread_);
 
-  bool GetKey(const StunMessage* msg, std::string* key);
+  bool GetKey(const StunMessage* msg, std::string* key) RTC_RUN_ON(thread_);
   bool CheckAuthorization(TurnServerConnection* conn,
-                          const StunMessage* msg,
+                          StunMessage* msg,
                           const char* data,
                           size_t size,
-                          const std::string& key);
-  bool ValidateNonce(const std::string& nonce) const;
+                          const std::string& key) RTC_RUN_ON(thread_);
+  bool ValidateNonce(const std::string& nonce) const RTC_RUN_ON(thread_);
 
-  TurnServerAllocation* FindAllocation(TurnServerConnection* conn);
+  TurnServerAllocation* FindAllocation(TurnServerConnection* conn)
+      RTC_RUN_ON(thread_);
   TurnServerAllocation* CreateAllocation(TurnServerConnection* conn,
                                          int proto,
-                                         const std::string& key);
+                                         const std::string& key)
+      RTC_RUN_ON(thread_);
 
   void SendErrorResponse(TurnServerConnection* conn,
                          const StunMessage* req,
@@ -297,55 +303,53 @@ class TurnServer : public sigslot::has_slots<> {
   void SendErrorResponseWithRealmAndNonce(TurnServerConnection* conn,
                                           const StunMessage* req,
                                           int code,
-                                          const std::string& reason);
+                                          const std::string& reason)
+      RTC_RUN_ON(thread_);
 
   void SendErrorResponseWithAlternateServer(TurnServerConnection* conn,
                                             const StunMessage* req,
-                                            const rtc::SocketAddress& addr);
+                                            const rtc::SocketAddress& addr)
+      RTC_RUN_ON(thread_);
 
   void SendStun(TurnServerConnection* conn, StunMessage* msg);
   void Send(TurnServerConnection* conn, const rtc::ByteBufferWriter& buf);
 
-  void OnAllocationDestroyed(TurnServerAllocation* allocation);
-  void DestroyInternalSocket(rtc::AsyncPacketSocket* socket);
-
-  // Just clears |sockets_to_delete_|; called asynchronously.
-  void FreeSockets();
+  void OnAllocationDestroyed(TurnServerAllocation* allocation)
+      RTC_RUN_ON(thread_);
+  void DestroyInternalSocket(rtc::AsyncPacketSocket* socket)
+      RTC_RUN_ON(thread_);
 
   typedef std::map<rtc::AsyncPacketSocket*, ProtocolType> InternalSocketMap;
   typedef std::map<rtc::AsyncSocket*, ProtocolType> ServerSocketMap;
 
-  rtc::Thread* thread_;
-  rtc::ThreadChecker thread_checker_;
-  std::string nonce_key_;
-  std::string realm_;
-  std::string software_;
-  TurnAuthInterface* auth_hook_;
-  TurnRedirectInterface* redirect_hook_;
+  rtc::Thread* const thread_;
+  const std::string nonce_key_;
+  std::string realm_ RTC_GUARDED_BY(thread_);
+  std::string software_ RTC_GUARDED_BY(thread_);
+  TurnAuthInterface* auth_hook_ RTC_GUARDED_BY(thread_);
+  TurnRedirectInterface* redirect_hook_ RTC_GUARDED_BY(thread_);
   // otu - one-time-use. Server will respond with 438 if it's
   // sees the same nonce in next transaction.
-  bool enable_otu_nonce_;
+  bool enable_otu_nonce_ RTC_GUARDED_BY(thread_);
   bool reject_private_addresses_ = false;
   // Check for permission when receiving an external packet.
   bool enable_permission_checks_ = true;
 
-  InternalSocketMap server_sockets_;
-  ServerSocketMap server_listen_sockets_;
-  // Used when we need to delete a socket asynchronously.
-  std::vector<std::unique_ptr<rtc::AsyncPacketSocket>> sockets_to_delete_;
-  std::unique_ptr<rtc::PacketSocketFactory> external_socket_factory_;
-  rtc::SocketAddress external_addr_;
+  InternalSocketMap server_sockets_ RTC_GUARDED_BY(thread_);
+  ServerSocketMap server_listen_sockets_ RTC_GUARDED_BY(thread_);
+  std::unique_ptr<rtc::PacketSocketFactory> external_socket_factory_
+      RTC_GUARDED_BY(thread_);
+  rtc::SocketAddress external_addr_ RTC_GUARDED_BY(thread_);
 
-  AllocationMap allocations_;
-
-  rtc::AsyncInvoker invoker_;
+  AllocationMap allocations_ RTC_GUARDED_BY(thread_);
 
   // For testing only. If this is non-zero, the next NONCE will be generated
   // from this value, and it will be reset to 0 after generating the NONCE.
-  int64_t ts_for_next_nonce_ = 0;
+  int64_t ts_for_next_nonce_ RTC_GUARDED_BY(thread_) = 0;
 
   // For testing only. Used to observe STUN messages received.
-  std::unique_ptr<StunMessageObserver> stun_message_observer_;
+  std::unique_ptr<StunMessageObserver> stun_message_observer_
+      RTC_GUARDED_BY(thread_);
 
   friend class TurnServerAllocation;
 };

@@ -11,6 +11,7 @@
 #ifndef MODULES_VIDEO_CODING_DECODING_STATE_H_
 #define MODULES_VIDEO_CODING_DECODING_STATE_H_
 
+#include <cstdint>
 #include <map>
 #include <set>
 #include <vector>

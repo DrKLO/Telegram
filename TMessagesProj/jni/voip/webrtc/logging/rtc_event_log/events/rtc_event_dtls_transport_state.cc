@@ -24,14 +24,6 @@ RtcEventDtlsTransportState::RtcEventDtlsTransportState(
 
 RtcEventDtlsTransportState::~RtcEventDtlsTransportState() = default;
 
-RtcEvent::Type RtcEventDtlsTransportState::GetType() const {
-  return RtcEvent::Type::DtlsTransportState;
-}
-
-bool RtcEventDtlsTransportState::IsConfigEvent() const {
-  return false;
-}
-
 std::unique_ptr<RtcEventDtlsTransportState> RtcEventDtlsTransportState::Copy()
     const {
   return absl::WrapUnique<RtcEventDtlsTransportState>(

@@ -326,4 +326,8 @@ public class ActionBarMenu extends LinearLayout {
             }
         }
     }
+
+    public void clearSearchFilters() {
+
+    }
 }

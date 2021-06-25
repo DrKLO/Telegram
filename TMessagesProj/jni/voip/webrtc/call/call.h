@@ -17,6 +17,7 @@
 
 #include "api/adaptation/resource.h"
 #include "api/media_types.h"
+#include "api/task_queue/task_queue_base.h"
 #include "call/audio_receive_stream.h"
 #include "call/audio_send_stream.h"
 #include "call/call_config.h"
@@ -157,6 +158,9 @@ class Call {
       const BitrateSettings& preferences) = 0;
 
   virtual const WebRtcKeyValueConfig& trials() const = 0;
+
+  virtual TaskQueueBase* network_thread() const = 0;
+  virtual TaskQueueBase* worker_thread() const = 0;
 
   virtual ~Call() {}
 };

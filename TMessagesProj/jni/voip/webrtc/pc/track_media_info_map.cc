@@ -10,10 +10,15 @@
 
 #include "pc/track_media_info_map.h"
 
+#include <cstdint>
 #include <set>
 #include <string>
 #include <utility>
 
+#include "api/media_types.h"
+#include "api/rtp_parameters.h"
+#include "media/base/stream_params.h"
+#include "rtc_base/checks.h"
 #include "rtc_base/thread.h"
 
 namespace webrtc {

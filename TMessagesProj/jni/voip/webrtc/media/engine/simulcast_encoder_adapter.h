@@ -12,6 +12,7 @@
 #ifndef MEDIA_ENGINE_SIMULCAST_ENCODER_ADAPTER_H_
 #define MEDIA_ENGINE_SIMULCAST_ENCODER_ADAPTER_H_
 
+#include <list>
 #include <memory>
 #include <stack>
 #include <string>
@@ -20,18 +21,18 @@
 
 #include "absl/types/optional.h"
 #include "api/fec_controller_override.h"
+#include "api/sequence_checker.h"
 #include "api/video_codecs/sdp_video_format.h"
 #include "api/video_codecs/video_encoder.h"
+#include "api/video_codecs/video_encoder_factory.h"
 #include "modules/video_coding/include/video_codec_interface.h"
 #include "modules/video_coding/utility/framerate_controller.h"
 #include "rtc_base/atomic_ops.h"
-#include "rtc_base/synchronization/sequence_checker.h"
+#include "rtc_base/experiments/encoder_info_settings.h"
+#include "rtc_base/system/no_unique_address.h"
 #include "rtc_base/system/rtc_export.h"
 
 namespace webrtc {
-
-class SimulcastRateAllocator;
-class VideoEncoderFactory;
 
 // SimulcastEncoderAdapter implements simulcast support by creating multiple
 // webrtc::VideoEncoder instances with the given VideoEncoderFactory.
@@ -64,75 +65,119 @@ class RTC_EXPORT SimulcastEncoderAdapter : public VideoEncoder {
   void OnRttUpdate(int64_t rtt_ms) override;
   void OnLossNotification(const LossNotification& loss_notification) override;
 
-  // Eventual handler for the contained encoders' EncodedImageCallbacks, but
-  // called from an internal helper that also knows the correct stream
-  // index.
+  EncoderInfo GetEncoderInfo() const override;
+
+ private:
+  class EncoderContext {
+   public:
+    EncoderContext(std::unique_ptr<VideoEncoder> encoder,
+                   bool prefer_temporal_support);
+    EncoderContext& operator=(EncoderContext&&) = delete;
+
+    VideoEncoder& encoder() { return *encoder_; }
+    bool prefer_temporal_support() { return prefer_temporal_support_; }
+    void Release();
+
+   private:
+    std::unique_ptr<VideoEncoder> encoder_;
+    bool prefer_temporal_support_;
+  };
+
+  class StreamContext : public EncodedImageCallback {
+   public:
+    StreamContext(SimulcastEncoderAdapter* parent,
+                  std::unique_ptr<EncoderContext> encoder_context,
+                  std::unique_ptr<FramerateController> framerate_controller,
+                  int stream_idx,
+                  uint16_t width,
+                  uint16_t height,
+                  bool send_stream);
+    StreamContext(StreamContext&& rhs);
+    StreamContext& operator=(StreamContext&&) = delete;
+    ~StreamContext() override;
+
+    Result OnEncodedImage(
+        const EncodedImage& encoded_image,
+        const CodecSpecificInfo* codec_specific_info) override;
+    void OnDroppedFrame(DropReason reason) override;
+
+    VideoEncoder& encoder() { return encoder_context_->encoder(); }
+    const VideoEncoder& encoder() const { return encoder_context_->encoder(); }
+    int stream_idx() const { return stream_idx_; }
+    uint16_t width() const { return width_; }
+    uint16_t height() const { return height_; }
+    bool is_keyframe_needed() const {
+      return !is_paused_ && is_keyframe_needed_;
+    }
+    void set_is_keyframe_needed() { is_keyframe_needed_ = true; }
+    bool is_paused() const { return is_paused_; }
+    void set_is_paused(bool is_paused) { is_paused_ = is_paused; }
+    absl::optional<float> target_fps() const {
+      return framerate_controller_ == nullptr
+                 ? absl::nullopt
+                 : absl::optional<float>(
+                       framerate_controller_->GetTargetRate());
+    }
+
+    std::unique_ptr<EncoderContext> ReleaseEncoderContext() &&;
+    void OnKeyframe(Timestamp timestamp);
+    bool ShouldDropFrame(Timestamp timestamp);
+
+   private:
+    SimulcastEncoderAdapter* const parent_;
+    std::unique_ptr<EncoderContext> encoder_context_;
+    std::unique_ptr<FramerateController> framerate_controller_;
+    const int stream_idx_;
+    const uint16_t width_;
+    const uint16_t height_;
+    bool is_keyframe_needed_;
+    bool is_paused_;
+  };
+
+  bool Initialized() const;
+
+  void DestroyStoredEncoders();
+
+  std::unique_ptr<EncoderContext> FetchOrCreateEncoderContext(
+      bool is_lowest_quality_stream);
+
+  webrtc::VideoCodec MakeStreamCodec(const webrtc::VideoCodec& codec,
+                                     int stream_idx,
+                                     uint32_t start_bitrate_kbps,
+                                     bool is_lowest_quality_stream,
+                                     bool is_highest_quality_stream);
+
   EncodedImageCallback::Result OnEncodedImage(
       size_t stream_idx,
       const EncodedImage& encoded_image,
       const CodecSpecificInfo* codec_specific_info);
 
-  EncoderInfo GetEncoderInfo() const override;
+  void OnDroppedFrame(size_t stream_idx);
 
- private:
-  struct StreamInfo {
-    StreamInfo(std::unique_ptr<VideoEncoder> encoder,
-               std::unique_ptr<EncodedImageCallback> callback,
-               std::unique_ptr<FramerateController> framerate_controller,
-               uint16_t width,
-               uint16_t height,
-               bool send_stream)
-        : encoder(std::move(encoder)),
-          callback(std::move(callback)),
-          framerate_controller(std::move(framerate_controller)),
-          width(width),
-          height(height),
-          key_frame_request(false),
-          send_stream(send_stream) {}
-    std::unique_ptr<VideoEncoder> encoder;
-    std::unique_ptr<EncodedImageCallback> callback;
-    std::unique_ptr<FramerateController> framerate_controller;
-    uint16_t width;
-    uint16_t height;
-    bool key_frame_request;
-    bool send_stream;
-  };
-
-  enum class StreamResolution {
-    OTHER,
-    HIGHEST,
-    LOWEST,
-  };
-
-  // Populate the codec settings for each simulcast stream.
-  void PopulateStreamCodec(const webrtc::VideoCodec& inst,
-                           int stream_index,
-                           uint32_t start_bitrate_kbps,
-                           StreamResolution stream_resolution,
-                           webrtc::VideoCodec* stream_codec);
-
-  bool Initialized() const;
-
-  void DestroyStoredEncoders();
+  void OverrideFromFieldTrial(VideoEncoder::EncoderInfo* info) const;
 
   volatile int inited_;  // Accessed atomically.
   VideoEncoderFactory* const primary_encoder_factory_;
   VideoEncoderFactory* const fallback_encoder_factory_;
   const SdpVideoFormat video_format_;
   VideoCodec codec_;
-  std::vector<StreamInfo> streaminfos_;
+  int total_streams_count_;
+  bool bypass_mode_;
+  std::vector<StreamContext> stream_contexts_;
   EncodedImageCallback* encoded_complete_callback_;
 
   // Used for checking the single-threaded access of the encoder interface.
-  SequenceChecker encoder_queue_;
+  RTC_NO_UNIQUE_ADDRESS SequenceChecker encoder_queue_;
 
   // Store encoders in between calls to Release and InitEncode, so they don't
   // have to be recreated. Remaining encoders are destroyed by the destructor.
-  std::stack<std::unique_ptr<VideoEncoder>> stored_encoders_;
+  std::list<std::unique_ptr<EncoderContext>> cached_encoder_contexts_;
 
   const absl::optional<unsigned int> experimental_boosted_screenshare_qp_;
   const bool boost_base_layer_quality_;
   const bool prefer_temporal_support_on_base_layer_;
+
+  const SimulcastEncoderAdapterEncoderInfoSettings encoder_info_override_;
 };
 
 }  // namespace webrtc

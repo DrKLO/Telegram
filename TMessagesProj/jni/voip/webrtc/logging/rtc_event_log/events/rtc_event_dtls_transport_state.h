@@ -20,11 +20,13 @@ namespace webrtc {
 
 class RtcEventDtlsTransportState : public RtcEvent {
  public:
+  static constexpr Type kType = Type::DtlsTransportState;
+
   explicit RtcEventDtlsTransportState(DtlsTransportState state);
   ~RtcEventDtlsTransportState() override;
 
-  Type GetType() const override;
-  bool IsConfigEvent() const override;
+  Type GetType() const override { return kType; }
+  bool IsConfigEvent() const override { return false; }
 
   std::unique_ptr<RtcEventDtlsTransportState> Copy() const;
 
@@ -36,6 +38,14 @@ class RtcEventDtlsTransportState : public RtcEvent {
   RtcEventDtlsTransportState(const RtcEventDtlsTransportState& other);
 
   const DtlsTransportState dtls_transport_state_;
+};
+
+struct LoggedDtlsTransportState {
+  int64_t log_time_us() const { return timestamp_us; }
+  int64_t log_time_ms() const { return timestamp_us / 1000; }
+
+  int64_t timestamp_us;
+  DtlsTransportState dtls_transport_state;
 };
 
 }  // namespace webrtc

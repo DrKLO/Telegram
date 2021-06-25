@@ -107,7 +107,7 @@ rtc::scoped_refptr<I420Buffer> VideoFrameBufferPool::CreateI420Buffer(
     return nullptr;
   // Allocate new buffer.
   rtc::scoped_refptr<I420Buffer> buffer =
-      new rtc::RefCountedObject<I420Buffer>(width, height);
+      rtc::make_ref_counted<I420Buffer>(width, height);
 
   if (zero_initialize_)
     buffer->InitializeData();
@@ -138,7 +138,7 @@ rtc::scoped_refptr<NV12Buffer> VideoFrameBufferPool::CreateNV12Buffer(
     return nullptr;
   // Allocate new buffer.
   rtc::scoped_refptr<NV12Buffer> buffer =
-      new rtc::RefCountedObject<NV12Buffer>(width, height);
+      rtc::make_ref_counted<NV12Buffer>(width, height);
 
   if (zero_initialize_)
     buffer->InitializeData();

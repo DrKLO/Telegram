@@ -8,7 +8,10 @@ import android.os.Looper;
 import android.view.TextureView;
 import android.view.View;
 
+import androidx.annotation.NonNull;
+
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.voip.VoIPService;
 
 import java.util.concurrent.CountDownLatch;
 
@@ -27,14 +30,59 @@ public class TextureViewRenderer extends TextureView
     private RendererCommon.RendererEvents rendererEvents;
 
     // Accessed only on the main thread.
-    private int rotatedFrameWidth;
-    private int rotatedFrameHeight;
+    public int rotatedFrameWidth;
+    public int rotatedFrameHeight;
+
+    private int videoWidth;
+    private int videoHeight;
     private boolean enableFixedSize;
     private int surfaceWidth;
     private int surfaceHeight;
     private boolean isCamera;
+    private boolean mirror;
+    private boolean rotateTextureWitchScreen;
+    private int screenRotation;
 
     private OrientationHelper orientationHelper;
+    private int cameraRotation;
+    private TextureView backgroundRenderer;
+    private int maxTextureSize;
+
+    private VideoSink parentSink;
+
+    Runnable updateScreenRunnable;
+
+    public void setBackgroundRenderer(TextureView backgroundRenderer) {
+        this.backgroundRenderer = backgroundRenderer;
+        backgroundRenderer.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
+            @Override
+            public void onSurfaceTextureAvailable(@NonNull SurfaceTexture surfaceTexture, int i, int i1) {
+                createBackgroundSurface(surfaceTexture);
+            }
+
+            @Override
+            public void onSurfaceTextureSizeChanged(@NonNull SurfaceTexture surfaceTexture, int i, int i1) {
+
+            }
+
+            @Override
+            public boolean onSurfaceTextureDestroyed(@NonNull SurfaceTexture surfaceTexture) {
+                ThreadUtils.checkIsOnMainThread();
+                eglRenderer.releaseEglSurface(null, true);
+                return false;
+            }
+
+            @Override
+            public void onSurfaceTextureUpdated(@NonNull SurfaceTexture surfaceTexture) {
+
+            }
+        });
+    }
+
+    public void clearFirstFrame() {
+        eglRenderer.firstFrameRendered = false;
+        eglRenderer.isFirstFrameRendered = false;
+    }
 
     public static class TextureEglRenderer extends EglRenderer implements TextureView.SurfaceTextureListener {
         private static final String TAG = "TextureEglRenderer";
@@ -135,7 +183,7 @@ public class TextureViewRenderer extends TextureView
         public boolean onSurfaceTextureDestroyed(SurfaceTexture surfaceTexture) {
             ThreadUtils.checkIsOnMainThread();
             final CountDownLatch completionLatch = new CountDownLatch(1);
-            releaseEglSurface(completionLatch::countDown);
+            releaseEglSurface(completionLatch::countDown, false);
             ThreadUtils.awaitUninterruptibly(completionLatch);
             return true;
         }
@@ -162,6 +210,7 @@ public class TextureViewRenderer extends TextureView
                     }
                     rotatedFrameWidth = frame.getRotatedWidth();
                     rotatedFrameHeight = frame.getRotatedHeight();
+
                     frameRotation = frame.getRotation();
                 }
             }
@@ -234,11 +283,14 @@ public class TextureViewRenderer extends TextureView
      *                 It should be lightweight and must not call removeFrameListener.
      * @param scale    The scale of the Bitmap passed to the callback, or 0 if no Bitmap is
      *                 required.
-     * @param drawer   Custom drawer to use for this frame listener.
      */
     public void addFrameListener(
             EglRenderer.FrameListener listener, float scale, RendererCommon.GlDrawer drawerParam) {
         eglRenderer.addFrameListener(listener, scale, drawerParam);
+    }
+
+    public void getRenderBufferBitmap(GlGenericDrawer.TextureCallback callback) {
+        eglRenderer.getTexture(callback);
     }
 
     /**
@@ -264,11 +316,13 @@ public class TextureViewRenderer extends TextureView
             orientationHelper = new OrientationHelper() {
                 @Override
                 protected void onOrientationUpdate(int orientation) {
-                    updateRotation();
+                    if (!isCamera) {
+                        updateRotation();
+                    }
                 }
             };
             orientationHelper.start();
-        }
+       }
     }
 
     /**
@@ -324,7 +378,16 @@ public class TextureViewRenderer extends TextureView
      * Set if the video stream should be mirrored or not.
      */
     public void setMirror(final boolean mirror) {
-        eglRenderer.setMirror(mirror);
+        if (this.mirror != mirror) {
+            this.mirror = mirror;
+            if (rotateTextureWitchScreen) {
+                onRotationChanged();
+            } else {
+                eglRenderer.setMirror(mirror);
+            }
+            updateSurfaceSize();
+            requestLayout();
+        }
     }
 
     /**
@@ -371,18 +434,20 @@ public class TextureViewRenderer extends TextureView
     @Override
     protected void onMeasure(int widthSpec, int heightSpec) {
         ThreadUtils.checkIsOnMainThread();
-        Point size = videoLayoutMeasure.measure(isCamera, widthSpec, heightSpec, rotatedFrameWidth, rotatedFrameHeight);
-        setMeasuredDimension(size.x, size.y);
-        if (!isCamera) {
-            updateRotation();
+        if (!isCamera && rotateTextureWitchScreen) {
+            updateVideoSizes();
         }
-        logD("onMeasure(). New size: " + size.x + "x" + size.y);
-    }
-
-    @Override
-    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-        ThreadUtils.checkIsOnMainThread();
-        eglRenderer.setLayoutAspectRatio((right - left) / (float) (bottom - top));
+        Point size;
+        if (maxTextureSize > 0) {
+            size = videoLayoutMeasure.measure(isCamera, MeasureSpec.makeMeasureSpec(Math.min(maxTextureSize, MeasureSpec.getSize(widthSpec)), MeasureSpec.getMode(widthSpec)), MeasureSpec.makeMeasureSpec(Math.min(maxTextureSize, MeasureSpec.getSize(heightSpec)), MeasureSpec.getMode(heightSpec)), rotatedFrameWidth, rotatedFrameHeight);
+        } else {
+            size = videoLayoutMeasure.measure(isCamera, widthSpec, heightSpec, rotatedFrameWidth, rotatedFrameHeight);
+        }
+        setMeasuredDimension(size.x, size.y);
+       // logD("onMeasure(). New size: " + size.x + "x" + size.y);
+        if (rotatedFrameWidth != 0 && rotatedFrameHeight != 0) {
+            eglRenderer.setLayoutAspectRatio(getMeasuredWidth() / (float) getMeasuredHeight());
+        }
         updateSurfaceSize();
     }
 
@@ -435,6 +500,11 @@ public class TextureViewRenderer extends TextureView
 
     @Override
     public boolean onSurfaceTextureDestroyed(SurfaceTexture surfaceTexture) {
+        if (parentSink instanceof VoIPService.ProxyVideoSink) {
+            VoIPService.ProxyVideoSink proxyVideoSink = (VoIPService.ProxyVideoSink) parentSink;
+            proxyVideoSink.removeTarget(this);
+            proxyVideoSink.removeBackground(this);
+        }
         eglRenderer.onSurfaceTextureDestroyed(surfaceTexture);
         return true;
     }
@@ -457,6 +527,12 @@ public class TextureViewRenderer extends TextureView
      */
     public void clearImage() {
         eglRenderer.clearImage();
+        eglRenderer.isFirstFrameRendered = false;
+    }
+
+    @Override
+    public void setParentSink(VideoSink parent) {
+        parentSink = parent;
     }
 
     @Override
@@ -470,34 +546,148 @@ public class TextureViewRenderer extends TextureView
         return eglRenderer.isFirstFrameRendered;
     }
 
+    int textureRotation;
     @Override
     public void onFrameResolutionChanged(int videoWidth, int videoHeight, int rotation) {
         if (rendererEvents != null) {
             rendererEvents.onFrameResolutionChanged(videoWidth, videoHeight, rotation);
         }
-        if (isCamera) {
-            eglRenderer.setRotation(-OrientationHelper.cameraRotation);
+        textureRotation = rotation;
+        int rotatedWidth, rotatedHeight;
+
+        if (rotateTextureWitchScreen) {
+            if (isCamera) {
+                onRotationChanged();
+            }
+            if (useCameraRotation) {
+                rotatedWidth = screenRotation == 0 ? videoHeight : videoWidth;
+                rotatedHeight = screenRotation == 0 ? videoWidth : videoHeight;
+            } else {
+                rotatedWidth = textureRotation == 0 || textureRotation == 180 || textureRotation == -180 ? videoWidth : videoHeight;
+                rotatedHeight = textureRotation == 0 || textureRotation == 180 || textureRotation == -180 ? videoHeight : videoWidth;
+            }
+        } else {
+            if (isCamera) {
+                eglRenderer.setRotation(-OrientationHelper.cameraRotation);
+            }
+            rotation -= OrientationHelper.cameraOrientation;
+            rotatedWidth = rotation == 0 || rotation == 180 || rotation == -180 ? videoWidth : videoHeight;
+            rotatedHeight = rotation == 0 || rotation == 180 || rotation == -180? videoHeight : videoWidth;
         }
-        int rotatedWidth = rotation == 0 || rotation == 180 ? videoWidth : videoHeight;
-        int rotatedHeight = rotation == 0 || rotation == 180 ? videoHeight : videoWidth;
         // run immediately if possible for ui thread tests
-        postOrRun(() -> {
-            rotatedFrameWidth = rotatedWidth;
-            rotatedFrameHeight = rotatedHeight;
-            updateSurfaceSize();
+        synchronized (eglRenderer.layoutLock) {
+            if (updateScreenRunnable != null) {
+                AndroidUtilities.cancelRunOnUIThread(updateScreenRunnable);
+            }
+            postOrRun(updateScreenRunnable = () -> {
+                updateScreenRunnable = null;
+                this.videoWidth = videoWidth;
+                this.videoHeight = videoHeight;
+
+                rotatedFrameWidth = rotatedWidth;
+                rotatedFrameHeight = rotatedHeight;
+
+                updateSurfaceSize();
+                requestLayout();
+            });
+        }
+    }
+
+    public void setScreenRotation(int screenRotation) {
+        this.screenRotation = screenRotation;
+        onRotationChanged();
+        updateVideoSizes();
+    }
+
+    private void updateVideoSizes() {
+        if (videoHeight != 0 && videoWidth != 0) {
+            int rotatedWidth;
+            int rotatedHeight;
+            if (rotateTextureWitchScreen) {
+                if (useCameraRotation) {
+                    rotatedWidth = screenRotation == 0 ? videoHeight : videoWidth;
+                    rotatedHeight = screenRotation == 0 ? videoWidth : videoHeight;
+                } else {
+                    rotatedWidth = textureRotation == 0 || textureRotation == 180 || textureRotation == -180 ? videoWidth : videoHeight;
+                    rotatedHeight = textureRotation == 0 || textureRotation == 180 || textureRotation == -180 ? videoHeight : videoWidth;
+                }
+            } else {
+                int rotation = textureRotation;
+                rotation -= OrientationHelper.cameraOrientation;
+                rotatedWidth = rotation == 0 || rotation == 180 || rotation == -180 ? videoWidth : videoHeight;
+                rotatedHeight = rotation == 0 || rotation == 180 || rotation == -180 ? videoHeight : videoWidth;
+
+            }
+            if (rotatedFrameWidth != rotatedWidth || rotatedFrameHeight != rotatedHeight) {
+                synchronized (eglRenderer.layoutLock) {
+                    if (updateScreenRunnable != null) {
+                        AndroidUtilities.cancelRunOnUIThread(updateScreenRunnable);
+                    }
+                    postOrRun(updateScreenRunnable = () -> {
+                        updateScreenRunnable = null;
+
+                        rotatedFrameWidth = rotatedWidth;
+                        rotatedFrameHeight = rotatedHeight;
+
+                        updateSurfaceSize();
+                        requestLayout();
+                    });
+                }
+            }
+        }
+    }
+
+    public void setRotateTextureWitchScreen(boolean rotateTextureWitchScreen) {
+        if (this.rotateTextureWitchScreen != rotateTextureWitchScreen) {
+            this.rotateTextureWitchScreen = rotateTextureWitchScreen;
             requestLayout();
-        });
+        }
+    }
+
+    boolean useCameraRotation;
+
+    public void setUseCameraRotation(boolean useCameraRotation) {
+        if (this.useCameraRotation != useCameraRotation) {
+            this.useCameraRotation = useCameraRotation;
+            onRotationChanged();
+            updateVideoSizes();
+        }
+    }
+    private void onRotationChanged() {
+        int rotation = useCameraRotation ? OrientationHelper.cameraOrientation : 0;
+        if (mirror) {
+            rotation = 360 - rotation;
+        }
+        int r = -rotation;
+        if (useCameraRotation) {
+            if (screenRotation == 1) {
+                r += mirror ? 90 : -90;
+            } else if (screenRotation == 3) {
+                r += mirror ? 270 : -270;
+            }
+        }
+
+        eglRenderer.setRotation(r);
+        eglRenderer.setMirror(mirror);
     }
 
     private void postOrRun(Runnable r) {
         if (Thread.currentThread() == Looper.getMainLooper().getThread()) {
             r.run();
         } else {
-            post(r);
+            AndroidUtilities.runOnUIThread(r);
         }
     }
 
     private void logD(String string) {
         Logging.d(TAG, resourceName + ": " + string);
+    }
+
+    public void createBackgroundSurface(SurfaceTexture bluSurfaceTexturerRenderer) {
+        eglRenderer.createBackgroundSurface(bluSurfaceTexturerRenderer);
+    }
+
+    public void setMaxTextureSize(int maxTextureSize) {
+        this.maxTextureSize = maxTextureSize;
     }
 }

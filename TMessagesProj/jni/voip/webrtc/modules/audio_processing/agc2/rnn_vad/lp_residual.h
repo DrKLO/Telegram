@@ -18,7 +18,7 @@
 namespace webrtc {
 namespace rnn_vad {
 
-// LPC inverse filter length.
+// Linear predictive coding (LPC) inverse filter length.
 constexpr int kNumLpcCoefficients = 5;
 
 // Given a frame |x|, computes a post-processed version of LPC coefficients

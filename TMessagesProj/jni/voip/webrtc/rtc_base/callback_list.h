@@ -33,17 +33,50 @@ class CallbackListReceivers {
   ~CallbackListReceivers();
 
   template <typename UntypedFunctionArgsT>
+  RTC_NO_INLINE void AddReceiver(const void* removal_tag,
+                                 UntypedFunctionArgsT args) {
+    RTC_CHECK(!send_in_progress_);
+    RTC_DCHECK(removal_tag != nullptr);
+    receivers_.push_back({removal_tag, UntypedFunction::Create(args)});
+  }
+
+  template <typename UntypedFunctionArgsT>
   RTC_NO_INLINE void AddReceiver(UntypedFunctionArgsT args) {
     RTC_CHECK(!send_in_progress_);
-    receivers_.push_back(UntypedFunction::Create(args));
+    receivers_.push_back({nullptr, UntypedFunction::Create(args)});
   }
+
+  void RemoveReceivers(const void* removal_tag);
 
   void Foreach(rtc::FunctionView<void(UntypedFunction&)> fv);
 
  private:
-  std::vector<UntypedFunction> receivers_;
+  struct Callback {
+    const void* removal_tag;
+    UntypedFunction function;
+  };
+  std::vector<Callback> receivers_;
   bool send_in_progress_ = false;
 };
+
+extern template void CallbackListReceivers::AddReceiver(
+    const void*,
+    UntypedFunction::TrivialUntypedFunctionArgs<1>);
+extern template void CallbackListReceivers::AddReceiver(
+    const void*,
+    UntypedFunction::TrivialUntypedFunctionArgs<2>);
+extern template void CallbackListReceivers::AddReceiver(
+    const void*,
+    UntypedFunction::TrivialUntypedFunctionArgs<3>);
+extern template void CallbackListReceivers::AddReceiver(
+    const void*,
+    UntypedFunction::TrivialUntypedFunctionArgs<4>);
+extern template void CallbackListReceivers::AddReceiver(
+    const void*,
+    UntypedFunction::NontrivialUntypedFunctionArgs);
+extern template void CallbackListReceivers::AddReceiver(
+    const void*,
+    UntypedFunction::FunctionPointerUntypedFunctionArgs);
 
 extern template void CallbackListReceivers::AddReceiver(
     UntypedFunction::TrivialUntypedFunctionArgs<1>);
@@ -125,11 +158,6 @@ extern template void CallbackListReceivers::AddReceiver(
 //     foo_callbacks_.AddReceiver(std::forward<F>(callback));
 //   }
 //
-// Removing callbacks
-// ------------------
-//
-// TODO(kwiberg): The current design doesn’t support removing callbacks, only
-// adding them, but removal support can easily be added.
 template <typename... ArgT>
 class CallbackList {
  public:
@@ -141,16 +169,35 @@ class CallbackList {
 
   // Adds a new receiver. The receiver (a callable object or a function pointer)
   // must be movable, but need not be copyable. Its call signature should be
-  // `void(ArgT...)`.
+  // `void(ArgT...)`. The removal tag is a pointer to an arbitrary object that
+  // you own, and that will stay alive until the CallbackList is gone, or until
+  // all receivers using it as a removal tag have been removed; you can use it
+  // to remove the receiver.
+  template <typename F>
+  void AddReceiver(const void* removal_tag, F&& f) {
+    receivers_.AddReceiver(
+        removal_tag,
+        UntypedFunction::PrepareArgs<void(ArgT...)>(std::forward<F>(f)));
+  }
+
+  // Adds a new receiver with no removal tag.
   template <typename F>
   void AddReceiver(F&& f) {
     receivers_.AddReceiver(
         UntypedFunction::PrepareArgs<void(ArgT...)>(std::forward<F>(f)));
   }
 
+  // Removes all receivers that were added with the given removal tag.
+  void RemoveReceivers(const void* removal_tag) {
+    receivers_.RemoveReceivers(removal_tag);
+  }
+
   // Calls all receivers with the given arguments. While the Send is in
   // progress, no method calls are allowed; specifically, this means that the
   // callbacks may not do anything with this CallbackList instance.
+  //
+  // Note: Receivers are called serially, but not necessarily in the same order
+  // they were added.
   template <typename... ArgU>
   void Send(ArgU&&... args) {
     receivers_.Foreach([&](UntypedFunction& f) {

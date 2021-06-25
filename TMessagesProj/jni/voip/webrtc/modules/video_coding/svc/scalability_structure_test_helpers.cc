@@ -17,7 +17,6 @@
 #include "api/array_view.h"
 #include "api/transport/rtp/dependency_descriptor.h"
 #include "api/video/video_bitrate_allocation.h"
-#include "api/video/video_frame_type.h"
 #include "modules/video_coding/chain_diff_calculator.h"
 #include "modules/video_coding/frame_dependencies_calculator.h"
 #include "modules/video_coding/svc/scalable_video_controller.h"
@@ -56,8 +55,6 @@ void ScalabilityStructureWrapper::GenerateFrames(
       frame_info.chain_diffs =
           chain_diff_calculator_.From(frame_id, frame_info.part_of_chain);
       for (int64_t base_frame_id : frame_deps_calculator_.FromBuffersUsage(
-               is_keyframe ? VideoFrameType::kVideoFrameKey
-                           : VideoFrameType::kVideoFrameDelta,
                frame_id, frame_info.encoder_buffers)) {
         frame_info.frame_diffs.push_back(frame_id - base_frame_id);
       }

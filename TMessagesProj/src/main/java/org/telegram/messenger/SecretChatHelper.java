@@ -604,8 +604,6 @@ public class SecretChatHelper extends BaseController {
                 Utilities.random.nextBytes(layer.random_bytes);
                 toEncryptObject = layer;
 
-                int mtprotoVersion = AndroidUtilities.getPeerLayerVersion(chat.layer) >= 73 ? 2 : 1;
-
                 if (chat.seq_in == 0 && chat.seq_out == 0) {
                     if (chat.admin_id == getUserConfig().getClientUserId()) {
                         chat.seq_out = 1;
@@ -619,15 +617,15 @@ public class SecretChatHelper extends BaseController {
                     layer.in_seq_no = chat.seq_in > 0 ? chat.seq_in : chat.seq_in + 2;
                     layer.out_seq_no = chat.seq_out;
                     chat.seq_out += 2;
-                    if (AndroidUtilities.getPeerLayerVersion(chat.layer) >= 20) {
-                        if (chat.key_create_date == 0) {
-                            chat.key_create_date = getConnectionsManager().getCurrentTime();
-                        }
-                        chat.key_use_count_out++;
-                        if ((chat.key_use_count_out >= 100 || chat.key_create_date < getConnectionsManager().getCurrentTime() - 60 * 60 * 24 * 7) && chat.exchange_id == 0 && chat.future_key_fingerprint == 0) {
-                            requestNewSecretChatKey(chat);
-                        }
+
+                    if (chat.key_create_date == 0) {
+                        chat.key_create_date = getConnectionsManager().getCurrentTime();
                     }
+                    chat.key_use_count_out++;
+                    if ((chat.key_use_count_out >= 100 || chat.key_create_date < getConnectionsManager().getCurrentTime() - 60 * 60 * 24 * 7) && chat.exchange_id == 0 && chat.future_key_fingerprint == 0) {
+                        requestNewSecretChatKey(chat);
+                    }
+
                     getMessagesStorage().updateEncryptedChatSeq(chat, false);
                     if (newMsgObj != null) {
                         newMsgObj.seq_in = layer.in_seq_no;
@@ -649,9 +647,7 @@ public class SecretChatHelper extends BaseController {
 
                 len = toEncrypt.length();
                 int extraLen = len % 16 != 0 ? 16 - len % 16 : 0;
-                if (mtprotoVersion == 2) {
-                    extraLen += (2 + Utilities.random.nextInt(3)) * 16;
-                }
+                extraLen += (2 + Utilities.random.nextInt(3)) * 16;
 
                 NativeByteBuffer dataForEncryption = new NativeByteBuffer(len + extraLen);
                 toEncrypt.position(0);
@@ -664,17 +660,14 @@ public class SecretChatHelper extends BaseController {
 
                 byte[] messageKey = new byte[16];
                 byte[] messageKeyFull;
-                boolean incoming = mtprotoVersion == 2 && chat.admin_id != getUserConfig().getClientUserId();
-                if (mtprotoVersion == 2) {
-                    messageKeyFull = Utilities.computeSHA256(chat.auth_key, 88 + (incoming ? 8 : 0), 32, dataForEncryption.buffer, 0, dataForEncryption.buffer.limit());
-                    System.arraycopy(messageKeyFull, 8, messageKey, 0, 16);
-                } else {
-                    messageKeyFull = Utilities.computeSHA1(toEncrypt.buffer);
-                    System.arraycopy(messageKeyFull, messageKeyFull.length - 16, messageKey, 0, 16);
-                }
+                boolean incoming = chat.admin_id != getUserConfig().getClientUserId();
+
+                messageKeyFull = Utilities.computeSHA256(chat.auth_key, 88 + (incoming ? 8 : 0), 32, dataForEncryption.buffer, 0, dataForEncryption.buffer.limit());
+                System.arraycopy(messageKeyFull, 8, messageKey, 0, 16);
+
                 toEncrypt.reuse();
 
-                MessageKeyData keyData = MessageKeyData.generateMessageKeyData(chat.auth_key, messageKey, incoming, mtprotoVersion);
+                MessageKeyData keyData = MessageKeyData.generateMessageKeyData(chat.auth_key, messageKey, incoming, 2);
 
                 Utilities.aesIgeEncryption(dataForEncryption.buffer, keyData.aesKey, keyData.aesIv, true, false, 0, dataForEncryption.limit());
 
@@ -730,7 +723,7 @@ public class SecretChatHelper extends BaseController {
                                 currentChat.key_hash = AndroidUtilities.calcAuthKeyHash(currentChat.auth_key);
                             }
 
-                            if (AndroidUtilities.getPeerLayerVersion(currentChat.layer) >= 46 && currentChat.key_hash.length == 16) {
+                            if (currentChat.key_hash.length == 16) {
                                 try {
                                     byte[] sha256 = Utilities.computeSHA256(chat.auth_key, 0, chat.auth_key.length);
                                     byte[] key_hash = new byte[36];
@@ -802,7 +795,7 @@ public class SecretChatHelper extends BaseController {
         if (newPeerLayer <= currentPeerLayer) {
             return;
         }
-        if (chat.key_hash.length == 16 && currentPeerLayer >= 46) {
+        if (chat.key_hash.length == 16) {
             try {
                 byte[] sha256 = Utilities.computeSHA256(chat.auth_key, 0, chat.auth_key.length);
                 byte[] key_hash = new byte[36];
@@ -829,7 +822,7 @@ public class SecretChatHelper extends BaseController {
                 from_id = chat.participant_id;
             }
 
-            if (AndroidUtilities.getPeerLayerVersion(chat.layer) >= 20 && chat.exchange_id == 0 && chat.future_key_fingerprint == 0 && chat.key_use_count_in >= 120) {
+            if (chat.exchange_id == 0 && chat.future_key_fingerprint == 0 && chat.key_use_count_in >= 120) {
                 requestNewSecretChatKey(chat);
             }
 
@@ -853,14 +846,9 @@ public class SecretChatHelper extends BaseController {
             if (object instanceof TLRPC.TL_decryptedMessage) {
                 TLRPC.TL_decryptedMessage decryptedMessage = (TLRPC.TL_decryptedMessage) object;
                 TLRPC.TL_message newMessage;
-                if (AndroidUtilities.getPeerLayerVersion(chat.layer) >= 17) {
-                    newMessage = new TLRPC.TL_message_secret();
-                    newMessage.ttl = decryptedMessage.ttl;
-                    newMessage.entities = decryptedMessage.entities;
-                } else {
-                    newMessage = new TLRPC.TL_message();
-                    newMessage.ttl = chat.ttl;
-                }
+                newMessage = new TLRPC.TL_message_secret();
+                newMessage.ttl = decryptedMessage.ttl;
+                newMessage.entities = decryptedMessage.entities;
                 newMessage.message = decryptedMessage.message;
                 newMessage.date = date;
                 newMessage.local_id = newMessage.id = getUserConfig().getNewMessageId();
@@ -932,7 +920,7 @@ public class SecretChatHelper extends BaseController {
                         newMessage.media.flags |= 4;
                     }
 
-                    TLRPC.TL_photoSize big = new TLRPC.TL_photoSize();
+                    TLRPC.TL_photoSize big = new TLRPC.TL_photoSize_layer127();
                     big.w = decryptedMessage.media.w;
                     big.h = decryptedMessage.media.h;
                     big.type = "x";
@@ -1171,7 +1159,7 @@ public class SecretChatHelper extends BaseController {
                         }));
                         getMessagesStorage().deleteDialog(did, 1);
                         getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
-                        getNotificationCenter().postNotificationName(NotificationCenter.removeAllMessagesFromDialog, did, false);
+                        getNotificationCenter().postNotificationName(NotificationCenter.removeAllMessagesFromDialog, did, false, null);
                     });
                     return null;
                 } else if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionDeleteMessages) {
@@ -1512,6 +1500,8 @@ public class SecretChatHelper extends BaseController {
         MessageKeyData keyData = MessageKeyData.generateMessageKeyData(keyToDecrypt, messageKey, incoming, version);
         Utilities.aesIgeEncryption(is.buffer, keyData.aesKey, keyData.aesIv, false, false, 24, is.limit() - 24);
 
+        int error = 0;
+
         int len = is.readInt32(false);
         byte[] messageKeyFull;
         if (version == 2) {
@@ -1521,7 +1511,7 @@ public class SecretChatHelper extends BaseController {
                     Utilities.aesIgeEncryption(is.buffer, keyData.aesKey, keyData.aesIv, true, false, 24, is.limit() - 24);
                     is.position(24);
                 }
-                return false;
+                error |= 1;
             }
         } else {
             int l = len + 28;
@@ -1534,18 +1524,30 @@ public class SecretChatHelper extends BaseController {
                     Utilities.aesIgeEncryption(is.buffer, keyData.aesKey, keyData.aesIv, true, false, 24, is.limit() - 24);
                     is.position(24);
                 }
-                return false;
+                error |= 1;
             }
         }
-        if (len <= 0 || len > is.limit() - 28) {
-            return false;
+        if (len <= 0) {
+            error |= 1;
+        }
+        if (len > is.limit() - 28) {
+            error |= 1;
         }
         int padding = is.limit() - 28 - len;
-        if (version == 2 && (padding < 12 || padding > 1024) || version == 1 && padding > 15) {
-            return false;
+        if (version == 2) {
+            if (padding < 12) {
+                error |= 1;
+            }
+            if (padding > 1024) {
+                error |= 1;
+            }
+        } else {
+            if (padding > 15) {
+                error |= 1;
+            }
         }
-        //
-        return true;
+
+        return error == 0;
     }
 
     protected ArrayList<TLRPC.Message> decryptMessage(TLRPC.EncryptedMessage message) {
@@ -1578,8 +1580,8 @@ public class SecretChatHelper extends BaseController {
                 keyToDecrypt = chat.future_auth_key;
                 new_key_used = true;
             }
-            int mtprotoVersion = AndroidUtilities.getPeerLayerVersion(chat.layer) >= 73 ? 2 : 1;
-            int decryptedWithVersion = mtprotoVersion;
+            int mtprotoVersion = 2;
+            int decryptedWithVersion = 2;
 
             if (keyToDecrypt != null) {
                 byte[] messageKey = is.readData(16, false);
@@ -1607,7 +1609,7 @@ public class SecretChatHelper extends BaseController {
                 TLObject object = TLClassStore.Instance().TLdeserialize(is, is.readInt32(false), false);
 
                 is.reuse();
-                if (!new_key_used && AndroidUtilities.getPeerLayerVersion(chat.layer) >= 20) {
+                if (!new_key_used) {
                     chat.key_use_count_in++;
                 }
                 if (object instanceof TLRPC.TL_decryptedMessageLayer) {
@@ -1707,9 +1709,6 @@ public class SecretChatHelper extends BaseController {
     }
 
     public void requestNewSecretChatKey(final TLRPC.EncryptedChat encryptedChat) {
-        if (AndroidUtilities.getPeerLayerVersion(encryptedChat.layer) < 20) {
-            return;
-        }
         final byte[] salt = new byte[256];
         Utilities.random.nextBytes(salt);
 
@@ -1797,11 +1796,32 @@ public class SecretChatHelper extends BaseController {
     }
 
     public void declineSecretChat(int chat_id, boolean revoke) {
+        declineSecretChat(chat_id, revoke, 0);
+    }
+
+    public void declineSecretChat(int chat_id, boolean revoke, long taskId) {
+        final long newTaskId;
+        if (taskId == 0) {
+            NativeByteBuffer data = null;
+            try {
+                data = new NativeByteBuffer(4 + 4 + 4);
+                data.writeInt32(100);
+                data.writeInt32(chat_id);
+                data.writeBool(revoke);
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+            newTaskId = getMessagesStorage().createPendingTask(data);
+        } else {
+            newTaskId = taskId;
+        }
         TLRPC.TL_messages_discardEncryption req = new TLRPC.TL_messages_discardEncryption();
         req.chat_id = chat_id;
         req.delete_history = revoke;
         getConnectionsManager().sendRequest(req, (response, error) -> {
-
+            if (newTaskId != 0) {
+                getMessagesStorage().removePendingTask(newTaskId);
+            }
         });
     }
 

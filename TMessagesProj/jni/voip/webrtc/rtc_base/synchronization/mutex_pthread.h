@@ -18,6 +18,7 @@
 #include <pthread_spis.h>
 #endif
 
+#include "absl/base/attributes.h"
 #include "rtc_base/thread_annotations.h"
 
 namespace webrtc {
@@ -39,7 +40,7 @@ class RTC_LOCKABLE MutexImpl final {
   ~MutexImpl() { pthread_mutex_destroy(&mutex_); }
 
   void Lock() RTC_EXCLUSIVE_LOCK_FUNCTION() { pthread_mutex_lock(&mutex_); }
-  RTC_WARN_UNUSED_RESULT bool TryLock() RTC_EXCLUSIVE_TRYLOCK_FUNCTION(true) {
+  ABSL_MUST_USE_RESULT bool TryLock() RTC_EXCLUSIVE_TRYLOCK_FUNCTION(true) {
     return pthread_mutex_trylock(&mutex_) == 0;
   }
   void Unlock() RTC_UNLOCK_FUNCTION() { pthread_mutex_unlock(&mutex_); }

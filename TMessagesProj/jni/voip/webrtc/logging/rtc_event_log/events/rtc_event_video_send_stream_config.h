@@ -20,13 +20,14 @@ namespace webrtc {
 
 class RtcEventVideoSendStreamConfig final : public RtcEvent {
  public:
+  static constexpr Type kType = Type::VideoSendStreamConfig;
+
   explicit RtcEventVideoSendStreamConfig(
       std::unique_ptr<rtclog::StreamConfig> config);
   ~RtcEventVideoSendStreamConfig() override;
 
-  Type GetType() const override;
-
-  bool IsConfigEvent() const override;
+  Type GetType() const override { return kType; }
+  bool IsConfigEvent() const override { return true; }
 
   std::unique_ptr<RtcEventVideoSendStreamConfig> Copy() const;
 
@@ -38,6 +39,17 @@ class RtcEventVideoSendStreamConfig final : public RtcEvent {
   const std::unique_ptr<const rtclog::StreamConfig> config_;
 };
 
+struct LoggedVideoSendConfig {
+  LoggedVideoSendConfig() = default;
+  LoggedVideoSendConfig(int64_t timestamp_us, const rtclog::StreamConfig config)
+      : timestamp_us(timestamp_us), config(config) {}
+
+  int64_t log_time_us() const { return timestamp_us; }
+  int64_t log_time_ms() const { return timestamp_us / 1000; }
+
+  int64_t timestamp_us;
+  rtclog::StreamConfig config;
+};
 }  // namespace webrtc
 
 #endif  // LOGGING_RTC_EVENT_LOG_EVENTS_RTC_EVENT_VIDEO_SEND_STREAM_CONFIG_H_

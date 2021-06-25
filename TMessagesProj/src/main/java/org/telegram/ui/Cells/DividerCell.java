@@ -10,12 +10,19 @@ package org.telegram.ui.Cells;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.view.View;
+
+import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 
 public class DividerCell extends View {
+
+    boolean forceDarkTheme;
+    Paint paint;
 
     public DividerCell(Context context) {
         super(context);
@@ -29,6 +36,19 @@ public class DividerCell extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        canvas.drawLine(getPaddingLeft(), getPaddingTop(), getWidth() - getPaddingRight(), getPaddingTop(), Theme.dividerPaint);
+        Paint localPaint = Theme.dividerPaint;
+        if (forceDarkTheme) {
+            if (paint == null) {
+                paint = new Paint();
+                paint.setColor(ColorUtils.blendARGB(Color.BLACK, Theme.getColor(Theme.key_voipgroup_dialogBackground),  0.2f));
+            }
+            localPaint = paint;
+        }
+
+        canvas.drawLine(getPaddingLeft(), getPaddingTop(), getWidth() - getPaddingRight(), getPaddingTop(), localPaint);
+    }
+
+    public void setForceDarkTheme(boolean forceDarkTheme) {
+        this.forceDarkTheme = forceDarkTheme;
     }
 }

@@ -102,24 +102,28 @@ void FrameBuffer::StartWaitForNextFrameOnQueue() {
         RTC_DCHECK_RUN_ON(&callback_checker_);
         // If this task has not been cancelled, we did not get any new frames
         // while waiting. Continue with frame delivery.
-        MutexLock lock(&mutex_);
-        if (!frames_to_decode_.empty()) {
-          // We have frames, deliver!
-          frame_handler_(absl::WrapUnique(GetNextFrame()), kFrameFound);
+        std::unique_ptr<EncodedFrame> frame;
+        std::function<void(std::unique_ptr<EncodedFrame>, ReturnReason)>
+            frame_handler;
+        {
+          MutexLock lock(&mutex_);
+          if (!frames_to_decode_.empty()) {
+            // We have frames, deliver!
+            frame = absl::WrapUnique(GetNextFrame());
+          } else if (clock_->TimeInMilliseconds() < latest_return_time_ms_) {
+            // If there's no frames to decode and there is still time left, it
+            // means that the frame buffer was cleared between creation and
+            // execution of this task. Continue waiting for the remaining time.
+            int64_t wait_ms = FindNextFrame(clock_->TimeInMilliseconds());
+            return TimeDelta::Millis(wait_ms);
+          }
+          frame_handler = std::move(frame_handler_);
           CancelCallback();
-          return TimeDelta::Zero();  // Ignored.
-        } else if (clock_->TimeInMilliseconds() >= latest_return_time_ms_) {
-          // We have timed out, signal this and stop repeating.
-          frame_handler_(nullptr, kTimeout);
-          CancelCallback();
-          return TimeDelta::Zero();  // Ignored.
-        } else {
-          // If there's no frames to decode and there is still time left, it
-          // means that the frame buffer was cleared between creation and
-          // execution of this task. Continue waiting for the remaining time.
-          int64_t wait_ms = FindNextFrame(clock_->TimeInMilliseconds());
-          return TimeDelta::Millis(wait_ms);
         }
+        // Deliver frame, if any. Otherwise signal timeout.
+        ReturnReason reason = frame ? kFrameFound : kTimeout;
+        frame_handler(std::move(frame), reason);
+        return TimeDelta::Zero();  // Ignored.
       });
 }
 
@@ -153,38 +157,44 @@ int64_t FrameBuffer::FindNextFrame(int64_t now_ms) {
       continue;
     }
 
-    // Only ever return all parts of a superframe. Therefore skip this
-    // frame if it's not a beginning of a superframe.
-    if (frame->inter_layer_predicted) {
-      continue;
-    }
-
     // Gather all remaining frames for the same superframe.
     std::vector<FrameMap::iterator> current_superframe;
     current_superframe.push_back(frame_it);
     bool last_layer_completed = frame_it->second.frame->is_last_spatial_layer;
     FrameMap::iterator next_frame_it = frame_it;
-    while (true) {
+    while (!last_layer_completed) {
       ++next_frame_it;
-      if (next_frame_it == frames_.end() ||
-          next_frame_it->first.picture_id != frame->id.picture_id ||
+
+      if (next_frame_it == frames_.end() || !next_frame_it->second.frame) {
+        break;
+      }
+
+      if (next_frame_it->second.frame->Timestamp() != frame->Timestamp() ||
           !next_frame_it->second.continuous) {
         break;
       }
-      // Check if the next frame has some undecoded references other than
-      // the previous frame in the same superframe.
-      size_t num_allowed_undecoded_refs =
-          (next_frame_it->second.frame->inter_layer_predicted) ? 1 : 0;
-      if (next_frame_it->second.num_missing_decodable >
-          num_allowed_undecoded_refs) {
-        break;
+
+      if (next_frame_it->second.num_missing_decodable > 0) {
+        bool has_inter_layer_dependency = false;
+        for (size_t i = 0; i < EncodedFrame::kMaxFrameReferences &&
+                           i < next_frame_it->second.frame->num_references;
+             ++i) {
+          if (next_frame_it->second.frame->references[i] >= frame_it->first) {
+            has_inter_layer_dependency = true;
+            break;
+          }
+        }
+
+        // If the frame has an undecoded dependency that is not within the same
+        // temporal unit then this frame is not yet ready to be decoded. If it
+        // is within the same temporal unit then the not yet decoded dependency
+        // is just a lower spatial frame, which is ok.
+        if (!has_inter_layer_dependency ||
+            next_frame_it->second.num_missing_decodable > 1) {
+          break;
+        }
       }
-      // All frames in the superframe should have the same timestamp.
-      if (frame->Timestamp() != next_frame_it->second.frame->Timestamp()) {
-        RTC_LOG(LS_WARNING) << "Frames in a single superframe have different"
-                               " timestamps. Skipping undecodable superframe.";
-        break;
-      }
+
       current_superframe.push_back(next_frame_it);
       last_layer_completed = next_frame_it->second.frame->is_last_spatial_layer;
     }
@@ -251,11 +261,11 @@ EncodedFrame* FrameBuffer::GetNextFrame() {
 
     // Remove decoded frame and all undecoded frames before it.
     if (stats_callback_) {
-      unsigned int dropped_frames = std::count_if(
-          frames_.begin(), frame_it,
-          [](const std::pair<const VideoLayerFrameId, FrameInfo>& frame) {
-            return frame.second.frame != nullptr;
-          });
+      unsigned int dropped_frames =
+          std::count_if(frames_.begin(), frame_it,
+                        [](const std::pair<const int64_t, FrameInfo>& frame) {
+                          return frame.second.frame != nullptr;
+                        });
       if (dropped_frames > 0) {
         stats_callback_->OnDroppedFrames(dropped_frames);
       }
@@ -360,7 +370,7 @@ void FrameBuffer::UpdateRtt(int64_t rtt_ms) {
 
 bool FrameBuffer::ValidReferences(const EncodedFrame& frame) const {
   for (size_t i = 0; i < frame.num_references; ++i) {
-    if (frame.references[i] >= frame.id.picture_id)
+    if (frame.references[i] >= frame.Id())
       return false;
 
     for (size_t j = i + 1; j < frame.num_references; ++j) {
@@ -368,9 +378,6 @@ bool FrameBuffer::ValidReferences(const EncodedFrame& frame) const {
         return false;
     }
   }
-
-  if (frame.inter_layer_predicted && frame.id.spatial_layer == 0)
-    return false;
 
   return true;
 }
@@ -383,136 +390,82 @@ void FrameBuffer::CancelCallback() {
   callback_checker_.Detach();
 }
 
-bool FrameBuffer::IsCompleteSuperFrame(const EncodedFrame& frame) {
-  if (frame.inter_layer_predicted) {
-    // Check that all previous spatial layers are already inserted.
-    VideoLayerFrameId id = frame.id;
-    RTC_DCHECK_GT(id.spatial_layer, 0);
-    --id.spatial_layer;
-    FrameMap::iterator prev_frame = frames_.find(id);
-    if (prev_frame == frames_.end() || !prev_frame->second.frame)
-      return false;
-    while (prev_frame->second.frame->inter_layer_predicted) {
-      if (prev_frame == frames_.begin())
-        return false;
-      --prev_frame;
-      --id.spatial_layer;
-      if (!prev_frame->second.frame ||
-          prev_frame->first.picture_id != id.picture_id ||
-          prev_frame->first.spatial_layer != id.spatial_layer) {
-        return false;
-      }
-    }
-  }
-
-  if (!frame.is_last_spatial_layer) {
-    // Check that all following spatial layers are already inserted.
-    VideoLayerFrameId id = frame.id;
-    ++id.spatial_layer;
-    FrameMap::iterator next_frame = frames_.find(id);
-    if (next_frame == frames_.end() || !next_frame->second.frame)
-      return false;
-    while (!next_frame->second.frame->is_last_spatial_layer) {
-      ++next_frame;
-      ++id.spatial_layer;
-      if (next_frame == frames_.end() || !next_frame->second.frame ||
-          next_frame->first.picture_id != id.picture_id ||
-          next_frame->first.spatial_layer != id.spatial_layer) {
-        return false;
-      }
-    }
-  }
-
-  return true;
-}
-
 int64_t FrameBuffer::InsertFrame(std::unique_ptr<EncodedFrame> frame) {
   TRACE_EVENT0("webrtc", "FrameBuffer::InsertFrame");
   RTC_DCHECK(frame);
 
   MutexLock lock(&mutex_);
 
-  const VideoLayerFrameId& id = frame->id;
-  int64_t last_continuous_picture_id =
-      !last_continuous_frame_ ? -1 : last_continuous_frame_->picture_id;
+  int64_t last_continuous_frame_id = last_continuous_frame_.value_or(-1);
 
   if (!ValidReferences(*frame)) {
-    RTC_LOG(LS_WARNING) << "Frame with (picture_id:spatial_id) ("
-                        << id.picture_id << ":"
-                        << static_cast<int>(id.spatial_layer)
-                        << ") has invalid frame references, dropping frame.";
-    return last_continuous_picture_id;
+    RTC_LOG(LS_WARNING) << "Frame " << frame->Id()
+                        << " has invalid frame references, dropping frame.";
+    return last_continuous_frame_id;
   }
 
   if (frames_.size() >= kMaxFramesBuffered) {
     if (frame->is_keyframe()) {
-      RTC_LOG(LS_WARNING) << "Inserting keyframe (picture_id:spatial_id) ("
-                          << id.picture_id << ":"
-                          << static_cast<int>(id.spatial_layer)
-                          << ") but buffer is full, clearing"
+      RTC_LOG(LS_WARNING) << "Inserting keyframe " << frame->Id()
+                          << " but buffer is full, clearing"
                              " buffer and inserting the frame.";
       ClearFramesAndHistory();
     } else {
-      RTC_LOG(LS_WARNING) << "Frame with (picture_id:spatial_id) ("
-                          << id.picture_id << ":"
-                          << static_cast<int>(id.spatial_layer)
-                          << ") could not be inserted due to the frame "
+      RTC_LOG(LS_WARNING) << "Frame " << frame->Id()
+                          << " could not be inserted due to the frame "
                              "buffer being full, dropping frame.";
-      return last_continuous_picture_id;
+      return last_continuous_frame_id;
     }
   }
 
   auto last_decoded_frame = decoded_frames_history_.GetLastDecodedFrameId();
   auto last_decoded_frame_timestamp =
       decoded_frames_history_.GetLastDecodedFrameTimestamp();
-  if (last_decoded_frame && id <= *last_decoded_frame) {
+  if (last_decoded_frame && frame->Id() <= *last_decoded_frame) {
     if (AheadOf(frame->Timestamp(), *last_decoded_frame_timestamp) &&
         frame->is_keyframe()) {
-      // If this frame has a newer timestamp but an earlier picture id then we
-      // assume there has been a jump in the picture id due to some encoder
+      // If this frame has a newer timestamp but an earlier frame id then we
+      // assume there has been a jump in the frame id due to some encoder
       // reconfiguration or some other reason. Even though this is not according
       // to spec we can still continue to decode from this frame if it is a
       // keyframe.
       RTC_LOG(LS_WARNING)
-          << "A jump in picture id was detected, clearing buffer.";
+          << "A jump in frame id was detected, clearing buffer.";
       ClearFramesAndHistory();
-      last_continuous_picture_id = -1;
+      last_continuous_frame_id = -1;
     } else {
-      RTC_LOG(LS_WARNING) << "Frame with (picture_id:spatial_id) ("
-                          << id.picture_id << ":"
-                          << static_cast<int>(id.spatial_layer)
-                          << ") inserted after frame ("
-                          << last_decoded_frame->picture_id << ":"
-                          << static_cast<int>(last_decoded_frame->spatial_layer)
-                          << ") was handed off for decoding, dropping frame.";
-      return last_continuous_picture_id;
+      RTC_LOG(LS_WARNING) << "Frame " << frame->Id() << " inserted after frame "
+                          << *last_decoded_frame
+                          << " was handed off for decoding, dropping frame.";
+      return last_continuous_frame_id;
     }
   }
 
   // Test if inserting this frame would cause the order of the frames to become
   // ambiguous (covering more than half the interval of 2^16). This can happen
-  // when the picture id make large jumps mid stream.
-  if (!frames_.empty() && id < frames_.begin()->first &&
-      frames_.rbegin()->first < id) {
-    RTC_LOG(LS_WARNING)
-        << "A jump in picture id was detected, clearing buffer.";
+  // when the frame id make large jumps mid stream.
+  if (!frames_.empty() && frame->Id() < frames_.begin()->first &&
+      frames_.rbegin()->first < frame->Id()) {
+    RTC_LOG(LS_WARNING) << "A jump in frame id was detected, clearing buffer.";
     ClearFramesAndHistory();
-    last_continuous_picture_id = -1;
+    last_continuous_frame_id = -1;
   }
 
-  auto info = frames_.emplace(id, FrameInfo()).first;
+  auto info = frames_.emplace(frame->Id(), FrameInfo()).first;
 
   if (info->second.frame) {
-    return last_continuous_picture_id;
+    return last_continuous_frame_id;
   }
 
   if (!UpdateFrameInfoWithIncomingFrame(*frame, info))
-    return last_continuous_picture_id;
+    return last_continuous_frame_id;
 
   if (!frame->delayed_by_retransmission())
     timing_->IncomingTimestamp(frame->Timestamp(), frame->ReceivedTime());
 
-  if (stats_callback_ && IsCompleteSuperFrame(*frame)) {
+  // It can happen that a frame will be reported as fully received even if a
+  // lower spatial layer frame is missing.
+  if (stats_callback_ && frame->is_last_spatial_layer) {
     stats_callback_->OnCompleteFrame(frame->is_keyframe(), frame->size(),
                                      frame->contentType());
   }
@@ -522,7 +475,7 @@ int64_t FrameBuffer::InsertFrame(std::unique_ptr<EncodedFrame> frame) {
   if (info->second.num_missing_continuous == 0) {
     info->second.continuous = true;
     PropagateContinuity(info);
-    last_continuous_picture_id = last_continuous_frame_->picture_id;
+    last_continuous_frame_id = *last_continuous_frame_;
 
     // Since we now have new continuous frames there might be a better frame
     // to return from NextFrame.
@@ -538,7 +491,7 @@ int64_t FrameBuffer::InsertFrame(std::unique_ptr<EncodedFrame> frame) {
     }
   }
 
-  return last_continuous_picture_id;
+  return last_continuous_frame_id;
 }
 
 void FrameBuffer::PropagateContinuity(FrameMap::iterator start) {
@@ -591,8 +544,6 @@ void FrameBuffer::PropagateDecodability(const FrameInfo& info) {
 bool FrameBuffer::UpdateFrameInfoWithIncomingFrame(const EncodedFrame& frame,
                                                    FrameMap::iterator info) {
   TRACE_EVENT0("webrtc", "FrameBuffer::UpdateFrameInfoWithIncomingFrame");
-  const VideoLayerFrameId& id = frame.id;
-
   auto last_decoded_frame = decoded_frames_history_.GetLastDecodedFrameId();
   RTC_DCHECK(!last_decoded_frame || *last_decoded_frame < info->first);
 
@@ -605,52 +556,34 @@ bool FrameBuffer::UpdateFrameInfoWithIncomingFrame(const EncodedFrame& frame,
   // so that |num_missing_continuous| and |num_missing_decodable| can be
   // decremented as frames become continuous/are decoded.
   struct Dependency {
-    VideoLayerFrameId id;
+    int64_t frame_id;
     bool continuous;
   };
   std::vector<Dependency> not_yet_fulfilled_dependencies;
 
   // Find all dependencies that have not yet been fulfilled.
   for (size_t i = 0; i < frame.num_references; ++i) {
-    VideoLayerFrameId ref_key(frame.references[i], frame.id.spatial_layer);
     // Does |frame| depend on a frame earlier than the last decoded one?
-    if (last_decoded_frame && ref_key <= *last_decoded_frame) {
+    if (last_decoded_frame && frame.references[i] <= *last_decoded_frame) {
       // Was that frame decoded? If not, this |frame| will never become
       // decodable.
-      if (!decoded_frames_history_.WasDecoded(ref_key)) {
+      if (!decoded_frames_history_.WasDecoded(frame.references[i])) {
         int64_t now_ms = clock_->TimeInMilliseconds();
         if (last_log_non_decoded_ms_ + kLogNonDecodedIntervalMs < now_ms) {
           RTC_LOG(LS_WARNING)
-              << "Frame with (picture_id:spatial_id) (" << id.picture_id << ":"
-              << static_cast<int>(id.spatial_layer)
-              << ") depends on a non-decoded frame more previous than"
-                 " the last decoded frame, dropping frame.";
+              << "Frame " << frame.Id()
+              << " depends on a non-decoded frame more previous than the last "
+                 "decoded frame, dropping frame.";
           last_log_non_decoded_ms_ = now_ms;
         }
         return false;
       }
     } else {
-      auto ref_info = frames_.find(ref_key);
+      auto ref_info = frames_.find(frame.references[i]);
       bool ref_continuous =
           ref_info != frames_.end() && ref_info->second.continuous;
-      not_yet_fulfilled_dependencies.push_back({ref_key, ref_continuous});
-    }
-  }
-
-  // Does |frame| depend on the lower spatial layer?
-  if (frame.inter_layer_predicted) {
-    VideoLayerFrameId ref_key(frame.id.picture_id, frame.id.spatial_layer - 1);
-    auto ref_info = frames_.find(ref_key);
-
-    bool lower_layer_decoded =
-        last_decoded_frame && *last_decoded_frame == ref_key;
-    bool lower_layer_continuous =
-        lower_layer_decoded ||
-        (ref_info != frames_.end() && ref_info->second.continuous);
-
-    if (!lower_layer_continuous || !lower_layer_decoded) {
       not_yet_fulfilled_dependencies.push_back(
-          {ref_key, lower_layer_continuous});
+          {frame.references[i], ref_continuous});
     }
   }
 
@@ -661,7 +594,7 @@ bool FrameBuffer::UpdateFrameInfoWithIncomingFrame(const EncodedFrame& frame,
     if (dep.continuous)
       --info->second.num_missing_continuous;
 
-    frames_[dep.id].dependent_frames.push_back(id);
+    frames_[dep.frame_id].dependent_frames.push_back(frame.Id());
   }
 
   return true;
@@ -697,11 +630,11 @@ void FrameBuffer::UpdateTimingFrameInfo() {
 void FrameBuffer::ClearFramesAndHistory() {
   TRACE_EVENT0("webrtc", "FrameBuffer::ClearFramesAndHistory");
   if (stats_callback_) {
-    unsigned int dropped_frames = std::count_if(
-        frames_.begin(), frames_.end(),
-        [](const std::pair<const VideoLayerFrameId, FrameInfo>& frame) {
-          return frame.second.frame != nullptr;
-        });
+    unsigned int dropped_frames =
+        std::count_if(frames_.begin(), frames_.end(),
+                      [](const std::pair<const int64_t, FrameInfo>& frame) {
+                        return frame.second.frame != nullptr;
+                      });
     if (dropped_frames > 0) {
       stats_callback_->OnDroppedFrames(dropped_frames);
     }
@@ -725,15 +658,14 @@ EncodedFrame* FrameBuffer::CombineAndDeleteFrames(
   }
   auto encoded_image_buffer = EncodedImageBuffer::Create(total_length);
   uint8_t* buffer = encoded_image_buffer->data();
-  first_frame->SetSpatialLayerFrameSize(first_frame->id.spatial_layer,
+  first_frame->SetSpatialLayerFrameSize(first_frame->SpatialIndex().value_or(0),
                                         first_frame->size());
   memcpy(buffer, first_frame->data(), first_frame->size());
   buffer += first_frame->size();
 
   // Spatial index of combined frame is set equal to spatial index of its top
   // spatial layer.
-  first_frame->SetSpatialIndex(last_frame->id.spatial_layer);
-  first_frame->id.spatial_layer = last_frame->id.spatial_layer;
+  first_frame->SetSpatialIndex(last_frame->SpatialIndex().value_or(0));
 
   first_frame->video_timing_mutable()->network2_timestamp_ms =
       last_frame->video_timing().network2_timestamp_ms;
@@ -743,8 +675,8 @@ EncodedFrame* FrameBuffer::CombineAndDeleteFrames(
   // Append all remaining frames to the first one.
   for (size_t i = 1; i < frames.size(); ++i) {
     EncodedFrame* next_frame = frames[i];
-    first_frame->SetSpatialLayerFrameSize(next_frame->id.spatial_layer,
-                                          next_frame->size());
+    first_frame->SetSpatialLayerFrameSize(
+        next_frame->SpatialIndex().value_or(0), next_frame->size());
     memcpy(buffer, next_frame->data(), next_frame->size());
     buffer += next_frame->size();
     delete next_frame;

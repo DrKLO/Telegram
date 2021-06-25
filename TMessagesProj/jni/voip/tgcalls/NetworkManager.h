@@ -10,6 +10,7 @@
 
 #include "rtc_base/copy_on_write_buffer.h"
 #include "api/candidate.h"
+#include "rtc_base/network_monitor_factory.h"
 
 #include <functional>
 #include <memory>
@@ -93,6 +94,7 @@ private:
 	std::function<void(DecryptedMessage &&)> _transportMessageReceived;
 	std::function<void(Message &&)> _sendSignalingMessage;
 
+    std::unique_ptr<rtc::NetworkMonitorFactory> _networkMonitorFactory;
 	std::unique_ptr<rtc::BasicPacketSocketFactory> _socketFactory;
 	std::unique_ptr<rtc::BasicNetworkManager> _networkManager;
     std::unique_ptr<webrtc::TurnCustomizer> _turnCustomizer;

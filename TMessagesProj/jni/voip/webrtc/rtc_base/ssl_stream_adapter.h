@@ -18,7 +18,6 @@
 #include <vector>
 
 #include "absl/memory/memory.h"
-#include "rtc_base/deprecation.h"
 #include "rtc_base/ssl_certificate.h"
 #include "rtc_base/ssl_identity.h"
 #include "rtc_base/stream.h"
@@ -119,7 +118,7 @@ enum { SSE_MSG_TRUNC = 0xff0001 };
 // Used to send back UMA histogram value. Logged when Dtls handshake fails.
 enum class SSLHandshakeError { UNKNOWN, INCOMPATIBLE_CIPHERSUITE, MAX_VALUE };
 
-class SSLStreamAdapter : public StreamAdapterInterface {
+class SSLStreamAdapter : public StreamInterface, public sigslot::has_slots<> {
  public:
   // Instantiate an SSLStreamAdapter wrapping the given stream,
   // (using the selected implementation for the platform).
@@ -127,8 +126,8 @@ class SSLStreamAdapter : public StreamAdapterInterface {
   static std::unique_ptr<SSLStreamAdapter> Create(
       std::unique_ptr<StreamInterface> stream);
 
-  explicit SSLStreamAdapter(std::unique_ptr<StreamInterface> stream);
-  ~SSLStreamAdapter() override;
+  SSLStreamAdapter() = default;
+  ~SSLStreamAdapter() override = default;
 
   // Specify our SSL identity: key and certificate. SSLStream takes ownership
   // of the SSLIdentity object and will free it when appropriate. Should be

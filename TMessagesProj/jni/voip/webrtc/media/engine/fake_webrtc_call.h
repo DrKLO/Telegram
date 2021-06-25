@@ -20,6 +20,7 @@
 #ifndef MEDIA_ENGINE_FAKE_WEBRTC_CALL_H_
 #define MEDIA_ENGINE_FAKE_WEBRTC_CALL_H_
 
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -104,6 +105,7 @@ class FakeAudioReceiveStream final : public webrtc::AudioReceiveStream {
   void Reconfigure(const webrtc::AudioReceiveStream::Config& config) override;
   void Start() override { started_ = true; }
   void Stop() override { started_ = false; }
+  bool IsRunning() const override { return started_; }
 
   webrtc::AudioReceiveStream::Stats GetStats(
       bool get_and_clear_legacy_stats) const override;
@@ -218,12 +220,6 @@ class FakeVideoReceiveStream final : public webrtc::VideoReceiveStream {
 
   void SetStats(const webrtc::VideoReceiveStream::Stats& stats);
 
-  void AddSecondarySink(webrtc::RtpPacketSinkInterface* sink) override;
-  void RemoveSecondarySink(const webrtc::RtpPacketSinkInterface* sink) override;
-
-  int GetNumAddedSecondarySinks() const;
-  int GetNumRemovedSecondarySinks() const;
-
   std::vector<webrtc::RtpSource> GetSources() const override {
     return std::vector<webrtc::RtpSource>();
   }
@@ -266,9 +262,6 @@ class FakeVideoReceiveStream final : public webrtc::VideoReceiveStream {
   webrtc::VideoReceiveStream::Stats stats_;
 
   int base_mininum_playout_delay_ms_ = 0;
-
-  int num_added_secondary_sinks_;
-  int num_removed_secondary_sinks_;
 };
 
 class FakeFlexfecReceiveStream final : public webrtc::FlexfecReceiveStream {
@@ -289,6 +282,8 @@ class FakeFlexfecReceiveStream final : public webrtc::FlexfecReceiveStream {
 class FakeCall final : public webrtc::Call, public webrtc::PacketReceiver {
  public:
   FakeCall();
+  FakeCall(webrtc::TaskQueueBase* worker_thread,
+           webrtc::TaskQueueBase* network_thread);
   ~FakeCall() override;
 
   webrtc::MockRtpTransportControllerSend* GetMockTransportControllerSend() {
@@ -307,6 +302,10 @@ class FakeCall final : public webrtc::Call, public webrtc::PacketReceiver {
   const std::vector<FakeFlexfecReceiveStream*>& GetFlexfecReceiveStreams();
 
   rtc::SentPacket last_sent_packet() const { return last_sent_packet_; }
+  size_t GetDeliveredPacketsForSsrc(uint32_t ssrc) const {
+    auto it = delivered_packets_by_ssrc_.find(ssrc);
+    return it != delivered_packets_by_ssrc_.end() ? it->second : 0u;
+  }
 
   // This is useful if we care about the last media packet (with id populated)
   // but not the last ICE packet (with -1 ID).
@@ -367,11 +366,17 @@ class FakeCall final : public webrtc::Call, public webrtc::PacketReceiver {
     return trials_;
   }
 
+  webrtc::TaskQueueBase* network_thread() const override;
+  webrtc::TaskQueueBase* worker_thread() const override;
+
   void SignalChannelNetworkState(webrtc::MediaType media,
                                  webrtc::NetworkState state) override;
   void OnAudioTransportOverheadChanged(
       int transport_overhead_per_packet) override;
   void OnSentPacket(const rtc::SentPacket& sent_packet) override;
+
+  webrtc::TaskQueueBase* const network_thread_;
+  webrtc::TaskQueueBase* const worker_thread_;
 
   ::testing::NiceMock<webrtc::MockRtpTransportControllerSend>
       transport_controller_send_;
@@ -387,6 +392,7 @@ class FakeCall final : public webrtc::Call, public webrtc::PacketReceiver {
   std::vector<FakeVideoReceiveStream*> video_receive_streams_;
   std::vector<FakeAudioReceiveStream*> audio_receive_streams_;
   std::vector<FakeFlexfecReceiveStream*> flexfec_receive_streams_;
+  std::map<uint32_t, size_t> delivered_packets_by_ssrc_;
 
   int num_created_send_streams_;
   int num_created_receive_streams_;

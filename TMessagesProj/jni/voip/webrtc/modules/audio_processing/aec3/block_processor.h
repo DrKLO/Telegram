@@ -69,6 +69,12 @@ class BlockProcessor {
   // Reports whether echo leakage has been detected in the echo canceller
   // output.
   virtual void UpdateEchoLeakageStatus(bool leakage_detected) = 0;
+
+  // Specifies whether the capture output will be used. The purpose of this is
+  // to allow the block processor to deactivate some of the processing when the
+  // resulting output is anyway not used, for instance when the endpoint is
+  // muted.
+  virtual void SetCaptureOutputUsage(bool capture_output_used) = 0;
 };
 
 }  // namespace webrtc

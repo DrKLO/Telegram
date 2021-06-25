@@ -18,7 +18,6 @@
 #include <memory>
 #include <string>
 
-#include "rtc_base/deprecation.h"
 #include "rtc_base/system/rtc_export.h"
 
 namespace rtc {

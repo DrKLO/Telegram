@@ -18,10 +18,10 @@
 #include <memory>
 
 #include "api/scoped_refptr.h"
+#include "api/sequence_checker.h"
 #include "modules/audio_device/audio_device_buffer.h"
 #include "modules/audio_device/fine_audio_buffer.h"
 #include "modules/audio_device/include/audio_device_defines.h"
-#include "rtc_base/thread_checker.h"
 #include "sdk/android/src/jni/audio_device/audio_common.h"
 #include "sdk/android/src/jni/audio_device/audio_device_module.h"
 #include "sdk/android/src/jni/audio_device/opensles_common.h"
@@ -128,12 +128,12 @@ class OpenSLESRecorder : public AudioInput {
 
   // Ensures that methods are called from the same thread as this object is
   // created on.
-  rtc::ThreadChecker thread_checker_;
+  SequenceChecker thread_checker_;
 
   // Stores thread ID in first call to SimpleBufferQueueCallback() from internal
   // non-application thread which is not attached to the Dalvik JVM.
   // Detached during construction of this object.
-  rtc::ThreadChecker thread_checker_opensles_;
+  SequenceChecker thread_checker_opensles_;
 
   const AudioParameters audio_parameters_;
 

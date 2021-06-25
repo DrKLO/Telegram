@@ -52,8 +52,9 @@ void ErleEstimator::Update(
     rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>>
         subtractor_spectra,
     const std::vector<bool>& converged_filters) {
-  RTC_DCHECK_EQ(subband_erle_estimator_.Erle().size(), capture_spectra.size());
-  RTC_DCHECK_EQ(subband_erle_estimator_.Erle().size(),
+  RTC_DCHECK_EQ(subband_erle_estimator_.Erle(/*onset_compensated=*/true).size(),
+                capture_spectra.size());
+  RTC_DCHECK_EQ(subband_erle_estimator_.Erle(/*onset_compensated=*/true).size(),
                 subtractor_spectra.size());
   const auto& X2_reverb = avg_render_spectrum_with_reverb;
   const auto& Y2 = capture_spectra;
@@ -68,7 +69,9 @@ void ErleEstimator::Update(
   if (signal_dependent_erle_estimator_) {
     signal_dependent_erle_estimator_->Update(
         render_buffer, filter_frequency_responses, X2_reverb, Y2, E2,
-        subband_erle_estimator_.Erle(), converged_filters);
+        subband_erle_estimator_.Erle(/*onset_compensated=*/false),
+        subband_erle_estimator_.Erle(/*onset_compensated=*/true),
+        converged_filters);
   }
 
   fullband_erle_estimator_.Update(X2_reverb, Y2, E2, converged_filters);

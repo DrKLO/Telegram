@@ -193,13 +193,15 @@ public class DrawerLayoutContainer extends FrameLayout {
         if (drawerLayout.getVisibility() != newVisibility) {
             drawerLayout.setVisibility(newVisibility);
         }
-        BaseFragment currentFragment = parentActionBarLayout.fragmentsStack.get(0);
-        if (drawerPosition == drawerLayout.getMeasuredWidth()) {
-            currentFragment.setProgressToDrawerOpened(1f);
-        } else if (drawerPosition == 0){
-            currentFragment.setProgressToDrawerOpened(0);
-        } else {
-            currentFragment.setProgressToDrawerOpened(drawerPosition / drawerLayout.getMeasuredWidth());
+        if (!parentActionBarLayout.fragmentsStack.isEmpty()) {
+            BaseFragment currentFragment = parentActionBarLayout.fragmentsStack.get(0);
+            if (drawerPosition == drawerLayout.getMeasuredWidth()) {
+                currentFragment.setProgressToDrawerOpened(1f);
+            } else if (drawerPosition == 0) {
+                currentFragment.setProgressToDrawerOpened(0);
+            } else {
+                currentFragment.setProgressToDrawerOpened(drawerPosition / drawerLayout.getMeasuredWidth());
+            }
         }
         setScrimOpacity(drawerPosition / (float) drawerLayout.getMeasuredWidth());
     }
@@ -315,6 +317,10 @@ public class DrawerLayoutContainer extends FrameLayout {
                 closeDrawer(true);
             }
         }
+    }
+
+    public boolean isAllowOpenDrawer() {
+        return allowOpenDrawer;
     }
 
     public void setAllowOpenDrawerBySwipe(boolean value) {

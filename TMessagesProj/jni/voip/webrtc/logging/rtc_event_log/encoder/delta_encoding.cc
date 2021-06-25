@@ -693,7 +693,7 @@ bool FixedLengthDeltaDecoder::IsSuitableDecoderFor(const std::string& input) {
 
   uint32_t encoding_type_bits;
   const bool result =
-      reader.ReadBits(&encoding_type_bits, kBitsInHeaderForEncodingType);
+      reader.ReadBits(kBitsInHeaderForEncodingType, encoding_type_bits);
   RTC_DCHECK(result);
 
   const auto encoding_type = static_cast<EncodingType>(encoding_type_bits);
@@ -729,7 +729,7 @@ std::unique_ptr<FixedLengthDeltaDecoder> FixedLengthDeltaDecoder::Create(
   // Encoding type
   uint32_t encoding_type_bits;
   const bool result =
-      reader->ReadBits(&encoding_type_bits, kBitsInHeaderForEncodingType);
+      reader->ReadBits(kBitsInHeaderForEncodingType, encoding_type_bits);
   RTC_DCHECK(result);
   const EncodingType encoding = static_cast<EncodingType>(encoding_type_bits);
   if (encoding != EncodingType::kFixedSizeUnsignedDeltasNoEarlyWrapNoOpt &&
@@ -742,7 +742,7 @@ std::unique_ptr<FixedLengthDeltaDecoder> FixedLengthDeltaDecoder::Create(
   uint32_t read_buffer;
 
   // delta_width_bits
-  if (!reader->ReadBits(&read_buffer, kBitsInHeaderForDeltaWidthBits)) {
+  if (!reader->ReadBits(kBitsInHeaderForDeltaWidthBits, read_buffer)) {
     return nullptr;
   }
   RTC_DCHECK_LE(read_buffer, 64 - 1);  // See encoding for -1's rationale.
@@ -759,20 +759,20 @@ std::unique_ptr<FixedLengthDeltaDecoder> FixedLengthDeltaDecoder::Create(
     value_width_bits = kDefaultValueWidthBits;
   } else {
     // signed_deltas
-    if (!reader->ReadBits(&read_buffer, kBitsInHeaderForSignedDeltas)) {
+    if (!reader->ReadBits(kBitsInHeaderForSignedDeltas, read_buffer)) {
       return nullptr;
     }
     signed_deltas = rtc::dchecked_cast<bool>(read_buffer);
 
     // values_optional
-    if (!reader->ReadBits(&read_buffer, kBitsInHeaderForValuesOptional)) {
+    if (!reader->ReadBits(kBitsInHeaderForValuesOptional, read_buffer)) {
       return nullptr;
     }
     RTC_DCHECK_LE(read_buffer, 1);
     values_optional = rtc::dchecked_cast<bool>(read_buffer);
 
     // value_width_bits
-    if (!reader->ReadBits(&read_buffer, kBitsInHeaderForValueWidthBits)) {
+    if (!reader->ReadBits(kBitsInHeaderForValueWidthBits, read_buffer)) {
       return nullptr;
     }
     RTC_DCHECK_LE(read_buffer, 64 - 1);  // See encoding for -1's rationale.
@@ -813,7 +813,7 @@ std::vector<absl::optional<uint64_t>> FixedLengthDeltaDecoder::Decode() {
   if (params_.values_optional()) {
     for (size_t i = 0; i < num_of_deltas_; ++i) {
       uint32_t exists;
-      if (!reader_->ReadBits(&exists, 1u)) {
+      if (!reader_->ReadBits(1u, exists)) {
         RTC_LOG(LS_WARNING) << "Failed to read existence-indicating bit.";
         return std::vector<absl::optional<uint64_t>>();
       }
@@ -877,7 +877,7 @@ bool FixedLengthDeltaDecoder::ParseDelta(uint64_t* delta) {
   uint32_t higher_bits;
 
   if (higher_bit_count > 0) {
-    if (!reader_->ReadBits(&higher_bits, higher_bit_count)) {
+    if (!reader_->ReadBits(higher_bit_count, higher_bits)) {
       RTC_LOG(LS_WARNING) << "Failed to read higher half of delta.";
       return false;
     }
@@ -885,7 +885,7 @@ bool FixedLengthDeltaDecoder::ParseDelta(uint64_t* delta) {
     higher_bits = 0;
   }
 
-  if (!reader_->ReadBits(&lower_bits, lower_bit_count)) {
+  if (!reader_->ReadBits(lower_bit_count, lower_bits)) {
     RTC_LOG(LS_WARNING) << "Failed to read lower half of delta.";
     return false;
   }

@@ -16,7 +16,8 @@
 
 ******************************************************************/
 
-#include "modules/audio_coding/codecs/ilbc/defines.h"
+#include "modules/audio_coding/codecs/ilbc/refiner.h"
+
 #include "modules/audio_coding/codecs/ilbc/constants.h"
 #include "modules/audio_coding/codecs/ilbc/enh_upsample.h"
 #include "modules/audio_coding/codecs/ilbc/my_corr.h"

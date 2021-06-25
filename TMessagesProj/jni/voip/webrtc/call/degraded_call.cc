@@ -270,6 +270,14 @@ const WebRtcKeyValueConfig& DegradedCall::trials() const {
   return call_->trials();
 }
 
+TaskQueueBase* DegradedCall::network_thread() const {
+  return call_->network_thread();
+}
+
+TaskQueueBase* DegradedCall::worker_thread() const {
+  return call_->worker_thread();
+}
+
 void DegradedCall::SignalChannelNetworkState(MediaType media,
                                              NetworkState state) {
   call_->SignalChannelNetworkState(media, state);

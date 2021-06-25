@@ -16,6 +16,7 @@
 #include <string>
 #include <vector>
 
+#include "api/sequence_checker.h"
 #include "api/transport/enums.h"
 #include "p2p/base/port.h"
 #include "p2p/base/port_interface.h"
@@ -25,7 +26,6 @@
 #include "rtc_base/system/rtc_export.h"
 #include "rtc_base/third_party/sigslot/sigslot.h"
 #include "rtc_base/thread.h"
-#include "rtc_base/thread_checker.h"
 
 namespace webrtc {
 class TurnCustomizer;
@@ -638,7 +638,7 @@ class RTC_EXPORT PortAllocator : public sigslot::has_slots<> {
   bool allow_tcp_listen_;
   uint32_t candidate_filter_;
   std::string origin_;
-  rtc::ThreadChecker thread_checker_;
+  webrtc::SequenceChecker thread_checker_;
 
  private:
   ServerAddresses stun_servers_;

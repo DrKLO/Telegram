@@ -160,7 +160,7 @@ void RampUpTester::ModifyVideoConfigs(
   encoder_config->number_of_streams = num_video_streams_;
   encoder_config->max_bitrate_bps = 2000000;
   encoder_config->video_stream_factory =
-      new rtc::RefCountedObject<RampUpTester::VideoStreamFactory>();
+      rtc::make_ref_counted<RampUpTester::VideoStreamFactory>();
   if (num_video_streams_ == 1) {
     // For single stream rampup until 1mbps
     expected_bitrate_bps_ = kSingleStreamTargetBps;
@@ -370,7 +370,10 @@ void RampUpTester::TriggerTestDone() {
   if (!send_stream_)
     return;
 
-  VideoSendStream::Stats send_stats = send_stream_->GetStats();
+  VideoSendStream::Stats send_stats;
+  SendTask(RTC_FROM_HERE, task_queue_,
+           [&] { send_stats = send_stream_->GetStats(); });
+
   send_stream_ = nullptr;  // To avoid dereferencing a bad pointer.
 
   size_t total_packets_sent = 0;
@@ -663,7 +666,6 @@ TEST_F(RampUpTest, DISABLED_UpDownUpTransportSequenceNumberPacketLoss) {
   UpDownUpAudioVideoTransportSequenceNumberRtx
 #endif
 TEST_F(RampUpTest, MAYBE_UpDownUpAudioVideoTransportSequenceNumberRtx) {
-  test::ScopedFieldTrials field_trials("WebRTC-Audio-SendSideBwe/Enabled/");
   std::vector<int> loss_rates = {0, 0, 0, 0};
   RampUpDownUpTester test(3, 1, 0, kStartBitrateBps,
                           RtpExtension::kTransportSequenceNumberUri, true,
@@ -672,7 +674,6 @@ TEST_F(RampUpTest, MAYBE_UpDownUpAudioVideoTransportSequenceNumberRtx) {
 }
 
 TEST_F(RampUpTest, UpDownUpAudioTransportSequenceNumberRtx) {
-  test::ScopedFieldTrials field_trials("WebRTC-Audio-SendSideBwe/Enabled/");
   std::vector<int> loss_rates = {0, 0, 0, 0};
   RampUpDownUpTester test(0, 1, 0, kStartBitrateBps,
                           RtpExtension::kTransportSequenceNumberUri, true,

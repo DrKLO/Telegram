@@ -87,7 +87,7 @@ RtpTransportControllerSend::RtpTransportControllerSend(
     : clock_(clock),
       event_log_(event_log),
       bitrate_configurator_(bitrate_config),
-      process_thread_started_(false),
+      pacer_started_(false),
       process_thread_(std::move(process_thread)),
       use_task_queue_pacer_(IsEnabled(trials, "WebRTC-TaskQueuePacer")),
       process_thread_pacer_(use_task_queue_pacer_
@@ -496,9 +496,13 @@ void RtpTransportControllerSend::IncludeOverheadInPacedSender() {
 }
 
 void RtpTransportControllerSend::EnsureStarted() {
-  if (!use_task_queue_pacer_ && !process_thread_started_) {
-    process_thread_started_ = true;
-    process_thread_->Start();
+  if (!pacer_started_) {
+    pacer_started_ = true;
+    if (use_task_queue_pacer_) {
+      task_queue_pacer_->EnsureStarted();
+    } else {
+      process_thread_->Start();
+    }
   }
 }
 

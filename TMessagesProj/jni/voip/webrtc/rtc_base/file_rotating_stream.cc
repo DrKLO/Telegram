@@ -193,49 +193,40 @@ FileRotatingStream::FileRotatingStream(const std::string& dir_path,
 
 FileRotatingStream::~FileRotatingStream() {}
 
-StreamState FileRotatingStream::GetState() const {
-  return (file_.is_open() ? SS_OPEN : SS_CLOSED);
+bool FileRotatingStream::IsOpen() const {
+  return file_.is_open();
 }
 
-StreamResult FileRotatingStream::Read(void* buffer,
-                                      size_t buffer_len,
-                                      size_t* read,
-                                      int* error) {
-  RTC_DCHECK(buffer);
-  RTC_NOTREACHED();
-  return SR_EOS;
-}
-
-StreamResult FileRotatingStream::Write(const void* data,
-                                       size_t data_len,
-                                       size_t* written,
-                                       int* error) {
+bool FileRotatingStream::Write(const void* data, size_t data_len) {
   if (!file_.is_open()) {
     std::fprintf(stderr, "Open() must be called before Write.\n");
-    return SR_ERROR;
+    return false;
   }
-  // Write as much as will fit in to the current file.
-  RTC_DCHECK_LT(current_bytes_written_, max_file_size_);
-  size_t remaining_bytes = max_file_size_ - current_bytes_written_;
-  size_t write_length = std::min(data_len, remaining_bytes);
+  while (data_len > 0) {
+    // Write as much as will fit in to the current file.
+    RTC_DCHECK_LT(current_bytes_written_, max_file_size_);
+    size_t remaining_bytes = max_file_size_ - current_bytes_written_;
+    size_t write_length = std::min(data_len, remaining_bytes);
 
-  if (!file_.Write(data, write_length)) {
-    return SR_ERROR;
-  }
-  if (disable_buffering_ && !file_.Flush()) {
-    return SR_ERROR;
-  }
+    if (!file_.Write(data, write_length)) {
+      return false;
+    }
+    if (disable_buffering_ && !file_.Flush()) {
+      return false;
+    }
 
-  current_bytes_written_ += write_length;
-  if (written) {
-    *written = write_length;
+    current_bytes_written_ += write_length;
+
+    // If we're done with this file, rotate it out.
+    if (current_bytes_written_ >= max_file_size_) {
+      RTC_DCHECK_EQ(current_bytes_written_, max_file_size_);
+      RotateFiles();
+    }
+    data_len -= write_length;
+    data =
+        static_cast<const void*>(static_cast<const char*>(data) + write_length);
   }
-  // If we're done with this file, rotate it out.
-  if (current_bytes_written_ >= max_file_size_) {
-    RTC_DCHECK_EQ(current_bytes_written_, max_file_size_);
-    RotateFiles();
-  }
-  return SR_SUCCESS;
+  return true;
 }
 
 bool FileRotatingStream::Flush() {

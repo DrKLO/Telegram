@@ -11,41 +11,45 @@
 #ifndef MODULES_AUDIO_PROCESSING_AGC2_ADAPTIVE_DIGITAL_GAIN_APPLIER_H_
 #define MODULES_AUDIO_PROCESSING_AGC2_ADAPTIVE_DIGITAL_GAIN_APPLIER_H_
 
+#include <vector>
+
 #include "modules/audio_processing/agc2/gain_applier.h"
-#include "modules/audio_processing/agc2/vad_with_level.h"
 #include "modules/audio_processing/include/audio_frame_view.h"
 
 namespace webrtc {
 
 class ApmDataDumper;
 
-// Part of the adaptive digital controller that applies a digital adaptive gain.
-// The gain is updated towards a target. The logic decides when gain updates are
-// allowed, it controls the adaptation speed and caps the target based on the
-// estimated noise level and the speech level estimate confidence.
+// TODO(bugs.webrtc.org): Split into `GainAdaptor` and `GainApplier`.
+// Selects the target digital gain, decides when and how quickly to adapt to the
+// target and applies the current gain to 10 ms frames.
 class AdaptiveDigitalGainApplier {
  public:
   // Information about a frame to process.
   struct FrameInfo {
-    float input_level_dbfs;        // Estimated speech plus noise level.
-    float input_noise_level_dbfs;  // Estimated noise level.
-    VadLevelAnalyzer::Result vad_result;
-    float limiter_envelope_dbfs;  // Envelope level from the limiter.
-    bool estimate_is_confident;
+    float speech_probability;     // Probability of speech in the [0, 1] range.
+    float speech_level_dbfs;      // Estimated speech level (dBFS).
+    bool speech_level_reliable;   // True with reliable speech level estimation.
+    float noise_rms_dbfs;         // Estimated noise RMS level (dBFS).
+    float headroom_db;            // Headroom (dB).
+    float limiter_envelope_dbfs;  // Envelope level from the limiter (dBFS).
   };
 
-  // Ctor.
-  // `adjacent_speech_frames_threshold` indicates how many speech frames are
-  // required before a gain increase is allowed. `max_gain_change_db_per_second`
-  // limits the adaptation speed (uniformly operated across frames).
-  // `max_output_noise_level_dbfs` limits the output noise level.
+  // Ctor. `adjacent_speech_frames_threshold` indicates how many adjacent speech
+  // frames must be observed in order to consider the sequence as speech.
+  // `max_gain_change_db_per_second` limits the adaptation speed (uniformly
+  // operated across frames). `max_output_noise_level_dbfs` limits the output
+  // noise level. If `dry_run` is true, `Process()` will not modify the audio.
   AdaptiveDigitalGainApplier(ApmDataDumper* apm_data_dumper,
                              int adjacent_speech_frames_threshold,
                              float max_gain_change_db_per_second,
-                             float max_output_noise_level_dbfs);
+                             float max_output_noise_level_dbfs,
+                             bool dry_run);
   AdaptiveDigitalGainApplier(const AdaptiveDigitalGainApplier&) = delete;
   AdaptiveDigitalGainApplier& operator=(const AdaptiveDigitalGainApplier&) =
       delete;
+
+  void Initialize(int sample_rate_hz, int num_channels);
 
   // Analyzes `info`, updates the digital gain and applies it to a 10 ms
   // `frame`. Supports any sample rate supported by APM.
@@ -58,10 +62,14 @@ class AdaptiveDigitalGainApplier {
   const int adjacent_speech_frames_threshold_;
   const float max_gain_change_db_per_10ms_;
   const float max_output_noise_level_dbfs_;
+  const bool dry_run_;
 
   int calls_since_last_gain_log_;
   int frames_to_gain_increase_allowed_;
   float last_gain_db_;
+
+  std::vector<std::vector<float>> dry_run_frame_;
+  std::vector<float*> dry_run_channels_;
 };
 
 }  // namespace webrtc

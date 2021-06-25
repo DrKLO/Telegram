@@ -169,7 +169,7 @@ void InstanceImpl::stop(std::function<void(FinalState)> completion) {
 }
 
 int InstanceImpl::GetConnectionMaxLayer() {
-	return 92;  // TODO: retrieve from LayerBase
+	return 92;
 }
 
 std::vector<std::string> InstanceImpl::GetVersions() {

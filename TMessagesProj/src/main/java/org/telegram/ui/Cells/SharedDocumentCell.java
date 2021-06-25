@@ -8,37 +8,26 @@
 
 package org.telegram.ui.Cells;
 
-import android.animation.Animator;
-import android.animation.AnimatorSet;
-import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
-import android.text.style.ReplacementSpan;
 import android.transition.ChangeBounds;
 import android.transition.Fade;
 import android.transition.TransitionManager;
 import android.transition.TransitionSet;
-import android.transition.TransitionValues;
-import android.transition.Visibility;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DownloadController;
@@ -51,7 +40,6 @@ import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox2;
@@ -79,6 +67,8 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
     private CheckBox2 checkBox;
     private TextView rightDateTextView;
     private TextView captionTextView;
+
+    private boolean drawDownloadIcon = true;
 
     private boolean needDivider;
 
@@ -160,7 +150,7 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
         nameTextView.setEllipsize(TextUtils.TruncateAt.END);
         nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
 
-        LinearLayout linearLayout = null;
+        LinearLayout linearLayout;
         if (viewType == VIEW_TYPE_PICKER) {
             nameTextView.setLines(1);
             nameTextView.setMaxLines(1);
@@ -243,6 +233,10 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
             dotSpan = new SpannableStringBuilder(".");
             dotSpan.setSpan(new DotDividerSpan(), 0, 1, 0);
         }
+    }
+
+    public void setDrawDownloadIcon(boolean value) {
+        drawDownloadIcon = value;
     }
 
     public void setTextAndValueAndTypeAndThumb(String text, String value, String type, String thumb, int resId, boolean divider) {
@@ -379,7 +373,7 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
         loading = false;
 
         TLRPC.Document document = messageObject.getDocument();
-        if (messageObject != null && document != null) {
+        if (document != null) {
             int idx;
             String name = null;
             if (messageObject.isMusic()) {
@@ -422,7 +416,11 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
                 thumbImageView.getImageReceiver().setShouldGenerateQualityThumb(bigthumb == null);
 
                 thumbImageView.setVisibility(VISIBLE);
-                thumbImageView.setImage(ImageLocation.getForDocument(bigthumb, document), "40_40", ImageLocation.getForDocument(thumb, document), "40_40_b", null, 0, 1, messageObject);
+                if (messageObject.strippedThumb != null) {
+                    thumbImageView.setImage(ImageLocation.getForDocument(bigthumb, document), "40_40", null, null, messageObject.strippedThumb, null, null, 1, messageObject);
+                } else {
+                    thumbImageView.setImage(ImageLocation.getForDocument(bigthumb, document), "40_40", ImageLocation.getForDocument(thumb, document), "40_40_b", null, 0, 1, messageObject);
+                }
             }
             long date = (long) messageObject.messageOwner.date * 1000;
             if (viewType == VIEW_TYPE_GLOBAL_SEARCH) {
@@ -480,7 +478,7 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
         }
         if (message != null && message.messageOwner.media != null) {
             loaded = false;
-            if (message.attachPathExists || message.mediaExists) {
+            if (message.attachPathExists || message.mediaExists || !drawDownloadIcon) {
                 statusImageView.setVisibility(INVISIBLE);
                 progressView.setVisibility(INVISIBLE);
 

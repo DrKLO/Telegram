@@ -134,14 +134,13 @@ void StreamInterfaceChannel::Close() {
 
 DtlsTransport::DtlsTransport(IceTransportInternal* ice_transport,
                              const webrtc::CryptoOptions& crypto_options,
-                             webrtc::RtcEventLog* event_log)
-    : transport_name_(ice_transport->transport_name()),
-      component_(ice_transport->component()),
+                             webrtc::RtcEventLog* event_log,
+                             rtc::SSLProtocolVersion max_version)
+    : component_(ice_transport->component()),
       ice_transport_(ice_transport),
       downward_(NULL),
       srtp_ciphers_(crypto_options.GetSupportedDtlsSrtpCryptoSuites()),
-      ssl_max_version_(rtc::SSL_PROTOCOL_DTLS_12),
-      crypto_options_(crypto_options),
+      ssl_max_version_(max_version),
       event_log_(event_log) {
   RTC_DCHECK(ice_transport_);
   ConnectToIceTransport();
@@ -149,16 +148,12 @@ DtlsTransport::DtlsTransport(IceTransportInternal* ice_transport,
 
 DtlsTransport::~DtlsTransport() = default;
 
-const webrtc::CryptoOptions& DtlsTransport::crypto_options() const {
-  return crypto_options_;
-}
-
 DtlsTransportState DtlsTransport::dtls_state() const {
   return dtls_state_;
 }
 
 const std::string& DtlsTransport::transport_name() const {
-  return transport_name_;
+  return ice_transport_->transport_name();
 }
 
 int DtlsTransport::component() const {
@@ -197,17 +192,6 @@ bool DtlsTransport::SetLocalCertificate(
 rtc::scoped_refptr<rtc::RTCCertificate> DtlsTransport::GetLocalCertificate()
     const {
   return local_certificate_;
-}
-
-bool DtlsTransport::SetSslMaxProtocolVersion(rtc::SSLProtocolVersion version) {
-  if (dtls_active_) {
-    RTC_LOG(LS_ERROR) << "Not changing max. protocol version "
-                         "while DTLS is negotiating";
-    return false;
-  }
-
-  ssl_max_version_ = version;
-  return true;
 }
 
 bool DtlsTransport::SetDtlsRole(rtc::SSLRole role) {
@@ -816,11 +800,11 @@ void DtlsTransport::set_dtls_state(DtlsTransportState state) {
   RTC_LOG(LS_VERBOSE) << ToString() << ": set_dtls_state from:" << dtls_state_
                       << " to " << state;
   dtls_state_ = state;
-  SignalDtlsState(this, state);
+  SendDtlsState(this, state);
 }
 
 void DtlsTransport::OnDtlsHandshakeError(rtc::SSLHandshakeError error) {
-  SignalDtlsHandshakeError(error);
+  SendDtlsHandshakeError(error);
 }
 
 void DtlsTransport::ConfigureHandshakeTimeout() {

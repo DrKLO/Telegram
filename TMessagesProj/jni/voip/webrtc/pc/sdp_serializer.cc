@@ -10,12 +10,14 @@
 
 #include "pc/sdp_serializer.h"
 
+#include <algorithm>
+#include <map>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "absl/algorithm/container.h"
-#include "api/jsep.h"
+#include "absl/types/optional.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/string_encode.h"

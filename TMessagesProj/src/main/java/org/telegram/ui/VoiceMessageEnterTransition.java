@@ -3,9 +3,7 @@ package org.telegram.ui;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
-import android.annotation.SuppressLint;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.Paint;
@@ -17,8 +15,6 @@ import android.view.animation.LinearInterpolator;
 import android.widget.FrameLayout;
 
 import androidx.core.graphics.ColorUtils;
-
-import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
@@ -100,7 +96,7 @@ public class VoiceMessageEnterTransition {
                 int clipBottom = 0;
                 if (getMeasuredHeight() > 0) {
                     clipBottom = (int) (getMeasuredHeight() * (1f - progress) + listViewBottom * progress);
-                    canvas.saveLayerAlpha(0, getMeasuredHeight() - AndroidUtilities.dp(400), getMeasuredWidth(), getMeasuredHeight(), 255, canvas.ALL_SAVE_FLAG);
+                    canvas.saveLayerAlpha(0, getMeasuredHeight() - AndroidUtilities.dp(400), getMeasuredWidth(), getMeasuredHeight(), 255, Canvas.ALL_SAVE_FLAG);
                 } else {
                     canvas.save();
                 }

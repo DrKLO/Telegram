@@ -12,8 +12,8 @@
 
 #include <stdint.h>
 
+#include "api/network_state_predictor.h"
 #include "api/transport/webrtc_key_value_config.h"
-#include "modules/remote_bitrate_estimator/include/bwe_defines.h"
 #include "rtc_base/constructor_magic.h"
 
 namespace webrtc {

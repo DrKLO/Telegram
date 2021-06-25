@@ -1,6 +1,6 @@
 # How to write code in the `api/` directory
 
-Mostly, just follow the regular [style guide](../style-guide.md), but:
+Mostly, just follow the regular [style guide](../g3doc/style-guide.md), but:
 
 * Note that `api/` code is not exempt from the “`.h` and `.cc` files come in
   pairs” rule, so if you declare something in `api/path/to/foo.h`, it should be
@@ -17,7 +17,7 @@ it from a `.cc` file, so that users of our API headers won’t transitively
 
 For headers in `api/` that need to refer to non-public types, forward
 declarations are often a lesser evil than including non-public header files. The
-usual [rules](../style-guide.md#forward-declarations) still apply, though.
+usual [rules](../g3doc/style-guide.md#forward-declarations) still apply, though.
 
 `.cc` files in `api/` should preferably be kept reasonably small. If a
 substantial implementation is needed, consider putting it with our non-public

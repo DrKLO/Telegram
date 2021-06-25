@@ -115,50 +115,6 @@ class RTC_EXPORT StreamInterface {
   RTC_DISALLOW_COPY_AND_ASSIGN(StreamInterface);
 };
 
-///////////////////////////////////////////////////////////////////////////////
-// StreamAdapterInterface is a convenient base-class for adapting a stream.
-// By default, all operations are pass-through.  Override the methods that you
-// require adaptation.  Streams should really be upgraded to reference-counted.
-// In the meantime, use the owned flag to indicate whether the adapter should
-// own the adapted stream.
-///////////////////////////////////////////////////////////////////////////////
-
-class StreamAdapterInterface : public StreamInterface,
-                               public sigslot::has_slots<> {
- public:
-  explicit StreamAdapterInterface(StreamInterface* stream, bool owned = true);
-
-  // Core Stream Interface
-  StreamState GetState() const override;
-  StreamResult Read(void* buffer,
-                    size_t buffer_len,
-                    size_t* read,
-                    int* error) override;
-  StreamResult Write(const void* data,
-                     size_t data_len,
-                     size_t* written,
-                     int* error) override;
-  void Close() override;
-
-  bool Flush() override;
-
-  void Attach(StreamInterface* stream, bool owned = true);
-  StreamInterface* Detach();
-
- protected:
-  ~StreamAdapterInterface() override;
-
-  // Note that the adapter presents itself as the origin of the stream events,
-  // since users of the adapter may not recognize the adapted object.
-  virtual void OnEvent(StreamInterface* stream, int events, int err);
-  StreamInterface* stream() { return stream_; }
-
- private:
-  StreamInterface* stream_;
-  bool owned_;
-  RTC_DISALLOW_COPY_AND_ASSIGN(StreamAdapterInterface);
-};
-
 }  // namespace rtc
 
 #endif  // RTC_BASE_STREAM_H_

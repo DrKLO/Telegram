@@ -20,7 +20,6 @@
 #include "absl/types/optional.h"
 #include "api/call/transport.h"
 #include "api/video/video_bitrate_allocation.h"
-#include "modules/remote_bitrate_estimator/include/bwe_defines.h"
 #include "modules/remote_bitrate_estimator/include/remote_bitrate_estimator.h"
 #include "modules/rtp_rtcp/include/receive_statistics.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
@@ -28,6 +27,7 @@
 #include "modules/rtp_rtcp/source/rtcp_packet.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/compound_packet.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/dlrr.h"
+#include "modules/rtp_rtcp/source/rtcp_packet/loss_notification.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/report_block.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/tmmb_item.h"
 #include "modules/rtp_rtcp/source/rtp_rtcp_interface.h"
@@ -75,8 +75,8 @@ class RTCPSender final {
   void SetRTCPStatus(RtcpMode method) RTC_LOCKS_EXCLUDED(mutex_rtcp_sender_);
 
   bool Sending() const RTC_LOCKS_EXCLUDED(mutex_rtcp_sender_);
-  int32_t SetSendingStatus(const FeedbackState& feedback_state,
-                           bool enabled)
+  void SetSendingStatus(const FeedbackState& feedback_state,
+                        bool enabled)
       RTC_LOCKS_EXCLUDED(mutex_rtcp_sender_);  // combine the functions
 
   int32_t SetNackStatus(bool enable) RTC_LOCKS_EXCLUDED(mutex_rtcp_sender_);
@@ -100,12 +100,6 @@ class RTCPSender final {
 
   int32_t SetCNAME(const char* cName) RTC_LOCKS_EXCLUDED(mutex_rtcp_sender_);
 
-  int32_t AddMixedCNAME(uint32_t SSRC, const char* c_name)
-      RTC_LOCKS_EXCLUDED(mutex_rtcp_sender_);
-
-  int32_t RemoveMixedCNAME(uint32_t SSRC)
-      RTC_LOCKS_EXCLUDED(mutex_rtcp_sender_);
-
   bool TimeToSendRTCPReport(bool sendKeyframeBeforeRTP = false) const
       RTC_LOCKS_EXCLUDED(mutex_rtcp_sender_);
 
@@ -113,12 +107,6 @@ class RTCPSender final {
                    RTCPPacketType packetType,
                    int32_t nackSize = 0,
                    const uint16_t* nackList = 0)
-      RTC_LOCKS_EXCLUDED(mutex_rtcp_sender_);
-
-  int32_t SendCompoundRTCP(const FeedbackState& feedback_state,
-                           const std::set<RTCPPacketType>& packetTypes,
-                           int32_t nackSize = 0,
-                           const uint16_t* nackList = nullptr)
       RTC_LOCKS_EXCLUDED(mutex_rtcp_sender_);
 
   int32_t SendLossNotification(const FeedbackState& feedback_state,
@@ -135,18 +123,10 @@ class RTCPSender final {
 
   bool TMMBR() const RTC_LOCKS_EXCLUDED(mutex_rtcp_sender_);
 
-  void SetTMMBRStatus(bool enable) RTC_LOCKS_EXCLUDED(mutex_rtcp_sender_);
-
   void SetMaxRtpPacketSize(size_t max_packet_size)
       RTC_LOCKS_EXCLUDED(mutex_rtcp_sender_);
 
   void SetTmmbn(std::vector<rtcp::TmmbItem> bounding_set)
-      RTC_LOCKS_EXCLUDED(mutex_rtcp_sender_);
-
-  void SendRtcpXrReceiverReferenceTime(bool enable)
-      RTC_LOCKS_EXCLUDED(mutex_rtcp_sender_);
-
-  bool RtcpXrReceiverReferenceTime() const
       RTC_LOCKS_EXCLUDED(mutex_rtcp_sender_);
 
   void SetCsrcs(const std::vector<uint32_t>& csrcs)
@@ -162,20 +142,14 @@ class RTCPSender final {
 
  private:
   class RtcpContext;
-
-  int32_t SendCompoundRTCPLocked(const FeedbackState& feedback_state,
-                                 const std::set<RTCPPacketType>& packet_types,
-                                 int32_t nack_size,
-                                 const uint16_t* nack_list)
-      RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_rtcp_sender_);
+  class PacketSender;
 
   absl::optional<int32_t> ComputeCompoundRTCPPacket(
       const FeedbackState& feedback_state,
-      const std::set<RTCPPacketType>& packet_types,
+      RTCPPacketType packet_type,
       int32_t nack_size,
       const uint16_t* nack_list,
-      rtcp::CompoundPacket* out_packet)
-      RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_rtcp_sender_);
+      PacketSender& sender) RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_rtcp_sender_);
 
   // Determine which RTCP messages should be sent and setup flags.
   void PrepareReport(const FeedbackState& feedback_state)
@@ -185,36 +159,33 @@ class RTCPSender final {
       const FeedbackState& feedback_state)
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_rtcp_sender_);
 
-  std::unique_ptr<rtcp::RtcpPacket> BuildSR(const RtcpContext& context)
+  void BuildSR(const RtcpContext& context, PacketSender& sender)
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_rtcp_sender_);
-  std::unique_ptr<rtcp::RtcpPacket> BuildRR(const RtcpContext& context)
+  void BuildRR(const RtcpContext& context, PacketSender& sender)
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_rtcp_sender_);
-  std::unique_ptr<rtcp::RtcpPacket> BuildSDES(const RtcpContext& context)
+  void BuildSDES(const RtcpContext& context, PacketSender& sender)
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_rtcp_sender_);
-  std::unique_ptr<rtcp::RtcpPacket> BuildPLI(const RtcpContext& context)
+  void BuildPLI(const RtcpContext& context, PacketSender& sender)
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_rtcp_sender_);
-  std::unique_ptr<rtcp::RtcpPacket> BuildREMB(const RtcpContext& context)
+  void BuildREMB(const RtcpContext& context, PacketSender& sender)
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_rtcp_sender_);
-  std::unique_ptr<rtcp::RtcpPacket> BuildTMMBR(const RtcpContext& context)
+  void BuildTMMBR(const RtcpContext& context, PacketSender& sender)
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_rtcp_sender_);
-  std::unique_ptr<rtcp::RtcpPacket> BuildTMMBN(const RtcpContext& context)
+  void BuildTMMBN(const RtcpContext& context, PacketSender& sender)
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_rtcp_sender_);
-  std::unique_ptr<rtcp::RtcpPacket> BuildAPP(const RtcpContext& context)
+  void BuildAPP(const RtcpContext& context, PacketSender& sender)
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_rtcp_sender_);
-  std::unique_ptr<rtcp::RtcpPacket> BuildLossNotification(
-      const RtcpContext& context)
+  void BuildLossNotification(const RtcpContext& context, PacketSender& sender)
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_rtcp_sender_);
-  std::unique_ptr<rtcp::RtcpPacket> BuildExtendedReports(
-      const RtcpContext& context)
+  void BuildExtendedReports(const RtcpContext& context, PacketSender& sender)
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_rtcp_sender_);
-  std::unique_ptr<rtcp::RtcpPacket> BuildBYE(const RtcpContext& context)
+  void BuildBYE(const RtcpContext& context, PacketSender& sender)
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_rtcp_sender_);
-  std::unique_ptr<rtcp::RtcpPacket> BuildFIR(const RtcpContext& context)
+  void BuildFIR(const RtcpContext& context, PacketSender& sender)
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_rtcp_sender_);
-  std::unique_ptr<rtcp::RtcpPacket> BuildNACK(const RtcpContext& context)
+  void BuildNACK(const RtcpContext& context, PacketSender& sender)
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_rtcp_sender_);
 
- private:
   const bool audio_;
   const uint32_t ssrc_;
   Clock* const clock_;
@@ -240,8 +211,6 @@ class RTCPSender final {
 
   ReceiveStatisticsProvider* receive_statistics_
       RTC_GUARDED_BY(mutex_rtcp_sender_);
-  std::map<uint32_t, std::string> csrc_cnames_
-      RTC_GUARDED_BY(mutex_rtcp_sender_);
 
   // send CSRCs
   std::vector<uint32_t> csrcs_ RTC_GUARDED_BY(mutex_rtcp_sender_);
@@ -249,14 +218,7 @@ class RTCPSender final {
   // Full intra request
   uint8_t sequence_number_fir_ RTC_GUARDED_BY(mutex_rtcp_sender_);
 
-  // Loss Notification
-  struct LossNotificationState {
-    uint16_t last_decoded_seq_num;
-    uint16_t last_received_seq_num;
-    bool decodability_flag;
-  };
-  LossNotificationState loss_notification_state_
-      RTC_GUARDED_BY(mutex_rtcp_sender_);
+  rtcp::LossNotification loss_notification_ RTC_GUARDED_BY(mutex_rtcp_sender_);
 
   // REMB
   int64_t remb_bitrate_ RTC_GUARDED_BY(mutex_rtcp_sender_);
@@ -268,8 +230,7 @@ class RTCPSender final {
   size_t max_packet_size_ RTC_GUARDED_BY(mutex_rtcp_sender_);
 
   // True if sending of XR Receiver reference time report is enabled.
-  bool xr_send_receiver_reference_time_enabled_
-      RTC_GUARDED_BY(mutex_rtcp_sender_);
+  const bool xr_send_receiver_reference_time_enabled_;
 
   RtcpPacketTypeCounterObserver* const packet_type_counter_observer_;
   RtcpPacketTypeCounter packet_type_counter_ RTC_GUARDED_BY(mutex_rtcp_sender_);
@@ -289,8 +250,6 @@ class RTCPSender final {
 
   void SetFlag(uint32_t type, bool is_volatile)
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_rtcp_sender_);
-  void SetFlags(const std::set<RTCPPacketType>& types, bool is_volatile)
-      RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_rtcp_sender_);
   bool IsFlagPresent(uint32_t type) const
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_rtcp_sender_);
   bool ConsumeFlag(uint32_t type, bool forced = false)
@@ -308,8 +267,7 @@ class RTCPSender final {
 
   std::set<ReportFlag> report_flags_ RTC_GUARDED_BY(mutex_rtcp_sender_);
 
-  typedef std::unique_ptr<rtcp::RtcpPacket> (RTCPSender::*BuilderFunc)(
-      const RtcpContext&);
+  typedef void (RTCPSender::*BuilderFunc)(const RtcpContext&, PacketSender&);
   // Map from RTCPPacketType to builder.
   std::map<uint32_t, BuilderFunc> builders_;
 };

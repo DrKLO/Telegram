@@ -277,7 +277,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
         updateRows(false);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.privacyRulesUpdated);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didSetNewWallpapper);
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiDidLoad);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
         return true;
     }
 
@@ -286,7 +286,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
         super.onFragmentDestroy();
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.privacyRulesUpdated);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didSetNewWallpapper);
-        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiDidLoad);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
     }
 
     @Override
@@ -439,7 +439,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.privacyRulesUpdated) {
             checkPrivacy();
-        } else if (id == NotificationCenter.emojiDidLoad) {
+        } else if (id == NotificationCenter.emojiLoaded) {
             listView.invalidateViews();
         } else if (id == NotificationCenter.didSetNewWallpapper) {
             if (messageCell != null) {

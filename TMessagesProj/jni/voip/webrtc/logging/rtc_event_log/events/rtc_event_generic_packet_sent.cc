@@ -33,12 +33,4 @@ std::unique_ptr<RtcEventGenericPacketSent> RtcEventGenericPacketSent::Copy()
   return absl::WrapUnique(new RtcEventGenericPacketSent(*this));
 }
 
-RtcEvent::Type RtcEventGenericPacketSent::GetType() const {
-  return RtcEvent::Type::GenericPacketSent;
-}
-
-bool RtcEventGenericPacketSent::IsConfigEvent() const {
-  return false;
-}
-
 }  // namespace webrtc

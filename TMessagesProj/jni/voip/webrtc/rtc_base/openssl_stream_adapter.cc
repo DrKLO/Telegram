@@ -32,7 +32,12 @@
 #include "rtc_base/openssl.h"
 #include "rtc_base/openssl_adapter.h"
 #include "rtc_base/openssl_digest.h"
+#ifdef OPENSSL_IS_BORINGSSL
+#include "rtc_base/boringssl_identity.h"
+#else
 #include "rtc_base/openssl_identity.h"
+#endif
+#include "rtc_base/openssl_utility.h"
 #include "rtc_base/ssl_certificate.h"
 #include "rtc_base/stream.h"
 #include "rtc_base/task_utils/to_queued_task.h"
@@ -283,7 +288,7 @@ bool ShouldAllowLegacyTLSProtocols() {
 
 OpenSSLStreamAdapter::OpenSSLStreamAdapter(
     std::unique_ptr<StreamInterface> stream)
-    : SSLStreamAdapter(std::move(stream)),
+    : stream_(std::move(stream)),
       owner_(rtc::Thread::Current()),
       state_(SSL_NONE),
       role_(SSL_CLIENT),
@@ -295,7 +300,9 @@ OpenSSLStreamAdapter::OpenSSLStreamAdapter(
       ssl_max_version_(SSL_PROTOCOL_TLS_12),
       // Default is to support legacy TLS protocols.
       // This will be changed to default non-support in M82 or M83.
-      support_legacy_tls_protocols_flag_(ShouldAllowLegacyTLSProtocols()) {}
+      support_legacy_tls_protocols_flag_(ShouldAllowLegacyTLSProtocols()) {
+  stream_->SignalEvent.connect(this, &OpenSSLStreamAdapter::OnEvent);
+}
 
 OpenSSLStreamAdapter::~OpenSSLStreamAdapter() {
   timeout_task_.Stop();
@@ -304,10 +311,14 @@ OpenSSLStreamAdapter::~OpenSSLStreamAdapter() {
 
 void OpenSSLStreamAdapter::SetIdentity(std::unique_ptr<SSLIdentity> identity) {
   RTC_DCHECK(!identity_);
+#ifdef OPENSSL_IS_BORINGSSL
+  identity_.reset(static_cast<BoringSSLIdentity*>(identity.release()));
+#else
   identity_.reset(static_cast<OpenSSLIdentity*>(identity.release()));
+#endif
 }
 
-OpenSSLIdentity* OpenSSLStreamAdapter::GetIdentityForTesting() const {
+SSLIdentity* OpenSSLStreamAdapter::GetIdentityForTesting() const {
   return identity_.get();
 }
 
@@ -510,7 +521,7 @@ int OpenSSLStreamAdapter::StartSSL() {
     return -1;
   }
 
-  if (StreamAdapterInterface::GetState() != SS_OPEN) {
+  if (stream_->GetState() != SS_OPEN) {
     state_ = SSL_WAIT;
     return 0;
   }
@@ -552,7 +563,7 @@ StreamResult OpenSSLStreamAdapter::Write(const void* data,
   switch (state_) {
     case SSL_NONE:
       // pass-through in clear text
-      return StreamAdapterInterface::Write(data, data_len, written, error);
+      return stream_->Write(data, data_len, written, error);
 
     case SSL_WAIT:
     case SSL_CONNECTING:
@@ -620,7 +631,7 @@ StreamResult OpenSSLStreamAdapter::Read(void* data,
   switch (state_) {
     case SSL_NONE:
       // pass-through in clear text
-      return StreamAdapterInterface::Read(data, data_len, read, error);
+      return stream_->Read(data, data_len, read, error);
     case SSL_WAIT:
     case SSL_CONNECTING:
       return SR_BLOCK;
@@ -724,7 +735,7 @@ void OpenSSLStreamAdapter::Close() {
   // When we're closed at SSL layer, also close the stream level which
   // performs necessary clean up. Otherwise, a new incoming packet after
   // this could overflow the stream buffer.
-  StreamAdapterInterface::Close();
+  stream_->Close();
 }
 
 StreamState OpenSSLStreamAdapter::GetState() const {
@@ -748,7 +759,7 @@ void OpenSSLStreamAdapter::OnEvent(StreamInterface* stream,
                                    int err) {
   int events_to_signal = 0;
   int signal_error = 0;
-  RTC_DCHECK(stream == this->stream());
+  RTC_DCHECK(stream == stream_.get());
 
   if ((events & SE_OPEN)) {
     RTC_DLOG(LS_VERBOSE) << "OpenSSLStreamAdapter::OnEvent SE_OPEN";
@@ -800,7 +811,9 @@ void OpenSSLStreamAdapter::OnEvent(StreamInterface* stream,
   }
 
   if (events_to_signal) {
-    StreamAdapterInterface::OnEvent(stream, events_to_signal, signal_error);
+    // Note that the adapter presents itself as the origin of the stream events,
+    // since users of the adapter may not recognize the adapted object.
+    SignalEvent(this, events_to_signal, signal_error);
   }
 }
 
@@ -845,7 +858,7 @@ int OpenSSLStreamAdapter::BeginSSL() {
     return -1;
   }
 
-  bio = BIO_new_stream(static_cast<StreamInterface*>(stream()));
+  bio = BIO_new_stream(stream_.get());
   if (!bio) {
     return -1;
   }
@@ -903,8 +916,7 @@ int OpenSSLStreamAdapter::ContinueSSL() {
         // The caller of ContinueSSL may be the same object listening for these
         // events and may not be prepared for reentrancy.
         // PostEvent(SE_OPEN | SE_READ | SE_WRITE, 0);
-        StreamAdapterInterface::OnEvent(stream(), SE_OPEN | SE_READ | SE_WRITE,
-                                        0);
+        SignalEvent(this, SE_OPEN | SE_READ | SE_WRITE, 0);
       }
       break;
 
@@ -947,7 +959,7 @@ void OpenSSLStreamAdapter::Error(const char* context,
   ssl_error_code_ = err;
   Cleanup(alert);
   if (signal) {
-    StreamAdapterInterface::OnEvent(stream(), SE_CLOSE, err);
+    SignalEvent(this, SE_CLOSE, err);
   }
 }
 
@@ -994,8 +1006,16 @@ void OpenSSLStreamAdapter::Cleanup(uint8_t alert) {
 }
 
 SSL_CTX* OpenSSLStreamAdapter::SetupSSLContext() {
+#ifdef OPENSSL_IS_BORINGSSL
+  // If X509 objects aren't used, we can use these methods to avoid
+  // linking the sizable crypto/x509 code, using CRYPTO_BUFFER instead.
+  SSL_CTX* ctx =
+      SSL_CTX_new(ssl_mode_ == SSL_MODE_DTLS ? DTLS_with_buffers_method()
+                                             : TLS_with_buffers_method());
+#else
   SSL_CTX* ctx =
       SSL_CTX_new(ssl_mode_ == SSL_MODE_DTLS ? DTLS_method() : TLS_method());
+#endif
   if (ctx == nullptr) {
     return nullptr;
   }
@@ -1033,6 +1053,7 @@ SSL_CTX* OpenSSLStreamAdapter::SetupSSLContext() {
   if (g_use_time_callback_for_testing) {
     SSL_CTX_set_current_time_cb(ctx, &TimeCallbackForTesting);
   }
+  SSL_CTX_set0_buffer_pool(ctx, openssl::GetBufferPool());
 #endif
 
   if (identity_ && !identity_->ConfigureIdentity(ctx)) {
@@ -1053,11 +1074,16 @@ SSL_CTX* OpenSSLStreamAdapter::SetupSSLContext() {
   }
 
   // Configure a custom certificate verification callback to check the peer
-  // certificate digest. Note the second argument to SSL_CTX_set_verify is to
-  // override individual errors in the default verification logic, which is not
-  // what we want here.
+  // certificate digest.
+#ifdef OPENSSL_IS_BORINGSSL
+  // Use CRYPTO_BUFFER version of the callback if building with BoringSSL.
+  SSL_CTX_set_custom_verify(ctx, mode, SSLVerifyCallback);
+#else
+  // Note the second argument to SSL_CTX_set_verify is to override individual
+  // errors in the default verification logic, which is not what we want here.
   SSL_CTX_set_verify(ctx, mode, nullptr);
   SSL_CTX_set_cert_verify_callback(ctx, SSLVerifyCallback, nullptr);
+#endif
 
   // Select list of available ciphers. Note that !SHA256 and !SHA384 only
   // remove HMAC-SHA256 and HMAC-SHA384 cipher suites, not GCM cipher suites
@@ -1082,14 +1108,12 @@ bool OpenSSLStreamAdapter::VerifyPeerCertificate() {
     RTC_LOG(LS_WARNING) << "Missing digest or peer certificate.";
     return false;
   }
-  const OpenSSLCertificate* leaf_cert =
-      static_cast<const OpenSSLCertificate*>(&peer_cert_chain_->Get(0));
 
   unsigned char digest[EVP_MAX_MD_SIZE];
   size_t digest_length;
-  if (!OpenSSLCertificate::ComputeDigest(
-          leaf_cert->x509(), peer_certificate_digest_algorithm_, digest,
-          sizeof(digest), &digest_length)) {
+  if (!peer_cert_chain_->Get(0).ComputeDigest(
+          peer_certificate_digest_algorithm_, digest, sizeof(digest),
+          &digest_length)) {
     RTC_LOG(LS_WARNING) << "Failed to compute peer cert digest.";
     return false;
   }
@@ -1113,6 +1137,36 @@ std::unique_ptr<SSLCertChain> OpenSSLStreamAdapter::GetPeerSSLCertChain()
   return peer_cert_chain_ ? peer_cert_chain_->Clone() : nullptr;
 }
 
+#ifdef OPENSSL_IS_BORINGSSL
+enum ssl_verify_result_t OpenSSLStreamAdapter::SSLVerifyCallback(
+    SSL* ssl,
+    uint8_t* out_alert) {
+  // Get our OpenSSLStreamAdapter from the context.
+  OpenSSLStreamAdapter* stream =
+      reinterpret_cast<OpenSSLStreamAdapter*>(SSL_get_app_data(ssl));
+  const STACK_OF(CRYPTO_BUFFER)* chain = SSL_get0_peer_certificates(ssl);
+  // Creates certificate chain.
+  std::vector<std::unique_ptr<SSLCertificate>> cert_chain;
+  for (CRYPTO_BUFFER* cert : chain) {
+    cert_chain.emplace_back(new BoringSSLCertificate(bssl::UpRef(cert)));
+  }
+  stream->peer_cert_chain_.reset(new SSLCertChain(std::move(cert_chain)));
+
+  // If the peer certificate digest isn't known yet, we'll wait to verify
+  // until it's known, and for now just return a success status.
+  if (stream->peer_certificate_digest_algorithm_.empty()) {
+    RTC_LOG(LS_INFO) << "Waiting to verify certificate until digest is known.";
+    // TODO(deadbeef): Use ssl_verify_retry?
+    return ssl_verify_ok;
+  }
+
+  if (!stream->VerifyPeerCertificate()) {
+    return ssl_verify_invalid;
+  }
+
+  return ssl_verify_ok;
+}
+#else   // OPENSSL_IS_BORINGSSL
 int OpenSSLStreamAdapter::SSLVerifyCallback(X509_STORE_CTX* store, void* arg) {
   // Get our SSL structure and OpenSSLStreamAdapter from the store.
   SSL* ssl = reinterpret_cast<SSL*>(
@@ -1120,20 +1174,10 @@ int OpenSSLStreamAdapter::SSLVerifyCallback(X509_STORE_CTX* store, void* arg) {
   OpenSSLStreamAdapter* stream =
       reinterpret_cast<OpenSSLStreamAdapter*>(SSL_get_app_data(ssl));
 
-#if defined(OPENSSL_IS_BORINGSSL)
-  STACK_OF(X509)* chain = SSL_get_peer_full_cert_chain(ssl);
-  // Creates certificate chain.
-  std::vector<std::unique_ptr<SSLCertificate>> cert_chain;
-  for (X509* cert : chain) {
-    cert_chain.emplace_back(new OpenSSLCertificate(cert));
-  }
-  stream->peer_cert_chain_.reset(new SSLCertChain(std::move(cert_chain)));
-#else
   // Record the peer's certificate.
   X509* cert = X509_STORE_CTX_get0_cert(store);
   stream->peer_cert_chain_.reset(
       new SSLCertChain(std::make_unique<OpenSSLCertificate>(cert)));
-#endif
 
   // If the peer certificate digest isn't known yet, we'll wait to verify
   // until it's known, and for now just return a success status.
@@ -1149,6 +1193,7 @@ int OpenSSLStreamAdapter::SSLVerifyCallback(X509_STORE_CTX* store, void* arg) {
 
   return 1;
 }
+#endif  // !OPENSSL_IS_BORINGSSL
 
 bool OpenSSLStreamAdapter::IsBoringSsl() {
 #ifdef OPENSSL_IS_BORINGSSL

@@ -23,6 +23,7 @@
 #include <sal.h>  // must come after windows headers.
 // clang-format on
 
+#include "absl/base/attributes.h"
 #include "rtc_base/thread_annotations.h"
 
 namespace webrtc {
@@ -37,7 +38,7 @@ class RTC_LOCKABLE MutexImpl final {
   void Lock() RTC_EXCLUSIVE_LOCK_FUNCTION() {
     EnterCriticalSection(&critical_section_);
   }
-  RTC_WARN_UNUSED_RESULT bool TryLock() RTC_EXCLUSIVE_TRYLOCK_FUNCTION(true) {
+  ABSL_MUST_USE_RESULT bool TryLock() RTC_EXCLUSIVE_TRYLOCK_FUNCTION(true) {
     return TryEnterCriticalSection(&critical_section_) != FALSE;
   }
   void Unlock() RTC_UNLOCK_FUNCTION() {

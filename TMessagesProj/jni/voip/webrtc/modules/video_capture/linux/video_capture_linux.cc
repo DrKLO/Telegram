@@ -34,8 +34,7 @@ namespace webrtc {
 namespace videocapturemodule {
 rtc::scoped_refptr<VideoCaptureModule> VideoCaptureImpl::Create(
     const char* deviceUniqueId) {
-  rtc::scoped_refptr<VideoCaptureModuleV4L2> implementation(
-      new rtc::RefCountedObject<VideoCaptureModuleV4L2>());
+  auto implementation = rtc::make_ref_counted<VideoCaptureModuleV4L2>();
 
   if (implementation->Init(deviceUniqueId) != 0)
     return nullptr;
@@ -241,12 +240,15 @@ int32_t VideoCaptureModuleV4L2::StartCapture(
   }
 
   // start capture thread;
-  if (!_captureThread) {
+  if (_captureThread.empty()) {
     quit_ = false;
-    _captureThread.reset(
-        new rtc::PlatformThread(VideoCaptureModuleV4L2::CaptureThread, this,
-                                "CaptureThread", rtc::kHighPriority));
-    _captureThread->Start();
+    _captureThread = rtc::PlatformThread::SpawnJoinable(
+        [this] {
+          while (CaptureProcess()) {
+          }
+        },
+        "CaptureThread",
+        rtc::ThreadAttributes().SetPriority(rtc::ThreadPriority::kHigh));
   }
 
   // Needed to start UVC camera - from the uvcview application
@@ -262,14 +264,13 @@ int32_t VideoCaptureModuleV4L2::StartCapture(
 }
 
 int32_t VideoCaptureModuleV4L2::StopCapture() {
-  if (_captureThread) {
+  if (!_captureThread.empty()) {
     {
       MutexLock lock(&capture_lock_);
       quit_ = true;
     }
-    // Make sure the capture thread stop stop using the critsect.
-    _captureThread->Stop();
-    _captureThread.reset();
+    // Make sure the capture thread stops using the mutex.
+    _captureThread.Finalize();
   }
 
   MutexLock lock(&capture_lock_);
@@ -357,11 +358,6 @@ bool VideoCaptureModuleV4L2::CaptureStarted() {
   return _captureStarted;
 }
 
-void VideoCaptureModuleV4L2::CaptureThread(void* obj) {
-  VideoCaptureModuleV4L2* capture = static_cast<VideoCaptureModuleV4L2*>(obj);
-  while (capture->CaptureProcess()) {
-  }
-}
 bool VideoCaptureModuleV4L2::CaptureProcess() {
   int retVal = 0;
   fd_set rSet;

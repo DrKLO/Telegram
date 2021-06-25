@@ -17,6 +17,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 
@@ -91,8 +92,9 @@ public class ActionBarPopupWindow extends PopupWindow {
         private boolean animationEnabled = allowAnimation;
         private ArrayList<AnimatorSet> itemAnimators;
         private HashMap<View, Integer> positions = new HashMap<>();
-        private int gapStartY;
-        private int gapEndY;
+        private int gapStartY = Integer.MIN_VALUE;
+        private int gapEndY = Integer.MIN_VALUE;
+        private Rect bgPaddings = new Rect();
 
         private ScrollView scrollView;
         protected LinearLayout linearLayout;
@@ -106,6 +108,9 @@ public class ActionBarPopupWindow extends PopupWindow {
             super(context);
 
             backgroundDrawable = getResources().getDrawable(R.drawable.popup_fixed_alert2).mutate();
+            if (backgroundDrawable != null) {
+                backgroundDrawable.getPadding(bgPaddings);
+            }
             setBackgroundColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground));
 
             setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8));
@@ -125,8 +130,8 @@ public class ActionBarPopupWindow extends PopupWindow {
                     if (fitItems) {
                         int maxWidth = 0;
                         int fixWidth = 0;
-                        gapStartY = -1;
-                        gapEndY = -1;
+                        gapStartY = Integer.MIN_VALUE;
+                        gapEndY = Integer.MIN_VALUE;
                         ArrayList<View> viewsToFix = null;
                         for (int a = 0, N = getChildCount(); a < N; a++) {
                             View view = getChildAt(a);
@@ -249,6 +254,9 @@ public class ActionBarPopupWindow extends PopupWindow {
         public void setBackgroundDrawable(Drawable drawable) {
             backgroundColor = Color.WHITE;
             backgroundDrawable = drawable;
+            if (backgroundDrawable != null) {
+                backgroundDrawable.getPadding(bgPaddings);
+            }
         }
 
         private void startChildAnimation(View child) {
@@ -309,30 +317,42 @@ public class ActionBarPopupWindow extends PopupWindow {
         @Override
         protected void onDraw(Canvas canvas) {
             if (backgroundDrawable != null) {
+                int start = gapStartY - scrollView.getScrollY();
+                int end = gapEndY - scrollView.getScrollY();
                 for (int a = 0; a < 2; a++) {
-                    if (a == 1 && gapStartY < 0) {
+                    if (a == 1 && start < -AndroidUtilities.dp(16)) {
                         break;
+                    }
+                    if (gapStartY != Integer.MIN_VALUE) {
+                        canvas.save();
+                        canvas.clipRect(0, bgPaddings.top, getMeasuredWidth(), getMeasuredHeight());
                     }
                     backgroundDrawable.setAlpha(backAlpha);
                     if (shownFromBotton) {
                         final int height = getMeasuredHeight();
                         backgroundDrawable.setBounds(0, (int) (height * (1.0f - backScaleY)), (int) (getMeasuredWidth() * backScaleX), height);
                     } else {
-                        if (gapStartY > 0) {
+                        if (start > -AndroidUtilities.dp(16)) {
                             int h = (int) (getMeasuredHeight() * backScaleY);
                             if (a == 0) {
-                                backgroundDrawable.setBounds(0, 0, (int) (getMeasuredWidth() * backScaleX), Math.min(h, gapStartY + AndroidUtilities.dp(16)));
+                                backgroundDrawable.setBounds(0, -scrollView.getScrollY(), (int) (getMeasuredWidth() * backScaleX), Math.min(h, start + AndroidUtilities.dp(16)));
                             } else {
-                                if (h < gapEndY) {
+                                if (h < end) {
+                                    if (gapStartY != Integer.MIN_VALUE) {
+                                        canvas.restore();
+                                    }
                                     continue;
                                 }
-                                backgroundDrawable.setBounds(0, gapEndY, (int) (getMeasuredWidth() * backScaleX), h);
+                                backgroundDrawable.setBounds(0, end, (int) (getMeasuredWidth() * backScaleX), h);
                             }
                         } else {
-                            backgroundDrawable.setBounds(0, 0, (int) (getMeasuredWidth() * backScaleX), (int) (getMeasuredHeight() * backScaleY));
+                            backgroundDrawable.setBounds(0, gapStartY < 0 ? 0 : -AndroidUtilities.dp(16), (int) (getMeasuredWidth() * backScaleX), (int) (getMeasuredHeight() * backScaleY));
                         }
                     }
                     backgroundDrawable.draw(canvas);
+                    if (gapStartY != Integer.MIN_VALUE) {
+                        canvas.restore();
+                    }
                 }
             }
         }

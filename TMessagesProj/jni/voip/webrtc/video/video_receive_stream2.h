@@ -14,6 +14,7 @@
 #include <memory>
 #include <vector>
 
+#include "api/sequence_checker.h"
 #include "api/task_queue/task_queue_factory.h"
 #include "api/units/timestamp.h"
 #include "api/video/recordable_encoded_frame.h"
@@ -24,9 +25,10 @@
 #include "modules/rtp_rtcp/source/source_tracker.h"
 #include "modules/video_coding/frame_buffer2.h"
 #include "modules/video_coding/video_receiver2.h"
-#include "rtc_base/synchronization/sequence_checker.h"
+#include "rtc_base/system/no_unique_address.h"
 #include "rtc_base/task_queue.h"
 #include "rtc_base/task_utils/pending_task_safety_flag.h"
+#include "rtc_base/thread_annotations.h"
 #include "system_wrappers/include/clock.h"
 #include "video/receive_statistics_proxy2.h"
 #include "video/rtp_streams_synchronizer2.h"
@@ -76,13 +78,16 @@ struct VideoFrameMetaData {
 class VideoReceiveStream2 : public webrtc::VideoReceiveStream,
                             public rtc::VideoSinkInterface<VideoFrame>,
                             public NackSender,
-                            public video_coding::OnCompleteFrameCallback,
+                            public OnCompleteFrameCallback,
                             public Syncable,
                             public CallStatsObserver {
  public:
   // The default number of milliseconds to pass before re-requesting a key frame
   // to be sent.
   static constexpr int kMaxWaitForKeyFrameMs = 200;
+  // The maximum number of buffered encoded frames when encoded output is
+  // configured.
+  static constexpr size_t kBufferedEncodedFramesMaxSize = 60;
 
   VideoReceiveStream2(TaskQueueFactory* task_queue_factory,
                       TaskQueueBase* current_queue,
@@ -109,9 +114,6 @@ class VideoReceiveStream2 : public webrtc::VideoReceiveStream,
 
   webrtc::VideoReceiveStream::Stats GetStats() const override;
 
-  void AddSecondarySink(RtpPacketSinkInterface* sink) override;
-  void RemoveSecondarySink(const RtpPacketSinkInterface* sink) override;
-
   // SetBaseMinimumPlayoutDelayMs and GetBaseMinimumPlayoutDelayMs are called
   // from webrtc/api level and requested by user code. For e.g. blink/js layer
   // in Chromium.
@@ -132,9 +134,8 @@ class VideoReceiveStream2 : public webrtc::VideoReceiveStream,
   void SendNack(const std::vector<uint16_t>& sequence_numbers,
                 bool buffering_allowed) override;
 
-  // Implements video_coding::OnCompleteFrameCallback.
-  void OnCompleteFrame(
-      std::unique_ptr<video_coding::EncodedFrame> frame) override;
+  // Implements OnCompleteFrameCallback.
+  void OnCompleteFrame(std::unique_ptr<EncodedFrame> frame) override;
 
   // Implements CallStatsObserver::OnRttUpdate
   void OnRttUpdate(int64_t avg_rtt_ms, int64_t max_rtt_ms) override;
@@ -157,9 +158,10 @@ class VideoReceiveStream2 : public webrtc::VideoReceiveStream,
   void GenerateKeyFrame() override;
 
  private:
+  void CreateAndRegisterExternalDecoder(const Decoder& decoder);
   int64_t GetMaxWaitMs() const RTC_RUN_ON(decode_queue_);
   void StartNextDecode() RTC_RUN_ON(decode_queue_);
-  void HandleEncodedFrame(std::unique_ptr<video_coding::EncodedFrame> frame)
+  void HandleEncodedFrame(std::unique_ptr<EncodedFrame> frame)
       RTC_RUN_ON(decode_queue_);
   void HandleFrameBufferTimeout(int64_t now_ms, int64_t wait_ms)
       RTC_RUN_ON(worker_sequence_checker_);
@@ -174,11 +176,13 @@ class VideoReceiveStream2 : public webrtc::VideoReceiveStream,
       RTC_RUN_ON(worker_sequence_checker_);
   bool IsReceivingKeyFrame(int64_t timestamp_ms) const
       RTC_RUN_ON(worker_sequence_checker_);
+  int DecodeAndMaybeDispatchEncodedFrame(std::unique_ptr<EncodedFrame> frame)
+      RTC_RUN_ON(decode_queue_);
 
   void UpdateHistograms();
 
-  SequenceChecker worker_sequence_checker_;
-  SequenceChecker module_process_sequence_checker_;
+  RTC_NO_UNIQUE_ADDRESS SequenceChecker worker_sequence_checker_;
+  RTC_NO_UNIQUE_ADDRESS SequenceChecker module_process_sequence_checker_;
 
   TaskQueueFactory* const task_queue_factory_;
 
@@ -256,6 +260,16 @@ class VideoReceiveStream2 : public webrtc::VideoReceiveStream,
   // Set to true while we're requesting keyframes but not yet received one.
   bool keyframe_generation_requested_ RTC_GUARDED_BY(worker_sequence_checker_) =
       false;
+  // Lock to avoid unnecessary per-frame idle wakeups in the code.
+  webrtc::Mutex pending_resolution_mutex_;
+  // Signal from decode queue to OnFrame callback to fill pending_resolution_.
+  // absl::nullopt - no resolution needed. 0x0 - next OnFrame to fill with
+  // received resolution. Not 0x0 - OnFrame has filled a resolution.
+  absl::optional<RecordableEncodedFrame::EncodedResolution> pending_resolution_
+      RTC_GUARDED_BY(pending_resolution_mutex_);
+  // Buffered encoded frames held while waiting for decoded resolution.
+  std::vector<std::unique_ptr<EncodedFrame>> buffered_encoded_frames_
+      RTC_GUARDED_BY(decode_queue_);
 
   // Set by the field trial WebRTC-LowLatencyRenderer. The parameter |enabled|
   // determines if the low-latency renderer algorithm should be used for the
@@ -266,6 +280,11 @@ class VideoReceiveStream2 : public webrtc::VideoReceiveStream,
   // taken into account when calculating maximum number of frames in composition
   // queue.
   FieldTrialParameter<bool> low_latency_renderer_include_predecode_buffer_;
+
+  // Set by the field trial WebRTC-PreStreamDecoders. The parameter |max|
+  // determines the maximum number of decoders that are created up front before
+  // any video frame has been received.
+  FieldTrialParameter<int> maximum_pre_stream_decoders_;
 
   // Defined last so they are destroyed before all other members.
   rtc::TaskQueue decode_queue_;

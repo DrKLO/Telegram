@@ -19,7 +19,8 @@
 #ifndef MODULES_AUDIO_CODING_CODECS_ILBC_MAIN_SOURCE_XCORR_COEF_H_
 #define MODULES_AUDIO_CODING_CODECS_ILBC_MAIN_SOURCE_XCORR_COEF_H_
 
-#include "modules/audio_coding/codecs/ilbc/defines.h"
+#include <stddef.h>
+#include <stdint.h>
 
 /*----------------------------------------------------------------*
  * cross correlation which finds the optimal lag for the

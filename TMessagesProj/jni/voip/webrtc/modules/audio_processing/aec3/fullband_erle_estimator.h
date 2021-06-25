@@ -106,8 +106,8 @@ class FullBandErleEstimator {
   };
 
   const float min_erle_log2_;
-  const float max_erle_lf_log2;
-  std::vector<int> hold_counters_time_domain_;
+  const float max_erle_lf_log2_;
+  std::vector<int> hold_counters_instantaneous_erle_;
   std::vector<float> erle_time_domain_log2_;
   std::vector<ErleInstantaneous> instantaneous_erle_;
   std::vector<absl::optional<float>> linear_filters_qualities_;

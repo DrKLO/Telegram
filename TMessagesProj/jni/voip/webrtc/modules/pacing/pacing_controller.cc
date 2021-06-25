@@ -112,8 +112,6 @@ PacingController::PacingController(Clock* clock,
       send_padding_if_silent_(
           IsEnabled(*field_trials_, "WebRTC-Pacer-PadInSilence")),
       pace_audio_(IsEnabled(*field_trials_, "WebRTC-Pacer-BlockAudio")),
-      small_first_probe_packet_(
-          !IsDisabled(*field_trials_, "WebRTC-Pacer-SmallFirstProbePacket")),
       ignore_transport_overhead_(
           IsEnabled(*field_trials_, "WebRTC-Pacer-IgnoreTransportOverhead")),
       padding_target_duration_(GetDynamicPaddingTarget(*field_trials_)),
@@ -297,11 +295,7 @@ void PacingController::EnqueuePacketInternal(
     int priority) {
   prober_.OnIncomingPacket(DataSize::Bytes(packet->payload_size()));
 
-  // TODO(sprang): Make sure tests respect this, replace with DCHECK.
   Timestamp now = CurrentTime();
-  if (packet->capture_time_ms() < 0) {
-    packet->set_capture_time_ms(now.ms());
-  }
 
   if (mode_ == ProcessMode::kDynamic && packet_queue_.Empty() &&
       NextSendTime() <= now) {
@@ -519,7 +513,7 @@ void PacingController::ProcessPackets() {
   // The paused state is checked in the loop since it leaves the critical
   // section allowing the paused state to be changed from other code.
   while (!paused_) {
-    if (small_first_probe_packet_ && first_packet_in_probe) {
+    if (first_packet_in_probe) {
       // If first packet in probe, insert a small padding packet so we have a
       // more reliable start window for the rate estimation.
       auto padding = packet_sender_->GeneratePadding(DataSize::Bytes(1));

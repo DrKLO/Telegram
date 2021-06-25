@@ -16,9 +16,11 @@
 
 ******************************************************************/
 
+#include "modules/audio_coding/codecs/ilbc/simple_lsf_quant.h"
+
+#include "modules/audio_coding/codecs/ilbc/constants.h"
 #include "modules/audio_coding/codecs/ilbc/defines.h"
 #include "modules/audio_coding/codecs/ilbc/split_vq.h"
-#include "modules/audio_coding/codecs/ilbc/constants.h"
 
 /*----------------------------------------------------------------*
  *  lsf quantizer (subrutine to LPCencode)

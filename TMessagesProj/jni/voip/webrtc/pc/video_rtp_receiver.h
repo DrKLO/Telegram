@@ -18,6 +18,7 @@
 
 #include "absl/types/optional.h"
 #include "api/crypto/frame_decryptor_interface.h"
+#include "api/dtls_transport_interface.h"
 #include "api/frame_transformer_interface.h"
 #include "api/media_stream_interface.h"
 #include "api/media_stream_track_proxy.h"
@@ -25,21 +26,24 @@
 #include "api/rtp_parameters.h"
 #include "api/rtp_receiver_interface.h"
 #include "api/scoped_refptr.h"
+#include "api/sequence_checker.h"
+#include "api/transport/rtp/rtp_source.h"
 #include "api/video/video_frame.h"
 #include "api/video/video_sink_interface.h"
 #include "api/video/video_source_interface.h"
 #include "media/base/media_channel.h"
-#include "pc/jitter_buffer_delay_interface.h"
+#include "pc/jitter_buffer_delay.h"
 #include "pc/rtp_receiver.h"
 #include "pc/video_rtp_track_source.h"
 #include "pc/video_track.h"
 #include "rtc_base/ref_counted_object.h"
+#include "rtc_base/system/no_unique_address.h"
 #include "rtc_base/thread.h"
+#include "rtc_base/thread_annotations.h"
 
 namespace webrtc {
 
-class VideoRtpReceiver : public rtc::RefCountedObject<RtpReceiverInternal>,
-                         public VideoRtpTrackSource::Callback {
+class VideoRtpReceiver : public RtpReceiverInternal {
  public:
   // An SSRC of 0 will create a receiver that will match the first SSRC it
   // sees. Must be called on signaling thread.
@@ -55,23 +59,16 @@ class VideoRtpReceiver : public rtc::RefCountedObject<RtpReceiverInternal>,
 
   virtual ~VideoRtpReceiver();
 
-  rtc::scoped_refptr<VideoTrackInterface> video_track() const {
-    return track_.get();
-  }
+  rtc::scoped_refptr<VideoTrackInterface> video_track() const { return track_; }
 
   // RtpReceiverInterface implementation
   rtc::scoped_refptr<MediaStreamTrackInterface> track() const override {
-    return track_.get();
+    return track_;
   }
-  rtc::scoped_refptr<DtlsTransportInterface> dtls_transport() const override {
-    return dtls_transport_;
-  }
+  rtc::scoped_refptr<DtlsTransportInterface> dtls_transport() const override;
   std::vector<std::string> stream_ids() const override;
   std::vector<rtc::scoped_refptr<MediaStreamInterface>> streams()
-      const override {
-    return streams_;
-  }
-
+      const override;
   cricket::MediaType media_type() const override {
     return cricket::MEDIA_TYPE_VIDEO;
   }
@@ -94,13 +91,11 @@ class VideoRtpReceiver : public rtc::RefCountedObject<RtpReceiverInternal>,
   void StopAndEndTrack() override;
   void SetupMediaChannel(uint32_t ssrc) override;
   void SetupUnsignaledMediaChannel() override;
-  uint32_t ssrc() const override { return ssrc_.value_or(0); }
+  uint32_t ssrc() const override;
   void NotifyFirstPacketReceived() override;
   void set_stream_ids(std::vector<std::string> stream_ids) override;
   void set_transport(
-      rtc::scoped_refptr<DtlsTransportInterface> dtls_transport) override {
-    dtls_transport_ = dtls_transport;
-  }
+      rtc::scoped_refptr<DtlsTransportInterface> dtls_transport) override;
   void SetStreams(const std::vector<rtc::scoped_refptr<MediaStreamInterface>>&
                       streams) override;
 
@@ -119,33 +114,68 @@ class VideoRtpReceiver : public rtc::RefCountedObject<RtpReceiverInternal>,
   void RestartMediaChannel(absl::optional<uint32_t> ssrc);
   void SetSink(rtc::VideoSinkInterface<VideoFrame>* sink)
       RTC_RUN_ON(worker_thread_);
+  void SetMediaChannel_w(cricket::MediaChannel* media_channel)
+      RTC_RUN_ON(worker_thread_);
 
   // VideoRtpTrackSource::Callback
-  void OnGenerateKeyFrame() override;
-  void OnEncodedSinkEnabled(bool enable) override;
+  void OnGenerateKeyFrame();
+  void OnEncodedSinkEnabled(bool enable);
+
   void SetEncodedSinkEnabled(bool enable) RTC_RUN_ON(worker_thread_);
 
+  class SourceCallback : public VideoRtpTrackSource::Callback {
+   public:
+    explicit SourceCallback(VideoRtpReceiver* receiver) : receiver_(receiver) {}
+    ~SourceCallback() override = default;
+
+   private:
+    void OnGenerateKeyFrame() override { receiver_->OnGenerateKeyFrame(); }
+    void OnEncodedSinkEnabled(bool enable) override {
+      receiver_->OnEncodedSinkEnabled(enable);
+    }
+
+    VideoRtpReceiver* const receiver_;
+  } source_callback_{this};
+
+  RTC_NO_UNIQUE_ADDRESS SequenceChecker signaling_thread_checker_;
   rtc::Thread* const worker_thread_;
 
   const std::string id_;
-  cricket::VideoMediaChannel* media_channel_ = nullptr;
-  absl::optional<uint32_t> ssrc_;
+  // See documentation for `stopped_` below for when a valid media channel
+  // has been assigned and when this pointer will be null.
+  cricket::VideoMediaChannel* media_channel_ RTC_GUARDED_BY(worker_thread_) =
+      nullptr;
+  absl::optional<uint32_t> ssrc_ RTC_GUARDED_BY(worker_thread_);
   // |source_| is held here to be able to change the state of the source when
   // the VideoRtpReceiver is stopped.
-  rtc::scoped_refptr<VideoRtpTrackSource> source_;
-  rtc::scoped_refptr<VideoTrackProxyWithInternal<VideoTrack>> track_;
-  std::vector<rtc::scoped_refptr<MediaStreamInterface>> streams_;
-  bool stopped_ = true;
-  RtpReceiverObserverInterface* observer_ = nullptr;
-  bool received_first_packet_ = false;
-  int attachment_id_ = 0;
-  rtc::scoped_refptr<FrameDecryptorInterface> frame_decryptor_;
-  rtc::scoped_refptr<DtlsTransportInterface> dtls_transport_;
+  const rtc::scoped_refptr<VideoRtpTrackSource> source_;
+  const rtc::scoped_refptr<VideoTrackProxyWithInternal<VideoTrack>> track_;
+  std::vector<rtc::scoped_refptr<MediaStreamInterface>> streams_
+      RTC_GUARDED_BY(&signaling_thread_checker_);
+  // `stopped` is state that's used on the signaling thread to indicate whether
+  // a valid `media_channel_` has been assigned and configured. When an instance
+  // of VideoRtpReceiver is initially created, `stopped_` is true and will
+  // remain true until either `SetupMediaChannel` or
+  // `SetupUnsignaledMediaChannel` is called after assigning a media channel.
+  // After that, `stopped_` will remain false until `Stop()` is called.
+  // Note, for checking the state of the class on the worker thread,
+  // check `media_channel_` instead, as that's the main worker thread state.
+  bool stopped_ RTC_GUARDED_BY(&signaling_thread_checker_) = true;
+  RtpReceiverObserverInterface* observer_
+      RTC_GUARDED_BY(&signaling_thread_checker_) = nullptr;
+  bool received_first_packet_ RTC_GUARDED_BY(&signaling_thread_checker_) =
+      false;
+  const int attachment_id_;
+  rtc::scoped_refptr<FrameDecryptorInterface> frame_decryptor_
+      RTC_GUARDED_BY(worker_thread_);
+  rtc::scoped_refptr<DtlsTransportInterface> dtls_transport_
+      RTC_GUARDED_BY(&signaling_thread_checker_);
   rtc::scoped_refptr<FrameTransformerInterface> frame_transformer_
       RTC_GUARDED_BY(worker_thread_);
-  // Allows to thread safely change jitter buffer delay. Handles caching cases
+  // Stores the minimum jitter buffer delay. Handles caching cases
   // if |SetJitterBufferMinimumDelay| is called before start.
-  rtc::scoped_refptr<JitterBufferDelayInterface> delay_;
+  JitterBufferDelay delay_ RTC_GUARDED_BY(worker_thread_);
+
   // Records if we should generate a keyframe when |media_channel_| gets set up
   // or switched.
   bool saved_generate_keyframe_ RTC_GUARDED_BY(worker_thread_) = false;

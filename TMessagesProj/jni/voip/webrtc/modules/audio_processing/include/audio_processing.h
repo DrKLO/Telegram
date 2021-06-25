@@ -32,7 +32,6 @@
 #include "modules/audio_processing/include/config.h"
 #include "rtc_base/arraysize.h"
 #include "rtc_base/constructor_magic.h"
-#include "rtc_base/deprecation.h"
 #include "rtc_base/ref_count.h"
 #include "rtc_base/system/file_wrapper.h"
 #include "rtc_base/system/rtc_export.h"
@@ -60,9 +59,9 @@ class CustomProcessing;
 //
 // Must be provided through AudioProcessingBuilder().Create(config).
 #if defined(WEBRTC_CHROMIUM_BUILD)
-static const int kAgcStartupMinVolume = 85;
+static constexpr int kAgcStartupMinVolume = 85;
 #else
-static const int kAgcStartupMinVolume = 0;
+static constexpr int kAgcStartupMinVolume = 0;
 #endif  // defined(WEBRTC_CHROMIUM_BUILD)
 static constexpr int kClippedLevelMin = 70;
 
@@ -72,32 +71,13 @@ static constexpr int kClippedLevelMin = 70;
 struct ExperimentalAgc {
   ExperimentalAgc() = default;
   explicit ExperimentalAgc(bool enabled) : enabled(enabled) {}
-  ExperimentalAgc(bool enabled,
-                  bool enabled_agc2_level_estimator,
-                  bool digital_adaptive_disabled)
-      : enabled(enabled),
-        enabled_agc2_level_estimator(enabled_agc2_level_estimator),
-        digital_adaptive_disabled(digital_adaptive_disabled) {}
-  // Deprecated constructor: will be removed.
-  ExperimentalAgc(bool enabled,
-                  bool enabled_agc2_level_estimator,
-                  bool digital_adaptive_disabled,
-                  bool analyze_before_aec)
-      : enabled(enabled),
-        enabled_agc2_level_estimator(enabled_agc2_level_estimator),
-        digital_adaptive_disabled(digital_adaptive_disabled) {}
   ExperimentalAgc(bool enabled, int startup_min_volume)
       : enabled(enabled), startup_min_volume(startup_min_volume) {}
-  ExperimentalAgc(bool enabled, int startup_min_volume, int clipped_level_min)
-      : enabled(enabled),
-        startup_min_volume(startup_min_volume),
-        clipped_level_min(clipped_level_min) {}
   static const ConfigOptionID identifier = ConfigOptionID::kExperimentalAgc;
   bool enabled = true;
   int startup_min_volume = kAgcStartupMinVolume;
   // Lowest microphone level that will be applied in response to clipping.
   int clipped_level_min = kClippedLevelMin;
-  bool enabled_agc2_level_estimator = false;
   bool digital_adaptive_disabled = false;
 };
 
@@ -187,7 +167,7 @@ struct ExperimentalNs {
 // analog_level = apm->recommended_stream_analog_level();
 // has_voice = apm->stream_has_voice();
 //
-// // Repeate render and capture processing for the duration of the call...
+// // Repeat render and capture processing for the duration of the call...
 // // Start a new call...
 // apm->Initialize();
 //
@@ -214,13 +194,9 @@ class RTC_EXPORT AudioProcessing : public rtc::RefCountInterface {
 
     // Sets the properties of the audio processing pipeline.
     struct RTC_EXPORT Pipeline {
-      Pipeline();
-
       // Maximum allowed processing rate used internally. May only be set to
-      // 32000 or 48000 and any differing values will be treated as 48000. The
-      // default rate is currently selected based on the CPU architecture, but
-      // that logic may change.
-      int maximum_internal_processing_rate;
+      // 32000 or 48000 and any differing values will be treated as 48000.
+      int maximum_internal_processing_rate = 48000;
       // Allow multi-channel processing of render audio.
       bool multi_channel_render = false;
       // Allow multi-channel processing of capture audio when AEC3 is active
@@ -230,10 +206,36 @@ class RTC_EXPORT AudioProcessing : public rtc::RefCountInterface {
 
     // Enabled the pre-amplifier. It amplifies the capture signal
     // before any other processing is done.
+    // TODO(webrtc:5298): Deprecate and use the pre-gain functionality in
+    // capture_level_adjustment instead.
     struct PreAmplifier {
       bool enabled = false;
-      float fixed_gain_factor = 1.f;
+      float fixed_gain_factor = 1.0f;
     } pre_amplifier;
+
+    // Functionality for general level adjustment in the capture pipeline. This
+    // should not be used together with the legacy PreAmplifier functionality.
+    struct CaptureLevelAdjustment {
+      bool operator==(const CaptureLevelAdjustment& rhs) const;
+      bool operator!=(const CaptureLevelAdjustment& rhs) const {
+        return !(*this == rhs);
+      }
+      bool enabled = false;
+      // The `pre_gain_factor` scales the signal before any processing is done.
+      float pre_gain_factor = 1.0f;
+      // The `post_gain_factor` scales the signal after all processing is done.
+      float post_gain_factor = 1.0f;
+      struct AnalogMicGainEmulation {
+        bool operator==(const AnalogMicGainEmulation& rhs) const;
+        bool operator!=(const AnalogMicGainEmulation& rhs) const {
+          return !(*this == rhs);
+        }
+        bool enabled = false;
+        // Initial analog gain level to use for the emulated analog gain. Must
+        // be in the range [0...255].
+        int initial_level = 255;
+      } analog_mic_gain_emulation;
+    } capture_level_adjustment;
 
     struct HighPassFilter {
       bool enabled = false;
@@ -273,7 +275,7 @@ class RTC_EXPORT AudioProcessing : public rtc::RefCountInterface {
     // in the analog mode, prescribing an analog gain to be applied at the audio
     // HAL.
     // Recommended to be enabled on the client-side.
-    struct GainController1 {
+    struct RTC_EXPORT GainController1 {
       bool operator==(const GainController1& rhs) const;
       bool operator!=(const GainController1& rhs) const {
         return !(*this == rhs);
@@ -331,8 +333,16 @@ class RTC_EXPORT AudioProcessing : public rtc::RefCountInterface {
         // Lowest analog microphone level that will be applied in response to
         // clipping.
         int clipped_level_min = kClippedLevelMin;
-        bool enable_agc2_level_estimator = false;
         bool enable_digital_adaptive = true;
+        // Amount the microphone level is lowered with every clipping event.
+        // Limited to (0, 255].
+        int clipped_level_step = 15;
+        // Proportion of clipped samples required to declare a clipping event.
+        // Limited to (0.f, 1.f).
+        float clipped_ratio_threshold = 0.1f;
+        // Time in frames to wait after a clipping event before checking again.
+        // Limited to values higher than 0.
+        int clipped_wait_frames = 300;
       } analog_gain_controller;
     } gain_controller1;
 
@@ -342,29 +352,44 @@ class RTC_EXPORT AudioProcessing : public rtc::RefCountInterface {
     // setting |fixed_gain_db|, the limiter can be turned into a compressor that
     // first applies a fixed gain. The adaptive digital AGC can be turned off by
     // setting |adaptive_digital_mode=false|.
-    struct GainController2 {
+    struct RTC_EXPORT GainController2 {
       bool operator==(const GainController2& rhs) const;
       bool operator!=(const GainController2& rhs) const {
         return !(*this == rhs);
       }
 
+      // TODO(crbug.com/webrtc/7494): Remove `LevelEstimator`.
       enum LevelEstimator { kRms, kPeak };
+      enum NoiseEstimator { kStationaryNoise, kNoiseFloor };
       bool enabled = false;
-      struct {
-        float gain_db = 0.f;
+      struct FixedDigital {
+        float gain_db = 0.0f;
       } fixed_digital;
-      struct {
+      struct RTC_EXPORT AdaptiveDigital {
+        bool operator==(const AdaptiveDigital& rhs) const;
+        bool operator!=(const AdaptiveDigital& rhs) const {
+          return !(*this == rhs);
+        }
+
         bool enabled = false;
-        float vad_probability_attack = 1.f;
+        // Run the adaptive digital controller but the signal is not modified.
+        bool dry_run = false;
+        NoiseEstimator noise_estimator = kNoiseFloor;
+        int vad_reset_period_ms = 1500;
+        int adjacent_speech_frames_threshold = 12;
+        float max_gain_change_db_per_second = 3.0f;
+        float max_output_noise_level_dbfs = -50.0f;
+        bool sse2_allowed = true;
+        bool avx2_allowed = true;
+        bool neon_allowed = true;
+        // TODO(crbug.com/webrtc/7494): Remove deprecated settings below.
+        float vad_probability_attack = 1.0f;
         LevelEstimator level_estimator = kRms;
-        int level_estimator_adjacent_speech_frames_threshold = 1;
-        // TODO(crbug.com/webrtc/7494): Remove `use_saturation_protector`.
+        int level_estimator_adjacent_speech_frames_threshold = 12;
         bool use_saturation_protector = true;
-        float initial_saturation_margin_db = 20.f;
-        float extra_saturation_margin_db = 2.f;
-        int gain_applier_adjacent_speech_frames_threshold = 1;
-        float max_gain_change_db_per_second = 3.f;
-        float max_output_noise_level_dbfs = -50.f;
+        float initial_saturation_margin_db = 25.0f;
+        float extra_saturation_margin_db = 5.0f;
+        int gain_applier_adjacent_speech_frames_threshold = 12;
       } adaptive_digital;
     } gain_controller2;
 
@@ -403,6 +428,7 @@ class RTC_EXPORT AudioProcessing : public rtc::RefCountInterface {
       kPlayoutVolumeChange,
       kCustomRenderProcessingRuntimeSetting,
       kPlayoutAudioDeviceChange,
+      kCapturePostGain,
       kCaptureOutputUsed
     };
 
@@ -412,12 +438,15 @@ class RTC_EXPORT AudioProcessing : public rtc::RefCountInterface {
       int max_volume;  // Maximum play-out volume.
     };
 
-    RuntimeSetting() : type_(Type::kNotSpecified), value_(0.f) {}
+    RuntimeSetting() : type_(Type::kNotSpecified), value_(0.0f) {}
     ~RuntimeSetting() = default;
 
     static RuntimeSetting CreateCapturePreGain(float gain) {
-      RTC_DCHECK_GE(gain, 1.f) << "Attenuation is not allowed.";
       return {Type::kCapturePreGain, gain};
+    }
+
+    static RuntimeSetting CreateCapturePostGain(float gain) {
+      return {Type::kCapturePostGain, gain};
     }
 
     // Corresponds to Config::GainController1::compression_gain_db, but for
@@ -431,8 +460,8 @@ class RTC_EXPORT AudioProcessing : public rtc::RefCountInterface {
     // Corresponds to Config::GainController2::fixed_digital::gain_db, but for
     // runtime configuration.
     static RuntimeSetting CreateCaptureFixedPostGain(float gain_db) {
-      RTC_DCHECK_GE(gain_db, 0.f);
-      RTC_DCHECK_LE(gain_db, 90.f);
+      RTC_DCHECK_GE(gain_db, 0.0f);
+      RTC_DCHECK_LE(gain_db, 90.0f);
       return {Type::kCaptureFixedPostGain, gain_db};
     }
 
@@ -453,8 +482,9 @@ class RTC_EXPORT AudioProcessing : public rtc::RefCountInterface {
       return {Type::kCustomRenderProcessingRuntimeSetting, payload};
     }
 
-    static RuntimeSetting CreateCaptureOutputUsedSetting(bool payload) {
-      return {Type::kCaptureOutputUsed, payload};
+    static RuntimeSetting CreateCaptureOutputUsedSetting(
+        bool capture_output_used) {
+      return {Type::kCaptureOutputUsed, capture_output_used};
     }
 
     Type type() const { return type_; }
@@ -546,11 +576,16 @@ class RTC_EXPORT AudioProcessing : public rtc::RefCountInterface {
   // Set to true when the output of AudioProcessing will be muted or in some
   // other way not used. Ideally, the captured audio would still be processed,
   // but some components may change behavior based on this information.
-  // Default false.
+  // Default false. This method takes a lock. To achieve this in a lock-less
+  // manner the PostRuntimeSetting can instead be used.
   virtual void set_output_will_be_muted(bool muted) = 0;
 
-  // Enqueue a runtime setting.
+  // Enqueues a runtime setting.
   virtual void SetRuntimeSetting(RuntimeSetting setting) = 0;
+
+  // Enqueues a runtime setting. Returns a bool indicating whether the
+  // enqueueing was successfull.
+  virtual bool PostRuntimeSetting(RuntimeSetting setting) = 0;
 
   // Accepts and produces a 10 ms frame interleaved 16 bit integer audio as
   // specified in |input_config| and |output_config|. |src| and |dest| may use
@@ -713,7 +748,7 @@ class RTC_EXPORT AudioProcessing : public rtc::RefCountInterface {
   static constexpr int kMaxNativeSampleRateHz =
       kNativeSampleRatesHz[kNumNativeSampleRates - 1];
 
-  static const int kChunkSizeMs = 10;
+  static constexpr int kChunkSizeMs = 10;
 };
 
 class RTC_EXPORT AudioProcessingBuilder {

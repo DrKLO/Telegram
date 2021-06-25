@@ -138,6 +138,9 @@ class VideoQualityAnalyzerInterface : public StatsObserverInterface {
       absl::string_view pc_label,
       const rtc::scoped_refptr<const RTCStatsReport>& report) override {}
 
+  // Will be called before test adds new participant in the middle of a call.
+  virtual void RegisterParticipantInCall(absl::string_view peer_name) {}
+
   // Tells analyzer that analysis complete and it should calculate final
   // statistics.
   virtual void Stop() {}

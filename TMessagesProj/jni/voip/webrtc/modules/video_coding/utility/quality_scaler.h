@@ -18,12 +18,13 @@
 
 #include "absl/types/optional.h"
 #include "api/scoped_refptr.h"
+#include "api/sequence_checker.h"
 #include "api/video_codecs/video_encoder.h"
 #include "rtc_base/experiments/quality_scaling_experiment.h"
 #include "rtc_base/numerics/moving_average.h"
 #include "rtc_base/ref_count.h"
 #include "rtc_base/ref_counted_object.h"
-#include "rtc_base/synchronization/sequence_checker.h"
+#include "rtc_base/system/no_unique_address.h"
 #include "rtc_base/task_queue.h"
 
 namespace webrtc {
@@ -82,7 +83,7 @@ class QualityScaler {
   std::unique_ptr<CheckQpTask> pending_qp_task_ RTC_GUARDED_BY(&task_checker_);
   QualityScalerQpUsageHandlerInterface* const handler_
       RTC_GUARDED_BY(&task_checker_);
-  SequenceChecker task_checker_;
+  RTC_NO_UNIQUE_ADDRESS SequenceChecker task_checker_;
 
   VideoEncoder::QpThresholds thresholds_ RTC_GUARDED_BY(&task_checker_);
   const int64_t sampling_period_ms_;

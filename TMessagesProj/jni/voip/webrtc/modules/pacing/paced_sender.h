@@ -32,7 +32,7 @@
 #include "modules/rtp_rtcp/include/rtp_packet_sender.h"
 #include "modules/rtp_rtcp/source/rtp_packet_to_send.h"
 #include "modules/utility/include/process_thread.h"
-#include "rtc_base/deprecated/recursive_critical_section.h"
+#include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/thread_annotations.h"
 
 namespace webrtc {
@@ -157,9 +157,9 @@ class PacedSender : public Module,
     PacedSender* const delegate_;
   } module_proxy_{this};
 
-  rtc::RecursiveCriticalSection critsect_;
+  mutable Mutex mutex_;
   const PacingController::ProcessMode process_mode_;
-  PacingController pacing_controller_ RTC_GUARDED_BY(critsect_);
+  PacingController pacing_controller_ RTC_GUARDED_BY(mutex_);
 
   Clock* const clock_;
   ProcessThread* const process_thread_;

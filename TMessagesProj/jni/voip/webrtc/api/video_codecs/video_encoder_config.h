@@ -194,6 +194,9 @@ class VideoEncoderConfig {
   // Legacy Google conference mode flag for simulcast screenshare
   bool legacy_conference_mode;
 
+  // Indicates whether quality scaling can be used or not.
+  bool is_quality_scaling_allowed;
+
  private:
   // Access to the copy constructor is private to force use of the Copy()
   // method for those exceptional cases where we do use it.

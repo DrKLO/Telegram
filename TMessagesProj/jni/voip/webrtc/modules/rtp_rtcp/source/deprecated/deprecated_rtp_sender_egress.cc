@@ -176,8 +176,7 @@ void DEPRECATED_RtpSenderEgress::SendPacket(
     AddPacketToTransportFeedback(*packet_id, *packet, pacing_info);
   }
 
-  options.application_data.assign(packet->application_data().begin(),
-                                  packet->application_data().end());
+  options.additional_data = packet->additional_data();
 
   if (packet->packet_type() != RtpPacketMediaType::kPadding &&
       packet->packet_type() != RtpPacketMediaType::kRetransmission) {

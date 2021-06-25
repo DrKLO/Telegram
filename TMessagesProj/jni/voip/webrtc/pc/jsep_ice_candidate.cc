@@ -14,6 +14,11 @@
 
 #include "pc/webrtc_sdp.h"
 
+// This file contains JsepIceCandidate-related functions that are not
+// included in api/jsep_ice_candidate.cc. Some of these link to SDP
+// parsing/serializing functions, which some users may not want.
+// TODO(bugs.webrtc.org/12330): Merge the two .cc files somehow.
+
 namespace webrtc {
 
 IceCandidateInterface* CreateIceCandidate(const std::string& sdp_mid,
@@ -48,6 +53,16 @@ JsepIceCandidate::JsepIceCandidate(const std::string& sdp_mid,
       candidate_(candidate) {}
 
 JsepIceCandidate::~JsepIceCandidate() {}
+
+JsepCandidateCollection JsepCandidateCollection::Clone() const {
+  JsepCandidateCollection new_collection;
+  for (const auto& candidate : candidates_) {
+    new_collection.candidates_.push_back(std::make_unique<JsepIceCandidate>(
+        candidate->sdp_mid(), candidate->sdp_mline_index(),
+        candidate->candidate()));
+  }
+  return new_collection;
+}
 
 bool JsepIceCandidate::Initialize(const std::string& sdp, SdpParseError* err) {
   return SdpDeserializeCandidate(sdp, this, err);

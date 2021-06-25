@@ -23,7 +23,7 @@ class VoipVolumeControl;
 // VoipEngine is the main interface serving as the entry point for all VoIP
 // APIs. A single instance of VoipEngine should suffice the most of the need for
 // typical VoIP applications as it handles multiple media sessions including a
-// specialized session type like ad-hoc mesh conferencing. Below example code
+// specialized session type like ad-hoc conference. Below example code
 // describes the typical sequence of API usage. Each API header contains more
 // description on what the methods are used for.
 //
@@ -38,36 +38,35 @@ class VoipVolumeControl;
 //   config.audio_processing = AudioProcessingBuilder().Create();
 //
 //   auto voip_engine = CreateVoipEngine(std::move(config));
-//   if (!voip_engine) return some_failure;
 //
 //   auto& voip_base = voip_engine->Base();
 //   auto& voip_codec = voip_engine->Codec();
 //   auto& voip_network = voip_engine->Network();
 //
-//   absl::optional<ChannelId> channel =
-//       voip_base.CreateChannel(&app_transport_);
-//   if (!channel) return some_failure;
+//   ChannelId channel = voip_base.CreateChannel(&app_transport_);
 //
 //   // After SDP offer/answer, set payload type and codecs that have been
 //   // decided through SDP negotiation.
-//   voip_codec.SetSendCodec(*channel, ...);
-//   voip_codec.SetReceiveCodecs(*channel, ...);
+//   // VoipResult handling omitted here.
+//   voip_codec.SetSendCodec(channel, ...);
+//   voip_codec.SetReceiveCodecs(channel, ...);
 //
 //   // Start sending and playing RTP on voip channel.
-//   voip_base.StartSend(*channel);
-//   voip_base.StartPlayout(*channel);
+//   // VoipResult handling omitted here.
+//   voip_base.StartSend(channel);
+//   voip_base.StartPlayout(channel);
 //
 //   // Inject received RTP/RTCP through VoipNetwork interface.
-//   voip_network.ReceivedRTPPacket(*channel, ...);
-//   voip_network.ReceivedRTCPPacket(*channel, ...);
+//   // VoipResult handling omitted here.
+//   voip_network.ReceivedRTPPacket(channel, ...);
+//   voip_network.ReceivedRTCPPacket(channel, ...);
 //
 //   // Stop and release voip channel.
-//   voip_base.StopSend(*channel);
-//   voip_base.StopPlayout(*channel);
-//   voip_base.ReleaseChannel(*channel);
+//   // VoipResult handling omitted here.
+//   voip_base.StopSend(channel);
+//   voip_base.StopPlayout(channel);
+//   voip_base.ReleaseChannel(channel);
 //
-// Current VoipEngine defines three sub-API classes and is subject to expand in
-// near future.
 class VoipEngine {
  public:
   virtual ~VoipEngine() = default;

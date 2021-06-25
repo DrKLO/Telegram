@@ -74,45 +74,50 @@ class VoipCore : public VoipEngine,
   VoipVolumeControl& VolumeControl() override { return *this; }
 
   // Implements VoipBase interfaces.
-  absl::optional<ChannelId> CreateChannel(
-      Transport* transport,
-      absl::optional<uint32_t> local_ssrc) override;
-  void ReleaseChannel(ChannelId channel_id) override;
-  bool StartSend(ChannelId channel_id) override;
-  bool StopSend(ChannelId channel_id) override;
-  bool StartPlayout(ChannelId channel_id) override;
-  bool StopPlayout(ChannelId channel_id) override;
+  ChannelId CreateChannel(Transport* transport,
+                          absl::optional<uint32_t> local_ssrc) override;
+  VoipResult ReleaseChannel(ChannelId channel_id) override;
+  VoipResult StartSend(ChannelId channel_id) override;
+  VoipResult StopSend(ChannelId channel_id) override;
+  VoipResult StartPlayout(ChannelId channel_id) override;
+  VoipResult StopPlayout(ChannelId channel_id) override;
 
   // Implements VoipNetwork interfaces.
-  void ReceivedRTPPacket(ChannelId channel_id,
-                         rtc::ArrayView<const uint8_t> rtp_packet) override;
-  void ReceivedRTCPPacket(ChannelId channel_id,
-                          rtc::ArrayView<const uint8_t> rtcp_packet) override;
+  VoipResult ReceivedRTPPacket(
+      ChannelId channel_id,
+      rtc::ArrayView<const uint8_t> rtp_packet) override;
+  VoipResult ReceivedRTCPPacket(
+      ChannelId channel_id,
+      rtc::ArrayView<const uint8_t> rtcp_packet) override;
 
   // Implements VoipCodec interfaces.
-  void SetSendCodec(ChannelId channel_id,
-                    int payload_type,
-                    const SdpAudioFormat& encoder_format) override;
-  void SetReceiveCodecs(
+  VoipResult SetSendCodec(ChannelId channel_id,
+                          int payload_type,
+                          const SdpAudioFormat& encoder_format) override;
+  VoipResult SetReceiveCodecs(
       ChannelId channel_id,
       const std::map<int, SdpAudioFormat>& decoder_specs) override;
 
   // Implements VoipDtmf interfaces.
-  void RegisterTelephoneEventType(ChannelId channel_id,
-                                  int rtp_payload_type,
-                                  int sample_rate_hz) override;
-  bool SendDtmfEvent(ChannelId channel_id,
-                     DtmfEvent dtmf_event,
-                     int duration_ms) override;
+  VoipResult RegisterTelephoneEventType(ChannelId channel_id,
+                                        int rtp_payload_type,
+                                        int sample_rate_hz) override;
+  VoipResult SendDtmfEvent(ChannelId channel_id,
+                           DtmfEvent dtmf_event,
+                           int duration_ms) override;
 
   // Implements VoipStatistics interfaces.
-  absl::optional<IngressStatistics> GetIngressStatistics(
-      ChannelId channel_id) override;
+  VoipResult GetIngressStatistics(ChannelId channel_id,
+                                  IngressStatistics& ingress_stats) override;
+  VoipResult GetChannelStatistics(ChannelId channe_id,
+                                  ChannelStatistics& channel_stats) override;
 
   // Implements VoipVolumeControl interfaces.
-  void SetInputMuted(ChannelId channel_id, bool enable) override;
-  absl::optional<VolumeInfo> GetInputVolumeInfo(ChannelId channel_id) override;
-  absl::optional<VolumeInfo> GetOutputVolumeInfo(ChannelId channel_id) override;
+  VoipResult SetInputMuted(ChannelId channel_id, bool enable) override;
+  VoipResult GetInputVolumeInfo(ChannelId channel_id,
+                                VolumeInfo& volume_info) override;
+  VoipResult GetOutputVolumeInfo(ChannelId channel_id,
+                                 VolumeInfo& volume_info) override;
 
  private:
   // Initialize ADM and default audio device if needed.

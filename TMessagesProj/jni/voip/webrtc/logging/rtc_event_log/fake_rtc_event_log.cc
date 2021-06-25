@@ -10,32 +10,29 @@
 
 #include "logging/rtc_event_log/fake_rtc_event_log.h"
 
-#include "logging/rtc_event_log/events/rtc_event_ice_candidate_pair.h"
-#include "rtc_base/bind.h"
-#include "rtc_base/checks.h"
-#include "rtc_base/logging.h"
+#include <map>
+#include <memory>
+
+#include "api/rtc_event_log/rtc_event_log.h"
+#include "rtc_base/synchronization/mutex.h"
 
 namespace webrtc {
-
-FakeRtcEventLog::FakeRtcEventLog(rtc::Thread* thread) : thread_(thread) {
-  RTC_DCHECK(thread_);
-}
-FakeRtcEventLog::~FakeRtcEventLog() = default;
 
 bool FakeRtcEventLog::StartLogging(std::unique_ptr<RtcEventLogOutput> output,
                                    int64_t output_period_ms) {
   return true;
 }
 
-void FakeRtcEventLog::StopLogging() {
-  invoker_.Flush(thread_);
-}
+void FakeRtcEventLog::StopLogging() {}
 
 void FakeRtcEventLog::Log(std::unique_ptr<RtcEvent> event) {
-  RtcEvent::Type rtc_event_type = event->GetType();
-  invoker_.AsyncInvoke<void>(
-      RTC_FROM_HERE, thread_,
-      rtc::Bind(&FakeRtcEventLog::IncrementEventCount, this, rtc_event_type));
+  MutexLock lock(&mu_);
+  ++count_[event->GetType()];
+}
+
+int FakeRtcEventLog::GetEventCount(RtcEvent::Type event_type) {
+  MutexLock lock(&mu_);
+  return count_[event_type];
 }
 
 }  // namespace webrtc

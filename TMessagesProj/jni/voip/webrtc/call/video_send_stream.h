@@ -82,7 +82,6 @@ class VideoSendStream {
     uint64_t total_packet_send_delay_ms = 0;
     StreamDataCounters rtp_stats;
     RtcpPacketTypeCounter rtcp_packet_type_counts;
-    RtcpStatistics rtcp_stats;
     // A snapshot of the most recent Report Block with additional data of
     // interest to statistics. Used to implement RTCRemoteInboundRtpStreamStats.
     absl::optional<ReportBlockData> report_block_data;
@@ -108,6 +107,7 @@ class VideoSendStream {
     uint64_t total_encode_time_ms = 0;
     // https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-totalencodedbytestarget
     uint64_t total_encoded_bytes_target = 0;
+    uint32_t frames = 0;
     uint32_t frames_dropped_by_capturer = 0;
     uint32_t frames_dropped_by_encoder_queue = 0;
     uint32_t frames_dropped_by_rate_limiter = 0;

@@ -63,7 +63,6 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
-import org.telegram.messenger.voip.VoIPBaseService;
 import org.telegram.messenger.voip.VoIPService;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
@@ -79,7 +78,7 @@ import org.telegram.ui.LocationActivity;
 
 import java.util.ArrayList;
 
-public class FragmentContextView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate, VoIPBaseService.StateListener {
+public class FragmentContextView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate, VoIPService.StateListener {
 
     private ImageView playButton;
     private PlayPauseDrawable playPauseDrawable;
@@ -289,7 +288,6 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         importingImageView.setAnimation(R.raw.import_progress, 30, 30);
         importingImageView.setBackground(Theme.createCircleDrawable(AndroidUtilities.dp(22), Theme.getColor(Theme.key_inappPlayerPlayPause)));
         addView(importingImageView, LayoutHelper.createFrame(22, 22, Gravity.TOP | Gravity.LEFT, 7, 7, 0, 0));
-
 
         titleTextView = new AudioPlayerAlert.ClippingTextViewSwitcher(context) {
             @Override
@@ -627,7 +625,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 if (importingHistory == null) {
                     return;
                 }
-                ImportingAlert importingAlert = new ImportingAlert(getContext(), (ChatActivity) fragment);
+                ImportingAlert importingAlert = new ImportingAlert(getContext(), null, (ChatActivity) fragment);
                 importingAlert.setOnHideListener(dialog -> checkImport(false));
                 fragment.showDialog(importingAlert);
                 checkImport(false);
@@ -1911,8 +1909,8 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                     titleTextView.setTranslationX(0);
                     subtitleTextView.setTranslationX(0);
                 }
-                titleTextView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, Gravity.LEFT | Gravity.TOP, x, 5, 36, 0));
-                subtitleTextView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, Gravity.LEFT | Gravity.TOP, x, 25, 36, 0));
+                titleTextView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, Gravity.LEFT | Gravity.TOP, x, 5, call.isScheduled() ? 90 : 36, 0));
+                subtitleTextView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, Gravity.LEFT | Gravity.TOP, x, 25, call.isScheduled() ? 90 : 36, 0));
             }
         } else {
             avatars.updateAfterTransitionEnd();

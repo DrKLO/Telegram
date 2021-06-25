@@ -482,7 +482,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
     }
 
     public void onCreate() {
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiDidLoad);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
         sizeNotifierLayout.setDelegate(this);
     }
 
@@ -492,7 +492,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
             closeKeyboard();
         }
         keyboardVisible = false;
-        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiDidLoad);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
         if (sizeNotifierLayout != null) {
             sizeNotifierLayout.setDelegate(null);
         }
@@ -809,7 +809,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.emojiDidLoad) {
+        if (id == NotificationCenter.emojiLoaded) {
             if (emojiView != null) {
                 emojiView.invalidateViews();
             }

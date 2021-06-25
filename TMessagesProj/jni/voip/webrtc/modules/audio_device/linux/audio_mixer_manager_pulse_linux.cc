@@ -54,12 +54,12 @@ AudioMixerManagerLinuxPulse::AudioMixerManagerLinuxPulse()
       _paSpeakerVolume(PA_VOLUME_NORM),
       _paChannels(0),
       _paObjectsSet(false) {
-  RTC_LOG(LS_INFO) << __FUNCTION__ << " created";
+  RTC_DLOG(LS_INFO) << __FUNCTION__ << " created";
 }
 
 AudioMixerManagerLinuxPulse::~AudioMixerManagerLinuxPulse() {
   RTC_DCHECK(thread_checker_.IsCurrent());
-  RTC_LOG(LS_INFO) << __FUNCTION__ << " destroyed";
+  RTC_DLOG(LS_INFO) << __FUNCTION__ << " destroyed";
 
   Close();
 }
@@ -72,7 +72,7 @@ int32_t AudioMixerManagerLinuxPulse::SetPulseAudioObjects(
     pa_threaded_mainloop* mainloop,
     pa_context* context) {
   RTC_DCHECK(thread_checker_.IsCurrent());
-  RTC_LOG(LS_VERBOSE) << __FUNCTION__;
+  RTC_DLOG(LS_VERBOSE) << __FUNCTION__;
 
   if (!mainloop || !context) {
     RTC_LOG(LS_ERROR) << "could not set PulseAudio objects for mixer";
@@ -90,7 +90,7 @@ int32_t AudioMixerManagerLinuxPulse::SetPulseAudioObjects(
 
 int32_t AudioMixerManagerLinuxPulse::Close() {
   RTC_DCHECK(thread_checker_.IsCurrent());
-  RTC_LOG(LS_VERBOSE) << __FUNCTION__;
+  RTC_DLOG(LS_VERBOSE) << __FUNCTION__;
 
   CloseSpeaker();
   CloseMicrophone();
@@ -104,7 +104,7 @@ int32_t AudioMixerManagerLinuxPulse::Close() {
 
 int32_t AudioMixerManagerLinuxPulse::CloseSpeaker() {
   RTC_DCHECK(thread_checker_.IsCurrent());
-  RTC_LOG(LS_VERBOSE) << __FUNCTION__;
+  RTC_DLOG(LS_VERBOSE) << __FUNCTION__;
 
   // Reset the index to -1
   _paOutputDeviceIndex = -1;
@@ -115,7 +115,7 @@ int32_t AudioMixerManagerLinuxPulse::CloseSpeaker() {
 
 int32_t AudioMixerManagerLinuxPulse::CloseMicrophone() {
   RTC_DCHECK(thread_checker_.IsCurrent());
-  RTC_LOG(LS_VERBOSE) << __FUNCTION__;
+  RTC_DLOG(LS_VERBOSE) << __FUNCTION__;
 
   // Reset the index to -1
   _paInputDeviceIndex = -1;
@@ -186,14 +186,14 @@ int32_t AudioMixerManagerLinuxPulse::OpenMicrophone(uint16_t deviceIndex) {
 
 bool AudioMixerManagerLinuxPulse::SpeakerIsInitialized() const {
   RTC_DCHECK(thread_checker_.IsCurrent());
-  RTC_LOG(LS_INFO) << __FUNCTION__;
+  RTC_DLOG(LS_INFO) << __FUNCTION__;
 
   return (_paOutputDeviceIndex != -1);
 }
 
 bool AudioMixerManagerLinuxPulse::MicrophoneIsInitialized() const {
   RTC_DCHECK(thread_checker_.IsCurrent());
-  RTC_LOG(LS_INFO) << __FUNCTION__;
+  RTC_DLOG(LS_INFO) << __FUNCTION__;
 
   return (_paInputDeviceIndex != -1);
 }

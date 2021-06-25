@@ -33,9 +33,10 @@ class SocketServer : public SocketFactory {
   static const int kForever = -1;
 
   static std::unique_ptr<SocketServer> CreateDefault();
-  // When the socket server is installed into a Thread, this function is
-  // called to allow the socket server to use the thread's message queue for
-  // any messaging that it might need to perform.
+  // When the socket server is installed into a Thread, this function is called
+  // to allow the socket server to use the thread's message queue for any
+  // messaging that it might need to perform. It is also called with a null
+  // argument before the thread is destroyed.
   virtual void SetMessageQueue(Thread* queue) {}
 
   // Sleeps until:

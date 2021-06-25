@@ -11,8 +11,8 @@ import android.content.Intent;
 public class VoIPActionsReceiver extends BroadcastReceiver {
 	@Override
 	public void onReceive(Context context, Intent intent) {
-		if (VoIPBaseService.getSharedInstance() != null) {
-			VoIPBaseService.getSharedInstance().handleNotificationAction(intent);
+		if (VoIPService.getSharedInstance() != null) {
+			VoIPService.getSharedInstance().handleNotificationAction(intent);
 		}
 	}
 }

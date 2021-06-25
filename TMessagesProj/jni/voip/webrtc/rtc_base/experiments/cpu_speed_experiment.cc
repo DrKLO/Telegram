@@ -25,7 +25,6 @@ constexpr int kMaxSetting = -1;
 std::vector<CpuSpeedExperiment::Config> GetValidOrEmpty(
     const std::vector<CpuSpeedExperiment::Config>& configs) {
   if (configs.empty()) {
-    RTC_LOG(LS_WARNING) << "Unsupported size, value ignored.";
     return {};
   }
 

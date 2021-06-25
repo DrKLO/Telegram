@@ -134,11 +134,11 @@ class RTC_EXPORT VideoFrame {
   // Get frame size in pixels.
   uint32_t size() const;
 
-  // Get frame ID. Returns 0 if ID is not set. Not guarantee to be transferred
-  // from the sender to the receiver, but preserved on single side. The id
+  // Get frame ID. Returns 0 if ID is not set. Not guaranteed to be transferred
+  // from the sender to the receiver, but preserved on the sender side. The id
   // should be propagated between all frame modifications during its lifetime
   // from capturing to sending as encoded image. It is intended to be unique
-  // over a time window of a few minutes for peer connection, to which
+  // over a time window of a few minutes for the peer connection to which the
   // corresponding video stream belongs to.
   uint16_t id() const { return id_; }
   void set_id(uint16_t id) { id_ = id; }

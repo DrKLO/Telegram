@@ -36,7 +36,7 @@ void BufferedFrameDecryptor::SetFrameDecryptor(
 }
 
 void BufferedFrameDecryptor::ManageEncryptedFrame(
-    std::unique_ptr<video_coding::RtpFrameObject> encrypted_frame) {
+    std::unique_ptr<RtpFrameObject> encrypted_frame) {
   switch (DecryptFrame(encrypted_frame.get())) {
     case FrameDecision::kStash:
       if (stashed_frames_.size() >= kMaxStashedFrames) {
@@ -55,7 +55,7 @@ void BufferedFrameDecryptor::ManageEncryptedFrame(
 }
 
 BufferedFrameDecryptor::FrameDecision BufferedFrameDecryptor::DecryptFrame(
-    video_coding::RtpFrameObject* frame) {
+    RtpFrameObject* frame) {
   // Optionally attempt to decrypt the raw video frame if it was provided.
   if (frame_decryptor_ == nullptr) {
     RTC_LOG(LS_INFO) << "Frame decryption required but not attached to this "

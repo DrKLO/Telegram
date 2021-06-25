@@ -367,7 +367,7 @@ class RTC_EXPORT VideoEncoder {
   // TODO(bugs.webrtc.org/10720): After updating downstream projects and posting
   // an announcement to discuss-webrtc, remove the three-parameters variant
   // and make the two-parameters variant pure-virtual.
-  /* RTC_DEPRECATED */ virtual int32_t InitEncode(
+  /* ABSL_DEPRECATED("bugs.webrtc.org/10720") */ virtual int32_t InitEncode(
       const VideoCodec* codec_settings,
       int32_t number_of_cores,
       size_t max_payload_size);

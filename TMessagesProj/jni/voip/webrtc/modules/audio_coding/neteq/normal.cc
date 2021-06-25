@@ -14,7 +14,6 @@
 
 #include <algorithm>  // min
 
-#include "api/audio_codecs/audio_decoder.h"
 #include "common_audio/signal_processing/include/signal_processing_library.h"
 #include "modules/audio_coding/neteq/audio_multi_vector.h"
 #include "modules/audio_coding/neteq/background_noise.h"
@@ -49,6 +48,13 @@ int Normal::Process(const int16_t* input,
   // Note that |fs_shift| is not "exact" for 48 kHz.
   // TODO(hlundin): Investigate this further.
   const int fs_shift = 30 - WebRtcSpl_NormW32(fs_mult);
+
+  // If last call resulted in a CodedPlc we don't need to do cross-fading but we
+  // need to report the end of the interruption once we are back to normal
+  // operation.
+  if (last_mode == NetEq::Mode::kCodecPlc) {
+    statistics_->EndExpandEvent(fs_hz_);
+  }
 
   // Check if last RecOut call resulted in an Expand. If so, we have to take
   // care of some cross-fading and unmuting.

@@ -33,7 +33,7 @@ public class NotificationImageProvider extends ContentProvider implements Notifi
 	@Override
 	public boolean onCreate() {
 		for (int i = 0; i < UserConfig.getActivatedAccountsCount(); i++) {
-			NotificationCenter.getInstance(i).addObserver(this, NotificationCenter.fileDidLoad);
+			NotificationCenter.getInstance(i).addObserver(this, NotificationCenter.fileLoaded);
 		}
 		return true;
 	}
@@ -41,7 +41,7 @@ public class NotificationImageProvider extends ContentProvider implements Notifi
 	@Override
 	public void shutdown() {
 		for (int i = 0; i < UserConfig.getActivatedAccountsCount(); i++) {
-			NotificationCenter.getInstance(i).removeObserver(this, NotificationCenter.fileDidLoad);
+			NotificationCenter.getInstance(i).removeObserver(this, NotificationCenter.fileLoaded);
 		}
 	}
 
@@ -138,7 +138,7 @@ public class NotificationImageProvider extends ContentProvider implements Notifi
 
 	@Override
 	public void didReceivedNotification(int id, int account, Object... args) {
-		if (id == NotificationCenter.fileDidLoad) {
+		if (id == NotificationCenter.fileLoaded) {
 			synchronized (sync) {
 				String name = (String) args[0];
 				if (waitingForFiles.remove(name)) {

@@ -32,10 +32,13 @@ using VoiceActivityDetector = VadLevelAnalyzer::VoiceActivityDetector;
 // Computes the speech probability on the first channel.
 class Vad : public VoiceActivityDetector {
  public:
-  Vad() = default;
+  explicit Vad(const AvailableCpuFeatures& cpu_features)
+      : features_extractor_(cpu_features), rnn_vad_(cpu_features) {}
   Vad(const Vad&) = delete;
   Vad& operator=(const Vad&) = delete;
   ~Vad() = default;
+
+  void Reset() override { rnn_vad_.Reset(); }
 
   float ComputeProbability(AudioFrameView<const float> frame) override {
     // The source number of channels is 1, because we always use the 1st
@@ -59,54 +62,44 @@ class Vad : public VoiceActivityDetector {
  private:
   PushResampler<float> resampler_;
   rnn_vad::FeaturesExtractor features_extractor_;
-  rnn_vad::RnnBasedVad rnn_vad_;
+  rnn_vad::RnnVad rnn_vad_;
 };
-
-// Returns an updated version of `p_old` by using instant decay and the given
-// `attack` on a new VAD probability value `p_new`.
-float SmoothedVadProbability(float p_old, float p_new, float attack) {
-  RTC_DCHECK_GT(attack, 0.f);
-  RTC_DCHECK_LE(attack, 1.f);
-  if (p_new < p_old || attack == 1.f) {
-    // Instant decay (or no smoothing).
-    return p_new;
-  } else {
-    // Attack phase.
-    return attack * p_new + (1.f - attack) * p_old;
-  }
-}
 
 }  // namespace
 
-VadLevelAnalyzer::VadLevelAnalyzer()
-    : VadLevelAnalyzer(kDefaultSmoothedVadProbabilityAttack,
-                       std::make_unique<Vad>()) {}
+VadLevelAnalyzer::VadLevelAnalyzer(int vad_reset_period_ms,
+                                   const AvailableCpuFeatures& cpu_features)
+    : VadLevelAnalyzer(vad_reset_period_ms,
+                       std::make_unique<Vad>(cpu_features)) {}
 
-VadLevelAnalyzer::VadLevelAnalyzer(float vad_probability_attack)
-    : VadLevelAnalyzer(vad_probability_attack, std::make_unique<Vad>()) {}
-
-VadLevelAnalyzer::VadLevelAnalyzer(float vad_probability_attack,
+VadLevelAnalyzer::VadLevelAnalyzer(int vad_reset_period_ms,
                                    std::unique_ptr<VoiceActivityDetector> vad)
-    : vad_(std::move(vad)), vad_probability_attack_(vad_probability_attack) {
+    : vad_(std::move(vad)),
+      vad_reset_period_frames_(
+          rtc::CheckedDivExact(vad_reset_period_ms, kFrameDurationMs)),
+      time_to_vad_reset_(vad_reset_period_frames_) {
   RTC_DCHECK(vad_);
+  RTC_DCHECK_GT(vad_reset_period_frames_, 1);
 }
 
 VadLevelAnalyzer::~VadLevelAnalyzer() = default;
 
 VadLevelAnalyzer::Result VadLevelAnalyzer::AnalyzeFrame(
     AudioFrameView<const float> frame) {
+  // Periodically reset the VAD.
+  time_to_vad_reset_--;
+  if (time_to_vad_reset_ <= 0) {
+    vad_->Reset();
+    time_to_vad_reset_ = vad_reset_period_frames_;
+  }
   // Compute levels.
-  float peak = 0.f;
-  float rms = 0.f;
+  float peak = 0.0f;
+  float rms = 0.0f;
   for (const auto& x : frame.channel(0)) {
     peak = std::max(std::fabs(x), peak);
     rms += x * x;
   }
-  // Compute smoothed speech probability.
-  vad_probability_ = SmoothedVadProbability(
-      /*p_old=*/vad_probability_, /*p_new=*/vad_->ComputeProbability(frame),
-      vad_probability_attack_);
-  return {vad_probability_,
+  return {vad_->ComputeProbability(frame),
           FloatS16ToDbfs(std::sqrt(rms / frame.samples_per_channel())),
           FloatS16ToDbfs(peak)};
 }

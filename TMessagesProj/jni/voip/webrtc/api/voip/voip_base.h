@@ -11,6 +11,7 @@
 #ifndef API_VOIP_VOIP_BASE_H_
 #define API_VOIP_VOIP_BASE_H_
 
+#include "absl/base/attributes.h"
 #include "absl/types/optional.h"
 
 namespace webrtc {
@@ -35,6 +36,21 @@ class Transport;
 
 enum class ChannelId : int {};
 
+enum class ABSL_MUST_USE_RESULT VoipResult {
+  // kOk indicates the function was successfully invoked with no error.
+  kOk,
+  // kInvalidArgument indicates the caller specified an invalid argument, such
+  // as an invalid ChannelId.
+  kInvalidArgument,
+  // kFailedPrecondition indicates that the operation was failed due to not
+  // satisfying prerequisite such as not setting codec type before sending.
+  kFailedPrecondition,
+  // kInternal is used to indicate various internal failures that are not the
+  // caller's fault. Further detail is commented on each function that uses this
+  // return value.
+  kInternal,
+};
+
 class VoipBase {
  public:
   // Creates a channel.
@@ -46,40 +62,48 @@ class VoipBase {
   // and injection for incoming RTP from remote endpoint is handled via
   // VoipNetwork interface. |local_ssrc| is optional and when local_ssrc is not
   // set, some random value will be used by voip engine.
-  // Returns value is optional as to indicate the failure to create channel.
-  virtual absl::optional<ChannelId> CreateChannel(
-      Transport* transport,
-      absl::optional<uint32_t> local_ssrc) = 0;
+  // Returns a ChannelId created for caller to handle subsequent Channel
+  // operations.
+  virtual ChannelId CreateChannel(Transport* transport,
+                                  absl::optional<uint32_t> local_ssrc) = 0;
 
   // Releases |channel_id| that no longer has any use.
-  virtual void ReleaseChannel(ChannelId channel_id) = 0;
+  // Returns following VoipResult;
+  //  kOk - |channel_id| is released.
+  //  kInvalidArgument - |channel_id| is invalid.
+  //  kInternal - Fails to stop audio output device.
+  virtual VoipResult ReleaseChannel(ChannelId channel_id) = 0;
 
-  // Starts sending on |channel_id|. This will start microphone if not started
-  // yet. Returns false if initialization has failed on selected microphone
-  // device. API is subject to expand to reflect error condition to application
-  // later.
-  virtual bool StartSend(ChannelId channel_id) = 0;
+  // Starts sending on |channel_id|. This starts microphone if not started yet.
+  // Returns following VoipResult;
+  //  kOk - Channel successfully started to send.
+  //  kInvalidArgument - |channel_id| is invalid.
+  //  kFailedPrecondition - Missing prerequisite on VoipCodec::SetSendCodec.
+  //  kInternal - initialization has failed on selected microphone.
+  virtual VoipResult StartSend(ChannelId channel_id) = 0;
 
   // Stops sending on |channel_id|. If this is the last active channel, it will
   // stop microphone input from underlying audio platform layer.
-  // Returns false if termination logic has failed on selected microphone
-  // device. API is subject to expand to reflect error condition to application
-  // later.
-  virtual bool StopSend(ChannelId channel_id) = 0;
+  // Returns following VoipResult;
+  //  kOk - Channel successfully stopped to send.
+  //  kInvalidArgument - |channel_id| is invalid.
+  //  kInternal - Failed to stop the active microphone device.
+  virtual VoipResult StopSend(ChannelId channel_id) = 0;
 
   // Starts playing on speaker device for |channel_id|.
   // This will start underlying platform speaker device if not started.
-  // Returns false if initialization has failed
-  // on selected speaker device. API is subject to expand to reflect error
-  // condition to application later.
-  virtual bool StartPlayout(ChannelId channel_id) = 0;
+  // Returns following VoipResult;
+  //  kOk - Channel successfully started to play out.
+  //  kInvalidArgument - |channel_id| is invalid.
+  //  kFailedPrecondition - Missing prerequisite on VoipCodec::SetReceiveCodecs.
+  //  kInternal - Failed to initializate the selected speaker device.
+  virtual VoipResult StartPlayout(ChannelId channel_id) = 0;
 
   // Stops playing on speaker device for |channel_id|.
-  // If this is the last active channel playing, then it will stop speaker
-  // from the platform layer.
-  // Returns false if termination logic has failed on selected speaker device.
-  // API is subject to expand to reflect error condition to application later.
-  virtual bool StopPlayout(ChannelId channel_id) = 0;
+  // Returns following VoipResult;
+  //  kOk - Channel successfully stopped t play out.
+  //  kInvalidArgument - |channel_id| is invalid.
+  virtual VoipResult StopPlayout(ChannelId channel_id) = 0;
 
  protected:
   virtual ~VoipBase() = default;

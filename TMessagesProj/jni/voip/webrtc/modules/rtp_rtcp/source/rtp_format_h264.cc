@@ -177,7 +177,7 @@ size_t RtpPacketizerH264::PacketizeStapA(size_t fragment_index) {
       return fragment_size;
     }
     if (fragment_index == input_fragments_.size() - 1) {
-      // Last fragment, so StrapA might be the last packet.
+      // Last fragment, so STAP-A might be the last packet.
       return fragment_size + limits_.last_packet_reduction_len;
     }
     return fragment_size;

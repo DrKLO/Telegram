@@ -33,7 +33,7 @@ class SocketAddressPair;
 // interface can create as many addresses as you want.  All of the sockets
 // created by this network will be able to communicate with one another, unless
 // they are bound to addresses from incompatible families.
-class VirtualSocketServer : public SocketServer, public sigslot::has_slots<> {
+class VirtualSocketServer : public SocketServer {
  public:
   VirtualSocketServer();
   // This constructor needs to be used if the test uses a fake clock and
@@ -94,6 +94,16 @@ class VirtualSocketServer : public SocketServer, public sigslot::has_slots<> {
     drop_prob_ = drop_prob;
   }
 
+  // Controls the maximum UDP payload for the networks simulated
+  // by this server. Any UDP payload sent that is larger than this will
+  // be dropped.
+  size_t max_udp_payload() { return max_udp_payload_; }
+  void set_max_udp_payload(size_t payload_size) {
+    max_udp_payload_ = payload_size;
+  }
+
+  size_t largest_seen_udp_payload() { return largest_seen_udp_payload_; }
+
   // If |blocked| is true, subsequent attempts to send will result in -1 being
   // returned, with the socket error set to EWOULDBLOCK.
   //
@@ -130,9 +140,9 @@ class VirtualSocketServer : public SocketServer, public sigslot::has_slots<> {
   typedef std::pair<double, double> Point;
   typedef std::vector<Point> Function;
 
-  static Function* CreateDistribution(uint32_t mean,
-                                      uint32_t stddev,
-                                      uint32_t samples);
+  static std::unique_ptr<Function> CreateDistribution(uint32_t mean,
+                                                      uint32_t stddev,
+                                                      uint32_t samples);
 
   // Similar to Thread::ProcessMessages, but it only processes messages until
   // there are no immediate messages or pending network traffic.  Returns false
@@ -151,24 +161,11 @@ class VirtualSocketServer : public SocketServer, public sigslot::has_slots<> {
   // socket server. Intended to be used for test assertions.
   uint32_t sent_packets() const { return sent_packets_; }
 
-  // For testing purpose only. Fired when a client socket is created.
-  sigslot::signal1<VirtualSocket*> SignalSocketCreated;
-
- protected:
-  // Returns a new IP not used before in this network.
-  IPAddress GetNextIP(int family);
-  uint16_t GetNextPort();
-
-  VirtualSocket* CreateSocketInternal(int family, int type);
-
   // Binds the given socket to addr, assigning and IP and Port if necessary
   int Bind(VirtualSocket* socket, SocketAddress* addr);
 
   // Binds the given socket to the given (fully-defined) address.
   int Bind(VirtualSocket* socket, const SocketAddress& addr);
-
-  // Find the socket bound to the given address
-  VirtualSocket* LookupBinding(const SocketAddress& addr);
 
   int Unbind(const SocketAddress& addr, VirtualSocket* socket);
 
@@ -177,13 +174,6 @@ class VirtualSocketServer : public SocketServer, public sigslot::has_slots<> {
                      const SocketAddress& server,
                      VirtualSocket* socket);
 
-  // Find the socket pair corresponding to this server address.
-  VirtualSocket* LookupConnection(const SocketAddress& client,
-                                  const SocketAddress& server);
-
-  void RemoveConnection(const SocketAddress& client,
-                        const SocketAddress& server);
-
   // Connects the given socket to the socket at the given address
   int Connect(VirtualSocket* socket,
               const SocketAddress& remote_addr,
@@ -191,6 +181,13 @@ class VirtualSocketServer : public SocketServer, public sigslot::has_slots<> {
 
   // Sends a disconnect message to the socket at the given address
   bool Disconnect(VirtualSocket* socket);
+
+  // Lookup address, and disconnect corresponding socket.
+  bool Disconnect(const SocketAddress& addr);
+
+  // Lookup connection, close corresponding socket.
+  bool Disconnect(const SocketAddress& local_addr,
+                  const SocketAddress& remote_addr);
 
   // Sends the given packet to the socket at the given address (if one exists).
   int SendUdp(VirtualSocket* socket,
@@ -201,6 +198,44 @@ class VirtualSocketServer : public SocketServer, public sigslot::has_slots<> {
   // Moves as much data as possible from the sender's buffer to the network
   void SendTcp(VirtualSocket* socket);
 
+  // Like above, but lookup sender by address.
+  void SendTcp(const SocketAddress& addr);
+
+  // Computes the number of milliseconds required to send a packet of this size.
+  uint32_t SendDelay(uint32_t size);
+
+  // Cancel attempts to connect to a socket that is being closed.
+  void CancelConnects(VirtualSocket* socket);
+
+  // Clear incoming messages for a socket that is being closed.
+  void Clear(VirtualSocket* socket);
+
+  void ProcessOneMessage();
+
+  void PostSignalReadEvent(VirtualSocket* socket);
+
+  // Sending was previously blocked, but now isn't.
+  sigslot::signal0<> SignalReadyToSend;
+
+ protected:
+  // Returns a new IP not used before in this network.
+  IPAddress GetNextIP(int family);
+
+  // Find the socket bound to the given address
+  VirtualSocket* LookupBinding(const SocketAddress& addr);
+
+ private:
+  uint16_t GetNextPort();
+
+  VirtualSocket* CreateSocketInternal(int family, int type);
+
+  // Find the socket pair corresponding to this server address.
+  VirtualSocket* LookupConnection(const SocketAddress& client,
+                                  const SocketAddress& server);
+
+  void RemoveConnection(const SocketAddress& client,
+                        const SocketAddress& server);
+
   // Places a packet on the network.
   void AddPacketToNetwork(VirtualSocket* socket,
                           VirtualSocket* recipient,
@@ -210,31 +245,19 @@ class VirtualSocketServer : public SocketServer, public sigslot::has_slots<> {
                           size_t header_size,
                           bool ordered);
 
-  // Removes stale packets from the network
-  void PurgeNetworkPackets(VirtualSocket* socket, int64_t cur_time);
-
-  // Computes the number of milliseconds required to send a packet of this size.
-  uint32_t SendDelay(uint32_t size);
-
   // If the delay has been set for the address of the socket, returns the set
   // delay. Otherwise, returns a random transit delay chosen from the
   // appropriate distribution.
   uint32_t GetTransitDelay(Socket* socket);
 
-  // Basic operations on functions.  Those that return a function also take
-  // ownership of the function given (and hence, may modify or delete it).
-  static Function* Accumulate(Function* f);
-  static Function* Invert(Function* f);
-  static Function* Resample(Function* f,
-                            double x1,
-                            double x2,
-                            uint32_t samples);
-  static double Evaluate(Function* f, double x);
-
-  // Null out our message queue if it goes away. Necessary in the case where
-  // our lifetime is greater than that of the thread we are using, since we
-  // try to send Close messages for all connected sockets when we shutdown.
-  void OnMessageQueueDestroyed() { msg_queue_ = nullptr; }
+  // Basic operations on functions.
+  static std::unique_ptr<Function> Accumulate(std::unique_ptr<Function> f);
+  static std::unique_ptr<Function> Invert(std::unique_ptr<Function> f);
+  static std::unique_ptr<Function> Resample(std::unique_ptr<Function> f,
+                                            double x1,
+                                            double x2,
+                                            uint32_t samples);
+  static double Evaluate(const Function* f, double x);
 
   // Determine if two sockets should be able to communicate.
   // We don't (currently) specify an address family for sockets; instead,
@@ -253,12 +276,6 @@ class VirtualSocketServer : public SocketServer, public sigslot::has_slots<> {
   // permitted.
   // NB: This scheme doesn't permit non-dualstack IPv6 sockets.
   static bool CanInteractWith(VirtualSocket* local, VirtualSocket* remote);
-
- private:
-  friend class VirtualSocket;
-
-  // Sending was previously blocked, but now isn't.
-  sigslot::signal0<> SignalReadyToSend;
 
   typedef std::map<SocketAddress, VirtualSocket*> AddressMap;
   typedef std::map<SocketAddressPair, VirtualSocket*> ConnectionMap;
@@ -295,9 +312,14 @@ class VirtualSocketServer : public SocketServer, public sigslot::has_slots<> {
   std::map<rtc::IPAddress, rtc::IPAddress> alternative_address_mapping_;
   std::unique_ptr<Function> delay_dist_;
 
-  RecursiveCriticalSection delay_crit_;
-
   double drop_prob_;
+  // The largest UDP payload permitted on this virtual socket server.
+  // The default is the max size of IPv4 fragmented UDP packet payload:
+  // 65535 bytes - 8 bytes UDP header - 20 bytes IP header.
+  size_t max_udp_payload_ = 65507;
+  // The largest UDP payload seen so far.
+  size_t largest_seen_udp_payload_ = 0;
+
   bool sending_blocked_ = false;
   RTC_DISALLOW_COPY_AND_ASSIGN(VirtualSocketServer);
 };
@@ -305,7 +327,7 @@ class VirtualSocketServer : public SocketServer, public sigslot::has_slots<> {
 // Implements the socket interface using the virtual network.  Packets are
 // passed as messages using the message queue of the socket server.
 class VirtualSocket : public AsyncSocket,
-                      public MessageHandlerAutoCleanup,
+                      public MessageHandler,
                       public sigslot::has_slots<> {
  public:
   VirtualSocket(VirtualSocketServer* server, int family, int type, bool async);
@@ -334,11 +356,30 @@ class VirtualSocket : public AsyncSocket,
   int SetOption(Option opt, int value) override;
   void OnMessage(Message* pmsg) override;
 
+  size_t recv_buffer_size() const { return recv_buffer_size_; }
+  size_t send_buffer_size() const { return send_buffer_.size(); }
+  const char* send_buffer_data() const { return send_buffer_.data(); }
+
+  // Used by server sockets to set the local address without binding.
+  void SetLocalAddress(const SocketAddress& addr);
+
   bool was_any() { return was_any_; }
   void set_was_any(bool was_any) { was_any_ = was_any; }
 
-  // For testing purpose only. Fired when client socket is bound to an address.
-  sigslot::signal2<VirtualSocket*, const SocketAddress&> SignalAddressReady;
+  void SetToBlocked();
+
+  void UpdateRecv(size_t data_size);
+  void UpdateSend(size_t data_size);
+
+  void MaybeSignalWriteEvent(size_t capacity);
+
+  // Adds a packet to be sent. Returns delay, based on network_size_.
+  uint32_t AddPacket(int64_t cur_time, size_t packet_size);
+
+  int64_t UpdateOrderedDelivery(int64_t ts);
+
+  // Removes stale packets from the network. Returns current size.
+  size_t PurgeNetworkPackets(int64_t cur_time);
 
  private:
   struct NetworkEntry {
@@ -356,9 +397,6 @@ class VirtualSocket : public AsyncSocket,
   void CompleteConnect(const SocketAddress& addr, bool notify);
   int SendUdp(const void* pv, size_t cb, const SocketAddress& addr);
   int SendTcp(const void* pv, size_t cb);
-
-  // Used by server sockets to set the local address without binding.
-  void SetLocalAddress(const SocketAddress& addr);
 
   void OnSocketServerReadyToSend();
 
@@ -405,8 +443,6 @@ class VirtualSocket : public AsyncSocket,
 
   // Store the options that are set
   OptionsMap options_map_;
-
-  friend class VirtualSocketServer;
 };
 
 }  // namespace rtc

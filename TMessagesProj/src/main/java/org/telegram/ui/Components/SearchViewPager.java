@@ -2,14 +2,10 @@ package org.telegram.ui.Components;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
-import android.animation.ObjectAnimator;
-import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.os.Bundle;
-import android.text.TextUtils;
 import android.view.View;
-import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -44,9 +40,7 @@ import org.telegram.ui.FilteredSearchView;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Set;
 
 public class SearchViewPager extends ViewPagerFixed implements FilteredSearchView.UiCallback {
 
@@ -54,7 +48,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
     public RecyclerListView searchListView;
     public StickerEmptyView emptyView;
     public DialogsSearchAdapter dialogsSearchAdapter;
-    private LinearLayoutManager searchlayoutManager;
+    private LinearLayoutManager searchLayoutManager;
     private RecyclerItemsEnterAnimator itemsEnterAnimator;
     private boolean attached;
 
@@ -127,7 +121,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         searchListView.setVerticalScrollBarEnabled(true);
         searchListView.setInstantClick(true);
         searchListView.setVerticalScrollbarPosition(LocaleController.isRTL ? RecyclerListView.SCROLLBAR_POSITION_LEFT : RecyclerListView.SCROLLBAR_POSITION_RIGHT);
-        searchListView.setLayoutManager(searchlayoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
+        searchListView.setLayoutManager(searchLayoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
         searchListView.setAnimateEmptyView(true, 0);
         searchListView.setOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
@@ -139,10 +133,10 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
 
             @Override
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
-                int firstVisibleItem = searchlayoutManager.findFirstVisibleItemPosition();
-                int visibleItemCount = Math.abs(searchlayoutManager.findLastVisibleItemPosition() - firstVisibleItem) + 1;
+                int firstVisibleItem = searchLayoutManager.findFirstVisibleItemPosition();
+                int visibleItemCount = Math.abs(searchLayoutManager.findLastVisibleItemPosition() - firstVisibleItem) + 1;
                 int totalItemCount = recyclerView.getAdapter().getItemCount();
-                if (visibleItemCount > 0 && searchlayoutManager.findLastVisibleItemPosition() == totalItemCount - 1 && !dialogsSearchAdapter.isMessagesSearchEndReached()) {
+                if (visibleItemCount > 0 && searchLayoutManager.findLastVisibleItemPosition() == totalItemCount - 1 && !dialogsSearchAdapter.isMessagesSearchEndReached()) {
                     dialogsSearchAdapter.loadMoreSearchMessages();
                 }
             }
@@ -154,8 +148,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         noMediaFiltersSearchView.setChatPreviewDelegate(chatPreviewDelegate);
 
         searchContainer = new FrameLayout(context);
-        searchContainer.addView(searchListView);
-        searchContainer.addView(noMediaFiltersSearchView);
+
 
         FlickerLoadingView loadingView = new FlickerLoadingView(context);
         loadingView.setViewType(1);
@@ -176,9 +169,11 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         emptyView.showProgress(true, false);
 
         searchContainer.addView(emptyView);
+        searchContainer.addView(searchListView);
+        searchContainer.addView(noMediaFiltersSearchView);
         searchListView.setEmptyView(emptyView);
 
-        itemsEnterAnimator = new RecyclerItemsEnterAnimator(searchListView);
+        itemsEnterAnimator = new RecyclerItemsEnterAnimator(searchListView, true);
 
         setAdapter(new ViewPagerFixed.Adapter() {
 
@@ -237,6 +232,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         int dialogId = 0;
         long minDate = 0;
         long maxDate = 0;
+        boolean includeFolder = false;
         for (int i = 0; i < currentSearchFilters.size(); i++) {
             FiltersView.MediaFilterData data = currentSearchFilters.get(i);
             if (data.filterType == FiltersView.FILTER_TYPE_CHAT) {
@@ -248,13 +244,15 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
             } else if (data.filterType == FiltersView.FILTER_TYPE_DATE) {
                 minDate = data.dateData.minDate;
                 maxDate = data.dateData.maxDate;
+            } else if (data.filterType == FiltersView.FILTER_TYPE_ARCHIVE) {
+                includeFolder = true;
             }
         }
 
         if (view == searchContainer) {
             if (dialogId == 0 && minDate == 0 && maxDate == 0) {
                 lastSearchScrolledToTop = false;
-                dialogsSearchAdapter.searchDialogs(query);
+                dialogsSearchAdapter.searchDialogs(query, includeFolder ? 1 : 0);
                 dialogsSearchAdapter.setFiltersDelegate(filteredSearchViewDelegate, false);
                 noMediaFiltersSearchView.animate().setListener(null).cancel();
                 noMediaFiltersSearchView.setDelegate(null, false);
@@ -294,14 +292,14 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
                     }
                     noMediaFiltersSearchView.animate().alpha(1f).setDuration(150).start();
                 }
-                noMediaFiltersSearchView.search(dialogId, minDate, maxDate, null, query, reset);
+                noMediaFiltersSearchView.search(dialogId, minDate, maxDate, null, includeFolder, query, reset);
                 emptyView.setVisibility(View.GONE);
             }
             emptyView.setKeyboardHeight(keyboardSize, false);
             noMediaFiltersSearchView.setKeyboardHeight(keyboardSize, false);
         } else {
             ((FilteredSearchView)view).setKeyboardHeight(keyboardSize, false);
-            ((FilteredSearchView)view).search(dialogId, minDate, maxDate, FiltersView.filters[position - 1], query, reset);
+            ((FilteredSearchView)view).search(dialogId, minDate, maxDate, FiltersView.filters[position - 1], includeFolder, query, reset);
         }
     }
 
@@ -329,6 +327,9 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
 
     private void showActionMode(boolean show) {
         if (isActionModeShowed == show) {
+            return;
+        }
+        if (show && parent.getActionBar().isActionModeShowed()) {
             return;
         }
         if (show && !parent.getActionBar().actionModeIsExist(actionModeTag)) {
@@ -402,7 +403,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
                     for (int a = 0; a < dids.size(); a++) {
                         long did = dids.get(a);
                         if (message != null) {
-                            AccountInstance.getInstance(currentAccount).getSendMessagesHelper().sendMessage(message.toString(), did, null, null, null, true, null, null, null, true, 0);
+                            AccountInstance.getInstance(currentAccount).getSendMessagesHelper().sendMessage(message.toString(), did, null, null, null, true, null, null, null, true, 0, null);
                         }
                         AccountInstance.getInstance(currentAccount).getSendMessagesHelper().sendMessage(fmessages, did, true, 0);
                     }
@@ -607,7 +608,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
     public void reset() {
         setPosition(0);
         if (dialogsSearchAdapter.getItemCount() > 0) {
-            searchlayoutManager.scrollToPositionWithOffset(0, 0);
+            searchLayoutManager.scrollToPositionWithOffset(0, 0);
         }
         viewsByType.clear();
     }
@@ -683,7 +684,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
     }
 
     public void runResultsEnterAnimation() {
-        itemsEnterAnimator.showItemsAnimated(animateFromCount);
+        itemsEnterAnimator.showItemsAnimated(animateFromCount > 0 ? animateFromCount + 1 : 0);
         animateFromCount = dialogsSearchAdapter.getItemCount();
     }
 

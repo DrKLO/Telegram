@@ -107,7 +107,10 @@ void StructParametersParser::Parse(absl::string_view src) {
         break;
       }
     }
-    if (!found) {
+    // "_" is be used to prefix keys that are part of the string for
+    // debugging purposes but not neccessarily used.
+    // e.g. WebRTC-Experiment/param: value, _DebuggingString
+    if (!found && (key.empty() || key[0] != '_')) {
       RTC_LOG(LS_INFO) << "No field with key: '" << key
                        << "' (found in trial: \"" << src << "\")";
     }

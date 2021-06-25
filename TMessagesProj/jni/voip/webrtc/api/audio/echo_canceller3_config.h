@@ -43,6 +43,7 @@ struct RTC_EXPORT EchoCanceller3Config {
     size_t hysteresis_limit_blocks = 1;
     size_t fixed_capture_delay_samples = 0;
     float delay_estimate_smoothing = 0.7f;
+    float delay_estimate_smoothing_delay_found = 0.7f;
     float delay_candidate_detection_threshold = 0.2f;
     struct DelaySelectionThresholds {
       int initial;
@@ -86,9 +87,11 @@ struct RTC_EXPORT EchoCanceller3Config {
 
     size_t config_change_duration_blocks = 250;
     float initial_state_seconds = 2.5f;
+    int coarse_reset_hangover_blocks = 25;
     bool conservative_initial_phase = false;
     bool enable_coarse_filter_output_usage = true;
     bool use_linear_filter = true;
+    bool high_pass_filter_echo_reference = false;
     bool export_linear_aec_output = false;
   } filter;
 
@@ -107,6 +110,7 @@ struct RTC_EXPORT EchoCanceller3Config {
     float default_len = 0.83f;
     bool echo_can_saturate = true;
     bool bounded_erl = false;
+    bool erle_onset_compensation_in_dominant_nearend = false;
   } ep_strength;
 
   struct EchoAudibility {

@@ -36,6 +36,11 @@ class AudioSource {
     // Called when the AudioSource is going away.
     virtual void OnClose() = 0;
 
+    // Returns the number of channels encoded by the sink. This can be less than
+    // the number_of_channels if down-mixing occur. A value of -1 means an
+    // unknown number.
+    virtual int NumPreferredChannels() const = 0;
+
    protected:
     virtual ~Sink() {}
   };

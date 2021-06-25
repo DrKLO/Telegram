@@ -47,15 +47,15 @@ struct SendDataParams {
   // If set, the maximum number of times this message may be
   // retransmitted by the transport before it is dropped.
   // Setting this value to zero disables retransmission.
-  // Must be non-negative. |max_rtx_count| and |max_rtx_ms| may not be set
-  // simultaneously.
+  // Valid values are in the range [0-UINT16_MAX].
+  // |max_rtx_count| and |max_rtx_ms| may not be set simultaneously.
   absl::optional<int> max_rtx_count;
 
   // If set, the maximum number of milliseconds for which the transport
   // may retransmit this message before it is dropped.
   // Setting this value to zero disables retransmission.
-  // Must be non-negative. |max_rtx_count| and |max_rtx_ms| may not be set
-  // simultaneously.
+  // Valid values are in the range [0-UINT16_MAX].
+  // |max_rtx_count| and |max_rtx_ms| may not be set simultaneously.
   absl::optional<int> max_rtx_ms;
 };
 

@@ -14,7 +14,8 @@
 #include <memory>
 
 #include "api/frame_transformer_interface.h"
-#include "rtc_base/synchronization/sequence_checker.h"
+#include "api/sequence_checker.h"
+#include "rtc_base/system/no_unique_address.h"
 #include "rtc_base/task_queue.h"
 #include "rtc_base/thread.h"
 
@@ -61,7 +62,7 @@ class ChannelReceiveFrameTransformerDelegate : public TransformedFrameCallback {
   ~ChannelReceiveFrameTransformerDelegate() override = default;
 
  private:
-  SequenceChecker sequence_checker_;
+  RTC_NO_UNIQUE_ADDRESS SequenceChecker sequence_checker_;
   ReceiveFrameCallback receive_frame_callback_
       RTC_GUARDED_BY(sequence_checker_);
   rtc::scoped_refptr<FrameTransformerInterface> frame_transformer_

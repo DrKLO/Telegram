@@ -43,7 +43,7 @@ public class VideoTimelinePlayView extends View {
     private float pressDx;
     private MediaMetadataRetriever mediaMetadataRetriever;
     private VideoTimelineViewDelegate delegate;
-    private ArrayList<Bitmap> frames = new ArrayList<>();
+    private ArrayList<BitmapFrame> frames = new ArrayList<>();
     private AsyncTask<Integer, Integer, Bitmap> currentTask;
     private static final Object sync = new Object();
     private long frameTimeOffset;
@@ -57,6 +57,8 @@ public class VideoTimelinePlayView extends View {
     private Drawable drawableRight;
     private int lastWidth;
     private int currentMode = MODE_VIDEO;
+
+    Paint bitmapPaint = new Paint();
 
     private ArrayList<android.graphics.Rect> exclusionRects = new ArrayList<>();
     private android.graphics.Rect exclustionRect = new Rect();
@@ -359,7 +361,7 @@ public class VideoTimelinePlayView extends View {
             @Override
             protected void onPostExecute(Bitmap bitmap) {
                 if (!isCancelled()) {
-                    frames.add(bitmap);
+                    frames.add(new BitmapFrame(bitmap));
                     invalidate();
                     if (frameNum < framesToLoad) {
                         reloadFrames(frameNum + 1);
@@ -382,9 +384,9 @@ public class VideoTimelinePlayView extends View {
             }
         }
         for (int a = 0; a < frames.size(); a++) {
-            Bitmap bitmap = frames.get(a);
-            if (bitmap != null) {
-                bitmap.recycle();
+            BitmapFrame bitmap = frames.get(a);
+            if (bitmap != null && bitmap.bitmap != null) {
+                bitmap.bitmap.recycle();
             }
         }
         frames.clear();
@@ -405,9 +407,9 @@ public class VideoTimelinePlayView extends View {
 
     public void clearFrames() {
         for (int a = 0; a < frames.size(); a++) {
-            Bitmap bitmap = frames.get(a);
-            if (bitmap != null) {
-                bitmap.recycle();
+            BitmapFrame frame = frames.get(a);
+            if (frame != null) {
+                frame.bitmap.recycle();
             }
         }
         frames.clear();
@@ -441,11 +443,22 @@ public class VideoTimelinePlayView extends View {
         } else {
             int offset = 0;
             for (int a = 0; a < frames.size(); a++) {
-                Bitmap bitmap = frames.get(a);
-                if (bitmap != null) {
+                BitmapFrame bitmap = frames.get(a);
+                if (bitmap.bitmap != null) {
                     int x = AndroidUtilities.dp(16) + offset * frameWidth;
                     int y = AndroidUtilities.dp(2 + 4);
-                    canvas.drawBitmap(bitmap, x, y, null);
+                    if (bitmap.alpha != 1f) {
+                        bitmap.alpha += 16f / 100f;
+                        if (bitmap.alpha > 1f) {
+                            bitmap.alpha = 1f;
+                        } else {
+                            invalidate();
+                        }
+                        bitmapPaint.setAlpha((int) (255 * bitmap.alpha));
+                        canvas.drawBitmap(bitmap.bitmap, x, y, bitmapPaint);
+                    } else {
+                        canvas.drawBitmap(bitmap.bitmap, x, y, null);
+                    }
                 }
                 offset++;
             }
@@ -481,5 +494,14 @@ public class VideoTimelinePlayView extends View {
         rect3.set(cx - AndroidUtilities.dp(1), AndroidUtilities.dp(2), cx + AndroidUtilities.dp(1), AndroidUtilities.dp(50));
         canvas.drawRoundRect(rect3, AndroidUtilities.dp(1), AndroidUtilities.dp(1), paint);
         canvas.drawCircle(cx, AndroidUtilities.dp(52), AndroidUtilities.dp(3), paint);
+    }
+
+    private static class BitmapFrame {
+        Bitmap bitmap;
+        float alpha;
+
+        public BitmapFrame(Bitmap bitmap) {
+            this.bitmap = bitmap;
+        }
     }
 }

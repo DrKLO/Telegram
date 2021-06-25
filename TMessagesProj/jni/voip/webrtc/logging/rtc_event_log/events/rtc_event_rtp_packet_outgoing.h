@@ -11,8 +11,12 @@
 #ifndef LOGGING_RTC_EVENT_LOG_EVENTS_RTC_EVENT_RTP_PACKET_OUTGOING_H_
 #define LOGGING_RTC_EVENT_LOG_EVENTS_RTC_EVENT_RTP_PACKET_OUTGOING_H_
 
+#include <cstddef>
+#include <cstdint>
 #include <memory>
+#include <utility>
 
+#include "api/array_view.h"
 #include "api/rtc_event_log/rtc_event.h"
 #include "modules/rtp_rtcp/source/rtp_packet.h"
 
@@ -22,33 +26,45 @@ class RtpPacketToSend;
 
 class RtcEventRtpPacketOutgoing final : public RtcEvent {
  public:
+  static constexpr Type kType = Type::RtpPacketOutgoing;
+
   RtcEventRtpPacketOutgoing(const RtpPacketToSend& packet,
                             int probe_cluster_id);
   ~RtcEventRtpPacketOutgoing() override;
 
-  Type GetType() const override;
-
-  bool IsConfigEvent() const override;
+  Type GetType() const override { return kType; }
+  bool IsConfigEvent() const override { return false; }
 
   std::unique_ptr<RtcEventRtpPacketOutgoing> Copy() const;
 
-  size_t packet_length() const {
-    return payload_length_ + header_length_ + padding_length_;
+  size_t packet_length() const { return packet_.size(); }
+
+  rtc::ArrayView<const uint8_t> RawHeader() const {
+    return rtc::MakeArrayView(packet_.data(), header_length());
+  }
+  uint32_t Ssrc() const { return packet_.Ssrc(); }
+  uint32_t Timestamp() const { return packet_.Timestamp(); }
+  uint16_t SequenceNumber() const { return packet_.SequenceNumber(); }
+  uint8_t PayloadType() const { return packet_.PayloadType(); }
+  bool Marker() const { return packet_.Marker(); }
+  template <typename ExtensionTrait, typename... Args>
+  bool GetExtension(Args&&... args) const {
+    return packet_.GetExtension<ExtensionTrait>(std::forward<Args>(args)...);
+  }
+  template <typename ExtensionTrait>
+  bool HasExtension() const {
+    return packet_.HasExtension<ExtensionTrait>();
   }
 
-  const RtpPacket& header() const { return header_; }
-  size_t payload_length() const { return payload_length_; }
-  size_t header_length() const { return header_length_; }
-  size_t padding_length() const { return padding_length_; }
+  size_t payload_length() const { return packet_.payload_size(); }
+  size_t header_length() const { return packet_.headers_size(); }
+  size_t padding_length() const { return packet_.padding_size(); }
   int probe_cluster_id() const { return probe_cluster_id_; }
 
  private:
   RtcEventRtpPacketOutgoing(const RtcEventRtpPacketOutgoing& other);
 
-  RtpPacket header_;  // Only the packet's header will be stored here.
-  const size_t payload_length_;  // Media payload, excluding header and padding.
-  const size_t header_length_;   // RTP header.
-  const size_t padding_length_;  // RTP padding.
+  const RtpPacket packet_;
   // TODO(eladalon): Delete |probe_cluster_id_| along with legacy encoding.
   const int probe_cluster_id_;
 };

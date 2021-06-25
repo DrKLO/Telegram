@@ -402,7 +402,7 @@ class HardwareVideoEncoder implements VideoEncoder {
       VideoFrame derotatedFrame =
           new VideoFrame(videoFrame.getBuffer(), 0 /* rotation */, videoFrame.getTimestampNs());
       videoFrameDrawer.drawFrame(derotatedFrame, textureDrawer, null /* additionalRenderMatrix */);
-      textureEglBase.swapBuffers(videoFrame.getTimestampNs());
+      textureEglBase.swapBuffers(videoFrame.getTimestampNs(), false);
     } catch (RuntimeException e) {
       Logging.e(TAG, "encodeTexture failed", e);
       return VideoCodecStatus.ERROR;
@@ -564,6 +564,9 @@ class HardwareVideoEncoder implements VideoEncoder {
 
         final ByteBuffer frameBuffer;
         if (isKeyFrame && (codecType == VideoCodecMimeType.H264 || codecType == VideoCodecMimeType.H265)) {
+          if (configBuffer == null) {
+            configBuffer = ByteBuffer.allocateDirect(info.size);
+          }
           Logging.d(TAG,
               "Prepending config frame of size " + configBuffer.capacity()
                   + " to output buffer with offset " + info.offset + ", size " + info.size);

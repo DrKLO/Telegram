@@ -31,7 +31,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
@@ -75,8 +75,8 @@ public class BlockingUpdateView extends FrameLayout implements NotificationCente
             pressCount++;
             if (pressCount >= 10) {
                 setVisibility(GONE);
-                UserConfig.getInstance(0).pendingAppUpdate = null;
-                UserConfig.getInstance(0).saveConfig(false);
+                SharedConfig.pendingAppUpdate = null;
+                SharedConfig.saveConfig();
             }
         });
 
@@ -161,26 +161,26 @@ public class BlockingUpdateView extends FrameLayout implements NotificationCente
     public void setVisibility(int visibility) {
         super.setVisibility(visibility);
         if (visibility == GONE) {
-            NotificationCenter.getInstance(accountNum).removeObserver(this, NotificationCenter.fileDidLoad);
-            NotificationCenter.getInstance(accountNum).removeObserver(this, NotificationCenter.fileDidFailToLoad);
-            NotificationCenter.getInstance(accountNum).removeObserver(this, NotificationCenter.FileLoadProgressChanged);
+            NotificationCenter.getInstance(accountNum).removeObserver(this, NotificationCenter.fileLoaded);
+            NotificationCenter.getInstance(accountNum).removeObserver(this, NotificationCenter.fileLoadFailed);
+            NotificationCenter.getInstance(accountNum).removeObserver(this, NotificationCenter.fileLoadProgressChanged);
         }
     }
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.fileDidLoad) {
+        if (id == NotificationCenter.fileLoaded) {
             String location = (String) args[0];
             if (fileName != null && fileName.equals(location)) {
                 showProgress(false);
                 openApkInstall((Activity) getContext(), appUpdate.document);
             }
-        } else if (id == NotificationCenter.fileDidFailToLoad) {
+        } else if (id == NotificationCenter.fileLoadFailed) {
             String location = (String) args[0];
             if (fileName != null && fileName.equals(location)) {
                 showProgress(false);
             }
-        } else if (id == NotificationCenter.FileLoadProgressChanged) {
+        } else if (id == NotificationCenter.fileLoadProgressChanged) {
             String location = (String) args[0];
             if (fileName != null && fileName.equals(location)) {
                 Long loadedSize = (Long) args[1];
@@ -304,9 +304,9 @@ public class BlockingUpdateView extends FrameLayout implements NotificationCente
         } else {
             acceptTextView.setText(LocaleController.getString("Update", R.string.Update));
         }
-        NotificationCenter.getInstance(accountNum).addObserver(this, NotificationCenter.fileDidLoad);
-        NotificationCenter.getInstance(accountNum).addObserver(this, NotificationCenter.fileDidFailToLoad);
-        NotificationCenter.getInstance(accountNum).addObserver(this, NotificationCenter.FileLoadProgressChanged);
+        NotificationCenter.getInstance(accountNum).addObserver(this, NotificationCenter.fileLoaded);
+        NotificationCenter.getInstance(accountNum).addObserver(this, NotificationCenter.fileLoadFailed);
+        NotificationCenter.getInstance(accountNum).addObserver(this, NotificationCenter.fileLoadProgressChanged);
         if (check) {
             TLRPC.TL_help_getAppUpdate req = new TLRPC.TL_help_getAppUpdate();
             try {
@@ -322,8 +322,8 @@ public class BlockingUpdateView extends FrameLayout implements NotificationCente
                     final TLRPC.TL_help_appUpdate res = (TLRPC.TL_help_appUpdate) response;
                     if (!res.can_not_skip) {
                         setVisibility(GONE);
-                        UserConfig.getInstance(0).pendingAppUpdate = null;
-                        UserConfig.getInstance(0).saveConfig(false);
+                        SharedConfig.pendingAppUpdate = null;
+                        SharedConfig.saveConfig();
                     }
                 }
             }));

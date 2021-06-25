@@ -33,6 +33,7 @@
 #include "p2p/base/port_interface.h"
 #include "p2p/base/stun_request.h"
 #include "rtc_base/async_packet_socket.h"
+#include "rtc_base/callback_list.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/net_helper.h"
 #include "rtc_base/network.h"
@@ -160,7 +161,7 @@ typedef std::set<rtc::SocketAddress> ServerAddresses;
 // connections to similar mechanisms of the other client.  Subclasses of this
 // one add support for specific mechanisms like local UDP ports.
 class Port : public PortInterface,
-             public rtc::MessageHandlerAutoCleanup,
+             public rtc::MessageHandler,
              public sigslot::has_slots<> {
  public:
   // INIT: The state when a port is just created.
@@ -209,14 +210,14 @@ class Port : public PortInterface,
   // Allows a port to be destroyed if no connection is using it.
   void Prune();
 
+  // Call to stop any currently pending operations from running.
+  void CancelPendingTasks();
+
   // The thread on which this port performs its I/O.
   rtc::Thread* thread() { return thread_; }
 
   // The factory used to create the sockets of this port.
   rtc::PacketSocketFactory* socket_factory() const { return factory_; }
-  void set_socket_factory(rtc::PacketSocketFactory* factory) {
-    factory_ = factory;
-  }
 
   // For debugging purposes.
   const std::string& content_name() const { return content_name_; }
@@ -266,6 +267,9 @@ class Port : public PortInterface,
   // connection.
   sigslot::signal1<Port*> SignalPortError;
 
+  void SubscribePortDestroyed(
+      std::function<void(PortInterface*)> callback) override;
+  void SendPortDestroyed(Port* port);
   // Returns a map containing all of the connections of this port, keyed by the
   // remote address.
   typedef std::map<rtc::SocketAddress, Connection*> AddressMap;
@@ -322,7 +326,7 @@ class Port : public PortInterface,
   uint16_t max_port() { return max_port_; }
 
   // Timeout shortening function to speed up unit tests.
-  void set_timeout_delay(int delay) { timeout_delay_ = delay; }
+  void set_timeout_delay(int delay);
 
   // This method will return local and remote username fragements from the
   // stun username attribute if present.
@@ -437,8 +441,8 @@ class Port : public PortInterface,
 
   void OnNetworkTypeChanged(const rtc::Network* network);
 
-  rtc::Thread* thread_;
-  rtc::PacketSocketFactory* factory_;
+  rtc::Thread* const thread_;
+  rtc::PacketSocketFactory* const factory_;
   std::string type_;
   bool send_retransmit_count_attribute_;
   rtc::Network* network_;
@@ -484,6 +488,7 @@ class Port : public PortInterface,
                              bool is_final);
 
   friend class Connection;
+  webrtc::CallbackList<PortInterface*> port_destroyed_callback_list_;
 };
 
 }  // namespace cricket

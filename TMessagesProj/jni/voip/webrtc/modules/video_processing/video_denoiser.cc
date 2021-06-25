@@ -19,17 +19,6 @@
 namespace webrtc {
 
 #if DISPLAY || DISPLAYNEON
-static void CopyMem8x8(const uint8_t* src,
-                       int src_stride,
-                       uint8_t* dst,
-                       int dst_stride) {
-  for (int i = 0; i < 8; i++) {
-    memcpy(dst, src, 8);
-    src += src_stride;
-    dst += dst_stride;
-  }
-}
-
 static void ShowRect(const std::unique_ptr<DenoiserFilter>& filter,
                      const std::unique_ptr<uint8_t[]>& d_status,
                      const std::unique_ptr<uint8_t[]>& moving_edge_red,
@@ -58,16 +47,16 @@ static void ShowRect(const std::unique_ptr<DenoiserFilter>& filter,
       memset(uv_tmp, 200, 8 * 8);
       if (d_status[mb_index] == 1) {
         // Paint to red.
-        CopyMem8x8(mb_src_u, stride_u_src, mb_dst_u, stride_u_dst);
-        CopyMem8x8(uv_tmp, 8, mb_dst_v, stride_v_dst);
+        libyuv::CopyPlane(mb_src_u, stride_u_src, mb_dst_u, stride_u_dst, 8, 8);
+        libyuv::CopyPlane(uv_tmp, 8, mb_dst_v, stride_v_dst, 8, 8);
       } else if (moving_edge_red[mb_row * mb_cols_ + mb_col] &&
                  x_density[mb_col] * y_density[mb_row]) {
         // Paint to blue.
-        CopyMem8x8(uv_tmp, 8, mb_dst_u, stride_u_dst);
-        CopyMem8x8(mb_src_v, stride_v_src, mb_dst_v, stride_v_dst);
+        libyuv::CopyPlane(uv_tmp, 8, mb_dst_u, stride_u_dst, 8, 8);
+        libyuv::CopyPlane(mb_src_v, stride_v_src, mb_dst_v, stride_v_dst, 8, 8);
       } else {
-        CopyMem8x8(mb_src_u, stride_u_src, mb_dst_u, stride_u_dst);
-        CopyMem8x8(mb_src_v, stride_v_src, mb_dst_v, stride_v_dst);
+        libyuv::CopyPlane(mb_src_u, stride_u_src, mb_dst_u, stride_u_dst, 8, 8);
+        libyuv::CopyPlane(mb_src_v, stride_v_src, mb_dst_v, stride_v_dst, 8, 8);
       }
     }
   }
@@ -194,7 +183,7 @@ void VideoDenoiser::CopySrcOnMOB(const uint8_t* y_src,
           (x_density_[mb_col] * y_density_[mb_row] &&
            moving_object_[mb_row * mb_cols_ + mb_col])) {
         // Copy y source.
-        filter_->CopyMem16x16(mb_src, stride_src, mb_dst, stride_dst);
+        libyuv::CopyPlane(mb_src, stride_src, mb_dst, stride_dst, 16, 16);
       }
     }
   }

@@ -95,7 +95,7 @@ RTC_NORETURN void rtc_FatalMessage(const char* file, int line, const char* msg);
 //   messages if the condition doesn't hold. Prefer them to raw RTC_CHECK and
 //   RTC_DCHECK.
 //
-// - FATAL() aborts unconditionally.
+// - RTC_FATAL() aborts unconditionally.
 
 namespace rtc {
 namespace webrtc_checks_impl {
@@ -454,8 +454,7 @@ RTC_NORETURN RTC_EXPORT void UnreachableCodeReached();
         RTC_UNREACHABLE_FILE_AND_LINE_CALL_ARGS);      \
   } while (0)
 
-// TODO(bugs.webrtc.org/8454): Add an RTC_ prefix or rename differently.
-#define FATAL()                                                      \
+#define RTC_FATAL()                                                  \
   ::rtc::webrtc_checks_impl::FatalLogCall<false>(__FILE__, __LINE__, \
                                                  "FATAL()") &        \
       ::rtc::webrtc_checks_impl::LogStreamer<>()

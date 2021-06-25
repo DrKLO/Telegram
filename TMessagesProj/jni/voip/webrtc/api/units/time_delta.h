@@ -11,9 +11,9 @@
 #ifndef API_UNITS_TIME_DELTA_H_
 #define API_UNITS_TIME_DELTA_H_
 
-#ifdef UNIT_TEST
+#ifdef WEBRTC_UNIT_TEST
 #include <ostream>  // no-presubmit-check TODO(webrtc:8982)
-#endif              // UNIT_TEST
+#endif              // WEBRTC_UNIT_TEST
 
 #include <cstdlib>
 #include <string>
@@ -92,13 +92,13 @@ inline std::string ToLogString(TimeDelta value) {
   return ToString(value);
 }
 
-#ifdef UNIT_TEST
+#ifdef WEBRTC_UNIT_TEST
 inline std::ostream& operator<<(  // no-presubmit-check TODO(webrtc:8982)
     std::ostream& stream,         // no-presubmit-check TODO(webrtc:8982)
     TimeDelta value) {
   return stream << ToString(value);
 }
-#endif  // UNIT_TEST
+#endif  // WEBRTC_UNIT_TEST
 
 }  // namespace webrtc
 

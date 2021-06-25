@@ -5,22 +5,22 @@
 
 namespace tgcalls {
 
-AndroidContext::AndroidContext(JNIEnv *env, jobject instance) {
-    VideoCameraCapturerClass = (jclass) env->NewGlobalRef(env->FindClass("org/telegram/messenger/voip/VideoCameraCapturer"));
-    jmethodID initMethodId = env->GetMethodID(VideoCameraCapturerClass, "<init>", "()V");
-    javaCapturer = env->NewGlobalRef(env->NewObject(VideoCameraCapturerClass, initMethodId));
+AndroidContext::AndroidContext(JNIEnv *env, jobject instance, bool screencast) {
+    VideoCapturerDeviceClass = (jclass) env->NewGlobalRef(env->FindClass("org/telegram/messenger/voip/VideoCapturerDevice"));
+    jmethodID initMethodId = env->GetMethodID(VideoCapturerDeviceClass, "<init>", "(Z)V");
+    javaCapturer = env->NewGlobalRef(env->NewObject(VideoCapturerDeviceClass, initMethodId, screencast));
     javaInstance = env->NewGlobalRef(instance);
 }
 
 AndroidContext::~AndroidContext() {
     JNIEnv *env = webrtc::AttachCurrentThreadIfNeeded();
 
-    jmethodID onDestroyMethodId = env->GetMethodID(VideoCameraCapturerClass, "onDestroy", "()V");
+    jmethodID onDestroyMethodId = env->GetMethodID(VideoCapturerDeviceClass, "onDestroy", "()V");
     env->CallVoidMethod(javaCapturer, onDestroyMethodId);
     env->DeleteGlobalRef(javaCapturer);
     javaCapturer = nullptr;
 
-    env->DeleteGlobalRef(VideoCameraCapturerClass);
+    env->DeleteGlobalRef(VideoCapturerDeviceClass);
 
     if (javaInstance) {
         env->DeleteGlobalRef(javaInstance);
@@ -40,7 +40,7 @@ jobject AndroidContext::getJavaCapturer() {
 }
 
 jclass AndroidContext::getJavaCapturerClass() {
-    return VideoCameraCapturerClass;
+    return VideoCapturerDeviceClass;
 }
 
 }  // namespace tgcalls

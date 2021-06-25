@@ -41,8 +41,7 @@ class VideoCaptureModuleV4L2 : public VideoCaptureImpl {
   bool AllocateVideoBuffers();
   bool DeAllocateVideoBuffers();
 
-  // TODO(pbos): Stop using unique_ptr and resetting the thread.
-  std::unique_ptr<rtc::PlatformThread> _captureThread;
+  rtc::PlatformThread _captureThread;
   Mutex capture_lock_;
   bool quit_ RTC_GUARDED_BY(capture_lock_);
   int32_t _deviceId;

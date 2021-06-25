@@ -55,9 +55,15 @@ class FakeDtlsTransport : public DtlsTransportInternal {
 
   // If this constructor is called, a new fake ICE transport will be created,
   // and this FakeDtlsTransport will take the ownership.
-  explicit FakeDtlsTransport(const std::string& name, int component)
+  FakeDtlsTransport(const std::string& name, int component)
       : FakeDtlsTransport(std::make_unique<FakeIceTransport>(name, component)) {
   }
+  FakeDtlsTransport(const std::string& name,
+                    int component,
+                    rtc::Thread* network_thread)
+      : FakeDtlsTransport(std::make_unique<FakeIceTransport>(name,
+                                                             component,
+                                                             network_thread)) {}
 
   ~FakeDtlsTransport() override {
     if (dest_ && dest_->dest_ == this) {
@@ -85,7 +91,7 @@ class FakeDtlsTransport : public DtlsTransportInternal {
   }
   void SetDtlsState(DtlsTransportState state) {
     dtls_state_ = state;
-    SignalDtlsState(this, dtls_state_);
+    SendDtlsState(this, dtls_state_);
   }
 
   // Simulates the two DTLS transports connecting to each other.
@@ -140,9 +146,6 @@ class FakeDtlsTransport : public DtlsTransportInternal {
         rtc::SSLFingerprint(alg, rtc::MakeArrayView(digest, digest_len));
     return true;
   }
-  bool SetSslMaxProtocolVersion(rtc::SSLProtocolVersion version) override {
-    return true;
-  }
   bool SetDtlsRole(rtc::SSLRole role) override {
     dtls_role_ = std::move(role);
     return true;
@@ -153,12 +156,6 @@ class FakeDtlsTransport : public DtlsTransportInternal {
     }
     *role = *dtls_role_;
     return true;
-  }
-  const webrtc::CryptoOptions& crypto_options() const override {
-    return crypto_options_;
-  }
-  void SetCryptoOptions(const webrtc::CryptoOptions& crypto_options) {
-    crypto_options_ = crypto_options;
   }
   bool SetLocalCertificate(
       const rtc::scoped_refptr<rtc::RTCCertificate>& certificate) override {
@@ -297,7 +294,6 @@ class FakeDtlsTransport : public DtlsTransportInternal {
   absl::optional<rtc::SSLRole> dtls_role_;
   int crypto_suite_ = rtc::SRTP_AES128_CM_SHA1_80;
   absl::optional<int> ssl_cipher_suite_;
-  webrtc::CryptoOptions crypto_options_;
 
   DtlsTransportState dtls_state_ = DTLS_TRANSPORT_NEW;
 

@@ -257,7 +257,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiDidLoad);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingDidStart);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingDidReset);
@@ -271,7 +271,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiDidLoad);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagePlayingDidStart);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagePlayingDidReset);
@@ -402,7 +402,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.emojiDidLoad) {
+        if (id == NotificationCenter.emojiLoaded) {
             if (chatListView != null) {
                 chatListView.invalidateViews();
             }
@@ -482,9 +482,9 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
         } else if (id == NotificationCenter.didSetNewWallpapper) {
             if (fragmentView != null) {
                 contentView.setBackgroundImage(Theme.getCachedWallpaper(), Theme.isWallpaperMotion());
-                progressView2.getBackground().setColorFilter(Theme.colorFilter);
+                progressView2.invalidate();
                 if (emptyView != null) {
-                    emptyView.getBackground().setColorFilter(Theme.colorFilter);
+                    emptyView.invalidate();
                 }
                 chatListView.invalidateViews();
             }
@@ -717,12 +717,11 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
         contentView.addView(emptyViewContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
         emptyViewContainer.setOnTouchListener((v, event) -> true);
 
-
         emptyView = new TextView(context);
         emptyView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         emptyView.setGravity(Gravity.CENTER);
         emptyView.setTextColor(Theme.getColor(Theme.key_chat_serviceText));
-        emptyView.setBackgroundDrawable(Theme.createRoundRectDrawable(AndroidUtilities.dp(10), Theme.getServiceMessageColor()));
+        emptyView.setBackground(Theme.createServiceDrawable(AndroidUtilities.dp(6), emptyView, contentView));
         emptyView.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(16), AndroidUtilities.dp(16), AndroidUtilities.dp(16));
         emptyViewContainer.addView(emptyView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 16, 0, 16, 0));
 
@@ -967,8 +966,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
         contentView.addView(progressView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
 
         progressView2 = new View(context);
-        progressView2.setBackgroundResource(R.drawable.system_loader);
-        progressView2.getBackground().setColorFilter(Theme.colorFilter);
+        progressView2.setBackground(Theme.createServiceDrawable(AndroidUtilities.dp(18), progressView2, contentView));
         progressView.addView(progressView2, LayoutHelper.createFrame(36, 36, Gravity.CENTER));
 
         progressBar = new RadialProgressView(context);
@@ -1393,7 +1391,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                     path = FileLoader.getPathToMessage(selectedObject.messageOwner).toString();
                 }
                 if (selectedObject.type == 3 || selectedObject.type == 1) {
-                    if (Build.VERSION.SDK_INT >= 23 && getParentActivity().checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                    if (Build.VERSION.SDK_INT >= 23 && (Build.VERSION.SDK_INT <= 28 || BuildVars.NO_SCOPED_STORAGE) && getParentActivity().checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                         getParentActivity().requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 4);
                         selectedObject = null;
                         return;
@@ -1502,7 +1500,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                 if (path == null || path.length() == 0) {
                     path = FileLoader.getPathToMessage(selectedObject.messageOwner).toString();
                 }
-                if (Build.VERSION.SDK_INT >= 23 && getParentActivity().checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                if (Build.VERSION.SDK_INT >= 23 && (Build.VERSION.SDK_INT <= 28 || BuildVars.NO_SCOPED_STORAGE) && getParentActivity().checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                     getParentActivity().requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 4);
                     selectedObject = null;
                     return;
@@ -1515,7 +1513,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                 break;
             }
             case 10: {
-                if (Build.VERSION.SDK_INT >= 23 && getParentActivity().checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                if (Build.VERSION.SDK_INT >= 23 && (Build.VERSION.SDK_INT <= 28 || BuildVars.NO_SCOPED_STORAGE) && getParentActivity().checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                     getParentActivity().requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 4);
                     selectedObject = null;
                     return;
@@ -1767,7 +1765,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                 if (viewBottom > height) {
                     viewBottom = viewTop + height;
                 }
-                messageCell.setVisiblePart(viewTop, viewBottom - viewTop, contentView.getHeightWithKeyboard() - AndroidUtilities.dp(48) - chatListView.getTop(), 0);
+                messageCell.setVisiblePart(viewTop, viewBottom - viewTop, contentView.getHeightWithKeyboard() - AndroidUtilities.dp(48) - chatListView.getTop(), 0, view.getY() + actionBar.getMeasuredHeight() - contentView.getBackgroundTranslationY(), contentView.getBackgroundSizeY());
 
                 MessageObject messageObject = messageCell.getMessageObject();
                 if (roundVideoContainer != null && messageObject.isRoundVideo() && MediaController.getInstance().isPlayingMessage(messageObject)) {
@@ -1778,6 +1776,9 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                     roundVideoContainer.invalidate();
                     foundTextureViewMessage = true;
                 }
+            } else if (view instanceof ChatActionCell) {
+                ChatActionCell cell = (ChatActionCell) view;
+                cell.setVisiblePart(view.getY() + actionBar.getMeasuredHeight() - contentView.getBackgroundTranslationY(), contentView.getBackgroundSizeY());
             }
             if (view.getBottom() <= chatListView.getPaddingTop()) {
                 continue;
@@ -2455,7 +2456,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
             } else if (viewType == 2) {
                 view = new ChatUnreadCell(mContext);
             } else {
-                view = new ChatLoadingCell(mContext);
+                view = new ChatLoadingCell(mContext, contentView);
             }
             view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
             return new RecyclerListView.Holder(view);
@@ -2510,6 +2511,34 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
 
         @Override
         public void onViewAttachedToWindow(RecyclerView.ViewHolder holder) {
+            if (holder.itemView instanceof ChatMessageCell || holder.itemView instanceof ChatActionCell) {
+                View view = holder.itemView;
+                holder.itemView.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+                    @Override
+                    public boolean onPreDraw() {
+                        view.getViewTreeObserver().removeOnPreDrawListener(this);
+
+                        int height = chatListView.getMeasuredHeight();
+                        int top = view.getTop();
+                        int bottom = view.getBottom();
+                        int viewTop = top >= 0 ? 0 : -top;
+                        int viewBottom = view.getMeasuredHeight();
+                        if (viewBottom > height) {
+                            viewBottom = viewTop + height;
+                        }
+
+                        if (holder.itemView instanceof ChatMessageCell) {
+                            ((ChatMessageCell) view).setVisiblePart(viewTop, viewBottom - viewTop, contentView.getHeightWithKeyboard() - AndroidUtilities.dp(48) - chatListView.getTop(), 0, view.getY() + actionBar.getMeasuredHeight() - contentView.getBackgroundTranslationY(), contentView.getBackgroundSizeY());
+                        } else if (holder.itemView instanceof ChatActionCell) {
+                            if (actionBar != null && contentView != null) {
+                                ((ChatActionCell) view).setVisiblePart(view.getY() + actionBar.getMeasuredHeight() - contentView.getBackgroundTranslationY(), contentView.getBackgroundSizeY());
+                            }
+                        }
+
+                        return true;
+                    }
+                });
+            }
             if (holder.itemView instanceof ChatMessageCell) {
                 final ChatMessageCell messageCell = (ChatMessageCell) holder.itemView;
                 MessageObject message = messageCell.getMessageObject();
@@ -2517,24 +2546,6 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                 messageCell.setBackgroundDrawable(null);
                 messageCell.setCheckPressed(true, false);
 
-                messageCell.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-                    @Override
-                    public boolean onPreDraw() {
-                        messageCell.getViewTreeObserver().removeOnPreDrawListener(this);
-
-                        int height = chatListView.getMeasuredHeight();
-                        int top = messageCell.getTop();
-                        int bottom = messageCell.getBottom();
-                        int viewTop = top >= 0 ? 0 : -top;
-                        int viewBottom = messageCell.getMeasuredHeight();
-                        if (viewBottom > height) {
-                            viewBottom = viewTop + height;
-                        }
-                        messageCell.setVisiblePart(viewTop, viewBottom - viewTop, contentView.getHeightWithKeyboard() - AndroidUtilities.dp(48) - chatListView.getTop(), 0);
-
-                        return true;
-                    }
-                });
                 messageCell.setHighlighted(false);
             }
         }

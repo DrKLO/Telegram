@@ -51,7 +51,7 @@ scoped_refptr<RTCCertificate> RTCCertificateGenerator::GenerateCertificate(
     expires_s = std::min(expires_s, kYearInSeconds);
     // TODO(torbjorng): Stop using |time_t|, its type is unspecified. It it safe
     // to assume it can hold up to a year's worth of seconds (and more), but
-    // |SSLIdentity::Generate| should stop relying on |time_t|.
+    // |SSLIdentity::Create| should stop relying on |time_t|.
     // See bugs.webrtc.org/5720.
     time_t cert_lifetime_s = static_cast<time_t>(expires_s);
     identity = SSLIdentity::Create(kIdentityName, key_params, cert_lifetime_s);

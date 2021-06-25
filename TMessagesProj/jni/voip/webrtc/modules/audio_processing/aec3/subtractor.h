@@ -78,6 +78,15 @@ class Subtractor {
             refined_impulse_responses_[0].data(),
             GetTimeDomainLength(
                 refined_filters_[0]->max_filter_size_partitions())));
+    if (ApmDataDumper::IsAvailable()) {
+      RTC_DCHECK_GT(coarse_impulse_responses_.size(), 0);
+      data_dumper_->DumpRaw(
+          "aec3_subtractor_h_coarse",
+          rtc::ArrayView<const float>(
+              coarse_impulse_responses_[0].data(),
+              GetTimeDomainLength(
+                  coarse_filter_[0]->max_filter_size_partitions())));
+    }
 
     refined_filters_[0]->DumpFilter("aec3_subtractor_H_refined");
     coarse_filter_[0]->DumpFilter("aec3_subtractor_H_coarse");
@@ -120,6 +129,7 @@ class Subtractor {
   const Aec3Optimization optimization_;
   const EchoCanceller3Config config_;
   const size_t num_capture_channels_;
+  const bool use_coarse_filter_reset_hangover_;
 
   std::vector<std::unique_ptr<AdaptiveFirFilter>> refined_filters_;
   std::vector<std::unique_ptr<AdaptiveFirFilter>> coarse_filter_;
@@ -127,9 +137,11 @@ class Subtractor {
   std::vector<std::unique_ptr<CoarseFilterUpdateGain>> coarse_gains_;
   std::vector<FilterMisadjustmentEstimator> filter_misadjustment_estimators_;
   std::vector<size_t> poor_coarse_filter_counters_;
+  std::vector<int> coarse_filter_reset_hangover_;
   std::vector<std::vector<std::array<float, kFftLengthBy2Plus1>>>
       refined_frequency_responses_;
   std::vector<std::vector<float>> refined_impulse_responses_;
+  std::vector<std::vector<float>> coarse_impulse_responses_;
 };
 
 }  // namespace webrtc

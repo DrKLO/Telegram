@@ -39,21 +39,28 @@ class CreateSdpObserverJni : public CreateSessionDescriptionObserver {
   std::unique_ptr<MediaConstraints> constraints_;
 };
 
-class SetSdpObserverJni : public SetSessionDescriptionObserver {
+class SetLocalSdpObserverJni : public SetLocalDescriptionObserverInterface {
  public:
-  SetSdpObserverJni(JNIEnv* env,
-                    const JavaRef<jobject>& j_observer,
-                    std::unique_ptr<MediaConstraints> constraints);
-  ~SetSdpObserverJni() override;
+  SetLocalSdpObserverJni(JNIEnv* env, const JavaRef<jobject>& j_observer);
 
-  MediaConstraints* constraints() { return constraints_.get(); }
+  ~SetLocalSdpObserverJni() override = default;
 
-  void OnSuccess() override;
-  void OnFailure(RTCError error) override;
+  virtual void OnSetLocalDescriptionComplete(RTCError error) override;
 
  private:
   const ScopedJavaGlobalRef<jobject> j_observer_global_;
-  std::unique_ptr<MediaConstraints> constraints_;
+};
+
+class SetRemoteSdpObserverJni : public SetRemoteDescriptionObserverInterface {
+ public:
+  SetRemoteSdpObserverJni(JNIEnv* env, const JavaRef<jobject>& j_observer);
+
+  ~SetRemoteSdpObserverJni() override = default;
+
+  virtual void OnSetRemoteDescriptionComplete(RTCError error) override;
+
+ private:
+  const ScopedJavaGlobalRef<jobject> j_observer_global_;
 };
 
 }  // namespace jni

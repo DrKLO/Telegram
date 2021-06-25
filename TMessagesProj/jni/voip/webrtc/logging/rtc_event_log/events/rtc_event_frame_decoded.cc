@@ -36,14 +36,6 @@ RtcEventFrameDecoded::RtcEventFrameDecoded(const RtcEventFrameDecoded& other)
       codec_(other.codec_),
       qp_(other.qp_) {}
 
-RtcEvent::Type RtcEventFrameDecoded::GetType() const {
-  return RtcEvent::Type::FrameDecoded;
-}
-
-bool RtcEventFrameDecoded::IsConfigEvent() const {
-  return false;
-}
-
 std::unique_ptr<RtcEventFrameDecoded> RtcEventFrameDecoded::Copy() const {
   return absl::WrapUnique<RtcEventFrameDecoded>(
       new RtcEventFrameDecoded(*this));

@@ -36,6 +36,8 @@ enum class NetworkPreference {
 
 const char* NetworkPreferenceToString(NetworkPreference preference);
 
+// This interface is set onto a socket server,
+// where only the ip address is known at the time of binding.
 class NetworkBinderInterface {
  public:
   // Binds a socket to the network that is attached to |address| so that all
@@ -82,6 +84,19 @@ class NetworkMonitorInterface {
 
   virtual NetworkPreference GetNetworkPreference(
       const std::string& interface_name) = 0;
+
+  // Does |this| NetworkMonitorInterface implement BindSocketToNetwork?
+  // Only Android returns true.
+  virtual bool SupportsBindSocketToNetwork() const { return false; }
+
+  // Bind a socket to an interface specified by ip address and/or interface
+  // name. Only implemented on Android.
+  virtual NetworkBindingResult BindSocketToNetwork(
+      int socket_fd,
+      const IPAddress& address,
+      const std::string& interface_name) {
+    return NetworkBindingResult::NOT_IMPLEMENTED;
+  }
 
   // Is this interface available to use? WebRTC shouldn't attempt to use it if
   // this returns false.

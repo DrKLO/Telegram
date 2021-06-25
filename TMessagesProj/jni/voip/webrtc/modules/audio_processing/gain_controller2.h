@@ -18,11 +18,11 @@
 #include "modules/audio_processing/agc2/gain_applier.h"
 #include "modules/audio_processing/agc2/limiter.h"
 #include "modules/audio_processing/include/audio_processing.h"
+#include "modules/audio_processing/logging/apm_data_dumper.h"
 #include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
-class ApmDataDumper;
 class AudioBuffer;
 
 // Gain Controller 2 aims to automatically adjust levels by acting on the
@@ -30,9 +30,11 @@ class AudioBuffer;
 class GainController2 {
  public:
   GainController2();
+  GainController2(const GainController2&) = delete;
+  GainController2& operator=(const GainController2&) = delete;
   ~GainController2();
 
-  void Initialize(int sample_rate_hz);
+  void Initialize(int sample_rate_hz, int num_channels);
   void Process(AudioBuffer* audio);
   void NotifyAnalogLevel(int level);
 
@@ -41,14 +43,13 @@ class GainController2 {
 
  private:
   static int instance_count_;
-  std::unique_ptr<ApmDataDumper> data_dumper_;
+  ApmDataDumper data_dumper_;
   AudioProcessing::Config::GainController2 config_;
   GainApplier gain_applier_;
   std::unique_ptr<AdaptiveAgc> adaptive_agc_;
   Limiter limiter_;
+  int calls_since_last_limiter_log_;
   int analog_level_ = -1;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(GainController2);
 };
 
 }  // namespace webrtc

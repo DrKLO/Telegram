@@ -12,9 +12,9 @@
 #define API_TRANSPORT_GOOG_CC_FACTORY_H_
 #include <memory>
 
+#include "absl/base/attributes.h"
 #include "api/network_state_predictor.h"
 #include "api/transport/network_control.h"
-#include "rtc_base/deprecation.h"
 
 namespace webrtc {
 class RtcEventLog;
@@ -31,8 +31,8 @@ class GoogCcNetworkControllerFactory
     : public NetworkControllerFactoryInterface {
  public:
   GoogCcNetworkControllerFactory() = default;
-  explicit RTC_DEPRECATED GoogCcNetworkControllerFactory(
-      RtcEventLog* event_log);
+  ABSL_DEPRECATED("")
+  explicit GoogCcNetworkControllerFactory(RtcEventLog* event_log);
   explicit GoogCcNetworkControllerFactory(
       NetworkStatePredictorFactoryInterface* network_state_predictor_factory);
 
@@ -49,7 +49,8 @@ class GoogCcNetworkControllerFactory
 // Deprecated, use GoogCcFactoryConfig to enable feedback only mode instead.
 // Factory to create packet feedback only GoogCC, this can be used for
 // connections providing packet receive time feedback but no other reports.
-class RTC_DEPRECATED GoogCcFeedbackNetworkControllerFactory
+class ABSL_DEPRECATED("use GoogCcFactoryConfig instead")
+    GoogCcFeedbackNetworkControllerFactory
     : public GoogCcNetworkControllerFactory {
  public:
   explicit GoogCcFeedbackNetworkControllerFactory(RtcEventLog* event_log);

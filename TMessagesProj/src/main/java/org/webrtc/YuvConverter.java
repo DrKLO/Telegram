@@ -13,6 +13,8 @@ package org.webrtc;
 import android.graphics.Matrix;
 import android.opengl.GLES20;
 import java.nio.ByteBuffer;
+
+import org.telegram.messenger.FileLog;
 import org.webrtc.VideoFrame.I420Buffer;
 import org.webrtc.VideoFrame.TextureBuffer;
 
@@ -173,37 +175,41 @@ public class YuvConverter {
     renderMatrix.preScale(1f, -1f);
     renderMatrix.preTranslate(-0.5f, -0.5f);
 
-    i420TextureFrameBuffer.setSize(viewportWidth, totalHeight);
+    try {
+      i420TextureFrameBuffer.setSize(viewportWidth, totalHeight);
 
-    // Bind our framebuffer.
-    GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, i420TextureFrameBuffer.getFrameBufferId());
-    GlUtil.checkNoGLES2Error("glBindFramebuffer");
+      // Bind our framebuffer.
+      GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, i420TextureFrameBuffer.getFrameBufferId());
+      GlUtil.checkNoGLES2Error("glBindFramebuffer");
 
-    // Draw Y.
-    shaderCallbacks.setPlaneY();
-    VideoFrameDrawer.drawTexture(drawer, preparedBuffer, renderMatrix, frameWidth, frameHeight,
-        /* viewportX= */ 0, /* viewportY= */ 0, viewportWidth,
-        /* viewportHeight= */ frameHeight);
+      // Draw Y.
+      shaderCallbacks.setPlaneY();
+      VideoFrameDrawer.drawTexture(drawer, preparedBuffer, renderMatrix, frameWidth, frameHeight, frameWidth, frameHeight,
+              /* viewportX= */ 0, /* viewportY= */ 0, viewportWidth,
+              /* viewportHeight= */ frameHeight, false);
 
-    // Draw U.
-    shaderCallbacks.setPlaneU();
-    VideoFrameDrawer.drawTexture(drawer, preparedBuffer, renderMatrix, frameWidth, frameHeight,
-        /* viewportX= */ 0, /* viewportY= */ frameHeight, viewportWidth / 2,
-        /* viewportHeight= */ uvHeight);
+      // Draw U.
+      shaderCallbacks.setPlaneU();
+      VideoFrameDrawer.drawTexture(drawer, preparedBuffer, renderMatrix, frameWidth, frameHeight, frameWidth, frameHeight,
+              /* viewportX= */ 0, /* viewportY= */ frameHeight, viewportWidth / 2,
+              /* viewportHeight= */ uvHeight, false);
 
-    // Draw V.
-    shaderCallbacks.setPlaneV();
-    VideoFrameDrawer.drawTexture(drawer, preparedBuffer, renderMatrix, frameWidth, frameHeight,
-        /* viewportX= */ viewportWidth / 2, /* viewportY= */ frameHeight, viewportWidth / 2,
-        /* viewportHeight= */ uvHeight);
+      // Draw V.
+      shaderCallbacks.setPlaneV();
+      VideoFrameDrawer.drawTexture(drawer, preparedBuffer, renderMatrix, frameWidth, frameHeight, frameWidth, frameHeight,
+              /* viewportX= */ viewportWidth / 2, /* viewportY= */ frameHeight, viewportWidth / 2,
+              /* viewportHeight= */ uvHeight, false);
 
-    GLES20.glReadPixels(0, 0, i420TextureFrameBuffer.getWidth(), i420TextureFrameBuffer.getHeight(),
-        GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, i420ByteBuffer);
+      GLES20.glReadPixels(0, 0, i420TextureFrameBuffer.getWidth(), i420TextureFrameBuffer.getHeight(),
+              GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, i420ByteBuffer);
 
-    GlUtil.checkNoGLES2Error("YuvConverter.convert");
+      GlUtil.checkNoGLES2Error("YuvConverter.convert");
 
-    // Restore normal framebuffer.
-    GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
+      // Restore normal framebuffer.
+      GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
+    } catch (Exception e) {
+      FileLog.e(e);
+    }
 
     // Prepare Y, U, and V ByteBuffer slices.
     final int yPos = 0;

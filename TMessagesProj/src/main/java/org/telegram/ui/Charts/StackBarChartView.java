@@ -153,6 +153,7 @@ public class StackBarChartView extends BaseChartView<StackBarChartData, StackBar
     @Override
     protected void selectXOnChart(int x, int y) {
         if (chartData == null) return;
+        int oldSelectedIndex = selectedIndex;
         float offset = chartFullWidth * (pickerDelegate.pickerStart) - HORIZONTAL_PADDING;
         float p;
         if (chartData.xPercentage.length < 2) {
@@ -174,13 +175,16 @@ public class StackBarChartView extends BaseChartView<StackBarChartData, StackBar
             if (selectedIndex < startXIndex) selectedIndex = startXIndex;
         }
 
-        legendShowing = true;
-        animateLegend(true);
-        moveLegend(offset);
-        if (dateSelectionListener != null) {
-            dateSelectionListener.onDateSelected(getSelectedDate());
+        if (oldSelectedIndex != selectedIndex) {
+            legendShowing = true;
+            animateLegend(true);
+            moveLegend(offset);
+            if (dateSelectionListener != null) {
+                dateSelectionListener.onDateSelected(getSelectedDate());
+            }
+            invalidate();
+            runSmoothHaptic();
         }
-        invalidate();
     }
 
     @Override

@@ -32,6 +32,9 @@ import java.util.Random;
 
 public class AvatarsImageView extends FrameLayout {
 
+
+    public final static int STYLE_GROUP_CALL_TOOLTIP = 10;
+
     DrawingState[] currentStates = new DrawingState[3];
     DrawingState[] animatingStates = new DrawingState[3];
     boolean wasDraw;
@@ -217,7 +220,7 @@ public class AvatarsImageView extends FrameLayout {
                 if (id == AccountInstance.getInstance(account).getUserConfig().getClientUserId()) {
                     animatingStates[index].lastSpeakTime = 0;
                 } else {
-                    animatingStates[index].lastSpeakTime = participant.active_date;
+                    animatingStates[index].lastSpeakTime = participant.lastActiveDate;
                 }
             } else {
                 animatingStates[index].lastSpeakTime = participant.active_date;
@@ -237,8 +240,9 @@ public class AvatarsImageView extends FrameLayout {
         } else {
             animatingStates[index].imageReceiver.setForUserOrChat(currentChat, animatingStates[index].avatarDrawable);
         }
-        animatingStates[index].imageReceiver.setRoundRadius(AndroidUtilities.dp(currentStyle == 4 ? 16 : 12));
-        int size = AndroidUtilities.dp(currentStyle == 4 ? 32 : 24);
+        boolean bigAvatars = currentStyle == 4 || currentStyle == STYLE_GROUP_CALL_TOOLTIP;
+        animatingStates[index].imageReceiver.setRoundRadius(AndroidUtilities.dp(bigAvatars ? 16 : 12));
+        int size = AndroidUtilities.dp(bigAvatars ? 32 : 24);
         animatingStates[index].imageReceiver.setImageCoords(0, 0, size, size);
         invalidate();
     }
@@ -248,15 +252,17 @@ public class AvatarsImageView extends FrameLayout {
     protected void onDraw(Canvas canvas) {
         wasDraw = true;
 
-        int size = AndroidUtilities.dp(currentStyle == 4 ? 32 : 24);
-        int toAdd = AndroidUtilities.dp(currentStyle == 4 ? 24 : 20);
+        boolean bigAvatars = currentStyle == 4 || currentStyle == STYLE_GROUP_CALL_TOOLTIP;
+        int size = AndroidUtilities.dp(bigAvatars ? 32 : 24);
+        int toAdd = AndroidUtilities.dp(bigAvatars ? 24 : 20);
         int drawCount = 0;
         for (int i = 0; i < 3; i++) {
             if (currentStates[i].id != 0) {
                 drawCount++;
             }
         }
-        int ax = centered ? (getMeasuredWidth() - drawCount * toAdd - AndroidUtilities.dp(currentStyle == 4 ? 8 : 4)) / 2 : (currentStyle == 0 ? 0 : AndroidUtilities.dp(10));
+        int startPadding = (currentStyle == 0 || currentStyle == STYLE_GROUP_CALL_TOOLTIP) ? 0 : AndroidUtilities.dp(10);
+        int ax = centered ? (getMeasuredWidth() - drawCount * toAdd - AndroidUtilities.dp(bigAvatars ? 8 : 4)) / 2 : startPadding;
         boolean isMuted = VoIPService.getSharedInstance() != null && VoIPService.getSharedInstance().isMicMute();
         if (currentStyle == 4) {
             paint.setColor(Theme.getColor(Theme.key_inappPlayerBackground));
@@ -270,9 +276,10 @@ public class AvatarsImageView extends FrameLayout {
                 animateToDrawCount++;
             }
         }
-        boolean useAlphaLayer = currentStyle == 0 || currentStyle == 1 || currentStyle == 3 || currentStyle == 4 || currentStyle == 5;
+        boolean useAlphaLayer = currentStyle == 0 || currentStyle == 1 || currentStyle == 3 || currentStyle == 4 || currentStyle == 5 || currentStyle == STYLE_GROUP_CALL_TOOLTIP;
         if (useAlphaLayer) {
-            canvas.saveLayerAlpha(0, 0, getMeasuredWidth(), getMeasuredHeight(), 255, Canvas.ALL_SAVE_FLAG);
+            float padding = currentStyle == STYLE_GROUP_CALL_TOOLTIP ? AndroidUtilities.dp(16) : 0;
+            canvas.saveLayerAlpha(-padding, -padding, getMeasuredWidth() + padding, getMeasuredHeight() + padding, 255, Canvas.ALL_SAVE_FLAG);
         }
         for (int a = 2; a >= 0; a--) {
             for (int k = 0; k < 2; k++) {
@@ -290,13 +297,13 @@ public class AvatarsImageView extends FrameLayout {
                     continue;
                 }
                 if (k == 0) {
-                    int toAx = centered ? (getMeasuredWidth() - animateToDrawCount * toAdd - AndroidUtilities.dp(currentStyle == 4 ? 8 : 4)) / 2 : AndroidUtilities.dp(10);
+                    int toAx = centered ? (getMeasuredWidth() - animateToDrawCount * toAdd - AndroidUtilities.dp(bigAvatars ? 8 : 4)) / 2 : startPadding;
                     imageReceiver.setImageX(toAx + toAdd * a);
                 } else {
                     imageReceiver.setImageX(ax + toAdd * a);
                 }
 
-                if (currentStyle == 0) {
+               if (currentStyle == 0 || currentStyle == STYLE_GROUP_CALL_TOOLTIP) {
                     imageReceiver.setImageY((getMeasuredHeight() - size) / 2f);
                 } else {
                     imageReceiver.setImageY(AndroidUtilities.dp(currentStyle == 4 ? 8 : 6));
@@ -316,12 +323,12 @@ public class AvatarsImageView extends FrameLayout {
                         alpha = transitionProgress;
                         needRestore = true;
                     } else if (states[a].animationType == DrawingState.ANIMATION_TYPE_MOVE) {
-                        int toAx = centered ? (getMeasuredWidth() - animateToDrawCount * toAdd - AndroidUtilities.dp(currentStyle == 4 ? 8 : 4)) / 2 : AndroidUtilities.dp(10);
+                        int toAx = centered ? (getMeasuredWidth() - animateToDrawCount * toAdd - AndroidUtilities.dp(bigAvatars ? 8 : 4)) / 2 : startPadding;
                         int toX = toAx + toAdd * a;
                         int fromX = ax + toAdd * states[a].moveFromIndex;
                         imageReceiver.setImageX((int) (toX * transitionProgress + fromX * (1f - transitionProgress)));
                     } else if (states[a].animationType == DrawingState.ANIMATION_TYPE_NONE && centered) {
-                        int toAx = (getMeasuredWidth() - animateToDrawCount * toAdd - AndroidUtilities.dp(currentStyle == 4 ? 8 : 4)) / 2;
+                        int toAx = (getMeasuredWidth() - animateToDrawCount * toAdd - AndroidUtilities.dp(bigAvatars ? 8 : 4)) / 2;
                         int toX = toAx + toAdd * a;
                         int fromX = ax + toAdd * a;
                         imageReceiver.setImageX((int) (toX * transitionProgress + fromX * (1f - transitionProgress)));
@@ -358,21 +365,35 @@ public class AvatarsImageView extends FrameLayout {
                             invalidate();
                         }
                         avatarScale = states[a].wavesDrawable.getAvatarScale();
-                    } else if (currentStyle == 4) {
+                    } else if (currentStyle == 4 || currentStyle == STYLE_GROUP_CALL_TOOLTIP) {
                         canvas.drawCircle(imageReceiver.getCenterX(), imageReceiver.getCenterY(), AndroidUtilities.dp(17), xRefP);
                         if (states[a].wavesDrawable == null) {
                             states[a].wavesDrawable = new GroupCallUserCell.AvatarWavesDrawable(AndroidUtilities.dp(17), AndroidUtilities.dp(21));
                         }
-                        states[a].wavesDrawable.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_voipgroup_listeningText), (int) (255 * 0.3f * alpha)));
+                        if (currentStyle == STYLE_GROUP_CALL_TOOLTIP) {
+                            states[a].wavesDrawable.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_voipgroup_speakingText), (int) (255 * 0.3f * alpha)));
+                        } else {
+                            states[a].wavesDrawable.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_voipgroup_listeningText), (int) (255 * 0.3f * alpha)));
+                        }
                         long currentTime = System.currentTimeMillis();
                         if (currentTime - states[a].lastUpdateTime > 100) {
                             states[a].lastUpdateTime = currentTime;
-                            if (ConnectionsManager.getInstance(UserConfig.selectedAccount).getCurrentTime() - states[a].lastSpeakTime <= 5) {
-                                states[a].wavesDrawable.setShowWaves(true, this);
-                                states[a].wavesDrawable.setAmplitude(random.nextInt() % 100);
+                            if (currentStyle == STYLE_GROUP_CALL_TOOLTIP) {
+                                if (states[a].participant != null && states[a].participant.amplitude > 0) {
+                                    states[a].wavesDrawable.setShowWaves(true, this);
+                                    float amplitude = states[a].participant.amplitude * 15f;
+                                    states[a].wavesDrawable.setAmplitude(amplitude);
+                                } else {
+                                    states[a].wavesDrawable.setShowWaves(false, this);
+                                }
                             } else {
-                                states[a].wavesDrawable.setShowWaves(false, this);
-                                states[a].wavesDrawable.setAmplitude(0);
+                                if (ConnectionsManager.getInstance(UserConfig.selectedAccount).getCurrentTime() - states[a].lastSpeakTime <= 5) {
+                                    states[a].wavesDrawable.setShowWaves(true, this);
+                                    states[a].wavesDrawable.setAmplitude(random.nextInt() % 100);
+                                } else {
+                                    states[a].wavesDrawable.setShowWaves(false, this);
+                                    states[a].wavesDrawable.setAmplitude(0);
+                                }
                             }
                         }
                         states[a].wavesDrawable.update();
@@ -380,13 +401,13 @@ public class AvatarsImageView extends FrameLayout {
                         avatarScale = states[a].wavesDrawable.getAvatarScale();
                     } else {
                         if (useAlphaLayer) {
-                            canvas.drawCircle(imageReceiver.getCenterX(), imageReceiver.getCenterY(), AndroidUtilities.dp(currentStyle == 4 ? 17 : 13), xRefP);
+                            canvas.drawCircle(imageReceiver.getCenterX(), imageReceiver.getCenterY(), AndroidUtilities.dp(bigAvatars ? 17 : 13), xRefP);
                         } else {
                             int paintAlpha = paint.getAlpha();
                             if (alpha != 1f) {
                                 paint.setAlpha((int) (paintAlpha * alpha));
                             }
-                            canvas.drawCircle(imageReceiver.getCenterX(), imageReceiver.getCenterY(), AndroidUtilities.dp(currentStyle == 4 ? 17 : 13), paint);
+                            canvas.drawCircle(imageReceiver.getCenterX(), imageReceiver.getCenterY(), AndroidUtilities.dp(bigAvatars ? 17 : 13), paint);
                             if (alpha != 1f) {
                                 paint.setAlpha(paintAlpha);
                             }

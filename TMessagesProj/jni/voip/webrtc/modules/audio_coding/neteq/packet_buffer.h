@@ -22,6 +22,14 @@ namespace webrtc {
 class DecoderDatabase;
 class StatisticsCalculator;
 class TickTimer;
+struct SmartFlushingConfig {
+  // When calculating the flushing threshold, the maximum between the target
+  // level and this value is used.
+  int target_level_threshold_ms = 500;
+  // A smart flush is triggered when the packet buffer contains a multiple of
+  // the target level.
+  int target_level_multiplier = 3;
+};
 
 // This is the actual buffer holding the packets before decoding.
 class PacketBuffer {
@@ -29,6 +37,7 @@ class PacketBuffer {
   enum BufferReturnCodes {
     kOK = 0,
     kFlushed,
+    kPartialFlush,
     kNotFound,
     kBufferEmpty,
     kInvalidPacket,
@@ -43,7 +52,13 @@ class PacketBuffer {
   virtual ~PacketBuffer();
 
   // Flushes the buffer and deletes all packets in it.
-  virtual void Flush();
+  virtual void Flush(StatisticsCalculator* stats);
+
+  // Partial flush. Flush packets but leave some packets behind.
+  virtual void PartialFlush(int target_level_ms,
+                            size_t sample_rate,
+                            size_t last_decoded_length,
+                            StatisticsCalculator* stats);
 
   // Returns true for an empty buffer.
   virtual bool Empty() const;
@@ -52,7 +67,12 @@ class PacketBuffer {
   // the packet object.
   // Returns PacketBuffer::kOK on success, PacketBuffer::kFlushed if the buffer
   // was flushed due to overfilling.
-  virtual int InsertPacket(Packet&& packet, StatisticsCalculator* stats);
+  virtual int InsertPacket(Packet&& packet,
+                           StatisticsCalculator* stats,
+                           size_t last_decoded_length,
+                           size_t sample_rate,
+                           int target_level_ms,
+                           const DecoderDatabase& decoder_database);
 
   // Inserts a list of packets into the buffer. The buffer will take over
   // ownership of the packet objects.
@@ -67,7 +87,10 @@ class PacketBuffer {
       const DecoderDatabase& decoder_database,
       absl::optional<uint8_t>* current_rtp_payload_type,
       absl::optional<uint8_t>* current_cng_rtp_payload_type,
-      StatisticsCalculator* stats);
+      StatisticsCalculator* stats,
+      size_t last_decoded_length,
+      size_t sample_rate,
+      int target_level_ms);
 
   // Gets the timestamp for the first packet in the buffer and writes it to the
   // output variable |next_timestamp|.
@@ -146,6 +169,7 @@ class PacketBuffer {
   }
 
  private:
+  absl::optional<SmartFlushingConfig> smart_flushing_config_;
   size_t max_number_of_packets_;
   PacketList buffer_;
   const TickTimer* tick_timer_;

@@ -383,15 +383,15 @@ public class AvatarPreviewer {
         @Override
         protected void onAttachedToWindow() {
             super.onAttachedToWindow();
-            NotificationCenter.getInstance(UserConfig.selectedAccount).addObserver(this, NotificationCenter.fileDidLoad);
-            NotificationCenter.getInstance(UserConfig.selectedAccount).addObserver(this, NotificationCenter.FileLoadProgressChanged);
+            NotificationCenter.getInstance(UserConfig.selectedAccount).addObserver(this, NotificationCenter.fileLoaded);
+            NotificationCenter.getInstance(UserConfig.selectedAccount).addObserver(this, NotificationCenter.fileLoadProgressChanged);
         }
 
         @Override
         protected void onDetachedFromWindow() {
             super.onDetachedFromWindow();
-            NotificationCenter.getInstance(UserConfig.selectedAccount).removeObserver(this, NotificationCenter.fileDidLoad);
-            NotificationCenter.getInstance(UserConfig.selectedAccount).removeObserver(this, NotificationCenter.FileLoadProgressChanged);
+            NotificationCenter.getInstance(UserConfig.selectedAccount).removeObserver(this, NotificationCenter.fileLoaded);
+            NotificationCenter.getInstance(UserConfig.selectedAccount).removeObserver(this, NotificationCenter.fileLoadProgressChanged);
         }
 
         @Override
@@ -399,12 +399,12 @@ public class AvatarPreviewer {
             if (!showProgress || TextUtils.isEmpty(videoFileName)) {
                 return;
             }
-            if (id == NotificationCenter.fileDidLoad) {
+            if (id == NotificationCenter.fileLoaded) {
                 final String fileName = (String) args[0];
                 if (TextUtils.equals(fileName, videoFileName)) {
                     radialProgress.setProgress(1f, true);
                 }
-            } else if (id == NotificationCenter.FileLoadProgressChanged) {
+            } else if (id == NotificationCenter.fileLoadProgressChanged) {
                 String fileName = (String) args[0];
                 if (TextUtils.equals(fileName, videoFileName)) {
                     if (radialProgress != null) {

@@ -71,8 +71,6 @@ public:
     void updateDcSettings(uint32_t datacenterId, bool workaround);
     void setPushConnectionEnabled(bool value);
     void applyDnsConfig(NativeByteBuffer *buffer, std::string phone, int32_t date);
-    void setMtProtoVersion(int version);
-    int32_t getMtProtoVersion();
     int64_t checkProxy(std::string address, uint16_t port, std::string username, std::string password, std::string secret, onRequestTimeFunc requestTimeFunc, jobject ptr1);
 
 #ifdef ANDROID
@@ -227,7 +225,6 @@ private:
     int32_t currentUserId = 0;
     bool registeredForInternalPush = false;
     bool pushConnectionEnabled = true;
-    int32_t mtProtoVersion = 2;
 
     std::map<uint32_t, std::vector<std::unique_ptr<NetworkMessage>>> genericMessagesToDatacenters;
     std::map<uint32_t, std::vector<std::unique_ptr<NetworkMessage>>> genericMediaMessagesToDatacenters;

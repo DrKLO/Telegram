@@ -48,6 +48,12 @@ class EchoRemover {
   // Updates the status on whether echo leakage is detected in the output of the
   // echo remover.
   virtual void UpdateEchoLeakageStatus(bool leakage_detected) = 0;
+
+  // Specifies whether the capture output will be used. The purpose of this is
+  // to allow the echo remover to deactivate some of the processing when the
+  // resulting output is anyway not used, for instance when the endpoint is
+  // muted.
+  virtual void SetCaptureOutputUsage(bool capture_output_used) = 0;
 };
 
 }  // namespace webrtc

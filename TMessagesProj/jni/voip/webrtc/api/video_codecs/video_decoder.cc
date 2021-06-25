@@ -10,6 +10,8 @@
 
 #include "api/video_codecs/video_decoder.h"
 
+#include "rtc_base/strings/string_builder.h"
+
 namespace webrtc {
 
 int32_t DecodedImageCallback::Decoded(VideoFrame& decodedImage,
@@ -24,12 +26,31 @@ void DecodedImageCallback::Decoded(VideoFrame& decodedImage,
   Decoded(decodedImage, decode_time_ms.value_or(-1));
 }
 
-bool VideoDecoder::PrefersLateDecoding() const {
-  return true;
+VideoDecoder::DecoderInfo VideoDecoder::GetDecoderInfo() const {
+  DecoderInfo info;
+  info.implementation_name = ImplementationName();
+  return info;
 }
 
 const char* VideoDecoder::ImplementationName() const {
   return "unknown";
+}
+
+std::string VideoDecoder::DecoderInfo::ToString() const {
+  char string_buf[2048];
+  rtc::SimpleStringBuilder oss(string_buf);
+
+  oss << "DecoderInfo { "
+      << "prefers_late_decoding = "
+      << "implementation_name = '" << implementation_name << "', "
+      << "is_hardware_accelerated = "
+      << (is_hardware_accelerated ? "true" : "false") << " }";
+  return oss.str();
+}
+
+bool VideoDecoder::DecoderInfo::operator==(const DecoderInfo& rhs) const {
+  return is_hardware_accelerated == rhs.is_hardware_accelerated &&
+         implementation_name == rhs.implementation_name;
 }
 
 }  // namespace webrtc

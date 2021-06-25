@@ -64,19 +64,6 @@ static void VarianceNeonW8(const uint8_t* a,
       static_cast<uint32_t>(HorizontalAddS32x4(vaddq_s32(v_sse_lo, v_sse_hi)));
 }
 
-void DenoiserFilterNEON::CopyMem16x16(const uint8_t* src,
-                                      int src_stride,
-                                      uint8_t* dst,
-                                      int dst_stride) {
-  uint8x16_t qtmp;
-  for (int r = 0; r < 16; r++) {
-    qtmp = vld1q_u8(src);
-    vst1q_u8(dst, qtmp);
-    src += src_stride;
-    dst += dst_stride;
-  }
-}
-
 uint32_t DenoiserFilterNEON::Variance16x8(const uint8_t* a,
                                           int a_stride,
                                           const uint8_t* b,

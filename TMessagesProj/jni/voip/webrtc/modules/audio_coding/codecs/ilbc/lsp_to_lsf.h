@@ -19,7 +19,7 @@
 #ifndef MODULES_AUDIO_CODING_CODECS_ILBC_MAIN_SOURCE_LSP_TO_LSF_H_
 #define MODULES_AUDIO_CODING_CODECS_ILBC_MAIN_SOURCE_LSP_TO_LSF_H_
 
-#include "modules/audio_coding/codecs/ilbc/defines.h"
+#include <stdint.h>
 
 /*----------------------------------------------------------------*
  *  conversion from LSP coefficients to LSF coefficients

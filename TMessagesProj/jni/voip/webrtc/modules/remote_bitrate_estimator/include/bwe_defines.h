@@ -17,9 +17,6 @@
 #include "api/network_state_predictor.h"
 #include "api/units/data_rate.h"
 
-#define BWE_MAX(a, b) ((a) > (b) ? (a) : (b))
-#define BWE_MIN(a, b) ((a) < (b) ? (a) : (b))
-
 namespace webrtc {
 
 namespace congestion_controller {
@@ -38,8 +35,6 @@ enum BweNames {
   kSendSideTransportSeqNum = 3,
   kBweNamesMax = 4
 };
-
-enum RateControlState { kRcHold, kRcIncrease, kRcDecrease };
 
 struct RateControlInput {
   RateControlInput(BandwidthUsage bw_state,

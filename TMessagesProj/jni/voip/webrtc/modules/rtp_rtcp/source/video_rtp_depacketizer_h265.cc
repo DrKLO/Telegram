@@ -298,8 +298,9 @@ absl::optional<VideoRtpDepacketizer::ParsedRtpPayload> ParseFuNalu(
     }
 	rtp_payload =
 	    rtp_payload.Slice(1, rtp_payload.size() - 1);
-    rtp_payload[0] = f | original_nal_type << 1 | layer_id_h;
-    rtp_payload[1] = layer_id_l_unshifted | tid;
+    RTC_DCHECK_LT(1, rtp_payload.size());
+    rtp_payload.MutableData()[0] = f | original_nal_type << 1 | layer_id_h;
+    rtp_payload.MutableData()[1] = layer_id_l_unshifted | tid;
 	parsed_payload->video_payload = std::move(rtp_payload);
   } else {
 	 parsed_payload->video_payload =

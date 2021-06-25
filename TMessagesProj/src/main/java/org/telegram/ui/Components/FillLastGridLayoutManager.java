@@ -10,11 +10,17 @@ import androidx.recyclerview.widget.RecyclerView;
 public class FillLastGridLayoutManager extends GridLayoutManager {
 
     private SparseArray<RecyclerView.ViewHolder> heights = new SparseArray<>();
-    private int lastItemHeight = -1;
+    protected int lastItemHeight = -1;
     private int listHeight;
     private int listWidth;
     private int additionalHeight;
     private RecyclerView listView;
+    private boolean bind = true;
+    private boolean canScrollVertically = true;
+
+    public void setBind(boolean bind) {
+        this.bind = bind;
+    }
 
     public FillLastGridLayoutManager(Context context, int spanCount, int h, RecyclerView recyclerView) {
         super(context, spanCount);
@@ -34,7 +40,7 @@ public class FillLastGridLayoutManager extends GridLayoutManager {
     }
 
     @SuppressWarnings("unchecked")
-    private void calcLastItemHeight() {
+    protected void calcLastItemHeight() {
         if (listHeight <= 0 || !shouldCalcLastItemHeight()) {
             return;
         }
@@ -69,7 +75,10 @@ public class FillLastGridLayoutManager extends GridLayoutManager {
                     holder.itemView.setLayoutParams(generateDefaultLayoutParams());
                 }
             }
-            adapter.onBindViewHolder(holder, a);
+
+            if (bind) {
+                adapter.onBindViewHolder(holder, a);
+            }
 
             final RecyclerView.LayoutParams lp = (RecyclerView.LayoutParams) holder.itemView.getLayoutParams();
             final int widthSpec = getChildMeasureSpec(listWidth, getWidthMode(), getPaddingLeft() + getPaddingRight() + lp.leftMargin + lp.rightMargin, lp.width, canScrollHorizontally());
@@ -151,5 +160,14 @@ public class FillLastGridLayoutManager extends GridLayoutManager {
 
     protected boolean shouldCalcLastItemHeight() {
         return true;
+    }
+
+    public void setCanScrollVertically(boolean value) {
+        canScrollVertically = value;
+    }
+
+    @Override
+    public boolean canScrollVertically() {
+        return canScrollVertically;
     }
 }

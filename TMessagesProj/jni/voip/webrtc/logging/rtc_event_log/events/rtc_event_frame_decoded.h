@@ -22,6 +22,8 @@ namespace webrtc {
 
 class RtcEventFrameDecoded final : public RtcEvent {
  public:
+  static constexpr Type kType = Type::FrameDecoded;
+
   RtcEventFrameDecoded(int64_t render_time_ms,
                        uint32_t ssrc,
                        int width,
@@ -30,9 +32,8 @@ class RtcEventFrameDecoded final : public RtcEvent {
                        uint8_t qp);
   ~RtcEventFrameDecoded() override = default;
 
-  Type GetType() const override;
-
-  bool IsConfigEvent() const override;
+  Type GetType() const override { return kType; }
+  bool IsConfigEvent() const override { return false; }
 
   std::unique_ptr<RtcEventFrameDecoded> Copy() const;
 
@@ -52,6 +53,19 @@ class RtcEventFrameDecoded final : public RtcEvent {
   const int height_;
   const VideoCodecType codec_;
   const uint8_t qp_;
+};
+
+struct LoggedFrameDecoded {
+  int64_t log_time_us() const { return timestamp_us; }
+  int64_t log_time_ms() const { return timestamp_us / 1000; }
+
+  int64_t timestamp_us;
+  int64_t render_time_ms;
+  uint32_t ssrc;
+  int width;
+  int height;
+  VideoCodecType codec;
+  uint8_t qp;
 };
 
 }  // namespace webrtc

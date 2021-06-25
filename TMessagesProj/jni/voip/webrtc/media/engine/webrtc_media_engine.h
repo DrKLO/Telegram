@@ -22,6 +22,7 @@
 #include "api/rtp_parameters.h"
 #include "api/task_queue/task_queue_factory.h"
 #include "api/transport/bitrate_settings.h"
+#include "api/transport/field_trial_based_config.h"
 #include "api/transport/webrtc_key_value_config.h"
 #include "api/video_codecs/video_decoder_factory.h"
 #include "api/video_codecs/video_encoder_factory.h"
@@ -51,8 +52,6 @@ struct MediaEngineDependencies {
 
   std::unique_ptr<webrtc::VideoEncoderFactory> video_encoder_factory;
   std::unique_ptr<webrtc::VideoDecoderFactory> video_decoder_factory;
-
-  std::function<void(uint32_t)> onUnknownAudioSsrc = nullptr;
 
   const webrtc::WebRtcKeyValueConfig* trials = nullptr;
 };

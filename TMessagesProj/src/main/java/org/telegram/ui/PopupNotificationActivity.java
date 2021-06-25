@@ -170,7 +170,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.contactsDidLoad);
         }
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.pushMessagesUpdated);
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiDidLoad);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
         classGuid = ConnectionsManager.generateClassGuid();
 
         statusDrawables[0] = new TypingDotsDrawable(false);
@@ -1534,7 +1534,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                     }
                 }
             }
-        } else if (id == NotificationCenter.emojiDidLoad) {
+        } else if (id == NotificationCenter.emojiLoaded) {
             if (messageContainer != null) {
                 int count = messageContainer.getChildCount();
                 for (int a = 0; a < count; a++) {
@@ -1583,7 +1583,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.contactsDidLoad);
         }
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.pushMessagesUpdated);
-        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiDidLoad);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
         if (chatActivityEnterView != null) {
             chatActivityEnterView.onDestroy();
         }

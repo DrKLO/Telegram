@@ -59,4 +59,12 @@ public class UserObject {
         }
         return !TextUtils.isEmpty(name) ? name : LocaleController.getString("HiddenName", R.string.HiddenName);
     }
+
+    public static boolean hasPhoto(TLRPC.User user) {
+        return user != null && user.photo != null && !(user.photo instanceof TLRPC.TL_userProfilePhotoEmpty);
+    }
+
+    public static TLRPC.UserProfilePhoto getPhoto(TLRPC.User user) {
+        return hasPhoto(user) ? user.photo : null;
+    }
 }

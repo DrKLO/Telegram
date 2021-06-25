@@ -44,6 +44,7 @@ class VCMDecoderDataBase {
   bool DeregisterExternalDecoder(uint8_t payload_type);
   void RegisterExternalDecoder(VideoDecoder* external_decoder,
                                uint8_t payload_type);
+  bool IsExternalDecoderRegistered(uint8_t payload_type) const;
 
   bool RegisterReceiveCodec(uint8_t payload_type,
                             const VideoCodec* receive_codec,
@@ -58,10 +59,6 @@ class VCMDecoderDataBase {
   VCMGenericDecoder* GetDecoder(
       const VCMEncodedFrame& frame,
       VCMDecodedFrameCallback* decoded_frame_callback);
-
-  // Returns true if the currently active decoder prefer to decode frames late.
-  // That means that frames must be decoded near the render times stamp.
-  bool PrefersLateDecoding() const;
 
  private:
   typedef std::map<uint8_t, VCMDecoderMapItem*> DecoderMap;

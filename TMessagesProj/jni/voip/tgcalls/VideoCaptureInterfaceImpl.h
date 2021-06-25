@@ -18,11 +18,17 @@ public:
 	~VideoCaptureInterfaceObject();
 
 	void switchToDevice(std::string deviceId);
+    void withNativeImplementation(std::function<void(void *)> completion);
 	void setState(VideoState state);
     void setPreferredAspectRatio(float aspectRatio);
 	void setOutput(std::shared_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink);
 	void setStateUpdated(std::function<void(VideoState)> stateUpdated);
+    void setRotationUpdated(std::function<void(int)> rotationUpdated);
+    void setOnFatalError(std::function<void()> error);
+    void setOnPause(std::function<void(bool)> pause);
+    void setOnIsActiveUpdated(std::function<void(bool)> onIsActiveUpdated);
 	webrtc::VideoTrackSourceInterface *source();
+    int getRotation();
 
 private:
     void updateAspectRateAdaptation();
@@ -33,6 +39,10 @@ private:
     std::pair<int, int> _videoCapturerResolution;
 	std::unique_ptr<VideoCapturerInterface> _videoCapturer;
 	std::function<void(VideoState)> _stateUpdated;
+    std::function<void()> _onFatalError;
+    std::function<void(bool)> _onPause;
+    std::function<void(bool)> _onIsActiveUpdated;
+    std::function<void(int)> _rotationUpdated;
 	VideoState _state = VideoState::Active;
     float _preferredAspectRatio = 0.0f;
     bool _shouldBeAdaptedToReceiverAspectRate = true;
@@ -44,10 +54,14 @@ public:
 	virtual ~VideoCaptureInterfaceImpl();
 
 	void switchToDevice(std::string deviceId) override;
+    void withNativeImplementation(std::function<void(void *)> completion) override;
 	void setState(VideoState state) override;
     void setPreferredAspectRatio(float aspectRatio) override;
 	void setOutput(std::shared_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink) override;
-	std::shared_ptr<PlatformContext> getPlatformContext() override;
+    void setOnFatalError(std::function<void()> error) override;
+    void setOnPause(std::function<void(bool)> pause) override;
+    void setOnIsActiveUpdated(std::function<void(bool)> onIsActiveUpdated) override;
+    std::shared_ptr<PlatformContext> getPlatformContext() override;
 
 	ThreadLocalObject<VideoCaptureInterfaceObject> *object();
 

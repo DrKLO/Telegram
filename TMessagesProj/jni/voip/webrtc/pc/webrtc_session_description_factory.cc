@@ -174,8 +174,7 @@ WebRtcSessionDescriptionFactory::WebRtcSessionDescriptionFactory(
     // Generate certificate.
     certificate_request_state_ = CERTIFICATE_WAITING;
 
-    rtc::scoped_refptr<WebRtcCertificateGeneratorCallback> callback(
-        new rtc::RefCountedObject<WebRtcCertificateGeneratorCallback>());
+    auto callback = rtc::make_ref_counted<WebRtcCertificateGeneratorCallback>();
     callback->SignalRequestFailed.connect(
         this, &WebRtcSessionDescriptionFactory::OnCertificateRequestFailed);
     callback->SignalCertificateReady.connect(
@@ -194,7 +193,7 @@ WebRtcSessionDescriptionFactory::WebRtcSessionDescriptionFactory(
 }
 
 WebRtcSessionDescriptionFactory::~WebRtcSessionDescriptionFactory() {
-  RTC_DCHECK(signaling_thread_->IsCurrent());
+  RTC_DCHECK_RUN_ON(signaling_thread_);
 
   // Fail any requests that were asked for before identity generation completed.
   FailPendingRequests(kFailedDueToSessionShutdown);
@@ -222,6 +221,7 @@ void WebRtcSessionDescriptionFactory::CreateOffer(
     CreateSessionDescriptionObserver* observer,
     const PeerConnectionInterface::RTCOfferAnswerOptions& options,
     const cricket::MediaSessionOptions& session_options) {
+  RTC_DCHECK_RUN_ON(signaling_thread_);
   std::string error = "CreateOffer";
   if (certificate_request_state_ == CERTIFICATE_FAILED) {
     error += kFailedDueToIdentityFailed;
@@ -441,7 +441,7 @@ void WebRtcSessionDescriptionFactory::InternalCreateAnswer(
 
 void WebRtcSessionDescriptionFactory::FailPendingRequests(
     const std::string& reason) {
-  RTC_DCHECK(signaling_thread_->IsCurrent());
+  RTC_DCHECK_RUN_ON(signaling_thread_);
   while (!create_session_description_requests_.empty()) {
     const CreateSessionDescriptionRequest& request =
         create_session_description_requests_.front();
@@ -476,7 +476,7 @@ void WebRtcSessionDescriptionFactory::PostCreateSessionDescriptionSucceeded(
 }
 
 void WebRtcSessionDescriptionFactory::OnCertificateRequestFailed() {
-  RTC_DCHECK(signaling_thread_->IsCurrent());
+  RTC_DCHECK_RUN_ON(signaling_thread_);
 
   RTC_LOG(LS_ERROR) << "Asynchronous certificate generation request failed.";
   certificate_request_state_ = CERTIFICATE_FAILED;

@@ -57,7 +57,7 @@ void GetDefaultAudioParameters(JNIEnv* env,
 rtc::scoped_refptr<AudioDeviceModule> CreateAAudioAudioDeviceModule(
     JNIEnv* env,
     jobject application_context) {
-  RTC_LOG(INFO) << __FUNCTION__;
+  RTC_DLOG(INFO) << __FUNCTION__;
   // Get default audio input/output parameters.
   AudioParameters input_parameters;
   AudioParameters output_parameters;
@@ -76,7 +76,7 @@ rtc::scoped_refptr<AudioDeviceModule> CreateAAudioAudioDeviceModule(
 rtc::scoped_refptr<AudioDeviceModule> CreateJavaAudioDeviceModule(
     JNIEnv* env,
     jobject application_context) {
-  RTC_LOG(INFO) << __FUNCTION__;
+  RTC_DLOG(INFO) << __FUNCTION__;
   // Get default audio input/output parameters.
   const JavaParamRef<jobject> j_context(application_context);
   const ScopedJavaLocalRef<jobject> j_audio_manager =
@@ -104,7 +104,7 @@ rtc::scoped_refptr<AudioDeviceModule> CreateJavaAudioDeviceModule(
 rtc::scoped_refptr<AudioDeviceModule> CreateOpenSLESAudioDeviceModule(
     JNIEnv* env,
     jobject application_context) {
-  RTC_LOG(INFO) << __FUNCTION__;
+  RTC_DLOG(INFO) << __FUNCTION__;
   // Get default audio input/output parameters.
   AudioParameters input_parameters;
   AudioParameters output_parameters;
@@ -127,7 +127,7 @@ rtc::scoped_refptr<AudioDeviceModule> CreateOpenSLESAudioDeviceModule(
 rtc::scoped_refptr<AudioDeviceModule>
 CreateJavaInputAndOpenSLESOutputAudioDeviceModule(JNIEnv* env,
                                                   jobject application_context) {
-  RTC_LOG(INFO) << __FUNCTION__;
+  RTC_DLOG(INFO) << __FUNCTION__;
   // Get default audio input/output parameters.
   const JavaParamRef<jobject> j_context(application_context);
   const ScopedJavaLocalRef<jobject> j_audio_manager =

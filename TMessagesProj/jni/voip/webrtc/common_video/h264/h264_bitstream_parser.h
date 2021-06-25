@@ -31,11 +31,6 @@ class H264BitstreamParser : public BitstreamParser {
   H264BitstreamParser();
   ~H264BitstreamParser() override;
 
-  // These are here for backwards-compatability for the time being.
-  void ParseBitstream(const uint8_t* bitstream, size_t length);
-  bool GetLastSliceQp(int* qp) const;
-
-  // New interface.
   void ParseBitstream(rtc::ArrayView<const uint8_t> bitstream) override;
   absl::optional<int> GetLastSliceQp() const override;
 

@@ -152,7 +152,7 @@ class RtpTransportControllerSend final
   std::vector<std::unique_ptr<RtpVideoSenderInterface>> video_rtp_senders_;
   RtpBitrateConfigurator bitrate_configurator_;
   std::map<std::string, rtc::NetworkRoute> network_routes_;
-  bool process_thread_started_;
+  bool pacer_started_;
   const std::unique_ptr<ProcessThread> process_thread_;
   const bool use_task_queue_pacer_;
   std::unique_ptr<PacedSender> process_thread_pacer_;

@@ -64,7 +64,7 @@ void RtxReceiveStream::OnRtpPacket(const RtpPacketReceived& rtx_packet) {
   media_packet.SetSequenceNumber((payload[0] << 8) + payload[1]);
   media_packet.SetPayloadType(it->second);
   media_packet.set_recovered(true);
-  media_packet.set_arrival_time_ms(rtx_packet.arrival_time_ms());
+  media_packet.set_arrival_time(rtx_packet.arrival_time());
 
   // Skip the RTX header.
   rtc::ArrayView<const uint8_t> rtx_payload = payload.subview(kRtxHeaderSize);

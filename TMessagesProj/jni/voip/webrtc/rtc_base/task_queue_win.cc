@@ -29,16 +29,18 @@
 #include <utility>
 
 #include "absl/strings/string_view.h"
+#include "absl/types/optional.h"
 #include "api/task_queue/queued_task.h"
 #include "api/task_queue/task_queue_base.h"
 #include "rtc_base/arraysize.h"
 #include "rtc_base/checks.h"
+#include "rtc_base/constructor_magic.h"
 #include "rtc_base/event.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/numerics/safe_conversions.h"
 #include "rtc_base/platform_thread.h"
-#include "rtc_base/time_utils.h"
 #include "rtc_base/synchronization/mutex.h"
+#include "rtc_base/time_utils.h"
 
 namespace webrtc {
 namespace {
@@ -56,16 +58,12 @@ rtc::ThreadPriority TaskQueuePriorityToThreadPriority(
     TaskQueueFactory::Priority priority) {
   switch (priority) {
     case TaskQueueFactory::Priority::HIGH:
-      return rtc::kRealtimePriority;
+      return rtc::ThreadPriority::kRealtime;
     case TaskQueueFactory::Priority::LOW:
-      return rtc::kLowPriority;
+      return rtc::ThreadPriority::kLow;
     case TaskQueueFactory::Priority::NORMAL:
-      return rtc::kNormalPriority;
-    default:
-      RTC_NOTREACHED();
-      break;
+      return rtc::ThreadPriority::kNormal;
   }
-  return rtc::kNormalPriority;
 }
 
 int64_t GetTick() {
@@ -167,21 +165,6 @@ class TaskQueueWin : public TaskQueueBase {
   void RunPendingTasks();
 
  private:
-  static void ThreadMain(void* context);
-
-  class WorkerThread : public rtc::PlatformThread {
-   public:
-    WorkerThread(rtc::ThreadRunFunction func,
-                 void* obj,
-                 absl::string_view thread_name,
-                 rtc::ThreadPriority priority)
-        : PlatformThread(func, obj, thread_name, priority) {}
-
-    bool QueueAPC(PAPCFUNC apc_function, ULONG_PTR data) {
-      return rtc::PlatformThread::QueueAPC(apc_function, data);
-    }
-  };
-
   void RunThreadMain();
   bool ProcessQueuedMessages();
   void RunDueTasks();
@@ -204,7 +187,7 @@ class TaskQueueWin : public TaskQueueBase {
                       greater<DelayedTaskInfo>>
       timer_tasks_;
   UINT_PTR timer_id_ = 0;
-  WorkerThread thread_;
+  rtc::PlatformThread thread_;
   Mutex pending_lock_;
   std::queue<std::unique_ptr<QueuedTask>> pending_
       RTC_GUARDED_BY(pending_lock_);
@@ -213,10 +196,12 @@ class TaskQueueWin : public TaskQueueBase {
 
 TaskQueueWin::TaskQueueWin(absl::string_view queue_name,
                            rtc::ThreadPriority priority)
-    : thread_(&TaskQueueWin::ThreadMain, this, queue_name, priority),
-      in_queue_(::CreateEvent(nullptr, true, false, nullptr)) {
+    : in_queue_(::CreateEvent(nullptr, true, false, nullptr)) {
   RTC_DCHECK(in_queue_);
-  thread_.Start();
+  thread_ = rtc::PlatformThread::SpawnJoinable(
+      [this] { RunThreadMain(); }, queue_name,
+      rtc::ThreadAttributes().SetPriority(priority));
+
   rtc::Event event(false, false);
   RTC_CHECK(thread_.QueueAPC(&InitializeQueueThread,
                              reinterpret_cast<ULONG_PTR>(&event)));
@@ -225,11 +210,13 @@ TaskQueueWin::TaskQueueWin(absl::string_view queue_name,
 
 void TaskQueueWin::Delete() {
   RTC_DCHECK(!IsCurrent());
-  while (!::PostThreadMessage(thread_.GetThreadRef(), WM_QUIT, 0, 0)) {
+  RTC_CHECK(thread_.GetHandle() != absl::nullopt);
+  while (
+      !::PostThreadMessage(GetThreadId(*thread_.GetHandle()), WM_QUIT, 0, 0)) {
     RTC_CHECK_EQ(ERROR_NOT_ENOUGH_QUOTA, ::GetLastError());
     Sleep(1);
   }
-  thread_.Stop();
+  thread_.Finalize();
   ::CloseHandle(in_queue_);
   delete this;
 }
@@ -252,7 +239,9 @@ void TaskQueueWin::PostDelayedTask(std::unique_ptr<QueuedTask> task,
   // and WPARAM is 32bits in 32bit builds.  Otherwise, we could pass the
   // task pointer and timestamp as LPARAM and WPARAM.
   auto* task_info = new DelayedTaskInfo(milliseconds, std::move(task));
-  if (!::PostThreadMessage(thread_.GetThreadRef(), WM_QUEUE_DELAYED_TASK, 0,
+  RTC_CHECK(thread_.GetHandle() != absl::nullopt);
+  if (!::PostThreadMessage(GetThreadId(*thread_.GetHandle()),
+                           WM_QUEUE_DELAYED_TASK, 0,
                            reinterpret_cast<LPARAM>(task_info))) {
     delete task_info;
   }
@@ -272,11 +261,6 @@ void TaskQueueWin::RunPendingTasks() {
     if (!task->Run())
       task.release();
   }
-}
-
-// static
-void TaskQueueWin::ThreadMain(void* context) {
-  static_cast<TaskQueueWin*>(context)->RunThreadMain();
 }
 
 void TaskQueueWin::RunThreadMain() {

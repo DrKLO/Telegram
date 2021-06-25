@@ -253,7 +253,7 @@ public class CountrySelectActivity extends BaseFragment {
         }
 
         @Override
-        public boolean isEnabled(int section, int row) {
+        public boolean isEnabled(RecyclerView.ViewHolder holder, int section, int row) {
             ArrayList<Country> arr = countries.get(sortedCountries.get(section));
             return row < arr.size();
         }

@@ -17,7 +17,7 @@
 
 #include "absl/strings/match.h"
 #include "absl/types/optional.h"
-#include "modules/remote_bitrate_estimator/include/bwe_defines.h"
+#include "api/network_state_predictor.h"
 #include "modules/remote_bitrate_estimator/test/bwe_test_logging.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/experiments/struct_parameters_parser.h"

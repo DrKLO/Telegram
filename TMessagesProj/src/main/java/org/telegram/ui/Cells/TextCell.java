@@ -26,9 +26,9 @@ import org.telegram.ui.ActionBar.Theme;
 
 public class TextCell extends FrameLayout {
 
-    private SimpleTextView textView;
-    private SimpleTextView valueTextView;
-    private ImageView imageView;
+    public final SimpleTextView textView;
+    public final SimpleTextView valueTextView;
+    public final ImageView imageView;
     private ImageView valueImageView;
     private int leftPadding;
     private boolean needDivider;

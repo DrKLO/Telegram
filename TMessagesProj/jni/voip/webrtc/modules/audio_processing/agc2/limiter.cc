@@ -94,7 +94,7 @@ void CheckLimiterSampleRate(size_t sample_rate_hz) {
 
 Limiter::Limiter(size_t sample_rate_hz,
                  ApmDataDumper* apm_data_dumper,
-                 std::string histogram_name)
+                 const std::string& histogram_name)
     : interp_gain_curve_(apm_data_dumper, histogram_name),
       level_estimator_(sample_rate_hz, apm_data_dumper),
       apm_data_dumper_(apm_data_dumper) {
@@ -125,9 +125,11 @@ void Limiter::Process(AudioFrameView<float> signal) {
   last_scaling_factor_ = scaling_factors_.back();
 
   // Dump data for debug.
-  apm_data_dumper_->DumpRaw("agc2_gain_curve_applier_scaling_factors",
-                            samples_per_channel,
-                            per_sample_scaling_factors_.data());
+  apm_data_dumper_->DumpRaw("agc2_limiter_last_scaling_factor",
+                            last_scaling_factor_);
+  apm_data_dumper_->DumpRaw(
+      "agc2_limiter_region",
+      static_cast<int>(interp_gain_curve_.get_stats().region));
 }
 
 InterpolatedGainCurve::Stats Limiter::GetGainCurveStats() const {

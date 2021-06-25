@@ -18,9 +18,9 @@
 
 #include "modules/audio_coding/codecs/ilbc/get_cd_vec.h"
 
-#include "modules/audio_coding/codecs/ilbc/defines.h"
 #include "modules/audio_coding/codecs/ilbc/constants.h"
 #include "modules/audio_coding/codecs/ilbc/create_augmented_vec.h"
+#include "modules/audio_coding/codecs/ilbc/defines.h"
 
 /*----------------------------------------------------------------*
  *  Construct codebook vector for given index.

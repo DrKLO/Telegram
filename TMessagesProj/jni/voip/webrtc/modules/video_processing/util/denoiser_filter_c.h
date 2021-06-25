@@ -20,10 +20,6 @@ namespace webrtc {
 class DenoiserFilterC : public DenoiserFilter {
  public:
   DenoiserFilterC() {}
-  void CopyMem16x16(const uint8_t* src,
-                    int src_stride,
-                    uint8_t* dst,
-                    int dst_stride) override;
   uint32_t Variance16x8(const uint8_t* a,
                         int a_stride,
                         const uint8_t* b,

@@ -13,9 +13,11 @@
 #include <cmath>
 #include <cstdlib>
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "modules/remote_bitrate_estimator/test/bwe_test_logging.h"
+#include "modules/rtp_rtcp/source/rtcp_packet/report_block.h"
 #include "modules/rtp_rtcp/source/rtp_packet_received.h"
 #include "modules/rtp_rtcp/source/rtp_rtcp_config.h"
 #include "modules/rtp_rtcp/source/time_util.h"
@@ -23,9 +25,14 @@
 #include "system_wrappers/include/clock.h"
 
 namespace webrtc {
+namespace {
+constexpr int64_t kStatisticsTimeoutMs = 8000;
+constexpr int64_t kStatisticsProcessIntervalMs = 1000;
 
-const int64_t kStatisticsTimeoutMs = 8000;
-const int64_t kStatisticsProcessIntervalMs = 1000;
+// Number of seconds since 1900 January 1 00:00 GMT (see
+// https://tools.ietf.org/html/rfc868).
+constexpr int64_t kNtpJan1970Millisecs = 2'208'988'800'000;
+}  // namespace
 
 StreamStatistician::~StreamStatistician() {}
 
@@ -34,10 +41,14 @@ StreamStatisticianImpl::StreamStatisticianImpl(uint32_t ssrc,
                                                int max_reordering_threshold)
     : ssrc_(ssrc),
       clock_(clock),
+      delta_internal_unix_epoch_ms_(clock_->CurrentNtpInMilliseconds() -
+                                    clock_->TimeInMilliseconds() -
+                                    kNtpJan1970Millisecs),
       incoming_bitrate_(kStatisticsProcessIntervalMs,
                         RateStatistics::kBpsScale),
       max_reordering_threshold_(max_reordering_threshold),
       enable_retransmit_detection_(false),
+      cumulative_loss_is_capped_(false),
       jitter_q4_(0),
       cumulative_loss_(0),
       cumulative_loss_rtcp_offset_(0),
@@ -100,7 +111,6 @@ bool StreamStatisticianImpl::UpdateOutOfOrder(const RtpPacketReceived& packet,
 }
 
 void StreamStatisticianImpl::UpdateCounters(const RtpPacketReceived& packet) {
-  MutexLock lock(&stream_lock_);
   RTC_DCHECK_EQ(ssrc_, packet.Ssrc());
   int64_t now_ms = clock_->TimeInMilliseconds();
 
@@ -159,47 +169,42 @@ void StreamStatisticianImpl::UpdateJitter(const RtpPacketReceived& packet,
 
 void StreamStatisticianImpl::SetMaxReorderingThreshold(
     int max_reordering_threshold) {
-  MutexLock lock(&stream_lock_);
   max_reordering_threshold_ = max_reordering_threshold;
 }
 
 void StreamStatisticianImpl::EnableRetransmitDetection(bool enable) {
-  MutexLock lock(&stream_lock_);
   enable_retransmit_detection_ = enable;
 }
 
 RtpReceiveStats StreamStatisticianImpl::GetStats() const {
-  MutexLock lock(&stream_lock_);
   RtpReceiveStats stats;
   stats.packets_lost = cumulative_loss_;
   // TODO(nisse): Can we return a float instead?
   // Note: internal jitter value is in Q4 and needs to be scaled by 1/16.
   stats.jitter = jitter_q4_ >> 4;
-  stats.last_packet_received_timestamp_ms =
-      receive_counters_.last_packet_received_timestamp_ms;
+  if (receive_counters_.last_packet_received_timestamp_ms.has_value()) {
+    stats.last_packet_received_timestamp_ms =
+        *receive_counters_.last_packet_received_timestamp_ms +
+        delta_internal_unix_epoch_ms_;
+  }
   stats.packet_counter = receive_counters_.transmitted;
   return stats;
 }
 
-bool StreamStatisticianImpl::GetActiveStatisticsAndReset(
-    RtcpStatistics* statistics) {
-  MutexLock lock(&stream_lock_);
-  if (clock_->TimeInMilliseconds() - last_receive_time_ms_ >=
-      kStatisticsTimeoutMs) {
+void StreamStatisticianImpl::MaybeAppendReportBlockAndReset(
+    std::vector<rtcp::ReportBlock>& report_blocks) {
+  int64_t now_ms = clock_->TimeInMilliseconds();
+  if (now_ms - last_receive_time_ms_ >= kStatisticsTimeoutMs) {
     // Not active.
-    return false;
+    return;
   }
   if (!ReceivedRtpPacket()) {
-    return false;
+    return;
   }
 
-  *statistics = CalculateRtcpStatistics();
-
-  return true;
-}
-
-RtcpStatistics StreamStatisticianImpl::CalculateRtcpStatistics() {
-  RtcpStatistics stats;
+  report_blocks.emplace_back();
+  rtcp::ReportBlock& stats = report_blocks.back();
+  stats.SetMediaSsrc(ssrc_);
   // Calculate fraction lost.
   int64_t exp_since_last = received_seq_max_ - last_report_seq_max_;
   RTC_DCHECK_GE(exp_since_last, 0);
@@ -207,41 +212,42 @@ RtcpStatistics StreamStatisticianImpl::CalculateRtcpStatistics() {
   int32_t lost_since_last = cumulative_loss_ - last_report_cumulative_loss_;
   if (exp_since_last > 0 && lost_since_last > 0) {
     // Scale 0 to 255, where 255 is 100% loss.
-    stats.fraction_lost =
-        static_cast<uint8_t>(255 * lost_since_last / exp_since_last);
-  } else {
-    stats.fraction_lost = 0;
+    stats.SetFractionLost(255 * lost_since_last / exp_since_last);
   }
 
-  // TODO(danilchap): Ensure |stats.packets_lost| is clamped to fit in a signed
-  // 24-bit value.
-  stats.packets_lost = cumulative_loss_ + cumulative_loss_rtcp_offset_;
-  if (stats.packets_lost < 0) {
+  int packets_lost = cumulative_loss_ + cumulative_loss_rtcp_offset_;
+  if (packets_lost < 0) {
     // Clamp to zero. Work around to accomodate for senders that misbehave with
     // negative cumulative loss.
-    stats.packets_lost = 0;
+    packets_lost = 0;
     cumulative_loss_rtcp_offset_ = -cumulative_loss_;
   }
-  stats.extended_highest_sequence_number =
-      static_cast<uint32_t>(received_seq_max_);
+  if (packets_lost > 0x7fffff) {
+    // Packets lost is a 24 bit signed field, and thus should be clamped, as
+    // described in https://datatracker.ietf.org/doc/html/rfc3550#appendix-A.3
+    if (!cumulative_loss_is_capped_) {
+      cumulative_loss_is_capped_ = true;
+      RTC_LOG(LS_WARNING) << "Cumulative loss reached maximum value for ssrc "
+                          << ssrc_;
+    }
+    packets_lost = 0x7fffff;
+  }
+  stats.SetCumulativeLost(packets_lost);
+  stats.SetExtHighestSeqNum(received_seq_max_);
   // Note: internal jitter value is in Q4 and needs to be scaled by 1/16.
-  stats.jitter = jitter_q4_ >> 4;
+  stats.SetJitter(jitter_q4_ >> 4);
 
   // Only for report blocks in RTCP SR and RR.
   last_report_cumulative_loss_ = cumulative_loss_;
   last_report_seq_max_ = received_seq_max_;
-  BWE_TEST_LOGGING_PLOT_WITH_SSRC(1, "cumulative_loss_pkts",
-                                  clock_->TimeInMilliseconds(),
+  BWE_TEST_LOGGING_PLOT_WITH_SSRC(1, "cumulative_loss_pkts", now_ms,
                                   cumulative_loss_, ssrc_);
-  BWE_TEST_LOGGING_PLOT_WITH_SSRC(
-      1, "received_seq_max_pkts", clock_->TimeInMilliseconds(),
-      (received_seq_max_ - received_seq_first_), ssrc_);
-
-  return stats;
+  BWE_TEST_LOGGING_PLOT_WITH_SSRC(1, "received_seq_max_pkts", now_ms,
+                                  (received_seq_max_ - received_seq_first_),
+                                  ssrc_);
 }
 
 absl::optional<int> StreamStatisticianImpl::GetFractionLostInPercent() const {
-  MutexLock lock(&stream_lock_);
   if (!ReceivedRtpPacket()) {
     return absl::nullopt;
   }
@@ -257,12 +263,10 @@ absl::optional<int> StreamStatisticianImpl::GetFractionLostInPercent() const {
 
 StreamDataCounters StreamStatisticianImpl::GetReceiveStreamDataCounters()
     const {
-  MutexLock lock(&stream_lock_);
   return receive_counters_;
 }
 
 uint32_t StreamStatisticianImpl::BitrateReceived() const {
-  MutexLock lock(&stream_lock_);
   return incoming_bitrate_.Rate(clock_->TimeInMilliseconds()).value_or(0);
 }
 
@@ -295,20 +299,32 @@ bool StreamStatisticianImpl::IsRetransmitOfOldPacket(
 }
 
 std::unique_ptr<ReceiveStatistics> ReceiveStatistics::Create(Clock* clock) {
-  return std::make_unique<ReceiveStatisticsImpl>(clock);
+  return std::make_unique<ReceiveStatisticsLocked>(
+      clock, [](uint32_t ssrc, Clock* clock, int max_reordering_threshold) {
+        return std::make_unique<StreamStatisticianLocked>(
+            ssrc, clock, max_reordering_threshold);
+      });
 }
 
-ReceiveStatisticsImpl::ReceiveStatisticsImpl(Clock* clock)
+std::unique_ptr<ReceiveStatistics> ReceiveStatistics::CreateThreadCompatible(
+    Clock* clock) {
+  return std::make_unique<ReceiveStatisticsImpl>(
+      clock, [](uint32_t ssrc, Clock* clock, int max_reordering_threshold) {
+        return std::make_unique<StreamStatisticianImpl>(
+            ssrc, clock, max_reordering_threshold);
+      });
+}
+
+ReceiveStatisticsImpl::ReceiveStatisticsImpl(
+    Clock* clock,
+    std::function<std::unique_ptr<StreamStatisticianImplInterface>(
+        uint32_t ssrc,
+        Clock* clock,
+        int max_reordering_threshold)> stream_statistician_factory)
     : clock_(clock),
-      last_returned_ssrc_(0),
+      stream_statistician_factory_(std::move(stream_statistician_factory)),
+      last_returned_ssrc_idx_(0),
       max_reordering_threshold_(kDefaultMaxReorderingThreshold) {}
-
-ReceiveStatisticsImpl::~ReceiveStatisticsImpl() {
-  while (!statisticians_.empty()) {
-    delete statisticians_.begin()->second;
-    statisticians_.erase(statisticians_.begin());
-  }
-}
 
 void ReceiveStatisticsImpl::OnRtpPacket(const RtpPacketReceived& packet) {
   // StreamStatisticianImpl instance is created once and only destroyed when
@@ -318,34 +334,29 @@ void ReceiveStatisticsImpl::OnRtpPacket(const RtpPacketReceived& packet) {
   GetOrCreateStatistician(packet.Ssrc())->UpdateCounters(packet);
 }
 
-StreamStatisticianImpl* ReceiveStatisticsImpl::GetStatistician(
+StreamStatistician* ReceiveStatisticsImpl::GetStatistician(
     uint32_t ssrc) const {
-  MutexLock lock(&receive_statistics_lock_);
   const auto& it = statisticians_.find(ssrc);
   if (it == statisticians_.end())
-    return NULL;
-  return it->second;
+    return nullptr;
+  return it->second.get();
 }
 
-StreamStatisticianImpl* ReceiveStatisticsImpl::GetOrCreateStatistician(
+StreamStatisticianImplInterface* ReceiveStatisticsImpl::GetOrCreateStatistician(
     uint32_t ssrc) {
-  MutexLock lock(&receive_statistics_lock_);
-  StreamStatisticianImpl*& impl = statisticians_[ssrc];
+  std::unique_ptr<StreamStatisticianImplInterface>& impl = statisticians_[ssrc];
   if (impl == nullptr) {  // new element
-    impl = new StreamStatisticianImpl(ssrc, clock_, max_reordering_threshold_);
+    impl =
+        stream_statistician_factory_(ssrc, clock_, max_reordering_threshold_);
+    all_ssrcs_.push_back(ssrc);
   }
-  return impl;
+  return impl.get();
 }
 
 void ReceiveStatisticsImpl::SetMaxReorderingThreshold(
     int max_reordering_threshold) {
-  std::map<uint32_t, StreamStatisticianImpl*> statisticians;
-  {
-    MutexLock lock(&receive_statistics_lock_);
-    max_reordering_threshold_ = max_reordering_threshold;
-    statisticians = statisticians_;
-  }
-  for (auto& statistician : statisticians) {
+  max_reordering_threshold_ = max_reordering_threshold;
+  for (auto& statistician : statisticians_) {
     statistician.second->SetMaxReorderingThreshold(max_reordering_threshold);
   }
 }
@@ -364,42 +375,18 @@ void ReceiveStatisticsImpl::EnableRetransmitDetection(uint32_t ssrc,
 
 std::vector<rtcp::ReportBlock> ReceiveStatisticsImpl::RtcpReportBlocks(
     size_t max_blocks) {
-  std::map<uint32_t, StreamStatisticianImpl*> statisticians;
-  {
-    MutexLock lock(&receive_statistics_lock_);
-    statisticians = statisticians_;
-  }
   std::vector<rtcp::ReportBlock> result;
-  result.reserve(std::min(max_blocks, statisticians.size()));
-  auto add_report_block = [&result](uint32_t media_ssrc,
-                                    StreamStatisticianImpl* statistician) {
-    // Do we have receive statistics to send?
-    RtcpStatistics stats;
-    if (!statistician->GetActiveStatisticsAndReset(&stats))
-      return;
-    result.emplace_back();
-    rtcp::ReportBlock& block = result.back();
-    block.SetMediaSsrc(media_ssrc);
-    block.SetFractionLost(stats.fraction_lost);
-    if (!block.SetCumulativeLost(stats.packets_lost)) {
-      RTC_LOG(LS_WARNING) << "Cumulative lost is oversized.";
-      result.pop_back();
-      return;
-    }
-    block.SetExtHighestSeqNum(stats.extended_highest_sequence_number);
-    block.SetJitter(stats.jitter);
-  };
+  result.reserve(std::min(max_blocks, all_ssrcs_.size()));
 
-  const auto start_it = statisticians.upper_bound(last_returned_ssrc_);
-  for (auto it = start_it;
-       result.size() < max_blocks && it != statisticians.end(); ++it)
-    add_report_block(it->first, it->second);
-  for (auto it = statisticians.begin();
-       result.size() < max_blocks && it != start_it; ++it)
-    add_report_block(it->first, it->second);
-
-  if (!result.empty())
-    last_returned_ssrc_ = result.back().source_ssrc();
+  size_t ssrc_idx = 0;
+  for (size_t i = 0; i < all_ssrcs_.size() && result.size() < max_blocks; ++i) {
+    ssrc_idx = (last_returned_ssrc_idx_ + i + 1) % all_ssrcs_.size();
+    const uint32_t media_ssrc = all_ssrcs_[ssrc_idx];
+    auto statistician_it = statisticians_.find(media_ssrc);
+    RTC_DCHECK(statistician_it != statisticians_.end());
+    statistician_it->second->MaybeAppendReportBlockAndReset(result);
+  }
+  last_returned_ssrc_idx_ = ssrc_idx;
   return result;
 }
 

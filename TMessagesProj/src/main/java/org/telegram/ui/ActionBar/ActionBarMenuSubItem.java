@@ -31,6 +31,8 @@ public class ActionBarMenuSubItem extends FrameLayout {
     boolean top;
     boolean bottom;
 
+    private int itemHeight = 48;
+
     public ActionBarMenuSubItem(Context context, boolean top, boolean bottom) {
         this(context, false, top, bottom);
     }
@@ -69,9 +71,12 @@ public class ActionBarMenuSubItem extends FrameLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(48), View.MeasureSpec.EXACTLY));
+        super.onMeasure(widthMeasureSpec, View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(itemHeight), View.MeasureSpec.EXACTLY));
     }
 
+    public void setItemHeight(int itemHeight) {
+        this.itemHeight = itemHeight;
+    }
     public void setChecked(boolean checked) {
         if (checkView == null) {
             return;

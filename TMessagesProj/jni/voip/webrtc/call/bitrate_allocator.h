@@ -20,8 +20,9 @@
 #include <vector>
 
 #include "api/call/bitrate_allocation.h"
+#include "api/sequence_checker.h"
 #include "api/transport/network_types.h"
-#include "rtc_base/synchronization/sequence_checker.h"
+#include "rtc_base/system/no_unique_address.h"
 
 namespace webrtc {
 
@@ -148,7 +149,7 @@ class BitrateAllocator : public BitrateAllocatorInterface {
   // video send stream.
   static uint8_t GetTransmissionMaxBitrateMultiplier();
 
-  SequenceChecker sequenced_checker_;
+  RTC_NO_UNIQUE_ADDRESS SequenceChecker sequenced_checker_;
   LimitObserver* const limit_observer_ RTC_GUARDED_BY(&sequenced_checker_);
   // Stored in a list to keep track of the insertion order.
   std::vector<AllocatableTrack> allocatable_tracks_

@@ -43,7 +43,6 @@ import android.text.Editable;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.text.TextWatcher;
-import android.util.Log;
 import android.util.LongSparseArray;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
@@ -75,6 +74,7 @@ import org.telegram.messenger.EmojiData;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
@@ -254,7 +254,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
 
         }
 
-        default void onStickerSelected(View view, TLRPC.Document sticker, String query, Object parent, boolean notify, int scheduleDate) {
+        default void onStickerSelected(View view, TLRPC.Document sticker, String query, Object parent, MessageObject.SendAnimationData sendAnimationData, boolean notify, int scheduleDate) {
 
         }
 
@@ -329,7 +329,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
     private ContentPreviewViewer.ContentPreviewViewerDelegate contentPreviewViewerDelegate = new ContentPreviewViewer.ContentPreviewViewerDelegate() {
         @Override
         public void sendSticker(TLRPC.Document sticker, String query, Object parent, boolean notify, int scheduleDate) {
-            delegate.onStickerSelected(null, sticker, query, parent, notify, scheduleDate);
+            delegate.onStickerSelected(null, sticker, query, parent, null, notify, scheduleDate);
         }
 
         @Override
@@ -1637,7 +1637,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                     return;
                 }
                 cell.disable();
-                delegate.onStickerSelected(cell, cell.getSticker(), query, cell.getParentObject(), true, 0);
+                delegate.onStickerSelected(cell, cell.getSticker(), query, cell.getParentObject(), cell.getSendAnimationData(), true, 0);
             };
             stickersGridView.setOnItemClickListener(stickersOnItemClickListener);
             stickersGridView.setGlowColor(Theme.getColor(Theme.key_chat_emojiPanelBackground));
@@ -1697,7 +1697,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
 
                         @Override
                         public void onStickerSelected(TLRPC.Document sticker, Object parent, boolean clearsInputField, boolean notify, int scheduleDate) {
-                            delegate.onStickerSelected(null, sticker, null, parent, notify, scheduleDate);
+                            delegate.onStickerSelected(null, sticker, null, parent, null, notify, scheduleDate);
                         }
 
                         @Override
@@ -3351,7 +3351,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiDidLoad);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.newEmojiSuggestionsAvailable);
         if (stickersGridAdapter != null) {
             NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.stickersDidLoad);
@@ -3393,7 +3393,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
     }
 
     public void onDestroy() {
-        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiDidLoad);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.newEmojiSuggestionsAvailable);
         if (stickersGridAdapter != null) {
             NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.stickersDidLoad);
@@ -3619,7 +3619,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
             if (info != null && info.stickerset != null && info.stickerset.id == (Long) args[0]) {
                 updateStickerTabs();
             }
-        } else if (id == NotificationCenter.emojiDidLoad) {
+        } else if (id == NotificationCenter.emojiLoaded) {
             if (stickersGridView != null) {
                 int count = stickersGridView.getChildCount();
                 for (int a = 0; a < count; a++) {
@@ -5289,7 +5289,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                 case 0: {
                     TLRPC.Document sticker = (TLRPC.Document) cache.get(position);
                     StickerEmojiCell cell = (StickerEmojiCell) holder.itemView;
-                    cell.setSticker(sticker, cacheParent.get(position), positionToEmoji.get(position), false);
+                    cell.setSticker(sticker, null, cacheParent.get(position), positionToEmoji.get(position), false);
                     cell.setRecent(recentStickers.contains(sticker) || favouriteStickers.contains(sticker));
                     break;
                 }

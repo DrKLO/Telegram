@@ -31,14 +31,6 @@ RtcEventIceCandidatePair::RtcEventIceCandidatePair(
 
 RtcEventIceCandidatePair::~RtcEventIceCandidatePair() = default;
 
-RtcEvent::Type RtcEventIceCandidatePair::GetType() const {
-  return RtcEvent::Type::IceCandidatePairEvent;
-}
-
-bool RtcEventIceCandidatePair::IsConfigEvent() const {
-  return false;
-}
-
 std::unique_ptr<RtcEventIceCandidatePair> RtcEventIceCandidatePair::Copy()
     const {
   return absl::WrapUnique<RtcEventIceCandidatePair>(

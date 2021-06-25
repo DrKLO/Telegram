@@ -378,7 +378,11 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
                 imageLocation = ImageLocation.getForDocument(thumb, sticker);
             } else if (object instanceof TLRPC.PhotoSize) {
                 TLRPC.PhotoSize thumb = (TLRPC.PhotoSize) object;
-                imageLocation = ImageLocation.getForSticker(thumb, sticker);
+                int thumbVersion = 0;
+                if (parentObject instanceof TLRPC.TL_messages_stickerSet) {
+                    thumbVersion = ((TLRPC.TL_messages_stickerSet) parentObject).set.thumb_version;
+                }
+                imageLocation = ImageLocation.getForSticker(thumb, sticker, thumbVersion);
             } else {
                 continue;
             }
@@ -426,7 +430,11 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
                 imageLocation = ImageLocation.getForDocument(thumb, sticker);
             } else if (object instanceof TLRPC.PhotoSize) {
                 TLRPC.PhotoSize thumb = (TLRPC.PhotoSize) object;
-                imageLocation = ImageLocation.getForSticker(thumb, sticker);
+                int thumbVersion = 0;
+                if (parentObject instanceof TLRPC.TL_messages_stickerSet) {
+                    thumbVersion = ((TLRPC.TL_messages_stickerSet) parentObject).set.thumb_version;
+                }
+                imageLocation = ImageLocation.getForSticker(thumb, sticker, thumbVersion);
             } else {
                 continue;
             }

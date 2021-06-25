@@ -20,6 +20,7 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DocumentObject;
+import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
@@ -27,6 +28,7 @@ import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
@@ -38,7 +40,9 @@ public class StickerEmojiCell extends FrameLayout {
 
     private BackupImageView imageView;
     private TLRPC.Document sticker;
+    private SendMessagesHelper.ImportingSticker stickerPath;
     private Object parentObject;
+    private String currentEmoji;
     private TextView emojiTextView;
     private float alpha = 1;
     private boolean changingAlpha;
@@ -71,6 +75,14 @@ public class StickerEmojiCell extends FrameLayout {
         return sticker;
     }
 
+    public SendMessagesHelper.ImportingSticker getStickerPath() {
+        return stickerPath != null && stickerPath.validated ? stickerPath : null;
+    }
+
+    public String getEmoji() {
+        return currentEmoji;
+    }
+
     public Object getParentObject() {
         return parentObject;
     }
@@ -84,11 +96,44 @@ public class StickerEmojiCell extends FrameLayout {
     }
 
     public void setSticker(TLRPC.Document document, Object parent, boolean showEmoji) {
-        setSticker(document, parent, null, showEmoji);
+        setSticker(document, null, parent, null, showEmoji);
     }
 
-    public void setSticker(TLRPC.Document document, Object parent, String emoji, boolean showEmoji) {
-        if (document != null) {
+    public void setSticker(SendMessagesHelper.ImportingSticker path) {
+        setSticker(null, path, null, path.emoji, path.emoji != null);
+    }
+
+    public MessageObject.SendAnimationData getSendAnimationData() {
+        ImageReceiver imageReceiver = imageView.getImageReceiver();
+        if (!imageReceiver.hasNotThumb()) {
+            return null;
+        }
+        MessageObject.SendAnimationData data = new MessageObject.SendAnimationData();
+        int[] position = new int[2];
+        imageView.getLocationInWindow(position);
+        data.x = imageReceiver.getCenterX() + position[0];
+        data.y = imageReceiver.getCenterY() + position[1];
+        data.width = imageReceiver.getImageWidth();
+        data.height = imageReceiver.getImageHeight();
+        return data;
+    }
+
+    public void setSticker(TLRPC.Document document, SendMessagesHelper.ImportingSticker path, Object parent, String emoji, boolean showEmoji) {
+        currentEmoji = emoji;
+        if (path != null) {
+            stickerPath = path;
+            if (path.validated) {
+                imageView.setImage(ImageLocation.getForPath(path.path), "80_80", null, null, DocumentObject.getSvgRectThumb(Theme.key_dialogBackgroundGray, 1.0f), null, path.animated ? "tgs" : null, 0, null);
+            } else {
+                imageView.setImage(null, null, null, null, DocumentObject.getSvgRectThumb(Theme.key_dialogBackgroundGray, 1.0f), null, path.animated ? "tgs" : null, 0, null);
+            }
+            if (emoji != null) {
+                emojiTextView.setText(Emoji.replaceEmoji(emoji, emojiTextView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(16), false));
+                emojiTextView.setVisibility(VISIBLE);
+            } else {
+                emojiTextView.setVisibility(INVISIBLE);
+            }
+        } else if (document != null) {
             sticker = document;
             parentObject = parent;
             TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90);

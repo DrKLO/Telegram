@@ -2,7 +2,6 @@ crodbro@webrtc.org
 deadbeef@webrtc.org
 hta@webrtc.org
 juberti@webrtc.org
-kwiberg@webrtc.org
 magjed@webrtc.org
 perkj@webrtc.org
 tkchin@webrtc.org
@@ -11,4 +10,16 @@ tommi@webrtc.org
 per-file peer_connection*=hbos@webrtc.org
 
 per-file DEPS=mbonadei@webrtc.org
-per-file DEPS=kwiberg@webrtc.org
+
+# Please keep this list in sync with Chromium's //base/metrics/OWNERS and
+# send a CL when you notice any difference.
+# Even if people in the list below cannot formally grant +1 on WebRTC, it
+# is good to get their LGTM before sending the CL to one of the folder OWNERS.
+per-file uma_metrics.h=asvitkine@chromium.org
+per-file uma_metrics.h=bcwhite@chromium.org
+per-file uma_metrics.h=caitlinfischer@google.com
+per-file uma_metrics.h=holte@chromium.org
+per-file uma_metrics.h=isherman@chromium.org
+per-file uma_metrics.h=jwd@chromium.org
+per-file uma_metrics.h=mpearson@chromium.org
+per-file uma_metrics.h=rkaplow@chromium.org

@@ -30,22 +30,28 @@ public class VideoFrameDrawer {
    * transformationMatrix)
    */
   public static void drawTexture(RendererCommon.GlDrawer drawer, VideoFrame.TextureBuffer buffer,
-      Matrix renderMatrix, int frameWidth, int frameHeight, int viewportX, int viewportY,
-      int viewportWidth, int viewportHeight) {
+      Matrix renderMatrix, int rotatedWidth, int rotatedHeight, int frameWidth, int frameHeight, int viewportX, int viewportY,
+      int viewportWidth, int viewportHeight, boolean blur) {
     Matrix finalMatrix = new Matrix(buffer.getTransformMatrix());
     finalMatrix.preConcat(renderMatrix);
     float[] finalGlMatrix = RendererCommon.convertMatrixFromAndroidGraphicsMatrix(finalMatrix);
     switch (buffer.getType()) {
       case OES:
-        drawer.drawOes(buffer.getTextureId(), finalGlMatrix, frameWidth, frameHeight, viewportX,
-            viewportY, viewportWidth, viewportHeight);
+        drawer.drawOes(buffer.getTextureId(), buffer.getWidth(), buffer.getHeight(), rotatedWidth, rotatedHeight, finalGlMatrix, frameWidth, frameHeight, viewportX,
+            viewportY, viewportWidth, viewportHeight, blur);
         break;
       case RGB:
-        drawer.drawRgb(buffer.getTextureId(), finalGlMatrix, frameWidth, frameHeight, viewportX,
-            viewportY, viewportWidth, viewportHeight);
+        drawer.drawRgb(buffer.getTextureId(), buffer.getWidth(), buffer.getHeight(), rotatedWidth, rotatedHeight, finalGlMatrix, frameWidth, frameHeight, viewportX,
+            viewportY, viewportWidth, viewportHeight, blur);
         break;
       default:
         throw new RuntimeException("Unknown texture type.");
+    }
+  }
+
+  public void getRenderBufferBitmap(RendererCommon.GlDrawer drawer, int rotation, GlGenericDrawer.TextureCallback callback) {
+    if (drawer instanceof GlGenericDrawer) {
+      ((GlGenericDrawer) drawer).getRenderBufferBitmap(rotation, callback);
     }
   }
 
@@ -160,7 +166,7 @@ public class VideoFrameDrawer {
 
     // Multiply with the width and height to get the positions in terms of pixels.
     for (int i = 0; i < 3; ++i) {
-      dstPoints[i * 2 + 0] *= frameWidth;
+      dstPoints[i * 2] *= frameWidth;
       dstPoints[i * 2 + 1] *= frameHeight;
     }
 
@@ -174,6 +180,7 @@ public class VideoFrameDrawer {
   // textures.
   @Nullable private VideoFrame lastI420Frame;
   private final Matrix renderMatrix = new Matrix();
+  private final Matrix renderRotateMatrix = new Matrix();
 
   public void drawFrame(VideoFrame frame, RendererCommon.GlDrawer drawer) {
     drawFrame(frame, drawer, null /* additionalRenderMatrix */);
@@ -182,12 +189,12 @@ public class VideoFrameDrawer {
   public void drawFrame(
       VideoFrame frame, RendererCommon.GlDrawer drawer, Matrix additionalRenderMatrix) {
     drawFrame(frame, drawer, additionalRenderMatrix, 0 /* viewportX */, 0 /* viewportY */,
-        frame.getRotatedWidth(), frame.getRotatedHeight(), false);
+        frame.getRotatedWidth(), frame.getRotatedHeight(), false, false);
   }
 
   public void drawFrame(VideoFrame frame, RendererCommon.GlDrawer drawer,
       @Nullable Matrix additionalRenderMatrix, int viewportX, int viewportY, int viewportWidth,
-      int viewportHeight, boolean rotate) {
+      int viewportHeight, boolean rotate, boolean blur) {
     final int width = rotate ? frame.getRotatedHeight() : frame.getRotatedWidth();
     final int height = rotate ? frame.getRotatedWidth() : frame.getRotatedHeight();
     calculateTransformedRenderSize(width, height, additionalRenderMatrix);
@@ -204,14 +211,15 @@ public class VideoFrameDrawer {
     }
     renderMatrix.preRotate(frame.getRotation());
     renderMatrix.preTranslate(-0.5f, -0.5f);
+    renderRotateMatrix.set(renderMatrix);
     if (additionalRenderMatrix != null) {
       renderMatrix.preConcat(additionalRenderMatrix);
     }
 
     if (isTextureFrame) {
       lastI420Frame = null;
-      drawTexture(drawer, (VideoFrame.TextureBuffer) frame.getBuffer(), renderMatrix, renderWidth,
-          renderHeight, viewportX, viewportY, viewportWidth, viewportHeight);
+      drawTexture(drawer, (VideoFrame.TextureBuffer) frame.getBuffer(), renderMatrix, frame.getRotatedWidth(), frame.getRotatedHeight(), renderWidth,
+          renderHeight, viewportX, viewportY, viewportWidth, viewportHeight, blur);
     } else {
       // Only upload the I420 data to textures once per frame, if we are called multiple times
       // with the same frame.
@@ -222,9 +230,9 @@ public class VideoFrameDrawer {
         i420Buffer.release();
       }
 
-      drawer.drawYuv(yuvUploader.getYuvTextures(),
+      drawer.drawYuv(yuvUploader.getYuvTextures(), frame.getBuffer().getWidth(), frame.getBuffer().getHeight(), frame.getRotatedWidth(), frame.getRotatedHeight(),
           RendererCommon.convertMatrixFromAndroidGraphicsMatrix(renderMatrix), renderWidth,
-          renderHeight, viewportX, viewportY, viewportWidth, viewportHeight);
+          renderHeight, viewportX, viewportY, viewportWidth, viewportHeight, blur);
     }
   }
 

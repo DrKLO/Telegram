@@ -153,7 +153,7 @@ RTPSenderVideo::RTPSenderVideo(const Config& config)
               : (kRetransmitBaseLayer | kConditionallyRetransmitHigherLayers)),
       last_rotation_(kVideoRotation_0),
       transmit_color_space_next_frame_(false),
-      send_allocation_(false),
+      send_allocation_(SendVideoLayersAllocation::kDontSend),
       current_playout_delay_{-1, -1},
       playout_delay_pending_(false),
       forced_playout_delay_(LoadVideoPlayoutDelayOverride(config.field_trials)),
@@ -169,8 +169,7 @@ RTPSenderVideo::RTPSenderVideo(const Config& config)
       absolute_capture_time_sender_(config.clock),
       frame_transformer_delegate_(
           config.frame_transformer
-              ? new rtc::RefCountedObject<
-                    RTPSenderVideoFrameTransformerDelegate>(
+              ? rtc::make_ref_counted<RTPSenderVideoFrameTransformerDelegate>(
                     this,
                     config.frame_transformer,
                     rtp_sender_->SSRC(),
@@ -293,8 +292,13 @@ void RTPSenderVideo::SetVideoLayersAllocationAfterTransformation(
 void RTPSenderVideo::SetVideoLayersAllocationInternal(
     VideoLayersAllocation allocation) {
   RTC_DCHECK_RUNS_SERIALIZED(&send_checker_);
+  if (!allocation_ || allocation.active_spatial_layers.size() >
+                          allocation_->active_spatial_layers.size()) {
+    send_allocation_ = SendVideoLayersAllocation::kSendWithResolution;
+  } else if (send_allocation_ == SendVideoLayersAllocation::kDontSend) {
+    send_allocation_ = SendVideoLayersAllocation::kSendWithoutResolution;
+  }
   allocation_ = std::move(allocation);
-  send_allocation_ = true;
 }
 
 void RTPSenderVideo::AddRtpHeaderExtensions(
@@ -433,16 +437,19 @@ void RTPSenderVideo::AddRtpHeaderExtensions(
     }
   }
 
-  if (first_packet && send_allocation_) {
-    if (video_header.frame_type == VideoFrameType::kVideoFrameKey) {
-      packet->SetExtension<RtpVideoLayersAllocationExtension>(
-          allocation_.value());
-    } else if (PacketWillLikelyBeRequestedForRestransmitionIfLost(
-                   video_header)) {
-      VideoLayersAllocation allocation = allocation_.value();
-      allocation.resolution_and_frame_rate_is_valid = false;
-      packet->SetExtension<RtpVideoLayersAllocationExtension>(allocation);
-    }
+  if (first_packet &&
+      send_allocation_ != SendVideoLayersAllocation::kDontSend &&
+      (video_header.frame_type == VideoFrameType::kVideoFrameKey ||
+       PacketWillLikelyBeRequestedForRestransmitionIfLost(video_header))) {
+    VideoLayersAllocation allocation = allocation_.value();
+    allocation.resolution_and_frame_rate_is_valid =
+        send_allocation_ == SendVideoLayersAllocation::kSendWithResolution;
+    packet->SetExtension<RtpVideoLayersAllocationExtension>(allocation);
+  }
+
+  if (first_packet && video_header.video_frame_tracking_id) {
+    packet->SetExtension<VideoFrameTrackingIdExtension>(
+        *video_header.video_frame_tracking_id);
   }
 }
 
@@ -481,7 +488,7 @@ bool RTPSenderVideo::SendVideo(
     }
     if (allocation_) {
       // Send the bitrate allocation on every key frame.
-      send_allocation_ = true;
+      send_allocation_ = SendVideoLayersAllocation::kSendWithResolution;
     }
   }
 
@@ -645,10 +652,10 @@ bool RTPSenderVideo::SendVideo(
     if (!packetizer->NextPacket(packet.get()))
       return false;
     RTC_DCHECK_LE(packet->payload_size(), expected_payload_capacity);
-    if (!rtp_sender_->AssignSequenceNumber(packet.get()))
-      return false;
 
     packet->set_allow_retransmission(allow_retransmission);
+    packet->set_is_key_frame(video_header.frame_type ==
+                             VideoFrameType::kVideoFrameKey);
 
     // Put packetization finish timestamp into extension.
     if (packet->HasExtension<VideoTimingExtension>()) {
@@ -665,7 +672,7 @@ bool RTPSenderVideo::SendVideo(
       red_packet->SetPayloadType(*red_payload_type_);
       red_packet->set_is_red(true);
 
-      // Send |red_packet| instead of |packet| for allocated sequence number.
+      // Append |red_packet| instead of |packet| to output.
       red_packet->set_packet_type(RtpPacketMediaType::kVideo);
       red_packet->set_allow_retransmission(packet->allow_retransmission());
       rtp_packets.emplace_back(std::move(red_packet));
@@ -686,6 +693,11 @@ bool RTPSenderVideo::SendVideo(
     }
   }
 
+  if (!rtp_sender_->AssignSequenceNumbersAndStoreLastPacketState(rtp_packets)) {
+    // Media not being sent.
+    return false;
+  }
+
   LogAndSendToNetwork(std::move(rtp_packets), payload.size());
 
   // Update details about the last sent frame.
@@ -704,7 +716,7 @@ bool RTPSenderVideo::SendVideo(
     // This frame will likely be delivered, no need to populate playout
     // delay extensions until it changes again.
     playout_delay_pending_ = false;
-    send_allocation_ = false;
+    send_allocation_ = SendVideoLayersAllocation::kDontSend;
   }
 
   TRACE_EVENT_ASYNC_END1("webrtc", "Video", capture_time_ms, "timestamp",

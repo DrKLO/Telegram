@@ -48,6 +48,13 @@ class EchoControl {
   // Provides an optional external estimate of the audio buffer delay.
   virtual void SetAudioBufferDelay(int delay_ms) = 0;
 
+  // Specifies whether the capture output will be used. The purpose of this is
+  // to allow the echo controller to deactivate some of the processing when the
+  // resulting output is anyway not used, for instance when the endpoint is
+  // muted.
+  // TODO(b/177830919): Make pure virtual.
+  virtual void SetCaptureOutputUsage(bool capture_output_used) {}
+
   // Returns wheter the signal is altered.
   virtual bool ActiveProcessing() const = 0;
 

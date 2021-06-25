@@ -12,7 +12,6 @@ extern "C" {
 #include <string>
 #include <set>
 #include <map>
-#include <stdint.h>
 
 namespace tgcalls {
 
@@ -310,26 +309,28 @@ private:
         }
 
         int ret = 0;
-
-        ret = av_read_frame(_inputFormatContext, &_packet);
-        if (ret < 0) {
+        do {
+          ret = av_read_frame(_inputFormatContext, &_packet);
+          if (ret < 0) {
             _didReadToEnd = true;
             return;
-        }
+          }
 
-        ret = avcodec_send_packet(_codecContext, &_packet);
-        if (ret < 0) {
+          ret = avcodec_send_packet(_codecContext, &_packet);
+          if (ret < 0) {
             _didReadToEnd = true;
             return;
-        }
+          }
 
-        int bytesPerSample = av_get_bytes_per_sample(_codecContext->sample_fmt);
-        if (bytesPerSample != 2 && bytesPerSample != 4) {
+          int bytesPerSample = av_get_bytes_per_sample(_codecContext->sample_fmt);
+          if (bytesPerSample != 2 && bytesPerSample != 4) {
             _didReadToEnd = true;
             return;
-        }
+          }
 
-        ret = avcodec_receive_frame(_codecContext, _frame);
+          ret = avcodec_receive_frame(_codecContext, _frame);
+        } while (ret == AVERROR(EAGAIN));
+
         if (ret != 0) {
             _didReadToEnd = true;
             return;

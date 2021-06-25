@@ -16,6 +16,8 @@
 
 ******************************************************************/
 
+#include "modules/audio_coding/codecs/ilbc/sort_sq.h"
+
 #include "modules/audio_coding/codecs/ilbc/defines.h"
 
 /*----------------------------------------------------------------*

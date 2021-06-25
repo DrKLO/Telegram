@@ -573,7 +573,7 @@ public class ThemeEditorView {
                             for (int a = 0; a < currentThemeDesription.size(); a++) {
                                 ThemeDescription description = currentThemeDesription.get(a);
                                 String key = description.getCurrentKey();
-                                if (a == 0 && key.equals(Theme.key_chat_wallpaper) || key.equals(Theme.key_chat_wallpaper_gradient_to) || key.equals(Theme.key_windowBackgroundWhite) || key.equals(Theme.key_windowBackgroundGray)) {
+                                if (a == 0 && key.equals(Theme.key_chat_wallpaper) || key.equals(Theme.key_chat_wallpaper_gradient_to1) || key.equals(Theme.key_chat_wallpaper_gradient_to2) || key.equals(Theme.key_chat_wallpaper_gradient_to3) || key.equals(Theme.key_windowBackgroundWhite) || key.equals(Theme.key_windowBackgroundGray)) {
                                     color = 0xff000000 | color;
                                 }
                                 currentThemeDesription.get(a).setColor(color, false);

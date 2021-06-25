@@ -42,6 +42,7 @@ EchoPathDelayEstimator::EchoPathDelayEstimator(
               ? config.render_levels.poor_excitation_render_limit_ds8
               : config.render_levels.poor_excitation_render_limit,
           config.delay.delay_estimate_smoothing,
+          config.delay.delay_estimate_smoothing_delay_found,
           config.delay.delay_candidate_detection_threshold),
       matched_filter_lag_aggregator_(data_dumper_,
                                      matched_filter_.GetMaxFilterLag(),
@@ -71,7 +72,8 @@ absl::optional<DelayEstimate> EchoPathDelayEstimator::EstimateDelay(
   data_dumper_->DumpWav("aec3_capture_decimator_output",
                         downsampled_capture.size(), downsampled_capture.data(),
                         16000 / down_sampling_factor_, 1);
-  matched_filter_.Update(render_buffer, downsampled_capture);
+  matched_filter_.Update(render_buffer, downsampled_capture,
+                         matched_filter_lag_aggregator_.ReliableDelayFound());
 
   absl::optional<DelayEstimate> aggregated_matched_filter_lag =
       matched_filter_lag_aggregator_.Aggregate(

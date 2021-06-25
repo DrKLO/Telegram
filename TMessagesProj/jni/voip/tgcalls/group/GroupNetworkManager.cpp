@@ -13,6 +13,8 @@
 #include "p2p/base/dtls_transport_factory.h"
 #include "pc/dtls_srtp_transport.h"
 #include "pc/dtls_transport.h"
+#include "media/sctp/sctp_transport_factory.h"
+#include "platform/PlatformInterface.h"
 
 #include "StaticThreads.h"
 
@@ -137,10 +139,10 @@ public:
         _dataChannel->OnDataReceived(params, buffer);
     }
 
-    virtual bool SendData(const cricket::SendDataParams& params, const rtc::CopyOnWriteBuffer& payload, cricket::SendDataResult* result) override {
+    virtual bool SendData(int sid, const webrtc::SendDataParams& params, const rtc::CopyOnWriteBuffer& payload, cricket::SendDataResult* result) override {
         assert(_threads->getNetworkThread()->IsCurrent());
 
-        return _sctpTransport->SendData(params, payload);
+        return _sctpTransport->SendData(sid, params, payload);
     }
 
     virtual bool ConnectDataChannel(webrtc::SctpDataChannel *data_channel) override {
@@ -199,14 +201,12 @@ webrtc::CryptoOptions GroupNetworkManager::getDefaulCryptoOptions() {
 GroupNetworkManager::GroupNetworkManager(
     std::function<void(const State &)> stateUpdated,
     std::function<void(rtc::CopyOnWriteBuffer const &, bool)> transportMessageReceived,
-    std::function<void(rtc::CopyOnWriteBuffer const &, int64_t)> rtcpPacketReceived,
     std::function<void(bool)> dataChannelStateUpdated,
     std::function<void(std::string const &)> dataChannelMessageReceived,
     std::shared_ptr<Threads> threads) :
 _threads(std::move(threads)),
 _stateUpdated(std::move(stateUpdated)),
 _transportMessageReceived(std::move(transportMessageReceived)),
-_rtcpPacketReceived(std::move(rtcpPacketReceived)),
 _dataChannelStateUpdated(dataChannelStateUpdated),
 _dataChannelMessageReceived(dataChannelMessageReceived) {
     assert(_threads->getNetworkThread()->IsCurrent());
@@ -214,18 +214,18 @@ _dataChannelMessageReceived(dataChannelMessageReceived) {
     _localIceParameters = PeerIceParameters(rtc::CreateRandomString(cricket::ICE_UFRAG_LENGTH), rtc::CreateRandomString(cricket::ICE_PWD_LENGTH));
     
     _localCertificate = rtc::RTCCertificateGenerator::GenerateCertificate(rtc::KeyParams(rtc::KT_ECDSA), absl::nullopt);
+
+    _networkMonitorFactory = PlatformInterface::SharedInstance()->createNetworkMonitorFactory();
     
     _socketFactory.reset(new rtc::BasicPacketSocketFactory(_threads->getNetworkThread()));
-    _networkManager = std::make_unique<rtc::BasicNetworkManager>();
+    _networkManager = std::make_unique<rtc::BasicNetworkManager>(_networkMonitorFactory.get());
     _asyncResolverFactory = std::make_unique<webrtc::BasicAsyncResolverFactory>();
     
     _dtlsSrtpTransport = std::make_unique<webrtc::DtlsSrtpTransport>(true);
     _dtlsSrtpTransport->SetDtlsTransports(nullptr, nullptr);
     _dtlsSrtpTransport->SetActiveResetSrtpParams(false);
-    _dtlsSrtpTransport->SignalDtlsStateChange.connect(this, &GroupNetworkManager::DtlsStateChanged);
     _dtlsSrtpTransport->SignalReadyToSend.connect(this, &GroupNetworkManager::DtlsReadyToSend);
     _dtlsSrtpTransport->SignalRtpPacketReceived.connect(this, &GroupNetworkManager::RtpPacketReceived_n);
-    _dtlsSrtpTransport->SignalRtcpPacketReceived.connect(this, &GroupNetworkManager::OnRtcpPacketReceived_n);
     
     resetDtlsSrtpTransport();
 }
@@ -281,8 +281,6 @@ void GroupNetworkManager::resetDtlsSrtpTransport() {
         this, &GroupNetworkManager::OnTransportWritableState_n);
     _dtlsTransport->SignalReceivingState.connect(
         this, &GroupNetworkManager::OnTransportReceivingState_n);
-    _dtlsTransport->SignalDtlsHandshakeError.connect(
-        this, &GroupNetworkManager::OnDtlsHandshakeError);
 
     _dtlsTransport->SetDtlsRole(rtc::SSLRole::SSL_SERVER);
     _dtlsTransport->SetLocalCertificate(_localCertificate);
@@ -293,22 +291,27 @@ void GroupNetworkManager::resetDtlsSrtpTransport() {
 void GroupNetworkManager::start() {
     _transportChannel->MaybeStartGathering();
 
-    /*const auto weak = std::weak_ptr<GroupNetworkManager>(shared_from_this());
-    _dataChannelInterface.reset(new SctpDataChannelProviderInterfaceImpl(_dtlsTransport.get(), [weak, threads = _threads](bool state) {
-        assert(threads->getNetworkThread()->IsCurrent());
-        const auto strong = weak.lock();
-        if (!strong) {
-            return;
-        }
-        strong->_dataChannelStateUpdated(state);
-    }, [weak, threads = _threads[](std::string const &message) {
-        assert(threads->getNetworkThread()->IsCurrent());
-        const auto strong = weak.lock();
-        if (!strong) {
-            return;
-        }
-        strong->_dataChannelMessageReceived(message);
-    }));*/
+    const auto weak = std::weak_ptr<GroupNetworkManager>(shared_from_this());
+    _dataChannelInterface.reset(new SctpDataChannelProviderInterfaceImpl(
+        _dtlsTransport.get(),
+        [weak, threads = _threads](bool state) {
+            assert(threads->getNetworkThread()->IsCurrent());
+            const auto strong = weak.lock();
+            if (!strong) {
+                return;
+            }
+            strong->_dataChannelStateUpdated(state);
+        },
+        [weak, threads = _threads](std::string const &message) {
+            assert(threads->getNetworkThread()->IsCurrent());
+            const auto strong = weak.lock();
+            if (!strong) {
+                return;
+            }
+            strong->_dataChannelMessageReceived(message);
+        },
+        _threads
+    ));
 }
 
 void GroupNetworkManager::stop() {
@@ -317,7 +320,6 @@ void GroupNetworkManager::stop() {
     
     _dtlsTransport->SignalWritableState.disconnect(this);
     _dtlsTransport->SignalReceivingState.disconnect(this);
-    _dtlsTransport->SignalDtlsHandshakeError.disconnect(this);
     
     _dtlsSrtpTransport->SetDtlsTransports(nullptr, nullptr);
     
@@ -416,25 +418,6 @@ void GroupNetworkManager::OnTransportReceivingState_n(rtc::PacketTransportIntern
     UpdateAggregateStates_n();
 }
 
-void GroupNetworkManager::OnDtlsHandshakeError(rtc::SSLHandshakeError error) {
-    assert(_threads->getNetworkThread()->IsCurrent());
-}
-
-void GroupNetworkManager::DtlsStateChanged() {
-    UpdateAggregateStates_n();
-
-    if (_dtlsTransport->IsDtlsActive()) {
-        const auto weak = std::weak_ptr<GroupNetworkManager>(shared_from_this());
-        _threads->getNetworkThread()->PostTask(RTC_FROM_HERE, [weak]() {
-            const auto strong = weak.lock();
-            if (!strong) {
-                return;
-            }
-            strong->UpdateAggregateStates_n();
-        });
-    }
-}
-
 void GroupNetworkManager::DtlsReadyToSend(bool isReadyToSend) {
     UpdateAggregateStates_n();
 
@@ -467,12 +450,6 @@ void GroupNetworkManager::transportPacketReceived(rtc::PacketTransportInternal *
 void GroupNetworkManager::RtpPacketReceived_n(rtc::CopyOnWriteBuffer *packet, int64_t packet_time_us, bool isUnresolved) {
     if (_transportMessageReceived) {
         _transportMessageReceived(*packet, isUnresolved);
-    }
-}
-
-void GroupNetworkManager::OnRtcpPacketReceived_n(rtc::CopyOnWriteBuffer *packet, int64_t packet_time_us) {
-    if (_rtcpPacketReceived) {
-        _rtcpPacketReceived(*packet, packet_time_us);
     }
 }
 

@@ -94,6 +94,7 @@ void VideoBroadcaster::OnFrame(const webrtc::VideoFrame& frame) {
 }
 
 void VideoBroadcaster::OnDiscardedFrame() {
+  webrtc::MutexLock lock(&sinks_and_wants_lock_);
   for (auto& sink_pair : sink_pairs()) {
     sink_pair.sink->OnDiscardedFrame();
   }

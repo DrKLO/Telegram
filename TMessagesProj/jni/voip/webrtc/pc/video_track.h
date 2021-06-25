@@ -16,13 +16,13 @@
 #include "api/media_stream_interface.h"
 #include "api/media_stream_track.h"
 #include "api/scoped_refptr.h"
+#include "api/sequence_checker.h"
 #include "api/video/video_frame.h"
 #include "api/video/video_sink_interface.h"
 #include "api/video/video_source_interface.h"
 #include "media/base/video_source_base.h"
 #include "rtc_base/thread.h"
 #include "rtc_base/thread_annotations.h"
-#include "rtc_base/thread_checker.h"
 
 namespace webrtc {
 
@@ -58,7 +58,7 @@ class VideoTrack : public MediaStreamTrack<VideoTrackInterface>,
   void OnChanged() override;
 
   rtc::Thread* const worker_thread_;
-  rtc::ThreadChecker signaling_thread_checker_;
+  SequenceChecker signaling_thread_checker_;
   rtc::scoped_refptr<VideoTrackSourceInterface> video_source_;
   ContentHint content_hint_ RTC_GUARDED_BY(signaling_thread_checker_);
 };

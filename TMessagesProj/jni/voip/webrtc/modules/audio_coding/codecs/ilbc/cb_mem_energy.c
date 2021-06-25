@@ -16,9 +16,11 @@
 
 ******************************************************************/
 
-#include "modules/audio_coding/codecs/ilbc/defines.h"
-#include "modules/audio_coding/codecs/ilbc/constants.h"
+#include "modules/audio_coding/codecs/ilbc/cb_mem_energy.h"
+
 #include "modules/audio_coding/codecs/ilbc/cb_mem_energy_calc.h"
+#include "modules/audio_coding/codecs/ilbc/constants.h"
+#include "modules/audio_coding/codecs/ilbc/defines.h"
 
 /*----------------------------------------------------------------*
  *  Function WebRtcIlbcfix_CbMemEnergy computes the energy of all

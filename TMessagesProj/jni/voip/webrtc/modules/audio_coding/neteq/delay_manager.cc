@@ -158,7 +158,8 @@ absl::optional<int> DelayManager::Update(uint32_t timestamp,
   }
 
   const int expected_iat_ms =
-      1000 * static_cast<int32_t>(timestamp - last_timestamp_) / sample_rate_hz;
+      1000ll * static_cast<int32_t>(timestamp - last_timestamp_) /
+      sample_rate_hz;
   const int iat_ms = packet_iat_stopwatch_->ElapsedMs();
   const int iat_delay_ms = iat_ms - expected_iat_ms;
   int relative_delay;

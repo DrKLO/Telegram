@@ -36,7 +36,7 @@ class DefaultIceTransport : public IceTransportInterface {
   }
 
  private:
-  const rtc::ThreadChecker thread_checker_{};
+  const SequenceChecker thread_checker_{};
   std::unique_ptr<cricket::P2PTransportChannel> internal_
       RTC_GUARDED_BY(thread_checker_);
 };

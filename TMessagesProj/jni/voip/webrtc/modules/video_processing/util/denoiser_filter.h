@@ -30,11 +30,6 @@ class DenoiserFilter {
                                                 CpuType* cpu_type);
 
   virtual ~DenoiserFilter() {}
-
-  virtual void CopyMem16x16(const uint8_t* src,
-                            int src_stride,
-                            uint8_t* dst,
-                            int dst_stride) = 0;
   virtual uint32_t Variance16x8(const uint8_t* a,
                                 int a_stride,
                                 const uint8_t* b,

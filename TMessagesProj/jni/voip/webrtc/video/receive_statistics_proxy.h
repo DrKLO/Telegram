@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "absl/types/optional.h"
+#include "api/sequence_checker.h"
 #include "call/video_receive_stream.h"
 #include "modules/include/module_common_types.h"
 #include "modules/video_coding/include/video_coding_defines.h"
@@ -27,7 +28,6 @@
 #include "rtc_base/rate_tracker.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/thread_annotations.h"
-#include "rtc_base/thread_checker.h"
 #include "video/quality_threshold.h"
 #include "video/stats_counter.h"
 #include "video/video_quality_observer.h"
@@ -196,9 +196,9 @@ class ReceiveStatisticsProxy : public VCMReceiveStatisticsCallback,
       RTC_GUARDED_BY(&mutex_);
   absl::optional<int64_t> last_estimated_playout_time_ms_
       RTC_GUARDED_BY(&mutex_);
-  rtc::ThreadChecker decode_thread_;
-  rtc::ThreadChecker network_thread_;
-  rtc::ThreadChecker main_thread_;
+  SequenceChecker decode_thread_;
+  SequenceChecker network_thread_;
+  SequenceChecker main_thread_;
 };
 
 }  // namespace webrtc

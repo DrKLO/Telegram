@@ -16,6 +16,7 @@
 
 #include "rtc_base/checks.h"
 #include "rtc_base/system/rtc_export.h"
+#include "rtc_base/system_time.h"
 
 namespace rtc {
 
@@ -61,11 +62,16 @@ RTC_EXPORT ClockInterface* GetClockForTesting();
 // Synchronizes the current clock based upon an NTP server's epoch in
 // milliseconds.
 void SyncWithNtp(int64_t time_from_ntp_server_ms);
+
+// Returns the current time in nanoseconds. The clock is synchonized with the
+// system wall clock time upon instatiation. It may also be synchronized using
+// the SyncWithNtp() function above. Please note that the clock will most likely
+// drift away from the system wall clock time as time goes by.
+int64_t WinUwpSystemTimeNanos();
 #endif  // defined(WINUWP)
 
 // Returns the actual system time, even if a clock is set for testing.
 // Useful for timeouts while using a test clock, or for logging.
-int64_t SystemTimeNanos();
 int64_t SystemTimeMillis();
 
 // Returns the current time in milliseconds in 32 bits.

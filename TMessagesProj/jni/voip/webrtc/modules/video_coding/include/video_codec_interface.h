@@ -13,19 +13,18 @@
 
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/types/optional.h"
 #include "api/video/video_frame.h"
 #include "api/video_codecs/video_decoder.h"
 #include "api/video_codecs/video_encoder.h"
 #include "common_video/generic_frame_descriptor/generic_frame_info.h"
-#include "modules/include/module_common_types.h"
 #include "modules/video_coding/codecs/h264/include/h264_globals.h"
 #ifndef DISABLE_H265
 #include "modules/video_coding/codecs/h265/include/h265_globals.h"
 #endif
 #include "modules/video_coding/codecs/vp9/include/vp9_globals.h"
 #include "modules/video_coding/include/video_error_codes.h"
-#include "rtc_base/deprecation.h"
 #include "rtc_base/system/rtc_export.h"
 
 namespace webrtc {
@@ -83,7 +82,7 @@ struct CodecSpecificInfoVP9 {
   uint8_t num_ref_pics;
   uint8_t p_diff[kMaxVp9RefPics];
 
-  RTC_DEPRECATED bool end_of_picture;
+  ABSL_DEPRECATED("") bool end_of_picture;
 };
 static_assert(std::is_pod<CodecSpecificInfoVP9>::value, "");
 

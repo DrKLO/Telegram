@@ -49,7 +49,7 @@ NV12Buffer::~NV12Buffer() = default;
 
 // static
 rtc::scoped_refptr<NV12Buffer> NV12Buffer::Create(int width, int height) {
-  return new rtc::RefCountedObject<NV12Buffer>(width, height);
+  return rtc::make_ref_counted<NV12Buffer>(width, height);
 }
 
 // static
@@ -57,8 +57,7 @@ rtc::scoped_refptr<NV12Buffer> NV12Buffer::Create(int width,
                                                   int height,
                                                   int stride_y,
                                                   int stride_uv) {
-  return new rtc::RefCountedObject<NV12Buffer>(width, height, stride_y,
-                                               stride_uv);
+  return rtc::make_ref_counted<NV12Buffer>(width, height, stride_y, stride_uv);
 }
 
 // static

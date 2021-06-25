@@ -333,7 +333,7 @@ public class EmuDetector {
         return false;
     }
 
-    private boolean checkFiles(String[] targets, EmulatorTypes type) {
+    private boolean checkFiles(String[] targets, EmulatorTypes type) { //TODO scoped storage
         for (String pipe : targets) {
             File qemu_file;
             if (ContextCompat.checkSelfPermission(mContext, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {

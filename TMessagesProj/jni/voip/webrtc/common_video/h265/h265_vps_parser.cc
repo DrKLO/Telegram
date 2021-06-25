@@ -52,7 +52,7 @@ absl::optional<H265VpsParser::VpsState> H265VpsParser::ParseInternal(
 
   // vps_video_parameter_set_id: u(4)
   vps.id = 0;
-  RETURN_EMPTY_ON_FAIL(buffer->ReadBits(&vps.id, 4));
+  RETURN_EMPTY_ON_FAIL(buffer->ReadBits(4, vps.id));
 
   return OptionalVps(vps);
 }

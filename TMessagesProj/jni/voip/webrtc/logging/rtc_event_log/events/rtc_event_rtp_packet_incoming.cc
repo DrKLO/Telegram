@@ -18,32 +18,13 @@ namespace webrtc {
 
 RtcEventRtpPacketIncoming::RtcEventRtpPacketIncoming(
     const RtpPacketReceived& packet)
-    : payload_length_(packet.payload_size()),
-      header_length_(packet.headers_size()),
-      padding_length_(packet.padding_size()) {
-  header_.CopyHeaderFrom(packet);
-  RTC_DCHECK_EQ(packet.size(),
-                payload_length_ + header_length_ + padding_length_);
-}
+    : packet_(packet) {}
 
 RtcEventRtpPacketIncoming::RtcEventRtpPacketIncoming(
     const RtcEventRtpPacketIncoming& other)
-    : RtcEvent(other.timestamp_us_),
-      payload_length_(other.payload_length_),
-      header_length_(other.header_length_),
-      padding_length_(other.padding_length_) {
-  header_.CopyHeaderFrom(other.header_);
-}
+    : RtcEvent(other.timestamp_us_), packet_(other.packet_) {}
 
 RtcEventRtpPacketIncoming::~RtcEventRtpPacketIncoming() = default;
-
-RtcEvent::Type RtcEventRtpPacketIncoming::GetType() const {
-  return RtcEvent::Type::RtpPacketIncoming;
-}
-
-bool RtcEventRtpPacketIncoming::IsConfigEvent() const {
-  return false;
-}
 
 std::unique_ptr<RtcEventRtpPacketIncoming> RtcEventRtpPacketIncoming::Copy()
     const {

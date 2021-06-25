@@ -28,12 +28,13 @@ enum class ProbeFailureReason {
 
 class RtcEventProbeResultFailure final : public RtcEvent {
  public:
+  static constexpr Type kType = Type::ProbeResultFailure;
+
   RtcEventProbeResultFailure(int32_t id, ProbeFailureReason failure_reason);
   ~RtcEventProbeResultFailure() override = default;
 
-  Type GetType() const override;
-
-  bool IsConfigEvent() const override;
+  Type GetType() const override { return kType; }
+  bool IsConfigEvent() const override { return false; }
 
   std::unique_ptr<RtcEventProbeResultFailure> Copy() const;
 
@@ -45,6 +46,21 @@ class RtcEventProbeResultFailure final : public RtcEvent {
 
   const int32_t id_;
   const ProbeFailureReason failure_reason_;
+};
+
+struct LoggedBweProbeFailureEvent {
+  LoggedBweProbeFailureEvent() = default;
+  LoggedBweProbeFailureEvent(int64_t timestamp_us,
+                             int32_t id,
+                             ProbeFailureReason failure_reason)
+      : timestamp_us(timestamp_us), id(id), failure_reason(failure_reason) {}
+
+  int64_t log_time_us() const { return timestamp_us; }
+  int64_t log_time_ms() const { return timestamp_us / 1000; }
+
+  int64_t timestamp_us;
+  int32_t id;
+  ProbeFailureReason failure_reason;
 };
 
 }  // namespace webrtc

@@ -30,6 +30,7 @@
 #include "api/test/dummy_peer_connection.h"
 #include "api/test/fake_frame_decryptor.h"
 #include "api/test/fake_frame_encryptor.h"
+#include "api/test/mock_async_dns_resolver.h"
 #include "api/test/mock_audio_mixer.h"
 #include "api/test/mock_data_channel.h"
 #include "api/test/mock_frame_decryptor.h"

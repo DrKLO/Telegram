@@ -35,7 +35,7 @@ public class SeekBarView extends FrameLayout {
     private int selectorWidth;
     private int thumbX;
     private int thumbDX;
-    private float progressToSet;
+    private float progressToSet = -100;
     private boolean pressed;
     public SeekBarViewDelegate delegate;
     private boolean reportChanges;
@@ -46,6 +46,8 @@ public class SeekBarView extends FrameLayout {
     private int[] pressedState = new int[]{android.R.attr.state_enabled, android.R.attr.state_pressed};
     private float transitionProgress = 1f;
     private int transitionThumbX;
+
+    private boolean twoSided;
 
     public interface SeekBarViewDelegate {
         void onSeekBarDrag(boolean stop, float progress);
@@ -122,6 +124,14 @@ public class SeekBarView extends FrameLayout {
         }
     }
 
+    public void setTwoSided(boolean value) {
+        twoSided = value;
+    }
+
+    public boolean isTwoSided() {
+        return twoSided;
+    }
+
     public void setInnerColor(int color) {
         innerPaint1.setColor(color);
     }
@@ -178,7 +188,16 @@ public class SeekBarView extends FrameLayout {
             }
             if (pressed) {
                 if (ev.getAction() == MotionEvent.ACTION_UP) {
-                    delegate.onSeekBarDrag(true, (float) thumbX / (float) (getMeasuredWidth() - selectorWidth));
+                    if (twoSided) {
+                        float w = (getMeasuredWidth() - selectorWidth) / 2;
+                        if (thumbX >= w) {
+                            delegate.onSeekBarDrag(false, (thumbX - w) / w);
+                        } else {
+                            delegate.onSeekBarDrag(false, -Math.max(0.01f, 1.0f - (w - thumbX) / w));
+                        }
+                    } else {
+                        delegate.onSeekBarDrag(true, (float) thumbX / (float) (getMeasuredWidth() - selectorWidth));
+                    }
                 }
                 if (Build.VERSION.SDK_INT >= 21 && hoverDrawable != null) {
                     hoverDrawable.setState(StateSet.NOTHING);
@@ -227,7 +246,16 @@ public class SeekBarView extends FrameLayout {
                         thumbX = getMeasuredWidth() - selectorWidth;
                     }
                     if (reportChanges) {
-                        delegate.onSeekBarDrag(false, (float) thumbX / (float) (getMeasuredWidth() - selectorWidth));
+                        if (twoSided) {
+                            float w = (getMeasuredWidth() - selectorWidth) / 2;
+                            if (thumbX >= w) {
+                                delegate.onSeekBarDrag(false, (thumbX - w) / w);
+                            } else {
+                                delegate.onSeekBarDrag(false, -Math.max(0.01f, 1.0f - (w - thumbX) / w));
+                            }
+                        } else {
+                            delegate.onSeekBarDrag(false, (float) thumbX / (float) (getMeasuredWidth() - selectorWidth));
+                        }
                     }
                     if (Build.VERSION.SDK_INT >= 21 && hoverDrawable != null) {
                         hoverDrawable.setHotspot(ev.getX(), ev.getY());
@@ -256,8 +284,19 @@ public class SeekBarView extends FrameLayout {
             progressToSet = progress;
             return;
         }
-        progressToSet = -1;
-        int newThumbX = (int) Math.ceil((getMeasuredWidth() - selectorWidth) * progress);
+        progressToSet = -100;
+        int newThumbX;
+        if (twoSided) {
+            int w = getMeasuredWidth() - selectorWidth;
+            float cx = w / 2;
+            if (progress < 0) {
+                newThumbX = (int) Math.ceil(cx + w / 2 * -(1.0f + progress));
+            } else {
+                newThumbX = (int) Math.ceil(cx + w / 2 * progress);
+            }
+        } else {
+            newThumbX = (int) Math.ceil((getMeasuredWidth() - selectorWidth) * progress);
+        }
         if (thumbX != newThumbX) {
             if (animated) {
                 transitionThumbX = thumbX;
@@ -281,9 +320,9 @@ public class SeekBarView extends FrameLayout {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-        if (progressToSet >= 0 && getMeasuredWidth() > 0) {
+        if (progressToSet != -100 && getMeasuredWidth() > 0) {
             setProgress(progressToSet);
-            progressToSet = -1;
+            progressToSet = -100;
         }
     }
 
@@ -305,7 +344,16 @@ public class SeekBarView extends FrameLayout {
             innerPaint1.setColor(Theme.getColor(Theme.key_player_progressCachedBackground));
             canvas.drawRect(selectorWidth / 2, getMeasuredHeight() / 2 - AndroidUtilities.dp(1), selectorWidth / 2 + bufferedProgress * (getMeasuredWidth() - selectorWidth), getMeasuredHeight() / 2 + AndroidUtilities.dp(1), innerPaint1);
         }
-        canvas.drawRect(selectorWidth / 2, getMeasuredHeight() / 2 - AndroidUtilities.dp(1), selectorWidth / 2 + thumbX, getMeasuredHeight() / 2 + AndroidUtilities.dp(1), outerPaint1);
+        if (twoSided) {
+            canvas.drawRect(getMeasuredWidth() / 2 - AndroidUtilities.dp(1), getMeasuredHeight() / 2 - AndroidUtilities.dp(6), getMeasuredWidth() / 2 + AndroidUtilities.dp(1), getMeasuredHeight() / 2 + AndroidUtilities.dp(6), outerPaint1);
+            if (thumbX > (getMeasuredWidth() - selectorWidth) / 2) {
+                canvas.drawRect(getMeasuredWidth() / 2, getMeasuredHeight() / 2 - AndroidUtilities.dp(1), selectorWidth / 2 + thumbX, getMeasuredHeight() / 2 + AndroidUtilities.dp(1), outerPaint1);
+            } else {
+                canvas.drawRect(thumbX + selectorWidth / 2, getMeasuredHeight() / 2 - AndroidUtilities.dp(1), getMeasuredWidth() / 2, getMeasuredHeight() / 2 + AndroidUtilities.dp(1), outerPaint1);
+            }
+        } else {
+            canvas.drawRect(selectorWidth / 2, getMeasuredHeight() / 2 - AndroidUtilities.dp(1), selectorWidth / 2 + thumbX, getMeasuredHeight() / 2 + AndroidUtilities.dp(1), outerPaint1);
+        }
         if (hoverDrawable != null) {
             int dx = thumbX + selectorWidth / 2 - AndroidUtilities.dp(16);
             int dy = y + thumbSize / 2 - AndroidUtilities.dp(16);

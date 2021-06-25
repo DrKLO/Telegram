@@ -264,7 +264,7 @@ absl::optional<VideoRtpDepacketizer::ParsedRtpPayload> ParseFuaNalu(
     uint8_t original_nal_header = fnri | original_nal_type;
     rtp_payload =
         rtp_payload.Slice(kNalHeaderSize, rtp_payload.size() - kNalHeaderSize);
-    rtp_payload[0] = original_nal_header;
+    rtp_payload.MutableData()[0] = original_nal_header;
     parsed_payload->video_payload = std::move(rtp_payload);
   } else {
     parsed_payload->video_payload =

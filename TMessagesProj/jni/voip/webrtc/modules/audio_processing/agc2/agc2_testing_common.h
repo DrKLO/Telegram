@@ -11,16 +11,18 @@
 #ifndef MODULES_AUDIO_PROCESSING_AGC2_AGC2_TESTING_COMMON_H_
 #define MODULES_AUDIO_PROCESSING_AGC2_AGC2_TESTING_COMMON_H_
 
-#include <math.h>
-
 #include <limits>
 #include <vector>
 
-#include "rtc_base/checks.h"
+#include "rtc_base/random.h"
 
 namespace webrtc {
-
 namespace test {
+
+constexpr float kMinS16 =
+    static_cast<float>(std::numeric_limits<int16_t>::min());
+constexpr float kMaxS16 =
+    static_cast<float>(std::numeric_limits<int16_t>::max());
 
 // Level Estimator test parameters.
 constexpr float kDecayMs = 500.f;
@@ -29,47 +31,49 @@ constexpr float kDecayMs = 500.f;
 constexpr float kLimiterMaxInputLevelDbFs = 1.f;
 constexpr float kLimiterKneeSmoothnessDb = 1.f;
 constexpr float kLimiterCompressionRatio = 5.f;
-constexpr float kPi = 3.1415926536f;
 
-std::vector<double> LinSpace(const double l, const double r, size_t num_points);
+// Returns evenly spaced `num_points` numbers over a specified interval [l, r].
+std::vector<double> LinSpace(double l, double r, int num_points);
 
-class SineGenerator {
+// Generates white noise.
+class WhiteNoiseGenerator {
  public:
-  SineGenerator(float frequency, int rate)
-      : frequency_(frequency), rate_(rate) {}
-  float operator()() {
-    x_radians_ += frequency_ / rate_ * 2 * kPi;
-    if (x_radians_ > 2 * kPi) {
-      x_radians_ -= 2 * kPi;
-    }
-    return 1000.f * sinf(x_radians_);
-  }
+  WhiteNoiseGenerator(int min_amplitude, int max_amplitude);
+  float operator()();
 
  private:
-  float frequency_;
-  int rate_;
-  float x_radians_ = 0.f;
+  Random rand_gen_;
+  const int min_amplitude_;
+  const int max_amplitude_;
 };
 
-class PulseGenerator {
+// Generates a sine function.
+class SineGenerator {
  public:
-  PulseGenerator(float frequency, int rate)
-      : samples_period_(
-            static_cast<int>(static_cast<float>(rate) / frequency)) {
-    RTC_DCHECK_GT(rate, frequency);
-  }
-  float operator()() {
-    sample_counter_++;
-    if (sample_counter_ >= samples_period_) {
-      sample_counter_ -= samples_period_;
-    }
-    return static_cast<float>(
-        sample_counter_ == 0 ? std::numeric_limits<int16_t>::max() : 10.f);
-  }
+  SineGenerator(float amplitude, float frequency_hz, int sample_rate_hz);
+  float operator()();
 
  private:
-  int samples_period_;
-  int sample_counter_ = 0;
+  const float amplitude_;
+  const float frequency_hz_;
+  const int sample_rate_hz_;
+  float x_radians_;
+};
+
+// Generates periodic pulses.
+class PulseGenerator {
+ public:
+  PulseGenerator(float pulse_amplitude,
+                 float no_pulse_amplitude,
+                 float frequency_hz,
+                 int sample_rate_hz);
+  float operator()();
+
+ private:
+  const float pulse_amplitude_;
+  const float no_pulse_amplitude_;
+  const int samples_period_;
+  int sample_counter_;
 };
 
 }  // namespace test

@@ -17,11 +17,11 @@
 #include "api/audio/audio_mixer.h"
 #include "api/neteq/neteq_factory.h"
 #include "api/rtp_headers.h"
+#include "api/sequence_checker.h"
 #include "audio/audio_state.h"
 #include "call/audio_receive_stream.h"
 #include "call/syncable.h"
 #include "modules/rtp_rtcp/source/source_tracker.h"
-#include "rtc_base/thread_checker.h"
 #include "system_wrappers/include/clock.h"
 
 namespace webrtc {
@@ -71,6 +71,8 @@ class AudioReceiveStream final : public webrtc::AudioReceiveStream,
   void Reconfigure(const webrtc::AudioReceiveStream::Config& config) override;
   void Start() override;
   void Stop() override;
+  bool IsRunning() const override;
+
   webrtc::AudioReceiveStream::Stats GetStats(
       bool get_and_clear_legacy_stats) const override;
   void SetSink(AudioSinkInterface* sink) override;
@@ -106,12 +108,11 @@ class AudioReceiveStream final : public webrtc::AudioReceiveStream,
 
   AudioState* audio_state() const;
 
-  rtc::ThreadChecker worker_thread_checker_;
-  rtc::ThreadChecker module_process_thread_checker_;
+  SequenceChecker worker_thread_checker_;
   webrtc::AudioReceiveStream::Config config_;
   rtc::scoped_refptr<webrtc::AudioState> audio_state_;
-  const std::unique_ptr<voe::ChannelReceiveInterface> channel_receive_;
   SourceTracker source_tracker_;
+  const std::unique_ptr<voe::ChannelReceiveInterface> channel_receive_;
   AudioSendStream* associated_send_stream_ = nullptr;
 
   bool playing_ RTC_GUARDED_BY(worker_thread_checker_) = false;

@@ -17,11 +17,9 @@
 
 #include "absl/types/optional.h"
 #include "call/rtp_packet_sink_interface.h"
-#include "modules/include/module.h"
 #include "modules/rtp_rtcp/include/rtcp_statistics.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/report_block.h"
-#include "rtc_base/deprecation.h"
 
 namespace webrtc {
 
@@ -57,7 +55,12 @@ class ReceiveStatistics : public ReceiveStatisticsProvider,
  public:
   ~ReceiveStatistics() override = default;
 
+  // Returns a thread-safe instance of ReceiveStatistics.
+  // https://chromium.googlesource.com/chromium/src/+/lkgr/docs/threading_and_tasks.md#threading-lexicon
   static std::unique_ptr<ReceiveStatistics> Create(Clock* clock);
+  // Returns a thread-compatible instance of ReceiveStatistics.
+  static std::unique_ptr<ReceiveStatistics> CreateThreadCompatible(
+      Clock* clock);
 
   // Returns a pointer to the statistician of an ssrc.
   virtual StreamStatistician* GetStatistician(uint32_t ssrc) const = 0;

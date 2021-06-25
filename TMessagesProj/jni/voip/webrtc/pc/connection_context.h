@@ -17,19 +17,18 @@
 #include "api/call/call_factory_interface.h"
 #include "api/media_stream_interface.h"
 #include "api/peer_connection_interface.h"
+#include "api/ref_counted_base.h"
 #include "api/scoped_refptr.h"
+#include "api/sequence_checker.h"
 #include "api/transport/sctp_transport_factory_interface.h"
 #include "api/transport/webrtc_key_value_config.h"
 #include "media/base/media_engine.h"
-#include "media/sctp/sctp_transport_internal.h"
 #include "p2p/base/basic_packet_socket_factory.h"
 #include "pc/channel_manager.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/network.h"
 #include "rtc_base/network_monitor_factory.h"
-#include "rtc_base/ref_count.h"
 #include "rtc_base/rtc_certificate_generator.h"
-#include "rtc_base/synchronization/sequence_checker.h"
 #include "rtc_base/thread.h"
 #include "rtc_base/thread_annotations.h"
 
@@ -48,7 +47,8 @@ class RtcEventLog;
 // interferes with the operation of other PeerConnections.
 //
 // This class must be created and destroyed on the signaling thread.
-class ConnectionContext : public rtc::RefCountInterface {
+class ConnectionContext final
+    : public rtc::RefCountedNonVirtual<ConnectionContext> {
  public:
   // Creates a ConnectionContext. May return null if initialization fails.
   // The Dependencies class allows simple management of all new dependencies
@@ -62,7 +62,6 @@ class ConnectionContext : public rtc::RefCountInterface {
 
   // Functions called from PeerConnection and friends
   SctpTransportFactoryInterface* sctp_transport_factory() const {
-    RTC_DCHECK_RUN_ON(signaling_thread_);
     return sctp_factory_.get();
   }
 
@@ -94,7 +93,8 @@ class ConnectionContext : public rtc::RefCountInterface {
  protected:
   explicit ConnectionContext(PeerConnectionFactoryDependencies* dependencies);
 
-  virtual ~ConnectionContext();
+  friend class rtc::RefCountedNonVirtual<ConnectionContext>;
+  ~ConnectionContext();
 
  private:
   // The following three variables are used to communicate between the
@@ -121,10 +121,7 @@ class ConnectionContext : public rtc::RefCountInterface {
 
   std::unique_ptr<rtc::BasicPacketSocketFactory> default_socket_factory_
       RTC_GUARDED_BY(signaling_thread_);
-  std::unique_ptr<cricket::MediaEngineInterface> media_engine_
-      RTC_GUARDED_BY(signaling_thread_);
-  std::unique_ptr<SctpTransportFactoryInterface> const sctp_factory_
-      RTC_GUARDED_BY(signaling_thread_);
+  std::unique_ptr<SctpTransportFactoryInterface> const sctp_factory_;
   // Accessed both on signaling thread and worker thread.
   std::unique_ptr<WebRtcKeyValueConfig> const trials_;
 };

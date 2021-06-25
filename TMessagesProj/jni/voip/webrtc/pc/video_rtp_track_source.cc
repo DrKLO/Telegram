@@ -10,6 +10,12 @@
 
 #include "pc/video_rtp_track_source.h"
 
+#include <stddef.h>
+
+#include <algorithm>
+
+#include "rtc_base/checks.h"
+
 namespace webrtc {
 
 VideoRtpTrackSource::VideoRtpTrackSource(Callback* callback)

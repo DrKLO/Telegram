@@ -235,8 +235,8 @@ class ForwardErrorCorrection {
 
   // TODO(brandtr): Remove these functions when the Packet classes
   // have been refactored.
-  static uint16_t ParseSequenceNumber(uint8_t* packet);
-  static uint32_t ParseSsrc(uint8_t* packet);
+  static uint16_t ParseSequenceNumber(const uint8_t* packet);
+  static uint32_t ParseSsrc(const uint8_t* packet);
 
  protected:
   ForwardErrorCorrection(std::unique_ptr<FecHeaderReader> fec_header_reader,
@@ -329,6 +329,11 @@ class ForwardErrorCorrection {
   // Discards old packets in |recovered_packets|, which are no longer relevant
   // for recovering lost packets.
   void DiscardOldRecoveredPackets(RecoveredPacketList* recovered_packets);
+
+  // Checks if the FEC packet is old enough and no longer relevant for
+  // recovering lost media packets.
+  bool IsOldFecPacket(const ReceivedFecPacket& fec_packet,
+                      const RecoveredPacketList* recovered_packets);
 
   // These SSRCs are only used by the decoder.
   const uint32_t ssrc_;

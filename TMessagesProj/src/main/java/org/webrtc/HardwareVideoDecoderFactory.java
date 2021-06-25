@@ -13,6 +13,7 @@ package org.webrtc;
 import android.media.MediaCodecInfo;
 
 import org.telegram.messenger.voip.Instance;
+import org.telegram.messenger.voip.VoIPService;
 
 import androidx.annotation.Nullable;
 
@@ -22,6 +23,9 @@ public class HardwareVideoDecoderFactory extends MediaCodecVideoDecoderFactory {
       new Predicate<MediaCodecInfo>() {
         @Override
         public boolean test(MediaCodecInfo arg) {
+            if (VoIPService.getSharedInstance() != null && VoIPService.getSharedInstance().groupCall != null) {
+                return false;
+            }
             if (!MediaCodecUtils.isHardwareAccelerated(arg)) {
                 return false;
             }

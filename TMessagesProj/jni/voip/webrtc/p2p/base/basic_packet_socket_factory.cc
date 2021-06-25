@@ -15,6 +15,7 @@
 #include <string>
 
 #include "p2p/base/async_stun_tcp_socket.h"
+#include "rtc_base/async_resolver.h"
 #include "rtc_base/async_tcp_socket.h"
 #include "rtc_base/async_udp_socket.h"
 #include "rtc_base/checks.h"
@@ -81,15 +82,19 @@ AsyncPacketSocket* BasicPacketSocketFactory::CreateServerTcpSocket(
     return NULL;
   }
 
+  // Set TCP_NODELAY (via OPT_NODELAY) for improved performance; this causes
+  // small media packets to be sent immediately rather than being buffered up,
+  // reducing latency.
+  if (socket->SetOption(Socket::OPT_NODELAY, 1) != 0) {
+    RTC_LOG(LS_ERROR) << "Setting TCP_NODELAY option failed with error "
+                      << socket->GetError();
+  }
+
   // If using fake TLS, wrap the TCP socket in a pseudo-SSL socket.
   if (opts & PacketSocketFactory::OPT_TLS_FAKE) {
     RTC_DCHECK(!(opts & PacketSocketFactory::OPT_TLS));
     socket = new AsyncSSLSocket(socket);
   }
-
-  // Set TCP_NODELAY (via OPT_NODELAY) for improved performance.
-  // See http://go/gtalktcpnodelayexperiment
-  socket->SetOption(Socket::OPT_NODELAY, 1);
 
   if (opts & PacketSocketFactory::OPT_STUN)
     return new cricket::AsyncStunTCPSocket(socket, true);
@@ -121,6 +126,16 @@ AsyncPacketSocket* BasicPacketSocketFactory::CreateClientTcpSocket(
       delete socket;
       return NULL;
     }
+  }
+
+  // Set TCP_NODELAY (via OPT_NODELAY) for improved performance; this causes
+  // small media packets to be sent immediately rather than being buffered up,
+  // reducing latency.
+  //
+  // Must be done before calling Connect, otherwise it may fail.
+  if (socket->SetOption(Socket::OPT_NODELAY, 1) != 0) {
+    RTC_LOG(LS_ERROR) << "Setting TCP_NODELAY option failed with error "
+                      << socket->GetError();
   }
 
   // If using a proxy, wrap the socket in a proxy socket.
@@ -180,10 +195,6 @@ AsyncPacketSocket* BasicPacketSocketFactory::CreateClientTcpSocket(
   } else {
     tcp_socket = new AsyncTCPSocket(socket, false);
   }
-
-  // Set TCP_NODELAY (via OPT_NODELAY) for improved performance.
-  // See http://go/gtalktcpnodelayexperiment
-  tcp_socket->SetOption(Socket::OPT_NODELAY, 1);
 
   return tcp_socket;
 }

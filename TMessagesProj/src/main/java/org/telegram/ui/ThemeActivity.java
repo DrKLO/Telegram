@@ -669,7 +669,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didSetNewWallpapper);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.themeListUpdated);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.themeAccentListUpdated);
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiDidLoad);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.needShareTheme);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.needSetDayNightTheme);
         getNotificationCenter().addObserver(this, NotificationCenter.themeUploadedToServer);
@@ -689,7 +689,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didSetNewWallpapper);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.themeListUpdated);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.themeAccentListUpdated);
-        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiDidLoad);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.needShareTheme);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.needSetDayNightTheme);
         getNotificationCenter().removeObserver(this, NotificationCenter.themeUploadedToServer);
@@ -701,10 +701,11 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.locationPermissionGranted) {
             updateSunTime(null, true);
-        } else if (id == NotificationCenter.didSetNewWallpapper || id == NotificationCenter.emojiDidLoad) {
+        } else if (id == NotificationCenter.didSetNewWallpapper || id == NotificationCenter.emojiLoaded) {
             if (listView != null) {
                 listView.invalidateViews();
             }
+            updateMenuItem();
         } else if (id == NotificationCenter.themeAccentListUpdated) {
             if (listAdapter != null && themeAccentListRow != -1) {
                 listAdapter.notifyItemChanged(themeAccentListRow, new Object());
@@ -816,6 +817,15 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                         if (themesHorizontalListCell != null) {
                             Theme.ThemeInfo themeInfo = Theme.getTheme("Blue");
                             Theme.ThemeInfo currentTheme = Theme.getCurrentTheme();
+                            Theme.ThemeAccent accent = themeInfo.themeAccentsMap.get(Theme.DEFALT_THEME_ACCENT_ID);
+                            if (accent != null) {
+                                Theme.OverrideWallpaperInfo info = new Theme.OverrideWallpaperInfo();
+                                info.slug = Theme.DEFAULT_BACKGROUND_SLUG;
+                                info.fileName = "Blue_99_wp.jpg";
+                                info.originalFileName = "Blue_99_wp.jpg";
+                                accent.overrideWallpaper = info;
+                                themeInfo.setOverrideWallpaper(info);
+                            }
                             if (themeInfo != currentTheme) {
                                 themeInfo.setCurrentAccentId(Theme.DEFALT_THEME_ACCENT_ID);
                                 Theme.saveThemeAccents(themeInfo, true, false, true, false);
@@ -824,6 +834,8 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                             } else if (themeInfo.currentAccentId != Theme.DEFALT_THEME_ACCENT_ID) {
                                 NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, currentTheme, currentType == THEME_TYPE_NIGHT, null, Theme.DEFALT_THEME_ACCENT_ID);
                                 listAdapter.notifyItemChanged(themeAccentListRow);
+                            } else {
+                                Theme.reloadWallpaper();
                             }
                         }
                     });
@@ -1073,7 +1085,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         }
         int fontSize = AndroidUtilities.isTablet() ? 18 : 16;
         Theme.ThemeInfo currentTheme = Theme.getCurrentTheme();
-        if (SharedConfig.fontSize != fontSize || SharedConfig.bubbleRadius != 10 || !currentTheme.firstAccentIsDefault || currentTheme.currentAccentId != Theme.DEFALT_THEME_ACCENT_ID) {
+        if (SharedConfig.fontSize != fontSize || SharedConfig.bubbleRadius != 10 || !currentTheme.firstAccentIsDefault || currentTheme.currentAccentId != Theme.DEFALT_THEME_ACCENT_ID || accent != null && accent.overrideWallpaper != null && !Theme.DEFAULT_BACKGROUND_SLUG.equals(accent.overrideWallpaper.slug)) {
             menuItem.showSubItem(reset_settings);
         } else {
             menuItem.hideSubItem(reset_settings);
@@ -2149,7 +2161,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{BubbleRadiusCell.class}, new String[]{"sizeBar"}, null, null, null, Theme.key_player_progressBackground));
 
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{ChatListCell.class}, null, null, null, Theme.key_radioBackground));
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{ChatListCell.class}, null, null, null, Theme.key_radioBackgroundChecked));;
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{ChatListCell.class}, null, null, null, Theme.key_radioBackgroundChecked));
 
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{NotificationsCheckCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{NotificationsCheckCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));

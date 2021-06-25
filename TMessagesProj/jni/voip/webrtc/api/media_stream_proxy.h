@@ -20,8 +20,8 @@ namespace webrtc {
 
 // TODO(deadbeef): Move this to .cc file and out of api/. What threads methods
 // are called on is an implementation detail.
-BEGIN_SIGNALING_PROXY_MAP(MediaStream)
-PROXY_SIGNALING_THREAD_DESTRUCTOR()
+BEGIN_PRIMARY_PROXY_MAP(MediaStream)
+PROXY_PRIMARY_THREAD_DESTRUCTOR()
 BYPASS_PROXY_CONSTMETHOD0(std::string, id)
 PROXY_METHOD0(AudioTrackVector, GetAudioTracks)
 PROXY_METHOD0(VideoTrackVector, GetVideoTracks)

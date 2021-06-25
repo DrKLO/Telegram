@@ -118,7 +118,6 @@ const char MediaConstraints::kUseRtpMux[] = "googUseRtpMUX";
 
 // Below constraints should be used during PeerConnection construction.
 const char MediaConstraints::kEnableDtlsSrtp[] = "DtlsSrtpKeyAgreement";
-const char MediaConstraints::kEnableRtpDataChannels[] = "RtpDataChannels";
 // Google-specific constraint keys.
 const char MediaConstraints::kEnableDscp[] = "googDscp";
 const char MediaConstraints::kEnableIPv6[] = "googIPv6";
@@ -167,8 +166,6 @@ void CopyConstraintsIntoRtcConfiguration(
   FindConstraint(constraints, MediaConstraints::kCpuOveruseDetection,
                  &configuration->media_config.video.enable_cpu_adaptation,
                  nullptr);
-  FindConstraint(constraints, MediaConstraints::kEnableRtpDataChannels,
-                 &configuration->enable_rtp_data_channel, nullptr);
   // Find Suspend Below Min Bitrate constraint.
   FindConstraint(
       constraints, MediaConstraints::kEnableVideoSuspendBelowMinBitrate,

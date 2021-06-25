@@ -37,18 +37,18 @@ public class RendererCommon {
    * input can either be an OES texture, RGB texture, or YUV textures in I420 format. The function
    * release() must be called manually to free the resources held by this object.
    */
-  public static interface GlDrawer {
+  public interface GlDrawer {
     /**
      * Functions for drawing frames with different sources. The rendering surface target is
      * implied by the current EGL context of the calling thread and requires no explicit argument.
      * The coordinates specify the viewport location on the surface target.
      */
-    void drawOes(int oesTextureId, float[] texMatrix, int frameWidth, int frameHeight,
-        int viewportX, int viewportY, int viewportWidth, int viewportHeight);
-    void drawRgb(int textureId, float[] texMatrix, int frameWidth, int frameHeight, int viewportX,
-        int viewportY, int viewportWidth, int viewportHeight);
-    void drawYuv(int[] yuvTextures, float[] texMatrix, int frameWidth, int frameHeight,
-        int viewportX, int viewportY, int viewportWidth, int viewportHeight);
+    void drawOes(int oesTextureId, int originalWidth, int originalHeight, int rotatedWidth, int rotatedHeight, float[] texMatrix, int frameWidth, int frameHeight,
+        int viewportX, int viewportY, int viewportWidth, int viewportHeight, boolean blur);
+    void drawRgb(int textureId, int originalWidth, int originalHeight, int rotatedWidth, int rotatedHeight, float[] texMatrix, int frameWidth, int frameHeight, int viewportX,
+        int viewportY, int viewportWidth, int viewportHeight, boolean blur);
+    void drawYuv(int[] yuvTextures, int originalWidth, int originalHeight, int rotatedWidth, int rotatedHeight, float[] texMatrix, int frameWidth, int frameHeight,
+        int viewportX, int viewportY, int viewportWidth, int viewportHeight, boolean blur);
 
     /**
      * Release all GL resources. This needs to be done manually, otherwise resources may leak.
@@ -88,7 +88,7 @@ public class RendererCommon {
       this.visibleFractionMismatchOrientation = visibleFractionMismatchOrientation;
     }
 
-    public Point measure(boolean isCamera, int widthSpec, int heightSpec, int frameWidth, int frameHeight) {
+    public Point measure(boolean applayRotation, int widthSpec, int heightSpec, int frameWidth, int frameHeight) {
       // Calculate max allowed layout size.
       final int maxWidth = View.getDefaultSize(Integer.MAX_VALUE, widthSpec);
       final int maxHeight = View.getDefaultSize(Integer.MAX_VALUE, heightSpec);
@@ -105,11 +105,13 @@ public class RendererCommon {
       final Point layoutSize = getDisplaySize(visibleFraction, frameAspect, maxWidth, maxHeight);
 
       // If the measure specification is forcing a specific size - yield.
-      if (View.MeasureSpec.getMode(widthSpec) == View.MeasureSpec.EXACTLY) {
-        layoutSize.x = maxWidth;
-      }
-      if (View.MeasureSpec.getMode(heightSpec) == View.MeasureSpec.EXACTLY || !isCamera && (frameAspect > 1.0f) == (displayAspect > 1.0f)) {
-        layoutSize.y = maxHeight;
+      if (!applayRotation) {
+        if (View.MeasureSpec.getMode(widthSpec) == View.MeasureSpec.EXACTLY) {
+          layoutSize.x = maxWidth;
+        }
+        if (View.MeasureSpec.getMode(heightSpec) == View.MeasureSpec.EXACTLY || frameAspect > 1.0f == displayAspect > 1.0f) {
+          layoutSize.y = maxHeight;
+        }
       }
       return layoutSize;
     }

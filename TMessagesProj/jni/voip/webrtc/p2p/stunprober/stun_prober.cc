@@ -20,11 +20,11 @@
 #include "api/transport/stun.h"
 #include "rtc_base/async_packet_socket.h"
 #include "rtc_base/async_resolver_interface.h"
-#include "rtc_base/bind.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/constructor_magic.h"
 #include "rtc_base/helpers.h"
 #include "rtc_base/logging.h"
+#include "rtc_base/task_utils/to_queued_task.h"
 #include "rtc_base/thread.h"
 #include "rtc_base/time_utils.h"
 
@@ -104,7 +104,7 @@ class StunProber::Requester : public sigslot::has_slots<> {
   int16_t num_request_sent_ = 0;
   int16_t num_response_received_ = 0;
 
-  rtc::ThreadChecker& thread_checker_;
+  webrtc::SequenceChecker& thread_checker_;
 
   RTC_DISALLOW_COPY_AND_ASSIGN(Requester);
 };
@@ -262,6 +262,7 @@ StunProber::StunProber(rtc::PacketSocketFactory* socket_factory,
       networks_(networks) {}
 
 StunProber::~StunProber() {
+  RTC_DCHECK(thread_checker_.IsCurrent());
   for (auto* req : requesters_) {
     if (req) {
       delete req;
@@ -358,9 +359,8 @@ void StunProber::OnServerResolved(rtc::AsyncResolverInterface* resolver) {
 
   // Deletion of AsyncResolverInterface can't be done in OnResolveResult which
   // handles SignalDone.
-  invoker_.AsyncInvoke<void>(
-      RTC_FROM_HERE, thread_,
-      rtc::Bind(&rtc::AsyncResolverInterface::Destroy, resolver, false));
+  thread_->PostTask(
+      webrtc::ToQueuedTask([resolver] { resolver->Destroy(false); }));
   servers_.pop_back();
 
   if (servers_.size()) {
@@ -453,13 +453,14 @@ int StunProber::get_wake_up_interval_ms() {
 }
 
 void StunProber::MaybeScheduleStunRequests() {
-  RTC_DCHECK(thread_checker_.IsCurrent());
+  RTC_DCHECK_RUN_ON(thread_);
   int64_t now = rtc::TimeMillis();
 
   if (Done()) {
-    invoker_.AsyncInvokeDelayed<void>(
-        RTC_FROM_HERE, thread_,
-        rtc::Bind(&StunProber::ReportOnFinished, this, SUCCESS), timeout_ms_);
+    thread_->PostDelayedTask(
+        webrtc::ToQueuedTask(task_safety_.flag(),
+                             [this] { ReportOnFinished(SUCCESS); }),
+        timeout_ms_);
     return;
   }
   if (should_send_next_request(now)) {
@@ -469,9 +470,9 @@ void StunProber::MaybeScheduleStunRequests() {
     }
     next_request_time_ms_ = now + interval_ms_;
   }
-  invoker_.AsyncInvokeDelayed<void>(
-      RTC_FROM_HERE, thread_,
-      rtc::Bind(&StunProber::MaybeScheduleStunRequests, this),
+  thread_->PostDelayedTask(
+      webrtc::ToQueuedTask(task_safety_.flag(),
+                           [this] { MaybeScheduleStunRequests(); }),
       get_wake_up_interval_ms());
 }
 

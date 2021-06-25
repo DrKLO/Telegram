@@ -20,8 +20,10 @@ import android.os.Looper;
 import android.os.Message;
 import androidx.annotation.Nullable;
 import android.view.Surface;
+
+import org.telegram.messenger.FileLog;
+
 import java.nio.ByteBuffer;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
@@ -35,12 +37,12 @@ public class EglRenderer implements VideoSink {
   private static final String TAG = "EglRenderer";
   private static final long LOG_INTERVAL_SEC = 4;
 
-  private boolean firstFrameRendered;
+  public boolean firstFrameRendered;
 
   public interface FrameListener { void onFrame(Bitmap frame); }
 
   /** Callback for clients to be notified about errors encountered during rendering. */
-  public static interface ErrorCallback {
+  public interface ErrorCallback {
     /** Called if GLES20.GL_OUT_OF_MEMORY is encountered during rendering. */
     void onGlOutOfMemory();
   }
@@ -62,6 +64,11 @@ public class EglRenderer implements VideoSink {
 
   private class EglSurfaceCreation implements Runnable {
     private Object surface;
+    private final boolean background;
+
+    public EglSurfaceCreation(boolean background) {
+      this.background = background;
+    }
 
     // TODO(bugs.webrtc.org/8491): Remove NoSynchronizedMethodCheck suppression.
     @SuppressWarnings("NoSynchronizedMethodCheck")
@@ -73,17 +80,31 @@ public class EglRenderer implements VideoSink {
     // TODO(bugs.webrtc.org/8491): Remove NoSynchronizedMethodCheck suppression.
     @SuppressWarnings("NoSynchronizedMethodCheck")
     public synchronized void run() {
-      if (surface != null && eglBase != null && !eglBase.hasSurface()) {
+      if (surface != null && eglBase != null && (background ? !eglBase.hasBackgroundSurface() : !eglBase.hasSurface())) {
         if (surface instanceof Surface) {
           eglBase.createSurface((Surface) surface);
         } else if (surface instanceof SurfaceTexture) {
-          eglBase.createSurface((SurfaceTexture) surface);
+          if (background) {
+            eglBase.createBackgroundSurface((SurfaceTexture) surface);
+          } else {
+            eglBase.createSurface((SurfaceTexture) surface);
+          }
+
         } else {
           throw new IllegalStateException("Invalid surface: " + surface);
         }
-        eglBase.makeCurrent();
-        // Necessary for YUV frames with odd width.
-        GLES20.glPixelStorei(GLES20.GL_UNPACK_ALIGNMENT, 1);
+        if (!background) {
+          eglBase.makeCurrent();
+          // Necessary for YUV frames with odd width.
+          GLES20.glPixelStorei(GLES20.GL_UNPACK_ALIGNMENT, 1);
+        } else {
+          eglBase.makeBackgroundCurrent();
+          // Necessary for YUV frames with odd width.
+          GLES20.glPixelStorei(GLES20.GL_UNPACK_ALIGNMENT, 1);
+          if (eglBase.hasSurface()) {
+            eglBase.makeCurrent();
+          }
+        }
       }
     }
   }
@@ -152,8 +173,6 @@ public class EglRenderer implements VideoSink {
 
   private int rotation;
 
-  // These variables are synchronized on |statisticsLock|.
-  private final Object statisticsLock = new Object();
   // Total number of video frames received in renderFrame() call.
   private int framesReceived;
   // Number of video frames dropped by renderFrame() because previous frame has not been rendered
@@ -161,8 +180,6 @@ public class EglRenderer implements VideoSink {
   private int framesDropped;
   // Number of rendered video frames.
   private int framesRendered;
-  // Start time for counting these statistics, or 0 if we haven't started measuring yet.
-  private long statisticsStartTimeNs;
   // Time in ns spent in renderFrameOnRenderThread() function.
   private long renderTimeNs;
   // Time in ns spent by the render thread in the swapBuffers() function.
@@ -172,21 +189,8 @@ public class EglRenderer implements VideoSink {
   private final GlTextureFrameBuffer bitmapTextureFramebuffer =
       new GlTextureFrameBuffer(GLES20.GL_RGBA);
 
-  private final Runnable logStatisticsRunnable = new Runnable() {
-    @Override
-    public void run() {
-      logStatistics();
-      synchronized (handlerLock) {
-        if (renderThreadHandler != null) {
-          renderThreadHandler.removeCallbacks(logStatisticsRunnable);
-          renderThreadHandler.postDelayed(
-              logStatisticsRunnable, TimeUnit.SECONDS.toMillis(LOG_INTERVAL_SEC));
-        }
-      }
-    }
-  };
-
-  private final EglSurfaceCreation eglSurfaceCreationRunnable = new EglSurfaceCreation();
+  private final EglSurfaceCreation eglSurfaceCreationRunnable = new EglSurfaceCreation(false);
+  private final EglSurfaceCreation eglSurfaceBackgroundCreationRunnable = new EglSurfaceCreation(true);
 
   /**
    * Standard constructor. The name will be used for the render thread name and included when
@@ -234,7 +238,7 @@ public class EglRenderer implements VideoSink {
       // Create EGL context on the newly created render thread. It should be possibly to create the
       // context on this thread and make it current on the render thread, but this causes failure on
       // some Marvel based JB devices. https://bugs.chromium.org/p/webrtc/issues/detail?id=6350.
-      ThreadUtils.invokeAtFrontUninterruptibly(renderThreadHandler, () -> {
+      renderThreadHandler.post(() -> {
         // If sharedContext is null, then texture frames are disabled. This is typically for old
         // devices that might not be fully spec compliant, so force EGL 1.0 since EGL 1.4 has
         // caused trouble on some weird devices.
@@ -247,10 +251,6 @@ public class EglRenderer implements VideoSink {
         }
       });
       renderThreadHandler.post(eglSurfaceCreationRunnable);
-      final long currentTimeNs = System.nanoTime();
-      resetStatistics(currentTimeNs);
-      renderThreadHandler.postDelayed(
-          logStatisticsRunnable, TimeUnit.SECONDS.toMillis(LOG_INTERVAL_SEC));
     }
   }
 
@@ -265,16 +265,32 @@ public class EglRenderer implements VideoSink {
   }
 
   public void createEglSurface(Surface surface) {
-    createEglSurfaceInternal(surface);
+    createEglSurfaceInternal(surface, false);
   }
 
   public void createEglSurface(SurfaceTexture surfaceTexture) {
-    createEglSurfaceInternal(surfaceTexture);
+    createEglSurfaceInternal(surfaceTexture, false);
   }
 
-  private void createEglSurfaceInternal(Object surface) {
-    eglSurfaceCreationRunnable.setSurface(surface);
-    postToRenderThread(eglSurfaceCreationRunnable);
+  public void createBackgroundSurface(SurfaceTexture surface) {
+    createEglSurfaceInternal(surface, true);
+  }
+
+  private void createEglSurfaceInternal(Object surface, boolean background) {
+    if (background) {
+      eglSurfaceBackgroundCreationRunnable.setSurface(surface);
+      synchronized (handlerLock) {
+        if (renderThreadHandler != null) {
+          renderThreadHandler.post(eglSurfaceBackgroundCreationRunnable);
+        } else {
+          FileLog.d("can't create background surface. render thread is null");
+        }
+      }
+     // postToRenderThread(eglSurfaceBackgroundCreationRunnable);
+    } else {
+      eglSurfaceCreationRunnable.setSurface(surface);
+      postToRenderThread(eglSurfaceCreationRunnable);
+    }
   }
 
   /**
@@ -291,7 +307,6 @@ public class EglRenderer implements VideoSink {
         logD("Already released");
         return;
       }
-      renderThreadHandler.removeCallbacks(logStatisticsRunnable);
       // Release EGL and GL resources on render thread.
       renderThreadHandler.postAtFrontOfQueue(() -> {
         // Detach current shader program.
@@ -331,20 +346,6 @@ public class EglRenderer implements VideoSink {
       }
     }
     logD("Releasing done.");
-  }
-
-  /**
-   * Reset the statistics logged in logStatistics().
-   */
-  private void resetStatistics(long currentTimeNs) {
-    synchronized (statisticsLock) {
-      statisticsStartTimeNs = currentTimeNs;
-      framesReceived = 0;
-      framesDropped = 0;
-      framesRendered = 0;
-      renderTimeNs = 0;
-      renderSwapBufferTimeNs = 0;
-    }
   }
 
   public void printStackTrace() {
@@ -388,9 +389,10 @@ public class EglRenderer implements VideoSink {
    * Set this to 0 to disable cropping.
    */
   public void setLayoutAspectRatio(float layoutAspectRatio) {
-    logD("setLayoutAspectRatio: " + layoutAspectRatio);
-    synchronized (layoutLock) {
-      this.layoutAspectRatio = layoutAspectRatio;
+    if (this.layoutAspectRatio != layoutAspectRatio) {
+      synchronized (layoutLock) {
+        this.layoutAspectRatio = layoutAspectRatio;
+      }
     }
   }
 
@@ -508,9 +510,6 @@ public class EglRenderer implements VideoSink {
   // VideoSink interface.
   @Override
   public void onFrame(VideoFrame frame) {
-    synchronized (statisticsLock) {
-      ++framesReceived;
-    }
     final boolean dropOldFrame;
     synchronized (handlerLock) {
       if (renderThreadHandler == null) {
@@ -527,11 +526,6 @@ public class EglRenderer implements VideoSink {
         renderThreadHandler.post(this ::renderFrameOnRenderThread);
       }
     }
-    if (dropOldFrame) {
-      synchronized (statisticsLock) {
-        ++framesDropped;
-      }
-    }
   }
 
   public void setRotation(int value) {
@@ -543,7 +537,7 @@ public class EglRenderer implements VideoSink {
   /**
    * Release EGL surface. This function will block until the EGL surface is released.
    */
-  public void releaseEglSurface(final Runnable completionCallback) {
+  public void releaseEglSurface(final Runnable completionCallback, boolean background) {
     // Ensure that the render thread is no longer touching the Surface before returning from this
     // function.
     eglSurfaceCreationRunnable.setSurface(null /* surface */);
@@ -553,14 +547,18 @@ public class EglRenderer implements VideoSink {
         renderThreadHandler.postAtFrontOfQueue(() -> {
           if (eglBase != null) {
             eglBase.detachCurrent();
-            eglBase.releaseSurface();
+            eglBase.releaseSurface(background);
           }
-          completionCallback.run();
+          if (completionCallback != null) {
+            completionCallback.run();
+          }
         });
         return;
       }
     }
-    completionCallback.run();
+    if (completionCallback != null) {
+      completionCallback.run();
+    }
   }
 
   /**
@@ -579,7 +577,7 @@ public class EglRenderer implements VideoSink {
       logD("clearSurface");
       GLES20.glClearColor(r, g, b, a);
       GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
-      eglBase.swapBuffers();
+      eglBase.swapBuffers(false);
     }
   }
 
@@ -588,6 +586,7 @@ public class EglRenderer implements VideoSink {
    */
   public void clearImage() {
     clearImage(0 /* red */, 0 /* green */, 0 /* blue */, 0 /* alpha */);
+    firstFrameRendered = false;
   }
 
   /**
@@ -599,6 +598,18 @@ public class EglRenderer implements VideoSink {
         return;
       }
       renderThreadHandler.postAtFrontOfQueue(() -> clearSurfaceOnRenderThread(r, g, b, a));
+    }
+  }
+
+  public void getTexture(GlGenericDrawer.TextureCallback callback) {
+    synchronized (handlerLock) {
+      try {
+        if (renderThreadHandler != null) {
+          renderThreadHandler.post(() -> frameDrawer.getRenderBufferBitmap(drawer, rotation, callback));
+        }
+      } catch (Exception e) {
+        FileLog.e(e);
+      }
     }
   }
 
@@ -632,7 +643,6 @@ public class EglRenderer implements VideoSink {
       } else {
         final long currentTimeNs = System.nanoTime();
         if (currentTimeNs < nextFrameTimeNs) {
-          logD("Skipping frame rendering - fps reduction is active.");
           shouldRenderFrame = false;
         } else {
           nextFrameTimeNs += minRenderPeriodNs;
@@ -672,28 +682,34 @@ public class EglRenderer implements VideoSink {
 
     try {
       if (shouldRenderFrame) {
-        GLES20.glClearColor(0 /* red */, 0 /* green */, 0 /* blue */, 0 /* alpha */);
-        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
         frameDrawer.drawFrame(frame, drawer, drawMatrix, 0 /* viewportX */, 0 /* viewportY */,
-            eglBase.surfaceWidth(), eglBase.surfaceHeight(), rotate);
+                eglBase.surfaceWidth(), eglBase.surfaceHeight(), rotate, false);
+
+        if (eglBase.hasBackgroundSurface()) {
+          eglBase.makeBackgroundCurrent();
+
+          frameDrawer.drawFrame(frame, drawer, drawMatrix, 0, 0,
+                  eglBase.surfaceWidth(), eglBase.surfaceHeight(), rotate, true);
+
+          if (usePresentationTimeStamp) {
+            eglBase.swapBuffers(frame.getTimestampNs(), true);
+          } else {
+            eglBase.swapBuffers(true);
+          }
+          eglBase.makeCurrent();
+        }
 
         final long swapBuffersStartTimeNs = System.nanoTime();
         if (usePresentationTimeStamp) {
-          eglBase.swapBuffers(frame.getTimestampNs());
+          eglBase.swapBuffers(frame.getTimestampNs(), false);
         } else {
-          eglBase.swapBuffers();
+          eglBase.swapBuffers(false);
         }
+
 
         if (!firstFrameRendered) {
           firstFrameRendered = true;
           onFirstFrameRendered();
-        }
-
-        final long currentTimeNs = System.nanoTime();
-        synchronized (statisticsLock) {
-          ++framesRendered;
-          renderTimeNs += (currentTimeNs - startTimeNs);
-          renderSwapBufferTimeNs += (currentTimeNs - swapBuffersStartTimeNs);
         }
       }
 
@@ -755,7 +771,7 @@ public class EglRenderer implements VideoSink {
       GLES20.glClearColor(0 /* red */, 0 /* green */, 0 /* blue */, 0 /* alpha */);
       GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
       frameDrawer.drawFrame(frame, listenerAndParams.drawer, drawMatrix, 0 /* viewportX */,
-          0 /* viewportY */, scaledWidth, scaledHeight, false);
+          0 /* viewportY */, scaledWidth, scaledHeight, false, false);
 
       final ByteBuffer bitmapBuffer = ByteBuffer.allocateDirect(scaledWidth * scaledHeight * 4);
       GLES20.glViewport(0, 0, scaledWidth, scaledHeight);
@@ -768,31 +784,6 @@ public class EglRenderer implements VideoSink {
       final Bitmap bitmap = Bitmap.createBitmap(scaledWidth, scaledHeight, Bitmap.Config.ARGB_8888);
       bitmap.copyPixelsFromBuffer(bitmapBuffer);
       listenerAndParams.listener.onFrame(bitmap);
-    }
-  }
-
-  private String averageTimeAsString(long sumTimeNs, int count) {
-    return (count <= 0) ? "NA" : TimeUnit.NANOSECONDS.toMicros(sumTimeNs / count) + " us";
-  }
-
-  private void logStatistics() {
-    final DecimalFormat fpsFormat = new DecimalFormat("#.0");
-    final long currentTimeNs = System.nanoTime();
-    synchronized (statisticsLock) {
-      final long elapsedTimeNs = currentTimeNs - statisticsStartTimeNs;
-      if (elapsedTimeNs <= 0 || (minRenderPeriodNs == Long.MAX_VALUE && framesReceived == 0)) {
-        return;
-      }
-      final float renderFps = framesRendered * TimeUnit.SECONDS.toNanos(1) / (float) elapsedTimeNs;
-      logD("Duration: " + TimeUnit.NANOSECONDS.toMillis(elapsedTimeNs) + " ms."
-          + " Frames received: " + framesReceived + "."
-          + " Dropped: " + framesDropped + "."
-          + " Rendered: " + framesRendered + "."
-          + " Render fps: " + fpsFormat.format(renderFps) + "."
-          + " Average render time: " + averageTimeAsString(renderTimeNs, framesRendered) + "."
-          + " Average swapBuffer time: "
-          + averageTimeAsString(renderSwapBufferTimeNs, framesRendered) + ".");
-      resetStatistics(currentTimeNs);
     }
   }
 

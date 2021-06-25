@@ -14,8 +14,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "absl/base/attributes.h"
 #include "api/audio/audio_frame.h"
-#include "rtc_base/deprecation.h"
 
 namespace webrtc {
 
@@ -36,12 +36,14 @@ class AudioFrameOperations {
   // |frame.num_channels_| will be updated. This version checks for sufficient
   // buffer size and that |num_channels_| is mono. Use UpmixChannels
   // instead. TODO(bugs.webrtc.org/8649): remove.
-  RTC_DEPRECATED static int MonoToStereo(AudioFrame* frame);
+  ABSL_DEPRECATED("bugs.webrtc.org/8649")
+  static int MonoToStereo(AudioFrame* frame);
 
   // |frame.num_channels_| will be updated. This version checks that
   // |num_channels_| is stereo. Use DownmixChannels
   // instead. TODO(bugs.webrtc.org/8649): remove.
-  RTC_DEPRECATED static int StereoToMono(AudioFrame* frame);
+  ABSL_DEPRECATED("bugs.webrtc.org/8649")
+  static int StereoToMono(AudioFrame* frame);
 
   // Downmixes 4 channels |src_audio| to stereo |dst_audio|. This is an in-place
   // operation, meaning |src_audio| and |dst_audio| may point to the same

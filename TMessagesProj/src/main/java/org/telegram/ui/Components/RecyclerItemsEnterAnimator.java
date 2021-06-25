@@ -20,16 +20,18 @@ public class RecyclerItemsEnterAnimator {
     private final SparseArray<Float> listAlphaItems = new SparseArray<>();
     HashSet<View> ignoreView = new HashSet<>();
     boolean invalidateAlpha;
+    boolean alwaysCheckItemsAlpha;
 
     ArrayList<AnimatorSet> currentAnimations = new ArrayList<>();
     ArrayList<ViewTreeObserver.OnPreDrawListener> preDrawListeners = new ArrayList<>();
 
-    public RecyclerItemsEnterAnimator(RecyclerListView listView) {
+    public RecyclerItemsEnterAnimator(RecyclerListView listView, boolean alwaysCheckItemsAlpha) {
         this.listView = listView;
+        this.alwaysCheckItemsAlpha = alwaysCheckItemsAlpha;
     }
 
     public void dispatchDraw() {
-        if (invalidateAlpha) {
+        if (invalidateAlpha || alwaysCheckItemsAlpha) {
             for (int i = 0; i < listView.getChildCount(); i++) {
                 View child = listView.getChildAt(i);
                 int position = listView.getChildAdapterPosition(child);

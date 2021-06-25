@@ -33,18 +33,18 @@ VideoReceiver2::VideoReceiver2(Clock* clock, VCMTiming* timing)
       timing_(timing),
       decodedFrameCallback_(timing_, clock_),
       codecDataBase_() {
-  decoder_thread_checker_.Detach();
+  decoder_sequence_checker_.Detach();
 }
 
 VideoReceiver2::~VideoReceiver2() {
-  RTC_DCHECK_RUN_ON(&construction_thread_checker_);
+  RTC_DCHECK_RUN_ON(&construction_sequence_checker_);
 }
 
 // Register a receive callback. Will be called whenever there is a new frame
 // ready for rendering.
 int32_t VideoReceiver2::RegisterReceiveCallback(
     VCMReceiveCallback* receiveCallback) {
-  RTC_DCHECK_RUN_ON(&construction_thread_checker_);
+  RTC_DCHECK_RUN_ON(&construction_sequence_checker_);
   RTC_DCHECK(!IsDecoderThreadRunning());
   // This value is set before the decoder thread starts and unset after
   // the decoder thread has been stopped.
@@ -52,20 +52,35 @@ int32_t VideoReceiver2::RegisterReceiveCallback(
   return VCM_OK;
 }
 
-// Register an externally defined decoder object.
+// Register an externally defined decoder object. This may be called on either
+// the construction sequence or the decoder sequence to allow for lazy creation
+// of video decoders. If called on the decoder sequence |externalDecoder| cannot
+// be a nullptr. It's the responsibility of the caller to make sure that the
+// access from the two sequences are mutually exclusive.
 void VideoReceiver2::RegisterExternalDecoder(VideoDecoder* externalDecoder,
                                              uint8_t payloadType) {
-  RTC_DCHECK_RUN_ON(&construction_thread_checker_);
-  RTC_DCHECK(!IsDecoderThreadRunning());
+  if (IsDecoderThreadRunning()) {
+    RTC_DCHECK_RUN_ON(&decoder_sequence_checker_);
+    // Don't allow deregistering decoders on the decoder thread.
+    RTC_DCHECK(externalDecoder != nullptr);
+  } else {
+    RTC_DCHECK_RUN_ON(&construction_sequence_checker_);
+  }
+
   if (externalDecoder == nullptr) {
-    RTC_CHECK(codecDataBase_.DeregisterExternalDecoder(payloadType));
+    codecDataBase_.DeregisterExternalDecoder(payloadType);
     return;
   }
   codecDataBase_.RegisterExternalDecoder(externalDecoder, payloadType);
 }
 
+bool VideoReceiver2::IsExternalDecoderRegistered(uint8_t payloadType) const {
+  RTC_DCHECK_RUN_ON(&decoder_sequence_checker_);
+  return codecDataBase_.IsExternalDecoderRegistered(payloadType);
+}
+
 void VideoReceiver2::DecoderThreadStarting() {
-  RTC_DCHECK_RUN_ON(&construction_thread_checker_);
+  RTC_DCHECK_RUN_ON(&construction_sequence_checker_);
   RTC_DCHECK(!IsDecoderThreadRunning());
 #if RTC_DCHECK_IS_ON
   decoder_thread_is_running_ = true;
@@ -73,17 +88,17 @@ void VideoReceiver2::DecoderThreadStarting() {
 }
 
 void VideoReceiver2::DecoderThreadStopped() {
-  RTC_DCHECK_RUN_ON(&construction_thread_checker_);
+  RTC_DCHECK_RUN_ON(&construction_sequence_checker_);
   RTC_DCHECK(IsDecoderThreadRunning());
 #if RTC_DCHECK_IS_ON
   decoder_thread_is_running_ = false;
-  decoder_thread_checker_.Detach();
+  decoder_sequence_checker_.Detach();
 #endif
 }
 
 // Must be called from inside the receive side critical section.
 int32_t VideoReceiver2::Decode(const VCMEncodedFrame* frame) {
-  RTC_DCHECK_RUN_ON(&decoder_thread_checker_);
+  RTC_DCHECK_RUN_ON(&decoder_sequence_checker_);
   TRACE_EVENT0("webrtc", "VideoReceiver2::Decode");
   // Change decoder if payload type has changed
   VCMGenericDecoder* decoder =
@@ -98,7 +113,7 @@ int32_t VideoReceiver2::Decode(const VCMEncodedFrame* frame) {
 int32_t VideoReceiver2::RegisterReceiveCodec(uint8_t payload_type,
                                              const VideoCodec* receiveCodec,
                                              int32_t numberOfCores) {
-  RTC_DCHECK_RUN_ON(&construction_thread_checker_);
+  RTC_DCHECK_RUN_ON(&construction_sequence_checker_);
   RTC_DCHECK(!IsDecoderThreadRunning());
   if (receiveCodec == nullptr) {
     return VCM_PARAMETER_ERROR;

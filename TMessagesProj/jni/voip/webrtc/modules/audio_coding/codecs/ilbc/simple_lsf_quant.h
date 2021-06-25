@@ -19,7 +19,7 @@
 #ifndef MODULES_AUDIO_CODING_CODECS_ILBC_MAIN_SOURCE_SIMPLE_LSF_QUANT_H_
 #define MODULES_AUDIO_CODING_CODECS_ILBC_MAIN_SOURCE_SIMPLE_LSF_QUANT_H_
 
-#include "modules/audio_coding/codecs/ilbc/defines.h"
+#include <stdint.h>
 
 /*----------------------------------------------------------------*
  *  lsf quantizer (subrutine to LPCencode)

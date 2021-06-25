@@ -480,6 +480,7 @@ void Connection::OnReadPacket(const char* data,
     // If this is a STUN response, then update the writable bit.
     // Log at LS_INFO if we receive a ping on an unwritable connection.
     rtc::LoggingSeverity sev = (!writable() ? rtc::LS_INFO : rtc::LS_VERBOSE);
+    msg->ValidateMessageIntegrity(remote_candidate().password());
     switch (msg->type()) {
       case STUN_BINDING_REQUEST:
         RTC_LOG_V(sev) << ToString() << ": Received "
@@ -505,8 +506,7 @@ void Connection::OnReadPacket(const char* data,
       // id's match.
       case STUN_BINDING_RESPONSE:
       case STUN_BINDING_ERROR_RESPONSE:
-        if (msg->ValidateMessageIntegrity(data, size,
-                                          remote_candidate().password())) {
+        if (msg->IntegrityOk()) {
           requests_.CheckResponse(msg.get());
         }
         // Otherwise silently discard the response message.
@@ -523,8 +523,7 @@ void Connection::OnReadPacket(const char* data,
         break;
       case GOOG_PING_RESPONSE:
       case GOOG_PING_ERROR_RESPONSE:
-        if (msg->ValidateMessageIntegrity32(data, size,
-                                            remote_candidate().password())) {
+        if (msg->IntegrityOk()) {
           requests_.CheckResponse(msg.get());
         }
         break;
@@ -1372,13 +1371,15 @@ int ProxyConnection::Send(const void* data,
   stats_.sent_total_packets++;
   int sent =
       port_->SendTo(data, size, remote_candidate_.address(), options, true);
+  int64_t now = rtc::TimeMillis();
   if (sent <= 0) {
     RTC_DCHECK(sent < 0);
     error_ = port_->GetError();
     stats_.sent_discarded_packets++;
   } else {
-    send_rate_tracker_.AddSamples(sent);
+    send_rate_tracker_.AddSamplesAtTime(now, sent);
   }
+  last_send_data_ = now;
   return sent;
 }
 

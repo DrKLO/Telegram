@@ -14,7 +14,6 @@
 
 #include "api/video/i420_buffer.h"
 #include "common_video/include/video_frame_buffer.h"
-#include "rtc_base/bind.h"
 #include "rtc_base/checks.h"
 #include "third_party/libyuv/include/libyuv.h"
 
@@ -26,8 +25,6 @@ size_t CalcBufferSize(VideoType type, int width, int height) {
   size_t buffer_size = 0;
   switch (type) {
     case VideoType::kI420:
-    case VideoType::kNV12:
-    case VideoType::kNV21:
     case VideoType::kIYUV:
     case VideoType::kYV12: {
       int half_width = (width + 1) >> 1;
@@ -35,9 +32,7 @@ size_t CalcBufferSize(VideoType type, int width, int height) {
       buffer_size = width * height + half_width * half_height * 2;
       break;
     }
-    case VideoType::kARGB4444:
     case VideoType::kRGB565:
-    case VideoType::kARGB1555:
     case VideoType::kYUY2:
     case VideoType::kUYVY:
       buffer_size = width * height * 2;
@@ -98,8 +93,6 @@ int ConvertVideoType(VideoType video_type) {
       return libyuv::FOURCC_YV12;
     case VideoType::kRGB24:
       return libyuv::FOURCC_24BG;
-    case VideoType::kABGR:
-      return libyuv::FOURCC_ABGR;
     case VideoType::kRGB565:
       return libyuv::FOURCC_RGBP;
     case VideoType::kYUY2:
@@ -108,18 +101,10 @@ int ConvertVideoType(VideoType video_type) {
       return libyuv::FOURCC_UYVY;
     case VideoType::kMJPEG:
       return libyuv::FOURCC_MJPG;
-    case VideoType::kNV21:
-      return libyuv::FOURCC_NV21;
-    case VideoType::kNV12:
-      return libyuv::FOURCC_NV12;
     case VideoType::kARGB:
       return libyuv::FOURCC_ARGB;
     case VideoType::kBGRA:
       return libyuv::FOURCC_BGRA;
-    case VideoType::kARGB4444:
-      return libyuv::FOURCC_R444;
-    case VideoType::kARGB1555:
-      return libyuv::FOURCC_RGBO;
   }
   RTC_NOTREACHED();
   return libyuv::FOURCC_ANY;
@@ -137,10 +122,6 @@ int ConvertFromI420(const VideoFrame& src_frame,
       dst_frame, dst_sample_size, src_frame.width(), src_frame.height(),
       ConvertVideoType(dst_video_type));
 }
-
-// Helper functions for keeping references alive.
-void KeepBufferRefs(rtc::scoped_refptr<webrtc::VideoFrameBuffer>,
-                    rtc::scoped_refptr<webrtc::VideoFrameBuffer>) {}
 
 rtc::scoped_refptr<I420ABufferInterface> ScaleI420ABuffer(
     const I420ABufferInterface& buffer,
@@ -160,7 +141,8 @@ rtc::scoped_refptr<I420ABufferInterface> ScaleI420ABuffer(
       yuv_buffer->StrideY(), yuv_buffer->DataU(), yuv_buffer->StrideU(),
       yuv_buffer->DataV(), yuv_buffer->StrideV(), axx_buffer->DataY(),
       axx_buffer->StrideY(),
-      rtc::Bind(&KeepBufferRefs, yuv_buffer, axx_buffer));
+      // To keep references alive.
+      [yuv_buffer, axx_buffer] {});
   return merged_buffer;
 }
 

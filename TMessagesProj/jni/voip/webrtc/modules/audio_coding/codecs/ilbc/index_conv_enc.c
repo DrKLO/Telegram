@@ -16,7 +16,10 @@
 
 ******************************************************************/
 
+#include "modules/audio_coding/codecs/ilbc/index_conv_enc.h"
+
 #include "modules/audio_coding/codecs/ilbc/defines.h"
+
 /*----------------------------------------------------------------*
  *  Convert the codebook indexes to make the search easier
  *---------------------------------------------------------------*/

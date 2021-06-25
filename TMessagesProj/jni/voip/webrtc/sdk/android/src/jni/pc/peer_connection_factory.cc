@@ -471,14 +471,14 @@ static jlong JNI_PeerConnectionFactory_CreatePeerConnection(
             jni, j_sslCertificateVerifier);
   }
 
-  rtc::scoped_refptr<PeerConnectionInterface> pc =
-      PeerConnectionFactoryFromJava(factory)->CreatePeerConnection(
+  auto result =
+      PeerConnectionFactoryFromJava(factory)->CreatePeerConnectionOrError(
           rtc_config, std::move(peer_connection_dependencies));
-  if (!pc)
+  if (!result.ok())
     return 0;
 
-  return jlongFromPointer(
-      new OwnedPeerConnection(pc, std::move(observer), std::move(constraints)));
+  return jlongFromPointer(new OwnedPeerConnection(
+      result.MoveValue(), std::move(observer), std::move(constraints)));
 }
 
 static jlong JNI_PeerConnectionFactory_CreateVideoSource(

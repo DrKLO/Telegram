@@ -322,6 +322,7 @@ class Camera1Session implements CameraSession {
 
   private int getFrameOrientation() {
     int rotation = orientationHelper.getOrientation();
+    OrientationHelper.cameraOrientation = rotation;
     if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
       rotation = 360 - rotation;
     }

@@ -32,14 +32,28 @@ FrameDependencyStructure
 ScalableVideoControllerNoLayering::DependencyStructure() const {
   FrameDependencyStructure structure;
   structure.num_decode_targets = 1;
-  FrameDependencyTemplate a_template;
-  a_template.decode_target_indications = {DecodeTargetIndication::kSwitch};
-  structure.templates.push_back(a_template);
+  structure.num_chains = 1;
+  structure.decode_target_protected_by_chain = {0};
+
+  FrameDependencyTemplate key_frame;
+  key_frame.decode_target_indications = {DecodeTargetIndication::kSwitch};
+  key_frame.chain_diffs = {0};
+  structure.templates.push_back(key_frame);
+
+  FrameDependencyTemplate delta_frame;
+  delta_frame.decode_target_indications = {DecodeTargetIndication::kSwitch};
+  delta_frame.chain_diffs = {1};
+  delta_frame.frame_diffs = {1};
+  structure.templates.push_back(delta_frame);
+
   return structure;
 }
 
 std::vector<ScalableVideoController::LayerFrameConfig>
 ScalableVideoControllerNoLayering::NextFrameConfig(bool restart) {
+  if (!enabled_) {
+    return {};
+  }
   std::vector<LayerFrameConfig> result(1);
   if (restart || start_) {
     result[0].Id(0).Keyframe().Update(0);
@@ -61,7 +75,13 @@ GenericFrameInfo ScalableVideoControllerNoLayering::OnEncodeDone(
     }
   }
   frame_info.decode_target_indications = {DecodeTargetIndication::kSwitch};
+  frame_info.part_of_chain = {true};
   return frame_info;
+}
+
+void ScalableVideoControllerNoLayering::OnRatesUpdated(
+    const VideoBitrateAllocation& bitrates) {
+  enabled_ = bitrates.GetBitrate(0, 0) > 0;
 }
 
 }  // namespace webrtc

@@ -16,9 +16,9 @@
 
 #include <vector>
 
+#include "api/ref_counted_base.h"
 #include "api/scoped_refptr.h"
 #include "rtc_base/buffer.h"
-#include "rtc_base/ref_count.h"
 #include "rtc_base/synchronization/mutex.h"
 
 struct vpx_codec_ctx;
@@ -65,13 +65,14 @@ constexpr size_t kDefaultMaxNumBuffers = 68;
 //    vpx_codec_destroy(decoder_ctx);
 class Vp9FrameBufferPool {
  public:
-  class Vp9FrameBuffer : public rtc::RefCountInterface {
+  class Vp9FrameBuffer final
+      : public rtc::RefCountedNonVirtual<Vp9FrameBuffer> {
    public:
     uint8_t* GetData();
     size_t GetDataSize() const;
     void SetSize(size_t size);
 
-    virtual bool HasOneRef() const = 0;
+    using rtc::RefCountedNonVirtual<Vp9FrameBuffer>::HasOneRef;
 
    private:
     // Data as an easily resizable buffer.

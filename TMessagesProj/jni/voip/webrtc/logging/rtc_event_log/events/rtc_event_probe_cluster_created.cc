@@ -31,14 +31,6 @@ RtcEventProbeClusterCreated::RtcEventProbeClusterCreated(
       min_probes_(other.min_probes_),
       min_bytes_(other.min_bytes_) {}
 
-RtcEvent::Type RtcEventProbeClusterCreated::GetType() const {
-  return RtcEvent::Type::ProbeClusterCreated;
-}
-
-bool RtcEventProbeClusterCreated::IsConfigEvent() const {
-  return false;
-}
-
 std::unique_ptr<RtcEventProbeClusterCreated> RtcEventProbeClusterCreated::Copy()
     const {
   return absl::WrapUnique<RtcEventProbeClusterCreated>(

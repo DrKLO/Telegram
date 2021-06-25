@@ -24,7 +24,7 @@ VCMTimestampMap::VCMTimestampMap(size_t capacity)
 
 VCMTimestampMap::~VCMTimestampMap() {}
 
-void VCMTimestampMap::Add(uint32_t timestamp, VCMFrameInformation* data) {
+void VCMTimestampMap::Add(uint32_t timestamp, const VCMFrameInformation& data) {
   ring_buffer_[next_add_idx_].timestamp = timestamp;
   ring_buffer_[next_add_idx_].data = data;
   next_add_idx_ = (next_add_idx_ + 1) % capacity_;
@@ -35,18 +35,18 @@ void VCMTimestampMap::Add(uint32_t timestamp, VCMFrameInformation* data) {
   }
 }
 
-VCMFrameInformation* VCMTimestampMap::Pop(uint32_t timestamp) {
+absl::optional<VCMFrameInformation> VCMTimestampMap::Pop(uint32_t timestamp) {
   while (!IsEmpty()) {
     if (ring_buffer_[next_pop_idx_].timestamp == timestamp) {
       // Found start time for this timestamp.
-      VCMFrameInformation* data = ring_buffer_[next_pop_idx_].data;
-      ring_buffer_[next_pop_idx_].data = nullptr;
+      const VCMFrameInformation& data = ring_buffer_[next_pop_idx_].data;
+      ring_buffer_[next_pop_idx_].timestamp = 0;
       next_pop_idx_ = (next_pop_idx_ + 1) % capacity_;
       return data;
     } else if (IsNewerTimestamp(ring_buffer_[next_pop_idx_].timestamp,
                                 timestamp)) {
       // The timestamp we are looking for is not in the list.
-      return nullptr;
+      return absl::nullopt;
     }
 
     // Not in this position, check next (and forget this position).
@@ -54,7 +54,7 @@ VCMFrameInformation* VCMTimestampMap::Pop(uint32_t timestamp) {
   }
 
   // Could not find matching timestamp in list.
-  return nullptr;
+  return absl::nullopt;
 }
 
 bool VCMTimestampMap::IsEmpty() const {
@@ -67,6 +67,13 @@ size_t VCMTimestampMap::Size() const {
   return next_add_idx_ >= next_pop_idx_
              ? next_add_idx_ - next_pop_idx_
              : next_add_idx_ + capacity_ - next_pop_idx_;
+}
+
+void VCMTimestampMap::Clear() {
+  while (!IsEmpty()) {
+    ring_buffer_[next_pop_idx_].timestamp = 0;
+    next_pop_idx_ = (next_pop_idx_ + 1) % capacity_;
+  }
 }
 
 }  // namespace webrtc

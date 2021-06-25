@@ -165,28 +165,6 @@ static base::android::ScopedJavaLocalRef<jobject> Java_VideoDecoder_decode(JNIEn
   return base::android::ScopedJavaLocalRef<jobject>(env, ret);
 }
 
-static std::atomic<jmethodID> g_org_webrtc_VideoDecoder_getPrefersLateDecoding(nullptr);
-static jboolean Java_VideoDecoder_getPrefersLateDecoding(JNIEnv* env, const
-    base::android::JavaRef<jobject>& obj) {
-  jclass clazz = org_webrtc_VideoDecoder_clazz(env);
-  CHECK_CLAZZ(env, obj.obj(),
-      org_webrtc_VideoDecoder_clazz(env), false);
-
-  jni_generator::JniJavaCallContextChecked call_context;
-  call_context.Init<
-      base::android::MethodID::TYPE_INSTANCE>(
-          env,
-          clazz,
-          "getPrefersLateDecoding",
-          "()Z",
-          &g_org_webrtc_VideoDecoder_getPrefersLateDecoding);
-
-  jboolean ret =
-      env->CallBooleanMethod(obj.obj(),
-          call_context.base.method_id);
-  return ret;
-}
-
 static std::atomic<jmethodID> g_org_webrtc_VideoDecoder_getImplementationName(nullptr);
 static base::android::ScopedJavaLocalRef<jstring> Java_VideoDecoder_getImplementationName(JNIEnv*
     env, const base::android::JavaRef<jobject>& obj) {

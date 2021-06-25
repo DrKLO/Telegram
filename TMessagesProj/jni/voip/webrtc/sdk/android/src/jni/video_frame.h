@@ -16,7 +16,6 @@
 #include "api/video/video_frame.h"
 #include "api/video/video_frame_buffer.h"
 #include "api/video/video_rotation.h"
-#include "rtc_base/callback.h"
 #include "sdk/android/src/jni/jni_helpers.h"
 
 namespace webrtc {

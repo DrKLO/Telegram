@@ -15,6 +15,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "api/array_view.h"
@@ -23,6 +24,7 @@
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
 #include "modules/rtp_rtcp/source/rtcp_nack_stats.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/dlrr.h"
+#include "modules/rtp_rtcp/source/rtcp_packet/tmmb_item.h"
 #include "modules/rtp_rtcp/source/rtp_rtcp_interface.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/thread_annotations.h"
@@ -67,15 +69,22 @@ class RTCPReceiver final {
   void SetRemoteSSRC(uint32_t ssrc);
   uint32_t RemoteSSRC() const;
 
-  // Get received cname.
-  int32_t CNAME(uint32_t remote_ssrc, char cname[RTCP_CNAME_SIZE]) const;
-
   // Get received NTP.
+  // The types for the arguments below derive from the specification:
+  // - `remote_sender_packet_count`: `RTCSentRtpStreamStats.packetsSent` [1]
+  // - `remote_sender_octet_count`: `RTCSentRtpStreamStats.bytesSent` [1]
+  // - `remote_sender_reports_count`:
+  //   `RTCRemoteOutboundRtpStreamStats.reportsSent` [2]
+  // [1] https://www.w3.org/TR/webrtc-stats/#remoteoutboundrtpstats-dict*
+  // [2] https://www.w3.org/TR/webrtc-stats/#dom-rtcsentrtpstreamstats
   bool NTP(uint32_t* received_ntp_secs,
            uint32_t* received_ntp_frac,
            uint32_t* rtcp_arrival_time_secs,
            uint32_t* rtcp_arrival_time_frac,
-           uint32_t* rtcp_timestamp) const;
+           uint32_t* rtcp_timestamp,
+           uint32_t* remote_sender_packet_count,
+           uint64_t* remote_sender_octet_count,
+           uint64_t* remote_sender_reports_count) const;
 
   std::vector<rtcp::ReceiveTimeInfo> ConsumeReceivedXrReferenceTimeInfo();
 
@@ -86,7 +95,6 @@ class RTCPReceiver final {
               int64_t* min_rtt_ms,
               int64_t* max_rtt_ms) const;
 
-  void SetRtcpXrRrtrStatus(bool enable);
   bool GetAndResetXrRrRtt(int64_t* rtt_ms);
 
   // Called once per second on the worker thread to do rtt calculations.
@@ -94,8 +102,6 @@ class RTCPReceiver final {
   absl::optional<TimeDelta> OnPeriodicRttUpdate(Timestamp newer_than,
                                                 bool sending);
 
-  // Get statistics.
-  int32_t StatisticsReceived(std::vector<RTCPReportBlock>* receiveBlocks) const;
   // A snapshot of Report Blocks with additional data of interest to statistics.
   // Within this list, the sender-source SSRC pair is unique and per-pair the
   // ReportBlockData represents the latest Report Block that was received for
@@ -120,10 +126,68 @@ class RTCPReceiver final {
   void NotifyTmmbrUpdated();
 
  private:
+  // A lightweight inlined set of local SSRCs.
+  class RegisteredSsrcs {
+   public:
+    static constexpr size_t kMaxSsrcs = 3;
+    // Initializes the set of registered local SSRCS by extracting them from the
+    // provided `config`.
+    explicit RegisteredSsrcs(const RtpRtcpInterface::Configuration& config);
+
+    // Indicates if `ssrc` is in the set of registered local SSRCs.
+    bool contains(uint32_t ssrc) const {
+      return absl::c_linear_search(ssrcs_, ssrc);
+    }
+
+   private:
+    absl::InlinedVector<uint32_t, kMaxSsrcs> ssrcs_;
+  };
+
   struct PacketInformation;
-  struct TmmbrInformation;
-  struct RrtrInformation;
-  struct LastFirStatus;
+
+  // Structure for handing TMMBR and TMMBN rtcp messages (RFC5104,
+  // section 3.5.4).
+  struct TmmbrInformation {
+    struct TimedTmmbrItem {
+      rtcp::TmmbItem tmmbr_item;
+      int64_t last_updated_ms;
+    };
+
+    int64_t last_time_received_ms = 0;
+
+    bool ready_for_delete = false;
+
+    std::vector<rtcp::TmmbItem> tmmbn;
+    std::map<uint32_t, TimedTmmbrItem> tmmbr;
+  };
+
+  // Structure for storing received RRTR RTCP messages (RFC3611, section 4.4).
+  struct RrtrInformation {
+    RrtrInformation(uint32_t ssrc,
+                    uint32_t received_remote_mid_ntp_time,
+                    uint32_t local_receive_mid_ntp_time)
+        : ssrc(ssrc),
+          received_remote_mid_ntp_time(received_remote_mid_ntp_time),
+          local_receive_mid_ntp_time(local_receive_mid_ntp_time) {}
+
+    uint32_t ssrc;
+    // Received NTP timestamp in compact representation.
+    uint32_t received_remote_mid_ntp_time;
+    // NTP time when the report was received in compact representation.
+    uint32_t local_receive_mid_ntp_time;
+  };
+
+  struct LastFirStatus {
+    LastFirStatus(int64_t now_ms, uint8_t sequence_number)
+        : request_ms(now_ms), sequence_number(sequence_number) {}
+    int64_t request_ms;
+    uint8_t sequence_number;
+  };
+
+  // TODO(boivie): `ReportBlockDataMap` and `ReportBlockMap` should be converted
+  // to std::unordered_map, but as there are too many tests that assume a
+  // specific order, it's not easily done.
+
   // RTCP report blocks mapped by remote SSRC.
   using ReportBlockDataMap = std::map<uint32_t, ReportBlockData>;
   // RTCP report blocks map mapped by source SSRC.
@@ -225,7 +289,8 @@ class RTCPReceiver final {
   const bool receiver_only_;
   ModuleRtpRtcp* const rtp_rtcp_;
   const uint32_t main_ssrc_;
-  const std::set<uint32_t> registered_ssrcs_;
+  // The set of registered local SSRCs.
+  const RegisteredSsrcs registered_ssrcs_;
 
   RtcpBandwidthObserver* const rtcp_bandwidth_observer_;
   RtcpIntraFrameObserver* const rtcp_intra_frame_observer_;
@@ -243,27 +308,28 @@ class RTCPReceiver final {
   uint32_t remote_sender_rtp_time_ RTC_GUARDED_BY(rtcp_receiver_lock_);
   // When did we receive the last send report.
   NtpTime last_received_sr_ntp_ RTC_GUARDED_BY(rtcp_receiver_lock_);
+  uint32_t remote_sender_packet_count_ RTC_GUARDED_BY(rtcp_receiver_lock_);
+  uint64_t remote_sender_octet_count_ RTC_GUARDED_BY(rtcp_receiver_lock_);
+  uint64_t remote_sender_reports_count_ RTC_GUARDED_BY(rtcp_receiver_lock_);
 
   // Received RRTR information in ascending receive time order.
   std::list<RrtrInformation> received_rrtrs_
       RTC_GUARDED_BY(rtcp_receiver_lock_);
   // Received RRTR information mapped by remote ssrc.
-  std::map<uint32_t, std::list<RrtrInformation>::iterator>
+  std::unordered_map<uint32_t, std::list<RrtrInformation>::iterator>
       received_rrtrs_ssrc_it_ RTC_GUARDED_BY(rtcp_receiver_lock_);
 
   // Estimated rtt, zero when there is no valid estimate.
-  bool xr_rrtr_status_ RTC_GUARDED_BY(rtcp_receiver_lock_);
+  const bool xr_rrtr_status_;
   int64_t xr_rr_rtt_ms_;
 
   int64_t oldest_tmmbr_info_ms_ RTC_GUARDED_BY(rtcp_receiver_lock_);
   // Mapped by remote ssrc.
-  std::map<uint32_t, TmmbrInformation> tmmbr_infos_
+  std::unordered_map<uint32_t, TmmbrInformation> tmmbr_infos_
       RTC_GUARDED_BY(rtcp_receiver_lock_);
 
   ReportBlockMap received_report_blocks_ RTC_GUARDED_BY(rtcp_receiver_lock_);
-  std::map<uint32_t, LastFirStatus> last_fir_
-      RTC_GUARDED_BY(rtcp_receiver_lock_);
-  std::map<uint32_t, std::string> received_cnames_
+  std::unordered_map<uint32_t, LastFirStatus> last_fir_
       RTC_GUARDED_BY(rtcp_receiver_lock_);
 
   // The last time we received an RTCP Report block for this module.
@@ -274,11 +340,7 @@ class RTCPReceiver final {
   // delivered RTP packet to the remote side.
   Timestamp last_increased_sequence_number_ = Timestamp::PlusInfinity();
 
-  RtcpStatisticsCallback* const stats_callback_;
   RtcpCnameCallback* const cname_callback_;
-  // TODO(hbos): Remove RtcpStatisticsCallback in favor of
-  // ReportBlockDataObserver; the ReportBlockData contains a superset of the
-  // RtcpStatistics data.
   ReportBlockDataObserver* const report_block_data_observer_;
 
   RtcpPacketTypeCounterObserver* const packet_type_counter_observer_;

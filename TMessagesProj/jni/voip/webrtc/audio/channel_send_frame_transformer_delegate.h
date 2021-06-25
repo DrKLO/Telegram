@@ -14,10 +14,10 @@
 #include <memory>
 
 #include "api/frame_transformer_interface.h"
+#include "api/sequence_checker.h"
 #include "modules/audio_coding/include/audio_coding_module_typedefs.h"
 #include "rtc_base/buffer.h"
 #include "rtc_base/synchronization/mutex.h"
-#include "rtc_base/synchronization/sequence_checker.h"
 #include "rtc_base/task_queue.h"
 
 namespace webrtc {

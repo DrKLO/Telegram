@@ -281,6 +281,29 @@ static jint Java_WebRtcAudioTrack_getBufferSizeInFrames(JNIEnv* env, const
   return ret;
 }
 
+static std::atomic<jmethodID>
+    g_org_webrtc_audio_WebRtcAudioTrack_getInitialBufferSizeInFrames(nullptr);
+static jint Java_WebRtcAudioTrack_getInitialBufferSizeInFrames(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj) {
+  jclass clazz = org_webrtc_audio_WebRtcAudioTrack_clazz(env);
+  CHECK_CLAZZ(env, obj.obj(),
+      org_webrtc_audio_WebRtcAudioTrack_clazz(env), 0);
+
+  jni_generator::JniJavaCallContextChecked call_context;
+  call_context.Init<
+      base::android::MethodID::TYPE_INSTANCE>(
+          env,
+          clazz,
+          "getInitialBufferSizeInFrames",
+          "()I",
+          &g_org_webrtc_audio_WebRtcAudioTrack_getInitialBufferSizeInFrames);
+
+  jint ret =
+      env->CallIntMethod(obj.obj(),
+          call_context.base.method_id);
+  return ret;
+}
+
 }  // namespace jni
 }  // namespace  webrtc
 

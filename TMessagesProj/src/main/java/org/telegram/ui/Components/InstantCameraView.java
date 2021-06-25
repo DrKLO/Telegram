@@ -369,18 +369,18 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.FileDidUpload);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileUploaded);
     }
 
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.FileDidUpload);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileUploaded);
     }
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.FileDidUpload) {
+        if (id == NotificationCenter.fileUploaded) {
             final String location = (String) args[0];
             if (cameraFile != null && cameraFile.getAbsolutePath().equals(location)) {
                 file = (TLRPC.InputFile) args[1];
@@ -675,7 +675,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                 if (videoEditedInfo.endTime > 0) {
                     videoEditedInfo.endTime *= 1000;
                 }
-                FileLoader.getInstance(currentAccount).cancelUploadFile(cameraFile.getAbsolutePath(), false);
+                FileLoader.getInstance(currentAccount).cancelFileUpload(cameraFile.getAbsolutePath(), false);
             } else {
                 videoEditedInfo.estimatedSize = Math.max(1, size);
             }
@@ -683,7 +683,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             videoEditedInfo.encryptedFile = encryptedFile;
             videoEditedInfo.key = key;
             videoEditedInfo.iv = iv;
-            baseFragment.sendMedia(new MediaController.PhotoEntry(0, 0, 0, cameraFile.getAbsolutePath(), 0, true, 0, 0, 0), videoEditedInfo, notify, scheduleDate);
+            baseFragment.sendMedia(new MediaController.PhotoEntry(0, 0, 0, cameraFile.getAbsolutePath(), 0, true, 0, 0, 0), videoEditedInfo, notify, scheduleDate, false);
             if (scheduleDate != 0) {
                 startAnimation(false);
             }
@@ -1992,13 +1992,13 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                     if (send == 1) {
                         if (baseFragment.isInScheduleMode()) {
                             AlertsCreator.createScheduleDatePickerDialog(baseFragment.getParentActivity(), baseFragment.getDialogId(), (notify, scheduleDate) -> {
-                                baseFragment.sendMedia(new MediaController.PhotoEntry(0, 0, 0, videoFile.getAbsolutePath(), 0, true, 0, 0, 0), videoEditedInfo, notify, scheduleDate);
+                                baseFragment.sendMedia(new MediaController.PhotoEntry(0, 0, 0, videoFile.getAbsolutePath(), 0, true, 0, 0, 0), videoEditedInfo, notify, scheduleDate, false);
                                 startAnimation(false);
                             }, () -> {
                                 startAnimation(false);
                             });
                         } else {
-                            baseFragment.sendMedia(new MediaController.PhotoEntry(0, 0, 0, videoFile.getAbsolutePath(), 0, true, 0, 0, 0), videoEditedInfo, true, 0);
+                            baseFragment.sendMedia(new MediaController.PhotoEntry(0, 0, 0, videoFile.getAbsolutePath(), 0, true, 0, 0, 0), videoEditedInfo, true, 0, false);
                         }
                     } else {
                         videoPlayer = new VideoPlayer();
@@ -2059,7 +2059,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                     MediaController.getInstance().requestAudioFocus(false);
                 });
             } else {
-                FileLoader.getInstance(currentAccount).cancelUploadFile(videoFile.getAbsolutePath(), false);
+                FileLoader.getInstance(currentAccount).cancelFileUpload(videoFile.getAbsolutePath(), false);
                 videoFile.delete();
             }
             EGL14.eglDestroySurface(eglDisplay, eglSurface);

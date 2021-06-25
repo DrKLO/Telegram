@@ -21,27 +21,27 @@ namespace webrtc {
 // TODO(deadbeef): Move this to .cc file and out of api/. What threads methods
 // are called on is an implementation detail.
 BEGIN_PROXY_MAP(VideoTrackSource)
-PROXY_SIGNALING_THREAD_DESTRUCTOR()
+PROXY_PRIMARY_THREAD_DESTRUCTOR()
 PROXY_CONSTMETHOD0(SourceState, state)
 BYPASS_PROXY_CONSTMETHOD0(bool, remote)
 BYPASS_PROXY_CONSTMETHOD0(bool, is_screencast)
 PROXY_CONSTMETHOD0(absl::optional<bool>, needs_denoising)
 PROXY_METHOD1(bool, GetStats, Stats*)
-PROXY_WORKER_METHOD2(void,
-                     AddOrUpdateSink,
-                     rtc::VideoSinkInterface<VideoFrame>*,
-                     const rtc::VideoSinkWants&)
-PROXY_WORKER_METHOD1(void, RemoveSink, rtc::VideoSinkInterface<VideoFrame>*)
+PROXY_SECONDARY_METHOD2(void,
+                        AddOrUpdateSink,
+                        rtc::VideoSinkInterface<VideoFrame>*,
+                        const rtc::VideoSinkWants&)
+PROXY_SECONDARY_METHOD1(void, RemoveSink, rtc::VideoSinkInterface<VideoFrame>*)
 PROXY_METHOD1(void, RegisterObserver, ObserverInterface*)
 PROXY_METHOD1(void, UnregisterObserver, ObserverInterface*)
 PROXY_CONSTMETHOD0(bool, SupportsEncodedOutput)
-PROXY_WORKER_METHOD0(void, GenerateKeyFrame)
-PROXY_WORKER_METHOD1(void,
-                     AddEncodedSink,
-                     rtc::VideoSinkInterface<RecordableEncodedFrame>*)
-PROXY_WORKER_METHOD1(void,
-                     RemoveEncodedSink,
-                     rtc::VideoSinkInterface<RecordableEncodedFrame>*)
+PROXY_SECONDARY_METHOD0(void, GenerateKeyFrame)
+PROXY_SECONDARY_METHOD1(void,
+                        AddEncodedSink,
+                        rtc::VideoSinkInterface<RecordableEncodedFrame>*)
+PROXY_SECONDARY_METHOD1(void,
+                        RemoveEncodedSink,
+                        rtc::VideoSinkInterface<RecordableEncodedFrame>*)
 END_PROXY_MAP()
 
 }  // namespace webrtc

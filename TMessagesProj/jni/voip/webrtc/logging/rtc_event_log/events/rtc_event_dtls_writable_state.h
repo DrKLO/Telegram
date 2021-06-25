@@ -19,11 +19,13 @@ namespace webrtc {
 
 class RtcEventDtlsWritableState : public RtcEvent {
  public:
+  static constexpr Type kType = Type::DtlsWritableState;
+
   explicit RtcEventDtlsWritableState(bool writable);
   ~RtcEventDtlsWritableState() override;
 
-  Type GetType() const override;
-  bool IsConfigEvent() const override;
+  Type GetType() const override { return kType; }
+  bool IsConfigEvent() const override { return false; }
 
   std::unique_ptr<RtcEventDtlsWritableState> Copy() const;
 
@@ -33,6 +35,17 @@ class RtcEventDtlsWritableState : public RtcEvent {
   RtcEventDtlsWritableState(const RtcEventDtlsWritableState& other);
 
   const bool writable_;
+};
+
+struct LoggedDtlsWritableState {
+  LoggedDtlsWritableState() = default;
+  explicit LoggedDtlsWritableState(bool writable) : writable(writable) {}
+
+  int64_t log_time_us() const { return timestamp_us; }
+  int64_t log_time_ms() const { return timestamp_us / 1000; }
+
+  int64_t timestamp_us;
+  bool writable;
 };
 
 }  // namespace webrtc

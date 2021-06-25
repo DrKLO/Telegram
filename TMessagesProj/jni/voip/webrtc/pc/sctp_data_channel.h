@@ -11,18 +11,25 @@
 #ifndef PC_SCTP_DATA_CHANNEL_H_
 #define PC_SCTP_DATA_CHANNEL_H_
 
+#include <stdint.h>
+
 #include <memory>
 #include <set>
 #include <string>
 
+#include "absl/types/optional.h"
 #include "api/data_channel_interface.h"
 #include "api/priority.h"
+#include "api/rtc_error.h"
 #include "api/scoped_refptr.h"
 #include "api/transport/data_channel_transport_interface.h"
 #include "media/base/media_channel.h"
 #include "pc/data_channel_utils.h"
+#include "rtc_base/copy_on_write_buffer.h"
 #include "rtc_base/ssl_stream_adapter.h"  // For SSLRole
 #include "rtc_base/third_party/sigslot/sigslot.h"
+#include "rtc_base/thread.h"
+#include "rtc_base/thread_annotations.h"
 
 namespace webrtc {
 
@@ -33,7 +40,8 @@ class SctpDataChannel;
 class SctpDataChannelProviderInterface {
  public:
   // Sends the data to the transport.
-  virtual bool SendData(const cricket::SendDataParams& params,
+  virtual bool SendData(int sid,
+                        const SendDataParams& params,
                         const rtc::CopyOnWriteBuffer& payload,
                         cricket::SendDataResult* result) = 0;
   // Connects to the transport signals.

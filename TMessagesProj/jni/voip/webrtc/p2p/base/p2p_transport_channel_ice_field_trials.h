@@ -58,6 +58,9 @@ struct IceFieldTrials {
   // The timeout after which the connection will be considered dead if no
   // traffic is received.
   int dead_connection_timeout_ms = 30000;
+
+  // Stop gathering when having a strong connection.
+  bool stop_gather_on_strongly_connected = true;
 };
 
 }  // namespace cricket

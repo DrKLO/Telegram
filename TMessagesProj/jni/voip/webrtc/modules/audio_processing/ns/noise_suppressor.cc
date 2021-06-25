@@ -448,6 +448,12 @@ void NoiseSuppressor::Process(AudioBuffer* audio) {
     }
   }
 
+  // Only do the below processing if the output of the audio processing module
+  // is used.
+  if (!capture_output_used_) {
+    return;
+  }
+
   // Aggregate the Wiener filters for all channels.
   std::array<float, kFftSizeBy2Plus1> filter_data;
   rtc::ArrayView<const float, kFftSizeBy2Plus1> filter = filter_data;

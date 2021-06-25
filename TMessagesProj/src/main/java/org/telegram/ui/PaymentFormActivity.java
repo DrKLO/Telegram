@@ -45,7 +45,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.WindowManager;
-import android.view.animation.DecelerateInterpolator;
 import android.view.inputmethod.EditorInfo;
 import android.webkit.CookieManager;
 import android.webkit.JavascriptInterface;
@@ -2744,11 +2743,6 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                     if (task1.isSuccessful()) {
                         if (googlePayContainer != null) {
                             googlePayContainer.setVisibility(View.VISIBLE);
-                            AnimatorSet animatorSet = new AnimatorSet();
-                            animatorSet.playTogether(ObjectAnimator.ofFloat(googlePayContainer, View.ALPHA, 0.0f, 1.0f));
-                            animatorSet.setInterpolator(new DecelerateInterpolator());
-                            animatorSet.setDuration(180);
-                            animatorSet.start();
                         }
                     } else {
                         FileLog.e("isReadyToPay failed", task1.getException());

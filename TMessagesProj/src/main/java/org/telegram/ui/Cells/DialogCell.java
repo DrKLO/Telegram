@@ -143,6 +143,7 @@ public class DialogCell extends BaseCell {
     private boolean lastUnreadState;
     private int lastSendState;
     private boolean dialogMuted;
+    private float dialogMutedProgress;
     private MessageObject message;
     private boolean clearingDialog;
     private CharSequence lastMessageString;
@@ -1047,6 +1048,8 @@ public class DialogCell extends BaseCell {
                                         } else {
                                             innerMessage = String.format("\uD83C\uDFAE %s", message.messageOwner.media.game.title);
                                         }
+                                    } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaInvoice) {
+                                        innerMessage = message.messageOwner.media.title;
                                     } else if (message.type == 14) {
                                         if (Build.VERSION.SDK_INT >= 18) {
                                             innerMessage = String.format("\uD83C\uDFA7 \u2068%s - %s\u2069", message.getMusicAuthor(), message.getMusicTitle());
@@ -1161,6 +1164,8 @@ public class DialogCell extends BaseCell {
                                         messageString = "\uD83D\uDCCA " + mediaPoll.poll.question;
                                     } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaGame) {
                                         messageString = "\uD83C\uDFAE " + message.messageOwner.media.game.title;
+                                    } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaInvoice) {
+                                        messageString = message.messageOwner.media.title;
                                     } else if (message.type == 14) {
                                         messageString = String.format("\uD83C\uDFA7 %s - %s", message.getMusicAuthor(), message.getMusicTitle());
                                     } else {
@@ -2187,6 +2192,10 @@ public class DialogCell extends BaseCell {
             requestLayout();
         }
 
+        if (!animated) {
+            dialogMutedProgress = dialogMuted ? 1f : 0f;
+        }
+
         invalidate();
     }
 
@@ -2596,9 +2605,34 @@ public class DialogCell extends BaseCell {
             lastStatusDrawableParams = (this.drawClock ? 1 : 0) +  (this.drawCheck1 ? 2 : 0) + (this.drawCheck2 ? 4 : 0);
         }
 
-        if (dialogMuted && !drawVerified && drawScam == 0) {
+        if ((dialogMuted || dialogMutedProgress > 0) && !drawVerified && drawScam == 0) {
+            if (dialogMuted && dialogMutedProgress != 1f) {
+                dialogMutedProgress += 16 / 150f;
+                if (dialogMutedProgress > 1f) {
+                    dialogMutedProgress = 1f;
+                } else {
+                    invalidate();
+                }
+            } else if (!dialogMuted && dialogMutedProgress != 0f) {
+                dialogMutedProgress -= 16 / 150f;
+                if (dialogMutedProgress < 0f) {
+                    dialogMutedProgress = 0f;
+                } else {
+                    invalidate();
+                }
+            }
             setDrawableBounds(Theme.dialogs_muteDrawable, nameMuteLeft - AndroidUtilities.dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 0 : 1), AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 13.5f : 17.5f));
-            Theme.dialogs_muteDrawable.draw(canvas);
+            if (dialogMutedProgress != 1f) {
+                canvas.save();
+                canvas.scale(dialogMutedProgress, dialogMutedProgress, Theme.dialogs_muteDrawable.getBounds().centerX(), Theme.dialogs_muteDrawable.getBounds().centerY());
+                Theme.dialogs_muteDrawable.setAlpha((int) (255 * dialogMutedProgress));
+                Theme.dialogs_muteDrawable.draw(canvas);
+                Theme.dialogs_muteDrawable.setAlpha(255);
+                canvas.restore();
+            } else {
+                Theme.dialogs_muteDrawable.draw(canvas);
+            }
+
         } else if (drawVerified) {
             setDrawableBounds(Theme.dialogs_verifiedDrawable, nameMuteLeft, AndroidUtilities.dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 12.5f : 16.5f));
             setDrawableBounds(Theme.dialogs_verifiedCheckDrawable, nameMuteLeft, AndroidUtilities.dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 12.5f : 16.5f));

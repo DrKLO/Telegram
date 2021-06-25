@@ -30,6 +30,7 @@ public class Utilities {
 
     public static volatile DispatchQueue stageQueue = new DispatchQueue("stageQueue");
     public static volatile DispatchQueue globalQueue = new DispatchQueue("globalQueue");
+    public static volatile DispatchQueue cacheClearQueue = new DispatchQueue("cacheClearQueue");
     public static volatile DispatchQueue searchQueue = new DispatchQueue("searchQueue");
     public static volatile DispatchQueue phoneBookQueue = new DispatchQueue("phoneBookQueue");
 
@@ -69,6 +70,7 @@ public class Utilities {
     public static native void stackBlurBitmap(Bitmap bitmap, int radius);
     public static native void drawDitheredGradient(Bitmap bitmap, int[] colors, int startX, int startY, int endX, int endY);
     public static native int saveProgressiveJpeg(Bitmap bitmap, int width, int height, int stride, int quality, String path);
+    public static native void generateGradient(Bitmap bitmap, boolean unpin, int phase, float progress, int width, int height, int stride, int[] colors);
 
     public static Bitmap blurWallpaper(Bitmap src) {
         if (src == null) {
@@ -367,6 +369,14 @@ public class Utilities {
 
     public static int bytesToInt(byte[] bytes) {
         return (((int) bytes[3] & 0xFF) << 24) + (((int) bytes[2] & 0xFF) << 16) + (((int) bytes[1] & 0xFF) << 8) + ((int) bytes[0] & 0xFF);
+    }
+
+    public static byte[] intToBytes(int value) {
+        return new byte[]{
+                (byte) (value >>> 24),
+                (byte) (value >>> 16),
+                (byte) (value >>> 8),
+                (byte) value};
     }
 
     public static String MD5(String md5) {

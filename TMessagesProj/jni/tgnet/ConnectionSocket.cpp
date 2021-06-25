@@ -6,6 +6,7 @@
  * Copyright Nikolai Kudashov, 2015-2018.
  */
 
+#include <cassert>
 #include <unistd.h>
 #include <fcntl.h>
 #include <cerrno>

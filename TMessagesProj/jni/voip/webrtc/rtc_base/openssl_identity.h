@@ -17,44 +17,13 @@
 #include <memory>
 #include <string>
 
-#include "rtc_base/checks.h"
 #include "rtc_base/constructor_magic.h"
 #include "rtc_base/openssl_certificate.h"
+#include "rtc_base/openssl_key_pair.h"
 #include "rtc_base/ssl_certificate.h"
 #include "rtc_base/ssl_identity.h"
 
 namespace rtc {
-
-// OpenSSLKeyPair encapsulates an OpenSSL EVP_PKEY* keypair object,
-// which is reference counted inside the OpenSSL library.
-class OpenSSLKeyPair final {
- public:
-  explicit OpenSSLKeyPair(EVP_PKEY* pkey) : pkey_(pkey) {
-    RTC_DCHECK(pkey_ != nullptr);
-  }
-
-  static OpenSSLKeyPair* Generate(const KeyParams& key_params);
-  // Constructs a key pair from the private key PEM string. This must not result
-  // in missing public key parameters. Returns null on error.
-  static OpenSSLKeyPair* FromPrivateKeyPEMString(const std::string& pem_string);
-
-  virtual ~OpenSSLKeyPair();
-
-  virtual OpenSSLKeyPair* GetReference();
-
-  EVP_PKEY* pkey() const { return pkey_; }
-  std::string PrivateKeyToPEMString() const;
-  std::string PublicKeyToPEMString() const;
-  bool operator==(const OpenSSLKeyPair& other) const;
-  bool operator!=(const OpenSSLKeyPair& other) const;
-
- private:
-  void AddReference();
-
-  EVP_PKEY* pkey_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(OpenSSLKeyPair);
-};
 
 // Holds a keypair and certificate together, and a method to generate
 // them consistently.

@@ -242,6 +242,13 @@ class RTC_EXPORT NV12BufferInterface : public BiplanarYuv8Buffer {
   int ChromaWidth() const final;
   int ChromaHeight() const final;
 
+  rtc::scoped_refptr<VideoFrameBuffer> CropAndScale(int offset_x,
+                                                    int offset_y,
+                                                    int crop_width,
+                                                    int crop_height,
+                                                    int scaled_width,
+                                                    int scaled_height) override;
+
  protected:
   ~NV12BufferInterface() override {}
 };

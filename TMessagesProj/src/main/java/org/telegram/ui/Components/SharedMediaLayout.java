@@ -46,6 +46,8 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
@@ -1049,6 +1051,9 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 protected void onLayout(boolean changed, int l, int t, int r, int b) {
                     super.onLayout(changed, l, t, r, b);
                     checkLoadMoreScroll(mediaPage, mediaPage.listView, layoutManager);
+                    if (mediaPage.selectedType == 0) {
+                        PhotoViewer.getInstance().checkCurrentImageVisibility();
+                    }
                 }
 
                 @Override
@@ -1673,7 +1678,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     for (int a = 0; a < dids.size(); a++) {
                         long did = dids.get(a);
                         if (message != null) {
-                            profileActivity.getSendMessagesHelper().sendMessage(message.toString(), did, null, null, null, true, null, null, null, true, 0);
+                            profileActivity.getSendMessagesHelper().sendMessage(message.toString(), did, null, null, null, true, null, null, null, true, 0, null);
                         }
                         profileActivity.getSendMessagesHelper().sendMessage(fmessages, did, true, 0);
                     }
@@ -2520,11 +2525,8 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 changed++;
             }
         } else {
-            TLRPC.EncryptedChat currentEncryptedChat = profileActivity.getMessagesController().getEncryptedChat((int) (dialog_id >> 32));
-            if (currentEncryptedChat != null && AndroidUtilities.getPeerLayerVersion(currentEncryptedChat.layer) >= 46) {
-                if ((hasMedia[4] <= 0) == scrollSlidingTextTabStrip.hasTab(4)) {
-                    changed++;
-                }
+            if ((hasMedia[4] <= 0) == scrollSlidingTextTabStrip.hasTab(4)) {
+                changed++;
             }
         }
         if ((hasMedia[2] <= 0) == scrollSlidingTextTabStrip.hasTab(2)) {
@@ -2605,12 +2607,9 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     }
                 }
             } else {
-                TLRPC.EncryptedChat currentEncryptedChat = profileActivity.getMessagesController().getEncryptedChat((int) (dialog_id >> 32));
-                if (currentEncryptedChat != null && AndroidUtilities.getPeerLayerVersion(currentEncryptedChat.layer) >= 46) {
-                    if (hasMedia[4] > 0) {
-                        if (!scrollSlidingTextTabStrip.hasTab(4)) {
-                            scrollSlidingTextTabStrip.addTextTab(4, LocaleController.getString("SharedMusicTab2", R.string.SharedMusicTab2), idToView);
-                        }
+                if (hasMedia[4] > 0) {
+                    if (!scrollSlidingTextTabStrip.hasTab(4)) {
+                        scrollSlidingTextTabStrip.addTextTab(4, LocaleController.getString("SharedMusicTab2", R.string.SharedMusicTab2), idToView);
                     }
                 }
             }
@@ -3088,7 +3087,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         }
 
         @Override
-        public boolean isEnabled(int section, int row) {
+        public boolean isEnabled(RecyclerView.ViewHolder holder, int section, int row) {
             if (sharedMediaData[3].sections.size() == 0 && !sharedMediaData[3].loading) {
                 return false;
             }
@@ -3226,7 +3225,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         }
 
         @Override
-        public boolean isEnabled(int section, int row) {
+        public boolean isEnabled(RecyclerView.ViewHolder holder, int section, int row) {
             if (sharedMediaData[currentType].sections.size() == 0 && !sharedMediaData[currentType].loading) {
                 return false;
             }

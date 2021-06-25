@@ -17,6 +17,7 @@
 #include <utility>
 
 #include "api/array_view.h"
+#include "modules/audio_processing/agc2/cpu_features.h"
 #include "modules/audio_processing/agc2/rnn_vad/common.h"
 
 namespace webrtc {
@@ -65,7 +66,8 @@ void Decimate2x(rtc::ArrayView<const float, kBufSize24kHz> src,
 // buffer. The indexes of `y_energy` are inverted lags.
 void ComputeSlidingFrameSquareEnergies24kHz(
     rtc::ArrayView<const float, kBufSize24kHz> pitch_buffer,
-    rtc::ArrayView<float, kRefineNumLags24kHz> y_energy);
+    rtc::ArrayView<float, kRefineNumLags24kHz> y_energy,
+    AvailableCpuFeatures cpu_features);
 
 // Top-2 pitch period candidates. Unit: number of samples - i.e., inverted lags.
 struct CandidatePitchPeriods {
@@ -78,7 +80,8 @@ struct CandidatePitchPeriods {
 // indexes).
 CandidatePitchPeriods ComputePitchPeriod12kHz(
     rtc::ArrayView<const float, kBufSize12kHz> pitch_buffer,
-    rtc::ArrayView<const float, kNumLags12kHz> auto_correlation);
+    rtc::ArrayView<const float, kNumLags12kHz> auto_correlation,
+    AvailableCpuFeatures cpu_features);
 
 // Computes the pitch period at 48 kHz given a view on the 24 kHz pitch buffer,
 // the energies for the sliding frames `y` at 24 kHz and the pitch period
@@ -86,7 +89,8 @@ CandidatePitchPeriods ComputePitchPeriod12kHz(
 int ComputePitchPeriod48kHz(
     rtc::ArrayView<const float, kBufSize24kHz> pitch_buffer,
     rtc::ArrayView<const float, kRefineNumLags24kHz> y_energy,
-    CandidatePitchPeriods pitch_candidates_24kHz);
+    CandidatePitchPeriods pitch_candidates_24kHz,
+    AvailableCpuFeatures cpu_features);
 
 struct PitchInfo {
   int period;
@@ -101,7 +105,8 @@ PitchInfo ComputeExtendedPitchPeriod48kHz(
     rtc::ArrayView<const float, kBufSize24kHz> pitch_buffer,
     rtc::ArrayView<const float, kRefineNumLags24kHz> y_energy,
     int initial_pitch_period_48kHz,
-    PitchInfo last_pitch_48kHz);
+    PitchInfo last_pitch_48kHz,
+    AvailableCpuFeatures cpu_features);
 
 }  // namespace rnn_vad
 }  // namespace webrtc

@@ -38,12 +38,16 @@ class LibvpxVp8Decoder : public VideoDecoder {
   int RegisterDecodeCompleteCallback(DecodedImageCallback* callback) override;
   int Release() override;
 
+  DecoderInfo GetDecoderInfo() const override;
   const char* ImplementationName() const override;
 
   struct DeblockParams {
-    int max_level = 6;   // Deblocking strength: [0, 16].
-    int degrade_qp = 1;  // If QP value is below, start lowering |max_level|.
-    int min_qp = 0;      // If QP value is below, turn off deblocking.
+    DeblockParams() : max_level(6), degrade_qp(1), min_qp(0) {}
+    DeblockParams(int max_level, int degrade_qp, int min_qp)
+        : max_level(max_level), degrade_qp(degrade_qp), min_qp(min_qp) {}
+    int max_level;   // Deblocking strength: [0, 16].
+    int degrade_qp;  // If QP value is below, start lowering |max_level|.
+    int min_qp;      // If QP value is below, turn off deblocking.
   };
 
  private:

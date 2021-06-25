@@ -20,11 +20,12 @@
 
 #include "absl/types/optional.h"
 #include "api/scoped_refptr.h"
+#include "api/sequence_checker.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/constructor_magic.h"
 #include "rtc_base/ref_count.h"
 #include "rtc_base/ref_counted_object.h"
-#include "rtc_base/synchronization/sequence_checker.h"
+#include "rtc_base/system/no_unique_address.h"
 
 namespace rtc {
 
@@ -183,7 +184,7 @@ class OperationsChain final : public RefCountedObject<RefCountInterface> {
   std::function<void()> CreateOperationsChainCallback();
   void OnOperationComplete();
 
-  webrtc::SequenceChecker sequence_checker_;
+  RTC_NO_UNIQUE_ADDRESS webrtc::SequenceChecker sequence_checker_;
   // FIFO-list of operations that are chained. An operation that is executing
   // remains on this list until it has completed by invoking the callback passed
   // to it.

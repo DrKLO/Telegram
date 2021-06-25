@@ -20,6 +20,7 @@ import android.media.MediaCodecList;
 import android.os.Build;
 
 import org.telegram.messenger.voip.Instance;
+import org.telegram.messenger.voip.VoIPService;
 
 import androidx.annotation.Nullable;
 import java.util.ArrayList;
@@ -128,7 +129,7 @@ public class HardwareVideoEncoderFactory implements VideoEncoderFactory {
   @Override
   public VideoCodecInfo[] getSupportedCodecs() {
     // HW encoding is not supported below Android Kitkat.
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT || VoIPService.getSharedInstance() != null && VoIPService.getSharedInstance().groupCall != null) {
       return new VideoCodecInfo[0];
     }
 
@@ -190,6 +191,9 @@ public class HardwareVideoEncoderFactory implements VideoEncoderFactory {
   private boolean isHardwareSupportedInCurrentSdk(MediaCodecInfo info, VideoCodecMimeType type) {
     Instance.ServerConfig config = Instance.getGlobalServerConfig();
     if (!config.enable_h264_encoder && !config.enable_h265_encoder && !config.enable_vp8_encoder && !config.enable_vp9_encoder) {
+      return false;
+    }
+    if (VoIPService.getSharedInstance() != null && VoIPService.getSharedInstance().groupCall != null) {
       return false;
     }
     switch (type) {

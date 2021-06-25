@@ -16,13 +16,13 @@
 #include <vector>
 
 #include "api/fec_controller.h"
+#include "api/sequence_checker.h"
 #include "api/video/video_stream_encoder_interface.h"
 #include "call/bitrate_allocator.h"
 #include "call/video_receive_stream.h"
 #include "call/video_send_stream.h"
 #include "rtc_base/event.h"
 #include "rtc_base/task_queue.h"
-#include "rtc_base/thread_checker.h"
 #include "video/send_delay_stats.h"
 #include "video/send_statistics_proxy.h"
 
@@ -97,7 +97,7 @@ class VideoSendStream : public webrtc::VideoSendStream {
 
   absl::optional<float> GetPacingFactorOverride() const;
 
-  rtc::ThreadChecker thread_checker_;
+  SequenceChecker thread_checker_;
   rtc::TaskQueue* const worker_queue_;
   rtc::Event thread_sync_event_;
 

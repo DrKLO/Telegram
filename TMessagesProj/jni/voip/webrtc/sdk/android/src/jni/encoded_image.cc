@@ -90,7 +90,7 @@ EncodedImage JavaToNativeEncodedImage(JNIEnv* env,
   const size_t buffer_size = env->GetDirectBufferCapacity(j_buffer.obj());
 
   EncodedImage frame;
-  frame.SetEncodedData(new rtc::RefCountedObject<JavaEncodedImageBuffer>(
+  frame.SetEncodedData(rtc::make_ref_counted<JavaEncodedImageBuffer>(
       env, j_encoded_image, buffer, buffer_size));
 
   frame._encodedWidth = Java_EncodedImage_getEncodedWidth(env, j_encoded_image);

@@ -255,8 +255,6 @@ public:
     int32_t flags;
     bool has_video;
     int64_t photo_id;
-    std::unique_ptr<FileLocation> photo_small;
-    std::unique_ptr<FileLocation> photo_big;
     std::unique_ptr<ByteArray> stripped_thumb;
     int32_t dc_id;
 
@@ -274,7 +272,7 @@ public:
 class TL_userProfilePhoto : public UserProfilePhoto {
 
 public:
-    static const uint32_t constructor = 0xcc656077;
+    static const uint32_t constructor = 0x82d1f706;
 
     void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);

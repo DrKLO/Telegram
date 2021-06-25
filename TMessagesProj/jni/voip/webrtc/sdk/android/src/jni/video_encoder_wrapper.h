@@ -12,6 +12,7 @@
 #define SDK_ANDROID_SRC_JNI_VIDEO_ENCODER_WRAPPER_H_
 
 #include <jni.h>
+
 #include <deque>
 #include <memory>
 #include <string>
@@ -24,6 +25,7 @@
 #include "common_video/h265/h265_bitstream_parser.h"
 #endif
 #include "modules/video_coding/codecs/vp9/include/vp9_globals.h"
+#include "modules/video_coding/svc/scalable_video_controller_no_layering.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "sdk/android/src/jni/jni_helpers.h"
 #include "sdk/android/src/jni/video_frame.h"
@@ -102,6 +104,8 @@ class VideoEncoderWrapper : public VideoEncoder {
   H265BitstreamParser h265_bitstream_parser_;
 #endif
 
+  // Fills frame dependencies in codec-agnostic format.
+  ScalableVideoControllerNoLayering svc_controller_;
   // VP9 variables to populate codec specific structure.
   GofInfoVP9 gof_;  // Contains each frame's temporal information for
                     // non-flexible VP9 mode.

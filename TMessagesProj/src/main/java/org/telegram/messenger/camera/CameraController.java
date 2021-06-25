@@ -65,6 +65,7 @@ public class CameraController implements MediaRecorder.OnInfoListener {
     private boolean loadingCameras;
 
     private ArrayList<Runnable> onFinishCameraInitRunnables = new ArrayList<>();
+    CameraView recordingCurrentCameraView;
 
     private static volatile CameraController Instance = null;
 
@@ -255,10 +256,6 @@ public class CameraController implements MediaRecorder.OnInfoListener {
         return cameraInitied && cameraInfos != null && !cameraInfos.isEmpty();
     }
 
-    public void runOnThreadPool(Runnable runnable) {
-        threadPool.execute(runnable);
-    }
-
     public void close(final CameraSession session, final CountDownLatch countDownLatch, final Runnable beforeDestroyRunnable) {
         session.destroy();
         threadPool.execute(() -> {
@@ -406,12 +403,12 @@ public class CameraController implements MediaRecorder.OnInfoListener {
                     BitmapFactory.Options options = new BitmapFactory.Options();
                     options.inJustDecodeBounds = true;
                     BitmapFactory.decodeByteArray(data, 0, data.length, options);
-                    float scaleFactor = Math.max((float) options.outWidth / AndroidUtilities.getPhotoSize(), (float) options.outHeight / AndroidUtilities.getPhotoSize());
-                    if (scaleFactor < 1) {
-                        scaleFactor = 1;
-                    }
+//                    float scaleFactor = Math.max((float) options.outWidth / AndroidUtilities.getPhotoSize(), (float) options.outHeight / AndroidUtilities.getPhotoSize());
+//                    if (scaleFactor < 1) {
+//                        scaleFactor = 1;
+//                    }
                     options.inJustDecodeBounds = false;
-                    options.inSampleSize = (int) scaleFactor;
+                //    options.inSampleSize = (int) scaleFactor;
                     options.inPurgeable = true;
                     bitmap = BitmapFactory.decodeByteArray(data, 0, data.length, options);
                 } catch (Throwable e) {
@@ -591,13 +588,45 @@ public class CameraController implements MediaRecorder.OnInfoListener {
         });
     }
 
-    public void recordVideo(final CameraSession session, final File path, boolean mirror, final VideoTakeCallback callback, final Runnable onVideoStartRecord) {
+    public void recordVideo(final CameraSession session, final File path, boolean mirror, final VideoTakeCallback callback, final Runnable onVideoStartRecord, CameraView cameraView) {
         if (session == null) {
             return;
         }
-
         final CameraInfo info = session.cameraInfo;
         final Camera camera = info.camera;
+        if (cameraView != null) {
+            recordingCurrentCameraView = cameraView;
+            onVideoTakeCallback = callback;
+            recordedFile = path.getAbsolutePath();
+            threadPool.execute(() -> {
+                try {
+                    if (camera != null) {
+                        try {
+                            Camera.Parameters params = camera.getParameters();
+                            params.setFlashMode(session.getCurrentFlashMode().equals(Camera.Parameters.FLASH_MODE_ON) ? Camera.Parameters.FLASH_MODE_TORCH : Camera.Parameters.FLASH_MODE_OFF);
+                            camera.setParameters(params);
+                        } catch (Exception e) {
+                            FileLog.e(e);
+                        }
+                        AndroidUtilities.runOnUIThread(() -> {
+                            cameraView.startRecording(path, () -> {
+                                finishRecordingVideo();
+                            });
+
+                            if (onVideoStartRecord != null) {
+                                onVideoStartRecord.run();
+                            }
+                        });
+                    }
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+            });
+
+            return;
+        }
+
+
         threadPool.execute(() -> {
             try {
                 if (camera != null) {
@@ -722,6 +751,11 @@ public class CameraController implements MediaRecorder.OnInfoListener {
     }
 
     public void stopVideoRecording(final CameraSession session, final boolean abandon) {
+        if (recordingCurrentCameraView != null) {
+            recordingCurrentCameraView.stopRecording();
+            recordingCurrentCameraView = null;
+            return;
+        }
         threadPool.execute(() -> {
             try {
                 CameraInfo info = session.cameraInfo;

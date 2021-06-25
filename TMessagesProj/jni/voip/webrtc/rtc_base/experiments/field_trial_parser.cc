@@ -83,7 +83,10 @@ void ParseFieldTrial(
         RTC_LOG(LS_WARNING) << "Failed to read empty key field with value '"
                             << key << "' in trial: \"" << trial_string << "\"";
       }
-    } else {
+    } else if (key.empty() || key[0] != '_') {
+      // "_" is be used to prefix keys that are part of the string for
+      // debugging purposes but not neccessarily used.
+      // e.g. WebRTC-Experiment/param: value, _DebuggingString
       RTC_LOG(LS_INFO) << "No field with key: '" << key
                        << "' (found in trial: \"" << trial_string << "\")";
       std::string valid_keys;

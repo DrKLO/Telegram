@@ -775,7 +775,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
 
     private void openPhotoPicker(MediaController.AlbumEntry albumEntry, int type) {
         if (albumEntry != null) {
-            PhotoPickerActivity fragment = new PhotoPickerActivity(type, albumEntry, selectedPhotos, selectedPhotosOrder, selectPhotoType, allowCaption, chatActivity);
+            PhotoPickerActivity fragment = new PhotoPickerActivity(type, albumEntry, selectedPhotos, selectedPhotosOrder, selectPhotoType, allowCaption, chatActivity, false);
             fragment.setCaption(caption = commentTextView.getText());
             fragment.setDelegate(new PhotoPickerActivity.PhotoPickerActivityDelegate() {
                 @Override
@@ -826,7 +826,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
                 fragment.setMaxSelectedPhotos(maxSelectedPhotos, allowOrder);
                 presentFragment(fragment);
             } else {
-                PhotoPickerActivity fragment = new PhotoPickerActivity(0, albumEntry, photos, order, selectPhotoType, allowCaption, chatActivity);
+                PhotoPickerActivity fragment = new PhotoPickerActivity(0, albumEntry, photos, order, selectPhotoType, allowCaption, chatActivity, false);
                 fragment.setCaption(caption = commentTextView.getText());
                 fragment.setDelegate(new PhotoPickerActivity.PhotoPickerActivityDelegate() {
                     @Override

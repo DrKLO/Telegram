@@ -74,7 +74,6 @@ import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
-import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
@@ -928,8 +927,8 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
 
     @Override
     public boolean onFragmentCreate() {
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.FileDidUpload);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.FileDidFailUpload);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileUploaded);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileUploadFailed);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.twoStepPasswordChanged);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.didRemoveTwoStepPassword);
         return super.onFragmentCreate();
@@ -938,8 +937,8 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.FileDidUpload);
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.FileDidFailUpload);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileUploaded);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileUploadFailed);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.twoStepPasswordChanged);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.didRemoveTwoStepPassword);
         callCallback(false);
@@ -4934,7 +4933,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                         doneItem.setEnabled(true);
                         doneItem.setAlpha(1.0f);
                     }
-                    FileLoader.getInstance(currentAccount).cancelUploadFile(document.path, false);
+                    FileLoader.getInstance(currentAccount).cancelFileUpload(document.path, false);
                 }
             });
             showDialog(builder.create());
@@ -6490,7 +6489,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.FileDidUpload) {
+        if (id == NotificationCenter.fileUploaded) {
             final String location = (String) args[0];
             SecureDocument document = uploadingDocuments.get(location);
             if (document != null) {
@@ -6524,7 +6523,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                     errorsValues.remove("translation_all");
                 }
             }
-        } else if (id == NotificationCenter.FileDidFailUpload) {
+        } else if (id == NotificationCenter.fileUploadFailed) {
 
         } else if (id == NotificationCenter.twoStepPasswordChanged) {
             if (args != null && args.length > 0) {
@@ -6826,11 +6825,11 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             return;
         }
         if (chatAttachAlert == null) {
-            chatAttachAlert = new ChatAttachAlert(getParentActivity(), this, false);
+            chatAttachAlert = new ChatAttachAlert(getParentActivity(), this, false, false);
             chatAttachAlert.setDelegate(new ChatAttachAlert.ChatAttachViewDelegate() {
 
                 @Override
-                public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate) {
+                public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate, boolean forceDocument) {
                     if (getParentActivity() == null || chatAttachAlert == null) {
                         return;
                     }

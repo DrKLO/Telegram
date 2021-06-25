@@ -137,9 +137,6 @@ class VectorMath {
           z[j] = x[j] * y[j];
         }
       } break;
-      case Aec3Optimization::kAvx2:
-        MultiplyAVX2(x, y, z);
-        break;
 #endif
 #if defined(WEBRTC_HAS_NEON)
       case Aec3Optimization::kNeon: {
@@ -187,9 +184,6 @@ class VectorMath {
           z[j] += x[j];
         }
       } break;
-      case Aec3Optimization::kAvx2:
-        AccumulateAVX2(x, z);
-        break;
 #endif
 #if defined(WEBRTC_HAS_NEON)
       case Aec3Optimization::kNeon: {

@@ -144,13 +144,12 @@ struct RTPHeaderExtension {
   VideoPlayoutDelay playout_delay;
 
   // For identification of a stream when ssrc is not signaled. See
-  // https://tools.ietf.org/html/draft-ietf-avtext-rid-09
-  // TODO(danilchap): Update url from draft to release version.
+  // https://tools.ietf.org/html/rfc8852
   std::string stream_id;
   std::string repaired_stream_id;
 
   // For identifying the media section used to interpret this RTP packet. See
-  // https://tools.ietf.org/html/draft-ietf-mmusic-sdp-bundle-negotiation-38
+  // https://tools.ietf.org/html/rfc8843
   std::string mid;
 
   absl::optional<ColorSpace> color_space;

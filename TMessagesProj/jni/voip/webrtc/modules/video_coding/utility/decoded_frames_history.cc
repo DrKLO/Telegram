@@ -18,89 +18,63 @@
 namespace webrtc {
 namespace video_coding {
 
-DecodedFramesHistory::LayerHistory::LayerHistory() = default;
-DecodedFramesHistory::LayerHistory::~LayerHistory() = default;
-
 DecodedFramesHistory::DecodedFramesHistory(size_t window_size)
-    : window_size_(window_size) {}
+    : buffer_(window_size) {}
 
 DecodedFramesHistory::~DecodedFramesHistory() = default;
 
-void DecodedFramesHistory::InsertDecoded(const VideoLayerFrameId& frameid,
-                                         uint32_t timestamp) {
-  last_decoded_frame_ = frameid;
+void DecodedFramesHistory::InsertDecoded(int64_t frame_id, uint32_t timestamp) {
+  last_decoded_frame_ = frame_id;
   last_decoded_frame_timestamp_ = timestamp;
-  if (static_cast<int>(layers_.size()) < frameid.spatial_layer + 1) {
-    size_t old_size = layers_.size();
-    layers_.resize(frameid.spatial_layer + 1);
+  int new_index = FrameIdToIndex(frame_id);
 
-    for (size_t i = old_size; i < layers_.size(); ++i)
-      layers_[i].buffer.resize(window_size_);
+  RTC_DCHECK(last_frame_id_ < frame_id);
 
-    layers_[frameid.spatial_layer].last_picture_id = frameid.picture_id;
-    layers_[frameid.spatial_layer]
-        .buffer[PictureIdToIndex(frameid.picture_id)] = true;
-    return;
-  }
+  // Clears expired values from the cyclic buffer_.
+  if (last_frame_id_) {
+    int64_t id_jump = frame_id - *last_frame_id_;
+    int last_index = FrameIdToIndex(*last_frame_id_);
 
-  int new_index = PictureIdToIndex(frameid.picture_id);
-  LayerHistory& history = layers_[frameid.spatial_layer];
-
-  RTC_DCHECK(history.last_picture_id < frameid.picture_id);
-
-  // Clears expired values from the cyclic buffer.
-  if (history.last_picture_id) {
-    int64_t id_jump = frameid.picture_id - *history.last_picture_id;
-    int last_index = PictureIdToIndex(*history.last_picture_id);
-
-    if (id_jump >= window_size_) {
-      std::fill(history.buffer.begin(), history.buffer.end(), false);
+    if (id_jump >= static_cast<int64_t>(buffer_.size())) {
+      std::fill(buffer_.begin(), buffer_.end(), false);
     } else if (new_index > last_index) {
-      std::fill(history.buffer.begin() + last_index + 1,
-                history.buffer.begin() + new_index, false);
+      std::fill(buffer_.begin() + last_index + 1, buffer_.begin() + new_index,
+                false);
     } else {
-      std::fill(history.buffer.begin() + last_index + 1, history.buffer.end(),
-                false);
-      std::fill(history.buffer.begin(), history.buffer.begin() + new_index,
-                false);
+      std::fill(buffer_.begin() + last_index + 1, buffer_.end(), false);
+      std::fill(buffer_.begin(), buffer_.begin() + new_index, false);
     }
   }
 
-  history.buffer[new_index] = true;
-  history.last_picture_id = frameid.picture_id;
+  buffer_[new_index] = true;
+  last_frame_id_ = frame_id;
 }
 
-bool DecodedFramesHistory::WasDecoded(const VideoLayerFrameId& frameid) {
-  // Unseen before spatial layer.
-  if (static_cast<int>(layers_.size()) < frameid.spatial_layer + 1)
+bool DecodedFramesHistory::WasDecoded(int64_t frame_id) {
+  if (!last_frame_id_)
     return false;
 
-  LayerHistory& history = layers_[frameid.spatial_layer];
-
-  if (!history.last_picture_id)
-    return false;
-
-  // Reference to the picture_id out of the stored history should happen.
-  if (frameid.picture_id <= *history.last_picture_id - window_size_) {
-    RTC_LOG(LS_WARNING) << "Referencing a frame out of the history window. "
+  // Reference to the picture_id out of the stored should happen.
+  if (frame_id <= *last_frame_id_ - static_cast<int64_t>(buffer_.size())) {
+    RTC_LOG(LS_WARNING) << "Referencing a frame out of the window. "
                            "Assuming it was undecoded to avoid artifacts.";
     return false;
   }
 
-  if (frameid.picture_id > history.last_picture_id)
+  if (frame_id > last_frame_id_)
     return false;
 
-  return history.buffer[PictureIdToIndex(frameid.picture_id)];
+  return buffer_[FrameIdToIndex(frame_id)];
 }
 
 void DecodedFramesHistory::Clear() {
-  layers_.clear();
   last_decoded_frame_timestamp_.reset();
   last_decoded_frame_.reset();
+  std::fill(buffer_.begin(), buffer_.end(), false);
+  last_frame_id_.reset();
 }
 
-absl::optional<VideoLayerFrameId>
-DecodedFramesHistory::GetLastDecodedFrameId() {
+absl::optional<int64_t> DecodedFramesHistory::GetLastDecodedFrameId() {
   return last_decoded_frame_;
 }
 
@@ -108,9 +82,9 @@ absl::optional<uint32_t> DecodedFramesHistory::GetLastDecodedFrameTimestamp() {
   return last_decoded_frame_timestamp_;
 }
 
-int DecodedFramesHistory::PictureIdToIndex(int64_t frame_id) const {
-  int m = frame_id % window_size_;
-  return m >= 0 ? m : m + window_size_;
+int DecodedFramesHistory::FrameIdToIndex(int64_t frame_id) const {
+  int m = frame_id % buffer_.size();
+  return m >= 0 ? m : m + buffer_.size();
 }
 
 }  // namespace video_coding

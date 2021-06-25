@@ -17,7 +17,6 @@
 #include <cstdint>
 
 #include "common_audio/signal_processing/include/signal_processing_library.h"
-#include "rtc_base/bind.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/time_utils.h"
@@ -79,7 +78,7 @@ AudioDeviceBuffer::~AudioDeviceBuffer() {
 int32_t AudioDeviceBuffer::RegisterAudioCallback(
     AudioTransport* audio_callback) {
   RTC_DCHECK_RUN_ON(&main_thread_checker_);
-  RTC_LOG(INFO) << __FUNCTION__;
+  RTC_DLOG(INFO) << __FUNCTION__;
   if (playing_ || recording_) {
     RTC_LOG(LS_ERROR) << "Failed to set audio transport since media was active";
     return -1;
@@ -96,7 +95,7 @@ void AudioDeviceBuffer::StartPlayout() {
   if (playing_) {
     return;
   }
-  RTC_LOG(INFO) << __FUNCTION__;
+  RTC_DLOG(INFO) << __FUNCTION__;
   // Clear members tracking playout stats and do it on the task queue.
   task_queue_.PostTask([this] { ResetPlayStats(); });
   // Start a periodic timer based on task queue if not already done by the
@@ -115,7 +114,7 @@ void AudioDeviceBuffer::StartRecording() {
   if (recording_) {
     return;
   }
-  RTC_LOG(INFO) << __FUNCTION__;
+  RTC_DLOG(INFO) << __FUNCTION__;
   // Clear members tracking recording stats and do it on the task queue.
   task_queue_.PostTask([this] { ResetRecStats(); });
   // Start a periodic timer based on task queue if not already done by the
@@ -137,7 +136,7 @@ void AudioDeviceBuffer::StopPlayout() {
   if (!playing_) {
     return;
   }
-  RTC_LOG(INFO) << __FUNCTION__;
+  RTC_DLOG(INFO) << __FUNCTION__;
   playing_ = false;
   // Stop periodic logging if no more media is active.
   if (!recording_) {
@@ -151,7 +150,7 @@ void AudioDeviceBuffer::StopRecording() {
   if (!recording_) {
     return;
   }
-  RTC_LOG(INFO) << __FUNCTION__;
+  RTC_DLOG(INFO) << __FUNCTION__;
   recording_ = false;
   // Stop periodic logging if no more media is active.
   if (!playing_) {
@@ -349,13 +348,11 @@ int32_t AudioDeviceBuffer::GetPlayoutData(void* audio_buffer) {
 }
 
 void AudioDeviceBuffer::StartPeriodicLogging() {
-  task_queue_.PostTask(rtc::Bind(&AudioDeviceBuffer::LogStats, this,
-                                 AudioDeviceBuffer::LOG_START));
+  task_queue_.PostTask([this] { LogStats(AudioDeviceBuffer::LOG_START); });
 }
 
 void AudioDeviceBuffer::StopPeriodicLogging() {
-  task_queue_.PostTask(rtc::Bind(&AudioDeviceBuffer::LogStats, this,
-                                 AudioDeviceBuffer::LOG_STOP));
+  task_queue_.PostTask([this] { LogStats(AudioDeviceBuffer::LOG_STOP); });
 }
 
 void AudioDeviceBuffer::LogStats(LogState state) {
@@ -460,9 +457,9 @@ void AudioDeviceBuffer::LogStats(LogState state) {
   RTC_DCHECK_GT(time_to_wait_ms, 0) << "Invalid timer interval";
 
   // Keep posting new (delayed) tasks until state is changed to kLogStop.
-  task_queue_.PostDelayedTask(rtc::Bind(&AudioDeviceBuffer::LogStats, this,
-                                        AudioDeviceBuffer::LOG_ACTIVE),
-                              time_to_wait_ms);
+  task_queue_.PostDelayedTask(
+      [this] { AudioDeviceBuffer::LogStats(AudioDeviceBuffer::LOG_ACTIVE); },
+      time_to_wait_ms);
 }
 
 void AudioDeviceBuffer::ResetRecStats() {

@@ -32,7 +32,7 @@ constexpr TimeDelta kMinTimeBetweenStatsUpdates = TimeDelta::Millis(1);
 
 TaskQueuePacedSender::TaskQueuePacedSender(
     Clock* clock,
-    PacketRouter* packet_router,
+    PacingController::PacketSender* packet_sender,
     RtcEventLog* event_log,
     const WebRtcKeyValueConfig* field_trials,
     TaskQueueFactory* task_queue_factory,
@@ -40,7 +40,7 @@ TaskQueuePacedSender::TaskQueuePacedSender(
     : clock_(clock),
       hold_back_window_(hold_back_window),
       pacing_controller_(clock,
-                         packet_router,
+                         packet_sender,
                          event_log,
                          field_trials,
                          PacingController::ProcessMode::kDynamic),
@@ -59,6 +59,14 @@ TaskQueuePacedSender::~TaskQueuePacedSender() {
   task_queue_.PostTask([&]() {
     RTC_DCHECK_RUN_ON(&task_queue_);
     is_shutdown_ = true;
+  });
+}
+
+void TaskQueuePacedSender::EnsureStarted() {
+  task_queue_.PostTask([this]() {
+    RTC_DCHECK_RUN_ON(&task_queue_);
+    is_started_ = true;
+    MaybeProcessPackets(Timestamp::MinusInfinity());
   });
 }
 
@@ -136,6 +144,7 @@ void TaskQueuePacedSender::EnqueuePackets(
   task_queue_.PostTask([this, packets_ = std::move(packets)]() mutable {
     RTC_DCHECK_RUN_ON(&task_queue_);
     for (auto& packet : packets_) {
+      RTC_DCHECK_GE(packet->capture_time_ms(), 0);
       pacing_controller_.EnqueuePacket(std::move(packet));
     }
     MaybeProcessPackets(Timestamp::MinusInfinity());
@@ -196,7 +205,7 @@ void TaskQueuePacedSender::MaybeProcessPackets(
     Timestamp scheduled_process_time) {
   RTC_DCHECK_RUN_ON(&task_queue_);
 
-  if (is_shutdown_) {
+  if (is_shutdown_ || !is_started_) {
     return;
   }
 

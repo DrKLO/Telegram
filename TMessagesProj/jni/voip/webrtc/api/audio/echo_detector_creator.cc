@@ -15,7 +15,7 @@
 namespace webrtc {
 
 rtc::scoped_refptr<EchoDetector> CreateEchoDetector() {
-  return new rtc::RefCountedObject<ResidualEchoDetector>();
+  return rtc::make_ref_counted<ResidualEchoDetector>();
 }
 
 }  // namespace webrtc

@@ -16,10 +16,10 @@
 
 #include "absl/types/optional.h"
 #include "api/adaptation/resource.h"
+#include "api/sequence_checker.h"
 #include "api/task_queue/task_queue_base.h"
 #include "call/adaptation/adaptation_constraint.h"
 #include "rtc_base/synchronization/mutex.h"
-#include "rtc_base/synchronization/sequence_checker.h"
 
 namespace webrtc {
 

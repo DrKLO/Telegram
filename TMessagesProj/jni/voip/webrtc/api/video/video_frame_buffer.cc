@@ -11,6 +11,7 @@
 #include "api/video/video_frame_buffer.h"
 
 #include "api/video/i420_buffer.h"
+#include "api/video/nv12_buffer.h"
 #include "rtc_base/checks.h"
 
 namespace webrtc {
@@ -139,4 +140,18 @@ int NV12BufferInterface::ChromaWidth() const {
 int NV12BufferInterface::ChromaHeight() const {
   return (height() + 1) / 2;
 }
+
+rtc::scoped_refptr<VideoFrameBuffer> NV12BufferInterface::CropAndScale(
+    int offset_x,
+    int offset_y,
+    int crop_width,
+    int crop_height,
+    int scaled_width,
+    int scaled_height) {
+  rtc::scoped_refptr<NV12Buffer> result =
+      NV12Buffer::Create(scaled_width, scaled_height);
+  result->CropAndScaleFrom(*this, offset_x, offset_y, crop_width, crop_height);
+  return result;
+}
+
 }  // namespace webrtc

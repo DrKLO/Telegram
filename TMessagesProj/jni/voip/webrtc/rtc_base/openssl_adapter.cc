@@ -13,6 +13,9 @@
 #include <errno.h>
 #include <openssl/bio.h>
 #include <openssl/err.h>
+#ifdef OPENSSL_IS_BORINGSSL
+#include <openssl/pool.h>
+#endif
 #include <openssl/rand.h>
 #include <openssl/x509.h>
 #include <string.h>
@@ -20,13 +23,24 @@
 
 #include <memory>
 
+// Use CRYPTO_BUFFER APIs if available and we have no dependency on X509
+// objects.
+#if defined(OPENSSL_IS_BORINGSSL) && \
+    defined(WEBRTC_EXCLUDE_BUILT_IN_SSL_ROOT_CERTS)
+#define WEBRTC_USE_CRYPTO_BUFFER_CALLBACK
+#endif
+
 #include "absl/memory/memory.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/location.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/numerics/safe_conversions.h"
 #include "rtc_base/openssl.h"
-#include "rtc_base/openssl_certificate.h"
+#ifdef OPENSSL_IS_BORINGSSL
+#include "rtc_base/boringssl_identity.h"
+#else
+#include "rtc_base/openssl_identity.h"
+#endif
 #include "rtc_base/openssl_utility.h"
 #include "rtc_base/string_encode.h"
 #include "rtc_base/thread.h"
@@ -223,8 +237,13 @@ void OpenSSLAdapter::SetCertVerifier(
 
 void OpenSSLAdapter::SetIdentity(std::unique_ptr<SSLIdentity> identity) {
   RTC_DCHECK(!identity_);
+#ifdef OPENSSL_IS_BORINGSSL
+  identity_ =
+      absl::WrapUnique(static_cast<BoringSSLIdentity*>(identity.release()));
+#else
   identity_ =
       absl::WrapUnique(static_cast<OpenSSLIdentity*>(identity.release()));
+#endif
 }
 
 void OpenSSLAdapter::SetRole(SSLRole role) {
@@ -797,7 +816,70 @@ void OpenSSLAdapter::SSLInfoCallback(const SSL* s, int where, int ret) {
 
 #endif
 
+#ifdef WEBRTC_USE_CRYPTO_BUFFER_CALLBACK
+// static
+enum ssl_verify_result_t OpenSSLAdapter::SSLVerifyCallback(SSL* ssl,
+                                                           uint8_t* out_alert) {
+  // Get our stream pointer from the SSL context.
+  OpenSSLAdapter* stream =
+      reinterpret_cast<OpenSSLAdapter*>(SSL_get_app_data(ssl));
+
+  ssl_verify_result_t ret = stream->SSLVerifyInternal(ssl, out_alert);
+
+  // Should only be used for debugging and development.
+  if (ret != ssl_verify_ok && stream->ignore_bad_cert_) {
+    RTC_DLOG(LS_WARNING) << "Ignoring cert error while verifying cert chain";
+    return ssl_verify_ok;
+  }
+
+  return ret;
+}
+
+enum ssl_verify_result_t OpenSSLAdapter::SSLVerifyInternal(SSL* ssl,
+                                                           uint8_t* out_alert) {
+  if (ssl_cert_verifier_ == nullptr) {
+    RTC_LOG(LS_WARNING) << "Built-in trusted root certificates disabled but no "
+                           "SSL verify callback provided.";
+    return ssl_verify_invalid;
+  }
+
+  RTC_LOG(LS_INFO) << "Invoking SSL Verify Callback.";
+  const STACK_OF(CRYPTO_BUFFER)* chain = SSL_get0_peer_certificates(ssl);
+  if (sk_CRYPTO_BUFFER_num(chain) == 0) {
+    RTC_LOG(LS_ERROR) << "Peer certificate chain empty?";
+    return ssl_verify_invalid;
+  }
+
+  BoringSSLCertificate cert(bssl::UpRef(sk_CRYPTO_BUFFER_value(chain, 0)));
+  if (!ssl_cert_verifier_->Verify(cert)) {
+    RTC_LOG(LS_WARNING) << "Failed to verify certificate using custom callback";
+    return ssl_verify_invalid;
+  }
+
+  custom_cert_verifier_status_ = true;
+  RTC_LOG(LS_INFO) << "Validated certificate using custom callback";
+  return ssl_verify_ok;
+}
+#else  // WEBRTC_USE_CRYPTO_BUFFER_CALLBACK
 int OpenSSLAdapter::SSLVerifyCallback(int ok, X509_STORE_CTX* store) {
+  // Get our stream pointer from the store
+  SSL* ssl = reinterpret_cast<SSL*>(
+      X509_STORE_CTX_get_ex_data(store, SSL_get_ex_data_X509_STORE_CTX_idx()));
+
+  OpenSSLAdapter* stream =
+      reinterpret_cast<OpenSSLAdapter*>(SSL_get_app_data(ssl));
+  ok = stream->SSLVerifyInternal(ok, ssl, store);
+
+  // Should only be used for debugging and development.
+  if (!ok && stream->ignore_bad_cert_) {
+    RTC_DLOG(LS_WARNING) << "Ignoring cert error while verifying cert chain";
+    return 1;
+  }
+
+  return ok;
+}
+
+int OpenSSLAdapter::SSLVerifyInternal(int ok, SSL* ssl, X509_STORE_CTX* store) {
 #if !defined(NDEBUG)
   if (!ok) {
     char data[256];
@@ -814,33 +896,40 @@ int OpenSSLAdapter::SSLVerifyCallback(int ok, X509_STORE_CTX* store) {
                       << X509_verify_cert_error_string(err);
   }
 #endif
-  // Get our stream pointer from the store
-  SSL* ssl = reinterpret_cast<SSL*>(
-      X509_STORE_CTX_get_ex_data(store, SSL_get_ex_data_X509_STORE_CTX_idx()));
-
-  OpenSSLAdapter* stream =
-      reinterpret_cast<OpenSSLAdapter*>(SSL_get_app_data(ssl));
-
-  if (!ok && stream->ssl_cert_verifier_ != nullptr) {
-    RTC_LOG(LS_INFO) << "Invoking SSL Verify Callback.";
-    const OpenSSLCertificate cert(X509_STORE_CTX_get_current_cert(store));
-    if (stream->ssl_cert_verifier_->Verify(cert)) {
-      stream->custom_cert_verifier_status_ = true;
-      RTC_LOG(LS_INFO) << "Validated certificate using custom callback";
-      ok = true;
-    } else {
-      RTC_LOG(LS_INFO) << "Failed to verify certificate using custom callback";
-    }
+  if (ssl_cert_verifier_ == nullptr) {
+    return ok;
   }
 
-  // Should only be used for debugging and development.
-  if (!ok && stream->ignore_bad_cert_) {
-    RTC_DLOG(LS_WARNING) << "Ignoring cert error while verifying cert chain";
-    ok = 1;
+  RTC_LOG(LS_INFO) << "Invoking SSL Verify Callback.";
+#ifdef OPENSSL_IS_BORINGSSL
+  // Convert X509 to CRYPTO_BUFFER.
+  uint8_t* data = nullptr;
+  int length = i2d_X509(X509_STORE_CTX_get_current_cert(store), &data);
+  if (length < 0) {
+    RTC_LOG(LS_ERROR) << "Failed to encode X509.";
+    return ok;
+  }
+  bssl::UniquePtr<uint8_t> owned_data(data);
+  bssl::UniquePtr<CRYPTO_BUFFER> crypto_buffer(
+      CRYPTO_BUFFER_new(data, length, openssl::GetBufferPool()));
+  if (!crypto_buffer) {
+    RTC_LOG(LS_ERROR) << "Failed to allocate CRYPTO_BUFFER.";
+    return ok;
+  }
+  const BoringSSLCertificate cert(std::move(crypto_buffer));
+#else
+  const OpenSSLCertificate cert(X509_STORE_CTX_get_current_cert(store));
+#endif
+  if (!ssl_cert_verifier_->Verify(cert)) {
+    RTC_LOG(LS_INFO) << "Failed to verify certificate using custom callback";
+    return ok;
   }
 
-  return ok;
+  custom_cert_verifier_status_ = true;
+  RTC_LOG(LS_INFO) << "Validated certificate using custom callback";
+  return 1;
 }
+#endif  // !defined(WEBRTC_USE_CRYPTO_BUFFER_CALLBACK)
 
 int OpenSSLAdapter::NewSSLSessionCallback(SSL* ssl, SSL_SESSION* session) {
   OpenSSLAdapter* stream =
@@ -852,8 +941,15 @@ int OpenSSLAdapter::NewSSLSessionCallback(SSL* ssl, SSL_SESSION* session) {
 }
 
 SSL_CTX* OpenSSLAdapter::CreateContext(SSLMode mode, bool enable_cache) {
+#ifdef WEBRTC_USE_CRYPTO_BUFFER_CALLBACK
+  // If X509 objects aren't used, we can use these methods to avoid
+  // linking the sizable crypto/x509 code.
+  SSL_CTX* ctx = SSL_CTX_new(mode == SSL_MODE_DTLS ? DTLS_with_buffers_method()
+                                                   : TLS_with_buffers_method());
+#else
   SSL_CTX* ctx =
       SSL_CTX_new(mode == SSL_MODE_DTLS ? DTLS_method() : TLS_method());
+#endif
   if (ctx == nullptr) {
     unsigned long error = ERR_get_error();  // NOLINT: type used by OpenSSL.
     RTC_LOG(LS_WARNING) << "SSL_CTX creation failed: " << '"'
@@ -877,8 +973,16 @@ SSL_CTX* OpenSSLAdapter::CreateContext(SSLMode mode, bool enable_cache) {
   SSL_CTX_set_info_callback(ctx, SSLInfoCallback);
 #endif
 
+#ifdef OPENSSL_IS_BORINGSSL
+  SSL_CTX_set0_buffer_pool(ctx, openssl::GetBufferPool());
+#endif
+
+#ifdef WEBRTC_USE_CRYPTO_BUFFER_CALLBACK
+  SSL_CTX_set_custom_verify(ctx, SSL_VERIFY_PEER, SSLVerifyCallback);
+#else
   SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, SSLVerifyCallback);
   SSL_CTX_set_verify_depth(ctx, 4);
+#endif
   // Use defaults, but disable HMAC-SHA256 and HMAC-SHA384 ciphers
   // (note that SHA256 and SHA384 only select legacy CBC ciphers).
   // Additionally disable HMAC-SHA1 ciphers in ECDSA. These are the remaining

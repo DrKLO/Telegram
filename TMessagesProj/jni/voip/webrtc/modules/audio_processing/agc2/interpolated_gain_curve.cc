@@ -28,8 +28,9 @@ constexpr std::array<float, kInterpolatedGainCurveTotalPoints>
 constexpr std::array<float, kInterpolatedGainCurveTotalPoints>
     InterpolatedGainCurve::approximation_params_q_;
 
-InterpolatedGainCurve::InterpolatedGainCurve(ApmDataDumper* apm_data_dumper,
-                                             std::string histogram_name_prefix)
+InterpolatedGainCurve::InterpolatedGainCurve(
+    ApmDataDumper* apm_data_dumper,
+    const std::string& histogram_name_prefix)
     : region_logger_("WebRTC.Audio." + histogram_name_prefix +
                          ".FixedDigitalGainCurveRegion.Identity",
                      "WebRTC.Audio." + histogram_name_prefix +
@@ -56,10 +57,10 @@ InterpolatedGainCurve::~InterpolatedGainCurve() {
 }
 
 InterpolatedGainCurve::RegionLogger::RegionLogger(
-    std::string identity_histogram_name,
-    std::string knee_histogram_name,
-    std::string limiter_histogram_name,
-    std::string saturation_histogram_name)
+    const std::string& identity_histogram_name,
+    const std::string& knee_histogram_name,
+    const std::string& limiter_histogram_name,
+    const std::string& saturation_histogram_name)
     : identity_histogram(
           metrics::HistogramFactoryGetCounts(identity_histogram_name,
                                              1,

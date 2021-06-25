@@ -86,7 +86,7 @@ public final class DefaultExtractorsFactory implements ExtractorsFactory {
     FLAC_EXTENSION_EXTRACTOR_CONSTRUCTOR = flacExtensionExtractorConstructor;
   }
 
-  private boolean constantBitrateSeekingEnabled;
+  private boolean constantBitrateSeekingEnabled = true;
   private @AdtsExtractor.Flags int adtsFlags;
   private @AmrExtractor.Flags int amrFlags;
   private @MatroskaExtractor.Flags int matroskaFlags;

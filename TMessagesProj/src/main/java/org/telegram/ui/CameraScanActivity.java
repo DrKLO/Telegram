@@ -166,9 +166,9 @@ public class CameraScanActivity extends BaseFragment implements Camera.PreviewCa
     public CameraScanActivity(int type) {
         super();
         CameraController.getInstance().initCamera(() -> {
-            if (cameraView != null) {
-                cameraView.initCamera();
-            }
+//            if (cameraView != null) {
+//                cameraView.initCamera();
+//            }
         });
         currentType = type;
         if (currentType == TYPE_QR) {

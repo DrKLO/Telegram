@@ -48,7 +48,8 @@ SubbandErleEstimator::SubbandErleEstimator(const EchoCanceller3Config& config,
       use_min_erle_during_onsets_(EnableMinErleDuringOnsets()),
       accum_spectra_(num_capture_channels),
       erle_(num_capture_channels),
-      erle_onsets_(num_capture_channels),
+      erle_onset_compensated_(num_capture_channels),
+      erle_during_onsets_(num_capture_channels),
       coming_onset_(num_capture_channels),
       hold_counters_(num_capture_channels) {
   Reset();
@@ -57,11 +58,11 @@ SubbandErleEstimator::SubbandErleEstimator(const EchoCanceller3Config& config,
 SubbandErleEstimator::~SubbandErleEstimator() = default;
 
 void SubbandErleEstimator::Reset() {
-  for (auto& erle : erle_) {
-    erle.fill(min_erle_);
-  }
-  for (size_t ch = 0; ch < erle_onsets_.size(); ++ch) {
-    erle_onsets_[ch].fill(min_erle_);
+  const size_t num_capture_channels = erle_.size();
+  for (size_t ch = 0; ch < num_capture_channels; ++ch) {
+    erle_[ch].fill(min_erle_);
+    erle_onset_compensated_[ch].fill(min_erle_);
+    erle_during_onsets_[ch].fill(min_erle_);
     coming_onset_[ch].fill(true);
     hold_counters_[ch].fill(0);
   }
@@ -80,15 +81,21 @@ void SubbandErleEstimator::Update(
     DecreaseErlePerBandForLowRenderSignals();
   }
 
-  for (auto& erle : erle_) {
+  const size_t num_capture_channels = erle_.size();
+  for (size_t ch = 0; ch < num_capture_channels; ++ch) {
+    auto& erle = erle_[ch];
     erle[0] = erle[1];
     erle[kFftLengthBy2] = erle[kFftLengthBy2 - 1];
+
+    auto& erle_oc = erle_onset_compensated_[ch];
+    erle_oc[0] = erle_oc[1];
+    erle_oc[kFftLengthBy2] = erle_oc[kFftLengthBy2 - 1];
   }
 }
 
 void SubbandErleEstimator::Dump(
     const std::unique_ptr<ApmDataDumper>& data_dumper) const {
-  data_dumper->DumpRaw("aec3_erle_onset", ErleOnsets()[0]);
+  data_dumper->DumpRaw("aec3_erle_onset", ErleDuringOnsets()[0]);
 }
 
 void SubbandErleEstimator::UpdateBands(
@@ -102,13 +109,16 @@ void SubbandErleEstimator::UpdateBands(
       continue;
     }
 
+    if (accum_spectra_.num_points[ch] != kPointsToAccumulate) {
+      continue;
+    }
+
     std::array<float, kFftLengthBy2> new_erle;
     std::array<bool, kFftLengthBy2> is_erle_updated;
     is_erle_updated.fill(false);
 
     for (size_t k = 1; k < kFftLengthBy2; ++k) {
-      if (accum_spectra_.num_points[ch] == kPointsToAccumulate &&
-          accum_spectra_.E2[ch][k] > 0.f) {
+      if (accum_spectra_.E2[ch][k] > 0.f) {
         new_erle[k] = accum_spectra_.Y2[ch][k] / accum_spectra_.E2[ch][k];
         is_erle_updated[k] = true;
       }
@@ -120,10 +130,11 @@ void SubbandErleEstimator::UpdateBands(
           if (coming_onset_[ch][k]) {
             coming_onset_[ch][k] = false;
             if (!use_min_erle_during_onsets_) {
-              float alpha = new_erle[k] < erle_onsets_[ch][k] ? 0.3f : 0.15f;
-              erle_onsets_[ch][k] = rtc::SafeClamp(
-                  erle_onsets_[ch][k] +
-                      alpha * (new_erle[k] - erle_onsets_[ch][k]),
+              float alpha =
+                  new_erle[k] < erle_during_onsets_[ch][k] ? 0.3f : 0.15f;
+              erle_during_onsets_[ch][k] = rtc::SafeClamp(
+                  erle_during_onsets_[ch][k] +
+                      alpha * (new_erle[k] - erle_during_onsets_[ch][k]),
                   min_erle_, max_erle_[k]);
             }
           }
@@ -132,15 +143,26 @@ void SubbandErleEstimator::UpdateBands(
       }
     }
 
+    auto update_erle_band = [](float& erle, float new_erle,
+                               bool low_render_energy, float min_erle,
+                               float max_erle) {
+      float alpha = 0.05f;
+      if (new_erle < erle) {
+        alpha = low_render_energy ? 0.f : 0.1f;
+      }
+      erle =
+          rtc::SafeClamp(erle + alpha * (new_erle - erle), min_erle, max_erle);
+    };
+
     for (size_t k = 1; k < kFftLengthBy2; ++k) {
       if (is_erle_updated[k]) {
-        float alpha = 0.05f;
-        if (new_erle[k] < erle_[ch][k]) {
-          alpha = accum_spectra_.low_render_energy[ch][k] ? 0.f : 0.1f;
+        const bool low_render_energy = accum_spectra_.low_render_energy[ch][k];
+        update_erle_band(erle_[ch][k], new_erle[k], low_render_energy,
+                         min_erle_, max_erle_[k]);
+        if (use_onset_detection_) {
+          update_erle_band(erle_onset_compensated_[ch][k], new_erle[k],
+                           low_render_energy, min_erle_, max_erle_[k]);
         }
-        erle_[ch][k] =
-            rtc::SafeClamp(erle_[ch][k] + alpha * (new_erle[k] - erle_[ch][k]),
-                           min_erle_, max_erle_[k]);
       }
     }
   }
@@ -153,9 +175,11 @@ void SubbandErleEstimator::DecreaseErlePerBandForLowRenderSignals() {
       --hold_counters_[ch][k];
       if (hold_counters_[ch][k] <=
           (kBlocksForOnsetDetection - kBlocksToHoldErle)) {
-        if (erle_[ch][k] > erle_onsets_[ch][k]) {
-          erle_[ch][k] = std::max(erle_onsets_[ch][k], 0.97f * erle_[ch][k]);
-          RTC_DCHECK_LE(min_erle_, erle_[ch][k]);
+        if (erle_onset_compensated_[ch][k] > erle_during_onsets_[ch][k]) {
+          erle_onset_compensated_[ch][k] =
+              std::max(erle_during_onsets_[ch][k],
+                       0.97f * erle_onset_compensated_[ch][k]);
+          RTC_DCHECK_LE(min_erle_, erle_onset_compensated_[ch][k]);
         }
         if (hold_counters_[ch][k] <= 0) {
           coming_onset_[ch][k] = true;
@@ -167,7 +191,7 @@ void SubbandErleEstimator::DecreaseErlePerBandForLowRenderSignals() {
 }
 
 void SubbandErleEstimator::ResetAccumulatedSpectra() {
-  for (size_t ch = 0; ch < erle_onsets_.size(); ++ch) {
+  for (size_t ch = 0; ch < erle_during_onsets_.size(); ++ch) {
     accum_spectra_.Y2[ch].fill(0.f);
     accum_spectra_.E2[ch].fill(0.f);
     accum_spectra_.num_points[ch] = 0;

@@ -53,6 +53,16 @@ size_t RemoveFromMapByValue(Map* map, const Value& value) {
 RtpDemuxerCriteria::RtpDemuxerCriteria() = default;
 RtpDemuxerCriteria::~RtpDemuxerCriteria() = default;
 
+bool RtpDemuxerCriteria::operator==(const RtpDemuxerCriteria& other) const {
+  return this->mid == other.mid && this->rsid == other.rsid &&
+         this->ssrcs == other.ssrcs &&
+         this->payload_types == other.payload_types;
+}
+
+bool RtpDemuxerCriteria::operator!=(const RtpDemuxerCriteria& other) const {
+  return !(*this == other);
+}
+
 std::string RtpDemuxerCriteria::ToString() const {
   rtc::StringBuilder sb;
   sb << "{mid: " << (mid.empty() ? "<empty>" : mid)
@@ -91,7 +101,7 @@ std::string RtpDemuxer::DescribePacket(const RtpPacketReceived& packet) {
   return sb.Release();
 }
 
-RtpDemuxer::RtpDemuxer() = default;
+RtpDemuxer::RtpDemuxer(bool use_mid /* = true*/) : use_mid_(use_mid) {}
 
 RtpDemuxer::~RtpDemuxer() {
   RTC_DCHECK(sink_by_mid_.empty());

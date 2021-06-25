@@ -8,9 +8,10 @@
 
 #include "rtc_base/copy_on_write_buffer.h"
 #include "rtc_base/third_party/sigslot/sigslot.h"
+#include "rtc_base/network_monitor_factory.h"
 #include "api/candidate.h"
 #include "media/base/media_channel.h"
-#include "media/sctp/sctp_transport.h"
+#include "rtc_base/ssl_fingerprint.h"
 #include "pc/sctp_data_channel.h"
 
 #include <functional>
@@ -58,7 +59,6 @@ public:
     GroupNetworkManager(
         std::function<void(const State &)> stateUpdated,
         std::function<void(rtc::CopyOnWriteBuffer const &, bool)> transportMessageReceived,
-        std::function<void(rtc::CopyOnWriteBuffer const &, int64_t)> rtcpPacketReceived,
         std::function<void(bool)> dataChannelStateUpdated,
         std::function<void(std::string const &)> dataChannelMessageReceived,
         std::shared_ptr<Threads> threads);
@@ -82,11 +82,9 @@ private:
     void candidateGatheringState(cricket::IceTransportInternal *transport);
     void OnTransportWritableState_n(rtc::PacketTransportInternal *transport);
     void OnTransportReceivingState_n(rtc::PacketTransportInternal *transport);
-    void OnDtlsHandshakeError(rtc::SSLHandshakeError error);
     void transportStateChanged(cricket::IceTransportInternal *transport);
     void transportReadyToSend(cricket::IceTransportInternal *transport);
     void transportPacketReceived(rtc::PacketTransportInternal *transport, const char *bytes, size_t size, const int64_t &timestamp, int unused);
-    void DtlsStateChanged();
     void DtlsReadyToSend(bool DtlsReadyToSend);
     void UpdateAggregateStates_n();
     void RtpPacketReceived_n(rtc::CopyOnWriteBuffer *packet, int64_t packet_time_us, bool isUnresolved);
@@ -98,10 +96,10 @@ private:
     std::shared_ptr<Threads> _threads;
     std::function<void(const GroupNetworkManager::State &)> _stateUpdated;
     std::function<void(rtc::CopyOnWriteBuffer const &, bool)> _transportMessageReceived;
-    std::function<void(rtc::CopyOnWriteBuffer const &, int64_t)> _rtcpPacketReceived;
     std::function<void(bool)> _dataChannelStateUpdated;
     std::function<void(std::string const &)> _dataChannelMessageReceived;
 
+    std::unique_ptr<rtc::NetworkMonitorFactory> _networkMonitorFactory;
     std::unique_ptr<rtc::BasicPacketSocketFactory> _socketFactory;
     std::unique_ptr<rtc::BasicNetworkManager> _networkManager;
     std::unique_ptr<webrtc::TurnCustomizer> _turnCustomizer;

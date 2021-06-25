@@ -174,8 +174,6 @@ public class FlatCheckBox extends View {
             canvas.drawLine((int) AndroidUtilities.dpf2(7f), (int) AndroidUtilities.dpf2(13f), endX, endY, checkPaint);
         }
         canvas.restore();
-
-
     }
 
     public void denied() {

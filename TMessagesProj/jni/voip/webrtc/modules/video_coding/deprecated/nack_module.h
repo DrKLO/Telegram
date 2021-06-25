@@ -17,11 +17,11 @@
 #include <set>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "api/units/time_delta.h"
 #include "modules/include/module.h"
 #include "modules/include/module_common_types.h"
 #include "modules/video_coding/histogram.h"
-#include "rtc_base/deprecation.h"
 #include "rtc_base/numerics/sequence_number_util.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/thread_annotations.h"
@@ -125,7 +125,7 @@ class DEPRECATED_NackModule : public Module {
   const absl::optional<BackoffSettings> backoff_settings_;
 };
 
-using NackModule = RTC_DEPRECATED DEPRECATED_NackModule;
+using NackModule ABSL_DEPRECATED("") = DEPRECATED_NackModule;
 
 }  // namespace webrtc
 

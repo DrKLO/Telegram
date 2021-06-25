@@ -14,6 +14,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <list>
 #include <memory>
 #include <utility>
 
@@ -26,10 +27,12 @@
 
 namespace webrtc {
 
-// This class implements redundant audio coding. The class object will have an
-// underlying AudioEncoder object that performs the actual encodings. The
-// current class will gather the two latest encodings from the underlying codec
-// into one packet.
+// This class implements redundant audio coding as described in
+//   https://tools.ietf.org/html/rfc2198
+// The class object will have an underlying AudioEncoder object that performs
+// the actual encodings. The current class will gather the N latest encodings
+// from the underlying codec into one packet. Currently N is hard-coded to 2.
+
 class AudioEncoderCopyRed final : public AudioEncoder {
  public:
   struct Config {
@@ -50,21 +53,33 @@ class AudioEncoderCopyRed final : public AudioEncoder {
   size_t Num10MsFramesInNextPacket() const override;
   size_t Max10MsFramesInAPacket() const override;
   int GetTargetBitrate() const override;
+
   void Reset() override;
   bool SetFec(bool enable) override;
+
   bool SetDtx(bool enable) override;
+  bool GetDtx() const override;
+
   bool SetApplication(Application application) override;
   void SetMaxPlaybackRate(int frequency_hz) override;
-  rtc::ArrayView<std::unique_ptr<AudioEncoder>> ReclaimContainedEncoders()
-      override;
+  bool EnableAudioNetworkAdaptor(const std::string& config_string,
+                                 RtcEventLog* event_log) override;
+  void DisableAudioNetworkAdaptor() override;
   void OnReceivedUplinkPacketLossFraction(
       float uplink_packet_loss_fraction) override;
   void OnReceivedUplinkBandwidth(
       int target_audio_bitrate_bps,
       absl::optional<int64_t> bwe_period_ms) override;
+  void OnReceivedUplinkAllocation(BitrateAllocationUpdate update) override;
+  void OnReceivedRtt(int rtt_ms) override;
   void OnReceivedOverhead(size_t overhead_bytes_per_packet) override;
+  void SetReceiverFrameLengthRange(int min_frame_length_ms,
+                                   int max_frame_length_ms) override;
+  ANAStats GetANAStats() const override;
   absl::optional<std::pair<TimeDelta, TimeDelta>> GetFrameLengthRange()
       const override;
+  rtc::ArrayView<std::unique_ptr<AudioEncoder>> ReclaimContainedEncoders()
+      override;
 
  protected:
   EncodedInfo EncodeImpl(uint32_t rtp_timestamp,
@@ -72,15 +87,11 @@ class AudioEncoderCopyRed final : public AudioEncoder {
                          rtc::Buffer* encoded) override;
 
  private:
-  size_t CalculateHeaderLength(size_t encoded_bytes) const;
-
   std::unique_ptr<AudioEncoder> speech_encoder_;
+  rtc::Buffer primary_encoded_;
   size_t max_packet_length_;
   int red_payload_type_;
-  rtc::Buffer secondary_encoded_;
-  EncodedInfoLeaf secondary_info_;
-  rtc::Buffer tertiary_encoded_;
-  EncodedInfoLeaf tertiary_info_;
+  std::list<std::pair<EncodedInfo, rtc::Buffer>> redundant_encodings_;
 
   RTC_DISALLOW_COPY_AND_ASSIGN(AudioEncoderCopyRed);
 };

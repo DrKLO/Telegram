@@ -403,12 +403,14 @@ int TCPConnection::Send(const void* data,
   static_cast<TCPPort*>(port_)->CopyPortInformationToPacketInfo(
       &modified_options.info_signaled_after_sent);
   int sent = socket_->Send(data, size, modified_options);
+  int64_t now = rtc::TimeMillis();
   if (sent < 0) {
     stats_.sent_discarded_packets++;
     error_ = socket_->GetError();
   } else {
-    send_rate_tracker_.AddSamples(sent);
+    send_rate_tracker_.AddSamplesAtTime(now, sent);
   }
+  last_send_data_ = now;
   return sent;
 }
 

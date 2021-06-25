@@ -54,16 +54,6 @@ RtcEventIceCandidatePairConfig::RtcEventIceCandidatePairConfig(
 
 RtcEventIceCandidatePairConfig::~RtcEventIceCandidatePairConfig() = default;
 
-RtcEvent::Type RtcEventIceCandidatePairConfig::GetType() const {
-  return RtcEvent::Type::IceCandidatePairConfig;
-}
-
-// The ICE candidate pair config event is not equivalent to a RtcEventLog config
-// event.
-bool RtcEventIceCandidatePairConfig::IsConfigEvent() const {
-  return false;
-}
-
 std::unique_ptr<RtcEventIceCandidatePairConfig>
 RtcEventIceCandidatePairConfig::Copy() const {
   return absl::WrapUnique<RtcEventIceCandidatePairConfig>(

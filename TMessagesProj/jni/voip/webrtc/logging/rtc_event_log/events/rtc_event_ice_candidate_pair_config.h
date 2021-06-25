@@ -83,6 +83,8 @@ class IceCandidatePairDescription {
 
 class RtcEventIceCandidatePairConfig final : public RtcEvent {
  public:
+  static constexpr Type kType = Type::IceCandidatePairConfig;
+
   RtcEventIceCandidatePairConfig(
       IceCandidatePairConfigType type,
       uint32_t candidate_pair_id,
@@ -90,9 +92,9 @@ class RtcEventIceCandidatePairConfig final : public RtcEvent {
 
   ~RtcEventIceCandidatePairConfig() override;
 
-  Type GetType() const override;
-
-  bool IsConfigEvent() const override;
+  Type GetType() const override { return kType; }
+  // N.B. An ICE config event is not considered an RtcEventLog config event.
+  bool IsConfigEvent() const override { return false; }
 
   std::unique_ptr<RtcEventIceCandidatePairConfig> Copy() const;
 
@@ -108,6 +110,22 @@ class RtcEventIceCandidatePairConfig final : public RtcEvent {
   const IceCandidatePairConfigType type_;
   const uint32_t candidate_pair_id_;
   const IceCandidatePairDescription candidate_pair_desc_;
+};
+
+struct LoggedIceCandidatePairConfig {
+  int64_t log_time_us() const { return timestamp_us; }
+  int64_t log_time_ms() const { return timestamp_us / 1000; }
+
+  int64_t timestamp_us;
+  IceCandidatePairConfigType type;
+  uint32_t candidate_pair_id;
+  IceCandidateType local_candidate_type;
+  IceCandidatePairProtocol local_relay_protocol;
+  IceCandidateNetworkType local_network_type;
+  IceCandidatePairAddressFamily local_address_family;
+  IceCandidateType remote_candidate_type;
+  IceCandidatePairAddressFamily remote_address_family;
+  IceCandidatePairProtocol candidate_pair_protocol;
 };
 
 }  // namespace webrtc

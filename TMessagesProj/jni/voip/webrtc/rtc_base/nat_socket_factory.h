@@ -107,7 +107,7 @@ class NATSocketServer : public SocketServer, public NATInternalSocketFactory {
                const SocketAddress& ext_addr);
     ~Translator();
 
-    SocketFactory* internal_factory() { return internal_factory_.get(); }
+    SocketFactory* internal_factory() { return internal_server_.get(); }
     SocketAddress internal_udp_address() const {
       return nat_server_->internal_udp_address();
     }
@@ -129,7 +129,7 @@ class NATSocketServer : public SocketServer, public NATInternalSocketFactory {
 
    private:
     NATSocketServer* server_;
-    std::unique_ptr<SocketFactory> internal_factory_;
+    std::unique_ptr<SocketServer> internal_server_;
     std::unique_ptr<NATServer> nat_server_;
     TranslatorMap nats_;
     std::set<SocketAddress> clients_;

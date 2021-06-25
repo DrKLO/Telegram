@@ -57,7 +57,8 @@ struct RTC_EXPORT SSLFingerprint {
                  const uint8_t* digest_in,
                  size_t digest_len);
 
-  SSLFingerprint(const SSLFingerprint& from);
+  SSLFingerprint(const SSLFingerprint& from) = default;
+  SSLFingerprint& operator=(const SSLFingerprint& from) = default;
 
   bool operator==(const SSLFingerprint& other) const;
 

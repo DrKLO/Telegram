@@ -28,7 +28,6 @@
 
 #include "absl/types/optional.h"
 #include "api/rtc_error.h"
-#include "rtc_base/deprecation.h"
 #include "rtc_base/ref_count.h"
 #include "rtc_base/system/rtc_export.h"
 
@@ -135,6 +134,13 @@ class RTC_EXPORT SessionDescriptionInterface {
   static const char kRollback[];
 
   virtual ~SessionDescriptionInterface() {}
+
+  // Create a new SessionDescriptionInterface object
+  // with the same values as the old object.
+  // TODO(bugs.webrtc.org:12215): Remove default implementation
+  virtual std::unique_ptr<SessionDescriptionInterface> Clone() const {
+    return nullptr;
+  }
 
   // Only for use internally.
   virtual cricket::SessionDescription* description() = 0;

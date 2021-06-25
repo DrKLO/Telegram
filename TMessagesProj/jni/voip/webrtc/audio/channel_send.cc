@@ -21,6 +21,7 @@
 #include "api/call/transport.h"
 #include "api/crypto/frame_encryptor_interface.h"
 #include "api/rtc_event_log/rtc_event_log.h"
+#include "api/sequence_checker.h"
 #include "audio/channel_send_frame_transformer_delegate.h"
 #include "audio/utility/audio_frame_operations.h"
 #include "call/rtp_transport_controller_send_interface.h"
@@ -41,7 +42,6 @@
 #include "rtc_base/rate_limiter.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/task_queue.h"
-#include "rtc_base/thread_checker.h"
 #include "rtc_base/time_utils.h"
 #include "system_wrappers/include/clock.h"
 #include "system_wrappers/include/field_trial.h"
@@ -179,8 +179,8 @@ class ChannelSend : public ChannelSendInterface,
   // specific threads we know about. The goal is to eventually split up
   // voe::Channel into parts with single-threaded semantics, and thereby reduce
   // the need for locks.
-  rtc::ThreadChecker worker_thread_checker_;
-  rtc::ThreadChecker module_process_thread_checker_;
+  SequenceChecker worker_thread_checker_;
+  SequenceChecker module_process_thread_checker_;
   // Methods accessed from audio and video threads are checked for sequential-
   // only access. We don't necessarily own and control these threads, so thread
   // checkers cannot be used. E.g. Chromium may transfer "ownership" from one
@@ -218,8 +218,7 @@ class ChannelSend : public ChannelSendInterface,
   const std::unique_ptr<RtpPacketSenderProxy> rtp_packet_pacer_proxy_;
   const std::unique_ptr<RateLimiter> retransmission_rate_limiter_;
 
-  rtc::ThreadChecker construction_thread_;
-
+  SequenceChecker construction_thread_;
 
   bool encoder_queue_is_active_ RTC_GUARDED_BY(encoder_queue_) = false;
 
@@ -241,6 +240,8 @@ class ChannelSend : public ChannelSendInterface,
   // Defined last to ensure that there are no running tasks when the other
   // members are destroyed.
   rtc::TaskQueue encoder_queue_;
+
+  const bool fixing_timestamp_stall_;
 };
 
 const int kTelephoneEventAttenuationdB = 10;
@@ -262,7 +263,7 @@ class RtpPacketSenderProxy : public RtpPacketSender {
   }
 
  private:
-  rtc::ThreadChecker thread_checker_;
+  SequenceChecker thread_checker_;
   Mutex mutex_;
   RtpPacketSender* rtp_packet_pacer_ RTC_GUARDED_BY(&mutex_);
 };
@@ -471,7 +472,9 @@ ChannelSend::ChannelSend(
       crypto_options_(crypto_options),
       encoder_queue_(task_queue_factory->CreateTaskQueue(
           "AudioEncoder",
-          TaskQueueFactory::Priority::NORMAL)) {
+          TaskQueueFactory::Priority::NORMAL)),
+      fixing_timestamp_stall_(
+          !field_trial::IsDisabled("WebRTC-Audio-FixTimestampStall")) {
   RTC_DCHECK(module_process_thread);
   module_process_thread_checker_.Detach();
 
@@ -746,25 +749,20 @@ std::vector<ReportBlock> ChannelSend::GetRemoteRTCPReportBlocks() const {
   // Get the report blocks from the latest received RTCP Sender or Receiver
   // Report. Each element in the vector contains the sender's SSRC and a
   // report block according to RFC 3550.
-  std::vector<RTCPReportBlock> rtcp_report_blocks;
-
-  int ret = rtp_rtcp_->RemoteRTCPStat(&rtcp_report_blocks);
-  RTC_DCHECK_EQ(0, ret);
-
   std::vector<ReportBlock> report_blocks;
-
-  std::vector<RTCPReportBlock>::const_iterator it = rtcp_report_blocks.begin();
-  for (; it != rtcp_report_blocks.end(); ++it) {
+  for (const ReportBlockData& data : rtp_rtcp_->GetLatestReportBlockData()) {
     ReportBlock report_block;
-    report_block.sender_SSRC = it->sender_ssrc;
-    report_block.source_SSRC = it->source_ssrc;
-    report_block.fraction_lost = it->fraction_lost;
-    report_block.cumulative_num_packets_lost = it->packets_lost;
+    report_block.sender_SSRC = data.report_block().sender_ssrc;
+    report_block.source_SSRC = data.report_block().source_ssrc;
+    report_block.fraction_lost = data.report_block().fraction_lost;
+    report_block.cumulative_num_packets_lost = data.report_block().packets_lost;
     report_block.extended_highest_sequence_number =
-        it->extended_highest_sequence_number;
-    report_block.interarrival_jitter = it->jitter;
-    report_block.last_SR_timestamp = it->last_sender_report_timestamp;
-    report_block.delay_since_last_SR = it->delay_since_last_sender_report;
+        data.report_block().extended_highest_sequence_number;
+    report_block.interarrival_jitter = data.report_block().jitter;
+    report_block.last_SR_timestamp =
+        data.report_block().last_sender_report_timestamp;
+    report_block.delay_since_last_SR =
+        data.report_block().delay_since_last_sender_report;
     report_blocks.push_back(report_block);
   }
   return report_blocks;
@@ -808,6 +806,10 @@ void ChannelSend::ProcessAndEncodeAudio(
       [this, audio_frame = std::move(audio_frame)]() mutable {
         RTC_DCHECK_RUN_ON(&encoder_queue_);
         if (!encoder_queue_is_active_) {
+          if (fixing_timestamp_stall_) {
+            _timeStamp +=
+                static_cast<uint32_t>(audio_frame->samples_per_channel_);
+          }
           return;
         }
         // Measure time between when the audio frame is added to the task queue
@@ -861,24 +863,15 @@ RtpRtcpInterface* ChannelSend::GetRtpRtcp() const {
 }
 
 int64_t ChannelSend::GetRTT() const {
-  std::vector<RTCPReportBlock> report_blocks;
-  rtp_rtcp_->RemoteRTCPStat(&report_blocks);
-
+  std::vector<ReportBlockData> report_blocks =
+      rtp_rtcp_->GetLatestReportBlockData();
   if (report_blocks.empty()) {
     return 0;
   }
 
-  int64_t rtt = 0;
-  int64_t avg_rtt = 0;
-  int64_t max_rtt = 0;
-  int64_t min_rtt = 0;
   // We don't know in advance the remote ssrc used by the other end's receiver
-  // reports, so use the SSRC of the first report block for calculating the RTT.
-  if (rtp_rtcp_->RTT(report_blocks[0].sender_ssrc, &rtt, &avg_rtt, &min_rtt,
-                     &max_rtt) != 0) {
-    return 0;
-  }
-  return rtt;
+  // reports, so use the first report block for the RTT.
+  return report_blocks.front().last_rtt_ms();
 }
 
 void ChannelSend::SetFrameEncryptor(
@@ -926,7 +919,7 @@ void ChannelSend::InitFrameTransformerDelegate(
                             absolute_capture_timestamp_ms);
       };
   frame_transformer_delegate_ =
-      new rtc::RefCountedObject<ChannelSendFrameTransformerDelegate>(
+      rtc::make_ref_counted<ChannelSendFrameTransformerDelegate>(
           std::move(send_audio_callback), std::move(frame_transformer),
           &encoder_queue_);
   frame_transformer_delegate_->Init();

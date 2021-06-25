@@ -13,6 +13,7 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -34,11 +35,10 @@ public class ChatBigEmptyView extends LinearLayout {
     public final static int EMPTY_VIEW_TYPE_GROUP = 1;
     public final static int EMPTY_VIEW_TYPE_SAVED = 2;
 
-    public ChatBigEmptyView(Context context, int type) {
+    public ChatBigEmptyView(Context context, View parent, int type) {
         super(context);
 
-        setBackgroundResource(R.drawable.system);
-        getBackground().setColorFilter(Theme.colorFilter);
+        setBackground(Theme.createServiceDrawable(AndroidUtilities.dp(18), this, parent));
         setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(12), AndroidUtilities.dp(16), AndroidUtilities.dp(12));
         setOrientation(LinearLayout.VERTICAL);
 

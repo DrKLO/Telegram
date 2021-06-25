@@ -19,7 +19,6 @@
 
 #include "api/peer_connection_interface.h"
 #include "call/call.h"
-#include "pc/rtp_data_channel.h"
 #include "pc/rtp_transceiver.h"
 #include "pc/sctp_data_channel.h"
 
@@ -41,12 +40,8 @@ class PeerConnectionInternal : public PeerConnectionInterface {
       rtc::scoped_refptr<RtpTransceiverProxyWithInternal<RtpTransceiver>>>
   GetTransceiversInternal() const = 0;
 
-  virtual sigslot::signal1<RtpDataChannel*>& SignalRtpDataChannelCreated() = 0;
   virtual sigslot::signal1<SctpDataChannel*>&
   SignalSctpDataChannelCreated() = 0;
-
-  // Only valid when using deprecated RTP data channels.
-  virtual cricket::RtpDataChannel* rtp_data_channel() const = 0;
 
   // Call on the network thread to fetch stats for all the data channels.
   // TODO(tommi): Make pure virtual after downstream updates.
@@ -55,14 +50,13 @@ class PeerConnectionInternal : public PeerConnectionInterface {
   }
 
   virtual absl::optional<std::string> sctp_transport_name() const = 0;
+  virtual absl::optional<std::string> sctp_mid() const = 0;
 
   virtual cricket::CandidateStatsList GetPooledCandidateStats() const = 0;
 
-  // Returns a map from MID to transport name for all active media sections.
-  virtual std::map<std::string, std::string> GetTransportNamesByMid() const = 0;
-
   // Returns a map from transport name to transport stats for all given
   // transport names.
+  // Must be called on the network thread.
   virtual std::map<std::string, cricket::TransportStats>
   GetTransportStatsByNames(const std::set<std::string>& transport_names) = 0;
 

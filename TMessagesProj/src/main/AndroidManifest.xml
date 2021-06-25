@@ -145,11 +145,10 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:scheme="tg" />
             </intent-filter>
-            <intent-filter android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round" android:priority="1">
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:scheme="ton" />
+            <intent-filter>
+                <action android:name="org.telegram.messenger.CREATE_STICKER_PACK"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="*/*"/>
             </intent-filter>
             <meta-data android:name="android.service.chooser.chooser_target_service" android:value="androidx.sharetarget.ChooserTargetServiceCompat" />
             <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
@@ -332,7 +331,7 @@
         <service android:name=".LocationSharingService"
             android:foregroundServiceType="location"
             android:enabled="true"/>
-        <service android:name=".voip.VoIPService" android:enabled="true"/>
+        <service android:name=".voip.VoIPService" android:enabled="true" android:foregroundServiceType="mediaProjection|camera|microphone"/>
         <service android:name=".GoogleVoiceClientService"/>
         <service android:name=".MusicPlayerService" android:exported="true" android:enabled="true"/>
         <service android:name=".MusicBrowserService" android:exported="true">

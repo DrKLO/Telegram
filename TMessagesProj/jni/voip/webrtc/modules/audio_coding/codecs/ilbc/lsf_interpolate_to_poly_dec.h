@@ -19,7 +19,7 @@
 #ifndef MODULES_AUDIO_CODING_CODECS_ILBC_MAIN_SOURCE_LSF_INTERPOLATE_TO_POLY_DEC_H_
 #define MODULES_AUDIO_CODING_CODECS_ILBC_MAIN_SOURCE_LSF_INTERPOLATE_TO_POLY_DEC_H_
 
-#include "modules/audio_coding/codecs/ilbc/defines.h"
+#include <stdint.h>
 
 /*----------------------------------------------------------------*
  *  interpolation of lsf coefficients for the decoder

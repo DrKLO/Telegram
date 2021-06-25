@@ -18,7 +18,6 @@
 #include "common_video/libyuv/include/webrtc_libyuv.h"
 #include "media/base/video_common.h"
 #include "modules/video_coding/codecs/multiplex/include/augmented_video_frame_buffer.h"
-#include "rtc_base/keep_ref_until_done.h"
 #include "rtc_base/logging.h"
 
 namespace webrtc {
@@ -164,20 +163,38 @@ int MultiplexEncoderAdapter::Encode(
     return WEBRTC_VIDEO_CODEC_UNINITIALIZED;
   }
 
+  // The input image is forwarded as-is, unless it is a native buffer and
+  // |supports_augmented_data_| is true in which case we need to map it in order
+  // to access the underlying AugmentedVideoFrameBuffer.
+  VideoFrame forwarded_image = input_image;
+  if (supports_augmented_data_ &&
+      forwarded_image.video_frame_buffer()->type() ==
+          VideoFrameBuffer::Type::kNative) {
+    auto info = GetEncoderInfo();
+    rtc::scoped_refptr<VideoFrameBuffer> mapped_buffer =
+        forwarded_image.video_frame_buffer()->GetMappedFrameBuffer(
+            info.preferred_pixel_formats);
+    if (!mapped_buffer) {
+      // Unable to map the buffer.
+      return WEBRTC_VIDEO_CODEC_ERROR;
+    }
+    forwarded_image.set_video_frame_buffer(std::move(mapped_buffer));
+  }
+
   std::vector<VideoFrameType> adjusted_frame_types;
   if (key_frame_interval_ > 0 && picture_index_ % key_frame_interval_ == 0) {
     adjusted_frame_types.push_back(VideoFrameType::kVideoFrameKey);
   } else {
     adjusted_frame_types.push_back(VideoFrameType::kVideoFrameDelta);
   }
-  const bool has_alpha = input_image.video_frame_buffer()->type() ==
+  const bool has_alpha = forwarded_image.video_frame_buffer()->type() ==
                          VideoFrameBuffer::Type::kI420A;
   std::unique_ptr<uint8_t[]> augmenting_data = nullptr;
   uint16_t augmenting_data_length = 0;
   AugmentedVideoFrameBuffer* augmented_video_frame_buffer = nullptr;
   if (supports_augmented_data_) {
     augmented_video_frame_buffer = static_cast<AugmentedVideoFrameBuffer*>(
-        input_image.video_frame_buffer().get());
+        forwarded_image.video_frame_buffer().get());
     augmenting_data_length =
         augmented_video_frame_buffer->GetAugmentingDataSize();
     augmenting_data =
@@ -192,7 +209,7 @@ int MultiplexEncoderAdapter::Encode(
     MutexLock lock(&mutex_);
     stashed_images_.emplace(
         std::piecewise_construct,
-        std::forward_as_tuple(input_image.timestamp()),
+        std::forward_as_tuple(forwarded_image.timestamp()),
         std::forward_as_tuple(
             picture_index_, has_alpha ? kAlphaCodecStreams : 1,
             std::move(augmenting_data), augmenting_data_length));
@@ -201,7 +218,8 @@ int MultiplexEncoderAdapter::Encode(
   ++picture_index_;
 
   // Encode YUV
-  int rv = encoders_[kYUVStream]->Encode(input_image, &adjusted_frame_types);
+  int rv =
+      encoders_[kYUVStream]->Encode(forwarded_image, &adjusted_frame_types);
 
   // If we do not receive an alpha frame, we send a single frame for this
   // |picture_index_|. The receiver will receive |frame_count| as 1 which
@@ -210,24 +228,27 @@ int MultiplexEncoderAdapter::Encode(
     return rv;
 
   // Encode AXX
-  const I420ABufferInterface* yuva_buffer =
+  rtc::scoped_refptr<VideoFrameBuffer> frame_buffer =
       supports_augmented_data_
-          ? augmented_video_frame_buffer->GetVideoFrameBuffer()->GetI420A()
-          : input_image.video_frame_buffer()->GetI420A();
+          ? augmented_video_frame_buffer->GetVideoFrameBuffer()
+          : forwarded_image.video_frame_buffer();
+  const I420ABufferInterface* yuva_buffer = frame_buffer->GetI420A();
   rtc::scoped_refptr<I420BufferInterface> alpha_buffer =
-      WrapI420Buffer(input_image.width(), input_image.height(),
+      WrapI420Buffer(forwarded_image.width(), forwarded_image.height(),
                      yuva_buffer->DataA(), yuva_buffer->StrideA(),
                      multiplex_dummy_planes_.data(), yuva_buffer->StrideU(),
                      multiplex_dummy_planes_.data(), yuva_buffer->StrideV(),
-                     rtc::KeepRefUntilDone(input_image.video_frame_buffer()));
-  VideoFrame alpha_image = VideoFrame::Builder()
-                               .set_video_frame_buffer(alpha_buffer)
-                               .set_timestamp_rtp(input_image.timestamp())
-                               .set_timestamp_ms(input_image.render_time_ms())
-                               .set_rotation(input_image.rotation())
-                               .set_id(input_image.id())
-                               .set_packet_infos(input_image.packet_infos())
-                               .build();
+                     // To keep reference alive.
+                     [frame_buffer] {});
+  VideoFrame alpha_image =
+      VideoFrame::Builder()
+          .set_video_frame_buffer(alpha_buffer)
+          .set_timestamp_rtp(forwarded_image.timestamp())
+          .set_timestamp_ms(forwarded_image.render_time_ms())
+          .set_rotation(forwarded_image.rotation())
+          .set_id(forwarded_image.id())
+          .set_packet_infos(forwarded_image.packet_infos())
+          .build();
   rv = encoders_[kAXXStream]->Encode(alpha_image, &adjusted_frame_types);
   return rv;
 }
@@ -302,9 +323,6 @@ EncodedImageCallback::Result MultiplexEncoderAdapter::OnEncodedImage(
   image_component.codec_type =
       PayloadStringToCodecType(associated_format_.name);
   image_component.encoded_image = encodedImage;
-
-  // If we don't already own the buffer, make a copy.
-  image_component.encoded_image.Retain();
 
   MutexLock lock(&mutex_);
   const auto& stashed_image_itr =

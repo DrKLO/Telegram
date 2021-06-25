@@ -56,9 +56,10 @@ void RemixAndResample(const int16_t* src_data,
 
   if (resampler->InitializeIfNeeded(sample_rate_hz, dst_frame->sample_rate_hz_,
                                     audio_ptr_num_channels) == -1) {
-    FATAL() << "InitializeIfNeeded failed: sample_rate_hz = " << sample_rate_hz
-            << ", dst_frame->sample_rate_hz_ = " << dst_frame->sample_rate_hz_
-            << ", audio_ptr_num_channels = " << audio_ptr_num_channels;
+    RTC_FATAL() << "InitializeIfNeeded failed: sample_rate_hz = "
+                << sample_rate_hz << ", dst_frame->sample_rate_hz_ = "
+                << dst_frame->sample_rate_hz_
+                << ", audio_ptr_num_channels = " << audio_ptr_num_channels;
   }
 
   // TODO(yujo): for muted input frames, don't resample. Either 1) allow
@@ -70,9 +71,10 @@ void RemixAndResample(const int16_t* src_data,
       resampler->Resample(audio_ptr, src_length, dst_frame->mutable_data(),
                           AudioFrame::kMaxDataSizeSamples);
   if (out_length == -1) {
-    FATAL() << "Resample failed: audio_ptr = " << audio_ptr
-            << ", src_length = " << src_length
-            << ", dst_frame->mutable_data() = " << dst_frame->mutable_data();
+    RTC_FATAL() << "Resample failed: audio_ptr = " << audio_ptr
+                << ", src_length = " << src_length
+                << ", dst_frame->mutable_data() = "
+                << dst_frame->mutable_data();
   }
   dst_frame->samples_per_channel_ = out_length / audio_ptr_num_channels;
 

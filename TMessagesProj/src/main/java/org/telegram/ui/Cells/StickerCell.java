@@ -23,6 +23,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
+import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
@@ -138,6 +139,21 @@ public class StickerCell extends FrameLayout {
 
     public boolean showingBitmap() {
         return imageView.getImageReceiver().getBitmap() != null;
+    }
+
+    public MessageObject.SendAnimationData getSendAnimationData() {
+        ImageReceiver imageReceiver = imageView.getImageReceiver();
+        if (!imageReceiver.hasNotThumb()) {
+            return null;
+        }
+        MessageObject.SendAnimationData data = new MessageObject.SendAnimationData();
+        int[] position = new int[2];
+        imageView.getLocationInWindow(position);
+        data.x = imageReceiver.getCenterX() + position[0];
+        data.y = imageReceiver.getCenterY() + position[1];
+        data.width = imageReceiver.getImageWidth();
+        data.height = imageReceiver.getImageHeight();
+        return data;
     }
 
     @Override

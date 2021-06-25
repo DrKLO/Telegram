@@ -57,7 +57,7 @@ ForwardErrorCorrection::PacketList MediaPacketGenerator::ConstructMediaPackets(
     media_packet->data.SetSize(
         random_->Rand(min_packet_size_, max_packet_size_));
 
-    uint8_t* data = media_packet->data.data();
+    uint8_t* data = media_packet->data.MutableData();
     // Generate random values for the first 2 bytes
     data[0] = random_->Rand<uint8_t>();
     data[1] = random_->Rand<uint8_t>();
@@ -88,7 +88,7 @@ ForwardErrorCorrection::PacketList MediaPacketGenerator::ConstructMediaPackets(
   // Last packet, set marker bit.
   ForwardErrorCorrection::Packet* media_packet = media_packets.back().get();
   RTC_DCHECK(media_packet);
-  media_packet->data[1] |= 0x80;
+  media_packet->data.MutableData()[1] |= 0x80;
 
   next_seq_num_ = seq_num;
 
@@ -122,7 +122,7 @@ std::unique_ptr<AugmentedPacket> AugmentedPacketGenerator::NextPacket(
   std::unique_ptr<AugmentedPacket> packet(new AugmentedPacket());
 
   packet->data.SetSize(length + kRtpHeaderSize);
-  uint8_t* data = packet->data.data();
+  uint8_t* data = packet->data.MutableData();
   for (size_t i = 0; i < length; ++i)
     data[i + kRtpHeaderSize] = offset + i;
   packet->data.SetSize(length + kRtpHeaderSize);
@@ -132,7 +132,7 @@ std::unique_ptr<AugmentedPacket> AugmentedPacketGenerator::NextPacket(
   packet->header.sequenceNumber = seq_num_;
   packet->header.timestamp = timestamp_;
   packet->header.ssrc = ssrc_;
-  WriteRtpHeader(packet->header, packet->data.data());
+  WriteRtpHeader(packet->header, data);
   ++seq_num_;
   --num_packets_;
 
@@ -171,8 +171,8 @@ std::unique_ptr<AugmentedPacket> FlexfecPacketGenerator::BuildFlexfecPacket(
   std::unique_ptr<AugmentedPacket> packet_with_rtp_header(
       new AugmentedPacket());
   packet_with_rtp_header->data.SetSize(kRtpHeaderSize + packet.data.size());
-  WriteRtpHeader(header, packet_with_rtp_header->data.data());
-  memcpy(packet_with_rtp_header->data.data() + kRtpHeaderSize,
+  WriteRtpHeader(header, packet_with_rtp_header->data.MutableData());
+  memcpy(packet_with_rtp_header->data.MutableData() + kRtpHeaderSize,
          packet.data.cdata(), packet.data.size());
 
   return packet_with_rtp_header;
@@ -184,19 +184,21 @@ UlpfecPacketGenerator::UlpfecPacketGenerator(uint32_t ssrc)
 RtpPacketReceived UlpfecPacketGenerator::BuildMediaRedPacket(
     const AugmentedPacket& packet,
     bool is_recovered) {
-  RtpPacketReceived red_packet;
-  // Copy RTP header.
+  // Create a temporary buffer used to wrap the media packet in RED.
+  rtc::CopyOnWriteBuffer red_buffer;
   const size_t kHeaderLength = packet.header.headerLength;
-  red_packet.Parse(packet.data.cdata(), kHeaderLength);
-  RTC_DCHECK_EQ(red_packet.headers_size(), kHeaderLength);
-  uint8_t* rtp_payload =
-      red_packet.AllocatePayload(packet.data.size() + 1 - kHeaderLength);
-  // Move payload type into rtp payload.
-  rtp_payload[0] = red_packet.PayloadType();
+  // Append header.
+  red_buffer.SetData(packet.data.data(), kHeaderLength);
+  // Find payload type and add it as RED header.
+  uint8_t media_payload_type = red_buffer[1] & 0x7F;
+  red_buffer.AppendData({media_payload_type});
+  // Append rest of payload/padding.
+  red_buffer.AppendData(
+      packet.data.Slice(kHeaderLength, packet.data.size() - kHeaderLength));
+
+  RtpPacketReceived red_packet;
+  RTC_CHECK(red_packet.Parse(std::move(red_buffer)));
   red_packet.SetPayloadType(kRedPayloadType);
-  // Copy the payload.
-  memcpy(rtp_payload + 1, packet.data.cdata() + kHeaderLength,
-         packet.data.size() - kHeaderLength);
   red_packet.set_recovered(is_recovered);
 
   return red_packet;

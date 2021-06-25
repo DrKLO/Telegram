@@ -1216,8 +1216,8 @@ public class LocaleController {
             int idx = result.indexOf(type);
             if (idx >= 0) {
                 idx += type.length();
-                if (idx < result.length() && result.charAt(idx + type.length()) != ' ') {
-                    result = result.substring(0, idx + type.length()) + " " + result.substring(idx + type.length());
+                if (idx < result.length() && result.charAt(idx) != ' ') {
+                    result = result.substring(0, idx) + " " + result.substring(idx);
                 }
             }
             return result;

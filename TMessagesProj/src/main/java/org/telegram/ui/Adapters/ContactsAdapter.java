@@ -198,7 +198,7 @@ public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
     }
 
     @Override
-    public boolean isEnabled(int section, int row) {
+    public boolean isEnabled(RecyclerView.ViewHolder holder, int section, int row) {
         HashMap<String, ArrayList<TLRPC.TL_contact>> usersSectionsDict = onlyUsers == 2 ? ContactsController.getInstance(currentAccount).usersMutualSectionsDict : ContactsController.getInstance(currentAccount).usersSectionsDict;
         ArrayList<String> sortedUsersSectionsArray = onlyUsers == 2 ? ContactsController.getInstance(currentAccount).sortedUsersMutualSectionsArray : ContactsController.getInstance(currentAccount).sortedUsersSectionsArray;
 

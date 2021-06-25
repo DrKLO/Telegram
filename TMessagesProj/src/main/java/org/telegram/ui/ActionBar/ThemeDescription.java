@@ -389,10 +389,7 @@ public class ThemeDescription {
             }
         }
         if (viewToInvalidate != null && (changeFlags & FLAG_SERVICEBACKGROUND) != 0) {
-            Drawable background = viewToInvalidate.getBackground();
-            if (background != null) {
-                background.setColorFilter(Theme.colorFilter);
-            }
+
         }
         if ((changeFlags & FLAG_IMAGECOLOR) != 0) {
             if ((changeFlags & FLAG_CHECKTAG) == 0 || checkTag(currentKey, viewToInvalidate)) {
@@ -543,10 +540,7 @@ public class ThemeDescription {
                             }
                         }
                     } else if ((changeFlags & FLAG_SERVICEBACKGROUND) != 0) {
-                        Drawable background = child.getBackground();
-                        if (background != null) {
-                            background.setColorFilter(Theme.colorFilter);
-                        }
+
                     } else if ((changeFlags & FLAG_SELECTOR) != 0) {
                         child.setBackgroundDrawable(Theme.getSelectorDrawable(false));
                     } else if ((changeFlags & FLAG_SELECTORWHITE) != 0) {

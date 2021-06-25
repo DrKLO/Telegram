@@ -167,6 +167,41 @@ enum SimulcastApiVersion {
   kSimulcastApiVersionMax
 };
 
+// Metrics for reporting usage of BUNDLE.
+// These values are persisted to logs. Entries should not be renumbered and
+// numeric values should never be reused.
+enum BundleUsage {
+  // There are no m-lines in the SDP, only a session description.
+  kBundleUsageEmpty = 0,
+  // Only a data channel is negotiated but BUNDLE is not negotiated.
+  kBundleUsageNoBundleDatachannelOnly = 1,
+  // BUNDLE is not negotiated and there is at most one m-line per media type,
+  kBundleUsageNoBundleSimple = 2,
+  // BUNDLE is not negotiated and there are multiple m-lines per media type,
+  kBundleUsageNoBundleComplex = 3,
+  // Only a data channel is negotiated and BUNDLE is negotiated.
+  kBundleUsageBundleDatachannelOnly = 4,
+  // BUNDLE is negotiated but there is at most one m-line per media type,
+  kBundleUsageBundleSimple = 5,
+  // BUNDLE is negotiated and there are multiple m-lines per media type,
+  kBundleUsageBundleComplex = 6,
+  // Legacy plan-b metrics.
+  kBundleUsageNoBundlePlanB = 7,
+  kBundleUsageBundlePlanB = 8,
+  kBundleUsageMax
+};
+
+// Metrics for reporting configured BUNDLE policy, mapping directly to
+// https://w3c.github.io/webrtc-pc/#rtcbundlepolicy-enum
+// These values are persisted to logs. Entries should not be renumbered and
+// numeric values should never be reused.
+enum BundlePolicyUsage {
+  kBundlePolicyUsageBalanced = 0,
+  kBundlePolicyUsageMaxBundle = 1,
+  kBundlePolicyUsageMaxCompat = 2,
+  kBundlePolicyUsageMax
+};
+
 // When adding new metrics please consider using the style described in
 // https://chromium.googlesource.com/chromium/src.git/+/HEAD/tools/metrics/histograms/README.md#usage
 // instead of the legacy enums used above.

@@ -14,6 +14,8 @@ public:
 	void setState(VideoState state) override;
 	void setPreferredCaptureAspectRatio(float aspectRatio) override;
 	void setUncroppedOutput(std::shared_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink) override;
+	int getRotation() override;
+	void setOnFatalError(std::function<void()> error) override;
 
 private:
 	std::unique_ptr<VideoCameraCapturer> _capturer;

@@ -90,6 +90,13 @@ class AudioReceiveStream {
     int32_t total_interruption_duration_ms = 0;
     // https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-estimatedplayouttimestamp
     absl::optional<int64_t> estimated_playout_ntp_timestamp_ms;
+    // Remote outbound stats derived by the received RTCP sender reports.
+    // https://w3c.github.io/webrtc-stats/#remoteoutboundrtpstats-dict*
+    absl::optional<int64_t> last_sender_report_timestamp_ms;
+    absl::optional<int64_t> last_sender_report_remote_timestamp_ms;
+    uint32_t sender_reports_packets_sent = 0;
+    uint64_t sender_reports_bytes_sent = 0;
+    uint64_t sender_reports_reports_count = 0;
   };
 
   struct Config {
@@ -166,6 +173,9 @@ class AudioReceiveStream {
   // Stops stream activity.
   // When a stream is stopped, it can't receive, process or deliver packets.
   virtual void Stop() = 0;
+
+  // Returns true if the stream has been started.
+  virtual bool IsRunning() const = 0;
 
   virtual Stats GetStats(bool get_and_clear_legacy_stats) const = 0;
   Stats GetStats() { return GetStats(/*get_and_clear_legacy_stats=*/true); }

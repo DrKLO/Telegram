@@ -18,9 +18,11 @@
 #include "rtc_base/checks.h"
 
 #define RETURN_EMPTY_ON_FAIL(x) \
-  if (!(x)) {                   \
-    return absl::nullopt;       \
-  }
+  do {                          \
+    if (!(x)) {                 \
+      return absl::nullopt;     \
+    }                           \
+  } while (0)
 
 namespace {
 const int kMaxPicInitQpDeltaValue = 25;
@@ -64,14 +66,14 @@ absl::optional<uint32_t> PpsParser::ParsePpsIdFromSlice(const uint8_t* data,
 
   uint32_t golomb_tmp;
   // first_mb_in_slice: ue(v)
-  if (!slice_reader.ReadExponentialGolomb(&golomb_tmp))
+  if (!slice_reader.ReadExponentialGolomb(golomb_tmp))
     return absl::nullopt;
   // slice_type: ue(v)
-  if (!slice_reader.ReadExponentialGolomb(&golomb_tmp))
+  if (!slice_reader.ReadExponentialGolomb(golomb_tmp))
     return absl::nullopt;
   // pic_parameter_set_id: ue(v)
   uint32_t slice_pps_id;
-  if (!slice_reader.ReadExponentialGolomb(&slice_pps_id))
+  if (!slice_reader.ReadExponentialGolomb(slice_pps_id))
     return absl::nullopt;
   return slice_pps_id;
 }
@@ -86,30 +88,29 @@ absl::optional<PpsParser::PpsState> PpsParser::ParseInternal(
   uint32_t golomb_ignored;
   // entropy_coding_mode_flag: u(1)
   uint32_t entropy_coding_mode_flag;
-  RETURN_EMPTY_ON_FAIL(bit_buffer->ReadBits(&entropy_coding_mode_flag, 1));
+  RETURN_EMPTY_ON_FAIL(bit_buffer->ReadBits(1, entropy_coding_mode_flag));
   pps.entropy_coding_mode_flag = entropy_coding_mode_flag != 0;
   // bottom_field_pic_order_in_frame_present_flag: u(1)
   uint32_t bottom_field_pic_order_in_frame_present_flag;
   RETURN_EMPTY_ON_FAIL(
-      bit_buffer->ReadBits(&bottom_field_pic_order_in_frame_present_flag, 1));
+      bit_buffer->ReadBits(1, bottom_field_pic_order_in_frame_present_flag));
   pps.bottom_field_pic_order_in_frame_present_flag =
       bottom_field_pic_order_in_frame_present_flag != 0;
 
   // num_slice_groups_minus1: ue(v)
   uint32_t num_slice_groups_minus1;
   RETURN_EMPTY_ON_FAIL(
-      bit_buffer->ReadExponentialGolomb(&num_slice_groups_minus1));
+      bit_buffer->ReadExponentialGolomb(num_slice_groups_minus1));
   if (num_slice_groups_minus1 > 0) {
     uint32_t slice_group_map_type;
     // slice_group_map_type: ue(v)
     RETURN_EMPTY_ON_FAIL(
-        bit_buffer->ReadExponentialGolomb(&slice_group_map_type));
+        bit_buffer->ReadExponentialGolomb(slice_group_map_type));
     if (slice_group_map_type == 0) {
       for (uint32_t i_group = 0; i_group <= num_slice_groups_minus1;
            ++i_group) {
         // run_length_minus1[iGroup]: ue(v)
-        RETURN_EMPTY_ON_FAIL(
-            bit_buffer->ReadExponentialGolomb(&golomb_ignored));
+        RETURN_EMPTY_ON_FAIL(bit_buffer->ReadExponentialGolomb(golomb_ignored));
       }
     } else if (slice_group_map_type == 1) {
       // TODO(sprang): Implement support for dispersed slice group map type.
@@ -118,23 +119,21 @@ absl::optional<PpsParser::PpsState> PpsParser::ParseInternal(
       for (uint32_t i_group = 0; i_group <= num_slice_groups_minus1;
            ++i_group) {
         // top_left[iGroup]: ue(v)
-        RETURN_EMPTY_ON_FAIL(
-            bit_buffer->ReadExponentialGolomb(&golomb_ignored));
+        RETURN_EMPTY_ON_FAIL(bit_buffer->ReadExponentialGolomb(golomb_ignored));
         // bottom_right[iGroup]: ue(v)
-        RETURN_EMPTY_ON_FAIL(
-            bit_buffer->ReadExponentialGolomb(&golomb_ignored));
+        RETURN_EMPTY_ON_FAIL(bit_buffer->ReadExponentialGolomb(golomb_ignored));
       }
     } else if (slice_group_map_type == 3 || slice_group_map_type == 4 ||
                slice_group_map_type == 5) {
       // slice_group_change_direction_flag: u(1)
-      RETURN_EMPTY_ON_FAIL(bit_buffer->ReadBits(&bits_tmp, 1));
+      RETURN_EMPTY_ON_FAIL(bit_buffer->ReadBits(1, bits_tmp));
       // slice_group_change_rate_minus1: ue(v)
-      RETURN_EMPTY_ON_FAIL(bit_buffer->ReadExponentialGolomb(&golomb_ignored));
+      RETURN_EMPTY_ON_FAIL(bit_buffer->ReadExponentialGolomb(golomb_ignored));
     } else if (slice_group_map_type == 6) {
       // pic_size_in_map_units_minus1: ue(v)
       uint32_t pic_size_in_map_units_minus1;
       RETURN_EMPTY_ON_FAIL(
-          bit_buffer->ReadExponentialGolomb(&pic_size_in_map_units_minus1));
+          bit_buffer->ReadExponentialGolomb(pic_size_in_map_units_minus1));
       uint32_t slice_group_id_bits = 0;
       uint32_t num_slice_groups = num_slice_groups_minus1 + 1;
       // If num_slice_groups is not a power of two an additional bit is required
@@ -149,39 +148,39 @@ absl::optional<PpsParser::PpsState> PpsParser::ParseInternal(
         // slice_group_id[i]: u(v)
         // Represented by ceil(log2(num_slice_groups_minus1 + 1)) bits.
         RETURN_EMPTY_ON_FAIL(
-            bit_buffer->ReadBits(&bits_tmp, slice_group_id_bits));
+            bit_buffer->ReadBits(slice_group_id_bits, bits_tmp));
       }
     }
   }
   // num_ref_idx_l0_default_active_minus1: ue(v)
-  RETURN_EMPTY_ON_FAIL(bit_buffer->ReadExponentialGolomb(&golomb_ignored));
+  RETURN_EMPTY_ON_FAIL(bit_buffer->ReadExponentialGolomb(golomb_ignored));
   // num_ref_idx_l1_default_active_minus1: ue(v)
-  RETURN_EMPTY_ON_FAIL(bit_buffer->ReadExponentialGolomb(&golomb_ignored));
+  RETURN_EMPTY_ON_FAIL(bit_buffer->ReadExponentialGolomb(golomb_ignored));
   // weighted_pred_flag: u(1)
   uint32_t weighted_pred_flag;
-  RETURN_EMPTY_ON_FAIL(bit_buffer->ReadBits(&weighted_pred_flag, 1));
+  RETURN_EMPTY_ON_FAIL(bit_buffer->ReadBits(1, weighted_pred_flag));
   pps.weighted_pred_flag = weighted_pred_flag != 0;
   // weighted_bipred_idc: u(2)
-  RETURN_EMPTY_ON_FAIL(bit_buffer->ReadBits(&pps.weighted_bipred_idc, 2));
+  RETURN_EMPTY_ON_FAIL(bit_buffer->ReadBits(2, pps.weighted_bipred_idc));
 
   // pic_init_qp_minus26: se(v)
   RETURN_EMPTY_ON_FAIL(
-      bit_buffer->ReadSignedExponentialGolomb(&pps.pic_init_qp_minus26));
+      bit_buffer->ReadSignedExponentialGolomb(pps.pic_init_qp_minus26));
   // Sanity-check parsed value
   if (pps.pic_init_qp_minus26 > kMaxPicInitQpDeltaValue ||
       pps.pic_init_qp_minus26 < kMinPicInitQpDeltaValue) {
     RETURN_EMPTY_ON_FAIL(false);
   }
   // pic_init_qs_minus26: se(v)
-  RETURN_EMPTY_ON_FAIL(bit_buffer->ReadExponentialGolomb(&golomb_ignored));
+  RETURN_EMPTY_ON_FAIL(bit_buffer->ReadExponentialGolomb(golomb_ignored));
   // chroma_qp_index_offset: se(v)
-  RETURN_EMPTY_ON_FAIL(bit_buffer->ReadExponentialGolomb(&golomb_ignored));
+  RETURN_EMPTY_ON_FAIL(bit_buffer->ReadExponentialGolomb(golomb_ignored));
   // deblocking_filter_control_present_flag: u(1)
   // constrained_intra_pred_flag: u(1)
-  RETURN_EMPTY_ON_FAIL(bit_buffer->ReadBits(&bits_tmp, 2));
+  RETURN_EMPTY_ON_FAIL(bit_buffer->ReadBits(2, bits_tmp));
   // redundant_pic_cnt_present_flag: u(1)
   RETURN_EMPTY_ON_FAIL(
-      bit_buffer->ReadBits(&pps.redundant_pic_cnt_present_flag, 1));
+      bit_buffer->ReadBits(1, pps.redundant_pic_cnt_present_flag));
 
   return pps;
 }
@@ -189,11 +188,15 @@ absl::optional<PpsParser::PpsState> PpsParser::ParseInternal(
 bool PpsParser::ParsePpsIdsInternal(rtc::BitBuffer* bit_buffer,
                                     uint32_t* pps_id,
                                     uint32_t* sps_id) {
+  if (pps_id == nullptr)
+    return false;
   // pic_parameter_set_id: ue(v)
-  if (!bit_buffer->ReadExponentialGolomb(pps_id))
+  if (!bit_buffer->ReadExponentialGolomb(*pps_id))
+    return false;
+  if (sps_id == nullptr)
     return false;
   // seq_parameter_set_id: ue(v)
-  if (!bit_buffer->ReadExponentialGolomb(sps_id))
+  if (!bit_buffer->ReadExponentialGolomb(*sps_id))
     return false;
   return true;
 }

@@ -15,11 +15,11 @@
 #include <memory>
 #include <unordered_set>
 
+#include "api/sequence_checker.h"
 #include "audio/audio_transport_impl.h"
 #include "audio/null_audio_poller.h"
 #include "call/audio_state.h"
 #include "rtc_base/ref_count.h"
-#include "rtc_base/thread_checker.h"
 
 namespace webrtc {
 
@@ -65,8 +65,8 @@ class AudioState : public webrtc::AudioState {
   void UpdateAudioTransportWithSendingStreams();
   void UpdateNullAudioPollerState();
 
-  rtc::ThreadChecker thread_checker_;
-  rtc::ThreadChecker process_thread_checker_;
+  SequenceChecker thread_checker_;
+  SequenceChecker process_thread_checker_;
   const webrtc::AudioState::Config config_;
   bool recording_enabled_ = true;
   bool playout_enabled_ = true;

@@ -26,8 +26,10 @@ class RecordableEncodedFrame {
  public:
   // Encoded resolution in pixels
   struct EncodedResolution {
-    unsigned width;
-    unsigned height;
+    bool empty() const { return width == 0 && height == 0; }
+
+    unsigned width = 0;
+    unsigned height = 0;
   };
 
   virtual ~RecordableEncodedFrame() = default;

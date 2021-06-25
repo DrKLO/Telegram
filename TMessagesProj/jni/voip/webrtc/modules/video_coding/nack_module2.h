@@ -17,11 +17,11 @@
 #include <set>
 #include <vector>
 
+#include "api/sequence_checker.h"
 #include "api/units/time_delta.h"
 #include "modules/include/module_common_types.h"
 #include "modules/video_coding/histogram.h"
 #include "rtc_base/numerics/sequence_number_util.h"
-#include "rtc_base/synchronization/sequence_checker.h"
 #include "rtc_base/task_queue.h"
 #include "rtc_base/task_utils/pending_task_safety_flag.h"
 #include "rtc_base/task_utils/repeating_task.h"

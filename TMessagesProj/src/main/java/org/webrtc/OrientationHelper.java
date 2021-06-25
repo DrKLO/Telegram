@@ -11,6 +11,7 @@ public class OrientationHelper {
     private int rotation;
 
     public static volatile int cameraRotation;
+    public static volatile int cameraOrientation;
 
     private int roundOrientation(int orientation, int orientationHistory) {
         boolean changeOrientation;

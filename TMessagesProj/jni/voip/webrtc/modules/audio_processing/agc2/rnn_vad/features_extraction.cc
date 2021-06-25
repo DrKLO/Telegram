@@ -26,13 +26,13 @@ const BiQuadFilter::BiQuadCoefficients kHpfConfig24k = {
 
 }  // namespace
 
-FeaturesExtractor::FeaturesExtractor()
+FeaturesExtractor::FeaturesExtractor(const AvailableCpuFeatures& cpu_features)
     : use_high_pass_filter_(false),
       pitch_buf_24kHz_(),
       pitch_buf_24kHz_view_(pitch_buf_24kHz_.GetBufferView()),
       lp_residual_(kBufSize24kHz),
       lp_residual_view_(lp_residual_.data(), kBufSize24kHz),
-      pitch_estimator_(),
+      pitch_estimator_(cpu_features),
       reference_frame_view_(pitch_buf_24kHz_.GetMostRecentValuesView()) {
   RTC_DCHECK_EQ(kBufSize24kHz, lp_residual_.size());
   hpf_.Initialize(kHpfConfig24k);

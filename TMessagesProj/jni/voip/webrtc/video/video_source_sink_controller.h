@@ -12,13 +12,15 @@
 #define VIDEO_VIDEO_SOURCE_SINK_CONTROLLER_H_
 
 #include <string>
+#include <vector>
 
 #include "absl/types/optional.h"
+#include "api/sequence_checker.h"
 #include "api/video/video_frame.h"
 #include "api/video/video_sink_interface.h"
 #include "api/video/video_source_interface.h"
 #include "call/adaptation/video_source_restrictions.h"
-#include "rtc_base/synchronization/sequence_checker.h"
+#include "rtc_base/system/no_unique_address.h"
 
 namespace webrtc {
 
@@ -45,6 +47,7 @@ class VideoSourceSinkController {
   absl::optional<double> frame_rate_upper_limit() const;
   bool rotation_applied() const;
   int resolution_alignment() const;
+  const std::vector<rtc::VideoSinkWants::FrameSize>& resolutions() const;
 
   // Updates the settings stored internally. In order for these settings to be
   // applied to the sink, PushSourceSinkSettings() must subsequently be called.
@@ -54,6 +57,7 @@ class VideoSourceSinkController {
   void SetFrameRateUpperLimit(absl::optional<double> frame_rate_upper_limit);
   void SetRotationApplied(bool rotation_applied);
   void SetResolutionAlignment(int resolution_alignment);
+  void SetResolutions(std::vector<rtc::VideoSinkWants::FrameSize> resolutions);
 
  private:
   rtc::VideoSinkWants CurrentSettingsToSinkWants() const
@@ -62,7 +66,7 @@ class VideoSourceSinkController {
   // Used to ensure that this class is called on threads/sequences that it and
   // downstream implementations were designed for.
   // In practice, this represent's libjingle's worker thread.
-  SequenceChecker sequence_checker_;
+  RTC_NO_UNIQUE_ADDRESS SequenceChecker sequence_checker_;
 
   rtc::VideoSinkInterface<VideoFrame>* const sink_;
   rtc::VideoSourceInterface<VideoFrame>* source_
@@ -78,6 +82,8 @@ class VideoSourceSinkController {
       RTC_GUARDED_BY(&sequence_checker_);
   bool rotation_applied_ RTC_GUARDED_BY(&sequence_checker_) = false;
   int resolution_alignment_ RTC_GUARDED_BY(&sequence_checker_) = 1;
+  std::vector<rtc::VideoSinkWants::FrameSize> resolutions_
+      RTC_GUARDED_BY(&sequence_checker_);
 };
 
 }  // namespace webrtc

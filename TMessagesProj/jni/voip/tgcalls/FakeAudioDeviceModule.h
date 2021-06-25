@@ -32,6 +32,14 @@ class FakeAudioDeviceModule {
        return 10000;
     }
   };
+  class Recorder {
+  public:
+    virtual ~Recorder() = default;
+    virtual AudioFrame Record() = 0;
+    virtual int32_t WaitForUs() {
+      return 10000;
+    }
+  };
   using Task = std::function<double()>;
   struct Options {
     uint32_t samples_per_sec{48000};
@@ -39,6 +47,8 @@ class FakeAudioDeviceModule {
     std::function<void(Task)> scheduler_;
   };
   static std::function<rtc::scoped_refptr<webrtc::AudioDeviceModule>(webrtc::TaskQueueFactory *)> Creator(
-      std::shared_ptr<Renderer> renderer, Options options);
+      std::shared_ptr<Renderer> renderer,
+      std::shared_ptr<Recorder> recorder,
+      Options options);
 };
 }  // namespace tgcalls

@@ -28,6 +28,7 @@
 #include "call/rtp_packet_sink_interface.h"
 #include "call/syncable.h"
 #include "modules/audio_coding/include/audio_coding_module_typedefs.h"
+#include "modules/rtp_rtcp/source/source_tracker.h"
 #include "system_wrappers/include/clock.h"
 
 // TODO(solenberg, nisse): This file contains a few NOLINT marks, to silence
@@ -57,13 +58,22 @@ struct CallReceiveStatistics {
   int64_t payload_bytes_rcvd = 0;
   int64_t header_and_padding_bytes_rcvd = 0;
   int packetsReceived;
-  // The capture ntp time (in local timebase) of the first played out audio
+  // The capture NTP time (in local timebase) of the first played out audio
   // frame.
   int64_t capture_start_ntp_time_ms_;
   // The timestamp at which the last packet was received, i.e. the time of the
   // local clock when it was received - not the RTP timestamp of that packet.
   // https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-lastpacketreceivedtimestamp
   absl::optional<int64_t> last_packet_received_timestamp_ms;
+  // Remote outbound stats derived by the received RTCP sender reports.
+  // Note that the timestamps below correspond to the time elapsed since the
+  // Unix epoch.
+  // https://w3c.github.io/webrtc-stats/#remoteoutboundrtpstats-dict*
+  absl::optional<int64_t> last_sender_report_timestamp_ms;
+  absl::optional<int64_t> last_sender_report_remote_timestamp_ms;
+  uint32_t sender_reports_packets_sent = 0;
+  uint64_t sender_reports_bytes_sent = 0;
+  uint64_t sender_reports_reports_count = 0;
 };
 
 namespace voe {
@@ -134,6 +144,10 @@ class ChannelReceiveInterface : public RtpPacketSinkInterface {
       AudioFrame* audio_frame) = 0;
 
   virtual int PreferredSampleRate() const = 0;
+
+  // Sets the source tracker to notify about "delivered" packets when output is
+  // muted.
+  virtual void SetSourceTracker(SourceTracker* source_tracker) = 0;
 
   // Associate to a send channel.
   // Used for obtaining RTT for a receive-only channel.

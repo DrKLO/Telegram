@@ -3,6 +3,8 @@
 #include <rtc_base/ssl_adapter.h>
 #include <modules/utility/include/jvm_android.h>
 #include <sdk/android/src/jni/android_video_track_source.h>
+#include <sdk/android/src/jni/android_video_track_source.h>
+#include <sdk/android/src/jni/pc/android_network_monitor.h>
 #include <media/base/media_constants.h>
 
 #include "VideoCapturerInterfaceImpl.h"
@@ -55,10 +57,10 @@ void AndroidInterface::adaptVideoSource(rtc::scoped_refptr<webrtc::VideoTrackSou
 
 }
 
-rtc::scoped_refptr<webrtc::VideoTrackSourceInterface> AndroidInterface::makeVideoSource(rtc::Thread *signalingThread, rtc::Thread *workerThread) {
+rtc::scoped_refptr<webrtc::VideoTrackSourceInterface> AndroidInterface::makeVideoSource(rtc::Thread *signalingThread, rtc::Thread *workerThread, bool screencapture) {
     JNIEnv *env = webrtc::AttachCurrentThreadIfNeeded();
-    _source = webrtc::CreateJavaVideoSource(env, signalingThread, false, false);
-    return webrtc::VideoTrackSourceProxy::Create(signalingThread, workerThread, _source);
+    _source[screencapture ? 1 : 0] = webrtc::CreateJavaVideoSource(env, signalingThread, false, false);
+    return webrtc::VideoTrackSourceProxy::Create(signalingThread, workerThread, _source[screencapture ? 1 : 0]);
 }
 
 bool AndroidInterface::supportsEncoding(const std::string &codecName, std::shared_ptr<PlatformContext> platformContext) {
@@ -84,9 +86,12 @@ bool AndroidInterface::supportsEncoding(const std::string &codecName, std::share
 }
 
 std::unique_ptr<VideoCapturerInterface> AndroidInterface::makeVideoCapturer(rtc::scoped_refptr<webrtc::VideoTrackSourceInterface> source, std::string deviceId, std::function<void(VideoState)> stateUpdated, std::function<void(PlatformCaptureInfo)> captureInfoUpdated, std::shared_ptr<PlatformContext> platformContext, std::pair<int, int> &outResolution) {
-    return std::make_unique<VideoCapturerInterfaceImpl>(_source, deviceId, stateUpdated, platformContext);
+    return std::make_unique<VideoCapturerInterfaceImpl>(_source[deviceId == "screen" ? 1 : 0], deviceId, stateUpdated, platformContext);
 }
 
+std::unique_ptr<rtc::NetworkMonitorFactory> AndroidInterface::createNetworkMonitorFactory() {
+    return std::make_unique<webrtc::jni::AndroidNetworkMonitorFactory>();
+}
 
 std::unique_ptr<PlatformInterface> CreatePlatformInterface() {
 	return std::make_unique<AndroidInterface>();

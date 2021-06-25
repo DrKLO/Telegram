@@ -16,7 +16,12 @@
 
 #include "absl/algorithm/container.h"
 #include "rtc_base/checks.h"
-#include "rtc_base/openssl_certificate.h"
+#include "rtc_base/openssl.h"
+#ifdef OPENSSL_IS_BORINGSSL
+#include "rtc_base/boringssl_identity.h"
+#else
+#include "rtc_base/openssl_identity.h"
+#endif
 #include "rtc_base/ssl_fingerprint.h"
 #include "rtc_base/third_party/base64/base64.h"
 
@@ -117,7 +122,11 @@ std::unique_ptr<SSLCertificateStats> SSLCertChain::GetStats() const {
 // static
 std::unique_ptr<SSLCertificate> SSLCertificate::FromPEMString(
     const std::string& pem_string) {
+#ifdef OPENSSL_IS_BORINGSSL
+  return BoringSSLCertificate::FromPEMString(pem_string);
+#else
   return OpenSSLCertificate::FromPEMString(pem_string);
+#endif
 }
 
 }  // namespace rtc

@@ -307,5 +307,21 @@ class InbandComfortNoiseExtension {
                     absl::optional<uint8_t> level);
 };
 
+class VideoFrameTrackingIdExtension {
+ public:
+  using value_type = uint16_t;
+  static constexpr RTPExtensionType kId = kRtpExtensionVideoFrameTrackingId;
+  static constexpr uint8_t kValueSizeBytes = 2;
+  static constexpr const char kUri[] =
+      "http://www.webrtc.org/experiments/rtp-hdrext/video-frame-tracking-id";
+  static bool Parse(rtc::ArrayView<const uint8_t> data,
+                    uint16_t* video_frame_tracking_id);
+  static size_t ValueSize(uint16_t /*video_frame_tracking_id*/) {
+    return kValueSizeBytes;
+  }
+  static bool Write(rtc::ArrayView<uint8_t> data,
+                    uint16_t video_frame_tracking_id);
+};
+
 }  // namespace webrtc
 #endif  // MODULES_RTP_RTCP_SOURCE_RTP_HEADER_EXTENSIONS_H_

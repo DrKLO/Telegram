@@ -11,22 +11,58 @@
 #include "modules/audio_processing/agc2/rnn_vad/test_utils.h"
 
 #include <algorithm>
+#include <fstream>
 #include <memory>
+#include <type_traits>
+#include <vector>
 
 #include "rtc_base/checks.h"
 #include "rtc_base/numerics/safe_compare.h"
-#include "rtc_base/system/arch.h"
-#include "system_wrappers/include/cpu_features_wrapper.h"
 #include "test/gtest.h"
 #include "test/testsupport/file_utils.h"
 
 namespace webrtc {
 namespace rnn_vad {
-namespace test {
 namespace {
 
-using ReaderPairType =
-    std::pair<std::unique_ptr<BinaryFileReader<float>>, const int>;
+// File reader for binary files that contain a sequence of values with
+// arithmetic type `T`. The values of type `T` that are read are cast to float.
+template <typename T>
+class FloatFileReader : public FileReader {
+ public:
+  static_assert(std::is_arithmetic<T>::value, "");
+  FloatFileReader(const std::string& filename)
+      : is_(filename, std::ios::binary | std::ios::ate),
+        size_(is_.tellg() / sizeof(T)) {
+    RTC_CHECK(is_);
+    SeekBeginning();
+  }
+  FloatFileReader(const FloatFileReader&) = delete;
+  FloatFileReader& operator=(const FloatFileReader&) = delete;
+  ~FloatFileReader() = default;
+
+  int size() const override { return size_; }
+  bool ReadChunk(rtc::ArrayView<float> dst) override {
+    const std::streamsize bytes_to_read = dst.size() * sizeof(T);
+    if (std::is_same<T, float>::value) {
+      is_.read(reinterpret_cast<char*>(dst.data()), bytes_to_read);
+    } else {
+      buffer_.resize(dst.size());
+      is_.read(reinterpret_cast<char*>(buffer_.data()), bytes_to_read);
+      std::transform(buffer_.begin(), buffer_.end(), dst.begin(),
+                     [](const T& v) -> float { return static_cast<float>(v); });
+    }
+    return is_.gcount() == bytes_to_read;
+  }
+  bool ReadValue(float& dst) override { return ReadChunk({&dst, 1}); }
+  void SeekForward(int hop) override { is_.seekg(hop * sizeof(T), is_.cur); }
+  void SeekBeginning() override { is_.seekg(0, is_.beg); }
+
+ private:
+  std::ifstream is_;
+  const int size_;
+  std::vector<T> buffer_;
+};
 
 }  // namespace
 
@@ -51,85 +87,55 @@ void ExpectNearAbsolute(rtc::ArrayView<const float> expected,
   }
 }
 
-std::pair<std::unique_ptr<BinaryFileReader<int16_t, float>>, const int>
-CreatePcmSamplesReader(const int frame_length) {
-  auto ptr = std::make_unique<BinaryFileReader<int16_t, float>>(
-      test::ResourcePath("audio_processing/agc2/rnn_vad/samples", "pcm"),
-      frame_length);
-  // The last incomplete frame is ignored.
-  return {std::move(ptr), ptr->data_length() / frame_length};
+std::unique_ptr<FileReader> CreatePcmSamplesReader() {
+  return std::make_unique<FloatFileReader<int16_t>>(
+      /*filename=*/test::ResourcePath("audio_processing/agc2/rnn_vad/samples",
+                                      "pcm"));
 }
 
-ReaderPairType CreatePitchBuffer24kHzReader() {
-  constexpr int cols = 864;
-  auto ptr = std::make_unique<BinaryFileReader<float>>(
-      ResourcePath("audio_processing/agc2/rnn_vad/pitch_buf_24k", "dat"), cols);
-  return {std::move(ptr), rtc::CheckedDivExact(ptr->data_length(), cols)};
+ChunksFileReader CreatePitchBuffer24kHzReader() {
+  auto reader = std::make_unique<FloatFileReader<float>>(
+      /*filename=*/test::ResourcePath(
+          "audio_processing/agc2/rnn_vad/pitch_buf_24k", "dat"));
+  const int num_chunks = rtc::CheckedDivExact(reader->size(), kBufSize24kHz);
+  return {/*chunk_size=*/kBufSize24kHz, num_chunks, std::move(reader)};
 }
 
-ReaderPairType CreateLpResidualAndPitchPeriodGainReader() {
-  constexpr int num_lp_residual_coeffs = 864;
-  auto ptr = std::make_unique<BinaryFileReader<float>>(
-      ResourcePath("audio_processing/agc2/rnn_vad/pitch_lp_res", "dat"),
-      num_lp_residual_coeffs);
-  return {std::move(ptr),
-          rtc::CheckedDivExact(ptr->data_length(), 2 + num_lp_residual_coeffs)};
+ChunksFileReader CreateLpResidualAndPitchInfoReader() {
+  constexpr int kPitchInfoSize = 2;  // Pitch period and strength.
+  constexpr int kChunkSize = kBufSize24kHz + kPitchInfoSize;
+  auto reader = std::make_unique<FloatFileReader<float>>(
+      /*filename=*/test::ResourcePath(
+          "audio_processing/agc2/rnn_vad/pitch_lp_res", "dat"));
+  const int num_chunks = rtc::CheckedDivExact(reader->size(), kChunkSize);
+  return {kChunkSize, num_chunks, std::move(reader)};
 }
 
-ReaderPairType CreateVadProbsReader() {
-  auto ptr = std::make_unique<BinaryFileReader<float>>(
-      test::ResourcePath("audio_processing/agc2/rnn_vad/vad_prob", "dat"));
-  return {std::move(ptr), ptr->data_length()};
+std::unique_ptr<FileReader> CreateGruInputReader() {
+  return std::make_unique<FloatFileReader<float>>(
+      /*filename=*/test::ResourcePath("audio_processing/agc2/rnn_vad/gru_in",
+                                      "dat"));
+}
+
+std::unique_ptr<FileReader> CreateVadProbsReader() {
+  return std::make_unique<FloatFileReader<float>>(
+      /*filename=*/test::ResourcePath("audio_processing/agc2/rnn_vad/vad_prob",
+                                      "dat"));
 }
 
 PitchTestData::PitchTestData() {
-  BinaryFileReader<float> test_data_reader(
-      ResourcePath("audio_processing/agc2/rnn_vad/pitch_search_int", "dat"),
-      1396);
-  test_data_reader.ReadChunk(test_data_);
+  FloatFileReader<float> reader(
+      /*filename=*/ResourcePath(
+          "audio_processing/agc2/rnn_vad/pitch_search_int", "dat"));
+  reader.ReadChunk(pitch_buffer_24k_);
+  reader.ReadChunk(square_energies_24k_);
+  reader.ReadChunk(auto_correlation_12k_);
   // Reverse the order of the squared energy values.
   // Required after the WebRTC CL 191703 which switched to forward computation.
-  std::reverse(test_data_.begin() + kBufSize24kHz,
-               test_data_.begin() + kBufSize24kHz + kNumPitchBufSquareEnergies);
+  std::reverse(square_energies_24k_.begin(), square_energies_24k_.end());
 }
 
 PitchTestData::~PitchTestData() = default;
 
-rtc::ArrayView<const float, kBufSize24kHz> PitchTestData::GetPitchBufView()
-    const {
-  return {test_data_.data(), kBufSize24kHz};
-}
-
-rtc::ArrayView<const float, kNumPitchBufSquareEnergies>
-PitchTestData::GetPitchBufSquareEnergiesView() const {
-  return {test_data_.data() + kBufSize24kHz, kNumPitchBufSquareEnergies};
-}
-
-rtc::ArrayView<const float, kNumPitchBufAutoCorrCoeffs>
-PitchTestData::GetPitchBufAutoCorrCoeffsView() const {
-  return {test_data_.data() + kBufSize24kHz + kNumPitchBufSquareEnergies,
-          kNumPitchBufAutoCorrCoeffs};
-}
-
-bool IsOptimizationAvailable(Optimization optimization) {
-  switch (optimization) {
-    case Optimization::kSse2:
-#if defined(WEBRTC_ARCH_X86_FAMILY)
-      return GetCPUInfo(kSSE2) != 0;
-#else
-      return false;
-#endif
-    case Optimization::kNeon:
-#if defined(WEBRTC_HAS_NEON)
-      return true;
-#else
-      return false;
-#endif
-    case Optimization::kNone:
-      return true;
-  }
-}
-
-}  // namespace test
 }  // namespace rnn_vad
 }  // namespace webrtc

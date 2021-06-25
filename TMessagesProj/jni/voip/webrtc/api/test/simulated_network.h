@@ -46,8 +46,7 @@ struct PacketDeliveryInfo {
 // for built-in network behavior that will be used by WebRTC if no custom
 // NetworkBehaviorInterface is provided.
 struct BuiltInNetworkBehaviorConfig {
-  BuiltInNetworkBehaviorConfig() {}
-  // Queue length in number of packets.
+  //  Queue length in number of packets.
   size_t queue_length_packets = 0;
   // Delay in addition to capacity induced delay.
   int queue_delay_ms = 0;

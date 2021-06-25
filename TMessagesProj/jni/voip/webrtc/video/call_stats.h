@@ -14,12 +14,12 @@
 #include <list>
 #include <memory>
 
+#include "api/sequence_checker.h"
 #include "modules/include/module.h"
 #include "modules/include/module_common_types.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
 #include "rtc_base/constructor_magic.h"
 #include "rtc_base/synchronization/mutex.h"
-#include "rtc_base/thread_checker.h"
 #include "system_wrappers/include/clock.h"
 
 namespace webrtc {
@@ -110,8 +110,8 @@ class CallStats : public Module, public RtcpRttStats {
   // for the observers_ list, which makes the most common case lock free.
   std::list<CallStatsObserver*> observers_;
 
-  rtc::ThreadChecker construction_thread_checker_;
-  rtc::ThreadChecker process_thread_checker_;
+  SequenceChecker construction_thread_checker_;
+  SequenceChecker process_thread_checker_;
   ProcessThread* const process_thread_;
   bool process_thread_running_ RTC_GUARDED_BY(construction_thread_checker_);
 

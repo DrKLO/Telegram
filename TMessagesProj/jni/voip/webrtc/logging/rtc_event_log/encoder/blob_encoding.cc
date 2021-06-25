@@ -58,49 +58,30 @@ std::vector<absl::string_view> DecodeBlobs(absl::string_view encoded_blobs,
     return std::vector<absl::string_view>();
   }
 
-  size_t read_idx = 0;
-
   // Read the lengths of all blobs.
   std::vector<uint64_t> lengths(num_of_blobs);
   for (size_t i = 0; i < num_of_blobs; ++i) {
-    if (read_idx >= encoded_blobs.length()) {
-      RTC_DCHECK_EQ(read_idx, encoded_blobs.length());
-      RTC_LOG(LS_WARNING) << "Corrupt input; excessive number of blobs.";
-      return std::vector<absl::string_view>();
-    }
-
-    const size_t read_bytes =
-        DecodeVarInt(encoded_blobs.substr(read_idx), &lengths[i]);
-    if (read_bytes == 0) {
+    bool success = false;
+    std::tie(success, encoded_blobs) = DecodeVarInt(encoded_blobs, &lengths[i]);
+    if (!success) {
       RTC_LOG(LS_WARNING) << "Corrupt input; varint decoding failed.";
       return std::vector<absl::string_view>();
     }
-
-    read_idx += read_bytes;
-
-    // Note: It might be that read_idx == encoded_blobs.length(), if this
-    // is the last iteration, and all of the blobs are the empty string.
-    RTC_DCHECK_LE(read_idx, encoded_blobs.length());
   }
 
   // Read the blobs themselves.
   std::vector<absl::string_view> blobs(num_of_blobs);
   for (size_t i = 0; i < num_of_blobs; ++i) {
-    if (read_idx + lengths[i] < read_idx) {  // Wrap-around detection.
-      RTC_LOG(LS_WARNING) << "Corrupt input; unreasonably large blob sequence.";
-      return std::vector<absl::string_view>();
-    }
-
-    if (read_idx + lengths[i] > encoded_blobs.length()) {
+    if (lengths[i] > encoded_blobs.length()) {
       RTC_LOG(LS_WARNING) << "Corrupt input; blob sizes exceed input size.";
       return std::vector<absl::string_view>();
     }
 
-    blobs[i] = encoded_blobs.substr(read_idx, lengths[i]);
-    read_idx += lengths[i];
+    blobs[i] = encoded_blobs.substr(0, lengths[i]);
+    encoded_blobs = encoded_blobs.substr(lengths[i]);
   }
 
-  if (read_idx != encoded_blobs.length()) {
+  if (!encoded_blobs.empty()) {
     RTC_LOG(LS_WARNING) << "Corrupt input; unrecognized trailer.";
     return std::vector<absl::string_view>();
   }

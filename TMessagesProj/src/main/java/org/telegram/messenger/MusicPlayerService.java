@@ -88,7 +88,7 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
             NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.messagePlayingDidSeek);
             NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
             NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.httpFileDidLoad);
-            NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.fileDidLoad);
+            NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.fileLoaded);
         }
         imageReceiver = new ImageReceiver(null);
         imageReceiver.setDelegate((imageReceiver, set, thumb, memCache) -> {
@@ -509,7 +509,7 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
             NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.messagePlayingDidSeek);
             NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
             NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.httpFileDidLoad);
-            NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.fileDidLoad);
+            NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.fileLoaded);
         }
     }
 
@@ -536,7 +536,7 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
             if (messageObject != null && loadingFilePath != null && loadingFilePath.equals(path)) {
                 createNotification(messageObject, false);
             }
-        } else if (id == NotificationCenter.fileDidLoad) {
+        } else if (id == NotificationCenter.fileLoaded) {
             final String path = (String) args[0];
             MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
             if (messageObject != null && loadingFilePath != null && loadingFilePath.equals(path)) {

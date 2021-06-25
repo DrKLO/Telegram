@@ -730,4 +730,8 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
             @NonNull List<Object> payloads) {
         return !payloads.isEmpty() || super.canReuseUpdatedViewHolder(viewHolder, payloads);
     }
+
+    public void setTranslationInterpolator(Interpolator translationInterpolator) {
+        this.translationInterpolator = translationInterpolator;
+    }
 }

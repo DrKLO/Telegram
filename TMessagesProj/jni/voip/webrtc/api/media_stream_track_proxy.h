@@ -24,8 +24,8 @@ namespace webrtc {
 // TODO(deadbeef): Move this to .cc file and out of api/. What threads methods
 // are called on is an implementation detail.
 
-BEGIN_SIGNALING_PROXY_MAP(AudioTrack)
-PROXY_SIGNALING_THREAD_DESTRUCTOR()
+BEGIN_PRIMARY_PROXY_MAP(AudioTrack)
+PROXY_PRIMARY_THREAD_DESTRUCTOR()
 BYPASS_PROXY_CONSTMETHOD0(std::string, kind)
 BYPASS_PROXY_CONSTMETHOD0(std::string, id)
 PROXY_CONSTMETHOD0(TrackState, state)
@@ -41,7 +41,7 @@ PROXY_METHOD1(void, UnregisterObserver, ObserverInterface*)
 END_PROXY_MAP()
 
 BEGIN_PROXY_MAP(VideoTrack)
-PROXY_SIGNALING_THREAD_DESTRUCTOR()
+PROXY_PRIMARY_THREAD_DESTRUCTOR()
 BYPASS_PROXY_CONSTMETHOD0(std::string, kind)
 BYPASS_PROXY_CONSTMETHOD0(std::string, id)
 PROXY_CONSTMETHOD0(TrackState, state)
@@ -49,11 +49,11 @@ PROXY_CONSTMETHOD0(bool, enabled)
 PROXY_METHOD1(bool, set_enabled, bool)
 PROXY_CONSTMETHOD0(ContentHint, content_hint)
 PROXY_METHOD1(void, set_content_hint, ContentHint)
-PROXY_WORKER_METHOD2(void,
-                     AddOrUpdateSink,
-                     rtc::VideoSinkInterface<VideoFrame>*,
-                     const rtc::VideoSinkWants&)
-PROXY_WORKER_METHOD1(void, RemoveSink, rtc::VideoSinkInterface<VideoFrame>*)
+PROXY_SECONDARY_METHOD2(void,
+                        AddOrUpdateSink,
+                        rtc::VideoSinkInterface<VideoFrame>*,
+                        const rtc::VideoSinkWants&)
+PROXY_SECONDARY_METHOD1(void, RemoveSink, rtc::VideoSinkInterface<VideoFrame>*)
 PROXY_CONSTMETHOD0(VideoTrackSourceInterface*, GetSource)
 
 PROXY_METHOD1(void, RegisterObserver, ObserverInterface*)

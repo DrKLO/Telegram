@@ -51,10 +51,10 @@
 #include <string>
 #include <utility>
 
+#include "absl/base/attributes.h"
 #include "absl/meta/type_traits.h"
 #include "absl/strings/string_view.h"
 #include "rtc_base/constructor_magic.h"
-#include "rtc_base/deprecation.h"
 #include "rtc_base/strings/string_builder.h"
 #include "rtc_base/system/inline.h"
 
@@ -434,7 +434,7 @@ class LogMessage {
   // DEPRECATED - DO NOT USE - PLEASE USE THE MACROS INSTEAD OF THE CLASS.
   // Android code should use the 'const char*' version since tags are static
   // and we want to avoid allocating a std::string copy per log line.
-  RTC_DEPRECATED
+  ABSL_DEPRECATED("Use RTC_LOG macros instead of accessing this class directly")
   LogMessage(const char* file,
              int line,
              LoggingSeverity sev,
@@ -508,7 +508,7 @@ class LogMessage {
   // DEPRECATED - DO NOT USE - PLEASE USE THE MACROS INSTEAD OF THE CLASS.
   // Android code should use the 'const char*' version since tags are static
   // and we want to avoid allocating a std::string copy per log line.
-  RTC_DEPRECATED
+  ABSL_DEPRECATED("Use RTC_LOG macros instead of accessing this class directly")
   LogMessage(const char* file,
              int line,
              LoggingSeverity sev,

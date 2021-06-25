@@ -260,7 +260,11 @@ public class EditTextCaption extends EditTextBoldCursor {
         if (Build.VERSION.SDK_INT < 23 && !hasWindowFocus && copyPasteShowed) {
             return;
         }
-        super.onWindowFocusChanged(hasWindowFocus);
+        try {
+            super.onWindowFocusChanged(hasWindowFocus);
+        } catch (Throwable e) {
+            FileLog.e(e);
+        }
     }
 
     private ActionMode.Callback overrideCallback(final ActionMode.Callback callback) {

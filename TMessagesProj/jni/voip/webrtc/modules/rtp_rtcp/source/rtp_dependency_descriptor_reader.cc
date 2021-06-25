@@ -47,14 +47,14 @@ RtpDependencyDescriptorReader::RtpDependencyDescriptorReader(
 
 uint32_t RtpDependencyDescriptorReader::ReadBits(size_t bit_count) {
   uint32_t value = 0;
-  if (!buffer_.ReadBits(&value, bit_count))
+  if (!buffer_.ReadBits(bit_count, value))
     parsing_failed_ = true;
   return value;
 }
 
 uint32_t RtpDependencyDescriptorReader::ReadNonSymmetric(size_t num_values) {
   uint32_t value = 0;
-  if (!buffer_.ReadNonSymmetric(&value, num_values))
+  if (!buffer_.ReadNonSymmetric(num_values, value))
     parsing_failed_ = true;
   return value;
 }

@@ -20,8 +20,9 @@
 #include <netdb.h>
 #endif
 
-#include "rtc_base/byte_order.h"
 #include "rtc_base/ip_address.h"
+
+#include "rtc_base/byte_order.h"
 #include "rtc_base/net_helpers.h"
 #include "rtc_base/string_utils.h"
 
@@ -148,10 +149,6 @@ std::string IPAddress::ToString() const {
 }
 
 std::string IPAddress::ToSensitiveString() const {
-#if !defined(NDEBUG)
-  // Return non-stripped in debug.
-  return ToString();
-#else
   switch (family_) {
     case AF_INET: {
       std::string address = ToString();
@@ -175,7 +172,6 @@ std::string IPAddress::ToSensitiveString() const {
     }
   }
   return std::string();
-#endif
 }
 
 IPAddress IPAddress::Normalized() const {

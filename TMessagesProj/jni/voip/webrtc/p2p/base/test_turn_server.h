@@ -14,6 +14,7 @@
 #include <string>
 #include <vector>
 
+#include "api/sequence_checker.h"
 #include "api/transport/stun.h"
 #include "p2p/base/basic_packet_socket_factory.h"
 #include "p2p/base/turn_server.h"
@@ -21,7 +22,6 @@
 #include "rtc_base/ssl_adapter.h"
 #include "rtc_base/ssl_identity.h"
 #include "rtc_base/thread.h"
-#include "rtc_base/thread_checker.h"
 
 namespace cricket {
 
@@ -147,7 +147,7 @@ class TestTurnServer : public TurnAuthInterface {
 
   TurnServer server_;
   rtc::Thread* thread_;
-  rtc::ThreadChecker thread_checker_;
+  webrtc::SequenceChecker thread_checker_;
 };
 
 }  // namespace cricket

@@ -20,7 +20,7 @@
 
 namespace webrtc {
 namespace webrtc_new_closure_impl {
-// Simple implementation of QueuedTask for use with rtc::Bind and lambdas.
+// Simple implementation of QueuedTask for use with lambdas.
 template <typename Closure>
 class ClosureTask : public QueuedTask {
  public:

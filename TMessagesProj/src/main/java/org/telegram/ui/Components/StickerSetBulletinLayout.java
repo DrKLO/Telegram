@@ -78,7 +78,13 @@ public class StickerSetBulletinLayout extends Bulletin.TwoLineLayout {
                 imageLocation = ImageLocation.getForDocument(thumb, sticker);
             } else {
                 TLRPC.PhotoSize thumb = (TLRPC.PhotoSize) object;
-                imageLocation = ImageLocation.getForSticker(thumb, sticker);
+                int thumbVersion = 0;
+                if (setObject instanceof TLRPC.StickerSetCovered) {
+                    thumbVersion = ((TLRPC.StickerSetCovered) setObject).set.thumb_version;
+                } else if (setObject instanceof TLRPC.TL_messages_stickerSet) {
+                    thumbVersion = ((TLRPC.TL_messages_stickerSet) setObject).set.thumb_version;
+                }
+                imageLocation = ImageLocation.getForSticker(thumb, sticker, thumbVersion);
             }
 
             if (object instanceof TLRPC.Document && MessageObject.isAnimatedStickerDocument(sticker, true)) {

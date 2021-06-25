@@ -24,14 +24,6 @@ RtcEventProbeResultSuccess::RtcEventProbeResultSuccess(
       id_(other.id_),
       bitrate_bps_(other.bitrate_bps_) {}
 
-RtcEvent::Type RtcEventProbeResultSuccess::GetType() const {
-  return RtcEvent::Type::ProbeResultSuccess;
-}
-
-bool RtcEventProbeResultSuccess::IsConfigEvent() const {
-  return false;
-}
-
 std::unique_ptr<RtcEventProbeResultSuccess> RtcEventProbeResultSuccess::Copy()
     const {
   return absl::WrapUnique<RtcEventProbeResultSuccess>(

@@ -16,6 +16,8 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 import android.text.TextPaint;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
@@ -162,6 +164,8 @@ public abstract class BaseChartView<T extends ChartData, L extends LineViewData>
     public float chartWidth;
     public float chartFullWidth;
     public RectF chartArea = new RectF();
+
+    VibrationEffect vibrationEffect;
 
     private ValueAnimator.AnimatorUpdateListener pickerHeightUpdateListener = new ValueAnimator.AnimatorUpdateListener() {
         @Override
@@ -1057,13 +1061,29 @@ public abstract class BaseChartView<T extends ChartData, L extends LineViewData>
         if (selectedIndex > endXIndex) selectedIndex = endXIndex;
         if (selectedIndex < startXIndex) selectedIndex = startXIndex;
 
-        legendShowing = true;
-        animateLegend(true);
-        moveLegend(offset);
-        if (dateSelectionListener != null) {
-            dateSelectionListener.onDateSelected(getSelectedDate());
+        if (oldSelectedX != selectedIndex) {
+            legendShowing = true;
+            animateLegend(true);
+            moveLegend(offset);
+            if (dateSelectionListener != null) {
+                dateSelectionListener.onDateSelected(getSelectedDate());
+            }
+
+            runSmoothHaptic();
+            invalidate();
         }
-        invalidate();
+    }
+
+    protected void runSmoothHaptic() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            final Vibrator vibrator = (Vibrator) getContext().getSystemService(Context.VIBRATOR_SERVICE);
+            if (vibrationEffect == null) {
+                long[] vibrationWaveFormDurationPattern = {0, 2};
+                vibrationEffect = VibrationEffect.createWaveform(vibrationWaveFormDurationPattern, -1);
+            }
+            vibrator.cancel();
+            vibrator.vibrate(vibrationEffect);
+        }
     }
 
     public boolean animateLegentTo = false;

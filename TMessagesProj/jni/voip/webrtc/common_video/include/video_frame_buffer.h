@@ -12,10 +12,10 @@
 #define COMMON_VIDEO_INCLUDE_VIDEO_FRAME_BUFFER_H_
 
 #include <stdint.h>
+#include <functional>
 
 #include "api/scoped_refptr.h"
 #include "api/video/video_frame_buffer.h"
-#include "rtc_base/callback.h"
 #include "rtc_base/ref_counted_object.h"
 
 namespace webrtc {
@@ -29,7 +29,7 @@ rtc::scoped_refptr<I420BufferInterface> WrapI420Buffer(
     int u_stride,
     const uint8_t* v_plane,
     int v_stride,
-    const rtc::Callback0<void>& no_longer_used);
+    std::function<void()> no_longer_used);
 
 rtc::scoped_refptr<I444BufferInterface> WrapI444Buffer(
     int width,
@@ -40,7 +40,7 @@ rtc::scoped_refptr<I444BufferInterface> WrapI444Buffer(
     int u_stride,
     const uint8_t* v_plane,
     int v_stride,
-    const rtc::Callback0<void>& no_longer_used);
+    std::function<void()> no_longer_used);
 
 rtc::scoped_refptr<I420ABufferInterface> WrapI420ABuffer(
     int width,
@@ -53,7 +53,7 @@ rtc::scoped_refptr<I420ABufferInterface> WrapI420ABuffer(
     int v_stride,
     const uint8_t* a_plane,
     int a_stride,
-    const rtc::Callback0<void>& no_longer_used);
+    std::function<void()> no_longer_used);
 
 rtc::scoped_refptr<PlanarYuvBuffer> WrapYuvBuffer(
     VideoFrameBuffer::Type type,
@@ -65,7 +65,7 @@ rtc::scoped_refptr<PlanarYuvBuffer> WrapYuvBuffer(
     int u_stride,
     const uint8_t* v_plane,
     int v_stride,
-    const rtc::Callback0<void>& no_longer_used);
+    std::function<void()> no_longer_used);
 
 rtc::scoped_refptr<I010BufferInterface> WrapI010Buffer(
     int width,
@@ -76,7 +76,7 @@ rtc::scoped_refptr<I010BufferInterface> WrapI010Buffer(
     int u_stride,
     const uint16_t* v_plane,
     int v_stride,
-    const rtc::Callback0<void>& no_longer_used);
+    std::function<void()> no_longer_used);
 
 }  // namespace webrtc
 

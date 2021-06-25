@@ -15,12 +15,12 @@
 
 #include <memory>
 
+#include "api/sequence_checker.h"
 #include "modules/audio_device/android/audio_manager.h"
 #include "modules/audio_device/audio_device_generic.h"
 #include "modules/audio_device/include/audio_device_defines.h"
 #include "modules/utility/include/helpers_android.h"
 #include "modules/utility/include/jvm_android.h"
-#include "rtc_base/thread_checker.h"
 
 namespace webrtc {
 
@@ -110,11 +110,11 @@ class AudioRecordJni {
   void OnDataIsRecorded(int length);
 
   // Stores thread ID in constructor.
-  rtc::ThreadChecker thread_checker_;
+  SequenceChecker thread_checker_;
 
   // Stores thread ID in first call to OnDataIsRecorded() from high-priority
   // thread in Java. Detached during construction of this object.
-  rtc::ThreadChecker thread_checker_java_;
+  SequenceChecker thread_checker_java_;
 
   // Calls JavaVM::AttachCurrentThread() if this thread is not attached at
   // construction.

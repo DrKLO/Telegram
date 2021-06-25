@@ -90,14 +90,14 @@ public class IdenticonActivity extends BaseFragment implements NotificationCente
     @Override
     public boolean onFragmentCreate() {
         chat_id = getArguments().getInt("chat_id");
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiDidLoad);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
         return super.onFragmentCreate();
     }
 
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiDidLoad);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
     }
 
     @Override
@@ -244,7 +244,7 @@ public class IdenticonActivity extends BaseFragment implements NotificationCente
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.emojiDidLoad) {
+        if (id == NotificationCenter.emojiLoaded) {
             if (emojiTextView != null) {
                 emojiTextView.invalidate();
             }

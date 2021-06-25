@@ -26,7 +26,7 @@ class Limiter {
  public:
   Limiter(size_t sample_rate_hz,
           ApmDataDumper* apm_data_dumper,
-          std::string histogram_name_prefix);
+          const std::string& histogram_name_prefix);
   Limiter(const Limiter& limiter) = delete;
   Limiter& operator=(const Limiter& limiter) = delete;
   ~Limiter();

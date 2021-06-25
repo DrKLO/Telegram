@@ -1,20 +1,21 @@
 package org.telegram.ui.Components.voip;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ValueAnimator;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Outline;
-import android.graphics.Paint;
-import android.graphics.Path;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffXfermode;
-import android.graphics.RectF;
 import android.os.Build;
+import android.view.Display;
 import android.view.Gravity;
+import android.view.TextureView;
 import android.view.View;
 import android.view.ViewOutlineProvider;
+import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
@@ -22,75 +23,137 @@ import androidx.annotation.NonNull;
 
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.GroupCallActivity;
 import org.webrtc.RendererCommon;
 import org.webrtc.TextureViewRenderer;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.util.ArrayList;
 
 public class VoIPTextureView extends FrameLayout {
-
-    final Path path = new Path();
-    final RectF rectF = new RectF();
-    final Paint xRefPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-
     final boolean isCamera;
+    final boolean applyRotation;
 
     float roundRadius;
 
     public final TextureViewRenderer renderer;
+    public TextureView blurRenderer;
     public final ImageView imageView;
     public View backgroundView;
+    private Bitmap thumb;
 
     public Bitmap cameraLastBitmap;
     public float stubVisibleProgress = 1f;
 
-    public VoIPTextureView(@NonNull Context context, boolean isCamera) {
+    boolean animateOnNextLayout;
+    long animateNextDuration;
+    ArrayList<Animator> animateOnNextLayoutAnimations = new ArrayList<>();
+    int animateFromHeight;
+    int animateFromWidth;
+
+    float animateFromY;
+    float animateFromX;
+
+    float clipVertical;
+    float clipHorizontal;
+    float currentClipVertical;
+    float currentClipHorizontal;
+
+    float aninateFromScale = 1f;
+    float aninateFromScaleBlur = 1f;
+    float animateFromThumbScale = 1f;
+    float animateFromRendererW;
+    float animateFromRendererH;
+
+    public float scaleTextureToFill;
+    private float scaleTextureToFillBlur;
+    private float scaleThumb;
+    float currentThumbScale;
+
+    public static int SCALE_TYPE_NONE = 3;
+    public static int SCALE_TYPE_FILL = 0;
+    public static int SCALE_TYPE_FIT = 1;
+    public static int SCALE_TYPE_ADAPTIVE = 2;
+
+    public int scaleType;
+
+    ValueAnimator currentAnimation;
+
+    boolean applyRoundRadius;
+    boolean clipToTexture;
+    public float animationProgress;
+
+    public VoIPTextureView(@NonNull Context context, boolean isCamera, boolean applyRotation) {
+        this(context, isCamera, applyRotation, true, false);
+    }
+
+    public VoIPTextureView(@NonNull Context context, boolean isCamera, boolean applyRotation, boolean applyRoundRadius, boolean blurBackground) {
         super(context);
         this.isCamera = isCamera;
+        this.applyRotation = applyRotation;
         imageView = new ImageView(context);
+
         renderer = new TextureViewRenderer(context) {
             @Override
             public void onFirstFrameRendered() {
                 super.onFirstFrameRendered();
-                VoIPTextureView.this.invalidate();
-            }
-
-            @Override
-            protected void onMeasure(int widthSpec, int heightSpec) {
-                super.onMeasure(widthSpec, heightSpec);
+                VoIPTextureView.this.onFirstFrameRendered();
             }
         };
+        renderer.setFpsReduction(30);
+        renderer.setOpaque(false);
         renderer.setEnableHardwareScaler(true);
-        renderer.setIsCamera(isCamera);
-        if (!isCamera) {
+        renderer.setIsCamera(!applyRotation);
+        if (!isCamera && applyRotation) {
             backgroundView = new View(context);
             backgroundView.setBackgroundColor(0xff1b1f23);
             addView(backgroundView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+
+            if (blurBackground) {
+                blurRenderer = new TextureView(context);
+                addView(blurRenderer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
+            }
+
             renderer.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FIT);
             addView(renderer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
+        } else if (!isCamera) {
+            if (blurBackground) {
+                blurRenderer = new TextureView(context);
+                addView(blurRenderer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
+            }
+            addView(renderer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
         } else {
+            if (blurBackground) {
+                blurRenderer = new TextureView(context);
+                addView(blurRenderer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
+            }
             addView(renderer);
         }
+
         addView(imageView);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            setOutlineProvider(new ViewOutlineProvider() {
-                @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-                @Override
-                public void getOutline(View view, Outline outline) {
-                    if (roundRadius < 1) {
-                        outline.setRect(0, 0, view.getMeasuredWidth(), view.getMeasuredHeight());
-                    } else {
-                        outline.setRoundRect(0, 0, view.getMeasuredWidth(), view.getMeasuredHeight(), roundRadius);
+        if (blurRenderer != null) {
+            blurRenderer.setOpaque(false);
+        }
+
+        if (applyRoundRadius) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                setOutlineProvider(new ViewOutlineProvider() {
+                    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+                    @Override
+                    public void getOutline(View view, Outline outline) {
+                        if (roundRadius < 1) {
+                            outline.setRect((int) currentClipHorizontal, (int) currentClipVertical, (int) (view.getMeasuredWidth() - currentClipHorizontal), (int) (view.getMeasuredHeight() - currentClipVertical));
+                        } else {
+                            outline.setRoundRect((int) currentClipHorizontal, (int) currentClipVertical, (int) (view.getMeasuredWidth() - currentClipHorizontal), (int) (view.getMeasuredHeight() - currentClipVertical), roundRadius);
+                        }
                     }
-                }
-            });
-            setClipToOutline(true);
-        } else {
-            xRefPaint.setColor(0xff000000);
-            xRefPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
+                });
+                setClipToOutline(true);
+            }
         }
 
         if (isCamera) {
@@ -109,20 +172,27 @@ public class VoIPTextureView extends FrameLayout {
                 }
             }
         }
+
+        if (!applyRotation) {
+            Display display = ((WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
+            renderer.setScreenRotation(display.getRotation());
+        }
+    }
+
+    protected void onFirstFrameRendered() {
+        VoIPTextureView.this.invalidate();
+        if (renderer.getAlpha() != 1f) {
+            renderer.animate().setDuration(300).alpha(1f);
+        }
+
+        if (blurRenderer != null && blurRenderer.getAlpha() != 1f) {
+            blurRenderer.animate().setDuration(300).alpha(1f);
+        }
     }
 
     @Override
     protected void dispatchDraw(Canvas canvas) {
-        if (roundRadius > 0 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            try {
-                super.dispatchDraw(canvas);
-                canvas.drawPath(path, xRefPaint);
-            } catch (Exception ignore) {
-
-            }
-        } else {
-            super.dispatchDraw(canvas);
-        }
+        super.dispatchDraw(canvas);
 
         if (imageView.getVisibility() == View.VISIBLE && renderer.isFirstFrameRendered()) {
             stubVisibleProgress -= 16f / 150f;
@@ -137,11 +207,13 @@ public class VoIPTextureView extends FrameLayout {
     }
 
     public void setRoundCorners(float radius) {
-        roundRadius = radius;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            invalidateOutline();
-        } else {
-            invalidate();
+        if (roundRadius != radius) {
+            roundRadius = radius;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                invalidateOutline();
+            } else {
+                invalidate();
+            }
         }
     }
 
@@ -162,14 +234,304 @@ public class VoIPTextureView extends FrameLayout {
 
     public void setStub(VoIPTextureView from) {
         Bitmap bitmap = from.renderer.getBitmap();
-        if (bitmap == null || bitmap.getPixel(0,0) == 0) {
+        if (bitmap == null || bitmap.getPixel(0, 0) == 0) {
             imageView.setImageDrawable(from.imageView.getDrawable());
         } else {
             imageView.setImageBitmap(bitmap);
+            imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
         }
         stubVisibleProgress = 1f;
         imageView.setVisibility(View.VISIBLE);
         imageView.setAlpha(1f);
     }
 
+    public void animateToLayout() {
+        if (animateOnNextLayout || getMeasuredHeight() == 0 || getMeasuredWidth() == 0) {
+            return;
+        }
+        animateFromHeight = getMeasuredHeight();
+        animateFromWidth = getMeasuredWidth();
+
+        if (animateWithParent && getParent() != null) {
+            View parent = (View) getParent();
+            animateFromY = parent.getY();
+            animateFromX = parent.getX();
+        } else {
+            animateFromY = getY();
+            animateFromX = getX();
+        }
+        aninateFromScale = scaleTextureToFill;
+        aninateFromScaleBlur = scaleTextureToFillBlur;
+        animateFromThumbScale = scaleThumb;
+        animateFromRendererW = renderer.getMeasuredWidth();
+        animateFromRendererH = renderer.getMeasuredHeight();
+
+        animateOnNextLayout = true;
+        requestLayout();
+    }
+
+    boolean ignoreLayout;
+
+    @Override
+    public void requestLayout() {
+        if (ignoreLayout) {
+            return;
+        }
+        super.requestLayout();
+    }
+
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        if (!applyRotation) {
+            ignoreLayout = true;
+            Display display = ((WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
+            renderer.setScreenRotation(display.getRotation());
+            ignoreLayout = false;
+        }
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        updateRendererSize();
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+    }
+
+    protected void updateRendererSize() {
+        if (blurRenderer != null) {
+            blurRenderer.getLayoutParams().width = renderer.getMeasuredWidth();
+            blurRenderer.getLayoutParams().height = renderer.getMeasuredHeight();
+        }
+    }
+
+    @Override
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
+
+        if (blurRenderer != null) {
+            scaleTextureToFillBlur = Math.max(getMeasuredHeight() / (float) blurRenderer.getMeasuredHeight(), getMeasuredWidth() / (float) blurRenderer.getMeasuredWidth());
+        }
+
+        if (scaleType == SCALE_TYPE_NONE) {
+            if (blurRenderer != null) {
+                blurRenderer.setScaleX(scaleTextureToFillBlur);
+                blurRenderer.setScaleY(scaleTextureToFillBlur);
+            }
+            return;
+        }
+
+        if (renderer.getMeasuredHeight() == 0 || renderer.getMeasuredWidth() == 0 || getMeasuredHeight() == 0 || getMeasuredWidth() == 0) {
+            scaleTextureToFill = 1f;
+            if (currentAnimation == null && !animateOnNextLayout) {
+                currentClipHorizontal = 0;
+                currentClipVertical = 0;
+            }
+        } else if (scaleType == SCALE_TYPE_FILL) {
+            scaleTextureToFill = Math.max(getMeasuredHeight() / (float) renderer.getMeasuredHeight(), getMeasuredWidth() / (float) renderer.getMeasuredWidth());
+        } else if (scaleType == SCALE_TYPE_ADAPTIVE) {
+            //sqaud view
+            if (Math.abs(getMeasuredHeight() / (float) getMeasuredWidth() - 1f) < 0.02f) {
+                scaleTextureToFill = Math.max(getMeasuredHeight() / (float) renderer.getMeasuredHeight(), getMeasuredWidth() / (float) renderer.getMeasuredWidth());
+            } else {
+                if (getMeasuredWidth() > getMeasuredHeight() && renderer.getMeasuredHeight() > renderer.getMeasuredWidth()) {
+                    scaleTextureToFill = Math.max(getMeasuredHeight() / (float) renderer.getMeasuredHeight(), (getMeasuredWidth() / 2f ) / (float) renderer.getMeasuredWidth());
+                } else {
+                    scaleTextureToFill = Math.min(getMeasuredHeight() / (float) renderer.getMeasuredHeight(), getMeasuredWidth() / (float) renderer.getMeasuredWidth());
+                }
+            }
+        } else if (scaleType == SCALE_TYPE_FIT) {
+            scaleTextureToFill = Math.min(getMeasuredHeight() / (float) renderer.getMeasuredHeight(), getMeasuredWidth() / (float) renderer.getMeasuredWidth());
+            if (clipToTexture && !animateWithParent && currentAnimation == null && !animateOnNextLayout) {
+                currentClipHorizontal = (getMeasuredWidth() - renderer.getMeasuredWidth()) / 2f;
+                currentClipVertical = (getMeasuredHeight() - renderer.getMeasuredHeight()) / 2f;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    invalidateOutline();
+                }
+            }
+        }
+
+        if (thumb != null) {
+            scaleThumb = Math.max((getMeasuredWidth()) / (float) thumb.getWidth(), (getMeasuredHeight()) / (float) thumb.getHeight());
+        }
+
+        if (animateOnNextLayout) {
+            aninateFromScale /= renderer.getMeasuredWidth() / animateFromRendererW;
+            aninateFromScaleBlur /= renderer.getMeasuredWidth() / animateFromRendererW;
+            animateOnNextLayout = false;
+            float translationY, translationX;
+            if (animateWithParent && getParent() != null) {
+                View parent = (View) getParent();
+                translationY = animateFromY - parent.getTop();
+                translationX = animateFromX - parent.getLeft();
+            } else {
+                translationY = animateFromY - getTop();
+                translationX = animateFromX - getLeft();
+            }
+            clipVertical = 0;
+            clipHorizontal = 0;
+            if (animateFromHeight != getMeasuredHeight()) {
+                clipVertical = (getMeasuredHeight() - animateFromHeight) / 2f;
+                translationY -= clipVertical;
+            }
+            if (animateFromWidth != getMeasuredWidth()) {
+                clipHorizontal = (getMeasuredWidth() - animateFromWidth) / 2f;
+                translationX -= clipHorizontal;
+            }
+            setTranslationY(translationY);
+            setTranslationX(translationX);
+
+            if (currentAnimation != null) {
+                currentAnimation.removeAllListeners();
+                currentAnimation.cancel();
+            }
+            renderer.setScaleX(aninateFromScale);
+            renderer.setScaleY(aninateFromScale);
+
+            if (blurRenderer != null) {
+                blurRenderer.setScaleX(aninateFromScaleBlur);
+                blurRenderer.setScaleY(aninateFromScaleBlur);
+            }
+
+            currentClipVertical = clipVertical;
+            currentClipHorizontal = clipHorizontal;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                invalidateOutline();
+            }
+            invalidate();
+            float fromScaleFinal = aninateFromScale;
+            float fromScaleBlurFinal = aninateFromScaleBlur;
+            float fromThumbScale = animateFromThumbScale;
+
+            currentAnimation = ValueAnimator.ofFloat(1f, 0);
+            float finalTranslationX = translationX;
+            float finalTranslationY = translationY;
+            currentAnimation.addUpdateListener(animator -> {
+                float v = (float) animator.getAnimatedValue();
+                animationProgress = (1f - v);
+                currentClipVertical = v * clipVertical;
+                currentClipHorizontal = v * clipHorizontal;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    invalidateOutline();
+                }
+                invalidate();
+
+                float s = fromScaleFinal * v + scaleTextureToFill * (1f - v);
+                renderer.setScaleX(s);
+                renderer.setScaleY(s);
+
+                s = fromScaleBlurFinal * v + scaleTextureToFillBlur * (1f - v);
+                if (blurRenderer != null) {
+                    blurRenderer.setScaleX(s);
+                    blurRenderer.setScaleY(s);
+                }
+
+                setTranslationX(finalTranslationX * v);
+                setTranslationY(finalTranslationY * v);
+                currentThumbScale = fromThumbScale * v + scaleThumb * (1f - v);
+            });
+            if (animateNextDuration != 0) {
+                currentAnimation.setDuration(animateNextDuration);
+            } else {
+                currentAnimation.setDuration(GroupCallActivity.TRANSITION_DURATION);
+            }
+            currentAnimation.setInterpolator(CubicBezierInterpolator.DEFAULT);
+            currentAnimation.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    currentClipVertical = 0;
+                    currentClipHorizontal = 0;
+
+                    renderer.setScaleX(scaleTextureToFill);
+                    renderer.setScaleY(scaleTextureToFill);
+
+                    if (blurRenderer != null) {
+                        blurRenderer.setScaleX(scaleTextureToFillBlur);
+                        blurRenderer.setScaleY(scaleTextureToFillBlur);
+                    }
+
+                    setTranslationY(0);
+                    setTranslationX(0);
+
+                    currentThumbScale = scaleThumb;
+                    currentAnimation = null;
+                }
+            });
+            currentAnimation.start();
+            if (!animateOnNextLayoutAnimations.isEmpty()) {
+                for (int i = 0; i < animateOnNextLayoutAnimations.size(); i++) {
+                    animateOnNextLayoutAnimations.get(i).start();
+                }
+            }
+            animateOnNextLayoutAnimations.clear();
+            animateNextDuration = 0;
+        } else {
+            if (currentAnimation == null) {
+                renderer.setScaleX(scaleTextureToFill);
+                renderer.setScaleY(scaleTextureToFill);
+
+                if (blurRenderer != null) {
+                    blurRenderer.setScaleX(scaleTextureToFillBlur);
+                    blurRenderer.setScaleY(scaleTextureToFillBlur);
+                }
+
+                currentThumbScale = scaleThumb;
+            }
+        }
+    }
+
+    public void setCliping(float horizontalClip, float verticalClip) {
+        if (currentAnimation != null || animateOnNextLayout) {
+            return;
+        }
+        currentClipHorizontal = horizontalClip;
+        currentClipVertical = verticalClip;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            invalidateOutline();
+        }
+        invalidate();
+
+    }
+
+    boolean animateWithParent;
+
+    public void setAnimateWithParent(boolean b) {
+        animateWithParent = b;
+    }
+
+    public void synchOrRunAnimation(Animator animator) {
+        if (animateOnNextLayout) {
+            animateOnNextLayoutAnimations.add(animator);
+        } else {
+            animator.start();
+        }
+    }
+
+    public void cancelAnimation() {
+        animateOnNextLayout = false;
+        animateNextDuration = 0;
+    }
+
+    public void setAnimateNextDuration(long animateNextDuration) {
+        this.animateNextDuration = animateNextDuration;
+    }
+
+    public void setThumb(Bitmap thumb) {
+        this.thumb = thumb;
+    }
+
+    public void attachBackgroundRenderer() {
+        if (blurRenderer != null) {
+            renderer.setBackgroundRenderer(blurRenderer);
+            if (!renderer.isFirstFrameRendered()) {
+                blurRenderer.setAlpha(0f);
+            }
+        }
+    }
+
+    public boolean isInAnimation() {
+        return currentAnimation != null;
+    }
+
+    public void updateRotation() {
+        if (!applyRotation) {
+            Display display = ((WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
+            renderer.setScreenRotation(display.getRotation());
+        }
+    }
 }

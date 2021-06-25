@@ -11,12 +11,16 @@
 #ifndef PC_TRACK_MEDIA_INFO_MAP_H_
 #define PC_TRACK_MEDIA_INFO_MAP_H_
 
+#include <stdint.h>
+
 #include <map>
 #include <memory>
 #include <string>
 #include <vector>
 
+#include "absl/types/optional.h"
 #include "api/media_stream_interface.h"
+#include "api/scoped_refptr.h"
 #include "media/base/media_channel.h"
 #include "pc/rtp_receiver.h"
 #include "pc/rtp_sender.h"

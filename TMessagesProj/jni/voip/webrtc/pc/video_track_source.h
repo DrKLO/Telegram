@@ -11,12 +11,16 @@
 #ifndef PC_VIDEO_TRACK_SOURCE_H_
 #define PC_VIDEO_TRACK_SOURCE_H_
 
+#include "absl/types/optional.h"
 #include "api/media_stream_interface.h"
 #include "api/notifier.h"
+#include "api/sequence_checker.h"
+#include "api/video/recordable_encoded_frame.h"
+#include "api/video/video_frame.h"
 #include "api/video/video_sink_interface.h"
+#include "api/video/video_source_interface.h"
 #include "media/base/media_channel.h"
 #include "rtc_base/system/rtc_export.h"
-#include "rtc_base/thread_checker.h"
 
 namespace webrtc {
 
@@ -52,7 +56,7 @@ class RTC_EXPORT VideoTrackSource : public Notifier<VideoTrackSourceInterface> {
   virtual rtc::VideoSourceInterface<VideoFrame>* source() = 0;
 
  private:
-  rtc::ThreadChecker worker_thread_checker_;
+  SequenceChecker worker_thread_checker_;
   SourceState state_;
   const bool remote_;
 };

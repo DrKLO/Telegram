@@ -13,7 +13,8 @@
 
 #include <memory>
 
-#include "rtc_base/synchronization/sequence_checker.h"
+#include "api/sequence_checker.h"
+#include "rtc_base/system/no_unique_address.h"
 #include "rtc_base/task_queue.h"
 #include "rtc_base/task_utils/repeating_task.h"
 #include "video/stream_synchronization.h"
@@ -54,7 +55,7 @@ class RtpStreamsSynchronizer {
   // we might be running on an rtc::Thread implementation of TaskQueue, which
   // does not consistently set itself as the active TaskQueue.
   // Instead, we rely on a SequenceChecker for now.
-  SequenceChecker main_checker_;
+  RTC_NO_UNIQUE_ADDRESS SequenceChecker main_checker_;
 
   Syncable* const syncable_video_;
 

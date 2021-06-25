@@ -11,71 +11,36 @@
 #ifndef MODULES_AUDIO_PROCESSING_AGC2_SATURATION_PROTECTOR_H_
 #define MODULES_AUDIO_PROCESSING_AGC2_SATURATION_PROTECTOR_H_
 
-#include <array>
-
-#include "absl/types/optional.h"
-#include "modules/audio_processing/agc2/agc2_common.h"
-#include "rtc_base/numerics/safe_compare.h"
+#include <memory>
 
 namespace webrtc {
-namespace saturation_protector_impl {
+class ApmDataDumper;
 
-// Ring buffer which only supports (i) push back and (ii) read oldest item.
-class RingBuffer {
+// Saturation protector. Analyzes peak levels and recommends a headroom to
+// reduce the chances of clipping.
+class SaturationProtector {
  public:
-  bool operator==(const RingBuffer& b) const;
-  inline bool operator!=(const RingBuffer& b) const { return !(*this == b); }
+  virtual ~SaturationProtector() = default;
 
-  // Maximum number of values that the buffer can contain.
-  int Capacity() const { return buffer_.size(); }
-  // Number of values in the buffer.
-  int Size() const { return size_; }
+  // Returns the recommended headroom in dB.
+  virtual float HeadroomDb() = 0;
 
-  void Reset();
-  // Pushes back `v`. If the buffer is full, the oldest value is replaced.
-  void PushBack(float v);
-  // Returns the oldest item in the buffer. Returns an empty value if the
-  // buffer is empty.
-  absl::optional<float> Front() const;
+  // Analyzes the peak level of a 10 ms frame along with its speech probability
+  // and the current speech level estimate to update the recommended headroom.
+  virtual void Analyze(float speech_probability,
+                       float peak_dbfs,
+                       float speech_level_dbfs) = 0;
 
- private:
-  inline int FrontIndex() const {
-    return rtc::SafeEq(size_, buffer_.size()) ? next_ : 0;
-  }
-  // `buffer_` has `size_` elements (up to the size of `buffer_`) and `next_` is
-  // the position where the next new value is written in `buffer_`.
-  std::array<float, kPeakEnveloperBufferSize> buffer_;
-  int next_ = 0;
-  int size_ = 0;
+  // Resets the internal state.
+  virtual void Reset() = 0;
 };
 
-}  // namespace saturation_protector_impl
-
-// Saturation protector state. Exposed publicly for check-pointing and restore
-// ops.
-struct SaturationProtectorState {
-  bool operator==(const SaturationProtectorState& s) const;
-  inline bool operator!=(const SaturationProtectorState& s) const {
-    return !(*this == s);
-  }
-
-  float margin_db;  // Recommended margin.
-  saturation_protector_impl::RingBuffer peak_delay_buffer;
-  float max_peaks_dbfs;
-  int time_since_push_ms;  // Time since the last ring buffer push operation.
-};
-
-// Resets the saturation protector state.
-void ResetSaturationProtectorState(float initial_margin_db,
-                                   SaturationProtectorState& state);
-
-// Updates `state` by analyzing the estimated speech level `speech_level_dbfs`
-// and the peak power `speech_peak_dbfs` for an observed frame which is
-// reliably classified as "speech". `state` must not be modified without calling
-// this function.
-void UpdateSaturationProtectorState(float speech_peak_dbfs,
-                                    float speech_level_dbfs,
-                                    SaturationProtectorState& state);
+// Creates a saturation protector that starts at `initial_headroom_db`.
+std::unique_ptr<SaturationProtector> CreateSaturationProtector(
+    float initial_headroom_db,
+    float extra_headroom_db,
+    int adjacent_speech_frames_threshold,
+    ApmDataDumper* apm_data_dumper);
 
 }  // namespace webrtc
 

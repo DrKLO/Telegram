@@ -44,9 +44,11 @@ static const uint16_t WebRtcSpl_kAllPassFilter2[3] = {21333, 49062, 63010};
 //                            |data_length|
 //
 
-void WebRtcSpl_AllPassQMF(int32_t* in_data, size_t data_length,
-                          int32_t* out_data, const uint16_t* filter_coefficients,
-                          int32_t* filter_state)
+static void WebRtcSpl_AllPassQMF(int32_t* in_data,
+                                 size_t data_length,
+                                 int32_t* out_data,
+                                 const uint16_t* filter_coefficients,
+                                 int32_t* filter_state)
 {
     // The procedure is to filter the input with three first order all pass filters
     // (cascade operations).

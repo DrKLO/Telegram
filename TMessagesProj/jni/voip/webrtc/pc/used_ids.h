@@ -60,7 +60,9 @@ class UsedIds {
   }
 
  protected:
-  bool IsIdUsed(int new_id) { return id_set_.find(new_id) != id_set_.end(); }
+  virtual bool IsIdUsed(int new_id) {
+    return id_set_.find(new_id) != id_set_.end();
+  }
   const int min_allowed_id_;
   const int max_allowed_id_;
 
@@ -92,11 +94,24 @@ class UsedIds {
 class UsedPayloadTypes : public UsedIds<Codec> {
  public:
   UsedPayloadTypes()
-      : UsedIds<Codec>(kDynamicPayloadTypeMin, kDynamicPayloadTypeMax) {}
+      : UsedIds<Codec>(kFirstDynamicPayloadTypeLowerRange,
+                       kLastDynamicPayloadTypeUpperRange) {}
+
+ protected:
+  bool IsIdUsed(int new_id) override {
+    // Range marked for RTCP avoidance is "used".
+    if (new_id > kLastDynamicPayloadTypeLowerRange &&
+        new_id < kFirstDynamicPayloadTypeUpperRange)
+      return true;
+    return UsedIds<Codec>::IsIdUsed(new_id);
+  }
 
  private:
-  static const int kDynamicPayloadTypeMin = 96;
-  static const int kDynamicPayloadTypeMax = 127;
+  static const int kFirstDynamicPayloadTypeLowerRange = 35;
+  static const int kLastDynamicPayloadTypeLowerRange = 65;
+
+  static const int kFirstDynamicPayloadTypeUpperRange = 96;
+  static const int kLastDynamicPayloadTypeUpperRange = 127;
 };
 
 // Helper class used for finding duplicate RTP Header extension ids among

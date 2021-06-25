@@ -30,8 +30,9 @@ import android.text.TextUtils;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
-import com.google.firebase.iid.FirebaseInstanceId;
+import com.google.firebase.messaging.FirebaseMessaging;
 
+import org.telegram.messenger.voip.VideoCapturerDevice;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.ForegroundDetector;
@@ -243,6 +244,7 @@ public class ApplicationLoader extends Application {
         try {
             LocaleController.getInstance().onDeviceConfigurationChange(newConfig);
             AndroidUtilities.checkDisplaySize(applicationContext, newConfig);
+            VideoCapturerDevice.checkScreenCapturerSize();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -263,18 +265,21 @@ public class ApplicationLoader extends Application {
                 }
                 Utilities.globalQueue.postRunnable(() -> {
                     try {
-                        FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(instanceIdResult -> {
-                            String token = instanceIdResult.getToken();
-                            if (!TextUtils.isEmpty(token)) {
-                                GcmPushListenerService.sendRegistrationToServer(token);
-                            }
-                        }).addOnFailureListener(e -> {
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("Failed to get regid");
-                            }
-                            SharedConfig.pushStringStatus = "__FIREBASE_FAILED__";
-                            GcmPushListenerService.sendRegistrationToServer(null);
-                        });
+                        FirebaseMessaging.getInstance().getToken()
+                                .addOnCompleteListener(task -> {
+                                    if (!task.isSuccessful()) {
+                                        if (BuildVars.LOGS_ENABLED) {
+                                            FileLog.d("Failed to get regid");
+                                        }
+                                        SharedConfig.pushStringStatus = "__FIREBASE_FAILED__";
+                                        GcmPushListenerService.sendRegistrationToServer(null);
+                                        return;
+                                    }
+                                    String token = task.getResult();
+                                    if (!TextUtils.isEmpty(token)) {
+                                        GcmPushListenerService.sendRegistrationToServer(token);
+                                    }
+                                });
                     } catch (Throwable e) {
                         FileLog.e(e);
                     }

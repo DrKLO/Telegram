@@ -23,23 +23,6 @@
 
 namespace webrtc {
 
-namespace {
-
-bool IsFormatSupported(
-    const std::vector<webrtc::SdpVideoFormat>& supported_formats,
-    const webrtc::SdpVideoFormat& format) {
-  for (const webrtc::SdpVideoFormat& supported_format : supported_formats) {
-    if (cricket::IsSameCodec(format.name, format.parameters,
-                             supported_format.name,
-                             supported_format.parameters)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-}  // namespace
-
 std::vector<SdpVideoFormat> InternalDecoderFactory::GetSupportedFormats()
     const {
   std::vector<SdpVideoFormat> formats;
@@ -55,8 +38,9 @@ std::vector<SdpVideoFormat> InternalDecoderFactory::GetSupportedFormats()
 
 std::unique_ptr<VideoDecoder> InternalDecoderFactory::CreateVideoDecoder(
     const SdpVideoFormat& format) {
-  if (!IsFormatSupported(GetSupportedFormats(), format)) {
-    RTC_LOG(LS_ERROR) << "Trying to create decoder for unsupported format";
+  if (!format.IsCodecInList(GetSupportedFormats())) {
+    RTC_LOG(LS_WARNING) << "Trying to create decoder for unsupported format. "
+                        << format.ToString();
     return nullptr;
   }
 

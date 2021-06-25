@@ -29,7 +29,6 @@ void LogSinkImpl::OnLogMessage(const std::string &message) {
 	time_t rawTime;
 	time(&rawTime);
 	struct tm timeinfo;
-	timeval curTime = { 0 };
 
 #ifdef WEBRTC_WIN
 	localtime_s(&timeinfo, &rawTime);
@@ -45,14 +44,13 @@ void LogSinkImpl::OnLogMessage(const std::string &message) {
 	const auto deltaEpochInMicrosecs = 11644473600000000Ui64;
 	full -= deltaEpochInMicrosecs;
 	full /= 10;
-	curTime.tv_sec = (long)(full / 1000000UL);
-	curTime.tv_usec = (long)(full % 1000000UL);
+	int32_t milliseconds = (long)(full % 1000000UL) / 1000;
 #else
+	timeval curTime = { 0 };
 	localtime_r(&rawTime, &timeinfo);
 	gettimeofday(&curTime, nullptr);
-#endif
-
 	int32_t milliseconds = curTime.tv_usec / 1000;
+#endif
 
 	auto &stream = _file.is_open() ? (std::ostream&)_file : _data;
 	stream

@@ -191,6 +191,8 @@ void Aec3ConfigFromJsonString(absl::string_view json_string,
               &cfg.delay.fixed_capture_delay_samples);
     ReadParam(section, "delay_estimate_smoothing",
               &cfg.delay.delay_estimate_smoothing);
+    ReadParam(section, "delay_estimate_smoothing_delay_found",
+              &cfg.delay.delay_estimate_smoothing_delay_found);
     ReadParam(section, "delay_candidate_detection_threshold",
               &cfg.delay.delay_candidate_detection_threshold);
 
@@ -223,11 +225,15 @@ void Aec3ConfigFromJsonString(absl::string_view json_string,
               &cfg.filter.config_change_duration_blocks);
     ReadParam(section, "initial_state_seconds",
               &cfg.filter.initial_state_seconds);
+    ReadParam(section, "coarse_reset_hangover_blocks",
+              &cfg.filter.coarse_reset_hangover_blocks);
     ReadParam(section, "conservative_initial_phase",
               &cfg.filter.conservative_initial_phase);
     ReadParam(section, "enable_coarse_filter_output_usage",
               &cfg.filter.enable_coarse_filter_output_usage);
     ReadParam(section, "use_linear_filter", &cfg.filter.use_linear_filter);
+    ReadParam(section, "high_pass_filter_echo_reference",
+              &cfg.filter.high_pass_filter_echo_reference);
     ReadParam(section, "export_linear_aec_output",
               &cfg.filter.export_linear_aec_output);
   }
@@ -249,6 +255,8 @@ void Aec3ConfigFromJsonString(absl::string_view json_string,
     ReadParam(section, "default_len", &cfg.ep_strength.default_len);
     ReadParam(section, "echo_can_saturate", &cfg.ep_strength.echo_can_saturate);
     ReadParam(section, "bounded_erl", &cfg.ep_strength.bounded_erl);
+    ReadParam(section, "erle_onset_compensation_in_dominant_nearend",
+              &cfg.ep_strength.erle_onset_compensation_in_dominant_nearend);
   }
 
   if (rtc::GetValueFromJsonObject(aec3_root, "echo_audibility", &section)) {
@@ -419,6 +427,8 @@ std::string Aec3ConfigToJsonString(const EchoCanceller3Config& config) {
       << config.delay.fixed_capture_delay_samples << ",";
   ost << "\"delay_estimate_smoothing\": "
       << config.delay.delay_estimate_smoothing << ",";
+  ost << "\"delay_estimate_smoothing_delay_found\": "
+      << config.delay.delay_estimate_smoothing_delay_found << ",";
   ost << "\"delay_candidate_detection_threshold\": "
       << config.delay.delay_candidate_detection_threshold << ",";
 
@@ -502,6 +512,8 @@ std::string Aec3ConfigToJsonString(const EchoCanceller3Config& config) {
       << config.filter.config_change_duration_blocks << ",";
   ost << "\"initial_state_seconds\": " << config.filter.initial_state_seconds
       << ",";
+  ost << "\"coarse_reset_hangover_blocks\": "
+      << config.filter.coarse_reset_hangover_blocks << ",";
   ost << "\"conservative_initial_phase\": "
       << (config.filter.conservative_initial_phase ? "true" : "false") << ",";
   ost << "\"enable_coarse_filter_output_usage\": "
@@ -509,6 +521,9 @@ std::string Aec3ConfigToJsonString(const EchoCanceller3Config& config) {
       << ",";
   ost << "\"use_linear_filter\": "
       << (config.filter.use_linear_filter ? "true" : "false") << ",";
+  ost << "\"high_pass_filter_echo_reference\": "
+      << (config.filter.high_pass_filter_echo_reference ? "true" : "false")
+      << ",";
   ost << "\"export_linear_aec_output\": "
       << (config.filter.export_linear_aec_output ? "true" : "false");
 
@@ -533,8 +548,11 @@ std::string Aec3ConfigToJsonString(const EchoCanceller3Config& config) {
   ost << "\"echo_can_saturate\": "
       << (config.ep_strength.echo_can_saturate ? "true" : "false") << ",";
   ost << "\"bounded_erl\": "
-      << (config.ep_strength.bounded_erl ? "true" : "false");
-
+      << (config.ep_strength.bounded_erl ? "true" : "false") << ",";
+  ost << "\"erle_onset_compensation_in_dominant_nearend\": "
+      << (config.ep_strength.erle_onset_compensation_in_dominant_nearend
+              ? "true"
+              : "false");
   ost << "},";
 
   ost << "\"echo_audibility\": {";

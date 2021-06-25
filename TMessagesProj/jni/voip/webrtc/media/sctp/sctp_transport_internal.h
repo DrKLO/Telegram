@@ -18,6 +18,7 @@
 #include <string>
 #include <vector>
 
+#include "api/transport/data_channel_transport_interface.h"
 #include "rtc_base/copy_on_write_buffer.h"
 #include "rtc_base/thread.h"
 // For SendDataParams/ReceiveDataParams.
@@ -101,7 +102,8 @@ class SctpTransportInternal {
   // usrsctp that will then post the network interface).
   // Returns true iff successful data somewhere on the send-queue/network.
   // Uses |params.ssrc| as the SCTP sid.
-  virtual bool SendData(const SendDataParams& params,
+  virtual bool SendData(int sid,
+                        const webrtc::SendDataParams& params,
                         const rtc::CopyOnWriteBuffer& payload,
                         SendDataResult* result = nullptr) = 0;
 

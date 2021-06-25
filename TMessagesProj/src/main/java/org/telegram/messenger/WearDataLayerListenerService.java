@@ -79,7 +79,7 @@ public class WearDataLayerListenerService extends WearableListenerService {
 						final CyclicBarrier barrier = new CyclicBarrier(2);
 						if (!photo.exists()) {
 							final NotificationCenter.NotificationCenterDelegate listener = (id, account, args) -> {
-								if (id == NotificationCenter.fileDidLoad) {
+								if (id == NotificationCenter.fileLoaded) {
 									if (BuildVars.LOGS_ENABLED) {
 										FileLog.d("file loaded: " + args[0] + " " + args[0].getClass().getName());
 									}
@@ -95,14 +95,14 @@ public class WearDataLayerListenerService extends WearableListenerService {
 								}
 							};
 							AndroidUtilities.runOnUIThread(() -> {
-								NotificationCenter.getInstance(currentAccount).addObserver(listener, NotificationCenter.fileDidLoad);
+								NotificationCenter.getInstance(currentAccount).addObserver(listener, NotificationCenter.fileLoaded);
 								FileLoader.getInstance(currentAccount).loadFile(ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_SMALL), user, null, 1, 1);
 							});
 							try {
 								barrier.await(10, TimeUnit.SECONDS);
 							} catch (Exception ignore) {
 							}
-							AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(currentAccount).removeObserver(listener, NotificationCenter.fileDidLoad));
+							AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(currentAccount).removeObserver(listener, NotificationCenter.fileLoaded));
 						}
 						if (photo.exists() && photo.length() <= 50 * 1024 * 1024) {
 							byte[] photoData = new byte[(int) photo.length()];
@@ -249,7 +249,7 @@ public class WearDataLayerListenerService extends WearableListenerService {
 					if (dialog_id == 0 || max_id == 0 || currentAccount == -1) {
 						return;
 					}
-					SendMessagesHelper.getInstance(currentAccount).sendMessage(text.toString(), dialog_id, null, null, null, true, null, null, null, true, 0);
+					SendMessagesHelper.getInstance(currentAccount).sendMessage(text.toString(), dialog_id, null, null, null, true, null, null, null, true, 0, null);
 					MessagesController.getInstance(currentAccount).markDialogAsRead(dialog_id, max_id, max_id, 0, false, 0, 0, true, 0);
 				} catch (Exception x) {
 					if (BuildVars.LOGS_ENABLED)

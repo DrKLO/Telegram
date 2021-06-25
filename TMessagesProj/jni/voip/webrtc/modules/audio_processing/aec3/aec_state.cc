@@ -113,14 +113,6 @@ void AecState::GetResidualEchoScaling(
                                           residual_scaling);
 }
 
-absl::optional<float> AecState::ErleUncertainty() const {
-  if (SaturatedEcho()) {
-    return 1.f;
-  }
-
-  return absl::nullopt;
-}
-
 AecState::AecState(const EchoCanceller3Config& config,
                    size_t num_capture_channels)
     : data_dumper_(
@@ -302,7 +294,9 @@ void AecState::Update(
   data_dumper_->DumpRaw("aec3_active_render", active_render);
   data_dumper_->DumpRaw("aec3_erl", Erl());
   data_dumper_->DumpRaw("aec3_erl_time_domain", ErlTimeDomain());
-  data_dumper_->DumpRaw("aec3_erle", Erle()[0]);
+  data_dumper_->DumpRaw("aec3_erle", Erle(/*onset_compensated=*/false)[0]);
+  data_dumper_->DumpRaw("aec3_erle_onset_compensated",
+                        Erle(/*onset_compensated=*/true)[0]);
   data_dumper_->DumpRaw("aec3_usable_linear_estimate", UsableLinearEstimate());
   data_dumper_->DumpRaw("aec3_transparent_mode", TransparentModeActive());
   data_dumper_->DumpRaw("aec3_filter_delay",
@@ -322,6 +316,11 @@ void AecState::Update(
                         external_delay ? 1 : 0);
   data_dumper_->DumpRaw("aec3_filter_tail_freq_resp_est",
                         GetReverbFrequencyResponse());
+  data_dumper_->DumpRaw("aec3_subtractor_y2", subtractor_output[0].y2);
+  data_dumper_->DumpRaw("aec3_subtractor_e2_coarse",
+                        subtractor_output[0].e2_coarse);
+  data_dumper_->DumpRaw("aec3_subtractor_e2_refined",
+                        subtractor_output[0].e2_refined);
 }
 
 AecState::InitialState::InitialState(const EchoCanceller3Config& config)

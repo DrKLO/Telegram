@@ -754,6 +754,11 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
             switch (holder.getItemViewType()) {
                 case 0:
+                    boolean showLoading = false;
+                    String value = null;
+                    int loadingLen = 16;
+                    boolean animated = holder.itemView.getTag() != null && ((Integer) holder.itemView.getTag()) == position;
+                    holder.itemView.setTag(position);
                     TextSettingsCell textCell = (TextSettingsCell) holder.itemView;
                     if (position == blockedRow) {
                         int totalCount = getMessagesController().totalBlockedCount;
@@ -762,6 +767,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                         } else if (totalCount > 0) {
                             textCell.setTextAndValue(LocaleController.getString("BlockedUsers", R.string.BlockedUsers), String.format("%d", totalCount), true);
                         } else {
+                            showLoading = true;
                             textCell.setText(LocaleController.getString("BlockedUsers", R.string.BlockedUsers), true);
                         }
                     } else if (position == sessionsRow) {
@@ -769,9 +775,8 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                     } else if (position == webSessionsRow) {
                         textCell.setText(LocaleController.getString("WebSessionsTitle", R.string.WebSessionsTitle), false);
                     } else if (position == passwordRow) {
-                        String value;
                         if (currentPassword == null) {
-                            value = LocaleController.getString("Loading", R.string.Loading);
+                            showLoading = true;
                         } else if (currentPassword.has_password) {
                             value = LocaleController.getString("PasswordOn", R.string.PasswordOn);
                         } else {
@@ -781,49 +786,49 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                     } else if (position == passcodeRow) {
                         textCell.setText(LocaleController.getString("Passcode", R.string.Passcode), true);
                     } else if (position == phoneNumberRow) {
-                        String value;
                         if (getContactsController().getLoadingPrivicyInfo(ContactsController.PRIVACY_RULES_TYPE_PHONE)) {
-                            value = LocaleController.getString("Loading", R.string.Loading);
+                            showLoading = true;
+                            loadingLen = 30;
                         } else {
                             value = formatRulesString(getAccountInstance(), ContactsController.PRIVACY_RULES_TYPE_PHONE);
                         }
                         textCell.setTextAndValue(LocaleController.getString("PrivacyPhone", R.string.PrivacyPhone), value, true);
                     } else if (position == lastSeenRow) {
-                        String value;
                         if (getContactsController().getLoadingPrivicyInfo(ContactsController.PRIVACY_RULES_TYPE_LASTSEEN)) {
-                            value = LocaleController.getString("Loading", R.string.Loading);
+                            showLoading = true;
+                            loadingLen = 30;
                         } else {
                             value = formatRulesString(getAccountInstance(), ContactsController.PRIVACY_RULES_TYPE_LASTSEEN);
                         }
                         textCell.setTextAndValue(LocaleController.getString("PrivacyLastSeen", R.string.PrivacyLastSeen), value, true);
                     } else if (position == groupsRow) {
-                        String value;
                         if (getContactsController().getLoadingPrivicyInfo(ContactsController.PRIVACY_RULES_TYPE_INVITE)) {
-                            value = LocaleController.getString("Loading", R.string.Loading);
+                            showLoading = true;
+                            loadingLen = 30;
                         } else {
                             value = formatRulesString(getAccountInstance(), ContactsController.PRIVACY_RULES_TYPE_INVITE);
                         }
                         textCell.setTextAndValue(LocaleController.getString("GroupsAndChannels", R.string.GroupsAndChannels), value, false);
                     } else if (position == callsRow) {
-                        String value;
                         if (getContactsController().getLoadingPrivicyInfo(ContactsController.PRIVACY_RULES_TYPE_CALLS)) {
-                            value = LocaleController.getString("Loading", R.string.Loading);
+                            showLoading = true;
+                            loadingLen = 30;
                         } else {
                             value = formatRulesString(getAccountInstance(), ContactsController.PRIVACY_RULES_TYPE_CALLS);
                         }
                         textCell.setTextAndValue(LocaleController.getString("Calls", R.string.Calls), value, true);
                     } else if (position == profilePhotoRow) {
-                        String value;
                         if (getContactsController().getLoadingPrivicyInfo(ContactsController.PRIVACY_RULES_TYPE_PHOTO)) {
-                            value = LocaleController.getString("Loading", R.string.Loading);
+                            showLoading = true;
+                            loadingLen = 30;
                         } else {
                             value = formatRulesString(getAccountInstance(), ContactsController.PRIVACY_RULES_TYPE_PHOTO);
                         }
                         textCell.setTextAndValue(LocaleController.getString("PrivacyProfilePhoto", R.string.PrivacyProfilePhoto), value, true);
                     } else if (position == forwardsRow) {
-                        String value;
                         if (getContactsController().getLoadingPrivicyInfo(ContactsController.PRIVACY_RULES_TYPE_FORWARDS)) {
-                            value = LocaleController.getString("Loading", R.string.Loading);
+                            showLoading = true;
+                            loadingLen = 30;
                         } else {
                             value = formatRulesString(getAccountInstance(), ContactsController.PRIVACY_RULES_TYPE_FORWARDS);
                         }
@@ -831,9 +836,8 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                     } else if (position == passportRow) {
                         textCell.setText(LocaleController.getString("TelegramPassport", R.string.TelegramPassport), true);
                     } else if (position == deleteAccountRow) {
-                        String value;
                         if (getContactsController().getLoadingDeleteInfo()) {
-                            value = LocaleController.getString("Loading", R.string.Loading);
+                            showLoading = true;
                         } else {
                             int ttl = getContactsController().getDeleteAccountTTL();
                             if (ttl <= 182) {
@@ -848,7 +852,6 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                     } else if (position == paymentsClearRow) {
                         textCell.setText(LocaleController.getString("PrivacyPaymentsClear", R.string.PrivacyPaymentsClear), true);
                     } else if (position == secretMapRow) {
-                        String value;
                         switch (SharedConfig.mapPreviewType) {
                             case 0:
                                 value = LocaleController.getString("MapPreviewProviderTelegram", R.string.MapPreviewProviderTelegram);
@@ -868,6 +871,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                     } else if (position == contactsDeleteRow) {
                         textCell.setText(LocaleController.getString("SyncContactsDelete", R.string.SyncContactsDelete), true);
                     }
+                    textCell.setDrawLoading(showLoading, loadingLen, animated);
                     break;
                 case 1:
                     TextInfoPrivacyCell privacyCell = (TextInfoPrivacyCell) holder.itemView;

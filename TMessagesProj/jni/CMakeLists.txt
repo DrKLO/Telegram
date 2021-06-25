@@ -399,7 +399,7 @@ target_compile_definitions(sqlite PUBLIC
 #voip
 include(${CMAKE_HOME_DIRECTORY}/voip/CMakeLists.txt)
 
-set(NATIVE_LIB "tmessages.38")
+set(NATIVE_LIB "tmessages.39")
 
 #tmessages
 add_library(${NATIVE_LIB} SHARED
@@ -669,7 +669,7 @@ target_include_directories(${NATIVE_LIB} PUBLIC
         lz4)
 
 target_link_libraries(${NATIVE_LIB}
-        -Wl,--whole-archive voipandroid -Wl,--no-whole-archive
+        -Wl,--whole-archive rnnoise voipandroid -Wl,--no-whole-archive
         tgvoip
         tgcalls
         tgcalls_tp
@@ -692,6 +692,7 @@ target_link_libraries(${NATIVE_LIB}
         log
         z
         GLESv2
+        EGL
         android
         OpenSLES
         cpufeatures)

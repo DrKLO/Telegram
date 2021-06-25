@@ -177,7 +177,7 @@ public class ArchivedStickerSetCell extends FrameLayout implements Checkable {
                 imageLocation = ImageLocation.getForDocument(thumb, sticker);
             } else {
                 TLRPC.PhotoSize thumb = (TLRPC.PhotoSize) object;
-                imageLocation = ImageLocation.getForSticker(thumb, sticker);
+                imageLocation = ImageLocation.getForSticker(thumb, sticker, set.set.thumb_version);
             }
 
             if (object instanceof TLRPC.Document && MessageObject.isAnimatedStickerDocument(sticker, true)) {

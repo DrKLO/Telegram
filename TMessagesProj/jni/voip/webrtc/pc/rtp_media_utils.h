@@ -11,6 +11,7 @@
 #ifndef PC_RTP_MEDIA_UTILS_H_
 #define PC_RTP_MEDIA_UTILS_H_
 
+#include "api/rtp_transceiver_direction.h"
 #include "api/rtp_transceiver_interface.h"
 
 namespace webrtc {
@@ -49,13 +50,13 @@ RtpTransceiverDirection RtpTransceiverDirectionIntersection(
     RtpTransceiverDirection lhs,
     RtpTransceiverDirection rhs);
 
-#ifdef UNIT_TEST
+#ifdef WEBRTC_UNIT_TEST
 inline std::ostream& operator<<(  // no-presubmit-check TODO(webrtc:8982)
     std::ostream& os,             // no-presubmit-check TODO(webrtc:8982)
     RtpTransceiverDirection direction) {
   return os << RtpTransceiverDirectionToString(direction);
 }
-#endif  // UNIT_TEST
+#endif  // WEBRTC_UNIT_TEST
 
 }  // namespace webrtc
 

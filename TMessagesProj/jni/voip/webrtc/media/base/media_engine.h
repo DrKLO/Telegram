@@ -121,9 +121,9 @@ class MediaEngineInterface {
  public:
   virtual ~MediaEngineInterface() {}
 
-  // Initialization
-  // Starts the engine.
+  // Initialization. Needs to be called on the worker thread.
   virtual bool Init() = 0;
+
   virtual VoiceEngineInterface& voice() = 0;
   virtual VideoEngineInterface& video() = 0;
   virtual const VoiceEngineInterface& voice() const = 0;
@@ -141,6 +141,8 @@ class CompositeMediaEngine : public MediaEngineInterface {
   CompositeMediaEngine(std::unique_ptr<VoiceEngineInterface> audio_engine,
                        std::unique_ptr<VideoEngineInterface> video_engine);
   ~CompositeMediaEngine() override;
+
+  // Always succeeds.
   bool Init() override;
 
   VoiceEngineInterface& voice() override;
@@ -150,21 +152,8 @@ class CompositeMediaEngine : public MediaEngineInterface {
 
  private:
   const std::unique_ptr<webrtc::WebRtcKeyValueConfig> trials_;
-  std::unique_ptr<VoiceEngineInterface> voice_engine_;
-  std::unique_ptr<VideoEngineInterface> video_engine_;
-};
-
-enum DataChannelType {
-  DCT_NONE = 0,
-  DCT_RTP = 1,
-  DCT_SCTP = 2,
-};
-
-class DataEngineInterface {
- public:
-  virtual ~DataEngineInterface() {}
-  virtual DataMediaChannel* CreateChannel(const MediaConfig& config) = 0;
-  virtual const std::vector<DataCodec>& data_codecs() = 0;
+  const std::unique_ptr<VoiceEngineInterface> voice_engine_;
+  const std::unique_ptr<VideoEngineInterface> video_engine_;
 };
 
 webrtc::RtpParameters CreateRtpParametersWithOneEncoding();

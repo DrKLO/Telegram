@@ -10,6 +10,8 @@
 
 #include "call/adaptation/video_stream_input_state_provider.h"
 
+#include "call/adaptation/video_stream_adapter.h"
+
 namespace webrtc {
 
 VideoStreamInputStateProvider::VideoStreamInputStateProvider(
@@ -36,6 +38,9 @@ void VideoStreamInputStateProvider::OnEncoderSettingsChanged(
       encoder_settings.encoder_config().codec_type);
   input_state_.set_min_pixels_per_frame(
       encoder_settings.encoder_info().scaling_settings.min_pixels_per_frame);
+  input_state_.set_single_active_stream_pixels(
+      VideoStreamAdapter::GetSingleActiveLayerPixels(
+          encoder_settings.video_codec()));
 }
 
 VideoStreamInputState VideoStreamInputStateProvider::InputState() {

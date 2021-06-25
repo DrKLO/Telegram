@@ -10,12 +10,10 @@
 
 #include "pc/session_description.h"
 
-#include <algorithm>
 #include <utility>
 
 #include "absl/algorithm/container.h"
 #include "absl/memory/memory.h"
-#include "pc/media_protocol_names.h"
 #include "rtc_base/checks.h"
 
 namespace cricket {
@@ -259,6 +257,17 @@ const ContentGroup* SessionDescription::GetGroupByName(
     }
   }
   return NULL;
+}
+
+std::vector<const ContentGroup*> SessionDescription::GetGroupsByName(
+    const std::string& name) const {
+  std::vector<const ContentGroup*> content_groups;
+  for (const ContentGroup& content_group : content_groups_) {
+    if (content_group.semantics() == name) {
+      content_groups.push_back(&content_group);
+    }
+  }
+  return content_groups;
 }
 
 ContentInfo::~ContentInfo() {

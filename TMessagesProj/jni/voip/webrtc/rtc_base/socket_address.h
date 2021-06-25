@@ -12,9 +12,9 @@
 #define RTC_BASE_SOCKET_ADDRESS_H_
 
 #include <string>
-#ifdef UNIT_TEST
+#ifdef WEBRTC_UNIT_TEST
 #include <ostream>  // no-presubmit-check TODO(webrtc:8982)
-#endif              // UNIT_TEST
+#endif              // WEBRTC_UNIT_TEST
 #include "rtc_base/ip_address.h"
 #include "rtc_base/system/rtc_export.h"
 
@@ -124,15 +124,19 @@ class RTC_EXPORT SocketAddress {
   // Same as ToString but anonymizes it by hiding the last part.
   std::string ToSensitiveString() const;
 
+  // Returns hostname:port string if address is resolved, otherwise returns
+  // empty string.
+  std::string ToResolvedSensitiveString() const;
+
   // Parses hostname:port and [hostname]:port.
   bool FromString(const std::string& str);
 
-#ifdef UNIT_TEST
+#ifdef WEBRTC_UNIT_TEST
   inline std::ostream& operator<<(  // no-presubmit-check TODO(webrtc:8982)
       std::ostream& os) {           // no-presubmit-check TODO(webrtc:8982)
     return os << HostAsURIString() << ":" << port();
   }
-#endif  // UNIT_TEST
+#endif  // WEBRTC_UNIT_TEST
 
   // Determines whether this represents a missing / any IP address.
   // That is, 0.0.0.0 or ::.

@@ -34,8 +34,8 @@ FullBandErleEstimator::FullBandErleEstimator(
     const EchoCanceller3Config::Erle& config,
     size_t num_capture_channels)
     : min_erle_log2_(FastApproxLog2f(config.min + kEpsilon)),
-      max_erle_lf_log2(FastApproxLog2f(config.max_l + kEpsilon)),
-      hold_counters_time_domain_(num_capture_channels, 0),
+      max_erle_lf_log2_(FastApproxLog2f(config.max_l + kEpsilon)),
+      hold_counters_instantaneous_erle_(num_capture_channels, 0),
       erle_time_domain_log2_(num_capture_channels, min_erle_log2_),
       instantaneous_erle_(num_capture_channels, ErleInstantaneous(config)),
       linear_filters_qualities_(num_capture_channels) {
@@ -52,8 +52,8 @@ void FullBandErleEstimator::Reset() {
   UpdateQualityEstimates();
   std::fill(erle_time_domain_log2_.begin(), erle_time_domain_log2_.end(),
             min_erle_log2_);
-  std::fill(hold_counters_time_domain_.begin(),
-            hold_counters_time_domain_.end(), 0);
+  std::fill(hold_counters_instantaneous_erle_.begin(),
+            hold_counters_instantaneous_erle_.end(), 0);
 }
 
 void FullBandErleEstimator::Update(
@@ -71,21 +71,17 @@ void FullBandErleEstimator::Update(
         const float E2_sum =
             std::accumulate(E2[ch].begin(), E2[ch].end(), 0.0f);
         if (instantaneous_erle_[ch].Update(Y2_sum, E2_sum)) {
-          hold_counters_time_domain_[ch] = kBlocksToHoldErle;
+          hold_counters_instantaneous_erle_[ch] = kBlocksToHoldErle;
           erle_time_domain_log2_[ch] +=
-              0.1f * ((instantaneous_erle_[ch].GetInstErleLog2().value()) -
-                      erle_time_domain_log2_[ch]);
-          erle_time_domain_log2_[ch] = rtc::SafeClamp(
-              erle_time_domain_log2_[ch], min_erle_log2_, max_erle_lf_log2);
+              0.05f * ((instantaneous_erle_[ch].GetInstErleLog2().value()) -
+                       erle_time_domain_log2_[ch]);
+          erle_time_domain_log2_[ch] =
+              std::max(erle_time_domain_log2_[ch], min_erle_log2_);
         }
       }
     }
-    --hold_counters_time_domain_[ch];
-    if (hold_counters_time_domain_[ch] <= 0) {
-      erle_time_domain_log2_[ch] =
-          std::max(min_erle_log2_, erle_time_domain_log2_[ch] - 0.044f);
-    }
-    if (hold_counters_time_domain_[ch] == 0) {
+    --hold_counters_instantaneous_erle_[ch];
+    if (hold_counters_instantaneous_erle_[ch] == 0) {
       instantaneous_erle_[ch].ResetAccumulators();
     }
   }
@@ -166,17 +162,12 @@ void FullBandErleEstimator::ErleInstantaneous::Dump(
 
 void FullBandErleEstimator::ErleInstantaneous::UpdateMaxMin() {
   RTC_DCHECK(erle_log2_);
-  if (erle_log2_.value() > max_erle_log2_) {
-    max_erle_log2_ = erle_log2_.value();
-  } else {
-    max_erle_log2_ -= 0.0004;  // Forget factor, approx 1dB every 3 sec.
-  }
-
-  if (erle_log2_.value() < min_erle_log2_) {
-    min_erle_log2_ = erle_log2_.value();
-  } else {
-    min_erle_log2_ += 0.0004;  // Forget factor, approx 1dB every 3 sec.
-  }
+  // Adding the forgetting factors for the maximum and minimum and capping the
+  // result to the incoming value.
+  max_erle_log2_ -= 0.0004f;  // Forget factor, approx 1dB every 3 sec.
+  max_erle_log2_ = std::max(max_erle_log2_, erle_log2_.value());
+  min_erle_log2_ += 0.0004f;  // Forget factor, approx 1dB every 3 sec.
+  min_erle_log2_ = std::min(min_erle_log2_, erle_log2_.value());
 }
 
 void FullBandErleEstimator::ErleInstantaneous::UpdateQualityEstimate() {

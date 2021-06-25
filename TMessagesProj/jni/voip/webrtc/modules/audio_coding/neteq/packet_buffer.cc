@@ -25,8 +25,10 @@
 #include "modules/audio_coding/neteq/decoder_database.h"
 #include "modules/audio_coding/neteq/statistics_calculator.h"
 #include "rtc_base/checks.h"
+#include "rtc_base/experiments/struct_parameters_parser.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/numerics/safe_conversions.h"
+#include "system_wrappers/include/field_trial.h"
 
 namespace webrtc {
 namespace {
@@ -61,27 +63,80 @@ void LogPacketDiscarded(int codec_level, StatisticsCalculator* stats) {
   }
 }
 
+absl::optional<SmartFlushingConfig> GetSmartflushingConfig() {
+  absl::optional<SmartFlushingConfig> result;
+  std::string field_trial_string =
+      field_trial::FindFullName("WebRTC-Audio-NetEqSmartFlushing");
+  result = SmartFlushingConfig();
+  bool enabled = false;
+  auto parser = StructParametersParser::Create(
+      "enabled", &enabled, "target_level_threshold_ms",
+      &result->target_level_threshold_ms, "target_level_multiplier",
+      &result->target_level_multiplier);
+  parser->Parse(field_trial_string);
+  if (!enabled) {
+    return absl::nullopt;
+  }
+  RTC_LOG(LS_INFO) << "Using smart flushing, target_level_threshold_ms: "
+                   << result->target_level_threshold_ms
+                   << ", target_level_multiplier: "
+                   << result->target_level_multiplier;
+  return result;
+}
+
 }  // namespace
 
 PacketBuffer::PacketBuffer(size_t max_number_of_packets,
                            const TickTimer* tick_timer)
-    : max_number_of_packets_(max_number_of_packets), tick_timer_(tick_timer) {}
+    : smart_flushing_config_(GetSmartflushingConfig()),
+      max_number_of_packets_(max_number_of_packets),
+      tick_timer_(tick_timer) {}
 
 // Destructor. All packets in the buffer will be destroyed.
 PacketBuffer::~PacketBuffer() {
-  Flush();
+  buffer_.clear();
 }
 
 // Flush the buffer. All packets in the buffer will be destroyed.
-void PacketBuffer::Flush() {
+void PacketBuffer::Flush(StatisticsCalculator* stats) {
+  for (auto& p : buffer_) {
+    LogPacketDiscarded(p.priority.codec_level, stats);
+  }
   buffer_.clear();
+  stats->FlushedPacketBuffer();
+}
+
+void PacketBuffer::PartialFlush(int target_level_ms,
+                                size_t sample_rate,
+                                size_t last_decoded_length,
+                                StatisticsCalculator* stats) {
+  // Make sure that at least half the packet buffer capacity will be available
+  // after the flush. This is done to avoid getting stuck if the target level is
+  // very high.
+  int target_level_samples =
+      std::min(target_level_ms * sample_rate / 1000,
+               max_number_of_packets_ * last_decoded_length / 2);
+  // We should avoid flushing to very low levels.
+  target_level_samples = std::max(
+      target_level_samples, smart_flushing_config_->target_level_threshold_ms);
+  while (GetSpanSamples(last_decoded_length, sample_rate, true) >
+             static_cast<size_t>(target_level_samples) ||
+         buffer_.size() > max_number_of_packets_ / 2) {
+    LogPacketDiscarded(PeekNextPacket()->priority.codec_level, stats);
+    buffer_.pop_front();
+  }
 }
 
 bool PacketBuffer::Empty() const {
   return buffer_.empty();
 }
 
-int PacketBuffer::InsertPacket(Packet&& packet, StatisticsCalculator* stats) {
+int PacketBuffer::InsertPacket(Packet&& packet,
+                               StatisticsCalculator* stats,
+                               size_t last_decoded_length,
+                               size_t sample_rate,
+                               int target_level_ms,
+                               const DecoderDatabase& decoder_database) {
   if (packet.empty()) {
     RTC_LOG(LS_WARNING) << "InsertPacket invalid packet";
     return kInvalidPacket;
@@ -94,12 +149,32 @@ int PacketBuffer::InsertPacket(Packet&& packet, StatisticsCalculator* stats) {
 
   packet.waiting_time = tick_timer_->GetNewStopwatch();
 
-  if (buffer_.size() >= max_number_of_packets_) {
-    // Buffer is full. Flush it.
-    Flush();
-    stats->FlushedPacketBuffer();
-    RTC_LOG(LS_WARNING) << "Packet buffer flushed";
-    return_val = kFlushed;
+  // Perform a smart flush if the buffer size exceeds a multiple of the target
+  // level.
+  const size_t span_threshold =
+      smart_flushing_config_
+          ? smart_flushing_config_->target_level_multiplier *
+                std::max(smart_flushing_config_->target_level_threshold_ms,
+                         target_level_ms) *
+                sample_rate / 1000
+          : 0;
+  const bool smart_flush =
+      smart_flushing_config_.has_value() &&
+      GetSpanSamples(last_decoded_length, sample_rate, true) >= span_threshold;
+  if (buffer_.size() >= max_number_of_packets_ || smart_flush) {
+    size_t buffer_size_before_flush = buffer_.size();
+    if (smart_flushing_config_.has_value()) {
+      // Flush down to the target level.
+      PartialFlush(target_level_ms, sample_rate, last_decoded_length, stats);
+      return_val = kPartialFlush;
+    } else {
+      // Buffer is full.
+      Flush(stats);
+      return_val = kFlushed;
+    }
+    RTC_LOG(LS_WARNING) << "Packet buffer flushed, "
+                        << (buffer_size_before_flush - buffer_.size())
+                        << " packets discarded.";
   }
 
   // Get an iterator pointing to the place in the buffer where the new packet
@@ -134,7 +209,10 @@ int PacketBuffer::InsertPacketList(
     const DecoderDatabase& decoder_database,
     absl::optional<uint8_t>* current_rtp_payload_type,
     absl::optional<uint8_t>* current_cng_rtp_payload_type,
-    StatisticsCalculator* stats) {
+    StatisticsCalculator* stats,
+    size_t last_decoded_length,
+    size_t sample_rate,
+    int target_level_ms) {
   RTC_DCHECK(stats);
   bool flushed = false;
   for (auto& packet : *packet_list) {
@@ -143,7 +221,7 @@ int PacketBuffer::InsertPacketList(
           **current_cng_rtp_payload_type != packet.payload_type) {
         // New CNG payload type implies new codec type.
         *current_rtp_payload_type = absl::nullopt;
-        Flush();
+        Flush(stats);
         flushed = true;
       }
       *current_cng_rtp_payload_type = packet.payload_type;
@@ -156,12 +234,14 @@ int PacketBuffer::InsertPacketList(
                              **current_cng_rtp_payload_type,
                              decoder_database))) {
         *current_cng_rtp_payload_type = absl::nullopt;
-        Flush();
+        Flush(stats);
         flushed = true;
       }
       *current_rtp_payload_type = packet.payload_type;
     }
-    int return_val = InsertPacket(std::move(packet), stats);
+    int return_val =
+        InsertPacket(std::move(packet), stats, last_decoded_length, sample_rate,
+                     target_level_ms, decoder_database);
     if (return_val == kFlushed) {
       // The buffer flushed, but this is not an error. We can still continue.
       flushed = true;

@@ -15,13 +15,13 @@
 #include <SLES/OpenSLES_Android.h>
 #include <SLES/OpenSLES_AndroidConfiguration.h>
 
+#include "api/sequence_checker.h"
 #include "modules/audio_device/android/audio_common.h"
 #include "modules/audio_device/android/audio_manager.h"
 #include "modules/audio_device/android/opensles_common.h"
 #include "modules/audio_device/audio_device_generic.h"
 #include "modules/audio_device/include/audio_device_defines.h"
 #include "modules/utility/include/helpers_android.h"
-#include "rtc_base/thread_checker.h"
 
 namespace webrtc {
 
@@ -113,12 +113,12 @@ class OpenSLESPlayer {
 
   // Ensures that methods are called from the same thread as this object is
   // created on.
-  rtc::ThreadChecker thread_checker_;
+  SequenceChecker thread_checker_;
 
   // Stores thread ID in first call to SimpleBufferQueueCallback() from internal
   // non-application thread which is not attached to the Dalvik JVM.
   // Detached during construction of this object.
-  rtc::ThreadChecker thread_checker_opensles_;
+  SequenceChecker thread_checker_opensles_;
 
   // Raw pointer to the audio manager injected at construction. Used to cache
   // audio parameters and to access the global SL engine object needed by the

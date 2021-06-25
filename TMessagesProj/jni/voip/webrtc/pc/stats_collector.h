@@ -16,6 +16,8 @@
 
 #include <stdint.h>
 
+#include <algorithm>
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <string>
@@ -25,6 +27,7 @@
 #include "api/media_stream_interface.h"
 #include "api/peer_connection_interface.h"
 #include "api/stats_types.h"
+#include "p2p/base/connection_info.h"
 #include "p2p/base/port.h"
 #include "pc/peer_connection_internal.h"
 #include "pc/stats_collector_interface.h"
@@ -52,7 +55,7 @@ class StatsCollector : public StatsCollectorInterface {
   explicit StatsCollector(PeerConnectionInternal* pc);
   virtual ~StatsCollector();
 
-  // Adds a MediaStream with tracks that can be used as a |selector| in a call
+  // Adds a MediaStream with tracks that can be used as a `selector` in a call
   // to GetStats.
   void AddStream(MediaStreamInterface* stream);
   void AddTrack(MediaStreamTrackInterface* track);
@@ -70,12 +73,12 @@ class StatsCollector : public StatsCollectorInterface {
   void UpdateStats(PeerConnectionInterface::StatsOutputLevel level);
 
   // Gets a StatsReports of the last collected stats. Note that UpdateStats must
-  // be called before this function to get the most recent stats. |selector| is
+  // be called before this function to get the most recent stats. `selector` is
   // a track label or empty string. The most recent reports are stored in
-  // |reports|.
+  // `reports`.
   // TODO(tommi): Change this contract to accept a callback object instead
-  // of filling in |reports|.  As is, there's a requirement that the caller
-  // uses |reports| immediately without allowing any async activity on
+  // of filling in `reports`.  As is, there's a requirement that the caller
+  // uses `reports` immediately without allowing any async activity on
   // the thread (message handling etc) and then discard the results.
   void GetStats(MediaStreamTrackInterface* track,
                 StatsReports* reports) override;
@@ -103,19 +106,48 @@ class StatsCollector : public StatsCollectorInterface {
  private:
   friend class StatsCollectorTest;
 
+  // Struct that's populated on the network thread and carries the values to
+  // the signaling thread where the stats are added to the stats reports.
+  struct TransportStats {
+    TransportStats() = default;
+    TransportStats(std::string transport_name,
+                   cricket::TransportStats transport_stats)
+        : name(std::move(transport_name)), stats(std::move(transport_stats)) {}
+    TransportStats(TransportStats&&) = default;
+    TransportStats(const TransportStats&) = delete;
+
+    std::string name;
+    cricket::TransportStats stats;
+    std::unique_ptr<rtc::SSLCertificateStats> local_cert_stats;
+    std::unique_ptr<rtc::SSLCertificateStats> remote_cert_stats;
+  };
+
+  struct SessionStats {
+    SessionStats() = default;
+    SessionStats(SessionStats&&) = default;
+    SessionStats(const SessionStats&) = delete;
+
+    SessionStats& operator=(SessionStats&&) = default;
+    SessionStats& operator=(SessionStats&) = delete;
+
+    cricket::CandidateStatsList candidate_stats;
+    std::vector<TransportStats> transport_stats;
+    std::map<std::string, std::string> transport_names_by_mid;
+  };
+
   // Overridden in unit tests to fake timing.
   virtual double GetTimeNow();
 
   bool CopySelectedReports(const std::string& selector, StatsReports* reports);
 
-  // Helper method for creating IceCandidate report. |is_local| indicates
+  // Helper method for creating IceCandidate report. `is_local` indicates
   // whether this candidate is local or remote.
   StatsReport* AddCandidateReport(
       const cricket::CandidateStats& candidate_stats,
       bool local);
 
   // Adds a report for this certificate and every certificate in its chain, and
-  // returns the leaf certificate's report (|cert_stats|'s report).
+  // returns the leaf certificate's report (`cert_stats`'s report).
   StatsReport* AddCertificateReports(
       std::unique_ptr<rtc::SSLCertificateStats> cert_stats);
 
@@ -126,9 +158,14 @@ class StatsCollector : public StatsCollectorInterface {
                                        const cricket::ConnectionInfo& info);
 
   void ExtractDataInfo();
-  void ExtractSessionInfo();
+
+  // Returns the `transport_names_by_mid` member from the SessionStats as
+  // gathered and used to populate the stats.
+  std::map<std::string, std::string> ExtractSessionInfo();
+
   void ExtractBweInfo();
-  void ExtractMediaInfo();
+  void ExtractMediaInfo(
+      const std::map<std::string, std::string>& transport_names_by_mid);
   void ExtractSenderInfo();
   webrtc::StatsReport* GetReport(const StatsReport::StatsType& type,
                                  const std::string& id,
@@ -143,11 +180,19 @@ class StatsCollector : public StatsCollectorInterface {
   // Helper method to update the timestamp of track records.
   void UpdateTrackReports();
 
+  SessionStats ExtractSessionInfo_n(
+      const std::vector<rtc::scoped_refptr<
+          RtpTransceiverProxyWithInternal<RtpTransceiver>>>& transceivers,
+      absl::optional<std::string> sctp_transport_name,
+      absl::optional<std::string> sctp_mid);
+  void ExtractSessionInfo_s(SessionStats& session_stats);
+
   // A collection for all of our stats reports.
   StatsCollection reports_;
   TrackIdMap track_ids_;
   // Raw pointer to the peer connection the statistics are gathered from.
   PeerConnectionInternal* const pc_;
+  int64_t cache_timestamp_ms_ = 0;
   double stats_gathering_started_;
   const bool use_standard_bytes_stats_;
 

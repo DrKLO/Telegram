@@ -20,15 +20,15 @@
 
 #include <string.h>
 
-#include "modules/audio_coding/codecs/ilbc/defines.h"
-#include "modules/audio_coding/codecs/ilbc/state_construct.h"
 #include "modules/audio_coding/codecs/ilbc/cb_construct.h"
-#include "modules/audio_coding/codecs/ilbc/index_conv_dec.h"
-#include "modules/audio_coding/codecs/ilbc/do_plc.h"
 #include "modules/audio_coding/codecs/ilbc/constants.h"
+#include "modules/audio_coding/codecs/ilbc/defines.h"
+#include "modules/audio_coding/codecs/ilbc/do_plc.h"
 #include "modules/audio_coding/codecs/ilbc/enhancer_interface.h"
-#include "modules/audio_coding/codecs/ilbc/xcorr_coef.h"
+#include "modules/audio_coding/codecs/ilbc/index_conv_dec.h"
 #include "modules/audio_coding/codecs/ilbc/lsf_check.h"
+#include "modules/audio_coding/codecs/ilbc/state_construct.h"
+#include "modules/audio_coding/codecs/ilbc/xcorr_coef.h"
 
 /*----------------------------------------------------------------*
  *  frame residual decoder function (subrutine to iLBC_decode)

@@ -153,6 +153,7 @@ bool EchoCanceller3Config::Validate(EchoCanceller3Config* config) {
 
   res = res & Limit(&c->filter.config_change_duration_blocks, 0, 100000);
   res = res & Limit(&c->filter.initial_state_seconds, 0.f, 100.f);
+  res = res & Limit(&c->filter.coarse_reset_hangover_blocks, 0, 250000);
 
   res = res & Limit(&c->erle.min, 1.f, 100000.f);
   res = res & Limit(&c->erle.max_l, 1.f, 100000.f);

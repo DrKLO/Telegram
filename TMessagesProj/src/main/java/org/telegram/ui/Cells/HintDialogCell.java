@@ -19,7 +19,6 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
@@ -101,7 +100,6 @@ public class HintDialogCell extends FrameLayout {
 
     public void update() {
         int uid = (int) dialog_id;
-        TLRPC.FileLocation photo = null;
         if (uid > 0) {
             currentUser = MessagesController.getInstance(currentAccount).getUser(uid);
             avatarDrawable.setInfo(currentUser);

@@ -20,6 +20,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
@@ -387,7 +388,7 @@ public class TrendingStickersLayout extends FrameLayout implements NotificationC
         if (delegate.canSendSticker()) {
             stickersAlertDelegate = new StickersAlert.StickersAlertDelegate() {
                 @Override
-                public void onStickerSelected(TLRPC.Document sticker, String query, Object parent, boolean clearsInputField, boolean notify, int scheduleDate) {
+                public void onStickerSelected(TLRPC.Document sticker, String query, Object parent, MessageObject.SendAnimationData sendAnimationData, boolean clearsInputField, boolean notify, int scheduleDate) {
                     delegate.onStickerSelected(sticker, parent, clearsInputField, notify, scheduleDate);
                 }
 

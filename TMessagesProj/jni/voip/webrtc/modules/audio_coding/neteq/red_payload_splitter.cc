@@ -139,7 +139,7 @@ bool RedPayloadSplitter::SplitRed(PacketList* packet_list) {
             /*rtp_timestamp=*/new_packet.timestamp,
             /*audio_level=*/absl::nullopt,
             /*absolute_capture_time=*/absl::nullopt,
-            /*receive_time_ms=*/red_packet.packet_info.receive_time_ms());
+            /*receive_time=*/red_packet.packet_info.receive_time());
         new_packets.push_front(std::move(new_packet));
         payload_ptr += payload_length;
       }

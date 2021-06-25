@@ -12,6 +12,7 @@
 #define PC_RTP_TRANSMISSION_MANAGER_H_
 
 #include <stdint.h>
+
 #include <functional>
 #include <string>
 #include <vector>
@@ -24,6 +25,7 @@
 #include "api/rtp_receiver_interface.h"
 #include "api/rtp_sender_interface.h"
 #include "api/scoped_refptr.h"
+#include "api/sequence_checker.h"
 #include "media/base/media_channel.h"
 #include "pc/channel_manager.h"
 #include "pc/rtp_receiver.h"
@@ -32,10 +34,10 @@
 #include "pc/stats_collector_interface.h"
 #include "pc/transceiver_list.h"
 #include "pc/usage_pattern.h"
-#include "rtc_base/synchronization/sequence_checker.h"
 #include "rtc_base/third_party/sigslot/sigslot.h"
 #include "rtc_base/thread.h"
 #include "rtc_base/thread_annotations.h"
+#include "rtc_base/weak_ptr.h"
 
 namespace rtc {
 class Thread;

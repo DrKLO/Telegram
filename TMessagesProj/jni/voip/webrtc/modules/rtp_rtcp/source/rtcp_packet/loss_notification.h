@@ -11,9 +11,9 @@
 #ifndef MODULES_RTP_RTCP_SOURCE_RTCP_PACKET_LOSS_NOTIFICATION_H_
 #define MODULES_RTP_RTCP_SOURCE_RTCP_PACKET_LOSS_NOTIFICATION_H_
 
+#include "absl/base/attributes.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/common_header.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/psfb.h"
-#include "rtc_base/system/unused.h"
 
 namespace webrtc {
 namespace rtcp {
@@ -29,14 +29,15 @@ class LossNotification : public Psfb {
 
   size_t BlockLength() const override;
 
+  ABSL_MUST_USE_RESULT
   bool Create(uint8_t* packet,
               size_t* index,
               size_t max_length,
-              PacketReadyCallback callback) const override
-      RTC_WARN_UNUSED_RESULT;
+              PacketReadyCallback callback) const override;
 
   // Parse assumes header is already parsed and validated.
-  bool Parse(const CommonHeader& packet) RTC_WARN_UNUSED_RESULT;
+  ABSL_MUST_USE_RESULT
+  bool Parse(const CommonHeader& packet);
 
   // Set all of the values transmitted by the loss notification message.
   // If the values may not be represented by a loss notification message,
@@ -44,9 +45,10 @@ class LossNotification : public Psfb {
   // when |last_recieved| is ahead of |last_decoded| by more than 0x7fff.
   // This is because |last_recieved| is represented on the wire as a delta,
   // and only 15 bits are available for that delta.
+  ABSL_MUST_USE_RESULT
   bool Set(uint16_t last_decoded,
            uint16_t last_received,
-           bool decodability_flag) RTC_WARN_UNUSED_RESULT;
+           bool decodability_flag);
 
   // RTP sequence number of the first packet belong to the last decoded
   // non-discardable frame.

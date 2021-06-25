@@ -32,6 +32,11 @@ class MockPeerConnectionFactoryInterface final
               (const PeerConnectionInterface::RTCConfiguration&,
                PeerConnectionDependencies),
               (override));
+  MOCK_METHOD(RTCErrorOr<rtc::scoped_refptr<PeerConnectionInterface>>,
+              CreatePeerConnectionOrError,
+              (const PeerConnectionInterface::RTCConfiguration&,
+               PeerConnectionDependencies),
+              (override));
   MOCK_METHOD(rtc::scoped_refptr<PeerConnectionInterface>,
               CreatePeerConnection,
               (const PeerConnectionInterface::RTCConfiguration&,

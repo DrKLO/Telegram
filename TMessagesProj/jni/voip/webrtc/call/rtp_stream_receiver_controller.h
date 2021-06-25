@@ -12,9 +12,9 @@
 
 #include <memory>
 
+#include "api/sequence_checker.h"
 #include "call/rtp_demuxer.h"
 #include "call/rtp_stream_receiver_controller_interface.h"
-#include "rtc_base/deprecated/recursive_critical_section.h"
 
 namespace webrtc {
 
@@ -58,13 +58,18 @@ class RtpStreamReceiverController
     RtpPacketSinkInterface* const sink_;
   };
 
-  // TODO(nisse): Move to a TaskQueue for synchronization. When used
-  // by Call, we expect construction and all methods but OnRtpPacket
-  // to be called on the same thread, and OnRtpPacket to be called
-  // by a single, but possibly distinct, thread. But applications not
-  // using Call may have use threads differently.
-  rtc::RecursiveCriticalSection lock_;
-  RtpDemuxer demuxer_ RTC_GUARDED_BY(&lock_);
+  // TODO(bugs.webrtc.org/11993): We expect construction and all methods to be
+  // called on the same thread/tq. Currently this is the worker thread
+  // (including OnRtpPacket) but a more natural fit would be the network thread.
+  // Using a sequence checker to ensure that usage is correct but at the same
+  // time not require a specific thread/tq, an instance of this class + the
+  // associated functionality should be easily moved from one execution context
+  // to another (i.e. when network packets don't hop to the worker thread inside
+  // of Call).
+  SequenceChecker demuxer_sequence_;
+  // At this level the demuxer is only configured to demux by SSRC, so don't
+  // worry about MIDs (MIDs are handled by upper layers).
+  RtpDemuxer demuxer_ RTC_GUARDED_BY(&demuxer_sequence_){false /*use_mid*/};
 };
 
 }  // namespace webrtc

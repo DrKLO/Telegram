@@ -28,9 +28,13 @@ class AlignmentAdjuster {
   // |scale_resolution_down_by| may be adjusted to a common multiple to limit
   // the alignment value to avoid largely cropped frames and possibly with an
   // aspect ratio far from the original.
+
+  // Note: |max_layers| currently only taken into account when using default
+  // scale factors.
   static int GetAlignmentAndMaybeAdjustScaleFactors(
       const VideoEncoder::EncoderInfo& info,
-      VideoEncoderConfig* config);
+      VideoEncoderConfig* config,
+      absl::optional<size_t> max_layers);
 };
 
 }  // namespace webrtc

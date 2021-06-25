@@ -40,8 +40,10 @@ HRESULT GetActivationFactory(InterfaceType** factory) {
     return hr;
 
   hr = RoGetActivationFactoryProxy(class_id_hstring, IID_PPV_ARGS(factory));
-  if (FAILED(hr))
+  if (FAILED(hr)) {
+    DeleteHstring(class_id_hstring);
     return hr;
+  }
 
   return DeleteHstring(class_id_hstring);
 }

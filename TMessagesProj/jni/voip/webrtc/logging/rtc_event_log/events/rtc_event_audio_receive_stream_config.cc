@@ -31,14 +31,6 @@ RtcEventAudioReceiveStreamConfig::RtcEventAudioReceiveStreamConfig(
 
 RtcEventAudioReceiveStreamConfig::~RtcEventAudioReceiveStreamConfig() = default;
 
-RtcEvent::Type RtcEventAudioReceiveStreamConfig::GetType() const {
-  return RtcEvent::Type::AudioReceiveStreamConfig;
-}
-
-bool RtcEventAudioReceiveStreamConfig::IsConfigEvent() const {
-  return true;
-}
-
 std::unique_ptr<RtcEventAudioReceiveStreamConfig>
 RtcEventAudioReceiveStreamConfig::Copy() const {
   return absl::WrapUnique<RtcEventAudioReceiveStreamConfig>(

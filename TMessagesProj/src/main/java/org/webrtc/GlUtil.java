@@ -30,12 +30,12 @@ public class GlUtil {
 
   // Assert that no OpenGL ES 2.0 error has been raised.
   public static void checkNoGLES2Error(String msg) {
-    int error = GLES20.glGetError();
+    /*int error = GLES20.glGetError();
     if (error != GLES20.GL_NO_ERROR) {
       throw error == GLES20.GL_OUT_OF_MEMORY
           ? new GlOutOfMemoryException(msg)
           : new RuntimeException(msg + ": GLES20 error: " + error);
-    }
+    }*/
   }
 
   public static FloatBuffer createFloatBuffer(float[] coords) {

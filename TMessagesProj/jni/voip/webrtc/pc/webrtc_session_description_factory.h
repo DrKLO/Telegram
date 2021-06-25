@@ -12,6 +12,8 @@
 #define PC_WEBRTC_SESSION_DESCRIPTION_FACTORY_H_
 
 #include <stdint.h>
+
+#include <functional>
 #include <memory>
 #include <queue>
 #include <string>

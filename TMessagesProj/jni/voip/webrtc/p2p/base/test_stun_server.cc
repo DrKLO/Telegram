@@ -15,10 +15,9 @@
 
 namespace cricket {
 
-TestStunServer* TestStunServer::Create(rtc::Thread* thread,
+TestStunServer* TestStunServer::Create(rtc::SocketServer* ss,
                                        const rtc::SocketAddress& addr) {
-  rtc::AsyncSocket* socket =
-      thread->socketserver()->CreateAsyncSocket(addr.family(), SOCK_DGRAM);
+  rtc::AsyncSocket* socket = ss->CreateAsyncSocket(addr.family(), SOCK_DGRAM);
   rtc::AsyncUDPSocket* udp_socket = rtc::AsyncUDPSocket::Create(socket, addr);
 
   return new TestStunServer(udp_socket);

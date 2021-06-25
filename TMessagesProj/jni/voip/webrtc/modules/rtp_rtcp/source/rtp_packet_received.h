@@ -12,19 +12,26 @@
 
 #include <stdint.h>
 
-#include <vector>
+#include <utility>
 
+#include "absl/base/attributes.h"
 #include "api/array_view.h"
+#include "api/ref_counted_base.h"
 #include "api/rtp_headers.h"
+#include "api/scoped_refptr.h"
+#include "api/units/timestamp.h"
 #include "modules/rtp_rtcp/source/rtp_packet.h"
-#include "system_wrappers/include/ntp_time.h"
 
 namespace webrtc {
 // Class to hold rtp packet with metadata for receiver side.
+// The metadata is not parsed from the rtp packet, but may be derived from the
+// data that is parsed from the rtp packet.
 class RtpPacketReceived : public RtpPacket {
  public:
   RtpPacketReceived();
-  explicit RtpPacketReceived(const ExtensionManager* extensions);
+  explicit RtpPacketReceived(
+      const ExtensionManager* extensions,
+      webrtc::Timestamp arrival_time = webrtc::Timestamp::MinusInfinity());
   RtpPacketReceived(const RtpPacketReceived& packet);
   RtpPacketReceived(RtpPacketReceived&& packet);
 
@@ -39,12 +46,17 @@ class RtpPacketReceived : public RtpPacket {
 
   // Time in local time base as close as it can to packet arrived on the
   // network.
-  int64_t arrival_time_ms() const { return arrival_time_ms_; }
-  void set_arrival_time_ms(int64_t time) { arrival_time_ms_ = time; }
+  webrtc::Timestamp arrival_time() const { return arrival_time_; }
+  void set_arrival_time(webrtc::Timestamp time) { arrival_time_ = time; }
 
-  // Estimated from Timestamp() using rtcp Sender Reports.
-  NtpTime capture_ntp_time() const { return capture_time_; }
-  void set_capture_ntp_time(NtpTime time) { capture_time_ = time; }
+  ABSL_DEPRECATED("Use arrival_time() instead")
+  int64_t arrival_time_ms() const {
+    return arrival_time_.IsMinusInfinity() ? -1 : arrival_time_.ms();
+  }
+  ABSL_DEPRECATED("Use set_arrival_time() instead")
+  void set_arrival_time_ms(int64_t time) {
+    arrival_time_ = webrtc::Timestamp::Millis(time);
+  }
 
   // Flag if packet was recovered via RTX or FEC.
   bool recovered() const { return recovered_; }
@@ -55,21 +67,20 @@ class RtpPacketReceived : public RtpPacket {
     payload_type_frequency_ = value;
   }
 
-  // Additional data bound to the RTP packet for use in application code,
-  // outside of WebRTC.
-  rtc::ArrayView<const uint8_t> application_data() const {
-    return application_data_;
+  // An application can attach arbitrary data to an RTP packet using
+  // `additional_data`. The additional data does not affect WebRTC processing.
+  rtc::scoped_refptr<rtc::RefCountedBase> additional_data() const {
+    return additional_data_;
   }
-  void set_application_data(rtc::ArrayView<const uint8_t> data) {
-    application_data_.assign(data.begin(), data.end());
+  void set_additional_data(rtc::scoped_refptr<rtc::RefCountedBase> data) {
+    additional_data_ = std::move(data);
   }
 
  private:
-  NtpTime capture_time_;
-  int64_t arrival_time_ms_ = 0;
+  webrtc::Timestamp arrival_time_ = Timestamp::MinusInfinity();
   int payload_type_frequency_ = 0;
   bool recovered_ = false;
-  std::vector<uint8_t> application_data_;
+  rtc::scoped_refptr<rtc::RefCountedBase> additional_data_;
 };
 
 }  // namespace webrtc

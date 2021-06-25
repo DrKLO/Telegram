@@ -54,13 +54,9 @@ constexpr bool kIsArm = false;
 #endif
 
 absl::optional<LibvpxVp8Decoder::DeblockParams> DefaultDeblockParams() {
-  if (kIsArm) {
-    // For ARM, this is only called when deblocking is explicitly enabled, and
-    // the default strength is set by the ctor.
-    return LibvpxVp8Decoder::DeblockParams();
-  }
-  // For non-arm, don't use the explicit deblocking settings by default.
-  return absl::nullopt;
+  return LibvpxVp8Decoder::DeblockParams(/*max_level=*/8,
+                                         /*degrade_qp=*/60,
+                                         /*min_qp=*/30);
 }
 
 absl::optional<LibvpxVp8Decoder::DeblockParams>
@@ -395,6 +391,13 @@ int LibvpxVp8Decoder::Release() {
   buffer_pool_.Release();
   inited_ = false;
   return ret_val;
+}
+
+VideoDecoder::DecoderInfo LibvpxVp8Decoder::GetDecoderInfo() const {
+  DecoderInfo info;
+  info.implementation_name = "libvpx";
+  info.is_hardware_accelerated = false;
+  return info;
 }
 
 const char* LibvpxVp8Decoder::ImplementationName() const {

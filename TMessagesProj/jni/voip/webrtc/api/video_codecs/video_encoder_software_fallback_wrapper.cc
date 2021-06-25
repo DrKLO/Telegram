@@ -50,7 +50,6 @@ struct ForcedFallbackParams {
     return enable_resolution_based_switch &&
            codec.codecType == kVideoCodecVP8 &&
            codec.numberOfSimulcastStreams <= 1 &&
-           codec.VP8().numberOfTemporalLayers == 1 &&
            codec.width * codec.height <= max_pixels;
   }
 

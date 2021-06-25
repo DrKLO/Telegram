@@ -44,6 +44,8 @@ public class ImportingAlert extends BottomSheet implements NotificationCenter.No
     private RLottieDrawable completedDrawable;
     private TextView[] infoTextView = new TextView[2];
 
+    private String stickersShortName;
+
     public static class BottomSheetCell extends FrameLayout {
 
         private View background;
@@ -110,11 +112,12 @@ public class ImportingAlert extends BottomSheet implements NotificationCenter.No
         }
     };
 
-    public ImportingAlert(final Context context, ChatActivity chatActivity) {
+    public ImportingAlert(final Context context, String shortName, ChatActivity chatActivity) {
         super(context, false);
         setApplyBottomPadding(false);
         setApplyTopPadding(false);
         parentFragment = chatActivity;
+        stickersShortName = shortName;
 
         FrameLayout frameLayout = new FrameLayout(context);
         setCustomView(frameLayout);
@@ -123,7 +126,6 @@ public class ImportingAlert extends BottomSheet implements NotificationCenter.No
         textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
-        textView.setText(LocaleController.getString("ImportImportingTitle", R.string.ImportImportingTitle));
         textView.setSingleLine(true);
         textView.setEllipsize(TextUtils.TruncateAt.END);
         frameLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 17, 20, 17, 0));
@@ -138,17 +140,13 @@ public class ImportingAlert extends BottomSheet implements NotificationCenter.No
         frameLayout.addView(imageView, LayoutHelper.createFrame(160, 160, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 17, 79, 17, 0));
         imageView.getAnimatedDrawable().setOnFinishCallback(onFinishCallback, 178);
 
-        SendMessagesHelper.ImportingHistory importingHistory = parentFragment.getSendMessagesHelper().getImportingHistory(parentFragment.getDialogId());
-
         percentTextView = new TextView(context);
         percentTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         percentTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 24);
         percentTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
-        percentTextView.setText(String.format("%d%%", importingHistory.uploadProgress));
         frameLayout.addView(percentTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 17, 262, 17, 0));
 
         lineProgressView = new LineProgressView(getContext());
-        lineProgressView.setProgress(importingHistory.uploadProgress / 100.0f, false);
         lineProgressView.setProgressColor(Theme.getColor(Theme.key_featuredStickers_addButton));
         lineProgressView.setBackColor(Theme.getColor(Theme.key_dialogLineProgressBackground));
         frameLayout.addView(lineProgressView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 4, Gravity.LEFT | Gravity.TOP, 50, 307, 50, 0));
@@ -177,11 +175,7 @@ public class ImportingAlert extends BottomSheet implements NotificationCenter.No
 
             if (a == 0) {
                 infoTextView[a].setText(LocaleController.getString("ImportImportingInfo", R.string.ImportImportingInfo));
-                importCountTextView[a].setText(LocaleController.formatString("ImportCount", R.string.ImportCount, AndroidUtilities.formatFileSize(importingHistory.getUploadedCount()), AndroidUtilities.formatFileSize(importingHistory.getTotalCount())));
             } else {
-                infoTextView[a].setText(LocaleController.getString("ImportDoneInfo", R.string.ImportDoneInfo));
-                importCountTextView[a].setText(LocaleController.getString("ImportDoneTitle", R.string.ImportDoneTitle));
-
                 infoTextView[a].setAlpha(0.0f);
                 infoTextView[a].setTranslationY(AndroidUtilities.dp(10));
                 importCountTextView[a].setAlpha(0.0f);
@@ -189,7 +183,27 @@ public class ImportingAlert extends BottomSheet implements NotificationCenter.No
             }
         }
 
-        parentFragment.getNotificationCenter().addObserver(this, NotificationCenter.historyImportProgressChanged);
+        if (parentFragment != null) {
+            textView.setText(LocaleController.getString("ImportImportingTitle", R.string.ImportImportingTitle));
+            SendMessagesHelper.ImportingHistory importingHistory = parentFragment.getSendMessagesHelper().getImportingHistory(parentFragment.getDialogId());
+            percentTextView.setText(String.format("%d%%", importingHistory.uploadProgress));
+            lineProgressView.setProgress(importingHistory.uploadProgress / 100.0f, false);
+            importCountTextView[0].setText(LocaleController.formatString("ImportCount", R.string.ImportCount, AndroidUtilities.formatFileSize(importingHistory.getUploadedCount()), AndroidUtilities.formatFileSize(importingHistory.getTotalCount())));
+            infoTextView[1].setText(LocaleController.getString("ImportDoneInfo", R.string.ImportDoneInfo));
+            importCountTextView[1].setText(LocaleController.getString("ImportDoneTitle", R.string.ImportDoneTitle));
+
+            parentFragment.getNotificationCenter().addObserver(this, NotificationCenter.historyImportProgressChanged);
+        } else {
+            textView.setText(LocaleController.getString("ImportStickersImportingTitle", R.string.ImportStickersImportingTitle));
+            SendMessagesHelper.ImportingStickers importingStickers = SendMessagesHelper.getInstance(currentAccount).getImportingStickers(shortName);
+            percentTextView.setText(String.format("%d%%", importingStickers.uploadProgress));
+            lineProgressView.setProgress(importingStickers.uploadProgress / 100.0f, false);
+            importCountTextView[0].setText(LocaleController.formatString("ImportCount", R.string.ImportCount, AndroidUtilities.formatFileSize(importingStickers.getUploadedCount()), AndroidUtilities.formatFileSize(importingStickers.getTotalCount())));
+            infoTextView[1].setText(LocaleController.getString("ImportStickersDoneInfo", R.string.ImportStickersDoneInfo));
+            importCountTextView[1].setText(LocaleController.getString("ImportStickersDoneTitle", R.string.ImportStickersDoneTitle));
+
+            NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.stickersImportProgressChanged);
+        }
     }
 
     public void setCompleted() {
@@ -243,12 +257,38 @@ public class ImportingAlert extends BottomSheet implements NotificationCenter.No
             percentTextView.setText(String.format("%d%%", importingHistory.uploadProgress));
             importCountTextView[0].setText(LocaleController.formatString("ImportCount", R.string.ImportCount, AndroidUtilities.formatFileSize(importingHistory.getUploadedCount()), AndroidUtilities.formatFileSize(importingHistory.getTotalCount())));
             lineProgressView.setProgress(importingHistory.uploadProgress / 100.0f, true);
+        } else if (id == NotificationCenter.stickersImportProgressChanged) {
+            if (args.length > 1) {
+                dismiss();
+                return;
+            }
+
+            SendMessagesHelper.ImportingStickers importingStickers = SendMessagesHelper.getInstance(currentAccount).getImportingStickers(stickersShortName);
+            if (importingStickers == null) {
+                setCompleted();
+                return;
+            }
+            if (!completed) {
+                double timeToEndAnimation = (180 - imageView.getAnimatedDrawable().getCurrentFrame()) * 16.6 + 3000;
+                if (timeToEndAnimation >= importingStickers.timeUntilFinish) {
+                    imageView.setAutoRepeat(false);
+                    completed = true;
+                }
+            }
+
+            percentTextView.setText(String.format("%d%%", importingStickers.uploadProgress));
+            importCountTextView[0].setText(LocaleController.formatString("ImportCount", R.string.ImportCount, AndroidUtilities.formatFileSize(importingStickers.getUploadedCount()), AndroidUtilities.formatFileSize(importingStickers.getTotalCount())));
+            lineProgressView.setProgress(importingStickers.uploadProgress / 100.0f, true);
         }
     }
 
     @Override
     public void dismissInternal() {
         super.dismissInternal();
-        parentFragment.getNotificationCenter().removeObserver(this, NotificationCenter.historyImportProgressChanged);
+        if (parentFragment != null) {
+            parentFragment.getNotificationCenter().removeObserver(this, NotificationCenter.historyImportProgressChanged);
+        } else {
+            NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.stickersImportProgressChanged);
+        }
     }
 }

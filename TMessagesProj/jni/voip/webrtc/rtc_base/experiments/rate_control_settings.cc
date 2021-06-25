@@ -24,9 +24,12 @@ namespace webrtc {
 
 namespace {
 
-const int kDefaultAcceptedQueueMs = 250;
+const int kDefaultAcceptedQueueMs = 350;
 
 const int kDefaultMinPushbackTargetBitrateBps = 30000;
+
+const char kCongestionWindowDefaultFieldTrialString[] =
+    "QueueSize:350,MinBitrate:30000,DropFrame:true";
 
 const char kUseBaseHeavyVp8Tl3RateAllocationFieldTrialName[] =
     "WebRTC-UseBaseHeavyVP8TL3RateAllocation";
@@ -91,9 +94,13 @@ std::unique_ptr<StructParametersParser> VideoRateControlConfig::Parser() {
 }
 
 RateControlSettings::RateControlSettings(
-    const WebRtcKeyValueConfig* const key_value_config)
-    : congestion_window_config_(CongestionWindowConfig::Parse(
-          key_value_config->Lookup(CongestionWindowConfig::kKey))) {
+    const WebRtcKeyValueConfig* const key_value_config) {
+  std::string congestion_window_config =
+      key_value_config->Lookup(CongestionWindowConfig::kKey).empty()
+          ? kCongestionWindowDefaultFieldTrialString
+          : key_value_config->Lookup(CongestionWindowConfig::kKey);
+  congestion_window_config_ =
+      CongestionWindowConfig::Parse(congestion_window_config);
   video_config_.vp8_base_heavy_tl3_alloc = IsEnabled(
       key_value_config, kUseBaseHeavyVp8Tl3RateAllocationFieldTrialName);
   ParseHysteresisFactor(key_value_config, kVideoHysteresisFieldTrialname,

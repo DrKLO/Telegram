@@ -14,7 +14,6 @@
 
 #include <utility>
 
-#include "rtc_base/bind.h"
 #include "rtc_base/logging.h"
 
 namespace webrtc {
@@ -68,12 +67,7 @@ void AndroidVideoTrackSource::SetState(JNIEnv* env,
     } else {
       // TODO(sakal): Is this even necessary, does FireOnChanged have to be
       // called from signaling thread?
-      signaling_thread_->PostTask(
-          RTC_FROM_HERE,
-          rtc::Bind(
-              &AndroidVideoTrackSource::FireOnChanged,
-              static_cast<webrtc::Notifier<webrtc::VideoTrackSourceInterface>*>(
-                  this)));
+      signaling_thread_->PostTask(RTC_FROM_HERE, [this] { FireOnChanged(); });
     }
   }
 }

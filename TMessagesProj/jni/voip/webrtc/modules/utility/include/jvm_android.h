@@ -16,8 +16,8 @@
 #include <memory>
 #include <string>
 
+#include "api/sequence_checker.h"
 #include "modules/utility/include/helpers_android.h"
-#include "rtc_base/thread_checker.h"
 
 namespace webrtc {
 
@@ -34,7 +34,7 @@ class JvmThreadConnector {
   ~JvmThreadConnector();
 
  private:
-  rtc::ThreadChecker thread_checker_;
+  SequenceChecker thread_checker_;
   bool attached_;
 };
 
@@ -111,7 +111,7 @@ class JNIEnvironment {
   std::string JavaToStdString(const jstring& j_string);
 
  private:
-  rtc::ThreadChecker thread_checker_;
+  SequenceChecker thread_checker_;
   JNIEnv* const jni_;
 };
 
@@ -184,7 +184,7 @@ class JVM {
  private:
   JNIEnv* jni() const { return GetEnv(jvm_); }
 
-  rtc::ThreadChecker thread_checker_;
+  SequenceChecker thread_checker_;
   JavaVM* const jvm_;
 };
 

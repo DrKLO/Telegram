@@ -140,6 +140,11 @@ AudioEncoder::EncodedInfo AudioEncoderIsacT<T>::EncodeImpl(
       kSufficientEncodeBufferSizeBytes, [&](rtc::ArrayView<uint8_t> encoded) {
         int r = T::Encode(isac_state_, audio.data(), encoded.data());
 
+        if (T::GetErrorCode(isac_state_) == 6450) {
+          // Isac is not able to effectively compress all types of signals. This
+          // is a limitation of the codec that cannot be easily fixed.
+          r = 0;
+        }
         RTC_CHECK_GE(r, 0) << "Encode failed (error code "
                            << T::GetErrorCode(isac_state_) << ")";
 

@@ -1,6 +1,6 @@
 #include "VideoCameraCapturer.h"
 
-#include <stdint.h>
+#include <cstdint>
 #include <memory>
 #include <algorithm>
 
@@ -13,8 +13,8 @@ namespace tgcalls {
 VideoCameraCapturer::VideoCameraCapturer(rtc::scoped_refptr<webrtc::JavaVideoTrackSourceInterface> source, std::string deviceId, std::function<void(VideoState)> stateUpdated, std::shared_ptr<PlatformContext> platformContext) : _source(source), _stateUpdated(stateUpdated), _platformContext(platformContext) {
     AndroidContext *context = (AndroidContext *) platformContext.get();
     JNIEnv *env = webrtc::AttachCurrentThreadIfNeeded();
-    jmethodID methodId = env->GetMethodID(context->getJavaCapturerClass(), "init", "(JZ)V");
-    env->CallVoidMethod(context->getJavaCapturer(), methodId, (jlong) (intptr_t) this, (jboolean) (deviceId != "back"));
+    jmethodID methodId = env->GetMethodID(context->getJavaCapturerClass(), "init", "(JLjava/lang/String;)V");
+    env->CallVoidMethod(context->getJavaCapturer(), methodId, (jlong) (intptr_t) this, env->NewStringUTF(deviceId.c_str()));
 }
 
 void VideoCameraCapturer::setState(VideoState state) {
@@ -23,7 +23,7 @@ void VideoCameraCapturer::setState(VideoState state) {
         _stateUpdated(_state);
     }
     JNIEnv *env = webrtc::AttachCurrentThreadIfNeeded();
-    AndroidContext *context = (AndroidContext *) _platformContext.get();
+    auto context = (AndroidContext *) _platformContext.get();
     jmethodID methodId = env->GetMethodID(context->getJavaCapturerClass(), "onStateChanged", "(JI)V");
     env->CallVoidMethod(context->getJavaCapturer(), methodId, (jlong) (intptr_t) this, (jint) state);
 }
@@ -31,7 +31,7 @@ void VideoCameraCapturer::setState(VideoState state) {
 void VideoCameraCapturer::setPreferredCaptureAspectRatio(float aspectRatio) {
     _aspectRatio = aspectRatio;
     JNIEnv *env = webrtc::AttachCurrentThreadIfNeeded();
-    AndroidContext *context = (AndroidContext *) _platformContext.get();
+    auto context = (AndroidContext *) _platformContext.get();
     jmethodID methodId = env->GetMethodID(context->getJavaCapturerClass(), "onAspectRatioRequested", "(F)V");
     env->CallVoidMethod(context->getJavaCapturer(), methodId, (jfloat) aspectRatio);
 }
@@ -54,7 +54,7 @@ webrtc::ScopedJavaLocalRef<jobject> VideoCameraCapturer::GetJavaVideoCapturerObs
 
 extern "C" {
 
-JNIEXPORT jobject Java_org_telegram_messenger_voip_VideoCameraCapturer_nativeGetJavaVideoCapturerObserver(JNIEnv *env, jclass clazz, jlong ptr) {
+JNIEXPORT jobject Java_org_telegram_messenger_voip_VideoCapturerDevice_nativeGetJavaVideoCapturerObserver(JNIEnv *env, jclass clazz, jlong ptr) {
     tgcalls::VideoCameraCapturer *capturer = (tgcalls::VideoCameraCapturer *) (intptr_t) ptr;
     return capturer->GetJavaVideoCapturerObserver(env).Release();
 }

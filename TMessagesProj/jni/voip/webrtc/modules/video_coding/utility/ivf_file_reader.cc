@@ -29,6 +29,7 @@ constexpr uint8_t kVp8Header[kCodecTypeBytesCount] = {'V', 'P', '8', '0'};
 constexpr uint8_t kVp9Header[kCodecTypeBytesCount] = {'V', 'P', '9', '0'};
 constexpr uint8_t kAv1Header[kCodecTypeBytesCount] = {'A', 'V', '0', '1'};
 constexpr uint8_t kH264Header[kCodecTypeBytesCount] = {'H', '2', '6', '4'};
+constexpr uint8_t kH265Header[kCodecTypeBytesCount] = {'H', '2', '6', '5'};
 
 }  // namespace
 
@@ -164,7 +165,7 @@ absl::optional<EncodedImage> IvfFileReader::NextFrame() {
     image.SetTimestamp(static_cast<uint32_t>(current_timestamp));
   }
   image.SetEncodedData(payload);
-  image.SetSpatialIndex(static_cast<int>(layer_sizes.size()));
+  image.SetSpatialIndex(static_cast<int>(layer_sizes.size()) - 1);
   for (size_t i = 0; i < layer_sizes.size(); ++i) {
     image.SetSpatialLayerFrameSize(static_cast<int>(i), layer_sizes[i]);
   }
@@ -196,6 +197,9 @@ absl::optional<VideoCodecType> IvfFileReader::ParseCodecType(uint8_t* buffer,
   }
   if (memcmp(&buffer[start_pos], kH264Header, kCodecTypeBytesCount) == 0) {
     return VideoCodecType::kVideoCodecH264;
+  }
+  if (memcmp(&buffer[start_pos], kH265Header, kCodecTypeBytesCount) == 0) {
+    return VideoCodecType::kVideoCodecH265;
   }
   has_error_ = true;
   RTC_LOG(LS_ERROR) << "Unknown codec type: "

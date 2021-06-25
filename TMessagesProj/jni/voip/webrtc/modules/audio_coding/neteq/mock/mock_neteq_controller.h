@@ -48,6 +48,7 @@ class MockNetEqController : public NetEqController {
                bool should_update_stats,
                const PacketArrivedInfo& info),
               (override));
+  MOCK_METHOD(void, NotifyMutedState, (), (override));
   MOCK_METHOD(bool, PeakFound, (), (const, override));
   MOCK_METHOD(int, GetFilteredBufferLevel, (), (const, override));
   MOCK_METHOD(void, set_sample_memory, (int32_t value), (override));

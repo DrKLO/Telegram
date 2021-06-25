@@ -21,9 +21,11 @@
 #include <unordered_map>
 #include <vector>
 
+#include "rtc_base/async_resolver.h"
+#include "rtc_base/async_resolver_interface.h"
 #include "rtc_base/deprecated/recursive_critical_section.h"
-#include "rtc_base/net_helpers.h"
 #include "rtc_base/socket_server.h"
+#include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/system/rtc_export.h"
 #include "rtc_base/thread_annotations.h"
 
@@ -48,7 +50,6 @@ class Dispatcher {
  public:
   virtual ~Dispatcher() {}
   virtual uint32_t GetRequestedEvents() = 0;
-  virtual void OnPreEvent(uint32_t ff) = 0;
   virtual void OnEvent(uint32_t ff, int err) = 0;
 #if defined(WEBRTC_WIN)
   virtual WSAEVENT GetWSAEvent() = 0;
@@ -202,8 +203,8 @@ class PhysicalSocket : public AsyncSocket, public sigslot::has_slots<> {
   SOCKET s_;
   bool udp_;
   int family_ = 0;
-  RecursiveCriticalSection crit_;
-  int error_ RTC_GUARDED_BY(crit_);
+  mutable webrtc::Mutex mutex_;
+  int error_ RTC_GUARDED_BY(mutex_);
   ConnState state_;
   AsyncResolver* resolver_;
 
@@ -236,7 +237,6 @@ class SocketDispatcher : public Dispatcher, public PhysicalSocket {
 #endif
 
   uint32_t GetRequestedEvents() override;
-  void OnPreEvent(uint32_t ff) override;
   void OnEvent(uint32_t ff, int err) override;
 
   int Close() override;

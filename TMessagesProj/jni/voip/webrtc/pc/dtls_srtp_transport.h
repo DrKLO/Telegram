@@ -11,6 +11,7 @@
 #ifndef PC_DTLS_SRTP_TRANSPORT_H_
 #define PC_DTLS_SRTP_TRANSPORT_H_
 
+#include <string>
 #include <vector>
 
 #include "absl/types/optional.h"
@@ -45,8 +46,7 @@ class DtlsSrtpTransport : public SrtpTransport {
   void UpdateRecvEncryptedHeaderExtensionIds(
       const std::vector<int>& recv_extension_ids);
 
-  sigslot::signal<DtlsSrtpTransport*, bool> SignalDtlsSrtpSetupFailure;
-  sigslot::signal<> SignalDtlsStateChange;
+  void SetOnDtlsStateChange(std::function<void(void)> callback);
 
   RTCError SetSrtpSendKey(const cricket::CryptoParams& params) override {
     return RTCError(RTCErrorType::UNSUPPORTED_OPERATION,
@@ -61,16 +61,6 @@ class DtlsSrtpTransport : public SrtpTransport {
   // be reset whenever the DtlsTransports are reset.
   void SetActiveResetSrtpParams(bool active_reset_srtp_params) {
     active_reset_srtp_params_ = active_reset_srtp_params;
-  }
-
-  virtual void OnErrorDemuxingPacket(uint32_t ssrc) override {
-    if (SignalOnErrorDemuxingPacket_) {
-      SignalOnErrorDemuxingPacket_(ssrc);
-    }
-  }
-
-  void SetOnErrorDemuxingPacket(std::function<void(uint32_t)> f) {
-    SignalOnErrorDemuxingPacket_ = std::move(f);
   }
 
  private:
@@ -106,8 +96,7 @@ class DtlsSrtpTransport : public SrtpTransport {
   absl::optional<std::vector<int>> recv_extension_ids_;
 
   bool active_reset_srtp_params_ = false;
-
-  std::function<void(uint32_t)> SignalOnErrorDemuxingPacket_ = nullptr;
+  std::function<void(void)> on_dtls_state_change_;
 };
 
 }  // namespace webrtc

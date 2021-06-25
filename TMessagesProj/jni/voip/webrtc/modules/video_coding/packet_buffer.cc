@@ -36,34 +36,21 @@
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/numerics/mod_ops.h"
-#include "system_wrappers/include/clock.h"
 
 namespace webrtc {
 namespace video_coding {
 
 PacketBuffer::Packet::Packet(const RtpPacketReceived& rtp_packet,
-                             const RTPVideoHeader& video_header,
-                             int64_t ntp_time_ms,
-                             int64_t receive_time_ms)
+                             const RTPVideoHeader& video_header)
     : marker_bit(rtp_packet.Marker()),
       payload_type(rtp_packet.PayloadType()),
       seq_num(rtp_packet.SequenceNumber()),
       timestamp(rtp_packet.Timestamp()),
-      ntp_time_ms(ntp_time_ms),
       times_nacked(-1),
-      video_header(video_header),
-      packet_info(rtp_packet.Ssrc(),
-                  rtp_packet.Csrcs(),
-                  rtp_packet.Timestamp(),
-                  /*audio_level=*/absl::nullopt,
-                  rtp_packet.GetExtension<AbsoluteCaptureTimeExtension>(),
-                  receive_time_ms) {}
+      video_header(video_header) {}
 
-PacketBuffer::PacketBuffer(Clock* clock,
-                           size_t start_buffer_size,
-                           size_t max_buffer_size)
-    : clock_(clock),
-      max_size_(max_buffer_size),
+PacketBuffer::PacketBuffer(size_t start_buffer_size, size_t max_buffer_size)
+    : max_size_(max_buffer_size),
       first_seq_num_(0),
       first_packet_received_(false),
       is_cleared_to_first_seq_num_(false),
@@ -82,7 +69,6 @@ PacketBuffer::~PacketBuffer() {
 PacketBuffer::InsertResult PacketBuffer::InsertPacket(
     std::unique_ptr<PacketBuffer::Packet> packet) {
   PacketBuffer::InsertResult result;
-  MutexLock lock(&mutex_);
 
   uint16_t seq_num = packet->seq_num;
   size_t index = seq_num % buffer_.size();
@@ -122,14 +108,6 @@ PacketBuffer::InsertResult PacketBuffer::InsertPacket(
     }
   }
 
-  int64_t now_ms = clock_->TimeInMilliseconds();
-  last_received_packet_ms_ = now_ms;
-  if (packet->video_header.frame_type == VideoFrameType::kVideoFrameKey ||
-      last_received_keyframe_rtp_timestamp_ == packet->timestamp) {
-    last_received_keyframe_packet_ms_ = now_ms;
-    last_received_keyframe_rtp_timestamp_ = packet->timestamp;
-  }
-
   packet->continuous = false;
   buffer_[index] = std::move(packet);
 
@@ -140,7 +118,6 @@ PacketBuffer::InsertResult PacketBuffer::InsertPacket(
 }
 
 void PacketBuffer::ClearTo(uint16_t seq_num) {
-  MutexLock lock(&mutex_);
   // We have already cleared past this sequence number, no need to do anything.
   if (is_cleared_to_first_seq_num_ &&
       AheadOf<uint16_t>(first_seq_num_, seq_num)) {
@@ -177,30 +154,20 @@ void PacketBuffer::ClearTo(uint16_t seq_num) {
 }
 
 void PacketBuffer::Clear() {
-  MutexLock lock(&mutex_);
   ClearInternal();
 }
 
 PacketBuffer::InsertResult PacketBuffer::InsertPadding(uint16_t seq_num) {
   PacketBuffer::InsertResult result;
-  MutexLock lock(&mutex_);
   UpdateMissingPackets(seq_num);
   result.packets = FindFrames(static_cast<uint16_t>(seq_num + 1));
   return result;
 }
 
-absl::optional<int64_t> PacketBuffer::LastReceivedPacketMs() const {
-  MutexLock lock(&mutex_);
-  return last_received_packet_ms_;
-}
-
-absl::optional<int64_t> PacketBuffer::LastReceivedKeyframePacketMs() const {
-  MutexLock lock(&mutex_);
-  return last_received_keyframe_packet_ms_;
-}
 void PacketBuffer::ForceSpsPpsIdrIsH264Keyframe() {
   sps_pps_idr_is_h264_keyframe_ = true;
 }
+
 void PacketBuffer::ClearInternal() {
   for (auto& entry : buffer_) {
     entry = nullptr;
@@ -208,8 +175,6 @@ void PacketBuffer::ClearInternal() {
 
   first_packet_received_ = false;
   is_cleared_to_first_seq_num_ = false;
-  last_received_packet_ms_.reset();
-  last_received_keyframe_packet_ms_.reset();
   newest_inserted_seq_num_.reset();
   missing_packets_.clear();
 }

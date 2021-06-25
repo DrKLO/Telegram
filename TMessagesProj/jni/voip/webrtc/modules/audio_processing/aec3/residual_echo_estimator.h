@@ -39,6 +39,7 @@ class ResidualEchoEstimator {
       const RenderBuffer& render_buffer,
       rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> S2_linear,
       rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> Y2,
+      bool dominant_nearend,
       rtc::ArrayView<std::array<float, kFftLengthBy2Plus1>> R2);
 
  private:
@@ -68,6 +69,7 @@ class ResidualEchoEstimator {
   const float late_reflections_transparent_mode_gain_;
   const float early_reflections_general_gain_;
   const float late_reflections_general_gain_;
+  const bool erle_onset_compensation_in_dominant_nearend_;
   std::array<float, kFftLengthBy2Plus1> X2_noise_floor_;
   std::array<int, kFftLengthBy2Plus1> X2_noise_floor_counter_;
   ReverbModel echo_reverb_;

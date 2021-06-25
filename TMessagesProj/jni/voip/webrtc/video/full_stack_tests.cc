@@ -21,7 +21,7 @@
 #include "api/video_codecs/sdp_video_format.h"
 #include "api/video_codecs/video_codec.h"
 #include "api/video_codecs/video_encoder_config.h"
-#include "media/base/vp9_profile.h"
+#include "api/video_codecs/vp9_profile.h"
 #include "modules/video_coding/codecs/vp9/include/vp9.h"
 #include "system_wrappers/include/field_trial.h"
 #include "test/field_trial.h"

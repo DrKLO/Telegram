@@ -15,16 +15,15 @@
 #include <string>
 #include <vector>
 
-#include "rtc_base/async_invoker.h"
+#include "api/sequence_checker.h"
 #include "rtc_base/byte_buffer.h"
-#include "rtc_base/callback.h"
 #include "rtc_base/constructor_magic.h"
 #include "rtc_base/ip_address.h"
 #include "rtc_base/network.h"
 #include "rtc_base/socket_address.h"
 #include "rtc_base/system/rtc_export.h"
+#include "rtc_base/task_utils/pending_task_safety_flag.h"
 #include "rtc_base/thread.h"
-#include "rtc_base/thread_checker.h"
 
 namespace rtc {
 class AsyncPacketSocket;
@@ -40,7 +39,7 @@ class StunProber;
 
 static const int kMaxUdpBufferSize = 1200;
 
-typedef rtc::Callback2<void, StunProber*, int> AsyncCallback;
+typedef std::function<void(StunProber*, int)> AsyncCallback;
 
 enum NatType {
   NATTYPE_INVALID,
@@ -227,14 +226,12 @@ class RTC_EXPORT StunProber : public sigslot::has_slots<> {
   // The set of STUN probe sockets and their state.
   std::vector<Requester*> requesters_;
 
-  rtc::ThreadChecker thread_checker_;
+  webrtc::SequenceChecker thread_checker_;
 
   // Temporary storage for created sockets.
   std::vector<rtc::AsyncPacketSocket*> sockets_;
   // This tracks how many of the sockets are ready.
   size_t total_ready_sockets_ = 0;
-
-  rtc::AsyncInvoker invoker_;
 
   Observer* observer_ = nullptr;
   // TODO(guoweis): Remove this once all dependencies move away from
@@ -242,6 +239,8 @@ class RTC_EXPORT StunProber : public sigslot::has_slots<> {
   ObserverAdapter observer_adapter_;
 
   rtc::NetworkManager::NetworkList networks_;
+
+  webrtc::ScopedTaskSafety task_safety_;
 
   RTC_DISALLOW_COPY_AND_ASSIGN(StunProber);
 };

@@ -103,6 +103,7 @@ class NetEqController {
     uint16_t main_sequence_number;
     bool is_cng_or_dtmf;
     bool is_dtx;
+    bool buffer_flush;
   };
 
   virtual ~NetEqController() = default;

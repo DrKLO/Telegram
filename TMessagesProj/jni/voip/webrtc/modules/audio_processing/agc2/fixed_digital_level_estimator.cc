@@ -22,10 +22,18 @@ namespace {
 
 constexpr float kInitialFilterStateLevel = 0.f;
 
+// Instant attack.
+constexpr float kAttackFilterConstant = 0.f;
+// This is computed from kDecayMs by
+// 10 ** (-1/20 * subframe_duration / kDecayMs).
+// |subframe_duration| is |kFrameDurationMs / kSubFramesInFrame|.
+// kDecayMs is defined in agc2_testing_common.h
+constexpr float kDecayFilterConstant = 0.9998848773724686f;
+
 }  // namespace
 
 FixedDigitalLevelEstimator::FixedDigitalLevelEstimator(
-    size_t sample_rate_hz,
+    int sample_rate_hz,
     ApmDataDumper* apm_data_dumper)
     : apm_data_dumper_(apm_data_dumper),
       filter_state_level_(kInitialFilterStateLevel) {
@@ -52,8 +60,8 @@ std::array<float, kSubFramesInFrame> FixedDigitalLevelEstimator::ComputeLevel(
   for (size_t channel_idx = 0; channel_idx < float_frame.num_channels();
        ++channel_idx) {
     const auto channel = float_frame.channel(channel_idx);
-    for (size_t sub_frame = 0; sub_frame < kSubFramesInFrame; ++sub_frame) {
-      for (size_t sample_in_sub_frame = 0;
+    for (int sub_frame = 0; sub_frame < kSubFramesInFrame; ++sub_frame) {
+      for (int sample_in_sub_frame = 0;
            sample_in_sub_frame < samples_in_sub_frame_; ++sample_in_sub_frame) {
         envelope[sub_frame] =
             std::max(envelope[sub_frame],
@@ -66,14 +74,14 @@ std::array<float, kSubFramesInFrame> FixedDigitalLevelEstimator::ComputeLevel(
   // Make sure envelope increases happen one step earlier so that the
   // corresponding *gain decrease* doesn't miss a sudden signal
   // increase due to interpolation.
-  for (size_t sub_frame = 0; sub_frame < kSubFramesInFrame - 1; ++sub_frame) {
+  for (int sub_frame = 0; sub_frame < kSubFramesInFrame - 1; ++sub_frame) {
     if (envelope[sub_frame] < envelope[sub_frame + 1]) {
       envelope[sub_frame] = envelope[sub_frame + 1];
     }
   }
 
   // Add attack / decay smoothing.
-  for (size_t sub_frame = 0; sub_frame < kSubFramesInFrame; ++sub_frame) {
+  for (int sub_frame = 0; sub_frame < kSubFramesInFrame; ++sub_frame) {
     const float envelope_value = envelope[sub_frame];
     if (envelope_value > filter_state_level_) {
       envelope[sub_frame] = envelope_value * (1 - kAttackFilterConstant) +
@@ -97,9 +105,9 @@ std::array<float, kSubFramesInFrame> FixedDigitalLevelEstimator::ComputeLevel(
   return envelope;
 }
 
-void FixedDigitalLevelEstimator::SetSampleRate(size_t sample_rate_hz) {
-  samples_in_frame_ = rtc::CheckedDivExact(sample_rate_hz * kFrameDurationMs,
-                                           static_cast<size_t>(1000));
+void FixedDigitalLevelEstimator::SetSampleRate(int sample_rate_hz) {
+  samples_in_frame_ =
+      rtc::CheckedDivExact(sample_rate_hz * kFrameDurationMs, 1000);
   samples_in_sub_frame_ =
       rtc::CheckedDivExact(samples_in_frame_, kSubFramesInFrame);
   CheckParameterCombination();

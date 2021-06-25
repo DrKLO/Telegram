@@ -25,14 +25,6 @@ RtcEventRtcpPacketIncoming::RtcEventRtcpPacketIncoming(
 
 RtcEventRtcpPacketIncoming::~RtcEventRtcpPacketIncoming() = default;
 
-RtcEvent::Type RtcEventRtcpPacketIncoming::GetType() const {
-  return RtcEvent::Type::RtcpPacketIncoming;
-}
-
-bool RtcEventRtcpPacketIncoming::IsConfigEvent() const {
-  return false;
-}
-
 std::unique_ptr<RtcEventRtcpPacketIncoming> RtcEventRtcpPacketIncoming::Copy()
     const {
   return absl::WrapUnique<RtcEventRtcpPacketIncoming>(

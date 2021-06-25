@@ -15,7 +15,6 @@
 
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
-#include "rtc_base/ref_counted_object.h"
 #include "vpx/vpx_codec.h"
 #include "vpx/vpx_decoder.h"
 #include "vpx/vpx_frame_buffer.h"
@@ -68,7 +67,7 @@ Vp9FrameBufferPool::GetFrameBuffer(size_t min_size) {
     }
     // Otherwise create one.
     if (available_buffer == nullptr) {
-      available_buffer = new rtc::RefCountedObject<Vp9FrameBuffer>();
+      available_buffer = new Vp9FrameBuffer();
       allocated_buffers_.push_back(available_buffer);
       if (allocated_buffers_.size() > max_num_buffers_) {
         RTC_LOG(LS_WARNING)

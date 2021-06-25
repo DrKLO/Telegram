@@ -131,7 +131,9 @@ SignalDependentErleEstimator::SignalDependentErleEstimator(
       section_boundaries_blocks_(SetSectionsBoundaries(delay_headroom_blocks_,
                                                        num_blocks_,
                                                        num_sections_)),
+      use_onset_detection_(config.erle.onset_detection),
       erle_(num_capture_channels),
+      erle_onset_compensated_(num_capture_channels),
       S2_section_accum_(
           num_capture_channels,
           std::vector<std::array<float, kFftLengthBy2Plus1>>(num_sections_)),
@@ -154,6 +156,7 @@ SignalDependentErleEstimator::~SignalDependentErleEstimator() = default;
 void SignalDependentErleEstimator::Reset() {
   for (size_t ch = 0; ch < erle_.size(); ++ch) {
     erle_[ch].fill(min_erle_);
+    erle_onset_compensated_[ch].fill(min_erle_);
     for (auto& erle_estimator : erle_estimators_[ch]) {
       erle_estimator.fill(min_erle_);
     }
@@ -180,6 +183,8 @@ void SignalDependentErleEstimator::Update(
     rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> Y2,
     rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> E2,
     rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> average_erle,
+    rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>>
+        average_erle_onset_compensated,
     const std::vector<bool>& converged_filters) {
   RTC_DCHECK_GT(num_sections_, 1);
 
@@ -202,6 +207,11 @@ void SignalDependentErleEstimator::Update(
                              [band_to_subband_[k]];
       erle_[ch][k] = rtc::SafeClamp(average_erle[ch][k] * correction_factor,
                                     min_erle_, max_erle_[band_to_subband_[k]]);
+      if (use_onset_detection_) {
+        erle_onset_compensated_[ch][k] = rtc::SafeClamp(
+            average_erle_onset_compensated[ch][k] * correction_factor,
+            min_erle_, max_erle_[band_to_subband_[k]]);
+      }
     }
   }
 }

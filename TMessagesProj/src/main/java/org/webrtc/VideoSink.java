@@ -20,4 +20,8 @@ public interface VideoSink {
    * when the reference is no longer needed.
    */
   @CalledByNative void onFrame(VideoFrame frame);
+
+  default void setParentSink(VideoSink parent) {
+
+  }
 }

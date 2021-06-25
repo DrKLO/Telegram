@@ -54,7 +54,6 @@ const int NUM_SAMPLES = 1000;
 
 enum {
   MSG_ID_PACKET,
-  MSG_ID_ADDRESS_BOUND,
   MSG_ID_CONNECT,
   MSG_ID_DISCONNECT,
   MSG_ID_SIGNALREADEVENT,
@@ -149,9 +148,6 @@ int VirtualSocket::Bind(const SocketAddress& addr) {
   } else {
     bound_ = true;
     was_any_ = addr.IsAnyIP();
-    // Post a message here such that test case could have chance to
-    // process the local address. (i.e. SetAlternativeLocalAddress).
-    server_->msg_queue_->Post(RTC_FROM_HERE, this, MSG_ID_ADDRESS_BOUND);
   }
   return result;
 }
@@ -174,7 +170,7 @@ int VirtualSocket::Close() {
         SocketAddress addr = listen_queue_->front();
 
         // Disconnect listening socket.
-        server_->Disconnect(server_->LookupBinding(addr));
+        server_->Disconnect(addr);
         listen_queue_->pop_front();
       }
       delete listen_queue_;
@@ -182,50 +178,14 @@ int VirtualSocket::Close() {
     }
     // Disconnect stream sockets
     if (CS_CONNECTED == state_) {
-      // Disconnect remote socket, check if it is a child of a server socket.
-      VirtualSocket* socket =
-          server_->LookupConnection(local_addr_, remote_addr_);
-      if (!socket) {
-        // Not a server socket child, then see if it is bound.
-        // TODO(tbd): If this is indeed a server socket that has no
-        // children this will cause the server socket to be
-        // closed. This might lead to unexpected results, how to fix this?
-        socket = server_->LookupBinding(remote_addr_);
-      }
-      server_->Disconnect(socket);
-
-      // Remove mapping for both directions.
-      server_->RemoveConnection(remote_addr_, local_addr_);
-      server_->RemoveConnection(local_addr_, remote_addr_);
+      server_->Disconnect(local_addr_, remote_addr_);
     }
     // Cancel potential connects
-    MessageList msgs;
-    if (server_->msg_queue_) {
-      server_->msg_queue_->Clear(this, MSG_ID_CONNECT, &msgs);
-    }
-    for (MessageList::iterator it = msgs.begin(); it != msgs.end(); ++it) {
-      RTC_DCHECK(nullptr != it->pdata);
-      MessageAddress* data = static_cast<MessageAddress*>(it->pdata);
-
-      // Lookup remote side.
-      VirtualSocket* socket =
-          server_->LookupConnection(local_addr_, data->addr);
-      if (socket) {
-        // Server socket, remote side is a socket retreived by
-        // accept. Accepted sockets are not bound so we will not
-        // find it by looking in the bindings table.
-        server_->Disconnect(socket);
-        server_->RemoveConnection(local_addr_, data->addr);
-      } else {
-        server_->Disconnect(server_->LookupBinding(data->addr));
-      }
-      delete data;
-    }
-    // Clear incoming packets and disconnect messages
-    if (server_->msg_queue_) {
-      server_->msg_queue_->Clear(this);
-    }
+    server_->CancelConnects(this);
   }
+
+  // Clear incoming packets and disconnect messages
+  server_->Clear(this);
 
   state_ = CS_CLOSED;
   local_addr_.Clear();
@@ -278,9 +238,7 @@ int VirtualSocket::RecvFrom(void* pv,
       return -1;
     }
     while (recv_buffer_.empty()) {
-      Message msg;
-      server_->msg_queue_->Get(&msg);
-      server_->msg_queue_->Dispatch(&msg);
+      server_->ProcessOneMessage();
     }
   }
 
@@ -300,18 +258,14 @@ int VirtualSocket::RecvFrom(void* pv,
   // To behave like a real socket, SignalReadEvent should fire in the next
   // message loop pass if there's still data buffered.
   if (!recv_buffer_.empty()) {
-    // Clear the message so it doesn't end up posted multiple times.
-    server_->msg_queue_->Clear(this, MSG_ID_SIGNALREADEVENT);
-    server_->msg_queue_->Post(RTC_FROM_HERE, this, MSG_ID_SIGNALREADEVENT);
+    server_->PostSignalReadEvent(this);
   }
 
   if (SOCK_STREAM == type_) {
-    bool was_full = (recv_buffer_size_ == server_->recv_buffer_capacity_);
+    bool was_full = (recv_buffer_size_ == server_->recv_buffer_capacity());
     recv_buffer_size_ -= data_read;
     if (was_full) {
-      VirtualSocket* sender = server_->LookupBinding(remote_addr_);
-      RTC_DCHECK(nullptr != sender);
-      server_->SendTcp(sender);
+      server_->SendTcp(remote_addr_);
     }
   }
 
@@ -409,7 +363,7 @@ void VirtualSocket::OnMessage(Message* pmsg) {
     } else {
       RTC_LOG(LS_VERBOSE) << "Socket at " << local_addr_.ToString()
                           << " is not listening";
-      server_->Disconnect(server_->LookupBinding(data->addr));
+      server_->Disconnect(data->addr);
     }
     delete data;
   } else if (pmsg->message_id == MSG_ID_DISCONNECT) {
@@ -422,8 +376,6 @@ void VirtualSocket::OnMessage(Message* pmsg) {
         SignalCloseEvent(this, error);
       }
     }
-  } else if (pmsg->message_id == MSG_ID_ADDRESS_BOUND) {
-    SignalAddressReady(this, GetLocalAddress());
   } else if (pmsg->message_id == MSG_ID_SIGNALREADEVENT) {
     if (!recv_buffer_.empty()) {
       SignalReadEvent(this);
@@ -493,7 +445,7 @@ int VirtualSocket::SendUdp(const void* pv,
 }
 
 int VirtualSocket::SendTcp(const void* pv, size_t cb) {
-  size_t capacity = server_->send_buffer_capacity_ - send_buffer_.size();
+  size_t capacity = server_->send_buffer_capacity() - send_buffer_.size();
   if (0 == capacity) {
     ready_to_send_ = false;
     error_ = EWOULDBLOCK;
@@ -520,6 +472,67 @@ void VirtualSocket::OnSocketServerReadyToSend() {
     // SignalWriteEvent if successful.
     server_->SendTcp(this);
   }
+}
+
+void VirtualSocket::SetToBlocked() {
+  CritScope cs(&crit_);
+  ready_to_send_ = false;
+  error_ = EWOULDBLOCK;
+}
+
+void VirtualSocket::UpdateRecv(size_t data_size) {
+  recv_buffer_size_ += data_size;
+}
+
+void VirtualSocket::UpdateSend(size_t data_size) {
+  size_t new_buffer_size = send_buffer_.size() - data_size;
+  // Avoid undefined access beyond the last element of the vector.
+  // This only happens when new_buffer_size is 0.
+  if (data_size < send_buffer_.size()) {
+    // memmove is required for potentially overlapping source/destination.
+    memmove(&send_buffer_[0], &send_buffer_[data_size], new_buffer_size);
+  }
+  send_buffer_.resize(new_buffer_size);
+}
+
+void VirtualSocket::MaybeSignalWriteEvent(size_t capacity) {
+  if (!ready_to_send_ && (send_buffer_.size() < capacity)) {
+    ready_to_send_ = true;
+    SignalWriteEvent(this);
+  }
+}
+
+uint32_t VirtualSocket::AddPacket(int64_t cur_time, size_t packet_size) {
+  network_size_ += packet_size;
+  uint32_t send_delay =
+      server_->SendDelay(static_cast<uint32_t>(network_size_));
+
+  NetworkEntry entry;
+  entry.size = packet_size;
+  entry.done_time = cur_time + send_delay;
+  network_.push_back(entry);
+
+  return send_delay;
+}
+
+int64_t VirtualSocket::UpdateOrderedDelivery(int64_t ts) {
+  // Ensure that new packets arrive after previous ones
+  ts = std::max(ts, last_delivery_time_);
+  // A socket should not have both ordered and unordered delivery, so its last
+  // delivery time only needs to be updated when it has ordered delivery.
+  last_delivery_time_ = ts;
+  return ts;
+}
+
+size_t VirtualSocket::PurgeNetworkPackets(int64_t cur_time) {
+  CritScope cs(&crit_);
+
+  while (!network_.empty() && (network_.front().done_time <= cur_time)) {
+    RTC_DCHECK(network_size_ >= network_.front().size);
+    network_size_ -= network_.front().size;
+    network_.pop_front();
+  }
+  return network_size_;
 }
 
 VirtualSocketServer::VirtualSocketServer() : VirtualSocketServer(nullptr) {}
@@ -595,17 +608,11 @@ AsyncSocket* VirtualSocketServer::CreateAsyncSocket(int family, int type) {
 }
 
 VirtualSocket* VirtualSocketServer::CreateSocketInternal(int family, int type) {
-  VirtualSocket* socket = new VirtualSocket(this, family, type, true);
-  SignalSocketCreated(socket);
-  return socket;
+  return new VirtualSocket(this, family, type, true);
 }
 
 void VirtualSocketServer::SetMessageQueue(Thread* msg_queue) {
   msg_queue_ = msg_queue;
-  if (msg_queue_) {
-    msg_queue_->SignalQueueDestroyed.connect(
-        this, &VirtualSocketServer::OnMessageQueueDestroyed);
-  }
 }
 
 bool VirtualSocketServer::Wait(int cmsWait, bool process_io) {
@@ -813,19 +820,98 @@ bool VirtualSocketServer::Disconnect(VirtualSocket* socket) {
   return false;
 }
 
+bool VirtualSocketServer::Disconnect(const SocketAddress& addr) {
+  return Disconnect(LookupBinding(addr));
+}
+
+bool VirtualSocketServer::Disconnect(const SocketAddress& local_addr,
+                                     const SocketAddress& remote_addr) {
+  // Disconnect remote socket, check if it is a child of a server socket.
+  VirtualSocket* socket = LookupConnection(local_addr, remote_addr);
+  if (!socket) {
+    // Not a server socket child, then see if it is bound.
+    // TODO(tbd): If this is indeed a server socket that has no
+    // children this will cause the server socket to be
+    // closed. This might lead to unexpected results, how to fix this?
+    socket = LookupBinding(remote_addr);
+  }
+  Disconnect(socket);
+
+  // Remove mapping for both directions.
+  RemoveConnection(remote_addr, local_addr);
+  RemoveConnection(local_addr, remote_addr);
+  return socket != nullptr;
+}
+
+void VirtualSocketServer::CancelConnects(VirtualSocket* socket) {
+  MessageList msgs;
+  if (msg_queue_) {
+    msg_queue_->Clear(socket, MSG_ID_CONNECT, &msgs);
+  }
+  for (MessageList::iterator it = msgs.begin(); it != msgs.end(); ++it) {
+    RTC_DCHECK(nullptr != it->pdata);
+    MessageAddress* data = static_cast<MessageAddress*>(it->pdata);
+    SocketAddress local_addr = socket->GetLocalAddress();
+    // Lookup remote side.
+    VirtualSocket* socket = LookupConnection(local_addr, data->addr);
+    if (socket) {
+      // Server socket, remote side is a socket retreived by
+      // accept. Accepted sockets are not bound so we will not
+      // find it by looking in the bindings table.
+      Disconnect(socket);
+      RemoveConnection(local_addr, data->addr);
+    } else {
+      Disconnect(data->addr);
+    }
+    delete data;
+  }
+}
+
+void VirtualSocketServer::Clear(VirtualSocket* socket) {
+  // Clear incoming packets and disconnect messages
+  if (msg_queue_) {
+    msg_queue_->Clear(socket);
+  }
+}
+
+void VirtualSocketServer::ProcessOneMessage() {
+  Message msg;
+  msg_queue_->Get(&msg);
+  msg_queue_->Dispatch(&msg);
+}
+
+void VirtualSocketServer::PostSignalReadEvent(VirtualSocket* socket) {
+  // Clear the message so it doesn't end up posted multiple times.
+  msg_queue_->Clear(socket, MSG_ID_SIGNALREADEVENT);
+  msg_queue_->Post(RTC_FROM_HERE, socket, MSG_ID_SIGNALREADEVENT);
+}
+
 int VirtualSocketServer::SendUdp(VirtualSocket* socket,
                                  const char* data,
                                  size_t data_size,
                                  const SocketAddress& remote_addr) {
   ++sent_packets_;
   if (sending_blocked_) {
-    CritScope cs(&socket->crit_);
-    socket->ready_to_send_ = false;
-    socket->error_ = EWOULDBLOCK;
+    socket->SetToBlocked();
     return -1;
   }
 
+  if (data_size > largest_seen_udp_payload_) {
+    if (data_size > 1000) {
+      RTC_LOG(LS_VERBOSE) << "Largest UDP seen is " << data_size;
+    }
+    largest_seen_udp_payload_ = data_size;
+  }
+
   // See if we want to drop this packet.
+  if (data_size > max_udp_payload_) {
+    RTC_LOG(LS_VERBOSE) << "Dropping too large UDP payload of size "
+                        << data_size << ", UDP payload limit is "
+                        << max_udp_payload_;
+    // Return as if send was successful; packet disappears.
+    return data_size;
+  }
+
   if (Random() < drop_prob_) {
     RTC_LOG(LS_VERBOSE) << "Dropping packet: bad luck";
     return static_cast<int>(data_size);
@@ -855,10 +941,8 @@ int VirtualSocketServer::SendUdp(VirtualSocket* socket,
   }
 
   {
-    CritScope cs(&socket->crit_);
-
     int64_t cur_time = TimeMillis();
-    PurgeNetworkPackets(socket, cur_time);
+    size_t network_size = socket->PurgeNetworkPackets(cur_time);
 
     // Determine whether we have enough bandwidth to accept this packet.  To do
     // this, we need to update the send queue.  Once we know it's current size,
@@ -869,7 +953,7 @@ int VirtualSocketServer::SendUdp(VirtualSocket* socket,
     // simulation of what a normal network would do.
 
     size_t packet_size = data_size + UDP_HEADER_SIZE;
-    if (socket->network_size_ + packet_size > network_capacity_) {
+    if (network_size + packet_size > network_capacity_) {
       RTC_LOG(LS_VERBOSE) << "Dropping packet: network capacity exceeded";
       return static_cast<int>(data_size);
     }
@@ -897,45 +981,36 @@ void VirtualSocketServer::SendTcp(VirtualSocket* socket) {
 
   // Lookup the local/remote pair in the connections table.
   VirtualSocket* recipient =
-      LookupConnection(socket->local_addr_, socket->remote_addr_);
+      LookupConnection(socket->GetLocalAddress(), socket->GetRemoteAddress());
   if (!recipient) {
     RTC_LOG(LS_VERBOSE) << "Sending data to no one.";
     return;
   }
 
-  CritScope cs(&socket->crit_);
-
   int64_t cur_time = TimeMillis();
-  PurgeNetworkPackets(socket, cur_time);
+  socket->PurgeNetworkPackets(cur_time);
 
   while (true) {
-    size_t available = recv_buffer_capacity_ - recipient->recv_buffer_size_;
+    size_t available = recv_buffer_capacity_ - recipient->recv_buffer_size();
     size_t max_data_size =
         std::min<size_t>(available, TCP_MSS - TCP_HEADER_SIZE);
-    size_t data_size = std::min(socket->send_buffer_.size(), max_data_size);
+    size_t data_size = std::min(socket->send_buffer_size(), max_data_size);
     if (0 == data_size)
       break;
 
-    AddPacketToNetwork(socket, recipient, cur_time, &socket->send_buffer_[0],
+    AddPacketToNetwork(socket, recipient, cur_time, socket->send_buffer_data(),
                        data_size, TCP_HEADER_SIZE, true);
-    recipient->recv_buffer_size_ += data_size;
-
-    size_t new_buffer_size = socket->send_buffer_.size() - data_size;
-    // Avoid undefined access beyond the last element of the vector.
-    // This only happens when new_buffer_size is 0.
-    if (data_size < socket->send_buffer_.size()) {
-      // memmove is required for potentially overlapping source/destination.
-      memmove(&socket->send_buffer_[0], &socket->send_buffer_[data_size],
-              new_buffer_size);
-    }
-    socket->send_buffer_.resize(new_buffer_size);
+    recipient->UpdateRecv(data_size);
+    socket->UpdateSend(data_size);
   }
 
-  if (!socket->ready_to_send_ &&
-      (socket->send_buffer_.size() < send_buffer_capacity_)) {
-    socket->ready_to_send_ = true;
-    socket->SignalWriteEvent(socket);
-  }
+  socket->MaybeSignalWriteEvent(send_buffer_capacity_);
+}
+
+void VirtualSocketServer::SendTcp(const SocketAddress& addr) {
+  VirtualSocket* sender = LookupBinding(addr);
+  RTC_DCHECK(nullptr != sender);
+  SendTcp(sender);
 }
 
 void VirtualSocketServer::AddPacketToNetwork(VirtualSocket* sender,
@@ -945,13 +1020,7 @@ void VirtualSocketServer::AddPacketToNetwork(VirtualSocket* sender,
                                              size_t data_size,
                                              size_t header_size,
                                              bool ordered) {
-  VirtualSocket::NetworkEntry entry;
-  entry.size = data_size + header_size;
-
-  sender->network_size_ += entry.size;
-  uint32_t send_delay = SendDelay(static_cast<uint32_t>(sender->network_size_));
-  entry.done_time = cur_time + send_delay;
-  sender->network_.push_back(entry);
+  uint32_t send_delay = sender->AddPacket(cur_time, data_size + header_size);
 
   // Find the delay for crossing the many virtual hops of the network.
   uint32_t transit_delay = GetTransitDelay(sender);
@@ -959,7 +1028,7 @@ void VirtualSocketServer::AddPacketToNetwork(VirtualSocket* sender,
   // When the incoming packet is from a binding of the any address, translate it
   // to the default route here such that the recipient will see the default
   // route.
-  SocketAddress sender_addr = sender->local_addr_;
+  SocketAddress sender_addr = sender->GetLocalAddress();
   IPAddress default_ip = GetDefaultRoute(sender_addr.ipaddr().family());
   if (sender_addr.IsAnyIP() && !IPIsUnspec(default_ip)) {
     sender_addr.SetIP(default_ip);
@@ -970,23 +1039,9 @@ void VirtualSocketServer::AddPacketToNetwork(VirtualSocket* sender,
 
   int64_t ts = TimeAfter(send_delay + transit_delay);
   if (ordered) {
-    // Ensure that new packets arrive after previous ones
-    ts = std::max(ts, sender->last_delivery_time_);
-    // A socket should not have both ordered and unordered delivery, so its last
-    // delivery time only needs to be updated when it has ordered delivery.
-    sender->last_delivery_time_ = ts;
+    ts = sender->UpdateOrderedDelivery(ts);
   }
   msg_queue_->PostAt(RTC_FROM_HERE, ts, recipient, MSG_ID_PACKET, p);
-}
-
-void VirtualSocketServer::PurgeNetworkPackets(VirtualSocket* socket,
-                                              int64_t cur_time) {
-  while (!socket->network_.empty() &&
-         (socket->network_.front().done_time <= cur_time)) {
-    RTC_DCHECK(socket->network_size_ >= socket->network_.front().size);
-    socket->network_size_ -= socket->network_.front().size;
-    socket->network_.pop_front();
-  }
 }
 
 uint32_t VirtualSocketServer::SendDelay(uint32_t size) {
@@ -1018,13 +1073,7 @@ void PrintFunction(std::vector<std::pair<double, double> >* f) {
 #endif  // <unused>
 
 void VirtualSocketServer::UpdateDelayDistribution() {
-  Function* dist =
-      CreateDistribution(delay_mean_, delay_stddev_, delay_samples_);
-  // We take a lock just to make sure we don't leak memory.
-  {
-    CritScope cs(&delay_crit_);
-    delay_dist_.reset(dist);
-  }
+  delay_dist_ = CreateDistribution(delay_mean_, delay_stddev_, delay_samples_);
 }
 
 static double PI = 4 * atan(1.0);
@@ -1043,11 +1092,11 @@ static double Pareto(double x, double min, double k) {
 }
 #endif
 
-VirtualSocketServer::Function* VirtualSocketServer::CreateDistribution(
-    uint32_t mean,
-    uint32_t stddev,
-    uint32_t samples) {
-  Function* f = new Function();
+std::unique_ptr<VirtualSocketServer::Function>
+VirtualSocketServer::CreateDistribution(uint32_t mean,
+                                        uint32_t stddev,
+                                        uint32_t samples) {
+  auto f = std::make_unique<Function>();
 
   if (0 == stddev) {
     f->push_back(Point(mean, 1.0));
@@ -1063,7 +1112,7 @@ VirtualSocketServer::Function* VirtualSocketServer::CreateDistribution(
       f->push_back(Point(x, y));
     }
   }
-  return Resample(Invert(Accumulate(f)), 0, 1, samples);
+  return Resample(Invert(Accumulate(std::move(f))), 0, 1, samples);
 }
 
 uint32_t VirtualSocketServer::GetTransitDelay(Socket* socket) {
@@ -1092,7 +1141,8 @@ struct FunctionDomainCmp {
   }
 };
 
-VirtualSocketServer::Function* VirtualSocketServer::Accumulate(Function* f) {
+std::unique_ptr<VirtualSocketServer::Function> VirtualSocketServer::Accumulate(
+    std::unique_ptr<Function> f) {
   RTC_DCHECK(f->size() >= 1);
   double v = 0;
   for (Function::size_type i = 0; i < f->size() - 1; ++i) {
@@ -1105,7 +1155,8 @@ VirtualSocketServer::Function* VirtualSocketServer::Accumulate(Function* f) {
   return f;
 }
 
-VirtualSocketServer::Function* VirtualSocketServer::Invert(Function* f) {
+std::unique_ptr<VirtualSocketServer::Function> VirtualSocketServer::Invert(
+    std::unique_ptr<Function> f) {
   for (Function::size_type i = 0; i < f->size(); ++i)
     std::swap((*f)[i].first, (*f)[i].second);
 
@@ -1113,24 +1164,25 @@ VirtualSocketServer::Function* VirtualSocketServer::Invert(Function* f) {
   return f;
 }
 
-VirtualSocketServer::Function* VirtualSocketServer::Resample(Function* f,
-                                                             double x1,
-                                                             double x2,
-                                                             uint32_t samples) {
-  Function* g = new Function();
+std::unique_ptr<VirtualSocketServer::Function> VirtualSocketServer::Resample(
+    std::unique_ptr<Function> f,
+    double x1,
+    double x2,
+    uint32_t samples) {
+  auto g = std::make_unique<Function>();
 
   for (size_t i = 0; i < samples; i++) {
     double x = x1 + (x2 - x1) * i / (samples - 1);
-    double y = Evaluate(f, x);
+    double y = Evaluate(f.get(), x);
     g->push_back(Point(x, y));
   }
 
-  delete f;
   return g;
 }
 
-double VirtualSocketServer::Evaluate(Function* f, double x) {
-  Function::iterator iter = absl::c_lower_bound(*f, x, FunctionDomainCmp());
+double VirtualSocketServer::Evaluate(const Function* f, double x) {
+  Function::const_iterator iter =
+      absl::c_lower_bound(*f, x, FunctionDomainCmp());
   if (iter == f->begin()) {
     return (*f)[0].second;
   } else if (iter == f->end()) {

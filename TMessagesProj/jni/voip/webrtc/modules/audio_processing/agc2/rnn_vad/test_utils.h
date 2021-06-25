@@ -11,15 +11,10 @@
 #ifndef MODULES_AUDIO_PROCESSING_AGC2_RNN_VAD_TEST_UTILS_H_
 #define MODULES_AUDIO_PROCESSING_AGC2_RNN_VAD_TEST_UTILS_H_
 
-#include <algorithm>
 #include <array>
 #include <fstream>
-#include <limits>
 #include <memory>
 #include <string>
-#include <type_traits>
-#include <utility>
-#include <vector>
 
 #include "api/array_view.h"
 #include "modules/audio_processing/agc2/rnn_vad/common.h"
@@ -28,7 +23,6 @@
 
 namespace webrtc {
 namespace rnn_vad {
-namespace test {
 
 constexpr float kFloatMin = std::numeric_limits<float>::min();
 
@@ -43,98 +37,51 @@ void ExpectNearAbsolute(rtc::ArrayView<const float> expected,
                         rtc::ArrayView<const float> computed,
                         float tolerance);
 
-// Reader for binary files consisting of an arbitrary long sequence of elements
-// having type T. It is possible to read and cast to another type D at once.
-template <typename T, typename D = T>
-class BinaryFileReader {
+// File reader interface.
+class FileReader {
  public:
-  BinaryFileReader(const std::string& file_path, int chunk_size = 0)
-      : is_(file_path, std::ios::binary | std::ios::ate),
-        data_length_(is_.tellg() / sizeof(T)),
-        chunk_size_(chunk_size) {
-    RTC_CHECK(is_);
-    SeekBeginning();
-    buf_.resize(chunk_size_);
-  }
-  BinaryFileReader(const BinaryFileReader&) = delete;
-  BinaryFileReader& operator=(const BinaryFileReader&) = delete;
-  ~BinaryFileReader() = default;
-  int data_length() const { return data_length_; }
-  bool ReadValue(D* dst) {
-    if (std::is_same<T, D>::value) {
-      is_.read(reinterpret_cast<char*>(dst), sizeof(T));
-    } else {
-      T v;
-      is_.read(reinterpret_cast<char*>(&v), sizeof(T));
-      *dst = static_cast<D>(v);
-    }
-    return is_.gcount() == sizeof(T);
-  }
-  // If |chunk_size| was specified in the ctor, it will check that the size of
-  // |dst| equals |chunk_size|.
-  bool ReadChunk(rtc::ArrayView<D> dst) {
-    RTC_DCHECK((chunk_size_ == 0) || rtc::SafeEq(chunk_size_, dst.size()));
-    const std::streamsize bytes_to_read = dst.size() * sizeof(T);
-    if (std::is_same<T, D>::value) {
-      is_.read(reinterpret_cast<char*>(dst.data()), bytes_to_read);
-    } else {
-      is_.read(reinterpret_cast<char*>(buf_.data()), bytes_to_read);
-      std::transform(buf_.begin(), buf_.end(), dst.begin(),
-                     [](const T& v) -> D { return static_cast<D>(v); });
-    }
-    return is_.gcount() == bytes_to_read;
-  }
-  void SeekForward(int items) { is_.seekg(items * sizeof(T), is_.cur); }
-  void SeekBeginning() { is_.seekg(0, is_.beg); }
-
- private:
-  std::ifstream is_;
-  const int data_length_;
-  const int chunk_size_;
-  std::vector<T> buf_;
+  virtual ~FileReader() = default;
+  // Number of values in the file.
+  virtual int size() const = 0;
+  // Reads `dst.size()` float values into `dst`, advances the internal file
+  // position according to the number of read bytes and returns true if the
+  // values are correctly read. If the number of remaining bytes in the file is
+  // not sufficient to read `dst.size()` float values, `dst` is partially
+  // modified and false is returned.
+  virtual bool ReadChunk(rtc::ArrayView<float> dst) = 0;
+  // Reads a single float value, advances the internal file position according
+  // to the number of read bytes and returns true if the value is correctly
+  // read. If the number of remaining bytes in the file is not sufficient to
+  // read one float, `dst` is not modified and false is returned.
+  virtual bool ReadValue(float& dst) = 0;
+  // Advances the internal file position by `hop` float values.
+  virtual void SeekForward(int hop) = 0;
+  // Resets the internal file position to BOF.
+  virtual void SeekBeginning() = 0;
 };
 
-// Writer for binary files.
-template <typename T>
-class BinaryFileWriter {
- public:
-  explicit BinaryFileWriter(const std::string& file_path)
-      : os_(file_path, std::ios::binary) {}
-  BinaryFileWriter(const BinaryFileWriter&) = delete;
-  BinaryFileWriter& operator=(const BinaryFileWriter&) = delete;
-  ~BinaryFileWriter() = default;
-  static_assert(std::is_arithmetic<T>::value, "");
-  void WriteChunk(rtc::ArrayView<const T> value) {
-    const std::streamsize bytes_to_write = value.size() * sizeof(T);
-    os_.write(reinterpret_cast<const char*>(value.data()), bytes_to_write);
-  }
-
- private:
-  std::ofstream os_;
+// File reader for files that contain `num_chunks` chunks with size equal to
+// `chunk_size`.
+struct ChunksFileReader {
+  const int chunk_size;
+  const int num_chunks;
+  std::unique_ptr<FileReader> reader;
 };
 
-// Factories for resource file readers.
-// The functions below return a pair where the first item is a reader unique
-// pointer and the second the number of chunks that can be read from the file.
-// Creates a reader for the PCM samples that casts from S16 to float and reads
-// chunks with length |frame_length|.
-std::pair<std::unique_ptr<BinaryFileReader<int16_t, float>>, const int>
-CreatePcmSamplesReader(const int frame_length);
-// Creates a reader for the pitch buffer content at 24 kHz.
-std::pair<std::unique_ptr<BinaryFileReader<float>>, const int>
-CreatePitchBuffer24kHzReader();
-// Creates a reader for the the LP residual coefficients and the pitch period
-// and gain values.
-std::pair<std::unique_ptr<BinaryFileReader<float>>, const int>
-CreateLpResidualAndPitchPeriodGainReader();
-// Creates a reader for the VAD probabilities.
-std::pair<std::unique_ptr<BinaryFileReader<float>>, const int>
-CreateVadProbsReader();
+// Creates a reader for the PCM S16 samples file.
+std::unique_ptr<FileReader> CreatePcmSamplesReader();
 
-constexpr int kNumPitchBufAutoCorrCoeffs = 147;
-constexpr int kNumPitchBufSquareEnergies = 385;
-constexpr int kPitchTestDataSize =
-    kBufSize24kHz + kNumPitchBufSquareEnergies + kNumPitchBufAutoCorrCoeffs;
+// Creates a reader for the 24 kHz pitch buffer test data.
+ChunksFileReader CreatePitchBuffer24kHzReader();
+
+// Creates a reader for the LP residual and pitch information test data.
+ChunksFileReader CreateLpResidualAndPitchInfoReader();
+
+// Creates a reader for the sequence of GRU input vectors.
+std::unique_ptr<FileReader> CreateGruInputReader();
+
+// Creates a reader for the VAD probabilities test data.
+std::unique_ptr<FileReader> CreateVadProbsReader();
 
 // Class to retrieve a test pitch buffer content and the expected output for the
 // analysis steps.
@@ -142,20 +89,40 @@ class PitchTestData {
  public:
   PitchTestData();
   ~PitchTestData();
-  rtc::ArrayView<const float, kBufSize24kHz> GetPitchBufView() const;
-  rtc::ArrayView<const float, kNumPitchBufSquareEnergies>
-  GetPitchBufSquareEnergiesView() const;
-  rtc::ArrayView<const float, kNumPitchBufAutoCorrCoeffs>
-  GetPitchBufAutoCorrCoeffsView() const;
+  rtc::ArrayView<const float, kBufSize24kHz> PitchBuffer24kHzView() const {
+    return pitch_buffer_24k_;
+  }
+  rtc::ArrayView<const float, kRefineNumLags24kHz> SquareEnergies24kHzView()
+      const {
+    return square_energies_24k_;
+  }
+  rtc::ArrayView<const float, kNumLags12kHz> AutoCorrelation12kHzView() const {
+    return auto_correlation_12k_;
+  }
 
  private:
-  std::array<float, kPitchTestDataSize> test_data_;
+  std::array<float, kBufSize24kHz> pitch_buffer_24k_;
+  std::array<float, kRefineNumLags24kHz> square_energies_24k_;
+  std::array<float, kNumLags12kHz> auto_correlation_12k_;
 };
 
-// Returns true if the given optimization is available.
-bool IsOptimizationAvailable(Optimization optimization);
+// Writer for binary files.
+class FileWriter {
+ public:
+  explicit FileWriter(const std::string& file_path)
+      : os_(file_path, std::ios::binary) {}
+  FileWriter(const FileWriter&) = delete;
+  FileWriter& operator=(const FileWriter&) = delete;
+  ~FileWriter() = default;
+  void WriteChunk(rtc::ArrayView<const float> value) {
+    const std::streamsize bytes_to_write = value.size() * sizeof(float);
+    os_.write(reinterpret_cast<const char*>(value.data()), bytes_to_write);
+  }
 
-}  // namespace test
+ private:
+  std::ofstream os_;
+};
+
 }  // namespace rnn_vad
 }  // namespace webrtc
 

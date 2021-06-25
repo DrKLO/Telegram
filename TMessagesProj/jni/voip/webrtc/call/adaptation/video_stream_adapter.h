@@ -28,6 +28,7 @@
 #include "call/adaptation/video_stream_input_state_provider.h"
 #include "modules/video_coding/utility/quality_scaler.h"
 #include "rtc_base/experiments/balanced_degradation_settings.h"
+#include "rtc_base/system/no_unique_address.h"
 #include "rtc_base/thread_annotations.h"
 
 namespace webrtc {
@@ -56,6 +57,7 @@ VideoSourceRestrictions FilterRestrictionsByDegradationPreference(
     VideoSourceRestrictions source_restrictions,
     DegradationPreference degradation_preference);
 
+int GetLowerResolutionThan(int pixel_count);
 int GetHigherResolutionThan(int pixel_count);
 
 // Either represents the next VideoSourceRestrictions the VideoStreamAdapter
@@ -161,6 +163,9 @@ class VideoStreamAdapter {
     VideoAdaptationCounters counters;
   };
 
+  static absl::optional<uint32_t> GetSingleActiveLayerPixels(
+      const VideoCodec& codec);
+
  private:
   void BroadcastVideoRestrictionsUpdate(
       const VideoStreamInputState& input_state,
@@ -214,7 +219,8 @@ class VideoStreamAdapter {
       const VideoStreamInputState& input_state) const
       RTC_RUN_ON(&sequence_checker_);
 
-  SequenceChecker sequence_checker_ RTC_GUARDED_BY(&sequence_checker_);
+  RTC_NO_UNIQUE_ADDRESS SequenceChecker sequence_checker_
+      RTC_GUARDED_BY(&sequence_checker_);
   // Gets the input state which is the basis of all adaptations.
   // Thread safe.
   VideoStreamInputStateProvider* input_state_provider_;

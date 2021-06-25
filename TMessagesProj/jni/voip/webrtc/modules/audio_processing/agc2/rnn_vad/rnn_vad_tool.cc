@@ -16,6 +16,7 @@
 #include "absl/flags/parse.h"
 #include "common_audio/resampler/push_sinc_resampler.h"
 #include "common_audio/wav_file.h"
+#include "modules/audio_processing/agc2/cpu_features.h"
 #include "modules/audio_processing/agc2/rnn_vad/common.h"
 #include "modules/audio_processing/agc2/rnn_vad/features_extraction.h"
 #include "modules/audio_processing/agc2/rnn_vad/rnn.h"
@@ -63,9 +64,10 @@ int main(int argc, char* argv[]) {
   samples_10ms.resize(frame_size_10ms);
   std::array<float, kFrameSize10ms24kHz> samples_10ms_24kHz;
   PushSincResampler resampler(frame_size_10ms, kFrameSize10ms24kHz);
-  FeaturesExtractor features_extractor;
+  const AvailableCpuFeatures cpu_features = GetAvailableCpuFeatures();
+  FeaturesExtractor features_extractor(cpu_features);
   std::array<float, kFeatureVectorSize> feature_vector;
-  RnnBasedVad rnn_vad;
+  RnnVad rnn_vad(cpu_features);
 
   // Compute VAD probabilities.
   while (true) {

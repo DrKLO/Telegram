@@ -30,6 +30,8 @@ struct AckedPacket {
 
 class RtcEventGenericAckReceived final : public RtcEvent {
  public:
+  static constexpr Type kType = Type::GenericAckReceived;
+
   // For a collection of acked packets, it creates a vector of logs to log with
   // the same timestamp.
   static std::vector<std::unique_ptr<RtcEventGenericAckReceived>> CreateLogs(
@@ -40,9 +42,8 @@ class RtcEventGenericAckReceived final : public RtcEvent {
 
   std::unique_ptr<RtcEventGenericAckReceived> Copy() const;
 
-  Type GetType() const override;
-
-  bool IsConfigEvent() const override;
+  Type GetType() const override { return kType; }
+  bool IsConfigEvent() const override { return false; }
 
   // An identifier of the packet which contained an ack.
   int64_t packet_number() const { return packet_number_; }
@@ -72,6 +73,26 @@ class RtcEventGenericAckReceived final : public RtcEvent {
   const int64_t packet_number_;
   const int64_t acked_packet_number_;
   const absl::optional<int64_t> receive_acked_packet_time_ms_;
+};
+
+struct LoggedGenericAckReceived {
+  LoggedGenericAckReceived() = default;
+  LoggedGenericAckReceived(int64_t timestamp_us,
+                           int64_t packet_number,
+                           int64_t acked_packet_number,
+                           absl::optional<int64_t> receive_acked_packet_time_ms)
+      : timestamp_us(timestamp_us),
+        packet_number(packet_number),
+        acked_packet_number(acked_packet_number),
+        receive_acked_packet_time_ms(receive_acked_packet_time_ms) {}
+
+  int64_t log_time_us() const { return timestamp_us; }
+  int64_t log_time_ms() const { return timestamp_us / 1000; }
+
+  int64_t timestamp_us;
+  int64_t packet_number;
+  int64_t acked_packet_number;
+  absl::optional<int64_t> receive_acked_packet_time_ms;
 };
 
 }  // namespace webrtc

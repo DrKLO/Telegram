@@ -67,7 +67,6 @@ import org.telegram.ui.PopupNotificationActivity;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashSet;
 import java.util.List;
@@ -107,6 +106,7 @@ public class NotificationsController extends BaseController {
     public long lastNotificationChannelCreateTime;
 
     private Boolean groupsCreated;
+    private boolean channelGroupsCreated;
 
     public static long globalSecretChatId = -(1L << 32);
 
@@ -245,6 +245,7 @@ public class NotificationsController extends BaseController {
     public void cleanup() {
         popupMessages.clear();
         popupReplyMessages.clear();
+        channelGroupsCreated = false;
         notificationsQueue.postRunnable(() -> {
             opened_dialog_id = 0;
             total_unread_count = 0;
@@ -2851,26 +2852,61 @@ public class NotificationsController extends BaseController {
             } catch (Exception e) {
                 FileLog.e(e);
             }
-            TLRPC.User user = getMessagesController().getUser(getUserConfig().getClientUserId());
-            if (user == null) {
-                getUserConfig().getCurrentUser();
-            }
-            String userName;
-            if (user != null) {
-                userName = " (" + ContactsController.formatName(user.first_name, user.last_name) + ")";
-            } else {
-                userName = "";
-            }
-
-            systemNotificationManager.createNotificationChannelGroups(Arrays.asList(
-                    new NotificationChannelGroup("channels" + currentAccount, LocaleController.getString("NotificationsChannels", R.string.NotificationsChannels) + userName),
-                    new NotificationChannelGroup("groups" + currentAccount, LocaleController.getString("NotificationsGroups", R.string.NotificationsGroups) + userName),
-                    new NotificationChannelGroup("private" + currentAccount, LocaleController.getString("NotificationsPrivateChats", R.string.NotificationsPrivateChats) + userName),
-                    new NotificationChannelGroup("other" + currentAccount, LocaleController.getString("NotificationsOther", R.string.NotificationsOther) + userName)
-            ));
-
             preferences.edit().putBoolean("groupsCreated4", true).commit();
             groupsCreated = true;
+        }
+        if (!channelGroupsCreated) {
+            List<NotificationChannelGroup> list = systemNotificationManager.getNotificationChannelGroups();
+            String channelsId = "channels" + currentAccount;
+            String groupsId = "groups" + currentAccount;
+            String privateId = "private" + currentAccount;
+            String otherId = "other" + currentAccount;
+            for (int a = 0, N = list.size(); a < N; a++) {
+                String id = list.get(a).getId();
+                if (channelsId != null && channelsId.equals(id)) {
+                    channelsId = null;
+                } else if (groupsId != null && groupsId.equals(id)) {
+                    groupsId = null;
+                } else if (privateId != null && privateId.equals(id)) {
+                    privateId = null;
+                } else if (otherId != null && otherId.equals(id)) {
+                    otherId = null;
+                }
+                if (channelsId == null && groupsId == null && privateId == null && otherId == null) {
+                    break;
+                }
+            }
+
+            if (channelsId != null || groupsId != null || privateId != null || otherId != null) {
+                TLRPC.User user = getMessagesController().getUser(getUserConfig().getClientUserId());
+                if (user == null) {
+                    getUserConfig().getCurrentUser();
+                }
+                String userName;
+                if (user != null) {
+                    userName = " (" + ContactsController.formatName(user.first_name, user.last_name) + ")";
+                } else {
+                    userName = "";
+                }
+
+                ArrayList<NotificationChannelGroup> channelGroups = new ArrayList<>();
+                if (channelsId != null) {
+                    channelGroups.add(new NotificationChannelGroup(channelsId, LocaleController.getString("NotificationsChannels", R.string.NotificationsChannels) + userName));
+                }
+                if (groupsId != null) {
+                    channelGroups.add(new NotificationChannelGroup(groupsId, LocaleController.getString("NotificationsGroups", R.string.NotificationsGroups) + userName));
+                }
+                if (privateId != null) {
+                    channelGroups.add(new NotificationChannelGroup(privateId, LocaleController.getString("NotificationsPrivateChats", R.string.NotificationsPrivateChats) + userName));
+                }
+                if (otherId != null) {
+                    channelGroups.add(new NotificationChannelGroup(otherId, LocaleController.getString("NotificationsOther", R.string.NotificationsOther) + userName));
+                }
+
+                systemNotificationManager.createNotificationChannelGroups(channelGroups);
+            }
+
+            channelGroupsCreated = true;
         }
     }
 

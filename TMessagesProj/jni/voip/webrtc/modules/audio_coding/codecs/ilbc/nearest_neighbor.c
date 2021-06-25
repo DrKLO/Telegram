@@ -16,7 +16,7 @@
 
 ******************************************************************/
 
-#include "modules/audio_coding/codecs/ilbc/defines.h"
+#include "modules/audio_coding/codecs/ilbc/nearest_neighbor.h"
 
 void WebRtcIlbcfix_NearestNeighbor(size_t* index,
                                    const size_t* array,

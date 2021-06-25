@@ -106,8 +106,6 @@ OpenSLEngineManager::OpenSLEngineManager() {
   thread_checker_.Detach();
 }
 
-OpenSLEngineManager::~OpenSLEngineManager() = default;
-
 SLObjectItf OpenSLEngineManager::GetOpenSLEngine() {
   RTC_LOG(INFO) << "GetOpenSLEngine";
   RTC_DCHECK(thread_checker_.IsCurrent());

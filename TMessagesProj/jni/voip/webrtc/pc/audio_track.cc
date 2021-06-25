@@ -19,7 +19,7 @@ namespace webrtc {
 rtc::scoped_refptr<AudioTrack> AudioTrack::Create(
     const std::string& id,
     const rtc::scoped_refptr<AudioSourceInterface>& source) {
-  return new rtc::RefCountedObject<AudioTrack>(id, source);
+  return rtc::make_ref_counted<AudioTrack>(id, source);
 }
 
 AudioTrack::AudioTrack(const std::string& label,

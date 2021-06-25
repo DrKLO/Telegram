@@ -246,15 +246,15 @@ public class Browser {
                 String url = uri.toString();
                 int idx = url.indexOf("://");
                 String path = idx >= 0 ? url.substring(idx + 3) : url;
-                String[] args = path.split("#");
-                String finalPath = args[0];
+                String fragment = uri.getEncodedFragment();
+                String finalPath = fragment == null ? path : path.substring(0, path.indexOf("#" + fragment));
                 if (finalPath.indexOf('?') >= 0) {
                     finalPath += "&" + token;
                 } else {
                     finalPath += "?" + token;
                 }
-                if (args.length > 1) {
-                    finalPath += args[1];
+                if (fragment != null) {
+                    finalPath += "#" + fragment;
                 }
                 uri = Uri.parse("https://" + finalPath);
             }

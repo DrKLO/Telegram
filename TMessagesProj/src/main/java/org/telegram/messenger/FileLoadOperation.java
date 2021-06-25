@@ -192,18 +192,22 @@ public class FileLoadOperation {
             System.arraycopy(imageLocation.iv, 0, iv, 0, iv.length);
             key = imageLocation.key;
         } else if (imageLocation.photoPeer != null) {
-            location = new TLRPC.TL_inputPeerPhotoFileLocation();
-            location.id = imageLocation.location.volume_id;
-            location.volume_id = imageLocation.location.volume_id;
-            location.local_id = imageLocation.location.local_id;
-            location.big = imageLocation.photoPeerType == ImageLocation.TYPE_BIG;
-            location.peer = imageLocation.photoPeer;
+            TLRPC.TL_inputPeerPhotoFileLocation inputPeerPhotoFileLocation = new TLRPC.TL_inputPeerPhotoFileLocation();
+            inputPeerPhotoFileLocation.id = imageLocation.location.volume_id;
+            inputPeerPhotoFileLocation.volume_id = imageLocation.location.volume_id;
+            inputPeerPhotoFileLocation.local_id = imageLocation.location.local_id;
+            inputPeerPhotoFileLocation.photo_id = imageLocation.photoId;
+            inputPeerPhotoFileLocation.big = imageLocation.photoPeerType == ImageLocation.TYPE_BIG;
+            inputPeerPhotoFileLocation.peer = imageLocation.photoPeer;
+            location = inputPeerPhotoFileLocation;
         } else if (imageLocation.stickerSet != null) {
-            location = new TLRPC.TL_inputStickerSetThumb();
-            location.id = imageLocation.location.volume_id;
-            location.volume_id = imageLocation.location.volume_id;
-            location.local_id = imageLocation.location.local_id;
-            location.stickerset = imageLocation.stickerSet;
+            TLRPC.TL_inputStickerSetThumb inputStickerSetThumb = new TLRPC.TL_inputStickerSetThumb();
+            inputStickerSetThumb.id = imageLocation.location.volume_id;
+            inputStickerSetThumb.volume_id = imageLocation.location.volume_id;
+            inputStickerSetThumb.local_id = imageLocation.location.local_id;
+            inputStickerSetThumb.thumb_version = imageLocation.thumbVersion;
+            inputStickerSetThumb.stickerset = imageLocation.stickerSet;
+            location = inputStickerSetThumb;
         } else if (imageLocation.thumbSize != null) {
             if (imageLocation.photoId != 0) {
                 location = new TLRPC.TL_inputPhotoFileLocation();
@@ -1613,10 +1617,12 @@ public class FileLoadOperation {
     protected void onFail(boolean thread, final int reason) {
         cleanup();
         state = stateFailed;
-        if (thread) {
-            Utilities.stageQueue.postRunnable(() -> delegate.didFailedLoadingFile(FileLoadOperation.this, reason));
-        } else {
-            delegate.didFailedLoadingFile(FileLoadOperation.this, reason);
+        if (delegate != null) {
+            if (thread) {
+                Utilities.stageQueue.postRunnable(() -> delegate.didFailedLoadingFile(FileLoadOperation.this, reason));
+            } else {
+                delegate.didFailedLoadingFile(FileLoadOperation.this, reason);
+            }
         }
     }
 
@@ -1828,6 +1834,13 @@ public class FileLoadOperation {
                 }
                 streamPriorityStartOffset = 0;
                 priorityRequestInfo = requestInfo;
+            }
+            if (location instanceof TLRPC.TL_inputPeerPhotoFileLocation) {
+                TLRPC.TL_inputPeerPhotoFileLocation inputPeerPhotoFileLocation = (TLRPC.TL_inputPeerPhotoFileLocation) location;
+                if (inputPeerPhotoFileLocation.photo_id == 0) {
+                    requestReference(requestInfo);
+                    continue;
+                }
             }
 
             requestInfo.requestToken = ConnectionsManager.getInstance(currentAccount).sendRequest(request, (response, error) -> {

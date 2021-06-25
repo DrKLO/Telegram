@@ -266,9 +266,7 @@ public class DialogsItemAnimator extends SimpleItemAnimator {
     @Override
     public boolean animateAdd(final ViewHolder holder) {
         resetAnimation(holder);
-        if (holder.itemView instanceof DialogCell) {
-          //  ((DialogCell) holder.itemView).setMoving(true);
-        } else {
+        if (!(holder.itemView instanceof DialogCell)) {
             holder.itemView.setAlpha(0);
         }
 
@@ -313,7 +311,6 @@ public class DialogsItemAnimator extends SimpleItemAnimator {
                         }
                     }
                 }).start();
-
     }
 
     @Override

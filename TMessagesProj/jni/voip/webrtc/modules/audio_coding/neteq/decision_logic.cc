@@ -50,8 +50,8 @@ DecisionLogic::DecisionLogic(
       disallow_time_stretching_(!config.allow_time_stretching),
       timescale_countdown_(
           tick_timer_->GetNewCountdown(kMinTimescaleInterval + 1)),
-      estimate_dtx_delay_("estimate_dtx_delay", false),
-      time_stretch_cn_("time_stretch_cn", false),
+      estimate_dtx_delay_("estimate_dtx_delay", true),
+      time_stretch_cn_("time_stretch_cn", true),
       target_level_window_ms_("target_level_window",
                               kDefaultTargetLevelWindowMs,
                               0,
@@ -211,6 +211,7 @@ absl::optional<int> DecisionLogic::PacketArrived(
     int fs_hz,
     bool should_update_stats,
     const PacketArrivedInfo& info) {
+  buffer_flush_ = buffer_flush_ || info.buffer_flush;
   if (info.is_cng_or_dtmf) {
     last_pack_cng_or_dtmf_ = true;
     return absl::nullopt;
@@ -238,7 +239,12 @@ void DecisionLogic::FilterBufferLevel(size_t buffer_size_samples) {
     timescale_countdown_ = tick_timer_->GetNewCountdown(kMinTimescaleInterval);
   }
 
-  buffer_level_filter_->Update(buffer_size_samples, time_stretched_samples);
+  if (buffer_flush_) {
+    buffer_level_filter_->SetFilteredBufferLevel(buffer_size_samples);
+    buffer_flush_ = false;
+  } else {
+    buffer_level_filter_->Update(buffer_size_samples, time_stretched_samples);
+  }
   prev_time_scale_ = false;
   time_stretched_cn_samples_ = 0;
 }

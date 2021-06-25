@@ -19,7 +19,7 @@
 #ifndef MODULES_AUDIO_CODING_CODECS_ILBC_MAIN_SOURCE_GET_LSP_POLY_H_
 #define MODULES_AUDIO_CODING_CODECS_ILBC_MAIN_SOURCE_GET_LSP_POLY_H_
 
-#include "modules/audio_coding/codecs/ilbc/defines.h"
+#include <stdint.h>
 
 /*----------------------------------------------------------------*
  * Construct the polynomials F1(z) and F2(z) from the LSP

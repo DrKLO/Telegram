@@ -89,6 +89,22 @@ bool FileWrapper::SeekTo(int64_t position) {
   return fseek(file_, rtc::checked_cast<long>(position), SEEK_SET) == 0;
 }
 
+long FileWrapper::FileSize() {
+  if (file_ == nullptr)
+    return -1;
+  long original_position = ftell(file_);
+  if (original_position < 0)
+    return -1;
+  int seek_error = fseek(file_, 0, SEEK_END);
+  if (seek_error)
+    return -1;
+  long file_size = ftell(file_);
+  seek_error = fseek(file_, original_position, SEEK_SET);
+  if (seek_error)
+    return -1;
+  return file_size;
+}
+
 bool FileWrapper::Flush() {
   RTC_DCHECK(file_);
   return fflush(file_) == 0;

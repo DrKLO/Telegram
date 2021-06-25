@@ -27,20 +27,11 @@
 #include "rtc_base/trace_event.h"
 
 namespace webrtc {
-namespace {
-
-constexpr int kRembSendIntervalMs = 200;
-
-}  // namespace
 
 PacketRouter::PacketRouter() : PacketRouter(0) {}
 
 PacketRouter::PacketRouter(uint16_t start_transport_seq)
     : last_send_module_(nullptr),
-      last_remb_time_ms_(rtc::TimeMillis()),
-      last_send_bitrate_bps_(0),
-      bitrate_bps_(0),
-      max_bitrate_bps_(std::numeric_limits<decltype(max_bitrate_bps_)>::max()),
       active_remb_module_(nullptr),
       transport_seq_(start_transport_seq) {}
 
@@ -235,77 +226,19 @@ uint16_t PacketRouter::CurrentTransportSequenceNumber() const {
   return transport_seq_ & 0xFFFF;
 }
 
-void PacketRouter::OnReceiveBitrateChanged(const std::vector<uint32_t>& ssrcs,
-                                           uint32_t bitrate_bps) {
-  // % threshold for if we should send a new REMB asap.
-  const int64_t kSendThresholdPercent = 97;
-  // TODO(danilchap): Remove receive_bitrate_bps variable and the cast
-  // when OnReceiveBitrateChanged takes bitrate as int64_t.
-  int64_t receive_bitrate_bps = static_cast<int64_t>(bitrate_bps);
-
-  int64_t now_ms = rtc::TimeMillis();
-  {
-    MutexLock lock(&remb_mutex_);
-
-    // If we already have an estimate, check if the new total estimate is below
-    // kSendThresholdPercent of the previous estimate.
-    if (last_send_bitrate_bps_ > 0) {
-      int64_t new_remb_bitrate_bps =
-          last_send_bitrate_bps_ - bitrate_bps_ + receive_bitrate_bps;
-
-      if (new_remb_bitrate_bps <
-          kSendThresholdPercent * last_send_bitrate_bps_ / 100) {
-        // The new bitrate estimate is less than kSendThresholdPercent % of the
-        // last report. Send a REMB asap.
-        last_remb_time_ms_ = now_ms - kRembSendIntervalMs;
-      }
-    }
-    bitrate_bps_ = receive_bitrate_bps;
-
-    if (now_ms - last_remb_time_ms_ < kRembSendIntervalMs) {
-      return;
-    }
-    // NOTE: Updated if we intend to send the data; we might not have
-    // a module to actually send it.
-    last_remb_time_ms_ = now_ms;
-    last_send_bitrate_bps_ = receive_bitrate_bps;
-    // Cap the value to send in remb with configured value.
-    receive_bitrate_bps = std::min(receive_bitrate_bps, max_bitrate_bps_);
-  }
-  SendRemb(receive_bitrate_bps, ssrcs);
-}
-
-void PacketRouter::SetMaxDesiredReceiveBitrate(int64_t bitrate_bps) {
-  RTC_DCHECK_GE(bitrate_bps, 0);
-  {
-    MutexLock lock(&remb_mutex_);
-    max_bitrate_bps_ = bitrate_bps;
-    if (rtc::TimeMillis() - last_remb_time_ms_ < kRembSendIntervalMs &&
-        last_send_bitrate_bps_ > 0 &&
-        last_send_bitrate_bps_ <= max_bitrate_bps_) {
-      // Recent measured bitrate is already below the cap.
-      return;
-    }
-  }
-  SendRemb(bitrate_bps, /*ssrcs=*/{});
-}
-
-bool PacketRouter::SendRemb(int64_t bitrate_bps,
-                            const std::vector<uint32_t>& ssrcs) {
+void PacketRouter::SendRemb(int64_t bitrate_bps, std::vector<uint32_t> ssrcs) {
   MutexLock lock(&modules_mutex_);
 
   if (!active_remb_module_) {
-    return false;
+    return;
   }
 
   // The Add* and Remove* methods above ensure that REMB is disabled on all
   // other modules, because otherwise, they will send REMB with stale info.
-  active_remb_module_->SetRemb(bitrate_bps, ssrcs);
-
-  return true;
+  active_remb_module_->SetRemb(bitrate_bps, std::move(ssrcs));
 }
 
-bool PacketRouter::SendCombinedRtcpPacket(
+void PacketRouter::SendCombinedRtcpPacket(
     std::vector<std::unique_ptr<rtcp::RtcpPacket>> packets) {
   MutexLock lock(&modules_mutex_);
 
@@ -315,15 +248,14 @@ bool PacketRouter::SendCombinedRtcpPacket(
       continue;
     }
     rtp_module->SendCombinedRtcpPacket(std::move(packets));
-    return true;
+    return;
   }
 
   if (rtcp_feedback_senders_.empty()) {
-    return false;
+    return;
   }
   auto* rtcp_sender = rtcp_feedback_senders_[0];
   rtcp_sender->SendCombinedRtcpPacket(std::move(packets));
-  return true;
 }
 
 void PacketRouter::AddRembModuleCandidate(

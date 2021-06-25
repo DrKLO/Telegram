@@ -72,7 +72,7 @@ void DownSampler::Initialize(int sample_rate_hz) {
 
 void DownSampler::DownSample(rtc::ArrayView<const float> in,
                              rtc::ArrayView<float> out) {
-  data_dumper_->DumpWav("lc_down_sampler_input", in, sample_rate_hz_, 1);
+  data_dumper_->DumpWav("agc2_down_sampler_input", in, sample_rate_hz_, 1);
   RTC_DCHECK_EQ(sample_rate_hz_ * kChunkSizeMs / 1000, in.size());
   RTC_DCHECK_EQ(kSampleRate8kHz * kChunkSizeMs / 1000, out.size());
   const size_t kMaxNumFrames = kSampleRate48kHz * kChunkSizeMs / 1000;
@@ -93,7 +93,7 @@ void DownSampler::DownSample(rtc::ArrayView<const float> in,
     std::copy(in.data(), in.data() + in.size(), out.data());
   }
 
-  data_dumper_->DumpWav("lc_down_sampler_output", out, kSampleRate8kHz, 1);
+  data_dumper_->DumpWav("agc2_down_sampler_output", out, kSampleRate8kHz, 1);
 }
 
 }  // namespace webrtc

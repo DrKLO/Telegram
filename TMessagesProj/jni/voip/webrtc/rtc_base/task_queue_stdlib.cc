@@ -36,14 +36,11 @@ rtc::ThreadPriority TaskQueuePriorityToThreadPriority(
     TaskQueueFactory::Priority priority) {
   switch (priority) {
     case TaskQueueFactory::Priority::HIGH:
-      return rtc::kRealtimePriority;
+      return rtc::ThreadPriority::kRealtime;
     case TaskQueueFactory::Priority::LOW:
-      return rtc::kLowPriority;
+      return rtc::ThreadPriority::kLow;
     case TaskQueueFactory::Priority::NORMAL:
-      return rtc::kNormalPriority;
-    default:
-      RTC_NOTREACHED();
-      return rtc::kNormalPriority;
+      return rtc::ThreadPriority::kNormal;
   }
 }
 
@@ -77,8 +74,6 @@ class TaskQueueStdlib final : public TaskQueueBase {
   };
 
   NextTask GetNextTask();
-
-  static void ThreadMain(void* context);
 
   void ProcessTasks();
 
@@ -126,8 +121,13 @@ TaskQueueStdlib::TaskQueueStdlib(absl::string_view queue_name,
     : started_(/*manual_reset=*/false, /*initially_signaled=*/false),
       stopped_(/*manual_reset=*/false, /*initially_signaled=*/false),
       flag_notify_(/*manual_reset=*/false, /*initially_signaled=*/false),
-      thread_(&TaskQueueStdlib::ThreadMain, this, queue_name, priority) {
-  thread_.Start();
+      thread_(rtc::PlatformThread::SpawnJoinable(
+          [this] {
+            CurrentTaskQueueSetter set_current(this);
+            ProcessTasks();
+          },
+          queue_name,
+          rtc::ThreadAttributes().SetPriority(priority))) {
   started_.Wait(rtc::Event::kForever);
 }
 
@@ -142,7 +142,7 @@ void TaskQueueStdlib::Delete() {
   NotifyWake();
 
   stopped_.Wait(rtc::Event::kForever);
-  thread_.Stop();
+  thread_.Finalize();
   delete this;
 }
 
@@ -217,13 +217,6 @@ TaskQueueStdlib::NextTask TaskQueueStdlib::GetNextTask() {
   }
 
   return result;
-}
-
-// static
-void TaskQueueStdlib::ThreadMain(void* context) {
-  TaskQueueStdlib* me = static_cast<TaskQueueStdlib*>(context);
-  CurrentTaskQueueSetter set_current(me);
-  me->ProcessTasks();
 }
 
 void TaskQueueStdlib::ProcessTasks() {

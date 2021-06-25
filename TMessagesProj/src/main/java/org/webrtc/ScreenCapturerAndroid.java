@@ -21,6 +21,8 @@ import android.media.projection.MediaProjectionManager;
 import androidx.annotation.Nullable;
 import android.view.Surface;
 
+import org.telegram.messenger.FileLog;
+
 /**
  * An implementation of VideoCapturer to capture the screen content as a video stream.
  * Capturing is done by {@code MediaProjection} on a {@code SurfaceTexture}. We interact with this
@@ -106,20 +108,28 @@ public class ScreenCapturerAndroid implements VideoCapturer, VideoSink {
   @SuppressWarnings("NoSynchronizedMethodCheck")
   public synchronized void startCapture(
       final int width, final int height, final int ignoredFramerate) {
-    checkNotDisposed();
+    if (mediaProjection != null || mediaProjectionManager == null) {
+      return;
+    }
+    try {
+      checkNotDisposed();
 
-    this.width = width;
-    this.height = height;
+      this.width = width;
+      this.height = height;
 
-    mediaProjection = mediaProjectionManager.getMediaProjection(
-        Activity.RESULT_OK, mediaProjectionPermissionResultData);
+      mediaProjection = mediaProjectionManager.getMediaProjection(
+              Activity.RESULT_OK, mediaProjectionPermissionResultData);
 
-    // Let MediaProjection callback use the SurfaceTextureHelper thread.
-    mediaProjection.registerCallback(mediaProjectionCallback, surfaceTextureHelper.getHandler());
+      // Let MediaProjection callback use the SurfaceTextureHelper thread.
+      mediaProjection.registerCallback(mediaProjectionCallback, surfaceTextureHelper.getHandler());
 
-    createVirtualDisplay();
-    capturerObserver.onCapturerStarted(true);
-    surfaceTextureHelper.startListening(ScreenCapturerAndroid.this);
+      createVirtualDisplay();
+      capturerObserver.onCapturerStarted(true);
+      surfaceTextureHelper.startListening(ScreenCapturerAndroid.this);
+    } catch (Throwable e) {
+      mediaProjectionCallback.onStop();
+      FileLog.e(e);
+    }
   }
 
   @Override
@@ -127,24 +137,21 @@ public class ScreenCapturerAndroid implements VideoCapturer, VideoSink {
   @SuppressWarnings("NoSynchronizedMethodCheck")
   public synchronized void stopCapture() {
     checkNotDisposed();
-    ThreadUtils.invokeAtFrontUninterruptibly(surfaceTextureHelper.getHandler(), new Runnable() {
-      @Override
-      public void run() {
-        surfaceTextureHelper.stopListening();
-        capturerObserver.onCapturerStopped();
+    ThreadUtils.invokeAtFrontUninterruptibly(surfaceTextureHelper.getHandler(), () -> {
+      surfaceTextureHelper.stopListening();
+      capturerObserver.onCapturerStopped();
 
-        if (virtualDisplay != null) {
-          virtualDisplay.release();
-          virtualDisplay = null;
-        }
+      if (virtualDisplay != null) {
+        virtualDisplay.release();
+        virtualDisplay = null;
+      }
 
-        if (mediaProjection != null) {
-          // Unregister the callback before stopping, otherwise the callback recursively
-          // calls this method.
-          mediaProjection.unregisterCallback(mediaProjectionCallback);
-          mediaProjection.stop();
-          mediaProjection = null;
-        }
+      if (mediaProjection != null) {
+        // Unregister the callback before stopping, otherwise the callback recursively
+        // calls this method.
+        mediaProjection.unregisterCallback(mediaProjectionCallback);
+        mediaProjection.stop();
+        mediaProjection = null;
       }
     });
   }
@@ -182,20 +189,21 @@ public class ScreenCapturerAndroid implements VideoCapturer, VideoSink {
     // Create a new virtual display on the surfaceTextureHelper thread to avoid interference
     // with frame processing, which happens on the same thread (we serialize events by running
     // them on the same thread).
-    ThreadUtils.invokeAtFrontUninterruptibly(surfaceTextureHelper.getHandler(), new Runnable() {
-      @Override
-      public void run() {
-        virtualDisplay.release();
-        createVirtualDisplay();
-      }
+    ThreadUtils.invokeAtFrontUninterruptibly(surfaceTextureHelper.getHandler(), () -> {
+      virtualDisplay.release();
+      createVirtualDisplay();
     });
   }
 
   private void createVirtualDisplay() {
     surfaceTextureHelper.setTextureSize(width, height);
-    virtualDisplay = mediaProjection.createVirtualDisplay("WebRTC_ScreenCapture", width, height,
-        VIRTUAL_DISPLAY_DPI, DISPLAY_FLAGS, new Surface(surfaceTextureHelper.getSurfaceTexture()),
-        null /* callback */, null /* callback handler */);
+    try {
+      virtualDisplay = mediaProjection.createVirtualDisplay("WebRTC_ScreenCapture", width, height,
+              VIRTUAL_DISPLAY_DPI, DISPLAY_FLAGS, new Surface(surfaceTextureHelper.getSurfaceTexture()),
+              null /* callback */, null /* callback handler */);
+    } catch (Throwable e) {
+      FileLog.e(e);
+    }
   }
 
   // This is called on the internal looper thread of {@Code SurfaceTextureHelper}.

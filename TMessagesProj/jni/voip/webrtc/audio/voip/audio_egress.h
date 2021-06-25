@@ -15,6 +15,7 @@
 #include <string>
 
 #include "api/audio_codecs/audio_format.h"
+#include "api/sequence_checker.h"
 #include "api/task_queue/task_queue_factory.h"
 #include "audio/audio_level.h"
 #include "audio/utility/audio_frame_operations.h"
@@ -25,7 +26,6 @@
 #include "modules/rtp_rtcp/source/rtp_sender_audio.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/task_queue.h"
-#include "rtc_base/thread_checker.h"
 #include "rtc_base/time_utils.h"
 
 namespace webrtc {

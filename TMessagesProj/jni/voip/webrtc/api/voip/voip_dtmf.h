@@ -43,9 +43,12 @@ class VoipDtmf {
   // Register the payload type and sample rate for DTMF (RFC 4733) payload.
   // Must be called exactly once prior to calling SendDtmfEvent after payload
   // type has been negotiated with remote.
-  virtual void RegisterTelephoneEventType(ChannelId channel_id,
-                                          int rtp_payload_type,
-                                          int sample_rate_hz) = 0;
+  // Returns following VoipResult;
+  //  kOk - telephone event type is registered as provided.
+  //  kInvalidArgument - |channel_id| is invalid.
+  virtual VoipResult RegisterTelephoneEventType(ChannelId channel_id,
+                                                int rtp_payload_type,
+                                                int sample_rate_hz) = 0;
 
   // Send DTMF named event as specified by
   // https://tools.ietf.org/html/rfc4733#section-3.2
@@ -53,10 +56,14 @@ class VoipDtmf {
   // in place of real RTP packets instead.
   // Must be called after RegisterTelephoneEventType and VoipBase::StartSend
   // have been called.
-  // Returns true if the requested DTMF event is successfully scheduled.
-  virtual bool SendDtmfEvent(ChannelId channel_id,
-                             DtmfEvent dtmf_event,
-                             int duration_ms) = 0;
+  // Returns following VoipResult;
+  //  kOk - requested DTMF event is successfully scheduled.
+  //  kInvalidArgument - |channel_id| is invalid.
+  //  kFailedPrecondition - Missing prerequisite on RegisterTelephoneEventType
+  //   or sending state.
+  virtual VoipResult SendDtmfEvent(ChannelId channel_id,
+                                   DtmfEvent dtmf_event,
+                                   int duration_ms) = 0;
 
  protected:
   virtual ~VoipDtmf() = default;

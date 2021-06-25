@@ -7,7 +7,6 @@ import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
-import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
@@ -56,8 +55,9 @@ public class ThemePreviewDrawable extends BitmapDrawable {
         int messageOutColor = Theme.getPreviewColor(colors, Theme.key_chat_outBubble);
         Integer messageOutGradientColor = colors.get(Theme.key_chat_outBubbleGradient);
         Integer backgroundColor = colors.get(Theme.key_chat_wallpaper);
-        Integer serviceColor = colors.get(Theme.key_chat_serviceBackground);
-        Integer gradientToColor = colors.get(Theme.key_chat_wallpaper_gradient_to);
+        Integer gradientToColor1 = colors.get(Theme.key_chat_wallpaper_gradient_to1);
+        Integer gradientToColor2 = colors.get(Theme.key_chat_wallpaper_gradient_to2);
+        Integer gradientToColor3 = colors.get(Theme.key_chat_wallpaper_gradient_to3);
 
         Integer gradientRotation = colors.get(Theme.key_chat_wallpaper_gradient_rotation);
         if (gradientRotation == null) {
@@ -97,19 +97,20 @@ public class ThemePreviewDrawable extends BitmapDrawable {
         if (backgroundColor != null) {
             Drawable wallpaperDrawable;
             int patternColor;
-            if (gradientToColor == null) {
+            if (gradientToColor1 == null) {
                 wallpaperDrawable = new ColorDrawable(backgroundColor);
                 patternColor = AndroidUtilities.getPatternColor(backgroundColor);
             } else {
-                final int[] gradientColors = {backgroundColor, gradientToColor};
-                wallpaperDrawable = BackgroundGradientDrawable.createDitheredGradientBitmapDrawable(gradientRotation, gradientColors, bitmap.getWidth(), bitmap.getHeight() - 120);
-                patternColor = AndroidUtilities.getPatternColor(AndroidUtilities.getAverageColor(backgroundColor, gradientToColor));
+                if (gradientToColor2 != 0) {
+                    wallpaperDrawable = new MotionBackgroundDrawable(backgroundColor, gradientToColor1, gradientToColor2, gradientToColor3, true);
+                } else {
+                    final int[] gradientColors = {backgroundColor, gradientToColor1};
+                    wallpaperDrawable = BackgroundGradientDrawable.createDitheredGradientBitmapDrawable(gradientRotation, gradientColors, bitmap.getWidth(), bitmap.getHeight() - 120);
+                }
+                patternColor = AndroidUtilities.getPatternColor(AndroidUtilities.getAverageColor(backgroundColor, gradientToColor1));
             }
             wallpaperDrawable.setBounds(0, 120, bitmap.getWidth(), bitmap.getHeight() - 120);
             wallpaperDrawable.draw(canvas);
-            if (serviceColor == null) {
-                serviceColor = AndroidUtilities.calcDrawableColor(new ColorDrawable(backgroundColor))[0];
-            }
 
             if (pattern != null) {
                 Bitmap patternBitmap;
@@ -147,8 +148,10 @@ public class ThemePreviewDrawable extends BitmapDrawable {
                 }
                 if (patternBitmap != null) {
                     Paint backgroundPaint = new Paint(Paint.FILTER_BITMAP_FLAG);
-                    backgroundPaint.setColorFilter(new PorterDuffColorFilter(patternColor, PorterDuff.Mode.SRC_IN));
-                    backgroundPaint.setAlpha((int) (255 * themeDocument.accent.patternIntensity));
+                    if (themeDocument.accent.patternIntensity >= 0) {
+                        backgroundPaint.setColorFilter(new PorterDuffColorFilter(patternColor, PorterDuff.Mode.SRC_IN));
+                    }
+                    backgroundPaint.setAlpha((int) (255 * Math.abs(themeDocument.accent.patternIntensity)));
                     float scale = Math.max(560.0f / patternBitmap.getWidth(), 678.0f / patternBitmap.getHeight());
                     int w = (int) (patternBitmap.getWidth() * scale);
                     int h = (int) (patternBitmap.getHeight() * scale);
@@ -165,11 +168,7 @@ public class ThemePreviewDrawable extends BitmapDrawable {
             hasBackground = true;
         }
         if (!hasBackground) {
-            BitmapDrawable catsDrawable = (BitmapDrawable) ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.catstile).mutate();
-            if (serviceColor == null) {
-                serviceColor = AndroidUtilities.calcDrawableColor(catsDrawable)[0];
-            }
-            catsDrawable.setTileModeXY(Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
+            Drawable catsDrawable = Theme.createDefaultWallpaper(bitmap.getWidth(), bitmap.getHeight() - 120);
             catsDrawable.setBounds(0, 120, bitmap.getWidth(), bitmap.getHeight() - 120);
             catsDrawable.draw(canvas);
         }
@@ -201,14 +200,6 @@ public class ThemePreviewDrawable extends BitmapDrawable {
         messageDrawable[0].setBounds(20, 323, 399, 323 + 92);
         messageDrawable[0].setTop(323, 522, false, false);
         messageDrawable[0].draw(canvas);
-
-        if (serviceColor != null) {
-            int x = (bitmap.getWidth() - 126) / 2;
-            int y = 150;
-            rect.set(x, y, x + 126, y + 42);
-            paint.setColor(serviceColor);
-            canvas.drawRoundRect(rect, 21, 21, paint);
-        }
 
         paint.setColor(messageFieldColor);
         canvas.drawRect(0, bitmap.getHeight() - 120, bitmap.getWidth(), bitmap.getHeight(), paint);

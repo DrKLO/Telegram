@@ -144,11 +144,6 @@ int32_t VideoDecoderWrapper::Release() {
   return status;
 }
 
-bool VideoDecoderWrapper::PrefersLateDecoding() const {
-  JNIEnv* jni = AttachCurrentThreadIfNeeded();
-  return Java_VideoDecoder_getPrefersLateDecoding(jni, decoder_);
-}
-
 const char* VideoDecoderWrapper::ImplementationName() const {
   return implementation_name_.c_str();
 }
@@ -249,12 +244,8 @@ absl::optional<uint8_t> VideoDecoderWrapper::ParseQP(
       break;
     }
     case kVideoCodecH264: {
-      h264_bitstream_parser_.ParseBitstream(input_image.data(),
-                                            input_image.size());
-      int qp_int;
-      if (h264_bitstream_parser_.GetLastSliceQp(&qp_int)) {
-        qp = qp_int;
-      }
+      h264_bitstream_parser_.ParseBitstream(input_image);
+      qp = h264_bitstream_parser_.GetLastSliceQp();
       break;
     }
     default:

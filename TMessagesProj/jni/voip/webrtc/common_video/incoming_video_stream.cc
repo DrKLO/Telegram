@@ -42,7 +42,7 @@ void IncomingVideoStream::OnFrame(const VideoFrame& video_frame) {
   // into the lambda instead of copying it, but it doesn't work unless we change
   // OnFrame to take its frame argument by value instead of const reference.
   incoming_render_queue_.PostTask([this, video_frame = video_frame]() mutable {
-    RTC_DCHECK(incoming_render_queue_.IsCurrent());
+    RTC_DCHECK_RUN_ON(&incoming_render_queue_);
     if (render_buffers_.AddFrame(std::move(video_frame)) == 1)
       Dequeue();
   });
@@ -50,7 +50,7 @@ void IncomingVideoStream::OnFrame(const VideoFrame& video_frame) {
 
 void IncomingVideoStream::Dequeue() {
   TRACE_EVENT0("webrtc", "IncomingVideoStream::Dequeue");
-  RTC_DCHECK(incoming_render_queue_.IsCurrent());
+  RTC_DCHECK_RUN_ON(&incoming_render_queue_);
   absl::optional<VideoFrame> frame_to_render = render_buffers_.FrameToRender();
   if (frame_to_render)
     callback_->OnFrame(*frame_to_render);

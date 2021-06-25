@@ -123,9 +123,8 @@ rtc::scoped_refptr<AudioDecoderFactory> CreateAudioDecoderFactory() {
   static_assert(sizeof...(Ts) >= 1,
                 "Caller must give at least one template parameter");
 
-  return rtc::scoped_refptr<AudioDecoderFactory>(
-      new rtc::RefCountedObject<
-          audio_decoder_factory_template_impl::AudioDecoderFactoryT<Ts...>>());
+  return rtc::make_ref_counted<
+      audio_decoder_factory_template_impl::AudioDecoderFactoryT<Ts...>>();
 }
 
 }  // namespace webrtc

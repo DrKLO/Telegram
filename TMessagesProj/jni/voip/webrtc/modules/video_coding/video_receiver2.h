@@ -11,11 +11,11 @@
 #ifndef MODULES_VIDEO_CODING_VIDEO_RECEIVER2_H_
 #define MODULES_VIDEO_CODING_VIDEO_RECEIVER2_H_
 
+#include "api/sequence_checker.h"
 #include "modules/video_coding/decoder_database.h"
 #include "modules/video_coding/encoded_frame.h"
 #include "modules/video_coding/generic_decoder.h"
 #include "modules/video_coding/timing.h"
-#include "rtc_base/thread_checker.h"
 #include "system_wrappers/include/clock.h"
 
 namespace webrtc {
@@ -36,6 +36,7 @@ class VideoReceiver2 {
 
   void RegisterExternalDecoder(VideoDecoder* externalDecoder,
                                uint8_t payloadType);
+  bool IsExternalDecoderRegistered(uint8_t payloadType) const;
   int32_t RegisterReceiveCallback(VCMReceiveCallback* receiveCallback);
 
   int32_t Decode(const webrtc::VCMEncodedFrame* frame);
@@ -54,8 +55,8 @@ class VideoReceiver2 {
   // In builds where DCHECKs aren't enabled, it will return true.
   bool IsDecoderThreadRunning();
 
-  rtc::ThreadChecker construction_thread_checker_;
-  rtc::ThreadChecker decoder_thread_checker_;
+  SequenceChecker construction_sequence_checker_;
+  SequenceChecker decoder_sequence_checker_;
   Clock* const clock_;
   VCMTiming* timing_;
   VCMDecodedFrameCallback decodedFrameCallback_;

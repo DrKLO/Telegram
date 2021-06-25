@@ -19,7 +19,6 @@
 #include "rtc_base/checks.h"
 
 namespace webrtc {
-namespace video_coding {
 RtpFrameObject::RtpFrameObject(
     uint16_t first_seq_num,
     uint16_t last_seq_num,
@@ -69,6 +68,7 @@ RtpFrameObject::RtpFrameObject(
 
   rotation_ = rotation;
   SetColorSpace(color_space);
+  SetVideoFrameTrackingId(rtp_video_header_.video_frame_tracking_id);
   content_type_ = content_type;
   if (timing.flags != VideoSendTiming::kInvalid) {
     // ntp_time_ms_ may be -1 if not estimated yet. This is not a problem,
@@ -128,5 +128,4 @@ const RTPVideoHeader& RtpFrameObject::GetRtpVideoHeader() const {
   return rtp_video_header_;
 }
 
-}  // namespace video_coding
 }  // namespace webrtc

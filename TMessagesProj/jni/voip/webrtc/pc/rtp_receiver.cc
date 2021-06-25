@@ -16,12 +16,8 @@
 #include <vector>
 
 #include "api/media_stream_proxy.h"
-#include "api/media_stream_track_proxy.h"
 #include "pc/media_stream.h"
-#include "rtc_base/checks.h"
 #include "rtc_base/location.h"
-#include "rtc_base/logging.h"
-#include "rtc_base/trace_event.h"
 
 namespace webrtc {
 
@@ -41,22 +37,6 @@ RtpReceiverInternal::CreateStreamsFromIds(std::vector<std::string> stream_ids) {
         rtc::Thread::Current(), MediaStream::Create(std::move(stream_ids[i])));
   }
   return streams;
-}
-
-// Attempt to attach the frame decryptor to the current media channel on the
-// correct worker thread only if both the media channel exists and a ssrc has
-// been allocated to the stream.
-void RtpReceiverInternal::MaybeAttachFrameDecryptorToMediaChannel(
-    const absl::optional<uint32_t>& ssrc,
-    rtc::Thread* worker_thread,
-    rtc::scoped_refptr<webrtc::FrameDecryptorInterface> frame_decryptor,
-    cricket::MediaChannel* media_channel,
-    bool stopped) {
-  if (media_channel && frame_decryptor && ssrc.has_value() && !stopped) {
-    worker_thread->Invoke<void>(RTC_FROM_HERE, [&] {
-      media_channel->SetFrameDecryptor(*ssrc, frame_decryptor);
-    });
-  }
 }
 
 }  // namespace webrtc

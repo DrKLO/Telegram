@@ -27,8 +27,7 @@ class OnDecryptedFrameCallback {
  public:
   virtual ~OnDecryptedFrameCallback() = default;
   // Called each time a decrypted frame is returned.
-  virtual void OnDecryptedFrame(
-      std::unique_ptr<video_coding::RtpFrameObject> frame) = 0;
+  virtual void OnDecryptedFrame(std::unique_ptr<RtpFrameObject> frame) = 0;
 };
 
 // This callback is called each time there is a status change in the decryption
@@ -72,8 +71,7 @@ class BufferedFrameDecryptor final {
 
   // Determines whether the frame should be stashed, dropped or handed off to
   // the OnDecryptedFrameCallback.
-  void ManageEncryptedFrame(
-      std::unique_ptr<video_coding::RtpFrameObject> encrypted_frame);
+  void ManageEncryptedFrame(std::unique_ptr<RtpFrameObject> encrypted_frame);
 
  private:
   // Represents what should be done with a given frame.
@@ -82,7 +80,7 @@ class BufferedFrameDecryptor final {
   // Attempts to decrypt the frame, if it fails and no prior frames have been
   // decrypted it will return kStash. Otherwise fail to decrypts will return
   // kDrop. Successful decryptions will always return kDecrypted.
-  FrameDecision DecryptFrame(video_coding::RtpFrameObject* frame);
+  FrameDecision DecryptFrame(RtpFrameObject* frame);
   // Retries all the stashed frames this is triggered each time a kDecrypted
   // event occurs.
   void RetryStashedFrames();
@@ -96,7 +94,7 @@ class BufferedFrameDecryptor final {
   rtc::scoped_refptr<FrameDecryptorInterface> frame_decryptor_;
   OnDecryptedFrameCallback* const decrypted_frame_callback_;
   OnDecryptionStatusChangeCallback* const decryption_status_change_callback_;
-  std::deque<std::unique_ptr<video_coding::RtpFrameObject>> stashed_frames_;
+  std::deque<std::unique_ptr<RtpFrameObject>> stashed_frames_;
 };
 
 }  // namespace webrtc

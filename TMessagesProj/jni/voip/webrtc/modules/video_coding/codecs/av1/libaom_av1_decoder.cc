@@ -53,6 +53,7 @@ class LibaomAv1Decoder final : public VideoDecoder {
 
   int32_t Release() override;
 
+  DecoderInfo GetDecoderInfo() const override;
   const char* ImplementationName() const override;
 
  private:
@@ -180,6 +181,13 @@ int32_t LibaomAv1Decoder::Release() {
   buffer_pool_.Release();
   inited_ = false;
   return WEBRTC_VIDEO_CODEC_OK;
+}
+
+VideoDecoder::DecoderInfo LibaomAv1Decoder::GetDecoderInfo() const {
+  DecoderInfo info;
+  info.implementation_name = "libaom";
+  info.is_hardware_accelerated = false;
+  return info;
 }
 
 const char* LibaomAv1Decoder::ImplementationName() const {

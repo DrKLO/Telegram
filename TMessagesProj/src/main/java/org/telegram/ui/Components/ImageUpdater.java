@@ -89,6 +89,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
 
     private boolean canSelectVideo;
     private boolean forceDarkTheme;
+    private boolean showingFromDialog;
 
     private final static int attach_photo = 0;
 
@@ -250,7 +251,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
         }
         final HashMap<Object, Object> photos = new HashMap<>();
         final ArrayList<Object> order = new ArrayList<>();
-        PhotoPickerActivity fragment = new PhotoPickerActivity(0, null, photos, order, 1, false, null);
+        PhotoPickerActivity fragment = new PhotoPickerActivity(0, null, photos, order, 1, false, null, forceDarkTheme);
         fragment.setDelegate(new PhotoPickerActivity.PhotoPickerActivityDelegate() {
 
             private boolean sendPressed;
@@ -301,7 +302,11 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
         });
         fragment.setMaxSelectedPhotos(1, false);
         fragment.setInitialSearchString(delegate.getInitialSearchString());
-        parentFragment.presentFragment(fragment);
+        if (showingFromDialog) {
+            parentFragment.showAsSheet(fragment);
+        } else {
+            parentFragment.presentFragment(fragment);
+        }
     }
 
     private void openAttachMenu(DialogInterface.OnDismissListener onDismissListener) {
@@ -325,12 +330,12 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
             return;
         }
         if (chatAttachAlert == null) {
-            chatAttachAlert = new ChatAttachAlert(parentFragment.getParentActivity(), parentFragment, forceDarkTheme);
+            chatAttachAlert = new ChatAttachAlert(parentFragment.getParentActivity(), parentFragment, forceDarkTheme, showingFromDialog);
             chatAttachAlert.setAvatarPicker(canSelectVideo ? 2 : 1, searchAvailable);
             chatAttachAlert.setDelegate(new ChatAttachAlert.ChatAttachViewDelegate() {
 
                 @Override
-                public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate) {
+                public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate, boolean forceDocument) {
                     if (parentFragment == null || parentFragment.getParentActivity() == null || chatAttachAlert == null) {
                         return;
                     }
@@ -383,7 +388,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
                         }
                         didSelectPhotos(media);
                         return;
-                    } else if (chatAttachAlert != null) {
+                    } else {
                         chatAttachAlert.dismissWithButtonClick(button);
                     }
                     processSelectedAttach(button);
@@ -461,8 +466,8 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
                         if (path != null) {
                             bitmap = ImageLoader.loadBitmap(path.getAbsolutePath(), null, 800, 800, true);
                         } else {
-                            NotificationCenter.getInstance(currentAccount).addObserver(ImageUpdater.this, NotificationCenter.fileDidLoad);
-                            NotificationCenter.getInstance(currentAccount).addObserver(ImageUpdater.this, NotificationCenter.fileDidFailToLoad);
+                            NotificationCenter.getInstance(currentAccount).addObserver(ImageUpdater.this, NotificationCenter.fileLoaded);
+                            NotificationCenter.getInstance(currentAccount).addObserver(ImageUpdater.this, NotificationCenter.fileLoadFailed);
                             uploadingImage = FileLoader.getAttachFileName(photoSize.location);
                             imageReceiver.setImage(ImageLocation.getForPhoto(photoSize, info.searchImage.photo), null, null, "jpg", null, 1);
                         }
@@ -479,8 +484,6 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
                         NotificationCenter.getInstance(currentAccount).addObserver(ImageUpdater.this, NotificationCenter.httpFileDidFailedLoad);
                         imageReceiver.setImage(info.searchImage.imageUrl, null, null, "jpg", 1);
                     }
-                } else {
-                    bitmap = null;
                 }
             }
             processBitmap(bitmap, avatarObject);
@@ -555,7 +558,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
         if (parentFragment == null) {
             return;
         }
-        if (Build.VERSION.SDK_INT >= 23 && parentFragment != null && parentFragment.getParentActivity() != null) {
+        if (Build.VERSION.SDK_INT >= 23 && parentFragment.getParentActivity() != null) {
             if (parentFragment.getParentActivity().checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                 parentFragment.getParentActivity().requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 4);
                 return;
@@ -616,7 +619,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
         PhotoViewer.getInstance().setParentActivity(parentFragment.getParentActivity());
         PhotoViewer.getInstance().openPhotoForSelect(arrayList, 0, PhotoViewer.SELECT_TYPE_AVATAR, false, new PhotoViewer.EmptyPhotoViewerProvider() {
             @Override
-            public void sendButtonPressed(int index, VideoEditedInfo videoEditedInfo, boolean notify, int scheduleDate) {
+            public void sendButtonPressed(int index, VideoEditedInfo videoEditedInfo, boolean notify, int scheduleDate, boolean forceDocument) {
                 String path = null;
                 MediaController.PhotoEntry photoEntry = (MediaController.PhotoEntry) arrayList.get(0);
                 if (photoEntry.imagePath != null) {
@@ -740,9 +743,9 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
                         delegate.didStartUpload(false);
                     }
                 }
-                NotificationCenter.getInstance(currentAccount).addObserver(ImageUpdater.this, NotificationCenter.FileDidUpload);
-                NotificationCenter.getInstance(currentAccount).addObserver(ImageUpdater.this, NotificationCenter.FileUploadProgressChanged);
-                NotificationCenter.getInstance(currentAccount).addObserver(ImageUpdater.this, NotificationCenter.FileDidFailUpload);
+                NotificationCenter.getInstance(currentAccount).addObserver(ImageUpdater.this, NotificationCenter.fileUploaded);
+                NotificationCenter.getInstance(currentAccount).addObserver(ImageUpdater.this, NotificationCenter.fileUploadProgressChanged);
+                NotificationCenter.getInstance(currentAccount).addObserver(ImageUpdater.this, NotificationCenter.fileUploadFailed);
                 if (uploadingImage != null) {
                     FileLoader.getInstance(currentAccount).uploadFile(uploadingImage, false, true, ConnectionsManager.FileTypePhoto);
                 }
@@ -772,16 +775,16 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.FileDidUpload || id == NotificationCenter.FileDidFailUpload) {
+        if (id == NotificationCenter.fileUploaded || id == NotificationCenter.fileUploadFailed) {
             String location = (String) args[0];
             if (location.equals(uploadingImage)) {
                 uploadingImage = null;
-                if (id == NotificationCenter.FileDidUpload) {
+                if (id == NotificationCenter.fileUploaded) {
                     uploadedPhoto = (TLRPC.InputFile) args[1];
                 }
             } else if (location.equals(uploadingVideo)) {
                 uploadingVideo = null;
-                if (id == NotificationCenter.FileDidUpload) {
+                if (id == NotificationCenter.fileUploaded) {
                     uploadedVideo = (TLRPC.InputFile) args[1];
                 }
             } else {
@@ -789,17 +792,17 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
             }
 
             if (uploadingImage == null && uploadingVideo == null && convertingVideo == null) {
-                NotificationCenter.getInstance(currentAccount).removeObserver(ImageUpdater.this, NotificationCenter.FileDidUpload);
-                NotificationCenter.getInstance(currentAccount).removeObserver(ImageUpdater.this, NotificationCenter.FileUploadProgressChanged);
-                NotificationCenter.getInstance(currentAccount).removeObserver(ImageUpdater.this, NotificationCenter.FileDidFailUpload);
-                if (id == NotificationCenter.FileDidUpload) {
+                NotificationCenter.getInstance(currentAccount).removeObserver(ImageUpdater.this, NotificationCenter.fileUploaded);
+                NotificationCenter.getInstance(currentAccount).removeObserver(ImageUpdater.this, NotificationCenter.fileUploadProgressChanged);
+                NotificationCenter.getInstance(currentAccount).removeObserver(ImageUpdater.this, NotificationCenter.fileUploadFailed);
+                if (id == NotificationCenter.fileUploaded) {
                     if (delegate != null) {
                         delegate.didUploadPhoto(uploadedPhoto, uploadedVideo, videoTimestamp, videoPath, bigPhoto, smallPhoto);
                     }
                 }
                 cleanup();
             }
-        } else if (id == NotificationCenter.FileUploadProgressChanged) {
+        } else if (id == NotificationCenter.fileUploadProgressChanged) {
             String location = (String) args[0];
             String path = convertingVideo != null ? uploadingVideo : uploadingImage;
             if (delegate != null && location.equals(path)) {
@@ -808,16 +811,16 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
                 float progress = Math.min(1f, loadedSize / (float) totalSize);
                 delegate.onUploadProgressChanged(progress);
             }
-        } else if (id == NotificationCenter.fileDidLoad || id == NotificationCenter.fileDidFailToLoad || id == NotificationCenter.httpFileDidLoad || id == NotificationCenter.httpFileDidFailedLoad) {
+        } else if (id == NotificationCenter.fileLoaded || id == NotificationCenter.fileLoadFailed || id == NotificationCenter.httpFileDidLoad || id == NotificationCenter.httpFileDidFailedLoad) {
             String path = (String) args[0];
             if (path.equals(uploadingImage)) {
-                NotificationCenter.getInstance(currentAccount).removeObserver(ImageUpdater.this, NotificationCenter.fileDidLoad);
-                NotificationCenter.getInstance(currentAccount).removeObserver(ImageUpdater.this, NotificationCenter.fileDidFailToLoad);
+                NotificationCenter.getInstance(currentAccount).removeObserver(ImageUpdater.this, NotificationCenter.fileLoaded);
+                NotificationCenter.getInstance(currentAccount).removeObserver(ImageUpdater.this, NotificationCenter.fileLoadFailed);
                 NotificationCenter.getInstance(currentAccount).removeObserver(ImageUpdater.this, NotificationCenter.httpFileDidLoad);
                 NotificationCenter.getInstance(currentAccount).removeObserver(ImageUpdater.this, NotificationCenter.httpFileDidFailedLoad);
 
                 uploadingImage = null;
-                if (id == NotificationCenter.fileDidLoad || id == NotificationCenter.httpFileDidLoad) {
+                if (id == NotificationCenter.fileLoaded || id == NotificationCenter.httpFileDidLoad) {
                     Bitmap bitmap = ImageLoader.loadBitmap(finalPath, null, 800, 800, true);
                     processBitmap(bitmap, null);
                 } else {
@@ -891,5 +894,9 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
 
     public void setForceDarkTheme(boolean forceDarkTheme) {
         this.forceDarkTheme = forceDarkTheme;
+    }
+
+    public void setShowingFromDialog(boolean b) {
+        showingFromDialog = b;
     }
 }

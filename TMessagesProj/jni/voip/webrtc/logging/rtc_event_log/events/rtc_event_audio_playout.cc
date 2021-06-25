@@ -19,14 +19,6 @@ RtcEventAudioPlayout::RtcEventAudioPlayout(uint32_t ssrc) : ssrc_(ssrc) {}
 RtcEventAudioPlayout::RtcEventAudioPlayout(const RtcEventAudioPlayout& other)
     : RtcEvent(other.timestamp_us_), ssrc_(other.ssrc_) {}
 
-RtcEvent::Type RtcEventAudioPlayout::GetType() const {
-  return RtcEvent::Type::AudioPlayout;
-}
-
-bool RtcEventAudioPlayout::IsConfigEvent() const {
-  return false;
-}
-
 std::unique_ptr<RtcEventAudioPlayout> RtcEventAudioPlayout::Copy() const {
   return absl::WrapUnique<RtcEventAudioPlayout>(
       new RtcEventAudioPlayout(*this));

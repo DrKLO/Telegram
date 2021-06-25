@@ -44,6 +44,10 @@ class MockBlockProcessor : public BlockProcessor {
               (EchoControl::Metrics * metrics),
               (const, override));
   MOCK_METHOD(void, SetAudioBufferDelay, (int delay_ms), (override));
+  MOCK_METHOD(void,
+              SetCaptureOutputUsage,
+              (bool capture_output_used),
+              (override));
 };
 
 }  // namespace test

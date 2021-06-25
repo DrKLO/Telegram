@@ -155,6 +155,15 @@ size_t WebRtcSpl_MaxAbsIndexW16(const int16_t* vector, size_t length) {
   return index;
 }
 
+int16_t WebRtcSpl_MaxAbsElementW16(const int16_t* vector, size_t length) {
+  int16_t min_val, max_val;
+  WebRtcSpl_MinMaxW16(vector, length, &min_val, &max_val);
+  if (min_val == max_val || min_val < -max_val) {
+    return min_val;
+  }
+  return max_val;
+}
+
 // Index of maximum value in a word16 vector.
 size_t WebRtcSpl_MaxIndexW16(const int16_t* vector, size_t length) {
   size_t i = 0, index = 0;
@@ -221,4 +230,27 @@ size_t WebRtcSpl_MinIndexW32(const int32_t* vector, size_t length) {
   }
 
   return index;
+}
+
+// Finds both the minimum and maximum elements in an array of 16-bit integers.
+void WebRtcSpl_MinMaxW16(const int16_t* vector, size_t length,
+                         int16_t* min_val, int16_t* max_val) {
+#if defined(WEBRTC_HAS_NEON)
+  return WebRtcSpl_MinMaxW16Neon(vector, length, min_val, max_val);
+#else
+  int16_t minimum = WEBRTC_SPL_WORD16_MAX;
+  int16_t maximum = WEBRTC_SPL_WORD16_MIN;
+  size_t i = 0;
+
+  RTC_DCHECK_GT(length, 0);
+
+  for (i = 0; i < length; i++) {
+    if (vector[i] < minimum)
+      minimum = vector[i];
+    if (vector[i] > maximum)
+      maximum = vector[i];
+  }
+  *min_val = minimum;
+  *max_val = maximum;
+#endif
 }

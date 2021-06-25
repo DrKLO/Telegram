@@ -220,11 +220,19 @@ class PeerConnectionE2EQualityTestFixture {
     // was captured during the test for this video stream on sender side.
     // It is useful when generator is used as input.
     absl::optional<std::string> input_dump_file_name;
+    // Used only if |input_dump_file_name| is set. Specifies the module for the
+    // video frames to be dumped. Modulo equals X means every Xth frame will be
+    // written to the dump file. The value must be greater than 0.
+    int input_dump_sampling_modulo = 1;
     // If specified this file will be used as output on the receiver side for
     // this stream. If multiple streams will be produced by input stream,
     // output files will be appended with indexes. The produced files contains
     // what was rendered for this video stream on receiver side.
     absl::optional<std::string> output_dump_file_name;
+    // Used only if |output_dump_file_name| is set. Specifies the module for the
+    // video frames to be dumped. Modulo equals X means every Xth frame will be
+    // written to the dump file. The value must be greater than 0.
+    int output_dump_sampling_modulo = 1;
     // If true will display input and output video on the user's screen.
     bool show_on_screen = false;
     // If specified, determines a sync group to which this video stream belongs.

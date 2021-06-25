@@ -23,6 +23,7 @@ public class RecordStatusDrawable extends StatusDrawable {
     private boolean started = false;
     private RectF rect = new RectF();
     private float progress;
+    int alpha = 255;
 
     Paint currentPaint;
 
@@ -77,11 +78,11 @@ public class RecordStatusDrawable extends StatusDrawable {
         canvas.translate(0, getIntrinsicHeight() / 2 + AndroidUtilities.dp(isChat ? 1 : 2));
         for (int a = 0; a < 4; a++) {
             if (a == 0) {
-                paint.setAlpha((int) (255 * progress));
+                paint.setAlpha((int) (alpha * progress));
             } else if (a == 3) {
-                paint.setAlpha((int) (255 * (1.0f - progress)));
+                paint.setAlpha((int) (alpha * (1.0f - progress)));
             } else {
-                paint.setAlpha(255);
+                paint.setAlpha(alpha);
             }
             float side = AndroidUtilities.dp(4) * a + AndroidUtilities.dp(4) * progress;
             rect.set(-side, -side, side, side);
@@ -95,7 +96,7 @@ public class RecordStatusDrawable extends StatusDrawable {
 
     @Override
     public void setAlpha(int alpha) {
-
+        this.alpha = alpha;
     }
 
     @Override

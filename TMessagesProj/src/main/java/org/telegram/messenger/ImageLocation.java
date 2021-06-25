@@ -28,6 +28,8 @@ public class ImageLocation {
     public TLRPC.InputStickerSet stickerSet;
     public int imageType;
 
+    public int thumbVersion;
+
     public int currentSize;
 
     public long photoId;
@@ -142,7 +144,9 @@ public class ImageLocation {
         } else {
             dc_id = fileLocation.dc_id;
         }
-        return getForPhoto(fileLocation, 0, null, null, inputPeer, type, dc_id, null, null);
+        ImageLocation location = getForPhoto(fileLocation, 0, null, null, inputPeer, type, dc_id, null, null);
+        location.photoId = user.photo.photo_id;
+        return location;
     }
 
     public static ImageLocation getForChat(TLRPC.Chat chat, int type) {
@@ -181,10 +185,12 @@ public class ImageLocation {
         } else {
             dc_id = fileLocation.dc_id;
         }
-        return getForPhoto(fileLocation, 0, null, null, inputPeer, type, dc_id, null, null);
+        ImageLocation location = getForPhoto(fileLocation, 0, null, null, inputPeer, type, dc_id, null, null);
+        location.photoId = chat.photo.photo_id;
+        return location;
     }
 
-    public static ImageLocation getForSticker(TLRPC.PhotoSize photoSize, TLRPC.Document sticker) {
+    public static ImageLocation getForSticker(TLRPC.PhotoSize photoSize, TLRPC.Document sticker, int thumbVersion) {
         if (photoSize instanceof TLRPC.TL_photoStrippedSize || photoSize instanceof TLRPC.TL_photoPathSize) {
             ImageLocation imageLocation = new ImageLocation();
             imageLocation.photoSize = photoSize;
@@ -200,6 +206,7 @@ public class ImageLocation {
         if (MessageObject.isAnimatedStickerDocument(sticker, true)) {
             imageLocation.imageType = FileLoader.IMAGE_TYPE_LOTTIE;
         }
+        imageLocation.thumbVersion = thumbVersion;
         return imageLocation;
     }
 

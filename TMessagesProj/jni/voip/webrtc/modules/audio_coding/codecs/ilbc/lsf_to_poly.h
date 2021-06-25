@@ -19,7 +19,7 @@
 #ifndef MODULES_AUDIO_CODING_CODECS_ILBC_MAIN_SOURCE_LSF_TO_POLY_H_
 #define MODULES_AUDIO_CODING_CODECS_ILBC_MAIN_SOURCE_LSF_TO_POLY_H_
 
-#include "modules/audio_coding/codecs/ilbc/defines.h"
+#include <stdint.h>
 
 /*----------------------------------------------------------------*
  *  Convert from LSF coefficients to A coefficients

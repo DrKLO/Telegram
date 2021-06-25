@@ -60,7 +60,7 @@ private:
     std::shared_ptr<LOTModel>    mModel;
     std::unique_ptr<LOTCompItem> mCompItem;
     SharedRenderTask             mTask;
-    std::atomic<bool>            mRenderInProgress;
+    std::atomic<bool>            mRenderInProgress{false};
 };
 
 void AnimationImpl::setValue(const std::string &keypath, LOTVariant &&value)
@@ -141,9 +141,7 @@ std::unique_ptr<Animation> Animation::loadFromData(
         animation->d->init(loader.model());
         return animation;
     }
-    if (colorReplacement != nullptr) {
-        delete colorReplacement;
-    }
+    delete colorReplacement;
     return nullptr;
 }
 
@@ -161,9 +159,7 @@ std::unique_ptr<Animation> Animation::loadFromFile(const std::string &path, std:
         animation->d->init(loader.model());
         return animation;
     }
-    if (colorReplacement != nullptr) {
-        delete colorReplacement;
-    }
+    delete colorReplacement;
     return nullptr;
 }
 
