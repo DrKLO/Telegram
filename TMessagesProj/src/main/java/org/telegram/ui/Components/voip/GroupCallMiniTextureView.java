@@ -254,21 +254,23 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
                         if (animateToFullscreen || showingInFullscreen) {
                             size += (AndroidUtilities.dp(10) + AndroidUtilities.dp(39) * parentContainer.progressToFullscreenMode);
                         } else {
-                            size += AndroidUtilities.dp(10) * (1.0f - progressToFullscreen);
+                            size += AndroidUtilities.dp(10) * (1.0f - parentContainer.progressToFullscreenMode);
                         }
 
                         int x = (getMeasuredWidth() - size) / 2;
                         float smallProgress;
                         float scrimProgress = (showingAsScrimView || animateToScrimView ? parentContainer.progressToScrimView : 0);
-
-                        smallProgress = (showingAsScrimView || animateToScrimView) ? scrimProgress : progressToFullscreen;
-
-                        int y = (int) ((getMeasuredHeight() - size) / 2 - AndroidUtilities.dp(11) - (AndroidUtilities.dp(17) + AndroidUtilities.dp(74) * progressToFullscreen) * smallProgress);
+                        if (showingInFullscreen) {
+                            smallProgress = progressToFullscreen;
+                        } else {
+                            smallProgress = animateToFullscreen ? parentContainer.progressToFullscreenMode : scrimProgress;
+                        }
+                        int y = (int) ((getMeasuredHeight() - size) / 2 - AndroidUtilities.dp(11) - (AndroidUtilities.dp(17) + AndroidUtilities.dp(74) * parentContainer.progressToFullscreenMode) * smallProgress);
                         castingScreenDrawable.setBounds(x, y, x + size, y + size);
                         castingScreenDrawable.draw(canvas);
 
                         if (parentContainer.progressToFullscreenMode > 0 || scrimProgress > 0) {
-                            float alpha = Math.max(progressToFullscreen, scrimProgress) * smallProgress;
+                            float alpha = Math.max(parentContainer.progressToFullscreenMode, scrimProgress) * smallProgress;
                             textPaint2.setAlpha((int) (255 * alpha));
                             if (animateToFullscreen || showingInFullscreen) {
                                 stopSharingTextView.setAlpha(alpha * (1.0f - scrimProgress));
@@ -281,8 +283,8 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
                         }
                         stopSharingTextView.setTranslationY(y + size + AndroidUtilities.dp(72) + swipeToBackDy - currentClipVertical);
                         stopSharingTextView.setTranslationX((getMeasuredWidth() - stopSharingTextView.getMeasuredWidth()) / 2 - currentClipHorizontal);
-                        if (progressToFullscreen < 1 && scrimProgress < 1) {
-                            textPaint.setAlpha((int) (255 * (1.0 - Math.max(progressToFullscreen, scrimProgress))));
+                        if (parentContainer.progressToFullscreenMode < 1 && scrimProgress < 1) {
+                            textPaint.setAlpha((int) (255 * (1.0 - Math.max(parentContainer.progressToFullscreenMode, scrimProgress))));
                             canvas.save();
                             canvas.translate(x - AndroidUtilities.dp(400) / 2f + size / 2f, y + size + AndroidUtilities.dp(10));
                             staticLayout.draw(canvas);

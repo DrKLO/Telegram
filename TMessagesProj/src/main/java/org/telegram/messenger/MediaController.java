@@ -4012,7 +4012,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             inputStream = ApplicationLoader.applicationContext.getContentResolver().openInputStream(uri);
             byte[] header = new byte[12];
             if (inputStream.read(header, 0, 12) == 12) {
-                if (header[0] == 0x89 && header[1] == 0x50 && header[2] == 0x4E && header[3] == 0x47 && header[4] == 0x0D && header[5] == 0x0A && header[6] == 0x1A && header[7] == 0x0A) {
+                if (header[0] == (byte) 0x89 && header[1] == (byte) 0x50 && header[2] == (byte) 0x4E && header[3] == (byte) 0x47 && header[4] == (byte) 0x0D && header[5] == (byte) 0x0A && header[6] == (byte) 0x1A && header[7] == (byte) 0x0A) {
                     return "png";
                 }
                 if (header[0] == 0x1f && header[1] == (byte) 0x8b) {

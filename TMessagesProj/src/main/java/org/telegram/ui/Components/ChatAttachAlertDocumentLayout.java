@@ -1471,6 +1471,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
                 localTipDates.clear();
                 localTipChats.clear();
                 updateFiltersView(false, null, null, true);
+                return;
             }
             requestIndex++;
             final int requestId = requestIndex;

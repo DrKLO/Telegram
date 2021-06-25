@@ -579,6 +579,14 @@ public class GroupCallRenderersContainer extends FrameLayout {
         if ((videoParticipant == null && fullscreenParticipant == null) || (videoParticipant != null && videoParticipant.equals(fullscreenParticipant))) {
             return;
         }
+//        if (videoParticipant != null && fullscreenParticipant != null && fullscreenTextureView != null) {
+//            if (!fullscreenTextureView.hasVideo && MessageObject.getPeerId(fullscreenParticipant.participant.peer) == MessageObject.getPeerId(videoParticipant.participant.peer)) {
+//                fullscreenTextureView.participant = videoParticipant;
+//                fullscreenParticipant = videoParticipant;
+//                fullscreenTextureView.updateAttachState(true);
+//                return;
+//            }
+//        }
         int peerId = videoParticipant == null ? 0 : MessageObject.getPeerId(videoParticipant.participant.peer);
         if (fullscreenTextureView != null) {
             fullscreenTextureView.runDelayedAnimations();
@@ -939,6 +947,18 @@ public class GroupCallRenderersContainer extends FrameLayout {
 
     @Override
     public boolean onTouchEvent(MotionEvent ev) {
+        if ((maybeSwipeToBackGesture || swipeToBackGesture) && (ev.getActionMasked() == MotionEvent.ACTION_UP || ev.getActionMasked() == MotionEvent.ACTION_CANCEL)) {
+            maybeSwipeToBackGesture = false;
+            if (swipeToBackGesture) {
+                if (ev.getActionMasked() == MotionEvent.ACTION_UP && Math.abs(swipeToBackDy) > AndroidUtilities.dp(120)) {
+                    groupCallActivity.fullscreenFor(null);
+                } else {
+                    animateSwipeToBack(false);
+                }
+            }
+            invalidate();
+        }
+
         if (!inFullscreenMode || (!maybeSwipeToBackGesture && !swipeToBackGesture && !tapGesture && !canZoomGesture && !isInPinchToZoomTouchMode && !zoomStarted && ev.getActionMasked() != MotionEvent.ACTION_DOWN) || fullscreenTextureView == null) {
             finishZoom();
             return false;
@@ -1018,18 +1038,6 @@ public class GroupCallRenderersContainer extends FrameLayout {
                 setUiVisible(!uiVisible);
             }
             swipeToBackDy = 0;
-            invalidate();
-        }
-
-        if ((maybeSwipeToBackGesture || swipeToBackGesture) && ev.getActionMasked() == MotionEvent.ACTION_UP || ev.getActionMasked() == MotionEvent.ACTION_CANCEL) {
-            maybeSwipeToBackGesture = false;
-            if (swipeToBackGesture) {
-                if (ev.getActionMasked() == MotionEvent.ACTION_UP && Math.abs(swipeToBackDy) > AndroidUtilities.dp(120)) {
-                    groupCallActivity.fullscreenFor(null);
-                } else {
-                    animateSwipeToBack(false);
-                }
-            }
             invalidate();
         }
 

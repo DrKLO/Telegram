@@ -8210,7 +8210,8 @@ public class Theme {
                 return color;
             }
         }
-        if (serviceBitmapShader != null && (key_chat_serviceText.equals(key) || key_chat_serviceLink.equals(key) || key_chat_serviceIcon.equals(key))) {
+        if (serviceBitmapShader != null && (key_chat_serviceText.equals(key) || key_chat_serviceLink.equals(key) || key_chat_serviceIcon.equals(key)
+                || key_chat_stickerReplyLine.equals(key) || key_chat_stickerReplyNameText.equals(key) || key_chat_stickerReplyMessageText.equals(key))) {
             return 0xffffffff;
         }
         if (currentTheme == defaultTheme) {

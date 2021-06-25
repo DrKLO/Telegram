@@ -236,7 +236,7 @@ public class ContentPreviewViewer {
                 });
                 visibleDialog.show();
                 containerView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
-                if (delegate.needRemove()) {
+                if (delegate != null && delegate.needRemove()) {
                     BottomSheet.BottomSheetCell cell = visibleDialog.getItemViews().get(0);
                     cell.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
                     cell.setIconColor(Theme.getColor(Theme.key_dialogRedIcon));
