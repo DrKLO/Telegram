@@ -29,7 +29,7 @@ public class VoIPPermissionActivity extends Activity {
 		if (isVideoCall && checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
 			permissions.add(Manifest.permission.CAMERA);
 		}
-		if (permissions.isEmpty()) {
+		if (!permissions.isEmpty()) {
 			try {
 				requestPermissions(permissions.toArray(new String[0]), isVideoCall ? 102 : 101);
 			} catch (Exception e) {
