@@ -5,30 +5,26 @@
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
+package org.telegram.messenger
 
-package org.telegram.messenger;
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-
-public class NotificationDismissReceiver extends BroadcastReceiver {
-
-    @Override
-    public void onReceive(Context context, Intent intent) {
-        if (intent == null) {
-            return;
-        }
-        int currentAccount = intent.getIntExtra("currentAccount", UserConfig.selectedAccount);
+class NotificationDismissReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        val currentAccount = intent.getIntExtra("currentAccount", UserConfig.selectedAccount)
         if (!UserConfig.isValidAccount(currentAccount)) {
-            return;
+            return
         }
-        long dialogId = intent.getLongExtra("dialogId", 0);
-        int date = intent.getIntExtra("messageDate", 0);
-        if (dialogId == 0) {
-            MessagesController.getNotificationsSettings(currentAccount).edit().putInt("dismissDate", date).commit();
+        val dialogId = intent.getLongExtra("dialogId", 0)
+        val date = intent.getIntExtra("messageDate", 0)
+        if (dialogId == 0L) {
+            MessagesController.getNotificationsSettings(currentAccount).edit()
+                .putInt("dismissDate", date).commit()
         } else {
-            MessagesController.getNotificationsSettings(currentAccount).edit().putInt("dismissDate" + dialogId, date).commit();
+            MessagesController.getNotificationsSettings(currentAccount).edit()
+                .putInt("dismissDate$dialogId", date).commit()
         }
     }
 }

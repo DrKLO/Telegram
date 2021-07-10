@@ -5,19 +5,19 @@
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
+package org.telegram.messenger
 
-package org.telegram.messenger;
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-
-public class RefererReceiver extends BroadcastReceiver {
-    public void onReceive(Context context, Intent intent) {
+class RefererReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
         try {
-            MessagesController.getInstance(UserConfig.selectedAccount).setReferer(intent.getExtras().getString("referrer"));
-        } catch (Exception ignore) {
-
+            MessagesController.getInstance(UserConfig.selectedAccount).setReferer(
+                intent.extras?.getString("referrer")
+            )
+        } catch (ignore: Exception) {
         }
     }
 }

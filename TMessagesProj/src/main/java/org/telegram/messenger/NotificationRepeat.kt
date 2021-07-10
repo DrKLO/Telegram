@@ -5,27 +5,22 @@
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
+package org.telegram.messenger
 
-package org.telegram.messenger;
+import android.app.IntentService
+import android.content.Intent
 
-import android.app.IntentService;
-import android.content.Intent;
-
-public class NotificationRepeat extends IntentService {
-
-    public NotificationRepeat() {
-        super("NotificationRepeat");
-    }
-
-    @Override
-    protected void onHandleIntent(Intent intent) {
+class NotificationRepeat : IntentService("NotificationRepeat") {
+    override fun onHandleIntent(intent: Intent?) {
         if (intent == null) {
-            return;
+            return
         }
-        final int currentAccount = intent.getIntExtra("currentAccount", UserConfig.selectedAccount);
+        val currentAccount = intent.getIntExtra("currentAccount", UserConfig.selectedAccount)
         if (!UserConfig.isValidAccount(currentAccount)) {
-            return;
+            return
         }
-        AndroidUtilities.runOnUIThread(() -> NotificationsController.getInstance(currentAccount).repeatNotificationMaybe());
+        AndroidUtilities.runOnUIThread {
+            NotificationsController.getInstance(currentAccount).repeatNotificationMaybe()
+        }
     }
 }

@@ -21,8 +21,8 @@ public class BuildVars {
     public static boolean NO_SCOPED_STORAGE = true/* || Build.VERSION.SDK_INT <= 28*/;
     public static int BUILD_VERSION = 2360;
     public static String BUILD_VERSION_STRING = "7.8.0";
-    public static int APP_ID = 4;
-    public static String APP_HASH = "014b35b6184100b085b0d0572f9b5103";
+    public static int APP_ID = 72139;
+    public static String APP_HASH = "f5da0c781d50f443951b114452dbab6e";
     public static String APPCENTER_HASH = "a5b5c4f5-51da-dedc-9918-d9766a22ca7c";
     public static String APPCENTER_HASH_DEBUG = "f9726602-67c9-48d2-b5d0-4761f1c1a8f3";
     //

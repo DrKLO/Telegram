@@ -5,93 +5,103 @@
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
+package org.telegram.messenger
 
-package org.telegram.messenger;
+import android.accounts.*
+import android.app.Service
+import android.content.Context
+import android.content.Intent
+import android.os.Bundle
+import android.os.IBinder
 
-import android.accounts.AbstractAccountAuthenticator;
-import android.accounts.Account;
-import android.accounts.AccountAuthenticatorResponse;
-import android.accounts.AccountManager;
-import android.accounts.NetworkErrorException;
-import android.app.Service;
-import android.content.Context;
-import android.content.Intent;
-import android.os.Bundle;
-import android.os.IBinder;
+class AuthenticatorService : Service() {
 
-public class AuthenticatorService extends Service {
-
-    private static class Authenticator extends AbstractAccountAuthenticator {
-        private final Context context;
-
-        public Authenticator(Context context) {
-            super(context);
-            this.context = context;
+    private class Authenticator(context: Context) : AbstractAccountAuthenticator(context) {
+        @Throws(NetworkErrorException::class)
+        override fun addAccount(
+            response: AccountAuthenticatorResponse,
+            accountType: String,
+            authTokenType: String,
+            requiredFeatures: Array<String>,
+            options: Bundle
+        ): Bundle? {
+            return null
         }
 
-        @Override
-        public Bundle addAccount(AccountAuthenticatorResponse response, String accountType, String authTokenType, String[] requiredFeatures, Bundle options)
-                throws NetworkErrorException {
-            return null;
+        @Throws(NetworkErrorException::class)
+        override fun getAccountRemovalAllowed(
+            response: AccountAuthenticatorResponse,
+            account: Account
+        ): Bundle {
+            return super.getAccountRemovalAllowed(response, account)
         }
 
-        @Override
-        public Bundle getAccountRemovalAllowed(AccountAuthenticatorResponse response, Account account) throws NetworkErrorException {
-            return super.getAccountRemovalAllowed(response, account);
+        @Throws(NetworkErrorException::class)
+        override fun confirmCredentials(
+            response: AccountAuthenticatorResponse,
+            account: Account,
+            options: Bundle
+        ): Bundle? {
+            return null
         }
 
-        @Override
-        public Bundle confirmCredentials(AccountAuthenticatorResponse response, Account account, Bundle options) throws NetworkErrorException {
-            return null;
+        override fun editProperties(
+            response: AccountAuthenticatorResponse,
+            accountType: String
+        ): Bundle? {
+            return null
         }
 
-        @Override
-        public Bundle editProperties(AccountAuthenticatorResponse response, String accountType) {
-            return null;
+        @Throws(NetworkErrorException::class)
+        override fun getAuthToken(
+            response: AccountAuthenticatorResponse,
+            account: Account,
+            authTokenType: String,
+            options: Bundle
+        ): Bundle? {
+            return null
         }
 
-        @Override
-        public Bundle getAuthToken(AccountAuthenticatorResponse response, Account account, String authTokenType, Bundle options)
-                throws NetworkErrorException {
-            return null;
+        override fun getAuthTokenLabel(authTokenType: String): String? {
+            return null
         }
 
-        @Override
-        public String getAuthTokenLabel(String authTokenType) {
-            return null;
+        @Throws(NetworkErrorException::class)
+        override fun hasFeatures(
+            response: AccountAuthenticatorResponse,
+            account: Account, features: Array<String>
+        ): Bundle? {
+            return null
         }
 
-        @Override
-        public Bundle hasFeatures(AccountAuthenticatorResponse response,
-                                  Account account, String[] features)
-                throws NetworkErrorException {
-            return null;
+        @Throws(NetworkErrorException::class)
+        override fun updateCredentials(
+            response: AccountAuthenticatorResponse,
+            account: Account,
+            authTokenType: String,
+            options: Bundle
+        ): Bundle? {
+            return null
         }
-
-        @Override
-        public Bundle updateCredentials(AccountAuthenticatorResponse response, Account account, String authTokenType, Bundle options)
-                throws NetworkErrorException {
-            return null;
-        }
-
     }
 
-    private static Authenticator authenticator = null;
-
-    protected Authenticator getAuthenticator() {
-        if (authenticator == null) {
-            authenticator = new Authenticator(this);
+    private val authenticator: Authenticator?
+        get() {
+            if (Companion.authenticator == null) {
+                Companion.authenticator = Authenticator(this)
+            }
+            return Companion.authenticator
         }
-        return authenticator;
-    }
 
-
-    @Override
-    public IBinder onBind(Intent intent) {
-        if (intent.getAction().equals(AccountManager.ACTION_AUTHENTICATOR_INTENT)) {
-            return getAuthenticator().getIBinder();
+    override fun onBind(intent: Intent): IBinder? {
+        return if (intent.action == AccountManager.ACTION_AUTHENTICATOR_INTENT) {
+            authenticator!!.iBinder
         } else {
-            return null;
+            null
         }
+    }
+
+    companion object {
+        private var authenticator: Authenticator? = null
     }
 }

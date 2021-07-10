@@ -5,38 +5,32 @@
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
+package org.telegram.messenger
 
-package org.telegram.messenger;
+import android.app.Service
+import android.content.Intent
+import android.os.IBinder
 
-import android.app.Service;
-import android.content.Intent;
-import android.content.SharedPreferences;
-import android.os.IBinder;
-
-public class NotificationsService extends Service {
-
-    @Override
-    public void onCreate() {
-        super.onCreate();
-        ApplicationLoader.postInitApplication();
+class NotificationsService : Service() {
+    override fun onCreate() {
+        super.onCreate()
+        ApplicationLoader.postInitApplication()
     }
 
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        return START_STICKY;
+    override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
+        return START_STICKY
     }
 
-    @Override
-    public IBinder onBind(Intent intent) {
-        return null;
+    override fun onBind(intent: Intent): IBinder? {
+        return null
     }
 
-    public void onDestroy() {
-        super.onDestroy();
-        SharedPreferences preferences = MessagesController.getGlobalNotificationsSettings();
+    override fun onDestroy() {
+        super.onDestroy()
+        val preferences = MessagesController.getGlobalNotificationsSettings()
         if (preferences.getBoolean("pushService", true)) {
-            Intent intent = new Intent("org.telegram.start");
-            sendBroadcast(intent);
+            val intent = Intent("org.telegram.start")
+            sendBroadcast(intent)
         }
     }
 }

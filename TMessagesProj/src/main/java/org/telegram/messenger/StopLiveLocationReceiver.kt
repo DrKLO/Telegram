@@ -5,19 +5,16 @@
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
+package org.telegram.messenger
 
-package org.telegram.messenger;
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-
-public class StopLiveLocationReceiver extends BroadcastReceiver {
-
-    @Override
-    public void onReceive(Context context, Intent intent) {
-        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
-            LocationController.getInstance(a).removeAllLocationSharings();
+class StopLiveLocationReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        for (a in 0 until UserConfig.MAX_ACCOUNT_COUNT) {
+            LocationController.getInstance(a).removeAllLocationSharings()
         }
     }
 }
