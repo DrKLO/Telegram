@@ -177,6 +177,9 @@ public class ActionBarMenuSubItem extends FrameLayout {
     }
 
     public void updateSelectorBackground(boolean top, boolean bottom) {
+        if (this.top == top && this.bottom == bottom) {
+            return;
+        }
         this.top = top;
         this.bottom = bottom;
         updateBackground();

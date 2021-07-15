@@ -136,6 +136,7 @@ public class MenuDrawable extends Drawable {
         lastFrameTime = newTime;
 
         canvas.save();
+
         canvas.translate(getIntrinsicWidth() / 2 - AndroidUtilities.dp(9), getIntrinsicHeight() / 2);
         float endYDiff;
         float endXDiff;
@@ -172,11 +173,12 @@ public class MenuDrawable extends Drawable {
             canvas.rotate(currentRotation * (reverseAngle ? -225 : 135), AndroidUtilities.dp(9), 0);
             if (miniIcon) {
                 paint.setColor(color1);
-                canvas.drawLine(AndroidUtilities.dp(2), 0, AndroidUtilities.dp(16) - diffMiddle, 0, paint);
-                endYDiff = AndroidUtilities.dp(5) * (1 - Math.abs(currentRotation)) - AndroidUtilities.dp(0.25f) * Math.abs(currentRotation);
-                endXDiff = AndroidUtilities.dp(16) - AndroidUtilities.dp(6.25f) * Math.abs(currentRotation);
-                startYDiff = AndroidUtilities.dp(5) + AndroidUtilities.dp(1.25f) * Math.abs(currentRotation);
-                startXDiff = AndroidUtilities.dp(2) + AndroidUtilities.dp(7) * Math.abs(currentRotation);
+                canvas.drawLine(AndroidUtilities.dpf2(2) * (1 - Math.abs(currentRotation)) + AndroidUtilities.dp(1) * currentRotation, 0, AndroidUtilities.dpf2(16) * (1f - currentRotation) + AndroidUtilities.dp(17) * currentRotation - diffMiddle, 0, paint);
+                endYDiff = AndroidUtilities.dpf2(5) * (1 - Math.abs(currentRotation)) - AndroidUtilities.dpf2(0.5f) * Math.abs(currentRotation);
+                endXDiff = AndroidUtilities.dpf2(16) * (1 - Math.abs(currentRotation)) + (AndroidUtilities.dpf2(9)) * Math.abs(currentRotation);
+                startYDiff = AndroidUtilities.dpf2(5) + AndroidUtilities.dpf2(3.0f) * Math.abs(currentRotation);
+                startXDiff = AndroidUtilities.dpf2(2) + AndroidUtilities.dpf2(7) * Math.abs(currentRotation);
+
             } else {
                 int color2 = Theme.getColor(Theme.key_actionBarActionModeDefaultIcon);
                 int backColor2 = Theme.getColor(Theme.key_actionBarActionModeDefault);
@@ -189,8 +191,13 @@ public class MenuDrawable extends Drawable {
                 startXDiff = AndroidUtilities.dp(9) * Math.abs(currentRotation);
             }
         }
-        canvas.drawLine(startXDiff, -startYDiff, endXDiff - diffUp, -endYDiff, paint);
-        canvas.drawLine(startXDiff, startYDiff, endXDiff, endYDiff, paint);
+        if (miniIcon) {
+            canvas.drawLine(startXDiff, -startYDiff, endXDiff, -endYDiff, paint);
+            canvas.drawLine(startXDiff, startYDiff, endXDiff, endYDiff, paint);
+        } else {
+            canvas.drawLine(startXDiff, -startYDiff, endXDiff - diffUp, -endYDiff, paint);
+            canvas.drawLine(startXDiff, startYDiff, endXDiff, endYDiff, paint);
+        }
         if (type != TYPE_DEFAULT && currentRotation != 1.0f || previousType != TYPE_DEFAULT && typeAnimationProgress != 1.0f) {
             float cx = AndroidUtilities.dp(9 + 8);
             float cy = -AndroidUtilities.dp(4.5f);

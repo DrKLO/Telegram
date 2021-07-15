@@ -48,6 +48,8 @@ public class CameraSession {
     private boolean flipFront = true;
     private float currentZoom;
     private boolean optimizeForBarcode;
+    private boolean useTorch;
+    private boolean isRound;
 
     public static final int ORIENTATION_HYSTERESIS = 5;
 
@@ -59,11 +61,12 @@ public class CameraSession {
         }
     };
 
-    public CameraSession(CameraInfo info, Size preview, Size picture, int format) {
+    public CameraSession(CameraInfo info, Size preview, Size picture, int format, boolean round) {
         previewSize = preview;
         pictureSize = picture;
         pictureFormat = format;
         cameraInfo = info;
+        isRound = round;
 
         SharedPreferences sharedPreferences = ApplicationLoader.applicationContext.getSharedPreferences("camera", Activity.MODE_PRIVATE);
         currentFlashMode = sharedPreferences.getString(cameraInfo.frontCamera != 0 ? "flashMode_front" : "flashMode", Camera.Parameters.FLASH_MODE_OFF);
@@ -189,7 +192,7 @@ public class CameraSession {
         return sameTakePictureOrientation;
     }
 
-    protected void configureRoundCamera() {
+    protected void configureRoundCamera(boolean initial) {
         try {
             isVideo = true;
             Camera camera = cameraInfo.camera;
@@ -241,16 +244,17 @@ public class CameraSession {
                 diffOrientation = currentOrientation - displayOrientation;
 
                 if (params != null) {
-                    if (BuildVars.LOGS_ENABLED) {
+                    if (initial && BuildVars.LOGS_ENABLED) {
                         FileLog.d("set preview size = " + previewSize.getWidth() + " " + previewSize.getHeight());
                     }
                     params.setPreviewSize(previewSize.getWidth(), previewSize.getHeight());
-                    if (BuildVars.LOGS_ENABLED) {
+                    if (initial && BuildVars.LOGS_ENABLED) {
                         FileLog.d("set picture size = " + pictureSize.getWidth() + " " + pictureSize.getHeight());
                     }
                     params.setPictureSize(pictureSize.getWidth(), pictureSize.getHeight());
                     params.setPictureFormat(pictureFormat);
                     params.setRecordingHint(true);
+                    maxZoom = params.getMaxZoom();
 
                     String desiredMode = Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO;
                     if (params.getSupportedFocusModes().contains(desiredMode)) {
@@ -281,15 +285,19 @@ public class CameraSession {
                         //
                     }
                     params.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
+                    params.setZoom((int) (currentZoom * maxZoom));
                     try {
                         camera.setParameters(params);
                     } catch (Exception e) {
+                        throw new RuntimeException(e);
                         //
                     }
 
                     if (params.getMaxNumMeteringAreas() > 0) {
                         meteringAreaSupported = true;
                     }
+
+
                 }
             }
         } catch (Throwable e) {
@@ -390,7 +398,8 @@ public class CameraSession {
                     } catch (Exception e) {
                         //
                     }
-                    params.setFlashMode(currentFlashMode);
+                    params.setFlashMode(useTorch ? Camera.Parameters.FLASH_MODE_TORCH : currentFlashMode);
+
                     try {
                         camera.setParameters(params);
                     } catch (Exception e) {
@@ -444,9 +453,20 @@ public class CameraSession {
         return maxZoom;
     }
 
-    protected void setZoom(float value) {
+    public void onStartRecord() {
+        isVideo = true;
+    }
+
+    public void setZoom(float value) {
         currentZoom = value;
-        configurePhotoCamera();
+        if (isVideo && Camera.Parameters.FLASH_MODE_ON.equals(currentFlashMode)) {
+            useTorch = true;
+        }
+        if (isRound) {
+            configureRoundCamera(false);
+        } else {
+            configurePhotoCamera();
+        }
     }
 
     protected void configureRecorder(int quality, MediaRecorder recorder) {
@@ -480,6 +500,7 @@ public class CameraSession {
 
     protected void stopVideoRecording() {
         isVideo = false;
+        useTorch = false;
         configurePhotoCamera();
     }
 

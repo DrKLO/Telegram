@@ -197,6 +197,10 @@ public class MessageObject {
             " . "
     };
 
+    public int getEmojiOnlyCount() {
+        return emojiOnlyCount;
+    }
+
     public static class SendAnimationData {
         public float x;
         public float y;
@@ -895,7 +899,7 @@ public class MessageObject {
     }
 
     public MessageObject(int accountNum, TLRPC.Message message, MessageObject replyToMessage, AbstractMap<Integer, TLRPC.User> users, AbstractMap<Integer, TLRPC.Chat> chats, SparseArray<TLRPC.User> sUsers, SparseArray<TLRPC.Chat> sChats, boolean generateLayout, boolean checkMediaExists, long eid) {
-        Theme.createChatResources(null, true);
+        Theme.createCommonChatResources(null);
 
         currentAccount = accountNum;
         messageOwner = message;
@@ -1888,7 +1892,11 @@ public class MessageObject {
             id = 0;
         } else if (object instanceof TLRPC.User) {
             TLRPC.User user = (TLRPC.User) object;
-            name = ContactsController.formatName(user.first_name, user.last_name);
+            if (user.deleted) {
+                name = LocaleController.getString("HiddenName", R.string.HiddenName);
+            } else {
+                name = ContactsController.formatName(user.first_name, user.last_name);
+            }
             username = user.username;
             id = user.id;
         } else {
@@ -2355,7 +2363,7 @@ public class MessageObject {
         }
         wantedBotKeyboardWidth = 0;
         if (messageOwner.reply_markup instanceof TLRPC.TL_replyInlineMarkup || messageOwner.reactions != null && !messageOwner.reactions.results.isEmpty()) {
-            Theme.createChatResources(null, true);
+            Theme.createCommonChatResources(null);
             if (botButtonsLayout == null) {
                 botButtonsLayout = new StringBuilder();
             } else {
@@ -2478,9 +2486,18 @@ public class MessageObject {
                                 }
                             }
                         }
-                        messageText = LocaleController.formatString("ActionGroupCallEnded", R.string.ActionGroupCallEnded, time);
+
+                        if (messageOwner.peer_id instanceof TLRPC.TL_peerChat || isSupergroup()) {
+                            if (isOut()) {
+                                messageText = LocaleController.formatString("ActionGroupCallEndedByYou", R.string.ActionGroupCallEndedByYou, time);
+                            } else {
+                                messageText = replaceWithLink(LocaleController.formatString("ActionGroupCallEndedBy", R.string.ActionGroupCallEndedBy, time), "un1", fromObject);
+                            }
+                        } else {
+                            messageText = LocaleController.formatString("ActionGroupCallEnded", R.string.ActionGroupCallEnded, time);
+                        }
                     } else {
-                        if (isSupergroup()) {
+                        if (messageOwner.peer_id instanceof TLRPC.TL_peerChat || isSupergroup()) {
                             if (isOut()) {
                                 messageText = LocaleController.getString("ActionGroupCallStartedByYou", R.string.ActionGroupCallStartedByYou);
                             } else {
@@ -2958,9 +2975,9 @@ public class MessageObject {
                     }
                 }
             } else {
-                if (messageOwner.message != null) {
+                if (messageOwner.message != null && messageOwner.message.length() > 200) {
                     try {
-                        messageText = AndroidUtilities.BAD_CHARS_MESSAGE_PATTERN.matcher(messageOwner.message).replaceAll("");
+                        messageText = AndroidUtilities.BAD_CHARS_MESSAGE_PATTERN.matcher(messageOwner.message).replaceAll("\u200C");
                     } catch (Throwable e) {
                         messageText = messageOwner.message;
                     }
@@ -3311,6 +3328,9 @@ public class MessageObject {
                             }
                             if (size.type.equals(photoObject.type)) {
                                 photoObject.location = size.location;
+                                break;
+                            } else if ("s".equals(photoObject.type) && size instanceof TLRPC.TL_photoStrippedSize) {
+                                photoThumbs.set(a, size);
                                 break;
                             }
                         }
@@ -4641,7 +4661,7 @@ public class MessageObject {
             int ttl = Math.max(messageOwner.ttl, messageOwner.media.ttl_seconds);
             return ttl > 0 && ((messageOwner.media instanceof TLRPC.TL_messageMediaPhoto || isVideo() || isGif()) && ttl <= 60 || isRoundVideo());
         } else if (messageOwner instanceof TLRPC.TL_message) {
-            return (messageOwner.media instanceof TLRPC.TL_messageMediaPhoto || messageOwner.media instanceof TLRPC.TL_messageMediaDocument) && messageOwner.media.ttl_seconds != 0;
+            return (messageOwner.media != null && messageOwner.media.ttl_seconds != 0) && (messageOwner.media instanceof TLRPC.TL_messageMediaPhoto || messageOwner.media instanceof TLRPC.TL_messageMediaDocument);
         }
         return false;
     }
@@ -4650,7 +4670,7 @@ public class MessageObject {
         if (messageOwner instanceof TLRPC.TL_message_secret) {
             return (((messageOwner.media instanceof TLRPC.TL_messageMediaPhoto) || isGif()) && messageOwner.ttl > 0 && messageOwner.ttl <= 60 || isVoice() || isRoundVideo() || isVideo());
         } else if (messageOwner instanceof TLRPC.TL_message) {
-            return (messageOwner.media instanceof TLRPC.TL_messageMediaPhoto || messageOwner.media instanceof TLRPC.TL_messageMediaDocument) && messageOwner.media.ttl_seconds != 0;
+            return (messageOwner.media != null && messageOwner.media.ttl_seconds != 0) && (messageOwner.media instanceof TLRPC.TL_messageMediaPhoto || messageOwner.media instanceof TLRPC.TL_messageMediaDocument);
         }
         return false;
     }
@@ -5295,7 +5315,7 @@ public class MessageObject {
     }
 
     public boolean shouldAnimateSending() {
-        return isSending() && (type == MessageObject.TYPE_ROUND_VIDEO || isVoice() || isAnyKindOfSticker() && sendAnimationData != null);
+        return isSending() && (type == MessageObject.TYPE_ROUND_VIDEO || isVoice() || (isAnyKindOfSticker() && sendAnimationData != null)  || (messageText != null && sendAnimationData != null));
     }
 
     public boolean hasAttachedStickers() {

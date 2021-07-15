@@ -54,8 +54,6 @@ AudioRecordJni::JavaAudioRecord::JavaAudioRecord(
       enable_built_in_aec_(native_reg->GetMethodId("enableBuiltInAEC", "(Z)Z")),
       enable_built_in_ns_(native_reg->GetMethodId("enableBuiltInNS", "(Z)Z")) {}
 
-AudioRecordJni::JavaAudioRecord::~JavaAudioRecord() {}
-
 int AudioRecordJni::JavaAudioRecord::InitRecording(int sample_rate,
                                                    size_t channels) {
   return audio_record_->CallIntMethod(init_recording_,
@@ -108,7 +106,7 @@ AudioRecordJni::AudioRecordJni(AudioManager* audio_manager)
   j_audio_record_.reset(
       new JavaAudioRecord(j_native_registration_.get(),
                           j_native_registration_->NewObject(
-                              "<init>", "(J)V", PointerTojlong(this))));
+                              "<init>", "(JZ)V", PointerTojlong(this), false)));
   // Detach from this thread since we want to use the checker to verify calls
   // from the Java based audio thread.
   thread_checker_java_.Detach();

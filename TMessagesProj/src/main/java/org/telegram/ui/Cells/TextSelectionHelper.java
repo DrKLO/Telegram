@@ -143,8 +143,8 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                             dy = selectedView.getBottom() - parentView.getMeasuredHeight();
                         }
                     } else {
-                        if (selectedView.getTop() + dy > 0) {
-                            dy = -selectedView.getTop();
+                        if (selectedView.getTop() + dy > getParentTopPadding()) {
+                            dy = -selectedView.getTop() + getParentTopPadding();
                         }
                     }
                 }
@@ -748,7 +748,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                         x -= selectedView.getX();
 
                         boolean canScrollDown = event.getY() - touchSlop > parentView.getMeasuredHeight() && (multiselect || selectedView.getBottom() > parentView.getMeasuredHeight());
-                        boolean canScrollUp = event.getY() < ((View) parentView.getParent()).getTop() && (multiselect || selectedView.getTop() < 0);
+                        boolean canScrollUp = event.getY() < ((View) parentView.getParent()).getTop() + getParentTopPadding() && (multiselect || selectedView.getTop() < getParentTopPadding());
                         if (canScrollDown || canScrollUp) {
                             if (!scrolling) {
                                 scrolling = true;
@@ -2613,5 +2613,9 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
     public void setKeyboardSize(int keyboardSize) {
         this.keyboardSize = keyboardSize;
         invalidate();
+    }
+
+    public int getParentTopPadding() {
+        return 0;
     }
 }

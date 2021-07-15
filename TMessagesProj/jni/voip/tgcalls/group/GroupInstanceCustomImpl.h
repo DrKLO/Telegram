@@ -36,6 +36,7 @@ public:
     void setVideoSource(std::function<webrtc::VideoTrackSourceInterface*()> getVideoSource);
     void setAudioOutputDevice(std::string id);
     void setAudioInputDevice(std::string id);
+    void addExternalAudioSamples(std::vector<uint8_t> &&samples);
     
     void addIncomingVideoOutput(std::string const &endpointId, std::weak_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink);
     

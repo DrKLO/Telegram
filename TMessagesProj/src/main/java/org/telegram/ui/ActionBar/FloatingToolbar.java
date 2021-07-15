@@ -59,7 +59,9 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -347,14 +349,18 @@ public final class FloatingToolbar {
             mDismissAnimation = createExitAnimation(mContentContainer, 150, new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
-                    mPopupWindow.dismiss();
-                    mContentContainer.removeAllViews();
+                    NotificationCenter.getInstance(UserConfig.selectedAccount).doOnIdle(() -> {
+                        mPopupWindow.dismiss();
+                        mContentContainer.removeAllViews();
+                    });
                 }
             });
             mHideAnimation = createExitAnimation(mContentContainer, 0, new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
-                    mPopupWindow.dismiss();
+                    NotificationCenter.getInstance(UserConfig.selectedAccount).doOnIdle(() -> {
+                        mPopupWindow.dismiss();
+                    });
                 }
             });
         }

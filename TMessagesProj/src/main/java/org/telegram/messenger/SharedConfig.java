@@ -994,31 +994,35 @@ public class SharedConfig {
     }
 
     public static void checkSaveToGalleryFiles() {
-        try {
-            File telegramPath = new File(Environment.getExternalStorageDirectory(), "Telegram");
-            File imagePath = new File(telegramPath, "Telegram Images");
-            imagePath.mkdir();
-            File videoPath = new File(telegramPath, "Telegram Video");
-            videoPath.mkdir();
+        Utilities.globalQueue.postRunnable(() -> {
+            try {
 
-            if (saveToGallery) {
-                if (imagePath.isDirectory()) {
-                    new File(imagePath, ".nomedia").delete();
+
+                File telegramPath = new File(Environment.getExternalStorageDirectory(), "Telegram");
+                File imagePath = new File(telegramPath, "Telegram Images");
+                imagePath.mkdir();
+                File videoPath = new File(telegramPath, "Telegram Video");
+                videoPath.mkdir();
+
+                if (saveToGallery) {
+                    if (imagePath.isDirectory()) {
+                        new File(imagePath, ".nomedia").delete();
+                    }
+                    if (videoPath.isDirectory()) {
+                        new File(videoPath, ".nomedia").delete();
+                    }
+                } else {
+                    if (imagePath.isDirectory()) {
+                        AndroidUtilities.createEmptyFile(new File(imagePath, ".nomedia"));
+                    }
+                    if (videoPath.isDirectory()) {
+                        AndroidUtilities.createEmptyFile(new File(videoPath, ".nomedia"));
+                    }
                 }
-                if (videoPath.isDirectory()) {
-                    new File(videoPath, ".nomedia").delete();
-                }
-            } else {
-                if (imagePath.isDirectory()) {
-                    AndroidUtilities.createEmptyFile(new File(imagePath, ".nomedia"));
-                }
-                if (videoPath.isDirectory()) {
-                    AndroidUtilities.createEmptyFile(new File(videoPath, ".nomedia"));
-                }
+            } catch (Throwable e) {
+                FileLog.e(e);
             }
-        } catch (Throwable e) {
-            FileLog.e(e);
-        }
+        });
     }
 
     public static int getChatSwipeAction(int currentAccount) {

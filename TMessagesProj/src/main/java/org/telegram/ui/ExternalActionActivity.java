@@ -212,7 +212,7 @@ public class ExternalActionActivity extends Activity implements ActionBarLayout.
         } else if (ArticleViewer.hasInstance() && ArticleViewer.getInstance().isVisible()) {
             ArticleViewer.getInstance().close(false, true);
         }
-        passcodeView.onShow();
+        passcodeView.onShow(true, false);
         SharedConfig.isWaitingForPasscodeEnter = true;
         drawerLayoutContainer.setAllowOpenDrawer(false, false);
         passcodeView.setDelegate(() -> {

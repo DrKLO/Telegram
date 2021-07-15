@@ -33,6 +33,7 @@
 #include "modules/audio_device/android/audio_device_template.h"
 #include "modules/audio_device/android/audio_manager.h"
 #include "modules/audio_device/android/audio_record_jni.h"
+#include "modules/audio_device/android/audio_screen_record_jni.h"
 #include "modules/audio_device/android/audio_track_jni.h"
 #include "modules/audio_device/android/opensles_player.h"
 #include "modules/audio_device/android/opensles_recorder.h"
@@ -210,6 +211,10 @@ int32_t AudioDeviceModuleImpl::CreatePlatformSpecificObjects() {
     // Java audio for both input and output audio.
     audio_device_.reset(new AudioDeviceTemplate<AudioRecordJni, AudioTrackJni>(
         audio_layer, audio_manager));
+  } else if (audio_layer == kAndroidScreenAudio) {
+    // Java audio for both input and output audio.
+    audio_device_.reset(new AudioDeviceTemplate<AudioScreenRecordJni, AudioTrackJni>(
+            audio_layer, audio_manager));
   } else if (audio_layer == kAndroidOpenSLESAudio) {
     // OpenSL ES based audio for both input and output audio.
     audio_device_.reset(

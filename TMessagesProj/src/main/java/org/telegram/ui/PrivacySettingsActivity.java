@@ -41,7 +41,6 @@ import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.AlertsCreator;
-import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
@@ -506,7 +505,9 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                     listAdapter.notifyItemChanged(passwordRow);
                 }
             } else {
+                currentPassword = null;
                 loadPasswordSettings();
+                updateRows();
             }
         }
     }

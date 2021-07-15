@@ -100,7 +100,7 @@ public class ChangeBioActivity extends BaseFragment {
         inputFilters[0] = new CodepointsLengthInputFilter(70) {
             @Override
             public CharSequence filter(CharSequence source, int start, int end, Spanned dest, int dstart, int dend) {
-                if (source != null && TextUtils.indexOf(source, '\n') != -1) {
+                if (source != null && source.length() > 0 && TextUtils.indexOf(source, '\n') == source.length() - 1) {
                     doneButton.performClick();
                     return "";
                 }
@@ -141,7 +141,7 @@ public class ChangeBioActivity extends BaseFragment {
 
             @Override
             public void afterTextChanged(Editable s) {
-                checkTextView.setNumber(70 -  Character.codePointCount(s, 0, s.length()), true);
+                checkTextView.setNumber(70 - Character.codePointCount(s, 0, s.length()), true);
             }
         });
 

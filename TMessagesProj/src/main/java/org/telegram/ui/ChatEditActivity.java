@@ -67,6 +67,7 @@ import org.telegram.ui.Components.ImageUpdater;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RadialProgressView;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.UndoView;
@@ -582,12 +583,22 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
             };
             setAvatarCell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
             setAvatarCell.setColors(Theme.key_windowBackgroundWhiteBlueIcon, Theme.key_windowBackgroundWhiteBlueButton);
-            setAvatarCell.setOnClickListener(v -> imageUpdater.openMenu(avatar != null, () -> {
-                avatar = null;
-                MessagesController.getInstance(currentAccount).changeChatAvatar(chatId, null, null, null, 0, null, null, null, null);
-                showAvatarProgress(false, true);
-                avatarImage.setImage(null, null, avatarDrawable, currentChat);
-            }, null));
+            setAvatarCell.setOnClickListener(v -> {
+                imageUpdater.openMenu(avatar != null, () -> {
+                    avatar = null;
+                    MessagesController.getInstance(currentAccount).changeChatAvatar(chatId, null, null, null, 0, null, null, null, null);
+                    showAvatarProgress(false, true);
+                    avatarImage.setImage(null, null, avatarDrawable, currentChat);
+                    cameraDrawable.setCurrentFrame(0);
+                    setAvatarCell.imageView.playAnimation();
+                }, dialogInterface -> {
+                    cameraDrawable.setCustomEndFrame(86);
+                    setAvatarCell.imageView.playAnimation();
+                });
+                cameraDrawable.setCurrentFrame(0);
+                cameraDrawable.setCustomEndFrame(43);
+                setAvatarCell.imageView.playAnimation();
+            });
             settingsContainer.addView(setAvatarCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         }
 
@@ -925,6 +936,8 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
         return fragmentView;
     }
 
+    RLottieDrawable cameraDrawable;
+
     private void setAvatar() {
         if (avatarImage == null) {
             return;
@@ -950,6 +963,12 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
             } else {
                 setAvatarCell.setTextAndIcon(LocaleController.getString("ChatSetPhotoOrVideo", R.string.ChatSetPhotoOrVideo), R.drawable.menu_camera2, true);
             }
+            if (cameraDrawable == null) {
+                cameraDrawable = new RLottieDrawable(R.raw.camera_outline, "" + R.raw.camera_outline, AndroidUtilities.dp(50), AndroidUtilities.dp(50), false, null);
+            }
+            setAvatarCell.imageView.setTranslationY(-AndroidUtilities.dp(9));
+            setAvatarCell.imageView.setTranslationX(-AndroidUtilities.dp(8));
+            setAvatarCell.imageView.setAnimation(cameraDrawable);
         }
         if (PhotoViewer.hasInstance() && PhotoViewer.getInstance().isVisible()) {
             PhotoViewer.getInstance().checkCurrentImageVisibility();

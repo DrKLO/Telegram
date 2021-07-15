@@ -128,7 +128,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
     }
 
     public void setCustomDate(int date, boolean scheduled, boolean inLayout) {
-        if (customDate == date) {
+        if (customDate == date || customDate / 3600 == date / 3600) {
             return;
         }
         CharSequence newText;

@@ -48,7 +48,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
         mContext = context;
         itemAnimator = animator;
         accountsShown = UserConfig.getActivatedAccountsCount() > 1 && MessagesController.getGlobalMainSettings().getBoolean("accountsShown", true);
-        Theme.createDialogsResources(context);
+        Theme.createCommonDialogResources(context);
         resetItems();
         try {
             hasGps = ApplicationLoader.applicationContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_LOCATION_GPS);
@@ -345,7 +345,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
         }
 
         public void bind(DrawerActionCell actionCell) {
-            actionCell.setTextAndIcon(text, icon);
+            actionCell.setTextAndIcon(id, text, icon);
         }
     }
 }

@@ -8,6 +8,7 @@ import android.animation.ValueAnimator;
 import android.os.Build;
 import android.view.View;
 import android.view.ViewPropertyAnimator;
+import android.view.animation.Interpolator;
 import android.view.animation.OvershootInterpolator;
 
 import androidx.annotation.NonNull;
@@ -18,12 +19,15 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.Cells.BotHelpCell;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.ChatGreetingsView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.TextMessageEnterTransition;
+import org.telegram.ui.VoiceMessageEnterTransition;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -31,6 +35,9 @@ import java.util.HashMap;
 import java.util.List;
 
 public class ChatListItemAnimator extends DefaultItemAnimator {
+
+    public static final long DEFAULT_DURATION = 250;
+    public static final Interpolator DEFAULT_INTERPOLATOR = new CubicBezierInterpolator(0.19919472913616398, 0.010644531250000006, 0.27920937042459737, 0.91025390625);
 
     private final ChatActivity activity;
     private final RecyclerListView recyclerListView;
@@ -52,7 +59,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
     public ChatListItemAnimator(ChatActivity activity, RecyclerListView listView) {
         this.activity = activity;
         this.recyclerListView = listView;
-        translationInterpolator = CubicBezierInterpolator.DEFAULT;
+        translationInterpolator = DEFAULT_INTERPOLATOR;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             listView.getElevation();
         }
@@ -277,8 +284,26 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
         view.setTranslationY(addedItemsHeight);
         holder.itemView.setScaleX(1);
         holder.itemView.setScaleY(1);
-        if (!(holder.itemView instanceof ChatMessageCell && ((ChatMessageCell) holder.itemView).getTransitionParams().ignoreAlpha)) {
+        ChatMessageCell chatMessageCell = holder.itemView instanceof ChatMessageCell ? (ChatMessageCell) holder.itemView : null;
+        if (!(chatMessageCell != null && chatMessageCell.getTransitionParams().ignoreAlpha)) {
             holder.itemView.setAlpha(1);
+        }
+        if (chatMessageCell != null && activity.animatingMessageObjects.contains(chatMessageCell.getMessageObject())) {
+            activity.animatingMessageObjects.remove(chatMessageCell.getMessageObject());
+            if (activity.getChatActivityEnterView().canShowMessageTransition()) {
+                if (chatMessageCell.getMessageObject().isVoice()) {
+                    if (Math.abs(view.getTranslationY()) < view.getMeasuredHeight() * 3f) {
+                        VoiceMessageEnterTransition transition = new VoiceMessageEnterTransition(chatMessageCell, activity.getChatActivityEnterView(), recyclerListView, activity.messageEnterTransitionContainer);
+                        transition.start();
+                    }
+                } else {
+                    if (SharedConfig.getDevicePerformanceClass() != SharedConfig.PERFORMANCE_CLASS_LOW && Math.abs(view.getTranslationY()) < recyclerListView.getMeasuredHeight()) {
+                        TextMessageEnterTransition transition = new TextMessageEnterTransition(chatMessageCell, activity, recyclerListView, activity.messageEnterTransitionContainer);
+                        transition.start();
+                    }
+                }
+                activity.getChatActivityEnterView().startMessageTransition();
+            }
         }
         animation.translationY(0).setDuration(getMoveDuration())
                 .setInterpolator(translationInterpolator)
@@ -1309,7 +1334,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
             animatorSet.setInterpolator(new OvershootInterpolator());
         } else {
             animatorSet.setStartDelay(currentDelay);
-            animatorSet.setDuration(220);
+            animatorSet.setDuration(DEFAULT_DURATION);
         }
 
         animatorSet.addListener(new AnimatorListenerAdapter() {
@@ -1388,12 +1413,12 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 
     @Override
     public long getMoveDuration() {
-        return 220;
+        return DEFAULT_DURATION;
     }
 
     @Override
     public long getChangeDuration() {
-        return 220;
+        return DEFAULT_DURATION;
     }
 
     public void runOnAnimationEnd(Runnable runnable) {

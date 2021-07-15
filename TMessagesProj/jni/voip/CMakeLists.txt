@@ -47,7 +47,7 @@ set_target_properties(tgvoip PROPERTIES
 target_compile_definitions(tgvoip PUBLIC
         HAVE_PTHREAD __STDC_LIMIT_MACROS BSD=1 USE_KISS_FFT TGVOIP_NO_VIDEO NULL=0 SOCKLEN_T=socklen_t LOCALE_NOT_USED _LARGEFILE_SOURCE=1 _FILE_OFFSET_BITS=64 restrict= __EMX__ OPUS_BUILD FIXED_POINT USE_ALLOCA HAVE_LRINT HAVE_LRINTF)
 target_compile_definitions(tgvoip PUBLIC
-        RTC_DISABLE_TRACE_EVENTS WEBRTC_OPUS_SUPPORT_120MS_PTIME=1 BWE_TEST_LOGGING_COMPILE_TIME_ENABLE=0 ABSL_ALLOCATOR_NOTHROW=1 RTC_ENABLE_VP9 WEBRTC_POSIX WEBRTC_LINUX WEBRTC_ANDROID NDEBUG WEBRTC_HAVE_USRSCTP WEBRTC_HAVE_SCTP WEBRTC_APM_DEBUG_DUMP=0 WEBRTC_USE_BUILTIN_ISAC_FLOAT WEBRTC_OPUS_VARIABLE_COMPLEXITY=0 HAVE_NETINET_IN_H WEBRTC_INCLUDE_INTERNAL_AUDIO_DEVICE __Userspace__ SCTP_SIMPLE_ALLOCATOR SCTP_PROCESS_LEVEL_LOCKS __Userspace_os_Linux)
+        RTC_DISABLE_TRACE_EVENTS WEBRTC_OPUS_SUPPORT_120MS_PTIME=1 BWE_TEST_LOGGING_COMPILE_TIME_ENABLE=0 ABSL_ALLOCATOR_NOTHROW=1 RTC_ENABLE_VP9 WEBRTC_POSIX WEBRTC_LINUX WEBRTC_ANDROID WEBRTC_USE_H264 NDEBUG WEBRTC_HAVE_USRSCTP WEBRTC_HAVE_SCTP WEBRTC_APM_DEBUG_DUMP=0 WEBRTC_USE_BUILTIN_ISAC_FLOAT WEBRTC_OPUS_VARIABLE_COMPLEXITY=0 HAVE_NETINET_IN_H WEBRTC_INCLUDE_INTERNAL_AUDIO_DEVICE __Userspace__ SCTP_SIMPLE_ALLOCATOR SCTP_PROCESS_LEVEL_LOCKS __Userspace_os_Linux)
 target_include_directories(tgvoip PUBLIC
         ./
         voip
@@ -74,6 +74,134 @@ elseif(${ANDROID_ABI} STREQUAL "x86")
 elseif(${ANDROID_ABI} STREQUAL "x86_64")
     target_compile_definitions(tgvoip PUBLIC
             HAVE_SSE2)
+endif()
+
+#openh264
+add_library(openh264 STATIC
+        third_party/openh264/src/codec/encoder/core/src/au_set.cpp
+        third_party/openh264/src/codec/encoder/core/src/deblocking.cpp
+        third_party/openh264/src/codec/encoder/core/src/decode_mb_aux.cpp
+        third_party/openh264/src/codec/encoder/core/src/encode_mb_aux.cpp
+        third_party/openh264/src/codec/encoder/core/src/encoder_data_tables.cpp
+        third_party/openh264/src/codec/encoder/core/src/encoder_ext.cpp
+        third_party/openh264/src/codec/encoder/core/src/encoder.cpp
+        third_party/openh264/src/codec/encoder/core/src/get_intra_predictor.cpp
+        third_party/openh264/src/codec/encoder/core/src/md.cpp
+        third_party/openh264/src/codec/encoder/core/src/mv_pred.cpp
+        third_party/openh264/src/codec/encoder/core/src/nal_encap.cpp
+        third_party/openh264/src/codec/encoder/core/src/paraset_strategy.cpp
+        third_party/openh264/src/codec/encoder/core/src/picture_handle.cpp
+        third_party/openh264/src/codec/encoder/core/src/ratectl.cpp
+        third_party/openh264/src/codec/encoder/core/src/ref_list_mgr_svc.cpp
+        third_party/openh264/src/codec/encoder/core/src/sample.cpp
+        third_party/openh264/src/codec/encoder/core/src/set_mb_syn_cabac.cpp
+        third_party/openh264/src/codec/encoder/core/src/set_mb_syn_cavlc.cpp
+        third_party/openh264/src/codec/encoder/core/src/slice_multi_threading.cpp
+        third_party/openh264/src/codec/encoder/core/src/svc_base_layer_md.cpp
+        third_party/openh264/src/codec/encoder/core/src/svc_enc_slice_segment.cpp
+        third_party/openh264/src/codec/encoder/core/src/svc_encode_mb.cpp
+        third_party/openh264/src/codec/encoder/core/src/svc_encode_slice.cpp
+        third_party/openh264/src/codec/encoder/core/src/svc_mode_decision.cpp
+        third_party/openh264/src/codec/encoder/core/src/svc_motion_estimate.cpp
+        third_party/openh264/src/codec/encoder/core/src/svc_set_mb_syn_cabac.cpp
+        third_party/openh264/src/codec/encoder/core/src/svc_set_mb_syn_cavlc.cpp
+        third_party/openh264/src/codec/encoder/core/src/wels_preprocess.cpp
+        third_party/openh264/src/codec/encoder/core/src/wels_task_base.cpp
+        third_party/openh264/src/codec/encoder/core/src/wels_task_encoder.cpp
+        third_party/openh264/src/codec/encoder/core/src/wels_task_management.cpp
+        third_party/openh264/src/codec/encoder/plus/src/welsEncoderExt.cpp
+        third_party/openh264/src/codec/common/src/welsCodecTrace.cpp
+        third_party/openh264/src/codec/common/src/common_tables.cpp
+        third_party/openh264/src/codec/common/src/copy_mb.cpp
+        third_party/openh264/src/codec/common/src/cpu.cpp
+        third_party/openh264/src/codec/common/src/crt_util_safe_x.cpp
+        third_party/openh264/src/codec/common/src/deblocking_common.cpp
+        third_party/openh264/src/codec/common/src/expand_pic.cpp
+        third_party/openh264/src/codec/common/src/intra_pred_common.cpp
+        third_party/openh264/src/codec/common/src/mc.cpp
+        third_party/openh264/src/codec/common/src/memory_align.cpp
+        third_party/openh264/src/codec/common/src/sad_common.cpp
+        third_party/openh264/src/codec/common/src/WelsTaskThread.cpp
+        third_party/openh264/src/codec/common/src/WelsThread.cpp
+        third_party/openh264/src/codec/common/src/WelsThreadLib.cpp
+        third_party/openh264/src/codec/common/src/WelsThreadPool.cpp
+        third_party/openh264/src/codec/common/src/utils.cpp
+        third_party/openh264/src/codec/processing/src/adaptivequantization/AdaptiveQuantization.cpp
+        third_party/openh264/src/codec/processing/src/backgrounddetection/BackgroundDetection.cpp
+        third_party/openh264/src/codec/processing/src/common/memory.cpp
+        third_party/openh264/src/codec/processing/src/common/WelsFrameWork.cpp
+        third_party/openh264/src/codec/processing/src/common/WelsFrameWorkEx.cpp
+        third_party/openh264/src/codec/processing/src/complexityanalysis/ComplexityAnalysis.cpp
+        third_party/openh264/src/codec/processing/src/denoise/denoise.cpp
+        third_party/openh264/src/codec/processing/src/denoise/denoise_filter.cpp
+        third_party/openh264/src/codec/processing/src/downsample/downsample.cpp
+        third_party/openh264/src/codec/processing/src/downsample/downsamplefuncs.cpp
+        third_party/openh264/src/codec/processing/src/imagerotate/imagerotate.cpp
+        third_party/openh264/src/codec/processing/src/imagerotate/imagerotatefuncs.cpp
+        third_party/openh264/src/codec/processing/src/scenechangedetection/SceneChangeDetection.cpp
+        third_party/openh264/src/codec/processing/src/scrolldetection/ScrollDetection.cpp
+        third_party/openh264/src/codec/processing/src/scrolldetection/ScrollDetectionFuncs.cpp
+        third_party/openh264/src/codec/processing/src/vaacalc/vaacalcfuncs.cpp
+        third_party/openh264/src/codec/processing/src/vaacalc/vaacalculation.cpp)
+target_compile_options(openh264 PUBLIC
+        -Wall -finline-functions -fno-strict-aliasing -O3 -frtti -Wno-unknown-pragmas -funroll-loops -fexceptions -fno-math-errno)
+set_target_properties(openh264 PROPERTIES
+        ANDROID_ARM_MODE arm)
+target_compile_definitions(openh264 PRIVATE
+        )
+target_compile_definitions(openh264 PUBLIC
+        )
+target_include_directories(openh264 PUBLIC
+        third_party/openh264/src/codec/encoder/core/inc
+        third_party/openh264/src/codec/encoder/plus/inc
+        third_party/openh264/src/codec/decoder/plus/inc
+        third_party/openh264/src/codec/common/inc
+        third_party/openh264/src/codec/api/svc
+        third_party/openh264/src/codec/processing/interface
+        third_party/openh264/src/codec/processing/src/common)
+
+if (${ANDROID_ABI} STREQUAL "armeabi-v7a")
+    target_sources(openh264 PRIVATE
+            third_party/openh264/src/codec/encoder/core/arm/intra_pred_neon.S
+            third_party/openh264/src/codec/encoder/core/arm/intra_pred_sad_3_opt_neon.S
+            third_party/openh264/src/codec/encoder/core/arm/memory_neon.S
+            third_party/openh264/src/codec/encoder/core/arm/pixel_neon.S
+            third_party/openh264/src/codec/encoder/core/arm/reconstruct_neon.S
+            third_party/openh264/src/codec/encoder/core/arm/svc_motion_estimation.S
+            third_party/openh264/src/codec/common/arm/copy_mb_neon.S
+            third_party/openh264/src/codec/common/arm/deblocking_neon.S
+            third_party/openh264/src/codec/common/arm/expand_picture_neon.S
+            third_party/openh264/src/codec/common/arm/intra_pred_common_neon.S
+            third_party/openh264/src/codec/common/arm/mc_neon.S
+            third_party/openh264/src/codec/processing/src/arm/adaptive_quantization.S
+            third_party/openh264/src/codec/processing/src/arm/down_sample_neon.S
+            third_party/openh264/src/codec/processing/src/arm/pixel_sad_neon.S
+            third_party/openh264/src/codec/processing/src/arm/vaa_calc_neon.S)
+    target_include_directories(openh264 PUBLIC
+            third_party/openh264/src/codec/common/arm)
+    target_compile_definitions(openh264 PUBLIC
+            HAVE_NEON=1)
+elseif(${ANDROID_ABI} STREQUAL "arm64-v8a")
+    target_sources(openh264 PRIVATE
+            third_party/openh264/src/codec/encoder/core/arm64/intra_pred_aarch64_neon.S
+            third_party/openh264/src/codec/encoder/core/arm64/intra_pred_sad_3_opt_aarch64_neon.S
+            third_party/openh264/src/codec/encoder/core/arm64/memory_aarch64_neon.S
+            third_party/openh264/src/codec/encoder/core/arm64/pixel_aarch64_neon.S
+            third_party/openh264/src/codec/encoder/core/arm64/reconstruct_aarch64_neon.S
+            third_party/openh264/src/codec/encoder/core/arm64/svc_motion_estimation_aarch64_neon.S
+            third_party/openh264/src/codec/common/arm64/copy_mb_aarch64_neon.S
+            third_party/openh264/src/codec/common/arm64/deblocking_aarch64_neon.S
+            third_party/openh264/src/codec/common/arm64/expand_picture_aarch64_neon.S
+            third_party/openh264/src/codec/common/arm64/intra_pred_common_aarch64_neon.S
+            third_party/openh264/src/codec/common/arm64/mc_aarch64_neon.S
+            third_party/openh264/src/codec/processing/src/arm64/adaptive_quantization_aarch64_neon.S
+            third_party/openh264/src/codec/processing/src/arm64/down_sample_aarch64_neon.S
+            third_party/openh264/src/codec/processing/src/arm64/pixel_sad_aarch64_neon.S
+            third_party/openh264/src/codec/processing/src/arm64/vaa_calc_aarch64_neon.S)
+    target_include_directories(openh264 PUBLIC
+            third_party/openh264/src/codec/common/arm64)
+    target_compile_definitions(openh264 PUBLIC
+            HAVE_NEON_AARCH64=1)
 endif()
 
 #rnnoise
@@ -116,7 +244,7 @@ target_compile_definitions(rnnoise PRIVATE
         pitch_search=rnnoise_pitch_search
         remove_doubling=rnnoise_remove_doubling)
 target_compile_definitions(rnnoise PUBLIC
-        RTC_DISABLE_TRACE_EVENTS WEBRTC_OPUS_SUPPORT_120MS_PTIME=1 BWE_TEST_LOGGING_COMPILE_TIME_ENABLE=0 ABSL_ALLOCATOR_NOTHROW=1 RTC_ENABLE_VP9 WEBRTC_POSIX WEBRTC_LINUX WEBRTC_ANDROID NDEBUG WEBRTC_HAVE_USRSCTP WEBRTC_HAVE_SCTP WEBRTC_APM_DEBUG_DUMP=0 WEBRTC_USE_BUILTIN_ISAC_FLOAT WEBRTC_OPUS_VARIABLE_COMPLEXITY=0 HAVE_NETINET_IN_H WEBRTC_INCLUDE_INTERNAL_AUDIO_DEVICE __Userspace__ SCTP_SIMPLE_ALLOCATOR SCTP_PROCESS_LEVEL_LOCKS __Userspace_os_Linux)
+        RTC_DISABLE_TRACE_EVENTS WEBRTC_OPUS_SUPPORT_120MS_PTIME=1 BWE_TEST_LOGGING_COMPILE_TIME_ENABLE=0 ABSL_ALLOCATOR_NOTHROW=1 RTC_ENABLE_VP9 WEBRTC_POSIX WEBRTC_LINUX WEBRTC_ANDROID WEBRTC_USE_H264 NDEBUG WEBRTC_HAVE_USRSCTP WEBRTC_HAVE_SCTP WEBRTC_APM_DEBUG_DUMP=0 WEBRTC_USE_BUILTIN_ISAC_FLOAT WEBRTC_OPUS_VARIABLE_COMPLEXITY=0 HAVE_NETINET_IN_H WEBRTC_INCLUDE_INTERNAL_AUDIO_DEVICE __Userspace__ SCTP_SIMPLE_ALLOCATOR SCTP_PROCESS_LEVEL_LOCKS __Userspace_os_Linux)
 target_include_directories(rnnoise PUBLIC
         voip/rnnoise/include)
 
@@ -471,7 +599,7 @@ target_compile_options(tgcalls_tp PUBLIC
 set_target_properties(tgcalls_tp PROPERTIES
         ANDROID_ARM_MODE arm)
 target_compile_definitions(tgcalls_tp PUBLIC
-        RTC_DISABLE_TRACE_EVENTS WEBRTC_OPUS_SUPPORT_120MS_PTIME=1 BWE_TEST_LOGGING_COMPILE_TIME_ENABLE=0 ABSL_ALLOCATOR_NOTHROW=1 HAVE_PTHREAD RTC_ENABLE_VP9 WEBRTC_POSIX WEBRTC_LINUX WEBRTC_ANDROID NDEBUG WEBRTC_HAVE_USRSCTP WEBRTC_HAVE_SCTP WEBRTC_APM_DEBUG_DUMP=0 WEBRTC_USE_BUILTIN_ISAC_FLOAT WEBRTC_OPUS_VARIABLE_COMPLEXITY=0 HAVE_NETINET_IN_H WEBRTC_INCLUDE_INTERNAL_AUDIO_DEVICE __Userspace__ SCTP_SIMPLE_ALLOCATOR SCTP_PROCESS_LEVEL_LOCKS __Userspace_os_Linux HAVE_WEBRTC_VIDEO __ANDROID__)
+        RTC_DISABLE_TRACE_EVENTS WEBRTC_OPUS_SUPPORT_120MS_PTIME=1 BWE_TEST_LOGGING_COMPILE_TIME_ENABLE=0 ABSL_ALLOCATOR_NOTHROW=1 HAVE_PTHREAD RTC_ENABLE_VP9 WEBRTC_POSIX WEBRTC_LINUX WEBRTC_ANDROID WEBRTC_USE_H264 NDEBUG WEBRTC_HAVE_USRSCTP WEBRTC_HAVE_SCTP WEBRTC_APM_DEBUG_DUMP=0 WEBRTC_USE_BUILTIN_ISAC_FLOAT WEBRTC_OPUS_VARIABLE_COMPLEXITY=0 HAVE_NETINET_IN_H WEBRTC_INCLUDE_INTERNAL_AUDIO_DEVICE __Userspace__ SCTP_SIMPLE_ALLOCATOR SCTP_PROCESS_LEVEL_LOCKS __Userspace_os_Linux HAVE_WEBRTC_VIDEO __ANDROID__)
 target_include_directories(tgcalls_tp PUBLIC
         ./
         voip
@@ -1999,7 +2127,7 @@ target_compile_options(tgcalls PUBLIC
 set_target_properties(tgcalls PROPERTIES
         ANDROID_ARM_MODE arm)
 target_compile_definitions(tgcalls PUBLIC
-        RTC_DISABLE_TRACE_EVENTS WEBRTC_OPUS_SUPPORT_120MS_PTIME=1 BWE_TEST_LOGGING_COMPILE_TIME_ENABLE=0 ABSL_ALLOCATOR_NOTHROW=1 WEBRTC_NS_FLOAT HAVE_PTHREAD RTC_ENABLE_VP9 WEBRTC_POSIX WEBRTC_LINUX WEBRTC_ANDROID NDEBUG WEBRTC_HAVE_USRSCTP WEBRTC_HAVE_SCTP WEBRTC_APM_DEBUG_DUMP=0 WEBRTC_USE_BUILTIN_ISAC_FLOAT WEBRTC_OPUS_VARIABLE_COMPLEXITY=0 HAVE_NETINET_IN_H WEBRTC_INCLUDE_INTERNAL_AUDIO_DEVICE HAVE_WEBRTC_VIDEO)
+        RTC_DISABLE_TRACE_EVENTS WEBRTC_OPUS_SUPPORT_120MS_PTIME=1 BWE_TEST_LOGGING_COMPILE_TIME_ENABLE=0 ABSL_ALLOCATOR_NOTHROW=1 WEBRTC_NS_FLOAT HAVE_PTHREAD RTC_ENABLE_VP9 WEBRTC_POSIX WEBRTC_LINUX WEBRTC_ANDROID WEBRTC_USE_H264 NDEBUG WEBRTC_HAVE_USRSCTP WEBRTC_HAVE_SCTP WEBRTC_APM_DEBUG_DUMP=0 WEBRTC_USE_BUILTIN_ISAC_FLOAT WEBRTC_OPUS_VARIABLE_COMPLEXITY=0 HAVE_NETINET_IN_H WEBRTC_INCLUDE_INTERNAL_AUDIO_DEVICE HAVE_WEBRTC_VIDEO)
 target_include_directories(tgcalls PUBLIC
         ./
         voip
@@ -2087,6 +2215,7 @@ add_library(voipandroid STATIC
         voip/tgcalls/platform/android/VideoCapturerInterfaceImpl.cpp
         voip/webrtc/modules/audio_device/android/audio_manager.cc
         voip/webrtc/modules/audio_device/android/audio_record_jni.cc
+        voip/webrtc/modules/audio_device/android/audio_screen_record_jni.cc
         voip/webrtc/modules/audio_device/android/audio_track_jni.cc
         voip/webrtc/modules/audio_device/android/build_info.cc
         voip/webrtc/modules/audio_device/android/opensles_common.cc
@@ -2171,6 +2300,7 @@ add_library(voipandroid STATIC
         voip/webrtc/sdk/android/src/jni/video_track.cc
         voip/webrtc/sdk/android/src/jni/vp8_codec.cc
         voip/webrtc/sdk/android/src/jni/vp9_codec.cc
+        voip/webrtc/sdk/android/src/jni/h264_codec.cc
         voip/webrtc/sdk/android/src/jni/wrapped_native_i420_buffer.cc
         voip/webrtc/sdk/android/src/jni/yuv_helper.cc
         voip/org_telegram_messenger_voip_Instance.cpp)
@@ -2179,7 +2309,7 @@ target_compile_options(voipandroid PUBLIC
 set_target_properties(voipandroid PROPERTIES
         ANDROID_ARM_MODE arm)
 target_compile_definitions(voipandroid PUBLIC
-        RTC_DISABLE_TRACE_EVENTS WEBRTC_OPUS_SUPPORT_120MS_PTIME=1 BWE_TEST_LOGGING_COMPILE_TIME_ENABLE=0 ABSL_ALLOCATOR_NOTHROW=1 WEBRTC_NS_FLOAT HAVE_PTHREAD RTC_ENABLE_VP9 WEBRTC_POSIX WEBRTC_LINUX WEBRTC_ANDROID NDEBUG WEBRTC_HAVE_USRSCTP WEBRTC_HAVE_SCTP WEBRTC_APM_DEBUG_DUMP=0 WEBRTC_USE_BUILTIN_ISAC_FLOAT WEBRTC_OPUS_VARIABLE_COMPLEXITY=0 HAVE_NETINET_IN_H WEBRTC_INCLUDE_INTERNAL_AUDIO_DEVICE HAVE_WEBRTC_VIDEO)
+        RTC_DISABLE_TRACE_EVENTS WEBRTC_OPUS_SUPPORT_120MS_PTIME=1 BWE_TEST_LOGGING_COMPILE_TIME_ENABLE=0 ABSL_ALLOCATOR_NOTHROW=1 WEBRTC_NS_FLOAT HAVE_PTHREAD RTC_ENABLE_VP9 WEBRTC_POSIX WEBRTC_LINUX WEBRTC_ANDROID WEBRTC_USE_H264 NDEBUG WEBRTC_HAVE_USRSCTP WEBRTC_HAVE_SCTP WEBRTC_APM_DEBUG_DUMP=0 WEBRTC_USE_BUILTIN_ISAC_FLOAT WEBRTC_OPUS_VARIABLE_COMPLEXITY=0 HAVE_NETINET_IN_H WEBRTC_INCLUDE_INTERNAL_AUDIO_DEVICE HAVE_WEBRTC_VIDEO)
 target_include_directories(voipandroid PUBLIC
         ./
         voip

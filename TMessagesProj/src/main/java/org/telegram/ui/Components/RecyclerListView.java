@@ -25,6 +25,7 @@ import android.os.SystemClock;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
+import android.util.SparseBooleanArray;
 import android.util.SparseIntArray;
 import android.util.StateSet;
 import android.view.GestureDetector;
@@ -47,9 +48,12 @@ import org.telegram.ui.ActionBar.Theme;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashSet;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.exoplayer2.util.Log;
 
 public class RecyclerListView extends RecyclerView {
 
@@ -124,6 +128,20 @@ public class RecyclerListView extends RecyclerView {
     private int emptyViewAnimationType;
     private int selectorRadius;
     private int topBottomSelectorRadius;
+    private int touchSlop;
+
+    boolean useRelativePositions;
+    boolean multiSelectionGesture;
+    boolean multiSelectionGestureStarted;
+    int startSelectionFrom;
+    int currentSelectedPosition;
+    onMultiSelectionChanged multiSelectionListener;
+    boolean multiselectScrollRunning;
+    boolean multiselectScrollToTop;
+    float lastX = Float.MAX_VALUE;
+    float lastY = Float.MAX_VALUE;
+    int[] listPaddings;
+    HashSet<Integer> selectedPositions;
 
     public interface OnItemClickListener {
         void onItemClick(View view, int position);
@@ -947,6 +965,7 @@ public class RecyclerListView extends RecyclerView {
             fastScroll.getLayoutParams().height = height;
             fastScroll.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(132), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
         }
+        touchSlop = ViewConfiguration.get(getContext()).getScaledTouchSlop();
     }
 
     @Override
@@ -1906,5 +1925,170 @@ public class RecyclerListView extends RecyclerView {
         if (fastScroll != null) {
             fastScroll.setTranslationY(translationY);
         }
+    }
+
+    public void startMultiselect(int positionFrom, boolean useRelativePositions, onMultiSelectionChanged multiSelectionListener) {
+        if (!multiSelectionGesture) {
+            listPaddings = new int[2];
+            selectedPositions = new HashSet<>();
+
+            getParent().requestDisallowInterceptTouchEvent(true);
+
+            this.multiSelectionListener = multiSelectionListener;
+            multiSelectionGesture = true;
+            startSelectionFrom = currentSelectedPosition = positionFrom;
+        }
+        this.useRelativePositions = useRelativePositions;
+    }
+
+
+    @Override
+    public boolean onTouchEvent(MotionEvent e) {
+        if (multiSelectionGesture && e.getAction() != MotionEvent.ACTION_UP && e.getAction() != MotionEvent.ACTION_CANCEL) {
+            if (lastX == Float.MAX_VALUE && lastY == Float.MAX_VALUE) {
+                lastX = e.getX();
+                lastY = e.getY();
+            }
+            if (!multiSelectionGestureStarted && Math.abs(e.getY() - lastY) > touchSlop) {
+                multiSelectionGestureStarted = true;
+                getParent().requestDisallowInterceptTouchEvent(true);
+            }
+            if (multiSelectionGestureStarted) {
+                chekMultiselect(e.getX(), e.getY());
+                multiSelectionListener.getPaddings(listPaddings);
+                if (e.getY() > getMeasuredHeight() - AndroidUtilities.dp(56) - listPaddings[1] && !(currentSelectedPosition < startSelectionFrom && multiSelectionListener.limitReached())) {
+                    startMultiselectScroll(false);
+                } else if (e.getY() < AndroidUtilities.dp(56) + listPaddings[0] && !(currentSelectedPosition > startSelectionFrom && multiSelectionListener.limitReached())) {
+                    startMultiselectScroll(true);
+                } else {
+                    cancelMultiselectScroll();
+                }
+            }
+            return true;
+        }
+        lastX = Float.MAX_VALUE;
+        lastY = Float.MAX_VALUE;
+        multiSelectionGesture = false;
+        multiSelectionGestureStarted = false;
+        getParent().requestDisallowInterceptTouchEvent(false);
+        cancelMultiselectScroll();
+        return super.onTouchEvent(e);
+    }
+
+    private boolean chekMultiselect(float x, float y) {
+        y = Math.min(getMeasuredHeight() - listPaddings[1], Math.max(y, listPaddings[0]));
+        x = Math.min(getMeasuredWidth(), Math.max(x, 0));
+        for (int i = 0; i < getChildCount(); i++) {
+            multiSelectionListener.getPaddings(listPaddings);
+            if (useRelativePositions) {
+
+            } else {
+                View child = getChildAt(i);
+                AndroidUtilities.rectTmp.set(child.getLeft(), child.getTop(), child.getLeft() + child.getMeasuredWidth(), child.getTop() + child.getMeasuredHeight());
+
+                if (AndroidUtilities.rectTmp.contains(x, y)) {
+                    int position = getChildLayoutPosition(child);
+
+                    if (currentSelectedPosition != position) {
+                        boolean selectionFromTop = currentSelectedPosition > startSelectionFrom || position > startSelectionFrom;
+                        position = multiSelectionListener.checkPosition(position, selectionFromTop);
+
+                        if (selectionFromTop) {
+                            if (position > currentSelectedPosition) {
+                                if (!multiSelectionListener.limitReached()) {
+                                    for (int k = currentSelectedPosition + 1; k <= position; k++) {
+                                        if (k == startSelectionFrom) {
+                                            continue;
+                                        }
+                                        if (multiSelectionListener.canSelect(k)) {
+                                            multiSelectionListener.onSelectionChanged(k, true, x, y);
+                                        }
+                                    }
+                                }
+                            } else {
+                                for (int k = currentSelectedPosition; k > position; k--) {
+                                    if (k == startSelectionFrom) {
+                                        continue;
+                                    }
+                                    if (multiSelectionListener.canSelect(k)) {
+                                        multiSelectionListener.onSelectionChanged(k, false, x, y);
+                                    }
+                                }
+                            }
+                        } else {
+                            if (position > currentSelectedPosition) {
+                                for (int k = currentSelectedPosition; k < position; k++) {
+                                    if (k == startSelectionFrom) {
+                                        continue;
+                                    }
+                                    if (multiSelectionListener.canSelect(k)) {
+                                        multiSelectionListener.onSelectionChanged(k, false, x, y);
+                                    }
+                                }
+                            } else {
+                                if (!multiSelectionListener.limitReached()) {
+                                    for (int k = currentSelectedPosition - 1; k >= position; k--) {
+                                        if (k == startSelectionFrom) {
+                                            continue;
+                                        }
+                                        if (multiSelectionListener.canSelect(k)) {
+                                            multiSelectionListener.onSelectionChanged(k, true, x, y);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (!multiSelectionListener.limitReached()) {
+                        currentSelectedPosition = position;
+                    }
+                    break;
+                }
+            }
+
+        }
+        return true;
+    }
+
+    private void cancelMultiselectScroll() {
+        multiselectScrollRunning = false;
+        AndroidUtilities.cancelRunOnUIThread(scroller);
+    }
+
+    Runnable scroller = new Runnable() {
+        @Override
+        public void run() {
+            int dy;
+            multiSelectionListener.getPaddings(listPaddings);
+            if (multiselectScrollToTop) {
+                dy = -AndroidUtilities.dp(12f);
+                chekMultiselect(0, listPaddings[0]);
+            } else {
+                dy = AndroidUtilities.dp(12f);
+                chekMultiselect(0, getMeasuredHeight() - listPaddings[1]);
+            }
+            multiSelectionListener.scrollBy(dy);
+            if (multiselectScrollRunning) {
+                AndroidUtilities.runOnUIThread(scroller);
+            }
+        }
+    };
+
+    private void startMultiselectScroll(boolean top) {
+        multiselectScrollToTop = top;
+        if (!multiselectScrollRunning) {
+            multiselectScrollRunning = true;
+            AndroidUtilities.cancelRunOnUIThread(scroller);
+            AndroidUtilities.runOnUIThread(scroller);
+        }
+    }
+
+    public interface onMultiSelectionChanged {
+        void onSelectionChanged(int position, boolean selected, float x, float y);
+        boolean canSelect(int position);
+        int checkPosition(int position, boolean selectionFromTop);
+        boolean limitReached();
+        void getPaddings(int paddings[]);
+        void scrollBy(int dy);
     }
 }

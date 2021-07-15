@@ -1512,6 +1512,16 @@ public class FileLoadOperation {
                                 }
                                 fileReadStream.seek(fileOffset);
                                 fileReadStream.readFully(cdnCheckBytes, 0, availableSize);
+
+                                if (encryptFile) {
+                                    int offset = fileOffset / 16;
+                                    encryptIv[15] = (byte) (offset & 0xff);
+                                    encryptIv[14] = (byte) ((offset >> 8) & 0xff);
+                                    encryptIv[13] = (byte) ((offset >> 16) & 0xff);
+                                    encryptIv[12] = (byte) ((offset >> 24) & 0xff);
+                                    Utilities.aesCtrDecryptionByteArray(cdnCheckBytes, encryptKey, encryptIv, 0, availableSize, 0);
+                                }
+
                                 byte[] sha256 = Utilities.computeSHA256(cdnCheckBytes, 0, availableSize);
                                 if (!Arrays.equals(sha256, hash.hash)) {
                                     if (BuildVars.LOGS_ENABLED) {

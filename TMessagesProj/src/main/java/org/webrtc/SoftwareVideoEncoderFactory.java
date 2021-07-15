@@ -25,6 +25,9 @@ public class SoftwareVideoEncoderFactory implements VideoEncoderFactory {
     if (info.name.equalsIgnoreCase("VP9") && LibvpxVp9Encoder.nativeIsSupported()) {
       return new LibvpxVp9Encoder();
     }
+    if (info.name.equalsIgnoreCase("H264")) {
+      return new OpenH264Encoder();
+    }
 
     return null;
   }
@@ -38,6 +41,7 @@ public class SoftwareVideoEncoderFactory implements VideoEncoderFactory {
     List<VideoCodecInfo> codecs = new ArrayList<VideoCodecInfo>();
 
     codecs.add(new VideoCodecInfo("VP8", new HashMap<>()));
+    codecs.add(new VideoCodecInfo("H264", new HashMap<>()));
     if (LibvpxVp9Encoder.nativeIsSupported()) {
       codecs.add(new VideoCodecInfo("VP9", new HashMap<>()));
     }

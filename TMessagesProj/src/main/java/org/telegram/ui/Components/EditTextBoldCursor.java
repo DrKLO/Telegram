@@ -23,6 +23,7 @@ import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.RectShape;
 import android.os.Build;
 import android.os.SystemClock;
+
 import androidx.annotation.Keep;
 import androidx.annotation.Nullable;
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
@@ -42,6 +43,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
@@ -120,6 +122,12 @@ public class EditTextBoldCursor extends EditText {
     private ViewTreeObserver.OnPreDrawListener floatingToolbarPreDrawListener;
     private View windowView;
     private View attachedToWindow;
+    private int lastSize;
+    int lastOffset = -1;
+    CharSequence lastText;
+
+    boolean drawInMaim;
+    ShapeDrawable cursorDrawable;
 
     @TargetApi(23)
     private class ActionModeCallback2Wrapper extends ActionMode.Callback2 {
@@ -168,6 +176,9 @@ public class EditTextBoldCursor extends EditText {
     @Nullable
     @Override
     public Drawable getTextCursorDrawable() {
+        if (cursorDrawable != null) {
+            return super.getTextCursorDrawable();
+        }
         ShapeDrawable shapeDrawable = new ShapeDrawable(new RectShape()) {
             @Override
             public void draw(Canvas canvas) {
@@ -193,6 +204,35 @@ public class EditTextBoldCursor extends EditText {
         if (Build.VERSION.SDK_INT >= 26) {
             setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO);
         }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            cursorDrawable = new ShapeDrawable() {
+
+                @Override
+                public void draw(Canvas canvas) {
+                    if (drawInMaim) {
+                        cursorDrawn = true;
+                    } else {
+                        super.draw(canvas);
+                    }
+                }
+
+                @Override
+                public int getIntrinsicHeight() {
+                    return AndroidUtilities.dp(cursorSize + 20);
+                }
+
+                @Override
+                public int getIntrinsicWidth() {
+                    return AndroidUtilities.dp(cursorWidth);
+                }
+            };
+            cursorDrawable.setShape(new RectShape());
+            gradientDrawable = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{0xff54a1db, 0xff54a1db});
+
+            setTextCursorDrawable(cursorDrawable);
+        }
+
 
         try {
             if (!mScrollYGet && mScrollYField == null) {
@@ -220,25 +260,27 @@ public class EditTextBoldCursor extends EditText {
         } catch (Throwable e) {
             FileLog.e(e);
         }
-        try {
-            gradientDrawable = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[] {0xff54a1db, 0xff54a1db});
-            if (Build.VERSION.SDK_INT >= 29) {
-                setTextCursorDrawable(gradientDrawable);
-            }
-            editor = mEditor.get(this);
-        } catch (Throwable ignore) {
+        if (cursorDrawable == null) {
+            try {
+                gradientDrawable = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{0xff54a1db, 0xff54a1db});
+                if (Build.VERSION.SDK_INT >= 29) {
+                    setTextCursorDrawable(gradientDrawable);
+                }
+                editor = mEditor.get(this);
+            } catch (Throwable ignore) {
 
-        }
-        try {
-            if (mCursorDrawableResField == null) {
-                mCursorDrawableResField = TextView.class.getDeclaredField("mCursorDrawableRes");
-                mCursorDrawableResField.setAccessible(true);
             }
-            if (mCursorDrawableResField != null) {
-                mCursorDrawableResField.set(this, R.drawable.field_carret_empty);
-            }
-        } catch (Throwable ignore) {
+            try {
+                if (mCursorDrawableResField == null) {
+                    mCursorDrawableResField = TextView.class.getDeclaredField("mCursorDrawableRes");
+                    mCursorDrawableResField.setAccessible(true);
+                }
+                if (mCursorDrawableResField != null) {
+                    mCursorDrawableResField.set(this, R.drawable.field_carret_empty);
+                }
+            } catch (Throwable ignore) {
 
+            }
         }
         cursorSize = AndroidUtilities.dp(24);
     }
@@ -289,7 +331,12 @@ public class EditTextBoldCursor extends EditText {
     }
 
     public void setCursorColor(int color) {
-        gradientDrawable.setColor(color);
+        if (cursorDrawable != null) {
+            cursorDrawable.getPaint().setColor(color);
+        }
+        if (gradientDrawable != null) {
+            gradientDrawable.setColor(color);
+        }
         invalidate();
     }
 
@@ -342,11 +389,6 @@ public class EditTextBoldCursor extends EditText {
         requestLayout();
     }
 
-    @Override
-    public boolean requestFocus(int direction, Rect previouslyFocusedRect) {
-        return super.requestFocus(direction, previouslyFocusedRect);
-    }
-
     public boolean hasErrorText() {
         return !TextUtils.isEmpty(errorText);
     }
@@ -385,10 +427,14 @@ public class EditTextBoldCursor extends EditText {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        int currentSize = getMeasuredHeight() + (getMeasuredWidth() << 16);
         if (hintLayout != null) {
-            setHintText(hint);
+            if (lastSize != currentSize) {
+                setHintText(hint);
+            }
             lineY = (getMeasuredHeight() - hintLayout.getHeight()) / 2.0f + hintLayout.getHeight() + AndroidUtilities.dp(6);
         }
+        lastSize = currentSize;
     }
 
     public void setHintText(CharSequence text) {
@@ -494,35 +540,6 @@ public class EditTextBoldCursor extends EditText {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        int topPadding = getExtendedPaddingTop();
-        scrollY = Integer.MAX_VALUE;
-        try {
-            if (mScrollYField != null) {
-                scrollY = mScrollYField.getInt(this);
-                mScrollYField.set(this, 0);
-            } else {
-                scrollY = getScrollX();
-            }
-        } catch (Exception e) {
-            //
-        }
-        ignoreTopCount = 1;
-        ignoreBottomCount = 1;
-        canvas.save();
-        canvas.translate(0, topPadding);
-        try {
-            super.onDraw(canvas);
-        } catch (Exception e) {
-            //
-        }
-        if (scrollY != Integer.MAX_VALUE) {
-            try {
-                mScrollYField.set(this, scrollY);
-            } catch (Exception e) {
-                //
-            }
-        }
-        canvas.restore();
         if ((length() == 0 || transformHintToHeader) && hintLayout != null && (hintVisible || hintAlpha != 0)) {
             if (hintVisible && hintAlpha != 1.0f || !hintVisible && hintAlpha != 0.0f) {
                 long newTime = System.currentTimeMillis();
@@ -594,48 +611,129 @@ public class EditTextBoldCursor extends EditText {
             getPaint().setColor(oldColor);
             canvas.restore();
         }
-        try {
-            boolean showCursor;
-            if (mShowCursorField != null) {
-                long mShowCursor = mShowCursorField.getLong(editor);
-                showCursor = (SystemClock.uptimeMillis() - mShowCursor) % (2 * 500) < 500 && isFocused();
-            } else {
-                showCursor = cursorDrawn;
-                cursorDrawn = false;
-            }
-            if (allowDrawCursor && showCursor) {
-                canvas.save();
-                int voffsetCursor = 0;
-                if (getVerticalOffsetMethod != null) {
-                    if ((getGravity() & Gravity.VERTICAL_GRAVITY_MASK) != Gravity.TOP) {
-                        voffsetCursor = (int) getVerticalOffsetMethod.invoke(this, true);
-                    }
-                } else {
-                    if ((getGravity() & Gravity.VERTICAL_GRAVITY_MASK) != Gravity.TOP) {
-                        voffsetCursor = getTotalPaddingTop() - getExtendedPaddingTop();
-                    }
-                }
-                canvas.translate(getPaddingLeft(), getExtendedPaddingTop() + voffsetCursor);
-                Layout layout = getLayout();
-                int line = layout.getLineForOffset(getSelectionStart());
-                int lineCount = layout.getLineCount();
-                updateCursorPosition();
-                Rect bounds = gradientDrawable.getBounds();
-                rect.left = bounds.left;
-                rect.right = bounds.left + AndroidUtilities.dp(cursorWidth);
-                rect.bottom = bounds.bottom;
-                rect.top = bounds.top;
-                if (lineSpacingExtra != 0 && line < lineCount - 1) {
-                    rect.bottom -= lineSpacingExtra;
-                }
-                rect.top = rect.centerY() - cursorSize / 2;
-                rect.bottom = rect.top + cursorSize;
-                gradientDrawable.setBounds(rect);
-                gradientDrawable.draw(canvas);
-                canvas.restore();
-            }
-        } catch (Throwable ignore) {
 
+        int topPadding = getExtendedPaddingTop();
+        scrollY = Integer.MAX_VALUE;
+        try {
+            if (mScrollYField != null) {
+                scrollY = mScrollYField.getInt(this);
+                mScrollYField.set(this, 0);
+            } else {
+                scrollY = getScrollX();
+            }
+        } catch (Exception e) {
+            if (BuildVars.DEBUG_PRIVATE_VERSION) {
+                throw new RuntimeException(e);
+            }
+        }
+        ignoreTopCount = 1;
+        ignoreBottomCount = 1;
+        canvas.save();
+        canvas.translate(0, topPadding);
+        try {
+            drawInMaim = true;
+            super.onDraw(canvas);
+            drawInMaim = false;
+        } catch (Exception e) {
+            if (BuildVars.DEBUG_PRIVATE_VERSION) {
+                throw new RuntimeException(e);
+            }
+        }
+        if (mScrollYField != null && scrollY != Integer.MAX_VALUE) {
+            try {
+                mScrollYField.set(this, scrollY);
+            } catch (Exception e) {
+                if (BuildVars.DEBUG_PRIVATE_VERSION) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+        canvas.restore();
+        if (cursorDrawable == null) {
+            try {
+                boolean showCursor;
+                if (mShowCursorField != null && editor != null) {
+                    long mShowCursor = mShowCursorField.getLong(editor);
+                    showCursor = (SystemClock.uptimeMillis() - mShowCursor) % (2 * 500) < 500 && isFocused();
+                } else {
+                    showCursor = cursorDrawn;
+                    cursorDrawn = false;
+                }
+                if (allowDrawCursor && showCursor) {
+                    canvas.save();
+                    int voffsetCursor = 0;
+                    if (getVerticalOffsetMethod != null) {
+                        if ((getGravity() & Gravity.VERTICAL_GRAVITY_MASK) != Gravity.TOP) {
+                            voffsetCursor = (int) getVerticalOffsetMethod.invoke(this, true);
+                        }
+                    } else {
+                        if ((getGravity() & Gravity.VERTICAL_GRAVITY_MASK) != Gravity.TOP) {
+                            voffsetCursor = getTotalPaddingTop() - getExtendedPaddingTop();
+                        }
+                    }
+                    canvas.translate(getPaddingLeft(), getExtendedPaddingTop() + voffsetCursor);
+                    Layout layout = getLayout();
+                    int line = layout.getLineForOffset(getSelectionStart());
+                    int lineCount = layout.getLineCount();
+                    updateCursorPosition();
+                    Rect bounds = gradientDrawable.getBounds();
+                    rect.left = bounds.left;
+                    rect.right = bounds.left + AndroidUtilities.dp(cursorWidth);
+                    rect.bottom = bounds.bottom;
+                    rect.top = bounds.top;
+                    if (lineSpacingExtra != 0 && line < lineCount - 1) {
+                        rect.bottom -= lineSpacingExtra;
+                    }
+                    rect.top = rect.centerY() - cursorSize / 2;
+                    rect.bottom = rect.top + cursorSize;
+                    gradientDrawable.setBounds(rect);
+                    gradientDrawable.draw(canvas);
+                    canvas.restore();
+                }
+            } catch (Throwable exception) {
+                if (BuildVars.DEBUG_PRIVATE_VERSION) {
+                    throw new RuntimeException(exception);
+                }
+            }
+        } else {
+            if (cursorDrawn) {
+                try {
+                    canvas.save();
+                    int voffsetCursor = 0;
+                    if (getVerticalOffsetMethod != null) {
+                        if ((getGravity() & Gravity.VERTICAL_GRAVITY_MASK) != Gravity.TOP) {
+                            voffsetCursor = (int) getVerticalOffsetMethod.invoke(this, true);
+                        }
+                    } else {
+                        if ((getGravity() & Gravity.VERTICAL_GRAVITY_MASK) != Gravity.TOP) {
+                            voffsetCursor = getTotalPaddingTop() - getExtendedPaddingTop();
+                        }
+                    }
+                    canvas.translate(getPaddingLeft(), getExtendedPaddingTop() + voffsetCursor);
+                    Layout layout = getLayout();
+                    int line = layout.getLineForOffset(getSelectionStart());
+                    int lineCount = layout.getLineCount();
+                    updateCursorPosition();
+                    Rect bounds = gradientDrawable.getBounds();
+                    rect.left = bounds.left;
+                    rect.right = bounds.left + AndroidUtilities.dp(cursorWidth);
+                    rect.bottom = bounds.bottom;
+                    rect.top = bounds.top;
+                    if (lineSpacingExtra != 0 && line < lineCount - 1) {
+                        rect.bottom -= lineSpacingExtra;
+                    }
+                    rect.top = rect.centerY() - cursorSize / 2;
+                    rect.bottom = rect.top + cursorSize;
+                    gradientDrawable.setBounds(rect);
+                    gradientDrawable.draw(canvas);
+                    canvas.restore();
+                    cursorDrawn = false;
+                } catch (Throwable exception) {
+                    if (BuildVars.DEBUG_PRIVATE_VERSION) {
+                        throw new RuntimeException(exception);
+                    }
+                }
+            }
         }
         if (lineColor != 0 && hintLayout != null) {
             int h;
@@ -666,14 +764,19 @@ public class EditTextBoldCursor extends EditText {
     private boolean updateCursorPosition() {
         final Layout layout = getLayout();
         final int offset = getSelectionStart();
-        final int line = layout.getLineForOffset(offset);
-        final int top = layout.getLineTop(line);
-        final int bottom = layout.getLineTop(line + 1);
-        updateCursorPosition(top, bottom, layout.getPrimaryHorizontal(offset));
+        if (offset != lastOffset || lastText != layout.getText()) {
+            final int line = layout.getLineForOffset(offset);
+            final int top = layout.getLineTop(line);
+            final int bottom = layout.getLineTop(line + 1);
+            updateCursorPosition(top, bottom, layout.getPrimaryHorizontal(offset));
+        }
+        lastText = layout.getText();
+        lastOffset = offset;
         return true;
     }
 
     private Rect mTempRect;
+
     private int clampHorizontalPosition(final Drawable drawable, float horizontal) {
         horizontal = Math.max(0.5f, horizontal - 0.5f);
         if (mTempRect == null) {

@@ -1466,7 +1466,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 } else {
                     isMusic = true;
                     if (playbackSpeedButton != null) {
-                        if (messageObject.getDuration() >= 20 * 60) {
+                        if (messageObject.getDuration() >= 10 * 60) {
                             playbackSpeedButton.setAlpha(1.0f);
                             playbackSpeedButton.setEnabled(true);
                             titleTextView.setPadding(0, 0, AndroidUtilities.dp(44), 0);
@@ -1773,6 +1773,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                         updateScheduleTimeRunnable.run();
                     }
                 } else {
+                    timeLayout = null;
                     joinButton.setVisibility(VISIBLE);
                     titleTextView.setText(LocaleController.getString("VoipGroupVoiceChat", R.string.VoipGroupVoiceChat), false);
                     if (call.call.participants_count == 0) {
@@ -1780,6 +1781,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                     } else {
                         subtitleTextView.setText(LocaleController.formatPluralString("Participants", call.call.participants_count), false);
                     }
+                    frameLayout.invalidate();
                 }
 
                 updateAvatars(avatars.wasDraw && updateAnimated);

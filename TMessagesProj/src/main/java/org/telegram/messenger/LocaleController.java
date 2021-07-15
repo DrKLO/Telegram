@@ -733,6 +733,9 @@ public class LocaleController {
             String[] localesArr = locales.split("&");
             for (String locale : localesArr) {
                 LocaleInfo localeInfo = LocaleInfo.createWithString(locale);
+                if (localeInfo == null) {
+                    continue;
+                }
                 localeInfo.shortName = localeInfo.shortName.replace("-", "_");
                 if (localeInfo != null) {
                     unofficialLanguages.add(localeInfo);

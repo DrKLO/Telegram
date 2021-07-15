@@ -716,7 +716,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             Theme.ThemeInfo themeInfo = (Theme.ThemeInfo) args[0];
             Theme.ThemeAccent accent = (Theme.ThemeAccent) args[1];
             if (themeInfo == sharingTheme && accent == sharingAccent) {
-                String link = "https://" + MessagesController.getInstance(currentAccount).linkPrefix + "/addtheme/" + (accent != null ? accent.info.slug : themeInfo.info.slug);
+                String link = "https://" + getMessagesController().linkPrefix + "/addtheme/" + (accent != null ? accent.info.slug : themeInfo.info.slug);
                 showDialog(new ShareAlert(getParentActivity(), null, link, false, link, false));
                 if (sharingProgressDialog != null) {
                     sharingProgressDialog.dismiss();
@@ -785,10 +785,10 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                     Theme.ThemeInfo currentTheme = Theme.getCurrentTheme();
                     Theme.ThemeAccent accent = currentTheme.getAccent(false);
                     if (accent.info == null) {
-                        MessagesController.getInstance(currentAccount).saveThemeToServer(accent.parentTheme, accent);
+                        getMessagesController().saveThemeToServer(accent.parentTheme, accent);
                         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needShareTheme, accent.parentTheme, accent);
                     } else {
-                        String link = "https://" + MessagesController.getInstance(currentAccount).linkPrefix + "/addtheme/" + accent.info.slug;
+                        String link = "https://" + getMessagesController().linkPrefix + "/addtheme/" + accent.info.slug;
                         showDialog(new ShareAlert(getParentActivity(), null, link, false, link, false));
                     }
                 } else if (id == edit_theme) {
@@ -1541,10 +1541,10 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 }
                 if (which == 0) {
                     if (themeInfo.info == null) {
-                        MessagesController.getInstance(themeInfo.account).saveThemeToServer(themeInfo, null);
+                        getMessagesController().saveThemeToServer(themeInfo, null);
                         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needShareTheme, themeInfo, null);
                     } else {
-                        String link = "https://" + MessagesController.getInstance(currentAccount).linkPrefix + "/addtheme/" + themeInfo.info.slug;
+                        String link = "https://" + getMessagesController().linkPrefix + "/addtheme/" + themeInfo.info.slug;
                         showDialog(new ShareAlert(getParentActivity(), null, link, false, link, false));
                     }
                 } else if (which == 1) {
@@ -1807,10 +1807,10 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                                     AlertsCreator.createThemeCreateDialog(ThemeActivity.this, which == 1 ? 2 : 1, accent.parentTheme, accent);
                                 } else if (which == 1) {
                                     if (accent.info == null) {
-                                        MessagesController.getInstance(currentAccount).saveThemeToServer(accent.parentTheme, accent);
+                                        getMessagesController().saveThemeToServer(accent.parentTheme, accent);
                                         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needShareTheme, accent.parentTheme, accent);
                                     } else {
-                                        String link = "https://" + MessagesController.getInstance(currentAccount).linkPrefix + "/addtheme/" + accent.info.slug;
+                                        String link = "https://" + getMessagesController().linkPrefix + "/addtheme/" + accent.info.slug;
                                         showDialog(new ShareAlert(getParentActivity(), null, link, false, link, false));
                                     }
                                 } else if (which == 2) {

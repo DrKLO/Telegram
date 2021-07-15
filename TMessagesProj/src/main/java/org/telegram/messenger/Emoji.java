@@ -288,7 +288,8 @@ public class Emoji {
 
         @Override
         public void setAlpha(int alpha) {
-
+            placeholderPaint.setAlpha(alpha);
+            paint.setAlpha(alpha);
         }
 
         @Override
@@ -547,6 +548,19 @@ public class Emoji {
                     getDrawable().setBounds(0, 0, size, size);
                 }
                 return size;
+            }
+        }
+
+        @Override
+        public void draw(Canvas canvas, CharSequence text, int start, int end, float x, int top, int y, int bottom, Paint paint) {
+            boolean restoreAlpha = false;
+            if (paint.getAlpha() != 255) {
+                restoreAlpha = true;
+                getDrawable().setAlpha(paint.getAlpha());
+            }
+            super.draw(canvas, text, start, end, x, top, y, bottom, paint);
+            if (restoreAlpha) {
+                getDrawable().setAlpha(255);
             }
         }
     }

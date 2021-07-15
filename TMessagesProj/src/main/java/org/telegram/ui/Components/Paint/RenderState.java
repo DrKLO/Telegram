@@ -13,6 +13,7 @@ public class RenderState {
     public float alpha;
     public float angle;
     public float scale;
+    public float viewportScale;
 
     public double remainder;
 

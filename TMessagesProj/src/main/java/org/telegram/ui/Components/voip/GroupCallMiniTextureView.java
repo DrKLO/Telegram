@@ -1139,6 +1139,8 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
                     VoIPService.getSharedInstance().addRemoteSink(participant.participant, participant.presentation, textureView.renderer, null);
                 }
             }
+
+            updateIconColor(true);
         }
 
         updateInfo();
@@ -1459,16 +1461,20 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
                 float v = (float) valueAnimator.getAnimatedValue();
                 lastIconColor = ColorUtils.blendARGB(colorFrom, newColor, v);
                 lastSpeakingFrameColor = ColorUtils.blendARGB(colorFromSpeaking, newSpeakingFrameColor, v);
-                //   micIconView.setColorFilter(new PorterDuffColorFilter(lastIconColor, PorterDuff.Mode.MULTIPLY));
                 speakingPaint.setColor(lastSpeakingFrameColor);
+                if (progressToSpeaking > 0) {
+                    invalidate();
+                }
             });
             colorAnimator.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
                     animateToColor = lastIconColor = newColor;
                     lastSpeakingFrameColor = newSpeakingFrameColor;
-                    //     micIconView.setColorFilter(new PorterDuffColorFilter(lastIconColor, PorterDuff.Mode.MULTIPLY));
                     speakingPaint.setColor(lastSpeakingFrameColor);
+                    if (progressToSpeaking > 0) {
+                        invalidate();
+                    }
                 }
             });
             colorAnimator.start();

@@ -1783,6 +1783,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 SharedPreferences.Editor editor = mainPreferences.edit();
                 editor.putStringSet("pendingSuggestions", pendingSuggestions);
                 editor.commit();
+                getNotificationCenter().postNotificationName(NotificationCenter.newSuggestionsAvailable);
             } else {
                 return;
             }
@@ -3065,6 +3066,7 @@ public class MessagesController extends BaseController implements NotificationCe
             if (chatFull.call != null) {
                 TLRPC.TL_phone_getGroupCall req = new TLRPC.TL_phone_getGroupCall();
                 req.call = chatFull.call;
+                req.limit = 20;
                 getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                     if (response != null) {
                         TLRPC.TL_phone_groupCall groupCall = (TLRPC.TL_phone_groupCall) response;
@@ -12538,6 +12540,11 @@ public class MessagesController extends BaseController implements NotificationCe
                 updatesOnMainThread.add(baseUpdate);
             } else if (baseUpdate instanceof TLRPC.TL_updateGroupCallConnection) {
 
+            } else if (baseUpdate instanceof TLRPC.TL_updateBotCommands) {
+                if (updatesOnMainThread == null) {
+                    updatesOnMainThread = new ArrayList<>();
+                }
+                updatesOnMainThread.add(baseUpdate);
             } else if (baseUpdate instanceof TLRPC.TL_updatePhoneCallSignalingData) {
                 if (updatesOnMainThread == null) {
                     updatesOnMainThread = new ArrayList<>();
@@ -12992,7 +12999,7 @@ public class MessagesController extends BaseController implements NotificationCe
                                     updateGroupCall.call = new TLRPC.TL_groupCallDiscarded();
                                     updateGroupCall.call.id = call.call.id;
                                     updateGroupCall.call.access_hash = call.call.access_hash;
-                                    call.processGroupCallUpdate(getAccountInstance(), updateGroupCall);
+                                    call.processGroupCallUpdate(updateGroupCall);
                                     if (VoIPService.getSharedInstance() != null) {
                                         VoIPService.getSharedInstance().onGroupCallUpdated(updateGroupCall.call);
                                     }
@@ -13012,7 +13019,7 @@ public class MessagesController extends BaseController implements NotificationCe
                                 updateGroupCall.call = new TLRPC.TL_groupCallDiscarded();
                                 updateGroupCall.call.id = call.call.id;
                                 updateGroupCall.call.access_hash = call.call.access_hash;
-                                call.processGroupCallUpdate(getAccountInstance(), updateGroupCall);
+                                call.processGroupCallUpdate(updateGroupCall);
                                 if (VoIPService.getSharedInstance() != null) {
                                     VoIPService.getSharedInstance().onGroupCallUpdated(updateGroupCall.call);
                                 }
@@ -13037,6 +13044,9 @@ public class MessagesController extends BaseController implements NotificationCe
                             chat.default_banned_rights = update.default_banned_rights;
                             AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.channelRightsUpdated, chat));
                         }
+                    }  else if (baseUpdate instanceof TLRPC.TL_updateBotCommands) {
+                        TLRPC.TL_updateBotCommands update = (TLRPC.TL_updateBotCommands) baseUpdate;
+                        getMediaDataController().updateBotInfo(MessageObject.getPeerId(update.peer), update);
                     } else if (baseUpdate instanceof TLRPC.TL_updateStickerSets) {
                         TLRPC.TL_updateStickerSets update = (TLRPC.TL_updateStickerSets) baseUpdate;
                         getMediaDataController().loadStickers(MediaDataController.TYPE_IMAGE, false, true);
@@ -13090,7 +13100,7 @@ public class MessagesController extends BaseController implements NotificationCe
                         TLRPC.TL_updateGroupCall update = (TLRPC.TL_updateGroupCall) baseUpdate;
                         ChatObject.Call call = groupCalls.get(update.call.id);
                         if (call != null) {
-                            call.processGroupCallUpdate(getAccountInstance(), update);
+                            call.processGroupCallUpdate(update);
                             TLRPC.Chat chat = getChat(call.chatId);
                             if (chat != null) {
                                 chat.call_active = update.call instanceof TLRPC.TL_groupCall;

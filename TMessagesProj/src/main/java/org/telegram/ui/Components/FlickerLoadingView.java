@@ -30,6 +30,7 @@ public class FlickerLoadingView extends View {
     public final static int INVITE_LINKS_TYPE = 9;
     public final static int USERS2_TYPE = 10;
     public final static int BOTS_MENU_TYPE = 11;
+    public final static int SHARE_ALERT_TYPE = 12;
 
     private int gradientWidth;
     private LinearGradient gradient;
@@ -390,6 +391,26 @@ public class FlickerLoadingView extends View {
                     break;
                 }
             }
+        } else if (getViewType() == SHARE_ALERT_TYPE) {
+            int k = 0;
+            h += AndroidUtilities.dp(14);
+            while (h <= getMeasuredHeight()) {
+                int part = getMeasuredWidth() / 4;
+                for (int i = 0; i < 4; i++) {
+                    float cx = part * i + part / 2f;
+                    float cy = h + AndroidUtilities.dp(7) + AndroidUtilities.dp(56) / 2f;
+                    canvas.drawCircle(cx, cy, AndroidUtilities.dp(56 / 2f), paint);
+
+                    float y = h + AndroidUtilities.dp(7) + AndroidUtilities.dp(56) + AndroidUtilities.dp(16);
+                    AndroidUtilities.rectTmp.set(cx - AndroidUtilities.dp(24), y - AndroidUtilities.dp(4), cx + AndroidUtilities.dp(24), y + AndroidUtilities.dp(4));
+                    canvas.drawRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
+                }
+                h += getCellHeight(getMeasuredWidth());
+                k++;
+                if (isSingleCell) {
+                    break;
+                }
+            }
         }
 
         long newUpdateTime = SystemClock.elapsedRealtime();
@@ -453,6 +474,8 @@ public class FlickerLoadingView extends View {
             return AndroidUtilities.dp(61);
         } else if (getViewType() == BOTS_MENU_TYPE) {
             return AndroidUtilities.dp(36);
+        } else if (getViewType() == SHARE_ALERT_TYPE) {
+            return AndroidUtilities.dp(103);
         }
         return 0;
     }

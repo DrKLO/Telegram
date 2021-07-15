@@ -189,11 +189,11 @@ public class HardwareVideoEncoderFactory implements VideoEncoderFactory {
   // Returns true if the given MediaCodecInfo indicates a hardware module that is supported on the
   // current SDK.
   private boolean isHardwareSupportedInCurrentSdk(MediaCodecInfo info, VideoCodecMimeType type) {
-    Instance.ServerConfig config = Instance.getGlobalServerConfig();
-    if (!config.enable_h264_encoder && !config.enable_h265_encoder && !config.enable_vp8_encoder && !config.enable_vp9_encoder) {
+    if (VoIPService.getSharedInstance() != null && VoIPService.getSharedInstance().groupCall != null) {
       return false;
     }
-    if (VoIPService.getSharedInstance() != null && VoIPService.getSharedInstance().groupCall != null) {
+    Instance.ServerConfig config = Instance.getGlobalServerConfig();
+    if (!config.enable_h264_encoder && !config.enable_h265_encoder && !config.enable_vp8_encoder && !config.enable_vp9_encoder) {
       return false;
     }
     switch (type) {

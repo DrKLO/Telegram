@@ -650,6 +650,7 @@ public class GroupCallRenderersContainer extends FrameLayout {
                 }
                 if (!inFullscreenMode) {
                     inFullscreenMode = true;
+                    clearCurrentFullscreenTextureView();
                     fullscreenTextureView = textureView;
                     fullscreenTextureView.setShowingInFullscreen(true, true);
                     invalidate();
@@ -747,6 +748,7 @@ public class GroupCallRenderersContainer extends FrameLayout {
                         }
                     });
 
+                    clearCurrentFullscreenTextureView();
                     fullscreenTextureView = newFullscreenTextureView;
                     fullscreenTextureView.setShowingInFullscreen(true, false);
                     update();
@@ -813,12 +815,14 @@ public class GroupCallRenderersContainer extends FrameLayout {
                     });
                     replaceFullscreenViewAnimator.start();
 
+                    clearCurrentFullscreenTextureView();
                     fullscreenTextureView = newFullscreenTextureView;
                     fullscreenTextureView.setShowingInFullscreen(true, false);
                     fullscreenTextureView.updateAttachState(false);
                     update();
                 } else {
                     inFullscreenMode = true;
+                    clearCurrentFullscreenTextureView();
                     fullscreenTextureView = new GroupCallMiniTextureView(this, attachedRenderers, call, groupCallActivity);
                     fullscreenTextureView.participant = videoParticipant;
                     fullscreenTextureView.setFullscreenMode(inFullscreenMode, false);
@@ -881,6 +885,7 @@ public class GroupCallRenderersContainer extends FrameLayout {
                     fullscreenAnimator = null;
                     textureViewFinal.animateToFullscreen = false;
                     if (!inFullscreenMode) {
+                        clearCurrentFullscreenTextureView();
                         fullscreenTextureView = null;
                         fullscreenPeerId = 0;
                     }
@@ -902,6 +907,13 @@ public class GroupCallRenderersContainer extends FrameLayout {
         }
 
         animateSwipeToBack(fullscreenParticipant == null);
+    }
+
+    private void clearCurrentFullscreenTextureView() {
+        if (fullscreenTextureView != null) {
+            fullscreenTextureView.setSwipeToBack(false, 0);
+            fullscreenTextureView.setZoom(false, 1f, 0, 0, 0, 0);
+        }
     }
 
     protected void update() {

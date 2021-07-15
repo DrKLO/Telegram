@@ -432,15 +432,25 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
                     private int movement;
                     private float moveProgress;
                     private long lastUpdateTime;
-                    private int x;
-                    private int y;
+                    private int originalX;
+                    private int originalY;
+
+                    @Override
+                    protected void afterTextDraw() {
+                        if (arrowDrawable != null) {
+                            Rect bounds = arrowDrawable.getBounds();
+                            arrowDrawable.setBounds(originalX, originalY, originalX + bounds.width(), originalY + bounds.height());
+                        }
+                    }
 
                     @Override
                     protected void onTextDraw() {
                         if (arrowDrawable != null) {
                             Rect bounds = arrowDrawable.getBounds();
                             int dx = (int) (moveProgress * AndroidUtilities.dp(3));
-                            arrowDrawable.setBounds(x + dx, y + AndroidUtilities.dp(1), x + dx + bounds.width(), y + AndroidUtilities.dp(1) + bounds.height());
+                            originalX = bounds.left;
+                            originalY = bounds.top;
+                            arrowDrawable.setBounds(originalX + dx, originalY + AndroidUtilities.dp(1), originalX + dx + bounds.width(), originalY + AndroidUtilities.dp(1) + bounds.height());
 
                             long newUpdateTime = SystemClock.elapsedRealtime();
                             long dt = newUpdateTime - lastUpdateTime;
@@ -462,15 +472,6 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
                                 }
                             }
                             getTextView().invalidate();
-                        }
-                    }
-
-                    @Override
-                    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-                        super.onLayout(changed, left, top, right, bottom);
-                        if (arrowDrawable != null) {
-                            x = arrowDrawable.getBounds().left;
-                            y = arrowDrawable.getBounds().top;
                         }
                     }
                 };

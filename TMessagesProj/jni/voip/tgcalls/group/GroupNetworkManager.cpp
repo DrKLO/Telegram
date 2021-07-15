@@ -14,6 +14,8 @@
 #include "pc/dtls_srtp_transport.h"
 #include "pc/dtls_transport.h"
 #include "media/sctp/sctp_transport_factory.h"
+#include "modules/rtp_rtcp/source/rtp_utility.h"
+#include "modules/rtp_rtcp/source/byte_io.h"
 #include "platform/PlatformInterface.h"
 
 #include "StaticThreads.h"
@@ -43,11 +45,13 @@ public:
     SctpDataChannelProviderInterfaceImpl(
         cricket::DtlsTransport *transportChannel,
         std::function<void(bool)> onStateChanged,
+        std::function<void()> onTerminated,
         std::function<void(std::string const &)> onMessageReceived,
         std::shared_ptr<Threads> threads
     ) :
     _threads(std::move(threads)),
     _onStateChanged(onStateChanged),
+    _onTerminated(onTerminated),
     _onMessageReceived(onMessageReceived) {
         assert(_threads->getNetworkThread()->IsCurrent());
 
@@ -56,6 +60,7 @@ public:
         _sctpTransport = _sctpTransportFactory->CreateSctpTransport(transportChannel);
         _sctpTransport->SignalReadyToSendData.connect(this, &SctpDataChannelProviderInterfaceImpl::sctpReadyToSendData);
         _sctpTransport->SignalDataReceived.connect(this, &SctpDataChannelProviderInterfaceImpl::sctpDataReceived);
+        _sctpTransport->SignalClosedAbruptly.connect(this, &SctpDataChannelProviderInterfaceImpl::sctpClosedAbruptly);
 
         webrtc::InternalDataChannelInit dataChannelInit;
         dataChannelInit.id = 0;
@@ -133,6 +138,14 @@ public:
         _dataChannel->OnTransportReady(true);
     }
 
+    void sctpClosedAbruptly() {
+        assert(_threads->getNetworkThread()->IsCurrent());
+
+        if (_onTerminated) {
+            _onTerminated();
+        }
+    }
+
     void sctpDataReceived(const cricket::ReceiveDataParams& params, const rtc::CopyOnWriteBuffer& buffer) {
         assert(_threads->getNetworkThread()->IsCurrent());
 
@@ -180,6 +193,7 @@ public:
 private:
     std::shared_ptr<Threads> _threads;
     std::function<void(bool)> _onStateChanged;
+    std::function<void()> _onTerminated;
     std::function<void(std::string const &)> _onMessageReceived;
 
     std::unique_ptr<cricket::SctpTransportFactory> _sctpTransportFactory;
@@ -189,6 +203,279 @@ private:
     bool _isSctpTransportStarted = false;
     bool _isDataChannelOpen = false;
 
+};
+
+enum {
+    kRtcpExpectedVersion = 2,
+    kRtcpMinHeaderLength = 4,
+    kRtcpMinParseLength = 8,
+
+    kRtpExpectedVersion = 2,
+    kRtpMinParseLength = 12
+};
+
+static void updateHeaderWithVoiceActivity(rtc::CopyOnWriteBuffer *packet, const uint8_t* ptrRTPDataExtensionEnd, const uint8_t* ptr, bool voiceActivity) {
+    while (ptrRTPDataExtensionEnd - ptr > 0) {
+        //  0
+        //  0 1 2 3 4 5 6 7
+        // +-+-+-+-+-+-+-+-+
+        // |  ID   |  len  |
+        // +-+-+-+-+-+-+-+-+
+
+        // Note that 'len' is the header extension element length, which is the
+        // number of bytes - 1.
+        const int id = (*ptr & 0xf0) >> 4;
+        const int len = (*ptr & 0x0f);
+        ptr++;
+
+        if (id == 0) {
+            // Padding byte, skip ignoring len.
+            continue;
+        }
+
+        if (id == 15) {
+            RTC_LOG(LS_VERBOSE)
+            << "RTP extension header 15 encountered. Terminate parsing.";
+            return;
+        }
+
+        if (ptrRTPDataExtensionEnd - ptr < (len + 1)) {
+            RTC_LOG(LS_WARNING) << "Incorrect one-byte extension len: " << (len + 1)
+            << ", bytes left in buffer: "
+            << (ptrRTPDataExtensionEnd - ptr);
+            return;
+        }
+
+        if (id == 1) { // kAudioLevelUri
+            uint8_t audioLevel = ptr[0] & 0x7f;
+            bool parsedVoiceActivity = (ptr[0] & 0x80) != 0;
+
+            if (parsedVoiceActivity != voiceActivity) {
+                ptrdiff_t byteOffset = ptr - packet->data();
+                uint8_t *mutableBytes = packet->MutableData();
+                uint8_t audioActivityBit = voiceActivity ? 0x80 : 0;
+                mutableBytes[byteOffset] = audioLevel | audioActivityBit;
+            }
+            return;
+        }
+
+        ptr += (len + 1);
+    }
+}
+
+static void readHeaderVoiceActivity(const uint8_t* ptrRTPDataExtensionEnd, const uint8_t* ptr, bool &didRead, uint8_t &audioLevel, bool &voiceActivity) {
+    while (ptrRTPDataExtensionEnd - ptr > 0) {
+        //  0
+        //  0 1 2 3 4 5 6 7
+        // +-+-+-+-+-+-+-+-+
+        // |  ID   |  len  |
+        // +-+-+-+-+-+-+-+-+
+
+        // Note that 'len' is the header extension element length, which is the
+        // number of bytes - 1.
+        const int id = (*ptr & 0xf0) >> 4;
+        const int len = (*ptr & 0x0f);
+        ptr++;
+
+        if (id == 0) {
+            // Padding byte, skip ignoring len.
+            continue;
+        }
+
+        if (id == 15) {
+            RTC_LOG(LS_VERBOSE)
+            << "RTP extension header 15 encountered. Terminate parsing.";
+            return;
+        }
+
+        if (ptrRTPDataExtensionEnd - ptr < (len + 1)) {
+            RTC_LOG(LS_WARNING) << "Incorrect one-byte extension len: " << (len + 1)
+            << ", bytes left in buffer: "
+            << (ptrRTPDataExtensionEnd - ptr);
+            return;
+        }
+
+        if (id == 1) { // kAudioLevelUri
+            didRead = true;
+            audioLevel = ptr[0] & 0x7f;
+            voiceActivity = (ptr[0] & 0x80) != 0;
+
+            return;
+        }
+
+        ptr += (len + 1);
+    }
+}
+
+
+static void maybeUpdateRtpVoiceActivity(rtc::CopyOnWriteBuffer *packet, bool voiceActivity) {
+    const uint8_t *_ptrRTPDataBegin = packet->data();
+    const uint8_t *_ptrRTPDataEnd = packet->data() + packet->size();
+
+    const ptrdiff_t length = _ptrRTPDataEnd - _ptrRTPDataBegin;
+    if (length < kRtpMinParseLength) {
+        return;
+    }
+
+    // Version
+    const uint8_t V = _ptrRTPDataBegin[0] >> 6;
+    // eXtension
+    const bool X = ((_ptrRTPDataBegin[0] & 0x10) == 0) ? false : true;
+    const uint8_t CC = _ptrRTPDataBegin[0] & 0x0f;
+
+    const uint8_t PT = _ptrRTPDataBegin[1] & 0x7f;
+
+    const uint8_t* ptr = &_ptrRTPDataBegin[4];
+
+    ptr += 4;
+
+    ptr += 4;
+
+    if (V != kRtpExpectedVersion) {
+        return;
+    }
+
+    const size_t CSRCocts = CC * 4;
+
+    if ((ptr + CSRCocts) > _ptrRTPDataEnd) {
+        return;
+    }
+
+    if (PT != 111) {
+        return;
+    }
+
+    for (uint8_t i = 0; i < CC; ++i) {
+        ptr += 4;
+    }
+
+    if (X) {
+      /* RTP header extension, RFC 3550.
+       0                   1                   2                   3
+       0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |      defined by profile       |           length              |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |                        header extension                       |
+      |                             ....                              |
+      */
+      const ptrdiff_t remain = _ptrRTPDataEnd - ptr;
+      if (remain < 4) {
+          return;
+      }
+
+      uint16_t definedByProfile = webrtc::ByteReader<uint16_t>::ReadBigEndian(ptr);
+      ptr += 2;
+
+      // in 32 bit words
+      size_t XLen = webrtc::ByteReader<uint16_t>::ReadBigEndian(ptr);
+      ptr += 2;
+      XLen *= 4;  // in bytes
+
+      if (static_cast<size_t>(remain) < (4 + XLen)) {
+          return;
+      }
+      static constexpr uint16_t kRtpOneByteHeaderExtensionId = 0xBEDE;
+      if (definedByProfile == kRtpOneByteHeaderExtensionId) {
+          const uint8_t* ptrRTPDataExtensionEnd = ptr + XLen;
+          updateHeaderWithVoiceActivity(packet, ptrRTPDataExtensionEnd, ptr, voiceActivity);
+      }
+    }
+}
+
+static void maybeReadRtpVoiceActivity(rtc::CopyOnWriteBuffer *packet, bool &didRead, uint32_t &ssrc, uint8_t &audioLevel, bool &voiceActivity) {
+    const uint8_t *_ptrRTPDataBegin = packet->data();
+    const uint8_t *_ptrRTPDataEnd = packet->data() + packet->size();
+
+    const ptrdiff_t length = _ptrRTPDataEnd - _ptrRTPDataBegin;
+    if (length < kRtpMinParseLength) {
+        return;
+    }
+
+    // Version
+    const uint8_t V = _ptrRTPDataBegin[0] >> 6;
+    // eXtension
+    const bool X = ((_ptrRTPDataBegin[0] & 0x10) == 0) ? false : true;
+    const uint8_t CC = _ptrRTPDataBegin[0] & 0x0f;
+
+    const uint8_t PT = _ptrRTPDataBegin[1] & 0x7f;
+
+    const uint8_t* ptr = &_ptrRTPDataBegin[4];
+
+    ptr += 4;
+
+    ssrc = webrtc::ByteReader<uint32_t>::ReadBigEndian(ptr);
+    ptr += 4;
+
+    if (V != kRtpExpectedVersion) {
+        return;
+    }
+
+    const size_t CSRCocts = CC * 4;
+
+    if ((ptr + CSRCocts) > _ptrRTPDataEnd) {
+        return;
+    }
+
+    if (PT != 111) {
+        return;
+    }
+
+    for (uint8_t i = 0; i < CC; ++i) {
+        ptr += 4;
+    }
+
+    if (X) {
+      /* RTP header extension, RFC 3550.
+       0                   1                   2                   3
+       0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |      defined by profile       |           length              |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |                        header extension                       |
+      |                             ....                              |
+      */
+      const ptrdiff_t remain = _ptrRTPDataEnd - ptr;
+      if (remain < 4) {
+          return;
+      }
+
+      uint16_t definedByProfile = webrtc::ByteReader<uint16_t>::ReadBigEndian(ptr);
+      ptr += 2;
+
+      // in 32 bit words
+      size_t XLen = webrtc::ByteReader<uint16_t>::ReadBigEndian(ptr);
+      ptr += 2;
+      XLen *= 4;  // in bytes
+
+      if (static_cast<size_t>(remain) < (4 + XLen)) {
+          return;
+      }
+      static constexpr uint16_t kRtpOneByteHeaderExtensionId = 0xBEDE;
+      if (definedByProfile == kRtpOneByteHeaderExtensionId) {
+          const uint8_t* ptrRTPDataExtensionEnd = ptr + XLen;
+          readHeaderVoiceActivity(ptrRTPDataExtensionEnd, ptr, didRead, audioLevel, voiceActivity);
+      }
+    }
+}
+
+class WrappedDtlsSrtpTransport : public webrtc::DtlsSrtpTransport {
+public:
+    bool _voiceActivity = false;
+
+public:
+    WrappedDtlsSrtpTransport(bool rtcp_mux_enabled) :
+    webrtc::DtlsSrtpTransport(rtcp_mux_enabled) {
+
+    }
+
+    virtual ~WrappedDtlsSrtpTransport() {
+    }
+
+    bool SendRtpPacket(rtc::CopyOnWriteBuffer *packet, const rtc::PacketOptions& options, int flags) override {
+        maybeUpdateRtpVoiceActivity(packet, _voiceActivity);
+        return webrtc::DtlsSrtpTransport::SendRtpPacket(packet, options, flags);
+    }
 };
 
 webrtc::CryptoOptions GroupNetworkManager::getDefaulCryptoOptions() {
@@ -203,30 +490,32 @@ GroupNetworkManager::GroupNetworkManager(
     std::function<void(rtc::CopyOnWriteBuffer const &, bool)> transportMessageReceived,
     std::function<void(bool)> dataChannelStateUpdated,
     std::function<void(std::string const &)> dataChannelMessageReceived,
+    std::function<void(uint32_t, uint8_t, bool)> audioActivityUpdated,
     std::shared_ptr<Threads> threads) :
 _threads(std::move(threads)),
 _stateUpdated(std::move(stateUpdated)),
 _transportMessageReceived(std::move(transportMessageReceived)),
 _dataChannelStateUpdated(dataChannelStateUpdated),
-_dataChannelMessageReceived(dataChannelMessageReceived) {
+_dataChannelMessageReceived(dataChannelMessageReceived),
+_audioActivityUpdated(audioActivityUpdated) {
     assert(_threads->getNetworkThread()->IsCurrent());
-    
+
     _localIceParameters = PeerIceParameters(rtc::CreateRandomString(cricket::ICE_UFRAG_LENGTH), rtc::CreateRandomString(cricket::ICE_PWD_LENGTH));
-    
+
     _localCertificate = rtc::RTCCertificateGenerator::GenerateCertificate(rtc::KeyParams(rtc::KT_ECDSA), absl::nullopt);
 
     _networkMonitorFactory = PlatformInterface::SharedInstance()->createNetworkMonitorFactory();
-    
+
     _socketFactory.reset(new rtc::BasicPacketSocketFactory(_threads->getNetworkThread()));
     _networkManager = std::make_unique<rtc::BasicNetworkManager>(_networkMonitorFactory.get());
     _asyncResolverFactory = std::make_unique<webrtc::BasicAsyncResolverFactory>();
-    
-    _dtlsSrtpTransport = std::make_unique<webrtc::DtlsSrtpTransport>(true);
+
+    _dtlsSrtpTransport = std::make_unique<WrappedDtlsSrtpTransport>(true);
     _dtlsSrtpTransport->SetDtlsTransports(nullptr, nullptr);
     _dtlsSrtpTransport->SetActiveResetSrtpParams(false);
     _dtlsSrtpTransport->SignalReadyToSend.connect(this, &GroupNetworkManager::DtlsReadyToSend);
     _dtlsSrtpTransport->SignalRtpPacketReceived.connect(this, &GroupNetworkManager::RtpPacketReceived_n);
-    
+
     resetDtlsSrtpTransport();
 }
 
@@ -284,12 +573,18 @@ void GroupNetworkManager::resetDtlsSrtpTransport() {
 
     _dtlsTransport->SetDtlsRole(rtc::SSLRole::SSL_SERVER);
     _dtlsTransport->SetLocalCertificate(_localCertificate);
-    
+
     _dtlsSrtpTransport->SetDtlsTransports(_dtlsTransport.get(), nullptr);
 }
 
 void GroupNetworkManager::start() {
     _transportChannel->MaybeStartGathering();
+
+    restartDataChannel();
+}
+
+void GroupNetworkManager::restartDataChannel() {
+    _dataChannelStateUpdated(false);
 
     const auto weak = std::weak_ptr<GroupNetworkManager>(shared_from_this());
     _dataChannelInterface.reset(new SctpDataChannelProviderInterfaceImpl(
@@ -302,6 +597,14 @@ void GroupNetworkManager::start() {
             }
             strong->_dataChannelStateUpdated(state);
         },
+        [weak, threads = _threads]() {
+            assert(threads->getNetworkThread()->IsCurrent());
+            const auto strong = weak.lock();
+            if (!strong) {
+                return;
+            }
+            strong->restartDataChannel();
+        },
         [weak, threads = _threads](std::string const &message) {
             assert(threads->getNetworkThread()->IsCurrent());
             const auto strong = weak.lock();
@@ -312,26 +615,28 @@ void GroupNetworkManager::start() {
         },
         _threads
     ));
+
+    _dataChannelInterface->updateIsConnected(_isConnected);
 }
 
 void GroupNetworkManager::stop() {
     _transportChannel->SignalIceTransportStateChanged.disconnect(this);
     _transportChannel->SignalReadPacket.disconnect(this);
-    
+
     _dtlsTransport->SignalWritableState.disconnect(this);
     _dtlsTransport->SignalReceivingState.disconnect(this);
-    
+
     _dtlsSrtpTransport->SetDtlsTransports(nullptr, nullptr);
-    
+
     _dataChannelInterface.reset();
     _dtlsTransport.reset();
     _transportChannel.reset();
     _portAllocator.reset();
-    
+
     _localIceParameters = PeerIceParameters(rtc::CreateRandomString(cricket::ICE_UFRAG_LENGTH), rtc::CreateRandomString(cricket::ICE_PWD_LENGTH));
-    
+
     _localCertificate = rtc::RTCCertificateGenerator::GenerateCertificate(rtc::KeyParams(rtc::KT_ECDSA), absl::nullopt);
-    
+
     resetDtlsSrtpTransport();
 }
 
@@ -370,6 +675,12 @@ void GroupNetworkManager::setRemoteParams(PeerIceParameters const &remoteIcePara
 void GroupNetworkManager::sendDataChannelMessage(std::string const &message) {
     if (_dataChannelInterface) {
         _dataChannelInterface->sendDataChannelMessage(message);
+    }
+}
+
+void GroupNetworkManager::setOutgoingVoiceActivity(bool isSpeech) {
+    if (_dtlsSrtpTransport) {
+        ((WrappedDtlsSrtpTransport *)_dtlsSrtpTransport.get())->_voiceActivity = isSpeech;
     }
 }
 
@@ -448,6 +759,17 @@ void GroupNetworkManager::transportPacketReceived(rtc::PacketTransportInternal *
 }
 
 void GroupNetworkManager::RtpPacketReceived_n(rtc::CopyOnWriteBuffer *packet, int64_t packet_time_us, bool isUnresolved) {
+    bool didRead = false;
+    uint32_t ssrc = 0;
+    uint8_t audioLevel = 0;
+    bool isSpeech = false;
+    maybeReadRtpVoiceActivity(packet, didRead, ssrc, audioLevel, isSpeech);
+    if (didRead && ssrc != 0) {
+        if (_audioActivityUpdated) {
+            _audioActivityUpdated(ssrc, audioLevel, isSpeech);
+        }
+    }
+
     if (_transportMessageReceived) {
         _transportMessageReceived(*packet, isUnresolved);
     }

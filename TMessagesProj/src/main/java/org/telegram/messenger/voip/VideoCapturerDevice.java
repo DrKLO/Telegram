@@ -214,6 +214,13 @@ public class VideoCapturerDevice {
         });
     }
 
+    public static MediaProjection getMediaProjection() {
+        if (instance[1] == null) {
+            return null;
+        }
+        return ((ScreenCapturerAndroid) instance[1].videoCapturer).getMediaProjection();
+    }
+
     private void onAspectRatioRequested(float aspectRatio) {
         /*if (aspectRatio < 0.0001f) {
             return;
