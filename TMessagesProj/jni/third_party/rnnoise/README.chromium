@@ -1,0 +1,29 @@
+Name: Recurrent neural network for audio noise reduction
+Short Name: rnnoise
+URL: https://github.com/xiph/rnnoise
+Version: 91ef401
+Date: Oct 10, 2017
+Revision:
+License: BSD 3-Clause
+License File: COPYING
+Security Critical: no
+License Android Compatible:
+
+Description:
+RNNoise is a noise suppression library based on a recurrent neural network.
+The library is used for speech processing in WebRTC.
+
+Local Modifications:
+* Only retaining COPYING and from src/ the following files:
+ - kiss_fft.c, kiss_fft.h
+ - rnn.c
+ - rnn_data.c
+ - tansig_table.h
+* KissFFT: non-floating point parts removed, code clean, from C to C++,
+  class wrapper added
+* BUILD targets and KissFFT unit tests added
+* rnn_vad_weights.h: output layer sizes + weights scaling factor
+* removing unwanted extern from constants in rnn_vad_weights.h and using
+  constants to declare array sizes
+* Add braces around arrays in unit test.
+* KissFFT removed

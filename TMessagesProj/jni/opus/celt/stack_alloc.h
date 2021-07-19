@@ -116,9 +116,11 @@
 #else
 
 #ifdef CELT_C
+char *scratch_ptr=0;
 char *global_stack=0;
 #else
 extern char *global_stack;
+extern char *scratch_ptr;
 #endif /* CELT_C */
 
 #ifdef ENABLE_VALGRIND
@@ -140,8 +142,12 @@ extern char *global_stack_top;
 
 #define ALIGN(stack, size) ((stack) += ((size) - (long)(stack)) & ((size) - 1))
 #define PUSH(stack, size, type) (ALIGN((stack),sizeof(type)/sizeof(char)),(stack)+=(size)*(sizeof(type)/sizeof(char)),(type*)((stack)-(size)*(sizeof(type)/sizeof(char))))
+#if 0 /* Set this to 1 to instrument pseudostack usage */
+#define RESTORE_STACK (printf("%ld %s:%d\n", global_stack-scratch_ptr, __FILE__, __LINE__),global_stack = _saved_stack)
+#else
 #define RESTORE_STACK (global_stack = _saved_stack)
-#define ALLOC_STACK char *_saved_stack; (global_stack = (global_stack==0) ? opus_alloc_scratch(GLOBAL_STACK_SIZE) : global_stack); _saved_stack = global_stack;
+#endif
+#define ALLOC_STACK char *_saved_stack; (global_stack = (global_stack==0) ? (scratch_ptr=opus_alloc_scratch(GLOBAL_STACK_SIZE)) : global_stack); _saved_stack = global_stack;
 
 #endif /* ENABLE_VALGRIND */
 

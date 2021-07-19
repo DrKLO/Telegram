@@ -110,10 +110,10 @@ extern "C" {
   * packets produced by the encoder. Some basic information, such as packet
   * duration, can be computed without any special negotiation.
   *
-  * The format for multistream Opus packets is defined in the
-  * <a href="http://tools.ietf.org/html/draft-terriberry-oggopus">Ogg
-  * encapsulation specification</a> and is based on the self-delimited Opus
-  * framing described in Appendix B of <a href="http://tools.ietf.org/html/rfc6716">RFC 6716</a>.
+  * The format for multistream Opus packets is defined in
+  * <a href="https://tools.ietf.org/html/rfc7845">RFC 7845</a>
+  * and is based on the self-delimited Opus framing described in Appendix B of
+  * <a href="https://tools.ietf.org/html/rfc6716">RFC 6716</a>.
   * Normal Opus packets are just a degenerate case of multistream Opus packets,
   * and can be encoded or decoded with the multistream API by setting
   * <code>streams</code> to <code>1</code> when initializing the encoder or
@@ -140,7 +140,7 @@ extern "C" {
   *
   * The output channels specified by the encoder
   * should use the
-  * <a href="http://www.xiph.org/vorbis/doc/Vorbis_I_spec.html#x1-800004.3.9">Vorbis
+  * <a href="https://www.xiph.org/vorbis/doc/Vorbis_I_spec.html#x1-810004.3.9">Vorbis
   * channel ordering</a>. A decoder may wish to apply an additional permutation
   * to the mapping the encoder used to achieve a different output channel
   * order (e.g. for outputing in WAV order).
@@ -273,7 +273,7 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT OpusMSEncoder *opus_multistream_surround_enc
       unsigned char *mapping,
       int application,
       int *error
-) OPUS_ARG_NONNULL(5);
+) OPUS_ARG_NONNULL(4) OPUS_ARG_NONNULL(5) OPUS_ARG_NONNULL(6);
 
 /** Initialize a previously allocated multistream encoder state.
   * The memory pointed to by \a st must be at least the size returned by
@@ -342,7 +342,7 @@ OPUS_EXPORT int opus_multistream_surround_encoder_init(
       int *coupled_streams,
       unsigned char *mapping,
       int application
-) OPUS_ARG_NONNULL(1) OPUS_ARG_NONNULL(6);
+) OPUS_ARG_NONNULL(1) OPUS_ARG_NONNULL(5) OPUS_ARG_NONNULL(6) OPUS_ARG_NONNULL(7);
 
 /** Encodes a multistream Opus frame.
   * @param st <tt>OpusMSEncoder*</tt>: Multistream encoder state.

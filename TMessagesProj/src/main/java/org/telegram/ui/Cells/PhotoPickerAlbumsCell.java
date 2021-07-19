@@ -3,29 +3,32 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Cells;
 
 import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.os.Build;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.MediaController;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.MediaController;
 import org.telegram.messenger.R;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
-import org.telegram.ui.Components.FrameLayoutFixed;
 import org.telegram.ui.Components.LayoutHelper;
 
-public class PhotoPickerAlbumsCell extends FrameLayoutFixed {
+public class PhotoPickerAlbumsCell extends FrameLayout {
 
     public interface PhotoPickerAlbumsCellDelegate {
         void didSelectAlbum(MediaController.AlbumEntry albumEntry);
@@ -35,8 +38,9 @@ public class PhotoPickerAlbumsCell extends FrameLayoutFixed {
     private MediaController.AlbumEntry[] albumEntries;
     private int albumsCount;
     private PhotoPickerAlbumsCellDelegate delegate;
+    private Paint backgroundPaint = new Paint();
 
-    private class AlbumView extends FrameLayoutFixed {
+    private class AlbumView extends FrameLayout {
 
         private BackupImageView imageView;
         private TextView nameTextView;
@@ -51,8 +55,8 @@ public class PhotoPickerAlbumsCell extends FrameLayoutFixed {
 
             LinearLayout linearLayout = new LinearLayout(context);
             linearLayout.setOrientation(LinearLayout.HORIZONTAL);
-            linearLayout.setBackgroundColor(0x7f000000);
-            addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 28, Gravity.LEFT | Gravity.BOTTOM));
+            linearLayout.setBackgroundResource(R.drawable.album_shadow);
+            addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 60, Gravity.LEFT | Gravity.BOTTOM));
 
             nameTextView = new TextView(context);
             nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
@@ -60,20 +64,20 @@ public class PhotoPickerAlbumsCell extends FrameLayoutFixed {
             nameTextView.setSingleLine(true);
             nameTextView.setEllipsize(TextUtils.TruncateAt.END);
             nameTextView.setMaxLines(1);
-            nameTextView.setGravity(Gravity.CENTER_VERTICAL);
-            linearLayout.addView(nameTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, 8, 0, 0, 0));
+            nameTextView.setGravity(Gravity.BOTTOM);
+            linearLayout.addView(nameTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, 8, 0, 0, 5));
 
             countTextView = new TextView(context);
             countTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-            countTextView.setTextColor(0xffaaaaaa);
+            countTextView.setTextColor(0xffffffff);
             countTextView.setSingleLine(true);
             countTextView.setEllipsize(TextUtils.TruncateAt.END);
             countTextView.setMaxLines(1);
-            countTextView.setGravity(Gravity.CENTER_VERTICAL);
-            linearLayout.addView(countTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, 4, 0, 4, 0));
+            countTextView.setGravity(Gravity.BOTTOM);
+            linearLayout.addView(countTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, 4, 0, 7, 5));
 
             selector = new View(context);
-            selector.setBackgroundResource(R.drawable.list_selector);
+            selector.setBackgroundDrawable(Theme.getSelectorDrawable(false));
             addView(selector, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         }
 
@@ -83,6 +87,14 @@ public class PhotoPickerAlbumsCell extends FrameLayoutFixed {
                 selector.drawableHotspotChanged(event.getX(), event.getY());
             }
             return super.onTouchEvent(event);
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            if (!imageView.getImageReceiver().hasNotThumb() || imageView.getImageReceiver().getCurrentAlpha() != 1.0f) {
+                backgroundPaint.setColor(Theme.getColor(Theme.key_chat_attachPhotoBackground));
+                canvas.drawRect(0, 0, imageView.getMeasuredWidth(), imageView.getMeasuredHeight(), backgroundPaint);
+            }
         }
     }
 
@@ -95,12 +107,9 @@ public class PhotoPickerAlbumsCell extends FrameLayoutFixed {
             addView(albumViews[a]);
             albumViews[a].setVisibility(INVISIBLE);
             albumViews[a].setTag(a);
-            albumViews[a].setOnClickListener(new OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    if (delegate != null) {
-                        delegate.didSelectAlbum(albumEntries[(Integer) v.getTag()]);
-                    }
+            albumViews[a].setOnClickListener(v -> {
+                if (delegate != null) {
+                    delegate.didSelectAlbum(albumEntries[(Integer) v.getTag()]);
                 }
             });
         }
@@ -126,12 +135,12 @@ public class PhotoPickerAlbumsCell extends FrameLayoutFixed {
             if (albumEntry.coverPhoto != null && albumEntry.coverPhoto.path != null) {
                 albumView.imageView.setOrientation(albumEntry.coverPhoto.orientation, true);
                 if (albumEntry.coverPhoto.isVideo) {
-                    albumView.imageView.setImage("vthumb://" + albumEntry.coverPhoto.imageId + ":" + albumEntry.coverPhoto.path, null, getContext().getResources().getDrawable(R.drawable.nophotos));
+                    albumView.imageView.setImage("vthumb://" + albumEntry.coverPhoto.imageId + ":" + albumEntry.coverPhoto.path, null, Theme.chat_attachEmptyDrawable);
                 } else {
-                    albumView.imageView.setImage("thumb://" + albumEntry.coverPhoto.imageId + ":" + albumEntry.coverPhoto.path, null, getContext().getResources().getDrawable(R.drawable.nophotos));
+                    albumView.imageView.setImage("thumb://" + albumEntry.coverPhoto.imageId + ":" + albumEntry.coverPhoto.path, null, Theme.chat_attachEmptyDrawable);
                 }
             } else {
-                albumView.imageView.setImageResource(R.drawable.nophotos);
+                albumView.imageView.setImageDrawable(Theme.chat_attachEmptyDrawable);
             }
             albumView.nameTextView.setText(albumEntry.bucketName);
             albumView.countTextView.setText(String.format("%d", albumEntry.photos.size()));
@@ -144,9 +153,9 @@ public class PhotoPickerAlbumsCell extends FrameLayoutFixed {
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int itemWidth;
         if (AndroidUtilities.isTablet()) {
-            itemWidth = (AndroidUtilities.dp(490) - ((albumsCount + 1) * AndroidUtilities.dp(4))) / albumsCount;
+            itemWidth = (AndroidUtilities.dp(490) - AndroidUtilities.dp(12) - (albumsCount - 1) * AndroidUtilities.dp(4)) / albumsCount;
         } else {
-            itemWidth = (AndroidUtilities.displaySize.x - ((albumsCount + 1) * AndroidUtilities.dp(4))) / albumsCount;
+            itemWidth = (AndroidUtilities.displaySize.x - AndroidUtilities.dp(12) - (albumsCount - 1) * AndroidUtilities.dp(4)) / albumsCount;
         }
 
         for (int a = 0; a < albumsCount; a++) {

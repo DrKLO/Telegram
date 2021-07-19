@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+				xmlns:tools="http://schemas.android.com/tools"
+				tools:ignore="RtlHardcoded"
+				android:layout_width="match_parent"
+				android:layout_height="128dip"
+				android:background="@drawable/call_notification_bg">
+
+	<ImageView
+		android:id="@+id/photo"
+		android:layout_width="42dip"
+		android:layout_height="42dip"
+		android:layout_marginTop="20dip"
+		android:layout_marginLeft="20dip"
+		android:layout_alignParentTop="true"
+		android:layout_alignParentLeft="true"
+		android:layerType="hardware"
+		tools:src="#0f0"/>
+
+	<ImageView
+		android:id="@+id/icon"
+		android:layout_width="16dip"
+		android:layout_height="16dip"
+		android:layout_alignBottom="@+id/photo"
+		android:layout_alignRight="@+id/photo"
+		android:layout_marginRight="-2dip"
+		android:layout_marginBottom="-2dip"
+		android:src="@drawable/call_custom_notification_icon"/>
+
+	<LinearLayout
+		android:id="@+id/text_wrap"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:layout_toRightOf="@+id/photo"
+		android:layout_alignTop="@+id/photo"
+		android:layout_alignBottom="@+id/photo"
+		android:layout_marginTop="-12dip"
+		android:layout_marginBottom="-12dip"
+		android:layout_marginLeft="12dip"
+		android:layout_marginRight="20dip"
+		android:gravity="center_vertical|left"
+		android:orientation="vertical">
+
+		<TextView
+			android:id="@+id/name"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:textSize="17dip"
+			android:singleLine="true"
+			android:ellipsize="end"
+			android:textColor="#FFF"
+			android:fontFamily="sans-serif-medium"
+			android:gravity="left"
+			tools:text="Wow Such Doge"/>
+
+		<TextView
+			android:id="@+id/title"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:textSize="14dip"
+			android:textColor="#FFF"
+			android:singleLine="true"
+			android:ellipsize="end"
+			android:gravity="left"
+			tools:text="Telegram Call"/>
+
+		<TextView
+			android:id="@+id/subtitle"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:textSize="14dip"
+			android:textColor="#6BFFFFFF"
+			android:singleLine="true"
+			android:ellipsize="end"
+			android:gravity="left"
+			tools:text="to Account Name"/>
+
+	</LinearLayout>
+
+	<LinearLayout
+		android:id="@+id/buttons"
+		android:layout_width="match_parent"
+		android:layout_height="48.3dip"
+		android:paddingTop=".3dip"
+		android:layout_alignParentBottom="true"
+		android:background="@drawable/call_notification_line"
+		android:orientation="horizontal">
+
+		<FrameLayout
+			android:id="@+id/decline_btn"
+			android:layout_width="0dip"
+			android:layout_height="match_parent"
+			android:layout_margin="2dip"
+			android:background="@drawable/bar_selector_white"
+			android:layout_weight="1">
+
+			<TextView
+				android:id="@+id/decline_text"
+				android:layout_width="wrap_content"
+				android:layout_height="match_parent"
+				android:layout_gravity="center"
+				android:textAllCaps="true"
+				android:gravity="center"
+				android:textSize="14dip"
+				android:textColor="#ef5050"
+				android:fontFamily="sans-serif-medium"
+				android:drawableLeft="@drawable/ic_call_notification_decline"
+				android:drawablePadding="12dip"
+				tools:text="@string/VoipDeclineCall"/>
+
+		</FrameLayout>
+
+		<FrameLayout
+			android:id="@+id/answer_btn"
+			android:layout_width="0dip"
+			android:layout_height="match_parent"
+			android:layout_margin="2dip"
+			android:background="@drawable/bar_selector_white"
+			android:layout_weight="1">
+
+			<TextView
+				android:id="@+id/answer_text"
+				android:layout_width="wrap_content"
+				android:layout_height="match_parent"
+				android:layout_gravity="center"
+				android:textAllCaps="true"
+				android:gravity="center"
+				android:textSize="14dip"
+				android:textColor="#5ee067"
+				android:fontFamily="sans-serif-medium"
+				android:drawableLeft="@drawable/ic_call_notification_answer"
+				android:drawablePadding="12dip"
+				tools:text="@string/VoipAnswerCall"/>
+
+		</FrameLayout>
+
+	</LinearLayout>
+
+	<!--LinearLayout
+		android:id="@+id/group_photos"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:orientation="horizontal"
+		android:layout_alignParentRight="true"
+		android:layout_marginRight="16dip"
+		android:layout_marginTop="20dip"
+		android:layerType="hardware">
+
+		<ImageView
+			android:id="@+id/group_photo1"
+			android:layout_width="22dip"
+			android:layout_height="22dip"
+			android:layout_marginRight="4dip"
+			tools:src="#f0f"/>
+
+		<ImageView
+			android:id="@+id/group_photo2"
+			android:layout_width="22dip"
+			android:layout_height="22dip"
+			android:layout_marginRight="4dip"
+			tools:src="#f0f"/>
+
+		<ImageView
+			android:id="@+id/group_photo3"
+			android:layout_width="22dip"
+			android:layout_height="22dip"
+			android:layout_marginRight="4dip"
+			tools:src="#f0f"/>
+
+		<TextView
+			android:id="@+id/group_more"
+			android:layout_width="22dip"
+			android:layout_height="22dip"
+			android:layout_marginRight="4dip"
+			android:gravity="center"
+			android:textColor="#CFFF"
+			android:textSize="9dip"
+			android:fontFamily="sans-serif-condensed"
+			android:textStyle="bold"
+			android:background="@drawable/group_call_more_users_circle_thin"
+			tools:text="+99"/>
+
+	</LinearLayout-->
+
+</RelativeLayout>

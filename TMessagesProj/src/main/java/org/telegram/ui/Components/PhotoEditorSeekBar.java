@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 2.x
+ * This is the source code of Telegram for Android v. 5.x.x
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Components;
@@ -14,7 +14,7 @@ import android.graphics.Paint;
 import android.view.MotionEvent;
 import android.view.View;
 
-import org.telegram.android.AndroidUtilities;
+import org.telegram.messenger.AndroidUtilities;
 
 public class PhotoEditorSeekBar extends View {
 
@@ -29,14 +29,14 @@ public class PhotoEditorSeekBar extends View {
     private PhotoEditorSeekBarDelegate delegate;
 
     public interface PhotoEditorSeekBarDelegate {
-        void onProgressChanged();
+        void onProgressChanged(int i, int progress);
     }
 
     public PhotoEditorSeekBar(Context context) {
         super(context);
 
-        innerPaint.setColor(0x99383838);
-        outerPaint.setColor(0xff53aeef);
+        innerPaint.setColor(0xff4d4d4d);
+        outerPaint.setColor(0xffffffff);
     }
 
     public void setDelegate(PhotoEditorSeekBarDelegate delegate) {
@@ -76,7 +76,7 @@ public class PhotoEditorSeekBar extends View {
                 }
                 progress = thumbX / (getMeasuredWidth() - thumbSize);
                 if (delegate != null) {
-                    delegate.onProgressChanged();
+                    delegate.onProgressChanged((Integer) getTag(), getProgress());
                 }
                 invalidate();
                 return true;
@@ -98,7 +98,7 @@ public class PhotoEditorSeekBar extends View {
         this.progress = (progress - minValue) / (float) (maxValue - minValue);
         invalidate();
         if (notify && delegate != null) {
-            delegate.onProgressChanged();
+            delegate.onProgressChanged((Integer) getTag(), getProgress());
         }
     }
 

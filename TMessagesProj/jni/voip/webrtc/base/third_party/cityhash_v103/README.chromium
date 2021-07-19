@@ -1,0 +1,20 @@
+Name: CityHash
+Short Name: cityhash
+URL: https://github.com/google/cityhash
+Version: 1.0.3
+Revision: 00b9287e8c1255b5922ef90e304d5287361b2c2a
+License: MIT
+Security Critical: yes
+
+Description:
+Provides high-quality (but non-cryptographic) hash functions for strings.
+
+Local Modifications:
+- 000-remove-crc.patch: Remove CRC helpers.
+- 001-fix-include-paths.patch: Fix header includes to be relative to project root.
+- 002-fix-include-guards.patch: Fix include guards to follow Chromium style.
+- 003-use-base.patch: Move functions into base::internal::cityhash_v103 namespace to avoid
+  namespace collisions with other versions of CityHash, and use ARCH_CPU_LITTLE_ENDIAN and
+  LIKELY from //base
+- 004-google-style.patch: Use nullptr, remove 'using namespace std;'.
+- clang-format

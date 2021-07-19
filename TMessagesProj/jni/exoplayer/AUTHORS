@@ -1,0 +1,58 @@
+/* FLAC - Free Lossless Audio Codec
+ * Copyright (C) 2001-2009  Josh Coalson
+ * Copyright (C) 2011-2014  Xiph.Org Foundation
+ *
+ * This file is part the FLAC project.  FLAC is comprised of several
+ * components distributed under different licenses.  The codec libraries
+ * are distributed under Xiph.Org's BSD-like license (see the file
+ * COPYING.Xiph in this distribution).  All other programs, libraries, and
+ * plugins are distributed under the GPL (see COPYING.GPL).  The documentation
+ * is distributed under the Gnu FDL (see COPYING.FDL).  Each file in the
+ * FLAC distribution contains at the top the terms under which it may be
+ * distributed.
+ *
+ * Since this particular file is relevant to all components of FLAC,
+ * it may be distributed under the Xiph.Org license, which is the least
+ * restrictive of those mentioned above.  See the file COPYING.Xiph in this
+ * distribution.
+ */
+
+Current FLAC maintainer: Erik de Castro Lopo <erikd@mega-nerd.com>
+
+Original author: Josh Coalson <jcoalson@users.sourceforge.net>
+
+Website : https://www.xiph.org/flac/
+
+FLAC is an Open Source lossless audio codec originally developed by Josh Coalson
+between 2001 and 2009. From 2009 to 2012 FLAC was basically unmaintained. In
+2012 the Erik de Castro Lopo became the chief maintainer as part of the
+Xiph.Org Foundation.
+
+Other major contributors and their contributions:
+
+"lvqcl" <lvqcl@users.sourceforge.net>
+* Visual Studio build system.
+* Optimisations in the encoder and decoder.
+
+"Janne Hyvärinen" <cse@sci.fi>
+* Visual Studio build system.
+* Unicode handling on Windows.
+
+"Andrey Astafiev" <andrei@tvcell.ru>
+* Russian translation of the HTML documentation
+
+"Miroslav Lichvar" <lichvarm@phoenix.inf.upol.cz>
+* IA-32 assembly versions of several libFLAC routines
+
+"Brady Patterson" <bpat@users.sourceforge.net>
+* AIFF file support, PPC assembly versions of libFLAC routines
+
+"Daisuke Shimamura" <Daisuke_Shimamura@nifty.com>
+* i18n support in the XMMS plugin
+
+"X-Fixer" <x-fixer@narod.ru>
+* Configuration system, tag editing, and file info in the Winamp2 plugin
+
+"Matt Zimmerman" <mdz@debian.org>
+* Libtool/autoconf/automake make system, flac man page
+

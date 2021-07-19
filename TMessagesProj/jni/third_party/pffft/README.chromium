@@ -1,0 +1,41 @@
+Name: PFFFT: a pretty fast FFT.
+Short Name: PFFFT
+URL: https://bitbucket.org/jpommier/pffft/
+Version: 0
+Date: 2014-08-09
+Revision: 483453d8f766
+License: BSD-like
+License File: LICENSE
+Security Critical: Yes
+License Android Compatible: Yes
+
+Description:
+PFFFT does 1D Fast Fourier Transforms, of single precision real and complex vectors. It tries do it fast, it tries to be correct, and it tries to be small. Computations do take advantage of SSE1 instructions on x86 cpus, Altivec on powerpc cpus, and NEON on ARM cpus.
+
+Note about the structure of //third_party/pffft:
+The imported third party code (with patches applied, see "Local Modifications") lives in //third_party/pffft/src/, whereas the fuzzer and unit test code lives in //third_party/pffft.
+
+Remarks on the C library and recommendations:
+- The C API is unsafe: input and output arrays are passed as pointers without size
+- When a scratch array is not provided (e.g., pffft_transform(/*work=*/nullptr)), VLA is used
+  * MSVC: stack or heap depending on size
+  * other compilers: always on the stack
+- According to the PFFFT documentation, when SIMD is enabled, input, output and scratch arrays must be allocated as aligned memory (16-byte boundary on intel and PowerPC);
+  as long as the SIMD extension API requirements are met, one may use different options (and not only pffft_aligned_malloc) such as std::vector
+- It is strongly recommended that a C++ wrapper is used to
+  (i) avoid pointer arguments (e.g., using absl::Span)
+  (ii) pre-allocate the scratch buffer for large FFT sizes
+  (iii) provide a function to check if an integer is a supported FFT size
+
+Local Modifications:
+
+Local modifications live in //third_party/pffft/patches/. To apply them run:
+$ for patch in third_party/pffft/patches/*; do patch -s -p1 < $patch; done
+
+In case of conflict, update those patches accordingly and save them back in //third_party/pffft/patches/.
+
+ * 01-rmv_printf.diff: remove printf and stop including stdio.h
+ * 02-decl_validate_simd.diff: declare validate_pffft_simd() in pffft.h
+ * 03-malloca.diff: replace _alloca (deprecated) with _malloca (MSVC case only) + cleanup
+ * 04-fix_ptr_cast.diff: avoid MSVC warnings by fixing pointer cast
+ * 05-fix-arch-detection.diff: better arch detection to avoid to define PFFFT_SIMD_DISABLE

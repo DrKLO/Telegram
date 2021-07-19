@@ -3,83 +3,111 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Cells;
 
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
+import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
+import android.transition.ChangeBounds;
+import android.transition.Fade;
+import android.transition.TransitionManager;
+import android.transition.TransitionSet;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.View;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.ImageLoader;
-import org.telegram.android.ImageReceiver;
-import org.telegram.android.LocaleController;
-import org.telegram.android.MediaController;
-import org.telegram.android.MessageObject;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.DownloadController;
+import org.telegram.messenger.ImageLoader;
+import org.telegram.messenger.ImageLocation;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaController;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.R;
-import org.telegram.messenger.TLRPC;
+import org.telegram.messenger.UserConfig;
+import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
-import org.telegram.ui.Components.CheckBox;
+import org.telegram.ui.Components.CheckBox2;
+import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.DotDividerSpan;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LineProgressView;
+import org.telegram.ui.Components.RLottieDrawable;
+import org.telegram.ui.Components.RLottieImageView;
+import org.telegram.ui.FilteredSearchView;
 
 import java.io.File;
 import java.util.Date;
+import java.util.Locale;
 
-public class SharedDocumentCell extends FrameLayout implements MediaController.FileDownloadProgressListener {
+public class SharedDocumentCell extends FrameLayout implements DownloadController.FileDownloadProgressListener {
 
-    private ImageView placeholderImabeView;
+    private ImageView placeholderImageView;
     private BackupImageView thumbImageView;
     private TextView nameTextView;
     private TextView extTextView;
     private TextView dateTextView;
-    private ImageView statusImageView;
+    private RLottieImageView statusImageView;
     private LineProgressView progressView;
-    private CheckBox checkBox;
+    private CheckBox2 checkBox;
+    private TextView rightDateTextView;
+    private TextView captionTextView;
+
+    private boolean drawDownloadIcon = true;
 
     private boolean needDivider;
 
-    private static Paint paint;
-
+    private int currentAccount = UserConfig.selectedAccount;
     private int TAG;
 
     private MessageObject message;
     private boolean loading;
     private boolean loaded;
 
-    private int icons[] = {
-            R.drawable.media_doc_blue,
-            R.drawable.media_doc_green,
-            R.drawable.media_doc_red,
-            R.drawable.media_doc_yellow
-    };
+    private int viewType;
+
+    public final static int VIEW_TYPE_DEFAULT = 0;
+    public final static int VIEW_TYPE_PICKER = 1;
+    public final static int VIEW_TYPE_GLOBAL_SEARCH = 2;
+
+    private SpannableStringBuilder dotSpan;
+    private CharSequence caption;
+    private RLottieDrawable statusDrawable;
 
     public SharedDocumentCell(Context context) {
+        this(context, VIEW_TYPE_DEFAULT);
+    }
+
+    public SharedDocumentCell(Context context, int viewType) {
         super(context);
 
-        if (paint == null) {
-            paint = new Paint();
-            paint.setColor(0xffd9d9d9);
-            paint.setStrokeWidth(1);
+        this.viewType = viewType;
+        TAG = DownloadController.getInstance(currentAccount).generateObserverTag();
+
+        placeholderImageView = new ImageView(context);
+        if (viewType == VIEW_TYPE_PICKER) {
+            addView(placeholderImageView, LayoutHelper.createFrame(42, 42, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 15, 12, LocaleController.isRTL ? 15 : 0, 0));
+        } else {
+            addView(placeholderImageView, LayoutHelper.createFrame(40, 40, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 12, 8, LocaleController.isRTL ? 12 : 0, 0));
         }
 
-        TAG = MediaController.getInstance().generateObserverTag();
-
-        placeholderImabeView = new ImageView(context);
-        addView(placeholderImabeView, LayoutHelper.createFrame(40, 40, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 12, 8, LocaleController.isRTL ? 12 : 0, 0));
-
         extTextView = new TextView(context);
-        extTextView.setTextColor(0xffffffff);
+        extTextView.setTextColor(Theme.getColor(Theme.key_files_iconText));
         extTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         extTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         extTextView.setLines(1);
@@ -87,108 +115,247 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
         extTextView.setSingleLine(true);
         extTextView.setGravity(Gravity.CENTER);
         extTextView.setEllipsize(TextUtils.TruncateAt.END);
-        addView(extTextView, LayoutHelper.createFrame(32, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 16, 22, LocaleController.isRTL ? 16 : 0, 0));
+        extTextView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
+        if (viewType == VIEW_TYPE_PICKER) {
+            addView(extTextView, LayoutHelper.createFrame(32, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 20, 28, LocaleController.isRTL ? 20 : 0, 0));
+        } else {
+            addView(extTextView, LayoutHelper.createFrame(32, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 16, 22, LocaleController.isRTL ? 16 : 0, 0));
+        }
 
-        thumbImageView = new BackupImageView(context);
-        addView(thumbImageView, LayoutHelper.createFrame(40, 40, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 12, 8, LocaleController.isRTL ? 12 : 0, 0));
-        thumbImageView.getImageReceiver().setDelegate(new ImageReceiver.ImageReceiverDelegate() {
+        thumbImageView = new BackupImageView(context) {
             @Override
-            public void didSetImage(ImageReceiver imageReceiver, boolean set, boolean thumb) {
-                extTextView.setVisibility(set ? INVISIBLE : VISIBLE);
-                placeholderImabeView.setVisibility(set ? INVISIBLE : VISIBLE);
+            protected void onDraw(Canvas canvas) {
+                float alpha;
+                if (thumbImageView.getImageReceiver().hasBitmapImage()) {
+                    alpha = 1.0f - thumbImageView.getImageReceiver().getCurrentAlpha();
+                } else {
+                    alpha = 1.0f;
+                }
+                extTextView.setAlpha(alpha);
+                placeholderImageView.setAlpha(alpha);
+                super.onDraw(canvas);
             }
-        });
+        };
+        thumbImageView.setRoundRadius(AndroidUtilities.dp(4));
+        if (viewType == VIEW_TYPE_PICKER) {
+            addView(thumbImageView, LayoutHelper.createFrame(42, 42, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 16, 12, LocaleController.isRTL ? 16 : 0, 0));
+        } else {
+            addView(thumbImageView, LayoutHelper.createFrame(40, 40, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 12, 8, LocaleController.isRTL ? 12 : 0, 0));
+        }
 
         nameTextView = new TextView(context);
-        nameTextView.setTextColor(0xff222222);
+        nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        nameTextView.setLines(1);
-        nameTextView.setMaxLines(1);
-        nameTextView.setSingleLine(true);
         nameTextView.setEllipsize(TextUtils.TruncateAt.END);
         nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
-        addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 8 : 72, 5, LocaleController.isRTL ? 72 : 8, 0));
 
-        statusImageView = new ImageView(context);
+        LinearLayout linearLayout;
+        if (viewType == VIEW_TYPE_PICKER) {
+            nameTextView.setLines(1);
+            nameTextView.setMaxLines(1);
+            nameTextView.setSingleLine(true);
+            addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 8 : 72, 9, LocaleController.isRTL ? 72 : 8, 0));
+        } else if (viewType == VIEW_TYPE_GLOBAL_SEARCH) {
+            linearLayout = new LinearLayout(context);
+            linearLayout.setOrientation(LinearLayout.HORIZONTAL);
+            addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 16 : 72, 5, LocaleController.isRTL ? 72 : 16, 0));
+
+            rightDateTextView = new TextView(context);
+            rightDateTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3));
+            rightDateTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            if (!LocaleController.isRTL) {
+                linearLayout.addView(nameTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 1f));
+                linearLayout.addView(rightDateTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0f, 4, 0, 0, 0));
+            } else {
+                linearLayout.addView(rightDateTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0f));
+                linearLayout.addView(nameTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 1f, 0, 0, 4, 0));
+            }
+            nameTextView.setMaxLines(2);
+
+            captionTextView = new TextView(context);
+            captionTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            captionTextView.setLines(1);
+            captionTextView.setMaxLines(1);
+            captionTextView.setSingleLine(true);
+            captionTextView.setEllipsize(TextUtils.TruncateAt.END);
+            captionTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
+            captionTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+            addView(captionTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 8 : 72, 30, LocaleController.isRTL ? 72 : 8, 0));
+            captionTextView.setVisibility(View.GONE);
+        } else {
+            nameTextView.setMaxLines(2);
+            addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 8 : 72, 5, LocaleController.isRTL ? 72 : 8, 0));
+        }
+
+        statusDrawable = new RLottieDrawable(R.raw.download_arrow, "download_arrow", AndroidUtilities.dp(14), AndroidUtilities.dp(14), true, null);
+        statusImageView = new RLottieImageView(context);
+        statusImageView.setAnimation(statusDrawable);
         statusImageView.setVisibility(INVISIBLE);
-        addView(statusImageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 8 : 72, 35, LocaleController.isRTL ? 72 : 8, 0));
+        statusImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_sharedMedia_startStopLoadIcon), PorterDuff.Mode.MULTIPLY));
+        if (viewType == VIEW_TYPE_PICKER) {
+            addView(statusImageView, LayoutHelper.createFrame(14, 14, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 8 : 70, 37, LocaleController.isRTL ? 72 : 8, 0));
+        } else {
+            addView(statusImageView, LayoutHelper.createFrame(14, 14, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 8 : 70, 33, LocaleController.isRTL ? 72 : 8, 0));
+        }
 
         dateTextView = new TextView(context);
-        dateTextView.setTextColor(0xff999999);
-        dateTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        dateTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3));
         dateTextView.setLines(1);
         dateTextView.setMaxLines(1);
         dateTextView.setSingleLine(true);
         dateTextView.setEllipsize(TextUtils.TruncateAt.END);
         dateTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
-        addView(dateTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 8 : 72, 30, LocaleController.isRTL ? 72 : 8, 0));
+        if (viewType == VIEW_TYPE_PICKER) {
+            dateTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+            addView(dateTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 8 : 72, 34, LocaleController.isRTL ? 72 : 8, 0));
+        } else {
+            dateTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+            addView(dateTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 8 : 72, 30, LocaleController.isRTL ? 72 : 8, 0));
+        }
 
         progressView = new LineProgressView(context);
+        progressView.setProgressColor(Theme.getColor(Theme.key_sharedMedia_startStopLoadIcon));
         addView(progressView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 2, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 72, 54, LocaleController.isRTL ? 72 : 0, 0));
 
-        checkBox = new CheckBox(context, R.drawable.round_check2);
+        checkBox = new CheckBox2(context, 21);
         checkBox.setVisibility(INVISIBLE);
-        addView(checkBox, LayoutHelper.createFrame(22, 22, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 34, 30, LocaleController.isRTL ? 34 : 0, 0));
-    }
-
-    private int getThumbForNameOrMime(String name, String mime) {
-        if (name != null && name.length() != 0) {
-            int color = -1;
-            if (name.contains(".doc") || name.contains(".txt") || name.contains(".psd")) {
-                color = 0;
-            } else if (name.contains(".xls") || name.contains(".csv")) {
-                color = 1;
-            } else if (name.contains(".pdf") || name.contains(".ppt") || name.contains(".key")) {
-                color = 2;
-            } else if (name.contains(".zip") || name.contains(".rar") || name.contains(".ai") || name.contains(".mp3")  || name.contains(".mov") || name.contains(".avi")) {
-                color = 3;
-            }
-            if (color == -1) {
-                int idx;
-                String ext = (idx = name.lastIndexOf(".")) == -1 ? "" : name.substring(idx + 1);
-                if (ext.length() != 0) {
-                    color = ext.charAt(0) % icons.length;
-                } else {
-                    color = name.charAt(0) % icons.length;
-                }
-            }
-            return icons[color];
+        checkBox.setColor(null, Theme.key_windowBackgroundWhite, Theme.key_checkboxCheck);
+        checkBox.setDrawUnchecked(false);
+        checkBox.setDrawBackgroundAsArc(2);
+        if (viewType == VIEW_TYPE_PICKER) {
+            addView(checkBox, LayoutHelper.createFrame(24, 24, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 38, 36, LocaleController.isRTL ? 38 : 0, 0));
+        } else {
+            addView(checkBox, LayoutHelper.createFrame(24, 24, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 33, 28, LocaleController.isRTL ? 33 : 0, 0));
         }
-        return icons[0];
+
+        if (viewType == VIEW_TYPE_GLOBAL_SEARCH) {
+            dotSpan = new SpannableStringBuilder(".");
+            dotSpan.setSpan(new DotDividerSpan(), 0, 1, 0);
+        }
     }
 
-    public void setTextAndValueAndTypeAndThumb(String text, String value, String type, String thumb, int resId) {
+    public void setDrawDownloadIcon(boolean value) {
+        drawDownloadIcon = value;
+    }
+
+    public void setTextAndValueAndTypeAndThumb(String text, String value, String type, String thumb, int resId, boolean divider) {
         nameTextView.setText(text);
         dateTextView.setText(value);
         if (type != null) {
             extTextView.setVisibility(VISIBLE);
-            extTextView.setText(type);
+            extTextView.setText(type.toLowerCase());
         } else {
             extTextView.setVisibility(INVISIBLE);
         }
+        needDivider = divider;
         if (resId == 0) {
-            placeholderImabeView.setImageResource(getThumbForNameOrMime(text, type));
-            placeholderImabeView.setVisibility(VISIBLE);
+            placeholderImageView.setImageResource(AndroidUtilities.getThumbForNameOrMime(text, type, false));
+            placeholderImageView.setVisibility(VISIBLE);
         } else {
-            placeholderImabeView.setVisibility(INVISIBLE);
+            placeholderImageView.setVisibility(INVISIBLE);
         }
         if (thumb != null || resId != 0) {
             if (thumb != null) {
-                thumbImageView.setImage(thumb, "40_40", null);
-            } else  {
-                thumbImageView.setImageResource(resId);
+                thumbImageView.setImage(thumb, "42_42", null);
+            } else {
+                Drawable drawable = Theme.createCircleDrawableWithIcon(AndroidUtilities.dp(42), resId);
+                String iconKey;
+                String backKey;
+                if (resId == R.drawable.files_storage) {
+                    backKey = Theme.key_chat_attachLocationBackground;
+                    iconKey = Theme.key_chat_attachLocationIcon;
+                } else if (resId == R.drawable.files_gallery) {
+                    backKey = Theme.key_chat_attachContactBackground;
+                    iconKey = Theme.key_chat_attachContactIcon;
+                } else if (resId == R.drawable.files_music) {
+                    backKey = Theme.key_chat_attachAudioBackground;
+                    iconKey = Theme.key_chat_attachAudioIcon;
+                } else if (resId == R.drawable.files_internal) {
+                    backKey = Theme.key_chat_attachGalleryBackground;
+                    iconKey = Theme.key_chat_attachGalleryIcon;
+                } else {
+                    backKey = Theme.key_files_folderIconBackground;
+                    iconKey = Theme.key_files_folderIcon;
+                }
+                Theme.setCombinedDrawableColor(drawable, Theme.getColor(backKey), false);
+                Theme.setCombinedDrawableColor(drawable, Theme.getColor(iconKey), true);
+                thumbImageView.setImageDrawable(drawable);
             }
             thumbImageView.setVisibility(VISIBLE);
         } else {
+            extTextView.setAlpha(1.0f);
+            placeholderImageView.setAlpha(1.0f);
+            thumbImageView.setImageBitmap(null);
             thumbImageView.setVisibility(INVISIBLE);
         }
+        setWillNotDraw(!needDivider);
+    }
+
+    public void setPhotoEntry(MediaController.PhotoEntry entry) {
+        String path;
+        if (entry.thumbPath != null) {
+            thumbImageView.setImage(entry.thumbPath, null, Theme.chat_attachEmptyDrawable);
+            path = entry.thumbPath;
+        } else if (entry.path != null) {
+            if (entry.isVideo) {
+                thumbImageView.setOrientation(0, true);
+                thumbImageView.setImage("vthumb://" + entry.imageId + ":" + entry.path, null, Theme.chat_attachEmptyDrawable);
+            } else {
+                thumbImageView.setOrientation(entry.orientation, true);
+                thumbImageView.setImage("thumb://" + entry.imageId + ":" + entry.path, null, Theme.chat_attachEmptyDrawable);
+            }
+            path = entry.path;
+        } else {
+            thumbImageView.setImageDrawable(Theme.chat_attachEmptyDrawable);
+            path = "";
+        }
+
+        File file = new File(path);
+        nameTextView.setText(file.getName());
+        String type = FileLoader.getFileExtension(file);
+        StringBuilder builder = new StringBuilder();
+        extTextView.setVisibility(GONE);
+        if (entry.width != 0 && entry.height != 0) {
+            if (builder.length() > 0) {
+                builder.append(", ");
+            }
+            builder.append(String.format(Locale.US, "%dx%d", entry.width, entry.height));
+        }
+        if (entry.isVideo) {
+            if (builder.length() > 0) {
+                builder.append(", ");
+            }
+            builder.append(AndroidUtilities.formatShortDuration(entry.duration));
+        }
+        if (entry.size != 0) {
+            if (builder.length() > 0) {
+                builder.append(", ");
+            }
+            builder.append(AndroidUtilities.formatFileSize(entry.size));
+        }
+        if (builder.length() > 0) {
+            builder.append(", ");
+        }
+        builder.append(LocaleController.getInstance().formatterStats.format(entry.dateTaken));
+        dateTextView.setText(builder);
+        //placeholderImageView.setImageResource(AndroidUtilities.getThumbForNameOrMime(path, null, false));
+        //placeholderImageView.setVisibility(VISIBLE);
+        placeholderImageView.setVisibility(GONE);
     }
 
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        MediaController.getInstance().removeLoadingFileObserver(this);
+        DownloadController.getInstance(currentAccount).removeLoadingFileObserver(this);
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        if (progressView.getVisibility() == VISIBLE) {
+            updateFileExistIcon(false);
+        }
     }
 
     public void setChecked(boolean checked, boolean animated) {
@@ -198,67 +365,151 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
         checkBox.setChecked(checked, animated);
     }
 
-    public void setDocument(MessageObject document, boolean divider) {
+    public void setDocument(MessageObject messageObject, boolean divider) {
+        boolean animated = message != null && messageObject != null && message.getId() != messageObject.getId();
         needDivider = divider;
-        message = document;
+        message = messageObject;
         loaded = false;
         loading = false;
 
-        if (document != null && document.messageOwner.media != null) {
+        TLRPC.Document document = messageObject.getDocument();
+        if (document != null) {
             int idx;
-            String name = FileLoader.getDocumentFileName(document.messageOwner.media.document);
-            placeholderImabeView.setVisibility(VISIBLE);
+            String name = null;
+            if (messageObject.isMusic()) {
+                for (int a = 0; a < document.attributes.size(); a++) {
+                    TLRPC.DocumentAttribute attribute = document.attributes.get(a);
+                    if (attribute instanceof TLRPC.TL_documentAttributeAudio) {
+                        if (attribute.performer != null && attribute.performer.length() != 0 || attribute.title != null && attribute.title.length() != 0) {
+                            name = messageObject.getMusicAuthor() + " - " + messageObject.getMusicTitle();
+                        }
+                    }
+                }
+            }
+            String fileName = FileLoader.getDocumentFileName(document);
+            if (name == null) {
+                name = fileName;
+            }
+            CharSequence nameH = AndroidUtilities.highlightText(name, messageObject.highlightedWords);
+            if (nameH != null) {
+                nameTextView.setText(nameH);
+            } else {
+                nameTextView.setText(name);
+            }
+
+            placeholderImageView.setVisibility(VISIBLE);
             extTextView.setVisibility(VISIBLE);
-            placeholderImabeView.setImageResource(getThumbForNameOrMime(name, document.messageOwner.media.document.mime_type));
-            nameTextView.setText(name);
-            extTextView.setText((idx = name.lastIndexOf(".")) == -1 ? "" : name.substring(idx + 1).toLowerCase());
-            if (document.messageOwner.media.document.thumb instanceof TLRPC.TL_photoSizeEmpty) {
+            placeholderImageView.setImageResource(AndroidUtilities.getThumbForNameOrMime(fileName, document.mime_type, false));
+            extTextView.setText((idx = fileName.lastIndexOf('.')) == -1 ? "" : fileName.substring(idx + 1).toLowerCase());
+            TLRPC.PhotoSize bigthumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 320);
+            TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 40);
+            if (thumb == bigthumb) {
+                bigthumb = null;
+            }
+            if (thumb instanceof TLRPC.TL_photoSizeEmpty || thumb == null) {
                 thumbImageView.setVisibility(INVISIBLE);
                 thumbImageView.setImageBitmap(null);
+                extTextView.setAlpha(1.0f);
+                placeholderImageView.setAlpha(1.0f);
             } else {
+                thumbImageView.getImageReceiver().setNeedsQualityThumb(bigthumb == null);
+                thumbImageView.getImageReceiver().setShouldGenerateQualityThumb(bigthumb == null);
+
                 thumbImageView.setVisibility(VISIBLE);
-                thumbImageView.setImage(document.messageOwner.media.document.thumb.location, "40_40", (Drawable) null);
+                if (messageObject.strippedThumb != null) {
+                    thumbImageView.setImage(ImageLocation.getForDocument(bigthumb, document), "40_40", null, null, messageObject.strippedThumb, null, null, 1, messageObject);
+                } else {
+                    thumbImageView.setImage(ImageLocation.getForDocument(bigthumb, document), "40_40", ImageLocation.getForDocument(thumb, document), "40_40_b", null, 0, 1, messageObject);
+                }
             }
-            long date = (long) document.messageOwner.date * 1000;
-            dateTextView.setText(String.format("%s, %s", AndroidUtilities.formatFileSize(document.messageOwner.media.document.size), LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, LocaleController.formatterYear.format(new Date(date)), LocaleController.formatterDay.format(new Date(date)))));
+            long date = (long) messageObject.messageOwner.date * 1000;
+            if (viewType == VIEW_TYPE_GLOBAL_SEARCH) {
+                CharSequence fromName = FilteredSearchView.createFromInfoString(messageObject);
+
+                dateTextView.setText(new SpannableStringBuilder().append(AndroidUtilities.formatFileSize(document.size))
+                        .append(' ').append(dotSpan).append(' ')
+                        .append(fromName));
+                rightDateTextView.setText(LocaleController.stringForMessageListDate(messageObject.messageOwner.date));
+            } else {
+                dateTextView.setText(String.format("%s, %s", AndroidUtilities.formatFileSize(document.size), LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, LocaleController.getInstance().formatterYear.format(new Date(date)), LocaleController.getInstance().formatterDay.format(new Date(date)))));
+            }
+
+            if (messageObject.hasHighlightedWords() && !TextUtils.isEmpty(message.messageOwner.message)) {
+                String str = message.messageOwner.message.replace("\n", " ").replaceAll(" +", " ").trim();
+                caption = AndroidUtilities.highlightText(str, message.highlightedWords);
+                if (captionTextView != null) {
+                    captionTextView.setVisibility(caption == null ? View.GONE : View.VISIBLE);
+                }
+            } else {
+                if (captionTextView != null) {
+                    captionTextView.setVisibility(View.GONE);
+                }
+            }
         } else {
             nameTextView.setText("");
             extTextView.setText("");
             dateTextView.setText("");
-            placeholderImabeView.setVisibility(VISIBLE);
+            placeholderImageView.setVisibility(VISIBLE);
             extTextView.setVisibility(VISIBLE);
+            extTextView.setAlpha(1.0f);
+            placeholderImageView.setAlpha(1.0f);
             thumbImageView.setVisibility(INVISIBLE);
             thumbImageView.setImageBitmap(null);
+            caption = null;
+            if (captionTextView != null) {
+                captionTextView.setVisibility(View.GONE);
+            }
         }
 
         setWillNotDraw(!needDivider);
         progressView.setProgress(0, false);
-        updateFileExistIcon();
+        updateFileExistIcon(animated);
     }
 
-    public void updateFileExistIcon() {
+    public void updateFileExistIcon(boolean animated) {
+        if (animated && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            TransitionSet transition = new TransitionSet();
+            ChangeBounds changeBounds = new ChangeBounds();
+            changeBounds.setDuration(150);
+            transition.addTransition(new Fade().setDuration(150)).addTransition(changeBounds);
+            transition.setOrdering(TransitionSet.ORDERING_TOGETHER);
+            transition.setInterpolator(CubicBezierInterpolator.DEFAULT);
+            TransitionManager.beginDelayedTransition(this, transition);
+        }
         if (message != null && message.messageOwner.media != null) {
-            String fileName = null;
-            File cacheFile;
-            if (message.messageOwner.attachPath == null || message.messageOwner.attachPath.length() == 0 || !(new File(message.messageOwner.attachPath).exists())) {
-                cacheFile = FileLoader.getPathToMessage(message.messageOwner);
-                if (!cacheFile.exists()) {
-                    fileName = FileLoader.getAttachFileName(message.messageOwner.media.document);
-                }
-            }
             loaded = false;
-            if (fileName == null) {
+            if (message.attachPathExists || message.mediaExists || !drawDownloadIcon) {
                 statusImageView.setVisibility(INVISIBLE);
-                dateTextView.setPadding(0, 0, 0, 0);
+                progressView.setVisibility(INVISIBLE);
+
+                LayoutParams layoutParams = (LayoutParams) dateTextView.getLayoutParams();
+                if (layoutParams != null) {
+                    layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 8 : 72);
+                    layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 72 : 8);
+                    dateTextView.requestLayout();
+                }
                 loading = false;
                 loaded = true;
-                MediaController.getInstance().removeLoadingFileObserver(this);
+                DownloadController.getInstance(currentAccount).removeLoadingFileObserver(this);
             } else {
-                MediaController.getInstance().addLoadingFileObserver(fileName, this);
-                loading = FileLoader.getInstance().isLoadingFile(fileName);
+                String fileName = FileLoader.getAttachFileName(message.getDocument());
+                DownloadController.getInstance(currentAccount).addLoadingFileObserver(fileName, message, this);
+                loading = FileLoader.getInstance(currentAccount).isLoadingFile(fileName);
                 statusImageView.setVisibility(VISIBLE);
-                statusImageView.setImageResource(loading ? R.drawable.media_doc_pause : R.drawable.media_doc_load);
-                dateTextView.setPadding(LocaleController.isRTL ? 0 : AndroidUtilities.dp(14), 0, LocaleController.isRTL ? AndroidUtilities.dp(14) : 0, 0);
+                statusDrawable.setCustomEndFrame(loading ? 15 : 0);
+                statusDrawable.setPlayInDirectionOfCustomEndFrame(true);
+                if (animated) {
+                    statusImageView.playAnimation();
+                } else {
+                    statusDrawable.setCurrentFrame(loading ? 15 : 0);
+                    statusImageView.invalidate();
+                }
+                LayoutParams layoutParams = (LayoutParams) dateTextView.getLayoutParams();
+                if (layoutParams != null) {
+                    layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 8 : (72 + 14));
+                    layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? (72 + 14) : 8);
+                    dateTextView.requestLayout();
+                }
                 if (loading) {
                     progressView.setVisibility(VISIBLE);
                     Float progress = ImageLoader.getInstance().getFileProgress(fileName);
@@ -276,12 +527,17 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
             progressView.setVisibility(INVISIBLE);
             progressView.setProgress(0, false);
             statusImageView.setVisibility(INVISIBLE);
-            dateTextView.setPadding(0, 0, 0, 0);
-            MediaController.getInstance().removeLoadingFileObserver(this);
+            LayoutParams layoutParams = (LayoutParams) dateTextView.getLayoutParams();
+            if (layoutParams != null) {
+                layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 8 : 72);
+                layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 72 : 8);
+                dateTextView.requestLayout();
+            }
+            DownloadController.getInstance(currentAccount).removeLoadingFileObserver(this);
         }
     }
 
-    public MessageObject getDocument() {
+    public MessageObject getMessage() {
         return message;
     }
 
@@ -293,41 +549,94 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
         return loading;
     }
 
+    public BackupImageView getImageView() {
+        return thumbImageView;
+    }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(56) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY));
+        if (viewType == VIEW_TYPE_PICKER) {
+            super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(64) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY));
+        } else {
+            super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(56), MeasureSpec.EXACTLY));
+            int h = AndroidUtilities.dp(5 + 29) + nameTextView.getMeasuredHeight() +  (needDivider ? 1 : 0);
+            if (caption != null && captionTextView != null && message.hasHighlightedWords()) {
+                ignoreRequestLayout = true;
+                captionTextView.setText(AndroidUtilities.ellipsizeCenterEnd(caption, message.highlightedWords.get(0), captionTextView.getMeasuredWidth(), captionTextView.getPaint(), 130));
+                ignoreRequestLayout = false;
+
+                h += captionTextView.getMeasuredHeight() + AndroidUtilities.dp(3);
+            }
+            setMeasuredDimension(getMeasuredWidth(), h);
+        }
+    }
+
+    boolean ignoreRequestLayout;
+    @Override
+    public void requestLayout() {
+        if (ignoreRequestLayout) {
+            return;
+        }
+        super.requestLayout();
+    }
+
+    @Override
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
+        if (viewType != VIEW_TYPE_PICKER && ((nameTextView.getLineCount() > 1 || (captionTextView != null && captionTextView.getVisibility() == View.VISIBLE)))); {
+            int y = nameTextView.getMeasuredHeight() - AndroidUtilities.dp(22);
+            if (captionTextView != null && captionTextView.getVisibility() == View.VISIBLE) {
+                captionTextView.layout(captionTextView.getLeft(), y + captionTextView.getTop(), captionTextView.getRight(), y + captionTextView.getBottom());
+                y += captionTextView.getMeasuredHeight() + AndroidUtilities.dp(3);
+            }
+            dateTextView.layout(dateTextView.getLeft(), y + dateTextView.getTop(), dateTextView.getRight(), y + dateTextView.getBottom());
+            statusImageView.layout(statusImageView.getLeft(), y + statusImageView.getTop(), statusImageView.getRight(), y + statusImageView.getBottom());
+            progressView.layout(progressView.getLeft(), getMeasuredHeight() - progressView.getMeasuredHeight() - (needDivider ? 1 : 0), progressView.getRight(), getMeasuredHeight() - (needDivider ? 1 : 0));
+        }
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         if (needDivider) {
-            canvas.drawLine(AndroidUtilities.dp(72), getHeight() - 1, getWidth() - getPaddingRight(), getHeight() - 1, paint);
+            canvas.drawLine(AndroidUtilities.dp(72), getHeight() - 1, getWidth() - getPaddingRight(), getHeight() - 1, Theme.dividerPaint);
         }
     }
 
     @Override
-    public void onFailedDownload(String name) {
-        updateFileExistIcon();
+    public void onFailedDownload(String name, boolean canceled) {
+        updateFileExistIcon(true);
     }
 
     @Override
     public void onSuccessDownload(String name) {
         progressView.setProgress(1, true);
-        updateFileExistIcon();
+        updateFileExistIcon(true);
     }
 
     @Override
-    public void onProgressDownload(String fileName, float progress) {
-        progressView.setProgress(progress, true);
+    public void onProgressDownload(String fileName, long downloadedSize, long totalSize) {
+        if (progressView.getVisibility() != VISIBLE) {
+            updateFileExistIcon(true);
+        }
+        progressView.setProgress(Math.min(1f, downloadedSize / (float) totalSize), true);
     }
 
     @Override
-    public void onProgressUpload(String fileName, float progress, boolean isEncrypted) {
+    public void onProgressUpload(String fileName, long uploadedSize, long totalSize, boolean isEncrypted) {
 
     }
 
     @Override
     public int getObserverTag() {
         return TAG;
+    }
+
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        if (checkBox.isChecked()) {
+            info.setCheckable(true);
+            info.setChecked(true);
+        }
     }
 }

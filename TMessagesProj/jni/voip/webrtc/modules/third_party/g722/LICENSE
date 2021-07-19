@@ -1,0 +1,20 @@
+/*
+ * SpanDSP - a series of DSP components for telephony
+ *
+ * g722_decode.c - The ITU G.722 codec, decode part.
+ *
+ * Written by Steve Underwood <steveu@coppice.org>
+ *
+ * Copyright (C) 2005 Steve Underwood
+ *
+ *  Despite my general liking of the GPL, I place my own contributions
+ *  to this code in the public domain for the benefit of all mankind -
+ *  even the slimy ones who might try to proprietize my work and use it
+ *  to my detriment.
+ *
+ * Based in part on a single channel G.722 codec which is:
+ *
+ * Copyright (c) CMU 1993
+ * Computer Science, Speech Group
+ * Chengxiang Lu and Alex Hauptmann
+ */

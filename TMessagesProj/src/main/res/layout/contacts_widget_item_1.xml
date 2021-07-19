@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="0dp"
+    android:id="@+id/contacts_widget_item1"
+    android:layout_height="86dp"
+    android:background="@drawable/list_selector_ex"
+    android:layout_weight="0.5"
+    android:theme="@style/Theme.TMessages.AppWidget"
+    tools:showIn="@layout/contacts_widget_item">
+
+    <ImageView
+        android:id="@+id/contacts_widget_item_avatar1"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_gravity="center"
+        android:layout_marginBottom="10dp"
+        android:src="?attr/widgetPreviewImage"
+        android:gravity="start" />
+
+    <TextView
+        android:id="@+id/contacts_widget_item_text1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:singleLine="true"
+        android:ellipsize="end"
+        android:gravity="center"
+        android:layout_gravity="center"
+        android:textSize="12dp"
+        android:layout_marginRight="6dp"
+        android:layout_marginLeft="6dp"
+        android:layout_marginTop="28dp"
+        android:text="?attr/widgetPreviewTitle"
+        android:textColor="@color/widget_name" />
+
+    <FrameLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="1dp"
+        android:background="@drawable/widgets_light_badgebg"
+        android:layout_gravity="center"
+        android:layout_marginBottom="27dp"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="4dp"
+        android:visibility="?attr/widgetPreviewDot"
+        android:id="@+id/contacts_widget_item_badge_bg1">
+
+        <TextView
+            android:id="@+id/contacts_widget_item_badge1"
+            style="@style/TMessages.AppWidget.Badge"
+            android:layout_gravity="center"
+            android:text="2" />
+    </FrameLayout>
+
+</FrameLayout>

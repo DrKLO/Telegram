@@ -1,0 +1,16 @@
+asapersson@webrtc.org
+sprang@webrtc.org
+srte@webrtc.org
+
+per-file alr_experiment*=sprang@webrtc.org
+per-file audio_allocation_settings*=srte@webrtc.org
+per-file congestion_controller_experiment*=srte@webrtc.org
+per-file cpu_speed_experiment*=asapersson@webrtc.org
+per-file field_trial*=srte@webrtc.org
+per-file jitter_upper_bound_experiment*=sprang@webrtc.org
+per-file keyframe_interval_settings*=brandtr@webrtc.org
+per-file normalize_simulcast_size_experiment*=asapersson@webrtc.org
+per-file quality_scaling_experiment*=asapersson@webrtc.org
+per-file rtt_mult_experiment*=mhoro@webrtc.org
+per-file rate_control_settings*=sprang@webrtc.org
+per-file rate_control_settings*=srte@webrtc.org

@@ -1,39 +1,51 @@
 /*
- * This is the source code of Telegram for Android v. 1.7.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Cells;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
+import android.view.View;
 
-import org.telegram.android.AndroidUtilities;
+import androidx.core.graphics.ColorUtils;
 
-public class DividerCell extends BaseCell {
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.ActionBar.Theme;
 
-    private static Paint paint;
+public class DividerCell extends View {
+
+    private boolean forceDarkTheme;
+    private Paint paint = new Paint();
 
     public DividerCell(Context context) {
         super(context);
-        if (paint == null) {
-            paint = new Paint();
-            paint.setColor(0xffd9d9d9);
-            paint.setStrokeWidth(1);
-        }
+        setPadding(0, AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8));
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(16) + 1);
+        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), getPaddingTop() + getPaddingBottom() + 1);
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
-        canvas.drawLine(getPaddingLeft(), AndroidUtilities.dp(8), getWidth() - getPaddingRight(), AndroidUtilities.dp(8), paint);
+        if (forceDarkTheme) {
+            paint.setColor(ColorUtils.blendARGB(Color.BLACK, Theme.getColor(Theme.key_voipgroup_dialogBackground),  0.2f));
+        } else {
+            paint.setColor(Theme.getColor(Theme.key_divider));
+        }
+
+        canvas.drawLine(getPaddingLeft(), getPaddingTop(), getWidth() - getPaddingRight(), getPaddingTop(), paint);
+    }
+
+    public void setForceDarkTheme(boolean forceDarkTheme) {
+        this.forceDarkTheme = forceDarkTheme;
     }
 }

@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Components;
@@ -11,22 +11,28 @@ package org.telegram.ui.Components;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.RectF;
 import android.view.View;
 import android.view.animation.DecelerateInterpolator;
 
-import org.telegram.android.AndroidUtilities;
+import org.telegram.messenger.AndroidUtilities;
 
 public class LineProgressView extends View {
 
-    private long lastUpdateTime = 0;
-    private float currentProgress = 0;
-    private float animationProgressStart = 0;
-    private long currentProgressTime = 0;
-    private float animatedProgressValue = 0;
+    private long lastUpdateTime;
+    private float currentProgress;
+    private float animationProgressStart;
+    private long currentProgressTime;
+    private float animatedProgressValue;
     private float animatedAlphaValue = 1.0f;
 
-    private static DecelerateInterpolator decelerateInterpolator = null;
-    private static Paint progressPaint = null;
+    private int backColor;
+    private int progressColor;
+
+    private static DecelerateInterpolator decelerateInterpolator;
+    private static Paint progressPaint;
+
+    private RectF rect = new RectF();
 
     public LineProgressView(Context context) {
         super(context);
@@ -34,10 +40,8 @@ public class LineProgressView extends View {
         if (decelerateInterpolator == null) {
             decelerateInterpolator = new DecelerateInterpolator();
             progressPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-            progressPaint.setStyle(Paint.Style.STROKE);
             progressPaint.setStrokeCap(Paint.Cap.ROUND);
             progressPaint.setStrokeWidth(AndroidUtilities.dp(2));
-            progressPaint.setColor(0xff36a2ee);
         }
     }
 
@@ -70,7 +74,11 @@ public class LineProgressView extends View {
     }
 
     public void setProgressColor(int color) {
-        progressPaint.setColor(color);
+        progressColor = color;
+    }
+
+    public void setBackColor(int color) {
+        backColor = color;
     }
 
     public void setProgress(float value, boolean animated) {
@@ -90,9 +98,23 @@ public class LineProgressView extends View {
         invalidate();
     }
 
+    public float getCurrentProgress() {
+        return currentProgress;
+    }
+
     public void onDraw(Canvas canvas) {
-        progressPaint.setAlpha((int)(255 * animatedAlphaValue));
-        canvas.drawRect(0, 0, getWidth() * animatedProgressValue, getHeight(), progressPaint);
+        if (backColor != 0 && animatedProgressValue != 1) {
+            progressPaint.setColor(backColor);
+            progressPaint.setAlpha((int) (255 * animatedAlphaValue));
+            int start = (int) (getWidth() * animatedProgressValue);
+            rect.set(0, 0, getWidth(), getHeight());
+            canvas.drawRoundRect(rect, getHeight() / 2, getHeight() / 2, progressPaint);
+        }
+
+        progressPaint.setColor(progressColor);
+        progressPaint.setAlpha((int) (255 * animatedAlphaValue));
+        rect.set(0, 0, getWidth() * animatedProgressValue, getHeight());
+        canvas.drawRoundRect(rect, getHeight() / 2, getHeight() / 2, progressPaint);
         updateAnimation();
     }
 }

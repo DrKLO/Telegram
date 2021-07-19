@@ -39,14 +39,6 @@
 
 #define MAX_PERIOD 1024
 
-#ifndef OVERLAP
-#define OVERLAP(mode) ((mode)->overlap)
-#endif
-
-#ifndef FRAMESIZE
-#define FRAMESIZE(mode) ((mode)->mdctSize)
-#endif
-
 typedef struct {
    int size;
    const opus_int16 *index;

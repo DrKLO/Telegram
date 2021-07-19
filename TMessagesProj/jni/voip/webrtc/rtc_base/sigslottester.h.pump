@@ -1,0 +1,102 @@
+/*
+ *  Copyright 2014 The WebRTC Project Authors. All rights reserved.
+ *
+ *  Use of this source code is governed by a BSD-style license
+ *  that can be found in the LICENSE file in the root of the source
+ *  tree. An additional intellectual property rights grant can be found
+ *  in the file PATENTS.  All contributing project authors may
+ *  be found in the AUTHORS file in the root of the source tree.
+ */
+
+#ifndef RTC_BASE_SIGSLOTTESTER_H_
+#define RTC_BASE_SIGSLOTTESTER_H_
+
+// To generate sigslottester.h from sigslottester.h.pump, execute:
+// /home/build/google3/third_party/gtest/scripts/pump.py sigslottester.h.pump
+
+
+// SigslotTester(s) are utility classes to check if signals owned by an
+// object are being invoked at the right time and with the right arguments.
+// They are meant to be used in tests. Tests must provide "capture" pointers
+// (i.e. address of variables) where the arguments from the signal callback
+// can be stored.
+//
+// Example:
+//   /* Some signal */
+//   sigslot::signal1<const std::string&> foo;
+//
+//   /* We want to monitor foo in some test. Note how signal argument is
+//      const std::string&, but capture-type is std::string. Capture type
+//      must be type that can be assigned to. */
+//   std::string capture;
+//   SigslotTester1<const std::string&, std::string> slot(&foo, &capture);
+//   foo.emit("hello");
+//   EXPECT_EQ(1, slot.callback_count());
+//   EXPECT_EQ("hello", capture);
+//   /* See unit-tests for more examples */
+
+#include "rtc_base/constructor_magic.h"
+#include "rtc_base/third_party/sigslot/sigslot.h"
+
+namespace rtc {
+
+// Base version for testing signals that passes no arguments.
+class SigslotTester0 : public sigslot::has_slots<> {
+ public:
+  explicit SigslotTester0(sigslot::signal0<>* signal) : callback_count_(0) {
+    signal->connect(this, &SigslotTester0::OnSignalCallback);
+  }
+
+  int callback_count() const { return callback_count_; }
+
+ private:
+  void OnSignalCallback() { callback_count_++; }
+  int callback_count_;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(SigslotTester0);
+};
+
+// Versions below are for testing signals that pass arguments. For all the
+// templates below:
+// - A1-A5 is the type of the argument i in the callback. Signals may and often
+//   do use const-references here for efficiency.
+// - C1-C5 is the type of the variable to capture argument i. These should be
+//   non-const value types suitable for use as lvalues.
+
+$var n = 5
+$range i 1..n
+$for i [[
+$range j 1..i
+
+template <$for j , [[class A$j]], $for j , [[class C$j]]>
+class SigslotTester$i : public sigslot::has_slots<> {
+ public:
+  SigslotTester$i(sigslot::signal$i<$for j , [[A$j]]>* signal,
+                $for j , [[C$j* capture$j]])
+      : callback_count_(0),
+      $for j , [[capture$j[[]]_(capture$j)]] {
+    signal->connect(this, &SigslotTester$i::OnSignalCallback);
+  }
+
+  int callback_count() const { return callback_count_; }
+
+ private:
+  void OnSignalCallback($for j , [[A$j arg$j]]) {
+    callback_count_++;$for j [[
+
+    *capture$j[[]]_ = arg$j;]]
+
+  }
+
+  int callback_count_;$for j [[
+
+  C$j* capture$j[[]]_;]]
+
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(SigslotTester$i);
+};
+
+]]
+}  // namespace rtc
+
+#endif  // RTC_BASE_SIGSLOTTESTER_H_

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<appwidget-provider
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="320dp"
+    android:minHeight="110dp"
+    android:updatePeriodMillis="3600000"
+    android:initialLayout="@layout/feed_widget_layout"
+    android:autoAdvanceViewId="@id/list_view"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen"
+    android:configure="org.telegram.ui.FeedWidgetConfigActivity">
+</appwidget-provider>

@@ -80,7 +80,8 @@ opus_int silk_Encode(                                   /* O    Returns error co
     opus_int                        nSamplesIn,         /* I    Number of samples in input vector               */
     ec_enc                          *psRangeEnc,        /* I/O  Compressor data structure                       */
     opus_int32                      *nBytesOut,         /* I/O  Number of bytes in payload (input: Max bytes)   */
-    const opus_int                  prefillFlag         /* I    Flag to indicate prefilling buffers no coding   */
+    const opus_int                  prefillFlag,        /* I    Flag to indicate prefilling buffers no coding   */
+    int                             activity            /* I    Decision of Opus voice activity detector        */
 );
 
 /****************************************/
@@ -111,7 +112,8 @@ opus_int silk_Decode(                                   /* O    Returns error co
     opus_int                        newPacketFlag,      /* I    Indicates first decoder call for this packet    */
     ec_dec                          *psRangeDec,        /* I/O  Compressor data structure                       */
     opus_int16                      *samplesOut,        /* O    Decoded output speech vector                    */
-    opus_int32                      *nSamplesOut        /* O    Number of samples decoded                       */
+    opus_int32                      *nSamplesOut,       /* O    Number of samples decoded                       */
+    int                             arch                /* I    Run-time architecture                           */
 );
 
 #if 0

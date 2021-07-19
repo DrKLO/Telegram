@@ -58,8 +58,8 @@ static OPUS_INLINE void encode_split(
 }
 
 static OPUS_INLINE void decode_split(
-    opus_int                    *p_child1,      /* O    pulse amplitude of first child subframe     */
-    opus_int                    *p_child2,      /* O    pulse amplitude of second child subframe    */
+    opus_int16                  *p_child1,      /* O    pulse amplitude of first child subframe     */
+    opus_int16                  *p_child2,      /* O    pulse amplitude of second child subframe    */
     ec_dec                      *psRangeDec,    /* I/O  Compressor data structure                   */
     const opus_int              p,              /* I    pulse amplitude of current subframe         */
     const opus_uint8            *shell_table    /* I    table of shell cdfs                         */
@@ -117,12 +117,12 @@ void silk_shell_encoder(
 
 /* Shell decoder, operates on one shell code frame of 16 pulses */
 void silk_shell_decoder(
-    opus_int                    *pulses0,                       /* O    data: nonnegative pulse amplitudes          */
+    opus_int16                  *pulses0,                       /* O    data: nonnegative pulse amplitudes          */
     ec_dec                      *psRangeDec,                    /* I/O  Compressor data structure                   */
     const opus_int              pulses4                         /* I    number of pulses per pulse-subframe         */
 )
 {
-    opus_int pulses3[ 2 ], pulses2[ 4 ], pulses1[ 8 ];
+    opus_int16 pulses3[ 2 ], pulses2[ 4 ], pulses1[ 8 ];
 
     /* this function operates on one shell code frame of 16 pulses */
     silk_assert( SHELL_CODEC_FRAME_LENGTH == 16 );

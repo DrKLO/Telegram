@@ -3,7 +3,7 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
     <PreferenceCategory android:title="@string/Settings"/>
     <PreferenceScreen android:key="account_settings"
-        android:title="Account Settings"
+        android:title="@string/AccountSettings"
         android:summary="">
         <intent android:action="org.telegram.messenger.OPEN_ACCOUNT"
             android:targetPackage="org.telegram.messenger"

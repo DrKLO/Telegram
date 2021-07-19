@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<appwidget-provider
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="110dp"
+    android:minHeight="86dp"
+    android:minResizeHeight="40dp"
+    android:maxResizeHeight="110dp"
+    android:targetCellWidth="2"
+    android:targetCellHeight="2"
+    android:updatePeriodMillis="3600000"
+    android:initialLayout="@layout/contacts_widget_layout_2"
+    android:autoAdvanceViewId="@id/list_view"
+    android:resizeMode="vertical"
+    android:widgetCategory="home_screen"
+    android:description="@string/EditWidgetContactsInfo"
+    android:previewImage="@drawable/contacts_widget_preview"
+    android:previewLayout="@layout/contacts_widget_layout_preview"
+    android:widgetFeatures="reconfigurable|configuration_optional"
+    android:configure="org.telegram.ui.ContactsWidgetConfigActivity">
+</appwidget-provider>

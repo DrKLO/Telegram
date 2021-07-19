@@ -74,7 +74,7 @@ void silk_encode_signs(
 /* Decodes signs of excitation */
 void silk_decode_signs(
     ec_dec                      *psRangeDec,                        /* I/O  Compressor data structure                   */
-    opus_int                    pulses[],                           /* I/O  pulse signal                                */
+    opus_int16                  pulses[],                           /* I/O  pulse signal                                */
     opus_int                    length,                             /* I    length of input                             */
     const opus_int              signalType,                         /* I    Signal type                                 */
     const opus_int              quantOffsetType,                    /* I    Quantization offset type                    */
@@ -83,7 +83,7 @@ void silk_decode_signs(
 {
     opus_int         i, j, p;
     opus_uint8       icdf[ 2 ];
-    opus_int         *q_ptr;
+    opus_int16       *q_ptr;
     const opus_uint8 *icdf_ptr;
 
     icdf[ 1 ] = 0;

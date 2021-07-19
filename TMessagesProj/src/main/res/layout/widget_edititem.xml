@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:id="@+id/widget_edititem"
+    android:layout_height="44dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:id="@+id/widget_edititem_text"
+        android:layout_height="24dp"
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp"
+        android:textColor="@color/widget_edit_text"
+        android:layout_gravity="center"
+        android:singleLine="true"
+        android:ellipsize="end"
+        android:background="@drawable/widget_edit"
+        android:gravity="center"/>
+
+</FrameLayout>

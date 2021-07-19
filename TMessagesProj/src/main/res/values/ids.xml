@@ -1,0 +1,34 @@
+<resources>
+    <item name="menu_regular" type="id"/>
+    <item name="menu_bold" type="id"/>
+    <item name="menu_italic" type="id"/>
+    <item name="menu_link" type="id"/>
+    <item name="menu_mono" type="id"/>
+    <item name="menu_strike" type="id"/>
+    <item name="menu_underline" type="id"/>
+    <item name="menu_groupbolditalic" type="id"/>
+    <item name="parent_tag" type="id"/>
+    <item name="object_tag" type="id"/>
+    <item name="index_tag" type="id"/>
+    <item name="svg_tag" type="id"/>
+    <item name="width_tag" type="id"/>
+    <item name="current_animation" type="id"/>
+    <item name="acc_action_small_button" type="id"/>
+    <item name="acc_action_msg_options" type="id"/>
+    <item name="acc_action_open_photo" type="id"/>
+
+    <!-- there are required for focusing order customization on the passcode screen -->
+    <item name="passcode_btn_1" type="id"/>
+    <item name="passcode_btn_2" type="id"/>
+    <item name="passcode_btn_3" type="id"/>
+    <item name="passcode_btn_4" type="id"/>
+    <item name="passcode_btn_5" type="id"/>
+    <item name="passcode_btn_6" type="id"/>
+    <item name="passcode_btn_7" type="id"/>
+    <item name="passcode_btn_8" type="id"/>
+    <item name="passcode_btn_9" type="id"/>
+    <item name="passcode_btn_0" type="id"/>
+    <item name="passcode_btn_fingerprint" type="id"/>
+    <item name="passcode_btn_backspace" type="id"/>
+    <item name="passcode_btn_done" type="id"/>
+</resources>

@@ -1,0 +1,6 @@
+<animated-rotate xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/ab_progress"
+    android:fromDegrees="0"
+    android:pivotX="50%"
+    android:pivotY="50%"
+    android:toDegrees="360"/>

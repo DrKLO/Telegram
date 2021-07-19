@@ -1,0 +1,11 @@
+Name: In line A-law and u-law conversion routines
+Short Name: g711
+URL:
+Version: 0
+Date: 2018-06-25
+License: Custom license
+License File: LICENSE
+Security Critical: yes
+
+Description:
+In line A-law and u-law conversion routines

@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Cells;
@@ -12,10 +12,10 @@ import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
-import android.view.View;
 import android.view.ViewConfiguration;
+import android.view.ViewGroup;
 
-public class BaseCell extends View {
+public abstract class BaseCell extends ViewGroup {
 
     private final class CheckForTap implements Runnable {
         public void run() {
@@ -33,11 +33,11 @@ public class BaseCell extends View {
         public void run() {
             if (checkingForLongPress && getParent() != null && currentPressCount == pressCount) {
                 checkingForLongPress = false;
+                performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                onLongPress();
                 MotionEvent event = MotionEvent.obtain(0, 0, MotionEvent.ACTION_CANCEL, 0, 0, 0);
                 onTouchEvent(event);
                 event.recycle();
-                performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
-                onLongPress();
             }
         }
     }
@@ -49,14 +49,28 @@ public class BaseCell extends View {
 
     public BaseCell(Context context) {
         super(context);
+        setWillNotDraw(false);
+        setFocusable(true);
     }
 
-    protected void setDrawableBounds(Drawable drawable, int x, int y) {
+    public static void setDrawableBounds(Drawable drawable, int x, int y) {
         setDrawableBounds(drawable, x, y, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
     }
 
-    protected void setDrawableBounds(Drawable drawable, int x, int y, int w, int h) {
-        drawable.setBounds(x, y, x + w, y + h);
+    public static void setDrawableBounds(Drawable drawable, float x, float y) {
+        setDrawableBounds(drawable, (int) x, (int) y, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
+    }
+
+    public static void setDrawableBounds(Drawable drawable, int x, int y, int w, int h) {
+        if (drawable != null) {
+            drawable.setBounds(x, y, x + w, y + h);
+        }
+    }
+
+    public static void setDrawableBounds(Drawable drawable, float x, float y, int w, int h) {
+        if (drawable != null) {
+            drawable.setBounds((int) x, (int) y, (int) x + w, (int) y + h);
+        }
     }
 
     protected void startCheckLongPress() {
@@ -78,6 +92,11 @@ public class BaseCell extends View {
         if (pendingCheckForTap != null) {
             removeCallbacks(pendingCheckForTap);
         }
+    }
+
+    @Override
+    public boolean hasOverlappingRendering() {
+        return false;
     }
 
     protected void onLongPress() {

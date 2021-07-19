@@ -1,0 +1,7 @@
+// sigslot.h: Signal/Slot classes
+//
+// Written by Sarah Thompson (sarah@telergy.com) 2002.
+//
+// License: Public domain. You are free to use this code however you like, with
+// the proviso that the author takes on no responsibility or liability for any
+// use.

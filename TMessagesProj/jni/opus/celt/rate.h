@@ -32,7 +32,7 @@
 #define MAX_PSEUDO 40
 #define LOG_MAX_PSEUDO 6
 
-#define MAX_PULSES 128
+#define CELT_MAX_PULSES 128
 
 #define MAX_FINE_BITS 8
 
@@ -95,7 +95,7 @@ static OPUS_INLINE int pulses2bits(const CELTMode *m, int band, int LM, int puls
  @param pulses Number of pulses per band (returned)
  @return Total number of bits allocated
 */
-int compute_allocation(const CELTMode *m, int start, int end, const int *offsets, const int *cap, int alloc_trim, int *intensity, int *dual_stero,
+int clt_compute_allocation(const CELTMode *m, int start, int end, const int *offsets, const int *cap, int alloc_trim, int *intensity, int *dual_stero,
       opus_int32 total, opus_int32 *balance, int *pulses, int *ebits, int *fine_priority, int C, int LM, ec_ctx *ec, int encode, int prev, int signalBandwidth);
 
 #endif

@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 7.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2020.
  */
 
 package org.telegram.messenger;
@@ -11,92 +11,109 @@ package org.telegram.messenger;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.os.SystemClock;
+
+import java.util.concurrent.CountDownLatch;
 
 public class DispatchQueue extends Thread {
-    public volatile Handler handler = null;
-    private final Object handlerSyncObject = new Object();
+
+    private volatile Handler handler = null;
+    private CountDownLatch syncLatch = new CountDownLatch(1);
+    private long lastTaskTime;
 
     public DispatchQueue(final String threadName) {
-        setName(threadName);
-        start();
+        this(threadName, true);
     }
 
-    private void sendMessage(Message msg, int delay) {
-        if (handler == null) {
-            try {
-                synchronized (handlerSyncObject) {
-                    handlerSyncObject.wait();
-                }
-            } catch (Throwable t) {
-                t.printStackTrace();
-            }
+    public DispatchQueue(final String threadName, boolean start) {
+        setName(threadName);
+        if (start) {
+            start();
         }
+    }
 
-        if (handler != null) {
+    public void sendMessage(Message msg, int delay) {
+        try {
+            syncLatch.await();
             if (delay <= 0) {
                 handler.sendMessage(msg);
             } else {
                 handler.sendMessageDelayed(msg, delay);
             }
+        } catch (Exception ignore) {
+
         }
     }
 
     public void cancelRunnable(Runnable runnable) {
-        if (handler == null) {
-            synchronized (handlerSyncObject) {
-                if (handler == null) {
-                    try {
-                        handlerSyncObject.wait();
-                    } catch (Throwable t) {
-                        t.printStackTrace();
-                    }
-                }
-            }
-        }
-
-        if (handler != null) {
+        try {
+            syncLatch.await();
             handler.removeCallbacks(runnable);
+        } catch (Exception e) {
+            FileLog.e(e);
         }
     }
 
-    public void postRunnable(Runnable runnable) {
-        postRunnable(runnable, 0);
+    public void cancelRunnables(Runnable[] runnables) {
+        try {
+            syncLatch.await();
+            for (int i = 0; i < runnables.length; i++) {
+                handler.removeCallbacks(runnables[i]);
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
     }
 
-    public void postRunnable(Runnable runnable, long delay) {
-        if (handler == null) {
-            synchronized (handlerSyncObject) {
-                if (handler == null) {
-                    try {
-                        handlerSyncObject.wait();
-                    } catch (Throwable t) {
-                        t.printStackTrace();
-                    }
-                }
-            }
-        }
+    public boolean postRunnable(Runnable runnable) {
+        lastTaskTime = SystemClock.elapsedRealtime();
+        return postRunnable(runnable, 0);
+    }
 
-        if (handler != null) {
-            if (delay <= 0) {
-                handler.post(runnable);
-            } else {
-                handler.postDelayed(runnable, delay);
-            }
+    public boolean postRunnable(Runnable runnable, long delay) {
+        try {
+            syncLatch.await();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        if (delay <= 0) {
+            return handler.post(runnable);
+        } else {
+            return handler.postDelayed(runnable, delay);
         }
     }
 
     public void cleanupQueue() {
-        if (handler != null) {
+        try {
+            syncLatch.await();
             handler.removeCallbacksAndMessages(null);
+        } catch (Exception e) {
+            FileLog.e(e);
         }
     }
 
+    public void handleMessage(Message inputMessage) {
+
+    }
+
+    public long getLastTaskTime() {
+        return lastTaskTime;
+    }
+
+    public void recycle() {
+        handler.getLooper().quit();
+    }
+
+    @Override
     public void run() {
         Looper.prepare();
-        synchronized (handlerSyncObject) {
-            handler = new Handler();
-            handlerSyncObject.notify();
-        }
+        handler = new Handler() {
+            @Override
+            public void handleMessage(Message msg) {
+                DispatchQueue.this.handleMessage(msg);
+            }
+        };
+        syncLatch.countDown();
         Looper.loop();
     }
 }

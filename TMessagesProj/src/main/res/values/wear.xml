@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string-array name="android_wear_capabilities" translatable="false">
+		<item>telegram_full_app</item>
+		<item>remote_notifications_provider</item>
+	</string-array>
+</resources>

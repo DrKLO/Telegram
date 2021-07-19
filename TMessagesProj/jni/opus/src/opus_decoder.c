@@ -33,7 +33,7 @@
 # error "OPUS_BUILD _MUST_ be defined to build Opus. This probably means you need other defines as well, as in a config.h. See the included build files for details."
 #endif
 
-#if defined(__GNUC__) && (__GNUC__ >= 2) && !defined(__OPTIMIZE__)
+#if defined(__GNUC__) && (__GNUC__ >= 2) && !defined(__OPTIMIZE__) && !defined(OPUS_WILL_BE_SLOW)
 # pragma message "You appear to be compiling without optimization, if so opus will be very slow."
 #endif
 
@@ -59,6 +59,7 @@ struct OpusDecoder {
    opus_int32   Fs;          /** Sampling rate (at the API level) */
    silk_DecControlStruct DecControl;
    int          decode_gain;
+   int          arch;
 
    /* Everything beyond this point gets cleared on a reset */
 #define OPUS_DECODER_RESET_START stream_channels
@@ -77,12 +78,26 @@ struct OpusDecoder {
    opus_uint32  rangeFinal;
 };
 
-#ifdef FIXED_POINT
-static OPUS_INLINE opus_int16 SAT16(opus_int32 x) {
-   return x > 32767 ? 32767 : x < -32768 ? -32768 : (opus_int16)x;
-}
+#if defined(ENABLE_HARDENING) || defined(ENABLE_ASSERTIONS)
+static void validate_opus_decoder(OpusDecoder *st)
+{
+   celt_assert(st->channels == 1 || st->channels == 2);
+   celt_assert(st->Fs == 48000 || st->Fs == 24000 || st->Fs == 16000 || st->Fs == 12000 || st->Fs == 8000);
+   celt_assert(st->DecControl.API_sampleRate == st->Fs);
+   celt_assert(st->DecControl.internalSampleRate == 0 || st->DecControl.internalSampleRate == 16000 || st->DecControl.internalSampleRate == 12000 || st->DecControl.internalSampleRate == 8000);
+   celt_assert(st->DecControl.nChannelsAPI == st->channels);
+   celt_assert(st->DecControl.nChannelsInternal == 0 || st->DecControl.nChannelsInternal == 1 || st->DecControl.nChannelsInternal == 2);
+   celt_assert(st->DecControl.payloadSize_ms == 0 || st->DecControl.payloadSize_ms == 10 || st->DecControl.payloadSize_ms == 20 || st->DecControl.payloadSize_ms == 40 || st->DecControl.payloadSize_ms == 60);
+#ifdef OPUS_ARCHMASK
+   celt_assert(st->arch >= 0);
+   celt_assert(st->arch <= OPUS_ARCHMASK);
 #endif
-
+   celt_assert(st->stream_channels == 1 || st->stream_channels == 2);
+}
+#define VALIDATE_OPUS_DECODER(st) validate_opus_decoder(st)
+#else
+#define VALIDATE_OPUS_DECODER(st)
+#endif
 
 int opus_decoder_get_size(int channels)
 {
@@ -109,7 +124,7 @@ int opus_decoder_init(OpusDecoder *st, opus_int32 Fs, int channels)
       return OPUS_BAD_ARG;
 
    OPUS_CLEAR((char*)st, opus_decoder_get_size(channels));
-   /* Initialize SILK encoder */
+   /* Initialize SILK decoder */
    ret = silk_Get_Decoder_Size(&silkDecSizeBytes);
    if (ret)
       return OPUS_INTERNAL_ERROR;
@@ -137,6 +152,7 @@ int opus_decoder_init(OpusDecoder *st, opus_int32 Fs, int channels)
 
    st->prev_mode = 0;
    st->frame_size = Fs/400;
+   st->arch = opus_select_arch();
    return OPUS_OK;
 }
 
@@ -215,12 +231,13 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
    VARDECL(opus_val16, pcm_transition_silk);
    int pcm_transition_celt_size;
    VARDECL(opus_val16, pcm_transition_celt);
-   opus_val16 *pcm_transition;
+   opus_val16 *pcm_transition=NULL;
    int redundant_audio_size;
    VARDECL(opus_val16, redundant_audio);
 
    int audiosize;
    int mode;
+   int bandwidth;
    int transition=0;
    int start_band;
    int redundancy=0;
@@ -230,6 +247,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
    int F2_5, F5, F10, F20;
    const opus_val16 *window;
    opus_uint32 redundant_rng = 0;
+   int celt_accum;
    ALLOC_STACK;
 
    silk_dec = (char*)st+st->silk_dec_offset;
@@ -256,10 +274,12 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
    {
       audiosize = st->frame_size;
       mode = st->mode;
+      bandwidth = st->bandwidth;
       ec_dec_init(&dec,(unsigned char*)data,len);
    } else {
       audiosize = frame_size;
       mode = st->prev_mode;
+      bandwidth = 0;
 
       if (mode == 0)
       {
@@ -295,6 +315,14 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
       }
    }
 
+   /* In fixed-point, we can tell CELT to do the accumulation on top of the
+      SILK PCM buffer. This saves some stack space. */
+#ifdef FIXED_POINT
+   celt_accum = (mode != MODE_CELT_ONLY) && (frame_size >= F10);
+#else
+   celt_accum = 0;
+#endif
+
    pcm_transition_silk_size = ALLOC_NONE;
    pcm_transition_celt_size = ALLOC_NONE;
    if (data!=NULL && st->prev_mode > 0 && (
@@ -325,14 +353,20 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
    }
 
    /* Don't allocate any memory when in CELT-only mode */
-   pcm_silk_size = (mode != MODE_CELT_ONLY) ? IMAX(F10, frame_size)*st->channels : ALLOC_NONE;
+   pcm_silk_size = (mode != MODE_CELT_ONLY && !celt_accum) ? IMAX(F10, frame_size)*st->channels : ALLOC_NONE;
    ALLOC(pcm_silk, pcm_silk_size, opus_int16);
 
    /* SILK processing */
    if (mode != MODE_CELT_ONLY)
    {
       int lost_flag, decoded_samples;
-      opus_int16 *pcm_ptr = pcm_silk;
+      opus_int16 *pcm_ptr;
+#ifdef FIXED_POINT
+      if (celt_accum)
+         pcm_ptr = pcm;
+      else
+#endif
+         pcm_ptr = pcm_silk;
 
       if (st->prev_mode==MODE_CELT_ONLY)
          silk_InitDecoder( silk_dec );
@@ -344,15 +378,15 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
       {
         st->DecControl.nChannelsInternal = st->stream_channels;
         if( mode == MODE_SILK_ONLY ) {
-           if( st->bandwidth == OPUS_BANDWIDTH_NARROWBAND ) {
+           if( bandwidth == OPUS_BANDWIDTH_NARROWBAND ) {
               st->DecControl.internalSampleRate = 8000;
-           } else if( st->bandwidth == OPUS_BANDWIDTH_MEDIUMBAND ) {
+           } else if( bandwidth == OPUS_BANDWIDTH_MEDIUMBAND ) {
               st->DecControl.internalSampleRate = 12000;
-           } else if( st->bandwidth == OPUS_BANDWIDTH_WIDEBAND ) {
+           } else if( bandwidth == OPUS_BANDWIDTH_WIDEBAND ) {
               st->DecControl.internalSampleRate = 16000;
            } else {
               st->DecControl.internalSampleRate = 16000;
-              silk_assert( 0 );
+              celt_assert( 0 );
            }
         } else {
            /* Hybrid mode */
@@ -366,7 +400,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
         /* Call SILK decoder */
         int first_frame = decoded_samples == 0;
         silk_ret = silk_Decode( silk_dec, &st->DecControl,
-                                lost_flag, first_frame, &dec, pcm_ptr, &silk_frame_size );
+                                lost_flag, first_frame, &dec, pcm_ptr, &silk_frame_size, st->arch );
         if( silk_ret ) {
            if (lost_flag) {
               /* PLC failure should not be fatal */
@@ -416,29 +450,6 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
    if (mode != MODE_CELT_ONLY)
       start_band = 17;
 
-   {
-      int endband=21;
-
-      switch(st->bandwidth)
-      {
-      case OPUS_BANDWIDTH_NARROWBAND:
-         endband = 13;
-         break;
-      case OPUS_BANDWIDTH_MEDIUMBAND:
-      case OPUS_BANDWIDTH_WIDEBAND:
-         endband = 17;
-         break;
-      case OPUS_BANDWIDTH_SUPERWIDEBAND:
-         endband = 19;
-         break;
-      case OPUS_BANDWIDTH_FULLBAND:
-         endband = 21;
-         break;
-      }
-      celt_decoder_ctl(celt_dec, CELT_SET_END_BAND(endband));
-      celt_decoder_ctl(celt_dec, CELT_SET_CHANNELS(st->stream_channels));
-   }
-
    if (redundancy)
    {
       transition = 0;
@@ -453,6 +464,34 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
       opus_decode_frame(st, NULL, 0, pcm_transition, IMIN(F5, audiosize), 0);
    }
 
+
+   if (bandwidth)
+   {
+      int endband=21;
+
+      switch(bandwidth)
+      {
+      case OPUS_BANDWIDTH_NARROWBAND:
+         endband = 13;
+         break;
+      case OPUS_BANDWIDTH_MEDIUMBAND:
+      case OPUS_BANDWIDTH_WIDEBAND:
+         endband = 17;
+         break;
+      case OPUS_BANDWIDTH_SUPERWIDEBAND:
+         endband = 19;
+         break;
+      case OPUS_BANDWIDTH_FULLBAND:
+         endband = 21;
+         break;
+      default:
+         celt_assert(0);
+         break;
+      }
+      MUST_SUCCEED(celt_decoder_ctl(celt_dec, CELT_SET_END_BAND(endband)));
+   }
+   MUST_SUCCEED(celt_decoder_ctl(celt_dec, CELT_SET_CHANNELS(st->stream_channels)));
+
    /* Only allocation memory for redundancy if/when needed */
    redundant_audio_size = redundancy ? F5*st->channels : ALLOC_NONE;
    ALLOC(redundant_audio, redundant_audio_size, opus_val16);
@@ -460,42 +499,45 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
    /* 5 ms redundant frame for CELT->SILK*/
    if (redundancy && celt_to_silk)
    {
-      celt_decoder_ctl(celt_dec, CELT_SET_START_BAND(0));
+      MUST_SUCCEED(celt_decoder_ctl(celt_dec, CELT_SET_START_BAND(0)));
       celt_decode_with_ec(celt_dec, data+len, redundancy_bytes,
-                          redundant_audio, F5, NULL);
-      celt_decoder_ctl(celt_dec, OPUS_GET_FINAL_RANGE(&redundant_rng));
+                          redundant_audio, F5, NULL, 0);
+      MUST_SUCCEED(celt_decoder_ctl(celt_dec, OPUS_GET_FINAL_RANGE(&redundant_rng)));
    }
 
    /* MUST be after PLC */
-   celt_decoder_ctl(celt_dec, CELT_SET_START_BAND(start_band));
+   MUST_SUCCEED(celt_decoder_ctl(celt_dec, CELT_SET_START_BAND(start_band)));
 
    if (mode != MODE_SILK_ONLY)
    {
       int celt_frame_size = IMIN(F20, frame_size);
       /* Make sure to discard any previous CELT state */
       if (mode != st->prev_mode && st->prev_mode > 0 && !st->prev_redundancy)
-         celt_decoder_ctl(celt_dec, OPUS_RESET_STATE);
+         MUST_SUCCEED(celt_decoder_ctl(celt_dec, OPUS_RESET_STATE));
       /* Decode CELT */
       celt_ret = celt_decode_with_ec(celt_dec, decode_fec ? NULL : data,
-                                     len, pcm, celt_frame_size, &dec);
+                                     len, pcm, celt_frame_size, &dec, celt_accum);
    } else {
       unsigned char silence[2] = {0xFF, 0xFF};
-      for (i=0;i<frame_size*st->channels;i++)
-         pcm[i] = 0;
+      if (!celt_accum)
+      {
+         for (i=0;i<frame_size*st->channels;i++)
+            pcm[i] = 0;
+      }
       /* For hybrid -> SILK transitions, we let the CELT MDCT
          do a fade-out by decoding a silence frame */
       if (st->prev_mode == MODE_HYBRID && !(redundancy && celt_to_silk && st->prev_redundancy) )
       {
-         celt_decoder_ctl(celt_dec, CELT_SET_START_BAND(0));
-         celt_decode_with_ec(celt_dec, silence, 2, pcm, F2_5, NULL);
+         MUST_SUCCEED(celt_decoder_ctl(celt_dec, CELT_SET_START_BAND(0)));
+         celt_decode_with_ec(celt_dec, silence, 2, pcm, F2_5, NULL, celt_accum);
       }
    }
 
-   if (mode != MODE_CELT_ONLY)
+   if (mode != MODE_CELT_ONLY && !celt_accum)
    {
 #ifdef FIXED_POINT
       for (i=0;i<frame_size*st->channels;i++)
-         pcm[i] = SAT16(pcm[i] + pcm_silk[i]);
+         pcm[i] = SAT16(ADD32(pcm[i], pcm_silk[i]));
 #else
       for (i=0;i<frame_size*st->channels;i++)
          pcm[i] = pcm[i] + (opus_val16)((1.f/32768.f)*pcm_silk[i]);
@@ -504,18 +546,18 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
 
    {
       const CELTMode *celt_mode;
-      celt_decoder_ctl(celt_dec, CELT_GET_MODE(&celt_mode));
+      MUST_SUCCEED(celt_decoder_ctl(celt_dec, CELT_GET_MODE(&celt_mode)));
       window = celt_mode->window;
    }
 
    /* 5 ms redundant frame for SILK->CELT */
    if (redundancy && !celt_to_silk)
    {
-      celt_decoder_ctl(celt_dec, OPUS_RESET_STATE);
-      celt_decoder_ctl(celt_dec, CELT_SET_START_BAND(0));
+      MUST_SUCCEED(celt_decoder_ctl(celt_dec, OPUS_RESET_STATE));
+      MUST_SUCCEED(celt_decoder_ctl(celt_dec, CELT_SET_START_BAND(0)));
 
-      celt_decode_with_ec(celt_dec, data+len, redundancy_bytes, redundant_audio, F5, NULL);
-      celt_decoder_ctl(celt_dec, OPUS_GET_FINAL_RANGE(&redundant_rng));
+      celt_decode_with_ec(celt_dec, data+len, redundancy_bytes, redundant_audio, F5, NULL, 0);
+      MUST_SUCCEED(celt_decoder_ctl(celt_dec, OPUS_GET_FINAL_RANGE(&redundant_rng)));
       smooth_fade(pcm+st->channels*(frame_size-F2_5), redundant_audio+st->channels*F2_5,
                   pcm+st->channels*(frame_size-F2_5), F2_5, st->channels, window, st->Fs);
    }
@@ -591,6 +633,7 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
    int packet_frame_size, packet_bandwidth, packet_mode, packet_stream_channels;
    /* 48 x 2.5 ms = 120 ms */
    opus_int16 size[48];
+   VALIDATE_OPUS_DECODER(st);
    if (decode_fec<0 || decode_fec>1)
       return OPUS_BAD_ARG;
    /* For FEC/PLC, frame_size has to be to have a multiple of 2.5 ms */
@@ -710,6 +753,7 @@ int opus_decode_float(OpusDecoder *st, const unsigned char *data,
 {
    VARDECL(opus_int16, out);
    int ret, i;
+   int nb_samples;
    ALLOC_STACK;
 
    if(frame_size<=0)
@@ -717,6 +761,15 @@ int opus_decode_float(OpusDecoder *st, const unsigned char *data,
       RESTORE_STACK;
       return OPUS_BAD_ARG;
    }
+   if (data != NULL && len > 0 && !decode_fec)
+   {
+      nb_samples = opus_decoder_get_nb_samples(st, data, len);
+      if (nb_samples>0)
+         frame_size = IMIN(frame_size, nb_samples);
+      else
+         return OPUS_INVALID_PACKET;
+   }
+   celt_assert(st->channels == 1 || st->channels == 2);
    ALLOC(out, frame_size*st->channels, opus_int16);
 
    ret = opus_decode_native(st, data, len, out, frame_size, decode_fec, 0, NULL, 0);
@@ -737,6 +790,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
 {
    VARDECL(float, out);
    int ret, i;
+   int nb_samples;
    ALLOC_STACK;
 
    if(frame_size<=0)
@@ -745,6 +799,15 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
       return OPUS_BAD_ARG;
    }
 
+   if (data != NULL && len > 0 && !decode_fec)
+   {
+      nb_samples = opus_decoder_get_nb_samples(st, data, len);
+      if (nb_samples>0)
+         frame_size = IMIN(frame_size, nb_samples);
+      else
+         return OPUS_INVALID_PACKET;
+   }
+   celt_assert(st->channels == 1 || st->channels == 2);
    ALLOC(out, frame_size*st->channels, float);
 
    ret = opus_decode_native(st, data, len, out, frame_size, decode_fec, 0, NULL, 1);
@@ -832,7 +895,7 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
          goto bad_arg;
       }
       if (st->prev_mode == MODE_CELT_ONLY)
-         celt_decoder_ctl(celt_dec, OPUS_GET_PITCH(value));
+         ret = celt_decoder_ctl(celt_dec, OPUS_GET_PITCH(value));
       else
          *value = st->DecControl.prevPitchLag;
    }
@@ -859,12 +922,32 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
    break;
    case OPUS_GET_LAST_PACKET_DURATION_REQUEST:
    {
-      opus_uint32 *value = va_arg(ap, opus_uint32*);
+      opus_int32 *value = va_arg(ap, opus_int32*);
       if (!value)
       {
          goto bad_arg;
       }
       *value = st->last_packet_duration;
+   }
+   break;
+   case OPUS_SET_PHASE_INVERSION_DISABLED_REQUEST:
+   {
+       opus_int32 value = va_arg(ap, opus_int32);
+       if(value<0 || value>1)
+       {
+          goto bad_arg;
+       }
+       ret = celt_decoder_ctl(celt_dec, OPUS_SET_PHASE_INVERSION_DISABLED(value));
+   }
+   break;
+   case OPUS_GET_PHASE_INVERSION_DISABLED_REQUEST:
+   {
+       opus_int32 *value = va_arg(ap, opus_int32*);
+       if (!value)
+       {
+          goto bad_arg;
+       }
+       ret = celt_decoder_ctl(celt_dec, OPUS_GET_PHASE_INVERSION_DISABLED(value));
    }
    break;
    default:
@@ -902,27 +985,6 @@ int opus_packet_get_bandwidth(const unsigned char *data)
       bandwidth = OPUS_BANDWIDTH_NARROWBAND + ((data[0]>>5)&0x3);
    }
    return bandwidth;
-}
-
-int opus_packet_get_samples_per_frame(const unsigned char *data,
-      opus_int32 Fs)
-{
-   int audiosize;
-   if (data[0]&0x80)
-   {
-      audiosize = ((data[0]>>3)&0x3);
-      audiosize = (Fs<<audiosize)/400;
-   } else if ((data[0]&0x60) == 0x60)
-   {
-      audiosize = (data[0]&0x08) ? Fs/50 : Fs/100;
-   } else {
-      audiosize = ((data[0]>>3)&0x3);
-      if (audiosize == 3)
-         audiosize = Fs*60/1000;
-      else
-         audiosize = (Fs<<audiosize)/100;
-   }
-   return audiosize;
 }
 
 int opus_packet_get_nb_channels(const unsigned char *data)

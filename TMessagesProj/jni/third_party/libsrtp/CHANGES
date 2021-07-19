@@ -1,0 +1,227 @@
+Changelog
+
+2.2.0-pre (This version)
+
+Major changes
+
+All code has been reformatted to be consistent. A .clang-format file and format.sh script has been added that can be use to verify and enforce consistent formatting. An automated check on code formatting is now part of travis build.
+
+Other changes
+
+PR #409 - Compatibilty with LibreSSL
+
+PR #406 - Fix unprotect when pktlen < (2*mki_size + tag_len)
+
+PR #405 - Prevent potential double free
+
+PR #404 - Add back extern to global variables
+
+PR #403 - Set gcm IV directly with EVP_CipherInit_ex
+
+PR #401 - Fix memory access issue in srtp_get_session_keys()
+
+PR #398 - Fix memory access fixes when invalid profiles where used
+
+PR #391 - Return NULL when allocating memory of size zero
+
+PR #390 - Bitvector of length zero is not valid
+
+PR #385 - Treat warnings as errors on travis builds
+
+PR #388 - Moved externs from crypto_kernel into its own header
+
+PR #379 - Fixed several compiler warnings from Firefox builds
+
+PR #377 - Removed variable init code in rdbx which never gets used
+
+PR #381 - Added error in case the platform is not detected
+
+PR #376 - Add coverity scan to travis builds
+
+PR #374 - Add a big endian build on travis
+
+PR #373 - Fixed buffer size issue in test/srtp_driver.c
+
+PR #372 - Make rtp_decoder compile on MinGW
+
+PR #367 - Rename configure.in to configure.ac
+
+PR #365 - Replace calls to free() with srtp_crypto_free()
+
+PR #364 - Add valgrind to travis and fix leaks in tests
+
+PR #363 - Change smtp_crypto_alloc to initialize memory to zero
+
+PR #354 - Fix potential leak if cloning of stream fails
+
+PR #340 - Fix potential leak in srtp_add_stream()
+
+PR #323 - Fix running test in out of source builds
+
+Issue #316  - Remove VERSION file
+
+2.1.0
+
+Compatibility changes
+
+  PR #253 - Cipher type cleanup for AES
+    When libSRTP is compiled with OpenSSL and the AES 256 ICM cipher is used
+    with RTCP an incorrect initialization vector is formed.
+    This change will break backwards compatibility with older versions (1.5,
+    2.0) of libSRTP when using the AES 256 ICM cipher with OpenSSL for RTCP.
+
+  PR #259 - Sequence number incorrectly masked for AES GCM IV
+    The initialization vector for AES GCM encryption was incorrectly formed on
+    little endian machines.
+    This change will break backwards compatibility with older versions (1.5,
+    2.0) of libSRTP when using the AES GCM cipher for RTCP.
+
+  PR #287 - Fix OOB read in key generation for encrypted headers with GCM ciphers
+    Adds padding of GCM salt to the corresponding ICM length used for header
+    encryption.
+    This change will break backwards compatibility with version 2.0 of libSRTP
+    when using the header encryption extension with the AES GCM cipher.
+
+Major changes
+
+  PR #204 - OpenSSL performance improvements
+    Changed key expansion to occur once per key instead of once per packet.
+
+  PR #209 - Restore AES-192 under BoringSSL
+    BoringSSL supports AES-192 and is now enabled in libSRTP.
+
+  PR #224 - Master Key Identifiers (MKI) Support patch
+    Adds MKI support with up to 4 keys.
+
+  PR #234 - Report SSRC instead of srtp_stream_t in srtp_event_data_t
+    srtp_stream_t is an opaque type making the event framework almost useless.
+    Now the SSRC is returned instead for use as a key in the public API.
+
+  PR #238 - Configure changes and improvements
+    CFLAGS check more shell neutral, quotation fixes, always generate and
+    install pkg-config file, improved OpenSSL discovery and linking, remove
+    -fPIC flag on Windows, fix shared library generation under Cygwin, replace
+    hardcoded CFLAGS with compiler checks, and regenerate configure after
+    configure.in changes.
+
+  PR #241 & PR #261 - Improved logging API to receive log messages from libSRTP
+    Provides a logging API and the ability to enable logging to stdout and a
+    file, as well as a switch to enable all internal debug modules.
+
+  PR #289 - Added support for set and get the roll-over-counter
+    Adds an API to set and get the ROC in an (S)RTP session.
+
+  PR #304 - Fix (S)RTP and (S)RTCP for big endian machines
+    The structures srtp_hdr_t, srtcp_hdr_t and srtcp_trailer_t were defined
+    incorrectly on big endian systems.
+
+Other changes
+
+  PR #149 - Don't create a symlink if there is no $(SHAREDLIBVERSION)
+
+  PR #151 - Make srtp_driver compile for MIPS
+
+  PR #160 - Use PKG_PROG_PKG_CONFIG to find correct pkg-config
+
+  PR #167 - Additional RTCP and SRTCP tests
+
+  PR #169 - Identified merge conflict created by commit 6b71fb9
+
+  PR #173 - Avoid error 'possibly undefined macro: AM_PROG_AR'
+
+  PR #174 - Avoid warning 'The macro AC_TRY_LINK is obsolete.'
+
+  PR #175 - Remove 2nd -fPIC
+
+  PR #182 - Add a length check before reading packet data
+
+  PR #191 - On debug, output correct endianness of SSRC
+
+  PR #192 - Replace octet_string_is_eq with a constant-time implementation
+
+  PR #195 - Add missing __cplusplus header guards
+
+  PR #198 - Update sha1_driver.c to avoid memory leaks
+
+  PR #202 - Add an explicit cast to avoid a printf format warning on macOS
+
+  PR #205 - Update Windows build files to Visual Studio 2015
+
+  PR #207 - Fix to install-win.bat syntax, and add installation of x64 libraries
+
+  PR #208 - Make replace_cipher and replace_auth public again
+
+  PR #211 - Changes for OpenSSL 1.1.0 compatibility
+
+  PR #213 - Add cast to `unsigned int` in call to printf in test
+
+  PR #214 - Avoid empty initializer braces
+
+  PR #222 - Fix issue: No consistency when use some srtp_* functions
+
+  PR #231 - Advance version on master in preparation for 2.1 release
+
+  PR #232 - Update Travis, do not build with OpenSSL on OSX
+
+  PR #233 - crypto/replay/rdbx.c: Return type of srtp_index_guess from int to
+    int32_t
+
+  PR #236 - test/rtp_decoder.c: Removed superfluous conditional
+
+  PR #237 - test/rtp_decoder.c: spring cleaning
+
+  PR #239 - octet_string_set_to_zero() delegates to OPENSSL_cleanse() if
+    available, if not it will use srtp_cleanse() to zero memory
+
+  PR #243 - EKT is not really supported yet, remove from install
+
+  PR #244 - Add simple error checking in timing test to avoid false results
+
+  PR #245 - Add missing srtp_cipher_dealloc calls when test fails
+
+  PR #246 - test/rtp_decoder: Add missing conditional
+
+  PR #248 - New README.md that integrates intro, credits and references from
+    /doc/ and is used to generate documentation
+
+  PR #249 - Remove support for generic aesicm from configure.in
+
+  PR #250 - Update README.md, incorrect tag for link
+
+  PR #255 - Cleanup outdated comment related to MKI
+
+  PR #258 - Add AES-GCM to DTLS-SRTP Protection Profiles
+
+  PR #263 - Cleaning up and removing duplicated and outdated code
+
+  PR #265 - Introduction of unit test framework: CUTest
+
+  PR #267 - crypto/kernel/err.c: Include datatypes.h
+
+  PR #272 - Reduce literal constants
+
+  PR #273 - SRTP AEAD SRTCP initialization vector regression tests
+
+  PR #274 - Update Travis build - add ccache
+
+  PR #276 - Reference and docs updates
+
+  PR #278 - Removed crypto/test/auth_driver.c and test/lfsr.c
+
+  PR #279 - Bump copyright year
+
+  PR #283 - Add missing docs in srtp.h
+
+  PR #284 - Add strict-prototypes warning if supported
+
+  PR #291 - Use const char * for srtp_set_debug_module()
+
+  PR #294 - Fix incorrect result of rdb_increment on overflow
+
+  PR #300 - Standalone tests
+
+  PR #301 - Configure fixes
+
+  PR #302 - Fix warning regarding unused variable
+
+  PR #303 - Makefile.in: Add gnu as match for shared lib suffix

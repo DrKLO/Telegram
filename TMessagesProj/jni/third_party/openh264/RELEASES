@@ -1,0 +1,346 @@
+
+Releases
+-----------
+v2.1.0
+------
+- Experimentally support for multi-thread decoding(default disabled,and may result in random problems if enabled)
+- Assembly optimization for loongson platform
+- Update meson version to 5
+- Some minor bug fixes
+
+v2.0.0
+------
+- B-frame decoding support for Main and High Profile with two test cases
+- Add support for loongson(https://en.wikipedia.org/wiki/Loongson) platform
+- Add clang support for arm/arm64/x86 for NDK version over 17
+- Enable stack protector
+- Add some test cases
+- Avoid using C++/CX code for threads for Windows Phone/Windows Store/UWP
+- Remove extra visual studio projects for the decoder
+- Remove check for working compiler in NDK
+- Bug fixes
+
+v1.8.0
+------
+- Add meson build for Linux/Windows platform
+- Disable background detection for screen route
+- Add a workaround for Visual Studio 2013 C++ x64 compiler bug on AVX2. That bug will cause crash and has been fixed in Visual Studio 2014
+- Change the default profile from baseline to high if user does not set it and CABAC is specified
+- Skip frames that are marked as IDR due to scene change and simultaneously marked as skip frame to reduce bit rate
+- Refine threshold calculation algorithms for rate control in lower frame rate to get better effect
+- Encoder return with a specific return value instead of uninitialize encoder when input resolution is invalid
+- Refine strategy on level change to avoid frequent IDR. Encoder will not be reset if level is changed to a smaller one
+- Support to set the min and max QP values on screen content mode
+- Fix a memory issue that may cause encoder crash when temporal layer change
+- Corrected some statistics information
+- Refine error concealment algorithms to improve user experience
+- Support to get information about current output picture is reference picture or not on decoder side
+- Bug fix for decoder when 8x8 prediction mode is enabled on the input bitstream
+- Enable NEON for ChromeOS devices
+- Support for Fuchsia operating systerm
+- Support for building arm64 with MSVC
+- Remove some warnings when building with MSVC
+- Fix clang compiler error when building arm assembly funtions
+- Bug fixes for unit test
+
+v1.7.0
+------
+- Changed SPS/PPS strategy option name,See enum ENCODER_OPTION
+- Changed NAL size length parameter from static array to pointer to support more NALs.See struct SParserBsInfo
+- Changed semaphores to condition variables on apple platform
+- Changed version update mechanism as Major.Minor.patch,like 1.7.0
+- Supported to force IDR independently for each layer in simulcast AVC case.See API ForceIntraFrame()
+- Supported LTR request independently for each layer in simulcast AVC case.See struct SLTRRecoverRequest and SLTRMarkingFeedback
+- Supported to set sample aspect ratio in VUI on encoder side. See struct SSpatialLayerConfig
+- Supported to set profile and level, changed the default level as 4.1 if the user doesn’t set it. See enum ELevelIdc
+- Supported to get profile and level info on decoder side.See enum DECODER_OPTION
+- Supported for enable/disable AVX2 build option. Build option: HAVE_AVX2
+- Supported to set decoder statistics log interval, Add DECODER_OPTION_STATISTICS_LOG_INTERVAL.See DECODER_OPTION.
+- Supported for AU delimiter NAL on decoder side. AU delimiter refers to section 7.3.2.4
+- Supported for x86 PIC assembly and build option. Build option: ENABLEPIC. git issues:#2263 #2534
+- Supported for Cygwin x86_64 build
+- Supported to get sample aspect ratio by GetOption on decoder. Add option: DECODER_OPTION_GET_SAR_INFO
+- Set constraint_set4_flag constraint_set5_flag to align to CHP definition in latest H264 standard
+- Improved VUI support on decoder side
+- Improved decoder statistics info output
+- Refined the return value when failed in memory allocation
+- Added SSSE3 motion compensation routines
+- Added AVX2 motion compensation routines
+- Optimization on some of SSE2/MMX functions
+- Refactor rate control for RC_BUFFERBASED_MODE and RC_QUALITY_MODE mode
+- Added more unit tests for random resolution input,slice mode switch,profile/level setting
+- Refined logs
+- Bug fixes for 4:0:0 format support on decoder
+- Bug fixes for complexity calculation for screen content mode
+- Bug fixes for loadbalancing turn on, git issue:#2618
+- Bug fixes for parser subsps, scalling list, parser longer bitstream
+
+v1.6.0
+------
+- Adjusted the encoder API structures
+- Removed the unused data format in decoder API
+- Encoder support of simulcast AVC
+- Added support of video signal type present information
+- Added support of encoder load-balancing
+- Improved encoder multi-threads, rate control and down-sampling
+- Fixed the frame size constraint in encoder
+- Bug fixes for rate control, multi-threading, simulcasting in encoder
+- Bug fixes for interface call, return value check, memory leak in decoder
+- Bug fixes for UT and statistic information
+- Bug fixes for assembly code
+- Remove the unused and redundant code
+- Improvements on UT, memory allocation failed protection, error-protection in decoder, input parameters checking in encoder, assembly for AVX2 support, assembly code performance, logging and documentation
+- Correct some typos in source code and documents
+
+v1.5.3
+------
+- Bug fixes for GMP Plugin
+
+v1.5.2
+------
+- Fix GMP Plugin causing the Browser crash on Android
+
+v1.5.1
+------
+- Bug fixes for GMP Plugin
+
+v1.5.0
+------
+- Correct a typo in codec return value (github issue#2046, cmUnkonwReason -> cmUnknownReason)
+- Added Codec demo and auto build script for WP8
+- Decoder support of 'Constrained High Profile' of H.264
+- Encoder support of CABAC of H.264
+- Encoder support of input frame rate 60
+- Improved syntax of gaps_in_frame_num_value_allowed_flag in encoder
+- Improved memory usage for multi-threading in encoder
+- Added VUI info for base layer in encoder
+- Added encoder interface to get external setting of iMaxQp and iMinQp for rate control
+- Bug fixes for Rate Control, multi-threading and simulcasting in encoder
+- Bug fixes for NoDelay API, ParseOnly functions, error-concealment off functiond and error-detection in decoder
+- Bug fixes for UT
+- Fixes to avoid valgrind warnings, potential crash and calculation overflow
+- Merged files for decoder/encoder and remove unused files
+- Improvements on build scripts, UT, error-protection in decoder, input param checking in encoder, assembly for 64bit support, downsampling, logging and documentation
+
+Note:
+'Constrained High Profile' = 'Constrained Baseline Profile' plus:
+- CABAC
+- Intra 8x8 mode support
+- 8x8 transform
+- QP scaling matrices
+- QP per chroma component
+- Mono 4:0:0 (experimental)
+- Weighted prediction
+
+v1.4.0
+------
+- Decoder new interface of DecodeFrameNoDelay
+- Added new encoder and decoder statistics
+- Added option for generating pdb in windows builds
+- Added new rate control mode (RC_TIMESTAMP_MODE) for inconstant frame rate input
+- Added new Sps/Pps strategies for real-time video
+— Added support for simulcast avc
+- Improvements in code structure, assembly, input parameter checking, logging, UT and comments
+- In gmp-openh264, return decoder error correctly and other fixes
+- Decoder bug fixes when for Error Concealment disabled
+- Bug fixes for ParseOnly functions
+- Bug fixes for encoding large frame size (>32767MBs)
+- Fixes to avoid valgrind warnings, potential crash and calculation overflow
+
+-----------
+v1.3.1
+------
+- Fixed and enhanced protection to avoid crash when reading lossy bitstreams
+- Adjust the default mode of Error Concealment used by gmp-openh264
+
+-----------
+v1.3.0
+------
+- Removed manual API document, now using wiki: https://github.com/cisco/openh264/wiki (0af48e5 for v1.3.0)
+- Added API version in API header files
+- Added pkg-config file
+- Added decoder support of parsing only (bParseOnly) for only parsing bit stream but not decoding
+- Added timestamp and max nal size in gmp-openh264.cpp when calling encoding
+- Added timestamp info in decoder input and return structure
+- Added support of level 9 in decoder
+- Added total length of the encoded frame in encoder return structure
+- Added SetOption(ENCODER_OPTION_SVC_ENCODE_PARAM_BASE,&base) for encoder
+- Set constraint set 0 and 1 flags for non-scalable
+- Improved error concealment algorithms and provide more modes of error-concealment
+- Improved rate control algorithms and reference selection algorithms for screen content encoding 
+- Added encoder and decoder statistics interface
+- Improved input parameter checking and logging
+- Bug fixes, warning reductions, and test improvements
+
+-----------
+v1.2.0
+------
+- Add and modify encoder APIs related to rate control and screen content encoding
+- Remove PauseFrame in encoder APIs
+- Improve rate control and compression ratio for screen content encoding
+- Improve error concealment algorithm
+- Improve validation of input parameters
+- Add ARM64 assembly
+- bug fixes
+
+-----------
+v1.1.0
+------
+- Modify some APIs (see API doc for detail)
+- Improve the compression ratio of screen content encoding
+- ARM64 assembly support for most of core functions in encoder & decoder
+- Modify error concealment logic to always return decoding error info until IDR picture comes
+- fix some bugs
+
+
+Binaries
+-----------
+These binary releases are distributed under this license:
+http://www.openh264.org/BINARY_LICENSE.txt
+
+v2.1.0
+http://ciscobinary.openh264.org/libopenh264-2.1.0-android-arm.so.bz2
+http://ciscobinary.openh264.org/libopenh264-2.1.0-android-arm.so.sig.bz2
+http://ciscobinary.openh264.org/libopenh264-2.1.0-android-arm64.so.bz2
+http://ciscobinary.openh264.org/libopenh264-2.1.0-android-arm64.so.sig.bz2
+http://ciscobinary.openh264.org/libopenh264-2.1.0-ios.a.bz2
+http://ciscobinary.openh264.org/libopenh264-2.1.0-ios.a.sig.bz2
+http://ciscobinary.openh264.org/libopenh264-2.1.0-linux32.5.so.bz2
+http://ciscobinary.openh264.org/libopenh264-2.1.0-linux32.5.so.sig.bz2
+http://ciscobinary.openh264.org/libopenh264-2.1.0-linux64.5.so.bz2
+http://ciscobinary.openh264.org/libopenh264-2.1.0-linux64.5.so.sig.bz2
+http://ciscobinary.openh264.org/libopenh264-2.1.0-osx32.5.dylib.bz2
+http://ciscobinary.openh264.org/libopenh264-2.1.0-osx64.5.dylib.bz2
+http://ciscobinary.openh264.org/openh264-2.1.0-win32.dll.bz2
+http://ciscobinary.openh264.org/openh264-2.1.0-win64.dll.bz2
+
+v2.0.0
+------
+http://ciscobinary.openh264.org/libopenh264-2.0.0-android.so.bz2
+http://ciscobinary.openh264.org/libopenh264-2.0.0-android.so.sig.bz2
+http://ciscobinary.openh264.org/libopenh264-2.0.0-ios.a.bz2
+http://ciscobinary.openh264.org/libopenh264-2.0.0-ios.a.sig.bz2
+http://ciscobinary.openh264.org/libopenh264-2.0.0-linux32.5.so.bz2
+http://ciscobinary.openh264.org/libopenh264-2.0.0-linux32.5.so.sig.bz2
+http://ciscobinary.openh264.org/libopenh264-2.0.0-linux64.5.so.bz2
+http://ciscobinary.openh264.org/libopenh264-2.0.0-linux64.5.so.sig.bz2
+http://ciscobinary.openh264.org/libopenh264-2.0.0-osx32.5.dylib.bz2
+http://ciscobinary.openh264.org/libopenh264-2.0.0-osx64.5.dylib.bz2
+http://ciscobinary.openh264.org/openh264-2.0.0-win32.dll.bz2
+http://ciscobinary.openh264.org/openh264-2.0.0-win64.dll.bz2
+
+v1.8.0
+------
+http://ciscobinary.openh264.org/libopenh264-1.8.0-android19.so.bz2
+http://ciscobinary.openh264.org/libopenh264-1.8.0-android19.so.sig.bz2
+http://ciscobinary.openh264.org/libopenh264-1.8.0-ios.a.bz2
+http://ciscobinary.openh264.org/libopenh264-1.8.0-ios.a.sig.bz2
+http://ciscobinary.openh264.org/libopenh264-1.8.0-linux32.4.so.bz2
+http://ciscobinary.openh264.org/libopenh264-1.8.0-linux32.4.so.sig.bz2
+http://ciscobinary.openh264.org/libopenh264-1.8.0-linux64.4.so.bz2
+http://ciscobinary.openh264.org/libopenh264-1.8.0-linux64.4.so.sig.bz2
+http://ciscobinary.openh264.org/libopenh264-1.8.0-osx32.4.dylib.bz2
+http://ciscobinary.openh264.org/libopenh264-1.8.0-osx64.4.dylib.bz2
+http://ciscobinary.openh264.org/openh264-1.8.0-win32.dll.bz2
+http://ciscobinary.openh264.org/openh264-1.8.0-win64.dll.bz2
+
+v1.7.0
+------
+http://ciscobinary.openh264.org/libopenh264-1.7.0-android19.so.bz2
+http://ciscobinary.openh264.org/libopenh264-1.7.0-android19.so.sig.bz2
+http://ciscobinary.openh264.org/libopenh264-1.7.0-ios.a.bz2
+http://ciscobinary.openh264.org/libopenh264-1.7.0-ios.a.sig.bz2
+http://ciscobinary.openh264.org/libopenh264-1.7.0-linux32.4.so.bz2
+http://ciscobinary.openh264.org/libopenh264-1.7.0-linux32.4.so.sig.bz2
+http://ciscobinary.openh264.org/libopenh264-1.7.0-linux64.4.so.bz2
+http://ciscobinary.openh264.org/libopenh264-1.7.0-linux64.4.so.sig.bz2
+http://ciscobinary.openh264.org/libopenh264-1.7.0-osx32.4.dylib.bz2
+http://ciscobinary.openh264.org/libopenh264-1.7.0-osx64.4.dylib.bz2
+http://ciscobinary.openh264.org/openh264-1.7.0-win32.dll.bz2
+http://ciscobinary.openh264.org/openh264-1.7.0-win64.dll.bz2
+
+v1.6.0
+------
+http://ciscobinary.openh264.org/libopenh264-1.6.0-android19.so.bz2
+http://ciscobinary.openh264.org/libopenh264-1.6.0-ios.a.bz2
+http://ciscobinary.openh264.org/libopenh264-1.6.0-linux32.3.so.bz2
+http://ciscobinary.openh264.org/libopenh264-1.6.0-linux64.3.so.bz2
+http://ciscobinary.openh264.org/libopenh264-1.6.0-osx32.3.dylib.bz2
+http://ciscobinary.openh264.org/libopenh264-1.6.0-osx64.3.dylib.bz2
+http://ciscobinary.openh264.org/openh264-1.6.0-win32msvc.dll.bz2
+http://ciscobinary.openh264.org/openh264-1.6.0-win64msvc.dll.bz2
+
+v1.5.0
+------
+http://ciscobinary.openh264.org/libopenh264-1.5.0-android19.so.bz2
+http://ciscobinary.openh264.org/libopenh264-1.5.0-ios.a.bz2
+http://ciscobinary.openh264.org/libopenh264-1.5.0-linux32.so.bz2
+http://ciscobinary.openh264.org/libopenh264-1.5.0-linux64.so.bz2
+http://ciscobinary.openh264.org/libopenh264-1.5.0-osx32.dylib.bz2
+http://ciscobinary.openh264.org/libopenh264-1.5.0-osx64.dylib.bz2
+http://ciscobinary.openh264.org/openh264-1.5.0-win32msvc.dll.bz2
+http://ciscobinary.openh264.org/openh264-1.5.0-win64msvc.dll.bz2
+
+v1.4.0
+------
+http://ciscobinary.openh264.org/libopenh264-1.4.0-android19.so.bz2
+http://ciscobinary.openh264.org/libopenh264-1.4.0-linux32.so.bz2
+http://ciscobinary.openh264.org/libopenh264-1.4.0-linux64.so.bz2
+http://ciscobinary.openh264.org/libopenh264-1.4.0-osx32.dylib.bz2
+http://ciscobinary.openh264.org/libopenh264-1.4.0-osx64.dylib.bz2
+http://ciscobinary.openh264.org/openh264-1.4.0-win32msvc.dll.bz2
+http://ciscobinary.openh264.org/openh264-1.4.0-win64msvc.dll.bz2
+
+v1.3.1
+------
+http://ciscobinary.openh264.org/libopenh264-1.3.1-android19.so.bz2
+http://ciscobinary.openh264.org/libopenh264-1.3.1-linux32.so.bz2
+http://ciscobinary.openh264.org/libopenh264-1.3.1-linux64.so.bz2
+http://ciscobinary.openh264.org/libopenh264-1.3.1-osx32.dylib.bz2
+http://ciscobinary.openh264.org/libopenh264-1.3.1-osx64.dylib.bz2
+http://ciscobinary.openh264.org/openh264-1.3.1-win32msvc.dll.bz2
+http://ciscobinary.openh264.org/openh264-1.3.1-win64msvc.dll.bz2
+
+v1.3.0
+------
+http://ciscobinary.openh264.org/libopenh264-1.3.0-android19.so.bz2
+http://ciscobinary.openh264.org/libopenh264-1.3.0-linux32.so.bz2
+http://ciscobinary.openh264.org/libopenh264-1.3.0-linux64.so.bz2
+http://ciscobinary.openh264.org/libopenh264-1.3.0-osx32.dylib.bz2
+http://ciscobinary.openh264.org/libopenh264-1.3.0-osx64.dylib.bz2
+http://ciscobinary.openh264.org/openh264-1.3.0-win32msvc.dll.bz2
+http://ciscobinary.openh264.org/openh264-1.3.0-win64msvc.dll.bz2
+
+v1.2.0
+------
+http://ciscobinary.openh264.org/libopenh264-1.2.0-android19.so.bz2
+http://ciscobinary.openh264.org/libopenh264-1.2.0-linux32.so.bz2
+http://ciscobinary.openh264.org/libopenh264-1.2.0-linux64.so.bz2
+http://ciscobinary.openh264.org/libopenh264-1.2.0-osx32.dylib.bz2
+http://ciscobinary.openh264.org/libopenh264-1.2.0-osx64.dylib.bz2
+http://ciscobinary.openh264.org/openh264-1.2.0-win32msvc.dll.bz2
+http://ciscobinary.openh264.org/openh264-1.2.0-win64msvc.dll.bz2
+
+v1.1.0
+------
+http://ciscobinary.openh264.org/libopenh264-1.1.0-android19.so.bz2
+http://ciscobinary.openh264.org/libopenh264-1.1.0-linux32.so.bz2
+http://ciscobinary.openh264.org/libopenh264-1.1.0-linux64.so.bz2
+http://ciscobinary.openh264.org/libopenh264-1.1.0-osx32.dylib.bz2
+http://ciscobinary.openh264.org/libopenh264-1.1.0-osx64.dylib.bz2
+http://ciscobinary.openh264.org/openh264-1.1.0-win32msvc.dll.bz2
+http://ciscobinary.openh264.org/openh264-1.1.0-win64msvc.dll.bz2
+
+v1.0.0
+------
+
+http://ciscobinary.openh264.org/libopenh264-1.0.0-android19.so.bz2
+http://ciscobinary.openh264.org/libopenh264-1.0.0-linux32.so.bz2
+http://ciscobinary.openh264.org/libopenh264-1.0.0-linux64.so.bz2
+http://ciscobinary.openh264.org/libopenh264-1.0.0-osx64.dylib.bz2
+http://ciscobinary.openh264.org/openh264-1.0.0-win32msvc.dll.bz2
+http://ciscobinary.openh264.org/openh264-1.0.0-win64msvc.dll.bz2
+
+
+
+

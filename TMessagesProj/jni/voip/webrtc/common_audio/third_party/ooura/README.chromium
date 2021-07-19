@@ -1,0 +1,13 @@
+Name: General Purpose FFT (Fast Fourier/Cosine/Sine Transform) Package
+Short Name: fft4g
+URL: http://www.kurims.kyoto-u.ac.jp/~ooura/fft.html
+Version: 0
+Date: 2018-06-19
+License: Custome license
+License File: LICENSE
+Security Critical: yes
+
+Description:
+This is a package to calculate Discrete Fourier/Cosine/Sine Transforms of
+1-dimensional sequences of length 2^N. This package contains C and Fortran
+FFT codes.

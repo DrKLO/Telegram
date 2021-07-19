@@ -1,0 +1,14 @@
+/*
+ * SpanDSP - a series of DSP components for telephony
+ *
+ * g711.h - In line A-law and u-law conversion routines
+ *
+ * Written by Steve Underwood <steveu@coppice.org>
+ *
+ * Copyright (C) 2001 Steve Underwood
+ *
+ *  Despite my general liking of the GPL, I place this code in the
+ *  public domain for the benefit of all mankind - even the slimy
+ *  ones who might try to proprietize my work and use it to my
+ *  detriment.
+ */

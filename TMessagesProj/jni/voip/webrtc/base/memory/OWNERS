@@ -1,0 +1,7 @@
+per-file *chromeos*=skuhne@chromium.org
+per-file *chromeos*=oshima@chromium.org
+per-file *shared_memory*=set noparent
+per-file *shared_memory*=file://ipc/SECURITY_OWNERS
+per-file madv_free*=lizeb@chromium.org
+per-file madv_free*=pasko@chromium.org
+per-file madv_free*=mthiesse@chromium.org

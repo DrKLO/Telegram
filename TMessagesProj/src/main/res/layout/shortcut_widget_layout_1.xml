@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@style/TMessages.AppWidget.Background"
+    android:layout_width="match_parent"
+    android:layout_height="76dp"
+    android:orientation="vertical"
+    android:theme="@style/Theme.TMessages.AppWidget">
+
+    <ListView android:id="@+id/list_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:dividerHeight="0px"
+        android:listSelector="@drawable/list_selector_ex"
+        android:scrollbars="none"
+        android:divider="#00000000"/>
+
+    <TextView
+        android:id="@+id/empty_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:textColor="@color/widget_name"
+        android:textStyle="bold"
+        android:textSize="20sp" />
+</LinearLayout>

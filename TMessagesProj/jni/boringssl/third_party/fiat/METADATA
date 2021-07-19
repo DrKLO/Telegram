@@ -1,0 +1,13 @@
+name: "fiat"
+description: "Fiat-Crypto: Synthesizing Correct-by-Construction Code for Cryptographic Primitives."
+
+third_party {
+  url {
+    type: GIT
+    value: "https://github.com/mit-plv/fiat-crypto"
+  }
+  version: "4441785fb44b88bb6943ddbf639d872c8c903281"
+  last_upgrade_date { year: 2019 month: 1 day: 16 }
+
+  local_modifications: "Fiat-generated code has been integrated into existing BoringSSL code"
+}

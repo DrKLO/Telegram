@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 2.x
+ * This is the source code of Telegram for Android v. 5.x.x
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Components;
@@ -12,29 +12,39 @@ import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.RectF;
-import android.graphics.drawable.Drawable;
 
-import org.telegram.android.AndroidUtilities;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.ActionBar.Theme;
 
-public class RecordStatusDrawable extends Drawable {
+public class RecordStatusDrawable extends StatusDrawable {
 
     private boolean isChat = false;
-    private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private long lastUpdateTime = 0;
     private boolean started = false;
     private RectF rect = new RectF();
     private float progress;
+    int alpha = 255;
 
-    public RecordStatusDrawable() {
-        super();
-        paint.setColor(0xffd7e8f7);
-        paint.setStyle(Paint.Style.STROKE);
-        paint.setStrokeWidth(AndroidUtilities.dp(2));
-        paint.setStrokeCap(Paint.Cap.ROUND);
+    Paint currentPaint;
+
+    public RecordStatusDrawable(boolean createPaint) {
+        if (createPaint) {
+            currentPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            currentPaint.setStyle(Paint.Style.STROKE);
+            currentPaint.setStrokeCap(Paint.Cap.ROUND);
+            currentPaint.setStrokeWidth(AndroidUtilities.dp(2));
+        }
     }
 
     public void setIsChat(boolean value) {
         isChat = value;
+    }
+
+    @Override
+    public void setColor(int color) {
+        if (currentPaint != null) {
+            currentPaint.setColor(color);
+        }
     }
 
     private void update() {
@@ -44,7 +54,7 @@ public class RecordStatusDrawable extends Drawable {
         if (dt > 50) {
             dt = 50;
         }
-        progress += dt / 300.0f;
+        progress += dt / 800.0f;
         while (progress > 1.0f) {
             progress -= 1.0f;
         }
@@ -63,15 +73,16 @@ public class RecordStatusDrawable extends Drawable {
 
     @Override
     public void draw(Canvas canvas) {
+        Paint paint = currentPaint == null ? Theme.chat_statusRecordPaint : currentPaint;
         canvas.save();
         canvas.translate(0, getIntrinsicHeight() / 2 + AndroidUtilities.dp(isChat ? 1 : 2));
         for (int a = 0; a < 4; a++) {
             if (a == 0) {
-                paint.setAlpha((int) (255 * progress));
+                paint.setAlpha((int) (alpha * progress));
             } else if (a == 3) {
-                paint.setAlpha((int) (255 * (1.0f - progress)));
+                paint.setAlpha((int) (alpha * (1.0f - progress)));
             } else {
-                paint.setAlpha(255);
+                paint.setAlpha(alpha);
             }
             float side = AndroidUtilities.dp(4) * a + AndroidUtilities.dp(4) * progress;
             rect.set(-side, -side, side, side);
@@ -85,7 +96,7 @@ public class RecordStatusDrawable extends Drawable {
 
     @Override
     public void setAlpha(int alpha) {
-
+        this.alpha = alpha;
     }
 
     @Override

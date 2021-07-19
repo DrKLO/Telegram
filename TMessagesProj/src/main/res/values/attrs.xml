@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <attr name="widgetBackgroundCornerRadius" format="dimension" />
+
+    <attr name="widgetPreviewTitle" format="string" />
+    <attr name="widgetPreviewContent" format="string" />
+    <attr name="widgetPreviewTime" format="string" />
+    <attr name="widgetPreviewImage" format="reference" />
+    <attr name="widgetPreviewDot" format="integer" />
+</resources>

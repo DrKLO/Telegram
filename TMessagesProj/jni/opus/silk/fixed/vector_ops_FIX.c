@@ -30,6 +30,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 #include "SigProc_FIX.h"
+#include "pitch.h"
 
 /* Copy and multiply a vector by a constant */
 void silk_scale_copy_vector16(
@@ -70,18 +71,23 @@ void silk_scale_vector32_Q26_lshift_18(
 opus_int32 silk_inner_prod_aligned(
     const opus_int16 *const     inVec1,             /*    I input vector 1                                              */
     const opus_int16 *const     inVec2,             /*    I input vector 2                                              */
-    const opus_int              len                 /*    I vector lengths                                              */
+    const opus_int              len,                /*    I vector lengths                                              */
+    int                         arch                /*    I Run-time architecture                                       */
 )
 {
+#ifdef FIXED_POINT
+   return celt_inner_prod(inVec1, inVec2, len, arch);
+#else
     opus_int   i;
     opus_int32 sum = 0;
     for( i = 0; i < len; i++ ) {
         sum = silk_SMLABB( sum, inVec1[ i ], inVec2[ i ] );
     }
     return sum;
+#endif
 }
 
-opus_int64 silk_inner_prod16_aligned_64(
+opus_int64 silk_inner_prod16_aligned_64_c(
     const opus_int16            *inVec1,            /*    I input vector 1                                              */
     const opus_int16            *inVec2,            /*    I input vector 2                                              */
     const opus_int              len                 /*    I vector lengths                                              */
