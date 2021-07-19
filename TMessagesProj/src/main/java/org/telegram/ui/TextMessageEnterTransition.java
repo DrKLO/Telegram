@@ -16,6 +16,7 @@ import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.Layout;
+import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.StaticLayout;
 import android.text.TextPaint;
@@ -114,6 +115,9 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
         enterView = chatActivity.getChatActivityEnterView();
 
         ChatActivityEnterView chatActivityEnterView = chatActivity.getChatActivityEnterView();
+        if (chatActivityEnterView == null || chatActivityEnterView.getEditField() == null || chatActivityEnterView.getEditField().getLayout() == null) {
+            return;
+        }
 
         fromRadius = chatActivityEnterView.getRecordCicle().drawingCircleRadius;
         bitmapPaint.setFilterBitmap(true);
@@ -145,7 +149,18 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
                 emojiSize = AndroidUtilities.dp(24);
             }
         }
-        if (editText.length() != text.length()) {
+        boolean containsSpans = false;
+        if (text instanceof Spannable) {
+            Spannable spannable = (Spannable) text;
+            Object[] objects = spannable.getSpans(0, text.length(), Object.class);
+            for (int i = 0; i < objects.length; i++) {
+                if (!(objects[i] instanceof Emoji.EmojiSpan)) {
+                    containsSpans = true;
+                    break;
+                }
+            }
+        }
+        if (editText.length() != text.length() || containsSpans) {
             crossfade = true;
             String str = editText.toString();
             String trimmedStr = str.trim();
@@ -543,78 +558,78 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
         }
 
         canvas.save();
-        {
-            canvas.clipRect(drawableX + AndroidUtilities.dp(4), drawableTop + AndroidUtilities.dp(4), drawableRight - AndroidUtilities.dp(4), drawableBottom - AndroidUtilities.dp(4));
 
-            float scale = progressX + scaleFrom * (1f - progressX);
-            float scale2;
-            if (drawBitmaps) {
-                scale2 = progressX + scaleY * (1f - progressX);
+        canvas.clipRect(drawableX + AndroidUtilities.dp(4), drawableTop + AndroidUtilities.dp(4), drawableRight - AndroidUtilities.dp(4), drawableBottom - AndroidUtilities.dp(4));
+
+        float scale = progressX + scaleFrom * (1f - progressX);
+        float scale2;
+        if (drawBitmaps) {
+            scale2 = progressX + scaleY * (1f - progressX);
+        } else {
+            scale2 = 1f;
+        }
+
+        canvas.save();
+        canvas.translate(fromX * (1f - progressX) + (toX - toXOffset) * progressX, fromY * (1f - progress) + (toY + textLayoutBlock.textYOffset) * progress);
+        canvas.scale(scale, scale * scale2, 0, 0);
+        //   canvas.translate(0, textLayoutBlock.textYOffset / 2);
+        if (drawBitmaps) {
+            if (crossfade) {
+                bitmapPaint.setAlpha((int) (255 * (1f - alphaProgress)));
+            }
+            canvas.drawBitmap(textLayoutBitmap, 0, 0, bitmapPaint);
+        } else {
+            if (crossfade) {
+                int oldAlpha = Theme.chat_msgTextPaint.getAlpha();
+                Theme.chat_msgTextPaint.setAlpha((int) (oldAlpha * (1f - alphaProgress)));
+                layout.draw(canvas);
+                Theme.chat_msgTextPaint.setAlpha(oldAlpha);
             } else {
-                scale2 = 1f;
+                layout.draw(canvas);
             }
 
+        }
+        canvas.restore();
+
+        if (rtlLayout != null) {
             canvas.save();
-            canvas.translate(fromX * (1f - progressX) + (toX - toXOffset) * progressX, fromY * (1f - progress) + (toY + textLayoutBlock.textYOffset) * progress);
+            canvas.translate(fromX * (1f - progressX) + (toX - toXOffsetRtl) * progressX, fromY * (1f - progress) + (toY + textLayoutBlock.textYOffset) * progress);
             canvas.scale(scale, scale * scale2, 0, 0);
-            //   canvas.translate(0, textLayoutBlock.textYOffset / 2);
             if (drawBitmaps) {
                 if (crossfade) {
                     bitmapPaint.setAlpha((int) (255 * (1f - alphaProgress)));
                 }
-                canvas.drawBitmap(textLayoutBitmap, 0, 0, bitmapPaint);
+                canvas.drawBitmap(textLayoutBitmapRtl, 0, 0, bitmapPaint);
             } else {
                 if (crossfade) {
                     int oldAlpha = Theme.chat_msgTextPaint.getAlpha();
                     Theme.chat_msgTextPaint.setAlpha((int) (oldAlpha * (1f - alphaProgress)));
-                    layout.draw(canvas);
+                    rtlLayout.draw(canvas);
                     Theme.chat_msgTextPaint.setAlpha(oldAlpha);
                 } else {
-                    layout.draw(canvas);
+                    rtlLayout.draw(canvas);
                 }
 
             }
             canvas.restore();
-
-            if (rtlLayout != null) {
-                canvas.save();
-                canvas.translate(fromX * (1f - progressX) + (toX - toXOffsetRtl) * progressX, fromY * (1f - progress) + (toY + textLayoutBlock.textYOffset) * progress);
-                canvas.scale(scale, scale * scale2, 0, 0);
-                if (drawBitmaps) {
-                    if (crossfade) {
-                        bitmapPaint.setAlpha((int) (255 * (1f - alphaProgress)));
-                    }
-                    canvas.drawBitmap(textLayoutBitmapRtl, 0, 0, bitmapPaint);
-                } else {
-                    if (crossfade) {
-                        int oldAlpha = Theme.chat_msgTextPaint.getAlpha();
-                        Theme.chat_msgTextPaint.setAlpha((int) (oldAlpha * (1f - alphaProgress)));
-                        rtlLayout.draw(canvas);
-                        Theme.chat_msgTextPaint.setAlpha(oldAlpha);
-                    } else {
-                        rtlLayout.draw(canvas);
-                    }
-
-                }
-                canvas.restore();
-            }
-
-            if (crossfade) {
-                canvas.save();
-                canvas.translate(messageView.getLeft() + listView.getX() - container.getX() + (fromX - toX) * (1f - progressX), messageViewY + (fromY - toY) * (1f - progress));
-                canvas.scale(scale, scale * scale2, messageView.getTextX(), messageView.getTextY());
-                canvas.translate(0, -crossfadeTextOffset);
-
-                if (drawBitmaps) {
-                    bitmapPaint.setAlpha((int) (255 * alphaProgress));
-                    canvas.drawBitmap(crossfadeTextBitmap, 0, 0, bitmapPaint);
-                } else {
-                    messageView.drawMessageText(canvas, messageView.getMessageObject().textLayoutBlocks, true, alphaProgress, true);
-                }
-                canvas.restore();
-            }
-
         }
+
+        if (crossfade) {
+            canvas.save();
+            canvas.translate(messageView.getLeft() + listView.getX() - container.getX() + (fromX - toX) * (1f - progressX), messageViewY + (fromY - toY) * (1f - progress));
+            canvas.scale(scale, scale * scale2, messageView.getTextX(), messageView.getTextY());
+            canvas.translate(0, -crossfadeTextOffset);
+
+            if (crossfadeTextBitmap != null) {
+                bitmapPaint.setAlpha((int) (255 * alphaProgress));
+                canvas.drawBitmap(crossfadeTextBitmap, 0, 0, bitmapPaint);
+            } else {
+                messageView.drawMessageText(canvas, messageView.getMessageObject().textLayoutBlocks, true, alphaProgress, true);
+            }
+            canvas.restore();
+        }
+
+
         canvas.restore();
 
         if (clipBottomWithAlpha) {
@@ -631,8 +646,8 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
         }
         if (enterView.getSendButton().getVisibility() == View.VISIBLE && sendProgress < 1f) {
             canvas.save();
-            canvas.translate(enterView.getX() + enterView.getSendButton().getX() + ((View) enterView.getSendButton().getParent()).getX() + ((View) enterView.getSendButton().getParent().getParent()).getX() - container.getX() + AndroidUtilities.dp(52) *  sendProgress, enterView.getY() + enterView.getSendButton().getY() + ((View) enterView.getSendButton().getParent()).getY() + ((View) enterView.getSendButton().getParent().getParent()).getY()- container.getY());
-           // canvas.saveLayerAlpha(0, 0, enterView.getSendButton().getWidth(), enterView.getSendButton().getHeight(), (int) (enterView.getSendButton().getAlpha() * 255), Canvas.ALL_SAVE_FLAG);
+            canvas.translate(enterView.getX() + enterView.getSendButton().getX() + ((View) enterView.getSendButton().getParent()).getX() + ((View) enterView.getSendButton().getParent().getParent()).getX() - container.getX() + AndroidUtilities.dp(52) * sendProgress, enterView.getY() + enterView.getSendButton().getY() + ((View) enterView.getSendButton().getParent()).getY() + ((View) enterView.getSendButton().getParent().getParent()).getY() - container.getY());
+            // canvas.saveLayerAlpha(0, 0, enterView.getSendButton().getWidth(), enterView.getSendButton().getHeight(), (int) (enterView.getSendButton().getAlpha() * 255), Canvas.ALL_SAVE_FLAG);
             //canvas.scale(enterView.getSendButton().getScaleX(), enterView.getSendButton().getScaleY(), enterView.getSendButton().getWidth() / 2f, enterView.getSendButton().getHeight() / 2f);
             enterView.getSendButton().draw(canvas);
             canvas.restore();

@@ -911,6 +911,8 @@ add_library(tgcalls STATIC
         voip/tgcalls/VideoCaptureInterface.cpp
         voip/tgcalls/VideoCaptureInterfaceImpl.cpp
         voip/tgcalls/AudioDeviceHelper.cpp
+        voip/tgcalls/SctpDataChannelProviderInterfaceImpl.cpp
+        voip/tgcalls/TurnCustomizerImpl.cpp
         voip/tgcalls/reference/InstanceImplReference.cpp
         voip/tgcalls/legacy/InstanceImplLegacy.cpp
         voip/tgcalls/group/GroupNetworkManager.cpp

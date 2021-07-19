@@ -254,18 +254,20 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
                         if (animateToFullscreen || showingInFullscreen) {
                             size += (AndroidUtilities.dp(10) + AndroidUtilities.dp(39) * parentContainer.progressToFullscreenMode);
                         } else {
-                            size += AndroidUtilities.dp(10) * (1.0f - parentContainer.progressToFullscreenMode);
+                            size += AndroidUtilities.dp(10) * Math.max(1.0f - parentContainer.progressToFullscreenMode, showingAsScrimView || animateToScrimView ? parentContainer.progressToScrimView : 0.0f);
                         }
 
                         int x = (getMeasuredWidth() - size) / 2;
                         float smallProgress;
+                        float smallProgress2;
                         float scrimProgress = (showingAsScrimView || animateToScrimView ? parentContainer.progressToScrimView : 0);
                         if (showingInFullscreen) {
-                            smallProgress = progressToFullscreen;
+                            smallProgress = smallProgress2 = progressToFullscreen;
                         } else {
                             smallProgress = animateToFullscreen ? parentContainer.progressToFullscreenMode : scrimProgress;
+                            smallProgress2 = showingAsScrimView || animateToScrimView ? parentContainer.progressToScrimView : parentContainer.progressToFullscreenMode;
                         }
-                        int y = (int) ((getMeasuredHeight() - size) / 2 - AndroidUtilities.dp(11) - (AndroidUtilities.dp(17) + AndroidUtilities.dp(74) * parentContainer.progressToFullscreenMode) * smallProgress);
+                        int y = (int) ((getMeasuredHeight() - size) / 2 - AndroidUtilities.dp(28) - (AndroidUtilities.dp(17) + AndroidUtilities.dp(74) * (showingInFullscreen || animateToFullscreen ? parentContainer.progressToFullscreenMode : 0.0f)) * smallProgress + AndroidUtilities.dp(17) * smallProgress2);
                         castingScreenDrawable.setBounds(x, y, x + size, y + size);
                         castingScreenDrawable.draw(canvas);
 
@@ -1102,8 +1104,14 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
             }
 
             boolean pausedInternal = false;
-            if (participant.participant.video != null && participant.participant.video.paused) {
-                pausedInternal = true;
+            if (participant.presentation) {
+                if (participant.participant.presentation != null && participant.participant.presentation.paused) {
+                    pausedInternal = true;
+                }
+            } else {
+                if (participant.participant.video != null && participant.participant.video.paused) {
+                    pausedInternal = true;
+                }
             }
             if (videoIsPaused != pausedInternal) {
                 videoIsPaused = pausedInternal;

@@ -423,7 +423,7 @@
             android:name=".voip.CallNotificationSoundProvider"
             android:exported="true"/>
 
-        <receiver android:name=".ChatsWidgetProvider">
+        <receiver android:name=".ChatsWidgetProvider" android:exported="false">
             <meta-data android:name="android.appwidget.provider"
                 android:resource="@xml/chats_widget_info" />
             <intent-filter>
@@ -435,7 +435,7 @@
             android:permission="android.permission.BIND_REMOTEVIEWS"
             android:exported="false" />
 
-        <receiver android:name=".ContactsWidgetProvider">
+        <receiver android:name=".ContactsWidgetProvider" android:exported="false">
             <meta-data android:name="android.appwidget.provider"
                 android:resource="@xml/contacts_widget_info" />
             <intent-filter>

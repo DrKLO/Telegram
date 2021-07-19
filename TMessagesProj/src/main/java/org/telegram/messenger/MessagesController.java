@@ -2474,12 +2474,12 @@ public class MessagesController extends BaseController implements NotificationCe
         }
         if (chatsWidgets != null) {
             for (int a = 0, N = chatsWidgets.size(); a < N; a++) {
-                ChatsWidgetProvider.updateWidget(ApplicationLoader.applicationContext, appWidgetManager, chatsWidgets.get(a), true);
+                ChatsWidgetProvider.updateWidget(ApplicationLoader.applicationContext, appWidgetManager, chatsWidgets.get(a));
             }
         }
         if (contactsWidgets != null) {
             for (int a = 0, N = contactsWidgets.size(); a < N; a++) {
-                ContactsWidgetProvider.updateWidget(ApplicationLoader.applicationContext, appWidgetManager, contactsWidgets.get(a), true);
+                ContactsWidgetProvider.updateWidget(ApplicationLoader.applicationContext, appWidgetManager, contactsWidgets.get(a));
             }
         }
 

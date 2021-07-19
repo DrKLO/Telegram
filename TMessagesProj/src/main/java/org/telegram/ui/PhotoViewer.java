@@ -676,7 +676,12 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     BulletinFactory.of(containerView).createSimpleBulletin(R.raw.voip_invite, bulletinMessage).show();
                 }
             });
-            builder.create().show();
+            BottomSheet bottomSheet = builder.create();
+            bottomSheet.show();
+            bottomSheet.setItemColor(0,0xffffffff, 0xffffffff);
+            bottomSheet.setItemColor(1,0xffffffff, 0xffffffff);
+            bottomSheet.setBackgroundColor(0xff1C2229);
+            bottomSheet.setTitleColor(0xff8A8A8A);
         }
     }
 

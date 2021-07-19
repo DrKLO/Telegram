@@ -3102,8 +3102,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 }
                 if (!SharedConfig.smoothKeyboard) {
                     setBottomClip(paddingBottom);
-                } else if (!inPreviewMode) {
+                } else if (!inPreviewMode && chatActivityEnterView.getEmojiPadding() == 0) {
                     setBottomClip(AndroidUtilities.dp(48));
+                } else {
+                    setBottomClip(0);
                 }
 
                 for (int i = 0; i < count; i++) {
@@ -6936,13 +6938,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         searchUpButton.setOnClickListener(view -> {
             getMediaDataController().searchMessagesInChat(null, dialog_id, mergeDialogId, classGuid, 1, threadMessageId, searchingUserMessages, searchingChatMessages);
             showMessagesSearchListView(false);
-            //if (!SharedConfig.searchMessagesAsListUsed && SharedConfig.searchMessagesAsListHintShows < 3 && !searchAsListHintShown && Math.random() <= 0.25) {
-            if (!searchAsListHintShown) {
+            if (!SharedConfig.searchMessagesAsListUsed && SharedConfig.searchMessagesAsListHintShows < 3 && !searchAsListHintShown && Math.random() <= 0.25) {
                 showSearchAsListHint();
-               // searchAsListHintShown = true;
+                searchAsListHintShown = true;
+                SharedConfig.increaseSearchAsListHintShows();
             }
-//                SharedConfig.increaseSearchAsListHintShows();
-//            }
         });
         searchUpButton.setContentDescription(LocaleController.getString("AccDescrSearchNext", R.string.AccDescrSearchNext));
 
@@ -6997,9 +6997,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         searchCalendarButton.setContentDescription(LocaleController.getString("JumpToDate", R.string.JumpToDate));
 
         searchCountText = new SearchCounterView(context);
-//        searchCountText.setTextColor(Theme.getColor(Theme.key_chat_searchPanelText));
-//        searchCountText.setTextSize(15);
-//        searchCountText.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         searchCountText.setGravity(Gravity.LEFT);
         searchContainer.addView(searchCountText, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 0, 0, 108, 0));
 

@@ -1747,6 +1747,9 @@ public class AndroidUtilities {
     }
 
     public static void runOnUIThread(Runnable runnable, long delay) {
+        if (ApplicationLoader.applicationHandler == null) {
+            return;
+        }
         if (delay == 0) {
             ApplicationLoader.applicationHandler.post(runnable);
         } else {
@@ -1755,6 +1758,9 @@ public class AndroidUtilities {
     }
 
     public static void cancelRunOnUIThread(Runnable runnable) {
+        if (ApplicationLoader.applicationHandler == null) {
+            return;
+        }
         ApplicationLoader.applicationHandler.removeCallbacks(runnable);
     }
 

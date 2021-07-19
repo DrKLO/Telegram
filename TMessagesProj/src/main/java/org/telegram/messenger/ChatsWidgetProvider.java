@@ -28,13 +28,13 @@ public class ChatsWidgetProvider extends AppWidgetProvider {
         super.onUpdate(context, appWidgetManager, appWidgetIds);
         for (int i = 0; i < appWidgetIds.length; i++) {
             int appWidgetId = appWidgetIds[i];
-            updateWidget(context, appWidgetManager, appWidgetId, false);
+            updateWidget(context, appWidgetManager, appWidgetId);
         }
     }
 
     @Override
     public void onAppWidgetOptionsChanged(Context context, AppWidgetManager appWidgetManager, int appWidgetId, Bundle newOptions) {
-        updateWidget(context, appWidgetManager, appWidgetId, true);
+        updateWidget(context, appWidgetManager, appWidgetId);
         super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions);
     }
 
@@ -65,7 +65,7 @@ public class ChatsWidgetProvider extends AppWidgetProvider {
         return n - 1;
     }
 
-    public static void updateWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId, boolean edit) {
+    public static void updateWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
         ApplicationLoader.postInitApplication();
         Bundle options = appWidgetManager.getAppWidgetOptions(appWidgetId);
         int minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT);
@@ -80,6 +80,11 @@ public class ChatsWidgetProvider extends AppWidgetProvider {
         int id;
         if (!deleted) {
             int accountId = preferences.getInt("account" + appWidgetId, -1);
+            if (accountId == -1) {
+                SharedPreferences.Editor editor = preferences.edit();
+                editor.putInt("account" + appWidgetId, UserConfig.selectedAccount);
+                editor.putInt("type" + appWidgetId, EditWidgetActivity.TYPE_CHATS).commit();
+            }
             ArrayList<Long> selectedDialogs = new ArrayList<>();
             if (accountId >= 0) {
                 AccountInstance.getInstance(accountId).getMessagesStorage().getWidgetDialogIds(appWidgetId, EditWidgetActivity.TYPE_CHATS, selectedDialogs, null, null, false);
@@ -109,8 +114,6 @@ public class ChatsWidgetProvider extends AppWidgetProvider {
 
         rv.setPendingIntentTemplate(R.id.list_view, contentIntent);
         appWidgetManager.updateAppWidget(appWidgetId, rv);
-        if (edit) {
-            appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.list_view);
-        }
+        appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.list_view);
     }
 }

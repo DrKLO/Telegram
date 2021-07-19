@@ -520,11 +520,14 @@ class AudioSinkImpl: public webrtc::AudioSinkInterface {
 public:
     struct Update {
         float level = 0.0f;
-        std::shared_ptr<webrtc::AudioBuffer> buffer;
-        std::shared_ptr<CombinedVad> vad;
+        bool hasSpeech = false;
 
-        Update(float level_, webrtc::AudioBuffer *buffer_, std::shared_ptr<CombinedVad> vad_) :
-            level(level_), buffer(std::shared_ptr<webrtc::AudioBuffer>(buffer_)), vad(vad_) {
+        Update(float level_, bool hasSpech_) :
+                level(level_), hasSpeech(hasSpech_) {
+        }
+
+        Update(const Update &other) :
+                level(other.level), hasSpeech(other.hasSpeech) {
         }
     };
 
@@ -550,7 +553,7 @@ public:
         frame.ntp_time_ms = 0;
         _onAudioFrame(_channel_id.actualSsrc, frame);
       }
-      if (_update && audio.channels == 1) {
+        if (_update && audio.channels == 1) {
             const int16_t *samples = (const int16_t *)audio.data;
             int numberOfSamplesInFrame = (int)audio.samples_per_channel;
 
@@ -573,17 +576,7 @@ public:
                 float level = ((float)(_peak)) / 8000.0f;
                 _peak = 0;
                 _peakCount = 0;
-
-                webrtc::AudioBuffer *buffer;
-                if (_vad->incWaitingFrames()) {
-                    buffer = new webrtc::AudioBuffer(audio.sample_rate, 1, 48000, 1, 48000, 1);
-                    webrtc::StreamConfig config(audio.sample_rate, 1);
-                    buffer->CopyFrom(samples, config);
-                } else {
-                    buffer = nullptr;
-                }
-
-                _update(Update(level, buffer, _vad));
+                _update(Update(level, level >= 1.0f));
             }
         }
     }
@@ -2929,12 +2922,6 @@ public:
     }
 
     void setIsMuted(bool isMuted) {
-        if (_videoContentType == VideoContentType::Screencast) {
-            if (isMuted) {
-                return;
-            }
-        }
-
         if (_isMuted == isMuted) {
             return;
         }
@@ -3011,23 +2998,23 @@ public:
         const auto weak = std::weak_ptr<GroupInstanceCustomInternal>(shared_from_this());
 
         std::function<void(AudioSinkImpl::Update)> onAudioSinkUpdate;
-        /*if (_audioLevelsUpdated) {
-          onAudioSinkUpdate = [weak, ssrc = ssrc, threads = _threads](AudioSinkImpl::Update update) {
-            threads->getProcessThread()->PostTask(RTC_FROM_HERE, [weak, ssrc, update, threads]() {
-                bool voice = update.vad->update(update.buffer.get());
-                threads->getMediaThread()->PostTask(RTC_FROM_HERE, [weak, ssrc, update, voice]() {
-                    auto strong = weak.lock();
-                    if (!strong) {
-                        return;
-                    }
-                    GroupLevelValue mappedUpdate;
-                    mappedUpdate.level = update.level;
-                    mappedUpdate.voice = voice;
-                    strong->_audioLevels[ssrc] = mappedUpdate;
-                });
-            });
-          };
-        }*/
+        if (ssrc.actualSsrc != ssrc.networkSsrc) {
+            if (_audioLevelsUpdated) {
+                onAudioSinkUpdate = [weak, ssrc = ssrc, threads = _threads](AudioSinkImpl::Update update) {
+                    threads->getMediaThread()->PostTask(RTC_FROM_HERE, [weak, ssrc, update]() {
+                        auto strong = weak.lock();
+                        if (!strong) {
+                            return;
+                        }
+                        InternalGroupLevelValue updated;
+                        updated.value.level = update.level;
+                        updated.value.voice = update.hasSpeech;
+                        updated.timestamp = rtc::TimeMillis();
+                        strong->_audioLevels.insert(std::make_pair(ChannelId(ssrc), std::move(updated)));
+                    });
+                };
+            }
+        }
 
         std::unique_ptr<IncomingAudioChannel> channel(new IncomingAudioChannel(
           _channelManager.get(),

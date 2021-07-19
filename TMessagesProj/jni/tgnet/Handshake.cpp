@@ -482,7 +482,7 @@ void Handshake::processHandshakeResponse(TLObject *message, int64_t messageId) {
             uint32_t paddedDataSize = 192;
             uint32_t encryptedDataSize = keySize + paddedDataSize + SHA256_DIGEST_LENGTH;
             uint32_t additionalSize = innerDataSize < paddedDataSize ? paddedDataSize - innerDataSize : 0;
-            NativeByteBuffer *innerDataBuffer = BuffersStorage::getInstance().getFreeBuffer(encryptedDataSize + paddedDataSize + ivSize + SHA256_DIGEST_LENGTH);
+            NativeByteBuffer *innerDataBuffer = BuffersStorage::getInstance().getFreeBuffer(encryptedDataSize + paddedDataSize + ivSize + SHA256_DIGEST_LENGTH + 256);
 
             innerDataBuffer->position(encryptedDataSize);
             innerData->serializeToStream(innerDataBuffer);
@@ -518,12 +518,13 @@ void Handshake::processHandshakeResponse(TLObject *message, int64_t messageId) {
                 }
 
                 bool ok = false;
-                size_t resLen = BN_bn2bin(rsaKey->n, innerDataBuffer->bytes() + encryptedDataSize);
+                uint32_t offset = encryptedDataSize + paddedDataSize + ivSize + SHA256_DIGEST_LENGTH;
+                size_t resLen = BN_bn2bin(rsaKey->n, innerDataBuffer->bytes() + offset);
                 const auto shift = (256 - resLen);
 
                 for (auto i = 0; i != 256; ++i) {
                     const auto a = innerDataBuffer->bytes()[i];
-                    const auto b = (i < shift) ? 0 : innerDataBuffer->bytes()[encryptedDataSize + i - shift];
+                    const auto b = (i < shift) ? 0 : innerDataBuffer->bytes()[offset + i - shift];
                     if (a > b) {
                         break;
                     } else if (a < b) {
@@ -544,9 +545,9 @@ void Handshake::processHandshakeResponse(TLObject *message, int64_t messageId) {
             BN_mod_exp(r, a, rsaKey->e, rsaKey->n, bnContext);
             uint32_t size = BN_num_bytes(r);
             auto rsaEncryptedData = new ByteArray(size >= 256 ? size : 256);
-            size_t resLen = BN_bn2bin(r, rsaEncryptedData->bytes);
-            if (256 - resLen > 0) {
-                memset(rsaEncryptedData->bytes + resLen, 0, 256 - resLen);
+            BN_bn2bin(r, rsaEncryptedData->bytes + (size < 256 ? (256 - size) : 0));
+            if (256 - size > 0) {
+                memset(rsaEncryptedData->bytes, 0, 256 - size);
             }
             BN_free(a);
             BN_free(r);

@@ -12,6 +12,7 @@
 #include "api/jsep_ice_candidate.h"
 #include "rtc_base/network_monitor_factory.h"
 
+#include "TurnCustomizerImpl.h"
 #include "platform/PlatformInterface.h"
 
 extern "C" {
@@ -59,24 +60,6 @@ public:
     
 private:
     std::string _value;
-};
-
-class TurnCustomizerImpl : public webrtc::TurnCustomizer {
-public:
-    TurnCustomizerImpl() {
-    }
-    
-    virtual ~TurnCustomizerImpl() {
-    }
-    
-    void MaybeModifyOutgoingStunMessage(cricket::PortInterface* port,
-                                        cricket::StunMessage* message) override {
-        message->AddAttribute(std::make_unique<cricket::StunByteStringAttribute>(cricket::STUN_ATTR_SOFTWARE, "Telegram "));
-    }
-    
-    bool AllowChannelData(cricket::PortInterface* port, const void *data, size_t size, bool payload) override {
-        return true;
-    }
 };
 
 NetworkManager::NetworkManager(

@@ -314,7 +314,7 @@ public class MotionBackgroundDrawable extends Drawable {
         if (Build.VERSION.SDK_INT < 28 && intensity < 0) {
             int w = right - left;
             int h = bottom - top;
-            if (legacyBitmap == null || legacyBitmap.getWidth() != w || legacyBitmap.getHeight() != h) {
+            if (w > 0 && h > 0 && (legacyBitmap == null || legacyBitmap.getWidth() != w || legacyBitmap.getHeight() != h)) {
                 if (legacyBitmap != null) {
                     legacyBitmap.recycle();
                 }

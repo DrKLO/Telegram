@@ -284,15 +284,22 @@ public class SharedConfig {
                 }
                 if (pendingAppUpdate != null) {
                     long updateTime = 0;
-                    int updateVerstion;
+                    int updateVersion = 0;
+                    String updateVersionString = null;
                     try {
                         PackageInfo packageInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
-                        updateVerstion = packageInfo.versionCode;
+                        updateVersion = packageInfo.versionCode;
+                        updateVersionString = packageInfo.versionName;
                     } catch (Exception e) {
                         FileLog.e(e);
-                        updateVerstion = BuildVars.BUILD_VERSION;
                     }
-                    if (pendingAppUpdateBuildVersion != updateVerstion) {
+                    if (updateVersion == 0) {
+                        updateVersion = BuildVars.BUILD_VERSION;
+                    }
+                    if (updateVersionString == null) {
+                        updateVersionString = BuildVars.BUILD_VERSION_STRING;
+                    }
+                    if (pendingAppUpdateBuildVersion != updateVersion || pendingAppUpdate.version == null || updateVersionString.compareTo(pendingAppUpdate.version) >= 0) {
                         pendingAppUpdate = null;
                         AndroidUtilities.runOnUIThread(SharedConfig::saveConfig);
                     }
@@ -428,16 +435,29 @@ public class SharedConfig {
         return pendingAppUpdateBuildVersion == currentVersion;
     }
 
-    public static void setNewAppVersionAvailable(TLRPC.TL_help_appUpdate update) {
-        pendingAppUpdate = update;
+    public static boolean setNewAppVersionAvailable(TLRPC.TL_help_appUpdate update) {
+        String updateVersionString = null;
+        int versionCode = 0;
         try {
             PackageInfo packageInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
-            pendingAppUpdateBuildVersion = packageInfo.versionCode;
+            versionCode = packageInfo.versionCode;
+            updateVersionString = packageInfo.versionName;
         } catch (Exception e) {
             FileLog.e(e);
-            pendingAppUpdateBuildVersion = BuildVars.BUILD_VERSION;
         }
+        if (versionCode == 0) {
+            versionCode = BuildVars.BUILD_VERSION;
+        }
+        if (updateVersionString == null) {
+            updateVersionString = BuildVars.BUILD_VERSION_STRING;
+        }
+        if (update.version == null || updateVersionString.compareTo(update.version) >= 0) {
+            return false;
+        }
+        pendingAppUpdate = update;
+        pendingAppUpdateBuildVersion = versionCode;
         saveConfig();
+        return true;
     }
 
     public static boolean checkPasscode(String passcode) {

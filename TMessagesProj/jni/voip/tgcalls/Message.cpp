@@ -72,6 +72,7 @@ void Serialize(rtc::ByteBufferWriter &to, const cricket::Candidate &from) {
 	std::string serialized;
 	const auto success = iceCandidate.ToString(&serialized);
 	assert(success);
+	(void)success;
 	Serialize(to, serialized);
 }
 

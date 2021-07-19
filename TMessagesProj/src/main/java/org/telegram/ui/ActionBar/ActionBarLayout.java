@@ -644,9 +644,11 @@ public class ActionBarLayout extends FrameLayout {
     public boolean onTouchEvent(MotionEvent ev) {
         if (!checkTransitionAnimation() && !inActionMode && !animationInProgress) {
             if (fragmentsStack.size() > 1) {
-                if (ev != null && ev.getAction() == MotionEvent.ACTION_DOWN && !startedTracking && !maybeStartTracking) {
+                if (ev != null && ev.getAction() == MotionEvent.ACTION_DOWN) {
                     BaseFragment currentFragment = fragmentsStack.get(fragmentsStack.size() - 1);
                     if (!currentFragment.isSwipeBackEnabled(ev)) {
+                        maybeStartTracking = false;
+                        startedTracking = false;
                         return false;
                     }
                     startedTrackingPointerId = ev.getPointerId(0);

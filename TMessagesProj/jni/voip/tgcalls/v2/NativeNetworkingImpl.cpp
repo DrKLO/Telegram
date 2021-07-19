@@ -13,183 +13,11 @@
 #include "p2p/base/dtls_transport_factory.h"
 #include "pc/dtls_srtp_transport.h"
 #include "pc/dtls_transport.h"
-
+#include "TurnCustomizerImpl.h"
+#include "SctpDataChannelProviderInterfaceImpl.h"
 #include "StaticThreads.h"
 
 namespace tgcalls {
-
-class TurnCustomizerImpl : public webrtc::TurnCustomizer {
-public:
-    TurnCustomizerImpl() {
-    }
-
-    virtual ~TurnCustomizerImpl() {
-    }
-
-    void MaybeModifyOutgoingStunMessage(cricket::PortInterface* port,
-                                        cricket::StunMessage* message) override {
-        message->AddAttribute(std::make_unique<cricket::StunByteStringAttribute>(cricket::STUN_ATTR_SOFTWARE, "Telegram "));
-    }
-
-    bool AllowChannelData(cricket::PortInterface* port, const void *data, size_t size, bool payload) override {
-        return true;
-    }
-};
-
-class SctpDataChannelProviderInterfaceImpl : public sigslot::has_slots<>, public webrtc::SctpDataChannelProviderInterface, public webrtc::DataChannelObserver {
-public:
-    SctpDataChannelProviderInterfaceImpl(
-        cricket::DtlsTransport *transportChannel,
-        bool isOutgoing,
-        std::function<void(bool)> onStateChanged,
-        std::function<void(std::string const &)> onMessageReceived,
-        std::shared_ptr<Threads> threads
-    ) :
-    _threads(std::move(threads)),
-    _onStateChanged(onStateChanged),
-    _onMessageReceived(onMessageReceived) {
-        assert(_threads->getNetworkThread()->IsCurrent());
-
-        _sctpTransportFactory.reset(new cricket::SctpTransportFactory(_threads->getNetworkThread()));
-
-        _sctpTransport = _sctpTransportFactory->CreateSctpTransport(transportChannel);
-        _sctpTransport->SignalReadyToSendData.connect(this, &SctpDataChannelProviderInterfaceImpl::sctpReadyToSendData);
-        _sctpTransport->SignalDataReceived.connect(this, &SctpDataChannelProviderInterfaceImpl::sctpDataReceived);
-
-        webrtc::InternalDataChannelInit dataChannelInit;
-        dataChannelInit.id = 0;
-        dataChannelInit.open_handshake_role = isOutgoing ? webrtc::InternalDataChannelInit::kOpener : webrtc::InternalDataChannelInit::kAcker;
-        _dataChannel = webrtc::SctpDataChannel::Create(
-            this,
-            "data",
-            dataChannelInit,
-            _threads->getNetworkThread(),
-            _threads->getNetworkThread()
-        );
-
-        _dataChannel->RegisterObserver(this);
-    }
-
-    virtual ~SctpDataChannelProviderInterfaceImpl() {
-        assert(_threads->getNetworkThread()->IsCurrent());
-
-        _dataChannel->UnregisterObserver();
-        _dataChannel->Close();
-        _dataChannel = nullptr;
-
-        _sctpTransport = nullptr;
-        _sctpTransportFactory.reset();
-    }
-
-    void sendDataChannelMessage(std::string const &message) {
-        assert(_threads->getNetworkThread()->IsCurrent());
-
-        if (_isDataChannelOpen) {
-            RTC_LOG(LS_INFO) << "Outgoing DataChannel message: " << message;
-
-            webrtc::DataBuffer buffer(message);
-            _dataChannel->Send(buffer);
-        } else {
-            RTC_LOG(LS_INFO) << "Could not send an outgoing DataChannel message: the channel is not open";
-        }
-    }
-
-    virtual void OnStateChange() override {
-        assert(_threads->getNetworkThread()->IsCurrent());
-
-        auto state = _dataChannel->state();
-        bool isDataChannelOpen = state == webrtc::DataChannelInterface::DataState::kOpen;
-        if (_isDataChannelOpen != isDataChannelOpen) {
-            _isDataChannelOpen = isDataChannelOpen;
-            _onStateChanged(_isDataChannelOpen);
-        }
-    }
-
-    virtual void OnMessage(const webrtc::DataBuffer& buffer) override {
-        assert(_threads->getNetworkThread()->IsCurrent());
-
-        if (!buffer.binary) {
-            std::string messageText(buffer.data.data(), buffer.data.data() + buffer.data.size());
-            RTC_LOG(LS_INFO) << "Incoming DataChannel message: " << messageText;
-
-            _onMessageReceived(messageText);
-        }
-    }
-
-    void updateIsConnected(bool isConnected) {
-        assert(_threads->getNetworkThread()->IsCurrent());
-
-        if (isConnected) {
-            if (!_isSctpTransportStarted) {
-                _isSctpTransportStarted = true;
-                _sctpTransport->Start(5000, 5000, 262144);
-            }
-        }
-    }
-
-    void sctpReadyToSendData() {
-        assert(_threads->getNetworkThread()->IsCurrent());
-
-        _dataChannel->OnTransportReady(true);
-    }
-
-    void sctpDataReceived(const cricket::ReceiveDataParams& params, const rtc::CopyOnWriteBuffer& buffer) {
-        assert(_threads->getNetworkThread()->IsCurrent());
-
-        _dataChannel->OnDataReceived(params, buffer);
-    }
-
-    virtual bool SendData(const cricket::SendDataParams& params, const rtc::CopyOnWriteBuffer& payload, cricket::SendDataResult* result) override {
-        assert(_threads->getNetworkThread()->IsCurrent());
-
-        return _sctpTransport->SendData(params, payload);
-    }
-
-    virtual bool ConnectDataChannel(webrtc::SctpDataChannel *data_channel) override {
-        assert(_threads->getNetworkThread()->IsCurrent());
-
-        return true;
-    }
-
-    virtual void DisconnectDataChannel(webrtc::SctpDataChannel* data_channel) override {
-        assert(_threads->getNetworkThread()->IsCurrent());
-
-        return;
-    }
-
-    virtual void AddSctpDataStream(int sid) override {
-      assert(_threads->getNetworkThread()->IsCurrent());
-
-        _sctpTransport->OpenStream(sid);
-    }
-
-    virtual void RemoveSctpDataStream(int sid) override {
-        assert(_threads->getNetworkThread()->IsCurrent());
-
-        _threads->getNetworkThread()->Invoke<void>(RTC_FROM_HERE, [this, sid]() {
-            _sctpTransport->ResetStream(sid);
-        });
-    }
-
-    virtual bool ReadyToSendData() const override {
-        assert(_threads->getNetworkThread()->IsCurrent());
-
-        return _sctpTransport->ReadyToSendData();
-    }
-
-private:
-    std::shared_ptr<Threads> _threads;
-    std::function<void(bool)> _onStateChanged;
-    std::function<void(std::string const &)> _onMessageReceived;
-
-    std::unique_ptr<cricket::SctpTransportFactory> _sctpTransportFactory;
-    std::unique_ptr<cricket::SctpTransportInternal> _sctpTransport;
-    rtc::scoped_refptr<webrtc::SctpDataChannel> _dataChannel;
-
-    bool _isSctpTransportStarted = false;
-    bool _isDataChannelOpen = false;
-
-};
 
 webrtc::CryptoOptions NativeNetworkingImpl::getDefaulCryptoOptions() {
     auto options = webrtc::CryptoOptions();
@@ -354,6 +182,14 @@ void NativeNetworkingImpl::start() {
                 return;
             }
             strong->_dataChannelStateUpdated(state);
+        },
+        [weak, threads = _threads]() {
+            assert(threads->getNetworkThread()->IsCurrent());
+            const auto strong = weak.lock();
+            if (!strong) {
+                return;
+            }
+            //strong->restartDataChannel();
         },
         [weak, threads = _threads](std::string const &message) {
             assert(threads->getNetworkThread()->IsCurrent());

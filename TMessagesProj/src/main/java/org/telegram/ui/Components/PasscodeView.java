@@ -1090,13 +1090,21 @@ public class PasscodeView extends FrameLayout {
                 FingerprintManagerCompat fingerprintManager = FingerprintManagerCompat.from(ApplicationLoader.applicationContext);
                 if (fingerprintManager.isHardwareDetected() && fingerprintManager.hasEnrolledFingerprints()) {
                     fingerprintView.setVisibility(VISIBLE);
+                } else {
+                    fingerprintView.setVisibility(GONE);
                 }
             } catch (Throwable e) {
                 FileLog.e(e);
+                fingerprintView.setVisibility(GONE);
             }
+        } else {
+            fingerprintView.setVisibility(GONE);
         }
         if (SharedConfig.passcodeType == 1) {
             fingerprintImage.setVisibility(fingerprintView.getVisibility());
+        }
+        if (numberFrameLayouts.size() >= 11) {
+            numberFrameLayouts.get(11).setVisibility(fingerprintView.getVisibility());
         }
     }
 
@@ -1363,7 +1371,7 @@ public class PasscodeView extends FrameLayout {
             layoutParams = (LayoutParams) numbersFrameLayout.getLayoutParams();
             layoutParams.height = height;
             layoutParams.leftMargin = width / 2;
-            layoutParams.topMargin = height - layoutParams.height;
+            layoutParams.topMargin = height - layoutParams.height + (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0);
             layoutParams.width = width / 2;
             numbersFrameLayout.setLayoutParams(layoutParams);
         } else {
@@ -1390,10 +1398,10 @@ public class PasscodeView extends FrameLayout {
             passwordFrameLayout.setLayoutParams(layoutParams);
 
             layoutParams = (LayoutParams) numbersFrameLayout.getLayoutParams();
-            layoutParams.height = height / 3 * 2 + AndroidUtilities.dp(20);
+            layoutParams.height = height / 3 * 2;
             layoutParams.leftMargin = left;
             if (AndroidUtilities.isTablet()) {
-                layoutParams.topMargin = height - layoutParams.height + top;
+                layoutParams.topMargin = height - layoutParams.height + top + AndroidUtilities.dp(20);
             } else {
                 layoutParams.topMargin = height - layoutParams.height + top + (SharedConfig.passcodeType == 0 ? AndroidUtilities.dp(40) : 0);
             }

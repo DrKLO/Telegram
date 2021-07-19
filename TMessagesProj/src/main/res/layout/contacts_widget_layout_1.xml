@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@style/TMessages.AppWidget.Background"
     android:layout_width="match_parent"
     android:layout_height="90dp"
-    android:background="@drawable/widget_bg"
-    android:padding="2dp">
+    android:orientation="vertical"
+    android:theme="@style/Theme.TMessages.AppWidget">
 
     <ListView android:id="@+id/list_view"
         android:layout_width="match_parent"
