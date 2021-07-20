@@ -724,7 +724,7 @@ public class FilterCreateActivity extends BaseFragment {
     }
 
     private void checkDoneButton(boolean animated) {
-        boolean enabled = !TextUtils.isEmpty(newFilterName) && newFilterName.length() <= MAX_NAME_LENGTH;
+        boolean enabled = !TextUtils.isEmpty(newFilterName) && newFilterName.length() <= MAX_NAME_LENGTH && !Character.isWhitespace(newFilterName.charAt(0));
         if (enabled) {
             enabled = (newFilterFlags & MessagesController.DIALOG_FILTER_FLAG_ALL_CHATS) != 0 || !newAlwaysShow.isEmpty();
             if (enabled && !creatingNew) {

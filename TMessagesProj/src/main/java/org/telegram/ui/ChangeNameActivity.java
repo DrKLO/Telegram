@@ -56,7 +56,7 @@ public class ChangeNameActivity extends BaseFragment {
                 if (id == -1) {
                     finishFragment();
                 } else if (id == done_button) {
-                    if (firstNameField.getText().length() != 0) {
+                    if (!firstNameField.getText().toString().trim().isEmpty()) {
                         saveName();
                         finishFragment();
                     }
@@ -152,8 +152,8 @@ public class ChangeNameActivity extends BaseFragment {
         if (currentUser == null || lastNameField.getText() == null || firstNameField.getText() == null) {
             return;
         }
-        String newFirst = firstNameField.getText().toString();
-        String newLast = lastNameField.getText().toString();
+        String newFirst = firstNameField.getText().toString().trim().replaceAll(" +", " ");
+        String newLast = lastNameField.getText().toString().trim().replaceAll(" +", " ");
         if (currentUser.first_name != null && currentUser.first_name.equals(newFirst) && currentUser.last_name != null && currentUser.last_name.equals(newLast)) {
             return;
         }

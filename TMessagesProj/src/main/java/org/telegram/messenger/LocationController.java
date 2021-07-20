@@ -76,7 +76,7 @@ public class LocationController extends BaseController implements NotificationCe
     private GoogleApiClient googleApiClient;
     private final static int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
     private final static long UPDATE_INTERVAL = 1000, FASTEST_INTERVAL = 1000;
-    private final static int BACKGROUD_UPDATE_TIME = 30 * 1000;
+    private final static int BACKGROUND_UPDATE_TIME = 30 * 1000;
     private final static int LOCATION_ACQUIRE_TIME = 10 * 1000;
     private final static int FOREGROUND_UPDATE_TIME = 20 * 1000;
     private final static int WATCH_LOCATION_TIMEOUT = 65 * 1000;
@@ -123,7 +123,7 @@ public class LocationController extends BaseController implements NotificationCe
             if (lastKnownLocation != null && (this == networkLocationListener || this == passiveLocationListener)) {
                 if (!started && location.distanceTo(lastKnownLocation) > 20) {
                     setLastKnownLocation(location);
-                    lastLocationSendTime = SystemClock.elapsedRealtime() - BACKGROUD_UPDATE_TIME + 5000;
+                    lastLocationSendTime = SystemClock.elapsedRealtime() - BACKGROUND_UPDATE_TIME + 5000;
                 }
             } else {
                 setLastKnownLocation(location);
@@ -527,7 +527,7 @@ public class LocationController extends BaseController implements NotificationCe
                 broadcastLastKnownLocation(cancelAll);
             }
         } else if (!sharingLocations.isEmpty() || shareMyCurrentLocation) {
-            if (shareMyCurrentLocation || Math.abs(lastLocationSendTime - SystemClock.elapsedRealtime()) > BACKGROUD_UPDATE_TIME) {
+            if (shareMyCurrentLocation || Math.abs(lastLocationSendTime - SystemClock.elapsedRealtime()) > BACKGROUND_UPDATE_TIME) {
                 lastLocationStartTime = SystemClock.elapsedRealtime();
                 start();
             }
@@ -602,7 +602,7 @@ public class LocationController extends BaseController implements NotificationCe
         }
         sharingLocations.add(info);
         saveSharingLocation(info, 0);
-        lastLocationSendTime = SystemClock.elapsedRealtime() - BACKGROUD_UPDATE_TIME + 5000;
+        lastLocationSendTime = SystemClock.elapsedRealtime() - BACKGROUND_UPDATE_TIME + 5000;
         AndroidUtilities.runOnUIThread(() -> {
             if (old != null) {
                 sharingLocationsUI.remove(old);
@@ -859,10 +859,10 @@ public class LocationController extends BaseController implements NotificationCe
         }
         lastLocationByGoogleMaps = true;
         if (first || lastKnownLocation != null && lastKnownLocation.distanceTo(location) >= 20) {
-            lastLocationSendTime = SystemClock.elapsedRealtime() - BACKGROUD_UPDATE_TIME;
+            lastLocationSendTime = SystemClock.elapsedRealtime() - BACKGROUND_UPDATE_TIME;
             locationSentSinceLastGoogleMapUpdate = false;
         } else if (locationSentSinceLastGoogleMapUpdate) {
-            lastLocationSendTime = SystemClock.elapsedRealtime() - BACKGROUD_UPDATE_TIME + FOREGROUND_UPDATE_TIME;
+            lastLocationSendTime = SystemClock.elapsedRealtime() - BACKGROUND_UPDATE_TIME + FOREGROUND_UPDATE_TIME;
             locationSentSinceLastGoogleMapUpdate = false;
         }
         setLastKnownLocation(location);
