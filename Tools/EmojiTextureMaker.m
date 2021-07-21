@@ -242,7 +242,7 @@ NSInteger sortFunc(id obj1, id obj2, void *context) {
                 if (alpha == 0) {
                     dataGray[a] = 0;
                 } else {
-                    dataGray[a] = alpha;
+                    dataGray[a] = alpha ;
                 }
             }
             
@@ -261,3 +261,4 @@ NSInteger sortFunc(id obj1, id obj2, void *context) {
 }
 
 @end
+// fix 
