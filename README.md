@@ -3,6 +3,11 @@
 [Telegram](https://telegram.org) is a messaging app with a focus on speed and security. It’s superfast, simple and free.
 This repo contains the official source code for [Telegram App for Android](https://play.google.com/store/apps/details?id=org.telegram.messenger).
 
+## How to Contribute
+To contribute to this repository, please open a [pull request](https://help.github.com/en/articles/about-pull-requests#fork--pull) from your forked repository.
+
+
+
 ## Creating your Telegram Application
 
 We welcome all developers to use our API and source code to create applications on our platform.
