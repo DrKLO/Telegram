@@ -4423,6 +4423,8 @@ public class MessageObject {
                     linesMaxWidth = Math.max(linesMaxWidth, (int) Math.ceil(lineWidth));
                     linesMaxWidthWithLeft = Math.max(linesMaxWidthWithLeft, (int) Math.ceil(lineWidth + lineLeft));
                 }
+                lastLineWidthWithLeft = Math.min(lastLineWidthWithLeft, maxWidth);
+                textRealMaxWidthWithLeft = Math.min(textRealMaxWidthWithLeft, maxWidth);
                 if (hasNonRTL) {
                     textRealMaxWidth = textRealMaxWidthWithLeft;
                     if (a == blocksCount - 1) {
