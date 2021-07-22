@@ -1,0 +1,24 @@
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ListView
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:id="@+id/listView"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentBottom="true"
+        android:clipToPadding="false"
+        android:fadingEdge="none"
+        android:fadingEdgeLength="0dp"
+        android:paddingLeft="16dp"
+        android:paddingRight="16dp"
+        android:dividerHeight="0dp"
+        android:divider="@null"
+        android:scrollbars="none"
+        android:paddingBottom="16dp"
+        android:verticalScrollbarPosition="left"/>
+
+</RelativeLayout>
