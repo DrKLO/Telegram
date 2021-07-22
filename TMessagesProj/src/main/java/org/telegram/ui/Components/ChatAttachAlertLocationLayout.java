@@ -629,6 +629,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
                 locationButton.setTag(Theme.key_location_actionActiveIcon);
                 adapter.setCustomLocation(null);
                 userLocationMoved = false;
+                positionMarker(myLocation);
                 showSearchPlacesButton(false);
                 googleMap.animateCamera(CameraUpdateFactory.newLatLng(new LatLng(myLocation.getLatitude(), myLocation.getLongitude())));
                 if (searchedForCustomLocations) {
