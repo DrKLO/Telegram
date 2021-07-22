@@ -21,6 +21,7 @@
         <item name="android:navigationBarColor">#000000</item>
         <item name="android:textViewStyle">@style/MyTextViewStyle</item>
         <item name="android:forceDarkAllowed">false</item>
+        <item name="android:windowFullscreen">true</item>
     </style>
 
     <style name="Theme.TMessages" parent="@android:style/Theme.Material.Light">
