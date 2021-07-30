@@ -1080,6 +1080,8 @@ public class LocaleController {
             return LocaleController.formatPluralString("Hours", ttl / 60 / 60);
         } else if (ttl < 60 * 60 * 24 * 7) {
             return LocaleController.formatPluralString("Days", ttl / 60 / 60 / 24);
+        } else if (ttl >= 60 * 60 * 24 * 30 && ttl <= 60 * 60 * 24 * 31) {
+            return LocaleController.formatPluralString("Months", ttl / 60 / 60 / 24 / 30);
         } else {
             int days = ttl / 60 / 60 / 24;
             if (ttl % 7 == 0) {

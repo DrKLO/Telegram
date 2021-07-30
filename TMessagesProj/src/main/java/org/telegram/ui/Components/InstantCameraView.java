@@ -20,6 +20,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.ImageFormat;
 import android.graphics.Outline;
 import android.graphics.Paint;
@@ -57,6 +58,8 @@ import android.view.animation.DecelerateInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
+import androidx.core.graphics.ColorUtils;
+
 import com.google.android.exoplayer2.ExoPlayer;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -68,6 +71,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
@@ -84,6 +88,7 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
+import org.telegram.ui.Components.voip.CellFlickerDrawable;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -152,6 +157,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
     private TextureView textureView;
     private BackupImageView textureOverlayView;
     private CameraSession cameraSession;
+    private boolean needDrawFlickerStub;
 
     private float panTranslationY;
     private float animationTranslationY;
@@ -212,6 +218,8 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
     boolean maybePinchToZoomTouchMode;
 
     private int pointerId1, pointerId2;
+    private int textureViewSize;
+    private boolean isMessageTransition;
 
     @SuppressLint("ClickableViewAccessibility")
     public InstantCameraView(Context context, ChatActivity parentFragment) {
@@ -254,7 +262,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                 @TargetApi(Build.VERSION_CODES.LOLLIPOP)
                 @Override
                 public void getOutline(View view, Outline outline) {
-                    outline.setOval(0, 0, AndroidUtilities.roundMessageSize, AndroidUtilities.roundMessageSize);
+                    outline.setOval(0, 0, textureViewSize, textureViewSize);
                 }
             });
             cameraContainer.setClipToOutline(true);
@@ -294,7 +302,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             cameraContainer.setLayerType(View.LAYER_TYPE_HARDWARE, null);
         }
 
-        addView(cameraContainer, new FrameLayout.LayoutParams(AndroidUtilities.roundMessageSize, AndroidUtilities.roundMessageSize, Gravity.CENTER));
+        addView(cameraContainer, new FrameLayout.LayoutParams(AndroidUtilities.roundPlayingMessageSize, AndroidUtilities.roundPlayingMessageSize, Gravity.CENTER));
 
         switchCameraButton = new ImageView(context);
         switchCameraButton.setScaleType(ImageView.ScaleType.CENTER);
@@ -321,14 +329,53 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         muteImageView.setImageResource(R.drawable.video_mute);
         muteImageView.setAlpha(0.0f);
         addView(muteImageView, LayoutHelper.createFrame(48, 48, Gravity.CENTER));
-        ((LayoutParams) muteImageView.getLayoutParams()).topMargin = AndroidUtilities.roundMessageSize / 2 - AndroidUtilities.dp(24);
 
-        textureOverlayView = new BackupImageView(getContext());
-        textureOverlayView.setRoundRadius(AndroidUtilities.roundMessageSize / 2);
-        addView(textureOverlayView, new FrameLayout.LayoutParams(AndroidUtilities.roundMessageSize, AndroidUtilities.roundMessageSize, Gravity.CENTER));
+        Paint blackoutPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        blackoutPaint.setColor(ColorUtils.setAlphaComponent(Color.BLACK, 40));
+        textureOverlayView = new BackupImageView(getContext()) {
+
+            CellFlickerDrawable flickerDrawable = new CellFlickerDrawable();
+
+            @Override
+            protected void onDraw(Canvas canvas) {
+                super.onDraw(canvas);
+                if (needDrawFlickerStub) {
+                    flickerDrawable.setParentWidth(textureViewSize);
+                    AndroidUtilities.rectTmp.set(0, 0, textureViewSize, textureViewSize);
+                    float rad = AndroidUtilities.rectTmp.width() / 2f;
+                    canvas.drawRoundRect(AndroidUtilities.rectTmp, rad, rad, blackoutPaint);
+                    AndroidUtilities.rectTmp.inset(AndroidUtilities.dp(1), AndroidUtilities.dp(1));
+                    flickerDrawable.draw(canvas, AndroidUtilities.rectTmp, rad);
+                    invalidate();
+                }
+            }
+        };
+        addView(textureOverlayView, new FrameLayout.LayoutParams(AndroidUtilities.roundPlayingMessageSize, AndroidUtilities.roundPlayingMessageSize, Gravity.CENTER));
 
         setVisibility(INVISIBLE);
         blurBehindDrawable = new BlurBehindDrawable(parentView, this);
+    }
+
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        int newSize;
+        if (MeasureSpec.getSize(heightMeasureSpec) > MeasureSpec.getSize(widthMeasureSpec)) {
+             newSize = AndroidUtilities.roundPlayingMessageSize;
+        } else {
+            newSize = AndroidUtilities.roundMessageSize;
+        }
+        if (newSize != textureViewSize) {
+            textureViewSize = newSize;
+            textureOverlayView.getLayoutParams().width = textureOverlayView.getLayoutParams().height = textureViewSize;
+            cameraContainer.getLayoutParams().width = cameraContainer.getLayoutParams().height = textureViewSize;
+            ((LayoutParams) muteImageView.getLayoutParams()).topMargin = textureViewSize / 2 - AndroidUtilities.dp(24);
+            textureOverlayView.setRoundRadius(textureViewSize / 2);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                cameraContainer.invalidateOutline();
+            }
+        }
+
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
     }
 
     private boolean checkPointerIds(MotionEvent ev) {
@@ -418,9 +465,13 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             int x1 = (int) x - AndroidUtilities.dp(3);
             int y1 = (int) y - AndroidUtilities.dp(2);
             canvas.save();
-            canvas.scale(cameraContainer.getScaleX(), cameraContainer.getScaleY(), x1 + AndroidUtilities.roundMessageSize / 2 + AndroidUtilities.dp(3), y1 + AndroidUtilities.roundMessageSize / 2 + AndroidUtilities.dp(3));
+            if (isMessageTransition) {
+                canvas.scale(cameraContainer.getScaleX(), cameraContainer.getScaleY(), x, y);
+            } else {
+                canvas.scale(cameraContainer.getScaleX(), cameraContainer.getScaleY(), x + textureViewSize / 2f, y + textureViewSize / 2f);
+            }
             Theme.chat_roundVideoShadow.setAlpha((int) (cameraContainer.getAlpha() * 255));
-            Theme.chat_roundVideoShadow.setBounds(x1, y1, x1 + AndroidUtilities.roundMessageSize + AndroidUtilities.dp(6), y1 + AndroidUtilities.roundMessageSize + AndroidUtilities.dp(6));
+            Theme.chat_roundVideoShadow.setBounds(x1, y1, x1 + textureViewSize + AndroidUtilities.dp(6), y1 + textureViewSize + AndroidUtilities.dp(6));
             Theme.chat_roundVideoShadow.draw(canvas);
             canvas.restore();
         }
@@ -466,6 +517,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
 
         switchCameraButton.setImageResource(R.drawable.camera_revert1);
         textureOverlayView.setAlpha(1.0f);
+        textureOverlayView.invalidate();
         if (lastBitmap == null) {
             try {
                 File file = new File(ApplicationLoader.getFilesDirFixed(), "icthumb.jpg");
@@ -489,6 +541,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         encryptedFile = null;
         key = null;
         iv = null;
+        needDrawFlickerStub = true;
 
         if (!initCamera()) {
             return;
@@ -662,7 +715,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                 long endTime = videoEditedInfo.endTime >= 0 ? videoEditedInfo.endTime : videoEditedInfo.estimatedDuration;
                 videoEditedInfo.estimatedDuration = endTime - startTime;
                 videoEditedInfo.estimatedSize = Math.max(1, (long) (size * (videoEditedInfo.estimatedDuration / totalDuration)));
-                videoEditedInfo.bitrate = 400000;
+                videoEditedInfo.bitrate = 1000000;
                 if (videoEditedInfo.startTime > 0) {
                     videoEditedInfo.startTime *= 1000;
                 }
@@ -716,7 +769,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
     private void saveLastCameraBitmap() {
         Bitmap bitmap = textureView.getBitmap();
         if (bitmap != null && bitmap.getPixel(0, 0) != 0) {
-            lastBitmap = Bitmap.createScaledBitmap(textureView.getBitmap(), 80, 80, true);
+            lastBitmap = Bitmap.createScaledBitmap(textureView.getBitmap(), 50, 50, true);
             if (lastBitmap != null) {
                 Utilities.blurBitmap(lastBitmap, 7, 1, lastBitmap.getWidth(), lastBitmap.getHeight(), lastBitmap.getRowBytes());
                 try {
@@ -791,6 +844,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
     private void switchCamera() {
         saveLastCameraBitmap();
         if (lastBitmap != null) {
+            needDrawFlickerStub = false;
             textureOverlayView.setImageBitmap(lastBitmap);
             textureOverlayView.setAlpha(1f);
         }
@@ -857,7 +911,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                     Size preview = previewSizes.get(a);
                     for (int b = pictureSizes.size() - 1; b >= 0; b--) {
                         Size picture = pictureSizes.get(b);
-                        if (preview.mWidth >= 240 && preview.mHeight >= 240 && preview.mWidth == picture.mWidth && preview.mHeight == picture.mHeight) {
+                        if (preview.mWidth >= 360 && preview.mHeight >= 360 && preview.mWidth == picture.mWidth && preview.mHeight == picture.mHeight) {
                             previewSize = preview;
                             pictureSize = picture;
                             found = true;
@@ -977,6 +1031,10 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
 
     public TextureView getTextureView() {
         return textureView;
+    }
+
+    public void setIsMessageTransition(boolean isMessageTransition) {
+        this.isMessageTransition = isMessageTransition;
     }
 
     public class CameraGLThread extends DispatchQueue {
@@ -1598,19 +1656,8 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         };
 
         public void startRecording(File outputFile, android.opengl.EGLContext sharedContext) {
-            int resolution;
-            int bitrate;
-            String model = Build.DEVICE;
-            if (model == null) {
-                model = "";
-            }
-            if (model.startsWith("zeroflte") || model.startsWith("zenlte")) {
-                resolution = 320;
-                bitrate = 600000;
-            } else {
-                resolution = 240;
-                bitrate = 400000;
-            }
+            int resolution = MessagesController.getInstance(currentAccount).roundVideoSize;
+            int bitrate = MessagesController.getInstance(currentAccount).roundVideoBitrate * 1024;
 
             videoFile = outputFile;
             videoWidth = resolution;
@@ -1980,8 +2027,8 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                     videoEditedInfo.iv = iv;
                     videoEditedInfo.estimatedSize = Math.max(1, size);
                     videoEditedInfo.framerate = 25;
-                    videoEditedInfo.resultWidth = videoEditedInfo.originalWidth = 240;
-                    videoEditedInfo.resultHeight = videoEditedInfo.originalHeight = 240;
+                    videoEditedInfo.resultWidth = videoEditedInfo.originalWidth = 360;
+                    videoEditedInfo.resultHeight = videoEditedInfo.originalHeight = 360;
                     videoEditedInfo.originalPath = videoFile.getAbsolutePath();
                     if (send == 1) {
                         if (baseFragment.isInScheduleMode()) {
@@ -2103,7 +2150,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                 audioFormat.setString(MediaFormat.KEY_MIME, AUDIO_MIME_TYPE);
                 audioFormat.setInteger(MediaFormat.KEY_SAMPLE_RATE, 44100);
                 audioFormat.setInteger(MediaFormat.KEY_CHANNEL_COUNT, 1);
-                audioFormat.setInteger(MediaFormat.KEY_BIT_RATE, 32000);
+                audioFormat.setInteger(MediaFormat.KEY_BIT_RATE, MessagesController.getInstance(currentAccount).roundAudioBitrate * 1024);
                 audioFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 2048 * AudioBufferInfo.MAX_SAMPLES);
 
                 audioEncoder = MediaCodec.createEncoderByType(AUDIO_MIME_TYPE);
@@ -2456,6 +2503,10 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             }
             if (imageReceiver != null) {
                 canvas.save();
+                if (imageReceiver.getImageWidth() != textureViewSize) {
+                    float s = textureViewSize / imageReceiver.getImageWidth();
+                    canvas.scale(s, s);
+                }
                 canvas.translate(-imageReceiver.getImageX(), -imageReceiver.getImageY());
                 float oldAlpha = imageReceiver.getAlpha();
                 imageReceiver.setAlpha(imageProgress);

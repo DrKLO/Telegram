@@ -3172,8 +3172,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
             fragmentContextView = new FragmentContextView(context, this, false) {
                 @Override
-                protected void playbackSpeedChanged(boolean enabled) {
-                    getUndoView().showWithAction(0, enabled ? UndoView.ACTION_PLAYBACK_SPEED_ENABLED : UndoView.ACTION_PLAYBACK_SPEED_DISABLED, null);
+                protected void playbackSpeedChanged(float value) {
+                    if (Math.abs(value - 1.0f) > 0.001f || Math.abs(value - 1.8f) > 0.001f) {
+                        getUndoView().showWithAction(0, Math.abs(value - 1.0f) > 0.001f ? UndoView.ACTION_PLAYBACK_SPEED_ENABLED : UndoView.ACTION_PLAYBACK_SPEED_DISABLED, value, null, null);
+                    }
                 }
             };
             fragmentContextView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 38, Gravity.TOP | Gravity.LEFT, 0, -36, 0, 0));
@@ -4136,7 +4138,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         if (searchIsShowed) {
             AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid);
         }
-        updateVisibleRows(0);
+        viewPages[0].dialogsAdapter.notifyDataSetChanged();
     }
 
     @Override

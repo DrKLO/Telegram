@@ -30,6 +30,7 @@ public class RoundVideoPlayingDrawable extends Drawable {
     private int progress2Direction = 1;
     private int progress3Direction = 1;
     private View parentView;
+    int alpha = 255;
 
     public RoundVideoPlayingDrawable(View view) {
         super();
@@ -92,6 +93,9 @@ public class RoundVideoPlayingDrawable extends Drawable {
     @Override
     public void draw(Canvas canvas) {
         paint.setColor(Theme.getColor(Theme.key_chat_serviceText));
+        if (alpha != 255) {
+            paint.setAlpha((int) (alpha * (paint.getAlpha() / 255f)));
+        }
         int x = getBounds().left;
         int y = getBounds().top;
         for (int a = 0; a < 3; a++) {
@@ -106,7 +110,7 @@ public class RoundVideoPlayingDrawable extends Drawable {
 
     @Override
     public void setAlpha(int alpha) {
-
+        this.alpha = alpha;
     }
 
     @Override

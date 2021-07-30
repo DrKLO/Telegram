@@ -621,8 +621,10 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                     chatActivity = null;
                     type = 4;
                 }
-                AndroidUtilities.hideKeyboard(parentAlert.baseFragment.getFragmentView().findFocus());
-                AndroidUtilities.hideKeyboard(parentAlert.getContainer().findFocus());
+                if (!parentAlert.delegate.needEnterComment()) {
+                    AndroidUtilities.hideKeyboard(parentAlert.baseFragment.getFragmentView().findFocus());
+                    AndroidUtilities.hideKeyboard(parentAlert.getContainer().findFocus());
+                }
                 PhotoViewer.getInstance().openPhotoForSelect(arrayList, position, type, false, photoViewerProvider, chatActivity);
             } else {
                 if (SharedConfig.inappCamera) {
@@ -1418,7 +1420,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                     return false;
                 }
                 int locked = Settings.System.getInt(parentAlert.baseFragment.getParentActivity().getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0);
-                return true;//sameTakePictureOrientation || locked == 1;
+                return sameTakePictureOrientation || locked == 1;
             }
 
             @Override

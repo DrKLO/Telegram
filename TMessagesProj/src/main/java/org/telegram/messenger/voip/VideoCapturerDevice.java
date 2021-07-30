@@ -24,6 +24,7 @@ import org.webrtc.Logging;
 import org.webrtc.ScreenCapturerAndroid;
 import org.webrtc.SurfaceTextureHelper;
 import org.webrtc.VideoCapturer;
+import org.webrtc.voiceengine.WebRtcAudioRecord;
 
 @TargetApi(18)
 public class VideoCapturerDevice {
@@ -165,6 +166,10 @@ public class VideoCapturerDevice {
                         nativeCapturerObserver = nativeGetJavaVideoCapturerObserver(nativePtr);
                         videoCapturer.initialize(videoCapturerSurfaceTextureHelper, ApplicationLoader.applicationContext, nativeCapturerObserver);
                         videoCapturer.startCapture(size.x, size.y, CAPTURE_FPS);
+                        WebRtcAudioRecord audioRecord = WebRtcAudioRecord.Instance;
+                        if (audioRecord != null) {
+                            audioRecord.initDeviceAudioRecord(((ScreenCapturerAndroid) videoCapturer).getMediaProjection());
+                        }
                     });
                 }
             } else {
@@ -183,7 +188,41 @@ public class VideoCapturerDevice {
                 }
                 String cameraName = names[index];
                 if (videoCapturer == null) {
-                    videoCapturer = enumerator.createCapturer(cameraName, null);
+                    videoCapturer = enumerator.createCapturer(cameraName, new CameraVideoCapturer.CameraEventsHandler() {
+                        @Override
+                        public void onCameraError(String errorDescription) {
+
+                        }
+
+                        @Override
+                        public void onCameraDisconnected() {
+
+                        }
+
+                        @Override
+                        public void onCameraFreezed(String errorDescription) {
+
+                        }
+
+                        @Override
+                        public void onCameraOpening(String cameraName) {
+
+                        }
+
+                        @Override
+                        public void onFirstFrameAvailable() {
+                            AndroidUtilities.runOnUIThread(() -> {
+                                if (VoIPService.getSharedInstance() != null) {
+                                    VoIPService.getSharedInstance().onCameraFirstFrameAvailable();
+                                }
+                            });
+                        }
+
+                        @Override
+                        public void onCameraClosed() {
+
+                        }
+                    });
                     videoCapturerSurfaceTextureHelper = SurfaceTextureHelper.create("VideoCapturerThread", eglBase.getEglBaseContext());
                     handler.post(() -> {
                         if (videoCapturerSurfaceTextureHelper == null) {
@@ -288,6 +327,12 @@ public class VideoCapturerDevice {
                 }
             }
             handler.post(() -> {
+                if (videoCapturer instanceof ScreenCapturerAndroid) {
+                    WebRtcAudioRecord audioRecord = WebRtcAudioRecord.Instance;
+                    if (audioRecord != null) {
+                        audioRecord.stopDeviceAudioRecord();
+                    }
+                }
                 if (videoCapturer != null) {
                     try {
                         videoCapturer.stopCapture();

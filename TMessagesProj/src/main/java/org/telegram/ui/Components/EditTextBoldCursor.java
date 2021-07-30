@@ -764,12 +764,11 @@ public class EditTextBoldCursor extends EditText {
     private boolean updateCursorPosition() {
         final Layout layout = getLayout();
         final int offset = getSelectionStart();
-        if (offset != lastOffset || lastText != layout.getText()) {
-            final int line = layout.getLineForOffset(offset);
-            final int top = layout.getLineTop(line);
-            final int bottom = layout.getLineTop(line + 1);
-            updateCursorPosition(top, bottom, layout.getPrimaryHorizontal(offset));
-        }
+        final int line = layout.getLineForOffset(offset);
+        final int top = layout.getLineTop(line);
+        final int bottom = layout.getLineTop(line + 1);
+        updateCursorPosition(top, bottom, layout.getPrimaryHorizontal(offset));
+
         lastText = layout.getText();
         lastOffset = offset;
         return true;

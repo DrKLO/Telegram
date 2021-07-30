@@ -22,7 +22,7 @@ bool SkipDefaultDevice(const char *name) {
 } // namespace
 
 void SetAudioInputDeviceById(webrtc::AudioDeviceModule *adm, const std::string &id) {
-	const auto recording = adm->Recording();
+	const auto recording = adm->Recording() || adm->RecordingIsInitialized();
 	if (recording) {
 		adm->StopRecording();
 	}

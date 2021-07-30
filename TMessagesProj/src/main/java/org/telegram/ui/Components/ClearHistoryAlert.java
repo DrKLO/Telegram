@@ -24,7 +24,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -123,8 +122,10 @@ public class ClearHistoryAlert extends BottomSheet {
             newTimer = currentTimer = 0;
         } else if (ttl == 24 * 60 * 60) {
             newTimer = currentTimer = 1;
-        } else {
+        } else if (ttl == 7 * 24 * 60 * 60) {
             newTimer = currentTimer = 2;
+        } else {
+            newTimer = currentTimer = 3;
         }
 
         shadowDrawable = context.getResources().getDrawable(R.drawable.sheet_shadow_round).mutate();
@@ -345,7 +346,8 @@ public class ClearHistoryAlert extends BottomSheet {
         String[] strings = new String[]{
                 LocaleController.getString("AutoDeleteNever", R.string.AutoDeleteNever),
                 LocaleController.getString("AutoDelete24Hours", R.string.AutoDelete24Hours),
-                LocaleController.getString("AutoDelete7Days", R.string.AutoDelete7Days)
+                LocaleController.getString("AutoDelete7Days", R.string.AutoDelete7Days),
+                LocaleController.getString("AutoDelete1Month", R.string.AutoDelete1Month)
         };
         slideChooseView.setOptions(currentTimer, strings);
         linearLayout.addView(slideChooseView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 8, 0, 0));
@@ -379,7 +381,10 @@ public class ClearHistoryAlert extends BottomSheet {
                 dismissedDelayed = true;
                 int time;
                 int action;
-                if (newTimer == 2) {
+                if (newTimer == 3) {
+                    time = 31 * 24 * 60 * 60;
+                    action = UndoView.ACTION_AUTO_DELETE_ON;
+                } else if (newTimer == 2) {
                     time = 7 * 24 * 60 * 60;
                     action = UndoView.ACTION_AUTO_DELETE_ON;
                 } else if (newTimer == 1) {

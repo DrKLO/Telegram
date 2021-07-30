@@ -23,6 +23,7 @@ public class ActionBarMenuSubItem extends FrameLayout {
     private TextView subtextView;
     private ImageView imageView;
     private ImageView checkView;
+    private ImageView rightIcon;
 
     private int textColor = Theme.getColor(Theme.key_actionBarDefaultSubmenuItem);
     private int iconColor = Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon);
@@ -88,6 +89,20 @@ public class ActionBarMenuSubItem extends FrameLayout {
         checkView.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
     }
 
+    public void setRightIcon(int icon) {
+        if (rightIcon == null) {
+            rightIcon = new ImageView(getContext());
+            rightIcon.setScaleType(ImageView.ScaleType.CENTER);
+            rightIcon.setColorFilter(textColor, PorterDuff.Mode.MULTIPLY);
+            if (LocaleController.isRTL) {
+                rightIcon.setScaleX(-1);
+            }
+            addView(rightIcon, LayoutHelper.createFrame(24, LayoutHelper.MATCH_PARENT, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT)));
+        }
+        setPadding(AndroidUtilities.dp(LocaleController.isRTL ? 8 : 18), 0, AndroidUtilities.dp(LocaleController.isRTL ? 18 : 8), 0);
+        rightIcon.setImageResource(icon);
+    }
+
     public void setTextAndIcon(CharSequence text, int icon) {
         setTextAndIcon(text, icon, null);
     }
@@ -108,9 +123,10 @@ public class ActionBarMenuSubItem extends FrameLayout {
         }
     }
 
-    public void setColors(int textColor, int iconColor) {
+    public ActionBarMenuSubItem setColors(int textColor, int iconColor) {
         setTextColor(textColor);
         setIconColor(iconColor);
+        return this;
     }
 
     public void setTextColor(int textColor) {

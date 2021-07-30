@@ -32,6 +32,7 @@ import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
+import android.graphics.RadialGradient;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
@@ -100,6 +101,7 @@ import org.telegram.ui.Components.StatusDrawable;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.ui.Components.ThemeEditorView;
 import org.telegram.ui.Components.TypingDotsDrawable;
+import org.telegram.ui.RoundVideoProgressShadow;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -121,6 +123,7 @@ import java.util.concurrent.CountDownLatch;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 
 public class Theme {
@@ -2218,6 +2221,9 @@ public class Theme {
     public static Paint chat_composeBackgroundPaint;
     public static Paint chat_radialProgressPaint;
     public static Paint chat_radialProgress2Paint;
+    public static Paint chat_radialProgressPausedPaint;
+    public static Paint chat_radialProgressPausedSeekbarPaint;
+
     public static TextPaint chat_msgTextPaint;
     public static TextPaint chat_actionTextPaint;
     public static TextPaint chat_msgBotButtonPaint;
@@ -3162,6 +3168,9 @@ public class Theme {
     private static ThreadLocal<float[]> hsvTemp3Local = new ThreadLocal<>();
     private static ThreadLocal<float[]> hsvTemp4Local = new ThreadLocal<>();
     private static ThreadLocal<float[]> hsvTemp5Local = new ThreadLocal<>();
+
+    private static FragmentContextViewWavesDrawable fragmentContextViewWavesDrawable;
+    private static RoundVideoProgressShadow roundPlayDrawable;
 
     static {
         defaultColors.put(key_dialogBackground, 0xffffffff);
@@ -7462,6 +7471,8 @@ public class Theme {
             chat_contextResult_titleTextPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             chat_contextResult_descriptionTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             chat_composeBackgroundPaint = new Paint();
+            chat_radialProgressPausedPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            chat_radialProgressPausedSeekbarPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         }
     }
 
@@ -9007,12 +9018,17 @@ public class Theme {
         return statusDrawable;
     }
 
-    private static FragmentContextViewWavesDrawable fragmentContextViewWavesDrawable;
-
     public static FragmentContextViewWavesDrawable getFragmentContextViewWavesDrawable() {
         if (fragmentContextViewWavesDrawable == null) {
             fragmentContextViewWavesDrawable = new FragmentContextViewWavesDrawable();
         }
         return fragmentContextViewWavesDrawable;
+    }
+
+    public static RoundVideoProgressShadow getRadialSeekbarShadowDrawable() {
+        if (roundPlayDrawable == null) {
+            roundPlayDrawable = new RoundVideoProgressShadow();
+        }
+        return roundPlayDrawable;
     }
 }

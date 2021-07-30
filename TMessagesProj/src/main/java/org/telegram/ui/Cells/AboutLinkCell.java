@@ -96,7 +96,11 @@ public class AboutLinkCell extends FrameLayout {
         if (TextUtils.isEmpty(text) || TextUtils.equals(text, oldText)) {
             return;
         }
-        oldText = text;
+        try {
+            oldText = AndroidUtilities.getSafeString(text);
+        } catch (Throwable e) {
+            oldText = text;
+        }
         stringBuilder = new SpannableStringBuilder(oldText);
         MessageObject.addLinks(false, stringBuilder, false, false, !parseLinks);
         Emoji.replaceEmoji(stringBuilder, Theme.profile_aboutTextPaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);

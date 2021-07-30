@@ -266,12 +266,6 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
             destroyed = true;
             finish();
         });
-        if (BuildVars.DEBUG_PRIVATE_VERSION) {
-            startMessagingButton.setOnLongClickListener(v -> {
-                ConnectionsManager.getInstance(currentAccount).switchBackend();
-                return true;
-            });
-        }
 
         bottomPages = new BottomPagesView(this, viewPager, 6);
         frameLayout.addView(bottomPages, LayoutHelper.createFrame(66, 5, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 350, 0, 0));

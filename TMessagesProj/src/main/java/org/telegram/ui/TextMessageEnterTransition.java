@@ -72,6 +72,7 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
     float toXOffsetRtl;
 
     boolean crossfade;
+    boolean changeColor;
 
     StaticLayout layout;
     StaticLayout rtlLayout;
@@ -101,6 +102,9 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
 
     float replyNameDx;
     float replyMessageDx;
+
+    int fromColor;
+    int toColor;
 
     @SuppressLint("WrongConstant")
     public TextMessageEnterTransition(ChatMessageCell messageView, ChatActivity chatActivity, RecyclerListView listView, MessageEnterTransitionContainer container) {
@@ -214,6 +218,14 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
         int normalLinesCount = 0;
         int rtlLinesCount = 0;
 
+        if (Math.abs(ColorUtils.calculateLuminance(Theme.getColor(Theme.key_chat_messageTextOut)) - ColorUtils.calculateLuminance(Theme.getColor(Theme.key_chat_messagePanelText))) > 0.2f) {
+            crossfade = true;
+            changeColor = true;
+            fromColor = Theme.getColor(Theme.key_chat_messagePanelText);
+            toColor = Theme.getColor(Theme.key_chat_messageTextOut);
+
+        }
+
         if (messageTextLayout.getLineCount() == layout.getLineCount()) {
             n = messageTextLayout.getLineCount();
             for (int i = 0; i < n; i++) {
@@ -263,8 +275,6 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
                 layout = new StaticLayout(normalText, textPaint, width, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0, false);
                 rtlLayout = new StaticLayout(rtlText, textPaint, width, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0, false);
             }
-
-
         }
 
         toXOffsetRtl = layout.getWidth() - messageView.getMessageObject().textLayoutBlocks.get(0).textLayout.getWidth();
@@ -308,7 +318,6 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
             replayObjectFromColor = chatActivity.getReplyObjectTextView().getTextColor();
             drawableFromTop -= AndroidUtilities.dp(46);
         }
-
 
         gradientMatrix = new Matrix();
         gradientPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -422,12 +431,11 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
         boolean messageViewOverscrolled = messageView.getBottom() - AndroidUtilities.dp(4) > listView.getMeasuredHeight();
         boolean clipBottomWithAlpha = messageViewOverscrolled && (messageViewY + messageView.getMeasuredHeight() - AndroidUtilities.dp(8) > clipBottom) && container.getMeasuredHeight() > 0;
 
-
         if (clipBottomWithAlpha) {
             canvas.saveLayerAlpha(0, Math.max(0, messageViewY), container.getMeasuredWidth(), container.getMeasuredHeight(), 255, Canvas.ALL_SAVE_FLAG);
         }
         canvas.save();
-        canvas.clipRect(0, listView.getTop() + chatActivity.getChatListViewPadding() - container.getY() - AndroidUtilities.dp(3), container.getMeasuredWidth(), container.getMeasuredHeight());
+        canvas.clipRect(0, listView.getY() + chatActivity.getChatListViewPadding() - container.getY() - AndroidUtilities.dp(3), container.getMeasuredWidth(), container.getMeasuredHeight());
         canvas.save();
         float drawableX = messageViewX + messageView.getBackgroundDrawableLeft() + (fromX - (toX - toXOffset)) * (1f - progressX);
         float drawableToTop = messageViewY + messageView.getBackgroundDrawableTop();
@@ -572,14 +580,19 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
         canvas.save();
         canvas.translate(fromX * (1f - progressX) + (toX - toXOffset) * progressX, fromY * (1f - progress) + (toY + textLayoutBlock.textYOffset) * progress);
         canvas.scale(scale, scale * scale2, 0, 0);
-        //   canvas.translate(0, textLayoutBlock.textYOffset / 2);
+
         if (drawBitmaps) {
             if (crossfade) {
                 bitmapPaint.setAlpha((int) (255 * (1f - alphaProgress)));
             }
             canvas.drawBitmap(textLayoutBitmap, 0, 0, bitmapPaint);
         } else {
-            if (crossfade) {
+            if (crossfade && changeColor) {
+                int oldColor = Theme.chat_msgTextPaint.getColor();
+                Theme.chat_msgTextPaint.setColor(ColorUtils.setAlphaComponent(fromColor, (int) (Color.alpha(fromColor) * (1f - alphaProgress))));
+                layout.draw(canvas);
+                Theme.chat_msgTextPaint.setColor(oldColor);
+            } else if (crossfade) {
                 int oldAlpha = Theme.chat_msgTextPaint.getAlpha();
                 Theme.chat_msgTextPaint.setAlpha((int) (oldAlpha * (1f - alphaProgress)));
                 layout.draw(canvas);
@@ -587,7 +600,6 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
             } else {
                 layout.draw(canvas);
             }
-
         }
         canvas.restore();
 
@@ -601,7 +613,12 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
                 }
                 canvas.drawBitmap(textLayoutBitmapRtl, 0, 0, bitmapPaint);
             } else {
-                if (crossfade) {
+                if (crossfade && changeColor) {
+                    int oldColor = Theme.chat_msgTextPaint.getColor();
+                    Theme.chat_msgTextPaint.setColor(ColorUtils.setAlphaComponent(fromColor, (int) (Color.alpha(fromColor) * (1f - alphaProgress))));
+                    rtlLayout.draw(canvas);
+                    Theme.chat_msgTextPaint.setColor(oldColor);
+                } else if (crossfade) {
                     int oldAlpha = Theme.chat_msgTextPaint.getAlpha();
                     Theme.chat_msgTextPaint.setAlpha((int) (oldAlpha * (1f - alphaProgress)));
                     rtlLayout.draw(canvas);
@@ -609,7 +626,6 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
                 } else {
                     rtlLayout.draw(canvas);
                 }
-
             }
             canvas.restore();
         }
@@ -629,14 +645,12 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
             canvas.restore();
         }
 
-
         canvas.restore();
 
         if (clipBottomWithAlpha) {
             gradientMatrix.setTranslate(0, clipBottom);
             gradientShader.setLocalMatrix(gradientMatrix);
             canvas.drawRect(0, clipBottom, container.getMeasuredWidth(), container.getMeasuredHeight(), gradientPaint);
-
             canvas.restore();
         }
 
@@ -647,8 +661,6 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
         if (enterView.getSendButton().getVisibility() == View.VISIBLE && sendProgress < 1f) {
             canvas.save();
             canvas.translate(enterView.getX() + enterView.getSendButton().getX() + ((View) enterView.getSendButton().getParent()).getX() + ((View) enterView.getSendButton().getParent().getParent()).getX() - container.getX() + AndroidUtilities.dp(52) * sendProgress, enterView.getY() + enterView.getSendButton().getY() + ((View) enterView.getSendButton().getParent()).getY() + ((View) enterView.getSendButton().getParent().getParent()).getY() - container.getY());
-            // canvas.saveLayerAlpha(0, 0, enterView.getSendButton().getWidth(), enterView.getSendButton().getHeight(), (int) (enterView.getSendButton().getAlpha() * 255), Canvas.ALL_SAVE_FLAG);
-            //canvas.scale(enterView.getSendButton().getScaleX(), enterView.getSendButton().getScaleY(), enterView.getSendButton().getWidth() / 2f, enterView.getSendButton().getHeight() / 2f);
             enterView.getSendButton().draw(canvas);
             canvas.restore();
             canvas.restore();

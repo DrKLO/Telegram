@@ -15,6 +15,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.view.ViewCompat;
 
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageReceiver;
@@ -392,6 +394,20 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
             fromX += (int) holder.itemView.getTranslationX();
         }
         fromY += (int) holder.itemView.getTranslationY();
+        float imageX = 0;
+        float imageY = 0;
+        float imageW = 0;
+        float imageH = 0;
+        int[] roundRadius = new int[4];
+        if (chatMessageCell != null) {
+            imageX = chatMessageCell.getPhotoImage().getImageX();
+            imageY = chatMessageCell.getPhotoImage().getImageY();
+            imageW = chatMessageCell.getPhotoImage().getImageWidth();
+            imageH = chatMessageCell.getPhotoImage().getImageHeight();
+            for (int i = 0; i < 4; i++) {
+                roundRadius[i] = chatMessageCell.getPhotoImage().getRoundRadius()[i];
+            }
+        }
         resetAnimation(holder);
         int deltaX = toX - fromX;
         int deltaY = toY - fromY;
@@ -431,12 +447,20 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                     recyclerListView.invalidate();
 
                     params.imageChangeBoundsTransition = true;
-                    params.animateToImageX = newImage.getImageX();
-                    params.animateToImageY = newImage.getImageY();
-                    params.animateToImageW = newImage.getImageWidth();
-                    params.animateToImageH = newImage.getImageHeight();
+                    if (chatMessageCell.getMessageObject().isRoundVideo()) {
+                        params.animateToImageX = imageX;
+                        params.animateToImageY = imageY;
+                        params.animateToImageW = imageW;
+                        params.animateToImageH = imageH;
+                        params.animateToRadius = roundRadius;
+                    } else {
+                        params.animateToImageX = newImage.getImageX();
+                        params.animateToImageY = newImage.getImageY();
+                        params.animateToImageW = newImage.getImageWidth();
+                        params.animateToImageH = newImage.getImageHeight();
+                        params.animateToRadius = newImage.getRoundRadius();
+                    }
 
-                    params.animateToRadius = newImage.getRoundRadius();
                     params.animateRadius = false;
                     for (int i = 0; i < 4; i++) {
                         if (params.imageRoundRadius[i] != params.animateToRadius[i]) {
@@ -458,9 +482,11 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                             group.transitionParams.captionEnterProgress = group.transitionParams.drawCaptionLayout ? 1f : 0;
                         }
                         if (params.animateRadius) {
-                            params.animateToRadius = new int[4];
-                            for (int i = 0; i < 4; i++) {
-                                params.animateToRadius[i] = newImage.getRoundRadius()[i];
+                            if (params.animateToRadius == newImage.getRoundRadius()) {
+                                params.animateToRadius = new int[4];
+                                for (int i = 0; i < 4; i++) {
+                                    params.animateToRadius[i] = newImage.getRoundRadius()[i];
+                                }
                             }
                             newImage.setRoundRadius(params.imageRoundRadius);
                         }
@@ -695,6 +721,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                 }
 
                 int[] finalFromRoundRadius = fromRoundRadius;
+
                 valueAnimator.addUpdateListener(animation -> {
                     float v = (float) animation.getAnimatedValue();
                     float x = moveInfoExtended.imageX * (1f - v) + params.animateToImageX * v;
@@ -723,12 +750,6 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                     chatMessageCell.setImageCoords(x, y, width, height);
                     holder.itemView.invalidate();
                 });
-                animatorSet.addListener(new AnimatorListenerAdapter() {
-                    @Override
-                    public void onAnimationEnd(Animator animation) {
-                        params.imageChangeBoundsTransition = false;
-                    }
-                });
                 animatorSet.playTogether(valueAnimator);
             }
             if (moveInfoExtended.deltaBottom != 0 || moveInfoExtended.deltaRight != 0 || moveInfoExtended.deltaTop != 0 || moveInfoExtended.deltaLeft != 0) {
@@ -740,15 +761,15 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                 valueAnimator.addUpdateListener(animation -> {
                     float v = (float) animation.getAnimatedValue();
                     if (moveInfoExtended.animateBackgroundOnly) {
-                        params.deltaLeft = (int) (-moveInfoExtended.deltaLeft * v);
-                        params.deltaRight = (int) (-moveInfoExtended.deltaRight * v);
-                        params.deltaTop = (int) (-moveInfoExtended.deltaTop * v);
-                        params.deltaBottom = (int) (-moveInfoExtended.deltaBottom * v);
+                        params.deltaLeft = -moveInfoExtended.deltaLeft * v;
+                        params.deltaRight = -moveInfoExtended.deltaRight * v;
+                        params.deltaTop = -moveInfoExtended.deltaTop * v;
+                        params.deltaBottom = -moveInfoExtended.deltaBottom * v;
                     } else {
-                        params.deltaLeft = (int) (-moveInfoExtended.deltaLeft * v - chatMessageCell.getAnimationOffsetX());
-                        params.deltaRight = (int) (-moveInfoExtended.deltaRight * v - chatMessageCell.getAnimationOffsetX());
-                        params.deltaTop = (int) (-moveInfoExtended.deltaTop * v - chatMessageCell.getTranslationY());
-                        params.deltaBottom = (int) (-moveInfoExtended.deltaBottom * v - chatMessageCell.getTranslationY());
+                        params.deltaLeft = -moveInfoExtended.deltaLeft * v - chatMessageCell.getAnimationOffsetX();
+                        params.deltaRight = -moveInfoExtended.deltaRight * v - chatMessageCell.getAnimationOffsetX();
+                        params.deltaTop = -moveInfoExtended.deltaTop * v - chatMessageCell.getTranslationY();
+                        params.deltaBottom = -moveInfoExtended.deltaBottom * v - chatMessageCell.getTranslationY();
                     }
                     chatMessageCell.invalidate();
                 });

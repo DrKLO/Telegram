@@ -50,6 +50,9 @@ public class CameraSession {
     private boolean optimizeForBarcode;
     private boolean useTorch;
     private boolean isRound;
+    private boolean destroyed;
+
+    Camera.CameraInfo info = new Camera.CameraInfo();
 
     public static final int ORIENTATION_HYSTERESIS = 5;
 
@@ -60,6 +63,7 @@ public class CameraSession {
 
         }
     };
+    private int displayOrientation;
 
     public CameraSession(CameraInfo info, Size preview, Size picture, int format, boolean round) {
         previewSize = preview;
@@ -197,7 +201,6 @@ public class CameraSession {
             isVideo = true;
             Camera camera = cameraInfo.camera;
             if (camera != null) {
-                Camera.CameraInfo info = new Camera.CameraInfo();
                 Camera.Parameters params = null;
                 try {
                     params = camera.getParameters();
@@ -206,42 +209,7 @@ public class CameraSession {
                 }
 
                 Camera.getCameraInfo(cameraInfo.getCameraId(), info);
-
-                int displayOrientation = getDisplayOrientation(info, true);
-                int cameraDisplayOrientation;
-
-                if ("samsung".equals(Build.MANUFACTURER) && "sf2wifixx".equals(Build.PRODUCT)) {
-                    cameraDisplayOrientation = 0;
-                } else {
-                    int degrees = 0;
-                    int temp = displayOrientation;
-                    switch (temp) {
-                        case Surface.ROTATION_0:
-                            degrees = 0;
-                            break;
-                        case Surface.ROTATION_90:
-                            degrees = 90;
-                            break;
-                        case Surface.ROTATION_180:
-                            degrees = 180;
-                            break;
-                        case Surface.ROTATION_270:
-                            degrees = 270;
-                            break;
-                    }
-                    if (info.orientation % 90 != 0) {
-                        info.orientation = 0;
-                    }
-                    if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
-                        temp = (info.orientation + degrees) % 360;
-                        temp = (360 - temp) % 360;
-                    } else {
-                        temp = (info.orientation - degrees + 360) % 360;
-                    }
-                    cameraDisplayOrientation = temp;
-                }
-                camera.setDisplayOrientation(currentOrientation = cameraDisplayOrientation);
-                diffOrientation = currentOrientation - displayOrientation;
+                updateRotation();
 
                 if (params != null) {
                     if (initial && BuildVars.LOGS_ENABLED) {
@@ -305,11 +273,71 @@ public class CameraSession {
         }
     }
 
+    public void updateRotation() {
+        if (cameraInfo == null) {
+            return;
+        }
+
+        try {
+            Camera.getCameraInfo(cameraInfo.getCameraId(), info);
+        } catch (Throwable throwable) {
+            FileLog.e(throwable);
+            return;
+        }
+        Camera camera = (cameraInfo == null || destroyed) ? null : cameraInfo.camera;
+
+        displayOrientation = getDisplayOrientation(info, true);
+        int cameraDisplayOrientation;
+
+        if ("samsung".equals(Build.MANUFACTURER) && "sf2wifixx".equals(Build.PRODUCT)) {
+            cameraDisplayOrientation = 0;
+        } else {
+            int degrees = 0;
+            int temp = displayOrientation;
+            switch (temp) {
+                case Surface.ROTATION_0:
+                    degrees = 0;
+                    break;
+                case Surface.ROTATION_90:
+                    degrees = 90;
+                    break;
+                case Surface.ROTATION_180:
+                    degrees = 180;
+                    break;
+                case Surface.ROTATION_270:
+                    degrees = 270;
+                    break;
+            }
+            if (info.orientation % 90 != 0) {
+                info.orientation = 0;
+            }
+            if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+                temp = (info.orientation + degrees) % 360;
+                temp = (360 - temp) % 360;
+            } else {
+                temp = (info.orientation - degrees + 360) % 360;
+            }
+            cameraDisplayOrientation = temp;
+        }
+        currentOrientation = cameraDisplayOrientation;
+        if (camera != null) {
+            try {
+                camera.setDisplayOrientation(currentOrientation);
+            } catch (Throwable ignore) {
+
+            }
+
+        }
+        diffOrientation = currentOrientation - displayOrientation;
+        if (diffOrientation < 0) {
+            diffOrientation += 360;
+        }
+    }
+
     protected void configurePhotoCamera() {
         try {
             Camera camera = cameraInfo.camera;
             if (camera != null) {
-                Camera.CameraInfo info = new Camera.CameraInfo();
                 Camera.Parameters params = null;
                 try {
                     params = camera.getParameters();
@@ -319,41 +347,12 @@ public class CameraSession {
 
                 Camera.getCameraInfo(cameraInfo.getCameraId(), info);
 
-                int displayOrientation = getDisplayOrientation(info, true);
-                int cameraDisplayOrientation;
+                updateRotation();
 
-                if ("samsung".equals(Build.MANUFACTURER) && "sf2wifixx".equals(Build.PRODUCT)) {
-                    cameraDisplayOrientation = 0;
-                } else {
-                    int degrees = 0;
-                    int temp = displayOrientation;
-                    switch (temp) {
-                        case Surface.ROTATION_0:
-                            degrees = 0;
-                            break;
-                        case Surface.ROTATION_90:
-                            degrees = 90;
-                            break;
-                        case Surface.ROTATION_180:
-                            degrees = 180;
-                            break;
-                        case Surface.ROTATION_270:
-                            degrees = 270;
-                            break;
-                    }
-                    if (info.orientation % 90 != 0) {
-                        info.orientation = 0;
-                    }
-                    if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
-                        temp = (info.orientation + degrees) % 360;
-                        temp = (360 - temp) % 360;
-                    } else {
-                        temp = (info.orientation - degrees + 360) % 360;
-                    }
-                    cameraDisplayOrientation = temp;
-                }
-                camera.setDisplayOrientation(currentOrientation = cameraDisplayOrientation);
                 diffOrientation = currentOrientation - displayOrientation;
+                if (diffOrientation < 0) {
+                    diffOrientation += 360;
+                }
 
                 if (params != null) {
                     params.setPreviewSize(previewSize.getWidth(), previewSize.getHeight());
@@ -470,10 +469,7 @@ public class CameraSession {
     }
 
     protected void configureRecorder(int quality, MediaRecorder recorder) {
-        Camera.CameraInfo info = new Camera.CameraInfo();
         Camera.getCameraInfo(cameraInfo.cameraId, info);
-        int displayOrientation = getDisplayOrientation(info, false);
-
 
         int outputOrientation = 0;
         if (jpegOrientation != OrientationEventListener.ORIENTATION_UNKNOWN) {
@@ -552,7 +548,6 @@ public class CameraSession {
 
     public int getDisplayOrientation() {
         try {
-            Camera.CameraInfo info = new Camera.CameraInfo();
             Camera.getCameraInfo(cameraInfo.getCameraId(), info);
             return getDisplayOrientation(info, true);
         } catch (Exception e) {
@@ -577,6 +572,7 @@ public class CameraSession {
 
     public void destroy() {
         initied = false;
+        destroyed = true;
         if (orientationEventListener != null) {
             orientationEventListener.disable();
             orientationEventListener = null;

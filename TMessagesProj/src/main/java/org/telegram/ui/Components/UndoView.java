@@ -163,6 +163,7 @@ public class UndoView extends FrameLayout {
     public final static int ACTION_PAYMENT_SUCCESS = 77;
     public final static int ACTION_PIN_DIALOGS = 78;
     public final static int ACTION_UNPIN_DIALOGS = 79;
+    public final static int ACTION_EMAIL_COPIED = 80;
 
     private CharSequence infoText;
     private int hideAnimationType = 1;
@@ -821,7 +822,7 @@ public class UndoView extends FrameLayout {
                 currentAction == ACTION_FWD_MESSAGES || currentAction == ACTION_NOTIFY_ON || currentAction == ACTION_NOTIFY_OFF ||  currentAction == ACTION_USERNAME_COPIED ||
                 currentAction == ACTION_HASHTAG_COPIED || currentAction == ACTION_TEXT_COPIED || currentAction == ACTION_LINK_COPIED || currentAction == ACTION_PHONE_COPIED ||
                 currentAction == ACTION_AUTO_DELETE_OFF || currentAction == ACTION_AUTO_DELETE_ON || currentAction == ACTION_GIGAGROUP_CANCEL || currentAction == ACTION_GIGAGROUP_SUCCESS ||
-                currentAction == ACTION_VOIP_INVITE_LINK_SENT || currentAction == ACTION_PIN_DIALOGS || currentAction == ACTION_UNPIN_DIALOGS || currentAction == ACTION_SHARE_BACKGROUND) {
+                currentAction == ACTION_VOIP_INVITE_LINK_SENT || currentAction == ACTION_PIN_DIALOGS || currentAction == ACTION_UNPIN_DIALOGS || currentAction == ACTION_SHARE_BACKGROUND || currentAction == ACTION_EMAIL_COPIED) {
             undoImageView.setVisibility(GONE);
             leftImageView.setVisibility(VISIBLE);
 
@@ -844,7 +845,9 @@ public class UndoView extends FrameLayout {
                 int ttl = (Integer) infoObject2;
                 String time;
                 subinfoTextView.setSingleLine(false);
-                if (ttl > 24 * 60 * 60) {
+                if (ttl >= 30 * 24 * 60 * 60) {
+                    time = LocaleController.formatPluralString("Months", ttl / (30 * 24 * 60 * 60));
+                } else if (ttl > 24 * 60 * 60) {
                     time = LocaleController.formatPluralString("Days", ttl / (24 * 60 * 60));
                 } else if (ttl >= 60 * 60) {
                     time = LocaleController.formatPluralString("Hours", ttl / (60 * 60));
@@ -894,9 +897,11 @@ public class UndoView extends FrameLayout {
                 leftImageView.setAnimation(R.raw.audio_speed, 36, 36);
                 timeLeft = 3000;
                 infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-            } else if (currentAction == ACTION_MESSAGE_COPIED || currentAction == ACTION_USERNAME_COPIED || currentAction == ACTION_HASHTAG_COPIED || currentAction == ACTION_TEXT_COPIED || currentAction == ACTION_LINK_COPIED || currentAction == ACTION_PHONE_COPIED) {
+            } else if (currentAction == ACTION_MESSAGE_COPIED || currentAction == ACTION_USERNAME_COPIED || currentAction == ACTION_HASHTAG_COPIED || currentAction == ACTION_TEXT_COPIED || currentAction == ACTION_LINK_COPIED || currentAction == ACTION_PHONE_COPIED || currentAction == ACTION_EMAIL_COPIED) {
                 int iconRawId = R.raw.copy;
-                if (currentAction == ACTION_PHONE_COPIED) {
+                if (currentAction == ACTION_EMAIL_COPIED) {
+                    infoTextView.setText(LocaleController.getString("EmailCopied", R.string.EmailCopied));
+                } else if (currentAction == ACTION_PHONE_COPIED) {
                     infoTextView.setText(LocaleController.getString("PhoneCopied", R.string.PhoneCopied));
                 } else if (currentAction == ACTION_USERNAME_COPIED) {
                     infoTextView.setText(LocaleController.getString("UsernameCopied", R.string.UsernameCopied));

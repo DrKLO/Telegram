@@ -2975,9 +2975,13 @@ public class MessageObject {
                     }
                 }
             } else {
-                if (messageOwner.message != null && messageOwner.message.length() > 200) {
+                if (messageOwner.message != null) {
                     try {
-                        messageText = AndroidUtilities.BAD_CHARS_MESSAGE_PATTERN.matcher(messageOwner.message).replaceAll("\u200C");
+                        if (messageOwner.message.length() > 200) {
+                            messageText = AndroidUtilities.BAD_CHARS_MESSAGE_LONG_PATTERN.matcher(messageOwner.message).replaceAll("\u200C");
+                        } else {
+                            messageText = AndroidUtilities.BAD_CHARS_MESSAGE_PATTERN.matcher(messageOwner.message).replaceAll("\u200C");
+                        }
                     } catch (Throwable e) {
                         messageText = messageOwner.message;
                     }

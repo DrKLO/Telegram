@@ -138,6 +138,7 @@ public class LoginActivity extends BaseFragment {
     private boolean checkShowPermissions = true;
     private boolean newAccount;
     private boolean syncContacts = true;
+    private boolean testBackend = false;
 
     private int scrollHeight;
 
@@ -1122,6 +1123,7 @@ public class LoginActivity extends BaseFragment {
         private TextView textView;
         private TextView textView2;
         private CheckBoxCell checkBoxCell;
+        private CheckBoxCell testBackendCheckBox;
 
         private int countryState = 0;
 
@@ -1431,6 +1433,20 @@ public class LoginActivity extends BaseFragment {
                 });
             }
 
+            if (BuildVars.DEBUG_PRIVATE_VERSION) {
+                testBackendCheckBox = new CheckBoxCell(context, 2);
+                testBackendCheckBox.setText("Test Backend", "", testBackend, false);
+                addView(testBackendCheckBox, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 0, 0, 0, 0));
+                testBackendCheckBox.setOnClickListener(v -> {
+                    if (getParentActivity() == null) {
+                        return;
+                    }
+                    CheckBoxCell cell = (CheckBoxCell) v;
+                    testBackend = !testBackend;
+                    cell.setChecked(testBackend, true);
+                });
+            }
+
             HashMap<String, String> languageMap = new HashMap<>();
             try {
                 BufferedReader reader = new BufferedReader(new InputStreamReader(getResources().getAssets().open("countries.txt")));
@@ -1613,6 +1629,11 @@ public class LoginActivity extends BaseFragment {
                 return;
             }
             String phone = PhoneFormat.stripExceptNumbers("" + codeField.getText() + phoneField.getText());
+            boolean isTestBakcend = getConnectionsManager().isTestBackend();
+            if (isTestBakcend != testBackend) {
+                getConnectionsManager().switchBackend(false);
+                isTestBakcend = testBackend;
+            }
             if (getParentActivity() instanceof LaunchActivity) {
                 for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
                     UserConfig userConfig = UserConfig.getInstance(a);
@@ -1620,7 +1641,7 @@ public class LoginActivity extends BaseFragment {
                         continue;
                     }
                     String userPhone = userConfig.getCurrentUser().phone;
-                    if (PhoneNumberUtils.compare(phone, userPhone)) {
+                    if (PhoneNumberUtils.compare(phone, userPhone) && ConnectionsManager.getInstance(a).isTestBackend() == isTestBakcend) {
                         final int num = a;
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         builder.setTitle(LocaleController.getString("AppName", R.string.AppName));

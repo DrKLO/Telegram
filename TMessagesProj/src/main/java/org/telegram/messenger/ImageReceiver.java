@@ -2293,4 +2293,14 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             }
         }
     }
+
+    public void startCrossfadeFromStaticThumb(Bitmap thumb) {
+        currentThumbKey = null;
+        currentThumbDrawable = null;
+        thumbShader = null;
+        staticThumbDrawable = new BitmapDrawable(null, thumb);
+        crossfadeWithThumb = true;
+        currentAlpha = 0f;
+        updateDrawableRadius(staticThumbDrawable);
+    }
 }

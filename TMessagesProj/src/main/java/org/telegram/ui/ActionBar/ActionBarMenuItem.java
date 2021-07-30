@@ -271,7 +271,7 @@ public class ActionBarMenuItem extends FrameLayout {
                     delegate.onItemClick((Integer) selectedMenuView.getTag());
                 }
                 popupWindow.dismiss(allowCloseAnimation);
-            } else {
+            } else if (showSubmenuByMove) {
                 popupWindow.dismiss();
             }
         } else {
@@ -1538,6 +1538,16 @@ public class ActionBarMenuItem extends FrameLayout {
             view.setVisibility(GONE);
             measurePopup = true;
         }
+    }
+
+    public void hideAllSubItems() {
+        if (popupLayout == null) {
+            return;
+        }
+        for (int a = 0, N = popupLayout.getItemsCount(); a < N; a++) {
+            popupLayout.getItemAt(a).setVisibility(GONE);
+        }
+        measurePopup = true;
     }
 
     public boolean isSubItemVisible(int id) {

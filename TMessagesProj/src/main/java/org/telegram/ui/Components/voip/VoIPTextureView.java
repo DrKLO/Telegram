@@ -10,6 +10,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Outline;
 import android.os.Build;
+import android.util.TypedValue;
 import android.view.Display;
 import android.view.Gravity;
 import android.view.TextureView;
@@ -18,13 +19,18 @@ import android.view.ViewOutlineProvider;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.MotionBackgroundDrawable;
 import org.telegram.ui.GroupCallActivity;
 import org.webrtc.RendererCommon;
 import org.webrtc.TextureViewRenderer;
@@ -39,10 +45,15 @@ public class VoIPTextureView extends FrameLayout {
 
     float roundRadius;
 
+    private boolean screencast;
+
     public final TextureViewRenderer renderer;
     public TextureView blurRenderer;
     public final ImageView imageView;
     public View backgroundView;
+    private FrameLayout screencastView;
+    private ImageView screencastImage;
+    private TextView screencastText;
     private Bitmap thumb;
 
     public Bitmap cameraLastBitmap;
@@ -139,6 +150,25 @@ public class VoIPTextureView extends FrameLayout {
             blurRenderer.setOpaque(false);
         }
 
+        screencastView = new FrameLayout(getContext());
+        screencastView.setBackground(new MotionBackgroundDrawable(0xff212E3A, 0xff2B5B4D, 0xff245863, 0xff274558, true));
+        addView(screencastView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        screencastView.setVisibility(GONE);
+
+        screencastImage = new ImageView(getContext());
+        screencastImage.setScaleType(ImageView.ScaleType.CENTER);
+        screencastImage.setImageResource(R.drawable.screencast_big);
+        screencastView.addView(screencastImage, LayoutHelper.createFrame(82, 82, Gravity.CENTER, 0, 0, 0, 60));
+
+        screencastText = new TextView(getContext());
+        screencastText.setText(LocaleController.getString("VoipVideoScreenSharing", R.string.VoipVideoScreenSharing));
+        screencastText.setGravity(Gravity.CENTER);
+        screencastText.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
+        screencastText.setTextColor(0xffffffff);
+        screencastText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+        screencastText.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        screencastView.addView(screencastText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 21, 28, 21, 0));
+
         if (applyRoundRadius) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 setOutlineProvider(new ViewOutlineProvider() {
@@ -176,6 +206,40 @@ public class VoIPTextureView extends FrameLayout {
         if (!applyRotation) {
             Display display = ((WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
             renderer.setScreenRotation(display.getRotation());
+        }
+    }
+
+    public void setScreenshareMiniProgress(float progress, boolean value) {
+        if (!screencast) {
+            return;
+        }
+        float scale = ((View) getParent()).getScaleX();
+        screencastText.setAlpha(1.0f - progress);
+        float sc;
+        if (!value) {
+            sc = 1.0f / scale - 0.4f / scale * progress;
+        } else {
+            sc = 1.0f - 0.4f * progress;
+        }
+        screencastImage.setScaleX(sc);
+        screencastImage.setScaleY(sc);
+        screencastImage.setTranslationY(AndroidUtilities.dp(60) * progress);
+    }
+
+    public void setIsScreencast(boolean value) {
+        screencast = value;
+        screencastView.setVisibility(screencast ? VISIBLE : GONE);
+        if (screencast) {
+            renderer.setVisibility(GONE);
+            if (blurRenderer != null) {
+                blurRenderer.setVisibility(GONE);
+            }
+            imageView.setVisibility(GONE);
+        } else {
+            renderer.setVisibility(VISIBLE);
+            if (blurRenderer != null) {
+                blurRenderer.setVisibility(VISIBLE);
+            }
         }
     }
 
@@ -233,6 +297,9 @@ public class VoIPTextureView extends FrameLayout {
     }
 
     public void setStub(VoIPTextureView from) {
+        if (screencast) {
+            return;
+        }
         Bitmap bitmap = from.renderer.getBitmap();
         if (bitmap == null || bitmap.getPixel(0, 0) == 0) {
             imageView.setImageDrawable(from.imageView.getDrawable());

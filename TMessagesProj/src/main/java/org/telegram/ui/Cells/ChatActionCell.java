@@ -246,10 +246,11 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
     }
 
     @Override
-    protected void onLongPress() {
+    protected boolean onLongPress() {
         if (delegate != null) {
             delegate.didLongPress(this, lastTouchX, lastTouchY);
         }
+        return true;
     }
 
     @Override

@@ -106,7 +106,7 @@ AudioScreenRecordJni::AudioScreenRecordJni(AudioManager* audio_manager)
   j_audio_record_.reset(
       new JavaAudioRecord(j_native_registration_.get(),
                           j_native_registration_->NewObject(
-                              "<init>", "(JZ)V", PointerTojlong(this), true)));
+                              "<init>", "(JI)V", PointerTojlong(this), 1)));
   // Detach from this thread since we want to use the checker to verify calls
   // from the Java based audio thread.
   thread_checker_java_.Detach();

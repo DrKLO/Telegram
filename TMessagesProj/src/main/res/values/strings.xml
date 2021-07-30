@@ -158,7 +158,8 @@
     <string name="AutoDeleteAlertChannelInfo">Automatically delete new messages after a certain period of time for subscribers of this channel.</string>
     <string name="AutoDeleteConfirm">Confirm</string>
     <string name="AutoDelete24Hours">24 hours</string>
-    <string name="AutoDelete7Days">7 days</string>
+    <string name="AutoDelete7Days">1 week</string>
+    <string name="AutoDelete1Month">1 month</string>
     <string name="AutoDeleteInfo">Automatically delete new messages sent in this chat after a certain period of time.</string>
     <string name="AutoDeleteNever">Off</string>
     <string name="AutoDeleteSet">Set for this chat</string>
@@ -1153,6 +1154,7 @@
     <string name="ChatDistanceToPeer">%1$s is %2$s</string>
     <string name="ChatWasMovedToMainList">The chat was moved to your main list.</string>
     <string name="SecretChatTimerDays">d</string>
+    <string name="SecretChatTimerMonths">m</string>
     <string name="SecretChatTimerSeconds">s</string>
     <string name="SecretChatTimerMinutes">m</string>
     <string name="SecretChatTimerHours">h</string>
@@ -2653,6 +2655,12 @@
     <string name="ProximityAlertSetInfoGroup2">We will notify you once someone is within %1$s from you.</string>
     <string name="ProximityAlertCancelled">Proximity alert cancelled</string>
     <!--photo gallery view-->
+    <string name="Speed">Speed</string>
+    <string name="SpeedSlow">Slow</string>
+    <string name="SpeedVerySlow">Very slow</string>
+    <string name="SpeedFast">Fast</string>
+    <string name="SpeedVeryFast">Very fast</string>
+    <string name="SpeedNormal">Normal</string>
     <string name="ShowAsList">Show as list</string>
     <string name="ShowAsGrid">Show as grid</string>
     <string name="ShowAllMedia">Show all media</string>
@@ -3713,11 +3721,17 @@
     <string name="VoipVideoOnPause">Video on Pause</string>
     <string name="VoipVideoScreenSharingTwoLines">You are sharing\nyour screen</string>
     <string name="VoipVideoScreenSharing">You are sharing your screen</string>
+    <string name="VoipVideoPrivateScreenSharing">Everything on your screen, including notifications, will be shared.</string>
     <string name="VoipVideoScreenStopSharing">STOP SHARING</string>
+    <string name="VoipPhoneScreen">PHONE SCREEN</string>
+    <string name="VoipFrontCamera">FRONT CAMERA</string>
+    <string name="VoipBackCamera">BACK CAMERA</string>
+    <string name="VoipShareVideo">Share Video</string>
     <string name="VoipNoiseCancellation">Noise suppression</string>
     <string name="VoipNoiseCancellationEnabled">Enabled</string>
     <string name="VoipNoiseCancellationDisabled">Disabled</string>
     <string name="VoipVideoNotAvailable">Video is only available\nfor the first %1$s</string>
+    <string name="VoipVideoNotAvailableAdmin">The voice chat is over %1$s.\nNew participants only have access to audio stream.</string>
     <!--invite links-->
     <string name="ManageInviteLinks">Manage Invite Links</string>
     <string name="ManageLinksInfoHelp">You can create additional invite links that have a limited time or number of uses</string>

@@ -41,6 +41,9 @@ public class HardwareVideoDecoderFactory extends MediaCodecVideoDecoderFactory {
                     case "video/x-vnd.on2.vp9":
                         return config.enable_vp9_decoder;
                     case "video/avc":
+                        if (VoIPService.getSharedInstance() != null && VoIPService.getSharedInstance().groupCall != null) {
+                            return false;
+                        }
                         return config.enable_h264_decoder;
                     case "video/hevc":
                         return config.enable_h265_decoder;

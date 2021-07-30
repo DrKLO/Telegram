@@ -53,6 +53,8 @@ import android.widget.ImageView;
 
 import androidx.core.graphics.ColorUtils;
 
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.DispatchQueue;
@@ -277,6 +279,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         if (previewSize != null && cameraSession != null) {
             int frameWidth, frameHeight;
+            cameraSession.updateRotation();
             if (cameraSession.getWorldAngle() == 90 || cameraSession.getWorldAngle() == 270) {
                 frameWidth = previewSize.getWidth();
                 frameHeight = previewSize.getHeight();
@@ -289,6 +292,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
             blurredStubView.getLayoutParams().height = textureView.getLayoutParams().height = (int) (s * frameHeight);
         }
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        checkPreviewMatrix();
     }
 
     public float getTextureHeight(float width, float height) {
@@ -490,7 +494,8 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
 
         if (cameraThread != null) {
             cameraThread.postRunnable(() -> {
-                if (cameraThread.currentSession != null) {
+                final  CameraGLThread cameraThread = this.cameraThread;
+                if (cameraThread != null && cameraThread.currentSession != null) {
                     int rotationAngle = cameraThread.currentSession.getWorldAngle();
                     android.opengl.Matrix.setIdentityM(mMVPMatrix, 0);
                     if (rotationAngle != 0) {
@@ -1035,15 +1040,15 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
                         FileLog.d("CameraView " + "set gl rednderer session");
                     }
                     CameraSession newSession = (CameraSession) inputMessage.obj;
-                    if (currentSession == newSession) {
-                        int rotationAngle = currentSession.getWorldAngle();
-                        android.opengl.Matrix.setIdentityM(mMVPMatrix, 0);
-                        if (rotationAngle != 0) {
-                            android.opengl.Matrix.rotateM(mMVPMatrix, 0, rotationAngle, 0, 0, 1);
-                        }
-                    } else {
+                    if (currentSession != newSession) {
                         currentSession = newSession;
                         cameraId = newSession.cameraInfo.cameraId;
+                    }
+                    currentSession.updateRotation();
+                    int rotationAngle = currentSession.getWorldAngle();
+                    android.opengl.Matrix.setIdentityM(mMVPMatrix, 0);
+                    if (rotationAngle != 0) {
+                        android.opengl.Matrix.rotateM(mMVPMatrix, 0, rotationAngle, 0, 0, 1);
                     }
                     break;
                 }
@@ -1153,6 +1158,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
                         FileLog.d("CameraView " + "camera initied");
                     }
                     cameraSession.setInitied();
+                    requestLayout();
                 }
             }, () -> cameraThread.setCurrentSession(cameraSession));
         });

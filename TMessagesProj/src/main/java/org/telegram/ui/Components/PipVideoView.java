@@ -278,6 +278,10 @@ public class PipVideoView {
         return show(activity, null, sheet, controls, aspectRatio, rotation, webview);
     }
 
+    public TextureView show(Activity activity, PhotoViewer viewer, float aspectRatio, int rotation, WebView webview) {
+        return show(activity, viewer, null, null, aspectRatio, rotation, webview);
+    }
+
     public TextureView show(Activity activity, PhotoViewer viewer, float aspectRatio, int rotation) {
         return show(activity, viewer, null, null, aspectRatio, rotation, null);
     }
@@ -431,7 +435,6 @@ public class PipVideoView {
             FileLog.e(e);
             return null;
         }
-
 
         return textureView;
     }

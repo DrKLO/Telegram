@@ -1144,6 +1144,7 @@ public class GroupCallRenderersContainer extends FrameLayout {
                     super.onAnimationEnd(animation);
                     swipeToBackAnimator = null;
                     swipeToBackDy = 0;
+                    invalidate();
                 }
             });
             swipeToBackAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);

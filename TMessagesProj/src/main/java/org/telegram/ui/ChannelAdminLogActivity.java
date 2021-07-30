@@ -425,7 +425,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                             if (messageObject1.isVoice() || messageObject1.isMusic()) {
                                 cell.updateButtonState(false, true, false);
                             } else if (messageObject1.isRoundVideo()) {
-                                cell.checkVideoPlayback(false);
+                                cell.checkVideoPlayback(false, null);
                                 if (!MediaController.getInstance().isPlayingMessage(messageObject1)) {
                                     if (messageObject1.audioProgress != 0) {
                                         messageObject1.resetPlayingProgress();
@@ -450,7 +450,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                                 cell.updateButtonState(false, true, false);
                             } else if (messageObject.isRoundVideo()) {
                                 if (!MediaController.getInstance().isPlayingMessage(messageObject)) {
-                                    cell.checkVideoPlayback(true);
+                                    cell.checkVideoPlayback(true, null);
                                 }
                             }
                         }
@@ -2217,8 +2217,8 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                     }
 
                     @Override
-                    public void needOpenWebView(String url, String title, String description, String originalUrl, int w, int h) {
-                        EmbedBottomSheet.show(mContext, title, description, originalUrl, url, w, h, false);
+                    public void needOpenWebView(MessageObject message, String url, String title, String description, String originalUrl, int w, int h) {
+                        EmbedBottomSheet.show(getParentActivity(), message, provider, title, description, originalUrl, url, w, h, false);
                     }
 
                     @Override

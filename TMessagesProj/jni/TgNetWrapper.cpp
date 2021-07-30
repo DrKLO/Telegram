@@ -194,8 +194,8 @@ void setUserId(JNIEnv *env, jclass c, jint instanceNum, int32_t id) {
     ConnectionsManager::getInstance(instanceNum).setUserId(id);
 }
 
-void switchBackend(JNIEnv *env, jclass c, jint instanceNum) {
-    ConnectionsManager::getInstance(instanceNum).switchBackend();
+void switchBackend(JNIEnv *env, jclass c, jint instanceNum, jboolean restart) {
+    ConnectionsManager::getInstance(instanceNum).switchBackend(restart);
 }
 
 void pauseNetwork(JNIEnv *env, jclass c, jint instanceNum) {
@@ -448,7 +448,7 @@ static JNINativeMethod ConnectionsManagerMethods[] = {
         {"native_setLangCode", "(ILjava/lang/String;)V", (void *) setLangCode},
         {"native_setRegId", "(ILjava/lang/String;)V", (void *) setRegId},
         {"native_setSystemLangCode", "(ILjava/lang/String;)V", (void *) setSystemLangCode},
-        {"native_switchBackend", "(I)V", (void *) switchBackend},
+        {"native_switchBackend", "(IZ)V", (void *) switchBackend},
         {"native_pauseNetwork", "(I)V", (void *) pauseNetwork},
         {"native_resumeNetwork", "(IZ)V", (void *) resumeNetwork},
         {"native_updateDcSettings", "(I)V", (void *) updateDcSettings},

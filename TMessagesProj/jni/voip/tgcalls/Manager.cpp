@@ -453,4 +453,10 @@ void Manager::setOutputVolume(float level) {
 	});
 }
 
+void Manager::addExternalAudioSamples(std::vector<uint8_t> &&samples) {
+    _mediaManager->perform(RTC_FROM_HERE, [samples = std::move(samples)](MediaManager *mediaManager) mutable {
+        mediaManager->addExternalAudioSamples(std::move(samples));
+    });
+}
+
 } // namespace tgcalls

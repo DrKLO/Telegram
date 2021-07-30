@@ -162,12 +162,11 @@ void VideoCaptureInterfaceObject::setRotationUpdated(std::function<void(int)> ro
     _rotationUpdated = rotationUpdated;
 }
 
-VideoCaptureInterfaceImpl::VideoCaptureInterfaceImpl(std::string deviceId,
-   std::shared_ptr<PlatformContext> platformContext, std::shared_ptr<Threads> threads) :
+VideoCaptureInterfaceImpl::VideoCaptureInterfaceImpl(std::string deviceId, bool isScreenCapture, std::shared_ptr<PlatformContext> platformContext, std::shared_ptr<Threads> threads) :
 _platformContext(platformContext),
 _impl(threads->getMediaThread(), [deviceId, platformContext, threads]() {
 	return new VideoCaptureInterfaceObject(deviceId, platformContext, *threads);
-}) {
+}), _isScreenCapture(isScreenCapture) {
 }
 
 VideoCaptureInterfaceImpl::~VideoCaptureInterfaceImpl() = default;
@@ -176,6 +175,10 @@ void VideoCaptureInterfaceImpl::switchToDevice(std::string deviceId) {
 	_impl.perform(RTC_FROM_HERE, [deviceId](VideoCaptureInterfaceObject *impl) {
 		impl->switchToDevice(deviceId);
 	});
+}
+
+bool VideoCaptureInterfaceImpl::isScreenCapture() {
+    return _isScreenCapture;
 }
 
 void VideoCaptureInterfaceImpl::withNativeImplementation(std::function<void(void *)> completion) {

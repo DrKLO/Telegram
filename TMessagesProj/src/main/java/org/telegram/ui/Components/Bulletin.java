@@ -284,7 +284,7 @@ public final class Bulletin {
             layout.onExitTransitionEnd();
             layout.onHide();
             if (containerLayout != null) {
-                containerLayout.removeView(parentLayout);
+                AndroidUtilities.runOnUIThread(() -> containerLayout.removeView(parentLayout));
             }
             layout.onDetach();
         }

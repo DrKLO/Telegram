@@ -1719,17 +1719,8 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                                         }
                                                     }
                                                 }
-                                                if (messageId != null && segments.contains("video")) {
-                                                    String str = data.getQuery();
-                                                    DateFormat dateFormat = new SimpleDateFormat("mm:ss");
-                                                    Date reference = null;
-                                                    try {
-                                                        reference = dateFormat.parse("00:00");
-                                                        Date date = dateFormat.parse(str);
-                                                        videoTimestamp = (int) ((date.getTime() - reference.getTime()) / 1000L);
-                                                    } catch (ParseException e) {
-                                                        e.printStackTrace();
-                                                    }
+                                                if (messageId != null) {
+                                                    videoTimestamp = getTimestampFromLink(data);
                                                 }
                                                 botUser = data.getQueryParameter("start");
                                                 botChat = data.getQueryParameter("startgroup");
@@ -2459,6 +2450,36 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
 
         intent.setAction(null);
         return pushOpened;
+    }
+
+    public static int getTimestampFromLink(Uri data) {
+        List<String> segments = data.getPathSegments();
+        String timestampStr = null;
+        if (segments.contains("video")) {
+            timestampStr = data.getQuery();
+        } else if (data.getQueryParameter("t") != null) {
+            timestampStr = data.getQueryParameter("t");
+        }
+        int videoTimestamp = -1;
+        if (timestampStr != null) {
+            try {
+                videoTimestamp = Integer.parseInt(timestampStr);
+            } catch (Throwable ignore) {
+
+            }
+            if (videoTimestamp == - 1) {
+                DateFormat dateFormat = new SimpleDateFormat("mm:ss");
+                Date reference = null;
+                try {
+                    reference = dateFormat.parse("00:00");
+                    Date date = dateFormat.parse(timestampStr);
+                    videoTimestamp = (int) ((date.getTime() - reference.getTime()) / 1000L);
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return videoTimestamp;
     }
 
     private void openDialogsToSend(boolean animated) {
@@ -4003,7 +4024,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         if (requestCode == SCREEN_CAPTURE_REQUEST_CODE) {
             if (resultCode == Activity.RESULT_OK) {
                 VoIPService service = VoIPService.getSharedInstance();
-                if (service != null && service.groupCall != null) {
+                if (service != null) {
                     VideoCapturerDevice.mediaProjectionPermissionResultData = data;
                     service.createCaptureDevice(true);
                 }

@@ -414,10 +414,14 @@ public class ConnectionsManager extends BaseController {
         }
     }
 
-    public void switchBackend() {
+    public void switchBackend(boolean restart) {
         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         preferences.edit().remove("language_showed2").commit();
-        native_switchBackend(currentAccount);
+        native_switchBackend(currentAccount, restart);
+    }
+
+    public boolean isTestBackend() {
+        return native_isTestBackend(currentAccount) != 0;
     }
 
     public void resumeNetworkMaybe() {
@@ -678,7 +682,7 @@ public class ConnectionsManager extends BaseController {
         }
     }
 
-    public static native void native_switchBackend(int currentAccount);
+    public static native void native_switchBackend(int currentAccount, boolean restart);
     public static native int native_isTestBackend(int currentAccount);
     public static native void native_pauseNetwork(int currentAccount);
     public static native void native_setIpStrategy(int currentAccount, byte value);

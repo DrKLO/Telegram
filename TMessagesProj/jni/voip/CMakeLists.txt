@@ -2218,6 +2218,7 @@ add_library(voipandroid STATIC
         voip/webrtc/modules/audio_device/android/audio_manager.cc
         voip/webrtc/modules/audio_device/android/audio_record_jni.cc
         voip/webrtc/modules/audio_device/android/audio_screen_record_jni.cc
+        voip/webrtc/modules/audio_device/android/audio_merged_screen_record_jni.cc
         voip/webrtc/modules/audio_device/android/audio_track_jni.cc
         voip/webrtc/modules/audio_device/android/build_info.cc
         voip/webrtc/modules/audio_device/android/opensles_common.cc
