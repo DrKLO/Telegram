@@ -59,7 +59,6 @@ import android.widget.LinearLayout;
 import android.widget.OverScroller;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 
@@ -2776,7 +2775,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
      * same View may still get the focus as a result of that search.
      */
     private boolean isPreferredNextFocus(View focused, View next, int direction) {
-        if (next == null || next == this) {
+        if (next == null || next == this || next == focused) {
             return false;
         }
         // panic, result view is not a child anymore, maybe workaround b/37864393
@@ -2826,9 +2825,9 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
             case View.FOCUS_DOWN:
                 return downness > 0;
             case View.FOCUS_FORWARD:
-                return downness > 0 || (downness == 0 && rightness * rtl >= 0);
+                return downness > 0 || (downness == 0 && rightness * rtl > 0);
             case View.FOCUS_BACKWARD:
-                return downness < 0 || (downness == 0 && rightness * rtl <= 0);
+                return downness < 0 || (downness == 0 && rightness * rtl < 0);
         }
         throw new IllegalArgumentException("Invalid direction: " + direction + exceptionLabel());
     }
@@ -5107,7 +5106,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
         // but some general-purpose code may choose to respond to changes this way.
         final int scrollX = getScrollX();
         final int scrollY = getScrollY();
-        onScrollChanged(scrollX, scrollY, scrollX, scrollY);
+        onScrollChanged(scrollX, scrollY, scrollX - hresult, scrollY - vresult);
 
         // Pass the real deltas to onScrolled, the RecyclerView-specific method.
         onScrolled(hresult, vresult);
@@ -5327,7 +5326,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
 
                     postOnAnimation();
                     if (mGapWorker != null) {
-                        mGapWorker.postFromTraversal(RecyclerView.this, unconsumedX, unconsumedY);
+                        mGapWorker.postFromTraversal(RecyclerView.this, consumedX, consumedY);
                     }
                 }
             }

@@ -390,22 +390,6 @@ public class AndroidUtilities {
         int end;
     }
 
-    private static Boolean standaloneApp;
-    public static boolean isStandaloneApp() {
-        if (standaloneApp == null) {
-            standaloneApp = "org.telegram.messenger.web".equals(ApplicationLoader.applicationContext.getPackageName());
-        }
-        return standaloneApp;
-    }
-
-    private static Boolean betaApp;
-    public static boolean isBetaApp() {
-        if (betaApp == null) {
-            betaApp = "org.telegram.messenger.beta".equals(ApplicationLoader.applicationContext.getPackageName());
-        }
-        return betaApp;
-    }
-
     private static String makeUrl(String url, String[] prefixes, Matcher matcher) {
         boolean hasPrefix = false;
         for (int i = 0; i < prefixes.length; i++) {
@@ -1784,7 +1768,7 @@ public class AndroidUtilities {
 
     public static boolean isTablet() {
         if (isTablet == null) {
-            isTablet = ApplicationLoader.applicationContext.getResources().getBoolean(R.bool.isTablet);
+            isTablet = ApplicationLoader.applicationContext != null && ApplicationLoader.applicationContext.getResources().getBoolean(R.bool.isTablet);
         }
         return isTablet;
     }

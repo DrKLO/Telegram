@@ -4763,7 +4763,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             public void setVisibility(int visibility) {
                 super.setVisibility(visibility);
                 if (videoTimelineView != null && videoTimelineView.getVisibility() != GONE) {
-                    showVideoTimeline(visibility == View.VISIBLE, false);
+                    videoTimelineView.setVisibility(visibility == VISIBLE ? VISIBLE : INVISIBLE);
                 }
             }
 
@@ -4801,8 +4801,10 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         videoTimelineView = new VideoTimelinePlayView(parentActivity) {
             @Override
             public void setTranslationY(float translationY) {
-                super.setTranslationY(translationY);
-                containerView.invalidate();
+                if (getTranslationY() != translationY) {
+                    super.setTranslationY(translationY);
+                    containerView.invalidate();
+                }
             }
         };
         videoTimelineView.setDelegate(new VideoTimelinePlayView.VideoTimelineViewDelegate() {
@@ -10485,6 +10487,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         if (!animated)  {
             videoTimelineView.animate().setListener(null).cancel();
             videoTimelineView.setVisibility(show ? View.VISIBLE : View.GONE);
+            videoTimelineView.setTranslationY(0);
+            videoTimelineView.setAlpha(pickerView.getAlpha());
         } else {
             if (show && videoTimelineView.getTag() == null) {
                 if (videoTimelineView.getVisibility() != View.VISIBLE) {

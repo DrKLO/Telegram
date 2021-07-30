@@ -220,6 +220,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
     private int pointerId1, pointerId2;
     private int textureViewSize;
     private boolean isMessageTransition;
+    private boolean updateTextureViewSize;
 
     @SuppressLint("ClickableViewAccessibility")
     public InstantCameraView(Context context, ChatActivity parentFragment) {
@@ -358,21 +359,24 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        int newSize;
-        if (MeasureSpec.getSize(heightMeasureSpec) > MeasureSpec.getSize(widthMeasureSpec)) {
-             newSize = AndroidUtilities.roundPlayingMessageSize;
-        } else {
-            newSize = AndroidUtilities.roundMessageSize;
-        }
-        if (newSize != textureViewSize) {
-            textureViewSize = newSize;
-            textureOverlayView.getLayoutParams().width = textureOverlayView.getLayoutParams().height = textureViewSize;
-            cameraContainer.getLayoutParams().width = cameraContainer.getLayoutParams().height = textureViewSize;
-            ((LayoutParams) muteImageView.getLayoutParams()).topMargin = textureViewSize / 2 - AndroidUtilities.dp(24);
-            textureOverlayView.setRoundRadius(textureViewSize / 2);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                cameraContainer.invalidateOutline();
+        if (updateTextureViewSize) {
+            int newSize;
+            if (MeasureSpec.getSize(heightMeasureSpec) > MeasureSpec.getSize(widthMeasureSpec) * 1.3f) {
+                newSize = AndroidUtilities.roundPlayingMessageSize;
+            } else {
+                newSize = AndroidUtilities.roundMessageSize;
             }
+            if (newSize != textureViewSize) {
+                textureViewSize = newSize;
+                textureOverlayView.getLayoutParams().width = textureOverlayView.getLayoutParams().height = textureViewSize;
+                cameraContainer.getLayoutParams().width = cameraContainer.getLayoutParams().height = textureViewSize;
+                ((LayoutParams) muteImageView.getLayoutParams()).topMargin = textureViewSize / 2 - AndroidUtilities.dp(24);
+                textureOverlayView.setRoundRadius(textureViewSize / 2);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    cameraContainer.invalidateOutline();
+                }
+            }
+            updateTextureViewSize = false;
         }
 
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
@@ -597,6 +601,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         });
         cameraContainer.addView(textureView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
+        updateTextureViewSize = true;
         setVisibility(VISIBLE);
 
         startAnimation(true);

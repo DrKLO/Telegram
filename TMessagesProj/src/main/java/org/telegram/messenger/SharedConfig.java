@@ -421,7 +421,7 @@ public class SharedConfig {
     }
 
     public static boolean isAppUpdateAvailable() {
-        if (pendingAppUpdate == null || pendingAppUpdate.document == null || !AndroidUtilities.isStandaloneApp()) {
+        if (pendingAppUpdate == null || pendingAppUpdate.document == null || !BuildVars.isStandaloneApp()) {
             return false;
         }
         int currentVersion;

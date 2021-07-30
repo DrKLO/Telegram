@@ -394,38 +394,40 @@ JNIEXPORT jlong JNICALL Java_org_telegram_messenger_voip_NativeInstance_makeGrou
                 });
             },
             .videoCapture = videoCapture,
-            .requestBroadcastPart = [](std::shared_ptr<PlatformContext> platformContext, int64_t timestamp, int64_t duration, std::function<void(BroadcastPart &&)> callback) -> std::shared_ptr<BroadcastPartTask> {
-                std::shared_ptr<BroadcastPartTask> task = std::make_shared<BroadcastPartTaskJava>(platformContext, callback, timestamp);
-                ((AndroidContext *) platformContext.get())->streamTask = task;
-                tgvoip::jni::DoWithJNI([platformContext, timestamp, duration, task](JNIEnv *env) {
-                    jobject globalRef = ((AndroidContext *) platformContext.get())->getJavaInstance();
-                    env->CallVoidMethod(globalRef, env->GetMethodID(NativeInstanceClass, "onRequestBroadcastPart", "(JJ)V"), timestamp, duration);
-                });
-                return task;
-            },
             .videoContentType = screencast ? VideoContentType::Screencast : VideoContentType::Generic,
             .initialEnableNoiseSuppression = (bool) noiseSupression,
-            .requestMediaChannelDescriptions = [platformContext](std::vector<uint32_t> const &ssrcs, std::function<void(std::vector<MediaChannelDescription> &&)> callback) -> std::shared_ptr<RequestMediaChannelDescriptionTask> {
-                std::shared_ptr<RequestMediaChannelDescriptionTaskJava> task = std::make_shared<RequestMediaChannelDescriptionTaskJava>(platformContext, callback);
-                ((AndroidContext *) platformContext.get())->descriptionTasks.push_back(task);
-                tgvoip::jni::DoWithJNI([platformContext, ssrcs, task](JNIEnv *env) {
-                    unsigned int size = ssrcs.size();
-                    jintArray intArray = env->NewIntArray(size);
-
-                    jint intFill[size];
-                    for (int a = 0; a < size; a++) {
-                        intFill[a] = ssrcs[a];
-                    }
-                    env->SetIntArrayRegion(intArray, 0, size, intFill);
-
-                    jobject globalRef = ((AndroidContext *) platformContext.get())->getJavaInstance();
-                    env->CallVoidMethod(globalRef, env->GetMethodID(NativeInstanceClass, "onParticipantDescriptionsRequired", "(J[I)V"), (jlong) task.get(), intArray);
-                    env->DeleteLocalRef(intArray);
-                });
-                return task;
-            },
             .platformContext = platformContext
     };
+    if (!screencast) {
+        descriptor.requestBroadcastPart = [](std::shared_ptr<PlatformContext> platformContext, int64_t timestamp, int64_t duration, std::function<void(BroadcastPart &&)> callback) -> std::shared_ptr<BroadcastPartTask> {
+            std::shared_ptr<BroadcastPartTask> task = std::make_shared<BroadcastPartTaskJava>(platformContext, callback, timestamp);
+            ((AndroidContext *) platformContext.get())->streamTask = task;
+            tgvoip::jni::DoWithJNI([platformContext, timestamp, duration, task](JNIEnv *env) {
+                jobject globalRef = ((AndroidContext *) platformContext.get())->getJavaInstance();
+                env->CallVoidMethod(globalRef, env->GetMethodID(NativeInstanceClass, "onRequestBroadcastPart", "(JJ)V"), timestamp, duration);
+            });
+            return task;
+        };
+        descriptor.requestMediaChannelDescriptions = [platformContext](std::vector<uint32_t> const &ssrcs, std::function<void(std::vector<MediaChannelDescription> &&)> callback) -> std::shared_ptr<RequestMediaChannelDescriptionTask> {
+            std::shared_ptr<RequestMediaChannelDescriptionTaskJava> task = std::make_shared<RequestMediaChannelDescriptionTaskJava>(platformContext, callback);
+            ((AndroidContext *) platformContext.get())->descriptionTasks.push_back(task);
+            tgvoip::jni::DoWithJNI([platformContext, ssrcs, task](JNIEnv *env) {
+                unsigned int size = ssrcs.size();
+                jintArray intArray = env->NewIntArray(size);
+
+                jint intFill[size];
+                for (int a = 0; a < size; a++) {
+                    intFill[a] = ssrcs[a];
+                }
+                env->SetIntArrayRegion(intArray, 0, size, intFill);
+
+                jobject globalRef = ((AndroidContext *) platformContext.get())->getJavaInstance();
+                env->CallVoidMethod(globalRef, env->GetMethodID(NativeInstanceClass, "onParticipantDescriptionsRequired", "(J[I)V"), (jlong) task.get(), intArray);
+                env->DeleteLocalRef(intArray);
+            });
+            return task;
+        };
+    }
 
     auto *holder = new InstanceHolder;
     holder->groupNativeInstance = std::make_unique<GroupInstanceCustomImpl>(std::move(descriptor));

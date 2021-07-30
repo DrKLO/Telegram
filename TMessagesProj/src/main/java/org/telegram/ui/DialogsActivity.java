@@ -4138,7 +4138,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         if (searchIsShowed) {
             AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid);
         }
-        viewPages[0].dialogsAdapter.notifyDataSetChanged();
+        if (viewPages != null) {
+            viewPages[0].dialogsAdapter.notifyDataSetChanged();
+        }
     }
 
     @Override

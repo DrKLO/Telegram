@@ -2899,10 +2899,12 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		}
 		stopForeground(true);
 		stopRinging();
-		if (ApplicationLoader.mainInterfacePaused || !ApplicationLoader.isScreenOn) {
-			MessagesController.getInstance(currentAccount).ignoreSetOnline = false;
+		if (currentAccount >= 0) {
+			if (ApplicationLoader.mainInterfacePaused || !ApplicationLoader.isScreenOn) {
+				MessagesController.getInstance(currentAccount).ignoreSetOnline = false;
+			}
+			NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.appDidLogout);
 		}
-		NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.appDidLogout);
 		SensorManager sm = (SensorManager) getSystemService(SENSOR_SERVICE);
 		Sensor proximity = sm.getDefaultSensor(Sensor.TYPE_PROXIMITY);
 		if (proximity != null) {
@@ -3006,15 +3008,17 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			}
 		}
 
-		ConnectionsManager.getInstance(currentAccount).setAppPaused(true, false);
 		VoIPHelper.lastCallTime = SystemClock.elapsedRealtime();
 
 		setSinks(null, null);
 		if (onDestroyRunnable != null) {
 			onDestroyRunnable.run();
 		}
-		if (ChatObject.isChannel(chat)) {
-			MessagesController.getInstance(currentAccount).startShortPoll(chat, classGuid, true);
+		if (currentAccount >= 0) {
+			ConnectionsManager.getInstance(currentAccount).setAppPaused(true, false);
+			if (ChatObject.isChannel(chat)) {
+				MessagesController.getInstance(currentAccount).startShortPoll(chat, classGuid, true);
+			}
 		}
 	}
 

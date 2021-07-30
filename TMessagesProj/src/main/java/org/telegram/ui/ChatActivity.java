@@ -2793,6 +2793,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             groupedBackgroundWasDraw = true;
                         }
 
+                        if (cell != null && cell.getPhotoImage().isAnimationRunning()) {
+                            invalidate();
+                        }
+
                         float viewClipLeft = Math.max(chatListView.getLeft(), chatListView.getLeft() + child.getX());
                         float viewClipTop = Math.max(listTop, chatListView.getTop() + child.getY());
                         float viewClipRight = Math.min(chatListView.getRight(), chatListView.getLeft() + child.getX() + child.getMeasuredWidth());

@@ -1458,7 +1458,7 @@ public class ActionBar extends FrameLayout {
 
                 @Override
                 public Animator createAnimator(ViewGroup sceneRoot, TransitionValues startValues, TransitionValues endValues) {
-                    if (startValues.view instanceof SimpleTextView) {
+                    if (startValues != null && startValues.view instanceof SimpleTextView) {
                         AnimatorSet animatorSet = new AnimatorSet();
                         Animator animator = super.createAnimator(sceneRoot, startValues, endValues);
                         float s = (float) startValues.values.get("text_size") / (float) endValues.values.get("text_size");

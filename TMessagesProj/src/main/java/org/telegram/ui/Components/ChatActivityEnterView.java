@@ -1832,9 +1832,12 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     return false;
                 }
                 if (isPopupShowing() && event.getAction() == MotionEvent.ACTION_DOWN) {
+                    boolean rez = false;
                     if (searchingType != 0) {
                         searchingType = 0;
                         emojiView.closeSearch(false);
+                        requestFocus();
+                        rez = true;
                     }
                     showPopup(AndroidUtilities.usingHardwareInput ? 0 : 2, 0);
                     if (stickersExpanded) {
@@ -1847,7 +1850,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     } else {
                         openKeyboardInternal();
                     }
-                    return false;
+                    return rez;
                 }
                 try {
                     return super.onTouchEvent(event);
@@ -4092,7 +4095,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         }
         if (stickersExpanded) {
             setStickersExpanded(false, true, false);
-            if (searchingType != 0) {
+            if (searchingType != 0 && emojiView != null) {
                 emojiView.closeSearch(false);
                 emojiView.hideSearchKeyboard();
             }
@@ -4165,6 +4168,20 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             }
             return;
         }
+        if (searchingType != 0) {
+            searchingType = 0;
+            emojiView.closeSearch(false);
+
+            if (stickersExpanded) {
+                setStickersExpanded(false, true, false);
+                waitingForKeyboardOpenAfterAnimation = true;
+                AndroidUtilities.runOnUIThread(() -> {
+                    waitingForKeyboardOpenAfterAnimation = false;
+                    openKeyboardInternal();
+                }, 200);
+            }
+        }
+
         CharSequence[] message = new CharSequence[]{AndroidUtilities.getTrimmedString(messageEditText.getText())};
         ArrayList<TLRPC.MessageEntity> entities = MediaDataController.getInstance(currentAccount).getEntities(message, supportsSendingNewEntities());
         if (!TextUtils.equals(message[0], editingMessageObject.messageText) || entities != null && !entities.isEmpty() || entities == null && !editingMessageObject.messageOwner.entities.isEmpty() || editingMessageObject.messageOwner.media instanceof TLRPC.TL_messageMediaWebPage) {

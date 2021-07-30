@@ -7460,10 +7460,6 @@ public class Theme {
             chat_statusRecordPaint.setStrokeCap(Paint.Cap.ROUND);
             chat_actionTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             chat_actionTextPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-            chat_actionBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-            chat_actionBackgroundSelectedPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-            chat_actionBackgroundPaint2 = new Paint(Paint.ANTI_ALIAS_FLAG);
-            chat_actionBackgroundSelectedPaint2 = new Paint(Paint.ANTI_ALIAS_FLAG);
             chat_actionBackgroundGradientDarkenPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             chat_actionBackgroundGradientDarkenPaint.setColor(0x2a000000);
             chat_timeBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -7473,6 +7469,18 @@ public class Theme {
             chat_composeBackgroundPaint = new Paint();
             chat_radialProgressPausedPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             chat_radialProgressPausedSeekbarPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        }
+        if (chat_actionBackgroundPaint == null) {
+            chat_actionBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        }
+        if (chat_actionBackgroundSelectedPaint == null) {
+            chat_actionBackgroundSelectedPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        }
+        if (chat_actionBackgroundPaint2 == null) {
+            chat_actionBackgroundPaint2 = new Paint(Paint.ANTI_ALIAS_FLAG);
+        }
+        if (chat_actionBackgroundSelectedPaint2 == null) {
+            chat_actionBackgroundSelectedPaint2 = new Paint(Paint.ANTI_ALIAS_FLAG);
         }
     }
 
@@ -8046,6 +8054,8 @@ public class Theme {
         }
         if (servicePressedColor == null) {
             servicePressedColor = serviceSelectedMessageColor;
+        }
+        if (servicePressedColor2 == null) {
             servicePressedColor2 = serviceSelectedMessage2Color;
         }
 
