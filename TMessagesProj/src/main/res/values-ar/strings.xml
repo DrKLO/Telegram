@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="AppName">تيليجرام</string>
-    <string name="AppNameBeta">Telegram Beta</string>
+    <string name="AppNameBeta">Teamgram Beta</string>
     <string name="LanguageName">العربية</string>
     <string name="English">الإنجليزية</string>
     <string name="LanguageNameInEnglish">Arabic</string>
@@ -1138,10 +1138,10 @@
     <string name="SendDice">إرسال</string>
     <string name="PsaType_covid">كوفيد-19</string>
     <string name="PsaTypeDefault">PSA</string>
-    <string name="PsaInfo_covid">تزودك هذه الرسالة بإعلان عام لمبادرة تتعلق بالجائحة الحالية كوفيد-19. تعرف على المزيد حول هذه المبادرة على https://telegram.org/blog/coronavirus</string>
+    <string name="PsaInfo_covid">تزودك هذه الرسالة بإعلان عام لمبادرة تتعلق بالجائحة الحالية كوفيد-19. تعرف على المزيد حول هذه المبادرة على https://teamgram.org/blog/coronavirus</string>
     <string name="PsaInfoDefault">PSA info test</string>
     <string name="PsaMessage_covid">إشعار كوفيد-19</string>
-    <string name="PsaMessageInfo_covid">تزودك هذه الرسالة بإعلان عام لمبادرة تتعلق بالجائحة الحالية كوفيد-19. تعرف على المزيد حول هذه المبادرة على https://telegram.org/blog/coronavirus</string>
+    <string name="PsaMessageInfo_covid">تزودك هذه الرسالة بإعلان عام لمبادرة تتعلق بالجائحة الحالية كوفيد-19. تعرف على المزيد حول هذه المبادرة على https://teamgram.org/blog/coronavirus</string>
     <string name="PsaMessageDefault">إشعار مهم</string>
     <string name="PsaMessageInfoDefault">هذا إشعار&#160;مهم.</string>
     <string name="PsaHideChatAlertTitle">إخفاء المحادثة</string>
@@ -1499,8 +1499,8 @@
     <string name="MessageLifetimePhoto">إن قمت بتعيين العداد فسيتم تدمير الصورة تلقائيًا بعد مشاهدتها.</string>
     <string name="MessageLifetimeVideo">إن قمت بتعيين العداد فسيتم تدمير المقطع المرئي تلقائيًا بعد مشاهدته.</string>
     <string name="ShortMessageLifetimeForever">إيقاف</string>
-    <string name="EncryptionKeyDescription">تم اشتقاق الصورة والنص من مفتاح تشفير هذه المحادثة السرية مع **%1$s**.\n\nإن كانت مطابقة لما يظهر على جهاز **%2$s**، فالتشفير من البداية للنهاية مضمون.\n\nللاستزادة، اطلع على telegram.org</string>
-    <string name="EncryptionKeyLink">https://telegram.org/faq/ar#g</string>
+    <string name="EncryptionKeyDescription">تم اشتقاق الصورة والنص من مفتاح تشفير هذه المحادثة السرية مع **%1$s**.\n\nإن كانت مطابقة لما يظهر على جهاز **%2$s**، فالتشفير من البداية للنهاية مضمون.\n\nللاستزادة، اطلع على teamgram.org</string>
+    <string name="EncryptionKeyLink">https://teamgram.org/faq/ar#g</string>
     <string name="NumberUnknown">غير معروف</string>
     <string name="PhoneHidden">غير معروف</string>
     <string name="MobileHidden">رقم الهاتف مخفي</string>
@@ -1587,7 +1587,7 @@
     <string name="NoMasks">لا توجد أقنعة بعد</string>
     <string name="EmojiSuggestions">اقتراحات الرموز التعبيرية</string>
     <string name="EmojiSuggestionsInfo">يسمح لك **تيليجرام** بالعثور على الرموز التعبيرية عبر آلاف الكلمات، لكن من المؤكد أنه لايزال هناك نقصٌ ما، في حال كنت ترغب في اقتراح كلمة مفتاحية جديدة لرمز تعبيري ما، يمكنك مساعدتنا عبر زيارة:</string>
-    <string name="EmojiSuggestionsUrl">https://translations.telegram.org/%1$s/emoji</string>
+    <string name="EmojiSuggestionsUrl">https://translations.teamgram.org/%1$s/emoji</string>
     <string name="Masks">الأقنعة</string>
     <string name="MasksInfo">يمكنك إضافة أقنعة للصور التي ترسلها، لعمل ذلك قم بفتح محرر الصور قبل إرسال الصورة.</string>
     <string name="FeaturedStickers">الملصقات الشائعة</string>
@@ -1881,7 +1881,7 @@
     <string name="LanguageUnsupportedError">تعذر العثور على هذه اللغة.</string>
     <string name="LanguageSame">أنت تستخدم حزمة اللغة (**%1$s**) بالفعل، يمكنك تغيير لغتك في أي وقت عبر الإعدادات.</string>
     <string name="LanguageUnknownCustomAlert">للأسف، لا تحتوي حزمة اللغة المخصصةُ هذه (**%1$s **) على بيانات لتيليجرام للأندرويد.</string>
-    <string name="AskAQuestionInfo">نرجو الأخذ بالعلم أن الدعم الفني في تيليجرام يقوم به مجموعة من المتطوعين. نحاول الرد سريعًا قدر الإمكان، لكن ذلك قد يستغرق بعض الوقت.\n\nيرجى الإطلاع على<![CDATA[<a href=\"https://telegram.org/faq/ar#a\"> الأسئلة الشائعة عن تيليجرام</a>]]> فهي تحوي إجابات لمعظم الأسئلة  <![CDATA[<a href=\"https://telegram.org/faq/ar#j\">وحلولًا للعديد من المشاكل.</a>]]></string>
+    <string name="AskAQuestionInfo">نرجو الأخذ بالعلم أن الدعم الفني في تيليجرام يقوم به مجموعة من المتطوعين. نحاول الرد سريعًا قدر الإمكان، لكن ذلك قد يستغرق بعض الوقت.\n\nيرجى الإطلاع على<![CDATA[<a href=\"https://teamgram.org/faq/ar#a\"> الأسئلة الشائعة عن تيليجرام</a>]]> فهي تحوي إجابات لمعظم الأسئلة  <![CDATA[<a href=\"https://teamgram.org/faq/ar#j\">وحلولًا للعديد من المشاكل.</a>]]></string>
     <string name="AskButton">اسأل متطوعًا</string>
     <string name="TelegramFAQ">الأسئلة الشائعة</string>
     <string name="TelegramFaq">الأسئلة الشائعة</string>
@@ -1889,11 +1889,11 @@
     <string name="TelegramFeaturesUrl">https://t.me/TelegramTipsAR/128</string>
     <string name="AddAccount">إضافة حساب</string>
     <string name="SelectAccount">اختيار حساب</string>
-    <string name="TelegramFaqUrl">https://telegram.org/faq/ar</string>
+    <string name="TelegramFaqUrl">https://teamgram.org/faq/ar</string>
     <string name="PrivacyPolicy">سياسة الخصوصية</string>
     <string name="TermsOfService">شروط الخدمة</string>
     <string name="TermsOfServiceLogin">عبر تسجيلك\nأنت توافق على *شروط الخدمة*.</string>
-    <string name="PrivacyPolicyUrl">https://telegram.org/faq/ar#a10</string>
+    <string name="PrivacyPolicyUrl">https://teamgram.org/faq/ar#a10</string>
     <string name="DeleteLocalizationTitle">حذف حزمة اللغة</string>
     <string name="DeleteLocalizationText">هل ترغب حقًا في حذف حزمة اللغة **%1$s**؟</string>
     <string name="IncorrectLocalization">ملف التعريب غير صحيح</string>
@@ -2134,8 +2134,8 @@
     <string name="AuthAnotherClientTokenError">رمز غير صالح أو منتهي الصلاحية.</string>
     <string name="AuthAnotherClientNotFound">لم يتم العثور على رمز مصادقة</string>
     <string name="AuthAnotherClientOk">تمّت المصادقة بنجاح</string>
-    <string name="AuthAnotherClientDownloadClientUrl">https://desktop.telegram.org</string>
-    <string name="AuthAnotherClientInfo1">قم بتنزيل تيليجرام على حاسوبك من *desktop.telegram.org*.</string>
+    <string name="AuthAnotherClientDownloadClientUrl">https://desktop.teamgram.org</string>
+    <string name="AuthAnotherClientInfo1">قم بتنزيل تيليجرام على حاسوبك من *desktop.teamgram.org*.</string>
     <string name="AuthAnotherClientInfo2">افتح تيليجرام على سطح المكتب للحصول على رمز QR.</string>
     <string name="AuthAnotherClientInfo3">امسح رمز الـ QR لربط حسابك.</string>
     <string name="AuthAnotherClientUrl">يمكن استخدام هذا الرمز للسماح لشخص ما بتسجيل الدخول إلى حسابك في تيليجرام.\n\nلتأكيد عملية تسجيل الدخول؛ يرجى الذهاب إلى الإعدادات &gt; الأجهزة &gt; مسح QR وامسح الرمز.</string>
@@ -2199,7 +2199,7 @@
     <string name="PassportProvidedInformation">المعلومات المضافة</string>
     <string name="PassportInfoTitle">ماهو جواز تيليجرام؟</string>
     <string name="PassportInfo2">مع جواز تيليجرام يمْكنك التسجيل في المواقع والخدمات التي تتطلب توثيق الهوية الشخصية بسهولة.\n\nمعلوماتك، بياناتك الشخصية ووثائقك محمية ومشفرة من البداية للنهاية، لا أحد بما فيهم تيليجرام ذاتُه يمكنه الوصول إليها دون إذنك. \n\nلمزيد من التفاصيل يمكنك زيارة *الأسئلة الشائعة*.</string>
-    <string name="PassportInfoUrl">https://telegram.org/faq/ar#i7</string>
+    <string name="PassportInfoUrl">https://teamgram.org/faq/ar#i7</string>
     <string name="TelegramPassportCreatePasswordInfo">"يرجى إنشاء كلمة مرور لحماية بياناتك الشخصية باستخدام التشفير من البداية للنهاية.\n\nستُطلب كلمة المرور هذه في كل مرة تقوم فيها بتسجيل الدخول لجهازٍ جديد. "</string>
     <string name="TelegramPassportCreatePassword">إنشاء كلمة مرور</string>
     <string name="TelegramPassportDelete">حذف جواز تيليجرام</string>
@@ -3118,7 +3118,7 @@
     <string name="ActionBotDocumentRentalAgreement">عقد الإيجار</string>
     <string name="ActionBotDocumentPhone">رقم الهاتف</string>
     <string name="ActionBotDocumentEmail">بريد إلكتروني</string>
-    <string name="UnsupportedMedia">نسخة تيليجرام التي لديك لاتدعم هذه الرسالة. حدّث التطبيق لعرضها: https://telegram.org/update</string>
+    <string name="UnsupportedMedia">نسخة تيليجرام التي لديك لاتدعم هذه الرسالة. حدّث التطبيق لعرضها: https://teamgram.org/update</string>
     <string name="AttachPhoto">صورة</string>
     <string name="AttachVideo">مقطع مرئي</string>
     <string name="AttachDestructingPhoto">صورة ذاتية التدمير</string>

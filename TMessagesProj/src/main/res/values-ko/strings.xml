@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="AppName">텔레그램</string>
-    <string name="AppNameBeta">Telegram Beta</string>
+    <string name="AppNameBeta">Teamgram Beta</string>
     <string name="LanguageName">한국어</string>
     <string name="English">영어</string>
     <string name="LanguageNameInEnglish">한국어</string>
@@ -1138,10 +1138,10 @@
     <string name="SendDice">보내기</string>
     <string name="PsaType_covid">코로나19</string>
     <string name="PsaTypeDefault">공공발표</string>
-    <string name="PsaInfo_covid">이 메시지는 세계적 유행 중인 코로나19 감염 질환에 관한 공공 서비스 발표를 제공드립니다. 아래 링크에서 이 계획에 대해 더 알아보세요.\nhttps://telegram.org/blog/coronavirus</string>
+    <string name="PsaInfo_covid">이 메시지는 세계적 유행 중인 코로나19 감염 질환에 관한 공공 서비스 발표를 제공드립니다. 아래 링크에서 이 계획에 대해 더 알아보세요.\nhttps://teamgram.org/blog/coronavirus</string>
     <string name="PsaInfoDefault">공공서비스발표 정보 테스트</string>
     <string name="PsaMessage_covid">코로나바이러스감염증-19 알림</string>
-    <string name="PsaMessageInfo_covid">이 메시지는 세계적 유행 중인 코로나19 감염 질환에 관한 공공 서비스 발표를 제공드립니다. 아래 링크에서 이 계획에 대해 더 알아보세요.\nhttps://telegram.org/blog/coronavirus</string>
+    <string name="PsaMessageInfo_covid">이 메시지는 세계적 유행 중인 코로나19 감염 질환에 관한 공공 서비스 발표를 제공드립니다. 아래 링크에서 이 계획에 대해 더 알아보세요.\nhttps://teamgram.org/blog/coronavirus</string>
     <string name="PsaMessageDefault">중요 알림</string>
     <string name="PsaMessageInfoDefault">중요한 알림입니다.</string>
     <string name="PsaHideChatAlertTitle">대화방 가리기</string>
@@ -1499,8 +1499,8 @@
     <string name="MessageLifetimePhoto">타이머를 맞추시면, 사진이 열람된 뒤에 자동으로 삭제됩니다.</string>
     <string name="MessageLifetimeVideo">타이머를 맞추시면, 동영상이 열람된 뒤에 자동으로 삭제됩니다.</string>
     <string name="ShortMessageLifetimeForever">끔</string>
-    <string name="EncryptionKeyDescription">이 이미지와 문자는 **%1$s** 님과의 비밀 대화에 사용된 암호화 키에서 파생되었습니다.\n\n이 이미지와 문자가 **%2$s** 님의 기기에서 똑같이 보인다면, 단대단 암호화가 보장됩니다.\n\ntelegram.org에서 자세히 알아보세요.</string>
-    <string name="EncryptionKeyLink">https://telegram.org/faq/ko#1498786448</string>
+    <string name="EncryptionKeyDescription">이 이미지와 문자는 **%1$s** 님과의 비밀 대화에 사용된 암호화 키에서 파생되었습니다.\n\n이 이미지와 문자가 **%2$s** 님의 기기에서 똑같이 보인다면, 단대단 암호화가 보장됩니다.\n\nteamgram.org에서 자세히 알아보세요.</string>
+    <string name="EncryptionKeyLink">https://teamgram.org/faq/ko#1498786448</string>
     <string name="NumberUnknown">알 수 없음</string>
     <string name="PhoneHidden">알 수 없음</string>
     <string name="MobileHidden">전화번호 숨김</string>
@@ -1587,7 +1587,7 @@
     <string name="NoMasks">마스크 없음</string>
     <string name="EmojiSuggestions">이모지 추천</string>
     <string name="EmojiSuggestionsInfo">**텔레그램**에서 회원님이 이모지를 손쉽게 찾으실 수 있도록 수천 개의 키워드를 지원해 드리지만, 누락된 키워드들이란 있기 마련입니다. 새로운 이모지 대치어를 제안하고 싶다면, 다음 사이트에서 도움을 주세요:</string>
-    <string name="EmojiSuggestionsUrl">https://translations.telegram.org/%1$s/emoji</string>
+    <string name="EmojiSuggestionsUrl">https://translations.teamgram.org/%1$s/emoji</string>
     <string name="Masks">마스크</string>
     <string name="MasksInfo">보내고자 하는 사진에 마스크를 추가하실 수 있습니다. 사진을 보내기 전에 사진 편집기를 열어 보세요.</string>
     <string name="FeaturedStickers">인기 스티커</string>
@@ -1881,19 +1881,19 @@
     <string name="LanguageUnsupportedError">해당 언어가 없습니다.</string>
     <string name="LanguageSame">이미 이 언어 묶음(**%1$s**)을 사용하고 계십니다. 언제든 설정에서 언어를 바꾸실 수 있습니다.</string>
     <string name="LanguageUnknownCustomAlert">안타깝게도 이 맞춤 언어 묶음(**%1$s**)에는 Android 텔레그램용 데이터가 들어 있지 않습니다.</string>
-    <string name="AskAQuestionInfo">텔레그램 지원 사항은 자원봉사자들이 처리합니다. 신속하게 응답해 드리고자 노력하지만, 다소 시간이 걸릴 수 있습니다.\n\n<![CDATA[<a href=\"https://telegram.org/faq/ko#325188137\"> 자주 묻는 질문</a>]]>을 확인해 보세요. 잦은 질문에 대한 답과 <![CDATA[<a href=\"https://telegram.org/faq/ko#1478791328\">문제 해결</a>]]>을 위한 중요한 조언이 있습니다.</string>
+    <string name="AskAQuestionInfo">텔레그램 지원 사항은 자원봉사자들이 처리합니다. 신속하게 응답해 드리고자 노력하지만, 다소 시간이 걸릴 수 있습니다.\n\n<![CDATA[<a href=\"https://teamgram.org/faq/ko#325188137\"> 자주 묻는 질문</a>]]>을 확인해 보세요. 잦은 질문에 대한 답과 <![CDATA[<a href=\"https://teamgram.org/faq/ko#1478791328\">문제 해결</a>]]>을 위한 중요한 조언이 있습니다.</string>
     <string name="AskButton">봉사자에게 질문하기</string>
     <string name="TelegramFAQ">자주 묻는 질문</string>
     <string name="TelegramFaq">자주 묻는 질문</string>
     <string name="TelegramFeatures">텔레그램 기능 소개</string>
-    <string name="TelegramFeaturesUrl">https://t.me/TelegramTipsKo</string>
+    <string name="TelegramFeaturesUrl">https://t.me/TeamgramTipsKo</string>
     <string name="AddAccount">계정 추가</string>
     <string name="SelectAccount">계정을 선택하세요</string>
-    <string name="TelegramFaqUrl">https://telegram.org/faq/ko</string>
+    <string name="TelegramFaqUrl">https://teamgram.org/faq/ko</string>
     <string name="PrivacyPolicy">개인 정보 정책</string>
     <string name="TermsOfService">이용 약관</string>
     <string name="TermsOfServiceLogin">가입함으로써 귀하는 *이용 약관*에 동의하게 됩니다.</string>
-    <string name="PrivacyPolicyUrl">https://telegram.org/privacy</string>
+    <string name="PrivacyPolicyUrl">https://teamgram.org/privacy</string>
     <string name="DeleteLocalizationTitle">언어 묶음 삭제</string>
     <string name="DeleteLocalizationText">정말 **%1$s** 언어 묶음을 삭제하시겠습니까?</string>
     <string name="IncorrectLocalization">언어 파일이 올바르지 않습니다</string>
@@ -2134,8 +2134,8 @@
     <string name="AuthAnotherClientTokenError">토큰이 올바르지 않거나 만료되었습니다.</string>
     <string name="AuthAnotherClientNotFound">인증 토큰을 찾지 못했습니다</string>
     <string name="AuthAnotherClientOk">인증되었습니다</string>
-    <string name="AuthAnotherClientDownloadClientUrl">https://desktop.telegram.org/</string>
-    <string name="AuthAnotherClientInfo1">컴퓨터에 텔레그램을 다운로드하세요\n*desktop.telegram.org*.</string>
+    <string name="AuthAnotherClientDownloadClientUrl">https://desktop.teamgram.org/</string>
+    <string name="AuthAnotherClientInfo1">컴퓨터에 텔레그램을 다운로드하세요\n*desktop.teamgram.org*.</string>
     <string name="AuthAnotherClientInfo2">QR 코드를 받으려면 텔레그램 데스크탑을 실행하세요.</string>
     <string name="AuthAnotherClientInfo3">회원님의 계정을 연결하려면 QR 코드를 스캔하세요.</string>
     <string name="AuthAnotherClientUrl">이 코드는 누군가가 회원님의 텔레그램 계정에 로그인할 수 있도록 하는 데 사용될 수 있습니다.\n\n텔레그램 로그인을 인증하려면, 설정 &gt; 기기 &gt; QR 코드 스캔으로 이동하여 코드를 스캔해 주세요.</string>
@@ -2199,7 +2199,7 @@
     <string name="PassportProvidedInformation">제공한 정보</string>
     <string name="PassportInfoTitle">텔레그램 패스포트가 무엇인가요?</string>
     <string name="PassportInfo2">텔레그램 패스포트와 함께라면, 신분 인증이 필요한 여러 웹 사이트와 서비스에 손쉽게 로그인하실 수 있습니다.\n\n회원님의 정보와 개인 데이터, 서류들은 단대단 암호화로 보호됩니다. 텔레그램을 포함하여, 그 누구도 회원님의 허가 없이 이들에 접근할 수 없습니다.\n\n*자주 묻는 질문*을 방문하여 자세히 알아보실 수 있습니다.</string>
-    <string name="PassportInfoUrl">https://telegram.org/faq/ko#1660002760</string>
+    <string name="PassportInfoUrl">https://teamgram.org/faq/ko#1660002760</string>
     <string name="TelegramPassportCreatePasswordInfo">단대단 암호화로 개인 데이터를 보호하려면 비밀번호를 만드셔야 합니다.\n\n새로운 기기로 텔레그램에 로그인할 때 이 비밀번호가 필요할 것입니다.</string>
     <string name="TelegramPassportCreatePassword">비밀번호 만들기</string>
     <string name="TelegramPassportDelete">텔레그램 패스포트 삭제</string>
@@ -3118,7 +3118,7 @@
     <string name="ActionBotDocumentRentalAgreement">임대 계약서</string>
     <string name="ActionBotDocumentPhone">전화번호</string>
     <string name="ActionBotDocumentEmail">이메일 주소</string>
-    <string name="UnsupportedMedia">이 메시지는 현재 사용하고 있는 텔레그램 버전에서 지원되지 않습니다.\n메시지를 보시려면 http://telegram.org/update 에서 앱을 업데이트하세요.</string>
+    <string name="UnsupportedMedia">이 메시지는 현재 사용하고 있는 텔레그램 버전에서 지원되지 않습니다.\n메시지를 보시려면 http://teamgram.org/update 에서 앱을 업데이트하세요.</string>
     <string name="AttachPhoto">사진</string>
     <string name="AttachVideo">동영상</string>
     <string name="AttachDestructingPhoto">자동 삭제되는 사진</string>
