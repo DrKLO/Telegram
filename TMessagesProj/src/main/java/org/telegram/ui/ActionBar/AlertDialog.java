@@ -358,7 +358,11 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
                             WindowManager.LayoutParams params = new WindowManager.LayoutParams();
                             params.copyFrom(window.getAttributes());
                             params.width = Math.min(maxWidth, calculatedWidth) + backgroundPaddings.left + backgroundPaddings.right;
-                            window.setAttributes(params);
+                            try {
+                                window.setAttributes(params);
+                            } catch (Throwable e) {
+                                FileLog.e(e);
+                            }
                         });
                     }
                 }

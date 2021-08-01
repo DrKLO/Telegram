@@ -1182,7 +1182,7 @@ std::vector<std::pair<float, float>> gatherPositions(std::vector<std::pair<float
     return result;
 }
 
-static float *pixelCache = nullptr;
+thread_local static float *pixelCache = nullptr;
 
 JNIEXPORT void Java_org_telegram_messenger_Utilities_generateGradient(JNIEnv *env, jclass clazz, jobject bitmap, jboolean unpin, jint phase, jfloat progress, jint width, jint height, jint stride, jintArray colors) {
     if (!bitmap) {
@@ -1217,29 +1217,29 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_generateGradient(JNIEnv *en
     std::vector<std::pair<float, float>> current = gatherPositions(positions, phase);
 
     auto colorsArray = (uint8_t *) env->GetIntArrayElements(colors, nullptr);
-    /*float *newPixelCache = nullptr;
+    float *newPixelCache = nullptr;
     if (pixelCache == nullptr) {
         newPixelCache = new float[width * height * 2];
-    }*/
+    }
     float directPixelY;
     float centerDistanceY;
     float centerDistanceY2;
     int32_t colorsCount = colorsArray[12] == 0 ? 3 : 4;
 
     for (int y = 0; y < height; y++) {
-        //if (pixelCache == nullptr) {
+        if (pixelCache == nullptr) {
             directPixelY = (float) y / (float) height;
             centerDistanceY = directPixelY - 0.5f;
             centerDistanceY2 = centerDistanceY * centerDistanceY;
-        //}
+        }
         uint32_t offset = y * stride;
         for (int x = 0; x < width; x++) {
             float pixelX;
             float pixelY;
-            /*if (pixelCache != nullptr) {
+            if (pixelCache != nullptr) {
                 pixelX = pixelCache[(y * width + x) * 2];
-                pixelX = pixelCache[(y * width + x) * 2 + 1];
-            } else {*/
+                pixelY = pixelCache[(y * width + x) * 2 + 1];
+            } else {
                 float directPixelX = (float) x / (float) width;
 
                 float centerDistanceX = directPixelX - 0.5f;
@@ -1250,9 +1250,9 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_generateGradient(JNIEnv *en
                 float sinTheta = sinf(theta);
                 float cosTheta = cosf(theta);
 
-                pixelX = /*newPixelCache[(y * width + x) * 2] =*/ std::max(0.0f, std::min(1.0f, 0.5f + centerDistanceX * cosTheta - centerDistanceY * sinTheta));
-                pixelY = /*newPixelCache[(y * width + x) * 2 + 1] =*/ std::max(0.0f, std::min(1.0f, 0.5f + centerDistanceX * sinTheta + centerDistanceY * cosTheta));
-            //}
+                pixelX = newPixelCache[(y * width + x) * 2] = std::max(0.0f, std::min(1.0f, 0.5f + centerDistanceX * cosTheta - centerDistanceY * sinTheta));
+                pixelY = newPixelCache[(y * width + x) * 2 + 1] = std::max(0.0f, std::min(1.0f, 0.5f + centerDistanceX * sinTheta + centerDistanceY * cosTheta));
+            }
 
             float distanceSum = 0.0f;
 
@@ -1282,10 +1282,10 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_generateGradient(JNIEnv *en
             pixels[offset + x * 4 + 3] = 0xff;
         }
     }
-    /*if (newPixelCache != nullptr) {
+    if (newPixelCache != nullptr) {
         delete [] pixelCache;
         pixelCache = newPixelCache;
-    }*/
+    }
 
     env->ReleaseIntArrayElements(colors, (jint *) colorsArray, JNI_ABORT);
 

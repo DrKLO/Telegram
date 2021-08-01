@@ -425,7 +425,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                             if (messageObject1.isVoice() || messageObject1.isMusic()) {
                                 cell.updateButtonState(false, true, false);
                             } else if (messageObject1.isRoundVideo()) {
-                                cell.checkVideoPlayback(false);
+                                cell.checkVideoPlayback(false, null);
                                 if (!MediaController.getInstance().isPlayingMessage(messageObject1)) {
                                     if (messageObject1.audioProgress != 0) {
                                         messageObject1.resetPlayingProgress();
@@ -450,7 +450,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                                 cell.updateButtonState(false, true, false);
                             } else if (messageObject.isRoundVideo()) {
                                 if (!MediaController.getInstance().isPlayingMessage(messageObject)) {
-                                    cell.checkVideoPlayback(true);
+                                    cell.checkVideoPlayback(true, null);
                                 }
                             }
                         }
@@ -735,9 +735,6 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                     ImageReceiver imageReceiver = chatMessageCell.getAvatarImage();
                     if (imageReceiver != null) {
                         if (chatMessageCell.getMessageObject().deleted) {
-//                            if (child.getTranslationY() != 0) {
-//                                canvas.restore();
-//                            }
                             imageReceiver.setVisible(false, false);
                             return result;
                         }
@@ -753,17 +750,13 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                             if (p >= 0) {
                                 int nextPosition;
 
-                                nextPosition = p - 1;
+                                nextPosition = p + 1;
 
                                 holder = chatListView.findViewHolderForAdapterPosition(nextPosition);
                                 if (holder != null) {
-//                                    if (child.getTranslationY() != 0) {
-//                                        canvas.restore();
-//                                    }
                                     imageReceiver.setVisible(false, false);
                                     return result;
                                 }
-
                             }
                         }
                         float tx = chatMessageCell.getSlidingOffsetX() + chatMessageCell.getCheckBoxTranslation();
@@ -775,9 +768,6 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                             y = maxY;
                         }
 
-//                        if (child.getTranslationY() != 0) {
-//                            canvas.restore();
-//                        }
                         if (chatMessageCell.drawPinnedTop()) {
                             int p;
 
@@ -794,7 +784,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
 
                                     int prevPosition;
 
-                                    prevPosition = p + 1;
+                                    prevPosition = p - 1;
 
 
                                     holder = chatListView.findViewHolderForAdapterPosition(prevPosition);
@@ -2227,8 +2217,8 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                     }
 
                     @Override
-                    public void needOpenWebView(String url, String title, String description, String originalUrl, int w, int h) {
-                        EmbedBottomSheet.show(mContext, title, description, originalUrl, url, w, h, false);
+                    public void needOpenWebView(MessageObject message, String url, String title, String description, String originalUrl, int w, int h) {
+                        EmbedBottomSheet.show(getParentActivity(), message, provider, title, description, originalUrl, url, w, h, false);
                     }
 
                     @Override

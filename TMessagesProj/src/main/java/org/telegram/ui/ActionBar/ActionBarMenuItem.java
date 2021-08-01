@@ -229,7 +229,7 @@ public class ActionBarMenuItem extends FrameLayout {
                     toggleSubMenu();
                     return true;
                 }
-            } else if (popupWindow != null && popupWindow.isShowing()) {
+            } else if (showSubmenuByMove && popupWindow != null && popupWindow.isShowing()) {
                 getLocationOnScreen(location);
                 float x = event.getX() + location[0];
                 float y = event.getY() + location[1];
@@ -245,14 +245,14 @@ public class ActionBarMenuItem extends FrameLayout {
                         if (!rect.contains((int) x, (int) y)) {
                             child.setPressed(false);
                             child.setSelected(false);
-                            if (Build.VERSION.SDK_INT == 21) {
+                            if (Build.VERSION.SDK_INT == 21 && child.getBackground() != null) {
                                 child.getBackground().setVisible(false, false);
                             }
                         } else {
                             child.setPressed(true);
                             child.setSelected(true);
                             if (Build.VERSION.SDK_INT >= 21) {
-                                if (Build.VERSION.SDK_INT == 21) {
+                                if (Build.VERSION.SDK_INT == 21 && child.getBackground() != null) {
                                     child.getBackground().setVisible(true, false);
                                 }
                                 child.drawableHotspotChanged(x, y - child.getTop());
@@ -271,7 +271,7 @@ public class ActionBarMenuItem extends FrameLayout {
                     delegate.onItemClick((Integer) selectedMenuView.getTag());
                 }
                 popupWindow.dismiss(allowCloseAnimation);
-            } else {
+            } else if (showSubmenuByMove) {
                 popupWindow.dismiss();
             }
         } else {
@@ -1538,6 +1538,16 @@ public class ActionBarMenuItem extends FrameLayout {
             view.setVisibility(GONE);
             measurePopup = true;
         }
+    }
+
+    public void hideAllSubItems() {
+        if (popupLayout == null) {
+            return;
+        }
+        for (int a = 0, N = popupLayout.getItemsCount(); a < N; a++) {
+            popupLayout.getItemAt(a).setVisibility(GONE);
+        }
+        measurePopup = true;
     }
 
     public boolean isSubItemVisible(int id) {

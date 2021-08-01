@@ -25,6 +25,11 @@ import android.os.Build;
 import android.text.SpannableString;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.transition.ChangeBounds;
+import android.transition.Fade;
+import android.transition.TransitionManager;
+import android.transition.TransitionSet;
+import android.transition.TransitionValues;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -33,11 +38,13 @@ import android.view.ViewPropertyAnimator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
+import org.checkerframework.checker.units.qual.A;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.Adapters.FiltersView;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EllipsizeSpanAnimator;
 import org.telegram.ui.Components.FireworksEffect;
 import org.telegram.ui.Components.LayoutHelper;
@@ -110,6 +117,8 @@ public class ActionBar extends FrameLayout {
     private boolean overlayTitleAnimation;
     private boolean titleAnimationRunning;
     private boolean fromBottom;
+    private boolean centerScale;
+    private CharSequence subtitle;
 
     EllipsizeSpanAnimator ellipsizeSpanAnimator = new EllipsizeSpanAnimator(this);
 
@@ -318,9 +327,13 @@ public class ActionBar extends FrameLayout {
             createSubtitleTextView();
         }
         if (subtitleTextView != null) {
-            subtitleTextView.setVisibility(!TextUtils.isEmpty(value) && !isSearchFieldVisible ? VISIBLE : GONE);
+            boolean isEmpty = TextUtils.isEmpty(value);
+            subtitleTextView.setVisibility(!isEmpty && !isSearchFieldVisible ? VISIBLE : GONE);
             subtitleTextView.setAlpha(1f);
-            subtitleTextView.setText(value);
+            if (!isEmpty) {
+                subtitleTextView.setText(value);
+            }
+            subtitle = value;
         }
     }
 
@@ -417,10 +430,10 @@ public class ActionBar extends FrameLayout {
     }
 
     public String getSubtitle() {
-        if (subtitleTextView == null) {
+        if (subtitleTextView == null || subtitle == null) {
             return null;
         }
-        return subtitleTextView.getText().toString();
+        return subtitle.toString();
     }
 
     public ActionBarMenu createMenu() {
@@ -563,7 +576,7 @@ public class ActionBar extends FrameLayout {
                         if (titleTextView[0] != null) {
                             titleTextView[0].setVisibility(INVISIBLE);
                         }
-                        if (subtitleTextView != null && !TextUtils.isEmpty(subtitleTextView.getText())) {
+                        if (subtitleTextView != null && !TextUtils.isEmpty(subtitle)) {
                             subtitleTextView.setVisibility(INVISIBLE);
                         }
                         if (menu != null) {
@@ -632,7 +645,7 @@ public class ActionBar extends FrameLayout {
             if (titleTextView[0] != null) {
                 titleTextView[0].setVisibility(INVISIBLE);
             }
-            if (subtitleTextView != null && !TextUtils.isEmpty(subtitleTextView.getText())) {
+            if (subtitleTextView != null && !TextUtils.isEmpty(subtitle)) {
                 subtitleTextView.setVisibility(INVISIBLE);
             }
             if (menu != null) {
@@ -723,7 +736,7 @@ public class ActionBar extends FrameLayout {
             if (titleTextView[0] != null) {
                 titleTextView[0].setVisibility(VISIBLE);
             }
-            if (subtitleTextView != null && !TextUtils.isEmpty(subtitleTextView.getText())) {
+            if (subtitleTextView != null && !TextUtils.isEmpty(subtitle)) {
                 subtitleTextView.setVisibility(VISIBLE);
             }
         }
@@ -807,7 +820,7 @@ public class ActionBar extends FrameLayout {
             viewsToHide.add(titleTextView[0]);
         }
 
-        if (subtitleTextView != null && !TextUtils.isEmpty(subtitleTextView.getText())) {
+        if (subtitleTextView != null && !TextUtils.isEmpty(subtitle)) {
             viewsToHide.add(subtitleTextView);
             subtitleTextView.setVisibility(visible ? INVISIBLE : VISIBLE);
         }
@@ -824,7 +837,8 @@ public class ActionBar extends FrameLayout {
             searchVisibleAnimator.playTogether(ObjectAnimator.ofFloat(view, View.SCALE_Y, visible ? 0.95f : 1f));
             searchVisibleAnimator.playTogether(ObjectAnimator.ofFloat(view, View.SCALE_X, visible ? 0.95f : 1f));
         }
-
+        centerScale = true;
+        requestLayout();
         searchVisibleAnimator.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
@@ -1002,10 +1016,15 @@ public class ActionBar extends FrameLayout {
                 }
 
                 if (titleTextView[i] != null && titleTextView[i].getVisibility() != GONE) {
-                    CharSequence text = titleTextView[i].getText();
-                    titleTextView[i].setPivotX(titleTextView[i].getTextPaint().measureText(text, 0, text.length()) / 2f);
-                    titleTextView[i].setPivotY((AndroidUtilities.dp(24) >> 1));
                     titleTextView[i].measure(MeasureSpec.makeMeasureSpec(availableWidth, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(24), MeasureSpec.AT_MOST));
+                    if (centerScale) {
+                        CharSequence text = titleTextView[i].getText();
+                        titleTextView[i].setPivotX(titleTextView[i].getTextPaint().measureText(text, 0, text.length()) / 2f);
+                        titleTextView[i].setPivotY((AndroidUtilities.dp(24) >> 1));
+                    } else {
+                        titleTextView[i].setPivotX(0);
+                        titleTextView[i].setPivotY(0);
+                    }
                 }
                 if (subtitleTextView != null && subtitleTextView.getVisibility() != GONE) {
                     subtitleTextView.measure(MeasureSpec.makeMeasureSpec(availableWidth, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(20), MeasureSpec.AT_MOST));
@@ -1209,6 +1228,8 @@ public class ActionBar extends FrameLayout {
             } else {
                 animator.scaleY(0.7f).scaleX(0.7f);
             }
+            requestLayout();
+            centerScale = true;
             animator.setDuration(220).setListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
@@ -1322,7 +1343,7 @@ public class ActionBar extends FrameLayout {
             setTitle(title);
             return;
         }
-        boolean crossfade =  overlayTitleAnimation && !TextUtils.isEmpty(subtitleTextView.getText());
+        boolean crossfade =  overlayTitleAnimation && !TextUtils.isEmpty(subtitle);
         if (crossfade) {
             if (subtitleTextView.getVisibility() != View.VISIBLE) {
                 subtitleTextView.setVisibility(View.VISIBLE);
@@ -1409,5 +1430,69 @@ public class ActionBar extends FrameLayout {
 
     public void setOverlayTitleAnimation(boolean ovelayTitleAnimation) {
         this.overlayTitleAnimation = ovelayTitleAnimation;
+    }
+
+    public void beginDelayedTransition() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            TransitionSet transitionSet = new TransitionSet();
+            transitionSet.setOrdering(TransitionSet.ORDERING_TOGETHER);
+            transitionSet.addTransition(new Fade());
+            transitionSet.addTransition(new ChangeBounds() {
+
+
+                public void captureStartValues(TransitionValues transitionValues) {
+                    super.captureStartValues(transitionValues);
+                    if (transitionValues.view instanceof SimpleTextView) {
+                        float textSize = ((SimpleTextView) transitionValues.view).getTextPaint().getTextSize();
+                        transitionValues.values.put("text_size", textSize);
+                    }
+                }
+
+                public void captureEndValues(TransitionValues transitionValues) {
+                    super.captureEndValues(transitionValues);
+                    if (transitionValues.view instanceof SimpleTextView) {
+                        float textSize= ((SimpleTextView) transitionValues.view).getTextPaint().getTextSize();
+                        transitionValues.values.put("text_size", textSize);
+                    }
+                }
+
+                @Override
+                public Animator createAnimator(ViewGroup sceneRoot, TransitionValues startValues, TransitionValues endValues) {
+                    if (startValues != null && startValues.view instanceof SimpleTextView) {
+                        AnimatorSet animatorSet = new AnimatorSet();
+                        Animator animator = super.createAnimator(sceneRoot, startValues, endValues);
+                        float s = (float) startValues.values.get("text_size") / (float) endValues.values.get("text_size");
+                        startValues.view.setScaleX(s);
+                        startValues.view.setScaleY(s);
+                        if (animator != null) {
+                            animatorSet.playTogether(animator);
+                        }
+                        animatorSet.playTogether(ObjectAnimator.ofFloat(startValues.view, SCALE_X, 1f));
+                        animatorSet.playTogether(ObjectAnimator.ofFloat(startValues.view, SCALE_Y, 1f));
+                        animatorSet.addListener(new AnimatorListenerAdapter() {
+
+                            @Override
+                            public void onAnimationStart(Animator animation) {
+                                super.onAnimationStart(animation);
+                                startValues.view.setLayerType(LAYER_TYPE_HARDWARE, null);
+                            }
+
+                            @Override
+                            public void onAnimationEnd(Animator animation) {
+                                super.onAnimationEnd(animation);
+                                startValues.view.setLayerType(LAYER_TYPE_NONE, null);
+                            }
+                        });
+                        return animatorSet;
+                    } else {
+                        return super.createAnimator(sceneRoot, startValues, endValues);
+                    }
+                }
+            });
+            centerScale = false;
+            transitionSet.setDuration(220);
+            transitionSet.setInterpolator(CubicBezierInterpolator.DEFAULT);
+            TransitionManager.beginDelayedTransition(this, transitionSet);
+        }
     }
 }

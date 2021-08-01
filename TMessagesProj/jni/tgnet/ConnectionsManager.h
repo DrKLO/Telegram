@@ -58,7 +58,7 @@ public:
     void setDelegate(ConnectiosManagerDelegate *connectiosManagerDelegate);
     ConnectionState getConnectionState();
     void setUserId(int32_t userId);
-    void switchBackend();
+    void switchBackend(bool restart);
     void resumeNetwork(bool partial);
     void pauseNetwork();
     void setNetworkAvailable(bool value, int32_t type, bool slow);

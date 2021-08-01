@@ -170,6 +170,7 @@ public class Painting {
                 GLES20.glUniformMatrix4fv(shader.getUniform("mvpMatrix"), 1, false, FloatBuffer.wrap(projection));
                 GLES20.glUniform1i(shader.getUniform("texture"), 0);
 
+                renderState.viewportScale = renderView.getScaleX();
                 bounds = Render.RenderPath(path, renderState);
             }
 

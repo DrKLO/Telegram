@@ -45,7 +45,7 @@ int FormatPriority(const VideoFormat &format, const std::vector<std::string> &pr
 		}
 		return result;
 	}();
-    
+
     for (int i = 0; i < preferredCodecs.size(); i++) {
         for (const auto &name : kSupported) {
             if (absl::EqualsIgnoreCase(format.name, preferredCodecs[i]) && absl::EqualsIgnoreCase(format.name, name)) {
@@ -112,12 +112,6 @@ std::vector<VideoFormat>::const_iterator FindEqualFormat(
 			other.name,
 			other.parameters);
 	});
-}
-
-bool ContainsEqualFormat(
-		const std::vector<VideoFormat> &list,
-		const VideoFormat &format) {
-	return FindEqualFormat(list, format) != list.end();
 }
 
 void AddDefaultFeedbackParams(cricket::VideoCodec *codec) {

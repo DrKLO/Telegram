@@ -53,6 +53,7 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BringAppForegroundService;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
@@ -60,6 +61,7 @@ import org.telegram.messenger.browser.Browser;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.LaunchActivity;
+import org.telegram.ui.PhotoViewer;
 
 import java.util.HashMap;
 import java.util.Locale;
@@ -217,17 +219,23 @@ public class EmbedBottomSheet extends BottomSheet {
     @SuppressLint("StaticFieldLeak")
     private static EmbedBottomSheet instance;
 
-    public static void show(Context context, String title, String description, String originalUrl, final String url, int w, int h, boolean keyboardVisible) {
-        show(context, title, description, originalUrl, url, w, h, -1, keyboardVisible);
+    public static void show(Activity activity, MessageObject message, PhotoViewer.PhotoViewerProvider photoViewerProvider, String title, String description, String originalUrl, final String url, int w, int h, boolean keyboardVisible) {
+        show(activity, message, photoViewerProvider, title, description, originalUrl, url, w, h, -1, keyboardVisible);
     }
 
-    public static void show(Context context, String title, String description, String originalUrl, final String url, int w, int h, int seekTime, boolean keyboardVisible) {
+    public static void show(Activity activity, MessageObject message, PhotoViewer.PhotoViewerProvider photoViewerProvider, String title, String description, String originalUrl, final String url, int w, int h, int seekTime, boolean keyboardVisible) {
         if (instance != null) {
             instance.destroy();
         }
-        EmbedBottomSheet sheet = new EmbedBottomSheet(context, title, description, originalUrl, url, w, h, seekTime);
-        sheet.setCalcMandatoryInsets(keyboardVisible);
-        sheet.show();
+        String youtubeId = message != null && message.messageOwner.media != null && message.messageOwner.media.webpage != null ? WebPlayerView.getYouTubeVideoId(url) : null;
+        if (youtubeId != null) {
+            PhotoViewer.getInstance().setParentActivity(activity);
+            PhotoViewer.getInstance().openPhoto(message, seekTime, null, 0, 0, photoViewerProvider);
+        } else {
+            EmbedBottomSheet sheet = new EmbedBottomSheet(activity, title, description, originalUrl, url, w, h, seekTime);
+            sheet.setCalcMandatoryInsets(keyboardVisible);
+            sheet.show();
+        }
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -259,10 +267,8 @@ public class EmbedBottomSheet extends BottomSheet {
             fullscreenVideoContainer.setFitsSystemWindows(true);
         }
         fullscreenVideoContainer.setOnTouchListener((v, event) -> true);
-
         container.addView(fullscreenVideoContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         fullscreenVideoContainer.setVisibility(View.INVISIBLE);
-        fullscreenVideoContainer.setOnTouchListener((v, event) -> true);
 
         containerLayout = new FrameLayout(context) {
             @Override

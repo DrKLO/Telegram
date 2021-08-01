@@ -78,7 +78,7 @@ public class BotHelpCell extends View {
         if (text != null && text.equals(oldText)) {
             return;
         }
-        oldText = text;
+        oldText = AndroidUtilities.getSafeString(text);
         setVisibility(VISIBLE);
         int maxWidth;
         if (AndroidUtilities.isTablet()) {

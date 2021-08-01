@@ -621,8 +621,10 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                     chatActivity = null;
                     type = 4;
                 }
-                AndroidUtilities.hideKeyboard(parentAlert.baseFragment.getFragmentView().findFocus());
-                AndroidUtilities.hideKeyboard(parentAlert.getContainer().findFocus());
+                if (!parentAlert.delegate.needEnterComment()) {
+                    AndroidUtilities.hideKeyboard(parentAlert.baseFragment.getFragmentView().findFocus());
+                    AndroidUtilities.hideKeyboard(parentAlert.getContainer().findFocus());
+                }
                 PhotoViewer.getInstance().openPhotoForSelect(arrayList, position, type, false, photoViewerProvider, chatActivity);
             } else {
                 if (SharedConfig.inappCamera) {
@@ -1418,7 +1420,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                     return false;
                 }
                 int locked = Settings.System.getInt(parentAlert.baseFragment.getParentActivity().getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0);
-                return true;//sameTakePictureOrientation || locked == 1;
+                return sameTakePictureOrientation || locked == 1;
             }
 
             @Override
@@ -1621,6 +1623,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         animateCameraValues[2] = itemSize;
         additionCloseCameraY = 0;
         cameraExpanded = true;
+        cameraView.setFpsLimit(-1);
         if (animated) {
             setCameraOpenProgress(0);
             cameraAnimationInProgress = true;
@@ -1712,15 +1715,16 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                         } else {
                             AndroidUtilities.rectTmp.set(0 , 0, getMeasuredWidth(), getMeasuredHeight());
                         }
+                        canvas.save();
                         canvas.clipRect(AndroidUtilities.rectTmp);
                         super.dispatchDraw(canvas);
                         canvas.restore();
                     }
-
                 }
             };
             cameraView.setRecordFile(AndroidUtilities.generateVideoPath(parentAlert.baseFragment instanceof ChatActivity && ((ChatActivity) parentAlert.baseFragment).isSecretChat()));
             cameraView.setFocusable(true);
+            cameraView.setFpsLimit(30);
             if (Build.VERSION.SDK_INT >= 21) {
                 Path path = new Path();
                 float[] radii = new float[8];
@@ -2054,6 +2058,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                         cameraView.invalidate();
                     }
                     cameraOpened = false;
+
                     if (cameraPanel != null) {
                         cameraPanel.setVisibility(View.GONE);
                     }
@@ -2064,8 +2069,11 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                     if (cameraPhotoRecyclerView != null) {
                         cameraPhotoRecyclerView.setVisibility(View.GONE);
                     }
-                    if (Build.VERSION.SDK_INT >= 21 && cameraView != null) {
-                        cameraView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+                    if (cameraView != null) {
+                        cameraView.setFpsLimit(30);
+                        if (Build.VERSION.SDK_INT >= 21) {
+                            cameraView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+                        }
                     }
                 }
             });
@@ -2090,6 +2098,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                 }
             }
             cameraOpened = false;
+            cameraView.setFpsLimit(30);
             if (Build.VERSION.SDK_INT >= 21) {
                 cameraView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
             }
@@ -2867,7 +2876,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
 
     @Override
     public boolean onSheetKeyDown(int keyCode, KeyEvent event) {
-        if (cameraOpened && (keyCode == KeyEvent.KEYCODE_VOLUME_UP || keyCode == KeyEvent.KEYCODE_VOLUME_DOWN)) {
+        if (cameraOpened && (keyCode == KeyEvent.KEYCODE_VOLUME_UP || keyCode == KeyEvent.KEYCODE_VOLUME_DOWN || keyCode == KeyEvent.KEYCODE_HEADSETHOOK || keyCode == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)) {
             shutterButton.getDelegate().shutterReleased();
             return true;
         }

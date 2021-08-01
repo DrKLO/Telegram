@@ -122,7 +122,8 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
     private LineProgressView progressView;
     private SeekBarView seekBarView;
     private SimpleTextView timeTextView;
-    private ImageView playbackSpeedButton;
+    private ActionBarMenuItem playbackSpeedButton;
+    private ActionBarMenuSubItem[] speedItems = new ActionBarMenuSubItem[4];
     private TextView durationTextView;
     private ActionBarMenuItem repeatButton;
     private ActionBarMenuSubItem repeatSongItem;
@@ -171,6 +172,11 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
     int rewindingForwardPressedCount;
     long lastRewindingTime;
     long lastUpdateRewindingPlayerTime;
+
+    private final static int menu_speed_slow = 1;
+    private final static int menu_speed_normal = 2;
+    private final static int menu_speed_fast = 3;
+    private final static int menu_speed_veryfast = 4;
 
     private final Runnable forwardSeek = new Runnable() {
         @Override
@@ -663,22 +669,46 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         durationTextView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         playerLayout.addView(durationTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.RIGHT, 0, 96, 20, 0));
 
-        playbackSpeedButton = new ImageView(context);
-        playbackSpeedButton.setScaleType(ImageView.ScaleType.CENTER);
-        playbackSpeedButton.setImageResource(R.drawable.voice2x);
+        playbackSpeedButton = new ActionBarMenuItem(context, null, 0, Theme.getColor(Theme.key_dialogTextBlack));
+        playbackSpeedButton.setLongClickEnabled(false);
+        playbackSpeedButton.setShowSubmenuByMove(false);
+        playbackSpeedButton.setAdditionalYOffset(-AndroidUtilities.dp(224));
         playbackSpeedButton.setContentDescription(LocaleController.getString("AccDescrPlayerSpeed", R.string.AccDescrPlayerSpeed));
-        if (AndroidUtilities.density >= 3.0f) {
-            playbackSpeedButton.setPadding(0, 1, 0, 0);
-        }
-        playerLayout.addView(playbackSpeedButton, LayoutHelper.createFrame(36, 36, Gravity.TOP | Gravity.RIGHT, 0, 86, 20, 0));
-        playbackSpeedButton.setOnClickListener(v -> {
-            float currentPlaybackSpeed = MediaController.getInstance().getPlaybackSpeed(true);
-            if (currentPlaybackSpeed > 1) {
+        playbackSpeedButton.setDelegate(id -> {
+            float oldSpeed = MediaController.getInstance().getPlaybackSpeed(true);
+            if (id == menu_speed_slow) {
+                MediaController.getInstance().setPlaybackSpeed(true, 0.5f);
+            } else if (id == menu_speed_normal) {
                 MediaController.getInstance().setPlaybackSpeed(true, 1.0f);
+            } else if (id == menu_speed_fast) {
+                MediaController.getInstance().setPlaybackSpeed(true, 1.5f);
             } else {
                 MediaController.getInstance().setPlaybackSpeed(true, 1.8f);
             }
             updatePlaybackButton();
+        });
+        speedItems[0] = playbackSpeedButton.addSubItem(menu_speed_slow, R.drawable.msg_speed_0_5, LocaleController.getString("SpeedSlow", R.string.SpeedSlow));
+        speedItems[1] = playbackSpeedButton.addSubItem(menu_speed_normal, R.drawable.msg_speed_1, LocaleController.getString("SpeedNormal", R.string.SpeedNormal));
+        speedItems[2] = playbackSpeedButton.addSubItem(menu_speed_fast, R.drawable.msg_speed_1_5, LocaleController.getString("SpeedFast", R.string.SpeedFast));
+        speedItems[3] = playbackSpeedButton.addSubItem(menu_speed_veryfast, R.drawable.msg_speed_2, LocaleController.getString("SpeedVeryFast", R.string.SpeedVeryFast));
+        if (AndroidUtilities.density >= 3.0f) {
+            playbackSpeedButton.setPadding(0, 1, 0, 0);
+        }
+        playbackSpeedButton.setAdditionalXOffset(AndroidUtilities.dp(8));
+        playbackSpeedButton.setShowedFromBottom(true);
+        playerLayout.addView(playbackSpeedButton, LayoutHelper.createFrame(36, 36, Gravity.TOP | Gravity.RIGHT, 0, 86, 20, 0));
+        playbackSpeedButton.setOnClickListener(v -> {
+            float currentPlaybackSpeed = MediaController.getInstance().getPlaybackSpeed(true);
+            if (Math.abs(currentPlaybackSpeed - 1.0f) > 0.001f) {
+                MediaController.getInstance().setPlaybackSpeed(true, 1.0f);
+            } else {
+                MediaController.getInstance().setPlaybackSpeed(true, MediaController.getInstance().getFastPlaybackSpeed(true));
+            }
+            updatePlaybackButton();
+        });
+        playbackSpeedButton.setOnLongClickListener(view -> {
+            playbackSpeedButton.toggleSubMenu();
+            return true;
         });
         updatePlaybackButton();
 
@@ -1272,12 +1302,34 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
 
     private void updatePlaybackButton() {
         float currentPlaybackSpeed = MediaController.getInstance().getPlaybackSpeed(true);
-        if (currentPlaybackSpeed > 1) {
-            playbackSpeedButton.setTag(Theme.key_inappPlayerPlayPause);
-            playbackSpeedButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_inappPlayerPlayPause), PorterDuff.Mode.MULTIPLY));
+        String key;
+        if (Math.abs(currentPlaybackSpeed - 1.0f) > 0.001f) {
+            key = Theme.key_inappPlayerPlayPause;
         } else {
-            playbackSpeedButton.setTag(Theme.key_inappPlayerClose);
-            playbackSpeedButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_inappPlayerClose), PorterDuff.Mode.MULTIPLY));
+            key = Theme.key_inappPlayerClose;
+        }
+        playbackSpeedButton.setTag(key);
+        float speed = MediaController.getInstance().getFastPlaybackSpeed(true);
+        if (Math.abs(speed - 1.8f) < 0.001f) {
+            playbackSpeedButton.setIcon(R.drawable.voice_mini_2_0);
+        } else if (Math.abs(speed - 1.5f) < 0.001f) {
+            playbackSpeedButton.setIcon(R.drawable.voice_mini_1_5);
+        } else {
+            playbackSpeedButton.setIcon(R.drawable.voice_mini_0_5);
+        }
+        playbackSpeedButton.setIconColor(Theme.getColor(key));
+        if (Build.VERSION.SDK_INT >= 21) {
+            playbackSpeedButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(key) & 0x19ffffff, 1, AndroidUtilities.dp(14)));
+        }
+        for (int a = 0; a < speedItems.length; a++) {
+            if (a == 0 && Math.abs(currentPlaybackSpeed - 0.5f) < 0.001f ||
+                    a == 1 && Math.abs(currentPlaybackSpeed - 1.0f) < 0.001f ||
+                    a == 2 && Math.abs(currentPlaybackSpeed - 1.5f) < 0.001f ||
+                    a == 3 && Math.abs(currentPlaybackSpeed - 1.8f) < 0.001f) {
+                speedItems[a].setColors(Theme.getColor(Theme.key_inappPlayerPlayPause), Theme.getColor(Theme.key_inappPlayerPlayPause));
+            } else {
+                speedItems[a].setColors(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem), Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon));
+            }
         }
     }
 
@@ -1422,9 +1474,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             if (path == null || path.length() == 0) {
                 path = FileLoader.getPathToMessage(messageObject.messageOwner).toString();
             }
-            MediaController.saveFile(path, parentActivity, 3, fileName, messageObject.getDocument() != null ? messageObject.getDocument().mime_type : "", () -> {
-                BulletinFactory.of((FrameLayout) containerView).createDownloadBulletin(BulletinFactory.FileType.AUDIO).show();
-            });
+            MediaController.saveFile(path, parentActivity, 3, fileName, messageObject.getDocument() != null ? messageObject.getDocument().mime_type : "", () -> BulletinFactory.of((FrameLayout) containerView).createDownloadBulletin(BulletinFactory.FileType.AUDIO).show());
         }
     }
 
@@ -1844,7 +1894,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 durationTextView.setText(duration != 0 ? AndroidUtilities.formatShortDuration(duration) : "-:--");
             }
 
-            if (duration > 60 * 20) {
+            if (duration > 60 * 10) {
                 playbackSpeedButton.setVisibility(View.VISIBLE);
             } else {
                 playbackSpeedButton.setVisibility(View.GONE);

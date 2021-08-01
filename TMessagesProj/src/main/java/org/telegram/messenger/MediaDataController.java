@@ -37,6 +37,7 @@ import android.util.SparseArray;
 
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLiteDatabase;
+import org.telegram.SQLite.SQLiteException;
 import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.messenger.support.SparseLongArray;
 import org.telegram.tgnet.ConnectionsManager;
@@ -4525,6 +4526,45 @@ public class MediaDataController extends BaseController {
         return runs;
     }
 
+    public void addStyle(int flags, int spanStart, int spanEnd, ArrayList<TLRPC.MessageEntity> entities) {
+        if ((flags & TextStyleSpan.FLAG_STYLE_BOLD) != 0) {
+            TLRPC.MessageEntity entity = new TLRPC.TL_messageEntityBold();
+            entity.offset = spanStart;
+            entity.length = spanEnd - spanStart;
+            entities.add(entity);
+        }
+        if ((flags & TextStyleSpan.FLAG_STYLE_ITALIC) != 0) {
+            TLRPC.MessageEntity entity = new TLRPC.TL_messageEntityItalic();
+            entity.offset = spanStart;
+            entity.length = spanEnd - spanStart;
+            entities.add(entity);
+        }
+        if ((flags & TextStyleSpan.FLAG_STYLE_MONO) != 0) {
+            TLRPC.MessageEntity entity = new TLRPC.TL_messageEntityCode();
+            entity.offset = spanStart;
+            entity.length = spanEnd - spanStart;
+            entities.add(entity);
+        }
+        if ((flags & TextStyleSpan.FLAG_STYLE_STRIKE) != 0) {
+            TLRPC.MessageEntity entity = new TLRPC.TL_messageEntityStrike();
+            entity.offset = spanStart;
+            entity.length = spanEnd - spanStart;
+            entities.add(entity);
+        }
+        if ((flags & TextStyleSpan.FLAG_STYLE_UNDERLINE) != 0) {
+            TLRPC.MessageEntity entity = new TLRPC.TL_messageEntityUnderline();
+            entity.offset = spanStart;
+            entity.length = spanEnd - spanStart;
+            entities.add(entity);
+        }
+        if ((flags & TextStyleSpan.FLAG_STYLE_QUOTE) != 0) {
+            TLRPC.MessageEntity entity = new TLRPC.TL_messageEntityBlockquote();
+            entity.offset = spanStart;
+            entity.length = spanEnd - spanStart;
+            entities.add(entity);
+        }
+    }
+
     public ArrayList<TLRPC.MessageEntity> getEntities(CharSequence[] message, boolean allowStrike) {
         if (message == null || message[0] == null) {
             return null;
@@ -4619,43 +4659,7 @@ public class MediaDataController extends BaseController {
                     if (entities == null) {
                         entities = new ArrayList<>();
                     }
-                    int flags = span.getStyleFlags();
-                    if ((flags & TextStyleSpan.FLAG_STYLE_BOLD) != 0) {
-                        TLRPC.MessageEntity entity = new TLRPC.TL_messageEntityBold();
-                        entity.offset = spanStart;
-                        entity.length = spanEnd - spanStart;
-                        entities.add(entity);
-                    }
-                    if ((flags & TextStyleSpan.FLAG_STYLE_ITALIC) != 0) {
-                        TLRPC.MessageEntity entity = new TLRPC.TL_messageEntityItalic();
-                        entity.offset = spanStart;
-                        entity.length = spanEnd - spanStart;
-                        entities.add(entity);
-                    }
-                    if ((flags & TextStyleSpan.FLAG_STYLE_MONO) != 0) {
-                        TLRPC.MessageEntity entity = new TLRPC.TL_messageEntityCode();
-                        entity.offset = spanStart;
-                        entity.length = spanEnd - spanStart;
-                        entities.add(entity);
-                    }
-                    if ((flags & TextStyleSpan.FLAG_STYLE_STRIKE) != 0) {
-                        TLRPC.MessageEntity entity = new TLRPC.TL_messageEntityStrike();
-                        entity.offset = spanStart;
-                        entity.length = spanEnd - spanStart;
-                        entities.add(entity);
-                    }
-                    if ((flags & TextStyleSpan.FLAG_STYLE_UNDERLINE) != 0) {
-                        TLRPC.MessageEntity entity = new TLRPC.TL_messageEntityUnderline();
-                        entity.offset = spanStart;
-                        entity.length = spanEnd - spanStart;
-                        entities.add(entity);
-                    }
-                    if ((flags & TextStyleSpan.FLAG_STYLE_QUOTE) != 0) {
-                        TLRPC.MessageEntity entity = new TLRPC.TL_messageEntityBlockquote();
-                        entity.offset = spanStart;
-                        entity.length = spanEnd - spanStart;
-                        entities.add(entity);
-                    }
+                    addStyle(span.getStyleFlags(), spanStart, spanEnd, entities);
                 }
             }
 
@@ -4689,6 +4693,10 @@ public class MediaDataController extends BaseController {
                     entity.length = Math.min(spannable.getSpanEnd(spansUrlReplacement[b]), message[0].length()) - entity.offset;
                     entity.url = spansUrlReplacement[b].getURL();
                     entities.add(entity);
+                    TextStyleSpan.TextStyleRun style = spansUrlReplacement[b].getTextStyleRun();
+                    if (style != null) {
+                        addStyle(style.flags, entity.offset, entity.offset + entity.length, entities);
+                    }
                 }
             }
         }
@@ -5110,7 +5118,7 @@ public class MediaDataController extends BaseController {
 
     //---------------- DRAFT END ----------------
 
-    private SparseArray<TLRPC.BotInfo> botInfos = new SparseArray<>();
+    private HashMap<String, TLRPC.BotInfo> botInfos = new HashMap<>();
     private LongSparseArray<TLRPC.Message> botKeyboards = new LongSparseArray<>();
     private SparseLongArray botKeyboardsByMids = new SparseLongArray();
 
@@ -5165,9 +5173,27 @@ public class MediaDataController extends BaseController {
         });
     }
 
+    private TLRPC.BotInfo loadBotInfoInternal(final int uid, final long dialogId) throws SQLiteException {
+        TLRPC.BotInfo botInfo = null;
+        SQLiteCursor cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT info FROM bot_info_v2 WHERE uid = %d AND dialogId = %d", uid, dialogId));
+        if (cursor.next()) {
+            NativeByteBuffer data;
+
+            if (!cursor.isNull(0)) {
+                data = cursor.byteBufferValue(0);
+                if (data != null) {
+                    botInfo = TLRPC.BotInfo.TLdeserialize(data, data.readInt32(false), false);
+                    data.reuse();
+                }
+            }
+        }
+        cursor.dispose();
+        return botInfo;
+    }
+
     public void loadBotInfo(final int uid, final long dialogId, boolean cache, final int classGuid) {
         if (cache) {
-            TLRPC.BotInfo botInfo = botInfos.get(uid);
+            TLRPC.BotInfo botInfo = botInfos.get(uid + "_" + dialogId);
             if (botInfo != null) {
                 getNotificationCenter().postNotificationName(NotificationCenter.botInfoDidLoad, botInfo, classGuid);
                 return;
@@ -5175,21 +5201,7 @@ public class MediaDataController extends BaseController {
         }
         getMessagesStorage().getStorageQueue().postRunnable(() -> {
             try {
-                TLRPC.BotInfo botInfo = null;
-                SQLiteCursor cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT info FROM bot_info_v2 WHERE uid = %d AND dialogId = %d", uid, dialogId));
-                if (cursor.next()) {
-                    NativeByteBuffer data;
-
-                    if (!cursor.isNull(0)) {
-                        data = cursor.byteBufferValue(0);
-                        if (data != null) {
-                            botInfo = TLRPC.BotInfo.TLdeserialize(data, data.readInt32(false), false);
-                            data.reuse();
-                        }
-                    }
-                }
-                cursor.dispose();
-
+                TLRPC.BotInfo botInfo = loadBotInfoInternal(uid, dialogId);
                 if (botInfo != null) {
                     final TLRPC.BotInfo botInfoFinal = botInfo;
                     AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.botInfoDidLoad, botInfoFinal, classGuid));
@@ -5244,7 +5256,7 @@ public class MediaDataController extends BaseController {
         if (botInfo == null) {
             return;
         }
-        botInfos.put(botInfo.user_id, botInfo);
+        botInfos.put(botInfo.user_id + "_" + dialogId, botInfo);
         getMessagesStorage().getStorageQueue().postRunnable(() -> {
             try {
                 SQLitePreparedStatement state = getMessagesStorage().getDatabase().executeFast("REPLACE INTO bot_info_v2 VALUES(?, ?, ?)");
@@ -5252,6 +5264,34 @@ public class MediaDataController extends BaseController {
                 NativeByteBuffer data = new NativeByteBuffer(botInfo.getObjectSize());
                 botInfo.serializeToStream(data);
                 state.bindInteger(1, botInfo.user_id);
+                state.bindLong(2, dialogId);
+                state.bindByteBuffer(3, data);
+                state.step();
+                data.reuse();
+                state.dispose();
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        });
+    }
+
+    public void updateBotInfo(long dialogId, TLRPC.TL_updateBotCommands update) {
+        TLRPC.BotInfo botInfo = botInfos.get(update.bot_id + "_" + dialogId);
+        if (botInfo != null) {
+            botInfo.commands = update.commands;
+            getNotificationCenter().postNotificationName(NotificationCenter.botInfoDidLoad, botInfo, 0);
+        }
+        getMessagesStorage().getStorageQueue().postRunnable(() -> {
+            try {
+                TLRPC.BotInfo info = loadBotInfoInternal(update.bot_id, dialogId);
+                if (info != null) {
+                    info.commands = update.commands;
+                }
+                SQLitePreparedStatement state = getMessagesStorage().getDatabase().executeFast("REPLACE INTO bot_info_v2 VALUES(?, ?, ?)");
+                state.requery();
+                NativeByteBuffer data = new NativeByteBuffer(info.getObjectSize());
+                info.serializeToStream(data);
+                state.bindInteger(1, info.user_id);
                 state.bindLong(2, dialogId);
                 state.bindByteBuffer(3, data);
                 state.step();

@@ -62,13 +62,17 @@ public class SharedPhotoVideoCell extends FrameLayout {
 
     private int currentAccount = UserConfig.selectedAccount;
 
+    public SharedPhotoVideoCellDelegate getDelegate() {
+        return delegate;
+    }
+
     public interface SharedPhotoVideoCellDelegate {
         void didClickItem(SharedPhotoVideoCell cell, int index, MessageObject messageObject, int a);
 
         boolean didLongClickItem(SharedPhotoVideoCell cell, int index, MessageObject messageObject, int a);
     }
 
-    private class PhotoVideoView extends FrameLayout {
+    public class PhotoVideoView extends FrameLayout {
 
         private BackupImageView imageView;
         private TextView videoTextView;
@@ -332,11 +336,25 @@ public class SharedPhotoVideoCell extends FrameLayout {
         return photoVideoViews[a].imageView;
     }
 
+    public PhotoVideoView getView(int a) {
+        if (a >= itemsCount) {
+            return null;
+        }
+        return photoVideoViews[a];
+    }
+
     public MessageObject getMessageObject(int a) {
         if (a >= itemsCount) {
             return null;
         }
         return messageObjects[a];
+    }
+
+    public int getIndeces(int a) {
+        if (a >= itemsCount) {
+            return -1;
+        }
+        return indeces[a];
     }
 
     public void setIsFirst(boolean first) {

@@ -25,6 +25,8 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import androidx.annotation.Keep;
+
+import android.os.SystemClock;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.KeyEvent;
@@ -39,6 +41,7 @@ import android.view.animation.DecelerateInterpolator;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
@@ -343,7 +346,13 @@ public class ActionBarLayout extends FrameLayout {
 
     public void drawHeaderShadow(Canvas canvas, int alpha, int y) {
         if (headerShadowDrawable != null) {
-            headerShadowDrawable.setAlpha(alpha);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                if (headerShadowDrawable.getAlpha() != alpha) {
+                    headerShadowDrawable.setAlpha(alpha);
+                }
+            } else {
+                headerShadowDrawable.setAlpha(alpha);
+            }
             headerShadowDrawable.setBounds(0, y, getMeasuredWidth(), y + headerShadowDrawable.getIntrinsicHeight());
             headerShadowDrawable.draw(canvas);
         }
@@ -354,7 +363,7 @@ public class ActionBarLayout extends FrameLayout {
         innerTranslationX = value;
         invalidate();
 
-        if (fragmentsStack.size() >= 2) {
+        if (fragmentsStack.size() >= 2 && containerView.getMeasuredWidth() > 0) {
             BaseFragment prevFragment = fragmentsStack.get(fragmentsStack.size() - 2);
             prevFragment.onSlideProgress(false, value / containerView.getMeasuredWidth());
         }
@@ -635,9 +644,11 @@ public class ActionBarLayout extends FrameLayout {
     public boolean onTouchEvent(MotionEvent ev) {
         if (!checkTransitionAnimation() && !inActionMode && !animationInProgress) {
             if (fragmentsStack.size() > 1) {
-                if (ev != null && ev.getAction() == MotionEvent.ACTION_DOWN && !startedTracking && !maybeStartTracking) {
+                if (ev != null && ev.getAction() == MotionEvent.ACTION_DOWN) {
                     BaseFragment currentFragment = fragmentsStack.get(fragmentsStack.size() - 1);
                     if (!currentFragment.isSwipeBackEnabled(ev)) {
+                        maybeStartTracking = false;
+                        startedTracking = false;
                         return false;
                     }
                     startedTrackingPointerId = ev.getPointerId(0);

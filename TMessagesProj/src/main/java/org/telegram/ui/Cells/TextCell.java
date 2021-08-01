@@ -23,12 +23,13 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.RLottieImageView;
 
 public class TextCell extends FrameLayout {
 
     public final SimpleTextView textView;
     public final SimpleTextView valueTextView;
-    public final ImageView imageView;
+    public final RLottieImageView imageView;
     private ImageView valueImageView;
     private int leftPadding;
     private boolean needDivider;
@@ -59,7 +60,7 @@ public class TextCell extends FrameLayout {
         valueTextView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         addView(valueTextView);
 
-        imageView = new ImageView(context);
+        imageView = new RLottieImageView(context);
         imageView.setScaleType(ImageView.ScaleType.CENTER);
         imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(dialog ? Theme.key_dialogIcon : Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.MULTIPLY));
         addView(imageView);

@@ -198,6 +198,7 @@ public class NativeInstance {
     public native void onMediaDescriptionAvailable(long taskPtr, int[] ssrcs);
     public native void setNoiseSuppressionEnabled(boolean value);
     public native void activateVideoCapturer(long videoCapturer);
+    public native void clearVideoCapturer();
     public native long addIncomingVideoOutput(int quality, String endpointId, SsrcGroup[] ssrcGroups, VideoSink remoteSink);
     public native void removeIncomingVideoOutput(long nativeRemoteSink);
     public native void setVideoEndpointQuality(String endpointId, int quality);
@@ -216,7 +217,7 @@ public class NativeInstance {
     public native byte[] getPersistentState();
     private native void stopNative();
     private native void stopGroupNative();
-    public native void setupOutgoingVideo(VideoSink localSink, boolean front);
+    public native void setupOutgoingVideo(VideoSink localSink, int type);
     public native void setupOutgoingVideoCreated(long videoCapturer);
     public native void switchCamera(boolean front);
     public native void setVideoState(int videoState);

@@ -368,7 +368,7 @@ public class HintView extends FrameLayout {
         } else {
             setTranslationY(extraTranslationY + (translationY = top - getMeasuredHeight()));
         }
-        final int offset;
+        int offset;
 
         int leftMargin = 0;
         int rightMargin = 0;
@@ -381,12 +381,18 @@ public class HintView extends FrameLayout {
         } else if (centerX > parentView.getMeasuredWidth() / 2) {
             if (currentType == TYPE_SEARCH_AS_LIST) {
                 offset = (int) (parentWidth - getMeasuredWidth() * 1.5f);
+                if (offset < 0) {
+                    offset = 0;
+                }
             } else {
                 offset = parentWidth - getMeasuredWidth() - (leftMargin + rightMargin);
             }
         } else {
             if (currentType == TYPE_SEARCH_AS_LIST) {
                 offset = centerX - getMeasuredWidth() / 2 - arrowImageView.getMeasuredWidth();
+                if (offset < 0) {
+                    offset = 0;
+                }
             } else {
                 offset = 0;
             }

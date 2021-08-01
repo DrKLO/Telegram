@@ -49,7 +49,6 @@ class AudioRecordJni {
    public:
     JavaAudioRecord(NativeRegistration* native_registration,
                     std::unique_ptr<GlobalRef> audio_track);
-    ~JavaAudioRecord();
 
     int InitRecording(int sample_rate, size_t channels);
     bool StartRecording();

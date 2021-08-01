@@ -34,6 +34,8 @@ class AudioDeviceModule : public rtc::RefCountInterface {
     kAndroidAAudioAudio,
     kAndroidJavaInputAndAAudioOutputAudio,
     kDummyAudio,
+    kAndroidScreenAudio,
+    kAndroidMergedScreenAudio
   };
 
   enum WindowsDeviceType {

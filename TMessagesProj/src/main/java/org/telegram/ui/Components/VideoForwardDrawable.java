@@ -17,6 +17,9 @@ public class VideoForwardDrawable extends Drawable {
     private TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     private Path path1 = new Path();
     private boolean leftSide;
+    private boolean isRound;
+    private Path clippingPath;
+    private int lastClippingPath;
 
     private final static int[] playPath = new int[] {10, 7, 26, 16, 10, 25};
 
@@ -46,7 +49,8 @@ public class VideoForwardDrawable extends Drawable {
         void invalidate();
     }
 
-    public VideoForwardDrawable() {
+    public VideoForwardDrawable(boolean isRound) {
+        this.isRound = isRound;
         paint.setColor(0xffffffff);
         textPaint.setColor(0xffffffff);
         textPaint.setTextSize(AndroidUtilities.dp(12));
@@ -131,7 +135,21 @@ public class VideoForwardDrawable extends Drawable {
         }
 
         canvas.save();
-        canvas.clipRect(rect.left, rect.top, rect.right, rect.bottom);
+        if (isRound) {
+            if (clippingPath == null) {
+                clippingPath = new Path();
+            }
+            int clippingPathHash = rect.left + (rect.top << 8) + (rect.bottom << 16) + (rect.right << 24);
+            if (lastClippingPath != clippingPathHash) {
+                clippingPath.reset();
+                AndroidUtilities.rectTmp.set(rect);
+                clippingPath.addOval(AndroidUtilities.rectTmp, Path.Direction.CCW);
+                lastClippingPath = clippingPathHash;
+            }
+            canvas.clipPath(clippingPath);
+        } else {
+            canvas.clipRect(rect.left, rect.top, rect.right, rect.bottom);
+        }
         if (!isOneShootAnimation) {
             paint.setAlpha((int) (80 * enterAnimationProgress));
             textPaint.setAlpha((int) (255 * enterAnimationProgress));

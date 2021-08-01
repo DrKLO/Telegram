@@ -14,6 +14,8 @@ import android.view.Window;
 import android.view.animation.Interpolator;
 import android.widget.FrameLayout;
 
+import androidx.recyclerview.widget.ChatListItemAnimator;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.SharedConfig;
@@ -24,7 +26,7 @@ import java.util.ArrayList;
 
 public class AdjustPanLayoutHelper {
 
-    public final static Interpolator keyboardInterpolator = CubicBezierInterpolator.DEFAULT;
+    public final static Interpolator keyboardInterpolator = ChatListItemAnimator.DEFAULT_INTERPOLATOR;
     public final static long keyboardDuration = 250;
 
     private final View parent;
@@ -33,6 +35,15 @@ public class AdjustPanLayoutHelper {
     private ViewGroup contentView;
     private View resizableView;
     private boolean animationInProgress;
+    private boolean needDelay;
+    private Runnable delayedAnimationRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (animator != null && !animator.isRunning()) {
+                animator.start();
+            }
+        }
+    };
 
     int previousHeight = -1;
     int previousContentHeight = -1;
@@ -148,11 +159,16 @@ public class AdjustPanLayoutHelper {
                 onTransitionEnd();
             }
         });
-        animator.setDuration(220);
-        animator.setInterpolator(CubicBezierInterpolator.DEFAULT);
+        animator.setDuration(keyboardDuration);
+        animator.setInterpolator(keyboardInterpolator);
 
         notificationsIndex = NotificationCenter.getInstance(selectedAccount).setAnimationInProgress(notificationsIndex, null);
-        animator.start();
+        if (needDelay) {
+            needDelay = false;
+            AndroidUtilities.runOnUIThread(delayedAnimationRunnable, 100);
+        } else {
+            animator.start();
+        }
     }
 
     private void setViewHeight(int height) {
@@ -268,5 +284,14 @@ public class AdjustPanLayoutHelper {
 
     public void setCheckHierarchyHeight(boolean checkHierarchyHeight) {
         this.checkHierarchyHeight = checkHierarchyHeight;
+    }
+
+    public void delayAnimation() {
+       needDelay = true;
+    }
+
+    public void runDelayedAnimation() {
+        AndroidUtilities.cancelRunOnUIThread(delayedAnimationRunnable);
+        delayedAnimationRunnable.run();
     }
 }

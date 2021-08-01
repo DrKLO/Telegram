@@ -3,7 +3,9 @@ package org.telegram.ui;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
+import android.text.SpannableString;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -17,11 +19,14 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.TextSettingsCell;
+import org.telegram.ui.Components.EllipsizeSpanAnimator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.voip.CellFlickerDrawable;
 
 class StroageUsageView extends FrameLayout {
 
     private Paint paintFill = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private Paint paintCalculcating = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Paint paintProgress = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Paint paintProgress2 = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Paint bgPaint = new Paint();
@@ -48,14 +53,24 @@ class StroageUsageView extends FrameLayout {
     ValueAnimator valueAnimator2;
     ViewGroup legendLayout;
 
+    EllipsizeSpanAnimator ellipsizeSpanAnimator;
+
+    float calculatingProgress;
+    boolean calculatingProgressIncrement;
+
+    CellFlickerDrawable cellFlickerDrawable = new CellFlickerDrawable(220, 255);
+
     public StroageUsageView(Context context) {
         super(context);
         setWillNotDraw(false);
 
+        cellFlickerDrawable.drawFrame = false;
         paintFill.setStrokeWidth(AndroidUtilities.dp(6));
+        paintCalculcating.setStrokeWidth(AndroidUtilities.dp(6));
         paintProgress.setStrokeWidth(AndroidUtilities.dp(6));
         paintProgress2.setStrokeWidth(AndroidUtilities.dp(6));
         paintFill.setStrokeCap(Paint.Cap.ROUND);
+        paintCalculcating.setStrokeCap(Paint.Cap.ROUND);
         paintProgress.setStrokeCap(Paint.Cap.ROUND);
         paintProgress2.setStrokeCap(Paint.Cap.ROUND);
 
@@ -115,7 +130,18 @@ class StroageUsageView extends FrameLayout {
 
         calculatingTextView = new TextView(context);
         calculatingTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
-        calculatingTextView.setText(LocaleController.getString("CalculatingSize",R.string.CalculatingSize));
+
+        String calculatingString = LocaleController.getString("CalculatingSize",R.string.CalculatingSize);
+        int indexOfDots = calculatingString.indexOf("...");
+        if (indexOfDots >= 0) {
+            SpannableString spannableString = new SpannableString(calculatingString);
+            ellipsizeSpanAnimator = new EllipsizeSpanAnimator(calculatingTextView);
+            ellipsizeSpanAnimator.wrap(spannableString, indexOfDots);
+            calculatingTextView.setText(spannableString);
+        } else {
+            calculatingTextView.setText(calculatingString);
+        }
+
 
         telegramCacheTextView = new TextView(context);
         telegramCacheTextView.setCompoundDrawablePadding(AndroidUtilities.dp(6));
@@ -182,7 +208,13 @@ class StroageUsageView extends FrameLayout {
             textSettingsCell.setVisibility(GONE);
             progress = 0f;
             progress2 = 0;
+            if (ellipsizeSpanAnimator != null) {
+                ellipsizeSpanAnimator.addView(calculatingTextView);
+            }
         } else {
+            if (ellipsizeSpanAnimator != null) {
+                ellipsizeSpanAnimator.removeView(calculatingTextView);
+            }
             calculatingTextView.setVisibility(View.GONE);
             if (totalSize > 0) {
                 divider.setVisibility(VISIBLE);
@@ -286,7 +318,35 @@ class StroageUsageView extends FrameLayout {
             bgPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhite));
 
             canvas.drawLine(AndroidUtilities.dp(24), AndroidUtilities.dp(20), getMeasuredWidth() - AndroidUtilities.dp(24), AndroidUtilities.dp(20), paintFill);
+            if (calculating || calculatingProgress != 0) {
+                if (calculating) {
+                    if (calculatingProgressIncrement) {
+                        calculatingProgress += 16f / 650;
+                        if (calculatingProgress > 1f) {
+                            calculatingProgress = 1f;
+                            calculatingProgressIncrement = false;
+                        }
+                    } else {
+                        calculatingProgress -= 16f / 650;
+                        if (calculatingProgress < 0) {
+                            calculatingProgress = 0;
+                            calculatingProgressIncrement = true;
+                        }
 
+                    }
+                } else {
+                    calculatingProgress -= 16f / 150;
+                    if (calculatingProgress < 0) {
+                        calculatingProgress = 0;
+                    }
+                }
+                invalidate();
+//                paintCalculcating.setColor(ColorUtils.setAlphaComponent(Color.WHITE, (int) (150 * calculatingProgress)));
+//                canvas.drawLine(AndroidUtilities.dp(24), AndroidUtilities.dp(20), getMeasuredWidth() - AndroidUtilities.dp(24), AndroidUtilities.dp(20), paintCalculcating);
+                AndroidUtilities.rectTmp.set(AndroidUtilities.dp(24), AndroidUtilities.dp(17), getMeasuredWidth() - AndroidUtilities.dp(24), AndroidUtilities.dp(23));
+                cellFlickerDrawable.setParentWidth(getMeasuredWidth());
+                cellFlickerDrawable.draw(canvas, AndroidUtilities.rectTmp, AndroidUtilities.dp(3));
+            }
             int currentP = AndroidUtilities.dp(24);
             if (!calculating) {
                 int progressWidth = (int) ((getMeasuredWidth() - AndroidUtilities.dp(24) * 2) * progress2);
@@ -304,6 +364,22 @@ class StroageUsageView extends FrameLayout {
                 canvas.drawLine(currentP, AndroidUtilities.dp(20), AndroidUtilities.dp(24) + progressWidth, AndroidUtilities.dp(20), paintProgress);
                 canvas.drawRect(left, AndroidUtilities.dp(20) - AndroidUtilities.dp(3), left + AndroidUtilities.dp(3), AndroidUtilities.dp(20) + AndroidUtilities.dp(3), bgPaint);
             }
+        }
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        if (ellipsizeSpanAnimator != null) {
+            ellipsizeSpanAnimator.onAttachedToWindow();
+        }
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        if (ellipsizeSpanAnimator != null) {
+            ellipsizeSpanAnimator.onDetachedFromWindow();
         }
     }
 }

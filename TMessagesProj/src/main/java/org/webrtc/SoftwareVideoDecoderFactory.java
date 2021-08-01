@@ -32,6 +32,9 @@ public class SoftwareVideoDecoderFactory implements VideoDecoderFactory {
     if (codecType.getName().equalsIgnoreCase("VP9") && LibvpxVp9Decoder.nativeIsSupported()) {
       return new LibvpxVp9Decoder();
     }
+    if (codecType.getName().equalsIgnoreCase("H264")) {
+      return new OpenH264Decoder();
+    }
 
     return null;
   }
@@ -48,6 +51,7 @@ public class SoftwareVideoDecoderFactory implements VideoDecoderFactory {
     if (LibvpxVp9Decoder.nativeIsSupported()) {
       codecs.add(new VideoCodecInfo("VP9", new HashMap<>()));
     }
+    codecs.add(new VideoCodecInfo("H264", new HashMap<>()));
 
     return codecs.toArray(new VideoCodecInfo[codecs.size()]);
   }

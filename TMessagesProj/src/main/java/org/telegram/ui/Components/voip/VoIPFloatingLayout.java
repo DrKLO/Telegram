@@ -67,7 +67,7 @@ public class VoIPFloatingLayout extends FrameLayout {
     private boolean floatingMode;
     private boolean setedFloatingMode;
     private boolean switchingToFloatingMode;
-    private boolean measuredAsFloatingMode;
+    public boolean measuredAsFloatingMode;
 
     private float overrideCornerRadius = -1f;
     private boolean active = true;
@@ -81,9 +81,15 @@ public class VoIPFloatingLayout extends FrameLayout {
     Drawable outerShadow;
 
     ValueAnimator switchToFloatingModeAnimator;
-    private ValueAnimator.AnimatorUpdateListener progressUpdateListener = valueAnimator -> {
-        toFloatingModeProgress = (float) valueAnimator.getAnimatedValue();
-        invalidate();
+    private ValueAnimator.AnimatorUpdateListener progressUpdateListener = new ValueAnimator.AnimatorUpdateListener() {
+        @Override
+        public void onAnimationUpdate(ValueAnimator valueAnimator) {
+            toFloatingModeProgress = (float) valueAnimator.getAnimatedValue();
+            if (delegate != null) {
+                delegate.onChange(toFloatingModeProgress, measuredAsFloatingMode);
+            }
+            invalidate();
+        }
     };
 
     ValueAnimator mutedAnimator;
@@ -94,6 +100,11 @@ public class VoIPFloatingLayout extends FrameLayout {
 
     OnClickListener tapListener;
 
+    private VoIPFloatingLayoutDelegate delegate;
+
+    public interface VoIPFloatingLayoutDelegate {
+        void onChange(float progress, boolean value);
+    }
 
     public VoIPFloatingLayout(@NonNull Context context) {
         super(context);
@@ -139,6 +150,9 @@ public class VoIPFloatingLayout extends FrameLayout {
                 setTranslationY(0);
             }
         }
+        if (delegate != null) {
+            delegate.onChange(toFloatingModeProgress, measuredAsFloatingMode);
+        }
 
         super.onMeasure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
 
@@ -164,6 +178,10 @@ public class VoIPFloatingLayout extends FrameLayout {
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
         return true;
+    }
+
+    public void setDelegate(VoIPFloatingLayoutDelegate voIPFloatingLayoutDelegate) {
+        delegate = voIPFloatingLayoutDelegate;
     }
 
     long startTime;

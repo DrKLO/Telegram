@@ -448,6 +448,8 @@ public class VoIPPiPView implements VoIPService.StateListener, NotificationCente
             callingUserIsVideo = service.getRemoteVideoState() == Instance.VIDEO_STATE_ACTIVE;
             currentUserIsVideo = service.getVideoState(false) == Instance.VIDEO_STATE_ACTIVE || service.getVideoState(false) == Instance.VIDEO_STATE_PAUSED;
             currentUserTextureView.renderer.setMirror(service.isFrontFaceCamera());
+            currentUserTextureView.setIsScreencast(service.isScreencast());
+            currentUserTextureView.setScreenshareMiniProgress(1.0f, false);
         }
 
         if (!animated) {

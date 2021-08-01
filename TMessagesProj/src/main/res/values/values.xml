@@ -2,4 +2,5 @@
 <resources>
     <bool name="isTablet">false</bool>
     <dimen name="custom_notification_corner_radius">2dip</dimen>
+    <dimen name="app_widget_background_corner_radius">16dp</dimen>
 </resources>

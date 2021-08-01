@@ -47,6 +47,7 @@ public:
     int64_t startTimeMillis = 0;
     int32_t minStartTime = 0;
     int32_t lastResendTime = 0;
+    bool isResending = false;
     int32_t instanceNum = 0;
     uint32_t serverFailureCount = 0;
     TLObject *rawRequest;

@@ -35,6 +35,7 @@ public:
 	void setInputVolume(float level) override;
 	void setOutputVolume(float level) override;
 	void setAudioOutputDuckingEnabled(bool enabled) override;
+    void addExternalAudioSamples(std::vector<uint8_t> &&samples) override;
     void setIsLowBatteryLevel(bool isLowBatteryLevel) override;
 	std::string getLastError() override;
 	std::string getDebugInfo() override;

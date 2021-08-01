@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <memory>
 
 namespace webrtc {
 class VideoTrackSourceInterface;

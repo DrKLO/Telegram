@@ -53,20 +53,24 @@ public class EmptyTextProgressView extends FrameLayout {
         textView.setText(LocaleController.getString("NoResult", R.string.NoResult));
         addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
-        progressView.setAlpha(0f);
-        textView.setAlpha(0f);
+        AndroidUtilities.updateViewVisibilityAnimated(textView, false, 2f, false);
+        AndroidUtilities.updateViewVisibilityAnimated(progressView, false, 1f, false);
 
         setOnTouchListener((v, event) -> true);
     }
 
     public void showProgress() {
-        textView.animate().alpha(0f).setDuration(150).start();
-        progressView.animate().alpha(1f).setDuration(150).start();
+        showProgress(true);
+    }
+
+    public void showProgress(boolean animated) {
+        AndroidUtilities.updateViewVisibilityAnimated(textView, false, 0.9f, animated);
+        AndroidUtilities.updateViewVisibilityAnimated(progressView, true, 1f, animated);
     }
 
     public void showTextView() {
-        textView.animate().alpha(1f).setDuration(150).start();
-        progressView.animate().alpha(0f).setDuration(150).start();
+        AndroidUtilities.updateViewVisibilityAnimated(textView, true, 0.9f, true);
+        AndroidUtilities.updateViewVisibilityAnimated(progressView, false, 1f, true);
     }
 
     public void setText(String text) {
@@ -123,12 +127,16 @@ public class EmptyTextProgressView extends FrameLayout {
 
             int x = (width - child.getMeasuredWidth()) / 2;
             int y;
-            if (showAtPos == 2) {
-                y = (AndroidUtilities.dp(100) - child.getMeasuredHeight()) / 2 + getPaddingTop();
-            } else if (showAtPos == 1) {
-                y = (height / 2 - child.getMeasuredHeight()) / 2 + getPaddingTop();
-            } else {
+            if (child == progressView && progressView instanceof FlickerLoadingView) {
                 y = (height - child.getMeasuredHeight()) / 2 + getPaddingTop();
+            } else {
+                if (showAtPos == 2) {
+                    y = (AndroidUtilities.dp(100) - child.getMeasuredHeight()) / 2 + getPaddingTop();
+                } else if (showAtPos == 1) {
+                    y = (height / 2 - child.getMeasuredHeight()) / 2 + getPaddingTop();
+                } else {
+                    y = (height - child.getMeasuredHeight()) / 2 + getPaddingTop();
+                }
             }
             child.layout(x, y, x + child.getMeasuredWidth(), y + child.getMeasuredHeight());
         }

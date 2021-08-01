@@ -61,6 +61,7 @@ public:
         std::function<void(rtc::CopyOnWriteBuffer const &, bool)> transportMessageReceived,
         std::function<void(bool)> dataChannelStateUpdated,
         std::function<void(std::string const &)> dataChannelMessageReceived,
+        std::function<void(uint32_t, uint8_t, bool)> audioActivityUpdated,
         std::shared_ptr<Threads> threads);
     ~GroupNetworkManager();
 
@@ -73,10 +74,13 @@ public:
 
     void sendDataChannelMessage(std::string const &message);
 
+    void setOutgoingVoiceActivity(bool isSpeech);
+
     webrtc::RtpTransport *getRtpTransport();
 
 private:
     void resetDtlsSrtpTransport();
+    void restartDataChannel();
     void checkConnectionTimeout();
     void candidateGathered(cricket::IceTransportInternal *transport, const cricket::Candidate &candidate);
     void candidateGatheringState(cricket::IceTransportInternal *transport);
@@ -98,6 +102,7 @@ private:
     std::function<void(rtc::CopyOnWriteBuffer const &, bool)> _transportMessageReceived;
     std::function<void(bool)> _dataChannelStateUpdated;
     std::function<void(std::string const &)> _dataChannelMessageReceived;
+    std::function<void(uint32_t, uint8_t, bool)> _audioActivityUpdated;
 
     std::unique_ptr<rtc::NetworkMonitorFactory> _networkMonitorFactory;
     std::unique_ptr<rtc::BasicPacketSocketFactory> _socketFactory;

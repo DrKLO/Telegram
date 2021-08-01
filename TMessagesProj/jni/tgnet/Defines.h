@@ -19,7 +19,6 @@
 #define USE_DEBUG_SESSION false
 #define READ_BUFFER_SIZE 1024 * 128
 //#define DEBUG_VERSION
-#define USE_OLD_KEYS
 #define PFS_ENABLED 1
 #define DEFAULT_DATACENTER_ID INT_MAX
 #define DC_UPDATE_TIME 60 * 60
@@ -60,6 +59,7 @@ typedef struct NetworkMessage {
     std::unique_ptr<TL_message> message;
     bool invokeAfter = false;
     bool needQuickAck = false;
+    bool forceContainer = false;
     int32_t requestId;
 } NetworkMessage;
 
@@ -168,7 +168,8 @@ enum RequestFlag {
     RequestFlagForceDownload = 32,
     RequestFlagInvokeAfter = 64,
     RequestFlagNeedQuickAck = 128,
-    RequestFlagUseUnboundKey = 256
+    RequestFlagUseUnboundKey = 256,
+    RequestFlagResendAfter = 512
 };
 
 inline std::string to_string_int32(int32_t value) {

@@ -54,8 +54,8 @@ public class ViewPagerFixed extends FrameLayout {
 
     int currentPosition;
     int nextPosition;
-    private View viewPages[];
-    private int viewTypes[];
+    private View[] viewPages;
+    private int[] viewTypes;
 
     protected SparseArray<View> viewsByType = new SparseArray<>();
 
@@ -945,11 +945,6 @@ public class ViewPagerFixed extends FrameLayout {
                     };
                     linearSmoothScroller.setTargetPosition(position);
                     startSmoothScroll(linearSmoothScroller);
-                }
-
-                @Override
-                public int scrollHorizontallyBy(int dx, RecyclerView.Recycler recycler, RecyclerView.State state) {
-                    return super.scrollHorizontallyBy(dx, recycler, state);
                 }
 
                 @Override

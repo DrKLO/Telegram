@@ -349,6 +349,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 
 		private ProfileSearchCell profileSearchCell;
 		private ProgressButton button;
+		private TLRPC.Chat currentChat;
 
 		public GroupCallCell(Context context) {
 			super(context);
@@ -385,6 +386,10 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 					waitingForLoadButton = button;
 				}
 			});
+		}
+
+		public void setChat(TLRPC.Chat chat) {
+			currentChat = chat;
 		}
 	}
 
@@ -484,9 +489,9 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 					presentFragment(new ChatActivity(args), true);
 				}
 			} else if (view instanceof GroupCallCell) {
-				Integer id = activeGroupCalls.get(position - listViewAdapter.activeStartRow);
+				GroupCallCell cell = (GroupCallCell) view;
 				Bundle args = new Bundle();
-				args.putInt("chat_id", id);
+				args.putInt("chat_id", cell.currentChat.id);
 				getNotificationCenter().postNotificationName(NotificationCenter.closeChats);
 				presentFragment(new ChatActivity(args), true);
 			}
@@ -1078,6 +1083,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 					Integer chatId = activeGroupCalls.get(position);
 					TLRPC.Chat chat = getMessagesController().getChat(chatId);
 					GroupCallCell cell = (GroupCallCell) holder.itemView;
+					cell.setChat(chat);
 					cell.button.setTag(chat.id);
 					String text;
 					if (ChatObject.isChannel(chat) && !chat.megagroup) {

@@ -169,8 +169,10 @@ struct InstanceHolder {
     std::unique_ptr<Instance> nativeInstance;
     std::unique_ptr<GroupInstanceCustomImpl> groupNativeInstance;
     std::shared_ptr<tgcalls::VideoCaptureInterface> _videoCapture;
+    std::shared_ptr<tgcalls::VideoCaptureInterface> _screenVideoCapture;
     std::shared_ptr<PlatformContext> _platformContext;
     std::map<std::string, SetVideoSink> remoteGroupSinks;
+    bool useScreencast = false;
 };
 
 jlong getInstanceHolderId(JNIEnv *env, jobject obj) {
@@ -392,38 +394,40 @@ JNIEXPORT jlong JNICALL Java_org_telegram_messenger_voip_NativeInstance_makeGrou
                 });
             },
             .videoCapture = videoCapture,
-            .requestBroadcastPart = [](std::shared_ptr<PlatformContext> platformContext, int64_t timestamp, int64_t duration, std::function<void(BroadcastPart &&)> callback) -> std::shared_ptr<BroadcastPartTask> {
-                std::shared_ptr<BroadcastPartTask> task = std::make_shared<BroadcastPartTaskJava>(platformContext, callback, timestamp);
-                ((AndroidContext *) platformContext.get())->streamTask = task;
-                tgvoip::jni::DoWithJNI([platformContext, timestamp, duration, task](JNIEnv *env) {
-                    jobject globalRef = ((AndroidContext *) platformContext.get())->getJavaInstance();
-                    env->CallVoidMethod(globalRef, env->GetMethodID(NativeInstanceClass, "onRequestBroadcastPart", "(JJ)V"), timestamp, duration);
-                });
-                return task;
-            },
             .videoContentType = screencast ? VideoContentType::Screencast : VideoContentType::Generic,
             .initialEnableNoiseSuppression = (bool) noiseSupression,
-            .requestMediaChannelDescriptions = [platformContext](std::vector<uint32_t> const &ssrcs, std::function<void(std::vector<MediaChannelDescription> &&)> callback) -> std::shared_ptr<RequestMediaChannelDescriptionTask> {
-                std::shared_ptr<RequestMediaChannelDescriptionTaskJava> task = std::make_shared<RequestMediaChannelDescriptionTaskJava>(platformContext, callback);
-                ((AndroidContext *) platformContext.get())->descriptionTasks.push_back(task);
-                tgvoip::jni::DoWithJNI([platformContext, ssrcs, task](JNIEnv *env) {
-                    unsigned int size = ssrcs.size();
-                    jintArray intArray = env->NewIntArray(size);
-
-                    jint intFill[size];
-                    for (int a = 0; a < size; a++) {
-                        intFill[a] = ssrcs[a];
-                    }
-                    env->SetIntArrayRegion(intArray, 0, size, intFill);
-
-                    jobject globalRef = ((AndroidContext *) platformContext.get())->getJavaInstance();
-                    env->CallVoidMethod(globalRef, env->GetMethodID(NativeInstanceClass, "onParticipantDescriptionsRequired", "(J[I)V"), (jlong) task.get(), intArray);
-                    env->DeleteLocalRef(intArray);
-                });
-                return task;
-            },
             .platformContext = platformContext
     };
+    if (!screencast) {
+        descriptor.requestBroadcastPart = [](std::shared_ptr<PlatformContext> platformContext, int64_t timestamp, int64_t duration, std::function<void(BroadcastPart &&)> callback) -> std::shared_ptr<BroadcastPartTask> {
+            std::shared_ptr<BroadcastPartTask> task = std::make_shared<BroadcastPartTaskJava>(platformContext, callback, timestamp);
+            ((AndroidContext *) platformContext.get())->streamTask = task;
+            tgvoip::jni::DoWithJNI([platformContext, timestamp, duration, task](JNIEnv *env) {
+                jobject globalRef = ((AndroidContext *) platformContext.get())->getJavaInstance();
+                env->CallVoidMethod(globalRef, env->GetMethodID(NativeInstanceClass, "onRequestBroadcastPart", "(JJ)V"), timestamp, duration);
+            });
+            return task;
+        };
+        descriptor.requestMediaChannelDescriptions = [platformContext](std::vector<uint32_t> const &ssrcs, std::function<void(std::vector<MediaChannelDescription> &&)> callback) -> std::shared_ptr<RequestMediaChannelDescriptionTask> {
+            std::shared_ptr<RequestMediaChannelDescriptionTaskJava> task = std::make_shared<RequestMediaChannelDescriptionTaskJava>(platformContext, callback);
+            ((AndroidContext *) platformContext.get())->descriptionTasks.push_back(task);
+            tgvoip::jni::DoWithJNI([platformContext, ssrcs, task](JNIEnv *env) {
+                unsigned int size = ssrcs.size();
+                jintArray intArray = env->NewIntArray(size);
+
+                jint intFill[size];
+                for (int a = 0; a < size; a++) {
+                    intFill[a] = ssrcs[a];
+                }
+                env->SetIntArrayRegion(intArray, 0, size, intFill);
+
+                jobject globalRef = ((AndroidContext *) platformContext.get())->getJavaInstance();
+                env->CallVoidMethod(globalRef, env->GetMethodID(NativeInstanceClass, "onParticipantDescriptionsRequired", "(J[I)V"), (jlong) task.get(), intArray);
+                env->DeleteLocalRef(intArray);
+            });
+            return task;
+        };
+    }
 
     auto *holder = new InstanceHolder;
     holder->groupNativeInstance = std::make_unique<GroupInstanceCustomImpl>(std::move(descriptor));
@@ -846,9 +850,9 @@ JNIEXPORT jlong JNICALL Java_org_telegram_messenger_voip_NativeInstance_createVi
     initWebRTC(env);
     std::unique_ptr<VideoCaptureInterface> capture;
     if (type == 0 || type == 1) {
-        capture = tgcalls::VideoCaptureInterface::Create(StaticThreads::getThreads(), type == 1 ? "front" : "back", std::make_shared<AndroidContext>(env, nullptr, false));
+        capture = tgcalls::VideoCaptureInterface::Create(StaticThreads::getThreads(), type == 1 ? "front" : "back", false, std::make_shared<AndroidContext>(env, nullptr, false));
     } else {
-        capture = tgcalls::VideoCaptureInterface::Create(StaticThreads::getThreads(), "screen", std::make_shared<AndroidContext>(env, nullptr, true));
+        capture = tgcalls::VideoCaptureInterface::Create(StaticThreads::getThreads(), "screen", true, std::make_shared<AndroidContext>(env, nullptr, true));
     }
     capture->setOutput(webrtc::JavaToNativeVideoSink(env, localSink));
     capture->setState(VideoState::Active);
@@ -864,6 +868,15 @@ JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_activateV
     }
     auto capturer = reinterpret_cast<VideoCaptureInterface *>(videoCapturer);
     capturer->setState(VideoState::Active);
+}
+
+JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_clearVideoCapturer(JNIEnv *env, jobject obj) {
+    InstanceHolder *instance = getInstanceHolder(env, obj);
+    if (instance->nativeInstance) {
+        instance->nativeInstance->setVideoCapture(nullptr);
+    } else if (instance->groupNativeInstance) {
+        instance->groupNativeInstance->setVideoSource(nullptr);
+    }
 }
 
 JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_destroyVideoCapturer(JNIEnv *env, jclass clazz, jlong videoCapturer) {
@@ -899,24 +912,35 @@ JNIEXPORT jboolean JNICALL Java_org_telegram_messenger_voip_NativeInstance_hasVi
 
 JNIEXPORT void Java_org_telegram_messenger_voip_NativeInstance_setVideoState(JNIEnv *env, jobject obj, jint state) {
     InstanceHolder *instance = getInstanceHolder(env, obj);
-    if (instance->_videoCapture == nullptr) {
+    std::shared_ptr<tgcalls::VideoCaptureInterface> capturer = instance->useScreencast ? instance->_screenVideoCapture : instance->_videoCapture;
+    if (capturer == nullptr) {
         return;
     }
-    instance->_videoCapture->setState(static_cast<VideoState>(state));
+    capturer->setState(static_cast<VideoState>(state));
 }
 
-JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_setupOutgoingVideo(JNIEnv *env, jobject obj, jobject localSink, jboolean front) {
+JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_setupOutgoingVideo(JNIEnv *env, jobject obj, jobject localSink, jint type) {
     InstanceHolder *instance = getInstanceHolder(env, obj);
-    if (instance->_videoCapture) {
-        return;
+    std::shared_ptr<tgcalls::VideoCaptureInterface> capturer;
+    if (type == 0 || type == 1) {
+        if (instance->_videoCapture == nullptr) {
+            instance->_videoCapture = tgcalls::VideoCaptureInterface::Create(StaticThreads::getThreads(), type == 1 ? "front" : "back", false, instance->_platformContext);
+        }
+        capturer = instance->_videoCapture;
+        instance->useScreencast = false;
+    } else {
+        if (instance->_screenVideoCapture == nullptr) {
+            instance->_screenVideoCapture = tgcalls::VideoCaptureInterface::Create(StaticThreads::getThreads(), "screen", true, instance->_platformContext);
+        }
+        capturer = instance->_screenVideoCapture;
+        instance->useScreencast = true;
     }
-    instance->_videoCapture = tgcalls::VideoCaptureInterface::Create(StaticThreads::getThreads(), front ? "front" : "back", instance->_platformContext);
-    instance->_videoCapture->setOutput(webrtc::JavaToNativeVideoSink(env, localSink));
-    instance->_videoCapture->setState(VideoState::Active);
+    capturer->setOutput(webrtc::JavaToNativeVideoSink(env, localSink));
+    capturer->setState(VideoState::Active);
     if (instance->nativeInstance) {
-        instance->nativeInstance->setVideoCapture(instance->_videoCapture);
+        instance->nativeInstance->setVideoCapture(capturer);
     } else if (instance->groupNativeInstance) {
-        instance->groupNativeInstance->setVideoCapture(instance->_videoCapture);
+        instance->groupNativeInstance->setVideoCapture(capturer);
     }
 }
 
@@ -931,6 +955,7 @@ JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_setupOutg
     instance->_videoCapture->setState(VideoState::Active);
     if (instance->nativeInstance) {
         instance->nativeInstance->setVideoCapture(instance->_videoCapture);
+        instance->useScreencast = false;
     } else if (instance->groupNativeInstance) {
         instance->groupNativeInstance->setVideoCapture(instance->_videoCapture);
     }

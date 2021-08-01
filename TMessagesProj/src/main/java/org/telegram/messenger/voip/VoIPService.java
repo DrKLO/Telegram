@@ -114,6 +114,7 @@ import org.telegram.ui.Components.JoinCallAlert;
 import org.telegram.ui.Components.voip.VoIPHelper;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.VoIPFeedbackActivity;
+import org.telegram.ui.VoIPFragment;
 import org.telegram.ui.VoIPPermissionActivity;
 import org.webrtc.VideoFrame;
 import org.webrtc.VideoSink;
@@ -194,6 +195,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 	private boolean notificationsDisabled;
 	private boolean switchingCamera;
 	private boolean isFrontFaceCamera = true;
+	private boolean isPrivateScreencast;
 	private String lastError;
 	private PowerManager.WakeLock proximityWakelock;
 	private PowerManager.WakeLock cpuWakelock;
@@ -444,6 +446,10 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		return isFrontFaceCamera;
 	}
 
+	public boolean isScreencast() {
+		return isPrivateScreencast;
+	}
+
 	public void setMicMute(boolean mute, boolean hold, boolean send) {
 		if (micMute == mute || micSwitching) {
 			return;
@@ -468,10 +474,8 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			}
 		}
 		unmutedByHold = !micMute && hold;
-		for (int a = 0; a < tgVoip.length; a++) {
-			if (tgVoip[a] != null) {
-				tgVoip[a].setMuteMicrophone(mute);
-			}
+		if (tgVoip[CAPTURE_DEVICE_CAMERA] != null) {
+			tgVoip[CAPTURE_DEVICE_CAMERA].setMuteMicrophone(mute);
 		}
 		for (StateListener l : stateListeners) {
 			l.onAudioSettingsChanged();
@@ -1052,11 +1056,17 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		return currentState != STATE_WAIT_INIT && currentState != STATE_CREATING;
 	}
 
-	public void requestVideoCall() {
+	public void requestVideoCall(boolean screencast) {
 		if (tgVoip[CAPTURE_DEVICE_CAMERA] == null) {
 			return;
 		}
-		tgVoip[CAPTURE_DEVICE_CAMERA].setupOutgoingVideo(localSink[CAPTURE_DEVICE_CAMERA], isFrontFaceCamera);
+		if (!screencast && captureDevice[CAPTURE_DEVICE_CAMERA] != 0) {
+			tgVoip[CAPTURE_DEVICE_CAMERA].setupOutgoingVideoCreated(captureDevice[CAPTURE_DEVICE_CAMERA]);
+			destroyCaptureDevice[CAPTURE_DEVICE_CAMERA] = false;
+		} else {
+			tgVoip[CAPTURE_DEVICE_CAMERA].setupOutgoingVideo(localSink[CAPTURE_DEVICE_CAMERA], screencast ? 2 : (isFrontFaceCamera ? 1 : 0));
+		}
+		isPrivateScreencast = screencast;
 	}
 
 	public void switchCamera() {
@@ -1078,63 +1088,91 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		} else {
 			deviceType = isFrontFaceCamera ? 1 : 0;
 		}
-		if (index == CAPTURE_DEVICE_SCREEN) {
-			if (captureDevice[index] != 0) {
-				return;
+		if (groupCall == null) {
+			if (!isPrivateScreencast && screencast) {
+				setVideoState(false, Instance.VIDEO_STATE_INACTIVE);
 			}
-			captureDevice[index] = NativeInstance.createVideoCapturer(localSink[index], deviceType);
-			createGroupInstance(CAPTURE_DEVICE_SCREEN, false);
-			setVideoState(true, Instance.VIDEO_STATE_ACTIVE);
-			AccountInstance.getInstance(currentAccount).getNotificationCenter().postNotificationName(NotificationCenter.groupCallScreencastStateChanged);
+			isPrivateScreencast = screencast;
+			if (tgVoip[CAPTURE_DEVICE_CAMERA] != null) {
+				tgVoip[CAPTURE_DEVICE_CAMERA].clearVideoCapturer();
+			}
+		}
+		if (index == CAPTURE_DEVICE_SCREEN) {
+			if (groupCall != null) {
+				if (captureDevice[index] != 0) {
+					return;
+				}
+				captureDevice[index] = NativeInstance.createVideoCapturer(localSink[index], deviceType);
+				createGroupInstance(CAPTURE_DEVICE_SCREEN, false);
+				setVideoState(true, Instance.VIDEO_STATE_ACTIVE);
+				AccountInstance.getInstance(currentAccount).getNotificationCenter().postNotificationName(NotificationCenter.groupCallScreencastStateChanged);
+			} else {
+				requestVideoCall(true);
+				setVideoState(true, Instance.VIDEO_STATE_ACTIVE);
+				if (VoIPFragment.getInstance() != null) {
+					VoIPFragment.getInstance().onScreenCastStart();
+				}
+			}
 		} else {
 			if (captureDevice[index] != 0 || tgVoip[index] == null) {
 				if (tgVoip[index] != null && captureDevice[index] != 0) {
 					tgVoip[index].activateVideoCapturer(captureDevice[index]);
 				}
-				return;
+				if (captureDevice[index] != 0) {
+					return;
+				}
 			}
 			captureDevice[index] = NativeInstance.createVideoCapturer(localSink[index], deviceType);
 		}
 	}
 
 	public void setupCaptureDevice(boolean screencast, boolean micEnabled) {
-		int index = screencast ? CAPTURE_DEVICE_SCREEN : CAPTURE_DEVICE_CAMERA;
-		if (captureDevice[index] == 0 || tgVoip[index] == null) {
-			return;
+		if (!screencast) {
+			int index = screencast ? CAPTURE_DEVICE_SCREEN : CAPTURE_DEVICE_CAMERA;
+			if (captureDevice[index] == 0 || tgVoip[index] == null) {
+				return;
+			}
+			tgVoip[index].setupOutgoingVideoCreated(captureDevice[index]);
+			destroyCaptureDevice[index] = false;
+			videoState[index] = Instance.VIDEO_STATE_ACTIVE;
 		}
-		tgVoip[index].setupOutgoingVideoCreated(captureDevice[index]);
-		destroyCaptureDevice[index] = false;
-		videoState[index] = Instance.VIDEO_STATE_ACTIVE;
 		if (micMute == micEnabled) {
 			setMicMute(!micEnabled, false, false);
 			micSwitching = true;
 		}
-		if (!screencast && groupCall != null) {
-			editCallMember(UserConfig.getInstance(currentAccount).getCurrentUser(), !micEnabled, videoState[index] != Instance.VIDEO_STATE_ACTIVE, null, null, () -> micSwitching = false);
+		if (groupCall != null) {
+			editCallMember(UserConfig.getInstance(currentAccount).getCurrentUser(), !micEnabled, videoState[CAPTURE_DEVICE_CAMERA] != Instance.VIDEO_STATE_ACTIVE, null, null, () -> micSwitching = false);
+		}
+	}
+
+	public void clearCamera() {
+		if (tgVoip[CAPTURE_DEVICE_CAMERA] != null) {
+			tgVoip[CAPTURE_DEVICE_CAMERA].clearVideoCapturer();
 		}
 	}
 
 	public void setVideoState(boolean screencast, int state) {
 		int index = screencast ? CAPTURE_DEVICE_SCREEN : CAPTURE_DEVICE_CAMERA;
-		if (tgVoip[index] == null) {
+		int trueIndex = groupCall != null ? index : CAPTURE_DEVICE_CAMERA;
+		if (tgVoip[trueIndex] == null) {
 			if (captureDevice[index] != 0) {
-				videoState[index] = state;
-				NativeInstance.setVideoStateCapturer(captureDevice[index], videoState[index]);
+				videoState[trueIndex] = state;
+				NativeInstance.setVideoStateCapturer(captureDevice[index], videoState[trueIndex]);
 			} else if (state == Instance.VIDEO_STATE_ACTIVE && currentState != STATE_BUSY && currentState != STATE_ENDED) {
-				captureDevice[index] = NativeInstance.createVideoCapturer(localSink[index], isFrontFaceCamera ? 1 : 0);
-				videoState[index] = Instance.VIDEO_STATE_ACTIVE;
+				captureDevice[index] = NativeInstance.createVideoCapturer(localSink[trueIndex], isFrontFaceCamera ? 1 : 0);
+				videoState[trueIndex] = Instance.VIDEO_STATE_ACTIVE;
 			}
 			return;
 		}
-		videoState[index] = state;
-		tgVoip[index].setVideoState(videoState[index]);
+		videoState[trueIndex] = state;
+		tgVoip[trueIndex].setVideoState(videoState[trueIndex]);
 		if (captureDevice[index] != 0) {
-			NativeInstance.setVideoStateCapturer(captureDevice[index], videoState[index]);
-		}
-		if (!screencast && groupCall != null) {
-			editCallMember(UserConfig.getInstance(currentAccount).getCurrentUser(), null, videoState[CAPTURE_DEVICE_CAMERA] != Instance.VIDEO_STATE_ACTIVE, null, null, null);
+			NativeInstance.setVideoStateCapturer(captureDevice[index], videoState[trueIndex]);
 		}
 		if (!screencast) {
+			if (groupCall != null) {
+				editCallMember(UserConfig.getInstance(currentAccount).getCurrentUser(), null, videoState[CAPTURE_DEVICE_CAMERA] != Instance.VIDEO_STATE_ACTIVE, null, null, null);
+			}
 			checkIsNear();
 		}
 	}
@@ -1766,7 +1804,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		}
 	}
 
-	private void startScreenCapture(String json) {
+	private void startScreenCapture(int ssrc, String json) {
 		if (getSharedInstance() == null || groupCall == null) {
 			return;
 		}
@@ -1777,6 +1815,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		req.params.data = json;
 		ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
 			if (response != null) {
+				AndroidUtilities.runOnUIThread(() -> mySource[CAPTURE_DEVICE_SCREEN] = ssrc);
 				TLRPC.Updates updates = (TLRPC.Updates) response;
 				AndroidUtilities.runOnUIThread(() -> {
 					if (tgVoip[CAPTURE_DEVICE_SCREEN] != null) {
@@ -1794,10 +1833,14 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 									TLRPC.TL_groupCallParticipant participant = updateGroupCallParticipants.participants.get(b);
 									if (MessageObject.getPeerId(participant.peer) == selfId) {
 										if (participant.presentation != null) {
-											for (int c = 0, N3 = participant.presentation.source_groups.size(); c < N3; c++) {
-												TLRPC.TL_groupCallParticipantVideoSourceGroup sourceGroup = participant.presentation.source_groups.get(c);
-												if (sourceGroup.sources.size() > 0) {
-													mySource[CAPTURE_DEVICE_SCREEN] = sourceGroup.sources.get(0);
+											if ((participant.presentation.flags & 2) != 0) {
+												mySource[CAPTURE_DEVICE_SCREEN] = participant.presentation.audio_source;
+											} else {
+												for (int c = 0, N3 = participant.presentation.source_groups.size(); c < N3; c++) {
+													TLRPC.TL_groupCallParticipantVideoSourceGroup sourceGroup = participant.presentation.source_groups.get(c);
+													if (sourceGroup.sources.size() > 0) {
+														mySource[CAPTURE_DEVICE_SCREEN] = sourceGroup.sources.get(0);
+													}
 												}
 											}
 										}
@@ -1812,7 +1855,9 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				startGroupCheckShortpoll();
 			} else {
 				AndroidUtilities.runOnUIThread(() -> {
-					if ("JOIN_AS_PEER_INVALID".equals(error.text)) {
+					if ("GROUPCALL_VIDEO_TOO_MUCH".equals(error.text)) {
+						groupCall.reloadGroupCall();
+					} else if ("JOIN_AS_PEER_INVALID".equals(error.text)) {
 						TLRPC.ChatFull chatFull = MessagesController.getInstance(currentAccount).getChatFull(chat.id);
 						if (chatFull != null) {
 							if (chatFull instanceof TLRPC.TL_chatFull) {
@@ -1911,9 +1956,9 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		public int audioSsrc;
 		public TLRPC.TL_groupCallParticipant participant;
 
-		public RequestedParticipant(TLRPC.TL_groupCallParticipant p) {
+		public RequestedParticipant(TLRPC.TL_groupCallParticipant p, int ssrc) {
 			participant = p;
-			audioSsrc = p.source;
+			audioSsrc = ssrc;
 		}
 	}
 
@@ -1937,7 +1982,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			if (participants == null) {
 				participants = new ArrayList<>();
 			}
-			participants.add(new RequestedParticipant(p));
+			participants.add(new RequestedParticipant(p, unknown[a]));
 		}
 		if (participants != null) {
 			int[] ssrcs = new int[participants.size()];
@@ -1980,7 +2025,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				if (type == CAPTURE_DEVICE_CAMERA) {
 					startGroupCall(ssrc, json, true);
 				} else {
-					startScreenCapture(json);
+					startScreenCapture(ssrc, json);
 				}
 			}, (uids, levels, voice) -> {
 				if (sharedInstance == null || groupCall == null || type != CAPTURE_DEVICE_CAMERA) {
@@ -2152,16 +2197,19 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 					continue;
 				}
 				if (participant.muted_by_you) {
-					instance.setVolume(participant.source, 0);
+					setParticipantVolume(participant, 0);
 				} else {
-					instance.setVolume(participant.source, ChatObject.getParticipantVolume(participant) / 10000.0);
+					setParticipantVolume(participant, ChatObject.getParticipantVolume(participant));
 				}
 			}
 		}
 	}
 
-	public void setParticipantVolume(int ssrc, int volume) {
-		tgVoip[CAPTURE_DEVICE_CAMERA].setVolume(ssrc, volume / 10000.0);
+	public void setParticipantVolume(TLRPC.TL_groupCallParticipant participant, int volume) {
+		tgVoip[CAPTURE_DEVICE_CAMERA].setVolume(participant.source, volume / 10000.0);
+		if (participant.presentation != null && participant.presentation.audio_source != 0) {
+			tgVoip[CAPTURE_DEVICE_CAMERA].setVolume(participant.presentation.audio_source, volume / 10000.0);
+		}
 	}
 
 	public boolean isSwitchingStream() {
@@ -2473,6 +2521,13 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		}
 	}
 
+	protected void onCameraFirstFrameAvailable() {
+		for (int a = 0; a < stateListeners.size(); a++) {
+			StateListener l = stateListeners.get(a);
+			l.onCameraFirstFrameAvailable();
+		}
+	}
+
 	public void registerStateListener(StateListener l) {
 		if (stateListeners.contains(l)) {
 			return;
@@ -2536,6 +2591,10 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		AccountInstance.getInstance(account).getConnectionsManager().sendRequest(req, (response, error) -> {
 			if (response != null) {
 				AccountInstance.getInstance(account).getMessagesController().processUpdates((TLRPC.Updates) response, false);
+			} else if (error != null) {
+				if ("GROUPCALL_VIDEO_TOO_MUCH".equals(error.text)) {
+					groupCall.reloadGroupCall();
+				}
 			}
 			if (onComplete != null) {
 				AndroidUtilities.runOnUIThread(onComplete);
@@ -2628,6 +2687,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 						am.setBluetoothScoOn(true);
 						am.setSpeakerphoneOn(false);
 					}
+					audioRouteToSet = AUDIO_ROUTE_BLUETOOTH;
 					break;
 				case 1:
 					needSwitchToBluetoothAfterScoActivates = false;
@@ -2638,6 +2698,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 					}
 					am.setSpeakerphoneOn(false);
 					am.setBluetoothScoOn(false);
+					audioRouteToSet = AUDIO_ROUTE_EARPIECE;
 					break;
 				case 0:
 					needSwitchToBluetoothAfterScoActivates = false;
@@ -2648,6 +2709,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 					}
 					am.setBluetoothScoOn(false);
 					am.setSpeakerphoneOn(true);
+					audioRouteToSet = AUDIO_ROUTE_SPEAKER;
 					break;
 			}
 			updateOutputGainControlState();
@@ -2837,10 +2899,12 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		}
 		stopForeground(true);
 		stopRinging();
-		if (ApplicationLoader.mainInterfacePaused || !ApplicationLoader.isScreenOn) {
-			MessagesController.getInstance(currentAccount).ignoreSetOnline = false;
+		if (currentAccount >= 0) {
+			if (ApplicationLoader.mainInterfacePaused || !ApplicationLoader.isScreenOn) {
+				MessagesController.getInstance(currentAccount).ignoreSetOnline = false;
+			}
+			NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.appDidLogout);
 		}
-		NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.appDidLogout);
 		SensorManager sm = (SensorManager) getSystemService(SENSOR_SERVICE);
 		Sensor proximity = sm.getDefaultSensor(Sensor.TYPE_PROXIMITY);
 		if (proximity != null) {
@@ -2944,15 +3008,17 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			}
 		}
 
-		ConnectionsManager.getInstance(currentAccount).setAppPaused(true, false);
 		VoIPHelper.lastCallTime = SystemClock.elapsedRealtime();
 
 		setSinks(null, null);
 		if (onDestroyRunnable != null) {
 			onDestroyRunnable.run();
 		}
-		if (ChatObject.isChannel(chat)) {
-			MessagesController.getInstance(currentAccount).startShortPoll(chat, classGuid, true);
+		if (currentAccount >= 0) {
+			ConnectionsManager.getInstance(currentAccount).setAppPaused(true, false);
+			if (ChatObject.isChannel(chat)) {
+				MessagesController.getInstance(currentAccount).startShortPoll(chat, classGuid, true);
+			}
 		}
 	}
 
@@ -3448,6 +3514,11 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 						am.setBluetoothScoOn(speakerphoneStateToSet);
 					} else {
 						am.setSpeakerphoneOn(speakerphoneStateToSet);
+						if (speakerphoneStateToSet) {
+							audioRouteToSet = AUDIO_ROUTE_SPEAKER;
+						} else {
+							audioRouteToSet = AUDIO_ROUTE_EARPIECE;
+						}
 					}
 					updateOutputGainControlState();
 					audioConfigured = true;
@@ -3490,7 +3561,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		}
 		if (event.sensor.getType() == Sensor.TYPE_PROXIMITY) {
 			AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
-			if (isHeadsetPlugged || am.isSpeakerphoneOn() || (isBluetoothHeadsetConnected() && am.isBluetoothScoOn())) {
+			if (audioRouteToSet != AUDIO_ROUTE_EARPIECE || isHeadsetPlugged || am.isSpeakerphoneOn() || (isBluetoothHeadsetConnected() && am.isBluetoothScoOn())) {
 				return;
 			}
 			boolean newIsNear = event.values[0] < Math.min(event.sensor.getMaximumRange(), 3);
@@ -4194,6 +4265,10 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		}
 
 		default void onCameraSwitch(boolean isFrontFace) {
+
+		}
+
+		default void onCameraFirstFrameAvailable() {
 
 		}
 

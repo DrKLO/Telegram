@@ -64,7 +64,6 @@ public:
     network_->DisallowAllInvokes();
     media_ = create("tgc-media" + suffix);
     worker_ = create("tgc-work"  + suffix);
-    process_ = create("tgc-process"  + suffix);
     worker_->DisallowAllInvokes();
     worker_->AllowInvokesToThread(network_.get());
   }
@@ -77,9 +76,6 @@ public:
   }
   rtc::Thread *getWorkerThread() override {
     return worker_.get();
-  }
-  rtc::Thread *getProcessThread() override {
-    return process_.get();
   }
   rtc::scoped_refptr<webrtc::SharedModuleThread> getSharedModuleThread() override {
     // This function must be called from a single thread because of SharedModuleThread implementation
@@ -96,7 +92,6 @@ private:
   Thread network_;
   Thread media_;
   Thread worker_;
-  Thread process_;
   rtc::scoped_refptr<webrtc::SharedModuleThread> shared_module_thread_;
 
   static Thread create(const std::string &name) {
@@ -144,10 +139,6 @@ rtc::Thread *getMediaThread() {
 
 rtc::Thread *getWorkerThread() {
   return getThreads()->getWorkerThread();
-}
-
-rtc::Thread *getProcessThread() {
-  return getThreads()->getProcessThread();
 }
 
 std::shared_ptr<Threads> &getThreads() {

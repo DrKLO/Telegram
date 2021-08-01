@@ -113,6 +113,7 @@ import org.telegram.ui.Cells.TextDetailSettingsCell;
 import org.telegram.ui.Components.BackgroundGradientDrawable;
 import org.telegram.ui.Components.ForegroundColorSpanThemable;
 import org.telegram.ui.Components.ForegroundDetector;
+import org.telegram.ui.Components.HideViewAfterAnimation;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MotionBackgroundDrawable;
 import org.telegram.ui.Components.PickerBottomLayout;
@@ -167,6 +168,7 @@ public class AndroidUtilities {
     public static Point displaySize = new Point();
     public static float screenRefreshRate = 60;
     public static int roundMessageSize;
+    public static int roundPlayingMessageSize;
     public static int roundMessageInset;
     public static boolean incorrectDisplaySizeFix;
     public static Integer photoSize = null;
@@ -190,12 +192,14 @@ public class AndroidUtilities {
     public static Pattern WEB_URL = null;
     public static Pattern BAD_CHARS_PATTERN = null;
     public static Pattern BAD_CHARS_MESSAGE_PATTERN = null;
+    public static Pattern BAD_CHARS_MESSAGE_LONG_PATTERN = null;
 
     static {
         try {
             final String GOOD_IRI_CHAR = "a-zA-Z0-9\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF";
             BAD_CHARS_PATTERN = Pattern.compile("[\u2500-\u25ff]");
-            BAD_CHARS_MESSAGE_PATTERN = Pattern.compile("[\u0300-\u036f]+");
+            BAD_CHARS_MESSAGE_LONG_PATTERN = Pattern.compile("[\u0300-\u036f\u2066-\u2067]+");
+            BAD_CHARS_MESSAGE_PATTERN = Pattern.compile("[\u2066-\u2067]+");
             final Pattern IP_ADDRESS = Pattern.compile(
                     "((25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[1-9])\\.(25[0-5]|2[0-4]"
                             + "[0-9]|[0-1][0-9]{2}|[1-9][0-9]|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1]"
@@ -257,6 +261,14 @@ public class AndroidUtilities {
             return true;
         }
         return false;
+    }
+
+    public static String getSafeString(String str) {
+        try {
+            return BAD_CHARS_MESSAGE_PATTERN.matcher(str).replaceAll("\u200C");
+        } catch (Throwable e) {
+            return str;
+        }
     }
 
     public static CharSequence ellipsizeCenterEnd(CharSequence str, String query, int availableWidth, TextPaint textPaint, int maxSymbols) {
@@ -376,22 +388,6 @@ public class AndroidUtilities {
         String url;
         int start;
         int end;
-    }
-
-    private static Boolean standaloneApp;
-    public static boolean isStandaloneApp() {
-        if (standaloneApp == null) {
-            standaloneApp = "org.telegram.messenger.web".equals(ApplicationLoader.applicationContext.getPackageName());
-        }
-        return standaloneApp;
-    }
-
-    private static Boolean betaApp;
-    public static boolean isBetaApp() {
-        if (betaApp == null) {
-            betaApp = "org.telegram.messenger.beta".equals(ApplicationLoader.applicationContext.getPackageName());
-        }
-        return betaApp;
     }
 
     private static String makeUrl(String url, String[] prefixes, Matcher matcher) {
@@ -1665,8 +1661,10 @@ public class AndroidUtilities {
             if (roundMessageSize == 0) {
                 if (AndroidUtilities.isTablet()) {
                     roundMessageSize = (int) (AndroidUtilities.getMinTabletSide() * 0.6f);
+                    roundPlayingMessageSize = (int) (AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(28));
                 } else {
                     roundMessageSize = (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * 0.6f);
+                    roundPlayingMessageSize = (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y)  - AndroidUtilities.dp(28));
                 }
                 roundMessageInset = dp(2);
             }
@@ -1747,6 +1745,9 @@ public class AndroidUtilities {
     }
 
     public static void runOnUIThread(Runnable runnable, long delay) {
+        if (ApplicationLoader.applicationHandler == null) {
+            return;
+        }
         if (delay == 0) {
             ApplicationLoader.applicationHandler.post(runnable);
         } else {
@@ -1755,6 +1756,9 @@ public class AndroidUtilities {
     }
 
     public static void cancelRunOnUIThread(Runnable runnable) {
+        if (ApplicationLoader.applicationHandler == null) {
+            return;
+        }
         ApplicationLoader.applicationHandler.removeCallbacks(runnable);
     }
 
@@ -1764,7 +1768,7 @@ public class AndroidUtilities {
 
     public static boolean isTablet() {
         if (isTablet == null) {
-            isTablet = ApplicationLoader.applicationContext.getResources().getBoolean(R.bool.isTablet);
+            isTablet = ApplicationLoader.applicationContext != null && ApplicationLoader.applicationContext.getResources().getBoolean(R.bool.isTablet);
         }
         return isTablet;
     }
@@ -3733,12 +3737,7 @@ public class AndroidUtilities {
         } else if (!show && view.getTag() != null){
             view.animate().setListener(null).cancel();
             if (animated) {
-                view.animate().alpha(0).scaleY(scaleFactor).scaleX(scaleFactor).setListener(new AnimatorListenerAdapter() {
-                    @Override
-                    public void onAnimationEnd(Animator animation) {
-                        view.setVisibility(View.GONE);
-                    }
-                }).setDuration(150).start();
+                view.animate().alpha(0).scaleY(scaleFactor).scaleX(scaleFactor).setListener(new HideViewAfterAnimation(view)).setDuration(150).start();
             } else {
                 view.setVisibility(View.GONE);
             }

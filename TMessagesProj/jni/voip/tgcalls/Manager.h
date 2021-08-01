@@ -42,6 +42,8 @@ public:
 	void setInputVolume(float level);
 	void setOutputVolume(float level);
 
+    void addExternalAudioSamples(std::vector<uint8_t> &&samples);
+
 private:
 	void sendSignalingAsync(int delayMs, int cause);
 	void receiveMessage(DecryptedMessage &&message);

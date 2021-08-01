@@ -50,6 +50,7 @@ import org.telegram.ui.Components.BackgroundGradientDrawable;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.HintView;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.MotionBackgroundDrawable;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
@@ -185,7 +186,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                 }
                 backgroundDrawable = newDrawable;
             }
-            if (backgroundDrawable instanceof ColorDrawable || backgroundDrawable instanceof GradientDrawable) {
+            if (backgroundDrawable instanceof ColorDrawable || backgroundDrawable instanceof GradientDrawable || backgroundDrawable instanceof MotionBackgroundDrawable) {
                 backgroundDrawable.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
                 if (backgroundDrawable instanceof BackgroundGradientDrawable) {
                     backgroundGradientDisposable = ((BackgroundGradientDrawable) backgroundDrawable).drawExactBoundsSize(canvas, this);

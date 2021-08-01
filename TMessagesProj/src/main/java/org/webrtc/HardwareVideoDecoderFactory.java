@@ -23,9 +23,6 @@ public class HardwareVideoDecoderFactory extends MediaCodecVideoDecoderFactory {
       new Predicate<MediaCodecInfo>() {
         @Override
         public boolean test(MediaCodecInfo arg) {
-            if (VoIPService.getSharedInstance() != null && VoIPService.getSharedInstance().groupCall != null) {
-                return false;
-            }
             if (!MediaCodecUtils.isHardwareAccelerated(arg)) {
                 return false;
             }
@@ -37,10 +34,16 @@ public class HardwareVideoDecoderFactory extends MediaCodecVideoDecoderFactory {
             for (int a = 0; a < types.length; a++) {
                 switch (types[a]) {
                     case "video/x-vnd.on2.vp8":
+                        if (VoIPService.getSharedInstance() != null && VoIPService.getSharedInstance().groupCall != null) {
+                            return false;
+                        }
                         return config.enable_vp8_decoder;
                     case "video/x-vnd.on2.vp9":
                         return config.enable_vp9_decoder;
                     case "video/avc":
+                        if (VoIPService.getSharedInstance() != null && VoIPService.getSharedInstance().groupCall != null) {
+                            return false;
+                        }
                         return config.enable_h264_decoder;
                     case "video/hevc":
                         return config.enable_h265_decoder;

@@ -130,4 +130,94 @@
         <item name="android:windowFullscreen">false</item>
     </style>
 
+    <!--APP WIDGET-->
+
+    <style name="Base.Theme.TMessages.AppWidget" parent="Theme.TMessages"/>
+
+    <style name="Theme.TMessages.AppWidget" parent="Base.Theme.TMessages.AppWidget">
+        <item name="widgetBackgroundCornerRadius">@dimen/app_widget_background_corner_radius</item>
+
+        <item name="widgetPreviewTitle"/>
+        <item name="widgetPreviewContent"/>
+        <item name="widgetPreviewTime"/>
+        <item name="widgetPreviewDot">0</item>
+        <item name="widgetPreviewImage">@null</item>
+    </style>
+
+    <style name="Theme.TMessages.AppWidget.Preview">
+        <item name="widgetPreviewTitle">Local Weather</item>
+        <item name="widgetPreviewContent">&#9728; 30°C Sunny,</item>
+        <item name="widgetPreviewTime">13:00</item>
+        <item name="widgetPreviewDot">0</item>
+        <item name="widgetPreviewImage">@drawable/widget_avatar_5</item>
+    </style>
+
+    <style name="Theme.TMessages.AppWidget.Preview2">
+        <item name="widgetPreviewTitle">Rex</item>
+        <item name="widgetPreviewContent">It\'s morning in Tokyo &#128526;</item>
+        <item name="widgetPreviewTime">12:00</item>
+        <item name="widgetPreviewDot">2</item>
+        <item name="widgetPreviewImage">@drawable/widget_avatar_7</item>
+    </style>
+
+    <style name="Theme.TMessages.AppWidget.Preview3">
+        <item name="widgetPreviewTitle">Dolph Ingman</item>
+        <item name="widgetPreviewContent">&#128517; Sticker</item>
+        <item name="widgetPreviewTime">11:00</item>
+        <item name="widgetPreviewDot">2</item>
+        <item name="widgetPreviewImage">@drawable/widget_avatar_6</item>
+    </style>
+
+    <style name="Theme.TMessages.AppWidget.Preview4">
+        <item name="widgetPreviewTitle">Doge</item>
+        <item name="widgetPreviewDot">0</item>
+        <item name="widgetPreviewImage">@drawable/widget_avatar_1</item>
+    </style>
+
+    <style name="Theme.TMessages.AppWidget.Preview5">
+        <item name="widgetPreviewTitle">Donald</item>
+        <item name="widgetPreviewDot">2</item>
+        <item name="widgetPreviewImage">@drawable/widget_avatar_4</item>
+    </style>
+
+    <style name="Theme.TMessages.AppWidget.Preview6">
+        <item name="widgetPreviewTitle">Kate</item>
+        <item name="widgetPreviewDot">2</item>
+        <item name="widgetPreviewImage">@drawable/widget_avatar_2</item>
+    </style>
+
+    <style name="Theme.TMessages.AppWidget.Preview7">
+        <item name="widgetPreviewTitle">Nick</item>
+        <item name="widgetPreviewDot">2</item>
+        <item name="widgetPreviewImage">@drawable/widget_avatar_3</item>
+    </style>
+
+    <!-- APP WIDGET STYLES-->
+
+    <style name="Base.TMessages.AppWidget.Background" parent="android:Widget">
+        <item name="android:id">@android:id/background</item>
+        <item name="android:padding">2dp</item>
+    </style>
+
+    <style name="TMessages.AppWidget.Background" parent="Base.TMessages.AppWidget.Background">
+        <item name="android:background">@drawable/widget_bg</item>
+    </style>
+
+    <style name="Base.TMessages.AppWidget.Badge" parent="android:Widget">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">23dp</item>
+        <item name="android:paddingLeft">7dp</item>
+        <item name="android:paddingRight">7dp</item>
+        <item name="android:paddingBottom">1dp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:gravity">center</item>
+        <item name="android:minWidth">23dp</item>
+        <item name="android:textSize">13dp</item>
+        <item name="android:background">@drawable/widget_badge_background</item>
+    </style>
+
+    <style name="TMessages.AppWidget.Badge" parent="Base.TMessages.AppWidget.Badge">
+        <item name="android:textColor">@color/widget_badge</item>
+    </style>
+
 </resources>

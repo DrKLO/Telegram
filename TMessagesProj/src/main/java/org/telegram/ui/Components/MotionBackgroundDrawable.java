@@ -27,6 +27,8 @@ import java.lang.ref.WeakReference;
 
 public class MotionBackgroundDrawable extends Drawable {
 
+    private final static int ANIMATION_CACHE_BITMAPS_COUNT = 3;
+
     private int[] colors = new int[]{
             0xff426D57,
             0xffF7E48B,
@@ -37,7 +39,7 @@ public class MotionBackgroundDrawable extends Drawable {
     private long lastUpdateTime;
     private WeakReference<View> parentView;
 
-    private CubicBezierInterpolator interpolator = new CubicBezierInterpolator(0.33, 0.0, 0.0, 1.0);
+    private final CubicBezierInterpolator interpolator = new CubicBezierInterpolator(0.33, 0.0, 0.0, 1.0);
 
     private int translationY;
 
@@ -48,17 +50,26 @@ public class MotionBackgroundDrawable extends Drawable {
 
     private RectF rect = new RectF();
     private Bitmap currentBitmap;
+    private Bitmap gradientFromBitmap;
+    private Bitmap[] gradientToBitmap = new Bitmap[ANIMATION_CACHE_BITMAPS_COUNT];
     private Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG);
     private Paint paint2 = new Paint(Paint.FILTER_BITMAP_FLAG);
+    private Paint paint3 = new Paint();
     private int intensity = 100;
+    private Canvas gradientCanvas;
+    private Canvas gradientFromCanvas;
 
     private Bitmap patternBitmap;
     private BitmapShader bitmapShader;
     private BitmapShader gradientShader;
     private Matrix matrix;
 
+    private boolean fastAnimation;
+
     private Canvas legacyCanvas;
     private Bitmap legacyBitmap;
+
+    private boolean rotationBack;
 
     private boolean rotatingPreview;
 
@@ -68,12 +79,9 @@ public class MotionBackgroundDrawable extends Drawable {
 
     public MotionBackgroundDrawable() {
         super();
-        currentBitmap = Bitmap.createBitmap(60, 80, Bitmap.Config.ARGB_8888);
-        Utilities.generateGradient(currentBitmap, true, phase, interpolator.getInterpolation(posAnimationProgress), currentBitmap.getWidth(), currentBitmap.getHeight(), currentBitmap.getRowBytes(), colors);
-        if (Build.VERSION.SDK_INT >= 29) {
-            paint2.setBlendMode(BlendMode.SOFT_LIGHT);
-        }
+        init();
     }
+
 
     public MotionBackgroundDrawable(int c1, int c2, int c3, int c4, boolean preview) {
         super();
@@ -82,11 +90,23 @@ public class MotionBackgroundDrawable extends Drawable {
         colors[2] = c3;
         colors[3] = c4;
         isPreview = preview;
+        init();
+    }
+
+    private void init() {
+        currentBitmap = Bitmap.createBitmap(60, 80, Bitmap.Config.ARGB_8888);
+        for (int i = 0; i < ANIMATION_CACHE_BITMAPS_COUNT; i++) {
+            gradientToBitmap[i] = Bitmap.createBitmap(60, 80, Bitmap.Config.ARGB_8888);
+        }
+        gradientCanvas = new Canvas(currentBitmap);
+
+        gradientFromBitmap = Bitmap.createBitmap(60, 80, Bitmap.Config.ARGB_8888);
+        gradientFromCanvas = new Canvas(gradientFromBitmap);
+
+        Utilities.generateGradient(currentBitmap, true, phase, interpolator.getInterpolation(posAnimationProgress), currentBitmap.getWidth(), currentBitmap.getHeight(), currentBitmap.getRowBytes(), colors);
         if (Build.VERSION.SDK_INT >= 29) {
             paint2.setBlendMode(BlendMode.SOFT_LIGHT);
         }
-        currentBitmap = Bitmap.createBitmap(60, 80, Bitmap.Config.ARGB_8888);
-        Utilities.generateGradient(currentBitmap, true, phase, interpolator.getInterpolation(posAnimationProgress), currentBitmap.getWidth(), currentBitmap.getHeight(), currentBitmap.getRowBytes(), colors);
     }
 
     public void setRoundRadius(int rad) {
@@ -99,6 +119,10 @@ public class MotionBackgroundDrawable extends Drawable {
 
     public Bitmap getBitmap() {
         return currentBitmap;
+    }
+
+    public int getIntensity() {
+        return intensity;
     }
 
     public static boolean isDark(int color1, int color2, int color3, int color4) {
@@ -147,12 +171,13 @@ public class MotionBackgroundDrawable extends Drawable {
         return phase;
     }
 
-    public void rotatePreview() {
+    public void rotatePreview(boolean back) {
         if (posAnimationProgress < 1.0f) {
             return;
         }
         rotatingPreview = true;
         posAnimationProgress = 0.0f;
+        rotationBack = back;
         invalidateParent();
     }
 
@@ -167,16 +192,44 @@ public class MotionBackgroundDrawable extends Drawable {
     }
 
     public void switchToNextPosition() {
+        switchToNextPosition(false);
+    }
+
+    public void switchToNextPosition(boolean fast) {
         if (posAnimationProgress < 1.0f) {
             return;
         }
         rotatingPreview = false;
+        rotationBack = false;
+        fastAnimation = fast;
         posAnimationProgress = 0.0f;
         phase--;
         if (phase < 0) {
             phase = 7;
         }
         invalidateParent();
+        gradientFromCanvas.drawBitmap(currentBitmap, 0, 0, null);
+        generateNextGradient();
+    }
+
+    private void generateNextGradient() {
+        for (int i = 0; i < ANIMATION_CACHE_BITMAPS_COUNT; i++) {
+            float p = (i + 1) / (float) ANIMATION_CACHE_BITMAPS_COUNT;
+            Utilities.generateGradient(gradientToBitmap[i], true, phase, p, currentBitmap.getWidth(), currentBitmap.getHeight(), currentBitmap.getRowBytes(), colors);
+        }
+    }
+
+    public void switchToPrevPosition(boolean fast) {
+        if (posAnimationProgress < 1.0f) {
+            return;
+        }
+        rotatingPreview = false;
+        fastAnimation = fast;
+        rotationBack = true;
+        posAnimationProgress = 0.0f;
+        invalidateParent();
+        Utilities.generateGradient(gradientFromBitmap, true, phase, 0, currentBitmap.getWidth(), currentBitmap.getHeight(), currentBitmap.getRowBytes(), colors);
+        generateNextGradient();
     }
 
     public int[] getColors() {
@@ -261,7 +314,7 @@ public class MotionBackgroundDrawable extends Drawable {
         if (Build.VERSION.SDK_INT < 28 && intensity < 0) {
             int w = right - left;
             int h = bottom - top;
-            if (legacyBitmap == null || legacyBitmap.getWidth() != w || legacyBitmap.getHeight() != h) {
+            if (w > 0 && h > 0 && (legacyBitmap == null || legacyBitmap.getWidth() != w || legacyBitmap.getHeight() != h)) {
                 if (legacyBitmap != null) {
                     legacyBitmap.recycle();
                 }
@@ -385,7 +438,7 @@ public class MotionBackgroundDrawable extends Drawable {
                 } else {
                     stageBefore = 3;
                 }
-                posAnimationProgress += dt / 2000.0f;
+                posAnimationProgress += dt / (rotationBack ? 1000.0f : 2000.0f);
                 if (posAnimationProgress > 1.0f) {
                     posAnimationProgress = 1.0f;
                 }
@@ -393,9 +446,16 @@ public class MotionBackgroundDrawable extends Drawable {
                 if (stageBefore == 0 && progress > 0.25f ||
                         stageBefore == 1 && progress > 0.5f ||
                         stageBefore == 2 && progress > 0.75f) {
-                    phase--;
-                    if (phase < 0) {
-                        phase = 7;
+                    if (rotationBack) {
+                        phase++;
+                        if (phase > 7) {
+                            phase = 0;
+                        }
+                    } else {
+                        phase--;
+                        if (phase < 0) {
+                            phase = 7;
+                        }
                     }
                 }
                 if (progress <= 0.25f) {
@@ -407,14 +467,54 @@ public class MotionBackgroundDrawable extends Drawable {
                 } else {
                     progress = (progress - 0.75f) / 0.25f;
                 }
+                if (rotationBack) {
+                    float prevProgress = progress;
+                    progress = 1.0f - progress;
+                    if (posAnimationProgress >= 1.0f) {
+                        phase++;
+                        if (phase > 7) {
+                            phase = 0;
+                        }
+                        progress = 1.0f;
+                    }
+                }
             } else {
-                posAnimationProgress += dt / 500.0f;
+                posAnimationProgress += dt / (fastAnimation ? 300.0f : 500.0f);
                 if (posAnimationProgress > 1.0f) {
                     posAnimationProgress = 1.0f;
                 }
                 progress = interpolator.getInterpolation(posAnimationProgress);
+                if (rotationBack) {
+                    progress = 1.0f - progress;
+                    if (posAnimationProgress >= 1.0f) {
+                        phase++;
+                        if (phase > 7) {
+                            phase = 0;
+                        }
+                        progress = 1.0f;
+                    }
+                }
             }
-            Utilities.generateGradient(currentBitmap, true, phase, progress, currentBitmap.getWidth(), currentBitmap.getHeight(), currentBitmap.getRowBytes(), colors);
+
+            if (rotatingPreview) {
+                Utilities.generateGradient(currentBitmap, true, phase, progress, currentBitmap.getWidth(), currentBitmap.getHeight(), currentBitmap.getRowBytes(), colors);
+            } else {
+                if (progress != 1f) {
+                    float part = 1f / ANIMATION_CACHE_BITMAPS_COUNT;
+                    int i = (int) (progress / part);
+                    if (i == 0) {
+                        gradientCanvas.drawBitmap(gradientFromBitmap, 0, 0, null);
+                    } else {
+                        gradientCanvas.drawBitmap(gradientToBitmap[i - 1], 0, 0, null);
+                    }
+                    float alpha = (progress - i * part) / part;
+                    paint3.setAlpha((int) (255 * alpha));
+                    gradientCanvas.drawBitmap(gradientToBitmap[i], 0, 0, paint3);
+                } else {
+                    gradientCanvas.drawBitmap(gradientToBitmap[ANIMATION_CACHE_BITMAPS_COUNT - 1], 0, 0, paint3);
+                }
+            }
+
             invalidateParent();
         }
     }

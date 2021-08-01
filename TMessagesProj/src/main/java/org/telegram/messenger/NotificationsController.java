@@ -47,6 +47,7 @@ import androidx.core.app.NotificationManagerCompat;
 import androidx.core.app.Person;
 import androidx.core.app.RemoteInput;
 import androidx.core.content.FileProvider;
+import androidx.core.content.LocusIdCompat;
 import androidx.core.content.pm.ShortcutInfoCompat;
 import androidx.core.content.pm.ShortcutManagerCompat;
 import androidx.core.graphics.drawable.IconCompat;
@@ -2749,11 +2750,22 @@ public class NotificationsController extends BaseController {
         }
         try {
             String id = "ndid_" + did;
+
+            Intent shortcutIntent = new Intent(ApplicationLoader.applicationContext, OpenChatReceiver.class);
+            shortcutIntent.setAction("com.tmessages.openchat" + Math.random() + Integer.MAX_VALUE);
+            if (did > 0) {
+                shortcutIntent.putExtra("userId", did);
+            } else {
+                shortcutIntent.putExtra("chatId", -did);
+            }
+
             ShortcutInfoCompat.Builder shortcutBuilder = new ShortcutInfoCompat.Builder(ApplicationLoader.applicationContext, id)
                     .setShortLabel(chat != null ? name : UserObject.getFirstName(user))
                     .setLongLabel(name)
                     .setIntent(new Intent(Intent.ACTION_DEFAULT))
-                    .setLongLived(true);
+                    .setIntent(shortcutIntent)
+                    .setLongLived(true)
+                    .setLocusId(new LocusIdCompat(id));
 
             Bitmap avatar = null;
             if (person != null) {
@@ -2763,11 +2775,9 @@ public class NotificationsController extends BaseController {
                     avatar = person.getIcon().getBitmap();
                 }
             }
-            ArrayList<ShortcutInfoCompat> arrayList = new ArrayList<>(1);
-            arrayList.add(shortcutBuilder.build());
-            ShortcutManagerCompat.addDynamicShortcuts(ApplicationLoader.applicationContext, arrayList);
-            builder.setShortcutId(id);
-            NotificationCompat.BubbleMetadata.Builder bubbleBuilder = new NotificationCompat.BubbleMetadata.Builder();
+            ShortcutInfoCompat shortcut = shortcutBuilder.build();
+            ShortcutManagerCompat.pushDynamicShortcut(ApplicationLoader.applicationContext, shortcut);
+            builder.setShortcutInfo(shortcut);
             Intent intent = new Intent(ApplicationLoader.applicationContext, BubbleActivity.class);
             intent.setAction("com.tmessages.openchat" + Math.random() + Integer.MAX_VALUE);
             if (did > 0) {
@@ -2776,19 +2786,21 @@ public class NotificationsController extends BaseController {
                 intent.putExtra("chatId", -did);
             }
             intent.putExtra("currentAccount", currentAccount);
-            bubbleBuilder.setIntent(PendingIntent.getActivity(ApplicationLoader.applicationContext, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT));
+            IconCompat icon;
+            if (avatar != null) {
+                icon = IconCompat.createWithAdaptiveBitmap(avatar);
+            } else if (user != null) {
+                icon = IconCompat.createWithResource(ApplicationLoader.applicationContext, user.bot ? R.drawable.book_bot : R.drawable.book_user);
+            } else {
+                icon = IconCompat.createWithResource(ApplicationLoader.applicationContext, R.drawable.book_group);
+            }
+            NotificationCompat.BubbleMetadata.Builder bubbleBuilder =
+                    new NotificationCompat.BubbleMetadata.Builder(
+                            PendingIntent.getActivity(ApplicationLoader.applicationContext, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT),
+                            icon);
             bubbleBuilder.setSuppressNotification(opened_dialog_id == did);
             bubbleBuilder.setAutoExpandBubble(false);
             bubbleBuilder.setDesiredHeight(AndroidUtilities.dp(640));
-            if (avatar != null) {
-                bubbleBuilder.setIcon(IconCompat.createWithAdaptiveBitmap(avatar));
-            } else {
-                if (user != null) {
-                    bubbleBuilder.setIcon(IconCompat.createWithResource(ApplicationLoader.applicationContext, user.bot ? R.drawable.book_bot : R.drawable.book_user));
-                } else {
-                    bubbleBuilder.setIcon(IconCompat.createWithResource(ApplicationLoader.applicationContext, R.drawable.book_group));
-                }
-            }
             builder.setBubbleMetadata(bubbleBuilder.build());
             return id;
         } catch (Exception e) {

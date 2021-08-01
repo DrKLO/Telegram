@@ -281,6 +281,9 @@ public class MessagesController extends BaseController implements NotificationCe
     public String mapKey;
     public int maxMessageLength;
     public int maxCaptionLength;
+    public int roundVideoSize;
+    public int roundVideoBitrate;
+    public int roundAudioBitrate;
     public boolean blockedCountry;
     public boolean preloadFeaturedStickers;
     public String youtubePipType;
@@ -760,7 +763,9 @@ public class MessagesController extends BaseController implements NotificationCe
         autoarchiveAvailable = mainPreferences.getBoolean("autoarchiveAvailable", false);
         groipCallVideoMaxParticipants = mainPreferences.getInt("groipCallVideoMaxParticipants", 30);
         suggestStickersApiOnly = mainPreferences.getBoolean("suggestStickersApiOnly", false);
-
+        roundVideoSize = mainPreferences.getInt("roundVideoSize", 384);
+        roundVideoBitrate = mainPreferences.getInt("roundVideoBitrate", 1000);
+        roundAudioBitrate = mainPreferences.getInt("roundAudioBitrate", 64);
         pendingSuggestions = mainPreferences.getStringSet("pendingSuggestions", null);
         if (pendingSuggestions != null) {
             pendingSuggestions = new HashSet<>(pendingSuggestions);
@@ -1621,6 +1626,50 @@ public class MessagesController extends BaseController implements NotificationCe
                             }
                             break;
                         }
+                        case "round_video_encoding": {
+                            if (value.value instanceof TLRPC.TL_jsonObject) {
+                                TLRPC.TL_jsonObject jsonObject = (TLRPC.TL_jsonObject) value.value;
+                                for (int b = 0, N2 = jsonObject.value.size(); b < N2; b++) {
+                                    TLRPC.TL_jsonObjectValue value2 = jsonObject.value.get(b);
+                                    switch (value2.key) {
+                                        case "diameter": {
+                                            if (value2.value instanceof TLRPC.TL_jsonNumber) {
+                                                TLRPC.TL_jsonNumber number = (TLRPC.TL_jsonNumber) value2.value;
+                                                if (number.value != roundVideoSize) {
+                                                    roundVideoSize = (int) number.value;
+                                                    editor.putInt("roundVideoSize", roundVideoSize);
+                                                    changed = true;
+                                                }
+                                            }
+                                            break;
+                                        }
+                                        case "video_bitrate": {
+                                            if (value2.value instanceof TLRPC.TL_jsonNumber) {
+                                                TLRPC.TL_jsonNumber number = (TLRPC.TL_jsonNumber) value2.value;
+                                                if (number.value != roundVideoBitrate) {
+                                                    roundVideoBitrate = (int) number.value;
+                                                    editor.putInt("roundVideoBitrate", roundVideoBitrate);
+                                                    changed = true;
+                                                }
+                                            }
+                                            break;
+                                        }
+                                        case "audio_bitrate": {
+                                            if (value2.value instanceof TLRPC.TL_jsonNumber) {
+                                                TLRPC.TL_jsonNumber number = (TLRPC.TL_jsonNumber) value2.value;
+                                                if (number.value != roundAudioBitrate) {
+                                                    roundAudioBitrate = (int) number.value;
+                                                    editor.putInt("roundAudioBitrate", roundAudioBitrate);
+                                                    changed = true;
+                                                }
+                                            }
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            break;
+                        }
                         case "stickers_emoji_suggest_only_api": {
                             if (value.value instanceof TLRPC.TL_jsonBool) {
                                 TLRPC.TL_jsonBool bool = (TLRPC.TL_jsonBool) value.value;
@@ -1783,6 +1832,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 SharedPreferences.Editor editor = mainPreferences.edit();
                 editor.putStringSet("pendingSuggestions", pendingSuggestions);
                 editor.commit();
+                getNotificationCenter().postNotificationName(NotificationCenter.newSuggestionsAvailable);
             } else {
                 return;
             }
@@ -2473,12 +2523,12 @@ public class MessagesController extends BaseController implements NotificationCe
         }
         if (chatsWidgets != null) {
             for (int a = 0, N = chatsWidgets.size(); a < N; a++) {
-                ChatsWidgetProvider.updateWidget(ApplicationLoader.applicationContext, appWidgetManager, chatsWidgets.get(a), true);
+                ChatsWidgetProvider.updateWidget(ApplicationLoader.applicationContext, appWidgetManager, chatsWidgets.get(a));
             }
         }
         if (contactsWidgets != null) {
             for (int a = 0, N = contactsWidgets.size(); a < N; a++) {
-                ContactsWidgetProvider.updateWidget(ApplicationLoader.applicationContext, appWidgetManager, contactsWidgets.get(a), true);
+                ContactsWidgetProvider.updateWidget(ApplicationLoader.applicationContext, appWidgetManager, contactsWidgets.get(a));
             }
         }
 
@@ -3065,6 +3115,7 @@ public class MessagesController extends BaseController implements NotificationCe
             if (chatFull.call != null) {
                 TLRPC.TL_phone_getGroupCall req = new TLRPC.TL_phone_getGroupCall();
                 req.call = chatFull.call;
+                req.limit = 20;
                 getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                     if (response != null) {
                         TLRPC.TL_phone_groupCall groupCall = (TLRPC.TL_phone_groupCall) response;
@@ -12538,6 +12589,11 @@ public class MessagesController extends BaseController implements NotificationCe
                 updatesOnMainThread.add(baseUpdate);
             } else if (baseUpdate instanceof TLRPC.TL_updateGroupCallConnection) {
 
+            } else if (baseUpdate instanceof TLRPC.TL_updateBotCommands) {
+                if (updatesOnMainThread == null) {
+                    updatesOnMainThread = new ArrayList<>();
+                }
+                updatesOnMainThread.add(baseUpdate);
             } else if (baseUpdate instanceof TLRPC.TL_updatePhoneCallSignalingData) {
                 if (updatesOnMainThread == null) {
                     updatesOnMainThread = new ArrayList<>();
@@ -12992,7 +13048,7 @@ public class MessagesController extends BaseController implements NotificationCe
                                     updateGroupCall.call = new TLRPC.TL_groupCallDiscarded();
                                     updateGroupCall.call.id = call.call.id;
                                     updateGroupCall.call.access_hash = call.call.access_hash;
-                                    call.processGroupCallUpdate(getAccountInstance(), updateGroupCall);
+                                    call.processGroupCallUpdate(updateGroupCall);
                                     if (VoIPService.getSharedInstance() != null) {
                                         VoIPService.getSharedInstance().onGroupCallUpdated(updateGroupCall.call);
                                     }
@@ -13012,7 +13068,7 @@ public class MessagesController extends BaseController implements NotificationCe
                                 updateGroupCall.call = new TLRPC.TL_groupCallDiscarded();
                                 updateGroupCall.call.id = call.call.id;
                                 updateGroupCall.call.access_hash = call.call.access_hash;
-                                call.processGroupCallUpdate(getAccountInstance(), updateGroupCall);
+                                call.processGroupCallUpdate(updateGroupCall);
                                 if (VoIPService.getSharedInstance() != null) {
                                     VoIPService.getSharedInstance().onGroupCallUpdated(updateGroupCall.call);
                                 }
@@ -13037,6 +13093,9 @@ public class MessagesController extends BaseController implements NotificationCe
                             chat.default_banned_rights = update.default_banned_rights;
                             AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.channelRightsUpdated, chat));
                         }
+                    }  else if (baseUpdate instanceof TLRPC.TL_updateBotCommands) {
+                        TLRPC.TL_updateBotCommands update = (TLRPC.TL_updateBotCommands) baseUpdate;
+                        getMediaDataController().updateBotInfo(MessageObject.getPeerId(update.peer), update);
                     } else if (baseUpdate instanceof TLRPC.TL_updateStickerSets) {
                         TLRPC.TL_updateStickerSets update = (TLRPC.TL_updateStickerSets) baseUpdate;
                         getMediaDataController().loadStickers(MediaDataController.TYPE_IMAGE, false, true);
@@ -13090,7 +13149,7 @@ public class MessagesController extends BaseController implements NotificationCe
                         TLRPC.TL_updateGroupCall update = (TLRPC.TL_updateGroupCall) baseUpdate;
                         ChatObject.Call call = groupCalls.get(update.call.id);
                         if (call != null) {
-                            call.processGroupCallUpdate(getAccountInstance(), update);
+                            call.processGroupCallUpdate(update);
                             TLRPC.Chat chat = getChat(call.chatId);
                             if (chat != null) {
                                 chat.call_active = update.call instanceof TLRPC.TL_groupCall;
@@ -14128,7 +14187,7 @@ public class MessagesController extends BaseController implements NotificationCe
         }
         for (int a = 0, N = reasons.size(); a < N; a++) {
             TLRPC.TL_restrictionReason reason = reasons.get(a);
-            if ("all".equals(reason.platform) || !AndroidUtilities.isStandaloneApp() && !AndroidUtilities.isBetaApp() && "android".equals(reason.platform)) {
+            if ("all".equals(reason.platform) || !BuildVars.isStandaloneApp() && !BuildVars.isBetaApp() && "android".equals(reason.platform)) {
                 return reason.text;
             }
         }

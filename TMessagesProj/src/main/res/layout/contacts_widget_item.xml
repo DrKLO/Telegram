@@ -1,121 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="horizontal"
-    android:layout_width="match_parent"
-    android:minHeight="72dp"
     android:id="@+id/contacts_widget_item"
+    android:layout_width="match_parent"
     android:layout_height="86dp"
-    android:weightSum="1"
-    android:baselineAligned="false">
+    android:baselineAligned="false"
+    android:minHeight="72dp"
+    android:orientation="horizontal"
+    android:weightSum="1">
 
-    <FrameLayout
-        android:layout_width="0dp"
-        android:id="@+id/contacts_widget_item1"
-        android:layout_height="86dp"
-        android:background="@drawable/list_selector_ex"
-        android:layout_weight="0.5">
+    <include layout="@layout/contacts_widget_item_1" />
 
-        <ImageView android:id="@+id/contacts_widget_item_avatar1"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_gravity="center"
-            android:layout_marginBottom="10dp"
-            android:gravity="start" />
+    <include layout="@layout/contacts_widget_item_2" />
 
-        <TextView android:id="@+id/contacts_widget_item_text1"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:singleLine="true"
-            android:ellipsize="end"
-            android:gravity="center"
-            android:layout_gravity="center"
-            android:textSize="12dp"
-            android:layout_marginRight="6dp"
-            android:layout_marginLeft="6dp"
-            android:layout_marginTop="28dp"
-            android:textColor="@color/widget_name"/>
-
-        <FrameLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="1dp"
-            android:background="@drawable/widgets_light_badgebg"
-            android:layout_gravity="center"
-            android:layout_marginBottom="27dp"
-            android:layout_marginLeft="20dp"
-            android:layout_marginRight="4dp"
-            android:id="@+id/contacts_widget_item_badge_bg1">
-
-            <TextView android:id="@+id/contacts_widget_item_badge1"
-                android:layout_width="wrap_content"
-                android:layout_height="23dp"
-                android:paddingLeft="7dp"
-                android:paddingRight="7dp"
-                android:paddingBottom="1dp"
-                android:fontFamily="sans-serif-medium"
-                android:layout_gravity="center"
-                android:gravity="center"
-                android:minWidth="23dp"
-                android:textSize="13dp"
-                android:background="@drawable/widget_counter"
-                android:textColor="@color/widget_badge" />
-        </FrameLayout>
-
-    </FrameLayout>
-
-    <FrameLayout
-        android:layout_width="0dp"
-        android:minHeight="72dp"
-        android:id="@+id/contacts_widget_item2"
-        android:background="@drawable/list_selector_ex"
-        android:layout_height="86dp"
-        android:layout_weight="0.5">
-
-        <ImageView android:id="@+id/contacts_widget_item_avatar2"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_gravity="center"
-            android:layout_marginBottom="10dp"
-            android:gravity="start" />
-
-        <TextView android:id="@+id/contacts_widget_item_text2"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:singleLine="true"
-            android:ellipsize="end"
-            android:gravity="center"
-            android:layout_gravity="center"
-            android:textSize="12dp"
-            android:layout_marginRight="6dp"
-            android:layout_marginLeft="6dp"
-            android:layout_marginTop="28dp"
-            android:textColor="@color/widget_name"/>
-
-        <FrameLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="1dp"
-            android:background="@drawable/widgets_light_badgebg"
-            android:layout_gravity="center"
-            android:layout_marginBottom="27dp"
-            android:layout_marginLeft="20dp"
-            android:layout_marginRight="4dp"
-            android:id="@+id/contacts_widget_item_badge_bg2">
-
-            <TextView android:id="@+id/contacts_widget_item_badge2"
-                android:layout_width="wrap_content"
-                android:layout_height="23dp"
-                android:paddingLeft="7dp"
-                android:paddingRight="7dp"
-                android:paddingBottom="1dp"
-                android:fontFamily="sans-serif-medium"
-                android:layout_gravity="center"
-                android:gravity="center"
-                android:minWidth="23dp"
-                android:textSize="13dp"
-                android:background="@drawable/widget_counter"
-                android:textColor="@color/widget_badge" />
-        </FrameLayout>
-
-    </FrameLayout>
 </LinearLayout>

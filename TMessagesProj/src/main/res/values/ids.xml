@@ -28,6 +28,7 @@
     <item name="passcode_btn_8" type="id"/>
     <item name="passcode_btn_9" type="id"/>
     <item name="passcode_btn_0" type="id"/>
+    <item name="passcode_btn_fingerprint" type="id"/>
     <item name="passcode_btn_backspace" type="id"/>
     <item name="passcode_btn_done" type="id"/>
 </resources>

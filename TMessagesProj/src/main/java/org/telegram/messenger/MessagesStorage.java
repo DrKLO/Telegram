@@ -6454,7 +6454,7 @@ public class MessagesStorage extends BaseController {
                         }
                     } else if (load_type == 1) {
                         long holeMessageId = 0;
-                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT start, end FROM messages_holes WHERE uid = %d AND start >= %d AND start != 1 AND end != 1 OR start < %d AND end > %d ORDER BY start ASC LIMIT 1", dialogId, max_id, max_id, max_id));
+                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT start, end FROM messages_holes WHERE uid = %d AND (start >= %d AND start != 1 AND end != 1 OR start < %d AND end > %d) ORDER BY start ASC LIMIT 1", dialogId, max_id, max_id, max_id));
                         if (cursor.next()) {
                             holeMessageId = cursor.intValue(0);
                             if (channelId != 0) {

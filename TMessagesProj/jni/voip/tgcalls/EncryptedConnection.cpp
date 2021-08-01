@@ -285,7 +285,6 @@ void EncryptedConnection::appendAdditionalMessages(rtc::CopyOnWriteBuffer &buffe
     }
 
     const auto now = rtc::TimeMillis();
-    auto someWereNotAdded = false;
     for (auto &resending : _myNotYetAckedMessages) {
         const auto sent = resending.lastSent;
         const auto when = sent
@@ -471,6 +470,7 @@ auto EncryptedConnection::processPacket(
         }
         const auto success = reader.ReadUInt32(&currentSeq);
         assert(success);
+        (void)success;
         currentCounter = CounterFromSeq(currentSeq);
 
         additionalMessage = true;

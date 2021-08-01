@@ -50,9 +50,10 @@ private:
 
 class VideoCaptureInterfaceImpl : public VideoCaptureInterface {
 public:
-	VideoCaptureInterfaceImpl(std::string deviceId, std::shared_ptr<PlatformContext> platformContext, std::shared_ptr<Threads> threads);
+	VideoCaptureInterfaceImpl(std::string deviceId, bool isScreenCapture, std::shared_ptr<PlatformContext> platformContext, std::shared_ptr<Threads> threads);
 	virtual ~VideoCaptureInterfaceImpl();
 
+    bool isScreenCapture() override;
 	void switchToDevice(std::string deviceId) override;
     void withNativeImplementation(std::function<void(void *)> completion) override;
 	void setState(VideoState state) override;
@@ -67,7 +68,10 @@ public:
 
 private:
 	ThreadLocalObject<VideoCaptureInterfaceObject> _impl;
-	std::shared_ptr<PlatformContext> _platformContext;
+    
+    bool _isScreenCapture = false;
+
+    std::shared_ptr<PlatformContext> _platformContext;
 
 };
 

@@ -128,7 +128,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
     }
 
     public void setCustomDate(int date, boolean scheduled, boolean inLayout) {
-        if (customDate == date) {
+        if (customDate == date || customDate / 3600 == date / 3600) {
             return;
         }
         CharSequence newText;
@@ -246,10 +246,11 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
     }
 
     @Override
-    protected void onLongPress() {
+    protected boolean onLongPress() {
         if (delegate != null) {
             delegate.didLongPress(this, lastTouchX, lastTouchY);
         }
+        return true;
     }
 
     @Override

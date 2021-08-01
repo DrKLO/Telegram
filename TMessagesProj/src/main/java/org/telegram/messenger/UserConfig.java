@@ -65,16 +65,6 @@ public class UserConfig extends BaseController {
     public volatile byte[] savedSaltedPassword;
     public volatile long savedPasswordTime;
 
-    public String tonEncryptedData;
-    public String tonPublicKey;
-    public int tonPasscodeType = -1;
-    public byte[] tonPasscodeSalt;
-    public long tonPasscodeRetryInMs;
-    public long tonLastUptimeMillis;
-    public int tonBadPasscodeTries;
-    public String tonKeyName;
-    public boolean tonCreationFinished;
-
     private static volatile UserConfig[] Instance = new UserConfig[UserConfig.MAX_ACCOUNT_COUNT];
     public static UserConfig getInstance(int num) {
         UserConfig localInstance = Instance[num];
@@ -117,104 +107,91 @@ public class UserConfig extends BaseController {
     }
 
     public void saveConfig(boolean withFile, File oldFile) {
-        synchronized (sync) {
-            try {
-                SharedPreferences.Editor editor = getPreferences().edit();
-                if (currentAccount == 0) {
-                    editor.putInt("selectedAccount", selectedAccount);
-                }
-                editor.putBoolean("registeredForPush", registeredForPush);
-                editor.putInt("lastSendMessageId", lastSendMessageId);
-                editor.putInt("contactsSavedCount", contactsSavedCount);
-                editor.putInt("lastBroadcastId", lastBroadcastId);
-                editor.putInt("lastContactsSyncTime", lastContactsSyncTime);
-                editor.putInt("lastHintsSyncTime", lastHintsSyncTime);
-                editor.putBoolean("draftsLoaded", draftsLoaded);
-                editor.putBoolean("unreadDialogsLoaded", unreadDialogsLoaded);
-                editor.putInt("ratingLoadTime", ratingLoadTime);
-                editor.putInt("botRatingLoadTime", botRatingLoadTime);
-                editor.putBoolean("contactsReimported", contactsReimported);
-                editor.putInt("loginTime", loginTime);
-                editor.putBoolean("syncContacts", syncContacts);
-                editor.putBoolean("suggestContacts", suggestContacts);
-                editor.putBoolean("hasSecureData", hasSecureData);
-                editor.putBoolean("notificationsSettingsLoaded3", notificationsSettingsLoaded);
-                editor.putBoolean("notificationsSignUpSettingsLoaded", notificationsSignUpSettingsLoaded);
-                editor.putLong("autoDownloadConfigLoadTime", autoDownloadConfigLoadTime);
-                editor.putBoolean("hasValidDialogLoadIds", hasValidDialogLoadIds);
-                editor.putInt("sharingMyLocationUntil", sharingMyLocationUntil);
-                editor.putInt("lastMyLocationShareTime", lastMyLocationShareTime);
-                editor.putBoolean("filtersLoaded", filtersLoaded);
-                if (tonEncryptedData != null) {
-                    editor.putString("tonEncryptedData", tonEncryptedData);
-                    editor.putString("tonPublicKey", tonPublicKey);
-                    editor.putString("tonKeyName", tonKeyName);
-                    editor.putBoolean("tonCreationFinished", tonCreationFinished);
-                    if (tonPasscodeSalt != null) {
-                        editor.putInt("tonPasscodeType", tonPasscodeType);
-                        editor.putString("tonPasscodeSalt", Base64.encodeToString(tonPasscodeSalt, Base64.DEFAULT));
-                        editor.putLong("tonPasscodeRetryInMs", tonPasscodeRetryInMs);
-                        editor.putLong("tonLastUptimeMillis", tonLastUptimeMillis);
-                        editor.putInt("tonBadPasscodeTries", tonBadPasscodeTries);
+        NotificationCenter.getInstance(currentAccount).doOnIdle(() -> {
+            synchronized (sync) {
+                try {
+                    SharedPreferences.Editor editor = getPreferences().edit();
+                    if (currentAccount == 0) {
+                        editor.putInt("selectedAccount", selectedAccount);
                     }
-                } else {
-                    editor.remove("tonEncryptedData").remove("tonPublicKey").remove("tonKeyName").remove("tonPasscodeType").remove("tonPasscodeSalt").remove("tonPasscodeRetryInMs").remove("tonBadPasscodeTries").remove("tonLastUptimeMillis").remove("tonCreationFinished");
-                }
+                    editor.putBoolean("registeredForPush", registeredForPush);
+                    editor.putInt("lastSendMessageId", lastSendMessageId);
+                    editor.putInt("contactsSavedCount", contactsSavedCount);
+                    editor.putInt("lastBroadcastId", lastBroadcastId);
+                    editor.putInt("lastContactsSyncTime", lastContactsSyncTime);
+                    editor.putInt("lastHintsSyncTime", lastHintsSyncTime);
+                    editor.putBoolean("draftsLoaded", draftsLoaded);
+                    editor.putBoolean("unreadDialogsLoaded", unreadDialogsLoaded);
+                    editor.putInt("ratingLoadTime", ratingLoadTime);
+                    editor.putInt("botRatingLoadTime", botRatingLoadTime);
+                    editor.putBoolean("contactsReimported", contactsReimported);
+                    editor.putInt("loginTime", loginTime);
+                    editor.putBoolean("syncContacts", syncContacts);
+                    editor.putBoolean("suggestContacts", suggestContacts);
+                    editor.putBoolean("hasSecureData", hasSecureData);
+                    editor.putBoolean("notificationsSettingsLoaded3", notificationsSettingsLoaded);
+                    editor.putBoolean("notificationsSignUpSettingsLoaded", notificationsSignUpSettingsLoaded);
+                    editor.putLong("autoDownloadConfigLoadTime", autoDownloadConfigLoadTime);
+                    editor.putBoolean("hasValidDialogLoadIds", hasValidDialogLoadIds);
+                    editor.putInt("sharingMyLocationUntil", sharingMyLocationUntil);
+                    editor.putInt("lastMyLocationShareTime", lastMyLocationShareTime);
+                    editor.putBoolean("filtersLoaded", filtersLoaded);
 
-                editor.putInt("6migrateOffsetId", migrateOffsetId);
-                if (migrateOffsetId != -1) {
-                    editor.putInt("6migrateOffsetDate", migrateOffsetDate);
-                    editor.putInt("6migrateOffsetUserId", migrateOffsetUserId);
-                    editor.putInt("6migrateOffsetChatId", migrateOffsetChatId);
-                    editor.putInt("6migrateOffsetChannelId", migrateOffsetChannelId);
-                    editor.putLong("6migrateOffsetAccess", migrateOffsetAccess);
-                }
-
-                if (unacceptedTermsOfService != null) {
-                    try {
-                        SerializedData data = new SerializedData(unacceptedTermsOfService.getObjectSize());
-                        unacceptedTermsOfService.serializeToStream(data);
-                        editor.putString("terms", Base64.encodeToString(data.toByteArray(), Base64.DEFAULT));
-                        data.cleanup();
-                    } catch (Exception ignore) {
-
+                    editor.putInt("6migrateOffsetId", migrateOffsetId);
+                    if (migrateOffsetId != -1) {
+                        editor.putInt("6migrateOffsetDate", migrateOffsetDate);
+                        editor.putInt("6migrateOffsetUserId", migrateOffsetUserId);
+                        editor.putInt("6migrateOffsetChatId", migrateOffsetChatId);
+                        editor.putInt("6migrateOffsetChannelId", migrateOffsetChannelId);
+                        editor.putLong("6migrateOffsetAccess", migrateOffsetAccess);
                     }
-                } else {
-                    editor.remove("terms");
-                }
 
-                SharedConfig.saveConfig();
+                    if (unacceptedTermsOfService != null) {
+                        try {
+                            SerializedData data = new SerializedData(unacceptedTermsOfService.getObjectSize());
+                            unacceptedTermsOfService.serializeToStream(data);
+                            editor.putString("terms", Base64.encodeToString(data.toByteArray(), Base64.DEFAULT));
+                            data.cleanup();
+                        } catch (Exception ignore) {
 
-                if (tmpPassword != null) {
-                    SerializedData data = new SerializedData();
-                    tmpPassword.serializeToStream(data);
-                    String string = Base64.encodeToString(data.toByteArray(), Base64.DEFAULT);
-                    editor.putString("tmpPassword", string);
-                    data.cleanup();
-                } else {
-                    editor.remove("tmpPassword");
-                }
+                        }
+                    } else {
+                        editor.remove("terms");
+                    }
 
-                if (currentUser != null) {
-                    if (withFile) {
+                    SharedConfig.saveConfig();
+
+                    if (tmpPassword != null) {
                         SerializedData data = new SerializedData();
-                        currentUser.serializeToStream(data);
+                        tmpPassword.serializeToStream(data);
                         String string = Base64.encodeToString(data.toByteArray(), Base64.DEFAULT);
-                        editor.putString("user", string);
+                        editor.putString("tmpPassword", string);
                         data.cleanup();
+                    } else {
+                        editor.remove("tmpPassword");
                     }
-                } else {
-                    editor.remove("user");
-                }
 
-                editor.commit();
-                if (oldFile != null) {
-                    oldFile.delete();
+                    if (currentUser != null) {
+                        if (withFile) {
+                            SerializedData data = new SerializedData();
+                            currentUser.serializeToStream(data);
+                            String string = Base64.encodeToString(data.toByteArray(), Base64.DEFAULT);
+                            editor.putString("user", string);
+                            data.cleanup();
+                        }
+                    } else {
+                        editor.remove("user");
+                    }
+
+                    editor.commit();
+                    if (oldFile != null) {
+                        oldFile.delete();
+                    }
+                } catch (Exception e) {
+                    FileLog.e(e);
                 }
-            } catch (Exception e) {
-                FileLog.e(e);
             }
-        }
+        });
     }
 
     public static boolean isValidAccount(int num) {
@@ -280,25 +257,9 @@ public class UserConfig extends BaseController {
             notificationsSignUpSettingsLoaded = preferences.getBoolean("notificationsSignUpSettingsLoaded", false);
             autoDownloadConfigLoadTime = preferences.getLong("autoDownloadConfigLoadTime", 0);
             hasValidDialogLoadIds = preferences.contains("2dialogsLoadOffsetId") || preferences.getBoolean("hasValidDialogLoadIds", false);
-            tonEncryptedData = preferences.getString("tonEncryptedData", null);
-            tonPublicKey = preferences.getString("tonPublicKey", null);
-            tonKeyName = preferences.getString("tonKeyName", "walletKey" + currentAccount);
-            tonCreationFinished = preferences.getBoolean("tonCreationFinished", true);
             sharingMyLocationUntil = preferences.getInt("sharingMyLocationUntil", 0);
             lastMyLocationShareTime = preferences.getInt("lastMyLocationShareTime", 0);
             filtersLoaded = preferences.getBoolean("filtersLoaded", false);
-            String salt = preferences.getString("tonPasscodeSalt", null);
-            if (salt != null) {
-                try {
-                    tonPasscodeSalt = Base64.decode(salt, Base64.DEFAULT);
-                    tonPasscodeType = preferences.getInt("tonPasscodeType", -1);
-                    tonPasscodeRetryInMs = preferences.getLong("tonPasscodeRetryInMs", 0);
-                    tonLastUptimeMillis = preferences.getLong("tonLastUptimeMillis", 0);
-                    tonBadPasscodeTries = preferences.getInt("tonBadPasscodeTries", 0);
-                } catch (Exception e) {
-                    FileLog.e(e);
-                }
-            }
 
             try {
                 String terms = preferences.getString("terms", null);
@@ -386,21 +347,8 @@ public class UserConfig extends BaseController {
         }
     }
 
-    public void clearTonConfig() {
-        tonEncryptedData = null;
-        tonKeyName = null;
-        tonPublicKey = null;
-        tonPasscodeType = -1;
-        tonPasscodeSalt = null;
-        tonCreationFinished = false;
-        tonPasscodeRetryInMs = 0;
-        tonLastUptimeMillis = 0;
-        tonBadPasscodeTries = 0;
-    }
-
     public void clearConfig() {
         getPreferences().edit().clear().commit();
-        clearTonConfig();
 
         sharingMyLocationUntil = 0;
         lastMyLocationShareTime = 0;

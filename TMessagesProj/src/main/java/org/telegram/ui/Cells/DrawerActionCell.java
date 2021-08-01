@@ -9,8 +9,10 @@
 package org.telegram.ui.Cells;
 
 import android.content.Context;
+import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -19,12 +21,18 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
+
+import java.util.Set;
 
 public class DrawerActionCell extends FrameLayout {
 
     private TextView textView;
+    private int currentId;
+    private RectF rect = new RectF();
 
     public DrawerActionCell(Context context) {
         super(context);
@@ -39,6 +47,32 @@ public class DrawerActionCell extends FrameLayout {
         textView.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
         textView.setCompoundDrawablePadding(AndroidUtilities.dp(29));
         addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 19, 0, 16, 0));
+
+        setWillNotDraw(false);
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
+
+        if (currentId == 8) {
+            Set<String> suggestions = MessagesController.getInstance(UserConfig.selectedAccount).pendingSuggestions;
+            if (suggestions.contains("VALIDATE_PHONE_NUMBER") || suggestions.contains("VALIDATE_PASSWORD")) {
+                int countTop = AndroidUtilities.dp(12.5f);
+                int countWidth = AndroidUtilities.dp(9);
+                int countLeft = getMeasuredWidth() - countWidth - AndroidUtilities.dp(25);
+
+                int x = countLeft - AndroidUtilities.dp(5.5f);
+                rect.set(x, countTop, x + countWidth + AndroidUtilities.dp(14), countTop + AndroidUtilities.dp(23));
+                Theme.chat_docBackPaint.setColor(Theme.getColor(Theme.key_chats_archiveBackground));
+                canvas.drawRoundRect(rect, 11.5f * AndroidUtilities.density, 11.5f * AndroidUtilities.density, Theme.chat_docBackPaint);
+
+                int w = Theme.dialogs_errorDrawable.getIntrinsicWidth();
+                int h = Theme.dialogs_errorDrawable.getIntrinsicHeight();
+                Theme.dialogs_errorDrawable.setBounds((int) (rect.centerX() - w / 2), (int) (rect.centerY() - h / 2), (int) (rect.centerX() + w / 2), (int) (rect.centerY() + h / 2));
+                Theme.dialogs_errorDrawable.draw(canvas);
+            }
+        }
     }
 
     @Override
@@ -52,7 +86,8 @@ public class DrawerActionCell extends FrameLayout {
         textView.setTextColor(Theme.getColor(Theme.key_chats_menuItemText));
     }
 
-    public void setTextAndIcon(String text, int resId) {
+    public void setTextAndIcon(int id, String text, int resId) {
+        currentId = id;
         try {
             textView.setText(text);
             Drawable drawable = getResources().getDrawable(resId).mutate();

@@ -88,7 +88,8 @@ enum class VideoContentType {
 
 enum class VideoCodecName {
     VP8,
-    VP9
+    VP9,
+    H264
 };
 
 class RequestMediaChannelDescriptionTask {
@@ -177,6 +178,7 @@ public:
     virtual void setVideoSource(std::function<webrtc::VideoTrackSourceInterface*()> getVideoSource) = 0;
     virtual void setAudioOutputDevice(std::string id) = 0;
     virtual void setAudioInputDevice(std::string id) = 0;
+    virtual void addExternalAudioSamples(std::vector<uint8_t> &&samples) = 0;
 
     virtual void addIncomingVideoOutput(std::string const &endpointId, std::weak_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink) = 0;
 

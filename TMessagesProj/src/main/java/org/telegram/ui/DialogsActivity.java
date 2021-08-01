@@ -182,7 +182,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
     private final String ACTION_MODE_SEARCH_DIALOGS_TAG = "search_dialogs_action_mode";
 
-    private class ViewPage extends FrameLayout {
+    private static class ViewPage extends FrameLayout {
         private DialogsRecyclerView listView;
         private LinearLayoutManager layoutManager;
         private DialogsAdapter dialogsAdapter;
@@ -224,7 +224,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private FilterTabsView filterTabsView;
     private boolean askingForPermissions;
     private RLottieDrawable passcodeDrawable;
-    private RLottieDrawable passcodeDrawable2;
 
     private SearchViewPager searchViewPager;
 
@@ -1956,10 +1955,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             proxyItem = menu.addItem(2, proxyDrawable);
             proxyItem.setContentDescription(LocaleController.getString("ProxySettings", R.string.ProxySettings));
 
-            passcodeDrawable = new RLottieDrawable(R.raw.passcode_lock_open, "passcode_lock_open", AndroidUtilities.dp(28), AndroidUtilities.dp(28), true, null);
-            passcodeDrawable2 = new RLottieDrawable(R.raw.passcode_lock_close, "passcode_lock_close", AndroidUtilities.dp(28), AndroidUtilities.dp(28), true, null);
+            passcodeDrawable = new RLottieDrawable(R.raw.passcode_lock_close, "passcode_lock_close", AndroidUtilities.dp(28), AndroidUtilities.dp(28), true, null);
             passcodeItem = menu.addItem(1, passcodeDrawable);
-            updatePasscodeButton(false);
+            passcodeItem.setContentDescription(LocaleController.getString("AccDescrPasscodeLock", R.string.AccDescrPasscodeLock));
+            updatePasscodeButton();
             updateProxyButton(false);
         }
         searchItem = menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true, true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
@@ -1984,7 +1983,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     }
                 }
                 setScrollY(0);
-                updatePasscodeButton(false);
+                updatePasscodeButton();
                 actionBar.setBackButtonContentDescription(LocaleController.getString("AccDescrGoBack", R.string.AccDescrGoBack));
             }
 
@@ -2018,7 +2017,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     }
                     showSearch(false, true);
                 }
-                updatePasscodeButton(false);
+                updatePasscodeButton();
                 if (menuDrawable != null) {
                     if (actionBar.getBackButton().getDrawable() != menuDrawable) {
                         actionBar.setBackButtonDrawable(menuDrawable);
@@ -3173,8 +3172,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
             fragmentContextView = new FragmentContextView(context, this, false) {
                 @Override
-                protected void playbackSpeedChanged(boolean enabled) {
-                    getUndoView().showWithAction(0, enabled ? UndoView.ACTION_PLAYBACK_SPEED_ENABLED : UndoView.ACTION_PLAYBACK_SPEED_DISABLED, null);
+                protected void playbackSpeedChanged(float value) {
+                    if (Math.abs(value - 1.0f) > 0.001f || Math.abs(value - 1.8f) > 0.001f) {
+                        getUndoView().showWithAction(0, Math.abs(value - 1.0f) > 0.001f ? UndoView.ACTION_PLAYBACK_SPEED_ENABLED : UndoView.ACTION_PLAYBACK_SPEED_DISABLED, value, null, null);
+                    }
                 }
             };
             fragmentContextView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 38, Gravity.TOP | Gravity.LEFT, 0, -36, 0, 0));
@@ -3736,9 +3737,15 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                             parentLayout.getDrawerLayoutContainer().openDrawer(false);
                         }
                     } else if (id == 1) {
-                        SharedConfig.appLocked = !SharedConfig.appLocked;
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        SharedConfig.appLocked = true;
                         SharedConfig.saveConfig();
-                        updatePasscodeButton(true);
+                        int[] position = new int[2];
+                        passcodeItem.getLocationInWindow(position);
+                        ((LaunchActivity) getParentActivity()).showPasscodeActivity(false, true, position[0] + passcodeItem.getMeasuredWidth() / 2, position[1] + passcodeItem.getMeasuredHeight() / 2, () -> passcodeItem.setAlpha(1.0f), () -> passcodeItem.setAlpha(0.0f));
+                        updatePasscodeButton();
                     } else if (id == 2) {
                         presentFragment(new ProxyListActivity());
                     } else if (id >= 10 && id < 10 + UserConfig.MAX_ACCOUNT_COUNT) {
@@ -4130,6 +4137,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         });
         if (searchIsShowed) {
             AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid);
+        }
+        if (viewPages != null) {
+            viewPages[0].dialogsAdapter.notifyDataSetChanged();
         }
     }
 
@@ -6453,7 +6463,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         } else if (id == NotificationCenter.messageReceivedByAck || id == NotificationCenter.messageReceivedByServer || id == NotificationCenter.messageSendError) {
             updateVisibleRows(MessagesController.UPDATE_MASK_SEND_STATE);
         } else if (id == NotificationCenter.didSetPasscode) {
-            updatePasscodeButton(true);
+            updatePasscodeButton();
         } else if (id == NotificationCenter.needReloadRecentDialogsSearch) {
             if (searchViewPager != null && searchViewPager.dialogsSearchAdapter != null) {
                 searchViewPager.dialogsSearchAdapter.loadRecentSearch();
@@ -6667,46 +6677,16 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         sideMenu.setGlowColor(Theme.getColor(Theme.key_chats_menuBackground));
     }
 
-    Runnable hapticLockRunnable = new Runnable() {
-        @Override
-        public void run() {
-            passcodeItem.getIconView().performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
-        }
-    };
-
-    private void updatePasscodeButton(boolean animated) {
+    private void updatePasscodeButton() {
         if (passcodeItem == null) {
             return;
         }
-        if (isPaused) {
-            animated = false;
-        }
-        AndroidUtilities.cancelRunOnUIThread(hapticLockRunnable);
         if (SharedConfig.passcodeHash.length() != 0 && !searching) {
             if (doneItem == null || doneItem.getVisibility() != View.VISIBLE) {
                 passcodeItem.setVisibility(View.VISIBLE);
             }
+            passcodeItem.setIcon(passcodeDrawable);
             passcodeItemVisible = true;
-            if (SharedConfig.appLocked) {
-                passcodeItem.setContentDescription(LocaleController.getString("AccDescrPasscodeUnlock", R.string.AccDescrPasscodeUnlock));
-                passcodeItem.setIcon(passcodeDrawable2);
-                if (animated) {
-                    passcodeDrawable2.setCurrentFrame(0, false);
-                    passcodeItem.getIconView().playAnimation();
-                    AndroidUtilities.runOnUIThread(hapticLockRunnable, 350);
-                } else {
-                    passcodeDrawable2.setCurrentFrame(38, false);
-                }
-            } else {
-                passcodeItem.setContentDescription(LocaleController.getString("AccDescrPasscodeLock", R.string.AccDescrPasscodeLock));
-                passcodeItem.setIcon(passcodeDrawable);
-                if (animated) {
-                    passcodeDrawable.setCurrentFrame(0, false);
-                    passcodeItem.getIconView().playAnimation();
-                } else {
-                    passcodeDrawable.setCurrentFrame(31, false);
-                }
-            }
         } else {
             passcodeItem.setVisibility(View.GONE);
             passcodeItemVisible = false;
@@ -6761,7 +6741,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     }
 
     private void updateVisibleRows(int mask) {
-        if (dialogsListFrozen && (mask & MessagesController.UPDATE_MASK_REORDER) == 0) {
+        if ((dialogsListFrozen && (mask & MessagesController.UPDATE_MASK_REORDER) == 0) || isPaused) {
             return;
         }
         for (int c = 0; c < 3; c++) {
@@ -7634,7 +7614,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
     @Override
     public void setProgressToDrawerOpened(float progress) {
-        if (SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_LOW) {
+        if (SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_LOW || isSlideBackTransition) {
             return;
         }
         boolean drawerTransition = progress > 0;

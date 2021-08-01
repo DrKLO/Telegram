@@ -421,6 +421,9 @@ public class ColorPicker extends FrameLayout {
                 if (radioButton[1].getColor() == 0) {
                     radioButton[1].setColor(generateGradientColors(radioButton[0].getColor()));
                 }
+                if (myMessagesColor) {
+                    delegate.setColor(radioButton[0].getColor(), 0, true);
+                }
                 delegate.setColor(radioButton[1].getColor(), 1, true);
                 colorsCount = 2;
                 clearButton.setVisibility(VISIBLE);
