@@ -49,6 +49,7 @@ import android.text.TextWatcher;
 import android.text.method.PasswordTransformationMethod;
 import android.text.style.ClickableSpan;
 import android.util.Base64;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -79,6 +80,7 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.ReceiveAutomaticSMS;
 import org.telegram.messenger.SRPHelper;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.RequestDelegate;
@@ -1568,10 +1570,12 @@ public class LoginActivity extends BaseFragment {
             boolean allowCall = true;
             boolean allowCancelCall = true;
             boolean allowReadCallLog = true;
+            boolean allowReceiveSms = true;
             if (Build.VERSION.SDK_INT >= 23 && simcardAvailable) {
                 allowCall = getParentActivity().checkSelfPermission(Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED;
                 allowCancelCall = getParentActivity().checkSelfPermission(Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED;
                 allowReadCallLog = Build.VERSION.SDK_INT < 28 || getParentActivity().checkSelfPermission(Manifest.permission.READ_CALL_LOG) == PackageManager.PERMISSION_GRANTED;
+                allowReceiveSms = getParentActivity().checkSelfPermission(Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED;
                 if (checkPermissions) {
                     permissionsItems.clear();
                     if (!allowCall) {
@@ -1582,6 +1586,9 @@ public class LoginActivity extends BaseFragment {
                     }
                     if (!allowReadCallLog) {
                         permissionsItems.add(Manifest.permission.READ_CALL_LOG);
+
+                    }if (!allowReceiveSms) {
+                        permissionsItems.add(Manifest.permission.RECEIVE_SMS);
                     }
                     boolean ok = true;
                     if (!permissionsItems.isEmpty()) {
@@ -1594,6 +1601,8 @@ public class LoginActivity extends BaseFragment {
                             if (!allowCall && (!allowCancelCall || !allowReadCallLog)) {
                                 builder.setMessage(LocaleController.getString("AllowReadCallAndLog", R.string.AllowReadCallAndLog));
                             } else if (!allowCancelCall || !allowReadCallLog) {
+                                builder.setMessage(LocaleController.getString("AllowReadCallLog", R.string.AllowReadCallLog));
+                            } else if (!allowReceiveSms) {
                                 builder.setMessage(LocaleController.getString("AllowReadCallLog", R.string.AllowReadCallLog));
                             } else {
                                 builder.setMessage(LocaleController.getString("AllowReadCall", R.string.AllowReadCall));
@@ -1665,7 +1674,7 @@ public class LoginActivity extends BaseFragment {
             req.api_id = BuildVars.APP_ID;
             req.phone_number = phone;
             req.settings = new TLRPC.TL_codeSettings();
-            req.settings.allow_flashcall = simcardAvailable && allowCall && allowCancelCall && allowReadCallLog;
+            req.settings.allow_flashcall = simcardAvailable && allowCall && allowCancelCall && allowReadCallLog && allowReceiveSms;
             req.settings.allow_app_hash = ApplicationLoader.hasPlayServices;
             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
             if (req.settings.allow_app_hash) {
@@ -2185,6 +2194,8 @@ public class LoginActivity extends BaseFragment {
                     } else {
                         codeField[a].setInputType(InputType.TYPE_CLASS_PHONE);
                     }
+                    ReceiveAutomaticSMS receiveAutomaticSMS = new ReceiveAutomaticSMS();
+                    receiveAutomaticSMS.setCode(codeField);
                     codeFieldContainer.addView(codeField[a], LayoutHelper.createLinear(34, 36, Gravity.CENTER_HORIZONTAL, 0, 0, a != length - 1 ? 7 : 0, 0));
                     codeField[a].addTextChangedListener(new TextWatcher() {
 
