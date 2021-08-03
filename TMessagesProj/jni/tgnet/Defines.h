@@ -16,9 +16,9 @@
 #include <inttypes.h>
 #include "ByteArray.h"
 
-#define USE_DEBUG_SESSION false
+#define USE_DEBUG_SESSION true
 #define READ_BUFFER_SIZE 1024 * 128
-//#define DEBUG_VERSION
+#define DEBUG_VERSION
 #define PFS_ENABLED 1
 #define DEFAULT_DATACENTER_ID INT_MAX
 #define DC_UPDATE_TIME 60 * 60
