@@ -6884,6 +6884,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 toggleMiniProgress(buffering, true);
             }
         }
+        if (aspectRatioFrameLayout != null) {
+            aspectRatioFrameLayout.setKeepScreenOn(playWhenReady && (playbackState != ExoPlayer.STATE_ENDED && playbackState != ExoPlayer.STATE_IDLE));
+        }
         if (playWhenReady && (playbackState != ExoPlayer.STATE_ENDED && playbackState != ExoPlayer.STATE_IDLE)) {
             try {
                 parentActivity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);

@@ -43,6 +43,8 @@ public:
     void setVolume(uint32_t ssrc, double volume);
     void setRequestedVideoChannels(std::vector<VideoChannelDescription> &&requestedVideoChannels);
 
+    void getStats(std::function<void(GroupInstanceStats)> completion);
+
 private:
     std::shared_ptr<Threads> _threads;
     std::unique_ptr<ThreadLocalObject<GroupInstanceCustomInternal>> _internal;

@@ -70,6 +70,21 @@ namespace tgcalls {
 
 namespace {
 
+template <typename Out>
+void splitString(const std::string &s, char delim, Out result) {
+    std::istringstream iss(s);
+    std::string item;
+    while (std::getline(iss, item, delim)) {
+        *result++ = item;
+    }
+}
+
+std::vector<std::string> splitString(const std::string &s, char delim) {
+    std::vector<std::string> elems;
+    splitString(s, delim, std::back_inserter(elems));
+    return elems;
+}
+
 static int stringToInt(std::string const &string) {
     std::stringstream stringStream(string);
     int value = 0;
@@ -1130,6 +1145,14 @@ public:
         _requestedMaxQuality = quality;
     }
 
+    void setStats(absl::optional<GroupInstanceStats::IncomingVideoStats> stats) {
+        _stats = stats;
+    }
+
+    absl::optional<GroupInstanceStats::IncomingVideoStats> getStats() {
+        return _stats;
+    }
+
 private:
     std::shared_ptr<Threads> _threads;
     uint32_t _mainVideoSsrc = 0;
@@ -1145,6 +1168,8 @@ private:
 
     VideoChannelDescription::Quality _requestedMinQuality = VideoChannelDescription::Quality::Thumbnail;
     VideoChannelDescription::Quality _requestedMaxQuality = VideoChannelDescription::Quality::Thumbnail;
+
+    absl::optional<GroupInstanceStats::IncomingVideoStats> _stats;
 };
 
 class MissingSsrcPacketBuffer {
@@ -1776,27 +1801,32 @@ public:
             GroupLevelsUpdate levelsUpdate;
             levelsUpdate.updates.reserve(strong->_audioLevels.size() + 1);
             for (auto &it : strong->_audioLevels) {
-                if (it.second.value.level > 0.001f && it.second.timestamp > timestamp - maxSampleTimeout) {
-                    uint32_t effectiveSsrc = it.first.actualSsrc;
-                    if (std::find_if(levelsUpdate.updates.begin(), levelsUpdate.updates.end(), [&](GroupLevelUpdate const &item) {
-                        return item.ssrc == effectiveSsrc;
-                    }) != levelsUpdate.updates.end()) {
-                        continue;
-                    }
-                    levelsUpdate.updates.push_back(GroupLevelUpdate{
-                        effectiveSsrc,
-                        it.second.value,
-                        });
-                    if (it.second.value.level > 0.001f) {
-                        auto audioChannel = strong->_incomingAudioChannels.find(it.first);
-                        if (audioChannel != strong->_incomingAudioChannels.end()) {
-                            audioChannel->second->updateActivity();
-                        }
-                    }
-
-                    it.second.value.level *= 0.5f;
-                    it.second.value.voice = false;
+                if (it.second.value.level < 0.001f) {
+                    continue;
                 }
+                if (it.second.timestamp <= timestamp - maxSampleTimeout) {
+                    continue;
+                }
+
+                uint32_t effectiveSsrc = it.first.actualSsrc;
+                if (std::find_if(levelsUpdate.updates.begin(), levelsUpdate.updates.end(), [&](GroupLevelUpdate const &item) {
+                    return item.ssrc == effectiveSsrc;
+                }) != levelsUpdate.updates.end()) {
+                    continue;
+                }
+                levelsUpdate.updates.push_back(GroupLevelUpdate{
+                    effectiveSsrc,
+                    it.second.value,
+                    });
+                if (it.second.value.level > 0.001f) {
+                    auto audioChannel = strong->_incomingAudioChannels.find(it.first);
+                    if (audioChannel != strong->_incomingAudioChannels.end()) {
+                        audioChannel->second->updateActivity();
+                    }
+                }
+
+                it.second.value.level *= 0.5f;
+                it.second.value.voice = false;
             }
 
             auto myAudioLevel = strong->_myAudioLevel;
@@ -2463,6 +2493,58 @@ public:
                             }
                         }
                     }
+                } else if (messageType == "DebugMessage") {
+                    const auto message = json.object_items().find("message");
+                    if (message != json.object_items().end() && message->second.is_string()) {
+                        std::vector<std::string> parts = splitString(message->second.string_value(), '\n');
+                        for (const auto &part : parts) {
+                            std::string cleanString = part;
+                            std::size_t index = cleanString.find("=");
+                            if (index == std::string::npos) {
+                                continue;
+                            }
+                            cleanString.erase(cleanString.begin(), cleanString.begin() + index + 1);
+
+                            index = cleanString.find("target=");
+                            if (index == std::string::npos) {
+                                continue;
+                            }
+
+                            std::string endpointId = cleanString.substr(0, index);
+                            cleanString.erase(cleanString.begin(), cleanString.begin() + index + 7);
+
+                            index = cleanString.find("p/");
+                            if (index == std::string::npos) {
+                                continue;
+                            }
+
+                            std::string targetQuality = cleanString.substr(0, index);
+                            cleanString.erase(cleanString.begin(), cleanString.begin() + index + 2);
+
+                            index = cleanString.find("ideal=");
+                            if (index == std::string::npos) {
+                                continue;
+                            }
+
+                            cleanString.erase(cleanString.begin(), cleanString.begin() + index + 6);
+
+                            index = cleanString.find("p/");
+                            if (index == std::string::npos) {
+                                continue;
+                            }
+
+                            std::string availableQuality = cleanString.substr(0, index);
+
+                            for (const auto &it : _incomingVideoChannels) {
+                                if (it.second->endpointId() == endpointId) {
+                                    GroupInstanceStats::IncomingVideoStats incomingVideoStats;
+                                    incomingVideoStats.receivingQuality = stringToInt(targetQuality);
+                                    incomingVideoStats.availableQuality = stringToInt(availableQuality);
+                                    it.second->setStats(incomingVideoStats);
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -2997,11 +3079,21 @@ public:
                         if (!strong) {
                             return;
                         }
-                        InternalGroupLevelValue updated;
-                        updated.value.level = update.level;
-                        updated.value.voice = update.hasSpeech;
-                        updated.timestamp = rtc::TimeMillis();
-                        strong->_audioLevels.insert(std::make_pair(ChannelId(ssrc), std::move(updated)));
+
+                        auto it = strong->_audioLevels.find(ChannelId(ssrc));
+                        if (it != strong->_audioLevels.end()) {
+                            it->second.value.level = fmax(it->second.value.level, update.level);
+                            if (update.hasSpeech) {
+                                it->second.value.voice = true;
+                            }
+                            it->second.timestamp = rtc::TimeMillis();
+                        } else {
+                            InternalGroupLevelValue updated;
+                            updated.value.level = update.level;
+                            updated.value.voice = update.hasSpeech;
+                            updated.timestamp = rtc::TimeMillis();
+                            strong->_audioLevels.insert(std::make_pair(ChannelId(ssrc), std::move(updated)));
+                        }
                     });
                 };
             }
@@ -3203,6 +3295,19 @@ public:
         if (updated) {
             maybeUpdateRemoteVideoConstraints();
         }
+    }
+
+    void getStats(std::function<void(GroupInstanceStats)> completion) {
+        GroupInstanceStats result;
+
+        for (const auto &it : _incomingVideoChannels) {
+            const auto videoStats = it.second->getStats();
+            if (videoStats) {
+                result.incomingVideoStats.push_back(std::make_pair(it.second->endpointId(), videoStats.value()));
+            }
+        }
+
+        completion(result);
     }
 
 private:
@@ -3462,6 +3567,12 @@ void GroupInstanceCustomImpl::setVolume(uint32_t ssrc, double volume) {
 void GroupInstanceCustomImpl::setRequestedVideoChannels(std::vector<VideoChannelDescription> &&requestedVideoChannels) {
     _internal->perform(RTC_FROM_HERE, [requestedVideoChannels = std::move(requestedVideoChannels)](GroupInstanceCustomInternal *internal) mutable {
         internal->setRequestedVideoChannels(std::move(requestedVideoChannels));
+    });
+}
+
+void GroupInstanceCustomImpl::getStats(std::function<void(GroupInstanceStats)> completion) {
+    _internal->perform(RTC_FROM_HERE, [completion = std::move(completion)](GroupInstanceCustomInternal *internal) mutable {
+        internal->getStats(completion);
     });
 }
 

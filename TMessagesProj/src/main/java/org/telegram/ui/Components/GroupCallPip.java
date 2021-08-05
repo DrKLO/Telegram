@@ -329,7 +329,7 @@ public class GroupCallPip implements NotificationCenter.NotificationCenterDelega
         button = new GroupCallPipButton(context, currentAccount, false);
         windowView.addView(button, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER));
 
-        avatarsImageView = new AvatarsImageView(context);
+        avatarsImageView = new AvatarsImageView(context, true);
         avatarsImageView.setStyle(5);
         avatarsImageView.setCentered(true);
         avatarsImageView.setVisibility(View.GONE);

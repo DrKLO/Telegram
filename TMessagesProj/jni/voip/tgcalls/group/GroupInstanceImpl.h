@@ -128,6 +128,15 @@ struct VideoChannelDescription {
     Quality maxQuality = Quality::Thumbnail;
 };
 
+struct GroupInstanceStats {
+    struct IncomingVideoStats {
+        int receivingQuality = 0;
+        int availableQuality = 0;
+    };
+
+    std::vector<std::pair<std::string, IncomingVideoStats>> incomingVideoStats;
+};
+
 struct GroupInstanceDescriptor {
     std::shared_ptr<Threads> threads;
     GroupConfig config;
@@ -184,6 +193,8 @@ public:
 
     virtual void setVolume(uint32_t ssrc, double volume) = 0;
     virtual void setRequestedVideoChannels(std::vector<VideoChannelDescription> &&requestedVideoChannels) = 0;
+
+    virtual void getStats(std::function<void(GroupInstanceStats)> completion) = 0;
 
     struct AudioDevice {
       enum class Type {Input, Output};

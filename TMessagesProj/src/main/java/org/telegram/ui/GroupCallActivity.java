@@ -3198,6 +3198,9 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                 if (cell.getUser() == null) {
                     return;
                 }
+
+                parentActivity.switchToAccount(currentAccount, true);
+
                 Bundle args = new Bundle();
                 args.putInt("user_id", cell.getUser().id);
                 if (cell.hasAvatarSet()) {
@@ -6627,6 +6630,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                 }
             }
         } else if (option == 6) {
+            parentActivity.switchToAccount(currentAccount, true);
             Bundle args = new Bundle();
             if (peerId > 0) {
                 args.putInt("user_id", peerId);
@@ -6636,6 +6640,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             parentActivity.presentFragment(new ChatActivity(args));
             dismiss();
         } else if (option == 8) {
+            parentActivity.switchToAccount(currentAccount, true);
             BaseFragment fragment = parentActivity.getActionBarLayout().fragmentsStack.get(parentActivity.getActionBarLayout().fragmentsStack.size() - 1);
             if (fragment instanceof ChatActivity) {
                 if (((ChatActivity) fragment).getDialogId() == peerId) {

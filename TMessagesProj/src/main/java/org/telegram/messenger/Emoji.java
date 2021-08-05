@@ -40,7 +40,7 @@ public class Emoji {
     private static int bigImgSize;
     private static boolean inited = false;
     private static Paint placeholderPaint;
-    private static int[] emojiCounts = new int[]{1695, 199, 123, 332, 128, 222, 290, 259};
+    private static int[] emojiCounts = new int[]{1906, 199, 123, 332, 128, 222, 292, 259};
     private static Bitmap[][] emojiBmp = new Bitmap[8][];
     private static boolean[][] loadingEmoji = new boolean[8][];
 
@@ -92,33 +92,16 @@ public class Emoji {
 
     private static void loadEmojiInternal(final byte page, final short page2) {
         try {
-            float scale;
-            int imageResize = 1;
+            int imageResize;
             if (AndroidUtilities.density <= 1.0f) {
-                scale = 2.0f;
                 imageResize = 2;
-            } else if (AndroidUtilities.density <= 1.5f) {
-                scale = 2.0f;
-            } else if (AndroidUtilities.density <= 2.0f) {
-                scale = 2.0f;
             } else {
-                scale = 2.0f;
+                imageResize = 1;
             }
 
             String imageName;
             File imageFile;
 
-            try {
-                for (int a = 13; a < 16; a++) {
-                    imageName = String.format(Locale.US, "v%d_emoji%.01fx_%d.png", a, scale, page);
-                    imageFile = ApplicationLoader.applicationContext.getFileStreamPath(imageName);
-                    if (imageFile.exists()) {
-                        imageFile.delete();
-                    }
-                }
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
             Bitmap bitmap = null;
             try {
                 InputStream is = ApplicationLoader.applicationContext.getAssets().open("emoji/" + String.format(Locale.US, "%d_%d.png", page, page2));
@@ -483,7 +466,7 @@ public class Emoji {
                     emojiCode.setLength(0);
                     doneEmoji = false;
                 }
-                if ((Build.VERSION.SDK_INT < 23 || Build.VERSION.SDK_INT >= 29) && emojiCount >= 50) {
+                if ((Build.VERSION.SDK_INT < 23 || Build.VERSION.SDK_INT >= 29) && !BuildVars.DEBUG_PRIVATE_VERSION && emojiCount >= 50) {
                     break;
                 }
             }

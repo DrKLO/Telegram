@@ -10943,7 +10943,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             canvas.restore();
             if (adminLayout != null) {
                 int color;
-                if (currentMessageObject.isOutOwner()) {
+                if (currentMessageObject.shouldDrawWithoutBackground()) {
+                    color = Theme.getColor(Theme.key_chat_stickerReplyNameText);
+                } else if (currentMessageObject.isOutOwner()) {
                     color = Theme.getColor(isDrawSelectionBackground() ? Theme.key_chat_outAdminSelectedText : Theme.key_chat_outAdminText);
                 } else {
                     color = Theme.getColor(isDrawSelectionBackground() ? Theme.key_chat_inAdminSelectedText : Theme.key_chat_inAdminText);
@@ -10972,7 +10974,14 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         ax -= AndroidUtilities.dp(48);
                     }
                 } else {
-                    if (!mediaBackground && currentMessageObject.isOutOwner()) {
+                    if (currentMessageObject.shouldDrawWithoutBackground()) {
+                        if (currentMessageObject.isOutOwner()) {
+                            ax = AndroidUtilities.dp(28) + nameWidth - adminLayout.getLineWidth(0);
+                        } else {
+                            ax = backgroundDrawableLeft + transitionParams.deltaLeft + backgroundDrawableRight + AndroidUtilities.dp(22) + nameWidth - adminLayout.getLineWidth(0);
+                        }
+
+                    } else if (!mediaBackground && currentMessageObject.isOutOwner()) {
                         ax = backgroundDrawableLeft + backgroundDrawableRight - AndroidUtilities.dp(17) - adminLayout.getLineWidth(0);
                     } else {
                         ax = backgroundDrawableLeft + backgroundDrawableRight - AndroidUtilities.dp(11) - adminLayout.getLineWidth(0);
@@ -13584,6 +13593,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         private final int REPLY = 497;
         private final int COMMENT = 496;
         private final int POLL_HINT = 495;
+        private final int FORWARD = 494;
         private Path linkPath = new Path();
         private RectF rectF = new RectF();
         private Rect rect = new Rect();
@@ -13754,7 +13764,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         i++;
                     }
                 }
-                if (currentMessageObject.caption instanceof Spannable) {
+                if (currentMessageObject.caption instanceof Spannable && captionLayout != null) {
                     Spannable buffer = (Spannable) currentMessageObject.caption;
                     CharacterStyle[] links = buffer.getSpans(0, buffer.length(), ClickableSpan.class);
                     i = 0;
@@ -13787,6 +13797,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 }
                 if (replyNameLayout != null) {
                     info.addChild(ChatMessageCell.this, REPLY);
+                }
+                if (forwardedNameLayout[0] != null && forwardedNameLayout[1] != null) {
+                    info.addChild(ChatMessageCell.this, FORWARD);
                 }
                 if (drawSelectionBackground || getBackground() != null) {
                     info.setSelected(true);
@@ -13989,6 +14002,27 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     rect.offset(pos[0], pos[1]);
                     info.setBoundsInScreen(rect);
                     info.setClickable(true);
+                } else if (virtualViewId == FORWARD) {
+                    info.setEnabled(true);
+                    StringBuilder sb = new StringBuilder();
+                    if (forwardedNameLayout[0] != null && forwardedNameLayout[1] != null) {
+                        for (int a = 0; a < 2; a++) {
+                            sb.append(forwardedNameLayout[a].getText());
+                            sb.append(a == 0 ? " " : "\n");
+                        }
+                    }
+                    info.setContentDescription(sb.toString());
+                    info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
+
+                    int x = (int) Math.min(forwardNameX - forwardNameOffsetX[0], forwardNameX - forwardNameOffsetX[1]);
+                    rect.set(x, forwardNameY, x + forwardedNameWidth, forwardNameY + AndroidUtilities.dp(32));
+                    info.setBoundsInParent(rect);
+                    if (accessibilityVirtualViewBounds.get(virtualViewId) == null || !accessibilityVirtualViewBounds.get(virtualViewId).equals(rect)) {
+                        accessibilityVirtualViewBounds.put(virtualViewId, new Rect(rect));
+                    }
+                    rect.offset(pos[0], pos[1]);
+                    info.setBoundsInScreen(rect);
+                    info.setClickable(true);
                 } else if (virtualViewId == COMMENT) {
                     info.setClassName("android.widget.Button");
                     info.setEnabled(true);
@@ -14073,7 +14107,17 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         if (delegate != null && (!isThreadChat || currentMessageObject.getReplyTopMsgId() != 0) && currentMessageObject.hasValidReplyMessageObject()) {
                             delegate.didPressReplyMessage(ChatMessageCell.this, currentMessageObject.getReplyMsgId());
                         }
-                    } else if (virtualViewId == COMMENT) {
+                    } else if (virtualViewId == FORWARD) {
+                         if (delegate != null) {
+                             if (currentForwardChannel != null) {
+                                 delegate.didPressChannelAvatar(ChatMessageCell.this, currentForwardChannel, currentMessageObject.messageOwner.fwd_from.channel_post, lastTouchX, lastTouchY);
+                             } else if (currentForwardUser != null) {
+                                 delegate.didPressUserAvatar(ChatMessageCell.this, currentForwardUser, lastTouchX, lastTouchY);
+                             } else if (currentForwardName != null) {
+                                 delegate.didPressHiddenForward(ChatMessageCell.this);
+                             }
+                         }
+                     } else if (virtualViewId == COMMENT) {
                         if (delegate != null) {
                             if (isRepliesChat) {
                                 delegate.didPressSideButton(ChatMessageCell.this);

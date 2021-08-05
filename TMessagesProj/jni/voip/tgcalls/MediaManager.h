@@ -102,7 +102,6 @@ private:
 
 	bool computeIsSendingVideo() const;
     void configureSendingVideoIfNeeded();
-	void resetSendingVideo();
 	void checkIsSendingVideoChanged(bool wasSending);
 	bool videoCodecsNegotiated() const;
 

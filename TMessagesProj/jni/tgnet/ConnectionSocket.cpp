@@ -495,6 +495,15 @@ void ConnectionSocket::openConnectionInternal(bool ipv6) {
     if (setsockopt(socketFd, IPPROTO_TCP, TCP_NODELAY, &yes, sizeof(int))) {
         if (LOGS_ENABLED) DEBUG_E("connection(%p) set TCP_NODELAY failed", this);
     }
+#ifdef DEBUG_VERSION
+    int size = 4 * 1024 * 1024;
+    if (setsockopt(socketFd, SOL_SOCKET, SO_SNDBUF, &size, sizeof(int))) {
+        if (LOGS_ENABLED) DEBUG_E("connection(%p) set SO_SNDBUF failed", this);
+    }
+    if (setsockopt(socketFd, SOL_SOCKET, SO_RCVBUF, &size, sizeof(int))) {
+        if (LOGS_ENABLED) DEBUG_E("connection(%p) set SO_RCVBUF failed", this);
+    }
+#endif
 
     if (fcntl(socketFd, F_SETFL, O_NONBLOCK) == -1) {
         if (LOGS_ENABLED) DEBUG_E("connection(%p) set O_NONBLOCK failed", this);

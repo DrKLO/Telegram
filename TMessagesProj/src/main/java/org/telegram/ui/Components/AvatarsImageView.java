@@ -50,6 +50,8 @@ public class AvatarsImageView extends FrameLayout {
     int currentStyle;
     boolean centered;
 
+    private boolean isInCall;
+
     public void commitTransition(boolean animated) {
         if (!wasDraw || !animated) {
             transitionProgress = 1f;
@@ -174,7 +176,7 @@ public class AvatarsImageView extends FrameLayout {
 
     Random random = new Random();
 
-    public AvatarsImageView(Context context) {
+    public AvatarsImageView(Context context, boolean inCall) {
         super(context);
         for (int a = 0; a < 3; a++) {
             currentStates[a] = new DrawingState();
@@ -189,6 +191,7 @@ public class AvatarsImageView extends FrameLayout {
             animatingStates[a].avatarDrawable = new AvatarDrawable();
             animatingStates[a].avatarDrawable.setTextSize(AndroidUtilities.dp(9));
         }
+        isInCall = inCall;
         setWillNotDraw(false);
         xRefP.setColor(0);
         xRefP.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
@@ -220,7 +223,11 @@ public class AvatarsImageView extends FrameLayout {
                 if (id == AccountInstance.getInstance(account).getUserConfig().getClientUserId()) {
                     animatingStates[index].lastSpeakTime = 0;
                 } else {
-                    animatingStates[index].lastSpeakTime = participant.lastActiveDate;
+                    if (isInCall) {
+                        animatingStates[index].lastSpeakTime = participant.lastActiveDate;
+                    } else {
+                        animatingStates[index].lastSpeakTime = participant.active_date;
+                    }
                 }
             } else {
                 animatingStates[index].lastSpeakTime = participant.active_date;

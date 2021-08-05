@@ -899,7 +899,7 @@ public class MessageObject {
     }
 
     public MessageObject(int accountNum, TLRPC.Message message, MessageObject replyToMessage, AbstractMap<Integer, TLRPC.User> users, AbstractMap<Integer, TLRPC.Chat> chats, SparseArray<TLRPC.User> sUsers, SparseArray<TLRPC.Chat> sChats, boolean generateLayout, boolean checkMediaExists, long eid) {
-        Theme.createCommonChatResources();
+        Theme.createCommonMessageResources();
 
         currentAccount = accountNum;
         messageOwner = message;
@@ -2363,7 +2363,7 @@ public class MessageObject {
         }
         wantedBotKeyboardWidth = 0;
         if (messageOwner.reply_markup instanceof TLRPC.TL_replyInlineMarkup || messageOwner.reactions != null && !messageOwner.reactions.results.isEmpty()) {
-            Theme.createCommonChatResources();
+            Theme.createCommonMessageResources();
             if (botButtonsLayout == null) {
                 botButtonsLayout = new StringBuilder();
             } else {
@@ -5035,8 +5035,9 @@ public class MessageObject {
     }
 
     public static TLRPC.InputStickerSet getInputStickerSet(TLRPC.Message message) {
-        if (message.media != null && message.media.document != null) {
-            return getInputStickerSet(message.media.document);
+        TLRPC.Document document = getDocument(message);
+        if (document != null) {
+            return getInputStickerSet(document);
         }
         return null;
     }
