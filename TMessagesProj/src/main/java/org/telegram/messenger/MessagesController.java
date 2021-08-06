@@ -5875,11 +5875,18 @@ public class MessagesController extends BaseController implements NotificationCe
                             newPrintingStrings.put(threadId, LocaleController.getString("RecordingAudio", R.string.RecordingAudio));
                         }
                         newPrintingStringsTypes.put(threadId, 1);
-                    } else if (pu.action instanceof TLRPC.TL_sendMessageRecordRoundAction || pu.action instanceof TLRPC.TL_sendMessageUploadRoundAction) {
+                    } else if (pu.action instanceof TLRPC.TL_sendMessageRecordRoundAction) {
                         if (lower_id < 0) {
                             newPrintingStrings.put(threadId, LocaleController.formatString("IsRecordingRound", R.string.IsRecordingRound, getUserNameForTyping(user)));
                         } else {
                             newPrintingStrings.put(threadId, LocaleController.getString("RecordingRound", R.string.RecordingRound));
+                        }
+                        newPrintingStringsTypes.put(threadId, 4);
+                    } else if (pu.action instanceof TLRPC.TL_sendMessageUploadRoundAction) {
+                        if (lower_id < 0) {
+                            newPrintingStrings.put(threadId, LocaleController.formatString("IsSendingVideo", R.string.IsSendingVideo, getUserNameForTyping(user)));
+                        } else {
+                            newPrintingStrings.put(threadId, LocaleController.getString("SendingVideoStatus", R.string.SendingVideoStatus));
                         }
                         newPrintingStringsTypes.put(threadId, 4);
                     } else if (pu.action instanceof TLRPC.TL_sendMessageUploadAudioAction) {
@@ -5889,11 +5896,18 @@ public class MessagesController extends BaseController implements NotificationCe
                             newPrintingStrings.put(threadId, LocaleController.getString("SendingAudio", R.string.SendingAudio));
                         }
                         newPrintingStringsTypes.put(threadId, 2);
-                    } else if (pu.action instanceof TLRPC.TL_sendMessageUploadVideoAction || pu.action instanceof TLRPC.TL_sendMessageRecordVideoAction) {
+                    } else if (pu.action instanceof TLRPC.TL_sendMessageUploadVideoAction) {
                         if (lower_id < 0) {
                             newPrintingStrings.put(threadId, LocaleController.formatString("IsSendingVideo", R.string.IsSendingVideo, getUserNameForTyping(user)));
                         } else {
                             newPrintingStrings.put(threadId, LocaleController.getString("SendingVideoStatus", R.string.SendingVideoStatus));
+                        }
+                        newPrintingStringsTypes.put(threadId, 2);
+                    } else if (pu.action instanceof TLRPC.TL_sendMessageRecordVideoAction) {
+                        if (lower_id < 0) {
+                            newPrintingStrings.put(threadId, LocaleController.formatString("IsRecordingVideo", R.string.IsRecordingVideo, getUserNameForTyping(user)));
+                        } else {
+                            newPrintingStrings.put(threadId, LocaleController.getString("RecordingVideoStatus", R.string.RecordingVideoStatus));
                         }
                         newPrintingStringsTypes.put(threadId, 2);
                     } else if (pu.action instanceof TLRPC.TL_sendMessageUploadDocumentAction) {
@@ -5917,6 +5931,20 @@ public class MessagesController extends BaseController implements NotificationCe
                             newPrintingStrings.put(threadId, LocaleController.getString("SendingGame", R.string.SendingGame));
                         }
                         newPrintingStringsTypes.put(threadId, 3);
+                    } else if (pu.action instanceof TLRPC.TL_sendMessageGeoLocationAction) {
+                        if (lower_id < 0) {
+                            newPrintingStrings.put(threadId, LocaleController.formatString("IsSelectingLocation", R.string.IsSelectingLocation, getUserNameForTyping(user)));
+                        } else {
+                            newPrintingStrings.put(threadId, LocaleController.getString("SelectingLocation", R.string.SelectingLocation));
+                        }
+                        newPrintingStringsTypes.put(threadId, 0);
+                    } else if (pu.action instanceof TLRPC.TL_sendMessageChooseContactAction) {
+                        if (lower_id < 0) {
+                            newPrintingStrings.put(threadId, LocaleController.formatString("IsSelectingContact", R.string.IsSelectingContact, getUserNameForTyping(user)));
+                        } else {
+                            newPrintingStrings.put(threadId, LocaleController.getString("SelectingContact", R.string.SelectingContact));
+                        }
+                        newPrintingStringsTypes.put(threadId, 0);
                     } else {
                         if (lower_id < 0) {
                             newPrintingStrings.put(threadId, LocaleController.formatString("IsTypingGroup", R.string.IsTypingGroup, getUserNameForTyping(user)));

@@ -3725,6 +3725,9 @@ public class MessagesStorage extends BaseController {
                     arr.add(m);
                 }
                 cursor.dispose();
+                if (media == null) {
+                    media = false;
+                }
                 getMessagesController().processLoadedDeleteTask(date, arr, media, channelId1);
             } catch (Exception e) {
                 FileLog.e(e);
@@ -10369,7 +10372,9 @@ public class MessagesStorage extends BaseController {
                                     data.reuse();
                                     int send_state = cursor.intValue(5);
                                     if (send_state != 3) {
-                                        message.attachPath = oldMessage.attachPath;
+                                        if (MessageObject.getFileName(oldMessage).equals(MessageObject.getFileName(message))) {
+                                            message.attachPath = oldMessage.attachPath;
+                                        }
                                         message.ttl = cursor.intValue(2);
                                     }
                                     boolean sameMedia = false;

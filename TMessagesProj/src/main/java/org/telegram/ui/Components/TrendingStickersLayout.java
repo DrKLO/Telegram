@@ -38,6 +38,7 @@ import org.telegram.ui.Cells.GraySectionCell;
 import org.telegram.ui.Cells.StickerEmojiCell;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class TrendingStickersLayout extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
@@ -112,17 +113,19 @@ public class TrendingStickersLayout extends FrameLayout implements NotificationC
     ValueAnimator glueToTopAnimator;
     private boolean gluedToTop;
     private boolean scrollFromAnimator;
+    private TLRPC.StickerSetCovered scrollToSet;
 
     public TrendingStickersLayout(@NonNull Context context, Delegate delegate) {
-        this(context, delegate, new TLRPC.StickerSetCovered[10], new LongSparseArray<>(), new LongSparseArray<>());
+        this(context, delegate, new TLRPC.StickerSetCovered[10], new LongSparseArray<>(), new LongSparseArray<>(), null);
     }
 
-    public TrendingStickersLayout(@NonNull Context context, Delegate delegate, TLRPC.StickerSetCovered[] primaryInstallingStickerSets, LongSparseArray<TLRPC.StickerSetCovered> installingStickerSets, LongSparseArray<TLRPC.StickerSetCovered> removingStickerSets) {
+    public TrendingStickersLayout(@NonNull Context context, Delegate delegate, TLRPC.StickerSetCovered[] primaryInstallingStickerSets, LongSparseArray<TLRPC.StickerSetCovered> installingStickerSets, LongSparseArray<TLRPC.StickerSetCovered> removingStickerSets, TLRPC.StickerSetCovered scrollToSet) {
         super(context);
         this.delegate = delegate;
         this.primaryInstallingStickerSets = primaryInstallingStickerSets;
         this.installingStickerSets = installingStickerSets;
         this.removingStickerSets = removingStickerSets;
+        this.scrollToSet = scrollToSet;
         this.adapter = new TrendingStickersAdapter(context);
 
         final StickersSearchAdapter.Delegate searchAdapterDelegate = new StickersSearchAdapter.Delegate() {
@@ -346,6 +349,12 @@ public class TrendingStickersLayout extends FrameLayout implements NotificationC
         if (!wasLayout) {
             wasLayout = true;
             adapter.refreshStickerSets();
+            if (scrollToSet != null) {
+                Integer pos  = adapter.setsToPosition.get(scrollToSet);
+                if (pos != null) {
+                    layoutManager.scrollToPositionWithOffset(pos, -listView.getPaddingTop() + AndroidUtilities.dp(58));
+                }
+            }
         }
     }
 
@@ -591,6 +600,7 @@ public class TrendingStickersLayout extends FrameLayout implements NotificationC
         private final SparseArray<Object> cache = new SparseArray<>();
         private final ArrayList<TLRPC.StickerSetCovered> sets = new ArrayList<>();
         private final SparseArray<TLRPC.StickerSetCovered> positionsToSets = new SparseArray<>();
+        private final HashMap<TLRPC.StickerSetCovered, Integer> setsToPosition = new HashMap<>();
         private final ArrayList<TLRPC.StickerSetCovered> otherPacks = new ArrayList<>();
 
         private boolean loadingMore;
@@ -826,6 +836,7 @@ public class TrendingStickersLayout extends FrameLayout implements NotificationC
             }
             cache.clear();
             positionsToSets.clear();
+            setsToPosition.clear();
             sets.clear();
             totalItems = 0;
             int num = 0;
@@ -847,6 +858,7 @@ public class TrendingStickersLayout extends FrameLayout implements NotificationC
 
                 sets.add(pack);
                 positionsToSets.put(totalItems, pack);
+                setsToPosition.put(pack, totalItems);
                 cache.put(totalItems++, num++);
 
                 int count;
