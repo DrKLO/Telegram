@@ -1681,7 +1681,6 @@ void ConnectionsManager::initDatacenters() {
         if (datacenters.find(1) == datacenters.end()) {
             datacenter = new Datacenter(instanceNum, 1);
             datacenter->addAddressAndPort("192.168.1.150", 443, 0, "");
-            datacenter->addAddressAndPort("192.168.31.40", 443, 0, "");
             // datacenter->addAddressAndPort("2001:b28:f23d:f001:0000:0000:0000:000a", 443, 1, "");
             datacenters[1] = datacenter;
         }
@@ -1689,7 +1688,6 @@ void ConnectionsManager::initDatacenters() {
         if (datacenters.find(1) == datacenters.end()) {
             datacenter = new Datacenter(instanceNum, 1);
             datacenter->addAddressAndPort("192.168.1.150", 443, 0, "");
-            datacenter->addAddressAndPort("192.168.31.40", 443, 0, "");
             // datacenter->addAddressAndPort("2001:b28:f23d:f001:0000:0000:0000:000e", 443, 1, "");
             datacenters[1] = datacenter;
         }
