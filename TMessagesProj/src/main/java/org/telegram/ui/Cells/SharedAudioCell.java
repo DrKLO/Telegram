@@ -198,8 +198,8 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
             captionLayoutEmojis = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, captionLayoutEmojis, captionLayout);
         }
         try {
-            if (viewType == VIEW_TYPE_GLOBAL_SEARCH && (currentMessageObject.isVoice() || currentMessageObject.isRoundVideo())) {
-                CharSequence duration = AndroidUtilities.formatDuration((int) currentMessageObject.getDuration(), false);
+            if (/*viewType == VIEW_TYPE_GLOBAL_SEARCH && */(currentMessageObject.isVoice() || currentMessageObject.isRoundVideo())) {
+                CharSequence duration = AndroidUtilities.formatDuration((int) currentMessageObject.getDuration(), false) + " / " + currentMessageObject.getMusicAuthor().replace('\n', ' ');
                 TextPaint paint = viewType == VIEW_TYPE_GLOBAL_SEARCH ? description2TextPaint : Theme.chat_contextResult_descriptionTextPaint;
                 duration = TextUtils.ellipsize(duration, paint, maxWidth, TextUtils.TruncateAt.END);
                 descriptionLayout = new StaticLayout(duration, paint, maxWidth + AndroidUtilities.dp(4), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
