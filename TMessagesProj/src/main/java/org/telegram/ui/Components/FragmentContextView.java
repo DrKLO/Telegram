@@ -404,7 +404,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
             updatePlaybackButton();
         }
 
-        avatars = new AvatarsImageView(context);
+        avatars = new AvatarsImageView(context, false);
         avatars.setDelegate(() -> updateAvatars(true));
         avatars.setVisibility(GONE);
         addView(avatars, LayoutHelper.createFrame(108, 36, Gravity.LEFT | Gravity.TOP));

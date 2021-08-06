@@ -489,6 +489,11 @@ public abstract class PrivateVideoPreviewDialog extends FrameLayout implements V
         }
     }
 
+    @Override
+    public void onCameraSwitch(boolean isFrontFace) {
+        update();
+    }
+
     public void update() {
         if (VoIPService.getSharedInstance() != null) {
             textureView.renderer.setMirror(VoIPService.getSharedInstance().isFrontFaceCamera());

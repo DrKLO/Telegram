@@ -433,7 +433,7 @@ public class LinkActionView extends LinearLayout {
 
         public AvatarsContainer(@NonNull Context context) {
             super(context);
-            avatarsImageView = new AvatarsImageView(context) {
+            avatarsImageView = new AvatarsImageView(context, false) {
                 @Override
                 protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                     int N = Math.min(3, usersCount);

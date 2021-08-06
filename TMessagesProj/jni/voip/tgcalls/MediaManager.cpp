@@ -636,28 +636,45 @@ void MediaManager::setSendVideo(std::shared_ptr<VideoCaptureInterface> videoCapt
     const auto wasReceiving = computeIsReceivingVideo();
 
     if (_videoCapture) {
-		GetVideoCaptureAssumingSameThread(_videoCapture.get())->setStateUpdated(nullptr);
+        GetVideoCaptureAssumingSameThread(_videoCapture.get())->setStateUpdated(nullptr);
     }
     _videoCapture = videoCapture;
-	if (_videoCapture) {
+    if (_videoCapture) {
         _videoCapture->setPreferredAspectRatio(_preferredAspectRatio);
         _isScreenCapture = _videoCapture->isScreenCapture();
 
-		const auto thread = _thread;
-		const auto weak = std::weak_ptr<MediaManager>(shared_from_this());
-		GetVideoCaptureAssumingSameThread(_videoCapture.get())->setStateUpdated([=](VideoState state) {
-			thread->PostTask(RTC_FROM_HERE, [=] {
-				if (const auto strong = weak.lock()) {
-					strong->setOutgoingVideoState(state);
-				}
-			});
-		});
+        const auto thread = _thread;
+        const auto weak = std::weak_ptr<MediaManager>(shared_from_this());
+        GetVideoCaptureAssumingSameThread(_videoCapture.get())->setStateUpdated([=](VideoState state) {
+            thread->PostTask(RTC_FROM_HERE, [=] {
+                if (const auto strong = weak.lock()) {
+                    strong->setOutgoingVideoState(state);
+                }
+            });
+        });
         setOutgoingVideoState(VideoState::Active);
     } else {
         _isScreenCapture = false;
 
         setOutgoingVideoState(VideoState::Inactive);
-        resetSendingVideo();
+    }
+
+    if (_enableFlexfec) {
+        _videoChannel->RemoveSendStream(_ssrcVideo.outgoing);
+        _videoChannel->RemoveSendStream(_ssrcVideo.fecOutgoing);
+    } else {
+        _videoChannel->RemoveSendStream(_ssrcVideo.outgoing);
+    }
+
+    if (_enableFlexfec) {
+        cricket::StreamParams videoSendStreamParams;
+        cricket::SsrcGroup videoSendSsrcGroup(cricket::kFecFrSsrcGroupSemantics, {_ssrcVideo.outgoing, _ssrcVideo.fecOutgoing});
+        videoSendStreamParams.ssrcs = {_ssrcVideo.outgoing};
+        videoSendStreamParams.ssrc_groups.push_back(videoSendSsrcGroup);
+        videoSendStreamParams.cname = "cname";
+        _videoChannel->AddSendStream(videoSendStreamParams);
+    } else {
+        _videoChannel->AddSendStream(cricket::StreamParams::CreateLegacy(_ssrcVideo.outgoing));
     }
 
     checkIsSendingVideoChanged(wasSending);
@@ -725,30 +742,6 @@ void MediaManager::configureSendingVideoIfNeeded() {
     }
 
     adjustBitratePreferences(true);
-}
-
-void MediaManager::resetSendingVideo() {
-    if (!_didConfigureVideo) {
-        return;
-    }
-
-    if (_enableFlexfec) {
-        _videoChannel->RemoveSendStream(_ssrcVideo.outgoing);
-        _videoChannel->RemoveSendStream(_ssrcVideo.fecOutgoing);
-    } else {
-        _videoChannel->RemoveSendStream(_ssrcVideo.outgoing);
-    }
-
-    if (_enableFlexfec) {
-        cricket::StreamParams videoSendStreamParams;
-        cricket::SsrcGroup videoSendSsrcGroup(cricket::kFecFrSsrcGroupSemantics, {_ssrcVideo.outgoing, _ssrcVideo.fecOutgoing});
-        videoSendStreamParams.ssrcs = {_ssrcVideo.outgoing};
-        videoSendStreamParams.ssrc_groups.push_back(videoSendSsrcGroup);
-        videoSendStreamParams.cname = "cname";
-        _videoChannel->AddSendStream(videoSendStreamParams);
-    } else {
-        _videoChannel->AddSendStream(cricket::StreamParams::CreateLegacy(_ssrcVideo.outgoing));
-    }
 }
 
 void MediaManager::checkIsSendingVideoChanged(bool wasSending) {

@@ -1650,6 +1650,23 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		}
 		groupCallPeer = peer;
 		groupCall.setSelfPeer(groupCallPeer);
+		TLRPC.ChatFull chatFull = MessagesController.getInstance(currentAccount).getChatFull(groupCall.chatId);
+		if (chatFull != null) {
+			chatFull.groupcall_default_join_as = groupCall.selfPeer;
+			if (chatFull.groupcall_default_join_as != null) {
+				if (chatFull instanceof TLRPC.TL_chatFull) {
+					chatFull.flags |= 32768;
+				} else {
+					chatFull.flags |= 67108864;
+				}
+			} else {
+				if (chatFull instanceof TLRPC.TL_chatFull) {
+					chatFull.flags &=~ 32768;
+				} else {
+					chatFull.flags &=~ 67108864;
+				}
+			}
+		}
 		createGroupInstance(CAPTURE_DEVICE_CAMERA, true);
 		if (videoState[CAPTURE_DEVICE_SCREEN] == Instance.VIDEO_STATE_ACTIVE) {
 			createGroupInstance(CAPTURE_DEVICE_SCREEN, true);
@@ -2358,7 +2375,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 					l.onVideoAvailableChange(isVideoAvailable);
 				}
 			}
-			captureDevice[CAPTURE_DEVICE_CAMERA] = 0;
+			destroyCaptureDevice[CAPTURE_DEVICE_CAMERA] = false;
 
 			AndroidUtilities.runOnUIThread(new Runnable() {
 				@Override
