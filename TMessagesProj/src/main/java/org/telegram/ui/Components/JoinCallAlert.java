@@ -140,7 +140,7 @@ public class JoinCallAlert extends BottomSheet {
                 }
                 textView[a].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                 textView[a].setPadding(0, 0, 0, hasBackground ? 0 : AndroidUtilities.dp(13));
-                addView(textView[a], LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
+                addView(textView[a], LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 24, 0, 24, 0));
                 if (a == 1) {
                     textView[a].setAlpha(0.0f);
                 }

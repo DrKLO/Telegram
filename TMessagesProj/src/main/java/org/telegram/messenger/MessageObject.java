@@ -3506,8 +3506,12 @@ public class MessageObject {
     }
 
     public String getFileName() {
+        return getFileName(messageOwner);
+    }
+
+    public static String getFileName(TLRPC.Message messageOwner) {
         if (messageOwner.media instanceof TLRPC.TL_messageMediaDocument) {
-            return FileLoader.getAttachFileName(getDocument());
+            return FileLoader.getAttachFileName(getDocument(messageOwner));
         } else if (messageOwner.media instanceof TLRPC.TL_messageMediaPhoto) {
             ArrayList<TLRPC.PhotoSize> sizes = messageOwner.media.photo.sizes;
             if (sizes.size() > 0) {

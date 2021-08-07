@@ -199,6 +199,11 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
             if (emojiView != null) {
                 emojiView.invalidateViews();
             }
+            if (editText != null) {
+                int color = editText.getCurrentTextColor();
+                editText.setTextColor(0xffffffff);
+                editText.setTextColor(color);
+            }
         }
     }
 

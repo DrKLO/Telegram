@@ -1670,6 +1670,9 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         }
                     }
                 }
+                if (chat != null) {
+                    rank = getMessagesController().getAdminRank(chat.id, myId);
+                }
                 canSendStickers = ChatObject.canSendStickers(chat);
                 canSendMedia = ChatObject.canSendMedia(chat);
                 canSendPreview = ChatObject.canSendEmbed(chat);

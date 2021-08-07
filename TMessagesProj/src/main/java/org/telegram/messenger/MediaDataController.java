@@ -4048,7 +4048,7 @@ public class MediaDataController extends BaseController {
                             }
                         }
                     }
-                    AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.replyMessagesDidLoad, dialogId, loadedMessages));
+                    AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.replyMessagesDidLoad, dialogId, loadedMessages, null));
                     if (callback != null) {
                         callback.run();
                     }
@@ -4270,7 +4270,7 @@ public class MediaDataController extends BaseController {
                 }
             }
             if (changed) {
-                getNotificationCenter().postNotificationName(NotificationCenter.replyMessagesDidLoad, dialog_id, messageObjects);
+                getNotificationCenter().postNotificationName(NotificationCenter.replyMessagesDidLoad, dialog_id, messageObjects, replyMessageOwners);
             }
         });
     }
