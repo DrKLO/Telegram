@@ -2226,7 +2226,8 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
 
             botCommandsMenuButton = new BotCommandsMenuView(getContext());
-            botCommandsMenuButton.setOnClickListener(view -> {
+            botCommandsMenuButton.setContentDescription(LocaleController.getString("AccDescrBotCommands",R.string.AccDescrBotCommands));
+                                    botCommandsMenuButton.setOnClickListener(view -> {
                 boolean open = !botCommandsMenuButton.isOpened();
                 botCommandsMenuButton.setOpened(open);
                 if (open) {

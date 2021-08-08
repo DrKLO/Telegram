@@ -67,6 +67,7 @@ import android.view.animation.Interpolator;
 import android.widget.Toast;
 
 import androidx.core.graphics.ColorUtils;
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
@@ -855,7 +856,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             public float getProgress() {
                 if (currentMessageObject.isMusic()) {
                     return seekBar.getProgress();
-                } else if (currentMessageObject.isVoice()) {
+                } else if (currentMessageObject.isVoice() ||currentMessageObject.isRoundVideo()) {
                     if (useSeekBarWaweform) {
                         return seekBarWaveform.getProgress();
                     } else {
@@ -870,7 +871,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             public void setProgress(float progress) {
                 if (currentMessageObject.isMusic()) {
                     seekBar.setProgress(progress);
-                } else if (currentMessageObject.isVoice()) {
+                } else if (currentMessageObject.isVoice() ||currentMessageObject.isRoundVideo()) {
                     if (useSeekBarWaweform) {
                         seekBarWaveform.setProgress(progress);
                     } else {
@@ -13311,7 +13312,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
     @Override
     public boolean performAccessibilityAction(int action, Bundle arguments) {
-        if (action == AccessibilityNodeInfo.ACTION_CLICK) {
+        if(action==AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS) currentFocusedVirtualView=-1;
+        else if (action == AccessibilityNodeInfo.ACTION_CLICK) {
             int icon = getIconForCurrentState();
             if (icon != MediaActionDrawable.ICON_NONE && icon != MediaActionDrawable.ICON_FILE) {
                 didPressButton(true, false);
@@ -13332,7 +13334,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 }
             }
         }
-        if (currentMessageObject.isVoice() || currentMessageObject.isMusic() && MediaController.getInstance().isPlayingMessage(currentMessageObject)) {
+        if (currentMessageObject.isVoice() ||currentMessageObject.isRoundVideo() ||currentMessageObject.isMusic() &&MediaController.getInstance().isPlayingMessage(currentMessageObject)) {
             if (seekBarAccessibilityDelegate.performAccessibilityActionInternal(action, arguments)) {
                 return true;
             }
@@ -13353,7 +13355,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     }
 
     @Override
-    public boolean onHoverEvent(MotionEvent event) {
+    public boolean dispatchHoverEvent(MotionEvent event) {
         int x = (int) event.getX();
         int y = (int) event.getY();
         if (event.getAction() == MotionEvent.ACTION_HOVER_ENTER || event.getAction() == MotionEvent.ACTION_HOVER_MOVE) {
@@ -13369,9 +13371,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 }
             }
         } else if (event.getAction() == MotionEvent.ACTION_HOVER_EXIT) {
-            currentFocusedVirtualView = 0;
+            currentFocusedVirtualView = -1;
         }
-        return super.onHoverEvent(event);
+        return super.dispatchHoverEvent(event);
     }
 
     @Override
@@ -13760,11 +13762,15 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     info.addAction(AccessibilityNodeInfo.ACTION_LONG_CLICK);
                 }
 
-                if ((currentMessageObject.isVoice() || currentMessageObject.isMusic()) && MediaController.getInstance().isPlayingMessage(currentMessageObject)) {
+                if ((currentMessageObject.isVoice() ||currentMessageObject.isRoundVideo() || currentMessageObject.isMusic()) && MediaController.getInstance().isPlayingMessage(currentMessageObject)) {
                     seekBarAccessibilityDelegate.onInitializeAccessibilityNodeInfoInternal(info);
                 }
 
                 int i;
+                //smallest ids should be added at first,because talkback can focus on it not always in correct order
+                if (forwardedNameLayout[1] != null) {
+                    info.addChild(ChatMessageCell.this, FORWARD);
+                }
                 if (currentMessageObject.messageText instanceof Spannable) {
                     Spannable buffer = (Spannable) currentMessageObject.messageText;
                     CharacterStyle[] links = buffer.getSpans(0, buffer.length(), ClickableSpan.class);
@@ -13807,9 +13813,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 }
                 if (replyNameLayout != null) {
                     info.addChild(ChatMessageCell.this, REPLY);
-                }
-                if (forwardedNameLayout[0] != null && forwardedNameLayout[1] != null) {
-                    info.addChild(ChatMessageCell.this, FORWARD);
                 }
                 if (drawSelectionBackground || getBackground() != null) {
                     info.setSelected(true);
@@ -14015,13 +14018,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 } else if (virtualViewId == FORWARD) {
                     info.setEnabled(true);
                     StringBuilder sb = new StringBuilder();
-                    if (forwardedNameLayout[0] != null && forwardedNameLayout[1] != null) {
-                        for (int a = 0; a < 2; a++) {
-                            sb.append(forwardedNameLayout[a].getText());
-                            sb.append(a == 0 ? " " : "\n");
-                        }
-                    }
-                    info.setContentDescription(sb.toString());
+if(forwardedNameLayout[1]!=null) info.setContentDescription(currentForwardNameString); //Enough only user/chat/channel name,because in parent node we know,what message was forwarded.
                     info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
 
                     int x = (int) Math.min(forwardNameX - forwardNameOffsetX[0], forwardNameX - forwardNameOffsetX[1]);
@@ -14037,7 +14034,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     info.setClassName("android.widget.Button");
                     info.setEnabled(true);
                     if (commentLayout != null) {
-                        info.setText(commentLayout.getText());
+                        int commentCount=getRepliesCount();
+                        info.setText(isRepliesChat?LocaleController.getString("ViewInChat", R.string.ViewInChat):commentCount == 0 ? LocaleController.getString("LeaveAComment", R.string.LeaveAComment) : LocaleController.formatPluralString("CommentsCount", commentCount));
                     }
                     info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
                     rect.set(commentButtonRect);
@@ -14061,6 +14059,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 performAccessibilityAction(action, arguments);
             } else {
                 if (action == AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS) {
+                    currentFocusedVirtualView = virtualViewId;
                     sendAccessibilityEventForVirtualView(virtualViewId, AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUSED);
                 } else if (action == AccessibilityNodeInfo.ACTION_CLICK) {
                      if (virtualViewId >= LINK_CAPTION_IDS_START) {
