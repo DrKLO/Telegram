@@ -459,14 +459,17 @@ public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
                         }
                     }
                 } else {
+                    String text="";
                     ContactsController.Contact contact = ContactsController.getInstance(currentAccount).phoneBookContacts.get(position);
                     if (contact.first_name != null && contact.last_name != null) {
-                        textCell.setText(contact.first_name + " " + contact.last_name, false);
+text=contact.first_name + " " + contact.last_name;
                     } else if (contact.first_name != null && contact.last_name == null) {
-                        textCell.setText(contact.first_name, false);
+text=contact.first_name;
                     } else {
-                        textCell.setText(contact.last_name, false);
+text=contact.last_name;
                     }
+                    if(contact.user.mutual_contact) text+=" mutual contact";
+                    textCell.setText(text,false);
                 }
                 break;
             case 2:

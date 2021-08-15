@@ -676,6 +676,7 @@ public class ProfileSearchCell extends BaseCell {
             }
             builder.append(statusLayout.getText());
         }
+        info.setSelected(checkBox.isChecked());
         info.setText(builder.toString());
     }
 

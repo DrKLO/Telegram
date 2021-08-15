@@ -3125,83 +3125,79 @@ public class DialogCell extends BaseCell {
         } else {
             info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
             info.addAction(AccessibilityNodeInfo.ACTION_LONG_CLICK);
-        }
-    }
-
-    @Override
-    public void onPopulateAccessibilityEvent(AccessibilityEvent event) {
-        super.onPopulateAccessibilityEvent(event);
-        StringBuilder sb = new StringBuilder();
-        if (currentDialogFolderId == 1) {
-            sb.append(LocaleController.getString("ArchivedChats", R.string.ArchivedChats));
-            sb.append(". ");
-        } else {
-            if (encryptedChat != null) {
-                sb.append(LocaleController.getString("AccDescrSecretChat", R.string.AccDescrSecretChat));
+info.setSelected(checkBox.isChecked());
+            StringBuilder sb = new StringBuilder();
+            if (currentDialogFolderId == 1) {
+                sb.append(LocaleController.getString("ArchivedChats", R.string.ArchivedChats));
                 sb.append(". ");
-            }
-            if (user != null) {
-                if (UserObject.isReplyUser(user)) {
-                    sb.append(LocaleController.getString("RepliesTitle", R.string.RepliesTitle));
-                } else {
-                    if (user.bot) {
-                        sb.append(LocaleController.getString("Bot", R.string.Bot));
-                        sb.append(". ");
-                    }
-                    if (user.self) {
-                        sb.append(LocaleController.getString("SavedMessages", R.string.SavedMessages));
-                    } else {
-                        sb.append(ContactsController.formatName(user.first_name, user.last_name));
-                    }
-                }
-                sb.append(". ");
-            } else if (chat != null) {
-                if (chat.broadcast) {
-                    sb.append(LocaleController.getString("AccDescrChannel", R.string.AccDescrChannel));
-                } else {
-                    sb.append(LocaleController.getString("AccDescrGroup", R.string.AccDescrGroup));
-                }
-                sb.append(". ");
-                sb.append(chat.title);
-                sb.append(". ");
-            }
-        }
-        if (unreadCount > 0) {
-            sb.append(LocaleController.formatPluralString("NewMessages", unreadCount));
-            sb.append(". ");
-        }
-        if (message == null || currentDialogFolderId != 0) {
-            event.setContentDescription(sb.toString());
-            return;
-        }
-        int lastDate = lastMessageDate;
-        if (lastMessageDate == 0) {
-            lastDate = message.messageOwner.date;
-        }
-        String date = LocaleController.formatDateAudio(lastDate, true);
-        if (message.isOut()) {
-            sb.append(LocaleController.formatString("AccDescrSentDate", R.string.AccDescrSentDate, date));
-        } else {
-            sb.append(LocaleController.formatString("AccDescrReceivedDate", R.string.AccDescrReceivedDate, date));
-        }
-        sb.append(". ");
-        if (chat != null && !message.isOut() && message.isFromUser() && message.messageOwner.action == null) {
-            TLRPC.User fromUser = MessagesController.getInstance(currentAccount).getUser(message.messageOwner.from_id.user_id);
-            if (fromUser != null) {
-                sb.append(ContactsController.formatName(fromUser.first_name, fromUser.last_name));
-                sb.append(". ");
-            }
-        }
-        if (encryptedChat == null) {
-            sb.append(message.messageText);
-            if (!message.isMediaEmpty()) {
-                if (!TextUtils.isEmpty(message.caption)) {
+            } else {
+                if (encryptedChat != null) {
+                    sb.append(LocaleController.getString("AccDescrSecretChat", R.string.AccDescrSecretChat));
                     sb.append(". ");
-                    sb.append(message.caption);
+                }
+                if (user != null) {
+                    if (UserObject.isReplyUser(user)) {
+                        sb.append(LocaleController.getString("RepliesTitle", R.string.RepliesTitle));
+                    } else {
+                        if (user.bot) {
+                            sb.append(LocaleController.getString("Bot", R.string.Bot));
+                            sb.append(". ");
+                        }
+                        if (user.self) {
+                            sb.append(LocaleController.getString("SavedMessages", R.string.SavedMessages));
+                        } else {
+                            sb.append(ContactsController.formatName(user.first_name, user.last_name));
+                        }
+                    }
+                    sb.append(". ");
+                } else if (chat != null) {
+                    if (chat.broadcast) {
+                        sb.append(LocaleController.getString("AccDescrChannel", R.string.AccDescrChannel));
+                    } else {
+                        sb.append(LocaleController.getString("AccDescrGroup", R.string.AccDescrGroup));
+                    }
+                    sb.append(". ");
+                    sb.append(chat.title);
+                    sb.append(". ");
                 }
             }
+            if (unreadCount > 0) {
+                sb.append(LocaleController.formatPluralString("NewMessages", unreadCount));
+                sb.append(". ");
+            }
+            if (message == null || currentDialogFolderId != 0) {
+                info.setContentDescription(sb.toString());
+                return;
+            }
+            int lastDate = lastMessageDate;
+            if (lastMessageDate == 0) {
+                lastDate = message.messageOwner.date;
+            }
+            String date = LocaleController.formatDateAudio(lastDate, true);
+            if (message.isOut()) {
+                sb.append(LocaleController.formatString("AccDescrSentDate", R.string.AccDescrSentDate, date));
+            } else {
+                sb.append(LocaleController.formatString("AccDescrReceivedDate", R.string.AccDescrReceivedDate, date));
+            }
+            sb.append(". ");
+            if (chat != null && !message.isOut() && message.isFromUser() && message.messageOwner.action == null) {
+                TLRPC.User fromUser = MessagesController.getInstance(currentAccount).getUser(message.messageOwner.from_id.user_id);
+                if (fromUser != null) {
+                    sb.append(ContactsController.formatName(fromUser.first_name, fromUser.last_name));
+                    sb.append(". ");
+                }
+            }
+            if (encryptedChat == null) {
+                sb.append(message.messageText);
+                if (!message.isMediaEmpty()) {
+                    if (!TextUtils.isEmpty(message.caption)) {
+                        sb.append(". ");
+                        sb.append(message.caption);
+                    }
+                }
+            }
+            info.setContentDescription(sb.toString());
         }
-        event.setContentDescription(sb.toString());
     }
 
     public void setClipProgress(float value) {
