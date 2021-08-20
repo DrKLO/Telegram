@@ -1355,7 +1355,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                         if (message != null) {
                             SendMessagesHelper.getInstance(currentAccount).sendMessage(message.toString(), did, null, null, null, true, null, null, null, true, 0, null);
                         }
-                        SendMessagesHelper.getInstance(currentAccount).sendMessage(fmessages, did, true, 0);
+                        SendMessagesHelper.getInstance(currentAccount).sendMessage(fmessages, did, false, true, 0);
                     }
                     fragment1.finishFragment();
                 } else {
@@ -1935,7 +1935,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
 
     private ImageLocation getArtworkThumbImageLocation(MessageObject messageObject) {
         final TLRPC.Document document = messageObject.getDocument();
-        TLRPC.PhotoSize thumb = document != null ? FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 240) : null;
+        TLRPC.PhotoSize thumb = document != null ? FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 360) : null;
         if (!(thumb instanceof TLRPC.TL_photoSize) && !(thumb instanceof TLRPC.TL_photoSizeProgressive)) {
             thumb = null;
         }

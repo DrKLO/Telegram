@@ -1878,6 +1878,11 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         public boolean closeKeyboard() {
             return false;
         }
+
+        @Override
+        public boolean validateGroupId(long groupId) {
+            return true;
+        }
     }
 
     public interface PhotoViewerProvider {
@@ -1913,6 +1918,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         MessageObject getEditingMessageObject();
         void onCaptionChanged(CharSequence caption);
         boolean closeKeyboard();
+        boolean validateGroupId(long groupId);
     }
 
     private class FrameLayoutDrawer extends SizeNotifierFrameLayoutPhoto {
@@ -3879,7 +3885,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                                 if (message != null) {
                                     SendMessagesHelper.getInstance(currentAccount).sendMessage(message.toString(), did, null, null, null, true, null, null, null, true, 0, null);
                                 }
-                                SendMessagesHelper.getInstance(currentAccount).sendMessage(fmessages, did, true, 0);
+                                SendMessagesHelper.getInstance(currentAccount).sendMessage(fmessages, did, false, true, 0);
                             }
                             fragment1.finishFragment();
                             if (parentChatActivityFinal != null) {
@@ -4516,6 +4522,14 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     onActionClick(true);
                     checkProgress(0, false, true);
                 }
+            }
+
+            @Override
+            public boolean validGroupId(long groupId) {
+                if (placeProvider != null) {
+                    return placeProvider.validateGroupId(groupId);
+                }
+                return true;
             }
         });
 

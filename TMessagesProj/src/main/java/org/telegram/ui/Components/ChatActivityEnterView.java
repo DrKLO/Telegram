@@ -243,6 +243,9 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     public BotCommandsMenuContainer botCommandsMenuContainer;
     private BotCommandsMenuView.BotCommandsAdapter botCommandsAdapter;
 
+    private ValueAnimator searchAnimator;
+    private float searchToOpenProgress;
+
     private HashMap<View, Float> animationParamsX = new HashMap<>();
 
     private class SeekBarWaveformView extends View {
@@ -502,7 +505,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     emojiTabOpen = curPage == 0;
                     if (stickersExpanded) {
                         if (searchingType != 0) {
-                            searchingType = curPage == 0 ? 2 : 1;
+                            setSearchingTypeInternal(curPage == 0 ? 2 : 1, true);
                             checkStickresExpandHeight();
                         } else if (!stickersTabOpen) {
                             setStickersExpanded(false, true, false);
@@ -1742,7 +1745,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     emojiView.onOpen(messageEditText.length() > 0);
                 } else {
                     if (searchingType != 0) {
-                        searchingType = 0;
+                        setSearchingTypeInternal(0, true);
                         if (emojiView != null) {
                             emojiView.closeSearch(false);
                         }
@@ -1832,7 +1835,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 if (isPopupShowing() && event.getAction() == MotionEvent.ACTION_DOWN) {
                     boolean rez = false;
                     if (searchingType != 0) {
-                        searchingType = 0;
+                        setSearchingTypeInternal(0, false);
                         emojiView.closeSearch(false);
                         requestFocus();
                         rez = true;
@@ -2012,7 +2015,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                             preferences.edit().putInt("hidekeyboard_" + dialog_id, botButtonsMessageObject.getId()).commit();
                         }
                         if (searchingType != 0) {
-                            searchingType = 0;
+                            setSearchingTypeInternal(0, true);
                             if (emojiView != null) {
                                 emojiView.closeSearch(true);
                             }
@@ -2305,7 +2308,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             attachLayout.addView(botButton, LayoutHelper.createLinear(48, 48));
             botButton.setOnClickListener(v -> {
                 if (searchingType != 0) {
-                    searchingType = 0;
+                    setSearchingTypeInternal(0, false);
                     emojiView.closeSearch(false);
                     messageEditText.requestFocus();
                 }
@@ -2921,7 +2924,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             }
             if (stickersExpanded) {
                 if (searchingType != 0) {
-                    searchingType = 0;
+                    setSearchingTypeInternal(0, true);
                     emojiView.closeSearch(true);
                     emojiView.hideSearchKeyboard();
                     if (emojiTabOpen) {
@@ -4167,7 +4170,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             return;
         }
         if (searchingType != 0) {
-            searchingType = 0;
+            setSearchingTypeInternal(0, true);
             emojiView.closeSearch(false);
 
             if (stickersExpanded) {
@@ -6433,7 +6436,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         if (emojiView != null) {
             return;
         }
-        emojiView = new EmojiView(allowStickers, allowGifs, parentActivity, true, info) {
+        emojiView = new EmojiView(allowStickers, allowGifs, parentActivity, true, info, sizeNotifierLayout) {
             @Override
             public void setTranslationY(float translationY) {
                 super.setTranslationY(translationY);
@@ -6443,6 +6446,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             }
         };
         emojiView.setVisibility(GONE);
+        emojiView.setShowing(false);
         emojiView.setDelegate(new EmojiView.EmojiViewDelegate() {
 
             @Override
@@ -6487,7 +6491,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 }
                 if (stickersExpanded) {
                     if (searchingType != 0) {
-                        searchingType = 0;
+                        setSearchingTypeInternal(0, true);
                         emojiView.closeSearch(true, MessageObject.getStickerSetId(sticker));
                         emojiView.hideSearchKeyboard();
                     }
@@ -6550,7 +6554,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                         SendMessagesHelper.prepareSendingBotContextResult(accountInstance, result, params, dialog_id, replyingMessageObject, getThreadMessage(), notify, scheduleDate);
 
                         if (searchingType != 0) {
-                            searchingType = 0;
+                            setSearchingTypeInternal(0, true);
                             emojiView.closeSearch(true);
                             emojiView.hideSearchKeyboard();
                         }
@@ -6621,13 +6625,9 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
             @Override
             public void onSearchOpenClose(int type) {
-                searchingType = type;
+                setSearchingTypeInternal(type, true);
                 if (type != 0) {
-//                    expandStickersWithKeyboard = true;
-//                    if (expandStickersWithKeyboard) {
-//                        expandStickersWithKeyboard = false;
                     setStickersExpanded(true, true, false);
-                    //   }
                 }
                 if (emojiTabOpen && searchingType == 2) {
                     checkStickresExpandHeight();
@@ -6679,6 +6679,16 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     }
                     trendingStickersAlert.show();
                 }
+            }
+
+            @Override
+            public void invalidateEnterView() {
+                invalidate();
+            }
+
+            @Override
+            public float getProgressToSearchOpened() {
+                return searchToOpenProgress;
             }
         });
         emojiView.setDragListener(new EmojiView.DragListener() {
@@ -6768,7 +6778,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 return;
             }
             if (searchingType != 0) {
-                searchingType = 0;
+                setSearchingTypeInternal(0, true);
                 emojiView.closeSearch(true);
                 emojiView.hideSearchKeyboard();
             }
@@ -6803,6 +6813,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         if (!emojiViewVisible && emojiView != null && emojiView.getVisibility() != GONE) {
             sizeNotifierLayout.removeView(emojiView);
             emojiView.setVisibility(GONE);
+            emojiView.setShowing(false);
         }
     }
 
@@ -6839,6 +6850,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     anotherPanelWasVisible = true;
                     previusHeight = botKeyboardView.getMeasuredHeight();
                 }
+                emojiView.setShowing(true);
                 currentView = emojiView;
                 animatingContentType = 0;
             } else if (contentType == 1) {
@@ -6847,6 +6859,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 if (emojiView != null && emojiView.getVisibility() != GONE) {
                     sizeNotifierLayout.removeView(emojiView);
                     emojiView.setVisibility(GONE);
+                    emojiView.setShowing(false);
                     emojiViewVisible = false;
                     anotherPanelWasVisible = true;
                     previusHeight = emojiView.getMeasuredHeight();
@@ -6918,6 +6931,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                         if (emojiViewVisible = true) {
                             animatingContentType = 0;
                         }
+                        emojiView.setShowing(false);
                         panelAnimation = new AnimatorSet();
                         panelAnimation.playTogether(ObjectAnimator.ofFloat(emojiView, View.TRANSLATION_Y, emojiView.getMeasuredHeight()));
                         panelAnimation.setInterpolator(AdjustPanLayoutHelper.keyboardInterpolator);
@@ -6955,6 +6969,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                         emojiPadding = 0;
                         sizeNotifierLayout.removeView(emojiView);
                         emojiView.setVisibility(GONE);
+                        emojiView.setShowing(false);
                     }
                 } else {
                     removeEmojiViewAfterAnimation = false;
@@ -7124,7 +7139,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 preferences.edit().putInt("hidekeyboard_" + dialog_id, botButtonsMessageObject.getId()).commit();
             }
             if (byBackButton && searchingType != 0) {
-                searchingType = 0;
+                setSearchingTypeInternal(0, true);
                 if (emojiView != null) {
                     emojiView.closeSearch(true);
                 }
@@ -7135,13 +7150,46 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 }
             } else {
                 if (searchingType != 0) {
-                    searchingType = 0;
+                    setSearchingTypeInternal(0, false);
                     emojiView.closeSearch(false);
                     messageEditText.requestFocus();
                 }
                 showPopup(0, 0);
             }
         }
+    }
+
+    private void setSearchingTypeInternal(int searchingType, boolean animated) {
+        boolean showSearchingNew = searchingType != 0;
+        boolean showSearchingOld = this.searchingType != 0;
+        if (showSearchingNew != showSearchingOld) {
+            if (searchAnimator != null) {
+                searchAnimator.removeAllListeners();
+                searchAnimator.cancel();
+            }
+            if (!animated) {
+               searchToOpenProgress = showSearchingNew ? 1f : 0f;
+                emojiView.searchProgressChanged();
+            } else {
+                searchAnimator = ValueAnimator.ofFloat(searchToOpenProgress, showSearchingNew ? 1f : 0f);
+                searchAnimator.addUpdateListener(valueAnimator -> {
+                    searchToOpenProgress = (float) valueAnimator.getAnimatedValue();
+                    emojiView.searchProgressChanged();
+                });
+                searchAnimator.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        searchToOpenProgress = showSearchingNew ? 1f : 0f;
+                        emojiView.searchProgressChanged();
+                    }
+                });
+                searchAnimator.setDuration(220);
+                searchAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
+                searchAnimator.start();
+            }
+        }
+
+        this.searchingType = searchingType;
     }
 
     private void openKeyboardInternal() {
@@ -7206,7 +7254,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
         if (w != oldw && stickersExpanded) {
-            searchingType = 0;
+            setSearchingTypeInternal(0, false);
             emojiView.closeSearch(false);
             setStickersExpanded(false, false, false);
         }
@@ -8403,5 +8451,18 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     public void runEmojiPanelAnimation() {
         AndroidUtilities.cancelRunOnUIThread(runEmojiPanelAnimation);
         runEmojiPanelAnimation.run();
+    }
+
+    @Override
+    protected void dispatchDraw(Canvas canvas) {
+        if (emojiView == null || emojiView.getVisibility() != View.VISIBLE || emojiView.getStickersExpandOffset() == 0) {
+            super.dispatchDraw(canvas);
+        } else {
+            canvas.save();
+            canvas.clipRect(0, AndroidUtilities.dp(2), getMeasuredWidth(), getMeasuredHeight());
+            canvas.translate(0, -emojiView.getStickersExpandOffset());
+            super.dispatchDraw(canvas);
+            canvas.restore();
+        }
     }
 }

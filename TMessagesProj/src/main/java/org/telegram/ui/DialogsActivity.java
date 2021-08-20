@@ -77,6 +77,8 @@ import androidx.recyclerview.widget.LinearSmoothScrollerCustom;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
 
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -4697,13 +4699,21 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         long dialogId = 0;
         int message_id = 0;
         boolean isGlobalSearch = false;
+        int folderId = 0;
+        int filterId = 0;
         if (adapter instanceof DialogsAdapter) {
             DialogsAdapter dialogsAdapter = (DialogsAdapter) adapter;
+            int dialogsType = dialogsAdapter.getDialogsType();
+            if (dialogsType == 7 || dialogsType == 8) {
+                MessagesController.DialogFilter dialogFilter = getMessagesController().selectedDialogFilter[dialogsType == 7 ? 0 : 1];
+                filterId = dialogFilter.id;
+            }
             TLObject object = dialogsAdapter.getItem(position);
             if (object instanceof TLRPC.User) {
                 dialogId = ((TLRPC.User) object).id;
             } else if (object instanceof TLRPC.Dialog) {
                 TLRPC.Dialog dialog = (TLRPC.Dialog) object;
+                folderId = dialog.folder_id;
                 if (dialog instanceof TLRPC.TL_dialogFolder) {
                     if (actionBar.isActionModeShowed(null)) {
                         return;
@@ -4846,6 +4856,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     searchObject = null;
                 }
             }
+            args.putInt("dialog_folder_id", folderId);
+            args.putInt("dialog_filter_id", filterId);
             if (AndroidUtilities.isTablet()) {
                 if (openedDialogId == dialogId && adapter != searchViewPager.dialogsSearchAdapter) {
                     return;

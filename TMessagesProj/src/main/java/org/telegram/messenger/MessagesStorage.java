@@ -10732,6 +10732,15 @@ public class MessagesStorage extends BaseController {
                 chatsToLoad.add(-message.ttl);
             }
         }
+        if (message.params != null) {
+            String peerIdStr = message.params.get("fwd_peer");
+            if (peerIdStr != null) {
+                int peerId = Utilities.parseInt(peerIdStr);
+                if (peerId < 0) {
+                    chatsToLoad.add(-peerId);
+                }
+            }
+        }
     }
 
     public void getDialogs(final int folderId, final int offset, final int count, final boolean loadDraftsPeersAndFolders) {

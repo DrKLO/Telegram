@@ -316,6 +316,12 @@ void Manager::setVideoCapture(std::shared_ptr<VideoCaptureInterface> videoCaptur
     });
 }
 
+void Manager::sendVideoDeviceUpdated() {
+    _mediaManager->perform(RTC_FROM_HERE, [](MediaManager *mediaManager) {
+        mediaManager->sendVideoDeviceUpdated();
+    });
+}
+
 void Manager::setRequestedVideoAspect(float aspect) {
     _mediaManager->perform(RTC_FROM_HERE, [aspect](MediaManager *mediaManager) {
         mediaManager->setRequestedVideoAspect(aspect);

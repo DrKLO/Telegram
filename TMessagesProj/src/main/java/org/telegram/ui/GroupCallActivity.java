@@ -121,6 +121,7 @@ import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.FillLastGridLayoutManager;
 import org.telegram.ui.Components.GroupCallFullscreenAdapter;
 import org.telegram.ui.Components.GroupCallPip;
+import org.telegram.ui.Components.GroupCallRecordAlert;
 import org.telegram.ui.Components.GroupVoipInviteAlert;
 import org.telegram.ui.Components.HintView;
 import org.telegram.ui.Components.ImageUpdater;
@@ -223,7 +224,6 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
     private HintView recordHintView;
     private HintView reminderHintView;
     private int buttonsVisibility;
-    private TextView speakingMembersSubtitle;
 
     public final ArrayList<ChatObject.VideoParticipant> visibleVideoParticipants = new ArrayList<>();
 
@@ -1818,74 +1818,84 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                     dialog.setTextColor(Theme.getColor(Theme.key_voipgroup_actionBarItems));
                 } else if (id == screen_capture_item) {
                     screenShareItem.callOnClick();
-                }  else if (id == start_record_item) {
-                    AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-                    builder.setDialogButtonColorKey(Theme.key_voipgroup_listeningText);
-                    EditTextBoldCursor editText;
+                } else if (id == start_record_item) {
+                    //TODO
                     if (call.recording) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+                        builder.setDialogButtonColorKey(Theme.key_voipgroup_listeningText);
                         builder.setTitle(LocaleController.getString("VoipGroupStopRecordingTitle", R.string.VoipGroupStopRecordingTitle));
                         builder.setMessage(LocaleController.getString("VoipGroupStopRecordingText", R.string.VoipGroupStopRecordingText));
-                        editText = null;
-                    } else {
-                        enterEventSent = false;
-                        builder.setTitle(LocaleController.getString("VoipGroupStartRecordingTitle", R.string.VoipGroupStartRecordingTitle));
-                        builder.setMessage(LocaleController.getString("VoipGroupStartRecordingText", R.string.VoipGroupStartRecordingText));
-                        builder.setCheckFocusable(false);
-
-                        editText = new EditTextBoldCursor(getContext());
-                        editText.setBackgroundDrawable(Theme.createEditTextDrawable(getContext(), true));
-
-                        LinearLayout linearLayout = new LinearLayout(getContext());
-                        linearLayout.setOrientation(LinearLayout.VERTICAL);
-                        builder.setView(linearLayout);
-
-                        editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-                        editText.setTextColor(Theme.getColor(Theme.key_voipgroup_nameText));
-                        editText.setMaxLines(1);
-                        editText.setLines(1);
-                        editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
-                        editText.setGravity(Gravity.LEFT | Gravity.TOP);
-                        editText.setSingleLine(true);
-                        editText.setHint(LocaleController.getString("VoipGroupSaveFileHint", R.string.VoipGroupSaveFileHint));
-                        editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
-                        editText.setHintTextColor(Theme.getColor(Theme.key_voipgroup_lastSeenText));
-                        editText.setCursorColor(Theme.getColor(Theme.key_voipgroup_nameText));
-                        editText.setCursorSize(AndroidUtilities.dp(20));
-                        editText.setCursorWidth(1.5f);
-                        editText.setPadding(0, AndroidUtilities.dp(4), 0, 0);
-                        linearLayout.addView(editText, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36, Gravity.TOP | Gravity.LEFT, 24, 0, 24, 12));
-                        editText.setOnEditorActionListener((textView, i2, keyEvent) -> {
-                            AndroidUtilities.hideKeyboard(textView);
-                            builder.create().getButton(AlertDialog.BUTTON_POSITIVE).callOnClick();
-                            return false;
-                        });
-
-                        final AlertDialog alertDialog = builder.create();
-                        alertDialog.setBackgroundColor(Theme.getColor(Theme.key_voipgroup_inviteMembersBackground));
-                        alertDialog.setOnShowListener(dialog -> makeFocusable(null, alertDialog, editText, true));
-                        alertDialog.setOnDismissListener(dialog -> AndroidUtilities.hideKeyboard(editText));
-                    }
-
-                    builder.setPositiveButton(call.recording ? LocaleController.getString("Stop", R.string.Stop) : LocaleController.getString("Start", R.string.Start), (dialogInterface, i) -> {
-                        if (editText == null) {
-                            call.toggleRecord(null);
-                            getUndoView().showWithAction(0, UndoView.ACTION_VOIP_RECORDING_FINISHED, null);
-                        } else {
-                            call.toggleRecord(editText.getText().toString());
-                            AndroidUtilities.hideKeyboard(editText);
+                        builder.setPositiveButton(LocaleController.getString("Stop", R.string.Stop), (dialogInterface, i) -> {
                             getUndoView().showWithAction(0, UndoView.ACTION_VOIP_RECORDING_STARTED, null);
                             if (VoIPService.getSharedInstance() != null) {
                                 VoIPService.getSharedInstance().playStartRecordSound();
                             }
-                        }
-                    });
-                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), (dialog, which) -> AndroidUtilities.hideKeyboard(editText));
-                    AlertDialog dialog = builder.create();
-                    dialog.setBackgroundColor(Theme.getColor(Theme.key_voipgroup_dialogBackground));
-                    dialog.show();
-                    dialog.setTextColor(Theme.getColor(Theme.key_voipgroup_nameText));
-                    if (editText != null) {
-                        editText.requestFocus();
+                        });
+                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        AlertDialog dialog = builder.create();
+                        dialog.setBackgroundColor(Theme.getColor(Theme.key_voipgroup_dialogBackground));
+                        dialog.show();
+                        dialog.setTextColor(Theme.getColor(Theme.key_voipgroup_nameText));
+                    } else {
+                        GroupCallRecordAlert alert = new GroupCallRecordAlert(getContext()) {
+                            @Override
+                            protected void onStartRecord(int type) {
+                                AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+                                builder.setDialogButtonColorKey(Theme.key_voipgroup_listeningText);
+
+                                enterEventSent = false;
+                                builder.setTitle(LocaleController.getString("VoipGroupStartRecordingTitle", R.string.VoipGroupStartRecordingTitle));
+                                builder.setMessage(LocaleController.getString("VoipGroupStartRecordingText", R.string.VoipGroupStartRecordingText));
+                                builder.setCheckFocusable(false);
+
+                                EditTextBoldCursor editText = new EditTextBoldCursor(getContext());
+                                editText.setBackgroundDrawable(Theme.createEditTextDrawable(getContext(), true));
+
+                                LinearLayout linearLayout = new LinearLayout(getContext());
+                                linearLayout.setOrientation(LinearLayout.VERTICAL);
+                                builder.setView(linearLayout);
+
+                                editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+                                editText.setTextColor(Theme.getColor(Theme.key_voipgroup_nameText));
+                                editText.setMaxLines(1);
+                                editText.setLines(1);
+                                editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+                                editText.setGravity(Gravity.LEFT | Gravity.TOP);
+                                editText.setSingleLine(true);
+                                editText.setHint(LocaleController.getString("VoipGroupSaveFileHint", R.string.VoipGroupSaveFileHint));
+                                editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
+                                editText.setHintTextColor(Theme.getColor(Theme.key_voipgroup_lastSeenText));
+                                editText.setCursorColor(Theme.getColor(Theme.key_voipgroup_nameText));
+                                editText.setCursorSize(AndroidUtilities.dp(20));
+                                editText.setCursorWidth(1.5f);
+                                editText.setPadding(0, AndroidUtilities.dp(4), 0, 0);
+                                linearLayout.addView(editText, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36, Gravity.TOP | Gravity.LEFT, 24, 0, 24, 12));
+                                editText.setOnEditorActionListener((textView, i2, keyEvent) -> {
+                                    AndroidUtilities.hideKeyboard(textView);
+                                    builder.create().getButton(AlertDialog.BUTTON_POSITIVE).callOnClick();
+                                    return false;
+                                });
+
+                                final AlertDialog alertDialog = builder.create();
+                                alertDialog.setBackgroundColor(Theme.getColor(Theme.key_voipgroup_inviteMembersBackground));
+                                alertDialog.setOnShowListener(dialog -> makeFocusable(null, alertDialog, editText, true));
+                                alertDialog.setOnDismissListener(dialog -> AndroidUtilities.hideKeyboard(editText));
+
+                                builder.setPositiveButton(LocaleController.getString("Start", R.string.Start), (dialogInterface, i) -> {
+                                    call.toggleRecord(null);
+                                    getUndoView().showWithAction(0, UndoView.ACTION_VOIP_RECORDING_FINISHED, null);
+                                });
+                                builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), (dialog, which) -> AndroidUtilities.hideKeyboard(editText));
+                                AlertDialog dialog = builder.create();
+                                dialog.setBackgroundColor(Theme.getColor(Theme.key_voipgroup_dialogBackground));
+                                dialog.show();
+                                dialog.setTextColor(Theme.getColor(Theme.key_voipgroup_nameText));
+                                if (editText != null) {
+                                    editText.requestFocus();
+                                }
+                            }
+                        };
+                        alert.show();
                     }
                 } else if (id == permission_item) {
                     changingPermissions = true;
@@ -2528,7 +2538,6 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                 if (renderersContainer.progressToFullscreenMode != 1f) {
                     shadowDrawable.setBounds(0, (int) top, getMeasuredWidth(), height);
                     shadowDrawable.draw(canvas);
-
 
                     if (rad != 1.0f) {
                         Theme.dialogs_onlineCirclePaint.setColor(backgroundColor);

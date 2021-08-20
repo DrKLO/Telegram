@@ -918,7 +918,9 @@ add_library(tgcalls STATIC
         voip/tgcalls/group/GroupNetworkManager.cpp
         voip/tgcalls/group/GroupInstanceCustomImpl.cpp
         voip/tgcalls/group/GroupJoinPayloadInternal.cpp
-        voip/tgcalls/group/StreamingPart.cpp
+        voip/tgcalls/group/AudioStreamingPart.cpp
+        voip/tgcalls/group/VideoStreamingPart.cpp
+        voip/tgcalls/group/StreamingMediaContext.cpp
         voip/tgcalls/third-party/json11.cpp
 
         voip/webrtc/rtc_base/async_invoker.cc

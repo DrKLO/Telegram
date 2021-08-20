@@ -29,6 +29,7 @@ import androidx.recyclerview.widget.ChatListItemAnimator;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.SharedConfig;
@@ -446,31 +447,25 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
         Theme.MessageDrawable drawable = messageView.getCurrentBackgroundDrawable(true);
 
         if (drawable != null) {
-            canvas.save();
-            canvas.translate(drawableX, drawableTop);
-            int heightLocal = (int) (drawableBottom - drawableTop);
-            int widthLocal = (int) (drawableRight - drawableX);
-
             messageView.setBackgroundTopY(false);
             Drawable shadowDrawable = drawable.getShadowDrawable();
 
             if (alphaProgress != 1f && fromMessageDrawable != null) {
-                fromMessageDrawable.setBounds(0, 0, widthLocal, heightLocal);
+                fromMessageDrawable.setBounds((int) drawableX, (int) drawableTop, drawableRight, (int) drawableBottom);
                 fromMessageDrawable.draw(canvas);
             }
 
             if (shadowDrawable != null) {
                 shadowDrawable.setAlpha((int) (255 * progressX));
-                shadowDrawable.setBounds(0, 0, widthLocal, heightLocal);
+                shadowDrawable.setBounds((int) drawableX, (int) drawableTop, drawableRight, (int) drawableBottom);
                 shadowDrawable.draw(canvas);
                 shadowDrawable.setAlpha(255);
             }
 
             drawable.setAlpha((int) (255 * alphaProgress));
-            drawable.setBounds(0, 0, widthLocal, heightLocal);
+            drawable.setBounds((int) drawableX, (int) drawableTop, drawableRight, (int) drawableBottom);
             drawable.draw(canvas);
             drawable.setAlpha(255);
-            canvas.restore();
         }
         canvas.restore();
 

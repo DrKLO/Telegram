@@ -20,6 +20,7 @@ public:
 	void setNetworkType(NetworkType networkType) override;
 	void setMuteMicrophone(bool muteMicrophone) override;
 	void setVideoCapture(std::shared_ptr<VideoCaptureInterface> videoCapture) override;
+	void sendVideoDeviceUpdated() override;
 	void setRequestedVideoAspect(float aspect) override;
 	bool supportsVideo() override {
 		return false;

@@ -1212,6 +1212,8 @@
     <string name="BackgroundToGroup">Background shared to **%1$s**.</string>
     <string name="BackgroundToUser">Background shared to **%1$s**.</string>
     <string name="BackgroundToChats">Background shared to **%1$s**.</string>
+    <string name="YouSenderNameHidden">You (senders’ names hidden)</string>
+    <string name="YouSendersNameHidden">You (sender’s names hidden)</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s set the self-destruct timer to %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">You set the self-destruct timer to %1$s</string>
@@ -1855,6 +1857,8 @@
     <string name="BackgroundBrightness">Brightness</string>
     <string name="BackgroundHexColorCode">Hex color code</string>
     <string name="BackgroundColors">Colors</string>
+    <string name="BackgroundAnimateInfo">Colors will move when you send messages</string>
+    <string name="BackgroundAnimate">Animate</string>
     <string name="BackgroundPattern">Pattern</string>
     <string name="BackgroundChoosePattern">Choose pattern</string>
     <string name="BackgroundIntensity">Intensity</string>
@@ -2160,9 +2164,13 @@
     <string name="AppUpdateChangelogEmpty">**What\'s new?**\n\n• Bug fixes and improvements.</string>
     <string name="Permanent">Permanent</string>
     <string name="LinkHashExpired">Link is no longer active</string>
-    <string name="CancelForward">Cancel Forward</string>
-    <string name="SelectOtherChat">Select another chat</string>
-    <string name="CancelForwardMessage">Do you want to cancel forwarding or to forward messages to a different chat?</string>
+    <string name="ForwardAnotherChat">Forward to another chat</string>
+    <string name="CancelForwardPrivate">What would you like to do with %1$s from your chat with **%2$s**?</string>
+    <string name="CancelForwardChat">What would you like to do with %1$s from **%2$s**?</string>
+    <string name="ShowSenderName">Show senders\’ name</string>
+    <string name="HideSenderName">Hide senders\’ name</string>
+    <string name="ShowSendersName">Show sender\’s name</string>
+    <string name="HideSendersName">Hide sender\’s name</string>
     <string name="ChatListSwipeGesture">Chat list swipe gesture</string>
     <string name="SwipeSettingsPin">Pin</string>
     <string name="SwipeSettingsRead">Read</string>
@@ -3217,7 +3225,7 @@
     <string name="InvalidLastName">Sorry, this last name can\'t be used</string>
     <string name="Loading">Loading...</string>
     <string name="NoPlayerInstalled">You don\'t have a video player, please install one to continue</string>
-    <string name="NoMailInstalled">Please send an email describing your problem to sms@stel.com</string>
+    <string name="NoMailInstalled">Please send an email describing your problem to reports@stel.com</string>
     <string name="NoHandleAppInstalled">You don\'t have applications that can handle the file type \'%1$s\', please install one to continue</string>
     <string name="InviteUser">This user does not have Telegram yet, send an invitation?</string>
     <string name="AreYouSure">Are you sure?</string>
@@ -3739,6 +3747,12 @@
     <string name="VoipNoiseCancellationDisabled">Disabled</string>
     <string name="VoipVideoNotAvailable">Video is only available\nfor the first %1$s</string>
     <string name="VoipVideoNotAvailableAdmin">The voice chat is over %1$s.\nNew participants only have access to audio stream.</string>
+    <string name="VoipRecordAudio">AUDIO ONLY</string>
+    <string name="VoipRecordPortrait">PORTRAIT VIDEO</string>
+    <string name="VoipRecordLandscape">LANDSCAPE VIDEO</string>
+    <string name="VoipRecordVoiceChat">Record voice chat</string>
+    <string name="VoipRecordVoiceChatInfo">Choose the way to record this chat</string>
+    <string name="VoipRecordStart">Start Recording</string>
     <!--invite links-->
     <string name="ManageInviteLinks">Manage Invite Links</string>
     <string name="ManageLinksInfoHelp">You can create additional invite links that have a limited time or number of uses</string>
@@ -3939,6 +3953,12 @@
     <string name="messages_few">%1$d messages</string>
     <string name="messages_many">%1$d messages</string>
     <string name="messages_other">%1$d messages</string>
+    <string name="MessagesBold_zero">**%1$d** messages</string>
+    <string name="MessagesBold_one">**%1$d** message</string>
+    <string name="MessagesBold_two">**%1$d** messages</string>
+    <string name="MessagesBold_few">**%1$d** messages</string>
+    <string name="MessagesBold_many">**%1$d** messages</string>
+    <string name="MessagesBold_other">**%1$d** messages</string>
     <string name="items_zero">%1$d items</string>
     <string name="items_one">%1$d item</string>
     <string name="items_two">%1$d items</string>
@@ -4541,4 +4561,12 @@
     <string name="RemindDayAt">\'Remind on\' MMM d \'at\' HH:mm</string>
     <string name="RemindDayYearAt">\'Remind on\' MMM d yyyy \'at\' HH:mm</string>
     <string name="BotsMenuTitle">Menu</string>
+    <string name="SwipeToGoNextChannel">Swipe up to go to the next unread channel</string>
+    <string name="ReleaseToGoNextChannel">Release to go to the next unread channel</string>
+    <string name="SwipeToGoNextFolder">Swipe up to go to the next unread folder</string>
+    <string name="ReleaseToGoNextFolder">Release to go to the next unread folder</string>
+    <string name="SwipeToGoNextChannelEnd">You have no unread channels</string>
+    <string name="FavoriteStickersShort">Favorites</string>
+    <string name="FeaturedStickersShort">Trendings</string>
+    <string name="RecentStickersShort">Recent</string>
 </resources>

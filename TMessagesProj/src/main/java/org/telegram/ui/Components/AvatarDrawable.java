@@ -381,7 +381,10 @@ public class AvatarDrawable extends Drawable {
             Theme.avatarDrawables[1].draw(canvas);
         } else {
             if (textLayout != null) {
+                float scale = size / (float) AndroidUtilities.dp(50);
+                canvas.scale(scale, scale, size / 2f, size / 2f) ;
                 canvas.translate((size - textWidth) / 2 - textLeft, (size - textHeight) / 2);
+
                 textLayout.draw(canvas);
             }
         }
