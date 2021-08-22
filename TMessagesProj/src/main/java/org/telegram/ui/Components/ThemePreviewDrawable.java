@@ -53,7 +53,6 @@ public class ThemePreviewDrawable extends BitmapDrawable {
         int messageInColor = Theme.getPreviewColor(colors, Theme.key_chat_inBubble);
 
         int messageOutColor = Theme.getPreviewColor(colors, Theme.key_chat_outBubble);
-        Integer messageOutGradientColor = colors.get(Theme.key_chat_outBubbleGradient);
         Integer backgroundColor = colors.get(Theme.key_chat_wallpaper);
         Integer gradientToColor1 = colors.get(Theme.key_chat_wallpaper_gradient_to1);
         Integer gradientToColor2 = colors.get(Theme.key_chat_wallpaper_gradient_to2);
@@ -190,15 +189,15 @@ public class ThemePreviewDrawable extends BitmapDrawable {
         }
 
         messageDrawable[1].setBounds(161, 216, bitmap.getWidth() - 20, 216 + 92);
-        messageDrawable[1].setTop(0, 522, false, false);
+        messageDrawable[1].setTop(0, 560, 522, false, false);
         messageDrawable[1].draw(canvas);
 
         messageDrawable[1].setBounds(161, 430, bitmap.getWidth() - 20, 430 + 92);
-        messageDrawable[1].setTop(430, 522, false, false);
+        messageDrawable[1].setTop(430, 560, 522, false, false);
         messageDrawable[1].draw(canvas);
 
         messageDrawable[0].setBounds(20, 323, 399, 323 + 92);
-        messageDrawable[0].setTop(323, 522, false, false);
+        messageDrawable[0].setTop(323, 560, 522, false, false);
         messageDrawable[0].draw(canvas);
 
         paint.setColor(messageFieldColor);

@@ -98,6 +98,9 @@ import com.android.internal.telephony.ITelephony;
 import com.google.android.gms.auth.api.phone.SmsRetriever;
 import com.google.android.gms.auth.api.phone.SmsRetrieverClient;
 import com.google.android.gms.tasks.Task;
+import com.microsoft.appcenter.AppCenter;
+import com.microsoft.appcenter.crashes.Crashes;
+import com.microsoft.appcenter.distribute.Distribute;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.browser.Browser;
@@ -2231,12 +2234,33 @@ public class AndroidUtilities {
     }*/
 
     public static void startAppCenter(Activity context) {
-        
+        if (BuildConfig.DEBUG) {
+            return;
+        }
+        try {
+            if (BuildVars.DEBUG_VERSION) {
+                Distribute.setEnabledForDebuggableBuild(true);
+                AppCenter.start(context.getApplication(), BuildVars.DEBUG_VERSION ? BuildVars.APPCENTER_HASH_DEBUG : BuildVars.APPCENTER_HASH, Distribute.class, Crashes.class);
+                AppCenter.setUserId("uid=" + UserConfig.getInstance(UserConfig.selectedAccount).clientUserId);
+            }
+        } catch (Throwable e) {
+            FileLog.e(e);
+        }
     }
 
     private static long lastUpdateCheckTime;
     public static void checkForUpdates() {
-        
+        try {
+            if (BuildVars.DEBUG_VERSION) {
+                if (SystemClock.elapsedRealtime() - lastUpdateCheckTime < 60 * 60 * 1000) {
+                    return;
+                }
+                lastUpdateCheckTime = SystemClock.elapsedRealtime();
+                Distribute.checkForUpdate();
+            }
+        } catch (Throwable e) {
+            FileLog.e(e);
+        }
     }
 
     public static void addToClipboard(CharSequence str) {
@@ -3717,38 +3741,27 @@ public class AndroidUtilities {
             animated = false;
         }
 
-        if (show && view.getTag() == null) {
-            view.animate().setListener(null).cancel();
-            if (animated) {
-                if (view.getVisibility() != View.VISIBLE) {
-                    view.setVisibility(View.VISIBLE);
-                    view.setAlpha(0f);
-                    view.setScaleX(scaleFactor);
-                    view.setScaleY(scaleFactor);
-                }
-                view.animate().alpha(1f).scaleY(1f).scaleX(1f).setDuration(150).start();
-            } else {
-                view.setVisibility(View.VISIBLE);
-                view.setAlpha(1f);
-                view.setScaleX(1f);
-                view.setScaleY(1f);
-            }
-            view.setTag(1);
-        } else if (!show && view.getTag() != null){
-            view.animate().setListener(null).cancel();
-            if (animated) {
-                view.animate().alpha(0).scaleY(scaleFactor).scaleX(scaleFactor).setListener(new HideViewAfterAnimation(view)).setDuration(150).start();
-            } else {
-                view.setVisibility(View.GONE);
-            }
-            view.setTag(null);
-        } else if (!animated) {
+        if (!animated) {
             view.animate().setListener(null).cancel();
             view.setVisibility(show ? View.VISIBLE : View.GONE);
             view.setTag(show ? 1 : null);
             view.setAlpha(1f);
             view.setScaleX(1f);
             view.setScaleY(1f);
+        } else if (show && view.getTag() == null) {
+            view.animate().setListener(null).cancel();
+            if (view.getVisibility() != View.VISIBLE) {
+                view.setVisibility(View.VISIBLE);
+                view.setAlpha(0f);
+                view.setScaleX(scaleFactor);
+                view.setScaleY(scaleFactor);
+            }
+            view.animate().alpha(1f).scaleY(1f).scaleX(1f).setDuration(150).start();
+            view.setTag(1);
+        } else if (!show && view.getTag() != null) {
+            view.animate().setListener(null).cancel();
+            view.animate().alpha(0).scaleY(scaleFactor).scaleX(scaleFactor).setListener(new HideViewAfterAnimation(view)).setDuration(150).start();
+            view.setTag(null);
         }
     }
 }

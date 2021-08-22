@@ -72,7 +72,7 @@ public class HintDialogCell extends FrameLayout {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(86), MeasureSpec.EXACTLY));
-        counterView.horizontalPadding = AndroidUtilities.dp(13);
+        counterView.counterDrawable.horizontalPadding = AndroidUtilities.dp(13);
     }
 
     public void update(int mask) {

@@ -78,7 +78,7 @@ public class MessagesController extends BaseController implements NotificationCe
     private SparseArray<TLRPC.TL_chatInviteExported> exportedChats = new SparseArray<>();
 
     public ArrayList<TLRPC.RecentMeUrl> hintDialogs = new ArrayList<>();
-    private SparseArray<ArrayList<TLRPC.Dialog>> dialogsByFolder = new SparseArray<>();
+    public SparseArray<ArrayList<TLRPC.Dialog>> dialogsByFolder = new SparseArray<>();
     protected ArrayList<TLRPC.Dialog> allDialogs = new ArrayList<>();
     public ArrayList<TLRPC.Dialog> dialogsForward = new ArrayList<>();
     public ArrayList<TLRPC.Dialog> dialogsServerOnly = new ArrayList<>();
@@ -2287,14 +2287,18 @@ public class MessagesController extends BaseController implements NotificationCe
                         settings.base_theme = Theme.getBaseThemeByKey(themeInfo.name);
                         settings.accent_color = accent.accentColor;
                         if (accent.myMessagesAccentColor != 0) {
-                            settings.message_bottom_color = accent.myMessagesAccentColor;
+                            settings.message_colors.add(accent.myMessagesAccentColor);
                             settings.flags |= 1;
-                        }
-                        if (accent.myMessagesGradientAccentColor != 0) {
-                            settings.message_top_color = accent.myMessagesGradientAccentColor;
-                            settings.flags |= 1;
-                        } else if (settings.message_bottom_color != 0) {
-                            settings.message_top_color = settings.message_bottom_color;
+                            if (accent.myMessagesGradientAccentColor1 != 0) {
+                                settings.message_colors.add(accent.myMessagesGradientAccentColor1);
+                                if (accent.myMessagesGradientAccentColor2 != 0) {
+                                    settings.message_colors.add(accent.myMessagesGradientAccentColor2);
+                                    if (accent.myMessagesGradientAccentColor3 != 0) {
+                                        settings.message_colors.add(accent.myMessagesGradientAccentColor3);
+                                    }
+                                }
+                            }
+                            settings.message_colors_animated = accent.myMessagesAnimated;
                         }
                         settings.flags |= 2;
                         settings.wallpaper_settings = new TLRPC.TL_wallPaperSettings();

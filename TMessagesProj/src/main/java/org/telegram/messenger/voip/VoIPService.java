@@ -187,8 +187,6 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 
 	private boolean reconnectScreenCapture;
 
-	private int currentStreamRequestId;
-
 	private TLRPC.Chat chat;
 
 	private boolean isVideoAvailable;
@@ -306,7 +304,9 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 
 	private int classGuid;
 
-	private long currentStreamRequestTimestamp;
+	private int currentStreamRequestId;
+	private long currentStreamAudioRequestTimestamp;
+	private HashMap<String, Integer> currentStreamVideoRequestTimestamp = new HashMap<>();
 	public boolean micSwitching;
 
 	private Runnable afterSoundRunnable = new Runnable() {
@@ -2084,7 +2084,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 					}
 					broadcastUnknownParticipants(taskPtr, unknown);
 				});
-			}, (timestamp, duration) -> {
+			}, (timestamp, duration, videoChannel, quality) -> {
 				if (type != CAPTURE_DEVICE_CAMERA) {
 					return;
 				}
@@ -2096,15 +2096,24 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				if (duration == 500) {
 					inputGroupCallStream.scale = 1;
 				}
+				if (videoChannel != 0) {
+					inputGroupCallStream.flags |= 1;
+					inputGroupCallStream.video_channel = videoChannel;
+					inputGroupCallStream.video_quality = quality;
+				}
 				req.location = inputGroupCallStream;
-				currentStreamRequestTimestamp = timestamp;
-				currentStreamRequestId = AccountInstance.getInstance(currentAccount).getConnectionsManager().sendRequest(req, (response, error, responseTime) -> {
+				currentStreamAudioRequestTimestamp = timestamp;
+				String videoKey = videoChannel == 0 ? null : (videoChannel + "_" + timestamp + "_" + quality);
+				int reqId = AccountInstance.getInstance(currentAccount).getConnectionsManager().sendRequest(req, (response, error, responseTime) -> {
+					if (videoKey != null) {
+						AndroidUtilities.runOnUIThread(() -> currentStreamVideoRequestTimestamp.remove(videoKey));
+					}
 					if (tgVoip[type] == null) {
 						return;
 					}
 					if (response != null) {
 						TLRPC.TL_upload_file res = (TLRPC.TL_upload_file) response;
-						tgVoip[type].onStreamPartAvailable(timestamp, res.bytes.buffer, res.bytes.limit(), responseTime);
+						tgVoip[type].onStreamPartAvailable(timestamp, res.bytes.buffer, res.bytes.limit(), responseTime, videoChannel, quality);
 					} else {
 						if ("GROUPCALL_JOIN_MISSING".equals(error.text)) {
 							AndroidUtilities.runOnUIThread(() -> createGroupInstance(type, false));
@@ -2115,18 +2124,37 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 							} else {
 								status = -1;
 							}
-							tgVoip[type].onStreamPartAvailable(timestamp, null, status, responseTime);
+							tgVoip[type].onStreamPartAvailable(timestamp, null, status, responseTime, videoChannel, quality);
 						}
 					}
 				}, ConnectionsManager.RequestFlagFailOnServerErrors, ConnectionsManager.ConnectionTypeDownload, groupCall.call.stream_dc_id);
-			}, (timestamp, duration) -> {
+				if (videoKey == null) {
+					AndroidUtilities.runOnUIThread(() -> {
+						currentStreamRequestId = reqId;
+						currentStreamAudioRequestTimestamp = timestamp;
+					});
+				} else {
+					AndroidUtilities.runOnUIThread(() -> currentStreamVideoRequestTimestamp.put(videoKey, reqId));
+				}
+			}, (timestamp, duration, videoChannel, quality) -> {
 				if (type != CAPTURE_DEVICE_CAMERA) {
 					return;
 				}
-				if (currentStreamRequestTimestamp == timestamp) {
-					AccountInstance.getInstance(currentAccount).getConnectionsManager().cancelRequest(currentStreamRequestId, true);
-					currentStreamRequestId = 0;
-				}
+				AndroidUtilities.runOnUIThread(() -> {
+					if (videoChannel == 0) {
+						if (currentStreamAudioRequestTimestamp == timestamp) {
+							AccountInstance.getInstance(currentAccount).getConnectionsManager().cancelRequest(currentStreamRequestId, true);
+							currentStreamRequestId = 0;
+						}
+					} else {
+						String videoKey = videoChannel + "_" + timestamp + "_" + quality;
+						Integer reqId = currentStreamVideoRequestTimestamp.get(videoKey);
+						if (reqId != null) {
+							AccountInstance.getInstance(currentAccount).getConnectionsManager().cancelRequest(reqId, true);
+							currentStreamVideoRequestTimestamp.remove(videoKey);
+						}
+					}
+				});
 			});
 			tgVoip[type].setOnStateUpdatedListener((state, inTransition) -> updateConnectionState(type, state, inTransition));
 		}

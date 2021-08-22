@@ -641,17 +641,18 @@ void MediaManager::setSendVideo(std::shared_ptr<VideoCaptureInterface> videoCapt
     _videoCapture = videoCapture;
     if (_videoCapture) {
         _videoCapture->setPreferredAspectRatio(_preferredAspectRatio);
-        _isScreenCapture = _videoCapture->isScreenCapture();
 
-        const auto thread = _thread;
-        const auto weak = std::weak_ptr<MediaManager>(shared_from_this());
-        GetVideoCaptureAssumingSameThread(_videoCapture.get())->setStateUpdated([=](VideoState state) {
-            thread->PostTask(RTC_FROM_HERE, [=] {
-                if (const auto strong = weak.lock()) {
-                    strong->setOutgoingVideoState(state);
-                }
-            });
-        });
+		const auto thread = _thread;
+		const auto weak = std::weak_ptr<MediaManager>(shared_from_this());
+        const auto object = GetVideoCaptureAssumingSameThread(_videoCapture.get());
+        _isScreenCapture = object->isScreenCapture();
+		object->setStateUpdated([=](VideoState state) {
+			thread->PostTask(RTC_FROM_HERE, [=] {
+				if (const auto strong = weak.lock()) {
+					strong->setOutgoingVideoState(state);
+				}
+			});
+		});
         setOutgoingVideoState(VideoState::Active);
     } else {
         _isScreenCapture = false;
@@ -679,6 +680,18 @@ void MediaManager::setSendVideo(std::shared_ptr<VideoCaptureInterface> videoCapt
 
     checkIsSendingVideoChanged(wasSending);
     checkIsReceivingVideoChanged(wasReceiving);
+}
+
+void MediaManager::sendVideoDeviceUpdated() {
+    if (!computeIsSendingVideo()) {
+        return;
+    }
+    const auto wasScreenCapture = _isScreenCapture;
+    const auto object = GetVideoCaptureAssumingSameThread(_videoCapture.get());
+    _isScreenCapture = object->isScreenCapture();
+    if (_isScreenCapture != wasScreenCapture) {
+        adjustBitratePreferences(true);
+    }
 }
 
 void MediaManager::setRequestedVideoAspect(float aspect) {

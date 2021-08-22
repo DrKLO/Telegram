@@ -59,7 +59,6 @@ public abstract class PrivateVideoPreviewDialog extends FrameLayout implements V
 
     private ViewPager viewPager;
     private TextView positiveButton;
-    private ActionBar actionBar;
     private LinearLayout titlesLayout;
     private RLottieImageView micIconView;
     private TextView[] titles;
@@ -136,7 +135,7 @@ public abstract class PrivateVideoPreviewDialog extends FrameLayout implements V
         textureView.renderer.setUseCameraRotation(true);
         addView(textureView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
-        actionBar = new ActionBar(context);
+        ActionBar actionBar = new ActionBar(context);
         actionBar.setBackButtonDrawable(new BackDrawable(false));
         actionBar.setBackgroundColor(Color.TRANSPARENT);
         actionBar.setItemsColor(Theme.getColor(Theme.key_voipgroup_actionBarItems), false);
@@ -529,7 +528,6 @@ public abstract class PrivateVideoPreviewDialog extends FrameLayout implements V
                 frameLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 21, 28, 21, 0));
             } else {
                 ImageView imageView = new ImageView(getContext());
-                imageView.setImageResource(R.drawable.icplaceholder);
                 imageView.setTag(position);
 
                 Bitmap bitmap = null;

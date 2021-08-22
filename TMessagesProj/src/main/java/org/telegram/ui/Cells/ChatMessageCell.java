@@ -349,6 +349,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private boolean needNewVisiblePart;
     private boolean fullyDraw;
 
+    private int parentWidth;
     private int parentHeight;
     public float parentViewTopOffset;
 
@@ -2556,7 +2557,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         fullyDraw = draw;
     }
 
-    public void setVisiblePart(int position, int height, int parent, float parentOffset, float visibleTop, int parentH) {
+    public void setVisiblePart(int position, int height, int parent, float parentOffset, float visibleTop, int parentW, int parentH) {
+        parentWidth = parentW;
         parentHeight = parentH;
         backgroundHeight = parentH;
         viewTop = visibleTop;
@@ -3273,7 +3275,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 if (currentMessageObject != null && currentMessageObject.textLayoutBlocks != null && currentMessageObject.textLayoutBlocks.size() > 1) {
                     needNewVisiblePart = true;
                 }
-
             }
 
             boolean linked = false;
@@ -7310,7 +7311,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private void drawContent(Canvas canvas) {
         if (needNewVisiblePart && currentMessageObject.type == 0) {
             getLocalVisibleRect(scrollRect);
-            setVisiblePart(scrollRect.top, scrollRect.bottom - scrollRect.top, parentHeight, parentViewTopOffset, viewTop, backgroundHeight);
+            setVisiblePart(scrollRect.top, scrollRect.bottom - scrollRect.top, parentHeight, parentViewTopOffset, viewTop, parentWidth, backgroundHeight);
             needNewVisiblePart = false;
         }
 
@@ -9658,7 +9659,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             } else if (isMegagroup && currentChat != null && currentMessageObject.isForwardedChannelPost()) {
                 adminString = LocaleController.getString("DiscussChannel", R.string.DiscussChannel);
                 adminWidth = (int) Math.ceil(Theme.chat_adminPaint.measureText(adminString));
-                nameWidth -= adminWidth;
+                nameWidth -= adminWidth; //TODO
             } else if (currentUser != null && !currentMessageObject.isOutOwner() && !currentMessageObject.isAnyKindOfSticker() && currentMessageObject.type != 5 && delegate != null && (adminLabel = delegate.getAdminRank(currentUser.id)) != null) {
                 if (adminLabel.length() == 0) {
                     adminLabel = LocaleController.getString("ChatAdmin", R.string.ChatAdmin);
@@ -10092,15 +10093,18 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             if (drawable == null) {
                 continue;
             }
+            int w = parentWidth;
             int h = parentHeight;
             if (h == 0) {
+                w = AndroidUtilities.displaySize.x;
                 h = AndroidUtilities.displaySize.y;
                 if (getParent() instanceof View) {
                     View view = (View) getParent();
+                    w = view.getMeasuredWidth();
                     h = view.getMeasuredHeight();
                 }
             }
-            drawable.setTop((int) ((fromParent ? getY() : getTop()) + parentViewTopOffset), h, pinnedTop, pinnedBottom || transitionParams.changePinnedBottomProgress != 1);
+            drawable.setTop((int) ((fromParent ? getY() : getTop()) + parentViewTopOffset), w, h, (int) parentViewTopOffset, pinnedTop, pinnedBottom || transitionParams.changePinnedBottomProgress != 1);
         }
     }
 
@@ -10434,15 +10438,18 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     drawable.setBounds(rect.left, rect.top, rect.right + AndroidUtilities.dp(6), rect.bottom);
                     canvas.save();
                     canvas.clipRect(rect.right - AndroidUtilities.dp(12), rect.bottom - AndroidUtilities.dp(16), rect.right + AndroidUtilities.dp(12), rect.bottom);
+                    int w = parentWidth;
                     int h = parentHeight;
                     if (h == 0) {
+                        w = AndroidUtilities.displaySize.x;
                         h = AndroidUtilities.displaySize.y;
                         if (getParent() instanceof View) {
                             View view = (View) getParent();
+                            w = view.getMeasuredWidth();
                             h = view.getMeasuredHeight();
                         }
                     }
-                    drawable.setTop((int) (getY() + parentViewTopOffset), h, pinnedTop, pinnedBottom);
+                    drawable.setTop((int) (getY() + parentViewTopOffset), w, h, (int) parentViewTopOffset, pinnedTop, pinnedBottom);
                     float alpha = !mediaBackground && !pinnedBottom ? transitionParams.changePinnedBottomProgress : (1f - transitionParams.changePinnedBottomProgress);
                     drawable.setAlpha((int) (255 * alpha));
                     drawable.draw(canvas);
@@ -10818,17 +10825,20 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             }
         }
 
+        int w = parentWidth;
         int h = parentHeight;
         if (h == 0) {
+            w = AndroidUtilities.displaySize.x;
             h = AndroidUtilities.displaySize.y;
             if (getParent() instanceof View) {
                 View view = (View) getParent();
+                w = view.getMeasuredWidth();
                 h = view.getMeasuredHeight();
             }
         }
 
         if (currentBackgroundDrawable != null) {
-            currentBackgroundDrawable.setTop(0, h, pinnedTop, pinnedBottom);
+            currentBackgroundDrawable.setTop(0, w, h, (int) parentViewTopOffset, pinnedTop, pinnedBottom);
             Drawable currentBackgroundShadowDrawable = currentBackgroundDrawable.getShadowDrawable();
             if (currentBackgroundShadowDrawable != null) {
                 currentBackgroundShadowDrawable.setAlpha((int) (getAlpha() * 255));

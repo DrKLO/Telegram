@@ -1035,7 +1035,7 @@ public class ChatObject {
             int selfId = getSelfId();
             VoIPService service = VoIPService.getSharedInstance();
             TLRPC.TL_groupCallParticipant selfParticipant = participants.get(selfId);
-            canStreamVideo = selfParticipant != null && selfParticipant.video_joined;
+            canStreamVideo = selfParticipant != null && selfParticipant.video_joined || BuildVars.DEBUG_PRIVATE_VERSION;
             boolean allowedVideoCount;
             boolean hasAnyVideo = false;
             activeVideos = 0;

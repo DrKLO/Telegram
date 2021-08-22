@@ -106,10 +106,10 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
         public CharSequence name;
     }
 
-    protected static class RecentSearchObject {
-        TLObject object;
-        int date;
-        long did;
+    public static class RecentSearchObject {
+        public TLObject object;
+        public int date;
+        public long did;
     }
 
     public interface DialogsSearchAdapterDelegate {
@@ -121,7 +121,15 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
         boolean isSelected(long dialogId);
     }
 
-    private class CategoryAdapterRecycler extends RecyclerListView.SelectionAdapter {
+    public static class CategoryAdapterRecycler extends RecyclerListView.SelectionAdapter {
+
+        private final Context mContext;
+        private final int currentAccount;
+
+        public CategoryAdapterRecycler(Context context, int account) {
+            mContext = context;
+            currentAccount = account;
+        }
 
         public void setIndex(int value) {
             notifyDataSetChanged();
@@ -371,6 +379,12 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
     }
 
     public void loadRecentSearch() {
+        loadRecentSearch(currentAccount, dialogsType, (arrayList, hashMap) -> {
+            DialogsSearchAdapter.this.setRecentSearch(arrayList, hashMap);
+        });
+    }
+
+    public static void loadRecentSearch(int currentAccount, int dialogsType, OnRecentSearchLoaded callback) {
         MessagesStorage.getInstance(currentAccount).getStorageQueue().postRunnable(() -> {
             try {
                 SQLiteCursor cursor = MessagesStorage.getInstance(currentAccount).getDatabase().queryFinalized("SELECT did, date FROM search_recent WHERE 1");
@@ -465,7 +479,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                         return 0;
                     }
                 });
-                AndroidUtilities.runOnUIThread(() -> setRecentSearch(arrayList, hashMap));
+                AndroidUtilities.runOnUIThread(() -> callback.setRecentSearch(arrayList, hashMap));
             } catch (Exception e) {
                 FileLog.e(e);
             }
@@ -934,7 +948,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 layoutManager.setOrientation(LinearLayoutManager.HORIZONTAL);
                 horizontalListView.setLayoutManager(layoutManager);
                 //horizontalListView.setDisallowInterceptTouchEvents(true);
-                horizontalListView.setAdapter(new CategoryAdapterRecycler());
+                horizontalListView.setAdapter(new CategoryAdapterRecycler(mContext, currentAccount));
                 horizontalListView.setOnItemClickListener((view1, position) -> {
                     if (delegate != null) {
                         delegate.didPressedOnSubDialog((Integer) view1.getTag());
@@ -1222,5 +1236,9 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
 
     public int getCurrentItemCount() {
         return currentItemCount;
+    }
+
+    public interface OnRecentSearchLoaded {
+        void setRecentSearch(ArrayList<RecentSearchObject> arrayList, LongSparseArray<RecentSearchObject> hashMap);
     }
 }

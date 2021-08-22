@@ -1042,4 +1042,5 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable {
     public void setInvalidateOnProgressSet(boolean value) {
         invalidateOnProgressSet = value;
     }
+
 }
