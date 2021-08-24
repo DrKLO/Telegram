@@ -93,8 +93,6 @@ import androidx.customview.widget.ExploreByTouchHelper;
 import androidx.recyclerview.widget.ChatListItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
-import com.google.android.exoplayer2.util.Log;
-
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -133,9 +131,7 @@ import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.StickersActivity;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -381,6 +377,8 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     protected int animatedTop;
     public ValueAnimator currentTopViewAnimation;
     private ReplaceableIconDrawable botButtonDrawable;
+
+    private CharSequence draftMessage;
 
     private boolean isPaste;
 
@@ -2098,7 +2096,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 CharSequence message = AndroidUtilities.getTrimmedString(charSequence.toString());
                 if (delegate != null) {
                     if (!ignoreTextChange) {
-                        if (count > 2 || TextUtils.isEmpty(charSequence)) {
+                        if (before > count + 1 || (count - before) > 2 || TextUtils.isEmpty(charSequence)) {
                             messageWebPageSearch = true;
                         }
                         delegate.onTextChanged(charSequence, before > count + 1 || (count - before) > 2);
@@ -5723,6 +5721,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         if (audioToSend != null || videoToSendMessageObject != null || editingMessageObject == messageObject) {
             return;
         }
+        boolean hadEditingMessage = editingMessageObject != null;
         editingMessageObject = messageObject;
         editingCaption = caption;
         CharSequence textToSetWithKeyboard;
@@ -5803,6 +5802,9 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 textToSetWithKeyboard = Emoji.replaceEmoji(new SpannableStringBuilder(stringBuilder), messageEditText.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20), false);
             } else {
                 textToSetWithKeyboard = "";
+            }
+            if (draftMessage == null && !hadEditingMessage) {
+                draftMessage = messageEditText.length() > 0 ? messageEditText.getText() : null;
             }
             if (!keyboardVisible) {
                 AndroidUtilities.runOnUIThread(setTextFieldRunnable = () -> {
@@ -5893,7 +5895,8 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 scheduledButton.setAlpha(1.0f);
                 scheduledButton.setVisibility(VISIBLE);
             }
-            messageEditText.setText("");
+            messageEditText.setText(draftMessage);
+            messageEditText.setSelection(messageEditText.length());
             if (getVisibility() == VISIBLE) {
                 delegate.onAttachButtonShow();
             }
@@ -6092,6 +6095,16 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
     public EditTextCaption getEditField() {
         return messageEditText;
+    }
+
+    public CharSequence getDraftMessage() {
+        if (editingMessageObject != null) {
+            return TextUtils.isEmpty(draftMessage) ? null : draftMessage;
+        }
+        if (hasText()) {
+            return messageEditText.getText();
+        }
+        return null;
     }
 
     public CharSequence getFieldText() {

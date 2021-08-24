@@ -16,6 +16,7 @@ import android.animation.StateListAnimator;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.database.DataSetObserver;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -34,6 +35,7 @@ import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.core.view.ViewCompat;
 import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.LinearSmoothScroller;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.SimpleItemAnimator;
@@ -66,8 +68,10 @@ import android.widget.PopupWindow;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DocumentObject;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.EmojiData;
@@ -90,6 +94,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Adapters.DialogsSearchAdapter;
 import org.telegram.ui.Cells.ContextLinkCell;
 import org.telegram.ui.Cells.EmptyCell;
 import org.telegram.ui.Cells.FeaturedStickerSetInfoCell;
@@ -1656,61 +1661,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
             updateStickerTabs();
             stickersTab.setDelegate(page -> {
                 if (page == trendingTabNum) {
-                    final TrendingStickersLayout.Delegate trendingDelegate = new TrendingStickersLayout.Delegate() {
-                        @Override
-                        public void onStickerSetAdd(TLRPC.StickerSetCovered stickerSet, boolean primary) {
-                            delegate.onStickerSetAdd(stickerSet);
-                            if (primary) {
-                                updateStickerTabs();
-                            }
-                        }
-
-                        @Override
-                        public void onStickerSetRemove(TLRPC.StickerSetCovered stickerSet) {
-                            delegate.onStickerSetRemove(stickerSet);
-                        }
-
-                        @Override
-                        public boolean onListViewInterceptTouchEvent(RecyclerListView listView, MotionEvent event) {
-                            return ContentPreviewViewer.getInstance().onInterceptTouchEvent(event, listView, EmojiView.this.getMeasuredHeight(), contentPreviewViewerDelegate);
-                        }
-
-                        @Override
-                        public boolean onListViewTouchEvent(RecyclerListView listView, RecyclerListView.OnItemClickListener onItemClickListener, MotionEvent event) {
-                            return ContentPreviewViewer.getInstance().onTouch(event, listView, EmojiView.this.getMeasuredHeight(), onItemClickListener, contentPreviewViewerDelegate);
-                        }
-
-                        @Override
-                        public String[] getLastSearchKeyboardLanguage() {
-                            return lastSearchKeyboardLanguage;
-                        }
-
-                        @Override
-                        public void setLastSearchKeyboardLanguage(String[] language) {
-                            lastSearchKeyboardLanguage = language;
-                        }
-
-                        @Override
-                        public boolean canSendSticker() {
-                            return true;
-                        }
-
-                        @Override
-                        public void onStickerSelected(TLRPC.Document sticker, Object parent, boolean clearsInputField, boolean notify, int scheduleDate) {
-                            delegate.onStickerSelected(null, sticker, null, parent, null, notify, scheduleDate);
-                        }
-
-                        @Override
-                        public boolean canSchedule() {
-                            return delegate.canSchedule();
-                        }
-
-                        @Override
-                        public boolean isInScheduleMode() {
-                            return delegate.isInScheduleMode();
-                        }
-                    };
-                    this.delegate.showTrendingStickersAlert(new TrendingStickersLayout(context, trendingDelegate, primaryInstallingStickerSets, installingStickerSets, removingStickerSets));
+                    openTrendingStickers(null);
                     return;
                 } else if (page == recentTabBum) {
                     stickersGridView.stopScroll();
@@ -2036,6 +1987,64 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
             code += end;
         }
         return code;
+    }
+
+    private void openTrendingStickers(TLRPC.StickerSetCovered set) {
+        final TrendingStickersLayout.Delegate trendingDelegate = new TrendingStickersLayout.Delegate() {
+            @Override
+            public void onStickerSetAdd(TLRPC.StickerSetCovered stickerSet, boolean primary) {
+                delegate.onStickerSetAdd(stickerSet);
+                if (primary) {
+                    updateStickerTabs();
+                }
+            }
+
+            @Override
+            public void onStickerSetRemove(TLRPC.StickerSetCovered stickerSet) {
+                delegate.onStickerSetRemove(stickerSet);
+            }
+
+            @Override
+            public boolean onListViewInterceptTouchEvent(RecyclerListView listView, MotionEvent event) {
+                return ContentPreviewViewer.getInstance().onInterceptTouchEvent(event, listView, EmojiView.this.getMeasuredHeight(), contentPreviewViewerDelegate);
+            }
+
+            @Override
+            public boolean onListViewTouchEvent(RecyclerListView listView, RecyclerListView.OnItemClickListener onItemClickListener, MotionEvent event) {
+                return ContentPreviewViewer.getInstance().onTouch(event, listView, EmojiView.this.getMeasuredHeight(), onItemClickListener, contentPreviewViewerDelegate);
+            }
+
+            @Override
+            public String[] getLastSearchKeyboardLanguage() {
+                return lastSearchKeyboardLanguage;
+            }
+
+            @Override
+            public void setLastSearchKeyboardLanguage(String[] language) {
+                lastSearchKeyboardLanguage = language;
+            }
+
+            @Override
+            public boolean canSendSticker() {
+                return true;
+            }
+
+            @Override
+            public void onStickerSelected(TLRPC.Document sticker, Object parent, boolean clearsInputField, boolean notify, int scheduleDate) {
+                delegate.onStickerSelected(null, sticker, null, parent, null, notify, scheduleDate);
+            }
+
+            @Override
+            public boolean canSchedule() {
+                return delegate.canSchedule();
+            }
+
+            @Override
+            public boolean isInScheduleMode() {
+                return delegate.isInScheduleMode();
+            }
+        };
+        this.delegate.showTrendingStickersAlert(new TrendingStickersLayout(getContext(), trendingDelegate, primaryInstallingStickerSets, installingStickerSets, removingStickerSets, set));
     }
 
     @Override
@@ -2885,7 +2894,9 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
 
         final MediaDataController mediaDataController = MediaDataController.getInstance(currentAccount);
 
-        if (!mediaDataController.getFeaturedStickerSets().isEmpty()) {
+        SharedPreferences preferences = MessagesController.getEmojiSettings(currentAccount);
+        ArrayList<TLRPC.StickerSetCovered> featured = mediaDataController.getFeaturedStickerSets();
+        if (!featured.isEmpty() && (!BuildVars.DEBUG_PRIVATE_VERSION || (mediaDataController.getUnreadStickerSets().isEmpty() || preferences.getLong("featured_hidden", 0) == featured.get(0).set.id))) {
             final int id = mediaDataController.getUnreadStickerSets().isEmpty() ? 2 : 3;
             final ImageView trendingStickersTabView = stickersTab.addIconTab(id, stickerIcons[id]);
             trendingStickersTabView.setContentDescription(LocaleController.getString("FeaturedStickers", R.string.FeaturedStickers));
@@ -3642,6 +3653,88 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         }
     }
 
+    private class TrendingAdapter extends RecyclerListView.SelectionAdapter {
+
+        @Override
+        public boolean isEnabled(RecyclerView.ViewHolder holder) {
+            return true;
+        }
+
+        @Override
+        public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            BackupImageView imageView = new BackupImageView(getContext()) {
+                @Override
+                protected void onDraw(Canvas canvas) {
+                    super.onDraw(canvas);
+                    TLRPC.StickerSetCovered set = (TLRPC.StickerSetCovered) getTag();
+                    if (MediaDataController.getInstance(currentAccount).isStickerPackUnread(set.set.id) && dotPaint != null) {
+                        int x = canvas.getWidth() - AndroidUtilities.dp(8);
+                        int y = AndroidUtilities.dp(14);
+                        canvas.drawCircle(x, y, AndroidUtilities.dp(3), dotPaint);
+                    }
+                }
+            };
+            imageView.setSize(AndroidUtilities.dp(30), AndroidUtilities.dp(30));
+            imageView.setLayerNum(1);
+            imageView.setAspectFit(true);
+            imageView.setLayoutParams(new RecyclerView.LayoutParams(AndroidUtilities.dp(52), AndroidUtilities.dp(52)));
+            return new RecyclerListView.Holder(imageView);
+        }
+
+        @Override
+        public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+            BackupImageView imageView = (BackupImageView) holder.itemView;
+            TLRPC.StickerSetCovered set = MediaDataController.getInstance(currentAccount).getFeaturedStickerSets().get(position);
+            imageView.setTag(set);
+
+            TLRPC.Document document = set.cover;
+            if (!set.covers.isEmpty()) {
+                 document = set.covers.get(0);
+            }
+            TLObject object = FileLoader.getClosestPhotoSizeWithSize(set.set.thumbs, 90);
+            SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(set.set.thumbs, Theme.key_emptyListPlaceholder, 0.2f);
+            if (object == null) {
+                object = document;
+            }
+
+            ImageLocation imageLocation;
+            if (object instanceof TLRPC.Document) {
+                TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90);
+                imageLocation = ImageLocation.getForDocument(thumb, document);
+            } else if (object instanceof TLRPC.PhotoSize) {
+                TLRPC.PhotoSize thumb = (TLRPC.PhotoSize) object;
+                int thumbVersion = set.set.thumb_version;
+                imageLocation = ImageLocation.getForSticker(thumb, document, thumbVersion);
+            } else {
+                return;
+            }
+            if (imageLocation == null) {
+                return;
+            }
+            if (object instanceof TLRPC.Document && MessageObject.isAnimatedStickerDocument(document, true)) {
+                if (svgThumb != null) {
+                    imageView.setImage(ImageLocation.getForDocument(document), "30_30", svgThumb, 0, set);
+                } else {
+                    imageView.setImage(ImageLocation.getForDocument(document), "30_30", imageLocation, null, 0, set);
+                }
+            } else if (imageLocation.imageType == FileLoader.IMAGE_TYPE_LOTTIE) {
+                imageView.setImage(imageLocation, "30_30", "tgs", svgThumb, set);
+            } else {
+                imageView.setImage(imageLocation, null, "webp", svgThumb, set);
+            }
+        }
+
+        @Override
+        public int getItemViewType(int position) {
+            return 0;
+        }
+
+        @Override
+        public int getItemCount() {
+            return MediaDataController.getInstance(currentAccount).getFeaturedStickerSets().size();
+        }
+    }
+
     private class StickersGridAdapter extends RecyclerListView.SelectionAdapter {
 
         private Context context;
@@ -3659,7 +3752,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
 
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
-            return false;
+            return holder.itemView instanceof RecyclerListView;
         }
 
         @Override
@@ -3689,6 +3782,11 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                 if (object instanceof TLRPC.Document) {
                     return 0;
                 } else if (object instanceof String) {
+                    if ("trend1".equals(object)) {
+                        return 5;
+                    } else if ("trend2".equals(object)) {
+                        return 6;
+                    }
                     return 3;
                 } else {
                     return 2;
@@ -3698,6 +3796,16 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         }
 
         public int getTabForPosition(int position) {
+            Object cacheObject = cache.get(position);
+            if ("search".equals(cacheObject) || "trend1".equals(cacheObject) || "trend2".equals(cacheObject)) {
+                if (favTabBum >= 0) {
+                    return favTabBum;
+                }
+                if (recentTabBum >= 0) {
+                    return recentTabBum;
+                }
+                return 0;
+            }
             if (position == 0) {
                 position = 1;
             }
@@ -3768,6 +3876,49 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                 case 4:
                     view = new View(context);
                     view.setLayoutParams(new RecyclerView.LayoutParams(LayoutHelper.MATCH_PARENT, searchFieldHeight));
+                    break;
+                case 5:
+                    view = new StickerSetNameCell(context, false);
+                    ((StickerSetNameCell) view).setOnIconClickListener(v -> {
+                        MediaDataController mediaDataController = MediaDataController.getInstance(currentAccount);
+                        ArrayList<TLRPC.StickerSetCovered> featured = mediaDataController.getFeaturedStickerSets();
+                        if (!featured.isEmpty() && !mediaDataController.getUnreadStickerSets().isEmpty()) {
+                            MessagesController.getEmojiSettings(currentAccount).edit().putLong("featured_hidden", featured.get(0).set.id).commit();
+                            updateStickerTabs();
+                            if (stickersGridAdapter != null) {
+                                stickersGridAdapter.notifyItemRangeRemoved(1, 2);
+                            }
+                        }
+                    });
+                    break;
+                case 6:
+                    RecyclerListView horizontalListView = new RecyclerListView(context) {
+                        @Override
+                        public boolean onInterceptTouchEvent(MotionEvent e) {
+                            if (getParent() != null && getParent().getParent() != null) {
+                                getParent().getParent().requestDisallowInterceptTouchEvent(canScrollHorizontally(-1) || canScrollHorizontally(1));
+                                pager.requestDisallowInterceptTouchEvent(true);
+                            }
+                            return super.onInterceptTouchEvent(e);
+                        }
+                    };
+                    horizontalListView.setTag(9);
+                    horizontalListView.setItemAnimator(null);
+                    horizontalListView.setLayoutAnimation(null);
+                    LinearLayoutManager layoutManager = new LinearLayoutManager(context) {
+                        @Override
+                        public boolean supportsPredictiveItemAnimations() {
+                            return false;
+                        }
+                    };
+                    layoutManager.setOrientation(LinearLayoutManager.HORIZONTAL);
+                    horizontalListView.setLayoutManager(layoutManager);
+                    horizontalListView.setAdapter(new TrendingAdapter());
+                    horizontalListView.setOnItemClickListener((view1, position) -> {
+                        openTrendingStickers((TLRPC.StickerSetCovered) view1.getTag());
+                    });
+                    view = horizontalListView;
+                    view.setLayoutParams(new RecyclerView.LayoutParams(LayoutHelper.MATCH_PARENT, AndroidUtilities.dp(52)));
                     break;
             }
 
@@ -3851,15 +4002,20 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                     cell.setIsLast(position == totalItems - 1);
                     break;
                 }
+                case 5: {
+                    StickerSetNameCell cell = (StickerSetNameCell) holder.itemView;
+                    cell.setText(LocaleController.getString("FeaturedStickers", R.string.FeaturedStickers), R.drawable.stickerset_close);
+                    break;
+                }
             }
         }
 
-        @Override
-        public void notifyDataSetChanged() {
+        private void updateItems() {
             int width = getMeasuredWidth();
             if (width == 0) {
                 width = AndroidUtilities.displaySize.x;
             }
+
             stickersPerRow = width / AndroidUtilities.dp(72);
             stickersLayoutManager.setSpanCount(stickersPerRow);
             rowStartPack.clear();
@@ -3869,13 +4025,23 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
             totalItems = 0;
             ArrayList<TLRPC.TL_messages_stickerSet> packs = stickerSets;
             int startRow = 0;
-            for (int a = -3; a < packs.size(); a++) {
+            for (int a = -4; a < packs.size(); a++) {
                 ArrayList<TLRPC.Document> documents;
                 TLRPC.TL_messages_stickerSet pack = null;
                 String key;
-                if (a == -3) {
+                if (a == -4) {
                     cache.put(totalItems++, "search");
                     startRow++;
+                    continue;
+                } else if (a == -3) {
+                    MediaDataController mediaDataController = MediaDataController.getInstance(currentAccount);
+                    SharedPreferences preferences = MessagesController.getEmojiSettings(currentAccount);
+                    ArrayList<TLRPC.StickerSetCovered> featured = mediaDataController.getFeaturedStickerSets();
+                    if (BuildVars.DEBUG_PRIVATE_VERSION && !featured.isEmpty() && !mediaDataController.getUnreadStickerSets().isEmpty() && preferences.getLong("featured_hidden", 0) != featured.get(0).set.id) {
+                        cache.put(totalItems++, "trend1");
+                        cache.put(totalItems++, "trend2");
+                        startRow += 2;
+                    }
                     continue;
                 } else if (a == -2) {
                     documents = favouriteStickers;
@@ -3931,6 +4097,17 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                 totalItems += count * stickersPerRow + 1;
                 startRow += count + 1;
             }
+        }
+
+        @Override
+        public void notifyItemRangeRemoved(int positionStart, int itemCount) {
+            updateItems();
+            super.notifyItemRangeRemoved(positionStart, itemCount);
+        }
+
+        @Override
+        public void notifyDataSetChanged() {
+            updateItems();
             super.notifyDataSetChanged();
         }
     }

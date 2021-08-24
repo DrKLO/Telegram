@@ -1374,7 +1374,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                                         ArrayList<Long> selectedDialogs = new ArrayList<>();
                                         selectedDialogs.add(dialogId);
                                         canReadCount = dialog.unread_count > 0 || dialog.unread_mark ? 1 : 0;
-                                        perfromSelectedDialogsAction(selectedDialogs, read, true);
+                                        performSelectedDialogsAction(selectedDialogs, read, true);
                                     } else if (SharedConfig.getChatSwipeAction(currentAccount) == SwipeGestureSettingsView.SWIPE_GESTURE_MUTE) {
                                         if (!getMessagesController().isDialogMuted(dialogId)) {
                                             NotificationsController.getInstance(UserConfig.selectedAccount).setDialogNotificationsSettings(dialogId, NotificationsController.SETTING_MUTE_FOREVER);
@@ -1386,18 +1386,18 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                                             selectedDialogs.add(dialogId);
                                             canMuteCount = MessagesController.getInstance(currentAccount).isDialogMuted(dialogId) ? 0 : 1;
                                             canUnmuteCount = canMuteCount > 0 ? 0 : 1;
-                                            perfromSelectedDialogsAction(selectedDialogs, mute, true);
+                                            performSelectedDialogsAction(selectedDialogs, mute, true);
                                         }
                                     } else if (SharedConfig.getChatSwipeAction(currentAccount) == SwipeGestureSettingsView.SWIPE_GESTURE_PIN) {
                                         ArrayList<Long> selectedDialogs = new ArrayList<>();
                                         selectedDialogs.add(dialogId);
                                         boolean pinned = isDialogPinned(dialog);
                                         canPinCount = pinned ? 0 : 1;
-                                        perfromSelectedDialogsAction(selectedDialogs, pin, true);
+                                        performSelectedDialogsAction(selectedDialogs, pin, true);
                                     } else if (SharedConfig.getChatSwipeAction(currentAccount) == SwipeGestureSettingsView.SWIPE_GESTURE_DELETE) {
                                         ArrayList<Long> selectedDialogs = new ArrayList<>();
                                         selectedDialogs.add(dialogId);
-                                        perfromSelectedDialogsAction(selectedDialogs, delete, true);
+                                        performSelectedDialogsAction(selectedDialogs, delete, true);
                                     }
                                 }
                             }
@@ -1588,7 +1588,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     ArrayList<Long> selectedDialogs = new ArrayList<>();
                     selectedDialogs.add(dialogId);
                     canReadCount = dialog.unread_count > 0 || dialog.unread_mark ? 1 : 0;
-                    perfromSelectedDialogsAction(selectedDialogs, read, true);
+                    performSelectedDialogsAction(selectedDialogs, read, true);
                     return;
                 }
 
@@ -3424,7 +3424,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
                 @Override
                 protected void onRemoveDialogAction(long currentDialogId, int action) {
-                    if (action == UndoView.ACTION_DELETE) {
+                    if (action == UndoView.ACTION_DELETE || action == UndoView.ACTION_DELETE_FEW) {
                         debugLastUpdateAction = 1;
                         setDialogsListFrozen(true);
                         if (frozenDialogsList != null) {
@@ -3826,7 +3826,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         getUndoView().showWithAction(did, UndoView.ACTION_REMOVED_FROM_FOLDER, neverShow.size(), filter, null, null);
                         hideActionMode(false);
                     } else if (id == pin || id == read || id == delete || id == clear || id == mute || id == archive || id == block || id == archive2 || id == pin2) {
-                        perfromSelectedDialogsAction(selectedDialogs, id, true);
+                        performSelectedDialogsAction(selectedDialogs, id, true);
                     }
                 }
             });
@@ -5227,7 +5227,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         return dialog.pinned;
     }
 
-    private void perfromSelectedDialogsAction(ArrayList<Long> selectedDialogs, int action, boolean alert) {
+    private void performSelectedDialogsAction(ArrayList<Long> selectedDialogs, int action, boolean alert) {
         if (getParentActivity() == null) {
             return;
         }
@@ -5336,28 +5336,37 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             if (action == delete) {
                 builder.setTitle(LocaleController.formatString("DeleteFewChatsTitle", R.string.DeleteFewChatsTitle, LocaleController.formatPluralString("ChatsSelected", count)));
                 builder.setMessage(LocaleController.getString("AreYouSureDeleteFewChats", R.string.AreYouSureDeleteFewChats));
-                builder.setPositiveButton(LocaleController.getString("Delete", R.string.Delete), (dialog1, which) -> {
-                    getMessagesController().setDialogsInTransaction(true);
-                    perfromSelectedDialogsAction(selectedDialogs, action, false);
-                    getMessagesController().setDialogsInTransaction(false);
-                    getMessagesController().checkIfFolderEmpty(folderId);
-                    if (folderId != 0 && getDialogsArray(currentAccount, viewPages[0].dialogsType, folderId, false).size() == 0) {
-                        viewPages[0].listView.setEmptyView(null);
-                        viewPages[0].progressView.setVisibility(View.INVISIBLE);
-                        finishFragment();
-                    }
-                });
             } else {
                 if (canClearCacheCount != 0) {
                     builder.setTitle(LocaleController.formatString("ClearCacheFewChatsTitle", R.string.ClearCacheFewChatsTitle, LocaleController.formatPluralString("ChatsSelectedClearCache", count)));
                     builder.setMessage(LocaleController.getString("AreYouSureClearHistoryCacheFewChats", R.string.AreYouSureClearHistoryCacheFewChats));
-                    builder.setPositiveButton(LocaleController.getString("ClearHistoryCache", R.string.ClearHistoryCache), (dialog1, which) -> perfromSelectedDialogsAction(selectedDialogs, action, false));
                 } else {
                     builder.setTitle(LocaleController.formatString("ClearFewChatsTitle", R.string.ClearFewChatsTitle, LocaleController.formatPluralString("ChatsSelectedClear", count)));
                     builder.setMessage(LocaleController.getString("AreYouSureClearHistoryFewChats", R.string.AreYouSureClearHistoryFewChats));
-                    builder.setPositiveButton(LocaleController.getString("ClearHistory", R.string.ClearHistory), (dialog1, which) -> perfromSelectedDialogsAction(selectedDialogs, action, false));
                 }
             }
+            builder.setPositiveButton(action == delete ? LocaleController.getString("Delete", R.string.Delete)
+                            : canClearCacheCount != 0 ? LocaleController.getString("ClearHistoryCache", R.string.ClearHistoryCache)
+                            : LocaleController.getString("ClearHistory", R.string.ClearHistory)
+                    , (dialog1, which) -> {
+                        ArrayList<Long> didsCopy = new ArrayList<>(selectedDialogs);
+                        getUndoView().showWithAction(didsCopy, action == delete ? UndoView.ACTION_DELETE_FEW : UndoView.ACTION_CLEAR_FEW, null, null, () -> {
+                            if (action == delete) {
+                                getMessagesController().setDialogsInTransaction(true);
+                                performSelectedDialogsAction(didsCopy, action, false);
+                                getMessagesController().setDialogsInTransaction(false);
+                                getMessagesController().checkIfFolderEmpty(folderId);
+                                if (folderId != 0 && getDialogsArray(currentAccount, viewPages[0].dialogsType, folderId, false).size() == 0) {
+                                    viewPages[0].listView.setEmptyView(null);
+                                    viewPages[0].progressView.setVisibility(View.INVISIBLE);
+                                    finishFragment();
+                                }
+                            } else {
+                                performSelectedDialogsAction(didsCopy, action, false);
+                            }
+                        }, null);
+                        hideActionMode(action == clear);
+                    });
             builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
             AlertDialog alertDialog = builder.create();
             showDialog(alertDialog);
@@ -5522,30 +5531,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                                         }
                                     }
                                 }
-                                getUndoView().showWithAction(selectedDialog, action == clear ? UndoView.ACTION_CLEAR : UndoView.ACTION_DELETE, () -> {
-                                    if (action == clear) {
-                                        getMessagesController().deleteDialog(selectedDialog, 1, param);
-                                    } else {
-                                        if (chat != null) {
-                                            if (ChatObject.isNotInChat(chat)) {
-                                                getMessagesController().deleteDialog(selectedDialog, 0, param);
-                                            } else {
-                                                TLRPC.User currentUser = getMessagesController().getUser(getUserConfig().getClientUserId());
-                                                getMessagesController().deleteParticipantFromChat((int) -selectedDialog, currentUser, null, null, param, false);
-                                            }
-                                        } else {
-                                            getMessagesController().deleteDialog(selectedDialog, 0, param);
-                                            if (isBot) {
-                                                getMessagesController().blockPeer((int) selectedDialog);
-                                            }
-                                        }
-                                        if (AndroidUtilities.isTablet()) {
-                                            getNotificationCenter().postNotificationName(NotificationCenter.closeChats, selectedDialog);
-                                        }
-                                        getMessagesController().checkIfFolderEmpty(folderId);
-                                    }
-                                });
-
+                                getUndoView().showWithAction(selectedDialog, action == clear ? UndoView.ACTION_CLEAR : UndoView.ACTION_DELETE, () -> performDeleteOrClearDialogAction(action, selectedDialog, chat, isBot, param));
 
                                 ArrayList<TLRPC.Dialog> currentDialogs = new ArrayList<>(getDialogsArray(currentAccount, viewPages[0].dialogsType, folderId, false));
                                 int currentDialogIndex = -1;
@@ -5577,26 +5563,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         if (action == clear && canClearCacheCount != 0) {
                             getMessagesController().deleteDialog(selectedDialog, 2, false);
                         } else {
-                            if (action == clear) {
-                                getMessagesController().deleteDialog(selectedDialog, 1, false);
-                            } else {
-                                if (chat != null) {
-                                    if (ChatObject.isNotInChat(chat)) {
-                                        getMessagesController().deleteDialog(selectedDialog, 0, false);
-                                    } else {
-                                        TLRPC.User currentUser = getMessagesController().getUser(getUserConfig().getClientUserId());
-                                        getMessagesController().deleteParticipantFromChat((int) -selectedDialog, currentUser, null);
-                                    }
-                                } else {
-                                    getMessagesController().deleteDialog(selectedDialog, 0, false);
-                                    if (isBot) {
-                                        getMessagesController().blockPeer((int) selectedDialog);
-                                    }
-                                }
-                                if (AndroidUtilities.isTablet()) {
-                                    getNotificationCenter().postNotificationName(NotificationCenter.closeChats, selectedDialog);
-                                }
-                            }
+                            performDeleteOrClearDialogAction(action, selectedDialog, chat, isBot, false);
                         }
                     }
                 }
@@ -5639,6 +5606,30 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             scrollToTop();
         }
         hideActionMode(action != pin2 && action != pin && action != delete);
+    }
+
+    private void performDeleteOrClearDialogAction(int action, long selectedDialog, TLRPC.Chat chat, boolean isBot, boolean revoke) {
+        if (action == clear) {
+            getMessagesController().deleteDialog(selectedDialog, 1, revoke);
+        } else {
+            if (chat != null) {
+                if (ChatObject.isNotInChat(chat)) {
+                    getMessagesController().deleteDialog(selectedDialog, 0, revoke);
+                } else {
+                    TLRPC.User currentUser = getMessagesController().getUser(getUserConfig().getClientUserId());
+                    getMessagesController().deleteParticipantFromChat((int) -selectedDialog, currentUser, null, null, revoke, false);
+                }
+            } else {
+                getMessagesController().deleteDialog(selectedDialog, 0, revoke);
+                if (isBot) {
+                    getMessagesController().blockPeer((int) selectedDialog);
+                }
+            }
+            if (AndroidUtilities.isTablet()) {
+                getNotificationCenter().postNotificationName(NotificationCenter.closeChats, selectedDialog);
+            }
+            getMessagesController().checkIfFolderEmpty(folderId);
+        }
     }
 
     private void pinDialog(long selectedDialog, boolean pin, MessagesController.DialogFilter filter, int minPinnedNum, boolean animated) {
