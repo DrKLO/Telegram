@@ -711,8 +711,13 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                             int messageId = messageObject1.getId();
 
                             if (messageObject1.messageOwner.fwd_from != null) {
-                                lower_id = MessageObject.getPeerId(messageObject1.messageOwner.fwd_from.saved_from_peer);
-                                messageId = messageObject1.messageOwner.fwd_from.saved_from_msg_id;
+                                if (messageObject1.messageOwner.fwd_from.saved_from_peer != null) {
+                                    lower_id = MessageObject.getPeerId(messageObject1.messageOwner.fwd_from.saved_from_peer);
+                                    messageId = messageObject1.messageOwner.fwd_from.saved_from_msg_id;
+                                } else if (messageObject1.messageOwner.fwd_from.from_id != null) {
+                                    lower_id = MessageObject.getPeerId(messageObject1.messageOwner.fwd_from.from_id);
+                                    messageId = messageObject1.messageOwner.fwd_from.channel_post;
+                                }
                             }
 
                             if (lower_id < 0) {
@@ -1878,6 +1883,11 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         public boolean closeKeyboard() {
             return false;
         }
+
+        @Override
+        public boolean validateGroupId(long groupId) {
+            return true;
+        }
     }
 
     public interface PhotoViewerProvider {
@@ -1913,6 +1923,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         MessageObject getEditingMessageObject();
         void onCaptionChanged(CharSequence caption);
         boolean closeKeyboard();
+        boolean validateGroupId(long groupId);
     }
 
     private class FrameLayoutDrawer extends SizeNotifierFrameLayoutPhoto {
@@ -3879,7 +3890,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                                 if (message != null) {
                                     SendMessagesHelper.getInstance(currentAccount).sendMessage(message.toString(), did, null, null, null, true, null, null, null, true, 0, null);
                                 }
-                                SendMessagesHelper.getInstance(currentAccount).sendMessage(fmessages, did, true, 0);
+                                SendMessagesHelper.getInstance(currentAccount).sendMessage(fmessages, did, false, false, true, 0);
                             }
                             fragment1.finishFragment();
                             if (parentChatActivityFinal != null) {
@@ -4516,6 +4527,14 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     onActionClick(true);
                     checkProgress(0, false, true);
                 }
+            }
+
+            @Override
+            public boolean validGroupId(long groupId) {
+                if (placeProvider != null) {
+                    return placeProvider.validateGroupId(groupId);
+                }
+                return true;
             }
         });
 
@@ -6948,8 +6967,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             }
         } else if (isPlaying || playbackState == ExoPlayer.STATE_ENDED) {
             if (currentEditMode != 3) {
-                photoProgressViews[0].setIndexedAlpha(1, 1f, false);
-                photoProgressViews[0].setBackgroundState(PROGRESS_PLAY, false, isPlaying);
+                photoProgressViews[0].setIndexedAlpha(1, 1f, playbackState == ExoPlayer.STATE_ENDED);
+                photoProgressViews[0].setBackgroundState(PROGRESS_PLAY, false, photoProgressViews[0].animAlphas[1] > 0f);
             }
             isPlaying = false;
             AndroidUtilities.cancelRunOnUIThread(updateProgressRunnable);

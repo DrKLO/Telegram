@@ -592,8 +592,13 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
                     cameraDrawable.setCurrentFrame(0);
                     setAvatarCell.imageView.playAnimation();
                 }, dialogInterface -> {
-                    cameraDrawable.setCustomEndFrame(86);
-                    setAvatarCell.imageView.playAnimation();
+                    if (!imageUpdater.isUploadingImage()) {
+                        cameraDrawable.setCustomEndFrame(86);
+                        setAvatarCell.imageView.playAnimation();
+                    } else {
+                        cameraDrawable.setCurrentFrame(0, false);
+                    }
+
                 });
                 cameraDrawable.setCurrentFrame(0);
                 cameraDrawable.setCustomEndFrame(43);
@@ -1037,6 +1042,12 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
             } else {
                 avatarImage.setImage(ImageLocation.getForLocal(avatar), "50_50", avatarDrawable, currentChat);
                 setAvatarCell.setTextAndIcon(LocaleController.getString("ChatSetNewPhoto", R.string.ChatSetNewPhoto), R.drawable.menu_camera2, true);
+                if (cameraDrawable == null) {
+                    cameraDrawable = new RLottieDrawable(R.raw.camera_outline, "" + R.raw.camera_outline, AndroidUtilities.dp(50), AndroidUtilities.dp(50), false, null);
+                }
+                setAvatarCell.imageView.setTranslationY(-AndroidUtilities.dp(9));
+                setAvatarCell.imageView.setTranslationX(-AndroidUtilities.dp(8));
+                setAvatarCell.imageView.setAnimation(cameraDrawable);
                 showAvatarProgress(true, false);
             }
         });

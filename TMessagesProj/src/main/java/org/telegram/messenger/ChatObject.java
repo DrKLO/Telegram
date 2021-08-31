@@ -1035,7 +1035,7 @@ public class ChatObject {
             int selfId = getSelfId();
             VoIPService service = VoIPService.getSharedInstance();
             TLRPC.TL_groupCallParticipant selfParticipant = participants.get(selfId);
-            canStreamVideo = selfParticipant != null && selfParticipant.video_joined;
+            canStreamVideo = true;//selfParticipant != null && selfParticipant.video_joined || BuildVars.DEBUG_PRIVATE_VERSION;
             boolean allowedVideoCount;
             boolean hasAnyVideo = false;
             activeVideos = 0;
@@ -1243,7 +1243,7 @@ public class ChatObject {
             }
         }
 
-        public void toggleRecord(String title) {
+        public void toggleRecord(String title, int type) {
             recording = !recording;
             TLRPC.TL_phone_toggleGroupCallRecord req = new TLRPC.TL_phone_toggleGroupCallRecord();
             req.call = getInputGroupCall();
@@ -1251,6 +1251,11 @@ public class ChatObject {
             if (title != null) {
                 req.title = title;
                 req.flags |= 2;
+            }
+            if (type == 1 || type == 2) {
+                req.flags |= 4;
+                req.video = true;
+                req.video_portrait = type == 1;
             }
             currentAccount.getConnectionsManager().sendRequest(req, (response, error) -> {
                 if (response != null) {
@@ -1432,6 +1437,10 @@ public class ChatObject {
 
     public static boolean isChannel(TLRPC.Chat chat) {
         return chat instanceof TLRPC.TL_channel || chat instanceof TLRPC.TL_channelForbidden;
+    }
+
+    public static boolean isChannelOrGiga(TLRPC.Chat chat) {
+        return (chat instanceof TLRPC.TL_channel || chat instanceof TLRPC.TL_channelForbidden) && (!chat.megagroup || chat.gigagroup);
     }
 
     public static boolean isMegagroup(TLRPC.Chat chat) {

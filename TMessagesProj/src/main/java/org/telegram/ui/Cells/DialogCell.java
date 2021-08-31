@@ -377,8 +377,23 @@ public class DialogCell extends BaseCell {
                 user = newUser;
             }
         }
-        boolean isOnline = user != null && !user.self && (user.status != null && user.status.expires > ConnectionsManager.getInstance(currentAccount).getCurrentTime() || MessagesController.getInstance(currentAccount).onlinePrivacy.containsKey(user.id));
+        boolean isOnline = isOnline();
         onlineProgress = isOnline ? 1.0f : 0.0f;
+    }
+
+    private boolean isOnline() {
+        if (user == null || user.self) {
+            return false;
+        }
+        if (user.status != null && user.status.expires <= 0) {
+            if (MessagesController.getInstance(currentAccount).onlinePrivacy.containsKey(user.id)) {
+                return true;
+            }
+        }
+        if (user.status != null && user.status.expires > ConnectionsManager.getInstance(currentAccount).getCurrentTime()) {
+            return true;
+        }
+        return false;
     }
 
     private void checkGroupCall() {
@@ -598,6 +613,7 @@ public class DialogCell extends BaseCell {
         boolean showChecks = !UserObject.isUserSelf(user) && !useMeForMyMessages;
         boolean drawTime = true;
         printingStringType = -1;
+        int printigStingReplaceIndex = -1;
 
         String messageFormat;
         boolean hasNameInMessage;
@@ -875,7 +891,15 @@ public class DialogCell extends BaseCell {
                     startPadding = statusDrawable.getIntrinsicWidth() + AndroidUtilities.dp(3);
                 }
                 SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
-                spannableStringBuilder.append(" ").append(TextUtils.replace(printingString, new String[]{"..."}, new String[]{""})).setSpan(new FixedWidthSpan(startPadding), 0, 1, 0);
+
+                if (printingStringType == 5) {
+                    printigStingReplaceIndex = printingString.toString().indexOf("**oo**");
+                }
+                if (printigStingReplaceIndex > 0) {
+                    spannableStringBuilder.append(TextUtils.replace(printingString, new String[]{"..."}, new String[]{""})).setSpan(new FixedWidthSpan(Theme.getChatStatusDrawable(printingStringType).getIntrinsicWidth()), printigStingReplaceIndex, printigStingReplaceIndex + 6, 0);
+                } else {
+                    spannableStringBuilder.append(" ").append(TextUtils.replace(printingString, new String[]{"..."}, new String[]{""})).setSpan(new FixedWidthSpan(startPadding), 0, 1, 0);
+                }
 
                 messageString = spannableStringBuilder;
                 currentMessagePaint = Theme.dialogs_messagePrintingPaint[paintIndex];
@@ -1725,8 +1749,14 @@ public class DialogCell extends BaseCell {
             }
         }
         if (messageLayout != null && printingStringType >= 0) {
-            float x1 = messageLayout.getPrimaryHorizontal(0);
-            float x2 = messageLayout.getPrimaryHorizontal(1);
+            float x1, x2;
+            if (printigStingReplaceIndex >= 0){
+                x1 = messageLayout.getPrimaryHorizontal(printigStingReplaceIndex);
+                x2 = messageLayout.getPrimaryHorizontal(printigStingReplaceIndex + 1);
+            } else {
+                x1 = messageLayout.getPrimaryHorizontal(0);
+                x2 = messageLayout.getPrimaryHorizontal(1);
+            }
             if (x1 < x2) {
                 statusDrawableLeft = (int) (messageLeft + x1);
             } else {
@@ -2802,7 +2832,7 @@ public class DialogCell extends BaseCell {
 
         if (isDialogCell && currentDialogFolderId == 0) {
             if (user != null && !MessagesController.isSupportUser(user) && !user.bot) {
-                boolean isOnline = !user.self && (user.status != null && user.status.expires > ConnectionsManager.getInstance(currentAccount).getCurrentTime() || MessagesController.getInstance(currentAccount).onlinePrivacy.containsKey(user.id));
+                boolean isOnline = isOnline();
                 if (isOnline || onlineProgress != 0) {
                     int top = (int) (avatarImage.getImageY2() - AndroidUtilities.dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 6 : 8));
                     int left;

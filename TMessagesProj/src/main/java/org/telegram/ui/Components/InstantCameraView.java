@@ -354,7 +354,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         addView(textureOverlayView, new FrameLayout.LayoutParams(AndroidUtilities.roundPlayingMessageSize, AndroidUtilities.roundPlayingMessageSize, Gravity.CENTER));
 
         setVisibility(INVISIBLE);
-        blurBehindDrawable = new BlurBehindDrawable(parentView, this);
+        blurBehindDrawable = new BlurBehindDrawable(parentView, this, 0);
     }
 
     @Override

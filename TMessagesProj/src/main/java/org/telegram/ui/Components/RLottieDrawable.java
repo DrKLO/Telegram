@@ -97,6 +97,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable {
     private float scaleX = 1.0f;
     private float scaleY = 1.0f;
     private boolean applyTransformation;
+    private boolean needScale;
     private final Rect dstRect = new Rect();
     protected static final Handler uiHandler = new Handler(Looper.getMainLooper());
     protected volatile boolean isRunning;
@@ -872,6 +873,9 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable {
         if (getCallback() != null) {
             return true;
         }
+        if (parentViews.size() <= 1) {
+            return true;
+        }
         for (int a = 0, N = parentViews.size(); a < N; a++) {
             View view = parentViews.get(a).get();
             if (view == null) {
@@ -966,15 +970,21 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable {
                 scaleX = (float) dstRect.width() / width;
                 scaleY = (float) dstRect.height() / height;
                 applyTransformation = false;
+                needScale = !(Math.abs(dstRect.width() - width) < AndroidUtilities.dp(1) && Math.abs(dstRect.width() - width) < AndroidUtilities.dp(1));
             }
-            canvas.save();
-            canvas.translate(dstRect.left, dstRect.top);
-            canvas.scale(scaleX, scaleY);
-            canvas.drawBitmap(renderingBitmap, 0, 0, getPaint());
+            if (!needScale) {
+                canvas.drawBitmap(renderingBitmap, dstRect.left, dstRect.top, getPaint());
+            } else {
+                canvas.save();
+                canvas.translate(dstRect.left, dstRect.top);
+                canvas.scale(scaleX, scaleY);
+                canvas.drawBitmap(renderingBitmap, 0, 0, getPaint());
+                canvas.restore();
+            }
+
             if (isRunning) {
                 invalidateInternal();
             }
-            canvas.restore();
         }
     }
 
@@ -1042,4 +1052,5 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable {
     public void setInvalidateOnProgressSet(boolean value) {
         invalidateOnProgressSet = value;
     }
+
 }

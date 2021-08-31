@@ -122,6 +122,9 @@ public class MessageObject {
     public boolean isRestrictedMessage;
     public long loadedFileSize;
 
+    public byte[] sponsoredId;
+    public String botStartParam;
+
     public boolean animateComments;
 
     public boolean loadingCancelled;
@@ -135,6 +138,7 @@ public class MessageObject {
     public boolean cancelEditing;
 
     public boolean scheduled;
+    public boolean preview;
 
     public ArrayList<TLRPC.TL_pollAnswer> checkedVotes;
 
@@ -179,6 +183,7 @@ public class MessageObject {
 
     public ArrayList<String> highlightedWords;
     public String messageTrimmedToHighlight;
+    public int parentWidth;
 
     static final String[] excludeWords = new String[] {
             " vs. ",
@@ -1579,6 +1584,27 @@ public class MessageObject {
             } else {
                 message.media = new TLRPC.TL_messageMediaEmpty();
             }
+        } else if (event.action instanceof TLRPC.TL_channelAdminLogEventActionChangeTheme) {
+            messageText = replaceWithLink(chat.megagroup ? LocaleController.getString("EventLogEditedGroupTheme", R.string.EventLogEditedGroupTheme) : LocaleController.getString("EventLogEditedChannelTheme", R.string.EventLogEditedChannelTheme), "un1", fromUser);
+            message = new TLRPC.TL_message();
+            message.out = false;
+            message.unread = false;
+            message.from_id = new TLRPC.TL_peerUser();
+            message.from_id.user_id = event.user_id;
+            message.peer_id = peer_id;
+            message.date = event.date;
+            message.message = ((TLRPC.TL_channelAdminLogEventActionChangeTheme) event.action).new_value;
+            if (!TextUtils.isEmpty(((TLRPC.TL_channelAdminLogEventActionChangeTheme) event.action).prev_value)) {
+                message.media = new TLRPC.TL_messageMediaWebPage();
+                message.media.webpage = new TLRPC.TL_webPage();
+                message.media.webpage.flags = 10;
+                message.media.webpage.display_url = "";
+                message.media.webpage.url = "";
+                message.media.webpage.site_name = LocaleController.getString("EventLogPreviousGroupTheme", R.string.EventLogPreviousGroupTheme);
+                message.media.webpage.description = ((TLRPC.TL_channelAdminLogEventActionChangeTheme) event.action).prev_value;
+            } else {
+                message.media = new TLRPC.TL_messageMediaEmpty();
+            }
         } else if (event.action instanceof TLRPC.TL_channelAdminLogEventActionChangeUsername) {
             String newLink = ((TLRPC.TL_channelAdminLogEventActionChangeUsername) event.action).new_value;
             if (!TextUtils.isEmpty(newLink)) {
@@ -1710,9 +1736,17 @@ public class MessageObject {
                 messageText = replaceWithLink(LocaleController.formatString("EventLogToggledSlowmodeOn", R.string.EventLogToggledSlowmodeOn, string), "un1", fromUser);
             }
         } else if (event.action instanceof TLRPC.TL_channelAdminLogEventActionStartGroupCall) {
-            messageText = replaceWithLink(LocaleController.getString("EventLogStartedVoiceChat", R.string.EventLogStartedVoiceChat), "un1", fromUser);
+            if (ChatObject.isChannel(chat) && (!chat.megagroup || chat.gigagroup)) {
+                messageText = replaceWithLink(LocaleController.getString("EventLogStartedLiveStream", R.string.EventLogStartedLiveStream), "un1", fromUser);
+            } else {
+                messageText = replaceWithLink(LocaleController.getString("EventLogStartedVoiceChat", R.string.EventLogStartedVoiceChat), "un1", fromUser);
+            }
         } else if (event.action instanceof TLRPC.TL_channelAdminLogEventActionDiscardGroupCall) {
-            messageText = replaceWithLink(LocaleController.getString("EventLogEndedVoiceChat", R.string.EventLogEndedVoiceChat), "un1", fromUser);
+            if (ChatObject.isChannel(chat) && (!chat.megagroup || chat.gigagroup)) {
+                messageText = replaceWithLink(LocaleController.getString("EventLogEndedLiveStream", R.string.EventLogEndedLiveStream), "un1", fromUser);
+            } else {
+                messageText = replaceWithLink(LocaleController.getString("EventLogEndedVoiceChat", R.string.EventLogEndedVoiceChat), "un1", fromUser);
+            }
         } else if (event.action instanceof TLRPC.TL_channelAdminLogEventActionParticipantMute) {
             TLRPC.TL_channelAdminLogEventActionParticipantMute action = (TLRPC.TL_channelAdminLogEventActionParticipantMute) event.action;
             int id = getPeerId(action.participant.peer);
@@ -2211,6 +2245,10 @@ public class MessageObject {
         return false;
     }
 
+    public boolean isSponsored() {
+        return sponsoredId != null;
+    }
+
     public long getPollId() {
         if (type != TYPE_POLL) {
             return 0;
@@ -2466,7 +2504,11 @@ public class MessageObject {
             if (messageOwner.action != null) {
                 if (messageOwner.action instanceof TLRPC.TL_messageActionGroupCallScheduled) {
                     TLRPC.TL_messageActionGroupCallScheduled action = (TLRPC.TL_messageActionGroupCallScheduled) messageOwner.action;
-                    messageText = LocaleController.formatString("ActionGroupCallScheduled", R.string.ActionGroupCallScheduled, LocaleController.formatStartsTime(action.schedule_date, 3, false));
+                    if (messageOwner.peer_id instanceof TLRPC.TL_peerChat || isSupergroup()) {
+                        messageText = LocaleController.formatString("ActionGroupCallScheduled", R.string.ActionGroupCallScheduled, LocaleController.formatStartsTime(action.schedule_date, 3, false));
+                    } else {
+                        messageText = LocaleController.formatString("ActionChannelCallScheduled", R.string.ActionChannelCallScheduled, LocaleController.formatStartsTime(action.schedule_date, 3, false));
+                    }
                 } else if (messageOwner.action instanceof TLRPC.TL_messageActionGroupCall) {
                     if (messageOwner.action.duration != 0) {
                         String time;
@@ -2494,7 +2536,7 @@ public class MessageObject {
                                 messageText = replaceWithLink(LocaleController.formatString("ActionGroupCallEndedBy", R.string.ActionGroupCallEndedBy, time), "un1", fromObject);
                             }
                         } else {
-                            messageText = LocaleController.formatString("ActionGroupCallEnded", R.string.ActionGroupCallEnded, time);
+                            messageText = LocaleController.formatString("ActionChannelCallEnded", R.string.ActionChannelCallEnded, time);
                         }
                     } else {
                         if (messageOwner.peer_id instanceof TLRPC.TL_peerChat || isSupergroup()) {
@@ -2504,7 +2546,7 @@ public class MessageObject {
                                 messageText = replaceWithLink(LocaleController.getString("ActionGroupCallStarted", R.string.ActionGroupCallStarted), "un1", fromObject);
                             }
                         } else {
-                            messageText = LocaleController.getString("ActionGroupCallJustStarted", R.string.ActionGroupCallJustStarted);
+                            messageText = LocaleController.getString("ActionChannelCallJustStarted", R.string.ActionChannelCallJustStarted);
                         }
                     }
                 } else if (messageOwner.action instanceof TLRPC.TL_messageActionInviteToGroupCall) {
@@ -4113,7 +4155,9 @@ public class MessageObject {
     }
 
     public boolean needDrawShareButton() {
-        if (scheduled) {
+        if (preview) {
+            return false;
+        } else if (scheduled) {
             return false;
         } else if (eventId != 0) {
             return false;
@@ -4160,7 +4204,7 @@ public class MessageObject {
         if (AndroidUtilities.isTablet() && eventId != 0) {
             generatedWithMinSize = AndroidUtilities.dp(530);
         } else {
-            generatedWithMinSize = AndroidUtilities.isTablet() ? AndroidUtilities.getMinTabletSide() : AndroidUtilities.displaySize.x;
+            generatedWithMinSize = AndroidUtilities.isTablet() ? AndroidUtilities.getMinTabletSide() : getParentWidth();
         }
         generatedWithDensity = AndroidUtilities.density;
         if (messageOwner.media instanceof TLRPC.TL_messageMediaWebPage && messageOwner.media.webpage != null && "telegram_background".equals(messageOwner.media.webpage.type)) {
@@ -4464,6 +4508,9 @@ public class MessageObject {
     }
 
     public boolean isOutOwner() {
+        if (preview) {
+            return true;
+        }
         TLRPC.Chat chat = messageOwner.peer_id != null && messageOwner.peer_id.channel_id != 0 ? getChat(null, null, messageOwner.peer_id.channel_id) : null;
         if (!messageOwner.out || !(messageOwner.from_id instanceof TLRPC.TL_peerUser) && (!(messageOwner.from_id instanceof TLRPC.TL_peerChannel) || ChatObject.isChannel(chat) && !chat.megagroup) || messageOwner.post) {
             return false;
@@ -4480,11 +4527,11 @@ public class MessageObject {
     }
 
     public boolean needDrawAvatar() {
-        return isFromUser() || isFromGroup() || eventId != 0 || messageOwner.fwd_from != null && messageOwner.fwd_from.saved_from_peer != null;
+        return !isSponsored() && (isFromUser() || isFromGroup() || eventId != 0 || messageOwner.fwd_from != null && messageOwner.fwd_from.saved_from_peer != null);
     }
 
     private boolean needDrawAvatarInternal() {
-        return isFromChat() && isFromUser() || isFromGroup() || eventId != 0 || messageOwner.fwd_from != null && messageOwner.fwd_from.saved_from_peer != null;
+        return !isSponsored() && (isFromChat() && isFromUser() || isFromGroup() || eventId != 0 || messageOwner.fwd_from != null && messageOwner.fwd_from.saved_from_peer != null);
     }
 
     public boolean isFromChat() {
@@ -4541,7 +4588,7 @@ public class MessageObject {
     }
 
     public boolean isForwardedChannelPost() {
-        return messageOwner.from_id instanceof TLRPC.TL_peerChannel && messageOwner.fwd_from != null && messageOwner.fwd_from.channel_post != 0;
+        return messageOwner.from_id instanceof TLRPC.TL_peerChannel && messageOwner.fwd_from != null && messageOwner.fwd_from.channel_post != 0 && messageOwner.fwd_from.saved_from_peer instanceof TLRPC.TL_peerChannel && messageOwner.from_id.channel_id == messageOwner.fwd_from.saved_from_peer.channel_id;
     }
 
     public boolean isUnread() {
@@ -5202,6 +5249,10 @@ public class MessageObject {
         }
     }
 
+    private int getParentWidth() {
+        return (preview && parentWidth > 0) ? parentWidth : AndroidUtilities.displaySize.x;
+    }
+
     public String getStickerEmoji() {
         TLRPC.Document document = getDocument();
         if (document == null) {
@@ -5604,7 +5655,7 @@ public class MessageObject {
     }
 
     public boolean canForwardMessage() {
-        return !(messageOwner instanceof TLRPC.TL_message_secret) && !needDrawBluredPreview() && !isLiveLocation() && type != 16;
+        return !(messageOwner instanceof TLRPC.TL_message_secret) && !needDrawBluredPreview() && !isLiveLocation() && type != 16 && !isSponsored();
     }
 
     public boolean canEditMedia() {
@@ -5712,7 +5763,7 @@ public class MessageObject {
     }
 
     public boolean canDeleteMessage(boolean inScheduleMode, TLRPC.Chat chat) {
-        return eventId == 0 && canDeleteMessage(currentAccount, inScheduleMode, messageOwner, chat);
+        return eventId == 0 && sponsoredId == null && canDeleteMessage(currentAccount, inScheduleMode, messageOwner, chat);
     }
 
     public static boolean canDeleteMessage(int currentAccount, boolean inScheduleMode, TLRPC.Message message, TLRPC.Chat chat) {

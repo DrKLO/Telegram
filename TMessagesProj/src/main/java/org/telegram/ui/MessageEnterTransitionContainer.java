@@ -5,8 +5,6 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.view.View;
 
-import com.google.android.exoplayer2.util.Log;
-
 import org.telegram.messenger.NotificationCenter;
 
 import java.util.ArrayList;
@@ -38,14 +36,11 @@ public class MessageEnterTransitionContainer extends View {
         checkVisibility();
     }
 
-    long time;
     @Override
     protected void onDraw(Canvas canvas) {
         if (transitions.isEmpty()) {
             return;
         }
-        long currentTime = System.currentTimeMillis();
-        time = currentTime;
         for (int i = 0; i < transitions.size(); i++) {
             transitions.get(i).onDraw(canvas);
         }

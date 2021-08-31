@@ -140,6 +140,8 @@ public class UndoView extends FrameLayout {
     public final static int ACTION_VOIP_SOUND_MUTED = 42;
     public final static int ACTION_VOIP_SOUND_UNMUTED = 43;
     public final static int ACTION_VOIP_USER_JOINED = 44;
+    public final static int ACTION_VOIP_VIDEO_RECORDING_STARTED = 100;
+    public final static int ACTION_VOIP_VIDEO_RECORDING_FINISHED = 101;
 
     public final static int ACTION_IMPORT_NOT_MUTUAL = 45;
     public final static int ACTION_IMPORT_GROUP_NOT_ADMIN = 46;
@@ -315,7 +317,8 @@ public class UndoView extends FrameLayout {
                 currentAction == ACTION_VOIP_LINK_COPIED || currentAction == ACTION_VOIP_INVITED || currentAction == ACTION_VOIP_MUTED_FOR_YOU || currentAction == ACTION_VOIP_UNMUTED_FOR_YOU ||
                 currentAction == ACTION_REPORT_SENT || currentAction == ACTION_VOIP_USER_CHANGED || currentAction == ACTION_VOIP_CAN_NOW_SPEAK || currentAction == ACTION_VOIP_RECORDING_STARTED ||
                 currentAction == ACTION_VOIP_RECORDING_FINISHED || currentAction == ACTION_VOIP_SOUND_MUTED || currentAction == ACTION_VOIP_SOUND_UNMUTED || currentAction == ACTION_PAYMENT_SUCCESS ||
-                currentAction == ACTION_VOIP_USER_JOINED || currentAction == ACTION_PIN_DIALOGS || currentAction == ACTION_UNPIN_DIALOGS;
+                currentAction == ACTION_VOIP_USER_JOINED || currentAction == ACTION_PIN_DIALOGS || currentAction == ACTION_UNPIN_DIALOGS || currentAction == ACTION_VOIP_VIDEO_RECORDING_STARTED ||
+                currentAction == ACTION_VOIP_VIDEO_RECORDING_FINISHED;
     }
 
     private boolean hasSubInfo() {
@@ -485,7 +488,12 @@ public class UndoView extends FrameLayout {
                 timeLeft = 4000;
             } else if (action == ACTION_VOIP_INVITED) {
                 TLRPC.User user = (TLRPC.User) infoObject;
-                infoText = AndroidUtilities.replaceTags(LocaleController.formatString("VoipGroupInvitedUser", R.string.VoipGroupInvitedUser, UserObject.getFirstName(user)));
+                TLRPC.Chat chat = (TLRPC.Chat) infoObject2;
+                if (ChatObject.isChannelOrGiga(chat)) {
+                    infoText = AndroidUtilities.replaceTags(LocaleController.formatString("VoipChannelInvitedUser", R.string.VoipChannelInvitedUser, UserObject.getFirstName(user)));
+                } else {
+                    infoText = AndroidUtilities.replaceTags(LocaleController.formatString("VoipGroupInvitedUser", R.string.VoipGroupInvitedUser, UserObject.getFirstName(user)));
+                }
                 subInfoText = null;
                 icon = 0;
                 AvatarDrawable avatarDrawable = new AvatarDrawable();
@@ -495,12 +503,21 @@ public class UndoView extends FrameLayout {
                 avatarImageView.setVisibility(VISIBLE);
                 timeLeft = 3000;
             } else if (action == ACTION_VOIP_USER_JOINED) {
+                TLRPC.Chat currentChat = (TLRPC.Chat) infoObject2;
                 if (infoObject instanceof TLRPC.User) {
                     TLRPC.User user = (TLRPC.User) infoObject;
-                    infoText = AndroidUtilities.replaceTags(LocaleController.formatString("VoipChatUserJoined", R.string.VoipChatUserJoined, UserObject.getFirstName(user)));
+                    if (ChatObject.isChannelOrGiga(currentChat)) {
+                        infoText = AndroidUtilities.replaceTags(LocaleController.formatString("VoipChannelUserJoined", R.string.VoipChannelUserJoined, UserObject.getFirstName(user)));
+                    } else {
+                        infoText = AndroidUtilities.replaceTags(LocaleController.formatString("VoipChatUserJoined", R.string.VoipChatUserJoined, UserObject.getFirstName(user)));
+                    }
                 } else {
                     TLRPC.Chat chat = (TLRPC.Chat) infoObject;
-                    infoText = AndroidUtilities.replaceTags(LocaleController.formatString("VoipChatChatJoined", R.string.VoipChatChatJoined, chat.title));
+                    if (ChatObject.isChannelOrGiga(currentChat)) {
+                        infoText = AndroidUtilities.replaceTags(LocaleController.formatString("VoipChannelChatJoined", R.string.VoipChannelChatJoined, chat.title));
+                    } else {
+                        infoText = AndroidUtilities.replaceTags(LocaleController.formatString("VoipChatChatJoined", R.string.VoipChatChatJoined, chat.title));
+                    }
                 }
                 subInfoText = null;
                 icon = 0;
@@ -525,7 +542,12 @@ public class UndoView extends FrameLayout {
                     avatarImageView.setForUserOrChat(chat, avatarDrawable);
                     name = chat.title;
                 }
-                infoText = AndroidUtilities.replaceTags(LocaleController.formatString("VoipGroupUserChanged", R.string.VoipGroupUserChanged, name));
+                TLRPC.Chat currentChat = (TLRPC.Chat) infoObject2;
+                if (ChatObject.isChannelOrGiga(currentChat)) {
+                    infoText = AndroidUtilities.replaceTags(LocaleController.formatString("VoipChannelUserChanged", R.string.VoipChannelUserChanged, name));
+                } else {
+                    infoText = AndroidUtilities.replaceTags(LocaleController.formatString("VoipGroupUserChanged", R.string.VoipGroupUserChanged, name));
+                }
                 subInfoText = null;
                 icon = 0;
                 avatarImageView.setVisibility(VISIBLE);
@@ -608,22 +630,32 @@ public class UndoView extends FrameLayout {
                 icon = R.raw.voip_allow_talk;
                 timeLeft = 3000;
             } else if (action == ACTION_VOIP_SOUND_MUTED) {
-                infoText = AndroidUtilities.replaceTags(LocaleController.getString("VoipGroupSoundMuted", R.string.VoipGroupSoundMuted));
+                TLRPC.Chat chat = (TLRPC.Chat) infoObject;
+                if (ChatObject.isChannelOrGiga(chat)) {
+                    infoText = AndroidUtilities.replaceTags(LocaleController.getString("VoipChannelSoundMuted", R.string.VoipChannelSoundMuted));
+                } else {
+                    infoText = AndroidUtilities.replaceTags(LocaleController.getString("VoipGroupSoundMuted", R.string.VoipGroupSoundMuted));
+                }
                 subInfoText = null;
                 icon = R.raw.ic_mute;
                 timeLeft = 3000;
             } else if (action == ACTION_VOIP_SOUND_UNMUTED) {
-                infoText = AndroidUtilities.replaceTags(LocaleController.getString("VoipGroupSoundUnmuted", R.string.VoipGroupSoundUnmuted));
+                TLRPC.Chat chat = (TLRPC.Chat) infoObject;
+                if (ChatObject.isChannelOrGiga(chat)) {
+                    infoText = AndroidUtilities.replaceTags(LocaleController.getString("VoipChannelSoundUnmuted", R.string.VoipChannelSoundUnmuted));
+                } else {
+                    infoText = AndroidUtilities.replaceTags(LocaleController.getString("VoipGroupSoundUnmuted", R.string.VoipGroupSoundUnmuted));
+                }
                 subInfoText = null;
                 icon = R.raw.ic_unmute;
                 timeLeft = 3000;
-            } else if (currentAction == ACTION_VOIP_RECORDING_STARTED) {
-                infoText = AndroidUtilities.replaceTags(LocaleController.getString("VoipGroupAudioRecordStarted", R.string.VoipGroupAudioRecordStarted));
+            } else if (currentAction == ACTION_VOIP_RECORDING_STARTED || currentAction == ACTION_VOIP_VIDEO_RECORDING_STARTED) {
+                infoText = AndroidUtilities.replaceTags(currentAction == ACTION_VOIP_RECORDING_STARTED ? LocaleController.getString("VoipGroupAudioRecordStarted", R.string.VoipGroupAudioRecordStarted) : LocaleController.getString("VoipGroupVideoRecordStarted", R.string.VoipGroupVideoRecordStarted));
                 subInfoText = null;
                 icon = R.raw.voip_record_start;
                 timeLeft = 3000;
-            } else if (currentAction == ACTION_VOIP_RECORDING_FINISHED) {
-                String text = LocaleController.getString("VoipGroupAudioRecordSaved", R.string.VoipGroupAudioRecordSaved);
+            } else if (currentAction == ACTION_VOIP_RECORDING_FINISHED || currentAction == ACTION_VOIP_VIDEO_RECORDING_FINISHED) {
+                String text = currentAction == ACTION_VOIP_RECORDING_FINISHED ? LocaleController.getString("VoipGroupAudioRecordSaved", R.string.VoipGroupAudioRecordSaved) : LocaleController.getString("VoipGroupVideoRecordSaved", R.string.VoipGroupVideoRecordSaved);
                 subInfoText = null;
                 icon = R.raw.voip_record_saved;
                 timeLeft = 4000;

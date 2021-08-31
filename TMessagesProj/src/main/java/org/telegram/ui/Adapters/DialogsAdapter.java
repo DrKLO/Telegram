@@ -144,6 +144,10 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
         notifyDataSetChanged();
     }
 
+    public int getDialogsType() {
+        return dialogsType;
+    }
+
     @Override
     public int getItemCount() {
         MessagesController messagesController = MessagesController.getInstance(currentAccount);

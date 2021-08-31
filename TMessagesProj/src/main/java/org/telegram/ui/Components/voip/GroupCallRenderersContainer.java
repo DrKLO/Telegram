@@ -29,8 +29,6 @@ import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.exoplayer2.util.Log;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.LocaleController;
@@ -39,6 +37,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserObject;
+import org.telegram.messenger.voip.VoIPService;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BackDrawable;
@@ -595,7 +594,14 @@ public class GroupCallRenderersContainer extends FrameLayout {
         if (replaceFullscreenViewAnimator != null) {
             replaceFullscreenViewAnimator.cancel();
         }
+        VoIPService service = VoIPService.getSharedInstance();
+        if (service != null && fullscreenParticipant != null) {
+            service.requestFullScreen(fullscreenParticipant.participant, false, fullscreenParticipant.presentation);
+        }
         fullscreenParticipant = videoParticipant;
+        if (service != null && fullscreenParticipant != null) {
+            service.requestFullScreen(fullscreenParticipant.participant, true, fullscreenParticipant.presentation);
+        }
         fullscreenPeerId = peerId;
 
         boolean oldInFullscreen = inFullscreenMode;

@@ -203,7 +203,6 @@ public class MediaDataController extends BaseController {
             loadingStickers[a] = false;
             stickersLoaded[a] = false;
         }
-        featuredStickerSets.clear();
         loadingPinnedMessages.clear();
         loadFeaturedDate = 0;
         loadFeaturedHash = 0;

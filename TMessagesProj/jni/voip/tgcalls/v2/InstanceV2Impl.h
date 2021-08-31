@@ -44,6 +44,8 @@ public:
 	TrafficStats getTrafficStats() override;
 	PersistentState getPersistentState() override;
 	void stop(std::function<void(FinalState)> completion) override;
+    void sendVideoDeviceUpdated() override {
+    }
 
 private:
     std::shared_ptr<Threads> _threads;

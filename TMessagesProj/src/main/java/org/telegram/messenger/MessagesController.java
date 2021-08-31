@@ -78,7 +78,7 @@ public class MessagesController extends BaseController implements NotificationCe
     private SparseArray<TLRPC.TL_chatInviteExported> exportedChats = new SparseArray<>();
 
     public ArrayList<TLRPC.RecentMeUrl> hintDialogs = new ArrayList<>();
-    private SparseArray<ArrayList<TLRPC.Dialog>> dialogsByFolder = new SparseArray<>();
+    public SparseArray<ArrayList<TLRPC.Dialog>> dialogsByFolder = new SparseArray<>();
     protected ArrayList<TLRPC.Dialog> allDialogs = new ArrayList<>();
     public ArrayList<TLRPC.Dialog> dialogsForward = new ArrayList<>();
     public ArrayList<TLRPC.Dialog> dialogsServerOnly = new ArrayList<>();
@@ -100,7 +100,7 @@ public class MessagesController extends BaseController implements NotificationCe
     public ConcurrentHashMap<Long, ConcurrentHashMap<Integer, ArrayList<PrintingUser>>> printingUsers = new ConcurrentHashMap<>(20, 1.0f, 2);
     public LongSparseArray<SparseArray<CharSequence>> printingStrings = new LongSparseArray<>();
     public LongSparseArray<SparseArray<Integer>> printingStringsTypes = new LongSparseArray<>();
-    public LongSparseArray<SparseArray<Boolean>>[] sendingTypings = new LongSparseArray[10];
+    public LongSparseArray<SparseArray<Boolean>>[] sendingTypings = new LongSparseArray[11];
     public ConcurrentHashMap<Integer, Integer> onlinePrivacy = new ConcurrentHashMap<>(20, 1.0f, 2);
     private int lastPrintingStringCount;
 
@@ -170,6 +170,8 @@ public class MessagesController extends BaseController implements NotificationCe
     private SparseIntArray loadingChannelAdmins = new SparseIntArray();
 
     private SparseIntArray migratedChats = new SparseIntArray();
+
+    private LongSparseArray<SponsoredMessagesInfo> sponsoredMessages = new LongSparseArray<>();
 
     private HashMap<String, ArrayList<MessageObject>> reloadingWebpages = new HashMap<>();
     private LongSparseArray<ArrayList<MessageObject>> reloadingWebpagesPending = new LongSparseArray<>();
@@ -321,6 +323,12 @@ public class MessagesController extends BaseController implements NotificationCe
     private SharedPreferences emojiPreferences;
 
     public volatile boolean ignoreSetOnline;
+
+    private class SponsoredMessagesInfo {
+        private ArrayList<MessageObject> messages;
+        private long loadTime;
+        private boolean loading;
+    }
 
     public static class FaqSearchResult {
 
@@ -2287,14 +2295,18 @@ public class MessagesController extends BaseController implements NotificationCe
                         settings.base_theme = Theme.getBaseThemeByKey(themeInfo.name);
                         settings.accent_color = accent.accentColor;
                         if (accent.myMessagesAccentColor != 0) {
-                            settings.message_bottom_color = accent.myMessagesAccentColor;
+                            settings.message_colors.add(accent.myMessagesAccentColor);
                             settings.flags |= 1;
-                        }
-                        if (accent.myMessagesGradientAccentColor != 0) {
-                            settings.message_top_color = accent.myMessagesGradientAccentColor;
-                            settings.flags |= 1;
-                        } else if (settings.message_bottom_color != 0) {
-                            settings.message_top_color = settings.message_bottom_color;
+                            if (accent.myMessagesGradientAccentColor1 != 0) {
+                                settings.message_colors.add(accent.myMessagesGradientAccentColor1);
+                                if (accent.myMessagesGradientAccentColor2 != 0) {
+                                    settings.message_colors.add(accent.myMessagesGradientAccentColor2);
+                                    if (accent.myMessagesGradientAccentColor3 != 0) {
+                                        settings.message_colors.add(accent.myMessagesGradientAccentColor3);
+                                    }
+                                }
+                            }
+                            settings.message_colors_animated = accent.myMessagesAnimated;
                         }
                         settings.flags |= 2;
                         settings.wallpaper_settings = new TLRPC.TL_wallPaperSettings();
@@ -2538,6 +2550,7 @@ public class MessagesController extends BaseController implements NotificationCe
         reloadingWebpagesPending.clear();
         reloadingScheduledWebpages.clear();
         reloadingScheduledWebpagesPending.clear();
+        sponsoredMessages.clear();
         dialogs_dict.clear();
         dialogs_read_inbox_max.clear();
         loadingPinnedDialogs.clear();
@@ -3865,7 +3878,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 if (currentDeletingTaskMedia) {
                     getMessagesStorage().emptyMessagesMedia(mids);
                 } else {
-                    deleteMessages(mids, null, null, 0, 0, false, false, !mids.isEmpty() && mids.get(0) > 0);
+                    deleteMessages(mids, null, null, 0, 0, true, false, !mids.isEmpty() && mids.get(0) > 0);
                 }
                 Utilities.stageQueue.postRunnable(() -> {
                     getNewDeleteTask(mids, currentDeletingTaskChannelId, currentDeletingTaskMedia);
@@ -5945,6 +5958,13 @@ public class MessagesController extends BaseController implements NotificationCe
                             newPrintingStrings.put(threadId, LocaleController.getString("SelectingContact", R.string.SelectingContact));
                         }
                         newPrintingStringsTypes.put(threadId, 0);
+                    } else if (pu.action instanceof TLRPC.TL_sendMessageChooseStickerAction) {
+                        if (lower_id < 0) {
+                            newPrintingStrings.put(threadId, LocaleController.formatString("IsChoosingSticker", R.string.IsChoosingSticker, getUserNameForTyping(user)));
+                        } else {
+                            newPrintingStrings.put(threadId, LocaleController.getString("ChoosingSticker", R.string.ChoosingSticker));
+                        }
+                        newPrintingStringsTypes.put(threadId, 5);
                     } else {
                         if (lower_id < 0) {
                             newPrintingStrings.put(threadId, LocaleController.formatString("IsTypingGroup", R.string.IsTypingGroup, getUserNameForTyping(user)));
@@ -6084,6 +6104,8 @@ public class MessagesController extends BaseController implements NotificationCe
                 req.action = new TLRPC.TL_sendMessageUploadRoundAction();
             } else if (action == 9) {
                 req.action = new TLRPC.TL_sendMessageUploadAudioAction();
+            } else if (action == 10) {
+                req.action = new TLRPC.TL_sendMessageChooseStickerAction();
             }
             threads.put(threadMsgId, true);
             int reqId = getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> cancelTyping(action, dialogId, threadMsgId)), ConnectionsManager.RequestFlagFailOnServerErrors);
@@ -13751,6 +13773,81 @@ public class MessagesController extends BaseController implements NotificationCe
             }
         }
         return false;
+    }
+
+    public ArrayList<MessageObject> getSponsoredMessages(long dialogId) {
+        SponsoredMessagesInfo info = sponsoredMessages.get(dialogId);
+        if (info != null && (info.loading || Math.abs(SystemClock.elapsedRealtime() - info.loadTime) <= 5 * 60 * 1000)) {
+            return info.messages;
+        }
+        TLRPC.Chat chat = getChat((int) -dialogId); //TODO long
+        if (!ChatObject.isChannel(chat) || chat.megagroup || chat.gigagroup) {
+            return null;
+        }
+        info = new SponsoredMessagesInfo();
+        info.loading = true;
+        sponsoredMessages.put(dialogId, info);
+        SponsoredMessagesInfo infoFinal = info;
+        TLRPC.TL_channels_getSponsoredMessages req = new TLRPC.TL_channels_getSponsoredMessages();
+        req.channel = getInputChannel(chat);
+        getConnectionsManager().sendRequest(req, (response, error) -> {
+            ArrayList<MessageObject> result;
+            if (response != null) {
+                TLRPC.TL_messages_sponsoredMessages res = (TLRPC.TL_messages_sponsoredMessages) response;
+                if (res.messages.isEmpty()) {
+                    result = null;
+                } else {
+                    result = new ArrayList<>();
+                    AndroidUtilities.runOnUIThread(() -> {
+                        putUsers(res.users, false);
+                        putChats(res.chats, false);
+                    });
+                    final SparseArray<TLRPC.User> usersDict = new SparseArray<>();
+                    final SparseArray<TLRPC.Chat> chatsDict = new SparseArray<>();
+
+                    for (int a = 0; a < res.users.size(); a++) {
+                        TLRPC.User u = res.users.get(a);
+                        usersDict.put(u.id, u);
+                    }
+                    for (int a = 0; a < res.chats.size(); a++) {
+                        TLRPC.Chat c = res.chats.get(a);
+                        chatsDict.put(c.id, c);
+                    }
+
+                    int messageId = -10000000;
+                    for (int a = 0, N = res.messages.size(); a < N; a++) {
+                        TLRPC.TL_sponsoredMessage sponsoredMessage = res.messages.get(a);
+                        TLRPC.TL_message message = new TLRPC.TL_message();
+                        message.message = sponsoredMessage.message;
+                        if (!sponsoredMessage.entities.isEmpty()) {
+                            message.entities = sponsoredMessage.entities;
+                            message.flags |= 128;
+                        }
+                        message.peer_id = getPeer((int) dialogId); //TODO long
+                        message.from_id = sponsoredMessage.from_id;
+                        message.flags |= 256;
+                        message.date = getConnectionsManager().getCurrentTime();
+                        message.id = messageId--;
+                        MessageObject messageObject = new MessageObject(currentAccount, message, usersDict, chatsDict, true, true);
+                        messageObject.sponsoredId = sponsoredMessage.random_id;
+                        messageObject.botStartParam = sponsoredMessage.start_param;
+                        result.add(messageObject);
+                    }
+                }
+            } else {
+                result = null;
+            }
+            AndroidUtilities.runOnUIThread(() -> {
+                if (result == null) {
+                    sponsoredMessages.remove(dialogId);
+                } else {
+                    infoFinal.loadTime = SystemClock.elapsedRealtime();
+                    infoFinal.messages = result;
+                    getNotificationCenter().postNotificationName(NotificationCenter.didLoadSponsoredMessages, dialogId, result);
+                }
+            });
+        });
+        return null;
     }
 
     public CharSequence getPrintingString(long dialogId, int threadId, boolean isDialog) {

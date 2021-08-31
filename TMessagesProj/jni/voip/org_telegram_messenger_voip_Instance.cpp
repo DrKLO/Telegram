@@ -76,10 +76,12 @@ class BroadcastPartTaskJava : public BroadcastPartTask {
 public:
     BroadcastPartTaskJava(std::shared_ptr<PlatformContext> platformContext,
             std::function<void(BroadcastPart &&)> callback,
-            int64_t timestamp) :
+            int64_t timestamp, int32_t videoChannel, VideoChannelDescription::Quality quality) :
             _platformContext(std::move(platformContext)),
             _callback(std::move(callback)),
-            _timestamp(timestamp) {
+            _timestamp(timestamp),
+            _videoChannel(videoChannel),
+            _quality(quality) {
     }
 
     void call(int64_t ts, int64_t responseTs, BroadcastPart::Status status, uint8_t *data, int32_t len) {
@@ -91,22 +93,48 @@ public:
         part.responseTimestamp = responseTs / 1000.0;
         part.status = status;
         if (data != nullptr) {
-            part.oggData = std::vector<uint8_t>(data, data + len);
+            part.data = std::vector<uint8_t>(data, data + len);
         }
         _callback(std::move<>(part));
+    }
+
+    bool isValidTaskFor(int64_t timestamp, int32_t videoChannel, VideoChannelDescription::Quality quality) {
+        if (_videoChannel == 0) {
+            return _timestamp == timestamp;
+        } else {
+            return _timestamp == timestamp && _videoChannel == videoChannel && _quality == quality;
+        }
     }
 
 private:
     void cancel() override {
         tgvoip::jni::DoWithJNI([&](JNIEnv *env) {
-            jobject globalRef = ((AndroidContext *) _platformContext.get())->getJavaInstance();
-            env->CallVoidMethod(globalRef, env->GetMethodID(NativeInstanceClass, "onCancelRequestBroadcastPart", "(J)V"), _timestamp);
+            auto context = (AndroidContext *) _platformContext.get();
+            jobject globalRef = context->getJavaInstance();
+            env->CallVoidMethod(globalRef, env->GetMethodID(NativeInstanceClass, "onCancelRequestBroadcastPart", "(JII)V"), _timestamp, _videoChannel, (jint) _quality);
+            if (_videoChannel != 0) {
+                for (auto videoTaskIter = context->videoStreamTasks.begin(); videoTaskIter != context->videoStreamTasks.end(); videoTaskIter++) {
+                    if (((BroadcastPartTaskJava *) videoTaskIter->get())->isValidTaskFor(_timestamp, _videoChannel, _quality)) {
+                        context->videoStreamTasks.erase(videoTaskIter);
+                        break;
+                    }
+                }
+            } else {
+                for (auto audioTaskIter = context->audioStreamTasks.begin(); audioTaskIter != context->audioStreamTasks.end(); audioTaskIter++) {
+                    if (((BroadcastPartTaskJava *) audioTaskIter->get())->isValidTaskFor(_timestamp, _videoChannel, _quality)) {
+                        context->audioStreamTasks.erase(audioTaskIter);
+                        break;
+                    }
+                }
+            }
         });
     }
 
     std::shared_ptr<PlatformContext> _platformContext;
     std::function<void(BroadcastPart &&)> _callback;
     int64_t _timestamp;
+    int32_t _videoChannel;
+    VideoChannelDescription::Quality _quality;
 };
 
 class JavaObject {
@@ -399,12 +427,21 @@ JNIEXPORT jlong JNICALL Java_org_telegram_messenger_voip_NativeInstance_makeGrou
             .platformContext = platformContext
     };
     if (!screencast) {
-        descriptor.requestBroadcastPart = [](std::shared_ptr<PlatformContext> platformContext, int64_t timestamp, int64_t duration, std::function<void(BroadcastPart &&)> callback) -> std::shared_ptr<BroadcastPartTask> {
-            std::shared_ptr<BroadcastPartTask> task = std::make_shared<BroadcastPartTaskJava>(platformContext, callback, timestamp);
-            ((AndroidContext *) platformContext.get())->streamTask = task;
+        descriptor.requestAudioBroadcastPart = [](std::shared_ptr<PlatformContext> platformContext, int64_t timestamp, int64_t duration, std::function<void(BroadcastPart &&)> callback) -> std::shared_ptr<BroadcastPartTask> {
+            std::shared_ptr<BroadcastPartTask> task = std::make_shared<BroadcastPartTaskJava>(platformContext, callback, timestamp, 0, VideoChannelDescription::Quality::Full);
+            ((AndroidContext *) platformContext.get())->audioStreamTasks.push_back(task);
             tgvoip::jni::DoWithJNI([platformContext, timestamp, duration, task](JNIEnv *env) {
                 jobject globalRef = ((AndroidContext *) platformContext.get())->getJavaInstance();
-                env->CallVoidMethod(globalRef, env->GetMethodID(NativeInstanceClass, "onRequestBroadcastPart", "(JJ)V"), timestamp, duration);
+                env->CallVoidMethod(globalRef, env->GetMethodID(NativeInstanceClass, "onRequestBroadcastPart", "(JJII)V"), timestamp, duration, 0, 0);
+            });
+            return task;
+        };
+        descriptor.requestVideoBroadcastPart = [](std::shared_ptr<PlatformContext> platformContext, int64_t timestamp, int64_t duration, int32_t video_channel, VideoChannelDescription::Quality quality, std::function<void(BroadcastPart &&)> callback) -> std::shared_ptr<BroadcastPartTask> {
+            std::shared_ptr<BroadcastPartTask> task = std::make_shared<BroadcastPartTaskJava>(platformContext, callback, timestamp, video_channel, quality);
+            ((AndroidContext *) platformContext.get())->videoStreamTasks.push_back(task);
+            tgvoip::jni::DoWithJNI([platformContext, timestamp, duration, task, video_channel, quality](JNIEnv *env) {
+                jobject globalRef = ((AndroidContext *) platformContext.get())->getJavaInstance();
+                env->CallVoidMethod(globalRef, env->GetMethodID(NativeInstanceClass, "onRequestBroadcastPart", "(JJII)V"), timestamp, duration, video_channel, (jint) quality);
             });
             return task;
         };
@@ -812,20 +849,37 @@ JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_stopGroup
     delete instance;
 }
 
-JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_onStreamPartAvailable(JNIEnv *env, jobject obj, jlong ts, jobject byteBuffer, jint size, jlong responseTs) {
+JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_onStreamPartAvailable(JNIEnv *env, jobject obj, jlong ts, jobject byteBuffer, jint size, jlong responseTs, jint videoChannel, jint quality) {
     InstanceHolder *instance = getInstanceHolder(env, obj);
     if (instance->groupNativeInstance == nullptr) {
         return;
     }
     auto context = (AndroidContext *) instance->_platformContext.get();
-    std::shared_ptr<BroadcastPartTask> streamTask = context->streamTask;
-    auto task = (BroadcastPartTaskJava *) streamTask.get();
+    std::shared_ptr<BroadcastPartTask> task;
+    auto q = (VideoChannelDescription::Quality) quality;
+    if (videoChannel != 0) {
+        for (auto videoTaskIter = context->videoStreamTasks.begin(); videoTaskIter != context->videoStreamTasks.end(); videoTaskIter++) {
+            if (((BroadcastPartTaskJava *) videoTaskIter->get())->isValidTaskFor(ts, videoChannel, q)) {
+                task = *videoTaskIter;
+                context->videoStreamTasks.erase(videoTaskIter);
+                break;
+            }
+        }
+    } else {
+        for (auto audioTaskIter = context->audioStreamTasks.begin(); audioTaskIter != context->audioStreamTasks.end(); audioTaskIter++) {
+            if (((BroadcastPartTaskJava *) audioTaskIter->get())->isValidTaskFor(ts, 0, q)) {
+                task = *audioTaskIter;
+                context->audioStreamTasks.erase(audioTaskIter);
+                break;
+            }
+        }
+    }
     if (task != nullptr) {
         if (byteBuffer != nullptr) {
             auto buf = (uint8_t *) env->GetDirectBufferAddress(byteBuffer);
-            task->call(ts, responseTs, BroadcastPart::Status::Success, buf, size);
+            ((BroadcastPartTaskJava *) task.get())->call(ts, responseTs, BroadcastPart::Status::Success, buf, size);
         } else {
-            task->call(ts, responseTs, size == 0 ? BroadcastPart::Status::NotReady : BroadcastPart::Status::ResyncNeeded, nullptr, 0);
+            ((BroadcastPartTaskJava *) task.get())->call(ts, responseTs, size == 0 ? BroadcastPart::Status::NotReady : BroadcastPart::Status::ResyncNeeded, nullptr, 0);
         }
     }
 }
@@ -886,7 +940,7 @@ JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_destroyVi
 
 JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_switchCameraCapturer(JNIEnv *env, jclass clazz, jlong videoCapturer, jboolean front) {
     auto capturer = reinterpret_cast<VideoCaptureInterface *>(videoCapturer);
-    capturer->switchToDevice(front ? "front" : "back");
+    capturer->switchToDevice(front ? "front" : "back", false);
 }
 
 JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_setVideoStateCapturer(JNIEnv *env, jclass clazz, jlong videoCapturer, jint videoState) {
@@ -899,7 +953,7 @@ JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_switchCam
     if (instance->_videoCapture == nullptr) {
         return;
     }
-    instance->_videoCapture->switchToDevice(front ? "front" : "back");
+    instance->_videoCapture->switchToDevice(front ? "front" : "back", false);
 }
 
 JNIEXPORT jboolean JNICALL Java_org_telegram_messenger_voip_NativeInstance_hasVideoCapturer(JNIEnv *env, jobject obj) {

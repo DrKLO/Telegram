@@ -1,4 +1,4 @@
-#include "StreamingPart.h"
+#include "AudioStreamingPart.h"
 
 #include "rtc_base/logging.h"
 #include "rtc_base/third_party/base64/base64.h"
@@ -10,12 +10,35 @@ extern "C" {
 }
 
 #include <string>
+#include <bitset>
 #include <set>
 #include <map>
 
 namespace tgcalls {
 
 namespace {
+
+uint32_t stringToUInt32(std::string const &string) {
+    std::stringstream stringStream(string);
+    uint32_t value = 0;
+    stringStream >> value;
+    return value;
+}
+
+template <typename Out>
+void splitString(const std::string &s, char delim, Out result) {
+    std::istringstream iss(s);
+    std::string item;
+    while (std::getline(iss, item, delim)) {
+        *result++ = item;
+    }
+}
+
+std::vector<std::string> splitString(const std::string &s, char delim) {
+    std::vector<std::string> elems;
+    splitString(s, delim, std::back_inserter(elems));
+    return elems;
+}
 
 static absl::optional<uint32_t> readInt32(std::string const &data, int &offset) {
     if (offset + 4 > data.length()) {
@@ -139,9 +162,9 @@ struct ReadPcmResult {
     int numChannels = 0;
 };
 
-class StreamingPartInternal {
+class AudioStreamingPartInternal {
 public:
-    StreamingPartInternal(std::vector<uint8_t> &&fileData) :
+    AudioStreamingPartInternal(std::vector<uint8_t> &&fileData) :
     _avIoContext(std::move(fileData)) {
         int ret = 0;
 
@@ -201,6 +224,31 @@ public:
                         _channelUpdates = parseChannelUpdates(result, offset);
                     }
                 }
+
+                uint32_t videoChannelMask = 0;
+                entry = av_dict_get(inStream->metadata, "ACTIVE_MASK", nullptr, 0);
+                if (entry && entry->value) {
+                    std::string sourceString = (const char *)entry->value;
+                    videoChannelMask = stringToUInt32(sourceString);
+                }
+
+                std::vector<std::string> endpointList;
+                entry = av_dict_get(inStream->metadata, "ENDPOINTS", nullptr, 0);
+                if (entry && entry->value) {
+                    std::string sourceString = (const char *)entry->value;
+                    endpointList = splitString(sourceString, ' ');
+                }
+
+                std::bitset<32> videoChannels(videoChannelMask);
+                size_t endpointIndex = 0;
+                if (videoChannels.count() == endpointList.size()) {
+                    for (size_t i = 0; i < videoChannels.size(); i++) {
+                        if (videoChannels[i]) {
+                            _endpointMapping.insert(std::make_pair(endpointList[endpointIndex], i));
+                            endpointIndex++;
+                        }
+                    }
+                }
             }
 
             break;
@@ -233,7 +281,7 @@ public:
         }
     }
 
-    ~StreamingPartInternal() {
+    ~AudioStreamingPartInternal() {
         if (_frame) {
             av_frame_unref(_frame);
         }
@@ -283,8 +331,12 @@ public:
         return _channelCount;
     }
 
-    std::vector<ChannelUpdate> const &getChannelUpdates() {
+    std::vector<ChannelUpdate> const &getChannelUpdates() const {
         return _channelUpdates;
+    }
+
+    std::map<std::string, int32_t> getEndpointMapping() const {
+        return _endpointMapping;
     }
 
 private:
@@ -399,13 +451,14 @@ private:
     int _channelCount = 0;
 
     std::vector<ChannelUpdate> _channelUpdates;
+    std::map<std::string, int32_t> _endpointMapping;
 
     std::vector<int16_t> _pcmBuffer;
     int _pcmBufferSampleOffset = 0;
     int _pcmBufferSampleSize = 0;
 };
 
-class StreamingPartState {
+class AudioStreamingPartState {
     struct ChannelMapping {
         uint32_t ssrc = 0;
         int channelIndex = 0;
@@ -416,7 +469,7 @@ class StreamingPartState {
     };
 
 public:
-    StreamingPartState(std::vector<uint8_t> &&data) :
+    AudioStreamingPartState(std::vector<uint8_t> &&data) :
     _parsedPart(std::move(data)) {
         if (_parsedPart.getChannelUpdates().size() == 0) {
             _didReadToEnd = true;
@@ -431,14 +484,18 @@ public:
         }
     }
 
-    ~StreamingPartState() {
+    ~AudioStreamingPartState() {
+    }
+
+    std::map<std::string, int32_t> getEndpointMapping() const {
+        return _parsedPart.getEndpointMapping();
     }
 
     int getRemainingMilliseconds() const {
         return _remainingMilliseconds;
     }
 
-    std::vector<StreamingPart::StreamingPartChannel> get10msPerChannel() {
+    std::vector<AudioStreamingPart::StreamingPartChannel> get10msPerChannel() {
         if (_didReadToEnd) {
             return {};
         }
@@ -455,9 +512,9 @@ public:
             return {};
         }
 
-        std::vector<StreamingPart::StreamingPartChannel> resultChannels;
+        std::vector<AudioStreamingPart::StreamingPartChannel> resultChannels;
         for (const auto ssrc : _allSsrcs) {
-            StreamingPart::StreamingPartChannel emptyPart;
+            AudioStreamingPart::StreamingPartChannel emptyPart;
             emptyPart.ssrc = ssrc;
             resultChannels.push_back(emptyPart);
         }
@@ -509,7 +566,7 @@ private:
     }
 
 private:
-    StreamingPartInternal _parsedPart;
+    AudioStreamingPartInternal _parsedPart;
     std::set<uint32_t> _allSsrcs;
 
     std::vector<int16_t> _pcm10ms;
@@ -520,26 +577,30 @@ private:
     bool _didReadToEnd = false;
 };
 
-StreamingPart::StreamingPart(std::vector<uint8_t> &&data) {
+AudioStreamingPart::AudioStreamingPart(std::vector<uint8_t> &&data) {
     if (!data.empty()) {
-        _state = new StreamingPartState(std::move(data));
+        _state = new AudioStreamingPartState(std::move(data));
     }
 }
 
-StreamingPart::~StreamingPart() {
+AudioStreamingPart::~AudioStreamingPart() {
     if (_state) {
         delete _state;
     }
 }
 
-int StreamingPart::getRemainingMilliseconds() const {
+std::map<std::string, int32_t> AudioStreamingPart::getEndpointMapping() const {
+    return _state ? _state->getEndpointMapping() : std::map<std::string, int32_t>();
+}
+
+int AudioStreamingPart::getRemainingMilliseconds() const {
     return _state ? _state->getRemainingMilliseconds() : 0;
 }
 
-std::vector<StreamingPart::StreamingPartChannel> StreamingPart::get10msPerChannel() {
+std::vector<AudioStreamingPart::StreamingPartChannel> AudioStreamingPart::get10msPerChannel() {
     return _state
         ? _state->get10msPerChannel()
-        : std::vector<StreamingPart::StreamingPartChannel>();
+        : std::vector<AudioStreamingPart::StreamingPartChannel>();
 }
 
 }

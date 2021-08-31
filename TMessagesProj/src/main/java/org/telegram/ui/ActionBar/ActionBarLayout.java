@@ -40,6 +40,8 @@ import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.FrameLayout;
 
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
@@ -206,6 +208,12 @@ public class ActionBarLayout extends FrameLayout {
         public void setFragmentPanTranslationOffset(int fragmentPanTranslationOffset) {
             this.fragmentPanTranslationOffset = fragmentPanTranslationOffset;
             invalidate();
+        }
+
+        @Override
+        public void setTranslationX(float translationX) {
+            Log.d("kek", "set translationX" + translationX);
+            super.setTranslationX(translationX);
         }
     }
 
@@ -982,7 +990,7 @@ public class ActionBarLayout extends FrameLayout {
             return false;
         }
         fragment.setInPreviewMode(preview);
-        if (parentActivity.getCurrentFocus() != null && fragment.hideKeyboardOnShow()) {
+        if (parentActivity.getCurrentFocus() != null && fragment.hideKeyboardOnShow() && !preview) {
             AndroidUtilities.hideKeyboard(parentActivity.getCurrentFocus());
         }
         boolean needAnimation = preview || !forceWithoutAnimation && MessagesController.getGlobalMainSettings().getBoolean("view_animations", true);
@@ -1158,7 +1166,7 @@ public class ActionBarLayout extends FrameLayout {
                         containerView.setScaleY(1.0f);
                     }
                     if (containerView.isKeyboardVisible || containerViewBack.isKeyboardVisible) {
-                        if (currentFragment != null) {
+                        if (currentFragment != null && !preview) {
                             currentFragment.saveKeyboardPositionBeforeTransition();
                         }
                         waitingForKeyboardCloseRunnable = new Runnable() {
@@ -1218,7 +1226,7 @@ public class ActionBarLayout extends FrameLayout {
                         startLayoutAnimation(true, true, preview);
                     }
                 } else {
-                    if (containerView.isKeyboardVisible || containerViewBack.isKeyboardVisible && currentFragment != null) {
+                    if (!preview && containerView.isKeyboardVisible || containerViewBack.isKeyboardVisible && currentFragment != null) {
                         currentFragment.saveKeyboardPositionBeforeTransition();
                     }
                     currentAnimation = animation;
@@ -1443,7 +1451,7 @@ public class ActionBarLayout extends FrameLayout {
                     animation = currentFragment.onCustomTransitionAnimation(false, () -> onAnimationEndCheck(false));
                 }
                 if (animation == null) {
-                    if (containerView.isKeyboardVisible || containerViewBack.isKeyboardVisible) {
+                    if (!inPreviewMode && (containerView.isKeyboardVisible || containerViewBack.isKeyboardVisible)) {
                         waitingForKeyboardCloseRunnable = new Runnable() {
                             @Override
                             public void run() {

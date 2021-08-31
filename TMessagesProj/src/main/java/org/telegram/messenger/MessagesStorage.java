@@ -6743,7 +6743,11 @@ public class MessagesStorage extends BaseController {
                             }
                             if (MessageObject.isSecretMedia(message)) {
                                 try {
-                                    SQLiteCursor cursor2 = database.queryFinalized(String.format(Locale.US, "SELECT date FROM enc_tasks_v3 WHERE mid = %d", message.id));
+                                    long messageId = message.id;
+                                    if (message.peer_id.channel_id != 0) {
+                                        messageId |= ((long) message.peer_id.channel_id) << 32;
+                                    }
+                                    SQLiteCursor cursor2 = database.queryFinalized(String.format(Locale.US, "SELECT date FROM enc_tasks_v3 WHERE mid = %d AND media = 1", messageId));
                                     if (cursor2.next()) {
                                         message.destroyTime = cursor2.intValue(0);
                                     }
@@ -10730,6 +10734,15 @@ public class MessagesStorage extends BaseController {
         if (message.ttl < 0) {
             if (!chatsToLoad.contains(-message.ttl)) {
                 chatsToLoad.add(-message.ttl);
+            }
+        }
+        if (message.params != null) {
+            String peerIdStr = message.params.get("fwd_peer");
+            if (peerIdStr != null) {
+                int peerId = Utilities.parseInt(peerIdStr);
+                if (peerId < 0) {
+                    chatsToLoad.add(-peerId);
+                }
             }
         }
     }

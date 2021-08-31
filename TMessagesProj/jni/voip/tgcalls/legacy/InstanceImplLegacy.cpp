@@ -209,6 +209,9 @@ void InstanceImplLegacy::receiveSignalingData(const std::vector<uint8_t> &data) 
 void InstanceImplLegacy::setVideoCapture(std::shared_ptr<VideoCaptureInterface> videoCapture) {
 }
 
+void InstanceImplLegacy::sendVideoDeviceUpdated() {
+}
+
 void InstanceImplLegacy::setRequestedVideoAspect(float aspect) {
 }
 

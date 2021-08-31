@@ -47,6 +47,7 @@ public class SizeNotifierFrameLayout extends FrameLayout {
     private int emojiHeight;
     private float emojiOffset;
     private boolean animationInProgress;
+    private boolean skipBackgroundDrawing;
 
     public interface SizeNotifierFrameLayoutDelegate {
         void onSizeChanged(int keyboardHeight, boolean isWidthGreater);
@@ -213,7 +214,7 @@ public class SizeNotifierFrameLayout extends FrameLayout {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        if (backgroundDrawable == null) {
+        if (backgroundDrawable == null || skipBackgroundDrawing) {
             super.onDraw(canvas);
             return;
         }
@@ -334,5 +335,10 @@ public class SizeNotifierFrameLayout extends FrameLayout {
 
     protected AdjustPanLayoutHelper createAdjustPanLayoutHelper() {
         return null;
+    }
+
+    public void setSkipBackgroundDrawing(boolean skipBackgroundDrawing) {
+        this.skipBackgroundDrawing = skipBackgroundDrawing;
+        invalidate();
     }
 }

@@ -416,7 +416,7 @@ public class WallpapersListActivity extends BaseFragment implements Notification
             NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.wallpapersNeedReload);
             getMessagesStorage().getWallpapers();
         } else {
-            boolean darkTheme = Theme.isCurrentThemeNight();
+            boolean darkTheme = Theme.isCurrentThemeDark();
             int[][] defaultColors = darkTheme ? defaultColorsDark : defaultColorsLight;
             for (int a = 0; a < defaultColors.length; a++) {
                 if (defaultColors[a].length == 1) {
@@ -991,6 +991,9 @@ public class WallpapersListActivity extends BaseFragment implements Notification
                     }
                     allWallPapersDict.put(wallPaper.slug, wallPaper);
                     if (currentType != TYPE_COLOR && (!wallPaper.pattern || wallPaper.settings != null && wallPaper.settings.background_color != 0)) {
+                        if (!Theme.isCurrentThemeDark() && wallPaper.settings != null && wallPaper.settings.intensity < 0) {
+                            continue;
+                        }
                         wallPapers.add(wallPaper);
                     }
                 } else if (wallPaper.settings.background_color != 0) {
@@ -1015,6 +1018,9 @@ public class WallpapersListActivity extends BaseFragment implements Notification
                         }
                         localWallPapers.add(colorWallpaper);
                         localDict.put(hash, colorWallpaper);
+                    }
+                    if (!Theme.isCurrentThemeDark() && wallPaper.settings != null && wallPaper.settings.intensity < 0) {
+                        continue;
                     }
                     wallPapers.add(colorWallpaper);
                 }
@@ -1083,9 +1089,15 @@ public class WallpapersListActivity extends BaseFragment implements Notification
                             patternsDict.put(wallPaper.document.id, wallPaper);
                         }
                         if (currentType != TYPE_COLOR && (!wallPaper.pattern || wallPaper.settings != null && wallPaper.settings.background_color != 0)) {
+                            if (!Theme.isCurrentThemeDark() && wallPaper.settings != null && wallPaper.settings.intensity < 0) {
+                                continue;
+                            }
                             wallPapers.add(wallPaper);
                         }
                     } else if (wallPaper.settings.background_color != 0) {
+                        if (!Theme.isCurrentThemeDark() && wallPaper.settings != null && wallPaper.settings.intensity < 0) {
+                            continue;
+                        }
                         ColorWallpaper colorWallpaper;
                         if (wallPaper.settings.second_background_color != 0 && wallPaper.settings.third_background_color != 0) {
                             colorWallpaper = new ColorWallpaper(null, wallPaper.settings.background_color, wallPaper.settings.second_background_color, wallPaper.settings.third_background_color, wallPaper.settings.fourth_background_color);

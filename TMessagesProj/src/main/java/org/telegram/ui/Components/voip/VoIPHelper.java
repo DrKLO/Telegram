@@ -277,8 +277,8 @@ public class VoIPHelper {
 		}
 		if (checkAnonymous && !hasFewPeers && peer instanceof TLRPC.TL_inputPeerUser && ChatObject.shouldSendAnonymously(chat) && (!ChatObject.isChannel(chat) || chat.megagroup)) {
 			new AlertDialog.Builder(activity)
-					.setTitle(LocaleController.getString("VoipGroupVoiceChat", R.string.VoipGroupVoiceChat))
-					.setMessage(LocaleController.getString("VoipGroupJoinAnonymouseAlert", R.string.VoipGroupJoinAnonymouseAlert))
+					.setTitle(ChatObject.isChannelOrGiga(chat) ? LocaleController.getString("VoipChannelVoiceChat", R.string.VoipChannelVoiceChat) : LocaleController.getString("VoipGroupVoiceChat", R.string.VoipGroupVoiceChat))
+					.setMessage(ChatObject.isChannelOrGiga(chat) ? LocaleController.getString("VoipChannelJoinAnonymouseAlert", R.string.VoipChannelJoinAnonymouseAlert) : LocaleController.getString("VoipGroupJoinAnonymouseAlert", R.string.VoipGroupJoinAnonymouseAlert))
 					.setPositiveButton(LocaleController.getString("VoipChatJoin", R.string.VoipChatJoin), (dialog, which) -> doInitiateCall(user, chat, hash, peer, false, videoCall, canVideoCall, createCall, activity, fragment, accountInstance, false, false))
 					.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null)
 					.show();

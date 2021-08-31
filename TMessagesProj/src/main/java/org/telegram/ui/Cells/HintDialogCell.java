@@ -27,6 +27,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.CounterView;
 import org.telegram.ui.Components.LayoutHelper;
 
@@ -46,9 +47,12 @@ public class HintDialogCell extends FrameLayout {
     boolean wasDraw;
 
     CounterView counterView;
+    CheckBox2 checkBox;
+    private final boolean drawCheckbox;
 
-    public HintDialogCell(Context context) {
+    public HintDialogCell(Context context, boolean drawCheckbox) {
         super(context);
+        this.drawCheckbox = drawCheckbox;
 
         imageView = new BackupImageView(context);
         imageView.setRoundRadius(AndroidUtilities.dp(27));
@@ -67,12 +71,28 @@ public class HintDialogCell extends FrameLayout {
         addView(counterView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 28, Gravity.TOP,0 ,4,0,0));
         counterView.setColors(Theme.key_chats_unreadCounterText, Theme.key_chats_unreadCounter);
         counterView.setGravity(Gravity.RIGHT);
+
+        if (drawCheckbox) {
+            checkBox = new CheckBox2(context, 21);
+            checkBox.setColor(Theme.key_dialogRoundCheckBox, Theme.key_dialogBackground, Theme.key_dialogRoundCheckBoxCheck);
+            checkBox.setDrawUnchecked(false);
+            checkBox.setDrawBackgroundAsArc(4);
+            checkBox.setProgressDelegate(progress -> {
+                float scale = 1.0f - (1.0f - 0.857f) * checkBox.getProgress();
+                imageView.setScaleX(scale);
+                imageView.setScaleY(scale);
+                invalidate();
+            });
+            addView(checkBox, LayoutHelper.createFrame(24, 24, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 19, 42, 0, 0));
+            checkBox.setChecked(true, false);
+            setWillNotDraw(false);
+        }
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(86), MeasureSpec.EXACTLY));
-        counterView.horizontalPadding = AndroidUtilities.dp(13);
+        counterView.counterDrawable.horizontalPadding = AndroidUtilities.dp(13);
     }
 
     public void update(int mask) {
@@ -180,5 +200,26 @@ public class HintDialogCell extends FrameLayout {
             wasDraw = true;
         }
         return result;
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        if (drawCheckbox) {
+            int cx = imageView.getLeft() + imageView.getMeasuredWidth() / 2;
+            int cy = imageView.getTop() + imageView.getMeasuredHeight() / 2;
+            Theme.checkboxSquare_checkPaint.setColor(Theme.getColor(Theme.key_dialogRoundCheckBox));
+            Theme.checkboxSquare_checkPaint.setAlpha((int) (checkBox.getProgress() * 255));
+            canvas.drawCircle(cx, cy, AndroidUtilities.dp(28), Theme.checkboxSquare_checkPaint);
+        }
+    }
+
+    public void setChecked(boolean checked, boolean animated) {
+        if (drawCheckbox) {
+            checkBox.setChecked(checked, animated);
+        }
+    }
+
+    public long getDialogId() {
+        return dialog_id;
     }
 }

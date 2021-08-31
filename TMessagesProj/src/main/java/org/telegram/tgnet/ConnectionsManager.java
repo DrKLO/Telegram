@@ -201,15 +201,23 @@ public class ConnectionsManager extends BaseController {
             systemVersion = "SDK Unknown";
         }
         getUserConfig().loadConfig();
-        String pushString = SharedConfig.pushString;
-        if (TextUtils.isEmpty(pushString) && !TextUtils.isEmpty(SharedConfig.pushStringStatus)) {
-            pushString = SharedConfig.pushStringStatus;
-        }
+        String pushString = getRegId();
         String fingerprint = AndroidUtilities.getCertificateSHA256Fingerprint();
 
         int timezoneOffset = (TimeZone.getDefault().getRawOffset() + TimeZone.getDefault().getDSTSavings()) / 1000;
 
         init(BuildVars.BUILD_VERSION, TLRPC.LAYER, BuildVars.APP_ID, deviceModel, systemVersion, appVersion, langCode, systemLangCode, configPath, FileLog.getNetworkLogPath(), pushString, fingerprint, timezoneOffset, getUserConfig().getClientUserId(), enablePushConnection);
+    }
+
+    private String getRegId() {
+        String pushString = SharedConfig.pushString;
+        if (TextUtils.isEmpty(pushString) && !TextUtils.isEmpty(SharedConfig.pushStringStatus)) {
+            pushString = SharedConfig.pushStringStatus;
+        }
+        if (TextUtils.isEmpty(pushString)) {
+            pushString = SharedConfig.pushStringStatus = "__FIREBASE_GENERATING_SINCE_" + getCurrentTime() + "__";
+        }
+        return pushString;
     }
 
     public boolean isPushConnectionEnabled() {
@@ -401,6 +409,9 @@ public class ConnectionsManager extends BaseController {
         String pushString = regId;
         if (TextUtils.isEmpty(pushString) && !TextUtils.isEmpty(status)) {
             pushString = status;
+        }
+        if (TextUtils.isEmpty(pushString)) {
+            pushString = SharedConfig.pushStringStatus = "__FIREBASE_GENERATING_SINCE_" + getInstance(0).getCurrentTime() + "__";
         }
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
             native_setRegId(a, pushString);

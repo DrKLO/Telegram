@@ -77,6 +77,8 @@ import androidx.recyclerview.widget.LinearSmoothScrollerCustom;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
 
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -424,6 +426,12 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         private Paint actionBarSearchPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private Paint windowBackgroundPaint = new Paint();
         private int inputFieldHeight;
+
+        @Override
+        public void setTranslationX(float translationX) {
+            Log.d("kek", "content view set translationX" + translationX);
+            super.setTranslationX(translationX);
+        }
 
         public ContentView(Context context) {
             super(context);
@@ -4138,9 +4146,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         if (searchIsShowed) {
             AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid);
         }
-        if (viewPages != null) {
-            viewPages[0].dialogsAdapter.notifyDataSetChanged();
-        }
+        updateVisibleRows(0, false);
     }
 
     @Override
@@ -4697,13 +4703,21 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         long dialogId = 0;
         int message_id = 0;
         boolean isGlobalSearch = false;
+        int folderId = 0;
+        int filterId = 0;
         if (adapter instanceof DialogsAdapter) {
             DialogsAdapter dialogsAdapter = (DialogsAdapter) adapter;
+            int dialogsType = dialogsAdapter.getDialogsType();
+            if (dialogsType == 7 || dialogsType == 8) {
+                MessagesController.DialogFilter dialogFilter = getMessagesController().selectedDialogFilter[dialogsType == 7 ? 0 : 1];
+                filterId = dialogFilter.id;
+            }
             TLObject object = dialogsAdapter.getItem(position);
             if (object instanceof TLRPC.User) {
                 dialogId = ((TLRPC.User) object).id;
             } else if (object instanceof TLRPC.Dialog) {
                 TLRPC.Dialog dialog = (TLRPC.Dialog) object;
+                folderId = dialog.folder_id;
                 if (dialog instanceof TLRPC.TL_dialogFolder) {
                     if (actionBar.isActionModeShowed(null)) {
                         return;
@@ -4846,6 +4860,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     searchObject = null;
                 }
             }
+            args.putInt("dialog_folder_id", folderId);
+            args.putInt("dialog_filter_id", filterId);
             if (AndroidUtilities.isTablet()) {
                 if (openedDialogId == dialogId && adapter != searchViewPager.dialogsSearchAdapter) {
                     return;
@@ -5346,27 +5362,29 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 }
             }
             builder.setPositiveButton(action == delete ? LocaleController.getString("Delete", R.string.Delete)
-                            : canClearCacheCount != 0 ? LocaleController.getString("ClearHistoryCache", R.string.ClearHistoryCache)
-                            : LocaleController.getString("ClearHistory", R.string.ClearHistory)
-                    , (dialog1, which) -> {
-                        ArrayList<Long> didsCopy = new ArrayList<>(selectedDialogs);
-                        getUndoView().showWithAction(didsCopy, action == delete ? UndoView.ACTION_DELETE_FEW : UndoView.ACTION_CLEAR_FEW, null, null, () -> {
-                            if (action == delete) {
-                                getMessagesController().setDialogsInTransaction(true);
-                                performSelectedDialogsAction(didsCopy, action, false);
-                                getMessagesController().setDialogsInTransaction(false);
-                                getMessagesController().checkIfFolderEmpty(folderId);
-                                if (folderId != 0 && getDialogsArray(currentAccount, viewPages[0].dialogsType, folderId, false).size() == 0) {
-                                    viewPages[0].listView.setEmptyView(null);
-                                    viewPages[0].progressView.setVisibility(View.INVISIBLE);
-                                    finishFragment();
-                                }
-                            } else {
-                                performSelectedDialogsAction(didsCopy, action, false);
-                            }
-                        }, null);
-                        hideActionMode(action == clear);
-                    });
+                    : canClearCacheCount != 0 ? LocaleController.getString("ClearHistoryCache", R.string.ClearHistoryCache)
+                    : LocaleController.getString("ClearHistory", R.string.ClearHistory), (dialog1, which) -> {
+                if (selectedDialogs.isEmpty()) {
+                    return;
+                }
+                ArrayList<Long> didsCopy = new ArrayList<>(selectedDialogs);
+                getUndoView().showWithAction(didsCopy, action == delete ? UndoView.ACTION_DELETE_FEW : UndoView.ACTION_CLEAR_FEW, null, null, () -> {
+                    if (action == delete) {
+                        getMessagesController().setDialogsInTransaction(true);
+                        performSelectedDialogsAction(didsCopy, action, false);
+                        getMessagesController().setDialogsInTransaction(false);
+                        getMessagesController().checkIfFolderEmpty(folderId);
+                        if (folderId != 0 && getDialogsArray(currentAccount, viewPages[0].dialogsType, folderId, false).size() == 0) {
+                            viewPages[0].listView.setEmptyView(null);
+                            viewPages[0].progressView.setVisibility(View.INVISIBLE);
+                            finishFragment();
+                        }
+                    } else {
+                        performSelectedDialogsAction(didsCopy, action, false);
+                    }
+                }, null);
+                hideActionMode(action == clear);
+            });
             builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
             AlertDialog alertDialog = builder.create();
             showDialog(alertDialog);
@@ -6732,6 +6750,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     }
 
     private void updateVisibleRows(int mask) {
+        updateVisibleRows(mask, true);
+    }
+    private void updateVisibleRows(int mask, boolean animated) {
         if ((dialogsListFrozen && (mask & MessagesController.UPDATE_MASK_REORDER) == 0) || isPaused) {
             return;
         }
@@ -6775,7 +6796,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                                     cell.setDialogSelected(cell.getDialogId() == openedDialogId);
                                 }
                             } else {
-                                cell.update(mask);
+                                cell.update(mask, animated);
                             }
                             if (selectedDialogs != null) {
                                 cell.setChecked(selectedDialogs.contains(cell.getDialogId()), false);

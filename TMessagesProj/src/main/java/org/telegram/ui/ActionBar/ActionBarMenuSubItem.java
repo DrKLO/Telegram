@@ -107,6 +107,12 @@ public class ActionBarMenuSubItem extends FrameLayout {
         setTextAndIcon(text, icon, null);
     }
 
+    public void setMultiline() {
+        textView.setLines(2);
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        textView.setSingleLine(false);
+    }
+
     public void setTextAndIcon(CharSequence text, int icon, Drawable iconDrawable) {
         textView.setText(text);
         if (icon != 0 || iconDrawable != null || checkView != null) {

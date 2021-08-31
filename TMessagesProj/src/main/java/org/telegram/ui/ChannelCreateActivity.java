@@ -499,8 +499,12 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                     avatarEditor.setAnimation(cameraDrawable);
                     cameraDrawable.setCurrentFrame(0);
                 }, dialog -> {
-                    cameraDrawable.setCustomEndFrame(86);
-                    avatarEditor.playAnimation();
+                    if (!imageUpdater.isUploadingImage()) {
+                        cameraDrawable.setCustomEndFrame(86);
+                        avatarEditor.playAnimation();
+                    } else {
+                        cameraDrawable.setCurrentFrame(0, false);
+                    }
                 });
                 cameraDrawable.setCurrentFrame(0);
                 cameraDrawable.setCustomEndFrame(43);

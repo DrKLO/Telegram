@@ -6,7 +6,6 @@ import android.animation.ObjectAnimator;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
@@ -16,6 +15,7 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import androidx.annotation.Keep;
 
+import android.graphics.Shader;
 import android.text.TextPaint;
 import android.view.View;
 
@@ -314,9 +314,11 @@ public class CheckBoxBase {
             if (backgroundType == 12 || backgroundType == 13) {
                 backgroundPaint.setStyle(Paint.Style.FILL);
                 if (messageDrawable != null && messageDrawable.hasGradient()) {
-                    LinearGradient shader = messageDrawable.getGradientShader();
+                    Shader shader = messageDrawable.getGradientShader();
                     Matrix matrix = messageDrawable.getMatrix();
-                    matrix.setTranslate(0, -messageDrawable.getTopY() + bounds.top);
+                    matrix.reset();
+                    messageDrawable.applyMatrixScale();
+                    matrix.postTranslate(0, -messageDrawable.getTopY() + bounds.top);
                     shader.setLocalMatrix(matrix);
                     backgroundPaint.setShader(shader);
                 } else {

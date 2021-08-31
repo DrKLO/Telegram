@@ -826,11 +826,10 @@ public class StickerMasksAlert extends BottomSheet implements NotificationCenter
             TLRPC.TL_messages_stickerSet stickerSet = stickerSets[currentType].get(a);
             TLRPC.Document document = stickerSet.documents.get(0);
             TLObject thumb = FileLoader.getClosestPhotoSizeWithSize(stickerSet.set.thumbs, 90);
-            SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(stickerSet.set.thumbs, Theme.key_windowBackgroundGray, 1.0f);
             if (thumb == null) {
                 thumb = document;
             }
-            stickersTab.addStickerTab(thumb, svgThumb, document, stickerSet).setContentDescription(stickerSet.set.title + ", " + LocaleController.getString("AccDescrStickerSet", R.string.AccDescrStickerSet));
+            stickersTab.addStickerTab(thumb, document, stickerSet).setContentDescription(stickerSet.set.title + ", " + LocaleController.getString("AccDescrStickerSet", R.string.AccDescrStickerSet));
         }
         stickersTab.commitUpdate();
         stickersTab.updateTabStyles();

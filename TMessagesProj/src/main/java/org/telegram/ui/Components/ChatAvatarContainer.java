@@ -13,6 +13,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
+import android.graphics.Canvas;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
@@ -53,7 +54,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
     private ImageView timeItem;
     private TimerDrawable timerDrawable;
     private ChatActivity parentFragment;
-    private StatusDrawable[] statusDrawables = new StatusDrawable[5];
+    private StatusDrawable[] statusDrawables = new StatusDrawable[6];
     private AvatarDrawable avatarDrawable = new AvatarDrawable();
     private int currentAccount = UserConfig.selectedAccount;
     private boolean occupyStatusBar = true;
@@ -156,6 +157,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             statusDrawables[2] = new SendingFileDrawable(false);
             statusDrawables[3] = new PlayingGameDrawable(false);
             statusDrawables[4] = new RoundStatusDrawable(false);
+            statusDrawables[5] = new ChoosingStickerStatusDrawable(false);
             for (int a = 0; a < statusDrawables.length; a++) {
                 statusDrawables[a].setIsChat(chat != null);
             }
@@ -380,8 +382,14 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
     private void setTypingAnimation(boolean start) {
         if (start) {
             try {
-                Integer type = MessagesController.getInstance(currentAccount).getPrintingStringType(parentFragment.getDialogId(), parentFragment.getThreadId());
-                subtitleTextView.setLeftDrawable(statusDrawables[type]);
+                int type = MessagesController.getInstance(currentAccount).getPrintingStringType(parentFragment.getDialogId(), parentFragment.getThreadId());
+                if (type == 5) {
+                    subtitleTextView.replaceTextWithDrawable(statusDrawables[type], "**oo**");
+                    subtitleTextView.setLeftDrawable(null);
+                } else {
+                    subtitleTextView.replaceTextWithDrawable(null, null);
+                    subtitleTextView.setLeftDrawable(statusDrawables[type]);
+                }
                 for (int a = 0; a < statusDrawables.length; a++) {
                     if (a == type) {
                         statusDrawables[a].start();
@@ -394,6 +402,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             }
         } else {
             subtitleTextView.setLeftDrawable(null);
+            subtitleTextView.replaceTextWithDrawable(null, null);
             for (int a = 0; a < statusDrawables.length; a++) {
                 statusDrawables[a].stop();
             }
@@ -744,5 +753,9 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
 
     public SharedMediaLayout.SharedMediaPreloader getSharedMediaPreloader() {
         return sharedMediaPreloader;
+    }
+
+    public BackupImageView getAvatarImageView() {
+        return avatarImageView;
     }
 }

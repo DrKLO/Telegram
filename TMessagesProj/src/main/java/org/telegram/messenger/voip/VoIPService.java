@@ -187,8 +187,6 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 
 	private boolean reconnectScreenCapture;
 
-	private int currentStreamRequestId;
-
 	private TLRPC.Chat chat;
 
 	private boolean isVideoAvailable;
@@ -306,7 +304,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 
 	private int classGuid;
 
-	private long currentStreamRequestTimestamp;
+	private HashMap<String, Integer> currentStreamRequestTimestamp = new HashMap<>();
 	public boolean micSwitching;
 
 	private Runnable afterSoundRunnable = new Runnable() {
@@ -1272,32 +1270,15 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		return result;
 	}
 
-	public void requestFullScreen(TLRPC.TL_groupCallParticipant participant, boolean screencast) {
-		if (currentBackgroundSink[screencast ? CAPTURE_DEVICE_SCREEN : CAPTURE_DEVICE_CAMERA] != null) {
-			currentBackgroundSink[screencast ? CAPTURE_DEVICE_SCREEN : CAPTURE_DEVICE_CAMERA].setBackground(null);
-		}
-		if (participant == null) {
-			currentBackgroundSink[screencast ? CAPTURE_DEVICE_SCREEN : CAPTURE_DEVICE_CAMERA] = null;
-			currentBackgroundEndpointId[screencast ? CAPTURE_DEVICE_SCREEN : CAPTURE_DEVICE_CAMERA] = null;
-			return;
-		}
+	public void requestFullScreen(TLRPC.TL_groupCallParticipant participant, boolean full, boolean screencast) {
 		String endpointId = screencast ? participant.presentationEndpoint : participant.videoEndpoint;
 		if (endpointId == null) {
 			return;
 		}
-		ProxyVideoSink sink = remoteSinks.get(endpointId);
-		if (sink == null) {
-			sink = addRemoteSink(participant, screencast, null, null);
-		}
-		if (sink != null) {
-			sink.setBackground(remoteSink[screencast ? CAPTURE_DEVICE_SCREEN : CAPTURE_DEVICE_CAMERA]);
-			//tgVoip[CAPTURE_DEVICE_CAMERA].setVideoEndpointQuality(endpointId, QUALITY_FULL); TODO
-			currentBackgroundSink[screencast ? CAPTURE_DEVICE_SCREEN : CAPTURE_DEVICE_CAMERA] = sink;
-			currentBackgroundEndpointId[screencast ? CAPTURE_DEVICE_SCREEN : CAPTURE_DEVICE_CAMERA] = endpointId;
+		if (full) {
+			tgVoip[CAPTURE_DEVICE_CAMERA].setVideoEndpointQuality(endpointId, QUALITY_FULL);
 		} else {
-			//tgVoip[CAPTURE_DEVICE_CAMERA].setVideoEndpointQuality(endpointId, QUALITY_MEDIUM); TODO
-			currentBackgroundSink[screencast ? CAPTURE_DEVICE_SCREEN : CAPTURE_DEVICE_CAMERA] = null;
-			currentBackgroundEndpointId[screencast ? CAPTURE_DEVICE_SCREEN : CAPTURE_DEVICE_CAMERA] = null;
+			tgVoip[CAPTURE_DEVICE_CAMERA].setVideoEndpointQuality(endpointId, QUALITY_MEDIUM);
 		}
 	}
 
@@ -2084,7 +2065,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 					}
 					broadcastUnknownParticipants(taskPtr, unknown);
 				});
-			}, (timestamp, duration) -> {
+			}, (timestamp, duration, videoChannel, quality) -> {
 				if (type != CAPTURE_DEVICE_CAMERA) {
 					return;
 				}
@@ -2096,15 +2077,21 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				if (duration == 500) {
 					inputGroupCallStream.scale = 1;
 				}
+				if (videoChannel != 0) {
+					inputGroupCallStream.flags |= 1;
+					inputGroupCallStream.video_channel = videoChannel;
+					inputGroupCallStream.video_quality = quality;
+				}
 				req.location = inputGroupCallStream;
-				currentStreamRequestTimestamp = timestamp;
-				currentStreamRequestId = AccountInstance.getInstance(currentAccount).getConnectionsManager().sendRequest(req, (response, error, responseTime) -> {
+				String key = videoChannel == 0 ? ("" + timestamp) : (videoChannel + "_" + timestamp + "_" + quality);
+				int reqId = AccountInstance.getInstance(currentAccount).getConnectionsManager().sendRequest(req, (response, error, responseTime) -> {
+					AndroidUtilities.runOnUIThread(() -> currentStreamRequestTimestamp.remove(key));
 					if (tgVoip[type] == null) {
 						return;
 					}
 					if (response != null) {
 						TLRPC.TL_upload_file res = (TLRPC.TL_upload_file) response;
-						tgVoip[type].onStreamPartAvailable(timestamp, res.bytes.buffer, res.bytes.limit(), responseTime);
+						tgVoip[type].onStreamPartAvailable(timestamp, res.bytes.buffer, res.bytes.limit(), responseTime, videoChannel, quality);
 					} else {
 						if ("GROUPCALL_JOIN_MISSING".equals(error.text)) {
 							AndroidUtilities.runOnUIThread(() -> createGroupInstance(type, false));
@@ -2115,18 +2102,23 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 							} else {
 								status = -1;
 							}
-							tgVoip[type].onStreamPartAvailable(timestamp, null, status, responseTime);
+							tgVoip[type].onStreamPartAvailable(timestamp, null, status, responseTime, videoChannel, quality);
 						}
 					}
 				}, ConnectionsManager.RequestFlagFailOnServerErrors, ConnectionsManager.ConnectionTypeDownload, groupCall.call.stream_dc_id);
-			}, (timestamp, duration) -> {
+				AndroidUtilities.runOnUIThread(() -> currentStreamRequestTimestamp.put(key, reqId));
+			}, (timestamp, duration, videoChannel, quality) -> {
 				if (type != CAPTURE_DEVICE_CAMERA) {
 					return;
 				}
-				if (currentStreamRequestTimestamp == timestamp) {
-					AccountInstance.getInstance(currentAccount).getConnectionsManager().cancelRequest(currentStreamRequestId, true);
-					currentStreamRequestId = 0;
-				}
+				AndroidUtilities.runOnUIThread(() -> {
+					String key = videoChannel == 0 ? ("" + timestamp) : (videoChannel + "_" + timestamp + "_" + quality);
+					Integer reqId = currentStreamRequestTimestamp.get(key);
+					if (reqId != null) {
+						AccountInstance.getInstance(currentAccount).getConnectionsManager().cancelRequest(reqId, true);
+						currentStreamRequestTimestamp.remove(key);
+					}
+				});
 			});
 			tgVoip[type].setOnStateUpdatedListener((state, inTransition) -> updateConnectionState(type, state, inTransition));
 		}
@@ -2819,18 +2811,23 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			intent.putExtra("currentAccount", currentAccount);
 		}
 		Notification.Builder builder = new Notification.Builder(this)
-				.setContentTitle(groupCall != null ? LocaleController.getString("VoipVoiceChat", R.string.VoipVoiceChat) : LocaleController.getString("VoipOutgoingCall", R.string.VoipOutgoingCall))
 				.setContentText(name)
 				.setContentIntent(PendingIntent.getActivity(this, 50, intent, 0));
 		if (groupCall != null) {
+			builder.setContentTitle(ChatObject.isChannelOrGiga(chat) ? LocaleController.getString("VoipLiveStream", R.string.VoipLiveStream) : LocaleController.getString("VoipVoiceChat", R.string.VoipVoiceChat));
 			builder.setSmallIcon(isMicMute() ? R.drawable.voicechat_muted : R.drawable.voicechat_active);
 		} else {
+			builder.setContentTitle(LocaleController.getString("VoipOutgoingCall", R.string.VoipOutgoingCall));
 			builder.setSmallIcon(R.drawable.notification);
 		}
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
 			Intent endIntent = new Intent(this, VoIPActionsReceiver.class);
 			endIntent.setAction(getPackageName() + ".END_CALL");
-			builder.addAction(R.drawable.ic_call_end_white_24dp, groupCall != null ? LocaleController.getString("VoipGroupLeaveAlertTitle", R.string.VoipGroupLeaveAlertTitle) : LocaleController.getString("VoipEndCall", R.string.VoipEndCall), PendingIntent.getBroadcast(this, 0, endIntent, PendingIntent.FLAG_UPDATE_CURRENT));
+			if (groupCall != null) {
+				builder.addAction(R.drawable.ic_call_end_white_24dp, ChatObject.isChannelOrGiga(chat) ? LocaleController.getString("VoipChannelLeaveAlertTitle", R.string.VoipChannelLeaveAlertTitle) : LocaleController.getString("VoipGroupLeaveAlertTitle", R.string.VoipGroupLeaveAlertTitle), PendingIntent.getBroadcast(this, 0, endIntent, PendingIntent.FLAG_UPDATE_CURRENT));
+			} else {
+				builder.addAction(R.drawable.ic_call_end_white_24dp, LocaleController.getString("VoipEndCall", R.string.VoipEndCall), PendingIntent.getBroadcast(this, 0, endIntent, PendingIntent.FLAG_UPDATE_CURRENT));
+			}
 			builder.setPriority(Notification.PRIORITY_MAX);
 		}
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
@@ -2954,8 +2951,10 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			if (tgVoip[CAPTURE_DEVICE_CAMERA].isGroup()) {
 				NativeInstance instance = tgVoip[CAPTURE_DEVICE_CAMERA];
 				Utilities.globalQueue.postRunnable(instance::stopGroup);
-				AccountInstance.getInstance(currentAccount).getConnectionsManager().cancelRequest(currentStreamRequestId, true);
-				currentStreamRequestId = 0;
+				for (HashMap.Entry<String, Integer> entry : currentStreamRequestTimestamp.entrySet()) {
+					AccountInstance.getInstance(currentAccount).getConnectionsManager().cancelRequest(entry.getValue(), true);
+				}
+				currentStreamRequestTimestamp.clear();
 			} else {
 				Instance.FinalState state = tgVoip[CAPTURE_DEVICE_CAMERA].stop();
 				updateTrafficStats(tgVoip[CAPTURE_DEVICE_CAMERA], state.trafficStats);

@@ -5,6 +5,8 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.res.Configuration;
+import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.util.LongSparseArray;
 import android.util.SparseArray;
 import android.view.Gravity;
@@ -356,6 +358,48 @@ public class TrendingStickersLayout extends FrameLayout implements NotificationC
                 }
             }
         }
+    }
+
+    private float highlightProgress = 1f;
+    Paint paint = new Paint();
+
+    @Override
+    protected void dispatchDraw(Canvas canvas) {
+        if (highlightProgress != 0 && scrollToSet != null) {
+            highlightProgress -= 16f / 3000f;
+            if (highlightProgress < 0) {
+                highlightProgress = 0;
+            } else {
+                invalidate();
+            }
+            Integer pos = adapter.setsToPosition.get(scrollToSet);
+            if (pos != null) {
+                View view1 = layoutManager.findViewByPosition(pos);
+                int t = -1, b = -1;
+                if (view1 != null) {
+                    t = (int) view1.getY();
+                    b = (int) view1.getY() + view1.getMeasuredHeight();
+
+                }
+                View view2 = layoutManager.findViewByPosition(pos + 1);
+                if (view2 != null) {
+                    if (view1 == null) {
+                        t = (int) view2.getY();
+                    }
+                    b = (int) view2.getY() + view2.getMeasuredHeight();
+                }
+
+                if (view1 != null || view2 != null) {
+                    paint.setColor(Theme.getColor(Theme.key_featuredStickers_addButton));
+                    float p = highlightProgress < 0.06f ? highlightProgress / 0.06f : 1f;
+                    paint.setAlpha((int) (255 * 0.1f * p));
+                    canvas.drawRect(0, t, getMeasuredWidth(), b, paint);
+                }
+            }
+
+        }
+
+        super.dispatchDraw(canvas);
     }
 
     @Override

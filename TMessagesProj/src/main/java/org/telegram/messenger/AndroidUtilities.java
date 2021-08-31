@@ -3717,38 +3717,27 @@ public class AndroidUtilities {
             animated = false;
         }
 
-        if (show && view.getTag() == null) {
-            view.animate().setListener(null).cancel();
-            if (animated) {
-                if (view.getVisibility() != View.VISIBLE) {
-                    view.setVisibility(View.VISIBLE);
-                    view.setAlpha(0f);
-                    view.setScaleX(scaleFactor);
-                    view.setScaleY(scaleFactor);
-                }
-                view.animate().alpha(1f).scaleY(1f).scaleX(1f).setDuration(150).start();
-            } else {
-                view.setVisibility(View.VISIBLE);
-                view.setAlpha(1f);
-                view.setScaleX(1f);
-                view.setScaleY(1f);
-            }
-            view.setTag(1);
-        } else if (!show && view.getTag() != null){
-            view.animate().setListener(null).cancel();
-            if (animated) {
-                view.animate().alpha(0).scaleY(scaleFactor).scaleX(scaleFactor).setListener(new HideViewAfterAnimation(view)).setDuration(150).start();
-            } else {
-                view.setVisibility(View.GONE);
-            }
-            view.setTag(null);
-        } else if (!animated) {
+        if (!animated) {
             view.animate().setListener(null).cancel();
             view.setVisibility(show ? View.VISIBLE : View.GONE);
             view.setTag(show ? 1 : null);
             view.setAlpha(1f);
             view.setScaleX(1f);
             view.setScaleY(1f);
+        } else if (show && view.getTag() == null) {
+            view.animate().setListener(null).cancel();
+            if (view.getVisibility() != View.VISIBLE) {
+                view.setVisibility(View.VISIBLE);
+                view.setAlpha(0f);
+                view.setScaleX(scaleFactor);
+                view.setScaleY(scaleFactor);
+            }
+            view.animate().alpha(1f).scaleY(1f).scaleX(1f).setDuration(150).start();
+            view.setTag(1);
+        } else if (!show && view.getTag() != null) {
+            view.animate().setListener(null).cancel();
+            view.animate().alpha(0).scaleY(scaleFactor).scaleX(scaleFactor).setListener(new HideViewAfterAnimation(view)).setDuration(150).start();
+            view.setTag(null);
         }
     }
 }

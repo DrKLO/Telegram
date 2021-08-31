@@ -265,8 +265,10 @@ public class ApplicationLoader extends Application {
                 }
                 Utilities.globalQueue.postRunnable(() -> {
                     try {
+                        SharedConfig.pushStringGetTimeStart = SystemClock.elapsedRealtime();
                         FirebaseMessaging.getInstance().getToken()
                                 .addOnCompleteListener(task -> {
+                                    SharedConfig.pushStringGetTimeEnd = SystemClock.elapsedRealtime();
                                     if (!task.isSuccessful()) {
                                         if (BuildVars.LOGS_ENABLED) {
                                             FileLog.d("Failed to get regid");

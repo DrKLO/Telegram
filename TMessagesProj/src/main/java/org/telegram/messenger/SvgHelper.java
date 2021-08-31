@@ -122,6 +122,8 @@ public class SvgHelper {
         private float colorAlpha;
         private float crossfadeAlpha = 1.0f;
 
+        private boolean aspectFill = true;
+
         @Override
         public int getIntrinsicHeight() {
             return width;
@@ -132,6 +134,16 @@ public class SvgHelper {
             return height;
         }
 
+        public void setAspectFill(boolean value) {
+            aspectFill = value;
+        }
+
+        public void overrideWidthAndHeight(int w, int h) {
+            width = w;
+            height = h;
+        }
+
+
         @Override
         public void draw(Canvas canvas) {
             if (currentColorKey != null) {
@@ -140,9 +152,12 @@ public class SvgHelper {
             Rect bounds = getBounds();
             float scaleX = bounds.width() / (float) width;
             float scaleY = bounds.height() / (float) height;
-            float scale = Math.max(scaleX, scaleY);
+            float scale = aspectFill ? Math.max(scaleX, scaleY) : Math.min(scaleX, scaleY);
             canvas.save();
             canvas.translate(bounds.left, bounds.top);
+            if (!aspectFill) {
+                canvas.translate((bounds.width() - width * scale) / 2, (bounds.height() - height * scale) / 2);
+            }
             canvas.scale(scale, scale);
             for (int a = 0, N = commands.size(); a < N; a++) {
                 Object object = commands.get(a);
@@ -1719,7 +1734,7 @@ public class SvgHelper {
                 int num = encoded[i] & 0xff;
                 if (num >= 128 + 64) {
                     int start = num - 128 - 64;
-                    path.append("AACAAAAHAAALMAAAQASTAVAAAZaacaaaahaaalmaaaqastava.az0123456789-,".substring(start, start + 1));
+                    path.append("AACAAAAHAAALMAAAQASTAVAAAZaacaaaahaaalmaaaqastava.az0123456789-,".charAt(start));
                 } else {
                     if (num >= 128) {
                         path.append(',');
