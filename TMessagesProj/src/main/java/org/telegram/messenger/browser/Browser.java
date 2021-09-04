@@ -26,7 +26,6 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.CustomTabsCopyReceiver;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.ShareBroadcastReceiver;
@@ -282,8 +281,8 @@ public class Browser {
                     allActivities = context.getPackageManager().queryIntentActivities(viewIntent, 0);
                     if (browserPackageNames != null) {
                         for (int a = 0; a < allActivities.size(); a++) {
-                            for (int b = 0; b < browserPackageNames.length; b++) {
-                                if (browserPackageNames[b].equals(allActivities.get(a).activityInfo.packageName)) {
+                            for (String browserPackageName : browserPackageNames) {
+                                if (browserPackageName.equals(allActivities.get(a).activityInfo.packageName)) {
                                     allActivities.remove(a);
                                     a--;
                                     break;
@@ -329,7 +328,12 @@ public class Browser {
             FileLog.e(e);
         }
         try {
-            Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+            Intent intent;
+            if (uri.toString().startsWith("tel")) {
+                intent = new Intent(Intent.ACTION_CALL, uri);
+            } else {
+                intent = new Intent(Intent.ACTION_VIEW, uri);
+            }
             if (internalUri) {
                 ComponentName componentName = new ComponentName(context.getPackageName(), LaunchActivity.class.getName());
                 intent.setComponent(componentName);
@@ -416,9 +420,7 @@ public class Browser {
                 return true;
             }
         } else if (all) {
-            if (host.endsWith("telegram.org") || host.endsWith("telegra.ph") || host.endsWith("telesco.pe")) {
-                return true;
-            }
+            return host.endsWith("telegram.org") || host.endsWith("telegra.ph") || host.endsWith("telesco.pe");
         }
         return false;
     }
