@@ -977,6 +977,8 @@
     <string name="OpenUrlOption1">Log in to %1$s as **%2$s**</string>
     <string name="OpenUrlOption2">Allow **%1$s** to send me messages</string>
     <string name="CancelSending">Cancel sending</string>
+    <string name="CatchPhoneNumber">Catch phone number</string>
+    <string name="DontCatchPhoneNumber">Do not catch phone number</string>
     <string name="BotPermissionGameAlert">Allow %1$s to pass your Telegram name and id (not your phone number) to pages you open with this bot?</string>
     <string name="ReportSpamLocation">GROUP UNRELATED TO LOCATION?</string>
     <string name="ReportUnrelatedGroup">Report unrelated group</string>

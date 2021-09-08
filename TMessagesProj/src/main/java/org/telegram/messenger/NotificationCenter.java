@@ -429,8 +429,8 @@ public class NotificationCenter {
                 }
                 int[] allowed = allowedNotification.allowedIds;
                 if (allowed != null) {
-                    for (int a = 0; a < allowed.length; a++) {
-                        if (allowed[a] == id) {
+                    for (int i : allowed) {
+                        if (i == id) {
                             allowedCount++;
                             break;
                         }
