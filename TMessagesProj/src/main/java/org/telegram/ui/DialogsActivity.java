@@ -135,6 +135,7 @@ import org.telegram.ui.Cells.HintDialogCell;
 import org.telegram.ui.Cells.LoadingCell;
 import org.telegram.ui.Cells.ProfileSearchCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
+import org.telegram.ui.Cells.StatusCell;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.UserCell;
@@ -293,6 +294,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
     private FragmentContextView fragmentLocationContextView;
     private FragmentContextView fragmentContextView;
+
+    private StatusCell statusCell;
 
     private ArrayList<TLRPC.Dialog> frozenDialogsList;
     private boolean dialogsListFrozen;
@@ -1934,6 +1937,12 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         if (inPreviewMode || AndroidUtilities.isTablet() && folderId != 0) {
             actionBar.setOccupyStatusBar(false);
         }
+
+        statusCell = initStatusCell(context);
+        actionBar.addView(statusCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.BOTTOM));
+        actionBar.setExtraHeight(AndroidUtilities.dp(76));
+        actionBar.setTitle("");
+
         return actionBar;
     }
 
@@ -3528,6 +3537,32 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         updateMenuButton(false);
         return fragmentView;
+    }
+
+    private StatusCell initStatusCell(Context context) {
+        StatusCell cell = new StatusCell(context);
+        cell.setUnAuthorizedState(l -> handleSignUpClick());
+
+        return cell;
+    }
+
+    private void handleSignUpClick() { // todo: auth screen required
+        // проверка работоспособности функций
+        setMainTitle("{title_field}");
+        setStatusBarTitle("{status_field}");
+        populateRating("{rating}");
+    }
+
+    private void populateRating(String rating) { // todo: api required
+        if (statusCell != null) statusCell.setAuthorizedState(rating);
+    }
+
+    private void setMainTitle(String title) { // todo: api required
+        if (actionBar != null) actionBar.setTitle(title);
+    }
+
+    private void setStatusBarTitle(String title) { // todo: api required
+        if (statusCell != null) statusCell.setTitle(title);
     }
 
     private void updateAppUpdateViews(boolean animated) {
@@ -7225,6 +7260,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             arrayList.add(new ThemeDescription(list, 0, new Class[]{DialogCell.class, ProfileSearchCell.class}, null, new Drawable[]{Theme.dialogs_verifiedDrawable}, null, Theme.key_chats_verifiedBackground));
             arrayList.add(new ThemeDescription(list, 0, new Class[]{DialogCell.class}, null, new Drawable[]{Theme.dialogs_muteDrawable}, null, Theme.key_chats_muteIcon));
             arrayList.add(new ThemeDescription(list, 0, new Class[]{DialogCell.class}, null, new Drawable[]{Theme.dialogs_mentionDrawable}, null, Theme.key_chats_mentionIcon));
+
+            arrayList.add(new ThemeDescription(list, 0, new Class[]{UserCell.class}, new String[]{"nameTextView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+            arrayList.add(new ThemeDescription(list, 0, new Class[]{UserCell.class}, new String[]{"statusColor"}, null, null, cellDelegate, Theme.key_windowBackgroundWhiteGrayText));
+            arrayList.add(new ThemeDescription(list, 0, new Class[]{UserCell.class}, new String[]{"statusOnlineColor"}, null, null, cellDelegate, Theme.key_windowBackgroundWhiteBlueText));
 
             arrayList.add(new ThemeDescription(list, 0, new Class[]{DialogCell.class}, null, null, null, Theme.key_chats_archivePinBackground));
             arrayList.add(new ThemeDescription(list, 0, new Class[]{DialogCell.class}, null, null, null, Theme.key_chats_archiveBackground));
