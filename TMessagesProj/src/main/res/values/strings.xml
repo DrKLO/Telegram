@@ -1511,6 +1511,8 @@
     <string name="CreateNewContact">Create New Contact</string>
     <string name="NewContact">New Contact</string>
     <string name="AddToExistingContact">Add to Existing Contact</string>
+    <string name="YourKey">Your Key</string>
+    <string name="DontShareKey">Do not give the secret key to anyone!</string>
     <string name="UserBio">Bio</string>
     <string name="UserBioDetail">Add a few words about yourself</string>
     <string name="UserBioEmpty">None</string>
