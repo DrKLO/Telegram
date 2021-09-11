@@ -1,0 +1,2 @@
+C:\Users\glebm\AndroidStudioProjects\Telegram\TMessagesProj\jni\CMakeLists.txt
+C:\Users\glebm\AndroidStudioProjects\Telegram\TMessagesProj\jni\voip\CMakeLists.txt

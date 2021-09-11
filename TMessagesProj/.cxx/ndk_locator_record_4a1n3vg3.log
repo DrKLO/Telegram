@@ -1,0 +1,27 @@
+[
+  {
+    "level": "INFO",
+    "message": "android.ndkVersion from module build.gradle is [21.4.7075529]",
+    "diagnosticCode": "UNKNOWN"
+  },
+  {
+    "level": "INFO",
+    "message": "android.ndkPath from module build.gradle is not set",
+    "diagnosticCode": "UNKNOWN"
+  },
+  {
+    "level": "INFO",
+    "message": "ndk.dir in local.properties is not set",
+    "diagnosticCode": "UNKNOWN"
+  },
+  {
+    "level": "INFO",
+    "message": "Not considering ANDROID_NDK_HOME because support was removed after deprecation period.",
+    "diagnosticCode": "UNKNOWN"
+  },
+  {
+    "level": "INFO",
+    "message": "sdkFolder is C:\\Users\\glebm\\AppData\\Local\\Android\\Sdk",
+    "diagnosticCode": "UNKNOWN"
+  }
+]

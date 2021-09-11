@@ -1,0 +1,25 @@
+                    Executable : C:\Users\glebm\AppData\Local\Android\Sdk\cmake\3.10.2.4988404\bin\cmake.exe
+arguments : 
+-HC:\Users\glebm\AndroidStudioProjects\Telegram\TMessagesProj\jni
+-DCMAKE_FIND_ROOT_PATH=C:\Users\glebm\AndroidStudioProjects\Telegram\TMessagesProj\.cxx\cmake\afatDebug\prefab\x86\prefab
+-DCMAKE_BUILD_TYPE=Debug
+-DCMAKE_TOOLCHAIN_FILE=C:\Users\glebm\AppData\Local\Android\Sdk\ndk\21.4.7075529\build\cmake\android.toolchain.cmake
+-DANDROID_ABI=x86
+-DANDROID_NDK=C:\Users\glebm\AppData\Local\Android\Sdk\ndk\21.4.7075529
+-DCMAKE_ANDROID_ARCH_ABI=x86
+-DCMAKE_ANDROID_NDK=C:\Users\glebm\AppData\Local\Android\Sdk\ndk\21.4.7075529
+-DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=C:\Users\glebm\AndroidStudioProjects\Telegram\TMessagesProj\build\intermediates\cmake\afatDebug\obj\x86
+-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=C:\Users\glebm\AndroidStudioProjects\Telegram\TMessagesProj\build\intermediates\cmake\afatDebug\obj\x86
+-DCMAKE_MAKE_PROGRAM=C:\Users\glebm\AppData\Local\Android\Sdk\cmake\3.10.2.4988404\bin\ninja.exe
+-DCMAKE_SYSTEM_NAME=Android
+-DCMAKE_SYSTEM_VERSION=16
+-DANDROID_STL=c++_static
+-DANDROID_PLATFORM=android-16
+-BC:\Users\glebm\AndroidStudioProjects\Telegram\TMessagesProj\.cxx\cmake\afatDebug\x86
+-GNinja
+jvmArgs : 
+
+
+                    Build command args: []
+                    Version: 1

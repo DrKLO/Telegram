@@ -1,0 +1,1 @@
+C:\Users\glebm\AndroidStudioProjects\Telegram\TMessagesProj\build\intermediates\cmake\afatDebug\obj\x86

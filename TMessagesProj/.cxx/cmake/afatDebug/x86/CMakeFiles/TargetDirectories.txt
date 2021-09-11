@@ -1,0 +1,17 @@
+C:/Users/glebm/AndroidStudioProjects/Telegram/TMessagesProj/.cxx/cmake/afatDebug/x86/CMakeFiles/webp.dir
+C:/Users/glebm/AndroidStudioProjects/Telegram/TMessagesProj/.cxx/cmake/afatDebug/x86/CMakeFiles/flac.dir
+C:/Users/glebm/AndroidStudioProjects/Telegram/TMessagesProj/.cxx/cmake/afatDebug/x86/CMakeFiles/mozjpeg.dir
+C:/Users/glebm/AndroidStudioProjects/Telegram/TMessagesProj/.cxx/cmake/afatDebug/x86/CMakeFiles/tgnet.dir
+C:/Users/glebm/AndroidStudioProjects/Telegram/TMessagesProj/.cxx/cmake/afatDebug/x86/CMakeFiles/rlottie.dir
+C:/Users/glebm/AndroidStudioProjects/Telegram/TMessagesProj/.cxx/cmake/afatDebug/x86/CMakeFiles/sqlite.dir
+C:/Users/glebm/AndroidStudioProjects/Telegram/TMessagesProj/.cxx/cmake/afatDebug/x86/CMakeFiles/lz4.dir
+C:/Users/glebm/AndroidStudioProjects/Telegram/TMessagesProj/.cxx/cmake/afatDebug/x86/CMakeFiles/tgvoip.dir
+C:/Users/glebm/AndroidStudioProjects/Telegram/TMessagesProj/.cxx/cmake/afatDebug/x86/CMakeFiles/openh264.dir
+C:/Users/glebm/AndroidStudioProjects/Telegram/TMessagesProj/.cxx/cmake/afatDebug/x86/CMakeFiles/tgcalls.dir
+C:/Users/glebm/AndroidStudioProjects/Telegram/TMessagesProj/.cxx/cmake/afatDebug/x86/CMakeFiles/rnnoise.dir
+C:/Users/glebm/AndroidStudioProjects/Telegram/TMessagesProj/.cxx/cmake/afatDebug/x86/CMakeFiles/tgcalls_tp.dir
+C:/Users/glebm/AndroidStudioProjects/Telegram/TMessagesProj/.cxx/cmake/afatDebug/x86/CMakeFiles/voipandroid.dir
+C:/Users/glebm/AndroidStudioProjects/Telegram/TMessagesProj/.cxx/cmake/afatDebug/x86/CMakeFiles/tmessages.40.dir
+C:/Users/glebm/AndroidStudioProjects/Telegram/TMessagesProj/.cxx/cmake/afatDebug/x86/CMakeFiles/cpufeatures.dir
+C:/Users/glebm/AndroidStudioProjects/Telegram/TMessagesProj/.cxx/cmake/afatDebug/x86/CMakeFiles/edit_cache.dir
+C:/Users/glebm/AndroidStudioProjects/Telegram/TMessagesProj/.cxx/cmake/afatDebug/x86/CMakeFiles/rebuild_cache.dir

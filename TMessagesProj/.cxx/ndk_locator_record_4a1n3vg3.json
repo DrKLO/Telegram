@@ -1,0 +1,11 @@
+{
+  "ndk": "C:\\Users\\glebm\\AppData\\Local\\Android\\Sdk\\ndk\\21.4.7075529",
+  "revision": {
+    "mMajor": 21,
+    "mMinor": 4,
+    "mMicro": 7075529,
+    "mPreview": 0,
+    "mPrecision": "MICRO",
+    "mPreviewSeparator": " "
+  }
+}

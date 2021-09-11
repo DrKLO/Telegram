@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#202023">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_gravity="center"
+        android:layout_marginStart="@dimen/_24sdp"
+        android:layout_marginEnd="@dimen/_24sdp">
+
+
+        <EditText
+            android:id="@+id/auth_email"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="E-mail"
+            android:gravity="center"
+            android:textAlignment="gravity"
+            android:textColorHint="@color/widget_badge"
+            android:minHeight="@dimen/_36sdp"
+            android:background="#353537"
+            android:textColor="@color/widget_badge"/>
+        <Button
+            android:id="@+id/auth"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="@dimen/_48sdp"
+            android:textAllCaps="false"
+            android:textSize="@dimen/_16ssp"
+            android:text="Зарегистрироваться"
+            android:layout_marginTop="@dimen/_16sdp"
+            android:background="#4588B9"
+            android:layout_gravity="center"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_gravity="bottom|center"
+        android:layout_marginBottom="@dimen/_16sdp">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#5A88AB"
+            android:text="Войти в существующий аккаунт"/>
+
+    </LinearLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

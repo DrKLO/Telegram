@@ -1,0 +1,79 @@
+Checking whether the ASM_NASM compiler is GNU using "--version" did not match "(GNU assembler)|(GCC)|(Free Software Foundation)":
+yasm 1.3.0
+Compiled on Jan 11 2021.
+Copyright (c) 2001-2014 Peter Johnson and other Yasm developers.
+Run yasm --license for licensing overview and summary.
+Checking whether the ASM_NASM compiler is HP using "-V" did not match "HP C":
+yasm: warning: unrecognized option `-V'
+yasm: No input files specified
+Checking whether the ASM_NASM compiler is Intel using "--version" did not match "(ICC)":
+yasm 1.3.0
+Compiled on Jan 11 2021.
+Copyright (c) 2001-2014 Peter Johnson and other Yasm developers.
+Run yasm --license for licensing overview and summary.
+Checking whether the ASM_NASM compiler is SunPro using "-V" did not match "Sun C":
+yasm: warning: unrecognized option `-V'
+yasm: No input files specified
+Checking whether the ASM_NASM compiler is XL using "-qversion" did not match "XL C":
+yasm: warning: unrecognized option `-qversion'
+yasm: No input files specified
+Checking whether the ASM_NASM compiler is MSVC using "/?" did not match "Microsoft":
+yasm: file name already has no extension: output will be in `yasm.out'
+yasm: FATAL: Could not open input file
+Checking whether the ASM_NASM compiler is TI using "-h" did not match "Texas Instruments":
+usage: yasm [option]* file
+Options:
+    --version               show version text
+    --license               show license text
+    -h, --help              show help text
+    --arch=<arch>           select architecture (list with -a help)
+     -a <arch>
+    --parser=<parser>       select parser (list with -p help)
+     -p <parser>
+    --preproc=<preproc>     select preprocessor (list with -r help)
+     -r <preproc>
+    --oformat=<format>      select object format (list with -f help)
+     -f <format>
+    --dformat=<debug>       select debugging format (list with -g help)
+     -g <debug>
+    --lformat=<list>        select list format (list with -L help)
+     -L <list>
+    --list=<listfile>       name of list-file output
+     -l <listfile>
+    --objfile=<filename>    name of object-file output
+     -o <filename>
+    --mapfile=<filename>    name of map-file output
+    --machine=<machine>     select machine (list with -m help)
+     -m <machine>
+    --force-strict          treat all sized operands as if `strict' was used
+    -w                      inhibits warning messages
+    -W                      enables/disables warning
+    -M                      generate Makefile dependencies on stdout
+    -E <file>               redirect error messages to file
+    -s                      redirect error messages to stdout
+    -e, --preproc-only      preprocess only (writes output to stdout by default)
+    -i <path>               add include path
+    -I <path>               add include path
+    -P <filename>           pre-include file
+    -d <macro[=value]>      pre-define a macro, optionally to value
+    -D <macro[=value]>      pre-define a macro, optionally to value
+    -u <macro>              undefine a macro
+    -U <macro>              undefine a macro
+    -X <style>              select error/warning message style (`gnu' or `vc')
+    --prefix=<prefix>       prepend argument to name of all external symbols
+    --suffix=<suffix>       append argument to name of all external symbols
+    --postfix=<suffix>      append argument to name of all external symbols
+
+Files are asm sources to be assembled.
+
+Sample invocation:
+   yasm -f elf -o object.o source.asm
+
+Report bugs to bug-yasm@tortall.net
+Checking whether the ASM_NASM compiler is IAR using "" did not match "IAR Assembler":
+yasm: No input files specified
+Checking whether the ASM_NASM compiler is ARMCC using "" did not match "(ARM Compiler)|(ARM Assembler)":
+yasm: No input files specified
+Checking whether the ASM_NASM compiler is NASM using "-v" did not match "(NASM version)":
+yasm: warning: unrecognized option `-v'
+yasm: No input files specified

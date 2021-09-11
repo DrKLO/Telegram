@@ -1,0 +1,23 @@
+[
+  {
+    "level": "INFO",
+    "message": "Start JSON generation. Platform version: 16 min SDK version: x86",
+    "file": "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\jni\\CMakeLists.txt",
+    "tag": "afatDebug|x86",
+    "diagnosticCode": "UNKNOWN"
+  },
+  {
+    "level": "INFO",
+    "message": "JSON \u0027C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\x86\\android_gradle_build.json\u0027 was up-to-date",
+    "file": "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\jni\\CMakeLists.txt",
+    "tag": "afatDebug|x86",
+    "diagnosticCode": "UNKNOWN"
+  },
+  {
+    "level": "INFO",
+    "message": "JSON generation completed without problems",
+    "file": "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\jni\\CMakeLists.txt",
+    "tag": "afatDebug|x86",
+    "diagnosticCode": "UNKNOWN"
+  }
+]

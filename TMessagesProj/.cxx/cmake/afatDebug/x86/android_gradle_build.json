@@ -1,0 +1,212 @@
+{
+  "stringTable": {},
+  "buildFiles": [
+    "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\jni\\CMakeLists.txt",
+    "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\jni\\voip\\CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "C:\\Users\\glebm\\AppData\\Local\\Android\\Sdk\\cmake\\3.10.2.4988404\\bin\\ninja.exe",
+      "-C",
+      "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\x86",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "C:\\Users\\glebm\\AppData\\Local\\Android\\Sdk\\cmake\\3.10.2.4988404\\bin\\ninja.exe",
+    "-C",
+    "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\x86",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {
+    "tgcalls_tp-Debug-x86": {
+      "buildCommandComponents": [
+        "C:\\Users\\glebm\\AppData\\Local\\Android\\Sdk\\cmake\\3.10.2.4988404\\bin\\ninja.exe",
+        "-C",
+        "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\x86",
+        "tgcalls_tp"
+      ],
+      "buildType": "debug",
+      "abi": "x86",
+      "artifactName": "tgcalls_tp",
+      "output": "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\x86\\libtgcalls_tp.a"
+    },
+    "tmessages.40-Debug-x86": {
+      "buildCommandComponents": [
+        "C:\\Users\\glebm\\AppData\\Local\\Android\\Sdk\\cmake\\3.10.2.4988404\\bin\\ninja.exe",
+        "-C",
+        "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\x86",
+        "tmessages.40"
+      ],
+      "buildType": "debug",
+      "abi": "x86",
+      "artifactName": "tmessages.40",
+      "output": "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\build\\intermediates\\cmake\\afatDebug\\obj\\x86\\libtmessages.40.so",
+      "runtimeFiles": []
+    },
+    "tgcalls-Debug-x86": {
+      "buildCommandComponents": [
+        "C:\\Users\\glebm\\AppData\\Local\\Android\\Sdk\\cmake\\3.10.2.4988404\\bin\\ninja.exe",
+        "-C",
+        "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\x86",
+        "tgcalls"
+      ],
+      "buildType": "debug",
+      "abi": "x86",
+      "artifactName": "tgcalls",
+      "output": "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\x86\\libtgcalls.a"
+    },
+    "lz4-Debug-x86": {
+      "buildCommandComponents": [
+        "C:\\Users\\glebm\\AppData\\Local\\Android\\Sdk\\cmake\\3.10.2.4988404\\bin\\ninja.exe",
+        "-C",
+        "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\x86",
+        "lz4"
+      ],
+      "buildType": "debug",
+      "abi": "x86",
+      "artifactName": "lz4",
+      "output": "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\x86\\liblz4.a"
+    },
+    "flac-Debug-x86": {
+      "buildCommandComponents": [
+        "C:\\Users\\glebm\\AppData\\Local\\Android\\Sdk\\cmake\\3.10.2.4988404\\bin\\ninja.exe",
+        "-C",
+        "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\x86",
+        "flac"
+      ],
+      "buildType": "debug",
+      "abi": "x86",
+      "artifactName": "flac",
+      "output": "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\x86\\libflac.a"
+    },
+    "tgvoip-Debug-x86": {
+      "buildCommandComponents": [
+        "C:\\Users\\glebm\\AppData\\Local\\Android\\Sdk\\cmake\\3.10.2.4988404\\bin\\ninja.exe",
+        "-C",
+        "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\x86",
+        "tgvoip"
+      ],
+      "buildType": "debug",
+      "abi": "x86",
+      "artifactName": "tgvoip",
+      "output": "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\x86\\libtgvoip.a"
+    },
+    "rnnoise-Debug-x86": {
+      "buildCommandComponents": [
+        "C:\\Users\\glebm\\AppData\\Local\\Android\\Sdk\\cmake\\3.10.2.4988404\\bin\\ninja.exe",
+        "-C",
+        "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\x86",
+        "rnnoise"
+      ],
+      "buildType": "debug",
+      "abi": "x86",
+      "artifactName": "rnnoise",
+      "output": "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\x86\\librnnoise.a"
+    },
+    "mozjpeg-Debug-x86": {
+      "buildCommandComponents": [
+        "C:\\Users\\glebm\\AppData\\Local\\Android\\Sdk\\cmake\\3.10.2.4988404\\bin\\ninja.exe",
+        "-C",
+        "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\x86",
+        "mozjpeg"
+      ],
+      "buildType": "debug",
+      "abi": "x86",
+      "artifactName": "mozjpeg",
+      "output": "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\x86\\libmozjpeg.a"
+    },
+    "webp-Debug-x86": {
+      "buildCommandComponents": [
+        "C:\\Users\\glebm\\AppData\\Local\\Android\\Sdk\\cmake\\3.10.2.4988404\\bin\\ninja.exe",
+        "-C",
+        "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\x86",
+        "webp"
+      ],
+      "buildType": "debug",
+      "abi": "x86",
+      "artifactName": "webp",
+      "output": "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\x86\\libwebp.a"
+    },
+    "sqlite-Debug-x86": {
+      "buildCommandComponents": [
+        "C:\\Users\\glebm\\AppData\\Local\\Android\\Sdk\\cmake\\3.10.2.4988404\\bin\\ninja.exe",
+        "-C",
+        "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\x86",
+        "sqlite"
+      ],
+      "buildType": "debug",
+      "abi": "x86",
+      "artifactName": "sqlite",
+      "output": "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\x86\\libsqlite.a"
+    },
+    "openh264-Debug-x86": {
+      "buildCommandComponents": [
+        "C:\\Users\\glebm\\AppData\\Local\\Android\\Sdk\\cmake\\3.10.2.4988404\\bin\\ninja.exe",
+        "-C",
+        "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\x86",
+        "openh264"
+      ],
+      "buildType": "debug",
+      "abi": "x86",
+      "artifactName": "openh264",
+      "output": "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\x86\\libopenh264.a"
+    },
+    "tgnet-Debug-x86": {
+      "buildCommandComponents": [
+        "C:\\Users\\glebm\\AppData\\Local\\Android\\Sdk\\cmake\\3.10.2.4988404\\bin\\ninja.exe",
+        "-C",
+        "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\x86",
+        "tgnet"
+      ],
+      "buildType": "debug",
+      "abi": "x86",
+      "artifactName": "tgnet",
+      "output": "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\x86\\libtgnet.a"
+    },
+    "voipandroid-Debug-x86": {
+      "buildCommandComponents": [
+        "C:\\Users\\glebm\\AppData\\Local\\Android\\Sdk\\cmake\\3.10.2.4988404\\bin\\ninja.exe",
+        "-C",
+        "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\x86",
+        "voipandroid"
+      ],
+      "buildType": "debug",
+      "abi": "x86",
+      "artifactName": "voipandroid",
+      "output": "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\x86\\libvoipandroid.a"
+    },
+    "cpufeatures-Debug-x86": {
+      "buildCommandComponents": [
+        "C:\\Users\\glebm\\AppData\\Local\\Android\\Sdk\\cmake\\3.10.2.4988404\\bin\\ninja.exe",
+        "-C",
+        "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\x86",
+        "cpufeatures"
+      ],
+      "buildType": "debug",
+      "abi": "x86",
+      "artifactName": "cpufeatures",
+      "output": "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\x86\\libcpufeatures.a"
+    },
+    "rlottie-Debug-x86": {
+      "buildCommandComponents": [
+        "C:\\Users\\glebm\\AppData\\Local\\Android\\Sdk\\cmake\\3.10.2.4988404\\bin\\ninja.exe",
+        "-C",
+        "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\x86",
+        "rlottie"
+      ],
+      "buildType": "debug",
+      "abi": "x86",
+      "artifactName": "rlottie",
+      "output": "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\x86\\librlottie.a"
+    }
+  },
+  "toolchains": {},
+  "cFileExtensions": [
+    "c"
+  ],
+  "cppFileExtensions": [
+    "cc",
+    "cpp"
+  ]
+}

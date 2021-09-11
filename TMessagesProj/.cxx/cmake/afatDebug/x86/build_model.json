@@ -1,0 +1,222 @@
+{
+  "abi": "X86",
+  "info": {
+    "abi": "X86",
+    "bitness": 32,
+    "deprecated": false,
+    "default": true
+  },
+  "originalCxxBuildFolder": "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\x86",
+  "cxxBuildFolder": "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\x86",
+  "abiPlatformVersion": 16,
+  "cmake": {
+    "cmakeWrappingBaseFolder": "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cxx\\afatDebug\\x86",
+    "cmakeArtifactsBaseFolder": "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\x86",
+    "effectiveConfiguration": {
+      "name": "traditional-android-studio-cmake-environment",
+      "description": "Composite reified CMakeSettings configuration",
+      "generator": "Ninja",
+      "inheritEnvironments": [
+        "ndk"
+      ],
+      "buildRoot": "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\x86",
+      "cmakeToolchain": "C:\\Users\\glebm\\AppData\\Local\\Android\\Sdk\\ndk\\21.4.7075529\\build\\cmake\\android.toolchain.cmake",
+      "cmakeExecutable": "C:\\Users\\glebm\\AppData\\Local\\Android\\Sdk\\cmake\\3.10.2.4988404\\bin\\cmake.exe",
+      "variables": [
+        {
+          "name": "CMAKE_FIND_ROOT_PATH",
+          "value": "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\prefab\\x86\\prefab"
+        },
+        {
+          "name": "CMAKE_BUILD_TYPE",
+          "value": "Debug"
+        },
+        {
+          "name": "CMAKE_TOOLCHAIN_FILE",
+          "value": "C:\\Users\\glebm\\AppData\\Local\\Android\\Sdk\\ndk\\21.4.7075529\\build\\cmake\\android.toolchain.cmake"
+        },
+        {
+          "name": "ANDROID_ABI",
+          "value": "x86"
+        },
+        {
+          "name": "ANDROID_NDK",
+          "value": "C:\\Users\\glebm\\AppData\\Local\\Android\\Sdk\\ndk\\21.4.7075529"
+        },
+        {
+          "name": "CMAKE_ANDROID_ARCH_ABI",
+          "value": "x86"
+        },
+        {
+          "name": "CMAKE_ANDROID_NDK",
+          "value": "C:\\Users\\glebm\\AppData\\Local\\Android\\Sdk\\ndk\\21.4.7075529"
+        },
+        {
+          "name": "CMAKE_EXPORT_COMPILE_COMMANDS",
+          "value": "ON"
+        },
+        {
+          "name": "CMAKE_LIBRARY_OUTPUT_DIRECTORY",
+          "value": "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\build\\intermediates\\cmake\\afatDebug\\obj\\x86"
+        },
+        {
+          "name": "CMAKE_RUNTIME_OUTPUT_DIRECTORY",
+          "value": "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\build\\intermediates\\cmake\\afatDebug\\obj\\x86"
+        },
+        {
+          "name": "CMAKE_MAKE_PROGRAM",
+          "value": "C:\\Users\\glebm\\AppData\\Local\\Android\\Sdk\\cmake\\3.10.2.4988404\\bin\\ninja.exe"
+        },
+        {
+          "name": "CMAKE_SYSTEM_NAME",
+          "value": "Android"
+        },
+        {
+          "name": "CMAKE_SYSTEM_VERSION",
+          "value": "16"
+        },
+        {
+          "name": "ANDROID_STL",
+          "value": "c++_static"
+        },
+        {
+          "name": "ANDROID_PLATFORM",
+          "value": "android-16"
+        }
+      ]
+    },
+    "cmakeServerLogFile": "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\x86\\cmake_server_log.txt"
+  },
+  "variant": {
+    "buildSystemArgumentList": [
+      "-DANDROID_STL\u003dc++_static",
+      "-DANDROID_PLATFORM\u003dandroid-16",
+      "-j\u003d16"
+    ],
+    "cFlagsList": [],
+    "cppFlagsList": [],
+    "variantName": "afatDebug",
+    "objFolder": "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\build\\intermediates\\cmake\\afatDebug\\obj",
+    "soFolder": "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\build\\intermediates\\cmake\\afatDebug\\lib",
+    "isDebuggableEnabled": true,
+    "validAbiList": [
+      "ARMEABI_V7A",
+      "ARM64_V8A",
+      "X86",
+      "X86_64"
+    ],
+    "buildTargetSet": [],
+    "implicitBuildTargetSet": [],
+    "cmakeSettingsConfiguration": "android-gradle-plugin-predetermined-name",
+    "module": {
+      "cxxFolder": "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx",
+      "splitsAbiFilterSet": [],
+      "intermediatesFolder": "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\build\\intermediates",
+      "gradleModulePathName": ":TMessagesProj",
+      "moduleRootFolder": "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj",
+      "moduleBuildFile": "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\build.gradle",
+      "makeFile": "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\jni\\CMakeLists.txt",
+      "buildSystem": "CMAKE",
+      "ndkFolder": "C:\\Users\\glebm\\AppData\\Local\\Android\\Sdk\\ndk\\21.4.7075529",
+      "ndkVersion": "21.4.7075529",
+      "ndkSupportedAbiList": [
+        "ARMEABI_V7A",
+        "ARM64_V8A",
+        "X86",
+        "X86_64"
+      ],
+      "ndkDefaultAbiList": [
+        "ARMEABI_V7A",
+        "ARM64_V8A",
+        "X86",
+        "X86_64"
+      ],
+      "ndkDefaultStl": "LIBCXX_STATIC",
+      "ndkMetaPlatforms": {
+        "min": 16,
+        "max": 30,
+        "aliases": {
+          "20": 19,
+          "25": 24,
+          "J": 16,
+          "J-MR1": 17,
+          "J-MR2": 18,
+          "K": 19,
+          "L": 21,
+          "L-MR1": 22,
+          "M": 23,
+          "N": 24,
+          "N-MR1": 24,
+          "O": 26,
+          "O-MR1": 27,
+          "P": 28,
+          "Q": 29,
+          "R": 30
+        }
+      },
+      "ndkMetaAbiList": [
+        {
+          "abi": "ARMEABI_V7A",
+          "bitness": 32,
+          "deprecated": false,
+          "default": true
+        },
+        {
+          "abi": "ARM64_V8A",
+          "bitness": 64,
+          "deprecated": false,
+          "default": true
+        },
+        {
+          "abi": "X86",
+          "bitness": 32,
+          "deprecated": false,
+          "default": true
+        },
+        {
+          "abi": "X86_64",
+          "bitness": 64,
+          "deprecated": false,
+          "default": true
+        }
+      ],
+      "originalCmakeToolchainFile": "C:\\Users\\glebm\\AppData\\Local\\Android\\Sdk\\ndk\\21.4.7075529\\build\\cmake\\android.toolchain.cmake",
+      "cmakeToolchainFile": "C:\\Users\\glebm\\AppData\\Local\\Android\\Sdk\\ndk\\21.4.7075529\\build\\cmake\\android.toolchain.cmake",
+      "cmake": {
+        "isValidCmakeAvailable": true,
+        "cmakeExe": "C:\\Users\\glebm\\AppData\\Local\\Android\\Sdk\\cmake\\3.10.2.4988404\\bin\\cmake.exe",
+        "minimumCmakeVersion": "3.10.2",
+        "ninjaExe": "C:\\Users\\glebm\\AppData\\Local\\Android\\Sdk\\cmake\\3.10.2.4988404\\bin\\ninja.exe",
+        "isPreferCmakeFileApiEnabled": true
+      },
+      "stlSharedObjectMap": {
+        "LIBCXX_SHARED": {
+          "ARMEABI_V7A": "C:\\Users\\glebm\\AppData\\Local\\Android\\Sdk\\ndk\\21.4.7075529\\toolchains\\llvm\\prebuilt\\windows-x86_64\\sysroot\\usr\\lib\\arm-linux-androideabi\\libc++_shared.so",
+          "ARM64_V8A": "C:\\Users\\glebm\\AppData\\Local\\Android\\Sdk\\ndk\\21.4.7075529\\toolchains\\llvm\\prebuilt\\windows-x86_64\\sysroot\\usr\\lib\\aarch64-linux-android\\libc++_shared.so",
+          "X86": "C:\\Users\\glebm\\AppData\\Local\\Android\\Sdk\\ndk\\21.4.7075529\\toolchains\\llvm\\prebuilt\\windows-x86_64\\sysroot\\usr\\lib\\i686-linux-android\\libc++_shared.so",
+          "X86_64": "C:\\Users\\glebm\\AppData\\Local\\Android\\Sdk\\ndk\\21.4.7075529\\toolchains\\llvm\\prebuilt\\windows-x86_64\\sysroot\\usr\\lib\\x86_64-linux-android\\libc++_shared.so"
+        },
+        "LIBCXX_STATIC": {},
+        "NONE": {},
+        "SYSTEM": {}
+      },
+      "project": {
+        "rootBuildGradleFolder": "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram",
+        "cxxFolder": "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\.cxx",
+        "compilerSettingsCacheFolder": "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\.cxx",
+        "sdkFolder": "C:\\Users\\glebm\\AppData\\Local\\Android\\Sdk",
+        "isNativeCompilerSettingsCacheEnabled": false,
+        "isBuildOnlyTargetAbiEnabled": true,
+        "isCmakeBuildCohabitationEnabled": false,
+        "isPrefabEnabled": false,
+        "isV2NativeModelEnabled": true
+      },
+      "nativeBuildOutputLevel": "QUIET"
+    },
+    "prefabDirectory": "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\prefab"
+  },
+  "buildSettings": {
+    "environmentVariables": []
+  },
+  "prefabFolder": "C:\\Users\\glebm\\AndroidStudioProjects\\Telegram\\TMessagesProj\\.cxx\\cmake\\afatDebug\\prefab\\x86"
+}
