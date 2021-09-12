@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <EditText
+        android:id="@+id/input_partner_id"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/HintPartnerId"
+        android:gravity="center"
+        android:textAlignment="gravity"
+        android:textColorHint="@color/widget_badge"
+        android:minHeight="@dimen/_36sdp"
+        android:background="#353537"
+        android:textColor="@color/widget_badge"/>
+
+    <EditText
+        android:id="@+id/input_rating"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:hint="@string/HintRating"
+        android:gravity="center"
+        android:textAlignment="gravity"
+        android:textColorHint="@color/widget_badge"
+        android:minHeight="@dimen/_36sdp"
+        android:background="#353537"
+        android:textColor="@color/widget_badge"/>
+
+    <Button
+        android:id="@+id/btn_vote"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="@dimen/_48sdp"
+        android:textAllCaps="false"
+        android:textSize="@dimen/_16ssp"
+        android:text="@string/Vote"
+        android:layout_marginTop="@dimen/_16sdp"
+        android:background="#4588B9"
+        android:layout_gravity="center"/>
+
+</LinearLayout>

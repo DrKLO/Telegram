@@ -29,6 +29,8 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.view.UserAreaBottomView;
+import org.telegram.ui.view.UserAreaInputView;
 
 import java.util.ArrayList;
 
@@ -36,8 +38,8 @@ public class UserAreaActivity extends BaseFragment {
 
     public class GoldRoundedRect extends View {
 
-        private final int HEIGHT = AndroidUtilities.dp(240);
-        private final int WIDTH = AndroidUtilities.dp(420);
+        private final int HEIGHT = AndroidUtilities.dp(250);
+        private final int WIDTH = AndroidUtilities.dp(360);
 
         private final Paint paint = new Paint();
         private final RectF rect = new RectF(0, 0, WIDTH, HEIGHT);
@@ -75,6 +77,22 @@ public class UserAreaActivity extends BaseFragment {
         private TextView smallRatingTextView;
         private Button boostBtn;
 
+        public void setRating(String rating) {
+            ratingTextView.setText(rating);
+        }
+
+        public void setRatingSmall(String rating) {
+            smallRatingTextView.setText(rating);
+        }
+
+        public String setOnCopyClickListener() {
+            return ratingTextView.getText().toString();
+        }
+
+        public void setOnBoostClickListener(OnClickListener l) {
+            boostBtn.setOnClickListener(l);
+        }
+
         public CardCell(Context context) {
             super(context);
 
@@ -89,19 +107,22 @@ public class UserAreaActivity extends BaseFragment {
             partnerIdTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             partnerIdTextView.setTextColor(Theme.getColor(Theme.key_wallet_whiteText));
             partnerIdTextView.setGravity(Gravity.CENTER);
+            partnerIdTextView.setText(R.string.PartnerId);
             linearLayout.addView(partnerIdTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
 
             clickToCopyTextView = new TextView(context);
             clickToCopyTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             clickToCopyTextView.setTextColor(Theme.getColor(Theme.key_wallet_whiteText));
             clickToCopyTextView.setGravity(Gravity.CENTER);
+            clickToCopyTextView.setText(R.string.ClickToCopy);
             linearLayout.addView(clickToCopyTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
 
             ratingInSystemTextView = new TextView(context);
             ratingInSystemTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             ratingInSystemTextView.setTextColor(Theme.getColor(Theme.key_wallet_whiteText));
             ratingInSystemTextView.setGravity(Gravity.CENTER);
-            linearLayout.addView(ratingInSystemTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 60, 0, 0));
+            ratingInSystemTextView.setText(R.string.RatingIsGold);
+            linearLayout.addView(ratingInSystemTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 24, 0, 0));
 
             ratingTextView = new TextView(context);
             ratingTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 23);
@@ -113,30 +134,20 @@ public class UserAreaActivity extends BaseFragment {
             smallRatingTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             smallRatingTextView.setTextColor(Theme.getColor(Theme.key_wallet_whiteText));
             smallRatingTextView.setGravity(Gravity.CENTER);
-            linearLayout.addView(smallRatingTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 40, 0, 0));
+            linearLayout.addView(smallRatingTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 16, 0, 0));
 
             boostBtn = new Button(context);
-            boostBtn.setBackgroundResource(R.drawable.btnshadow);
-            linearLayout.addView(boostBtn, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 40, 0, 0));
-
-            setInitialValues();
+            boostBtn.setAllCaps(false);
+            boostBtn.setBackgroundColor(getResources().getColor(R.color.wallet_holo_blue_light));
+            boostBtn.setTextSize(22);
+            boostBtn.setText(R.string.Boost);
+            linearLayout.addView(boostBtn, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, AndroidUtilities.dp(26), 16, AndroidUtilities.dp(26), 0));
         }
-
-        public void setInitialValues() {
-            partnerIdTextView.setText("Partner ID");
-            clickToCopyTextView.setText("Click to Copy");
-
-            ratingInSystemTextView.setText("Ваш рейтинг в системе - Gold");
-            ratingTextView.setText("100.000.000.000");
-            smallRatingTextView.setText("000100000000000");
-
-            boostBtn.setText("Ускорить");
-        }
-
     }
 
-    private TextView helpTextView;
     private CardCell cardCell;
+    private UserAreaInputView inputView;
+    private UserAreaBottomView bottomView;
 
     @Override
     public View createView(Context context) {
@@ -153,20 +164,16 @@ public class UserAreaActivity extends BaseFragment {
         fragmentView = new LinearLayout(context);
         LinearLayout linearLayout = (LinearLayout) fragmentView;
         linearLayout.setOrientation(LinearLayout.VERTICAL);
-        linearLayout.setGravity(Gravity.CENTER_HORIZONTAL);
 
         fragmentView.setOnTouchListener((v, event) -> true);
 
         cardCell = new CardCell(context);
-        linearLayout.addView(cardCell, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 90, 0, 0));
+        inputView = new UserAreaInputView(context);
+        bottomView = new UserAreaBottomView(context);
 
-        helpTextView = new TextView(context);
-        helpTextView.setFocusable(true);
-        helpTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 21);
-        helpTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText));
-        helpTextView.setGravity(Gravity.CENTER);
-        helpTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString("DontShareKey", R.string.DontShareKey)));
-        linearLayout.addView(helpTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 80, 60, 80, 0));
+        linearLayout.addView(cardCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, 0, AndroidUtilities.dp(16), 0, 0));
+        linearLayout.addView(inputView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, AndroidUtilities.dp(20), AndroidUtilities.dp(16), AndroidUtilities.dp(20), 0));
+        linearLayout.addView(bottomView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 0, AndroidUtilities.dp(26), 0, 0));
 
         return fragmentView;
     }
@@ -181,8 +188,6 @@ public class UserAreaActivity extends BaseFragment {
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon));
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle));
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector));
-
-        themeDescriptions.add(new ThemeDescription(helpTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlueText));
 
         return themeDescriptions;
     }

@@ -1511,8 +1511,21 @@
     <string name="CreateNewContact">Create New Contact</string>
     <string name="NewContact">New Contact</string>
     <string name="AddToExistingContact">Add to Existing Contact</string>
+
     <string name="YourKey">Your Key</string>
     <string name="DontShareKey">Do not give the secret key to anyone!</string>
+
+    <string name="PartnerId">Partner ID</string>
+    <string name="ClickToCopy">Click to Copy</string>
+    <string name="RatingIsGold">Your rating - Gold</string>
+    <string name="Boost">Boost</string>
+    <string name="HintPartnerId">enter partner id</string>
+    <string name="HintRating">enter rating</string>
+    <string name="Vote">Проголосовать</string>
+    <string name="GetSecretKey">Get secret key</string>
+    <string name="HintInfo">info</string>
+    <string name="HintSupport">support</string>
+
     <string name="UserBio">Bio</string>
     <string name="UserBioDetail">Add a few words about yourself</string>
     <string name="UserBioEmpty">None</string>

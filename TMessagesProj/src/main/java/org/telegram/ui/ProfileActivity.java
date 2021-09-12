@@ -2647,8 +2647,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 presentFragment(new ChangeUsernameActivity());
             } else if (position == bioRow) {
                 if (userInfo != null) {
-                    presentFragment(new UserAreaActivity());
-                    //presentFragment(new ChangeBioActivity());
+                    presentFragment(new ChangeBioActivity());
                 }
             } else if (position == numberRow) {
                 presentFragment(new ActionIntroActivity(ActionIntroActivity.ACTION_TYPE_CHANGE_PHONE_NUMBER));

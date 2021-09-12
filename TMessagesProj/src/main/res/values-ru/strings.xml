@@ -3,4 +3,13 @@
     <string name="YourKey">Ваш ключ</string>
     <string name="DontShareKey">Никому не сообщайте секретный ключ!</string>
 
+    <string name="RatingIsGold">Ваш рейтинг в системе - Gold</string>
+    <string name="Boost">Ускорить</string>
+    <string name="HintPartnerId">введите id партнера</string>
+    <string name="HintRating">введите кол-во рейтинга</string>
+    <string name="Vote">Проголосовать</string>
+    <string name="GetSecretKey">Получить секретный ключ</string>
+    <string name="HintInfo">информация</string>
+    <string name="HintSupport">поддержка</string>
+
 </resources>
