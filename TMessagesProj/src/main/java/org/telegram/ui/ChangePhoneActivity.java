@@ -379,8 +379,8 @@ public class ChangePhoneActivity extends BaseFragment {
             addView(countryButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36, 0, 0, 0, 14));
             countryButton.setOnClickListener(view -> {
                 CountrySelectActivity fragment = new CountrySelectActivity(true);
-                fragment.setCountrySelectActivityDelegate((name, shortName) -> {
-                    selectCountry(name);
+                fragment.setCountrySelectActivityDelegate((country) -> {
+                    selectCountry(country.name);
                     AndroidUtilities.runOnUIThread(() -> AndroidUtilities.showKeyboard(phoneField), 300);
                     phoneField.requestFocus();
                     phoneField.setSelection(phoneField.length());

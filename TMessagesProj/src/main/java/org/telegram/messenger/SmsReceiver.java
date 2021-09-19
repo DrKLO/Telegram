@@ -47,7 +47,7 @@ public class SmsReceiver extends BroadcastReceiver {
             if (matcher.find()) {
                 String code = matcher.group(0).replace("-", "");
                 if (code.length() >= 3) {
-                    if (preferences != null && hash != null) {
+                    if (hash != null) {
                         preferences.edit().putString("sms_hash_code", hash + "|" + code).commit();
                     }
                     AndroidUtilities.runOnUIThread(() -> NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didReceiveSmsCode, code));

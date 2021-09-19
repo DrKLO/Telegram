@@ -281,8 +281,8 @@ public class StickerMasksAlert extends BottomSheet implements NotificationCenter
         }
     }
 
-    public StickerMasksAlert(Context context, boolean isVideo) {
-        super(context, true);
+    public StickerMasksAlert(Context context, boolean isVideo, Theme.ResourcesProvider resourcesProvider) {
+        super(context, true, resourcesProvider);
         behindKeyboardColorKey = null;
         behindKeyboardColor = 0xff252525;
         useLightStatusBar = false;
@@ -460,7 +460,7 @@ public class StickerMasksAlert extends BottomSheet implements NotificationCenter
 
             @Override
             public boolean onInterceptTouchEvent(MotionEvent event) {
-                boolean result = ContentPreviewViewer.getInstance().onInterceptTouchEvent(event, gridView, containerView.getMeasuredHeight(), contentPreviewViewerDelegate);
+                boolean result = ContentPreviewViewer.getInstance().onInterceptTouchEvent(event, gridView, containerView.getMeasuredHeight(), contentPreviewViewerDelegate, resourcesProvider);
                 return super.onInterceptTouchEvent(event) || result;
             }
         };
@@ -517,7 +517,7 @@ public class StickerMasksAlert extends BottomSheet implements NotificationCenter
         gridView.setGlowColor(0xff252525);
         stickersSearchGridAdapter = new StickersSearchGridAdapter(context);
         gridView.setAdapter(stickersGridAdapter = new StickersGridAdapter(context));
-        gridView.setOnTouchListener((v, event) -> ContentPreviewViewer.getInstance().onTouch(event, gridView, containerView.getMeasuredHeight(), stickersOnItemClickListener, contentPreviewViewerDelegate));
+        gridView.setOnTouchListener((v, event) -> ContentPreviewViewer.getInstance().onTouch(event, gridView, containerView.getMeasuredHeight(), stickersOnItemClickListener, contentPreviewViewerDelegate, resourcesProvider));
         stickersOnItemClickListener = (view, position) -> {
             if (!(view instanceof StickerEmojiCell)) {
                 return;
@@ -530,7 +530,7 @@ public class StickerMasksAlert extends BottomSheet implements NotificationCenter
         gridView.setOnItemClickListener(stickersOnItemClickListener);
         containerView.addView(gridView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
-        stickersTab = new ScrollSlidingTabStrip(context) {
+        stickersTab = new ScrollSlidingTabStrip(context, resourcesProvider) {
             @Override
             public boolean onInterceptTouchEvent(MotionEvent ev) {
                 if (getParent() != null) {
@@ -1057,7 +1057,7 @@ public class StickerMasksAlert extends BottomSheet implements NotificationCenter
                     view = new EmptyCell(context);
                     break;
                 case 2:
-                    StickerSetNameCell cell = new StickerSetNameCell(context, false);
+                    StickerSetNameCell cell = new StickerSetNameCell(context, false, resourcesProvider);
                     cell.setTitleColor(0xff888888);
                     view = cell;
                     break;
@@ -1464,7 +1464,7 @@ public class StickerMasksAlert extends BottomSheet implements NotificationCenter
                     view = new EmptyCell(context);
                     break;
                 case 2:
-                    view = new StickerSetNameCell(context, false);
+                    view = new StickerSetNameCell(context, false, resourcesProvider);
                     break;
                 case 4:
                     view = new View(context);

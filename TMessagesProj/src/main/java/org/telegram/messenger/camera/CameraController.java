@@ -239,6 +239,7 @@ public class CameraController implements MediaRecorder.OnInfoListener {
                     NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.cameraInitied);
                 });
             } catch (Exception e) {
+                FileLog.e(e);
                 AndroidUtilities.runOnUIThread(() -> {
                     onFinishCameraInitRunnables.clear();
                     loadingCameras = false;
@@ -247,7 +248,6 @@ public class CameraController implements MediaRecorder.OnInfoListener {
                         AndroidUtilities.runOnUIThread(() -> initCamera(onInitRunnable, true), 1000);
                     }
                 });
-
             }
         });
     }

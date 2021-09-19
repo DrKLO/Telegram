@@ -12,6 +12,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -57,6 +58,7 @@ public class ActionBarPopupWindow extends PopupWindow {
     private boolean isClosingAnimated;
     private int currentAccount = UserConfig.selectedAccount;
     private boolean pauseNotifications;
+    private long outEmptyTime = -1;
 
     static {
         Field f = null;
@@ -103,19 +105,25 @@ public class ActionBarPopupWindow extends PopupWindow {
         protected Drawable backgroundDrawable;
 
         private boolean fitItems;
+        private final Theme.ResourcesProvider resourcesProvider;
 
         public ActionBarPopupWindowLayout(Context context) {
-            this(context, R.drawable.popup_fixed_alert2);
+            this(context, null);
         }
 
-        public ActionBarPopupWindowLayout(Context context, int resId) {
+        public ActionBarPopupWindowLayout(Context context, Theme.ResourcesProvider resourcesProvider) {
+            this(context, R.drawable.popup_fixed_alert2, resourcesProvider);
+        }
+
+        public ActionBarPopupWindowLayout(Context context, int resId, Theme.ResourcesProvider resourcesProvider) {
             super(context);
+            this.resourcesProvider = resourcesProvider;
 
             backgroundDrawable = getResources().getDrawable(resId).mutate();
             if (backgroundDrawable != null) {
                 backgroundDrawable.getPadding(bgPaddings);
             }
-            setBackgroundColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground));
+            setBackgroundColor(getThemedColor(Theme.key_actionBarDefaultSubmenuBackground));
 
             setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8));
             setWillNotDraw(false);
@@ -422,6 +430,11 @@ public class ActionBarPopupWindow extends PopupWindow {
                 }
             }
         }
+
+        private int getThemedColor(String key) {
+            Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+            return color != null ? color : Theme.getColor(key);
+        }
     }
 
     public ActionBarPopupWindow() {
@@ -616,20 +629,34 @@ public class ActionBarPopupWindow extends PopupWindow {
         isClosingAnimated = false;
         if (animationEnabled && animated) {
             isClosingAnimated = true;
-            ActionBarPopupWindowLayout content = (ActionBarPopupWindowLayout) getContentView();
-            if (content.itemAnimators != null && !content.itemAnimators.isEmpty()) {
-                for (int a = 0, N = content.itemAnimators.size(); a < N; a++) {
-                    AnimatorSet animatorSet = content.itemAnimators.get(a);
-                    animatorSet.removeAllListeners();
-                    animatorSet.cancel();
+            ViewGroup viewGroup = (ViewGroup) getContentView();
+            ActionBarPopupWindowLayout content = null;
+            for (int i = 0; i < viewGroup.getChildCount(); i++) {
+                if (viewGroup.getChildAt(i) instanceof ActionBarPopupWindowLayout) {
+                    content = (ActionBarPopupWindowLayout) viewGroup.getChildAt(i);
                 }
-                content.itemAnimators.clear();
+            }
+            if (content != null) {
+                if (content.itemAnimators != null && !content.itemAnimators.isEmpty()) {
+                    for (int a = 0, N = content.itemAnimators.size(); a < N; a++) {
+                        AnimatorSet animatorSet = content.itemAnimators.get(a);
+                        animatorSet.removeAllListeners();
+                        animatorSet.cancel();
+                    }
+                    content.itemAnimators.clear();
+                }
             }
             windowAnimatorSet = new AnimatorSet();
-            windowAnimatorSet.playTogether(
-                    ObjectAnimator.ofFloat(content, View.TRANSLATION_Y, AndroidUtilities.dp(content.shownFromBotton ? 5 : -5)),
-                    ObjectAnimator.ofFloat(content, View.ALPHA, 0.0f));
-            windowAnimatorSet.setDuration(dismissAnimationDuration);
+            if (outEmptyTime > 0) {
+                windowAnimatorSet.playTogether(ValueAnimator.ofFloat(0, 1f));
+                windowAnimatorSet.setDuration(outEmptyTime);
+            } else {
+                windowAnimatorSet.playTogether(
+                        ObjectAnimator.ofFloat(viewGroup, View.TRANSLATION_Y, AndroidUtilities.dp((content != null && content.shownFromBotton) ? 5 : -5)),
+                        ObjectAnimator.ofFloat(viewGroup, View.ALPHA, 0.0f));
+                windowAnimatorSet.setDuration(dismissAnimationDuration);
+            }
+
             windowAnimatorSet.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
@@ -659,5 +686,9 @@ public class ActionBarPopupWindow extends PopupWindow {
             }
             unregisterListener();
         }
+    }
+
+    public void setEmptyOutAnimation(long time) {
+        outEmptyTime = time;
     }
 }

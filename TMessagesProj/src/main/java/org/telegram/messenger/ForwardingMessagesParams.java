@@ -22,13 +22,13 @@ public class ForwardingMessagesParams {
     public boolean willSeeSenders;
     public boolean multiplyUsers;
 
-    public ArrayList<TLRPC.TL_pollAnswerVoters> pollChoosenAnswers = new ArrayList();
+    public ArrayList<TLRPC.TL_pollAnswerVoters> pollChoosenAnswers = new ArrayList<>();
 
     public ForwardingMessagesParams(ArrayList<MessageObject> messages, long newDialogId) {
         this.messages = messages;
         hasCaption = false;
         hasSenders = false;
-        isSecret = DialogObject.isSecretDialogId(newDialogId);
+        isSecret = DialogObject.isEncryptedDialog(newDialogId);
         ArrayList<String> hiddenSendersName = new ArrayList<>();
         for (int i = 0; i < messages.size(); i++) {
             MessageObject messageObject = messages.get(i);
@@ -53,10 +53,11 @@ public class ForwardingMessagesParams {
             message.reply_markup  =  messageObject.messageOwner.reply_markup;
             message.post = messageObject.messageOwner.post;
             message.legacy = messageObject.messageOwner.legacy;
+            message.restriction_reason = messageObject.messageOwner.restriction_reason;
 
             TLRPC.MessageFwdHeader header = null;
 
-            int clientUserId = UserConfig.getInstance(messageObject.currentAccount).clientUserId;
+            long clientUserId = UserConfig.getInstance(messageObject.currentAccount).clientUserId;
             if (!isSecret) {
                 if (messageObject.messageOwner.fwd_from != null) {
                     header = messageObject.messageOwner.fwd_from;
@@ -135,10 +136,10 @@ public class ForwardingMessagesParams {
             }
         }
 
-        ArrayList<Integer> uids = new ArrayList<>();
-        for (int a = 1; a < messages.size(); a++) {
+        ArrayList<Long> uids = new ArrayList<>();
+        for (int a = 0; a < messages.size(); a++) {
             MessageObject object = messages.get(a);
-            int uid;
+            long uid;
             if (object.isFromUser()) {
                 uid = object.messageOwner.from_id.user_id;
             } else {

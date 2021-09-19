@@ -12,7 +12,6 @@ import android.content.Context;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
-import android.util.SparseArray;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -40,16 +39,17 @@ import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import androidx.collection.LongSparseArray;
 import androidx.recyclerview.widget.RecyclerView;
 
 public class SearchAdapter extends RecyclerListView.SelectionAdapter {
 
     private Context mContext;
-    private SparseArray<TLRPC.User> ignoreUsers;
+    private LongSparseArray<TLRPC.User> ignoreUsers;
     private ArrayList<Object> searchResult = new ArrayList<>();
     private ArrayList<CharSequence> searchResultNames = new ArrayList<>();
     private SearchAdapterHelper searchAdapterHelper;
-    private SparseArray<?> checkedMap;
+    private LongSparseArray<?> checkedMap;
     private Timer searchTimer;
     private boolean allowUsernameSearch;
     private boolean useUserCell;
@@ -58,13 +58,13 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
     private boolean allowBots;
     private boolean allowSelf;
     private boolean allowPhoneNumbers;
-    private int channelId;
+    private long channelId;
     private boolean searchInProgress;
     private int searchReqId;
     private int searchPointer;
 
 
-    public SearchAdapter(Context context, SparseArray<TLRPC.User> arg1, boolean usernameSearch, boolean mutual, boolean chats, boolean bots, boolean self, boolean phones, int searchChannelId) {
+    public SearchAdapter(Context context, LongSparseArray<TLRPC.User> arg1, boolean usernameSearch, boolean mutual, boolean chats, boolean bots, boolean self, boolean phones, int searchChannelId) {
         mContext = context;
         ignoreUsers = arg1;
         onlyMutual = mutual;
@@ -85,13 +85,13 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
             }
 
             @Override
-            public SparseArray<TLRPC.User> getExcludeUsers() {
+            public LongSparseArray<TLRPC.User> getExcludeUsers() {
                 return ignoreUsers;
             }
         });
     }
 
-    public void setCheckedMap(SparseArray<?> map) {
+    public void setCheckedMap(LongSparseArray<?> map) {
         checkedMap = map;
     }
 
@@ -312,7 +312,7 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
             case 0: {
                 TLObject object = (TLObject) getItem(position);
                 if (object != null) {
-                    int id = 0;
+                    long id = 0;
                     String un = null;
                     boolean self = false;
                     if (object instanceof TLRPC.User) {

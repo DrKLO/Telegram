@@ -12,14 +12,20 @@ public class ForegroundColorSpanThemable extends CharacterStyle implements Updat
 
     private int color;
     private String colorKey;
+    private final Theme.ResourcesProvider resourcesProvider;
 
     public ForegroundColorSpanThemable(String colorKey) {
+        this(colorKey, null);
+    }
+
+    public ForegroundColorSpanThemable(String colorKey, Theme.ResourcesProvider resourcesProvider) {
         this.colorKey = colorKey;
+        this.resourcesProvider = resourcesProvider;
     }
 
     @Override
     public void updateDrawState(@NonNull TextPaint textPaint) {
-        color = Theme.getColor(colorKey);
+        color = Theme.getColor(colorKey, resourcesProvider);
         if (textPaint.getColor() != color) {
             textPaint.setColor(color);
         }

@@ -900,6 +900,10 @@
     <string name="OpenBot">OPEN BOT</string>
     <string name="SponsoredMessage">sponsored</string>
     <string name="SponsoredMessageInfo">What are sponsored\nmessages?</string>
+    <string name="SponsoredMessageInfoDescription1">Unlike other apps, Telegram never uses your private data to target ads. You are seeing this message only because someone chose this public one-to-many channel as a space to promote their messages. This means that no user data is mined or analyzed to display ads, and every user viewing a channel on Telegram sees the same sponsored message.</string>
+    <string name="SponsoredMessageInfoDescription2">Unlike other apps, Telegram doesn\'t track whether you tapped on a sponsored message and doesn\'t profile you based on your activity. We also prevent external links in sponsored messages to ensure that third parties can’t spy on our users. We believe that everyone has the right to privacy, and technological platforms should respect that.</string>
+    <string name="SponsoredMessageInfoDescription3">Telegram offers free and unlimited service to hundreds of millions of users, which involves significant server and traffic costs. In order to remain independent and stay true to its values, Telegram developed a paid tool to promote messages with user privacy in mind. We welcome responsible advertisers at:</string>
+    <string name="SponsoredMessageInfoDescription4">Ads should no longer be synonymous with abuse of user privacy. Let us redefine how a tech company should operate – together.</string>
     <string name="SponsoredMessageAlertTitle">Sponsored messages</string>
     <string name="SponsoredMessageAlertText">See https://telegram.org</string>
     <string name="SponsoredMessageAlertLearnMore">LEARN MORE</string>
@@ -3708,8 +3712,8 @@
     <string name="VoipChannelStopRecordingText">Do you want to stop recording this live stream?</string>
     <string name="VoipGroupStartRecordingTitle">Start recording</string>
     <string name="VoipGroupStartRecordingText">Do you want to start recording this chat and save the result into an audio file?\n\nOther members will see that the chat is being recorded.</string>
-    <string name="VoipGroupStartRecordingVideoText">Do you want to start recording this chat and save the result into an video file?\n\nOther members will see that the chat is being recorded.</string>
-    <string name="VoipChannelStartRecordingVideoText">Do you want to start recording this live stream and save the result into an video file?\n\nOther members will see that the stream is being recorded.</string>
+    <string name="VoipGroupStartRecordingVideoText">Do you want to start recording this chat and save the result into a video file?\n\nOther members will see that the chat is being recorded.</string>
+    <string name="VoipChannelStartRecordingVideoText">Do you want to start recording this live stream and save the result into a video file?\n\nOther members will see that the stream is being recorded.</string>
     <string name="VoipGroupSaveFileHint">Recording Title</string>
     <string name="VoipGroupAudioRecordSaved">Audio saved to **Saved Messages**.</string>
     <string name="VoipGroupVideoRecordSaved">Video saved to **Saved Messages**.</string>
@@ -3793,8 +3797,8 @@
     <string name="VoipNoiseCancellationEnabled">Enabled</string>
     <string name="VoipNoiseCancellationDisabled">Disabled</string>
     <string name="VoipVideoNotAvailable">Video is only available\nfor the first %1$s</string>
-    <string name="VoipVideoNotAvailableAdmin">The voice chat is over %1$s.\nNew participants only have access to the audio stream.</string>
-    <string name="VoipChannelVideoNotAvailableAdmin">The live stream is over %1$s.\nNew participants only have access to the audio stream.</string>
+    <string name="VoipVideoNotAvailableAdmin">The video chat has over %1$s.\nNew participants must use the latest version of Telegram to view video.</string>
+    <string name="VoipChannelVideoNotAvailableAdmin">The live stream is over %1$s.\nNew participants must use the latest version of Telegram to view video.</string>
     <string name="VoipRecordAudio">AUDIO ONLY</string>
     <string name="VoipRecordPortrait">PORTRAIT VIDEO</string>
     <string name="VoipRecordLandscape">LANDSCAPE VIDEO</string>
@@ -4501,6 +4505,20 @@
     <string name="UnpinnedDialogsCount_few">%1$d Dialogs unpinned</string>
     <string name="UnpinnedDialogsCount_many">%1$d Dialogs unpinned</string>
     <string name="UnpinnedDialogsCount_other">%1$d Dialogs unpinned</string>
+
+    <string name="MessageSeen_zero">%1$d Seen</string>
+    <string name="MessageSeen_one">Seen</string>
+    <string name="MessageSeen_two">%1$d Seen</string>
+    <string name="MessageSeen_few">%1$d Seen</string>
+    <string name="MessageSeen_many">%1$d Seen</string>
+    <string name="MessageSeen_other">%1$d Seen</string>
+
+    <string name="MessagePlayed_zero">%1$d Played</string>
+    <string name="MessagePlayed_one">Played</string>
+    <string name="MessagePlayed_two">%1$d Played</string>
+    <string name="MessagePlayed_few">%1$d Played</string>
+    <string name="MessagePlayed_many">%1$d Played</string>
+    <string name="MessagePlayed_other">%1$d Played</string>
     <!--accessibility descriptions-->
     <string name="AccDescrGroup">Group</string>
     <string name="AccDescrChannel">Channel</string>
@@ -4701,4 +4719,28 @@
     <string name="ShowCaption">Show caption</string>
     <string name="HideCaption">Hide caption</string>
     <string name="TapForForwardingOptions">Tap here for forwarding options</string>
+    <string name="ChangeColors">Change colors</string>
+    <string name="SelectTheme">Select theme</string>
+    <string name="ChatApplyTheme">Apply Theme</string>
+    <string name="ChatResetTheme">Reset Theme</string>
+    <string name="ChatNoTheme">No Theme</string>
+    <string name="ChatThemeChangedYou">You changed the chat theme to %1$s</string>
+    <string name="ChatThemeChangedTo">%1$s changed the chat theme to %2$s</string>
+    <string name="ChatThemeDisabled">%1$s disabled the chat theme</string>
+    <string name="ChatThemeDisabledYou">You disabled the chat theme</string>
+    <string name="ChatThemeSaveDialogTitle">Save changes?</string>
+    <string name="ChatThemeSaveDialogText">Do you want to apply the new theme for this chat?</string>
+    <string name="ChatThemeSaveDialogApply">Apply</string>
+    <string name="ChatThemeSaveDialogDiscard">Discard</string>
+    <string name="OptimizingTelegram">Optimizing Telegram...</string>
+    <string name="OptimizingTelegramDescription1">This may take a while, depending on the size of the database. Please keep the app open until the process is finished.</string>
+    <string name="OptimizingTelegramDescription2">Sorry for the inconvenience.</string>
+    <string name="DoNoSetTheme">Do No Set Theme</string>
+    <string name="EnjoyngAnimations">**oo** watching %1$s</string>
+    <string name="IsEnjoyngAnimations">%1$s is **oo** watching %2$s</string>
+    <string name="ThemeAlsoAppliedForHint">Theme will be also applied for **%s**.</string>
+    <string name="ThemeAlsoDisabledForHint">Theme will be also disabled for **%s**.</string>
+    <string name="MessageSeenTooltipMessage">To protect privacy, views are only stored for **7 days**</string>
+    <string name="EmojiInteractionTapHint">If **%s** were viewing the chat now, they would also see this animation.</string>
+    <string name="ChatThemeDayNightSwitchTooltip">Tap here to view how **%s** will see this theme when using night mode.</string>
 </resources>

@@ -50,6 +50,7 @@ public class Emoji {
     public static HashMap<String, String> emojiColor = new HashMap<>();
     private static boolean recentEmojiLoaded;
     private static Runnable invalidateUiRunnable = () -> NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.emojiLoaded);
+    public static float emojiDrawingYOffset;
 
     private final static int MAX_RECENT_EMOJI_COUNT = 48;
 
@@ -544,7 +545,16 @@ public class Emoji {
                 restoreAlpha = true;
                 getDrawable().setAlpha(paint.getAlpha());
             }
+            boolean needRestore = false;
+            if (emojiDrawingYOffset != 0) {
+                needRestore = true;
+                canvas.save();
+                canvas.translate(0, emojiDrawingYOffset);
+            }
             super.draw(canvas, text, start, end, x, top, y, bottom, paint);
+            if (needRestore) {
+                canvas.restore();
+            }
             if (restoreAlpha) {
                 getDrawable().setAlpha(255);
             }

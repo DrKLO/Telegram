@@ -161,15 +161,15 @@ public class BubbleActivity extends Activity implements ActionBarLayout.ActionBa
         }
         BaseFragment chatActivity = null;
         if (intent.getAction() != null && intent.getAction().startsWith("com.tmessages.openchat")) {
-            int chatId = intent.getIntExtra("chatId", 0);
-            int userId = intent.getIntExtra("userId", 0);
+            long chatId = intent.getLongExtra("chatId", 0);
+            long userId = intent.getLongExtra("userId", 0);
             Bundle args = new Bundle();
             if (userId != 0) {
                 dialogId = userId;
-                args.putInt("user_id", userId);
+                args.putLong("user_id", userId);
             } else {
                 dialogId = -chatId;
-                args.putInt("chat_id", chatId);
+                args.putLong("chat_id", chatId);
             }
             chatActivity = new ChatActivity(args);
             chatActivity.setInBubbleMode(true);

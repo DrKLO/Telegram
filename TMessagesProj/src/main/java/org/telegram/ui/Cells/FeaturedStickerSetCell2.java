@@ -61,9 +61,11 @@ public class FeaturedStickerSetCell2 extends FrameLayout {
     private TLRPC.StickerSetCovered stickersSet;
     private boolean isInstalled;
     private boolean needDivider;
+    private final Theme.ResourcesProvider resourcesProvider;
 
-    public FeaturedStickerSetCell2(Context context) {
+    public FeaturedStickerSetCell2(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
 
         textView = new TextView(context);
         textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -317,5 +319,10 @@ public class FeaturedStickerSetCell2 extends FrameLayout {
         descriptions.add(new ThemeDescription(listView, 0, new Class[]{FeaturedStickerSetCell.class}, Theme.dividerPaint, null, null, Theme.key_divider));
         descriptions.add(new ThemeDescription(null, 0, null, null, null, delegate, Theme.key_featuredStickers_buttonProgress));
         descriptions.add(new ThemeDescription(null, 0, null, null, null, delegate, Theme.key_featuredStickers_addButtonPressed));
+    }
+
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
     }
 }

@@ -18,7 +18,6 @@ import android.widget.FrameLayout;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
@@ -49,7 +48,7 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
     private RecyclerListView listView;
     private EmptyTextProgressView emptyView;
 
-    private int chat_id;
+    private long chatId;
     private boolean loading;
     private TLRPC.TL_chatInviteExported invite;
 
@@ -61,9 +60,9 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
     private int shadowRow;
     private int rowCount;
 
-    public GroupInviteActivity(int cid) {
+    public GroupInviteActivity(long cid) {
         super();
-        chat_id = cid;
+        chatId = cid;
     }
 
     @Override
@@ -71,7 +70,7 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
         super.onFragmentCreate();
 
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.chatInfoDidLoad);
-        MessagesController.getInstance(currentAccount).loadFullChat(chat_id, classGuid, true);
+        getMessagesController().loadFullChat(chatId, classGuid, true);
         loading = true;
 
         rowCount = 0;
@@ -166,8 +165,8 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
         if (id == NotificationCenter.chatInfoDidLoad) {
             TLRPC.ChatFull info = (TLRPC.ChatFull) args[0];
             int guid = (int) args[1];
-            if (info.id == chat_id && guid == classGuid) {
-                invite = MessagesController.getInstance(currentAccount).getExportedInvite(chat_id);
+            if (info.id == chatId && guid == classGuid) {
+                invite = getMessagesController().getExportedInvite(chatId);
                 if (invite == null) {
                     generateLink(false);
                 } else {
@@ -191,7 +190,7 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
     private void generateLink(final boolean newRequest) {
         loading = true;
         TLRPC.TL_messages_exportChatInvite req = new TLRPC.TL_messages_exportChatInvite();
-        req.peer = MessagesController.getInstance(currentAccount).getInputPeer(-chat_id);
+        req.peer = getMessagesController().getInputPeer(-chatId);
         final int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             if (error == null) {
                 invite = (TLRPC.TL_chatInviteExported) response;
@@ -273,7 +272,7 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
                         privacyCell.setText("");
                         privacyCell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                     } else if (position == linkInfoRow) {
-                        TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(chat_id);
+                        TLRPC.Chat chat = getMessagesController().getChat(chatId);
                         if (ChatObject.isChannel(chat) && !chat.megagroup) {
                             privacyCell.setText(LocaleController.getString("ChannelLinkInfo", R.string.ChannelLinkInfo));
                         } else {

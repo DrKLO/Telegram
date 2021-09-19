@@ -264,8 +264,6 @@ public class CameraSession {
                     if (params.getMaxNumMeteringAreas() > 0) {
                         meteringAreaSupported = true;
                     }
-
-
                 }
             }
         } catch (Throwable e) {

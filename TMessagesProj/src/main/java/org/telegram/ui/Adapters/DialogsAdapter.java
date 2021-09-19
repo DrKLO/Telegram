@@ -184,9 +184,9 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
                     onlineContacts = new ArrayList<>(ContactsController.getInstance(currentAccount).contacts);
                     prevContactsCount = onlineContacts.size();
                     prevDialogsCount = messagesController.dialogs_dict.size();
-                    int selfId = UserConfig.getInstance(currentAccount).clientUserId;
+                    long selfId = UserConfig.getInstance(currentAccount).clientUserId;
                     for (int a = 0, N = onlineContacts.size(); a < N; a++) {
-                        int userId = onlineContacts.get(a).user_id;
+                        long userId = onlineContacts.get(a).user_id;
                         if (userId == selfId || messagesController.dialogs_dict.get(userId) != null) {
                             onlineContacts.remove(a);
                             a--;
@@ -354,7 +354,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
         View view;
         switch (viewType) {
             case 0:
-                DialogCell dialogCell = new DialogCell(parentFragment, mContext, true, false, currentAccount);
+                DialogCell dialogCell = new DialogCell(parentFragment, mContext, true, false, currentAccount, null);
                 dialogCell.setArchivedPullAnimation(pullForegroundDrawable);
                 dialogCell.setPreloader(preloader);
                 view = dialogCell;

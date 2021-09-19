@@ -24,9 +24,14 @@ import android.graphics.Rect;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+
 import androidx.annotation.Keep;
 
 import android.os.SystemClock;
+
+import androidx.core.graphics.ColorUtils;
+import androidx.core.math.MathUtils;
+
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.KeyEvent;
@@ -54,14 +59,19 @@ import org.telegram.ui.Components.GroupCallPip;
 import org.telegram.ui.Components.LayoutHelper;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class ActionBarLayout extends FrameLayout {
 
     public interface ActionBarLayoutDelegate {
         boolean onPreIme();
+
         boolean needPresentFragment(BaseFragment fragment, boolean removeLast, boolean forceWithoutAnimation, ActionBarLayout layout);
+
         boolean needAddFragmentToStack(BaseFragment fragment, ActionBarLayout layout);
+
         boolean needCloseLastFragment(ActionBarLayout layout);
+
         void onRebuildAllFragments(ActionBarLayout layout, boolean last);
     }
 
@@ -209,11 +219,32 @@ public class ActionBarLayout extends FrameLayout {
             this.fragmentPanTranslationOffset = fragmentPanTranslationOffset;
             invalidate();
         }
+    }
 
-        @Override
-        public void setTranslationX(float translationX) {
-            Log.d("kek", "set translationX" + translationX);
-            super.setTranslationX(translationX);
+    public static class ThemeAnimationSettings {
+
+        public final Theme.ThemeInfo theme;
+        public final int accentId;
+        public final boolean nightTheme;
+        public final boolean instant;
+        public boolean onlyTopFragment;
+        public boolean applyTheme = true;
+        public Runnable afterStartDescriptionsAddedRunnable;
+        public Runnable beforeAnimationRunnable;
+        public Runnable afterAnimationRunnable;
+        public onAnimationProgress animationProgress;
+        public long duration = 200;
+        public Theme.ResourcesProvider resourcesProvider;
+
+        public ThemeAnimationSettings(Theme.ThemeInfo theme, int accentId, boolean nightTheme, boolean instant) {
+            this.theme = theme;
+            this.accentId = accentId;
+            this.nightTheme = nightTheme;
+            this.instant = instant;
+        }
+
+        public interface onAnimationProgress {
+            void setProgress(float p);
         }
     }
 
@@ -256,6 +287,12 @@ public class ActionBarLayout extends FrameLayout {
     private boolean transitionAnimationPreviewMode;
     private ArrayList<int[]> animateStartColors = new ArrayList<>();
     private ArrayList<int[]> animateEndColors = new ArrayList<>();
+
+    StartColorsProvider startColorsProvider = new StartColorsProvider();
+    public Theme.MessageDrawable messageDrawableOutStart;
+    public Theme.MessageDrawable messageDrawableOutMediaStart;
+    public ThemeAnimationSettings.onAnimationProgress animationProgressListener;
+
     private ArrayList<ArrayList<ThemeDescription>> themeAnimatorDescriptions = new ArrayList<>();
     private ArrayList<ThemeDescription> presentingFragmentDescriptions;
     private ArrayList<ThemeDescription.ThemeDescriptionDelegate> themeAnimatorDelegate = new ArrayList<>();
@@ -372,8 +409,18 @@ public class ActionBarLayout extends FrameLayout {
         invalidate();
 
         if (fragmentsStack.size() >= 2 && containerView.getMeasuredWidth() > 0) {
+            float progress = value / containerView.getMeasuredWidth();
             BaseFragment prevFragment = fragmentsStack.get(fragmentsStack.size() - 2);
-            prevFragment.onSlideProgress(false, value / containerView.getMeasuredWidth());
+            prevFragment.onSlideProgress(false, progress);
+            BaseFragment currFragment = fragmentsStack.get(fragmentsStack.size() - 1);
+            if (currFragment.isBeginToShow()) {
+                int currNavigationBarColor = currFragment.getNavigationBarColor();
+                int prevNavigationBarColor = prevFragment.getNavigationBarColor();
+                if (currNavigationBarColor != prevNavigationBarColor) {
+                    float ratio = MathUtils.clamp(2f * progress, 0f, 1f);
+                    currFragment.setNavigationBarColor(ColorUtils.blendARGB(currNavigationBarColor, prevNavigationBarColor, ratio));
+                }
+            }
         }
     }
 
@@ -480,7 +527,7 @@ public class ActionBarLayout extends FrameLayout {
                 layerShadowDrawable.setAlpha((int) (0xff * alpha));
                 layerShadowDrawable.draw(canvas);
             } else if (child == containerViewBack) {
-                float opacity = Math.min(0.8f, (width - translationX) / (float)width);
+                float opacity = Math.min(0.8f, (width - translationX) / (float) width);
                 if (opacity < 0) {
                     opacity = 0;
                 }
@@ -935,6 +982,12 @@ public class ActionBarLayout extends FrameLayout {
                 }
                 if (oldFragment != null) {
                     oldFragment.onTransitionAnimationProgress(false, animationProgress);
+                }
+                Integer oldNavigationBarColor = oldFragment != null ? oldFragment.getNavigationBarColor() : null;
+                Integer newNavigationBarColor = newFragment != null ? newFragment.getNavigationBarColor() : null;
+                if (newFragment != null && !newFragment.inPreviewMode && oldNavigationBarColor != null) {
+                    float ratio = MathUtils.clamp(2f * animationProgress - (open ? 1f : 0f), 0f, 1f);
+                    newFragment.setNavigationBarColor(ColorUtils.blendARGB(oldNavigationBarColor, newNavigationBarColor, ratio));
                 }
                 float interpolated = decelerateInterpolator.getInterpolation(animationProgress);
                 if (open) {
@@ -1635,7 +1688,7 @@ public class ActionBarLayout extends FrameLayout {
                 b = Math.min(255, (int) (bS + (bE - bS) * value));
                 int color = Color.argb(a, r, g, b);
                 ThemeDescription description = descriptions.get(i);
-                Theme.setAnimatedColor(description.getCurrentKey(), color);
+                description.setAnimatedColor(color);
                 description.setColor(color, false, false);
             }
         }
@@ -1643,6 +1696,7 @@ public class ActionBarLayout extends FrameLayout {
             ThemeDescription.ThemeDescriptionDelegate delegate = themeAnimatorDelegate.get(j);
             if (delegate != null) {
                 delegate.didSetColor();
+                delegate.onAnimationProgress(value);
             }
         }
         if (presentingFragmentDescriptions != null) {
@@ -1651,6 +1705,9 @@ public class ActionBarLayout extends FrameLayout {
                 String key = description.getCurrentKey();
                 description.setColor(Theme.getColor(key), false, false);
             }
+        }
+        if (animationProgressListener != null) {
+            animationProgressListener.setProgress(value);
         }
     }
 
@@ -1688,11 +1745,15 @@ public class ActionBarLayout extends FrameLayout {
     }
 
     public void animateThemedValues(Theme.ThemeInfo theme, int accentId, boolean nightTheme, boolean instant) {
+        animateThemedValues(new ThemeAnimationSettings(theme, accentId, nightTheme, instant));
+    }
+
+    public void animateThemedValues(ThemeAnimationSettings settings) {
         if (transitionAnimationInProgress || startedTracking) {
             animateThemeAfterAnimation = true;
-            animateSetThemeAfterAnimation = theme;
-            animateSetThemeNightAfterAnimation = nightTheme;
-            animateSetThemeAccentIdAfterAnimation = accentId;
+            animateSetThemeAfterAnimation = settings.theme;
+            animateSetThemeNightAfterAnimation = settings.nightTheme;
+            animateSetThemeAccentIdAfterAnimation = settings.accentId;
             return;
         }
         if (themeAnimatorSet != null) {
@@ -1700,7 +1761,8 @@ public class ActionBarLayout extends FrameLayout {
             themeAnimatorSet = null;
         }
         boolean startAnimation = false;
-        for (int i = 0; i < 2; i++) {
+        int fragmentCount = settings.onlyTopFragment ? 1 : 2;
+        for (int i = 0; i < fragmentCount; i++) {
             BaseFragment fragment;
             if (i == 0) {
                 fragment = getLastFragment();
@@ -1712,6 +1774,15 @@ public class ActionBarLayout extends FrameLayout {
             }
             if (fragment != null) {
                 startAnimation = true;
+                if (settings.resourcesProvider != null) {
+                    if (messageDrawableOutStart == null) {
+                        messageDrawableOutStart = new Theme.MessageDrawable(Theme.MessageDrawable.TYPE_TEXT, true, false, startColorsProvider);
+                        messageDrawableOutStart.isCrossfadeBackground = true;
+                        messageDrawableOutMediaStart = new Theme.MessageDrawable(Theme.MessageDrawable.TYPE_MEDIA, true, false, startColorsProvider);
+                        messageDrawableOutMediaStart.isCrossfadeBackground = true;
+                    }
+                    startColorsProvider.saveColors(settings.resourcesProvider);
+                }
                 ArrayList<ThemeDescription> descriptions = fragment.getThemeDescriptions();
                 addStartDescriptions(descriptions);
                 if (fragment.visibleDialog instanceof BottomSheet) {
@@ -1722,11 +1793,16 @@ public class ActionBarLayout extends FrameLayout {
                     addStartDescriptions(dialog.getThemeDescriptions());
                 }
                 if (i == 0) {
-                    if (accentId != -1) {
-                        theme.setCurrentAccentId(accentId);
-                        Theme.saveThemeAccents(theme, true, false, true, false);
+                    if (settings.applyTheme) {
+                        if (settings.accentId != -1) {
+                            settings.theme.setCurrentAccentId(settings.accentId);
+                            Theme.saveThemeAccents(settings.theme, true, false, true, false);
+                        }
+                        Theme.applyTheme(settings.theme, settings.nightTheme);
                     }
-                    Theme.applyTheme(theme, nightTheme);
+                    if (settings.afterStartDescriptionsAddedRunnable != null) {
+                        settings.afterStartDescriptionsAddedRunnable.run();
+                    }
                 }
                 addEndDescriptions(descriptions);
                 if (fragment.visibleDialog instanceof BottomSheet) {
@@ -1743,16 +1819,26 @@ public class ActionBarLayout extends FrameLayout {
                 fragment.clearViews();
                 fragment.setParentLayout(this);
             }
-            if (instant) {
+            if (settings.instant) {
                 setThemeAnimationValue(1.0f);
                 themeAnimatorDescriptions.clear();
                 animateStartColors.clear();
                 animateEndColors.clear();
                 themeAnimatorDelegate.clear();
                 presentingFragmentDescriptions = null;
+                if (settings.afterAnimationRunnable != null) {
+                    settings.afterAnimationRunnable.run();
+                }
                 return;
             }
             Theme.setAnimatingColor(true);
+            if (settings.beforeAnimationRunnable != null) {
+                settings.beforeAnimationRunnable.run();
+            }
+            animationProgressListener = settings.animationProgress;
+            if (animationProgressListener != null) {
+                animationProgressListener.setProgress(0);
+            }
             themeAnimatorSet = new AnimatorSet();
             themeAnimatorSet.addListener(new AnimatorListenerAdapter() {
                 @Override
@@ -1765,6 +1851,9 @@ public class ActionBarLayout extends FrameLayout {
                         Theme.setAnimatingColor(false);
                         presentingFragmentDescriptions = null;
                         themeAnimatorSet = null;
+                        if (settings.afterAnimationRunnable != null) {
+                            settings.afterAnimationRunnable.run();
+                        }
                     }
                 }
 
@@ -1778,11 +1867,14 @@ public class ActionBarLayout extends FrameLayout {
                         Theme.setAnimatingColor(false);
                         presentingFragmentDescriptions = null;
                         themeAnimatorSet = null;
+                        if (settings.afterAnimationRunnable != null) {
+                            settings.afterAnimationRunnable.run();
+                        }
                     }
                 }
             });
             themeAnimatorSet.playTogether(ObjectAnimator.ofFloat(this, "themeAnimationValue", 0.0f, 1.0f));
-            themeAnimatorSet.setDuration(200);
+            themeAnimatorSet.setDuration(settings.duration);
             themeAnimatorSet.start();
         }
     }
@@ -1964,5 +2056,36 @@ public class ActionBarLayout extends FrameLayout {
             }
         }
         return null;
+    }
+
+    private class StartColorsProvider implements Theme.ResourcesProvider {
+
+        HashMap<String, Integer> colors = new HashMap<>();
+
+        String[] keysToSave = new String[]{
+                Theme.key_chat_outBubble,
+                Theme.key_chat_outBubbleGradient1,
+                Theme.key_chat_outBubbleGradient2,
+                Theme.key_chat_outBubbleGradient3,
+                Theme.key_chat_outBubbleGradientAnimated,
+                Theme.key_chat_outBubbleShadow
+        };
+
+        @Override
+        public Integer getColor(String key) {
+            return colors.get(key);
+        }
+
+        @Override
+        public Integer getCurrentColor(String key) {
+            return colors.get(key);
+        }
+
+        public void saveColors(Theme.ResourcesProvider fragmentResourceProvider) {
+            colors.clear();
+            for (String key : keysToSave) {
+                colors.put(key, fragmentResourceProvider.getCurrentColor(key));
+            }
+        }
     }
 }

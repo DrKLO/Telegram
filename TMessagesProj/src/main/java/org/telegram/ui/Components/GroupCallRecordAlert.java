@@ -45,7 +45,7 @@ public class GroupCallRecordAlert extends BottomSheet {
     private float pageOffset;
     private int currentPage;
 
-    public GroupCallRecordAlert(Context context, TLRPC.Chat chat) {
+    public GroupCallRecordAlert(Context context, TLRPC.Chat chat, boolean hasVideo) {
         super(context, false);
 
         int color = Theme.getColor(Theme.key_voipgroup_inviteMembersBackground);
@@ -238,6 +238,9 @@ public class GroupCallRecordAlert extends BottomSheet {
             }
             int num = a;
             titles[a].setOnClickListener(view -> viewPager.setCurrentItem(num, true));
+        }
+        if (hasVideo) {
+            viewPager.setCurrentItem(1);
         }
     }
 

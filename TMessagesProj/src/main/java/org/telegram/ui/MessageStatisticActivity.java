@@ -32,6 +32,7 @@ import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
@@ -83,7 +84,7 @@ import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 public class MessageStatisticActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
     private TLRPC.ChatFull chat;
-    private final int chatId;
+    private final long chatId;
     private final int messageId;
     private ListAdapter listViewAdapter;
     private EmptyTextProgressView emptyView;
@@ -284,12 +285,12 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
         listView.setOnItemClickListener((view, position) -> {
             if (position >= startRow && position < endRow) {
                 TLRPC.Message message = messages.get(position - startRow);
-                int did = (int) MessageObject.getDialogId(message);
+                long did =  MessageObject.getDialogId(message);
                 Bundle args = new Bundle();
-                if (did > 0) {
-                    args.putInt("user_id", did);
+                if (DialogObject.isUserDialog(did)) {
+                    args.putLong("user_id", did);
                 } else {
-                    args.putInt("chat_id", -did);
+                    args.putLong("chat_id", -did);
                 }
                 args.putInt("message_id", message.id);
                 args.putBoolean("need_remove_previous_same_chat_activity", false);
@@ -427,9 +428,9 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
                 } else if (id == 1) {
                     Bundle args = new Bundle();
                     if (messageObject.messageOwner.fwd_from == null) {
-                        args.putInt("chat_id", messageObject.getChatId());
+                        args.putLong("chat_id", messageObject.getChatId());
                     } else {
-                        args.putInt("chat_id", -messageObject.getFromChatId());
+                        args.putLong("chat_id", -messageObject.getFromChatId());
                     }
                     presentFragment(new StatisticActivity(args));
                 }
@@ -451,7 +452,7 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
                 }
             }
             Bundle args = new Bundle();
-            args.putInt("chat_id", chatId);
+            args.putLong("chat_id", chatId);
             args.putInt("message_id", messageId);
             args.putBoolean("need_remove_previous_same_chat_activity", false);
             ChatActivity a = new ChatActivity(args);
@@ -486,12 +487,12 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
             req.channel = getMessagesController().getInputChannel(-messageObject.getFromChatId());
         } else {
             req.msg_id = messageObject.getId();
-            req.channel = getMessagesController().getInputChannel((int) -messageObject.getDialogId());
+            req.channel = getMessagesController().getInputChannel(-messageObject.getDialogId());
         }
         if (!messages.isEmpty()) {
             TLRPC.Message message = messages.get(messages.size() - 1);
             req.offset_id = message.id;
-            req.offset_peer = getMessagesController().getInputPeer((int) MessageObject.getDialogId(message));
+            req.offset_peer = getMessagesController().getInputPeer(MessageObject.getDialogId(message));
             req.offset_rate = nextRate;
         } else {
             req.offset_peer = new TLRPC.TL_inputPeerEmpty();
@@ -529,7 +530,7 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
             req.channel = getMessagesController().getInputChannel(-messageObject.getFromChatId());
         } else {
             req.msg_id = messageObject.getId();
-            req.channel = getMessagesController().getInputChannel((int) -messageObject.getDialogId());
+            req.channel = getMessagesController().getInputChannel(-messageObject.getDialogId());
         }
         getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             statsLoaded = true;
@@ -754,10 +755,10 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
                 case 0:
                     ManageChatUserCell userCell = (ManageChatUserCell) holder.itemView;
                     TLRPC.Message item = getItem(position);
-                    int did = (int) MessageObject.getDialogId(item);
+                    long did = MessageObject.getDialogId(item);
                     TLObject object;
                     String status = null;
-                    if (did > 0) {
+                    if (DialogObject.isUserDialog(did)) {
                         object = getMessagesController().getUser(did);
                     } else {
                         object = getMessagesController().getChat(-did);

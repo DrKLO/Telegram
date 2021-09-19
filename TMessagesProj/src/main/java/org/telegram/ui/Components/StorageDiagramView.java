@@ -1,4 +1,4 @@
-package org.telegram.ui;
+package org.telegram.ui.Components;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -12,13 +12,11 @@ import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.view.View;
-import android.view.animation.LinearInterpolator;
 
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.CubicBezierInterpolator;
 
 public class StorageDiagramView extends View {
 
@@ -182,9 +180,9 @@ public class StorageDiagramView extends View {
         public String color;
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
-        boolean clear = true;
+        public boolean clear = true;
         boolean firstDraw = false;
-        long size;
+        public long size;
 
         private final StorageDiagramView parentView;
 
@@ -223,7 +221,6 @@ public class StorageDiagramView extends View {
 
         float k = 0;
         float max= 0;
-        int maxIndex = 0;
         enabledCount = 0;
 
         for (int i = 0; i < data.length; i++) {
@@ -243,7 +240,6 @@ public class StorageDiagramView extends View {
             k += percent;
             if (percent > max && data[i].clear) {
                 max = percent;
-                maxIndex = i;
             }
             animateToPercentage[i] = percent;
         }
@@ -258,13 +254,9 @@ public class StorageDiagramView extends View {
         }
 
         if (!animate) {
-            for (int i = 0; i < data.length; i++) {
-                drawingPercentage[i] = animateToPercentage[i];
-            }
+            System.arraycopy(animateToPercentage, 0, drawingPercentage, 0, data.length);
         } else {
-            for (int i = 0; i < data.length; i++) {
-                startFromPercentage[i] = drawingPercentage[i];
-            }
+            System.arraycopy(drawingPercentage, 0, startFromPercentage, 0, data.length);
 
             if (valueAnimator != null) {
                 valueAnimator.removeAllListeners();
@@ -306,10 +298,9 @@ public class StorageDiagramView extends View {
             total += data[i].size;
         }
         String[] str = AndroidUtilities.formatFileSize(total).split(" ");
-        if (str != null & str.length > 1) {
+        if (str.length > 1) {
             layout1 = new StaticLayout(total == 0 ? " " : str[0], textPaint, getMeasuredWidth(), Layout.Alignment.ALIGN_CENTER, 1f, 0, false);
             layout2 = new StaticLayout(total == 0 ? " " : str[1], textPaint2, getMeasuredWidth(), Layout.Alignment.ALIGN_CENTER, 1f, 0, false);
         }
-
     }
 }

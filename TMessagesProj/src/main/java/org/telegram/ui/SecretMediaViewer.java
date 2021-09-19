@@ -222,7 +222,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
     private ImageReceiver centerImage = new ImageReceiver();
     private SecretDeleteTimer secretDeleteTimer;
     private boolean isVisible;
-    private int currentChannelId;
+    private long currentDialogId;
     private AspectRatioFrameLayout aspectRatioFrameLayout;
     private TextureView videoTextureView;
     private VideoPlayer videoPlayer;
@@ -337,11 +337,11 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
             if (currentMessageObject == null) {
                 return;
             }
-            int channelId = (Integer) args[1];
+            long channelId = (Long) args[1];
             if (channelId != 0) {
                 return;
             }
-            ArrayList<Integer> markAsDeletedMessages = (ArrayList<Integer>)args[0];
+            ArrayList<Integer> markAsDeletedMessages = (ArrayList<Integer>) args[0];
             if (markAsDeletedMessages.contains(currentMessageObject.getId())) {
                 if (isVideo && !videoWatchedOneTime) {
                     closeVideoAfterWatch = true;
@@ -355,21 +355,16 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
             if (currentMessageObject == null || secretDeleteTimer == null) {
                 return;
             }
-            SparseArray<ArrayList<Long>> mids = (SparseArray<ArrayList<Long>>)args[0];
+            long dialogId = (long) args[0];
+            if (dialogId != currentDialogId) {
+                return;
+            }
+            SparseArray<ArrayList<Integer>> mids = (SparseArray<ArrayList<Integer>>) args[1];
             for (int i = 0; i < mids.size(); i++) {
                 int key = mids.keyAt(i);
-                ArrayList<Long> arr = mids.get(key);
+                ArrayList<Integer> arr = mids.get(key);
                 for (int a = 0; a < arr.size(); a++) {
                     long mid = arr.get(a);
-                    if (a == 0) {
-                        int channelId = (int) (mid >> 32);
-                        if (channelId < 0) {
-                            channelId = 0;
-                        }
-                        if (channelId != currentChannelId) {
-                            return;
-                        }
-                    }
                     if (currentMessageObject.getId() == mid) {
                         currentMessageObject.messageOwner.destroyTime = key;
                         secretDeleteTimer.invalidate();
@@ -752,7 +747,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagesDeleted);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.updateMessageMedia);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.didCreatedNewDeleteTask);
-        currentChannelId = messageObject.messageOwner.peer_id != null ? messageObject.messageOwner.peer_id.channel_id : 0;
+        currentDialogId = MessageObject.getPeerId(messageObject.messageOwner.peer_id);
         toggleActionBar(true, false);
 
         currentMessageObject = messageObject;

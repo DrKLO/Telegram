@@ -13,12 +13,9 @@ public final class ContactsLoadingObserver {
         void onResult(boolean contactsLoaded);
     }
 
-    private final NotificationCenter.NotificationCenterDelegate observer = new NotificationCenter.NotificationCenterDelegate() {
-        @Override
-        public void didReceivedNotification(int id, int account, Object... args) {
-            if (id == NotificationCenter.contactsDidLoad) {
-                onContactsLoadingStateUpdated(account, false);
-            }
+    private final NotificationCenter.NotificationCenterDelegate observer = (id, account, args) -> {
+        if (id == NotificationCenter.contactsDidLoad) {
+            onContactsLoadingStateUpdated(account, false);
         }
     };
 

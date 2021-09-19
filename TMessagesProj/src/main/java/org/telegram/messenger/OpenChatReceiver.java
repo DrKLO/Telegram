@@ -22,14 +22,15 @@ public class OpenChatReceiver extends Activity {
         Intent intent = getIntent();
         if (intent == null) {
             finish();
+            return;
         }
         if (intent.getAction() == null || !intent.getAction().startsWith("com.tmessages.openchat")) {
             finish();
             return;
         }
         try {
-            int chatId = intent.getIntExtra("chatId", 0);
-            int userId = intent.getIntExtra("userId", 0);
+            long chatId = intent.getLongExtra("chatId", 0);
+            long userId = intent.getLongExtra("userId", 0);
             int encId = intent.getIntExtra("encId", 0);
             if (chatId == 0 && userId == 0 && encId == 0) {
                 return;

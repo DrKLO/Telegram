@@ -11,7 +11,6 @@ package org.telegram.messenger;
 import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.Base64;
-import android.util.SparseArray;
 
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
@@ -27,6 +26,8 @@ import java.util.Arrays;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+
+import androidx.collection.LongSparseArray;
 
 public class GcmPushListenerService extends FirebaseMessagingService {
 
@@ -121,11 +122,13 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                     } else {
                         userIdObject = null;
                     }
-                    int accountUserId;
+                    long accountUserId;
                     if (userIdObject == null) {
                         accountUserId = UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId();
                     } else {
-                        if (userIdObject instanceof Integer) {
+                        if (userIdObject instanceof Long) {
+                            accountUserId = (Long) userIdObject;
+                        } else if (userIdObject instanceof Integer) {
                             accountUserId = (Integer) userIdObject;
                         } else if (userIdObject instanceof String) {
                             accountUserId = Utilities.parseInt((String) userIdObject);
@@ -206,31 +209,31 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                         }
                     }
 
-                    int channel_id;
-                    int chat_id;
-                    int user_id;
+                    long channel_id;
+                    long chat_id;
+                    long user_id;
                     long dialogId = 0;
                     boolean scheduled;
                     if (custom.has("channel_id")) {
-                        channel_id = custom.getInt("channel_id");
+                        channel_id = custom.getLong("channel_id");
                         dialogId = -channel_id;
                     } else {
                         channel_id = 0;
                     }
                     if (custom.has("from_id")) {
-                        user_id = custom.getInt("from_id");
+                        user_id = custom.getLong("from_id");
                         dialogId = user_id;
                     } else {
                         user_id = 0;
                     }
                     if (custom.has("chat_id")) {
-                        chat_id = custom.getInt("chat_id");
+                        chat_id = custom.getLong("chat_id");
                         dialogId = -chat_id;
                     } else {
                         chat_id = 0;
                     }
                     if (custom.has("encryption_id")) {
-                        dialogId = ((long) custom.getInt("encryption_id")) << 32;
+                        dialogId = DialogObject.makeEncryptedDialogId(custom.getInt("encryption_id"));
                     }
                     if (custom.has("schedule")) {
                         scheduled = custom.getInt("schedule") == 1;
@@ -238,7 +241,7 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                         scheduled = false;
                     }
                     if (dialogId == 0 && "ENCRYPTED_MESSAGE".equals(loc_key)) {
-                        dialogId = -(1L << 32);
+                        dialogId = NotificationsController.globalSecretChatId;
                     }
                     boolean canRelease = true;
                     if (dialogId != 0) {
@@ -269,12 +272,12 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                         } else if ("MESSAGE_DELETED".equals(loc_key)) {
                             String messages = custom.getString("messages");
                             String[] messagesArgs = messages.split(",");
-                            SparseArray<ArrayList<Integer>> deletedMessages = new SparseArray<>();
+                            LongSparseArray<ArrayList<Integer>> deletedMessages = new LongSparseArray<>();
                             ArrayList<Integer> ids = new ArrayList<>();
                             for (int a = 0; a < messagesArgs.length; a++) {
                                 ids.add(Utilities.parseInt(messagesArgs[a]));
                             }
-                            deletedMessages.put(channel_id, ids);
+                            deletedMessages.put(-channel_id, ids);
                             NotificationsController.getInstance(currentAccount).removeDeletedMessagesFromNotifications(deletedMessages);
 
                             MessagesController.getInstance(currentAccount).deleteMessagesByPush(dialogId, ids, channel_id);
@@ -312,9 +315,9 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                 }
                             }
                             if (processNotification) {
-                                int chat_from_id = custom.optInt("chat_from_id", 0);
-                                int chat_from_broadcast_id = custom.optInt("chat_from_broadcast_id", 0);
-                                int chat_from_group_id = custom.optInt("chat_from_group_id", 0);
+                                long chat_from_id = custom.optLong("chat_from_id", 0);
+                                long chat_from_broadcast_id = custom.optLong("chat_from_broadcast_id", 0);
+                                long chat_from_group_id = custom.optLong("chat_from_group_id", 0);
                                 boolean isGroup = chat_from_id != 0 || chat_from_group_id != 0;
 
                                 boolean mention = custom.has("mention") && custom.getInt("mention") != 0;

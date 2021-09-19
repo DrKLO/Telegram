@@ -55,7 +55,7 @@ public class GroupCallGridCell extends FrameLayout {
         }
     }
 
-    public void setData(AccountInstance accountInstance, ChatObject.VideoParticipant participant, ChatObject.Call call, int selfPeerId) {
+    public void setData(AccountInstance accountInstance, ChatObject.VideoParticipant participant, ChatObject.Call call, long selfPeerId) {
         this.participant = participant;
     }
 

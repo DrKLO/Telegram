@@ -40,6 +40,7 @@ import androidx.annotation.Keep;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
@@ -174,6 +175,7 @@ public class UndoView extends FrameLayout {
     private CharSequence infoText;
     private int hideAnimationType = 1;
     Drawable backgroundDrawable;
+    private final Theme.ResourcesProvider resourcesProvider;
 
     public class LinkMovementMethodMy extends LinkMovementMethod {
         @Override
@@ -205,29 +207,30 @@ public class UndoView extends FrameLayout {
     }
 
     public UndoView(Context context) {
-        this(context, null, false);
+        this(context, null, false, null);
     }
 
     public UndoView(Context context, BaseFragment parent) {
-        this(context, parent, false);
+        this(context, parent, false, null);
     }
 
-    public UndoView(Context context, BaseFragment parent, boolean top) {
+    public UndoView(Context context, BaseFragment parent, boolean top, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
         parentFragment = parent;
         fromTop = top;
 
         infoTextView = new TextView(context);
         infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        infoTextView.setTextColor(Theme.getColor(Theme.key_undo_infoColor));
-        infoTextView.setLinkTextColor(Theme.getColor(Theme.key_undo_cancelColor));
+        infoTextView.setTextColor(getThemedColor(Theme.key_undo_infoColor));
+        infoTextView.setLinkTextColor(getThemedColor(Theme.key_undo_cancelColor));
         infoTextView.setMovementMethod(new LinkMovementMethodMy());
         addView(infoTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 45, 13, 0, 0));
 
         subinfoTextView = new TextView(context);
         subinfoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-        subinfoTextView.setTextColor(Theme.getColor(Theme.key_undo_infoColor));
-        subinfoTextView.setLinkTextColor(Theme.getColor(Theme.key_undo_cancelColor));
+        subinfoTextView.setTextColor(getThemedColor(Theme.key_undo_infoColor));
+        subinfoTextView.setLinkTextColor(getThemedColor(Theme.key_undo_cancelColor));
         subinfoTextView.setHighlightColor(0);
         subinfoTextView.setSingleLine(true);
         subinfoTextView.setEllipsize(TextUtils.TruncateAt.END);
@@ -236,21 +239,21 @@ public class UndoView extends FrameLayout {
 
         leftImageView = new RLottieImageView(context);
         leftImageView.setScaleType(ImageView.ScaleType.CENTER);
-        leftImageView.setLayerColor("info1.**", Theme.getColor(Theme.key_undo_background) | 0xff000000);
-        leftImageView.setLayerColor("info2.**", Theme.getColor(Theme.key_undo_background) | 0xff000000);
-        leftImageView.setLayerColor("luc12.**", Theme.getColor(Theme.key_undo_infoColor));
-        leftImageView.setLayerColor("luc11.**", Theme.getColor(Theme.key_undo_infoColor));
-        leftImageView.setLayerColor("luc10.**", Theme.getColor(Theme.key_undo_infoColor));
-        leftImageView.setLayerColor("luc9.**", Theme.getColor(Theme.key_undo_infoColor));
-        leftImageView.setLayerColor("luc8.**", Theme.getColor(Theme.key_undo_infoColor));
-        leftImageView.setLayerColor("luc7.**", Theme.getColor(Theme.key_undo_infoColor));
-        leftImageView.setLayerColor("luc6.**", Theme.getColor(Theme.key_undo_infoColor));
-        leftImageView.setLayerColor("luc5.**", Theme.getColor(Theme.key_undo_infoColor));
-        leftImageView.setLayerColor("luc4.**", Theme.getColor(Theme.key_undo_infoColor));
-        leftImageView.setLayerColor("luc3.**", Theme.getColor(Theme.key_undo_infoColor));
-        leftImageView.setLayerColor("luc2.**", Theme.getColor(Theme.key_undo_infoColor));
-        leftImageView.setLayerColor("luc1.**", Theme.getColor(Theme.key_undo_infoColor));
-        leftImageView.setLayerColor("Oval.**", Theme.getColor(Theme.key_undo_infoColor));
+        leftImageView.setLayerColor("info1.**", getThemedColor(Theme.key_undo_background) | 0xff000000);
+        leftImageView.setLayerColor("info2.**", getThemedColor(Theme.key_undo_background) | 0xff000000);
+        leftImageView.setLayerColor("luc12.**", getThemedColor(Theme.key_undo_infoColor));
+        leftImageView.setLayerColor("luc11.**", getThemedColor(Theme.key_undo_infoColor));
+        leftImageView.setLayerColor("luc10.**", getThemedColor(Theme.key_undo_infoColor));
+        leftImageView.setLayerColor("luc9.**", getThemedColor(Theme.key_undo_infoColor));
+        leftImageView.setLayerColor("luc8.**", getThemedColor(Theme.key_undo_infoColor));
+        leftImageView.setLayerColor("luc7.**", getThemedColor(Theme.key_undo_infoColor));
+        leftImageView.setLayerColor("luc6.**", getThemedColor(Theme.key_undo_infoColor));
+        leftImageView.setLayerColor("luc5.**", getThemedColor(Theme.key_undo_infoColor));
+        leftImageView.setLayerColor("luc4.**", getThemedColor(Theme.key_undo_infoColor));
+        leftImageView.setLayerColor("luc3.**", getThemedColor(Theme.key_undo_infoColor));
+        leftImageView.setLayerColor("luc2.**", getThemedColor(Theme.key_undo_infoColor));
+        leftImageView.setLayerColor("luc1.**", getThemedColor(Theme.key_undo_infoColor));
+        leftImageView.setLayerColor("Oval.**", getThemedColor(Theme.key_undo_infoColor));
         addView(leftImageView, LayoutHelper.createFrame(54, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.LEFT, 3, 0, 0, 0));
 
         avatarImageView = new BackupImageView(context);
@@ -269,13 +272,13 @@ public class UndoView extends FrameLayout {
 
         undoImageView = new ImageView(context);
         undoImageView.setImageResource(R.drawable.chats_undo);
-        undoImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_undo_cancelColor), PorterDuff.Mode.MULTIPLY));
+        undoImageView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_undo_cancelColor), PorterDuff.Mode.MULTIPLY));
         undoButton.addView(undoImageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.LEFT));
 
         undoTextView = new TextView(context);
         undoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         undoTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        undoTextView.setTextColor(Theme.getColor(Theme.key_undo_cancelColor));
+        undoTextView.setTextColor(getThemedColor(Theme.key_undo_cancelColor));
         undoTextView.setText(LocaleController.getString("Undo", R.string.Undo));
         undoButton.addView(undoTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.LEFT, 6, 0, 0, 0));
 
@@ -285,15 +288,15 @@ public class UndoView extends FrameLayout {
         progressPaint.setStyle(Paint.Style.STROKE);
         progressPaint.setStrokeWidth(AndroidUtilities.dp(2));
         progressPaint.setStrokeCap(Paint.Cap.ROUND);
-        progressPaint.setColor(Theme.getColor(Theme.key_undo_infoColor));
+        progressPaint.setColor(getThemedColor(Theme.key_undo_infoColor));
 
         textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         textPaint.setTextSize(AndroidUtilities.dp(12));
         textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        textPaint.setColor(Theme.getColor(Theme.key_undo_infoColor));
+        textPaint.setColor(getThemedColor(Theme.key_undo_infoColor));
 
         setWillNotDraw(false);
-        backgroundDrawable = Theme.createRoundRectDrawable(AndroidUtilities.dp(6), Theme.getColor(Theme.key_undo_background));
+        backgroundDrawable = Theme.createRoundRectDrawable(AndroidUtilities.dp(6), getThemedColor(Theme.key_undo_background));
 
         setOnTouchListener((v, event) -> true);
 
@@ -714,14 +717,14 @@ public class UndoView extends FrameLayout {
                 subInfoText = null;
                 icon = R.raw.contact_check;
             } else if (action == ACTION_PROFILE_PHOTO_CHANGED) {
-                if (did > 0) {
+                if (DialogObject.isUserDialog(did)) {
                     if (infoObject == null) {
                         infoText = LocaleController.getString("MainProfilePhotoSetHint", R.string.MainProfilePhotoSetHint);
                     } else {
                         infoText = LocaleController.getString("MainProfileVideoSetHint", R.string.MainProfileVideoSetHint);
                     }
                 } else {
-                    TLRPC.Chat chat = MessagesController.getInstance(UserConfig.selectedAccount).getChat((int) -did);
+                    TLRPC.Chat chat = MessagesController.getInstance(UserConfig.selectedAccount).getChat(-did);
                     if (ChatObject.isChannel(chat) && !chat.megagroup) {
                         if (infoObject == null) {
                             infoText = LocaleController.getString("MainChannelProfilePhotoSetHint", R.string.MainChannelProfilePhotoSetHint);
@@ -768,20 +771,20 @@ public class UndoView extends FrameLayout {
             } else if (action == ACTION_ADDED_TO_FOLDER || action == ACTION_REMOVED_FROM_FOLDER) {
                 MessagesController.DialogFilter filter = (MessagesController.DialogFilter) infoObject2;
                 if (did != 0) {
-                    int lowerId = (int) did;
-                    if (lowerId == 0) {
-                        TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance(currentAccount).getEncryptedChat((int) (did >> 32));
-                        lowerId = encryptedChat.user_id;
+                    long dialogId = did;
+                    if (DialogObject.isEncryptedDialog(did)) {
+                        TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance(currentAccount).getEncryptedChat(DialogObject.getEncryptedChatId(dialogId));
+                        dialogId = encryptedChat.user_id;
                     }
-                    if (lowerId > 0) {
-                        TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(lowerId);
+                    if (DialogObject.isUserDialog(dialogId)) {
+                        TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogId);
                         if (action == ACTION_ADDED_TO_FOLDER) {
                             infoText = AndroidUtilities.replaceTags(LocaleController.formatString("FilterUserAddedToExisting", R.string.FilterUserAddedToExisting, UserObject.getFirstName(user), filter.name));
                         } else {
                             infoText = AndroidUtilities.replaceTags(LocaleController.formatString("FilterUserRemovedFrom", R.string.FilterUserRemovedFrom, UserObject.getFirstName(user), filter.name));
                         }
                     } else {
-                        TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lowerId);
+                        TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
                         if (action == ACTION_ADDED_TO_FOLDER) {
                             infoText = AndroidUtilities.replaceTags(LocaleController.formatString("FilterChatAddedToExisting", R.string.FilterChatAddedToExisting, chat.title, filter.name));
                         } else {
@@ -979,12 +982,11 @@ public class UndoView extends FrameLayout {
                     if (did == UserConfig.getInstance(currentAccount).clientUserId) {
                         infoTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString("InvLinkToSavedMessages", R.string.InvLinkToSavedMessages)));
                     } else {
-                        int lowerId = (int) did;
-                        if (lowerId < 0) {
-                            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lowerId);
+                        if (DialogObject.isChatDialog(did)) {
+                            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-did);
                             infoTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("InvLinkToGroup", R.string.InvLinkToGroup, chat.title)));
                         } else {
-                            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(lowerId);
+                            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(did);
                             infoTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("InvLinkToUser", R.string.InvLinkToUser, UserObject.getFirstName(user))));
                         }
                     }
@@ -1005,16 +1007,15 @@ public class UndoView extends FrameLayout {
                         }
                         leftImageView.setAnimation(R.raw.saved_messages, 30, 30);
                     } else {
-                        int lowerId = (int) did;
-                        if (lowerId < 0) {
-                            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lowerId);
+                        if (DialogObject.isChatDialog(did)) {
+                            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-did);
                             if (count == 1) {
                                 infoTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("FwdMessageToGroup", R.string.FwdMessageToGroup, chat.title)));
                             } else {
                                 infoTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("FwdMessagesToGroup", R.string.FwdMessagesToGroup, chat.title)));
                             }
                         } else {
-                            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(lowerId);
+                            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(did);
                             if (count == 1) {
                                 infoTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("FwdMessageToUser", R.string.FwdMessageToUser, UserObject.getFirstName(user))));
                             } else {
@@ -1042,12 +1043,11 @@ public class UndoView extends FrameLayout {
                         infoTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString("BackgroundToSavedMessages", R.string.BackgroundToSavedMessages)));
                         leftImageView.setAnimation(R.raw.saved_messages, 30, 30);
                     } else {
-                        int lowerId = (int) did;
-                        if (lowerId < 0) {
-                            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lowerId);
+                        if (DialogObject.isChatDialog(did)) {
+                            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-did);
                             infoTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("BackgroundToGroup", R.string.BackgroundToGroup, chat.title)));
                         } else {
-                            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(lowerId);
+                            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(did);
                             infoTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("BackgroundToUser", R.string.BackgroundToUser, UserObject.getFirstName(user))));
                         }
                         leftImageView.setAnimation(R.raw.forward, 30, 30);
@@ -1060,7 +1060,7 @@ public class UndoView extends FrameLayout {
                 timeLeft = 3000;
             }
             subinfoTextView.setVisibility(GONE);
-            undoTextView.setTextColor(Theme.getColor(Theme.key_undo_cancelColor));
+            undoTextView.setTextColor(getThemedColor(Theme.key_undo_cancelColor));
             undoButton.setVisibility(GONE);
 
             layoutParams.leftMargin = AndroidUtilities.dp(58);
@@ -1084,10 +1084,10 @@ public class UndoView extends FrameLayout {
                 infoTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
                 infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                 leftImageView.clearLayerColors();
-                leftImageView.setLayerColor("BODY.**", Theme.getColor(Theme.key_undo_infoColor));
-                leftImageView.setLayerColor("Wibe Big.**", Theme.getColor(Theme.key_undo_infoColor));
-                leftImageView.setLayerColor("Wibe Big 3.**", Theme.getColor(Theme.key_undo_infoColor));
-                leftImageView.setLayerColor("Wibe Small.**", Theme.getColor(Theme.key_undo_infoColor));
+                leftImageView.setLayerColor("BODY.**", getThemedColor(Theme.key_undo_infoColor));
+                leftImageView.setLayerColor("Wibe Big.**", getThemedColor(Theme.key_undo_infoColor));
+                leftImageView.setLayerColor("Wibe Big 3.**", getThemedColor(Theme.key_undo_infoColor));
+                leftImageView.setLayerColor("Wibe Small.**", getThemedColor(Theme.key_undo_infoColor));
 
                 infoTextView.setText(LocaleController.getString("ProximityAlertSet", R.string.ProximityAlertSet));
                 leftImageView.setAnimation(R.raw.ic_unmute, 28, 28);
@@ -1107,18 +1107,18 @@ public class UndoView extends FrameLayout {
                 infoTextView.setTypeface(Typeface.DEFAULT);
                 infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
                 leftImageView.clearLayerColors();
-                leftImageView.setLayerColor("Body Main.**", Theme.getColor(Theme.key_undo_infoColor));
-                leftImageView.setLayerColor("Body Top.**", Theme.getColor(Theme.key_undo_infoColor));
-                leftImageView.setLayerColor("Line.**", Theme.getColor(Theme.key_undo_infoColor));
-                leftImageView.setLayerColor("Curve Big.**", Theme.getColor(Theme.key_undo_infoColor));
-                leftImageView.setLayerColor("Curve Small.**", Theme.getColor(Theme.key_undo_infoColor));
+                leftImageView.setLayerColor("Body Main.**", getThemedColor(Theme.key_undo_infoColor));
+                leftImageView.setLayerColor("Body Top.**", getThemedColor(Theme.key_undo_infoColor));
+                leftImageView.setLayerColor("Line.**", getThemedColor(Theme.key_undo_infoColor));
+                leftImageView.setLayerColor("Curve Big.**", getThemedColor(Theme.key_undo_infoColor));
+                leftImageView.setLayerColor("Curve Small.**", getThemedColor(Theme.key_undo_infoColor));
 
                 layoutParams.topMargin = AndroidUtilities.dp(14);
 
                 infoTextView.setText(LocaleController.getString("ProximityAlertCancelled", R.string.ProximityAlertCancelled));
                 leftImageView.setAnimation(R.raw.ic_mute, 28, 28);
                 subinfoTextView.setVisibility(GONE);
-                undoTextView.setTextColor(Theme.getColor(Theme.key_undo_cancelColor));
+                undoTextView.setTextColor(getThemedColor(Theme.key_undo_cancelColor));
                 undoButton.setVisibility(VISIBLE);
             }
 
@@ -1139,7 +1139,7 @@ public class UndoView extends FrameLayout {
             infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             infoTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
 
-            undoTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText2));
+            undoTextView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteRedText2));
             undoImageView.setVisibility(GONE);
             undoButton.setVisibility(VISIBLE);
             leftImageView.setVisibility(VISIBLE);
@@ -1213,7 +1213,7 @@ public class UndoView extends FrameLayout {
             if (currentAction == ACTION_DICE_INFO) {
                 margin = (int) Math.ceil(undoTextView.getPaint().measureText(undoTextView.getText().toString())) + AndroidUtilities.dp(26);
                 undoTextView.setVisibility(VISIBLE);
-                undoTextView.setTextColor(Theme.getColor(Theme.key_undo_cancelColor));
+                undoTextView.setTextColor(getThemedColor(Theme.key_undo_cancelColor));
                 undoImageView.setVisibility(GONE);
                 undoButton.setVisibility(VISIBLE);
             } else {
@@ -1315,9 +1315,8 @@ public class UndoView extends FrameLayout {
             } else if (currentAction == ACTION_DELETE_FEW) {
                 infoTextView.setText(LocaleController.getString("ChatsDeletedUndo", R.string.ChatsDeletedUndo));
             } else {
-                int lowerId = (int) did;
-                if (lowerId < 0) {
-                    TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lowerId);
+                if (DialogObject.isChatDialog(did)) {
+                    TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-did);
                     if (ChatObject.isChannel(chat) && !chat.megagroup) {
                         infoTextView.setText(LocaleController.getString("ChannelDeletedUndo", R.string.ChannelDeletedUndo));
                     } else {
@@ -1523,5 +1522,10 @@ public class UndoView extends FrameLayout {
     @Override
     public Drawable getBackground() {
         return backgroundDrawable;
+    }
+
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
     }
 }

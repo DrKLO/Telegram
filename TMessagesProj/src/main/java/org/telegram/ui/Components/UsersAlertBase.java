@@ -80,8 +80,8 @@ public class UsersAlertBase extends BottomSheet {
     protected final FillLastLinearLayoutManager layoutManager;
 
 
-    public UsersAlertBase(Context context, boolean needFocus, int account) {
-        super(context, needFocus);
+    public UsersAlertBase(Context context, boolean needFocus, int account, Theme.ResourcesProvider resourcesProvider) {
+        super(context, needFocus, resourcesProvider);
         updateColorKeys();
         setDimBehindAlpha(75);
 

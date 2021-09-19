@@ -31,6 +31,7 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
@@ -70,7 +71,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
     private ListAdapter adapter;
     private AnimatorSet animatorSet;
 
-    private long dialog_id;
+    private long dialogId;
 
     private boolean addingException;
 
@@ -112,7 +113,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
 
     public ProfileNotificationsActivity(Bundle args) {
         super(args);
-        dialog_id = args.getLong("dialog_id");
+        dialogId = args.getLong("dialog_id");
         addingException = args.getBoolean("exception", false);
     }
 
@@ -136,14 +137,14 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
         } else {
             enableRow = -1;
         }
-        if ((int) dialog_id != 0) {
+        if (!DialogObject.isEncryptedDialog(dialogId)) {
             previewRow = rowCount++;
         } else {
             previewRow = -1;
         }
         soundRow = rowCount++;
         vibrateRow = rowCount++;
-        if ((int) dialog_id < 0) {
+        if (DialogObject.isChatDialog(dialogId)) {
             smartRow = rowCount++;
         } else {
             smartRow = -1;
@@ -155,14 +156,13 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
         }
         priorityInfoRow = rowCount++;
         boolean isChannel;
-        int lower_id = (int) dialog_id;
-        if (lower_id < 0) {
-            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lower_id);
+        if (DialogObject.isChatDialog(dialogId)) {
+            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
             isChannel = ChatObject.isChannel(chat) && !chat.megagroup;
         } else {
             isChannel = false;
         }
-        if (lower_id != 0 && !isChannel) {
+        if (!DialogObject.isEncryptedDialog(dialogId) && !isChannel) {
             popupRow = rowCount++;
             popupEnabledRow = rowCount++;
             popupDisabledRow = rowCount++;
@@ -174,7 +174,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
             popupInfoRow = -1;
         }
 
-        if (lower_id > 0) {
+        if (DialogObject.isUserDialog(dialogId)) {
             callsRow = rowCount++;
             callsVibrateRow = rowCount++;
             ringtoneRow = rowCount++;
@@ -191,15 +191,15 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
         ledInfoRow = rowCount++;
 
         SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
-        customEnabled = preferences.getBoolean("custom_" + dialog_id, false) || addingException;
+        customEnabled = preferences.getBoolean("custom_" + dialogId, false) || addingException;
 
-        boolean hasOverride = preferences.contains("notify2_" + dialog_id);
-        int value = preferences.getInt("notify2_" + dialog_id, 0);
+        boolean hasOverride = preferences.contains("notify2_" + dialogId);
+        int value = preferences.getInt("notify2_" + dialogId, 0);
         if (value == 0) {
             if (hasOverride) {
                 notificationsEnabled = true;
             } else {
-                notificationsEnabled = NotificationsController.getInstance(currentAccount).isGlobalNotificationsEnabled(dialog_id);
+                notificationsEnabled = NotificationsController.getInstance(currentAccount).isGlobalNotificationsEnabled(dialogId);
             }
         } else if (value == 1) {
             notificationsEnabled = true;
@@ -229,25 +229,25 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                 if (id == -1) {
                     if (!addingException && notificationsEnabled && customEnabled) {
                         SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
-                        preferences.edit().putInt("notify2_" + dialog_id, 0).commit();
+                        preferences.edit().putInt("notify2_" + dialogId, 0).commit();
                     }
                 } else if (id == done_button) {
                     SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
                     SharedPreferences.Editor editor = preferences.edit();
-                    editor.putBoolean("custom_" + dialog_id, true);
+                    editor.putBoolean("custom_" + dialogId, true);
 
 
-                    TLRPC.Dialog dialog = MessagesController.getInstance(currentAccount).dialogs_dict.get(dialog_id);
+                    TLRPC.Dialog dialog = MessagesController.getInstance(currentAccount).dialogs_dict.get(dialogId);
                     if (notificationsEnabled) {
-                        editor.putInt("notify2_" + dialog_id, 0);
-                        MessagesStorage.getInstance(currentAccount).setDialogFlags(dialog_id, 0);
+                        editor.putInt("notify2_" + dialogId, 0);
+                        MessagesStorage.getInstance(currentAccount).setDialogFlags(dialogId, 0);
                         if (dialog != null) {
                             dialog.notify_settings = new TLRPC.TL_peerNotifySettings();
                         }
                     } else {
-                        editor.putInt("notify2_" + dialog_id, 2);
-                        NotificationsController.getInstance(currentAccount).removeNotificationsForDialog(dialog_id);
-                        MessagesStorage.getInstance(currentAccount).setDialogFlags(dialog_id, 1);
+                        editor.putInt("notify2_" + dialogId, 2);
+                        NotificationsController.getInstance(currentAccount).removeNotificationsForDialog(dialogId);
+                        MessagesStorage.getInstance(currentAccount).setDialogFlags(dialogId, 1);
                         if (dialog != null) {
                             dialog.notify_settings = new TLRPC.TL_peerNotifySettings();
                             dialog.notify_settings.mute_until = Integer.MAX_VALUE;
@@ -255,14 +255,14 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                     }
 
                     editor.commit();
-                    NotificationsController.getInstance(currentAccount).updateServerNotificationsSettings(dialog_id);
+                    NotificationsController.getInstance(currentAccount).updateServerNotificationsSettings(dialogId);
                     if (delegate != null) {
                         NotificationsSettingsActivity.NotificationException exception = new NotificationsSettingsActivity.NotificationException();
-                        exception.did = dialog_id;
+                        exception.did = dialogId;
                         exception.hasCustom = true;
-                        exception.notify = preferences.getInt("notify2_" + dialog_id, 0);
+                        exception.notify = preferences.getInt("notify2_" + dialogId, 0);
                         if (exception.notify != 0) {
-                            exception.muteUntil = preferences.getInt("notifyuntil_" + dialog_id, 0);
+                            exception.muteUntil = preferences.getInt("notifyuntil_" + dialogId, 0);
                         }
                         delegate.didCreateNewException(exception);
                     }
@@ -299,7 +299,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                     SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
                     customEnabled = !customEnabled;
                     notificationsEnabled = customEnabled;
-                    preferences.edit().putBoolean("custom_" + dialog_id, customEnabled).commit();
+                    preferences.edit().putBoolean("custom_" + dialogId, customEnabled).commit();
                     TextCheckBoxCell cell = (TextCheckBoxCell) view;
                     cell.setChecked(customEnabled);
                     checkRowsEnabled();
@@ -323,7 +323,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                                 defaultPath = defaultUri.getPath();
                             }
 
-                            String path = preferences.getString("sound_path_" + dialog_id, defaultPath);
+                            String path = preferences.getString("sound_path_" + dialogId, defaultPath);
                             if (path != null && !path.equals("NoSound")) {
                                 if (path.equals(defaultPath)) {
                                     currentSound = defaultUri;
@@ -353,7 +353,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                                 defaultPath = defaultUri.getPath();
                             }
 
-                            String path = preferences.getString("ringtone_path_" + dialog_id, defaultPath);
+                            String path = preferences.getString("ringtone_path_" + dialogId, defaultPath);
                             if (path != null && !path.equals("NoSound")) {
                                 if (path.equals(defaultPath)) {
                                     currentSound = defaultUri;
@@ -368,7 +368,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                             FileLog.e(e);
                         }
                     } else if (position == vibrateRow) {
-                        showDialog(AlertsCreator.createVibrationSelectDialog(getParentActivity(), dialog_id, false, false, () -> {
+                        showDialog(AlertsCreator.createVibrationSelectDialog(getParentActivity(), dialogId, false, false, () -> {
                             if (adapter != null) {
                                 adapter.notifyItemChanged(vibrateRow);
                             }
@@ -381,16 +381,16 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                     } else if (position == previewRow) {
                         TextCheckCell checkCell = (TextCheckCell) view;
                         SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
-                        preferences.edit().putBoolean("content_preview_" + dialog_id, !checkCell.isChecked()).commit();
+                        preferences.edit().putBoolean("content_preview_" + dialogId, !checkCell.isChecked()).commit();
                         checkCell.setChecked(!checkCell.isChecked());
                     } else if (position == callsVibrateRow) {
-                        showDialog(AlertsCreator.createVibrationSelectDialog(getParentActivity(), dialog_id, "calls_vibrate_" + dialog_id, () -> {
+                        showDialog(AlertsCreator.createVibrationSelectDialog(getParentActivity(), dialogId, "calls_vibrate_" + dialogId, () -> {
                             if (adapter != null) {
                                 adapter.notifyItemChanged(callsVibrateRow);
                             }
                         }));
                     } else if (position == priorityRow) {
-                        showDialog(AlertsCreator.createPrioritySelectDialog(getParentActivity(), dialog_id, -1, () -> {
+                        showDialog(AlertsCreator.createPrioritySelectDialog(getParentActivity(), dialogId, -1, () -> {
                             if (adapter != null) {
                                 adapter.notifyItemChanged(priorityRow);
                             }
@@ -401,8 +401,8 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                         }
                         final Context context1 = getParentActivity();
                         SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
-                        int notifyMaxCount = preferences.getInt("smart_max_count_" + dialog_id, 2);
-                        int notifyDelay = preferences.getInt("smart_delay_" + dialog_id, 3 * 60);
+                        int notifyMaxCount = preferences.getInt("smart_max_count_" + dialogId, 2);
+                        int notifyDelay = preferences.getInt("smart_delay_" + dialogId, 3 * 60);
                         if (notifyMaxCount == 0) {
                             notifyMaxCount = 2;
                         }
@@ -457,8 +457,8 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                             int notifyMaxCount1 = position1 % 10 + 1;
                             int notifyDelay1 = position1 / 10 + 1;
                             SharedPreferences preferences1 = MessagesController.getNotificationsSettings(currentAccount);
-                            preferences1.edit().putInt("smart_max_count_" + dialog_id, notifyMaxCount1).commit();
-                            preferences1.edit().putInt("smart_delay_" + dialog_id, notifyDelay1 * 60).commit();
+                            preferences1.edit().putInt("smart_max_count_" + dialogId, notifyMaxCount1).commit();
+                            preferences1.edit().putInt("smart_delay_" + dialogId, notifyDelay1 * 60).commit();
                             if (adapter != null) {
                                 adapter.notifyItemChanged(smartRow);
                             }
@@ -470,7 +470,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                         builder.setPositiveButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                         builder.setNegativeButton(LocaleController.getString("SmartNotificationsDisabled", R.string.SmartNotificationsDisabled), (dialog, which) -> {
                             SharedPreferences preferences12 = MessagesController.getNotificationsSettings(currentAccount);
-                            preferences12.edit().putInt("smart_max_count_" + dialog_id, 0).commit();
+                            preferences12.edit().putInt("smart_max_count_" + dialogId, 0).commit();
                             if (adapter != null) {
                                 adapter.notifyItemChanged(smartRow);
                             }
@@ -481,14 +481,14 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                         if (getParentActivity() == null) {
                             return;
                         }
-                        showDialog(AlertsCreator.createColorSelectDialog(getParentActivity(), dialog_id, -1, () -> {
+                        showDialog(AlertsCreator.createColorSelectDialog(getParentActivity(), dialogId, -1, () -> {
                             if (adapter != null) {
                                 adapter.notifyItemChanged(colorRow);
                             }
                         }));
                     } else if (position == popupEnabledRow) {
                         SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
-                        preferences.edit().putInt("popup_" + dialog_id, 1).commit();
+                        preferences.edit().putInt("popup_" + dialogId, 1).commit();
                         ((RadioCell) view).setChecked(true, true);
                         view = listView.findViewWithTag(2);
                         if (view != null) {
@@ -496,7 +496,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                         }
                     } else if (position == popupDisabledRow) {
                         SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
-                        preferences.edit().putInt("popup_" + dialog_id, 2).commit();
+                        preferences.edit().putInt("popup_" + dialogId, 2).commit();
                         ((RadioCell) view).setChecked(true, true);
                         view = listView.findViewWithTag(1);
                         if (view != null) {
@@ -543,20 +543,20 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
 
             if (requestCode == 12) {
                 if (name != null) {
-                    editor.putString("sound_" + dialog_id, name);
-                    editor.putString("sound_path_" + dialog_id, ringtone.toString());
+                    editor.putString("sound_" + dialogId, name);
+                    editor.putString("sound_path_" + dialogId, ringtone.toString());
                 } else {
-                    editor.putString("sound_" + dialog_id, "NoSound");
-                    editor.putString("sound_path_" + dialog_id, "NoSound");
+                    editor.putString("sound_" + dialogId, "NoSound");
+                    editor.putString("sound_path_" + dialogId, "NoSound");
                 }
-                getNotificationsController().deleteNotificationChannel(dialog_id);
+                getNotificationsController().deleteNotificationChannel(dialogId);
             } else if (requestCode == 13) {
                 if (name != null) {
-                    editor.putString("ringtone_" + dialog_id, name);
-                    editor.putString("ringtone_path_" + dialog_id, ringtone.toString());
+                    editor.putString("ringtone_" + dialogId, name);
+                    editor.putString("ringtone_path_" + dialogId, ringtone.toString());
                 } else {
-                    editor.putString("ringtone_" + dialog_id, "NoSound");
-                    editor.putString("ringtone_path_" + dialog_id, "NoSound");
+                    editor.putString("ringtone_" + dialogId, "NoSound");
+                    editor.putString("ringtone_path_" + dialogId, "NoSound");
                 }
             }
             editor.commit();
@@ -739,19 +739,19 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                     TextSettingsCell textCell = (TextSettingsCell) holder.itemView;
                     SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
                     if (position == soundRow) {
-                        String value = preferences.getString("sound_" + dialog_id, LocaleController.getString("SoundDefault", R.string.SoundDefault));
+                        String value = preferences.getString("sound_" + dialogId, LocaleController.getString("SoundDefault", R.string.SoundDefault));
                         if (value.equals("NoSound")) {
                             value = LocaleController.getString("NoSound", R.string.NoSound);
                         }
                         textCell.setTextAndValue(LocaleController.getString("Sound", R.string.Sound), value, true);
                     } else if (position == ringtoneRow) {
-                        String value = preferences.getString("ringtone_" + dialog_id, LocaleController.getString("DefaultRingtone", R.string.DefaultRingtone));
+                        String value = preferences.getString("ringtone_" + dialogId, LocaleController.getString("DefaultRingtone", R.string.DefaultRingtone));
                         if (value.equals("NoSound")) {
                             value = LocaleController.getString("NoSound", R.string.NoSound);
                         }
                         textCell.setTextAndValue(LocaleController.getString("VoipSettingsRingtone", R.string.VoipSettingsRingtone), value, false);
                     } else if (position == vibrateRow) {
-                        int value = preferences.getInt("vibrate_" + dialog_id, 0);
+                        int value = preferences.getInt("vibrate_" + dialogId, 0);
                         if (value == 0 || value == 4) {
                             textCell.setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString("VibrationDefault", R.string.VibrationDefault), smartRow != -1 || priorityRow != -1);
                         } else if (value == 1) {
@@ -762,7 +762,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                             textCell.setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString("Long", R.string.Long), smartRow != -1 || priorityRow != -1);
                         }
                     } else if (position == priorityRow) {
-                        int value = preferences.getInt("priority_" + dialog_id, 3);
+                        int value = preferences.getInt("priority_" + dialogId, 3);
                         if (value == 0) {
                             textCell.setTextAndValue(LocaleController.getString("NotificationsImportance", R.string.NotificationsImportance), LocaleController.getString("NotificationsPriorityHigh", R.string.NotificationsPriorityHigh), false);
                         } else if (value == 1 || value == 2) {
@@ -775,8 +775,8 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                             textCell.setTextAndValue(LocaleController.getString("NotificationsImportance", R.string.NotificationsImportance), LocaleController.getString("NotificationsPriorityMedium", R.string.NotificationsPriorityMedium), false);
                         }
                     } else if (position == smartRow) {
-                        int notifyMaxCount = preferences.getInt("smart_max_count_" + dialog_id, 2);
-                        int notifyDelay = preferences.getInt("smart_delay_" + dialog_id, 3 * 60);
+                        int notifyMaxCount = preferences.getInt("smart_max_count_" + dialogId, 2);
+                        int notifyDelay = preferences.getInt("smart_delay_" + dialogId, 3 * 60);
                         if (notifyMaxCount == 0) {
                             textCell.setTextAndValue(LocaleController.getString("SmartNotifications", R.string.SmartNotifications), LocaleController.getString("SmartNotificationsDisabled", R.string.SmartNotificationsDisabled), priorityRow != -1);
                         } else {
@@ -784,7 +784,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                             textCell.setTextAndValue(LocaleController.getString("SmartNotifications", R.string.SmartNotifications), LocaleController.formatString("SmartNotificationsInfo", R.string.SmartNotificationsInfo, notifyMaxCount, minutes), priorityRow != -1);
                         }
                     } else if (position == callsVibrateRow) {
-                        int value = preferences.getInt("calls_vibrate_" + dialog_id, 0);
+                        int value = preferences.getInt("calls_vibrate_" + dialogId, 0);
                         if (value == 0 || value == 4) {
                             textCell.setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString("VibrationDefault", R.string.VibrationDefault), true);
                         } else if (value == 1) {
@@ -825,10 +825,10 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                     TextColorCell textCell = (TextColorCell) holder.itemView;
                     SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
                     int color;
-                    if (preferences.contains("color_" + dialog_id)) {
-                        color = preferences.getInt("color_" + dialog_id, 0xff0000ff);
+                    if (preferences.contains("color_" + dialogId)) {
+                        color = preferences.getInt("color_" + dialogId, 0xff0000ff);
                     } else {
-                        if ((int) dialog_id < 0) {
+                        if (DialogObject.isChatDialog(dialogId)) {
                             color = preferences.getInt("GroupLed", 0xff0000ff);
                         } else {
                             color = preferences.getInt("MessagesLed", 0xff0000ff);
@@ -846,9 +846,9 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                 case 4: {
                     RadioCell radioCell = (RadioCell) holder.itemView;
                     SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
-                    int popup = preferences.getInt("popup_" + dialog_id, 0);
+                    int popup = preferences.getInt("popup_" + dialogId, 0);
                     if (popup == 0) {
-                        popup = preferences.getInt((int) dialog_id < 0 ? "popupGroup" : "popupAll", 0);
+                        popup = preferences.getInt(DialogObject.isChatDialog(dialogId) ? "popupGroup" : "popupAll", 0);
                         if (popup != 0) {
                             popup = 1;
                         } else {
@@ -872,12 +872,11 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                 }
                 case 6: {
                     UserCell2 userCell2 = (UserCell2) holder.itemView;
-                    int lower_id = (int) dialog_id;
                     TLObject object;
-                    if (lower_id > 0) {
-                        object = MessagesController.getInstance(currentAccount).getUser(lower_id);
+                    if (DialogObject.isUserDialog(dialogId)) {
+                        object = MessagesController.getInstance(currentAccount).getUser(dialogId);
                     } else {
-                        object = MessagesController.getInstance(currentAccount).getChat(-lower_id);
+                        object = MessagesController.getInstance(currentAccount).getChat(-dialogId);
                     }
                     userCell2.setData(object, null, null, 0);
                     break;
@@ -888,7 +887,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                     if (position == enableRow) {
                         checkCell.setTextAndCheck(LocaleController.getString("Notifications", R.string.Notifications), notificationsEnabled, true);
                     } else if (position == previewRow) {
-                        checkCell.setTextAndCheck(LocaleController.getString("MessagePreview", R.string.MessagePreview), preferences.getBoolean("content_preview_" + dialog_id, true), true);
+                        checkCell.setTextAndCheck(LocaleController.getString("MessagePreview", R.string.MessagePreview), preferences.getBoolean("content_preview_" + dialogId, true), true);
                     }
                     break;
                 }

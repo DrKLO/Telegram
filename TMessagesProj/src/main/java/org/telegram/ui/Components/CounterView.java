@@ -23,11 +23,14 @@ import org.telegram.ui.ActionBar.Theme;
 
 public class CounterView extends View {
 
-    public CounterDrawable counterDrawable = new CounterDrawable(this);
+    public CounterDrawable counterDrawable;
+    private final Theme.ResourcesProvider resourcesProvider;
 
-    public CounterView(Context context) {
+    public CounterView(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
         setVisibility(View.GONE);
+        counterDrawable = new CounterDrawable(this, resourcesProvider);
         counterDrawable.updateVisibility = true;
     }
 
@@ -61,6 +64,11 @@ public class CounterView extends View {
         counterDrawable.setCount(count, animated);
     }
 
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
+    }
+
     public static class CounterDrawable {
 
         private final static int ANIMATION_TYPE_IN = 0;
@@ -72,6 +80,7 @@ public class CounterView extends View {
         public Paint circlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         public TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         public RectF rectF = new RectF();
+        public boolean addServiceGradient;
 
         int currentCount;
         private boolean countAnimationIncrement;
@@ -107,9 +116,11 @@ public class CounterView extends View {
         public final static int TYPE_CHAT_PULLING_DOWN = 1;
 
         int type = TYPE_DEFAULT;
+        private final Theme.ResourcesProvider resourcesProvider;
 
-        public CounterDrawable(View parent) {
+        public CounterDrawable(View parent, Theme.ResourcesProvider resourcesProvider) {
             this.parent = parent;
+            this.resourcesProvider = resourcesProvider;
             circlePaint.setColor(Color.BLACK);
             textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             textPaint.setTextSize(AndroidUtilities.dp(13));
@@ -131,7 +142,7 @@ public class CounterView extends View {
             updateX(countWidth);
             rectF.set(x, countTop, x + countWidth + AndroidUtilities.dp(11), countTop + AndroidUtilities.dp(23));
             canvas.drawRoundRect(rectF, 11.5f * AndroidUtilities.density, 11.5f * AndroidUtilities.density, circlePaint);
-            if (Theme.hasGradientService()) {
+            if (addServiceGradient && Theme.hasGradientService()) {
                 canvas.drawRoundRect(rectF, 11.5f * AndroidUtilities.density, 11.5f * AndroidUtilities.density, Theme.chat_actionBackgroundGradientDarkenPaint);
             }
             if (countLayout != null) {
@@ -254,8 +265,8 @@ public class CounterView extends View {
 
         public void draw(Canvas canvas) {
             if (type != TYPE_CHAT_PULLING_DOWN) {
-                int textColor = Theme.getColor(textColorKey);
-                int circleColor = Theme.getColor(circleColorKey);
+                int textColor = getThemedColor(textColorKey);
+                int circleColor = getThemedColor(circleColorKey);
                 if (this.textColor != textColor) {
                     this.textColor = textColor;
                     textPaint.setColor(textColor);
@@ -303,7 +314,7 @@ public class CounterView extends View {
                     canvas.save();
                     canvas.scale(scale, scale, rectF.centerX(), rectF.centerY());
                     canvas.drawRoundRect(rectF, 11.5f * AndroidUtilities.density, 11.5f * AndroidUtilities.density, circlePaint);
-                    if (Theme.hasGradientService()) {
+                    if (addServiceGradient && Theme.hasGradientService()) {
                         canvas.drawRoundRect(rectF, 11.5f * AndroidUtilities.density, 11.5f * AndroidUtilities.density, Theme.chat_actionBackgroundGradientDarkenPaint);
                     }
                     canvas.clipRect(rectF);
@@ -401,6 +412,11 @@ public class CounterView extends View {
 
         public void setParent(View parent) {
             this.parent = parent;
+        }
+
+        private int getThemedColor(String key) {
+            Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+            return color != null ? color : Theme.getColor(key);
         }
     }
 }

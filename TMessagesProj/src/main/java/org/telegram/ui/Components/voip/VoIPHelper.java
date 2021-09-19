@@ -161,8 +161,8 @@ public class VoIPHelper {
 		}
 		VoIPService voIPService = VoIPService.getSharedInstance();
 		if (voIPService != null) {
-			int newId = user != null ? user.id : -chat.id;
-			int callerId = VoIPService.getSharedInstance().getCallerId();
+			long newId = user != null ? user.id : -chat.id;
+			long callerId = VoIPService.getSharedInstance().getCallerId();
 			if (callerId != newId || voIPService.getAccount() != accountInstance.getCurrentAccount()) {
 				String newName;
 				String oldName;
@@ -235,7 +235,7 @@ public class VoIPHelper {
 		if (checkJoiner && chat != null && !createCall) {
 			TLRPC.ChatFull chatFull = accountInstance.getMessagesController().getChatFull(chat.id);
 			if (chatFull != null && chatFull.groupcall_default_join_as != null) {
-				int did = MessageObject.getPeerId(chatFull.groupcall_default_join_as);
+				long did = MessageObject.getPeerId(chatFull.groupcall_default_join_as);
 				TLRPC.InputPeer	inputPeer = accountInstance.getMessagesController().getInputPeer(did);
 				JoinCallAlert.checkFewUsers(activity, -chat.id, accountInstance, param -> {
 					if (!param && hash != null) {

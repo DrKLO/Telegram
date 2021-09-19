@@ -38,7 +38,7 @@ import androidx.core.graphics.ColorUtils;
 
 public class GroupCreateSpan extends View {
 
-    private int uid;
+    private long uid;
     private String key;
     private static TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     private static Paint backPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -226,7 +226,7 @@ public class GroupCreateSpan extends View {
         invalidate();
     }
 
-    public int getUid() {
+    public long getUid() {
         return uid;
     }
 

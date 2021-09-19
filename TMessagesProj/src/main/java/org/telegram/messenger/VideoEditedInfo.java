@@ -374,7 +374,7 @@ public class VideoEditedInfo {
     }
 
     public boolean needConvert() {
-        return mediaEntities != null || paintPath != null || filterState != null || cropState != null || !roundVideo || roundVideo && (startTime > 0 || endTime != -1 && endTime != estimatedDuration);
+        return mediaEntities != null || paintPath != null || filterState != null || cropState != null || !roundVideo || startTime > 0 || endTime != -1 && endTime != estimatedDuration;
     }
 
     public boolean canAutoPlaySourceVideo() {

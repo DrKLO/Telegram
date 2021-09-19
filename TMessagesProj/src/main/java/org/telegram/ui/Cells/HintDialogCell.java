@@ -19,6 +19,7 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
@@ -41,7 +42,7 @@ public class HintDialogCell extends FrameLayout {
     private int lastUnreadCount;
     private TLRPC.User currentUser;
 
-    private long dialog_id;
+    private long dialogId;
     private int currentAccount = UserConfig.selectedAccount;
     float showOnlineProgress;
     boolean wasDraw;
@@ -67,7 +68,7 @@ public class HintDialogCell extends FrameLayout {
         nameTextView.setEllipsize(TextUtils.TruncateAt.END);
         addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 6, 64, 6, 0));
 
-        counterView = new CounterView(context);
+        counterView = new CounterView(context, null);
         addView(counterView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 28, Gravity.TOP,0 ,4,0,0));
         counterView.setColors(Theme.key_chats_unreadCounterText, Theme.key_chats_unreadCounter);
         counterView.setGravity(Gravity.RIGHT);
@@ -106,7 +107,7 @@ public class HintDialogCell extends FrameLayout {
         if (mask != 0 && (mask & MessagesController.UPDATE_MASK_READ_DIALOG_MESSAGE) == 0 && (mask & MessagesController.UPDATE_MASK_NEW_MESSAGE) == 0) {
             return;
         }
-        TLRPC.Dialog dialog = MessagesController.getInstance(currentAccount).dialogs_dict.get(dialog_id);
+        TLRPC.Dialog dialog = MessagesController.getInstance(currentAccount).dialogs_dict.get(dialogId);
         if (dialog != null && dialog.unread_count != 0) {
             if (lastUnreadCount != dialog.unread_count) {
                 lastUnreadCount = dialog.unread_count;
@@ -119,24 +120,23 @@ public class HintDialogCell extends FrameLayout {
     }
 
     public void update() {
-        int uid = (int) dialog_id;
-        if (uid > 0) {
-            currentUser = MessagesController.getInstance(currentAccount).getUser(uid);
+        if (DialogObject.isUserDialog(dialogId)) {
+            currentUser = MessagesController.getInstance(currentAccount).getUser(dialogId);
             avatarDrawable.setInfo(currentUser);
         } else {
-            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-uid);
+            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
             avatarDrawable.setInfo(chat);
             currentUser = null;
         }
     }
 
-    public void setDialog(int uid, boolean counter, CharSequence name) {
-        if (dialog_id != uid) {
+    public void setDialog(long uid, boolean counter, CharSequence name) {
+        if (dialogId != uid) {
             wasDraw = false;
             invalidate();
         }
-        dialog_id = uid;
-        if (uid > 0) {
+        dialogId = uid;
+        if (DialogObject.isUserDialog(uid)) {
             currentUser = MessagesController.getInstance(currentAccount).getUser(uid);
             if (name != null) {
                 nameTextView.setText(name);
@@ -220,6 +220,6 @@ public class HintDialogCell extends FrameLayout {
     }
 
     public long getDialogId() {
-        return dialog_id;
+        return dialogId;
     }
 }

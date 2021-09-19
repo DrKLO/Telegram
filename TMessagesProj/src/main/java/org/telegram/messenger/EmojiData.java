@@ -529,6 +529,10 @@ public class EmojiData {
         return "⚰".equals(emoji);
     }
 
+    public static boolean hasEmojiSupportVibration(String emoji) {
+        return isHeartEmoji(emoji) || isPeachEmoji(emoji) || isCofinEmoji(emoji);
+    }
+
     static {
         for (int a = 0; a < emojiToFE0F.length; a++) {
             emojiToFE0FMap.put(emojiToFE0F[a], true);

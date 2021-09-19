@@ -39,7 +39,6 @@ import android.text.Editable;
 import android.text.InputType;
 import android.text.TextUtils;
 import android.text.TextWatcher;
-import android.util.SparseArray;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -52,8 +51,8 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.Toast;
 
+import androidx.collection.LongSparseArray;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -64,7 +63,6 @@ import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
@@ -83,7 +81,6 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Adapters.ContactsAdapter;
-import org.telegram.ui.Adapters.DialogsAdapter;
 import org.telegram.ui.Adapters.SearchAdapter;
 import org.telegram.ui.Cells.GraySectionCell;
 import org.telegram.ui.Cells.LetterSectionCell;
@@ -136,10 +133,10 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     private boolean needForwardCount = true;
     private boolean needFinishFragment = true;
     private boolean resetDelegate = true;
-    private int channelId;
-    private int chatId;
+    private long channelId;
+    private long chatId;
     private String selectAlertString = null;
-    private SparseArray<TLRPC.User> ignoreUsers;
+    private LongSparseArray<TLRPC.User> ignoreUsers;
     private boolean allowUsernameSearch = true;
     private ContactsActivityDelegate delegate;
     private String initialSearchString;
@@ -184,9 +181,9 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             needForwardCount = arguments.getBoolean("needForwardCount", true);
             allowBots = arguments.getBoolean("allowBots", true);
             allowSelf = arguments.getBoolean("allowSelf", true);
-            channelId = arguments.getInt("channelId", 0);
+            channelId = arguments.getLong("channelId", 0);
             needFinishFragment = arguments.getBoolean("needFinishFragment", true);
-            chatId = arguments.getInt("chat_id", 0);
+            chatId = arguments.getLong("chat_id", 0);
             disableSections = arguments.getBoolean("disableSections", false);
             resetDelegate = arguments.getBoolean("resetDelegate", false);
         } else {
@@ -335,10 +332,10 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         };
         int inviteViaLink;
         if (chatId != 0) {
-            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(chatId);
+            TLRPC.Chat chat = getMessagesController().getChat(chatId);
             inviteViaLink = ChatObject.canUserDoAdminAction(chat, ChatObject.ACTION_INVITE) ? 1 : 0;
         } else if (channelId != 0) {
-            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(channelId);
+            TLRPC.Chat chat = getMessagesController().getChat(channelId);
             inviteViaLink = ChatObject.canUserDoAdminAction(chat, ChatObject.ACTION_INVITE) && TextUtils.isEmpty(chat.username) ? 2 : 0;
         } else {
             inviteViaLink = 0;
@@ -421,7 +418,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                     if (searchListViewAdapter.isGlobalSearch(position)) {
                         ArrayList<TLRPC.User> users = new ArrayList<>();
                         users.add(user);
-                        MessagesController.getInstance(currentAccount).putUsers(users, false);
+                        getMessagesController().putUsers(users, false);
                         MessagesStorage.getInstance(currentAccount).putUsersAndChats(users, null, false, true);
                     }
                     if (returnAsResult) {
@@ -438,8 +435,8 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                             SecretChatHelper.getInstance(currentAccount).startSecretChat(getParentActivity(), user);
                         } else {
                             Bundle args = new Bundle();
-                            args.putInt("user_id", user.id);
-                            if (MessagesController.getInstance(currentAccount).checkCanOpenChat(args, ContactsActivity.this)) {
+                            args.putLong("user_id", user.id);
+                            if (getMessagesController().checkCanOpenChat(args, ContactsActivity.this)) {
                                 presentFragment(new ChatActivity(args), true);
                             }
                         }
@@ -534,8 +531,8 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                 SecretChatHelper.getInstance(currentAccount).startSecretChat(getParentActivity(), user);
                             } else {
                                 Bundle args = new Bundle();
-                                args.putInt("user_id", user.id);
-                                if (MessagesController.getInstance(currentAccount).checkCanOpenChat(args, ContactsActivity.this)) {
+                                args.putLong("user_id", user.id);
+                                if (getMessagesController().checkCanOpenChat(args, ContactsActivity.this)) {
                                     presentFragment(new ChatActivity(args), true);
                                 }
                             }
@@ -675,7 +672,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                     return;
                 }
                 if (channelId != 0) {
-                    TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(channelId);
+                    TLRPC.Chat chat = getMessagesController().getChat(channelId);
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     if (ChatObject.canAddAdmins(chat)) {
                         builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
@@ -962,7 +959,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         this.delegate = delegate;
     }
 
-    public void setIgnoreUsers(SparseArray<TLRPC.User> users) {
+    public void setIgnoreUsers(LongSparseArray<TLRPC.User> users) {
         ignoreUsers = users;
     }
 
@@ -1015,7 +1012,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         if (previousFab.getParent() != null) {
             previousFabContainer = (View) previousFab.getParent();
         }
-        if (previousFab == null || floatingButtonContainer == null || previousFabContainer == null || previousFab.getVisibility() != View.VISIBLE || Math.abs(previousFabContainer.getTranslationY()) > AndroidUtilities.dp(4) || Math.abs(floatingButtonContainer.getTranslationY()) > AndroidUtilities.dp(4)) {
+        if (floatingButtonContainer == null || previousFabContainer == null || previousFab.getVisibility() != View.VISIBLE || Math.abs(previousFabContainer.getTranslationY()) > AndroidUtilities.dp(4) || Math.abs(floatingButtonContainer.getTranslationY()) > AndroidUtilities.dp(4)) {
             return null;
         }
         previousFab.setVisibility(View.GONE);

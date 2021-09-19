@@ -49,6 +49,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageReceiver;
@@ -213,7 +214,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             sharedMediaData = new SharedMediaData[6];
             for (int a = 0; a < sharedMediaData.length; a++) {
                 sharedMediaData[a] = new SharedMediaData();
-                sharedMediaData[a].setMaxId(0, (int) dialogId == 0 ? Integer.MIN_VALUE : Integer.MAX_VALUE);
+                sharedMediaData[a].setMaxId(0, DialogObject.isEncryptedDialog(dialogId) ? Integer.MIN_VALUE : Integer.MAX_VALUE);
             }
             loadMediaCounts();
 
@@ -316,7 +317,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     return;
                 }
                 if (dialogId == (Long) args[0]) {
-                    boolean enc = ((int) dialogId) == 0;
+                    boolean enc = DialogObject.isEncryptedDialog(dialogId);
                     ArrayList<MessageObject> arr = (ArrayList<MessageObject>) args[1];
                     for (int a = 0; a < arr.size(); a++) {
                         MessageObject obj = arr.get(a);
@@ -348,7 +349,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     int type = (Integer) args[4];
                     sharedMediaData[type].setTotalCount((Integer) args[1]);
                     ArrayList<MessageObject> arr = (ArrayList<MessageObject>) args[2];
-                    boolean enc = ((int) did) == 0;
+                    boolean enc = DialogObject.isEncryptedDialog(did);
                     int loadIndex = did == dialogId ? 0 : 1;
                     if (!arr.isEmpty()) {
                         sharedMediaData[type].setEndReached(loadIndex, (Boolean) args[5]);
@@ -363,11 +364,10 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 if (scheduled) {
                     return;
                 }
-                int channelId = (Integer) args[1];
+                long channelId = (Long) args[1];
                 TLRPC.Chat currentChat;
-                int lowerId = (int) dialogId;
-                if (lowerId < 0) {
-                    currentChat = parentFragment.getMessagesController().getChat(-lowerId);
+                if (DialogObject.isChatDialog(dialogId)) {
+                    currentChat = parentFragment.getMessagesController().getChat(-dialogId);
                 } else {
                     currentChat = null;
                 }
@@ -733,7 +733,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         dialog_id = did;
         for (int a = 0; a < sharedMediaData.length; a++) {
             sharedMediaData[a] = new SharedMediaData();
-            sharedMediaData[a].max_id[0] = ((int) dialog_id) == 0 ? Integer.MIN_VALUE : Integer.MAX_VALUE;
+            sharedMediaData[a].max_id[0] = DialogObject.isEncryptedDialog(dialog_id) ? Integer.MIN_VALUE : Integer.MAX_VALUE;
             fillMediaData(a);
             if (mergeDialogId != 0 && info != null) {
                 sharedMediaData[a].max_id[1] = info.migrated_from_max_id;
@@ -888,7 +888,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         actionModeLayout.addView(selectedMessagesCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, 18, 0, 0, 0));
         actionModeViews.add(selectedMessagesCountTextView);
 
-        if ((int) dialog_id != 0) {
+        if (!DialogObject.isEncryptedDialog(dialog_id)) {
             gotoItem = new ActionBarMenuItem(context, null, Theme.getColor(Theme.key_actionBarActionModeDefaultSelector), Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2), false);
             gotoItem.setIcon(R.drawable.msg_message);
             gotoItem.setContentDescription(LocaleController.getString("AccDescrGoToMessage", R.string.AccDescrGoToMessage));
@@ -1128,7 +1128,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                         }
                         onMemberClick(participant, false);
                     } else if (mediaPage.listView.getAdapter() == groupUsersSearchAdapter) {
-                        int user_id;
+                        long user_id;
                         TLObject object = groupUsersSearchAdapter.getItem(position);
                         if (object instanceof TLRPC.ChannelParticipant) {
                             TLRPC.ChannelParticipant channelParticipant = (TLRPC.ChannelParticipant) object;
@@ -1144,13 +1144,13 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                             return;
                         }
                         Bundle args = new Bundle();
-                        args.putInt("user_id", user_id);
+                        args.putLong("user_id", user_id);
                         profileActivity.presentFragment(new ProfileActivity(args));
                     }
                 } else if (mediaPage.selectedType == 6 && view instanceof ProfileSearchCell) {
                     TLRPC.Chat chat = ((ProfileSearchCell) view).getChat();
                     Bundle args = new Bundle();
-                    args.putInt("chat_id", chat.id);
+                    args.putLong("chat_id", chat.id);
                     if (!profileActivity.getMessagesController().checkCanOpenChat(args, profileActivity)) {
                         return;
                     }
@@ -1283,7 +1283,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         floatingDateView.setTranslationY(-AndroidUtilities.dp(48));
         addView(floatingDateView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 48 + 4, 0, 0));
 
-        addView(fragmentContextView = new FragmentContextView(context, parent, this, false), LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 38, Gravity.TOP | Gravity.LEFT, 0, 48, 0, 0));
+        addView(fragmentContextView = new FragmentContextView(context, parent, this, false, null), LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 38, Gravity.TOP | Gravity.LEFT, 0, 48, 0, 0));
         fragmentContextView.setDelegate((start, show) -> {
             if (!start) {
                 requestLayout();
@@ -1640,21 +1640,18 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             TLRPC.Chat currentChat = null;
             TLRPC.User currentUser = null;
             TLRPC.EncryptedChat currentEncryptedChat = null;
-            int lower_id = (int) dialog_id;
-            if (lower_id != 0) {
-                if (lower_id > 0) {
-                    currentUser = profileActivity.getMessagesController().getUser(lower_id);
-                } else {
-                    currentChat = profileActivity.getMessagesController().getChat(-lower_id);
-                }
+            if (DialogObject.isEncryptedDialog(dialog_id)) {
+                currentEncryptedChat = profileActivity.getMessagesController().getEncryptedChat(DialogObject.getEncryptedChatId(dialog_id));
+            } else if (DialogObject.isUserDialog(dialog_id)) {
+                currentUser = profileActivity.getMessagesController().getUser(dialog_id);
             } else {
-                currentEncryptedChat = profileActivity.getMessagesController().getEncryptedChat((int) (dialog_id >> 32));
+                currentChat = profileActivity.getMessagesController().getChat(-dialog_id);
             }
             AlertsCreator.createDeleteMessagesAlert(profileActivity, currentUser, currentChat, currentEncryptedChat, null, mergeDialogId, null, selectedFiles, null, false, 1, () -> {
                 showActionMode(false);
                 actionBar.closeSearchField();
                 cantDeleteMessagesCount = 0;
-            });
+            }, null);
         } else if (id == forward) {
             Bundle args = new Bundle();
             args.putBoolean("onlySelect", true);
@@ -1690,20 +1687,16 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     fragment1.finishFragment();
                 } else {
                     long did = dids.get(0);
-                    int lower_part = (int) did;
-                    int high_part = (int) (did >> 32);
                     Bundle args1 = new Bundle();
                     args1.putBoolean("scrollToTopOnResume", true);
-                    if (lower_part != 0) {
-                        if (lower_part > 0) {
-                            args1.putInt("user_id", lower_part);
-                        } else {
-                            args1.putInt("chat_id", -lower_part);
-                        }
+                    if (DialogObject.isEncryptedDialog(did)) {
+                        args1.putInt("enc_id", DialogObject.getEncryptedChatId(did));
                     } else {
-                        args1.putInt("enc_id", high_part);
-                    }
-                    if (lower_part != 0) {
+                        if (DialogObject.isUserDialog(did)) {
+                            args1.putLong("user_id", did);
+                        } else {
+                            args1.putLong("chat_id", -did);
+                        }
                         if (!profileActivity.getMessagesController().checkCanOpenChat(args1, fragment1)) {
                             return;
                         }
@@ -1723,21 +1716,18 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             }
             MessageObject messageObject = selectedFiles[selectedFiles[0].size() == 1 ? 0 : 1].valueAt(0);
             Bundle args = new Bundle();
-            int lower_part = (int) messageObject.getDialogId();
-            int high_id = (int) (messageObject.getDialogId() >> 32);
-            if (lower_part != 0) {
-                if (lower_part > 0) {
-                    args.putInt("user_id", lower_part);
-                } else {
-                    TLRPC.Chat chat = profileActivity.getMessagesController().getChat(-lower_part);
-                    if (chat != null && chat.migrated_to != null) {
-                        args.putInt("migrated_to", lower_part);
-                        lower_part = -chat.migrated_to.channel_id;
-                    }
-                    args.putInt("chat_id", -lower_part);
-                }
+            long dialogId = messageObject.getDialogId();
+            if (DialogObject.isEncryptedDialog(dialogId)) {
+                args.putInt("enc_id", DialogObject.getEncryptedChatId(dialogId));
+            } else if (DialogObject.isUserDialog(dialogId)) {
+                args.putLong("user_id", dialogId);
             } else {
-                args.putInt("enc_id", high_id);
+                TLRPC.Chat chat = profileActivity.getMessagesController().getChat(-dialogId);
+                if (chat != null && chat.migrated_to != null) {
+                    args.putLong("migrated_to", dialogId);
+                    dialogId = -chat.migrated_to.channel_id;
+                }
+                args.putLong("chat_id", -dialogId);
             }
             args.putInt("message_id", messageObject.getId());
             args.putBoolean("need_remove_previous_same_chat_activity", false);
@@ -2108,7 +2098,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             if (guid == profileActivity.getClassGuid()) {
                 sharedMediaData[type].totalCount = (Integer) args[1];
                 ArrayList<MessageObject> arr = (ArrayList<MessageObject>) args[2];
-                boolean enc = ((int) dialog_id) == 0;
+                boolean enc = DialogObject.isEncryptedDialog(dialog_id);
                 int loadIndex = uid == dialog_id ? 0 : 1;
 
                 RecyclerListView.Adapter adapter = null;
@@ -2200,10 +2190,10 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 return;
             }
             TLRPC.Chat currentChat = null;
-            if ((int) dialog_id < 0) {
-                currentChat = profileActivity.getMessagesController().getChat(-(int) dialog_id);
+            if (DialogObject.isChatDialog(dialog_id)) {
+                currentChat = profileActivity.getMessagesController().getChat(-dialog_id);
             }
-            int channelId = (Integer) args[1];
+            long channelId = (Long) args[1];
             int loadIndex = 0;
             if (ChatObject.isChannel(currentChat)) {
                 if (channelId == 0 && mergeDialogId != 0) {
@@ -2254,7 +2244,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             long uid = (Long) args[0];
             if (uid == dialog_id) {
                 ArrayList<MessageObject> arr = (ArrayList<MessageObject>) args[1];
-                boolean enc = ((int) dialog_id) == 0;
+                boolean enc = DialogObject.isEncryptedDialog(dialog_id);
                 boolean updated = false;
                 for (int a = 0; a < arr.size(); a++) {
                     MessageObject obj = arr.get(a);
@@ -2522,7 +2512,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         if ((hasMedia[1] <= 0) == scrollSlidingTextTabStrip.hasTab(1)) {
             changed++;
         }
-        if ((int) dialog_id != 0) {
+        if (!DialogObject.isEncryptedDialog(dialog_id)) {
             if ((hasMedia[3] <= 0) == scrollSlidingTextTabStrip.hasTab(3)) {
                 changed++;
             }
@@ -2600,7 +2590,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     scrollSlidingTextTabStrip.addTextTab(1, LocaleController.getString("SharedFilesTab2", R.string.SharedFilesTab2), idToView);
                 }
             }
-            if ((int) dialog_id != 0) {
+            if (!DialogObject.isEncryptedDialog(dialog_id)) {
                 if (hasMedia[3] > 0) {
                     if (!scrollSlidingTextTabStrip.hasTab(3)) {
                         scrollSlidingTextTabStrip.addTextTab(3, LocaleController.getString("SharedLinksTab2", R.string.SharedLinksTab2), idToView);
@@ -3414,42 +3404,42 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         EmptyStubView emptyStubView = new EmptyStubView(context);
         if (currentType == 0) {
             emptyStubView.emptyImageView.setImageResource(R.drawable.tip1);
-            if ((int) dialog_id == 0) {
+            if (DialogObject.isEncryptedDialog(dialog_id)) {
                 emptyStubView.emptyTextView.setText(LocaleController.getString("NoMediaSecret", R.string.NoMediaSecret));
             } else {
                 emptyStubView.emptyTextView.setText(LocaleController.getString("NoMedia", R.string.NoMedia));
             }
         } else if (currentType == 1) {
             emptyStubView.emptyImageView.setImageResource(R.drawable.tip2);
-            if ((int) dialog_id == 0) {
+            if (DialogObject.isEncryptedDialog(dialog_id)) {
                 emptyStubView.emptyTextView.setText(LocaleController.getString("NoSharedFilesSecret", R.string.NoSharedFilesSecret));
             } else {
                 emptyStubView.emptyTextView.setText(LocaleController.getString("NoSharedFiles", R.string.NoSharedFiles));
             }
         } else if (currentType == 2) {
             emptyStubView.emptyImageView.setImageResource(R.drawable.tip5);
-            if ((int) dialog_id == 0) {
+            if (DialogObject.isEncryptedDialog(dialog_id)) {
                 emptyStubView.emptyTextView.setText(LocaleController.getString("NoSharedVoiceSecret", R.string.NoSharedVoiceSecret));
             } else {
                 emptyStubView.emptyTextView.setText(LocaleController.getString("NoSharedVoice", R.string.NoSharedVoice));
             }
         } else if (currentType == 3) {
             emptyStubView.emptyImageView.setImageResource(R.drawable.tip3);
-            if ((int) dialog_id == 0) {
+            if (DialogObject.isEncryptedDialog(dialog_id)) {
                 emptyStubView.emptyTextView.setText(LocaleController.getString("NoSharedLinksSecret", R.string.NoSharedLinksSecret));
             } else {
                 emptyStubView.emptyTextView.setText(LocaleController.getString("NoSharedLinks", R.string.NoSharedLinks));
             }
         } else if (currentType == 4) {
             emptyStubView.emptyImageView.setImageResource(R.drawable.tip4);
-            if ((int) dialog_id == 0) {
+            if (DialogObject.isEncryptedDialog(dialog_id)) {
                 emptyStubView.emptyTextView.setText(LocaleController.getString("NoSharedAudioSecret", R.string.NoSharedAudioSecret));
             } else {
                 emptyStubView.emptyTextView.setText(LocaleController.getString("NoSharedAudio", R.string.NoSharedAudio));
             }
         } else if (currentType == 5) {
             emptyStubView.emptyImageView.setImageResource(R.drawable.tip1);
-            if ((int) dialog_id == 0) {
+            if (DialogObject.isEncryptedDialog(dialog_id)) {
                 emptyStubView.emptyTextView.setText(LocaleController.getString("NoSharedGifSecret", R.string.NoSharedGifSecret));
             } else {
                 emptyStubView.emptyTextView.setText(LocaleController.getString("NoGIFs", R.string.NoGIFs));
@@ -3658,8 +3648,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         }
 
         public void queryServerSearch(final String query, final int max_id, long did) {
-            int uid = (int) did;
-            if (uid == 0) {
+            if (DialogObject.isEncryptedDialog(did)) {
                 return;
             }
             if (reqId != 0) {
@@ -3684,7 +3673,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 req.filter = new TLRPC.TL_inputMessagesFilterMusic();
             }
             req.q = query;
-            req.peer = profileActivity.getMessagesController().getInputPeer(uid);
+            req.peer = profileActivity.getMessagesController().getInputPeer(did);
             if (req.peer == null) {
                 return;
             }
@@ -4062,19 +4051,17 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             mContext = context;
         }
 
-        private void getChats(int max_id, final int count) {
+        private void getChats(long max_id, final int count) {
             if (loading) {
                 return;
             }
             TLRPC.TL_messages_getCommonChats req = new TLRPC.TL_messages_getCommonChats();
-            int uid;
-            int lowerId = (int) dialog_id;
-            int hightId = (int) (dialog_id >> 32);
-            if (lowerId != 0) {
-                uid = lowerId;
-            } else {
-                TLRPC.EncryptedChat encryptedChat = profileActivity.getMessagesController().getEncryptedChat(hightId);
+            long uid;
+            if (DialogObject.isEncryptedDialog(dialog_id)) {
+                TLRPC.EncryptedChat encryptedChat = profileActivity.getMessagesController().getEncryptedChat(DialogObject.getEncryptedChatId(dialog_id));
                 uid = encryptedChat.user_id;
+            } else {
+                uid = dialog_id;
             }
             req.user_id = profileActivity.getMessagesController().getInputUser(uid);
             if (req.user_id instanceof TLRPC.TL_inputUserEmpty) {
@@ -4356,7 +4343,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                         ArrayList<TLObject> resultArray2 = new ArrayList<>();
 
                         for (int a = 0, N = participantsCopy.size(); a < N; a++) {
-                            int userId;
+                            long userId;
                             TLObject o = participantsCopy.get(a);
                             if (o instanceof TLRPC.ChatParticipant) {
                                 userId = ((TLRPC.ChatParticipant) o).user_id;
@@ -4452,7 +4439,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             super.notifyDataSetChanged();
         }
 
-        public void removeUserId(int userId) {
+        public void removeUserId(long userId) {
             searchAdapterHelper.removeUserId(userId);
             notifyDataSetChanged();
         }

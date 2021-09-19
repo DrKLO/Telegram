@@ -31,6 +31,8 @@ public class FlickerLoadingView extends View {
     public final static int USERS2_TYPE = 10;
     public final static int BOTS_MENU_TYPE = 11;
     public final static int SHARE_ALERT_TYPE = 12;
+    public final static int MESSAGE_SEEN_TYPE = 13;
+    public final static int CHAT_THEMES_TYPE = 14;
 
     private int gradientWidth;
     private LinearGradient gradient;
@@ -56,8 +58,10 @@ public class FlickerLoadingView extends View {
     private String colorKey2 = Theme.key_windowBackgroundGray;
     private String colorKey3;
     private int itemsCount = 1;
+    private final Theme.ResourcesProvider resourcesProvider;
 
     float[] randomParams;
+    private Paint backgroundPaint;
 
     public void setViewType(int type) {
         this.viewType = type;
@@ -91,7 +95,12 @@ public class FlickerLoadingView extends View {
     }
 
     public FlickerLoadingView(Context context) {
+        this(context, null);
+    }
+
+    public FlickerLoadingView(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
         matrix = new Matrix();
     }
 
@@ -110,12 +119,12 @@ public class FlickerLoadingView extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        int color0 = Theme.getColor(colorKey1);
-        int color1 = Theme.getColor(colorKey2);
+        int color0 = getThemedColor(colorKey1);
+        int color1 = getThemedColor(colorKey2);
         if (this.color1 != color1 || this.color0 != color0) {
             this.color0 = color0;
             this.color1 = color1;
-            if (isSingleCell) {
+            if (isSingleCell || viewType == MESSAGE_SEEN_TYPE || viewType == CHAT_THEMES_TYPE) {
                 gradient = new LinearGradient(0, 0, gradientWidth = AndroidUtilities.dp(200), 0, new int[]{color1, color0, color0, color1}, new float[]{0.0f, 0.4f, 0.6f, 1f}, Shader.TileMode.CLAMP);
             } else {
                 gradient = new LinearGradient(0, 0, 0, gradientWidth = AndroidUtilities.dp(600), new int[]{color1, color0, color0, color1}, new float[]{0.0f, 0.4f, 0.6f, 1f}, Shader.TileMode.CLAMP);
@@ -127,7 +136,7 @@ public class FlickerLoadingView extends View {
         if (useHeaderOffset) {
             h += AndroidUtilities.dp(32);
             if (colorKey3 != null) {
-                headerPaint.setColor(Theme.getColor(colorKey3));
+                headerPaint.setColor(getThemedColor(colorKey3));
             }
             canvas.drawRect(0,0, getMeasuredWidth(), AndroidUtilities.dp(32), colorKey3 != null ? headerPaint : paint);
         }
@@ -411,6 +420,51 @@ public class FlickerLoadingView extends View {
                     break;
                 }
             }
+        } else if (getViewType() == MESSAGE_SEEN_TYPE) {
+            float cy = getMeasuredHeight() / 2f;
+
+            AndroidUtilities.rectTmp.set(AndroidUtilities.dp(40), cy - AndroidUtilities.dp(4), getMeasuredWidth() - AndroidUtilities.dp(120), cy + AndroidUtilities.dp(4));
+            canvas.drawRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
+
+            if (backgroundPaint == null) {
+                backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                backgroundPaint.setColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground));
+            }
+
+            for (int i = 0; i < 3; i++) {
+                canvas.drawCircle(getMeasuredWidth() - AndroidUtilities.dp(8 + 24 + 12 + 12) + AndroidUtilities.dp(13) + AndroidUtilities.dp(12) * i, cy, AndroidUtilities.dp(13f), backgroundPaint);
+                canvas.drawCircle(getMeasuredWidth() - AndroidUtilities.dp(8 + 24 + 12 + 12) + AndroidUtilities.dp(13) + AndroidUtilities.dp(12) * i, cy, AndroidUtilities.dp(12f), paint);
+            }
+        } else if (getViewType() == CHAT_THEMES_TYPE) {
+            int x = AndroidUtilities.dp(12);
+            int itemWidth = AndroidUtilities.dp(77);
+            int INNER_RECT_SPACE = AndroidUtilities.dp(4);
+            float BUBBLE_HEIGHT = AndroidUtilities.dp(21);
+            float BUBBLE_WIDTH = AndroidUtilities.dp(41);
+
+            while (x < getMeasuredWidth()) {
+
+                if (backgroundPaint == null) {
+                    backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    backgroundPaint.setColor(Theme.getColor(Theme.key_dialogBackground));
+                }
+
+                float bubbleTop = INNER_RECT_SPACE + AndroidUtilities.dp(8);
+                float bubbleLeft = INNER_RECT_SPACE + AndroidUtilities.dp(22);
+                AndroidUtilities.rectTmp.set(x + AndroidUtilities.dp(4), AndroidUtilities.dp(4), x + itemWidth - AndroidUtilities.dp(4), getMeasuredHeight() - AndroidUtilities.dp(4));
+                canvas.drawRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(6), AndroidUtilities.dp(6), paint);
+
+                rectF.set(x + bubbleLeft, bubbleTop, x + bubbleLeft + BUBBLE_WIDTH, bubbleTop + BUBBLE_HEIGHT);
+                canvas.drawRoundRect(rectF, rectF.height() * 0.5f, rectF.height() * 0.5f, backgroundPaint);
+                bubbleLeft = INNER_RECT_SPACE + AndroidUtilities.dp(5);
+                bubbleTop += BUBBLE_HEIGHT + AndroidUtilities.dp(4);
+                rectF.set(x + bubbleLeft, bubbleTop, x + bubbleLeft + BUBBLE_WIDTH, bubbleTop + BUBBLE_HEIGHT);
+                canvas.drawRoundRect(rectF, rectF.height() * 0.5f, rectF.height() * 0.5f, backgroundPaint);
+
+
+                canvas.drawCircle(x + itemWidth / 2, getMeasuredHeight() - AndroidUtilities.dp(20), AndroidUtilities.dp(8), backgroundPaint);
+                x += itemWidth;
+            }
         }
 
         long newUpdateTime = SystemClock.elapsedRealtime();
@@ -419,7 +473,7 @@ public class FlickerLoadingView extends View {
             dt = 16;
         }
         lastUpdateTime = newUpdateTime;
-        if (isSingleCell) {
+        if (isSingleCell || viewType == MESSAGE_SEEN_TYPE || getViewType() == CHAT_THEMES_TYPE) {
             totalTranslation += dt * getMeasuredWidth() / 400.0f;
             if (totalTranslation >= getMeasuredWidth() * 2) {
                 totalTranslation = -gradientWidth * 2;
@@ -504,5 +558,10 @@ public class FlickerLoadingView extends View {
 
     public void setItemsCount(int i) {
         this.itemsCount = i;
+    }
+
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
     }
 }

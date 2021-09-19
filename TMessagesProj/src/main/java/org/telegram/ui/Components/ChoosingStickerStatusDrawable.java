@@ -20,6 +20,7 @@ public class ChoosingStickerStatusDrawable extends StatusDrawable {
     private boolean started = false;
     float progress;
     boolean increment = true;
+    int color;
 
     public ChoosingStickerStatusDrawable(boolean createPaint) {
         if (createPaint) {
@@ -49,8 +50,11 @@ public class ChoosingStickerStatusDrawable extends StatusDrawable {
 
     @Override
     public void setColor(int color) {
-        fillPaint.setColor(color);
-        strokePaint.setColor(color);
+        if (this.color != color) {
+            fillPaint.setColor(color);
+            strokePaint.setColor(color);
+        }
+        this.color = color;
     }
 
     @Override

@@ -323,7 +323,7 @@ public class DataAutoDownloadActivity extends BaseFragment {
                             cells[a].setTextAndCheck(LocaleController.getString("AutodownloadPrivateChats", R.string.AutodownloadPrivateChats), (currentPreset.mask[DownloadController.PRESET_NUM_PM] & type) != 0, true);
                         } else if (a == 2) {
                             cells[a].setTextAndCheck(LocaleController.getString("AutodownloadGroupChats", R.string.AutodownloadGroupChats), (currentPreset.mask[DownloadController.PRESET_NUM_GROUP] & type) != 0, true);
-                        } else if (a == 3) {
+                        } else {
                             cells[a].setTextAndCheck(LocaleController.getString("AutodownloadChannels", R.string.AutodownloadChannels), (currentPreset.mask[DownloadController.PRESET_NUM_CHANNEL] & type) != 0, position != photosRow);
                         }
                         cells[a].setBackgroundDrawable(Theme.getSelectorDrawable(false));
@@ -439,8 +439,8 @@ public class DataAutoDownloadActivity extends BaseFragment {
                             }
                         }
                         if (!hasAny) {
-                            sizeCell[0].setEnabled(hasAny, null);
-                            checkCell[0].setEnabled(hasAny, null);
+                            sizeCell[0].setEnabled(false, null);
+                            checkCell[0].setEnabled(false, null);
                         }
                         if (currentPreset.sizes[index] <= 2 * 1024 * 1024) {
                             checkCell[0].setEnabled(false, null);
@@ -787,7 +787,7 @@ public class DataAutoDownloadActivity extends BaseFragment {
 
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View view = null;
+            View view;
             switch (viewType) {
                 case 0: {
                     TextCheckCell cell = new TextCheckCell(mContext);
@@ -847,7 +847,8 @@ public class DataAutoDownloadActivity extends BaseFragment {
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
                 }
-                case 5: {
+                case 5:
+                default: {
                     view = new TextInfoPrivacyCell(mContext);
                     view.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                 }

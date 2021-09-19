@@ -106,7 +106,6 @@ public class SvgHelper {
         protected int height;
         private static int[] parentPosition = new int[2];
 
-        private Shader backgroundGradient;
         private Bitmap backgroundBitmap;
         private Canvas backgroundCanvas;
         private LinearGradient placeholderGradient;
@@ -263,6 +262,7 @@ public class SvgHelper {
                 color = Color.argb((int) (Color.alpha(color) / 2 * colorAlpha), Color.red(color), Color.green(color), Color.blue(color));
                 float centerX = (1.0f - w) / 2;
                 placeholderGradient = new LinearGradient(0, 0, gradientWidth, 0, new int[]{0x00000000, 0x00000000, color, 0x00000000, 0x00000000}, new float[]{0.0f, centerX - w / 2.0f, centerX, centerX + w / 2.0f, 1.0f}, Shader.TileMode.REPEAT);
+                Shader backgroundGradient;
                 if (Build.VERSION.SDK_INT >= 28) {
                     backgroundGradient = new LinearGradient(0, 0, gradientWidth, 0, new int[]{color, color}, null, Shader.TileMode.REPEAT);
                 } else {

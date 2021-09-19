@@ -57,7 +57,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
     private TextView infoTextView;
     private CheckBoxCell checkBoxCell;
 
-    private int user_id;
+    private long user_id;
     private boolean addContact;
     private boolean needAddException;
     private String phone;
@@ -77,7 +77,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
     @Override
     public boolean onFragmentCreate() {
         getNotificationCenter().addObserver(this, NotificationCenter.updateInterfaces);
-        user_id = getArguments().getInt("user_id", 0);
+        user_id = getArguments().getLong("user_id", 0);
         phone = getArguments().getString("phone");
         addContact = getArguments().getBoolean("addContact", false);
         needAddException = MessagesController.getNotificationsSettings(currentAccount).getBoolean("dialog_bar_exception" + user_id, false);
@@ -114,7 +114,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
                         SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
                         preferences.edit().putInt("dialog_bar_vis3" + user_id, 3).commit();
                         getNotificationCenter().postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_NAME);
-                        getNotificationCenter().postNotificationName(NotificationCenter.peerSettingsDidLoad, (long) user_id);
+                        getNotificationCenter().postNotificationName(NotificationCenter.peerSettingsDidLoad, user_id);
                         finishFragment();
                         if (delegate != null) {
                             delegate.didAddToContacts();

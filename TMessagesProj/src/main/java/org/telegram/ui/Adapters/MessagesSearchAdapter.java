@@ -15,6 +15,7 @@ import android.view.ViewGroup;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.UserConfig;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.Cells.LoadingCell;
 import org.telegram.ui.Components.RecyclerListView;
@@ -29,8 +30,10 @@ public class MessagesSearchAdapter extends RecyclerListView.SelectionAdapter {
     private ArrayList<MessageObject> searchResultMessages = new ArrayList<>();
 
     private int currentAccount = UserConfig.selectedAccount;
+    private final Theme.ResourcesProvider resourcesProvider;
 
-    public MessagesSearchAdapter(Context context) {
+    public MessagesSearchAdapter(Context context, Theme.ResourcesProvider resourcesProvider) {
+        this.resourcesProvider = resourcesProvider;
         mContext = context;
     }
 
@@ -67,7 +70,7 @@ public class MessagesSearchAdapter extends RecyclerListView.SelectionAdapter {
         View view = null;
         switch (viewType) {
             case 0:
-                view = new DialogCell(null, mContext, false, true);
+                view = new DialogCell(null, mContext, false, true, currentAccount, resourcesProvider);
                 break;
             case 1:
                 view = new LoadingCell(mContext);

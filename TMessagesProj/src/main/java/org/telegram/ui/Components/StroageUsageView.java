@@ -1,9 +1,8 @@
-package org.telegram.ui;
+package org.telegram.ui.Components;
 
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.text.SpannableString;
 import android.view.View;
@@ -19,11 +18,9 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.TextSettingsCell;
-import org.telegram.ui.Components.EllipsizeSpanAnimator;
-import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.voip.CellFlickerDrawable;
 
-class StroageUsageView extends FrameLayout {
+public class StroageUsageView extends FrameLayout {
 
     private Paint paintFill = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Paint paintCalculcating = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -51,7 +48,7 @@ class StroageUsageView extends FrameLayout {
     float progress2;
     ValueAnimator valueAnimator;
     ValueAnimator valueAnimator2;
-    ViewGroup legendLayout;
+    public ViewGroup legendLayout;
 
     EllipsizeSpanAnimator ellipsizeSpanAnimator;
 

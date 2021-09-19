@@ -460,7 +460,7 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
                     desctiptionLines[a * 2 + 1].setText(spanned);
                 } else if (a == 1) {
                     desctiptionLines[a * 2 + 1].setText(LocaleController.getString("AuthAnotherClientInfo2", R.string.AuthAnotherClientInfo2));
-                } else if (a == 2) {
+                } else {
                     desctiptionLines[a * 2 + 1].setText(LocaleController.getString("AuthAnotherClientInfo3", R.string.AuthAnotherClientInfo3));
                 }
                 if (LocaleController.isRTL) {
@@ -555,9 +555,8 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
                         return;
                     }
                     Bundle args = new Bundle();
-                    ArrayList<Integer> result = new ArrayList<>();
-                    result.add(getUserConfig().getClientUserId());
-                    args.putIntegerArrayList("result", result);
+                    long[] array = new long[]{getUserConfig().getClientUserId()};
+                    args.putLongArray("result", array);
                     args.putInt("chatType", ChatObject.CHAT_TYPE_MEGAGROUP);
                     args.putString("address", currentGroupCreateAddress);
                     args.putParcelable("location", currentGroupCreateLocation);

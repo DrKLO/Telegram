@@ -63,13 +63,15 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
     private boolean needEmptyView;
 
     private Runnable updateRunnable;
+    private final Theme.ResourcesProvider resourcesProvider;
 
-    public LocationActivityAdapter(Context context, int type, long did, boolean emptyView) {
+    public LocationActivityAdapter(Context context, int type, long did, boolean emptyView, Theme.ResourcesProvider resourcesProvider) {
         super();
         mContext = context;
         locationType = type;
         dialogId = did;
         needEmptyView = emptyView;
+        this.resourcesProvider = resourcesProvider;
     }
 
     public void setOverScrollHeight(int value) {
@@ -119,7 +121,7 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
 
     public void setLiveLocations(ArrayList<LocationActivity.LiveLocation> liveLocations) {
         currentLiveLocations = new ArrayList<>(liveLocations);
-        int uid = UserConfig.getInstance(currentAccount).getClientUserId();
+        long uid = UserConfig.getInstance(currentAccount).getClientUserId();
         for (int a = 0; a < currentLiveLocations.size(); a++) {
             if (currentLiveLocations.get(a).id == uid || currentLiveLocations.get(a).object.out) {
                 currentLiveLocations.remove(a);
@@ -261,31 +263,31 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
                 };
                 break;
             case 1:
-                view = new SendLocationCell(mContext, false);
+                view = new SendLocationCell(mContext, false, resourcesProvider);
                 break;
             case 2:
-                view = new HeaderCell(mContext);
+                view = new HeaderCell(mContext, resourcesProvider);
                 break;
             case 3:
-                view = new LocationCell(mContext, false);
+                view = new LocationCell(mContext, false, resourcesProvider);
                 break;
             case 4:
-                view = new LocationLoadingCell(mContext);
+                view = new LocationLoadingCell(mContext, resourcesProvider);
                 break;
             case 5:
-                view = new LocationPoweredCell(mContext);
+                view = new LocationPoweredCell(mContext, resourcesProvider);
                 break;
             case 6: {
-                SendLocationCell cell = new SendLocationCell(mContext, true);
+                SendLocationCell cell = new SendLocationCell(mContext, true, resourcesProvider);
                 cell.setDialogId(dialogId);
                 view = cell;
                 break;
             }
             case 7:
-                view = new SharingLiveLocationCell(mContext, true, locationType == LocationActivity.LOCATION_TYPE_GROUP || locationType == LocationActivity.LOCATION_TYPE_GROUP_VIEW ? 16 : 54);
+                view = new SharingLiveLocationCell(mContext, true, locationType == LocationActivity.LOCATION_TYPE_GROUP || locationType == LocationActivity.LOCATION_TYPE_GROUP_VIEW ? 16 : 54, resourcesProvider);
                 break;
             case 8: {
-                LocationDirectionCell cell = new LocationDirectionCell(mContext);
+                LocationDirectionCell cell = new LocationDirectionCell(mContext, resourcesProvider);
                 cell.setOnButtonClick(v -> onDirectionClick());
                 view = cell;
                 break;
@@ -293,7 +295,7 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
             case 9: {
                 view = new ShadowSectionCell(mContext);
                 Drawable drawable = Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow);
-                CombinedDrawable combinedDrawable = new CombinedDrawable(new ColorDrawable(Theme.getColor(Theme.key_windowBackgroundGray)), drawable);
+                CombinedDrawable combinedDrawable = new CombinedDrawable(new ColorDrawable(getThemedColor(Theme.key_windowBackgroundGray)), drawable);
                 combinedDrawable.setFullsize(true);
                 view.setBackgroundDrawable(combinedDrawable);
                 break;
@@ -477,5 +479,10 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
             return !(LocationController.getInstance(currentAccount).getSharingLocationInfo(dialogId) == null && gpsLocation == null);
         }
         return viewType == 1 || viewType == 3 || viewType == 7;
+    }
+
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
     }
 }

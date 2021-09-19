@@ -304,7 +304,7 @@ public class SharedLinkCell extends FrameLayout {
         if (title != null) {
             try {
                 CharSequence titleFinal = title;
-                CharSequence titleH = AndroidUtilities.highlightText(titleFinal, message.highlightedWords);
+                CharSequence titleH = AndroidUtilities.highlightText(titleFinal, message.highlightedWords, null);
                 if (titleH != null) {
                     titleFinal = titleH;
                 }
@@ -350,7 +350,7 @@ public class SharedLinkCell extends FrameLayout {
 
         if (message != null && !TextUtils.isEmpty(message.messageOwner.message)) {
             CharSequence caption = Emoji.replaceEmoji(message.messageOwner.message.replace("\n", " ").replaceAll(" +", " ").trim(), Theme.chat_msgTextPaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
-            CharSequence sequence = AndroidUtilities.highlightText(caption, message.highlightedWords);
+            CharSequence sequence = AndroidUtilities.highlightText(caption, message.highlightedWords, null);
             if (sequence != null) {
                 sequence = TextUtils.ellipsize(AndroidUtilities.ellipsizeCenterEnd(sequence, message.highlightedWords.get(0), maxWidth, captionTextPaint, 130), captionTextPaint, maxWidth, TextUtils.TruncateAt.END);
                 captionLayout = new StaticLayout(sequence, captionTextPaint, maxWidth + AndroidUtilities.dp(4), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);

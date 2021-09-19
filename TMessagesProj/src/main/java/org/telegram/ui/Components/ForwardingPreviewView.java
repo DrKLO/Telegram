@@ -7,7 +7,6 @@ import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Outline;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -42,12 +41,18 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.BotHelpCell;
 import org.telegram.ui.Cells.ChatMessageCell;
 
 import java.util.ArrayList;
 
 public class ForwardingPreviewView extends FrameLayout {
+
+    public interface ResourcesDelegate extends Theme.ResourcesProvider {
+
+        Drawable getWallpaperDrawable();
+
+        boolean isWallpaperMotion();
+    }
 
     SizeNotifierFrameLayout chatPreviewContainer;
     ActionBar actionBar;
@@ -100,17 +105,25 @@ public class ForwardingPreviewView extends FrameLayout {
     };
 
     private final ArrayList<MessageObject.GroupedMessages> drawingGroups = new ArrayList<>(10);
+    private final ResourcesDelegate resourcesProvider;
 
     @SuppressLint("ClickableViewAccessibility")
-    public ForwardingPreviewView(@NonNull Context context, ForwardingMessagesParams params, TLRPC.User user, TLRPC.Chat chat, int currentAccount) {
+    public ForwardingPreviewView(@NonNull Context context, ForwardingMessagesParams params, TLRPC.User user, TLRPC.Chat chat, int currentAccount, ResourcesDelegate resourcesProvider) {
         super(context);
         this.currentAccount = currentAccount;
         currentUser = user;
         currentChat = chat;
         forwardingMessagesParams = params;
+        this.resourcesProvider = resourcesProvider;
 
-        chatPreviewContainer = new SizeNotifierFrameLayout(context);
-        chatPreviewContainer.setBackgroundImage(Theme.getCachedWallpaper(), Theme.isWallpaperMotion());
+        chatPreviewContainer = new SizeNotifierFrameLayout(context) {
+            @Override
+            protected Drawable getNewDrawable() {
+                Drawable drawable = resourcesProvider.getWallpaperDrawable();
+                return drawable != null ? drawable : super.getNewDrawable();
+            }
+        };
+        chatPreviewContainer.setBackgroundImage(resourcesProvider.getWallpaperDrawable(), resourcesProvider.isWallpaperMotion());
         chatPreviewContainer.setOccupyStatusBar(false);
 
         if (Build.VERSION.SDK_INT >= 21) {
@@ -125,11 +138,11 @@ public class ForwardingPreviewView extends FrameLayout {
             chatPreviewContainer.setElevation(AndroidUtilities.dp(4));
         }
 
-        actionBar = new ActionBar(context);
-        actionBar.setBackgroundColor(Theme.getColor(Theme.key_actionBarDefault));
+        actionBar = new ActionBar(context, resourcesProvider);
+        actionBar.setBackgroundColor(getThemedColor(Theme.key_actionBarDefault));
         actionBar.setOccupyStatusBar(false);
 
-        chatListView = new RecyclerListView(context) {
+        chatListView = new RecyclerListView(context, resourcesProvider) {
 
             @Override
             public boolean drawChild(Canvas canvas, View child, long drawingTime) {
@@ -314,7 +327,7 @@ public class ForwardingPreviewView extends FrameLayout {
                 }
             }
         };
-        chatListView.setItemAnimator(itemAnimator = new ChatListItemAnimator(null, chatListView) {
+        chatListView.setItemAnimator(itemAnimator = new ChatListItemAnimator(null, chatListView, resourcesProvider) {
 
             int scrollAnimationIndex = -1;
 
@@ -512,16 +525,16 @@ public class ForwardingPreviewView extends FrameLayout {
         buttonsLayout = new LinearLayout(context);
         buttonsLayout.setOrientation(LinearLayout.VERTICAL);
         Drawable shadowDrawable = getContext().getResources().getDrawable(R.drawable.popup_fixed_alert).mutate();
-        shadowDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogBackground), PorterDuff.Mode.MULTIPLY));
+        shadowDrawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_dialogBackground), PorterDuff.Mode.MULTIPLY));
         buttonsLayout.setBackground(shadowDrawable);
         menuContainer.addView(buttonsLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-        showSendersNameView = new ActionBarMenuSubItem(context, true, true, false);
+        showSendersNameView = new ActionBarMenuSubItem(context, true, true, false, resourcesProvider);
         buttonsLayout.addView(showSendersNameView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48));
         showSendersNameView.setTextAndIcon(forwardingMessagesParams.multiplyUsers ? LocaleController.getString("ShowSenderNames", R.string.ShowSenderNames) : LocaleController.getString("ShowSendersName", R.string.ShowSendersName), 0);
         showSendersNameView.setChecked(true);
 
-        hideSendersNameView = new ActionBarMenuSubItem(context, true, false, !params.hasCaption);
+        hideSendersNameView = new ActionBarMenuSubItem(context, true, false, !params.hasCaption, resourcesProvider);
         buttonsLayout.addView(hideSendersNameView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48));
         hideSendersNameView.setTextAndIcon(forwardingMessagesParams.multiplyUsers ? LocaleController.getString("HideSenderNames", R.string.HideSenderNames) : LocaleController.getString("HideSendersName", R.string.HideSendersName), 0);
         hideSendersNameView.setChecked(false);
@@ -533,16 +546,16 @@ public class ForwardingPreviewView extends FrameLayout {
                     super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(2, MeasureSpec.EXACTLY));
                 }
             };
-            dividerView.setBackgroundColor(Theme.getColor(Theme.key_divider));
+            dividerView.setBackgroundColor(getThemedColor(Theme.key_divider));
             buttonsLayout.addView(dividerView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
 
-            showCaptionView = new ActionBarMenuSubItem(context, true, false, false);
+            showCaptionView = new ActionBarMenuSubItem(context, true, false, false, resourcesProvider);
             buttonsLayout.addView(showCaptionView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48));
             showCaptionView.setTextAndIcon(LocaleController.getString("ShowCaption", R.string.ShowCaption), 0);
             showCaptionView.setChecked(true);
 
-            hideCaptionView = new ActionBarMenuSubItem(context, true, false, true);
+            hideCaptionView = new ActionBarMenuSubItem(context, true, false, true, resourcesProvider);
             buttonsLayout.addView(hideCaptionView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48));
             hideCaptionView.setTextAndIcon(LocaleController.getString("HideCaption", R.string.HideCaption), 0);
             hideCaptionView.setChecked(false);
@@ -551,15 +564,15 @@ public class ForwardingPreviewView extends FrameLayout {
         buttonsLayout2 = new LinearLayout(context);
         buttonsLayout2.setOrientation(LinearLayout.VERTICAL);
         shadowDrawable = getContext().getResources().getDrawable(R.drawable.popup_fixed_alert).mutate();
-        shadowDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogBackground), PorterDuff.Mode.MULTIPLY));
+        shadowDrawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_dialogBackground), PorterDuff.Mode.MULTIPLY));
         buttonsLayout2.setBackground(shadowDrawable);
         menuContainer.addView(buttonsLayout2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, forwardingMessagesParams.hasSenders ? -8 : 0, 0, 0));
 
-        changeRecipientView = new ActionBarMenuSubItem(context, true, false);
+        changeRecipientView = new ActionBarMenuSubItem(context, true, false, resourcesProvider);
         buttonsLayout2.addView(changeRecipientView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48));
         changeRecipientView.setTextAndIcon(LocaleController.getString("ChangeRecipient", R.string.ChangeRecipient), R.drawable.msg_forward_replace);
 
-        sendMessagesView = new ActionBarMenuSubItem(context, false, true);
+        sendMessagesView = new ActionBarMenuSubItem(context, false, true, resourcesProvider);
         buttonsLayout2.addView(sendMessagesView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48));
         sendMessagesView.setTextAndIcon(LocaleController.getString("ForwardSendMessages", R.string.ForwardSendMessages), R.drawable.msg_forward_send);
 
@@ -948,7 +961,7 @@ public class ForwardingPreviewView extends FrameLayout {
         @NonNull
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            ChatMessageCell chatMessageCell = new ChatMessageCell(parent.getContext());
+            ChatMessageCell chatMessageCell = new ChatMessageCell(parent.getContext(), resourcesProvider);
             return new RecyclerListView.Holder(chatMessageCell);
         }
 
@@ -994,5 +1007,10 @@ public class ForwardingPreviewView extends FrameLayout {
             }
         }
         return groupedMessages;
+    }
+
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
     }
 }

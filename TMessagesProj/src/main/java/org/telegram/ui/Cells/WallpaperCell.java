@@ -15,6 +15,7 @@ import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.BlendMode;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -176,7 +177,7 @@ public class WallpaperCell extends FrameLayout {
                     }
                     if (Theme.DEFAULT_BACKGROUND_SLUG.equals(wallPaper.slug)) {
                         if (wallPaper.defaultCache == null) {
-                            wallPaper.defaultCache = SvgHelper.getBitmap(R.raw.default_pattern, 100, 180, patternColor);
+                            wallPaper.defaultCache = SvgHelper.getBitmap(R.raw.default_pattern, 100, 180, Color.BLACK);
                         }
                         imageView.setImageBitmap(wallPaper.defaultCache);
                         imageView.getImageReceiver().setAlpha(Math.abs(wallPaper.intensity));

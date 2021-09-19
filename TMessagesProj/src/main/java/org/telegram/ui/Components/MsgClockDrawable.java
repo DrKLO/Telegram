@@ -8,6 +8,7 @@ import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
 
@@ -15,11 +16,12 @@ import org.telegram.messenger.AndroidUtilities;
 
 public class MsgClockDrawable extends Drawable {
 
-    Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    int alpha = 255;
-    int colorAlpha = 255;
-
-    long startTime;
+    private ConstantState constantState;
+    private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private int alpha = 255;
+    private int colorAlpha = 255;
+    private long startTime;
+    private int color;
 
     public MsgClockDrawable() {
         paint.setStyle(Paint.Style.STROKE);
@@ -50,8 +52,11 @@ public class MsgClockDrawable extends Drawable {
     }
 
     public void setColor(int color) {
-        colorAlpha = Color.alpha(color);
-        paint.setColor(color);
+        if (color != this.color) {
+            colorAlpha = Color.alpha(color);
+            paint.setColor(ColorUtils.setAlphaComponent(color, (int) (alpha * (colorAlpha / 255f))));
+        }
+        this.color = color;
     }
 
     @Override
@@ -82,4 +87,22 @@ public class MsgClockDrawable extends Drawable {
         return PixelFormat.TRANSPARENT;
     }
 
+    @Nullable
+    @Override
+    public ConstantState getConstantState() {
+        if (constantState == null) {
+            constantState = new ConstantState() {
+                @NonNull
+                @Override
+                public Drawable newDrawable() {
+                    return new MsgClockDrawable();
+                }
+                @Override
+                public int getChangingConfigurations() {
+                    return 0;
+                }
+            };
+        }
+        return constantState;
+    }
 }

@@ -479,7 +479,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
                         } else {
                             itemCells[a].setTextAndIcon(LocaleController.getString("ScheduleMessage", R.string.ScheduleMessage), R.drawable.msg_schedule);
                         }
-                    } else if (num == 1) {
+                    } else {
                         itemCells[a].setTextAndIcon(LocaleController.getString("SendWithoutSound", R.string.SendWithoutSound), R.drawable.input_notify_off);
                     }
                     itemCells[a].setMinimumWidth(AndroidUtilities.dp(196));
@@ -494,7 +494,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
                                 sendSelectedPhotos(selectedPhotos, selectedPhotosOrder, notify, scheduleDate);
                                 finishFragment();
                             });
-                        } else if (num == 1) {
+                        } else {
                             sendSelectedPhotos(selectedPhotos, selectedPhotosOrder, true, 0);
                             finishFragment();
                         }
@@ -555,7 +555,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
             commentTextView.setVisibility(View.GONE);
         }
 
-        if (loading && (albumsSorted == null || albumsSorted != null && albumsSorted.isEmpty())) {
+        if (loading && (albumsSorted == null || albumsSorted.isEmpty())) {
             progressView.setVisibility(View.VISIBLE);
             listView.setEmptyView(null);
         } else {

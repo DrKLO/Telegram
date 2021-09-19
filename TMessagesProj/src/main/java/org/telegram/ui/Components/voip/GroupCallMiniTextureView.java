@@ -39,6 +39,7 @@ import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
@@ -1022,11 +1023,11 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
 
             if (!ChatObject.Call.videoIsActive(participant.participant, participant.presentation, call) || !call.canStreamVideo && participant != call.videoNotAvailableParticipant) {
                 noVideoStubLayout.avatarImageReceiver.setCurrentAccount(currentAccount);
-                int peerId = MessageObject.getPeerId(participant.participant.peer);
+                long peerId = MessageObject.getPeerId(participant.participant.peer);
                 ImageLocation imageLocation;
                 ImageLocation thumbLocation;
                 Object parentObject;
-                if (peerId > 0) {
+                if (DialogObject.isUserDialog(peerId)) {
                     TLRPC.User currentUser = AccountInstance.getInstance(currentAccount).getMessagesController().getUser(peerId);
                     noVideoStubLayout.avatarDrawable.setInfo(currentUser);
                     imageLocation = ImageLocation.getForUser(currentUser, ImageLocation.TYPE_BIG);
@@ -1162,7 +1163,7 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
         textureView.setThumb(thumb);
 
         if (thumb == null) {
-            int peerId = MessageObject.getPeerId(participant.participant.peer);
+            long peerId = MessageObject.getPeerId(participant.participant.peer);
 
             if (participant.participant.self && participant.presentation) {
                 imageReceiver.setImageBitmap(new MotionBackgroundDrawable(0xff212E3A, 0xff2B5B4D, 0xff245863, 0xff274558, true));
@@ -1192,8 +1193,8 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
 
         String name = null;
 
-        int peerId = MessageObject.getPeerId(participant.participant.peer);
-        if (peerId > 0) {
+        long peerId = MessageObject.getPeerId(participant.participant.peer);
+        if (DialogObject.isUserDialog(peerId)) {
             TLRPC.User currentUser = AccountInstance.getInstance(currentAccount).getMessagesController().getUser(peerId);
             name = UserObject.getUserName(currentUser);
         } else {
@@ -1706,8 +1707,8 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
     }
 
     public String getName() {
-        int peerId = MessageObject.getPeerId(participant.participant.peer);
-        if (peerId > 0) {
+        long peerId = MessageObject.getPeerId(participant.participant.peer);
+        if (DialogObject.isUserDialog(peerId)) {
             TLRPC.User currentUser = AccountInstance.getInstance(UserConfig.selectedAccount).getMessagesController().getUser(peerId);
             return UserObject.getUserName(currentUser);
         } else {

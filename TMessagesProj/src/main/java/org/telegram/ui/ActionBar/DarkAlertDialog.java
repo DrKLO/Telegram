@@ -3,12 +3,13 @@ package org.telegram.ui.ActionBar;
 import android.content.Context;
 
 public class DarkAlertDialog extends AlertDialog {
+
 	public DarkAlertDialog(Context context, int progressStyle) {
 		super(context, progressStyle);
 	}
 
 	@Override
-	protected int getThemeColor(String key) {
+	protected int getThemedColor(String key) {
 		switch (key) {
 			case Theme.key_dialogBackground:
 				return 0xFF262626;
@@ -17,7 +18,7 @@ public class DarkAlertDialog extends AlertDialog {
 			case Theme.key_dialogScrollGlow:
 				return 0xFFFFFFFF;
 		}
-		return super.getThemeColor(key);
+		return super.getThemedColor(key);
 	}
 
 	public static class Builder extends AlertDialog.Builder {

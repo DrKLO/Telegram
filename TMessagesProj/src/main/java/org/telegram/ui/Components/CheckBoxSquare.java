@@ -40,9 +40,15 @@ public class CheckBoxSquare extends View {
     private String key1;
     private String key2;
     private String key3;
+    private final Theme.ResourcesProvider resourcesProvider;
 
     public CheckBoxSquare(Context context, boolean alert) {
+        this(context, alert, null);
+    }
+
+    public CheckBoxSquare(Context context, boolean alert, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
         if (Theme.checkboxSquare_backgroundPaint == null) {
             Theme.createCommonResources(context);
         }
@@ -136,8 +142,8 @@ public class CheckBoxSquare extends View {
 
         float checkProgress;
         float bounceProgress;
-        int uncheckedColor = Theme.getColor(key1);
-        int color = Theme.getColor(key2);
+        int uncheckedColor = getThemedColor(key1);
+        int color = getThemedColor(key2);
         if (progress <= 0.5f) {
             bounceProgress = checkProgress = progress / 0.5f;
             int rD = (int) ((Color.red(color) - Color.red(uncheckedColor)) * checkProgress);
@@ -151,7 +157,7 @@ public class CheckBoxSquare extends View {
             Theme.checkboxSquare_backgroundPaint.setColor(color);
         }
         if (isDisabled) {
-            Theme.checkboxSquare_backgroundPaint.setColor(Theme.getColor(isAlert ? Theme.key_dialogCheckboxSquareDisabled : Theme.key_checkboxSquareDisabled));
+            Theme.checkboxSquare_backgroundPaint.setColor(getThemedColor(isAlert ? Theme.key_dialogCheckboxSquareDisabled : Theme.key_checkboxSquareDisabled));
         }
         float bounce = AndroidUtilities.dp(1) * bounceProgress;
         rectF.set(bounce, bounce, AndroidUtilities.dp(18) - bounce, AndroidUtilities.dp(18) - bounce);
@@ -166,7 +172,7 @@ public class CheckBoxSquare extends View {
         }
 
         if (progress > 0.5f) {
-            Theme.checkboxSquare_checkPaint.setColor(Theme.getColor(key3));
+            Theme.checkboxSquare_checkPaint.setColor(getThemedColor(key3));
 
             int endX = (int) (AndroidUtilities.dp(7) - AndroidUtilities.dp(3) * (1.0f - bounceProgress));
             int endY = (int) (AndroidUtilities.dpf2(13) - AndroidUtilities.dp(3) * (1.0f - bounceProgress));
@@ -177,5 +183,10 @@ public class CheckBoxSquare extends View {
             drawCanvas.drawLine((int) AndroidUtilities.dpf2(7), (int) AndroidUtilities.dpf2(13), endX, endY, Theme.checkboxSquare_checkPaint);
         }
         canvas.drawBitmap(drawBitmap, 0, 0, null);
+    }
+
+    protected int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
     }
 }
