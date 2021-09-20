@@ -4735,7 +4735,7 @@
     <string name="OptimizingTelegram">Optimizing Telegram...</string>
     <string name="OptimizingTelegramDescription1">This may take a while, depending on the size of the database. Please keep the app open until the process is finished.</string>
     <string name="OptimizingTelegramDescription2">Sorry for the inconvenience.</string>
-    <string name="DoNoSetTheme">Do No Set Theme</string>
+    <string name="DoNoSetTheme">Do Not Set Theme</string>
     <string name="EnjoyngAnimations">**oo** watching %1$s</string>
     <string name="IsEnjoyngAnimations">%1$s is **oo** watching %2$s</string>
     <string name="ThemeAlsoAppliedForHint">Theme will be also applied for **%s**.</string>
