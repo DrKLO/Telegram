@@ -9,6 +9,7 @@
 package org.telegram.ui.Cells;
 
 import android.content.Context;
+import android.graphics.Paint;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -22,17 +23,19 @@ public class ChatLoadingCell extends FrameLayout {
 
     private FrameLayout frameLayout;
     private RadialProgressView progressBar;
+    private Theme.ResourcesProvider resourcesProvider;
 
-    public ChatLoadingCell(Context context, View parent) {
+    public ChatLoadingCell(Context context, View parent, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
 
         frameLayout = new FrameLayout(context);
-        frameLayout.setBackground(Theme.createServiceDrawable(AndroidUtilities.dp(18), frameLayout, parent));
+        frameLayout.setBackground(Theme.createServiceDrawable(AndroidUtilities.dp(18), frameLayout, parent, getThemedPaint(Theme.key_paint_chatActionBackground)));
         addView(frameLayout, LayoutHelper.createFrame(36, 36, Gravity.CENTER));
 
-        progressBar = new RadialProgressView(context);
+        progressBar = new RadialProgressView(context, resourcesProvider);
         progressBar.setSize(AndroidUtilities.dp(28));
-        progressBar.setProgressColor(Theme.getColor(Theme.key_chat_serviceText));
+        progressBar.setProgressColor(getThemedColor(Theme.key_chat_serviceText));
         frameLayout.addView(progressBar, LayoutHelper.createFrame(32, 32, Gravity.CENTER));
     }
 
@@ -43,5 +46,15 @@ public class ChatLoadingCell extends FrameLayout {
 
     public void setProgressVisible(boolean value) {
         frameLayout.setVisibility(value ? VISIBLE : INVISIBLE);
+    }
+
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
+    }
+
+    private Paint getThemedPaint(String paintKey) {
+        Paint paint = resourcesProvider != null ? resourcesProvider.getPaint(paintKey) : null;
+        return paint != null ? paint : Theme.getThemePaint(paintKey);
     }
 }

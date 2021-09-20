@@ -48,6 +48,7 @@ public class BotHelpCell extends View {
     private LinkPath urlPath = new LinkPath();
 
     private BotHelpCellDelegate delegate;
+    private final Theme.ResourcesProvider resourcesProvider;
 
     private boolean animating;
 
@@ -55,8 +56,9 @@ public class BotHelpCell extends View {
         void didPressUrl(String url);
     }
 
-    public BotHelpCell(Context context) {
+    public BotHelpCell(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
     }
 
     public void setDelegate(BotHelpCellDelegate botHelpCellDelegate) {
@@ -214,11 +216,12 @@ public class BotHelpCell extends View {
             w = view.getMeasuredWidth();
             h = view.getMeasuredHeight();
         }
-        Theme.chat_msgInMediaDrawable.setTop((int) getY(), w, h, false, false);
-        Theme.chat_msgInMediaDrawable.setBounds(x, y, width + x, height + y);
-        Theme.chat_msgInMediaDrawable.draw(canvas);
-        Theme.chat_msgTextPaint.setColor(Theme.getColor(Theme.key_chat_messageTextIn));
-        Theme.chat_msgTextPaint.linkColor = Theme.getColor(Theme.key_chat_messageLinkIn);
+        Theme.MessageDrawable drawable = (Theme.MessageDrawable) getThemedDrawable(Theme.key_drawable_msgInMedia);
+        drawable.setTop((int) getY(), w, h, false, false);
+        drawable.setBounds(x, y, width + x, height + y);
+        drawable.draw(canvas);
+        Theme.chat_msgTextPaint.setColor(getThemedColor(Theme.key_chat_messageTextIn));
+        Theme.chat_msgTextPaint.linkColor = getThemedColor(Theme.key_chat_messageLinkIn);
         canvas.save();
         canvas.translate(textX = AndroidUtilities.dp(2 + 9) + x, textY = AndroidUtilities.dp(2 + 9) + y);
         if (pressedLink != null) {
@@ -250,5 +253,15 @@ public class BotHelpCell extends View {
 
     public void setAnimating(boolean animating) {
         this.animating = animating;
+    }
+    
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
+    }
+
+    private Drawable getThemedDrawable(String drawableKey) {
+        Drawable drawable = resourcesProvider != null ? resourcesProvider.getDrawable(drawableKey) : null;
+        return drawable != null ? drawable : Theme.getThemeDrawable(drawableKey);
     }
 }

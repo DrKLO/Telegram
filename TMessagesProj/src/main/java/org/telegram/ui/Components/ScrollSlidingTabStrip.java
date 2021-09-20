@@ -40,8 +40,6 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.google.android.exoplayer2.util.Log;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.Emoji;
@@ -106,6 +104,8 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
     private int tabPadding = AndroidUtilities.dp(24);
 
     private int lastScrollX = 0;
+    private final Theme.ResourcesProvider resourcesProvider;
+
     SparseArray<StickerTabView> currentPlayingImages = new SparseArray<>();
     SparseArray<StickerTabView> currentPlayingImagesTmp = new SparseArray<>();
     private boolean dragEnabled;
@@ -145,8 +145,9 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
         }
     };
 
-    public ScrollSlidingTabStrip(Context context) {
+    public ScrollSlidingTabStrip(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
         touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
 
         setFillViewport(true);
@@ -297,9 +298,9 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
             textView = new TextView(getContext());
             textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
-            textView.setTextColor(Theme.getColor(Theme.key_chat_emojiPanelBadgeText));
+            textView.setTextColor(getThemedColor(Theme.key_chat_emojiPanelBadgeText));
             textView.setGravity(Gravity.CENTER);
-            textView.setBackgroundDrawable(Theme.createRoundRectDrawable(AndroidUtilities.dp(9), Theme.getColor(Theme.key_chat_emojiPanelBadgeBackground)));
+            textView.setBackgroundDrawable(Theme.createRoundRectDrawable(AndroidUtilities.dp(9), getThemedColor(Theme.key_chat_emojiPanelBadgeBackground)));
             textView.setMinWidth(AndroidUtilities.dp(18));
             textView.setPadding(AndroidUtilities.dp(5), 0, AndroidUtilities.dp(5), AndroidUtilities.dp(1));
             tab.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 18, Gravity.TOP | Gravity.LEFT, 26, 6, 0, 0));
@@ -959,7 +960,6 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
                 currentDragPosition = p;
                 tabsContainer.removeView(draggingView);
                 tabsContainer.addView(draggingView, currentDragPosition);
-
                 invalidate();
             }
             dragDx = x - startDragFromX;
@@ -1071,5 +1071,10 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
 
     public void setDragEnabled(boolean enabled) {
         dragEnabled = enabled;
+    }
+
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
     }
 }

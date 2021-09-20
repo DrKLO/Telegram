@@ -105,9 +105,11 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
 
     int fromColor;
     int toColor;
+    private final Theme.ResourcesProvider resourcesProvider;
 
     @SuppressLint("WrongConstant")
-    public TextMessageEnterTransition(ChatMessageCell messageView, ChatActivity chatActivity, RecyclerListView listView, MessageEnterTransitionContainer container) {
+    public TextMessageEnterTransition(ChatMessageCell messageView, ChatActivity chatActivity, RecyclerListView listView, MessageEnterTransitionContainer container, Theme.ResourcesProvider resourcesProvider) {
+        this.resourcesProvider = resourcesProvider;
         currentAccount = UserConfig.selectedAccount;
         if (messageView.getMessageObject().textLayoutBlocks.size() > 1 || messageView.getMessageObject().textLayoutBlocks.get(0).textLayout.getLineCount() > 10) {
             return;
@@ -218,13 +220,13 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
         int normalLinesCount = 0;
         int rtlLinesCount = 0;
 
-        if (Math.abs(ColorUtils.calculateLuminance(Theme.getColor(Theme.key_chat_messageTextOut)) - ColorUtils.calculateLuminance(Theme.getColor(Theme.key_chat_messagePanelText))) > 0.2f) {
+        if (Math.abs(ColorUtils.calculateLuminance(getThemedColor(Theme.key_chat_messageTextOut)) - ColorUtils.calculateLuminance(getThemedColor(Theme.key_chat_messagePanelText))) > 0.2f) {
             crossfade = true;
             changeColor = true;
         }
 
-        fromColor = Theme.getColor(Theme.key_chat_messagePanelText);
-        toColor = Theme.getColor(Theme.key_chat_messageTextOut);
+        fromColor = getThemedColor(Theme.key_chat_messagePanelText);
+        toColor = getThemedColor(Theme.key_chat_messageTextOut);
 
         if (messageTextLayout.getLineCount() == layout.getLineCount()) {
             n = messageTextLayout.getLineCount();
@@ -372,7 +374,7 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
         if (SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_HIGH) {
             Theme.MessageDrawable drawable = messageView.getCurrentBackgroundDrawable(true);
             if (drawable != null) {
-                fromMessageDrawable = drawable.getTransitionDrawable(Theme.getColor(Theme.key_chat_messagePanelBackground));
+                fromMessageDrawable = drawable.getTransitionDrawable(getThemedColor(Theme.key_chat_messagePanelBackground));
             }
         }
     }
@@ -506,17 +508,17 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
             int replyOwnerMessageColor;
             int replyLineColor;
             if (currentMessageObject.hasValidReplyMessageObject() && (currentMessageObject.replyMessageObject.type == 0 || !TextUtils.isEmpty(currentMessageObject.replyMessageObject.caption)) && !(currentMessageObject.replyMessageObject.messageOwner.media instanceof TLRPC.TL_messageMediaGame || currentMessageObject.replyMessageObject.messageOwner.media instanceof TLRPC.TL_messageMediaInvoice)) {
-                replyMessageColor = Theme.getColor(Theme.key_chat_outReplyMessageText);
+                replyMessageColor = getThemedColor(Theme.key_chat_outReplyMessageText);
             } else {
-                replyMessageColor = Theme.getColor(Theme.key_chat_outReplyMediaMessageText);
+                replyMessageColor = getThemedColor(Theme.key_chat_outReplyMediaMessageText);
             }
 
             if (currentMessageObject.isOutOwner()) {
-                replyOwnerMessageColor = Theme.getColor(Theme.key_chat_outReplyNameText);
-                replyLineColor = Theme.getColor(Theme.key_chat_outReplyLine);
+                replyOwnerMessageColor = getThemedColor(Theme.key_chat_outReplyNameText);
+                replyLineColor = getThemedColor(Theme.key_chat_outReplyLine);
             } else {
-                replyOwnerMessageColor = Theme.getColor(Theme.key_chat_inReplyNameText);
-                replyLineColor = Theme.getColor(Theme.key_chat_inReplyLine);
+                replyOwnerMessageColor = getThemedColor(Theme.key_chat_inReplyNameText);
+                replyLineColor = getThemedColor(Theme.key_chat_inReplyLine);
             }
 
             Theme.chat_replyTextPaint.setColor(ColorUtils.blendARGB(replayObjectFromColor, replyMessageColor, progress));
@@ -589,10 +591,11 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
             canvas.drawBitmap(textLayoutBitmap, 0, 0, bitmapPaint);
         } else {
             if (crossfade && changeColor) {
-                int oldColor = Theme.chat_msgTextPaint.getColor();
-                Theme.chat_msgTextPaint.setColor(ColorUtils.blendARGB(fromColor, toColor, alphaProgress));
+                int oldColor = layout.getPaint().getColor();
+                int oldAlpha = Color.alpha(oldColor);
+                layout.getPaint().setColor(ColorUtils.setAlphaComponent(ColorUtils.blendARGB(fromColor, toColor, alphaProgress), (int) (oldAlpha * (1f - alphaProgress))));
                 layout.draw(canvas);
-                Theme.chat_msgTextPaint.setColor(oldColor);
+                layout.getPaint().setColor(oldColor);
             } else if (crossfade) {
                 int oldAlpha = Theme.chat_msgTextPaint.getAlpha();
                 Theme.chat_msgTextPaint.setAlpha((int) (oldAlpha * (1f - alphaProgress)));
@@ -615,15 +618,16 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
                 canvas.drawBitmap(textLayoutBitmapRtl, 0, 0, bitmapPaint);
             } else {
                 if (crossfade && changeColor) {
-                    int oldColor = Theme.chat_msgTextPaint.getColor();
-                    Theme.chat_msgTextPaint.setColor(ColorUtils.blendARGB(fromColor, toColor, alphaProgress));
+                    int oldColor = rtlLayout.getPaint().getColor();
+                    int oldAlpha = Color.alpha(oldColor);
+                    rtlLayout.getPaint().setColor(ColorUtils.setAlphaComponent(ColorUtils.blendARGB(fromColor, toColor, alphaProgress), (int) (oldAlpha * (1f - alphaProgress))));
                     rtlLayout.draw(canvas);
-                    Theme.chat_msgTextPaint.setColor(oldColor);
+                    rtlLayout.getPaint().setColor(oldColor);
                 } else if (crossfade) {
-                    int oldAlpha = Theme.chat_msgTextPaint.getAlpha();
-                    Theme.chat_msgTextPaint.setAlpha((int) (oldAlpha * (1f - alphaProgress)));
+                    int oldAlpha = rtlLayout.getPaint().getAlpha();
+                    rtlLayout.getPaint().setAlpha((int) (oldAlpha * (1f - alphaProgress)));
                     rtlLayout.draw(canvas);
-                    Theme.chat_msgTextPaint.setAlpha(oldAlpha);
+                    rtlLayout.getPaint().setAlpha(oldAlpha);
                 } else {
                     rtlLayout.draw(canvas);
                 }
@@ -671,5 +675,10 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
             canvas.restore();
             canvas.restore();
         }
+    }
+
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
     }
 }

@@ -7,10 +7,21 @@ import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.os.Build;
 
+import com.google.android.exoplayer2.util.Log;
+
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
+import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.NotificationsController;
+import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.VideoEditedInfo;
+import org.telegram.ui.Components.Bulletin;
+import org.telegram.ui.Components.BulletinFactory;
+import org.telegram.ui.LaunchActivity;
 
 import java.io.File;
 import java.nio.ByteBuffer;
@@ -70,6 +81,7 @@ public class MediaCodecVideoConvertor {
                                          boolean isPhoto,
                                          MediaController.CropState cropState) {
 
+        long time = System.currentTimeMillis();
         boolean error = false;
         boolean repeatWithIncreasedTimeout = false;
         int videoTrackIndex = -5;
@@ -782,6 +794,11 @@ public class MediaCodecVideoConvertor {
                     resultWidth, resultHeight, framerate, bitrate, originalBitrate, startTime, endTime, avatarStartTime, duration,
                     needCompress, true, savedFilterState, paintPath, mediaEntities,
                     isPhoto, cropState);
+        }
+
+        long timeLeft = System.currentTimeMillis() - time;
+        if (BuildVars.LOGS_ENABLED) {
+            FileLog.d("compression completed time=" + timeLeft + " needCompress=" + needCompress + " w=" + resultWidth + " h=" + resultHeight + " bitrate=" + bitrate);
         }
 
         return error;

@@ -40,8 +40,10 @@ public class VoiceMessageEnterTransition implements MessageEnterTransitionContai
     private final LinearGradient gradientShader;
     private final int messageId;
     MessageEnterTransitionContainer container;
+    private final Theme.ResourcesProvider resourcesProvider;
 
-    public VoiceMessageEnterTransition(ChatMessageCell messageView, ChatActivityEnterView chatActivityEnterView, RecyclerListView listView, MessageEnterTransitionContainer container) {
+    public VoiceMessageEnterTransition(ChatMessageCell messageView, ChatActivityEnterView chatActivityEnterView, RecyclerListView listView, MessageEnterTransitionContainer container, Theme.ResourcesProvider resourcesProvider) {
+        this.resourcesProvider = resourcesProvider;
         this.messageView = messageView;
         this.container = container;
         this.listView = listView;
@@ -130,7 +132,7 @@ public class VoiceMessageEnterTransition implements MessageEnterTransitionContai
             canvas.save();
         }
 
-        circlePaint.setColor(ColorUtils.blendARGB(Theme.getColor(Theme.key_chat_messagePanelVoiceBackground), Theme.getColor(messageView.getRadialProgress().getCircleColorKey()), progress));
+        circlePaint.setColor(ColorUtils.blendARGB(getThemedColor(Theme.key_chat_messagePanelVoiceBackground), getThemedColor(messageView.getRadialProgress().getCircleColorKey()), progress));
 
         recordCircle.drawWaves(canvas, cx, cy, 1f - hideWavesProgress);
 
@@ -159,5 +161,10 @@ public class VoiceMessageEnterTransition implements MessageEnterTransitionContai
         canvas.restore();
 
         recordCircle.drawIcon(canvas, (int) fromCx, (int) fromCy, 1f - moveProgress);
+    }
+
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
     }
 }

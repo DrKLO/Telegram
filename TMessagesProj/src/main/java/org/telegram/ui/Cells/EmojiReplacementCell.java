@@ -26,9 +26,11 @@ public class EmojiReplacementCell extends FrameLayout {
 
     private ImageView imageView;
     private String emoji;
+    private final Theme.ResourcesProvider resourcesProvider;
 
-    public EmojiReplacementCell(Context context) {
+    public EmojiReplacementCell(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
 
         imageView = new ImageView(context);
         imageView.setScaleType(ImageView.ScaleType.CENTER);
@@ -59,7 +61,7 @@ public class EmojiReplacementCell extends FrameLayout {
         Drawable background = getBackground();
         if (background != null) {
             background.setAlpha(230);
-            background.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_stickersHintPanel), PorterDuff.Mode.MULTIPLY));
+            background.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_stickersHintPanel), PorterDuff.Mode.MULTIPLY));
         }
     }
 
@@ -71,5 +73,10 @@ public class EmojiReplacementCell extends FrameLayout {
     public void invalidate() {
         super.invalidate();
         imageView.invalidate();
+    }
+
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
     }
 }

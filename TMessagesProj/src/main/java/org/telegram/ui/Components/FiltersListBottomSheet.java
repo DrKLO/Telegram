@@ -22,6 +22,7 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
@@ -315,27 +316,25 @@ public class FiltersListBottomSheet extends BottomSheet implements NotificationC
         return result;
     }
 
-    public static ArrayList<Integer> getDialogsCount(BaseFragment fragment, MessagesController.DialogFilter filter, ArrayList<Long> selectedDialogs, boolean always, boolean check) {
-        ArrayList<Integer> dids = new ArrayList<>();
+    public static ArrayList<Long> getDialogsCount(BaseFragment fragment, MessagesController.DialogFilter filter, ArrayList<Long> selectedDialogs, boolean always, boolean check) {
+        ArrayList<Long> dids = new ArrayList<>();
         for (int b = 0, N2 = selectedDialogs.size(); b < N2; b++) {
             long did = selectedDialogs.get(b);
-            int lowerId = (int) did;
-            if (lowerId == 0) {
-                int highId = (int) (did >> 32);
-                TLRPC.EncryptedChat encryptedChat = fragment.getMessagesController().getEncryptedChat(highId);
+            if (DialogObject.isEncryptedDialog(did)) {
+                TLRPC.EncryptedChat encryptedChat = fragment.getMessagesController().getEncryptedChat(DialogObject.getEncryptedChatId(did));
                 if (encryptedChat != null) {
-                    lowerId = encryptedChat.user_id;
-                    if (dids.contains(lowerId)) {
+                    did = encryptedChat.user_id;
+                    if (dids.contains(did)) {
                         continue;
                     }
                 } else {
                     continue;
                 }
             }
-            if (filter != null && (always && filter.alwaysShow.contains(lowerId) || !always && filter.neverShow.contains(lowerId))) {
+            if (filter != null && (always && filter.alwaysShow.contains(did) || !always && filter.neverShow.contains(did))) {
                 continue;
             }
-            dids.add(lowerId);
+            dids.add(did);
             if (check) {
                 break;
             }

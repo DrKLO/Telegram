@@ -30,16 +30,22 @@ public class GraySectionCell extends FrameLayout {
 
     private TextView textView;
     private TextView rightTextView;
+    private final Theme.ResourcesProvider resourcesProvider;
 
     public GraySectionCell(Context context) {
-        super(context);
+        this(context, null);
+    }
 
-        setBackgroundColor(Theme.getColor(Theme.key_graySection));
+    public GraySectionCell(Context context, Theme.ResourcesProvider resourcesProvider) {
+        super(context);
+        this.resourcesProvider = resourcesProvider;
+
+        setBackgroundColor(getThemedColor(Theme.key_graySection));
 
         textView = new TextView(getContext());
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        textView.setTextColor(Theme.getColor(Theme.key_graySectionText));
+        textView.setTextColor(getThemedColor(Theme.key_graySectionText));
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 16, 0, 16, 0));
 
@@ -50,7 +56,7 @@ public class GraySectionCell extends FrameLayout {
             }
         };
         rightTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        rightTextView.setTextColor(Theme.getColor(Theme.key_graySectionText));
+        rightTextView.setTextColor(getThemedColor(Theme.key_graySectionText));
         rightTextView.setGravity((LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL);
         addView(rightTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, 16, 0, 16, 0));
 
@@ -63,7 +69,7 @@ public class GraySectionCell extends FrameLayout {
     }
 
     public void setTextColor(String key) {
-        int color = Theme.getColor(key);
+        int color = getThemedColor(key);
         textView.setTextColor(color);
         rightTextView.setTextColor(color);
     }
@@ -88,5 +94,10 @@ public class GraySectionCell extends FrameLayout {
 
     public TextView getTextView() {
         return textView;
+    }
+
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
     }
 }

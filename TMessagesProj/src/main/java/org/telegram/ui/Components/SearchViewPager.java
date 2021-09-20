@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
@@ -88,7 +89,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         this.folderId = folderId;
         parent = fragment;
         this.chatPreviewDelegate = chatPreviewDelegate;
-        dialogsSearchAdapter = new DialogsSearchAdapter(context, type, initialDialogsType, folderId) {
+        dialogsSearchAdapter = new DialogsSearchAdapter(context, type, initialDialogsType) {
             @Override
             public void notifyDataSetChanged() {
                 int itemCount = getCurrentItemCount();
@@ -229,7 +230,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
     }
 
     private void search(View view, int position, String query, boolean reset) {
-        int dialogId = 0;
+        long dialogId = 0;
         long minDate = 0;
         long maxDate = 0;
         boolean includeFolder = false;
@@ -410,20 +411,16 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
                     fragment1.finishFragment();
                 } else {
                     long did = dids.get(0);
-                    int lower_part = (int) did;
-                    int high_part = (int) (did >> 32);
                     Bundle args1 = new Bundle();
                     args1.putBoolean("scrollToTopOnResume", true);
-                    if (lower_part != 0) {
-                        if (lower_part > 0) {
-                            args1.putInt("user_id", lower_part);
-                        } else if (lower_part < 0) {
-                            args1.putInt("chat_id", -lower_part);
-                        }
+                    if (DialogObject.isEncryptedDialog(did)) {
+                        args1.putInt("enc_id", DialogObject.getEncryptedChatId(did));
                     } else {
-                        args1.putInt("enc_id", high_part);
-                    }
-                    if (lower_part != 0) {
+                        if (DialogObject.isUserDialog(did)) {
+                            args1.putLong("user_id", did);
+                        } else {
+                            args1.putLong("chat_id", -did);
+                        }
                         if (!AccountInstance.getInstance(currentAccount).getMessagesController().checkCanOpenChat(args1, fragment1)) {
                             return;
                         }
@@ -439,21 +436,18 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
 
     public void goToMessage(MessageObject messageObject) {
         Bundle args = new Bundle();
-        int lower_part = (int) messageObject.getDialogId();
-        int high_id = (int) (messageObject.getDialogId() >> 32);
-        if (lower_part != 0) {
-            if (lower_part > 0) {
-                args.putInt("user_id", lower_part);
-            } else if (lower_part < 0) {
-                TLRPC.Chat chat = AccountInstance.getInstance(currentAccount).getMessagesController().getChat(-lower_part);
-                if (chat != null && chat.migrated_to != null) {
-                    args.putInt("migrated_to", lower_part);
-                    lower_part = -chat.migrated_to.channel_id;
-                }
-                args.putInt("chat_id", -lower_part);
-            }
+        long dialogId = messageObject.getDialogId();
+        if (DialogObject.isEncryptedDialog(dialogId)) {
+            args.putInt("enc_id", DialogObject.getEncryptedChatId(dialogId));
+        } else if (DialogObject.isUserDialog(dialogId)) {
+            args.putLong("user_id", dialogId);
         } else {
-            args.putInt("enc_id", high_id);
+            TLRPC.Chat chat = AccountInstance.getInstance(currentAccount).getMessagesController().getChat(-dialogId);
+            if (chat != null && chat.migrated_to != null) {
+                args.putLong("migrated_to", dialogId);
+                dialogId = -chat.migrated_to.channel_id;
+            }
+            args.putLong("chat_id", -dialogId);
         }
         args.putInt("message_id", messageObject.getId());
         parent.presentFragment(new ChatActivity(args));
@@ -639,7 +633,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         this.showOnlyDialogsAdapter = showOnlyDialogsAdapter;
     }
 
-    public void messagesDeleted(int channelId, ArrayList<Integer> markAsDeletedMessages) {
+    public void messagesDeleted(long channelId, ArrayList<Integer> markAsDeletedMessages) {
         int n = viewsByType.size();
         for (int i = 0; i < n; i++) {
             View v = viewsByType.valueAt(i);

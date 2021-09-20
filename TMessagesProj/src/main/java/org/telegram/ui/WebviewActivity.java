@@ -349,7 +349,7 @@ public class WebviewActivity extends BaseFragment {
         }
         loadStats = true;
         TLRPC.TL_messages_getStatsURL req = new TLRPC.TL_messages_getStatsURL();
-        req.peer = MessagesController.getInstance(currentAccount).getInputPeer((int) currentDialogId);
+        req.peer = MessagesController.getInstance(currentAccount).getInputPeer(currentDialogId);
         req.params = params != null ? params : "";
         req.dark = Theme.getCurrentTheme().isDark();
         ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {

@@ -295,7 +295,7 @@ public:
 class User : public TLObject {
 
 public:
-    int32_t id;
+    int64_t id;
     std::string first_name;
     std::string last_name;
     std::string username;
@@ -315,7 +315,7 @@ public:
 class TL_userEmpty : public User {
 
 public:
-    static const uint32_t constructor = 0x200250ba;
+    static const uint32_t constructor = 0xd3bc4b7a;
 
     void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
@@ -324,7 +324,7 @@ public:
 class TL_user : public User {
 
 public:
-    static const uint32_t constructor = 0x938458c1;
+    static const uint32_t constructor = 0x3ff6ecb0;
 
     void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
@@ -333,9 +333,9 @@ public:
 class InputPeer : public TLObject {
 
 public:
-    int32_t user_id;
-    int32_t chat_id;
-    int32_t channel_id;
+    int64_t user_id;
+    int64_t chat_id;
+    int64_t channel_id;
     int64_t access_hash;
 
     static InputPeer *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
@@ -352,7 +352,7 @@ public:
 class TL_inputPeerUser : public InputPeer {
 
 public:
-    static const uint32_t constructor = 0x7b8e7de6;
+    static const uint32_t constructor = 0xdde8a54c;
 
     void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
@@ -361,7 +361,7 @@ public:
 class TL_inputPeerChat : public InputPeer {
 
 public:
-    static const uint32_t constructor = 0x179be863;
+    static const uint32_t constructor = 0x35a95cb9;
 
     void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
@@ -370,7 +370,7 @@ public:
 class TL_inputPeerUserFromMessage : public InputPeer {
 
 public:
-    static const uint32_t constructor = 0x17bae2e6;
+    static const uint32_t constructor = 0xa87b0a1c;
 
     std::unique_ptr<InputPeer> peer;
     int32_t msg_id;
@@ -382,7 +382,7 @@ public:
 class TL_inputPeerChannelFromMessage : public InputPeer {
     
 public:
-    static const uint32_t constructor = 0x9c95f7bb;
+    static const uint32_t constructor = 0xbd2a0840;
 
     std::unique_ptr<InputPeer> peer;
     int32_t msg_id;
@@ -394,7 +394,7 @@ public:
 class TL_inputPeerChannel : public InputPeer {
     
 public:
-    static const uint32_t constructor = 0x20adaef8;
+    static const uint32_t constructor = 0x27bcbbfc;
 
     void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
@@ -411,7 +411,7 @@ public:
 class InputUser : public TLObject {
 
 public:
-    int32_t user_id;
+    int64_t user_id;
     int64_t access_hash;
 
     static InputUser *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
@@ -428,7 +428,7 @@ public:
 class TL_inputUser : public InputUser {
 
 public:
-    static const uint32_t constructor = 0xd8292816;
+    static const uint32_t constructor = 0xf21158c6;
 
     void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
@@ -445,7 +445,7 @@ public:
 class TL_inputUserFromMessage : public InputUser {
 
 public:
-    static const uint32_t constructor = 0x2d117597;
+    static const uint32_t constructor = 0x1da448e2;
 
     std::unique_ptr<InputPeer> peer;
     int32_t msg_id;
@@ -539,9 +539,9 @@ public:
 class TL_messageEntityMentionName : public MessageEntity {
 
 public:
-    static const uint32_t constructor = 0x352dca58;
+    static const uint32_t constructor = 0xdc7b1140;
 
-    int32_t user_id;
+    int64_t user_id;
 
     void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
@@ -693,9 +693,9 @@ public:
 class TL_auth_exportedAuthorization : public TLObject {
 
 public:
-    static const uint32_t constructor = 0xdf969c2d;
+    static const uint32_t constructor = 0xb434e2b8;
 
-    int32_t id;
+    int64_t id;
     std::unique_ptr<ByteArray> bytes;
 
     static TL_auth_exportedAuthorization *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
@@ -717,9 +717,9 @@ public:
 class TL_auth_importAuthorization : public TLObject {
 
 public:
-    static const uint32_t constructor = 0xe3ef9613;
+    static const uint32_t constructor = 0xa57a7dad;
 
-    int32_t id;
+    int64_t id;
     std::unique_ptr<ByteArray> bytes;
 
     bool isNeedLayer();

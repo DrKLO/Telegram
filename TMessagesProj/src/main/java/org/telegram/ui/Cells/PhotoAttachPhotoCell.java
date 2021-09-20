@@ -72,13 +72,15 @@ public class PhotoAttachPhotoCell extends FrameLayout {
 
     private Paint backgroundPaint = new Paint();
     private AnimatorSet animator;
+    private final Theme.ResourcesProvider resourcesProvider;
 
     public interface PhotoAttachPhotoCellDelegate {
         void onCheckClick(PhotoAttachPhotoCell v);
     }
 
-    public PhotoAttachPhotoCell(Context context) {
+    public PhotoAttachPhotoCell(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
 
         setWillNotDraw(false);
 
@@ -113,7 +115,7 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         videoTextView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         videoInfoContainer.addView(videoTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 13, -0.7f, 0, 0));
 
-        checkBox = new CheckBox2(context, 24);
+        checkBox = new CheckBox2(context, 24, resourcesProvider);
         checkBox.setDrawBackgroundAsArc(7);
         checkBox.setColor(Theme.key_chat_attachCheckBoxBackground, Theme.key_chat_attachPhotoBackground, Theme.key_chat_attachCheckBoxCheck);
         addView(checkBox, LayoutHelper.createFrame(26, 26, Gravity.LEFT | Gravity.TOP, 52, 4, 0, 0));
@@ -393,7 +395,7 @@ public class PhotoAttachPhotoCell extends FrameLayout {
     @Override
     protected void onDraw(Canvas canvas) {
         if (checkBox.isChecked() || container.getScaleX() != 1.0f || !imageView.getImageReceiver().hasNotThumb() || imageView.getImageReceiver().getCurrentAlpha() != 1.0f || photoEntry != null && PhotoViewer.isShowingImage(photoEntry.path) || searchEntry != null && PhotoViewer.isShowingImage(searchEntry.getPathToAttach())) {
-            backgroundPaint.setColor(Theme.getColor(Theme.key_chat_attachPhotoBackground));
+            backgroundPaint.setColor(getThemedColor(Theme.key_chat_attachPhotoBackground));
             canvas.drawRect(0, 0, imageView.getMeasuredWidth(), imageView.getMeasuredHeight(), backgroundPaint);
         }
     }
@@ -423,5 +425,10 @@ public class PhotoAttachPhotoCell extends FrameLayout {
             parent.dispatchTouchEvent(MotionEvent.obtain(SystemClock.uptimeMillis(), SystemClock.uptimeMillis(), MotionEvent.ACTION_UP, getLeft(), getTop() + getHeight() - 1, 0));
         }
         return super.performAccessibilityAction(action, arguments);
+    }
+
+    protected int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
     }
 }

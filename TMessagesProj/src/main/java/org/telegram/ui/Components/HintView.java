@@ -48,19 +48,29 @@ public class HintView extends FrameLayout {
 
     private int bottomOffset;
     private long showingDuration = 2000;
+    private final Theme.ResourcesProvider resourcesProvider;
 
     public HintView(Context context, int type) {
-        this(context, type, false);
+        this(context, type, false, null);
     }
 
     public HintView(Context context, int type, boolean topArrow) {
+        this(context, type, topArrow, null);
+    }
+
+    public HintView(Context context, int type, Theme.ResourcesProvider resourcesProvider) {
+        this(context, type, false, resourcesProvider);
+    }
+
+    public HintView(Context context, int type, boolean topArrow, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
 
         currentType = type;
         isTopArrow = topArrow;
 
         textView = new CorrectlyMeasuringTextView(context);
-        textView.setTextColor(Theme.getColor(Theme.key_chat_gifSaveHintText));
+        textView.setTextColor(getThemedColor(Theme.key_chat_gifSaveHintText));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         textView.setMaxLines(2);
         if (type == 7 || type == 8 || type == 9) {
@@ -72,12 +82,12 @@ public class HintView extends FrameLayout {
         }
         if (currentType == TYPE_SEARCH_AS_LIST) {
             textView.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
-            textView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(5), Theme.getColor(Theme.key_chat_gifSaveHintBackground)));
+            textView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(5), getThemedColor(Theme.key_chat_gifSaveHintBackground)));
             textView.setPadding(AndroidUtilities.dp(10), 0, AndroidUtilities.dp(10), 0);
             addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 30, Gravity.LEFT | Gravity.TOP, 0, topArrow ? 6 : 0, 0, topArrow ? 0 : 6));
         } else {
             textView.setGravity(Gravity.LEFT | Gravity.TOP);
-            textView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(currentType == 7 || currentType == 8 || currentType == 9 ? 6 : 3), Theme.getColor(Theme.key_chat_gifSaveHintBackground)));
+            textView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(currentType == 7 || currentType == 8 || currentType == 9 ? 6 : 3), getThemedColor(Theme.key_chat_gifSaveHintBackground)));
             if (currentType == TYPE_POLL_VOTE || currentType == 4) {
                 textView.setPadding(AndroidUtilities.dp(9), AndroidUtilities.dp(6), AndroidUtilities.dp(9), AndroidUtilities.dp(7));
             } else if (currentType == 2) {
@@ -96,13 +106,13 @@ public class HintView extends FrameLayout {
             imageView = new ImageView(context);
             imageView.setImageResource(R.drawable.tooltip_sound);
             imageView.setScaleType(ImageView.ScaleType.CENTER);
-            imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_gifSaveHintText), PorterDuff.Mode.MULTIPLY));
+            imageView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_gifSaveHintText), PorterDuff.Mode.MULTIPLY));
             addView(imageView, LayoutHelper.createFrame(38, 34, Gravity.LEFT | Gravity.TOP, 7, 7, 0, 0));
         }
 
         arrowImageView = new ImageView(context);
         arrowImageView.setImageResource(topArrow ? R.drawable.tooltip_arrow_up : R.drawable.tooltip_arrow);
-        arrowImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_gifSaveHintBackground), PorterDuff.Mode.MULTIPLY));
+        arrowImageView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_gifSaveHintBackground), PorterDuff.Mode.MULTIPLY));
         addView(arrowImageView, LayoutHelper.createFrame(14, 6, Gravity.LEFT | (topArrow ? Gravity.TOP : Gravity.BOTTOM), 0, 0, 0, 0));
     }
 
@@ -466,5 +476,10 @@ public class HintView extends FrameLayout {
 
     public void setBottomOffset(int offset) {
         this.bottomOffset = offset;
+    }
+
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
     }
 }

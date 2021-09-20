@@ -65,13 +65,15 @@ public class EditTextCaption extends EditTextBoldCursor {
     private float offsetY;
     private int lineCount;
     private boolean isInitLineCount;
+    private final Theme.ResourcesProvider resourcesProvider;
 
     public interface EditTextCaptionDelegate {
         void onSpansChanged();
     }
 
-    public EditTextCaption(Context context) {
+    public EditTextCaption(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
         addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -149,7 +151,7 @@ public class EditTextCaption extends EditTextBoldCursor {
     }
 
     public void makeSelectedUrl() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext(), resourcesProvider);
         builder.setTitle(LocaleController.getString("CreateLink", R.string.CreateLink));
 
         final EditTextBoldCursor editText = new EditTextBoldCursor(getContext()) {
@@ -160,13 +162,13 @@ public class EditTextCaption extends EditTextBoldCursor {
         };
         editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
         editText.setText("http://");
-        editText.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        editText.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
         editText.setHintText(LocaleController.getString("URL", R.string.URL));
-        editText.setHeaderHintColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader));
+        editText.setHeaderHintColor(getThemedColor(Theme.key_windowBackgroundWhiteBlueHeader));
         editText.setSingleLine(true);
         editText.setFocusable(true);
         editText.setTransformHintToHeader(true);
-        editText.setLineColors(Theme.getColor(Theme.key_windowBackgroundWhiteInputField), Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated), Theme.getColor(Theme.key_windowBackgroundWhiteRedText3));
+        editText.setLineColors(getThemedColor(Theme.key_windowBackgroundWhiteInputField), getThemedColor(Theme.key_windowBackgroundWhiteInputFieldActivated), getThemedColor(Theme.key_windowBackgroundWhiteRedText3));
         editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
         editText.setBackgroundDrawable(null);
         editText.requestFocus();
@@ -486,5 +488,10 @@ public class EditTextCaption extends EditTextBoldCursor {
     @Override
     public boolean performAccessibilityAction(int action, Bundle arguments) {
         return performMenuAction(action) || super.performAccessibilityAction(action, arguments);
+    }
+
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
     }
 }

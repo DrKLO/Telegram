@@ -639,9 +639,9 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                         }
                         if (event.getAction() == MotionEvent.ACTION_UP) {
                             CountrySelectActivity fragment = new CountrySelectActivity(false);
-                            fragment.setCountrySelectActivityDelegate((name, shortName) -> {
-                                inputFields[FIELD_COUNTRY].setText(name);
-                                countryName = shortName;
+                            fragment.setCountrySelectActivityDelegate((country) -> {
+                                inputFields[FIELD_COUNTRY].setText(country.name);
+                                countryName = country.shortname;
                             });
                             presentFragment(fragment);
                         }
@@ -1181,7 +1181,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                             }
                             if (event.getAction() == MotionEvent.ACTION_UP) {
                                 CountrySelectActivity fragment = new CountrySelectActivity(false);
-                                fragment.setCountrySelectActivityDelegate((name, shortName) -> inputFields[FIELD_CARD_COUNTRY].setText(name));
+                                fragment.setCountrySelectActivityDelegate((country) -> inputFields[FIELD_CARD_COUNTRY].setText(country.name));
                                 presentFragment(fragment);
                             }
                             return true;

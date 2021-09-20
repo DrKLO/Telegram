@@ -80,6 +80,7 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.ContactsLoadingObserver;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
@@ -588,7 +589,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     drawerLayoutContainer.closeDrawer(false);
                 } else if (id == 11) {
                     Bundle args = new Bundle();
-                    args.putInt("user_id", UserConfig.getInstance(currentAccount).getClientUserId());
+                    args.putLong("user_id", UserConfig.getInstance(currentAccount).getClientUserId());
                     presentFragment(new ChatActivity(args));
                     drawerLayoutContainer.closeDrawer(false);
                 } else if (id == 12) {
@@ -781,7 +782,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                 }
                                 break;
                             case "settings": {
-                                args.putInt("user_id", UserConfig.getInstance(currentAccount).clientUserId);
+                                args.putLong("user_id", UserConfig.getInstance(currentAccount).clientUserId);
                                 ProfileActivity settings = new ProfileActivity(args);
                                 actionBarLayout.addFragmentToStack(settings);
                                 settings.restoreSelfArgs(savedInstanceState);
@@ -886,7 +887,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
 
     private void openSettings(boolean expanded) {
         Bundle args = new Bundle();
-        args.putInt("user_id", UserConfig.getInstance(currentAccount).clientUserId);
+        args.putLong("user_id", UserConfig.getInstance(currentAccount).clientUserId);
         if (expanded) {
             args.putBoolean("expandPhoto", true);
         }
@@ -896,12 +897,18 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     }
 
     private void checkSystemBarColors() {
+        checkSystemBarColors(true, true);
+    }
+
+    private void checkSystemBarColors(boolean checkStatusBar, boolean checkNavigationBar) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            int color = Theme.getColor(Theme.key_actionBarDefault, null, true);
-            AndroidUtilities.setLightStatusBar(getWindow(), color == Color.WHITE);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            if (checkStatusBar) {
+                int color = Theme.getColor(Theme.key_actionBarDefault, null, true);
+                AndroidUtilities.setLightStatusBar(getWindow(), color == Color.WHITE);
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && checkNavigationBar) {
                 final Window window = getWindow();
-                color = Theme.getColor(Theme.key_windowBackgroundGray, null, true);
+                int color = Theme.getColor(Theme.key_windowBackgroundGray, null, true);
                 if (window.getNavigationBarColor() != color) {
                     window.setNavigationBarColor(color);
                     final float brightness = AndroidUtilities.computePerceivedBrightness(color);
@@ -909,7 +916,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 }
             }
         }
-        if (SharedConfig.noStatusBar) {
+        if (SharedConfig.noStatusBar && Build.VERSION.SDK_INT >= 21 && checkStatusBar) {
             getWindow().setStatusBarColor(0);
         }
     }
@@ -1230,8 +1237,8 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             }
         }
         boolean pushOpened = false;
-        int push_user_id = 0;
-        int push_chat_id = 0;
+        long push_user_id = 0;
+        long push_chat_id = 0;
         int push_enc_id = 0;
         int push_msg_id = 0;
         int open_settings = 0;
@@ -1558,7 +1565,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                         String code = null;
                         TLRPC.TL_wallPaper wallPaper = null;
                         Integer messageId = null;
-                        Integer channelId = null;
+                        Long channelId = null;
                         Integer threadId = null;
                         Integer commentId = null;
                         int videoTimestamp = -1;
@@ -1698,7 +1705,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                             } else if (path.startsWith("c/")) {
                                                 List<String> segments = data.getPathSegments();
                                                 if (segments.size() == 3) {
-                                                    channelId = Utilities.parseInt(segments.get(1));
+                                                    channelId = Utilities.parseLong(segments.get(1));
                                                     messageId = Utilities.parseInt(segments.get(2));
                                                     if (messageId == 0 || channelId == 0) {
                                                         messageId = null;
@@ -1784,7 +1791,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                         url = url.replace("tg:privatepost", "tg://telegram.org").replace("tg://privatepost", "tg://telegram.org");
                                         data = Uri.parse(url);
                                         messageId = Utilities.parseInt(data.getQueryParameter("post"));
-                                        channelId = Utilities.parseInt(data.getQueryParameter("channel"));
+                                        channelId = Utilities.parseLong(data.getQueryParameter("channel"));
                                         if (messageId == 0 || channelId == 0) {
                                             messageId = null;
                                             channelId = null;
@@ -2080,7 +2087,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                                     break;
                                                 }
                                             }
-                                            int userId = cursor.getInt(cursor.getColumnIndex(ContactsContract.Data.DATA4));
+                                            long userId = cursor.getLong(cursor.getColumnIndex(ContactsContract.Data.DATA4));
                                             NotificationCenter.getInstance(intentAccount[0]).postNotificationName(NotificationCenter.closeChats);
                                             push_user_id = userId;
                                             String mimeType = cursor.getString(cursor.getColumnIndex(ContactsContract.Data.MIMETYPE));
@@ -2102,8 +2109,8 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 } else if (intent.getAction().equals("new_dialog")) {
                     open_new_dialog = 1;
                 } else if (intent.getAction().startsWith("com.tmessages.openchat")) {
-                    int chatId = intent.getIntExtra("chatId", 0);
-                    int userId = intent.getIntExtra("userId", 0);
+                    long chatId = intent.getLongExtra("chatId", 0);
+                    long userId = intent.getLongExtra("userId", 0);
                     int encId = intent.getIntExtra("encId", 0);
                     int widgetId = intent.getIntExtra("appWidgetId", 0);
                     if (widgetId != 0) {
@@ -2165,7 +2172,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     }
                 } else {
                     Bundle args = new Bundle();
-                    args.putInt("user_id", push_user_id);
+                    args.putLong("user_id", push_user_id);
                     if (push_msg_id != 0) {
                         args.putInt("message_id", push_msg_id);
                     }
@@ -2179,7 +2186,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 }
             } else if (push_chat_id != 0) {
                 Bundle args = new Bundle();
-                args.putInt("chat_id", push_chat_id);
+                args.putLong("chat_id", push_chat_id);
                 if (push_msg_id != 0) {
                     args.putInt("message_id", push_msg_id);
                 }
@@ -2215,7 +2222,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             } else if (showPlayer) {
                 if (!actionBarLayout.fragmentsStack.isEmpty()) {
                     BaseFragment fragment = actionBarLayout.fragmentsStack.get(0);
-                    fragment.showDialog(new AudioPlayerAlert(this));
+                    fragment.showDialog(new AudioPlayerAlert(this, null));
                 }
                 pushOpened = false;
             } else if (showLocations) {
@@ -2230,7 +2237,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                         final long dialog_id = info.messageObject.getDialogId();
                         locationActivity.setDelegate((location, live, notify, scheduleDate) -> SendMessagesHelper.getInstance(intentAccount[0]).sendMessage(location, dialog_id, null, null, null, null, notify, scheduleDate));
                         presentFragment(locationActivity);
-                    }));
+                    }, null));
                 }
                 pushOpened = false;
             } else if (exportingChatUri != null) {
@@ -2239,7 +2246,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 AndroidUtilities.runOnUIThread(() -> {
                     if (!actionBarLayout.fragmentsStack.isEmpty()) {
                         BaseFragment fragment = actionBarLayout.fragmentsStack.get(0);
-                        fragment.showDialog(new StickersAlert(this, importingStickersSoftware, importingStickers, importingStickersEmoji));
+                        fragment.showDialog(new StickersAlert(this, importingStickersSoftware, importingStickers, importingStickersEmoji, null));
                     }
                 });
                 pushOpened = false;
@@ -2260,7 +2267,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 boolean closePrevious = false;
                 if (open_settings == 1) {
                     Bundle args = new Bundle();
-                    args.putInt("user_id", UserConfig.getInstance(currentAccount).clientUserId);
+                    args.putLong("user_id", UserConfig.getInstance(currentAccount).clientUserId);
                     fragment = new ProfileActivity(args);
                 } else if (open_settings == 2) {
                     fragment = new ThemeActivity(ThemeActivity.THEME_TYPE_BASIC);
@@ -2554,7 +2561,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 }
                 if (!arrayList.isEmpty()) {
                     Bundle args = new Bundle();
-                    args.putInt("chat_id", (int) -arrayList.get(0).getDialogId());
+                    args.putLong("chat_id", -arrayList.get(0).getDialogId());
                     args.putInt("message_id", Math.max(1, messageId));
                     ChatActivity chatActivity = new ChatActivity(args);
                     chatActivity.setThreadMessages(arrayList, chat, req.msg_id, res.read_inbox_max_id, res.read_outbox_max_id);
@@ -2726,7 +2733,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                 final String message,
                                 final boolean hasUrl,
                                 final Integer messageId,
-                                final Integer channelId,
+                                final Long channelId,
                                 final Integer threadId,
                                 final Integer commentId,
                                 final String game,
@@ -2801,20 +2808,16 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                 inputMediaGame.id = new TLRPC.TL_inputGameShortName();
                                 inputMediaGame.id.short_name = game;
                                 inputMediaGame.id.bot_id = MessagesController.getInstance(intentAccount).getInputUser(res.users.get(0));
-                                SendMessagesHelper.getInstance(intentAccount).sendGame(MessagesController.getInstance(intentAccount).getInputPeer((int) did), inputMediaGame, 0, 0);
+                                SendMessagesHelper.getInstance(intentAccount).sendGame(MessagesController.getInstance(intentAccount).getInputPeer(did), inputMediaGame, 0, 0);
 
                                 Bundle args1 = new Bundle();
                                 args1.putBoolean("scrollToTopOnResume", true);
-                                int lower_part = (int) did;
-                                int high_id = (int) (did >> 32);
-                                if (lower_part != 0) {
-                                    if (lower_part > 0) {
-                                        args1.putInt("user_id", lower_part);
-                                    } else if (lower_part < 0) {
-                                        args1.putInt("chat_id", -lower_part);
-                                    }
+                                if (DialogObject.isEncryptedDialog(did)) {
+                                    args1.putInt("enc_id", DialogObject.getEncryptedChatId(did));
+                                } else if (DialogObject.isUserDialog(did)) {
+                                    args1.putLong("user_id", did);
                                 } else {
-                                    args1.putInt("enc_id", high_id);
+                                    args1.putLong("chat_id", -did);
                                 }
                                 if (MessagesController.getInstance(intentAccount).checkCanOpenChat(args1, fragment1)) {
                                     NotificationCenter.getInstance(intentAccount).postNotificationName(NotificationCenter.closeChats);
@@ -2866,10 +2869,10 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                 long did = dids.get(0);
                                 Bundle args12 = new Bundle();
                                 args12.putBoolean("scrollToTopOnResume", true);
-                                args12.putInt("chat_id", -(int) did);
+                                args12.putLong("chat_id", -did);
                                 if (mainFragmentsStack.isEmpty() || MessagesController.getInstance(intentAccount).checkCanOpenChat(args12, mainFragmentsStack.get(mainFragmentsStack.size() - 1))) {
                                     NotificationCenter.getInstance(intentAccount).postNotificationName(NotificationCenter.closeChats);
-                                    MessagesController.getInstance(intentAccount).addUserToChat(-(int) did, user, 0, botChat, null, null);
+                                    MessagesController.getInstance(intentAccount).addUserToChat(-did, user, 0, botChat, null, null);
                                     actionBarLayout.presentFragment(new ChatActivity(args12), true, false, true, false);
                                 }
                             });
@@ -2879,10 +2882,10 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                             boolean isBot = false;
                             Bundle args = new Bundle();
                             if (!res.chats.isEmpty()) {
-                                args.putInt("chat_id", res.chats.get(0).id);
+                                args.putLong("chat_id", res.chats.get(0).id);
                                 dialog_id = -res.chats.get(0).id;
                             } else {
-                                args.putInt("user_id", res.users.get(0).id);
+                                args.putLong("user_id", res.users.get(0).id);
                                 dialog_id = res.users.get(0).id;
                             }
                             if (botUser != null && res.users.size() > 0 && res.users.get(0).bot) {
@@ -2973,7 +2976,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                 chats.add(invite.chat);
                                 MessagesStorage.getInstance(intentAccount).putUsersAndChats(null, chats, false, true);
                                 Bundle args = new Bundle();
-                                args.putInt("chat_id", invite.chat.id);
+                                args.putLong("chat_id", invite.chat.id);
                                 if (mainFragmentsStack.isEmpty() || MessagesController.getInstance(intentAccount).checkCanOpenChat(args, mainFragmentsStack.get(mainFragmentsStack.size() - 1))) {
                                     boolean[] canceled = new boolean[1];
                                     progressDialog.setOnCancelListener(dialog -> canceled[0] = true);
@@ -3064,7 +3067,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                         MessagesController.getInstance(intentAccount).putUsers(updates.users, false);
                                         MessagesController.getInstance(intentAccount).putChats(updates.chats, false);
                                         Bundle args = new Bundle();
-                                        args.putInt("chat_id", chat.id);
+                                        args.putLong("chat_id", chat.id);
                                         if (mainFragmentsStack.isEmpty() || MessagesController.getInstance(intentAccount).checkCanOpenChat(args, mainFragmentsStack.get(mainFragmentsStack.size() - 1))) {
                                             ChatActivity fragment = new ChatActivity(args);
                                             NotificationCenter.getInstance(intentAccount).postNotificationName(NotificationCenter.closeChats);
@@ -3097,7 +3100,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 StickersAlert alert;
                 if (fragment instanceof ChatActivity) {
                     ChatActivity chatActivity = (ChatActivity) fragment;
-                    alert = new StickersAlert(LaunchActivity.this, fragment, stickerset, null, chatActivity.getChatActivityEnterViewForStickers());
+                    alert = new StickersAlert(LaunchActivity.this, fragment, stickerset, null, chatActivity.getChatActivityEnterViewForStickers(), chatActivity.getResourceProvider());
                     alert.setCalcMandatoryInsets(chatActivity.isKeyboardVisible());
                 } else {
                     alert = new StickersAlert(LaunchActivity.this, fragment, stickerset, null, null);
@@ -3115,16 +3118,12 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 Bundle args13 = new Bundle();
                 args13.putBoolean("scrollToTopOnResume", true);
                 args13.putBoolean("hasUrl", hasUrl);
-                int lower_part = (int) did;
-                int high_id = (int) (did >> 32);
-                if (lower_part != 0) {
-                    if (lower_part > 0) {
-                        args13.putInt("user_id", lower_part);
-                    } else if (lower_part < 0) {
-                        args13.putInt("chat_id", -lower_part);
-                    }
+                if (DialogObject.isEncryptedDialog(did)) {
+                    args13.putInt("enc_id", DialogObject.getEncryptedChatId(did));
+                } else if (DialogObject.isUserDialog(did)) {
+                    args13.putLong("user_id", did);
                 } else {
-                    args13.putInt("enc_id", high_id);
+                    args13.putLong("chat_id", -did);
                 }
                 if (MessagesController.getInstance(intentAccount).checkCanOpenChat(args13, fragment13)) {
                     NotificationCenter.getInstance(intentAccount).postNotificationName(NotificationCenter.closeChats);
@@ -3365,7 +3364,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 }
             } else {
                 Bundle args = new Bundle();
-                args.putInt("chat_id", channelId);
+                args.putLong("chat_id", channelId);
                 args.putInt("message_id", messageId);
                 BaseFragment lastFragment = !mainFragmentsStack.isEmpty() ? mainFragmentsStack.get(mainFragmentsStack.size() - 1) : null;
                 if (lastFragment == null || MessagesController.getInstance(intentAccount).checkCanOpenChat(args, lastFragment)) {
@@ -3781,10 +3780,10 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     if (!AndroidUtilities.isTablet()) {
                         NotificationCenter.getInstance(account).postNotificationName(NotificationCenter.closeChats);
                     }
-                    if (result > 0) {
-                        args.putInt("user_id", result);
+                    if (DialogObject.isUserDialog(result)) {
+                        args.putLong("user_id", result);
                     } else {
-                        args.putInt("chat_id", -result);
+                        args.putLong("chat_id", -result);
                     }
                     ChatActivity fragment = new ChatActivity(args);
                     fragment.setOpenImport();
@@ -3812,22 +3811,18 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             final ChatActivity fragment;
             if (dids.size() <= 1) {
                 final long did = dids.get(0);
-                int lower_part = (int) did;
-                int high_id = (int) (did >> 32);
 
                 Bundle args = new Bundle();
                 args.putBoolean("scrollToTopOnResume", true);
                 if (!AndroidUtilities.isTablet()) {
                     NotificationCenter.getInstance(account).postNotificationName(NotificationCenter.closeChats);
                 }
-                if (lower_part != 0) {
-                    if (lower_part > 0) {
-                        args.putInt("user_id", lower_part);
-                    } else if (lower_part < 0) {
-                        args.putInt("chat_id", -lower_part);
-                    }
+                if (DialogObject.isEncryptedDialog(did)) {
+                    args.putInt("enc_id", DialogObject.getEncryptedChatId(did));
+                } else if (DialogObject.isUserDialog(did)) {
+                    args.putLong("user_id", did);
                 } else {
-                    args.putInt("enc_id", high_id);
+                    args.putLong("chat_id", -did);
                 }
                 if (!MessagesController.getInstance(account).checkCanOpenChat(args, dialogsFragment)) {
                     return;
@@ -3879,8 +3874,6 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 String captionToSend = null;
                 for (int i = 0; i < dids.size(); i++) {
                     final long did = dids.get(i);
-                    int lower_part = (int) did;
-                    int high_id = (int) (did >> 32);
 
                     AccountInstance accountInstance = AccountInstance.getInstance(UserConfig.selectedAccount);
                     if (fragment != null) {
@@ -4390,7 +4383,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             }
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-            if (reason != 2 && reason != 3 && reason != 6) {
+            if (reason != 2 && reason != 3) {
                 builder.setNegativeButton(LocaleController.getString("MoreInfo", R.string.MoreInfo), (dialogInterface, i) -> {
                     if (!mainFragmentsStack.isEmpty()) {
                         MessagesController.getInstance(account).openByUserName("spambot", mainFragmentsStack.get(mainFragmentsStack.size() - 1), 1);
@@ -4529,7 +4522,11 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 }
             }
             drawerLayoutContainer.setBehindKeyboardColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-            checkSystemBarColors();
+            boolean checkNavigationBarColor = true;
+            if (args.length > 1) {
+                checkNavigationBarColor = (boolean) args[1];
+            }
+            checkSystemBarColors(true, checkNavigationBarColor);
         } else if (id == NotificationCenter.needSetDayNightTheme) {
             boolean instant = false;
             if (Build.VERSION.SDK_INT >= 21 && args[2] != null) {
@@ -4738,16 +4735,16 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 }
 
                 if (type == Bulletin.TYPE_NAME_CHANGED) {
-                    int peerId = (int) args[1];
+                    long peerId = (long) args[1];
                     String text = peerId > 0 ? LocaleController.getString("YourNameChanged", R.string.YourNameChanged) : LocaleController.getString("CannelTitleChanged", R.string.ChannelTitleChanged);
-                    (container != null ? BulletinFactory.of(container) : BulletinFactory.of(fragment)).createErrorBulletin(text).show();
+                    (container != null ? BulletinFactory.of(container, null) : BulletinFactory.of(fragment)).createErrorBulletin(text).show();
                 } else if (type == Bulletin.TYPE_BIO_CHANGED) {
-                    int peerId = (int) args[1];
+                    long peerId = (long) args[1];
                     String text = peerId > 0 ? LocaleController.getString("YourBioChanged", R.string.YourBioChanged) : LocaleController.getString("CannelDescriptionChanged", R.string.ChannelDescriptionChanged);
-                    (container != null ? BulletinFactory.of(container) : BulletinFactory.of(fragment)).createErrorBulletin(text).show();
+                    (container != null ? BulletinFactory.of(container, null) : BulletinFactory.of(fragment)).createErrorBulletin(text).show();
                 } else if (type == Bulletin.TYPE_STICKER) {
                     TLRPC.Document sticker = (TLRPC.Document) args[1];
-                    StickerSetBulletinLayout layout = new StickerSetBulletinLayout(this, null, (int) args[2], sticker);
+                    StickerSetBulletinLayout layout = new StickerSetBulletinLayout(this, null, (int) args[2], sticker, null);
                     if (fragment != null) {
                         Bulletin.make(fragment, layout, Bulletin.DURATION_SHORT).show();
                     } else {
@@ -4757,7 +4754,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     if (fragment != null) {
                         BulletinFactory.of(fragment).createErrorBulletin((String) args[1]).show();
                     } else {
-                        BulletinFactory.of(container).createErrorBulletin((String) args[1]).show();
+                        BulletinFactory.of(container, null).createErrorBulletin((String) args[1]).show();
                     }
                 }
             }
@@ -4799,7 +4796,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             boolean wasMuted = wasMutedByAdminRaisedHand;
             ChatObject.Call call = voIPService.groupCall;
             TLRPC.InputPeer peer = voIPService.getGroupCallPeer();
-            int did;
+            long did;
             if (peer != null) {
                 if (peer.user_id != 0) {
                     did = peer.user_id;

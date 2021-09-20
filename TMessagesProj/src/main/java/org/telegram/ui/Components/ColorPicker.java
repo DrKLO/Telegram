@@ -82,6 +82,7 @@ public class ColorPicker extends FrameLayout {
     private int currentResetType;
 
     private int colorsCount = 1;
+    private int maxColorsCount = 1;
 
     private int colorWheelWidth;
 
@@ -407,12 +408,6 @@ public class ColorPicker extends FrameLayout {
                 }
                 delegate.setColor(radioButton[1].getColor(), 1, true);
                 colorsCount = 2;
-                clearButton.setVisibility(VISIBLE);
-                animators = new ArrayList<>();
-                animators.add(ObjectAnimator.ofFloat(clearButton, View.ALPHA, 1.0f));
-                animators.add(ObjectAnimator.ofFloat(clearButton, View.SCALE_X, 1.0f));
-                animators.add(ObjectAnimator.ofFloat(clearButton, View.SCALE_Y, 1.0f));
-                animators.add(ObjectAnimator.ofFloat(addButton, View.TRANSLATION_X, AndroidUtilities.dp(30) + AndroidUtilities.dp(13)));
             } else if (colorsCount == 2) {
                 colorsCount = 3;
                 if (radioButton[2].getColor() == 0) {
@@ -426,8 +421,6 @@ public class ColorPicker extends FrameLayout {
                     }
                     radioButton[2].setColor(Color.HSVToColor(255, hsv));
                 }
-                animators = new ArrayList<>();
-                animators.add(ObjectAnimator.ofFloat(addButton, View.TRANSLATION_X, AndroidUtilities.dp(30) * 2 + AndroidUtilities.dp(13) * 2));
                 delegate.setColor(radioButton[2].getColor(), 2, true);
             } else if (colorsCount == 3) {
                 colorsCount = 4;
@@ -435,14 +428,35 @@ public class ColorPicker extends FrameLayout {
                     radioButton[3].setColor(generateGradientColors(radioButton[2].getColor()));
                 }
                 delegate.setColor(radioButton[3].getColor(), 3, true);
-                animators = new ArrayList<>();
-                animators.add(ObjectAnimator.ofFloat(addButton, View.TRANSLATION_X, AndroidUtilities.dp(30) * 3 + AndroidUtilities.dp(13) * 3));
-                animators.add(ObjectAnimator.ofFloat(addButton, View.ALPHA, 0.0f));
-                animators.add(ObjectAnimator.ofFloat(addButton, View.SCALE_X, 0.0f));
-                animators.add(ObjectAnimator.ofFloat(addButton, View.SCALE_Y, 0.0f));
             } else {
                 return;
             }
+
+            animators = new ArrayList<>();
+            if (colorsCount < maxColorsCount) {
+                animators.add(ObjectAnimator.ofFloat(addButton, View.ALPHA, 1.0f));
+                animators.add(ObjectAnimator.ofFloat(addButton, View.SCALE_X, 1.0f));
+                animators.add(ObjectAnimator.ofFloat(addButton, View.SCALE_Y, 1.0f));
+                animators.add(ObjectAnimator.ofFloat(addButton, View.TRANSLATION_X, AndroidUtilities.dp(30) * (colorsCount - 1) + AndroidUtilities.dp(13) * (colorsCount - 1)));
+            } else {
+                animators.add(ObjectAnimator.ofFloat(addButton, View.TRANSLATION_X, AndroidUtilities.dp(30) * (colorsCount - 1) + AndroidUtilities.dp(13) * (colorsCount - 1)));
+                animators.add(ObjectAnimator.ofFloat(addButton, View.ALPHA, 0.0f));
+                animators.add(ObjectAnimator.ofFloat(addButton, View.SCALE_X, 0.0f));
+                animators.add(ObjectAnimator.ofFloat(addButton, View.SCALE_Y, 0.0f));
+            }
+
+            if (colorsCount > 1) {
+                if (clearButton.getVisibility() != View.VISIBLE) {
+                    clearButton.setScaleX(0f);
+                    clearButton.setScaleY(0f);
+                }
+                clearButton.setVisibility(VISIBLE);
+
+                animators.add(ObjectAnimator.ofFloat(clearButton, View.ALPHA, 1.0f));
+                animators.add(ObjectAnimator.ofFloat(clearButton, View.SCALE_X, 1.0f));
+                animators.add(ObjectAnimator.ofFloat(clearButton, View.SCALE_Y, 1.0f));
+            }
+
             radioButton[colorsCount - 1].callOnClick();
             colorsAnimator = new AnimatorSet();
             updateColorsPosition(animators, 0, false, getMeasuredWidth());
@@ -452,7 +466,7 @@ public class ColorPicker extends FrameLayout {
             colorsAnimator.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
-                    if (colorsCount == 4) {
+                    if (colorsCount == maxColorsCount) {
                         addButton.setVisibility(INVISIBLE);
                     }
                     colorsAnimator = null;
@@ -482,28 +496,31 @@ public class ColorPicker extends FrameLayout {
             if (colorsAnimator != null) {
                 return;
             }
-            ArrayList<Animator> animators;
+            ArrayList<Animator> animators = new ArrayList<>();
             if (colorsCount == 2) {
                 colorsCount = 1;
-                animators = new ArrayList<>();
                 animators.add(ObjectAnimator.ofFloat(clearButton, View.ALPHA, 0.0f));
                 animators.add(ObjectAnimator.ofFloat(clearButton, View.SCALE_X, 0.0f));
                 animators.add(ObjectAnimator.ofFloat(clearButton, View.SCALE_Y, 0.0f));
                 animators.add(ObjectAnimator.ofFloat(addButton, View.TRANSLATION_X, 0));
             } else if (colorsCount == 3) {
                 colorsCount = 2;
-                animators = new ArrayList<>();
                 animators.add(ObjectAnimator.ofFloat(addButton, View.TRANSLATION_X, AndroidUtilities.dp(30) + AndroidUtilities.dp(13)));
             } else if (colorsCount == 4) {
                 colorsCount = 3;
-                addButton.setVisibility(VISIBLE);
-                animators = new ArrayList<>();
                 animators.add(ObjectAnimator.ofFloat(addButton, View.TRANSLATION_X, AndroidUtilities.dp(30) * 2 + AndroidUtilities.dp(13) * 2));
+            } else {
+                return;
+            }
+            if (colorsCount < maxColorsCount) {
+                addButton.setVisibility(VISIBLE);
                 animators.add(ObjectAnimator.ofFloat(addButton, View.ALPHA, 1.0f));
                 animators.add(ObjectAnimator.ofFloat(addButton, View.SCALE_X, 1.0f));
                 animators.add(ObjectAnimator.ofFloat(addButton, View.SCALE_Y, 1.0f));
             } else {
-                return;
+                animators.add(ObjectAnimator.ofFloat(addButton, View.ALPHA, 0f));
+                animators.add(ObjectAnimator.ofFloat(addButton, View.SCALE_X, 0f));
+                animators.add(ObjectAnimator.ofFloat(addButton, View.SCALE_Y, 0f));
             }
             if (selectedColor != 3) {
                 RadioButton button = radioButton[selectedColor];
@@ -888,7 +905,14 @@ public class ColorPicker extends FrameLayout {
         animatorSet.start();
     }
 
-    public void setType(int resetType, boolean hasChanges, boolean fewColors, int newColorsCount, boolean myMessages, int angle, boolean animated) {
+    public void setType(int resetType, boolean hasChanges, int maxColorsCount, int newColorsCount, boolean myMessages, int angle, boolean animated) {
+        if (resetType != currentResetType) {
+            selectedColor = 0;
+            for (int i = 0; i < 4; i++) {
+                radioButton[i].setChecked(i == selectedColor, true);
+            }
+        }
+        this.maxColorsCount = maxColorsCount;
         currentResetType = resetType;
         myMessagesColor = myMessages;
         colorsCount = newColorsCount;
@@ -906,17 +930,16 @@ public class ColorPicker extends FrameLayout {
         if (menuItem != null) {
             if (resetType == 1) {
                 menuItem.setVisibility(VISIBLE);
-                clearButton.setTranslationX(-AndroidUtilities.dp(40));
             } else {
                 menuItem.setVisibility(GONE);
                 clearButton.setTranslationX(0);
             }
         }
-        if (!fewColors) {
+        if (maxColorsCount <= 1) {
             addButton.setVisibility(GONE);
             clearButton.setVisibility(GONE);
         } else {
-            if (newColorsCount < 4) {
+            if (newColorsCount < maxColorsCount) {
                 addButton.setVisibility(VISIBLE);
                 addButton.setScaleX(1.0f);
                 addButton.setScaleY(1.0f);
@@ -950,7 +973,7 @@ public class ColorPicker extends FrameLayout {
             animatorSet.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
-                    if (!fewColors) {
+                    if (maxColorsCount <= 1) {
                         clearButton.setVisibility(GONE);
                     }
                 }

@@ -55,6 +55,7 @@ import org.telegram.ui.Cells.ContextLinkCell;
 import org.telegram.ui.Cells.StickerCell;
 import org.telegram.ui.Cells.StickerEmojiCell;
 import org.telegram.ui.Components.AlertsCreator;
+import org.telegram.ui.Components.EmojiView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 
@@ -159,7 +160,7 @@ public class ContentPreviewViewer {
             }
             if (currentContentType == CONTENT_TYPE_STICKER) {
                 final boolean inFavs = MediaDataController.getInstance(currentAccount).isStickerInFavorites(currentDocument);
-                BottomSheet.Builder builder = new BottomSheet.Builder(parentActivity);
+                BottomSheet.Builder builder = new BottomSheet.Builder(parentActivity, true, resourcesProvider);
                 ArrayList<CharSequence> items = new ArrayList<>();
                 final ArrayList<Integer> actions = new ArrayList<>();
                 ArrayList<Integer> icons = new ArrayList<>();
@@ -168,6 +169,11 @@ public class ContentPreviewViewer {
                         items.add(LocaleController.getString("SendStickerPreview", R.string.SendStickerPreview));
                         icons.add(R.drawable.outline_send);
                         actions.add(0);
+                    }
+                    if (!delegate.isInScheduleMode()) {
+                        items.add(LocaleController.getString("SendWithoutSound", R.string.SendWithoutSound));
+                        icons.add(R.drawable.input_notify_off);
+                        actions.add(6);
                     }
                     if (delegate.canSchedule()) {
                         items.add(LocaleController.getString("Schedule", R.string.Schedule));
@@ -206,9 +212,9 @@ public class ContentPreviewViewer {
                     if (parentActivity == null) {
                         return;
                     }
-                    if (actions.get(which) == 0) {
+                    if (actions.get(which) == 0 || actions.get(which) == 6) {
                         if (delegate != null) {
-                            delegate.sendSticker(currentDocument, currentQuery, parentObject, true, 0);
+                            delegate.sendSticker(currentDocument, currentQuery, parentObject, actions.get(which) == 0, 0);
                         }
                     } else if (actions.get(which) == 1) {
                         if (delegate != null) {
@@ -238,8 +244,8 @@ public class ContentPreviewViewer {
                 containerView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
                 if (delegate != null && delegate.needRemove()) {
                     BottomSheet.BottomSheetCell cell = visibleDialog.getItemViews().get(0);
-                    cell.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
-                    cell.setIconColor(Theme.getColor(Theme.key_dialogRedIcon));
+                    cell.setTextColor(getThemedColor(Theme.key_dialogTextRed));
+                    cell.setIconColor(getThemedColor(Theme.key_dialogRedIcon));
                 }
             } else if (delegate != null) {
                 animateY = true;
@@ -313,7 +319,7 @@ public class ContentPreviewViewer {
                         TLRPC.BotInlineResult result = inlineResult;
                         Object parent = parentObject;
                         ContentPreviewViewerDelegate stickerPreviewViewerDelegate = delegate;
-                        AlertsCreator.createScheduleDatePickerDialog(parentActivity, stickerPreviewViewerDelegate.getDialogId(), (notify, scheduleDate) -> stickerPreviewViewerDelegate.sendGif(document != null ? document : result, parent, notify, scheduleDate));
+                        AlertsCreator.createScheduleDatePickerDialog(parentActivity, stickerPreviewViewerDelegate.getDialogId(), (notify, scheduleDate) -> stickerPreviewViewerDelegate.sendGif(document != null ? document : result, parent, notify, scheduleDate), resourcesProvider);
                     }
                 });
                 visibleDialog.setDimBehind(false);
@@ -324,7 +330,7 @@ public class ContentPreviewViewer {
                 visibleDialog.show();
                 containerView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
                 if (canDelete) {
-                    visibleDialog.setItemColor(items.size() - 1, Theme.getColor(Theme.key_dialogTextRed2), Theme.getColor(Theme.key_dialogRedIcon));
+                    visibleDialog.setItemColor(items.size() - 1, getThemedColor(Theme.key_dialogTextRed2), getThemedColor(Theme.key_dialogRedIcon));
                 }
             }
         }
@@ -337,6 +343,7 @@ public class ContentPreviewViewer {
     private TLRPC.BotInlineResult inlineResult;
     private TLRPC.InputStickerSet currentStickerSet;
     private Object parentObject;
+    private Theme.ResourcesProvider resourcesProvider;
 
     @SuppressLint("StaticFieldLeak")
     private static volatile ContentPreviewViewer Instance = null;
@@ -374,8 +381,9 @@ public class ContentPreviewViewer {
         }
     }
 
-    public boolean onTouch(MotionEvent event, final RecyclerListView listView, final int height, final Object listener, ContentPreviewViewerDelegate contentPreviewViewerDelegate) {
+    public boolean onTouch(MotionEvent event, final RecyclerListView listView, final int height, final Object listener, ContentPreviewViewerDelegate contentPreviewViewerDelegate, Theme.ResourcesProvider resourcesProvider) {
         delegate = contentPreviewViewerDelegate;
+        this.resourcesProvider = resourcesProvider;
         if (openPreviewRunnable != null || isVisible()) {
             if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL || event.getAction() == MotionEvent.ACTION_POINTER_UP) {
                 AndroidUtilities.runOnUIThread(() -> {
@@ -478,16 +486,16 @@ public class ContentPreviewViewer {
                             clearsInputField = false;
                             if (currentPreviewCell instanceof StickerEmojiCell) {
                                 StickerEmojiCell stickerEmojiCell = (StickerEmojiCell) currentPreviewCell;
-                                open(stickerEmojiCell.getSticker(), stickerEmojiCell.getStickerPath(), stickerEmojiCell.getEmoji(), delegate != null ? delegate.getQuery(false) : null, null, contentType, stickerEmojiCell.isRecent(), stickerEmojiCell.getParentObject());
+                                open(stickerEmojiCell.getSticker(), stickerEmojiCell.getStickerPath(), stickerEmojiCell.getEmoji(), delegate != null ? delegate.getQuery(false) : null, null, contentType, stickerEmojiCell.isRecent(), stickerEmojiCell.getParentObject(), resourcesProvider);
                                 stickerEmojiCell.setScaled(true);
                             } else if (currentPreviewCell instanceof StickerCell) {
                                 StickerCell stickerCell = (StickerCell) currentPreviewCell;
-                                open(stickerCell.getSticker(), null, null, delegate != null ? delegate.getQuery(false) : null, null, contentType, false, stickerCell.getParentObject());
+                                open(stickerCell.getSticker(), null, null, delegate != null ? delegate.getQuery(false) : null, null, contentType, false, stickerCell.getParentObject(), resourcesProvider);
                                 stickerCell.setScaled(true);
                                 clearsInputField = stickerCell.isClearsInputField();
                             } else if (currentPreviewCell instanceof ContextLinkCell) {
                                 ContextLinkCell contextLinkCell = (ContextLinkCell) currentPreviewCell;
-                                open(contextLinkCell.getDocument(), null, null, delegate != null ? delegate.getQuery(true) : null, contextLinkCell.getBotInlineResult(), contentType, false, contextLinkCell.getBotInlineResult() != null ? contextLinkCell.getInlineBot() : contextLinkCell.getParentObject());
+                                open(contextLinkCell.getDocument(), null, null, delegate != null ? delegate.getQuery(true) : null, contextLinkCell.getBotInlineResult(), contentType, false, contextLinkCell.getBotInlineResult() != null ? contextLinkCell.getInlineBot() : contextLinkCell.getParentObject(), resourcesProvider);
                                 if (contentType != CONTENT_TYPE_GIF) {
                                     contextLinkCell.setScaled(true);
                                 }
@@ -528,8 +536,9 @@ public class ContentPreviewViewer {
         }
     }
 
-    public boolean onInterceptTouchEvent(MotionEvent event, final RecyclerListView listView, final int height, ContentPreviewViewerDelegate contentPreviewViewerDelegate) {
+    public boolean onInterceptTouchEvent(MotionEvent event, final RecyclerListView listView, final int height, ContentPreviewViewerDelegate contentPreviewViewerDelegate, Theme.ResourcesProvider resourcesProvider) {
         delegate = contentPreviewViewerDelegate;
+        this.resourcesProvider = resourcesProvider;
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
             int x = (int) event.getX();
             int y = (int) event.getY();
@@ -591,16 +600,16 @@ public class ContentPreviewViewer {
                     clearsInputField = false;
                     if (currentPreviewCell instanceof StickerEmojiCell) {
                         StickerEmojiCell stickerEmojiCell = (StickerEmojiCell) currentPreviewCell;
-                        open(stickerEmojiCell.getSticker(), stickerEmojiCell.getStickerPath(), stickerEmojiCell.getEmoji(), delegate != null ? delegate.getQuery(false) : null, null, contentTypeFinal, stickerEmojiCell.isRecent(), stickerEmojiCell.getParentObject());
+                        open(stickerEmojiCell.getSticker(), stickerEmojiCell.getStickerPath(), stickerEmojiCell.getEmoji(), delegate != null ? delegate.getQuery(false) : null, null, contentTypeFinal, stickerEmojiCell.isRecent(), stickerEmojiCell.getParentObject(), resourcesProvider);
                         stickerEmojiCell.setScaled(true);
                     } else if (currentPreviewCell instanceof StickerCell) {
                         StickerCell stickerCell = (StickerCell) currentPreviewCell;
-                        open(stickerCell.getSticker(), null, null, delegate != null ? delegate.getQuery(false) : null, null, contentTypeFinal, false, stickerCell.getParentObject());
+                        open(stickerCell.getSticker(), null, null, delegate != null ? delegate.getQuery(false) : null, null, contentTypeFinal, false, stickerCell.getParentObject(), resourcesProvider);
                         stickerCell.setScaled(true);
                         clearsInputField = stickerCell.isClearsInputField();
                     } else if (currentPreviewCell instanceof ContextLinkCell) {
                         ContextLinkCell contextLinkCell = (ContextLinkCell) currentPreviewCell;
-                        open(contextLinkCell.getDocument(), null, null, delegate != null ? delegate.getQuery(true) : null, contextLinkCell.getBotInlineResult(), contentTypeFinal, false, contextLinkCell.getBotInlineResult() != null ? contextLinkCell.getInlineBot() : contextLinkCell.getParentObject());
+                        open(contextLinkCell.getDocument(), null, null, delegate != null ? delegate.getQuery(true) : null, contextLinkCell.getBotInlineResult(), contentTypeFinal, false, contextLinkCell.getBotInlineResult() != null ? contextLinkCell.getInlineBot() : contextLinkCell.getParentObject(), resourcesProvider);
                         if (contentTypeFinal != CONTENT_TYPE_GIF) {
                             contextLinkCell.setScaled(true);
                         }
@@ -670,10 +679,11 @@ public class ContentPreviewViewer {
         keyboardHeight = height;
     }
 
-    public void open(TLRPC.Document document, SendMessagesHelper.ImportingSticker sticker, String emojiPath, String query, TLRPC.BotInlineResult botInlineResult, int contentType, boolean isRecent, Object parent) {
+    public void open(TLRPC.Document document, SendMessagesHelper.ImportingSticker sticker, String emojiPath, String query, TLRPC.BotInlineResult botInlineResult, int contentType, boolean isRecent, Object parent, Theme.ResourcesProvider resourcesProvider) {
         if (parentActivity == null || windowView == null) {
             return;
         }
+        this.resourcesProvider = resourcesProvider;
         isRecentSticker = isRecent;
         stickerEmojiLayout = null;
         if (contentType == CONTENT_TYPE_STICKER) {
@@ -773,6 +783,7 @@ public class ContentPreviewViewer {
         currentQuery = query;
         inlineResult = botInlineResult;
         parentObject = parent;
+        this.resourcesProvider = resourcesProvider;
         containerView.invalidate();
 
         if (!isVisible) {
@@ -942,5 +953,10 @@ public class ContentPreviewViewer {
                 }
             }
         }
+    }
+
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
     }
 }

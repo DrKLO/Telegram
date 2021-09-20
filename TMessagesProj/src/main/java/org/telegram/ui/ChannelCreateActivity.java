@@ -121,7 +121,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
     private LoadingCell loadingAdminedCell;
 
     private int currentStep;
-    private int chatId;
+    private long chatId;
     private boolean canCreatePublic = true;
     private TLRPC.InputFile inputPhoto;
     private TLRPC.InputFile inputVideo;
@@ -152,7 +152,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                     loadAdminedChannels();
                 }
             }
-            chatId = args.getInt("chat_id", 0);
+            chatId = args.getLong("chat_id", 0);
         }
     }
 
@@ -306,7 +306,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                         }
                         Bundle args = new Bundle();
                         args.putInt("step", 2);
-                        args.putInt("chatId", chatId);
+                        args.putLong("chatId", chatId);
                         args.putInt("chatType", ChatObject.CHAT_TYPE_CHANNEL);
                         presentFragment(new GroupCreateActivity(args), true);
                     }
@@ -883,6 +883,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
             return;
         }
         if (avatarAnimation != null) {
+            avatarAnimation.removeAllListeners();
             avatarAnimation.cancel();
             avatarAnimation = null;
         }
@@ -894,6 +895,9 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                 avatarAnimation.playTogether(ObjectAnimator.ofFloat(avatarEditor, View.ALPHA, 0.0f),
                         ObjectAnimator.ofFloat(avatarProgressView, View.ALPHA, 1.0f));
             } else {
+                if (avatarEditor.getVisibility() != View.VISIBLE) {
+                    avatarEditor.setAlpha(0f);
+                }
                 avatarEditor.setVisibility(View.VISIBLE);
 
                 avatarAnimation.playTogether(ObjectAnimator.ofFloat(avatarEditor, View.ALPHA, 1.0f),
@@ -1001,10 +1005,10 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                     FileLog.e(e);
                 }
             }
-            int chat_id = (Integer) args[0];
+            long chat_id = (Long) args[0];
             Bundle bundle = new Bundle();
             bundle.putInt("step", 1);
-            bundle.putInt("chat_id", chat_id);
+            bundle.putLong("chat_id", chat_id);
             bundle.putBoolean("canCreatePublic", canCreatePublic);
             if (inputPhoto != null || inputVideo != null) {
                 MessagesController.getInstance(currentAccount).changeChatAvatar(chat_id, null, inputPhoto, inputVideo, videoTimestamp, inputVideoPath, avatar, avatarBig, null);

@@ -8,6 +8,9 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
@@ -21,6 +24,8 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ScrollView;
 import android.widget.TextView;
+
+import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -37,6 +42,7 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.voip.CellFlickerDrawable;
 
 import java.io.File;
 import java.util.Locale;
@@ -48,6 +54,7 @@ public class BlockingUpdateView extends FrameLayout implements NotificationCente
     private FrameLayout radialProgressView;
     private FrameLayout acceptButton;
     private RadialProgress radialProgress;
+    private ScrollView scrollView;
 
     private AnimatorSet progressAnimation;
 
@@ -63,11 +70,12 @@ public class BlockingUpdateView extends FrameLayout implements NotificationCente
         int top = Build.VERSION.SDK_INT >= 21 ? (int) (AndroidUtilities.statusBarHeight / AndroidUtilities.density) : 0;
 
         FrameLayout view = new FrameLayout(context);
-        view.setBackgroundColor(0xff4fa9e6);
         addView(view, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, AndroidUtilities.dp(176) + (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0)));
 
-        ImageView imageView = new ImageView(context);
-        imageView.setImageResource(R.drawable.intro_tg_plane);
+        RLottieImageView imageView = new RLottieImageView(context);
+        imageView.setAnimation(R.raw.qr_code_logo, 108, 108);
+        imageView.playAnimation();
+        imageView.getAnimatedDrawable().setAutoRepeat(1);
         imageView.setScaleType(ImageView.ScaleType.CENTER);
         imageView.setPadding(0, 0, 0, AndroidUtilities.dp(14));
         view.addView(imageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, top, 0, 0));
@@ -80,12 +88,15 @@ public class BlockingUpdateView extends FrameLayout implements NotificationCente
             }
         });
 
-        ScrollView scrollView = new ScrollView(context);
-        AndroidUtilities.setScrollViewEdgeEffectColor(scrollView, Theme.getColor(Theme.key_actionBarDefault));
-        addView(scrollView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 27, 206 + top, 27, 130));
-
         FrameLayout container = new FrameLayout(context);
-        scrollView.addView(container, LayoutHelper.createScroll(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
+        scrollView = new ScrollView(context);
+        AndroidUtilities.setScrollViewEdgeEffectColor(scrollView, Theme.getColor(Theme.key_actionBarDefault));
+        scrollView.setPadding(0, AndroidUtilities.dp(16), 0, AndroidUtilities.dp(16));
+        scrollView.setClipToPadding(false);
+        addView(scrollView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 27, 178 + top, 27, 130));
+
+
+        scrollView.addView(container);
 
         TextView titleTextView = new TextView(context);
         titleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -104,10 +115,38 @@ public class BlockingUpdateView extends FrameLayout implements NotificationCente
         textView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
         container.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 44, 0, 0));
 
-        acceptButton = new FrameLayout(context);
-        acceptButton.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), 0xff50a8eb, 0xff439bde));
+
+        acceptButton = new FrameLayout(context) {
+            CellFlickerDrawable cellFlickerDrawable;
+
+            @Override
+            protected void onDraw(Canvas canvas) {
+                super.onDraw(canvas);
+                if (cellFlickerDrawable == null) {
+                    cellFlickerDrawable = new CellFlickerDrawable();
+                    cellFlickerDrawable.drawFrame = false;
+                    cellFlickerDrawable.repeatProgress = 2f;
+                }
+                cellFlickerDrawable.setParentWidth(getMeasuredWidth());
+                AndroidUtilities.rectTmp.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
+                cellFlickerDrawable.draw(canvas, AndroidUtilities.rectTmp, AndroidUtilities.dp(4));
+                invalidate();
+            }
+
+            @Override
+            protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                int size = MeasureSpec.getSize(widthMeasureSpec);
+                if (size > AndroidUtilities.dp(260)) {
+                    super.onMeasure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(320), MeasureSpec.EXACTLY), heightMeasureSpec);
+                } else {
+                    super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+                }
+            }
+        };
         acceptButton.setPadding(AndroidUtilities.dp(34), 0, AndroidUtilities.dp(34), 0);
-        addView(acceptButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 42, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 0, 0, 0, 45));
+        acceptButton.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
+        acceptButton.setPadding(AndroidUtilities.dp(34), 0, AndroidUtilities.dp(34), 0);
+        addView(acceptButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 46, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 0, 0, 0, 45));
         acceptButton.setOnClickListener(view1 -> {
             if (!checkApkInstallPermissions(getContext())) {
                 return;
@@ -329,4 +368,18 @@ public class BlockingUpdateView extends FrameLayout implements NotificationCente
             }));
         }
     }
+
+    Drawable gradientDrawableTop = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[] {Theme.getColor(Theme.key_windowBackgroundWhite), Color.TRANSPARENT });
+    Drawable gradientDrawableBottom = new GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP, new int[] {Theme.getColor(Theme.key_windowBackgroundWhite), Color.TRANSPARENT });
+
+    @Override
+    protected void dispatchDraw(Canvas canvas) {
+        super.dispatchDraw(canvas);
+        gradientDrawableTop.setBounds(scrollView.getLeft(), scrollView.getTop(), scrollView.getRight(), scrollView.getTop() + AndroidUtilities.dp(16));
+        gradientDrawableTop.draw(canvas);
+
+        gradientDrawableBottom.setBounds(scrollView.getLeft(), scrollView.getBottom() - AndroidUtilities.dp(18), scrollView.getRight(), scrollView.getBottom());
+        gradientDrawableBottom.draw(canvas);
+    }
+
 }

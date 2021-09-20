@@ -219,7 +219,7 @@ public class SizeNotifierFrameLayout extends FrameLayout {
             return;
         }
         //int kbHeight = SharedConfig.smoothKeyboard ? 0 : keyboardHeight;
-        Drawable newDrawable = Theme.getCachedWallpaperNonBlocking();
+        Drawable newDrawable = getNewDrawable();
         if (newDrawable != backgroundDrawable && newDrawable != null) {
             if (Theme.isAnimatingColor()) {
                 oldBackgroundDrawable = backgroundDrawable;
@@ -340,5 +340,14 @@ public class SizeNotifierFrameLayout extends FrameLayout {
     public void setSkipBackgroundDrawing(boolean skipBackgroundDrawing) {
         this.skipBackgroundDrawing = skipBackgroundDrawing;
         invalidate();
+    }
+
+    protected Drawable getNewDrawable() {
+        return Theme.getCachedWallpaperNonBlocking();
+    }
+
+    @Override
+    protected boolean verifyDrawable(Drawable who) {
+        return who == getBackgroundImage() || super.verifyDrawable(who);
     }
 }

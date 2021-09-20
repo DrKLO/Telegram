@@ -52,7 +52,7 @@ import java.util.Locale;
 public class InviteLinkBottomSheet extends BottomSheet {
 
     TLRPC.TL_chatInviteExported invite;
-    HashMap<Integer, TLRPC.User> users;
+    HashMap<Long, TLRPC.User> users;
     TLRPC.ChatFull info;
 
     int creatorHeaderRow;
@@ -88,7 +88,7 @@ public class InviteLinkBottomSheet extends BottomSheet {
 
     ArrayList<TLRPC.TL_chatInviteImporter> invitedUsers = new ArrayList<>();
 
-    private int chatId;
+    private long chatId;
     private boolean isChannel;
     private final long timeDif;
 
@@ -96,7 +96,7 @@ public class InviteLinkBottomSheet extends BottomSheet {
 
     private boolean canEdit = true;
 
-    public InviteLinkBottomSheet(Context context, TLRPC.TL_chatInviteExported invite, TLRPC.ChatFull info, HashMap<Integer, TLRPC.User> users, BaseFragment fragment, int chatId, boolean permanent, boolean isChannel) {
+    public InviteLinkBottomSheet(Context context, TLRPC.TL_chatInviteExported invite, TLRPC.ChatFull info, HashMap<Long, TLRPC.User> users, BaseFragment fragment, long chatId, boolean permanent, boolean isChannel) {
         super(context, false);
         this.invite = invite;
         this.users = users;
@@ -279,7 +279,7 @@ public class InviteLinkBottomSheet extends BottomSheet {
                     }
                     if (user != null) {
                         Bundle bundle = new Bundle();
-                        bundle.putInt("user_id", user.id);
+                        bundle.putLong("user_id", user.id);
                         MessagesController.getInstance(UserConfig.selectedAccount).putUser(user, false);
                         ProfileActivity profileActivity = new ProfileActivity(bundle);
                         fragment.presentFragment(profileActivity);

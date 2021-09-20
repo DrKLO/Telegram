@@ -65,7 +65,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
     public interface GroupedPhotosListViewDelegate {
         int getCurrentIndex();
         int getCurrentAccount();
-        int getAvatarsDialogId();
+        long getAvatarsDialogId();
         int getSlideshowMessageId();
         ArrayList<ImageLocation> getImagesArrLocations();
         ArrayList<MessageObject> getImagesArr();

@@ -30,9 +30,11 @@ public class PlayingGameDrawable extends StatusDrawable {
     private RectF rect = new RectF();
     private float progress;
     private final boolean isDialogScreen;
+    Theme.ResourcesProvider resourcesProvider;
 
-    public PlayingGameDrawable(boolean isDialogScreen) {
+    public PlayingGameDrawable(boolean isDialogScreen, Theme.ResourcesProvider resourcesProvider) {
         this.isDialogScreen = isDialogScreen;
+        this.resourcesProvider = resourcesProvider;
     }
     public void setIsChat(boolean value) {
         isChat = value;
@@ -40,7 +42,6 @@ public class PlayingGameDrawable extends StatusDrawable {
 
     @Override
     public void setColor(int color) {
-
     }
 
     private void update() {
@@ -82,7 +83,7 @@ public class PlayingGameDrawable extends StatusDrawable {
             //y = AndroidUtilities.dp(9.3f) + getBounds().top;
         }
 
-        paint.setColor(Theme.getColor(isDialogScreen ? Theme.key_chats_actionMessage : Theme.key_chat_status));
+        paint.setColor(Theme.getColor(isDialogScreen ? Theme.key_chats_actionMessage : Theme.key_chat_status, resourcesProvider));
         rect.set(0, y, size, y + size);
         int rad;
         if (progress < 0.5f) {

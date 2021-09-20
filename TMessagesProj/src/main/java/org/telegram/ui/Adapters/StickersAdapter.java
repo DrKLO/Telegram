@@ -20,6 +20,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.FileLoader;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.EmojiReplacementCell;
 import org.telegram.ui.Components.RecyclerListView;
 
@@ -42,14 +43,16 @@ public class StickersAdapter extends RecyclerListView.SelectionAdapter implement
 
     private String[] lastSearchKeyboardLanguage;
     private Runnable searchRunnable;
+    private final Theme.ResourcesProvider resourcesProvider;
 
     public interface StickersAdapterDelegate {
         void needChangePanelVisibility(boolean show);
     }
 
-    public StickersAdapter(Context context, StickersAdapterDelegate delegate) {
+    public StickersAdapter(Context context, StickersAdapterDelegate delegate, Theme.ResourcesProvider resourcesProvider) {
         mContext = context;
         this.delegate = delegate;
+        this.resourcesProvider = resourcesProvider;
         MediaDataController.getInstance(currentAccount).checkStickers(MediaDataController.TYPE_IMAGE);
         MediaDataController.getInstance(currentAccount).checkStickers(MediaDataController.TYPE_MASK);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.newEmojiSuggestionsAvailable);
@@ -189,7 +192,7 @@ public class StickersAdapter extends RecyclerListView.SelectionAdapter implement
 
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup viewGroup, int viewType) {
-        return new RecyclerListView.Holder(new EmojiReplacementCell(mContext));
+        return new RecyclerListView.Holder(new EmojiReplacementCell(mContext, resourcesProvider));
     }
 
     @Override

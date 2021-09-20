@@ -19,7 +19,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.text.TextUtils;
-import android.util.LongSparseArray;
 import android.util.SparseIntArray;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -43,6 +42,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+
+import androidx.collection.LongSparseArray;
 
 public class LocationController extends BaseController implements NotificationCenter.NotificationCenterDelegate, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
@@ -214,9 +215,9 @@ public class LocationController extends BaseController implements NotificationCe
                         messages.add(messageObject.messageOwner);
                     }
                 } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionGeoProximityReached) {
-                    int lowerId = (int) messageObject.getDialogId();
-                    if (lowerId > 0) {
-                        setProximityLocation(messageObject.getDialogId(), 0, false);
+                    long dialogId = messageObject.getDialogId();
+                    if (DialogObject.isUserDialog(dialogId)) {
+                        setProximityLocation(dialogId, 0, false);
                     }
                 }
             }
@@ -230,11 +231,11 @@ public class LocationController extends BaseController implements NotificationCe
             }
             if (!sharingLocationsUI.isEmpty()) {
                 ArrayList<Integer> markAsDeletedMessages = (ArrayList<Integer>) args[0];
-                int channelId = (Integer) args[1];
+                long channelId = (Long) args[1];
                 ArrayList<Long> toRemove = null;
                 for (int a = 0; a < sharingLocationsUI.size(); a++) {
                     SharingLocationInfo info = sharingLocationsUI.get(a);
-                    int messageChannelId = info.messageObject != null ? info.messageObject.getChannelId() : 0;
+                    long messageChannelId = info.messageObject != null ? info.messageObject.getChannelId() : 0;
                     if (channelId != messageChannelId) {
                         continue;
                     }
@@ -397,7 +398,7 @@ public class LocationController extends BaseController implements NotificationCe
                     }
                 }
                 TLRPC.TL_messages_editMessage req = new TLRPC.TL_messages_editMessage();
-                req.peer = getMessagesController().getInputPeer((int) info.did);
+                req.peer = getMessagesController().getInputPeer(info.did);
                 req.id = info.mid;
                 req.flags |= 16384;
                 req.media = new TLRPC.TL_inputMediaGeoLive();
@@ -663,8 +664,8 @@ public class LocationController extends BaseController implements NotificationCe
             final ArrayList<TLRPC.User> users = new ArrayList<>();
             final ArrayList<TLRPC.Chat> chats = new ArrayList<>();
             try {
-                ArrayList<Integer> usersToLoad = new ArrayList<>();
-                ArrayList<Integer> chatsToLoad = new ArrayList<>();
+                ArrayList<Long> usersToLoad = new ArrayList<>();
+                ArrayList<Long> chatsToLoad = new ArrayList<>();
                 SQLiteCursor cursor = getMessagesStorage().getDatabase().queryFinalized("SELECT uid, mid, date, period, message, proximity FROM sharing_locations WHERE 1");
                 while (cursor.next()) {
                     SharingLocationInfo info = new SharingLocationInfo();
@@ -681,22 +682,14 @@ public class LocationController extends BaseController implements NotificationCe
                         data.reuse();
                     }
                     result.add(info);
-                    int lower_id = (int) info.did;
-                    int high_id = (int) (info.did >> 32);
-                    if (lower_id != 0) {
-                        if (lower_id < 0) {
-                            if (!chatsToLoad.contains(-lower_id)) {
-                                chatsToLoad.add(-lower_id);
-                            }
-                        } else {
-                            if (!usersToLoad.contains(lower_id)) {
-                                usersToLoad.add(lower_id);
-                            }
+                    if (DialogObject.isChatDialog(info.did)) {
+                        if (!chatsToLoad.contains(-info.did)) {
+                            chatsToLoad.add(-info.did);
                         }
-                    } else {
-                        /*if (!encryptedChatIds.contains(high_id)) {
-                            encryptedChatIds.add(high_id);
-                        }*/
+                    } else if (DialogObject.isUserDialog(info.did)) {
+                        if (!usersToLoad.contains(info.did)) {
+                            usersToLoad.add(info.did);
+                        }
                     }
                 }
                 cursor.dispose();
@@ -777,7 +770,7 @@ public class LocationController extends BaseController implements NotificationCe
             sharingLocationsMap.remove(did);
             if (info != null) {
                 TLRPC.TL_messages_editMessage req = new TLRPC.TL_messages_editMessage();
-                req.peer = getMessagesController().getInputPeer((int) info.did);
+                req.peer = getMessagesController().getInputPeer(info.did);
                 req.id = info.mid;
                 req.flags |= 16384;
                 req.media = new TLRPC.TL_inputMediaGeoLive();
@@ -827,7 +820,7 @@ public class LocationController extends BaseController implements NotificationCe
             for (int a = 0; a < sharingLocations.size(); a++) {
                 SharingLocationInfo info = sharingLocations.get(a);
                 TLRPC.TL_messages_editMessage req = new TLRPC.TL_messages_editMessage();
-                req.peer = getMessagesController().getInputPeer((int) info.did);
+                req.peer = getMessagesController().getInputPeer(info.did);
                 req.id = info.mid;
                 req.flags |= 16384;
                 req.media = new TLRPC.TL_inputMediaGeoLive();
@@ -947,13 +940,13 @@ public class LocationController extends BaseController implements NotificationCe
         return lastKnownLocation;
     }
 
-    public void loadLiveLocations(final long did) {
+    public void loadLiveLocations(long did) {
         if (cacheRequests.indexOfKey(did) >= 0) {
             return;
         }
         cacheRequests.put(did, true);
         TLRPC.TL_messages_getRecentLocations req = new TLRPC.TL_messages_getRecentLocations();
-        req.peer = getMessagesController().getInputPeer((int) did);
+        req.peer = getMessagesController().getInputPeer(did);
         req.limit = 100;
         getConnectionsManager().sendRequest(req, (response, error) -> {
             if (error != null) {
@@ -978,8 +971,7 @@ public class LocationController extends BaseController implements NotificationCe
     }
 
     public void markLiveLoactionsAsRead(long dialogId) {
-        int lowerId = (int) dialogId;
-        if (lowerId == 0) {
+        if (DialogObject.isEncryptedDialog(dialogId)) {
             return;
         }
         ArrayList<TLRPC.Message> messages = locationsCache.get(dialogId);
@@ -993,12 +985,12 @@ public class LocationController extends BaseController implements NotificationCe
         }
         lastReadLocationTime.put(dialogId, currentDate);
         TLObject request;
-        if (lowerId < 0 && ChatObject.isChannel(-lowerId, currentAccount)) {
+        if (DialogObject.isChatDialog(dialogId) && ChatObject.isChannel(-dialogId, currentAccount)) {
             TLRPC.TL_channels_readMessageContents req = new TLRPC.TL_channels_readMessageContents();
             for (int a = 0, N = messages.size(); a < N; a++) {
                 req.id.add(messages.get(a).id);
             }
-            req.channel = getMessagesController().getInputChannel(-lowerId);
+            req.channel = getMessagesController().getInputChannel(-dialogId);
             request = req;
         } else {
             TLRPC.TL_messages_readMessageContents req = new TLRPC.TL_messages_readMessageContents();

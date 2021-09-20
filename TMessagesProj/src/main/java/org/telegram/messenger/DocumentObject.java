@@ -12,12 +12,12 @@ public class DocumentObject {
 
     public static class ThemeDocument extends TLRPC.TL_document {
 
-        public TLRPC.TL_themeSettings themeSettings;
+        public TLRPC.ThemeSettings themeSettings;
         public TLRPC.Document wallpaper;
         public Theme.ThemeInfo baseTheme;
         public Theme.ThemeAccent accent;
 
-        public ThemeDocument(TLRPC.TL_themeSettings settings) {
+        public ThemeDocument(TLRPC.ThemeSettings settings) {
             themeSettings = settings;
             baseTheme = Theme.getTheme(Theme.getBaseThemeKey(settings));
             accent = baseTheme.createNewAccent(settings);

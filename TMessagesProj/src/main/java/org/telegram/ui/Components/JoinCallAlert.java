@@ -24,6 +24,7 @@ import android.widget.TextView;
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
@@ -180,7 +181,7 @@ public class JoinCallAlert extends BottomSheet {
         }
     }
 
-    public static void checkFewUsers(Context context, int did, AccountInstance accountInstance, MessagesStorage.BooleanCallback callback) {
+    public static void checkFewUsers(Context context, long did, AccountInstance accountInstance, MessagesStorage.BooleanCallback callback) {
         if (lastCachedAccount == accountInstance.getCurrentAccount() && lastCacheDid == did && cachedChats != null && SystemClock.elapsedRealtime() - lastCacheTime < 4 * 60 * 1000) {
             callback.run(cachedChats.size() == 1);
             return;
@@ -213,7 +214,7 @@ public class JoinCallAlert extends BottomSheet {
         }
     }
 
-    public static void open(Context context, int did, AccountInstance accountInstance, BaseFragment fragment, int type, TLRPC.Peer scheduledPeer, JoinCallAlertDelegate delegate) {
+    public static void open(Context context, long did, AccountInstance accountInstance, BaseFragment fragment, int type, TLRPC.Peer scheduledPeer, JoinCallAlertDelegate delegate) {
         if (context == null || delegate == null) {
             return;
         }
@@ -280,7 +281,7 @@ public class JoinCallAlert extends BottomSheet {
         shadowDrawable = context.getResources().getDrawable(R.drawable.sheet_shadow_round).mutate();
         if (type == TYPE_DISPLAY) {
             if (VoIPService.getSharedInstance() != null) {
-                int did = VoIPService.getSharedInstance().getSelfId();
+                long did = VoIPService.getSharedInstance().getSelfId();
                 for (int a = 0, N = chats.size(); a < N; a++) {
                     TLRPC.Peer p = chats.get(a);
                     if (MessageObject.getPeerId(p) == did) {
@@ -420,7 +421,7 @@ public class JoinCallAlert extends BottomSheet {
             containerView.setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, 0);
         }
 
-        TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat((int) -dialogId); //TODO long
+        TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
 
         listView = new RecyclerListView(context) {
             @Override
@@ -522,7 +523,7 @@ public class JoinCallAlert extends BottomSheet {
         messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         boolean hasGroup = false;
         for (int a = 0, N = chats.size(); a < N; a++) {
-            int peerId = MessageObject.getPeerId(chats.get(a));
+            long peerId = MessageObject.getPeerId(chats.get(a));
             if (peerId < 0) {
                 TLRPC.Chat peerChat = MessagesController.getInstance(currentAccount).getChat(-peerId);
                 if (!ChatObject.isChannel(peerChat) || peerChat.megagroup) {
@@ -603,8 +604,8 @@ public class JoinCallAlert extends BottomSheet {
                 doneButton.setText(LocaleController.formatString("VoipGroupStartVoiceChat", R.string.VoipGroupStartVoiceChat), animated);
             }
         } else {
-            int did = MessageObject.getPeerId(selectedPeer);
-            if (did > 0) {
+            long did = MessageObject.getPeerId(selectedPeer);
+            if (DialogObject.isUserDialog(did)) {
                 TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(did);
                 doneButton.setText(LocaleController.formatString("VoipGroupContinueAs", R.string.VoipGroupContinueAs, UserObject.getFirstName(user)), animated);
             } else {
@@ -675,7 +676,7 @@ public class JoinCallAlert extends BottomSheet {
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             View view;
             if (currentType == TYPE_CREATE) {
-                view = new ShareDialogCell(context, ShareDialogCell.TYPE_CREATE);
+                view = new ShareDialogCell(context, ShareDialogCell.TYPE_CREATE, null);
                 view.setLayoutParams(new RecyclerView.LayoutParams(AndroidUtilities.dp(80), AndroidUtilities.dp(100)));
             } else {
                 view = new GroupCreateUserCell(context, 2, 0, false, currentType == TYPE_DISPLAY);
@@ -708,7 +709,7 @@ public class JoinCallAlert extends BottomSheet {
 
         @Override
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-            int did = MessageObject.getPeerId(chats.get(position));
+            long did = MessageObject.getPeerId(chats.get(position));
             TLObject object;
             String status;
             if (did > 0) {

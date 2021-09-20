@@ -143,6 +143,8 @@ public class RecyclerListView extends RecyclerView {
     int[] listPaddings;
     HashSet<Integer> selectedPositions;
 
+    protected final Theme.ResourcesProvider resourcesProvider;
+
     public interface OnItemClickListener {
         void onItemClick(View view, int position);
     }
@@ -882,12 +884,17 @@ public class RecyclerListView extends RecyclerView {
         return null;
     }
 
-    @SuppressLint("PrivateApi")
     public RecyclerListView(Context context) {
-        super(context);
+        this(context, null);
+    }
 
-        setGlowColor(Theme.getColor(Theme.key_actionBarDefault));
-        selectorDrawable = Theme.getSelectorDrawable(false);
+    @SuppressLint("PrivateApi")
+    public RecyclerListView(Context context, Theme.ResourcesProvider resourcesProvider) {
+        super(context);
+        this.resourcesProvider = resourcesProvider;
+
+        setGlowColor(getThemedColor(Theme.key_actionBarDefault));
+        selectorDrawable = Theme.getSelectorDrawable(getThemedColor(Theme.key_listSelector), false);
         selectorDrawable.setCallback(this);
 
         try {
@@ -2085,6 +2092,21 @@ public class RecyclerListView extends RecyclerView {
 
     public boolean isMultiselect() {
         return multiSelectionGesture;
+    }
+
+    protected int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
+    }
+
+    protected Drawable getThemedDrawable(String key) {
+        Drawable drawable = resourcesProvider != null ? resourcesProvider.getDrawable(key) : null;
+        return drawable != null ? drawable : Theme.getThemeDrawable(key);
+    }
+
+    protected Paint getThemedPaint(String paintKey) {
+        Paint paint = resourcesProvider != null ? resourcesProvider.getPaint(paintKey) : null;
+        return paint != null ? paint : Theme.getThemePaint(paintKey);
     }
 
     public interface onMultiSelectionChanged {

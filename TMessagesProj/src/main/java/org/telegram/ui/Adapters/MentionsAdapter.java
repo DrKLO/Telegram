@@ -15,7 +15,6 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Build;
 import android.text.TextUtils;
-import android.util.SparseArray;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,6 +23,7 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
@@ -49,6 +49,7 @@ import org.telegram.ui.Cells.ContextLinkCell;
 import org.telegram.ui.Cells.MentionCell;
 import org.telegram.ui.Cells.StickerCell;
 import org.telegram.ui.ChatActivity;
+import org.telegram.ui.Components.EmojiView;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.io.File;
@@ -58,6 +59,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 
+import androidx.collection.LongSparseArray;
 import androidx.recyclerview.widget.RecyclerView;
 
 public class MentionsAdapter extends RecyclerListView.SelectionAdapter implements NotificationCenter.NotificationCenterDelegate {
@@ -71,10 +73,11 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
     private int currentAccount = UserConfig.selectedAccount;
     private Context mContext;
     private long dialog_id;
+    private int threadMessageId;
     private TLRPC.ChatFull info;
     private SearchAdapterHelper searchAdapterHelper;
     private ArrayList<TLObject> searchResultUsernames;
-    private SparseArray<TLObject> searchResultUsernamesMap;
+    private LongSparseArray<TLObject> searchResultUsernamesMap;
     private Runnable searchGlobalRunnable;
     private ArrayList<String> searchResultHashtags;
     private ArrayList<String> searchResultCommands;
@@ -85,7 +88,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
     private ArrayList<TLRPC.BotInlineResult> searchResultBotContext;
     private TLRPC.TL_inlineBotSwitchPM searchResultBotContextSwitch;
     private MentionsAdapterDelegate delegate;
-    private SparseArray<TLRPC.BotInfo> botInfo;
+    private LongSparseArray<TLRPC.BotInfo> botInfo;
     private int resultStartPosition;
     private int resultLength;
     private String lastText;
@@ -101,6 +104,8 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
     private int channelLastReqId;
     private int channelReqId;
     private boolean isSearchingMentions;
+
+    private EmojiView.ChooseStickerActionTracker mentionsStickersActionTracker;
 
     private boolean visibleByStickersSearch;
 
@@ -127,6 +132,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
     private boolean delayLocalResults;
 
     private ChatActivity parentFragment;
+    private final Theme.ResourcesProvider resourcesProvider;
 
     private static class StickerResult {
         public TLRPC.Document sticker;
@@ -159,11 +165,13 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
         }
     };
 
-    public MentionsAdapter(Context context, boolean darkTheme, long did, MentionsAdapterDelegate mentionsAdapterDelegate) {
+    public MentionsAdapter(Context context, boolean darkTheme, long did, int threadMessageId, MentionsAdapterDelegate mentionsAdapterDelegate, Theme.ResourcesProvider resourcesProvider) {
+        this.resourcesProvider = resourcesProvider;
         mContext = context;
         delegate = mentionsAdapterDelegate;
         isDarkTheme = darkTheme;
         dialog_id = did;
+        this.threadMessageId = threadMessageId;
         searchAdapterHelper = new SearchAdapterHelper(true);
         searchAdapterHelper.setDelegate(new SearchAdapterHelper.SearchAdapterHelperDelegate() {
             @Override
@@ -211,6 +219,9 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
         }
         stickers.add(new StickerResult(document, parent));
         stickersMap.put(key, document);
+        if (mentionsStickersActionTracker != null) {
+            mentionsStickersActionTracker.checkVisibility();
+        }
     }
 
     private void addStickersToResult(ArrayList<TLRPC.Document> documents, Object parent) {
@@ -306,6 +317,9 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
             ConnectionsManager.getInstance(currentAccount).cancelRequest(lastReqId, true);
             lastReqId = 0;
         }
+        if (mentionsStickersActionTracker != null) {
+            mentionsStickersActionTracker.checkVisibility();
+        }
     }
 
     public void onDestroy() {
@@ -367,7 +381,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
         needBotContext = value;
     }
 
-    public void setBotInfo(SparseArray<TLRPC.BotInfo> info) {
+    public void setBotInfo(LongSparseArray<TLRPC.BotInfo> info) {
         botInfo = info;
     }
 
@@ -388,7 +402,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
         return searchResultBotContextSwitch;
     }
 
-    public int getContextBotId() {
+    public long getContextBotId() {
         return foundContextBot != null ? foundContextBot.id : 0;
     }
 
@@ -623,7 +637,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
         if (user.bot_inline_geo && lastKnownLocation == null) {
             return;
         }
-        final String key = dialog_id + "_" + query + "_" + offset + "_" + dialog_id + "_" + user.id + "_" + (user.bot_inline_geo && lastKnownLocation != null && lastKnownLocation.getLatitude() != -1000 ? lastKnownLocation.getLatitude() + lastKnownLocation.getLongitude() : "");
+        final String key = dialog_id + "_" + query + "_" + offset + "_" + dialog_id + "_" + user.id + "_" + (user.bot_inline_geo && lastKnownLocation.getLatitude() != -1000 ? lastKnownLocation.getLatitude() + lastKnownLocation.getLongitude() : "");
         final MessagesStorage messagesStorage = MessagesStorage.getInstance(currentAccount);
         RequestDelegate requestDelegate = (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             if (!query.equals(searchingContextQuery)) {
@@ -699,12 +713,10 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
                 req.geo_point.lat = AndroidUtilities.fixLocationCoord(lastKnownLocation.getLatitude());
                 req.geo_point._long = AndroidUtilities.fixLocationCoord(lastKnownLocation.getLongitude());
             }
-            int lower_id = (int) dialog_id;
-            int high_id = (int) (dialog_id >> 32);
-            if (lower_id != 0) {
-                req.peer = MessagesController.getInstance(currentAccount).getInputPeer(lower_id);
-            } else {
+            if (DialogObject.isEncryptedDialog(dialog_id)) {
                 req.peer = new TLRPC.TL_inputPeerEmpty();
+            } else {
+                req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialog_id);
             }
             contextQueryReqid = ConnectionsManager.getInstance(currentAccount).sendRequest(req, requestDelegate, ConnectionsManager.RequestFlagFailOnServerErrors);
         }
@@ -966,9 +978,9 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
             return;
         }
         if (foundType == 0) {
-            final ArrayList<Integer> users = new ArrayList<>();
+            final ArrayList<Long> users = new ArrayList<>();
             for (int a = 0; a < Math.min(100, messageObjects.size()); a++) {
-                int from_id = messageObjects.get(a).getFromChatId();
+                long from_id = messageObjects.get(a).getFromChatId();
                 if (from_id > 0 && !users.contains(from_id)) {
                     users.add(from_id);
                 }
@@ -976,8 +988,8 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
             final String usernameString = result.toString().toLowerCase();
             boolean hasSpace = usernameString.indexOf(' ') >= 0;
             ArrayList<TLObject> newResult = new ArrayList<>();
-            final SparseArray<TLRPC.User> newResultsHashMap = new SparseArray<>();
-            final SparseArray<TLObject> newMap = new SparseArray<>();
+            final LongSparseArray<TLRPC.User> newResultsHashMap = new LongSparseArray<>();
+            final LongSparseArray<TLObject> newMap = new LongSparseArray<>();
             ArrayList<TLRPC.TL_topPeer> inlineBots = MediaDataController.getInstance(currentAccount).inlineBots;
             if (!usernameOnly && needBotContext && dogPostion == 0 && !inlineBots.isEmpty()) {
                 int count = 0;
@@ -1015,11 +1027,8 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
                     String firstName;
                     String lastName;
                     TLObject object;
-                    int id;
+                    long id;
                     if (a == -1) {
-                        if (chat == null) {
-                            continue;
-                        }
                         if (usernameString.length() == 0) {
                             newResult.add(chat);
                             continue;
@@ -1058,7 +1067,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
             }
             Collections.sort(newResult, new Comparator<TLObject>() {
 
-                private int getId(TLObject object) {
+                private long getId(TLObject object) {
                     if (object instanceof TLRPC.User) {
                         return ((TLRPC.User) object).id;
                     } else {
@@ -1068,8 +1077,8 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
 
                 @Override
                 public int compare(TLObject lhs, TLObject rhs) {
-                    int id1 = getId(lhs);
-                    int id2 = getId(rhs);
+                    long id1 = getId(lhs);
+                    long id2 = getId(rhs);
                     if (newMap.indexOfKey(id1) >= 0 && newMap.indexOfKey(id2) >= 0) {
                         return 0;
                     } else if (newMap.indexOfKey(id1) >= 0) {
@@ -1133,10 +1142,10 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
                                     messagesController.putChats(res.chats, false);
                                     boolean hasResults = !searchResultUsernames.isEmpty();
                                     if (!res.participants.isEmpty()) {
-                                        int currentUserId = UserConfig.getInstance(currentAccount).getClientUserId();
+                                        long currentUserId = UserConfig.getInstance(currentAccount).getClientUserId();
                                         for (int a = 0; a < res.participants.size(); a++) {
                                             TLRPC.ChannelParticipant participant = res.participants.get(a);
-                                            int peerId = MessageObject.getPeerId(participant.peer);
+                                            long peerId = MessageObject.getPeerId(participant.peer);
                                             if (searchResultUsernamesMap.indexOfKey(peerId) >= 0 || !isSearchingMentions && peerId == currentUserId) {
                                                 continue;
                                             }
@@ -1241,7 +1250,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
         }
     }
 
-    private void showUsersResult(ArrayList<TLObject> newResult, SparseArray<TLObject> newMap, boolean notify) {
+    private void showUsersResult(ArrayList<TLObject> newResult, LongSparseArray<TLObject> newMap, boolean notify) {
         searchResultUsernames = newResult;
         searchResultUsernamesMap = newMap;
         if (cancelDelayRunnable != null) {
@@ -1412,7 +1421,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
                 TextView textView = new TextView(mContext);
                 textView.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8));
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-                textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
+                textView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText2));
                 view = textView;
                 break;
             case 4:
@@ -1483,5 +1492,25 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
                 }
             }
         }
+    }
+
+    public void doSomeStickersAction() {
+        if (isStickers()) {
+            if (mentionsStickersActionTracker == null) {
+                mentionsStickersActionTracker = new EmojiView.ChooseStickerActionTracker(currentAccount, dialog_id, threadMessageId) {
+                    @Override
+                    public boolean isShown() {
+                        return isStickers();
+                    }
+                };
+                mentionsStickersActionTracker.checkVisibility();
+            }
+            mentionsStickersActionTracker.doSomeAction();
+        }
+    }
+
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
     }
 }

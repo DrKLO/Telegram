@@ -7,7 +7,6 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.text.TextPaint;
@@ -152,7 +151,7 @@ public class GroupCallFullscreenAdapter extends RecyclerListView.SelectionAdapte
 
         private BackupImageView avatarImageView;
         boolean hasAvatar;
-        int peerId;
+        long peerId;
 
         ChatObject.VideoParticipant videoParticipant;
         TLRPC.TL_groupCallParticipant participant;
@@ -222,7 +221,7 @@ public class GroupCallFullscreenAdapter extends RecyclerListView.SelectionAdapte
         public void setParticipant(ChatObject.VideoParticipant videoParticipant, TLRPC.TL_groupCallParticipant participant) {
             this.videoParticipant = videoParticipant;
             this.participant = participant;
-            int lastPeerId = peerId;
+            long lastPeerId = peerId;
             peerId = MessageObject.getPeerId(participant.peer);
             if (peerId > 0) {
                 currentUser = AccountInstance.getInstance(currentAccount).getMessagesController().getUser(peerId);
@@ -366,7 +365,7 @@ public class GroupCallFullscreenAdapter extends RecyclerListView.SelectionAdapte
             }
         }
 
-        public int getPeerId() {
+        public long getPeerId() {
             return peerId;
         }
 

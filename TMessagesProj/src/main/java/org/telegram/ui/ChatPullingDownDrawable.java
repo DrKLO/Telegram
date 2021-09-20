@@ -18,8 +18,6 @@ import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
 
-import com.google.android.exoplayer2.util.Log;
-
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DialogObject;
@@ -67,7 +65,7 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
     float swipeToReleaseProgress;
     float bounceProgress;
 
-    boolean animateSwipeToRelease;
+    public boolean animateSwipeToRelease;
     boolean animateCheck;
     float checkProgress;
     long lastHapticTime;
@@ -75,31 +73,35 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
     boolean emptyStub;
     float progressToBottomPannel;
     private final View fragmentView;
+    public long lastShowingReleaseTime;
 
     boolean drawFolderBackground;
     Runnable onAnimationFinishRunnable;
     public long nextDialogId;
     View parentView;
 
-    CounterView.CounterDrawable counterDrawable = new CounterView.CounterDrawable(null);
+    CounterView.CounterDrawable counterDrawable = new CounterView.CounterDrawable(null, null);
     int params[] = new int[3];
     private final int currentAccount;
     private final int folderId;
     private final int filterId;
     private final long currentDialog;
+    private final Theme.ResourcesProvider resourcesProvider;
 
-    public ChatPullingDownDrawable(int currentAccount, View fragmentView, long currentDialog, int folderId, int filterId) {
+    public ChatPullingDownDrawable(int currentAccount, View fragmentView, long currentDialog, int folderId, int filterId, Theme.ResourcesProvider resourcesProvider) {
         this.fragmentView = fragmentView;
         this.currentAccount = currentAccount;
         this.currentDialog = currentDialog;
         this.folderId = folderId;
         this.filterId = filterId;
+        this.resourcesProvider = resourcesProvider;
 
         arrowPaint.setStrokeWidth(AndroidUtilities.dpf2(2.8f));
         arrowPaint.setStrokeCap(Paint.Cap.ROUND);
         counterDrawable.gravity = Gravity.LEFT;
         counterDrawable.setType(CounterView.CounterDrawable.TYPE_CHAT_PULLING_DOWN);
-        counterDrawable.circlePaint = Theme.chat_actionBackgroundPaint;
+        counterDrawable.addServiceGradient = true;
+        counterDrawable.circlePaint = getThemedPaint(Theme.key_paint_chatActionBackground);
         counterDrawable.textPaint = textPaint;
 
         textPaint.setTextSize(AndroidUtilities.dp(13));
@@ -120,9 +122,9 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
             dialogFolderId = params[1];
             dialogFilterId = params[2];
             emptyStub = false;
-            nextChat = MessagesController.getInstance(currentAccount).getChat((int) -dialog.id);
+            nextChat = MessagesController.getInstance(currentAccount).getChat(-dialog.id);
             if (nextChat == null) {
-                MessagesController.getInstance(currentAccount).getChat((int) dialog.id);
+                MessagesController.getInstance(currentAccount).getChat(dialog.id);
             }
             AvatarDrawable avatarDrawable = new AvatarDrawable();
             avatarDrawable.setInfo(nextChat);
@@ -130,6 +132,7 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
             MessagesController.getInstance(currentAccount).ensureMessagesLoaded(dialog.id, 0, null);
             counterDrawable.setCount(dialog.unread_count, false);
         } else {
+            nextChat = null;
             drawFolderBackground = false;
             emptyStub = true;
         }
@@ -192,16 +195,16 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
         }
         Theme.applyServiceShaderMatrix(lastWidth, parent.getMeasuredHeight(), 0, parent.getMeasuredHeight() - offset);
 
-        textPaint.setColor(Theme.getColor(Theme.key_chat_serviceText));
-        arrowPaint.setColor(Theme.getColor(Theme.key_chat_serviceText));
-        textPaint2.setColor(Theme.getColor(Theme.key_chat_messagePanelHint));
+        textPaint.setColor(getThemedColor(Theme.key_chat_serviceText));
+        arrowPaint.setColor(getThemedColor(Theme.key_chat_serviceText));
+        textPaint2.setColor(getThemedColor(Theme.key_chat_messagePanelHint));
 
-        oldAlpha = Theme.chat_actionBackgroundPaint.getAlpha();
+        oldAlpha = getThemedPaint(Theme.key_paint_chatActionBackground).getAlpha();
         oldAlpha1 = Theme.chat_actionBackgroundGradientDarkenPaint.getAlpha();
         oldAlpha2 = textPaint.getAlpha();
         oldAlpha3 = arrowPaint.getAlpha();
         Theme.chat_actionBackgroundGradientDarkenPaint.setAlpha((int) (oldAlpha1 * alpha));
-        Theme.chat_actionBackgroundPaint.setAlpha((int) (oldAlpha * alpha));
+        getThemedPaint(Theme.key_paint_chatActionBackground).setAlpha((int) (oldAlpha * alpha));
         textPaint.setAlpha((int) (oldAlpha2 * alpha));
         imageReceiver.setAlpha(alpha);
 
@@ -218,6 +221,7 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
             animateSwipeToRelease = true;
             animateCheck = true;
             showReleaseState(true, parent);
+            lastShowingReleaseTime = System.currentTimeMillis();
         } else if (progress != 1f && animateSwipeToRelease) {
             animateSwipeToRelease = false;
             showReleaseState(false, parent);
@@ -256,20 +260,23 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
             if (emptyStub) {
                 float top = (-AndroidUtilities.dp(8) - AndroidUtilities.dp2(8) * progress - size) * (1f - swipeToReleaseProgress) + (-offset - AndroidUtilities.dp(2)) * swipeToReleaseProgress + bounceOffset;
                 arrowPaint.setAlpha(oldAlpha3);
+                canvas.save();
+                canvas.scale(progress, progress, cx, top + AndroidUtilities.dp(28));
                 drawCheck(canvas, cx, top + AndroidUtilities.dp(28));
+                canvas.restore();
             }
             canvas.restore();
         }
 
         if (chatNameLayout != null && swipeToReleaseProgress > 0) {
-            Theme.chat_actionBackgroundPaint.setAlpha((int) (oldAlpha * alpha));
+            getThemedPaint(Theme.key_paint_chatActionBackground).setAlpha((int) (oldAlpha * alpha));
             textPaint.setAlpha((int) (oldAlpha2 * alpha));
 
             float y = AndroidUtilities.dp(20) * (1f - swipeToReleaseProgress) - AndroidUtilities.dp(36) * swipeToReleaseProgress + bounceOffset;
             AndroidUtilities.rectTmp.set((lastWidth - chatNameWidth) / 2f, y, lastWidth - (lastWidth - chatNameWidth) / 2f, y + chatNameLayout.getHeight());
             AndroidUtilities.rectTmp.inset(-AndroidUtilities.dp(8), -AndroidUtilities.dp(4));
-            canvas.drawRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(15), AndroidUtilities.dp(15), Theme.chat_actionBackgroundPaint);
-            if (Theme.hasGradientService()) {
+            canvas.drawRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(15), AndroidUtilities.dp(15), getThemedPaint(Theme.key_paint_chatActionBackground));
+            if (hasGradientService()) {
                 canvas.drawRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(15), AndroidUtilities.dp(15), Theme.chat_actionBackgroundGradientDarkenPaint);
             }
 
@@ -305,7 +312,7 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
             }
         }
 
-        Theme.chat_actionBackgroundPaint.setAlpha(oldAlpha);
+        getThemedPaint(Theme.key_paint_chatActionBackground).setAlpha(oldAlpha);
         Theme.chat_actionBackgroundGradientDarkenPaint.setAlpha(oldAlpha1);
         textPaint.setAlpha(oldAlpha2);
         arrowPaint.setAlpha(oldAlpha3);
@@ -364,13 +371,13 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
             path.rQuadTo(roundRadius, 0, roundRadius, -roundRadius);
             path.rLineTo(0, -(h - (2 * roundRadius)));
             path.close();
-            canvas.drawPath(path, Theme.chat_actionBackgroundPaint);
-            if (Theme.hasGradientService()) {
+            canvas.drawPath(path, getThemedPaint(Theme.key_paint_chatActionBackground));
+            if (hasGradientService()) {
                 canvas.drawPath(path, Theme.chat_actionBackgroundGradientDarkenPaint);
             }
         } else {
-            canvas.drawRoundRect(AndroidUtilities.rectTmp, circleRadius, circleRadius, Theme.chat_actionBackgroundPaint);
-            if (Theme.hasGradientService()) {
+            canvas.drawRoundRect(AndroidUtilities.rectTmp, circleRadius, circleRadius, getThemedPaint(Theme.key_paint_chatActionBackground));
+            if (hasGradientService()) {
                 canvas.drawRoundRect(AndroidUtilities.rectTmp, circleRadius, circleRadius, Theme.chat_actionBackgroundGradientDarkenPaint);
             }
         }
@@ -505,7 +512,7 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
             params[1] = folderId;
             params[2] = filterId;
         }
-        ArrayList<TLRPC.Dialog> dialogs = null;
+        ArrayList<TLRPC.Dialog> dialogs;
         if (filterId != 0) {
             dialogs = messagesController.dialogFiltersById.get(filterId).dialogs;
         } else {
@@ -516,8 +523,7 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
         }
         for (int i = 0; i < dialogs.size(); i++) {
             TLRPC.Dialog dialog = dialogs.get(i);
-            int lower_id = (int) dialog.id;
-            TLRPC.Chat chat = messagesController.getChat(-lower_id);
+            TLRPC.Chat chat = messagesController.getChat(-dialog.id);
             if (chat != null && dialog.id != currentDialogId && dialog.unread_count > 0 && DialogObject.isChannel(dialog) && !chat.megagroup && !messagesController.isPromoDialog(dialog.id, false)) {
                 return dialog;
             }
@@ -556,7 +562,7 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
         return null;
     }
 
-    public int getChatId() {
+    public long getChatId() {
         return nextChat.id;
     }
 
@@ -576,11 +582,12 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
                 fragmentView.invalidate();
             }
         }
-        int oldAlpha = Theme.chat_composeBackgroundPaint.getAlpha();
+        Paint composeBackgroundPaint = getThemedPaint(Theme.key_paint_chatComposeBackground);
+        int oldAlpha = composeBackgroundPaint.getAlpha();
         int oldAlphaText = textPaint2.getAlpha();
 
-        Theme.chat_composeBackgroundPaint.setAlpha((int) (oldAlpha * progressToBottomPannel));
-        canvas.drawRect(0, top, width, bottom, Theme.chat_composeBackgroundPaint);
+        composeBackgroundPaint.setAlpha((int) (oldAlpha * progressToBottomPannel));
+        canvas.drawRect(0, top, width, bottom, composeBackgroundPaint);
 
 
         if (layout1 != null && swipeToReleaseProgress < 1f) {
@@ -602,7 +609,7 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
         }
 
         textPaint2.setAlpha(oldAlpha);
-        Theme.chat_composeBackgroundPaint.setAlpha(oldAlpha);
+        composeBackgroundPaint.setAlpha(oldAlpha);
     }
 
     boolean showBottomPanel;
@@ -667,5 +674,19 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
     public void reset() {
         checkProgress = 0;
         animateCheck = false;
+    }
+
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
+    }
+
+    private Paint getThemedPaint(String paintKey) {
+        Paint paint = resourcesProvider != null ? resourcesProvider.getPaint(paintKey) : null;
+        return paint != null ? paint : Theme.getThemePaint(paintKey);
+    }
+
+    private boolean hasGradientService() {
+        return resourcesProvider != null ? resourcesProvider.hasGradientService() : Theme.hasGradientService();
     }
 }

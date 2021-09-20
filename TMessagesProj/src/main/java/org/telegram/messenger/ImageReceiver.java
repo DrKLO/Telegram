@@ -272,6 +272,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
     private int crossfadeDuration = DEFAULT_CROSSFADE_DURATION;
     private float pressedProgress;
     private int animateFromIsPressed;
+    private String uniqKeyPrefix;
 
     public ImageReceiver() {
         this(null);
@@ -447,6 +448,10 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         }
         if (imageKey != null && imageFilter != null) {
             imageKey += "@" + imageFilter;
+        }
+
+        if (uniqKeyPrefix != null) {
+            imageKey = uniqKeyPrefix + imageKey;
         }
 
         String mediaKey = mediaLocation != null ? mediaLocation.getKey(parentObject, null, false) : null;
@@ -1424,12 +1429,15 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                             }
                             if (thumbDrawable != null) {
                                 int alpha;
-                                if (thumbDrawable instanceof SvgHelper.SvgDrawable) {
+                                if (thumbDrawable instanceof SvgHelper.SvgDrawable || thumbDrawable instanceof Emoji.EmojiDrawable) {
                                     alpha = (int) (overrideAlpha * 255 * (1.0f - currentAlpha));
                                 } else {
                                     alpha = (int) (overrideAlpha * 255);
                                 }
                                 drawDrawable(canvas, thumbDrawable, alpha, thumbShaderToUse, thumbOrientation);
+                                if (alpha != 255 && thumbDrawable instanceof Emoji.EmojiDrawable) {
+                                    thumbDrawable.setAlpha(255);
+                                }
                             }
                         }
                         drawDrawable(canvas, drawable, (int) (overrideAlpha * currentAlpha * 255), shaderToUse, orientation);
@@ -2056,7 +2064,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                 if (currentMediaDrawable instanceof AnimatedFileDrawable && ((AnimatedFileDrawable) currentMediaDrawable).hasBitmap()) {
                     allowCorssfade = false;
                 } else if (currentImageDrawable instanceof RLottieDrawable) {
-                    allowCorssfade = staticThumbDrawable instanceof LoadingStickerDrawable || staticThumbDrawable instanceof SvgHelper.SvgDrawable;
+                    allowCorssfade = staticThumbDrawable instanceof LoadingStickerDrawable || staticThumbDrawable instanceof SvgHelper.SvgDrawable || staticThumbDrawable instanceof Emoji.EmojiDrawable;
                 }
                 if (allowCorssfade && (currentThumbDrawable == null && staticThumbDrawable == null || currentAlpha == 1.0f || forceCrossfade)) {
                     currentAlpha = 0.0f;
@@ -2302,5 +2310,13 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         crossfadeWithThumb = true;
         currentAlpha = 0f;
         updateDrawableRadius(staticThumbDrawable);
+    }
+
+    public void setUniqKeyPrefix(String prefix) {
+        uniqKeyPrefix = prefix;
+    }
+
+    public String getUniqKeyPrefix() {
+        return uniqKeyPrefix;
     }
 }

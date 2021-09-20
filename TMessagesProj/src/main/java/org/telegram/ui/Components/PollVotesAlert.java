@@ -790,7 +790,7 @@ public class PollVotesAlert extends BottomSheet {
                 }
                 TLRPC.User currentUser = parentFragment.getCurrentUser();
                 Bundle args = new Bundle();
-                args.putInt("user_id", userCell.currentUser.id);
+                args.putLong("user_id", userCell.currentUser.id);
                 dismiss();
                 ProfileActivity fragment = new ProfileActivity(args);
                 fragment.setPlayProfileAnimation(currentUser != null && currentUser.id == userCell.currentUser.id ? 1 : 0);

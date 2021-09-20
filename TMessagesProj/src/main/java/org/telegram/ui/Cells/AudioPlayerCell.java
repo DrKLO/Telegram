@@ -68,12 +68,14 @@ public class AudioPlayerCell extends View implements DownloadController.FileDown
     public final static int VIEW_TYPE_GLOBAL_SEARCH = 1;
 
     private SpannableStringBuilder dotSpan;
+    private final Theme.ResourcesProvider resourcesProvider;
 
-    public AudioPlayerCell(Context context, int viewType) {
+    public AudioPlayerCell(Context context, int viewType, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
         this.viewType = viewType;
 
-        radialProgress = new RadialProgress2(this);
+        radialProgress = new RadialProgress2(this, resourcesProvider);
         radialProgress.setColors(Theme.key_chat_inLoader, Theme.key_chat_inLoaderSelected, Theme.key_chat_inMediaIcon, Theme.key_chat_inMediaIconSelected);
         TAG = DownloadController.getInstance(currentAccount).generateObserverTag();
         setFocusable(true);
@@ -270,14 +272,14 @@ public class AudioPlayerCell extends View implements DownloadController.FileDown
         }
 
         if (descriptionLayout != null) {
-            Theme.chat_contextResult_descriptionTextPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
+            Theme.chat_contextResult_descriptionTextPaint.setColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText2));
             canvas.save();
             canvas.translate(AndroidUtilities.dp(LocaleController.isRTL ? 8 : AndroidUtilities.leftBaseline), descriptionY);
             descriptionLayout.draw(canvas);
             canvas.restore();
         }
 
-        radialProgress.setProgressColor(Theme.getColor(buttonPressed ? Theme.key_chat_inAudioSelectedProgress : Theme.key_chat_inAudioProgress));
+        radialProgress.setProgressColor(getThemedColor(buttonPressed ? Theme.key_chat_inAudioSelectedProgress : Theme.key_chat_inAudioProgress));
         radialProgress.draw(canvas);
     }
 
@@ -330,7 +332,7 @@ public class AudioPlayerCell extends View implements DownloadController.FileDown
             miniButtonState = -1;
         }
         if (hasMiniProgress != 0) {
-            radialProgress.setMiniProgressBackgroundColor(Theme.getColor(currentMessageObject.isOutOwner() ? Theme.key_chat_outLoader : Theme.key_chat_inLoader));
+            radialProgress.setMiniProgressBackgroundColor(getThemedColor(currentMessageObject.isOutOwner() ? Theme.key_chat_outLoader : Theme.key_chat_inLoader));
             boolean playing = MediaController.getInstance().isPlayingMessage(currentMessageObject);
             if (!playing || playing && MediaController.getInstance().isMessagePaused()) {
                 buttonState = 0;
@@ -432,5 +434,10 @@ public class AudioPlayerCell extends View implements DownloadController.FileDown
         } else { // voice message
             info.setText(titleLayout.getText() + ", " + descriptionLayout.getText());
         }
+    }
+
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
     }
 }

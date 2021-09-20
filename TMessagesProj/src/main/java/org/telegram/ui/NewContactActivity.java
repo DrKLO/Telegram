@@ -318,8 +318,8 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
         contentLayout.addView(countryButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36, 0, 24, 0, 14));
         countryButton.setOnClickListener(view -> {
             CountrySelectActivity fragment = new CountrySelectActivity(true);
-            fragment.setCountrySelectActivityDelegate((name, shortName) -> {
-                selectCountry(name);
+            fragment.setCountrySelectActivityDelegate((country) -> {
+                selectCountry(country.name);
                 phoneField.requestFocus();
                 phoneField.setSelection(phoneField.length());
             });

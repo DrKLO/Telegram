@@ -52,12 +52,14 @@ public class ImportingAlert extends BottomSheet implements NotificationCenter.No
         private TextView textView;
         private RLottieImageView imageView;
         private LinearLayout linearLayout;
+        private Theme.ResourcesProvider resourcesProvider;
 
-        public BottomSheetCell(Context context) {
+        public BottomSheetCell(Context context, Theme.ResourcesProvider resourcesProvider) {
             super(context);
+            this.resourcesProvider = resourcesProvider;
 
             background = new View(context);
-            background.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
+            background.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), getThemedColor(Theme.key_featuredStickers_addButton), getThemedColor(Theme.key_featuredStickers_addButtonPressed)));
             addView(background, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, 0, 16, 16, 16, 16));
 
             linearLayout = new LinearLayout(context);
@@ -65,9 +67,9 @@ public class ImportingAlert extends BottomSheet implements NotificationCenter.No
             addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
 
             imageView = new RLottieImageView(context);
-            imageView.setBackground(Theme.createCircleDrawable(AndroidUtilities.dp(20), Theme.getColor(Theme.key_featuredStickers_buttonText)));
+            imageView.setBackground(Theme.createCircleDrawable(AndroidUtilities.dp(20), getThemedColor(Theme.key_featuredStickers_buttonText)));
             imageView.setScaleType(ImageView.ScaleType.CENTER);
-            imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addButton), PorterDuff.Mode.MULTIPLY));
+            imageView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_featuredStickers_addButton), PorterDuff.Mode.MULTIPLY));
             imageView.setAnimation(R.raw.import_check, 26, 26);
             imageView.setScaleX(0.8f);
             imageView.setScaleY(0.8f);
@@ -79,7 +81,7 @@ public class ImportingAlert extends BottomSheet implements NotificationCenter.No
             textView.setGravity(Gravity.CENTER_HORIZONTAL);
             textView.setEllipsize(TextUtils.TruncateAt.END);
             textView.setGravity(Gravity.CENTER);
-            textView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
+            textView.setTextColor(getThemedColor(Theme.key_featuredStickers_buttonText));
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             linearLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 10, 0, 0, 0));
@@ -101,6 +103,11 @@ public class ImportingAlert extends BottomSheet implements NotificationCenter.No
         public void setText(CharSequence text) {
             textView.setText(text);
         }
+
+        private int getThemedColor(String key) {
+            Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+            return color != null ? color : Theme.getColor(key);
+        }
     }
 
     @SuppressWarnings("FieldCanBeLocal")
@@ -112,8 +119,8 @@ public class ImportingAlert extends BottomSheet implements NotificationCenter.No
         }
     };
 
-    public ImportingAlert(final Context context, String shortName, ChatActivity chatActivity) {
-        super(context, false);
+    public ImportingAlert(final Context context, String shortName, ChatActivity chatActivity, Theme.ResourcesProvider resourcesProvider) {
+        super(context, false, resourcesProvider);
         setApplyBottomPadding(false);
         setApplyTopPadding(false);
         parentFragment = chatActivity;
@@ -125,7 +132,7 @@ public class ImportingAlert extends BottomSheet implements NotificationCenter.No
         TextView textView = new TextView(context);
         textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-        textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        textView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
         textView.setSingleLine(true);
         textView.setEllipsize(TextUtils.TruncateAt.END);
         frameLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 17, 20, 17, 0));
@@ -143,15 +150,15 @@ public class ImportingAlert extends BottomSheet implements NotificationCenter.No
         percentTextView = new TextView(context);
         percentTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         percentTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 24);
-        percentTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        percentTextView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
         frameLayout.addView(percentTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 17, 262, 17, 0));
 
         lineProgressView = new LineProgressView(getContext());
-        lineProgressView.setProgressColor(Theme.getColor(Theme.key_featuredStickers_addButton));
-        lineProgressView.setBackColor(Theme.getColor(Theme.key_dialogLineProgressBackground));
+        lineProgressView.setProgressColor(getThemedColor(Theme.key_featuredStickers_addButton));
+        lineProgressView.setBackColor(getThemedColor(Theme.key_dialogLineProgressBackground));
         frameLayout.addView(lineProgressView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 4, Gravity.LEFT | Gravity.TOP, 50, 307, 50, 0));
 
-        cell = new BottomSheetCell(context);
+        cell = new BottomSheetCell(context, resourcesProvider);
         cell.setBackground(null);
         cell.setText(LocaleController.getString("ImportDone", R.string.ImportDone));
         cell.setVisibility(View.INVISIBLE);
@@ -164,12 +171,12 @@ public class ImportingAlert extends BottomSheet implements NotificationCenter.No
             importCountTextView[a] = new TextView(context);
             importCountTextView[a].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             importCountTextView[a].setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-            importCountTextView[a].setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+            importCountTextView[a].setTextColor(getThemedColor(Theme.key_dialogTextBlack));
             frameLayout.addView(importCountTextView[a], LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 17, 340, 17, 0));
 
             infoTextView[a] = new TextView(context);
             infoTextView[a].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            infoTextView[a].setTextColor(Theme.getColor(Theme.key_dialogTextGray3));
+            infoTextView[a].setTextColor(getThemedColor(Theme.key_dialogTextGray3));
             infoTextView[a].setGravity(Gravity.CENTER_HORIZONTAL);
             frameLayout.addView(infoTextView[a], LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 30, 368, 30, 44));
 

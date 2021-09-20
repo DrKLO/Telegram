@@ -16,28 +16,12 @@ public class DialogObject {
         return dialog != null && (dialog.flags & 1) != 0;
     }
 
-    public static long makeSecretDialogId(int chatId) {
-        return ((long) chatId) << 32;
-    }
-
     public static long makeFolderDialogId(int folderId) {
-        return (((long) 2) << 32) | folderId;
+        return 0x2000000000000000L | (long) folderId;
     }
 
     public static boolean isFolderDialogId(long dialogId) {
-        int lowerId = (int) dialogId;
-        int highId = (int) (dialogId >> 32);
-        return lowerId != 0 && highId == 2;
-    }
-
-    public static boolean isPeerDialogId(long dialogId) {
-        int lowerId = (int) dialogId;
-        int highId = (int) (dialogId >> 32);
-        return lowerId != 0 && highId != 2 && highId != 1;
-    }
-
-    public static boolean isSecretDialogId(long dialogId) {
-        return ((int) dialogId) == 0;
+        return (dialogId & 0x2000000000000000L) != 0 && (dialogId & 0x8000000000000000L) == 0;
     }
 
     public static void initDialog(TLRPC.Dialog dialog) {
@@ -89,5 +73,29 @@ public class DialogObject {
 
     public static long getLastMessageOrDraftDate(TLRPC.Dialog dialog, TLRPC.DraftMessage draftMessage) {
         return draftMessage != null && draftMessage.date >= dialog.last_message_date ? draftMessage.date : dialog.last_message_date;
+    }
+
+    public static boolean isChatDialog(long dialogId) {
+        return !isEncryptedDialog(dialogId) && !isFolderDialogId(dialogId) && dialogId < 0;
+    }
+
+    public static boolean isUserDialog(long dialogId) {
+        return !isEncryptedDialog(dialogId) && !isFolderDialogId(dialogId) && dialogId > 0;
+    }
+
+    public static boolean isEncryptedDialog(long dialogId) {
+        return (dialogId & 0x4000000000000000L) != 0 && (dialogId & 0x8000000000000000L) == 0;
+    }
+
+    public static long makeEncryptedDialogId(long chatId) {
+        return 0x4000000000000000L | (chatId & 0x00000000ffffffffL);
+    }
+
+    public static int getEncryptedChatId(long dialogId) {
+        return (int) (dialogId & 0x00000000ffffffffL);
+    }
+
+    public static int getFolderId(long dialogId) {
+        return (int) dialogId;
     }
 }

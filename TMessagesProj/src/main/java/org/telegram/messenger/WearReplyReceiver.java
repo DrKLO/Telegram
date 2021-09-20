@@ -31,41 +31,39 @@ public class WearReplyReceiver extends BroadcastReceiver {
         if (TextUtils.isEmpty(text)) {
             return;
         }
-        long dialog_id = intent.getLongExtra("dialog_id", 0);
-        int max_id = intent.getIntExtra("max_id", 0);
+        long dialogId = intent.getLongExtra("dialog_id", 0);
+        int maxId = intent.getIntExtra("max_id", 0);
         int currentAccount = intent.getIntExtra("currentAccount", 0);
-        if (dialog_id == 0 || max_id == 0 || !UserConfig.isValidAccount(currentAccount)) {
+        if (dialogId == 0 || maxId == 0 || !UserConfig.isValidAccount(currentAccount)) {
             return;
         }
-        int lowerId = (int) dialog_id;
-        int highId = (int) (dialog_id >> 32);
         AccountInstance accountInstance = AccountInstance.getInstance(currentAccount);
-        if (lowerId > 0) {
-            TLRPC.User user = accountInstance.getMessagesController().getUser(lowerId);
+        if (DialogObject.isUserDialog(dialogId)) {
+            TLRPC.User user = accountInstance.getMessagesController().getUser(dialogId);
             if (user == null) {
                 Utilities.globalQueue.postRunnable(() -> {
-                    TLRPC.User user1 = accountInstance.getMessagesStorage().getUserSync(lowerId);
+                    TLRPC.User user1 = accountInstance.getMessagesStorage().getUserSync(dialogId);
                     AndroidUtilities.runOnUIThread(() -> {
                         accountInstance.getMessagesController().putUser(user1, true);
-                        sendMessage(accountInstance, text, dialog_id, max_id);
+                        sendMessage(accountInstance, text, dialogId, maxId);
                     });
                 });
                 return;
             }
-        } else if (lowerId < 0) {
-            TLRPC.Chat chat = accountInstance.getMessagesController().getChat(-lowerId);
+        } else if (DialogObject.isChatDialog(dialogId)) {
+            TLRPC.Chat chat = accountInstance.getMessagesController().getChat(-dialogId);
             if (chat == null) {
                 Utilities.globalQueue.postRunnable(() -> {
-                    TLRPC.Chat chat1 = accountInstance.getMessagesStorage().getChatSync(-lowerId);
+                    TLRPC.Chat chat1 = accountInstance.getMessagesStorage().getChatSync(-dialogId);
                     AndroidUtilities.runOnUIThread(() -> {
                         accountInstance.getMessagesController().putChat(chat1, true);
-                        sendMessage(accountInstance, text, dialog_id, max_id);
+                        sendMessage(accountInstance, text, dialogId, maxId);
                     });
                 });
                 return;
             }
         }
-        sendMessage(accountInstance, text, dialog_id, max_id);
+        sendMessage(accountInstance, text, dialogId, maxId);
     }
 
     private void sendMessage(AccountInstance accountInstance, CharSequence text, long dialog_id, int max_id) {

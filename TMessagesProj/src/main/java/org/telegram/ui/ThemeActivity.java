@@ -84,6 +84,7 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SeekBarView;
 import org.telegram.ui.Components.ShareAlert;
+import org.telegram.ui.Components.SwipeGestureSettingsView;
 import org.telegram.ui.Components.ThemeEditorView;
 
 import java.io.File;

@@ -28,6 +28,7 @@ import android.widget.Toast;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationsController;
@@ -194,14 +195,14 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
             ArrayList<NotificationException> channelsResult = new ArrayList<>();
             LongSparseArray<NotificationException> waitingForLoadExceptions = new LongSparseArray<>();
 
-            ArrayList<Integer> usersToLoad = new ArrayList<>();
-            ArrayList<Integer> chatsToLoad = new ArrayList<>();
+            ArrayList<Long> usersToLoad = new ArrayList<>();
+            ArrayList<Long> chatsToLoad = new ArrayList<>();
             ArrayList<Integer> encryptedChatsToLoad = new ArrayList<>();
 
             ArrayList<TLRPC.User> users = new ArrayList<>();
             ArrayList<TLRPC.Chat> chats = new ArrayList<>();
             ArrayList<TLRPC.EncryptedChat> encryptedChats = new ArrayList<>();
-            int selfId = UserConfig.getInstance(currentAccount).clientUserId;
+            long selfId = UserConfig.getInstance(currentAccount).clientUserId;
 
             SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
             Map<String, ?> values = preferences.getAll();
@@ -223,37 +224,11 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                             }
                         }
 
-                        int lower_id = (int) did;
-                        int high_id = (int) (did << 32);
-                        if (lower_id != 0) {
-                            if (lower_id > 0) {
-                                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(lower_id);
-                                if (user == null) {
-                                    usersToLoad.add(lower_id);
-                                    waitingForLoadExceptions.put(did, exception);
-                                } else if (user.deleted) {
-                                    continue;
-                                }
-                                usersResult.add(exception);
-                            } else {
-                                TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lower_id);
-                                if (chat == null) {
-                                    chatsToLoad.add(-lower_id);
-                                    waitingForLoadExceptions.put(did, exception);
-                                    continue;
-                                } else if (chat.left || chat.kicked || chat.migrated_to != null) {
-                                    continue;
-                                }
-                                if (ChatObject.isChannel(chat) && !chat.megagroup) {
-                                    channelsResult.add(exception);
-                                } else {
-                                    chatsResult.add(exception);
-                                }
-                            }
-                        } else if (high_id != 0) {
-                            TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance(currentAccount).getEncryptedChat(high_id);
+                        if (DialogObject.isEncryptedDialog(did)) {
+                            int encryptedChatId = DialogObject.getEncryptedChatId(did);
+                            TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance(currentAccount).getEncryptedChat(encryptedChatId);
                             if (encryptedChat == null) {
-                                encryptedChatsToLoad.add(high_id);
+                                encryptedChatsToLoad.add(encryptedChatId);
                                 waitingForLoadExceptions.put(did, exception);
                             } else {
                                 TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(encryptedChat.user_id);
@@ -265,6 +240,29 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                                 }
                             }
                             usersResult.add(exception);
+                        } else if (DialogObject.isUserDialog(did)) {
+                            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(did);
+                            if (user == null) {
+                                usersToLoad.add(did);
+                                waitingForLoadExceptions.put(did, exception);
+                            } else if (user.deleted) {
+                                continue;
+                            }
+                            usersResult.add(exception);
+                        } else {
+                            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-did);
+                            if (chat == null) {
+                                chatsToLoad.add(-did);
+                                waitingForLoadExceptions.put(did, exception);
+                                continue;
+                            } else if (chat.left || chat.kicked || chat.migrated_to != null) {
+                                continue;
+                            }
+                            if (ChatObject.isChannel(chat) && !chat.megagroup) {
+                                channelsResult.add(exception);
+                            } else {
+                                chatsResult.add(exception);
+                            }
                         }
                     }
                 }
@@ -308,11 +306,11 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                 }
                 for (int a = 0, size = encryptedChats.size(); a < size; a++) {
                     TLRPC.EncryptedChat encryptedChat = encryptedChats.get(a);
-                    waitingForLoadExceptions.remove(((long) encryptedChat.id) << 32);
+                    waitingForLoadExceptions.remove(DialogObject.makeEncryptedDialogId(encryptedChat.id));
                 }
                 for (int a = 0, size = waitingForLoadExceptions.size(); a < size; a++) {
                     long did = waitingForLoadExceptions.keyAt(a);
-                    if ((int) did < 0) {
+                    if (DialogObject.isChatDialog(did)) {
                         chatsResult.remove(waitingForLoadExceptions.valueAt(a));
                         channelsResult.remove(waitingForLoadExceptions.valueAt(a));
                     } else {
@@ -916,10 +914,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                         }
                         textCell.setTextAndValue(LocaleController.getString("VoipSettingsRingtone", R.string.VoipSettingsRingtone), value, false);
                     } else if (position == callsVibrateRow) {
-                        int value = 0;
-                        if (position == callsVibrateRow) {
-                            value = preferences.getInt("vibrate_calls", 0);
-                        }
+                        int value = preferences.getInt("vibrate_calls", 0);
                         if (value == 0) {
                             textCell.setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString("VibrationDefault", R.string.VibrationDefault), true);
                         } else if (value == 1) {

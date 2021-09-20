@@ -14,7 +14,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
-import android.util.LongSparseArray;
 import android.util.Pair;
 import android.util.SparseArray;
 
@@ -23,6 +22,8 @@ import org.telegram.tgnet.TLRPC;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
+
+import androidx.collection.LongSparseArray;
 
 public class DownloadController extends BaseController implements NotificationCenter.NotificationCenterDelegate {
 
@@ -629,7 +630,7 @@ public class DownloadController extends BaseController implements NotificationCe
                     index = 2;
                 }
             } else {
-                TLRPC.Chat chat = message.peer_id != null && message.peer_id.channel_id != 0 ? getMessagesController().getChat(message.peer_id.channel_id) : null;
+                TLRPC.Chat chat = message.peer_id.channel_id != 0 ? getMessagesController().getChat(message.peer_id.channel_id) : null;
                 if (ChatObject.isChannel(chat) && chat.megagroup) {
                     if (message.from_id instanceof TLRPC.TL_peerUser && getContactsController().contactsDict.containsKey(message.from_id.user_id)) {
                         index = 0;

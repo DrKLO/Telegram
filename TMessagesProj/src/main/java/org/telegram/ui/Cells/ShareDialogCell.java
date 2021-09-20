@@ -20,6 +20,7 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -48,13 +49,15 @@ public class ShareDialogCell extends FrameLayout {
     private long currentDialog;
 
     private int currentAccount = UserConfig.selectedAccount;
+    private final Theme.ResourcesProvider resourcesProvider;
 
     public static final int TYPE_SHARE = 0;
     public static final int TYPE_CALL = 1;
     public static final int TYPE_CREATE = 2;
 
-    public ShareDialogCell(Context context, int type) {
+    public ShareDialogCell(Context context, int type, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
 
         setWillNotDraw(false);
         currentType = type;
@@ -68,7 +71,7 @@ public class ShareDialogCell extends FrameLayout {
         }
 
         nameTextView = new TextView(context);
-        nameTextView.setTextColor(Theme.getColor(type == TYPE_CALL ? Theme.key_voipgroup_nameText : Theme.key_dialogTextBlack));
+        nameTextView.setTextColor(getThemedColor(type == TYPE_CALL ? Theme.key_voipgroup_nameText : Theme.key_dialogTextBlack));
         nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
         nameTextView.setMaxLines(2);
         nameTextView.setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
@@ -76,7 +79,7 @@ public class ShareDialogCell extends FrameLayout {
         nameTextView.setEllipsize(TextUtils.TruncateAt.END);
         addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 6, currentType == TYPE_CREATE ? 58 : 66, 6, 0));
 
-        checkBox = new CheckBox2(context, 21);
+        checkBox = new CheckBox2(context, 21, resourcesProvider);
         checkBox.setColor(Theme.key_dialogRoundCheckBox, type == TYPE_CALL ? Theme.key_voipgroup_inviteMembersBackground : Theme.key_dialogBackground, Theme.key_dialogRoundCheckBoxCheck);
         checkBox.setDrawUnchecked(false);
         checkBox.setDrawBackgroundAsArc(4);
@@ -94,8 +97,8 @@ public class ShareDialogCell extends FrameLayout {
         super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(currentType == TYPE_CREATE ? 95 : 103), MeasureSpec.EXACTLY));
     }
 
-    public void setDialog(int uid, boolean checked, CharSequence name) {
-        if (uid > 0) {
+    public void setDialog(long uid, boolean checked, CharSequence name) {
+        if (DialogObject.isUserDialog(uid)) {
             user = MessagesController.getInstance(currentAccount).getUser(uid);
             avatarDrawable.setInfo(user);
             if (currentType != TYPE_CREATE && UserObject.isReplyUser(user)) {
@@ -157,9 +160,9 @@ public class ShareDialogCell extends FrameLayout {
                 if (isOnline || onlineProgress != 0) {
                     int top = imageView.getBottom() - AndroidUtilities.dp(6);
                     int left = imageView.getRight() - AndroidUtilities.dp(10);
-                    Theme.dialogs_onlineCirclePaint.setColor(Theme.getColor(currentType == TYPE_CALL ? Theme.key_voipgroup_inviteMembersBackground : Theme.key_windowBackgroundWhite));
+                    Theme.dialogs_onlineCirclePaint.setColor(getThemedColor(currentType == TYPE_CALL ? Theme.key_voipgroup_inviteMembersBackground : Theme.key_windowBackgroundWhite));
                     canvas.drawCircle(left, top, AndroidUtilities.dp(7) * onlineProgress, Theme.dialogs_onlineCirclePaint);
-                    Theme.dialogs_onlineCirclePaint.setColor(Theme.getColor(Theme.key_chats_onlineCircle));
+                    Theme.dialogs_onlineCirclePaint.setColor(getThemedColor(Theme.key_chats_onlineCircle));
                     canvas.drawCircle(left, top, AndroidUtilities.dp(5) * onlineProgress, Theme.dialogs_onlineCirclePaint);
                     if (isOnline) {
                         if (onlineProgress < 1.0f) {
@@ -190,8 +193,13 @@ public class ShareDialogCell extends FrameLayout {
     protected void onDraw(Canvas canvas) {
         int cx = imageView.getLeft() + imageView.getMeasuredWidth() / 2;
         int cy = imageView.getTop() + imageView.getMeasuredHeight() / 2;
-        Theme.checkboxSquare_checkPaint.setColor(Theme.getColor(Theme.key_dialogRoundCheckBox));
+        Theme.checkboxSquare_checkPaint.setColor(getThemedColor(Theme.key_dialogRoundCheckBox));
         Theme.checkboxSquare_checkPaint.setAlpha((int) (checkBox.getProgress() * 255));
         canvas.drawCircle(cx, cy, AndroidUtilities.dp(currentType == TYPE_CREATE ? 24 : 28), Theme.checkboxSquare_checkPaint);
+    }
+
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
     }
 }

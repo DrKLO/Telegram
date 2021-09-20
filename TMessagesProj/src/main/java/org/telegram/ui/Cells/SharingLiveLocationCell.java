@@ -23,6 +23,7 @@ import com.google.android.gms.maps.model.LatLng;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.LocationController;
@@ -53,6 +54,7 @@ public class SharingLiveLocationCell extends FrameLayout {
     private LocationController.SharingLocationInfo currentInfo;
     private LocationActivity.LiveLocation liveLocation;
     private Location location = new Location("network");
+    private final Theme.ResourcesProvider resourcesProvider;
 
     private int currentAccount = UserConfig.selectedAccount;
 
@@ -64,8 +66,9 @@ public class SharingLiveLocationCell extends FrameLayout {
         }
     };
 
-    public SharingLiveLocationCell(Context context, boolean distance, int padding) {
+    public SharingLiveLocationCell(Context context, boolean distance, int padding, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
 
         avatarImageView = new BackupImageView(context);
         avatarImageView.setRoundRadius(AndroidUtilities.dp(21));
@@ -74,7 +77,7 @@ public class SharingLiveLocationCell extends FrameLayout {
 
         nameTextView = new SimpleTextView(context);
         nameTextView.setTextSize(16);
-        nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        nameTextView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
         nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         nameTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
 
@@ -84,7 +87,7 @@ public class SharingLiveLocationCell extends FrameLayout {
 
             distanceTextView = new SimpleTextView(context);
             distanceTextView.setTextSize(14);
-            distanceTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3));
+            distanceTextView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText3));
             distanceTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
 
             addView(distanceTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? padding : 73, 37, LocaleController.isRTL ? 73 : padding, 0));
@@ -118,16 +121,15 @@ public class SharingLiveLocationCell extends FrameLayout {
         String address = chatLocation.address;
         String name = "";
         avatarDrawable = null;
-        int lowerId = (int) dialogId;
-        if (lowerId > 0) {
-            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(lowerId);
+        if (DialogObject.isUserDialog(dialogId)) {
+            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogId);
             if (user != null) {
                 avatarDrawable = new AvatarDrawable(user);
                 name = UserObject.getUserName(user);
                 avatarImageView.setForUserOrChat(user, avatarDrawable);
             }
         } else {
-            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lowerId);
+            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
             if (chat != null) {
                 avatarDrawable = new AvatarDrawable(chat);
                 name = chat.title;
@@ -142,15 +144,9 @@ public class SharingLiveLocationCell extends FrameLayout {
     }
 
     public void setDialog(MessageObject messageObject, Location userLocation) {
-        int fromId = messageObject.getFromChatId();
+        long fromId = messageObject.getFromChatId();
         if (messageObject.isForwarded()) {
-            if (messageObject.messageOwner.fwd_from.from_id instanceof TLRPC.TL_peerChannel) {
-                fromId = -messageObject.messageOwner.fwd_from.from_id.channel_id;
-            } else if (messageObject.messageOwner.fwd_from.from_id instanceof TLRPC.TL_peerChat) {
-                fromId = -messageObject.messageOwner.fwd_from.from_id.chat_id;
-            } else if (messageObject.messageOwner.fwd_from.from_id instanceof TLRPC.TL_peerUser) {
-                fromId = messageObject.messageOwner.fwd_from.from_id.user_id;
-            }
+            fromId = MessageObject.getPeerId(messageObject.messageOwner.fwd_from.from_id);
         }
         currentAccount = messageObject.currentAccount;
         String address = null;
@@ -162,8 +158,8 @@ public class SharingLiveLocationCell extends FrameLayout {
             name = messageObject.messageOwner.media.title;
 
             Drawable drawable = getResources().getDrawable(R.drawable.pin);
-            drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_location_sendLocationIcon), PorterDuff.Mode.MULTIPLY));
-            int color = Theme.getColor(Theme.key_location_placeLocationBackground);
+            drawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_location_sendLocationIcon), PorterDuff.Mode.MULTIPLY));
+            int color = getThemedColor(Theme.key_location_placeLocationBackground);
             Drawable circle = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(42), color, color);
             CombinedDrawable combinedDrawable = new CombinedDrawable(circle, drawable);
             combinedDrawable.setCustomSize(AndroidUtilities.dp(42), AndroidUtilities.dp(42));
@@ -210,16 +206,15 @@ public class SharingLiveLocationCell extends FrameLayout {
 
     public void setDialog(LocationActivity.LiveLocation info, Location userLocation) {
         liveLocation = info;
-        int lower_id = info.id;
-        if (lower_id > 0) {
-            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(lower_id);
+        if (DialogObject.isUserDialog(info.id)) {
+            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(info.id);
             if (user != null) {
                 avatarDrawable.setInfo(user);
                 nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
                 avatarImageView.setForUserOrChat(user, avatarDrawable);
             }
         } else {
-            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lower_id);
+            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-info.id);
             if (chat != null) {
                 avatarDrawable.setInfo(chat);
                 nameTextView.setText(chat.title);
@@ -243,16 +238,15 @@ public class SharingLiveLocationCell extends FrameLayout {
         currentInfo = info;
         currentAccount = info.account;
         avatarImageView.getImageReceiver().setCurrentAccount(currentAccount);
-        int lower_id = (int) info.did;
-        if (lower_id > 0) {
-            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(lower_id);
+        if (DialogObject.isUserDialog(info.did)) {
+            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(info.did);
             if (user != null) {
                 avatarDrawable.setInfo(user);
                 nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
                 avatarImageView.setForUserOrChat(user, avatarDrawable);
             }
         } else {
-            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lower_id);
+            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-info.did);
             if (chat != null) {
                 avatarDrawable.setInfo(chat);
                 nameTextView.setText(chat.title);
@@ -288,9 +282,9 @@ public class SharingLiveLocationCell extends FrameLayout {
 
         int color;
         if (distanceTextView == null) {
-            color = Theme.getColor(Theme.key_dialog_liveLocationProgress);
+            color = getThemedColor(Theme.key_dialog_liveLocationProgress);
         } else {
-            color = Theme.getColor(Theme.key_location_liveLocationProgress);
+            color = getThemedColor(Theme.key_location_liveLocationProgress);
         }
         Theme.chat_radialProgress2Paint.setColor(color);
         Theme.chat_livePaint.setColor(color);
@@ -302,5 +296,10 @@ public class SharingLiveLocationCell extends FrameLayout {
         float size = Theme.chat_livePaint.measureText(text);
 
         canvas.drawText(text, rect.centerX() - size / 2, AndroidUtilities.dp(distanceTextView != null ? 37 : 31), Theme.chat_livePaint);
+    }
+
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
     }
 }

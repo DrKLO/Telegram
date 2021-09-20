@@ -65,12 +65,12 @@ public class ShareActivity extends Activity {
         }
         SerializedData serializedData = new SerializedData(Utilities.hexToBytes(message));
         TLRPC.Message mess = TLRPC.Message.TLdeserialize(serializedData, serializedData.readInt32(false), false);
-        mess.readAttachPath(serializedData, 0);
-        serializedData.cleanup();
         if (mess == null) {
             finish();
             return;
         }
+        mess.readAttachPath(serializedData, 0);
+        serializedData.cleanup();
         String link = sharedPreferences.getString(hash + "_link", null);
         MessageObject messageObject = new MessageObject(UserConfig.selectedAccount, mess, false, true);
         messageObject.messageOwner.with_my_score = true;

@@ -2,18 +2,15 @@ package org.telegram.ui;
 
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.os.Vibrator;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
 import android.text.method.DigitsKeyListener;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -28,7 +25,6 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.DrawerLayoutContainer;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.HeaderCell;
@@ -47,7 +43,7 @@ public class LinkEditActivity extends BaseFragment {
     public final static int EDIT_TYPE = 1;
     private int type;
 
-    private final int chatId;
+    private final long chatId;
     private SlideChooseView usesChooseView;
     private SlideChooseView timeChooseView;
 
@@ -64,7 +60,7 @@ public class LinkEditActivity extends BaseFragment {
     private ScrollView scrollView;
     private boolean finished;
 
-    public LinkEditActivity(int type, int chatId) {
+    public LinkEditActivity(int type, long chatId) {
         this.type = type;
         this.chatId = chatId;
     }
@@ -256,11 +252,7 @@ public class LinkEditActivity extends BaseFragment {
         timeEditText.setGravity(Gravity.CENTER_VERTICAL);
         timeEditText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         timeEditText.setHint(LocaleController.getString("TimeLimitHint", R.string.TimeLimitHint));
-        timeEditText.setOnClickListener(view -> {
-            AlertsCreator.createDatePickerDialog(context, -1, (notify, scheduleDate) -> {
-                chooseDate(scheduleDate);
-            });
-        });
+        timeEditText.setOnClickListener(view -> AlertsCreator.createDatePickerDialog(context, -1, (notify, scheduleDate) -> chooseDate(scheduleDate)));
 
         timeChooseView.setCallback(index -> {
             if (index < dispalyedDates.size()) {
@@ -423,22 +415,20 @@ public class LinkEditActivity extends BaseFragment {
                     req.usage_limit = 0;
                 }
 
-                getConnectionsManager().sendRequest(req, (response, error) -> {
-                    AndroidUtilities.runOnUIThread(() -> {
-                        loading = false;
-                        if (progressDialog != null) {
-                            progressDialog.dismiss();
+                getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                    loading = false;
+                    if (progressDialog != null) {
+                        progressDialog.dismiss();
+                    }
+                    if (error == null) {
+                        if (callback != null) {
+                            callback.onLinkCreated(response);
                         }
-                        if (error == null) {
-                            if (callback != null) {
-                                callback.onLinkCreated(response);
-                            }
-                            finishFragment();
-                        } else {
-                            AlertsCreator.showSimpleAlert(LinkEditActivity.this, error.text);
-                        }
-                    });
-                });
+                        finishFragment();
+                    } else {
+                        AlertsCreator.showSimpleAlert(LinkEditActivity.this, error.text);
+                    }
+                }));
             } else if (type == EDIT_TYPE) {
                 if (progressDialog != null) {
                     progressDialog.dismiss();
@@ -487,22 +477,20 @@ public class LinkEditActivity extends BaseFragment {
                 }
 
                 if (edited) {
-                    getConnectionsManager().sendRequest(req, (response, error) -> {
-                        AndroidUtilities.runOnUIThread(() -> {
-                            loading = false;
-                            if (progressDialog != null) {
-                                progressDialog.dismiss();
+                    getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                        loading = false;
+                        if (progressDialog != null) {
+                            progressDialog.dismiss();
+                        }
+                        if (error == null) {
+                            if (callback != null) {
+                                callback.onLinkEdited(inviteToEdit, response);
                             }
-                            if (error == null) {
-                                if (callback != null) {
-                                    callback.onLinkEdited(inviteToEdit, response);
-                                }
-                                finishFragment();
-                            } else {
-                                AlertsCreator.showSimpleAlert(LinkEditActivity.this, error.text);
-                            }
-                        });
-                    });
+                            finishFragment();
+                        } else {
+                            AlertsCreator.showSimpleAlert(LinkEditActivity.this, error.text);
+                        }
+                    }));
                 }
             }
         });
@@ -662,24 +650,21 @@ public class LinkEditActivity extends BaseFragment {
 
     @Override
     public ArrayList<ThemeDescription> getThemeDescriptions() {
-        ThemeDescription.ThemeDescriptionDelegate descriptionDelegate = new ThemeDescription.ThemeDescriptionDelegate() {
-            @Override
-            public void didSetColor() {
-                if (dividerUses != null) {
-                    Context context = dividerUses.getContext();
-                    dividerUses.setBackgroundDrawable(Theme.getThemedDrawable(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
-                    divider.setBackgroundDrawable(Theme.getThemedDrawable(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
-                    buttonTextView.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(6), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
+        ThemeDescription.ThemeDescriptionDelegate descriptionDelegate = () -> {
+            if (dividerUses != null) {
+                Context context = dividerUses.getContext();
+                dividerUses.setBackgroundDrawable(Theme.getThemedDrawable(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+                divider.setBackgroundDrawable(Theme.getThemedDrawable(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+                buttonTextView.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(6), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
 
-                    usesEditText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-                    usesEditText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+                usesEditText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                usesEditText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
 
-                    timeEditText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-                    timeEditText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
-                    buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
-                    if (revokeLink != null) {
-                        revokeLink.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText5));
-                    }
+                timeEditText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                timeEditText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+                buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
+                if (revokeLink != null) {
+                    revokeLink.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText5));
                 }
             }
         };
