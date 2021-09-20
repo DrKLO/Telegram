@@ -24,7 +24,7 @@ MTproto protocol manuals: https://core.telegram.org/mtproto
 
 **Note**: In order to support [reproducible builds](https://core.telegram.org/reproducible-builds), this repo contains dummy release.keystore,  google-services.json and filled variables inside BuildVars.java. Before publishing your own APKs please make sure to replace all these files with your own.
 
-You will require Android Studio 3.4, Android NDK rev. 20 and Android SDK 8.1
+You will require Android Studio 3.4, Android NDK rev. 21.4.7075529 and Android SDK 8.1
 
 1. Download the Telegram source code from https://github.com/DrKLO/Telegram ( git clone https://github.com/DrKLO/Telegram.git )
 2. Copy your release.keystore into TMessagesProj/config
