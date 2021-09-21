@@ -1542,7 +1542,7 @@ public class LoginActivity extends BaseFragment {
 
         private void setCountry(HashMap<String, String> languageMap, String country) {
             String name = languageMap.get(country);
-            if (name != null) {
+            if (name != null && countriesArray != null) {
                 CountrySelectActivity.Country countryWithCode = null;
                 for (int i = 0; i < countriesArray.size(); i++) {
                     if (countriesArray.get(i) != null && countriesArray.get(i).name.equals(country)) {

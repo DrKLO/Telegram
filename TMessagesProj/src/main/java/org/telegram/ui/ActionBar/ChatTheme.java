@@ -155,8 +155,10 @@ public class ChatTheme {
 
     public void loadWallpaperThumb(boolean isDark, ResultCallback<Pair<Long, Bitmap>> callback) {
         final TLRPC.WallPaper wallpaper = getWallpaper(isDark);
-        if (wallpaper == null && callback != null) {
-            callback.onComplete(null);
+        if (wallpaper == null) {
+            if (callback != null) {
+                callback.onComplete(null);
+            }
             return;
         }
 

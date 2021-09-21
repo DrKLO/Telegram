@@ -29,13 +29,14 @@ public class OpenChatReceiver extends Activity {
             return;
         }
         try {
-            long chatId = intent.getLongExtra("chatId", 0);
-            long userId = intent.getLongExtra("userId", 0);
+            long chatId = intent.getLongExtra("chatId", intent.getIntExtra("chatId", 0));
+            long userId = intent.getLongExtra("userId", intent.getIntExtra("userId", 0));
             int encId = intent.getIntExtra("encId", 0);
             if (chatId == 0 && userId == 0 && encId == 0) {
                 return;
             }
         } catch (Throwable e) {
+            FileLog.e(e);
             return;
         }
         Intent intent2 = new Intent(this, LaunchActivity.class);

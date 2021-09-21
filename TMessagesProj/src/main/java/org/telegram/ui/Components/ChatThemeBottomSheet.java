@@ -153,7 +153,7 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
         recyclerView.setLayoutManager(layoutManager = new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
         recyclerView.setPadding(AndroidUtilities.dp(12), 0, AndroidUtilities.dp(12), 0);
         recyclerView.setOnItemClickListener((view, position) -> {
-            if (adapter.items.get(position) == selectedItem) {
+            if (adapter.items.get(position) == selectedItem || changeDayNightView != null) {
                 return;
             }
             selectedItem = adapter.items.get(position);
@@ -855,6 +855,7 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
                                     drawable.setPatternBitmap(intensity >= 0 ? 100 : -100, result.second);
                                     drawable.setPatternColorFilter(drawable.getPatternColor());
                                 }
+                                invalidate();
                             }
                         });
                     }
@@ -965,7 +966,7 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
                 noThemeTextPaint.setTextSize(AndroidUtilities.dp(14));
                 noThemeTextPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
                 textLayout = StaticLayoutEx.createStaticLayout2(
-                        LocaleController.getString("NoTheme", R.string.ChatNoTheme),
+                        LocaleController.getString("ChatNoTheme", R.string.ChatNoTheme),
                         noThemeTextPaint,
                         AndroidUtilities.dp(52),
                         Layout.Alignment.ALIGN_CENTER,

@@ -55,9 +55,11 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
     ArrayList<Integer> animationIndexes = new ArrayList<>();
     Runnable sentInteractionsRunnable;
 
+    Runnable hintRunnable;
     private final static HashSet<String> supportedEmoji = new HashSet<>();
     private final static HashSet<String> excludeEmojiFromPack = new HashSet<>();
-    static  {
+
+    static {
         // 1️⃣, 2️⃣, 3️⃣... etc
         excludeEmojiFromPack.add("\u0030\u20E3");
         excludeEmojiFromPack.add("\u0031\u20E3");
@@ -93,12 +95,14 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
         checkStickerPack();
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.diceStickersDidLoad);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.onEmojiInteractionsReceived);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.updateInterfaces);
     }
 
     protected void onDetachedFromWindow() {
         attached = false;
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.diceStickersDidLoad);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.onEmojiInteractionsReceived);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.updateInterfaces);
     }
 
     public void checkStickerPack() {
@@ -131,7 +135,7 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
                         String[] heartEmojies = new String[]{"🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎"};
                         for (String heart : heartEmojies) {
                             supportedEmoji.add(heart);
-                            emojiInteractionsStickersMap.put(heart,  stickers);
+                            emojiInteractionsStickersMap.put(heart, stickers);
                         }
                     }
                 }
@@ -173,6 +177,11 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
                     }
                 }
 
+            }
+        } else if (id == NotificationCenter.updateInterfaces) {
+            Integer printingType = MessagesController.getInstance(currentAccount).getPrintingStringType(dialogId, threadMsgId);
+            if (printingType != null && printingType == 5) {
+                cancelHintRunnable();
             }
         }
     }
@@ -231,7 +240,7 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
                     }
                 }
 
-                drawingObject.imageReceiver.setImageCoords(drawingObject.lastX + drawingObject.randomOffsetX, drawingObject.lastY +  drawingObject.randomOffsetY, drawingObject.lastW * 3, drawingObject.lastW * 3);
+                drawingObject.imageReceiver.setImageCoords(drawingObject.lastX + drawingObject.randomOffsetX, drawingObject.lastY + drawingObject.randomOffsetY, drawingObject.lastW * 3, drawingObject.lastW * 3);
                 if (!drawingObject.isOut) {
                     canvas.save();
                     canvas.scale(-1f, 1, drawingObject.imageReceiver.getCenterX(), drawingObject.imageReceiver.getCenterY());
@@ -262,7 +271,13 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
         if (show && !EmojiData.hasEmojiSupportVibration(view.getMessageObject().getStickerEmoji())) {
             view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
         }
-        if ((Bulletin.getVisibleBulletin() == null || !Bulletin.getVisibleBulletin().isShowing()) && SharedConfig.emojiInteractionsHintCount > 0) {
+
+        Integer printingType = MessagesController.getInstance(currentAccount).getPrintingStringType(dialogId, threadMsgId);
+        boolean canShowHint = true;
+        if (printingType != null && printingType == 5) {
+            canShowHint = false;
+        }
+        if (canShowHint && hintRunnable == null && show && (Bulletin.getVisibleBulletin() == null || !Bulletin.getVisibleBulletin().isShowing()) && SharedConfig.emojiInteractionsHintCount > 0) {
             SharedConfig.updateEmojiInteractionsHintCount(SharedConfig.emojiInteractionsHintCount - 1);
             TLRPC.Document document = MediaDataController.getInstance(currentAccount).getEmojiAnimatedSticker(view.getMessageObject().getStickerEmoji());
             StickerSetBulletinLayout layout = new StickerSetBulletinLayout(chatActivity.getParentActivity(), null, StickerSetBulletinLayout.TYPE_EMPTY, document, chatActivity.getResourceProvider());
@@ -271,8 +286,22 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
             layout.titleTextView.setTypeface(null);
             layout.titleTextView.setMaxLines(3);
             layout.titleTextView.setSingleLine(false);
-            Bulletin.make(chatActivity, layout, Bulletin.DURATION_LONG).show();
+            Bulletin bulletin = Bulletin.make(chatActivity, layout, Bulletin.DURATION_LONG);
+            AndroidUtilities.runOnUIThread(hintRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    bulletin.show();
+                    hintRunnable = null;
+                }
+            }, 1500);
         }
+    }
+
+    public void cancelHintRunnable() {
+        if (hintRunnable != null) {
+            AndroidUtilities.cancelRunOnUIThread(hintRunnable);
+        }
+        hintRunnable = null;
     }
 
     private boolean showAnimationForCell(ChatMessageCell view, int animation, boolean sendTap, boolean sendSeen) {
@@ -351,7 +380,8 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
                     if (lastTappedTime == 0) {
                         lastTappedTime = System.currentTimeMillis();
                         timeIntervals.clear();
-                        animationIndexes.clear();;
+                        animationIndexes.clear();
+                        ;
                         timeIntervals.add(0L);
                         animationIndexes.add(animation);
                     } else {

@@ -736,7 +736,12 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 if (child == null || child.getVisibility() == GONE || child == commentView || child == actionBar) {
                     continue;
                 }
-                if (child instanceof ViewPage) {
+                if (child instanceof DatabaseMigrationHint) {
+                    int contentWidthSpec = View.MeasureSpec.makeMeasureSpec(widthSize, View.MeasureSpec.EXACTLY);
+                    int h = View.MeasureSpec.getSize(heightMeasureSpec) + keyboardSize;
+                    int contentHeightSpec = View.MeasureSpec.makeMeasureSpec(Math.max(AndroidUtilities.dp(10), h - inputFieldHeight + AndroidUtilities.dp(2) - actionBar.getMeasuredHeight()), View.MeasureSpec.EXACTLY);
+                    child.measure(contentWidthSpec, contentHeightSpec);
+                } else if (child instanceof ViewPage) {
                     int contentWidthSpec = View.MeasureSpec.makeMeasureSpec(widthSize, View.MeasureSpec.EXACTLY);
                     int h;
                     if (filterTabsView != null && filterTabsView.getVisibility() == VISIBLE) {
@@ -850,6 +855,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     childTop = actionBar.getMeasuredHeight();
                 } else if (child == searchViewPager) {
                     childTop = (onlySelect ? 0 : actionBar.getMeasuredHeight()) + topPadding + (searchTabsView == null ? 0 : AndroidUtilities.dp(44));
+                } else if (child instanceof DatabaseMigrationHint) {
+                    childTop = actionBar.getMeasuredHeight();
                 } else if (child instanceof ViewPage) {
                     if (!onlySelect) {
                         if (filterTabsView != null && filterTabsView.getVisibility() == VISIBLE) {
@@ -1815,18 +1822,24 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             getNotificationCenter().addObserver(this, NotificationCenter.fileLoaded);
             getNotificationCenter().addObserver(this, NotificationCenter.fileLoadFailed);
             getNotificationCenter().addObserver(this, NotificationCenter.fileLoadProgressChanged);
-            getNotificationCenter().addObserver(this, NotificationCenter.onDatabaseMigration);
 
             NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didSetPasscode);
             NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.appUpdateAvailable);
         }
         getNotificationCenter().addObserver(this, NotificationCenter.messagesDeleted);
 
-
+        getNotificationCenter().addObserver(this, NotificationCenter.onDatabaseMigration);
         getNotificationCenter().addObserver(this, NotificationCenter.didClearDatabase);
 
         loadDialogs(getAccountInstance());
         getMessagesController().loadPinnedDialogs(folderId, 0, null);
+        if (databaseMigrationHint != null && !getMessagesStorage().isDatabaseMigrationInProgress()) {
+            View localView = databaseMigrationHint;
+            if (localView.getParent() != null) {
+                ((ViewGroup) localView.getParent()).removeView(localView);
+            }
+            databaseMigrationHint = null;
+        }
         return true;
     }
 
@@ -1887,6 +1900,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.appUpdateAvailable);
         }
 
+        getNotificationCenter().removeObserver(this, NotificationCenter.onDatabaseMigration);
         getNotificationCenter().removeObserver(this, NotificationCenter.didClearDatabase);
         if (commentView != null) {
             commentView.onDestroy();
@@ -2056,7 +2070,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
             @Override
             public boolean canToggleSearch() {
-                return !actionBar.isActionModeShowed();
+                return !actionBar.isActionModeShowed() && databaseMigrationHint == null;
             }
         });
         searchItem.setSearchFieldHint(LocaleController.getString("Search", R.string.Search));
@@ -4530,7 +4544,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     }
 
     private void updateFilterTabsVisibility(boolean animated) {
-        if (isPaused) {
+        if (isPaused || databaseMigrationHint != null) {
             animated = false;
         }
         if (searchIsShowed) {
@@ -6539,22 +6553,21 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         ((ContentView) fragmentView).addView(databaseMigrationHint);
                         databaseMigrationHint.animate().alpha(1).setDuration(300).setStartDelay(1000).start();
                     }
+                    databaseMigrationHint.setTag(1);
                 } else {
-                    if (databaseMigrationHint != null) {
+                    if (databaseMigrationHint != null && databaseMigrationHint.getTag() != null) {
                         View localView = databaseMigrationHint;
                         localView.animate().setListener(null).cancel();
                         localView.animate().setListener(new AnimatorListenerAdapter() {
                             @Override
                             public void onAnimationEnd(Animator animation) {
                                 if (localView.getParent() != null) {
-                                    ((ContentView) fragmentView).removeView(localView);
+                                    ((ViewGroup) localView.getParent()).removeView(localView);
                                 }
-
+                                databaseMigrationHint = null;
                             }
-                        }).alpha(0f).setDuration(150).start();
-
-                        databaseMigrationHint = null;
-
+                        }).alpha(0f).setStartDelay(0).setDuration(150).start();
+                        databaseMigrationHint.setTag(null);
                     }
                 }
             }

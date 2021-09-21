@@ -28,6 +28,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLog;
@@ -155,6 +156,9 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
         dialogsCount = array.size();
         if (!forceShowEmptyCell && dialogsType != 7 && dialogsType != 8 && dialogsType != 11 && dialogsCount == 0 && (folderId != 0 || messagesController.isLoadingDialogs(folderId) || !MessagesController.getInstance(currentAccount).isDialogsEndReached(folderId))) {
             onlineContacts = null;
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.d("DialogsAdapter dialogsCount=" + dialogsCount + " dialogsType=" + dialogsType + " isLoadingDialogs=" + messagesController.isLoadingDialogs(folderId) + " isDialogsEndReached=" + MessagesController.getInstance(currentAccount).isDialogsEndReached(folderId));
+            }
             if (folderId == 1 && showArchiveHint) {
                 return (currentCount = 2);
             }
@@ -176,6 +180,9 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
         } else if (dialogsType == 0 && messagesController.dialogs_dict.size() <= 10 && folderId == 0 && messagesController.isDialogsEndReached(folderId)) {
             if (ContactsController.getInstance(currentAccount).contacts.isEmpty() && !ContactsController.getInstance(currentAccount).doneLoadingContacts) {
                 onlineContacts = null;
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.d("DialogsAdapter loadingContacts=" + (ContactsController.getInstance(currentAccount).contacts.isEmpty() && !ContactsController.getInstance(currentAccount).doneLoadingContacts) + "dialogsCount=" + dialogsCount + " dialogsType=" + dialogsType);
+                }
                 return (currentCount = 0);
             }
 
@@ -224,6 +231,10 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
             count += 1;
         }
         currentCount = count;
+
+        if (BuildVars.LOGS_ENABLED) {
+            FileLog.d("DialogsAdapter dialogsCount=" + dialogsCount + " dialogsType=" + dialogsType);
+        }
         return count;
     }
 

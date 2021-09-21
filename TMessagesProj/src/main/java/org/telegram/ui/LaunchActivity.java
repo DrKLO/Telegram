@@ -2109,8 +2109,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 } else if (intent.getAction().equals("new_dialog")) {
                     open_new_dialog = 1;
                 } else if (intent.getAction().startsWith("com.tmessages.openchat")) {
-                    long chatId = intent.getLongExtra("chatId", 0);
-                    long userId = intent.getLongExtra("userId", 0);
+
+                    long chatId = intent.getLongExtra("chatId", intent.getIntExtra("chatId", 0));
+                    long userId = intent.getLongExtra("userId",  intent.getIntExtra("userId", 0));
                     int encId = intent.getIntExtra("encId", 0);
                     int widgetId = intent.getIntExtra("appWidgetId", 0);
                     if (widgetId != 0) {

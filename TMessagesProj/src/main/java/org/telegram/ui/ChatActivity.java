@@ -8039,7 +8039,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     }
 
     private void openAnotherForward() {
-        if (forwardingMessages == null) {
+        if (forwardingMessages == null || forwardingMessages.messages == null) {
             return;
         }
         boolean fewSenders = false;
@@ -8063,7 +8063,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             message = LocaleController.formatString("CancelForwardPrivate", R.string.CancelForwardPrivate, LocaleController.formatPluralString("MessagesBold", forwardingMessages.messages.size()), ContactsController.formatName(user.first_name, user.last_name));
         } else {
             TLRPC.Chat chat = getMessagesController().getChat(-dialogId);
-            message = LocaleController.formatString("CancelForwardChat", R.string.CancelForwardChat, LocaleController.formatPluralString("MessagesBold", forwardingMessages.messages.size()), chat.title);
+            message = LocaleController.formatString("CancelForwardChat", R.string.CancelForwardChat, LocaleController.formatPluralString("MessagesBold", forwardingMessages.messages.size()), chat == null ? "" : chat.title);
         }
         builder.setMessage(AndroidUtilities.replaceTags(message));
         builder.setTitle(LocaleController.formatPluralString("messages", forwardingMessages.messages.size()));
@@ -19956,7 +19956,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             boolean showMessageSeen = currentChat != null && message.isOutOwner() && message.isSent() && !message.isEditing() && !message.isSending() && !message.isSendError() && !message.isContentUnread() && !message.isUnread() && (ConnectionsManager.getInstance(currentAccount).getCurrentTime() - message.messageOwner.date < 7 * 86400)  && (ChatObject.isMegagroup(currentChat) || !ChatObject.isChannel(currentChat)) && chatInfo != null && chatInfo.participants_count < 50;
             MessageSeenView messageSeenView = null;
             if (showMessageSeen) {
-                messageSeenView = new MessageSeenView(contentView.getContext(), currentAccount, message);
+                messageSeenView = new MessageSeenView(contentView.getContext(), currentAccount, message, currentChat);
                 Drawable shadowDrawable2 = ContextCompat.getDrawable(contentView.getContext(), R.drawable.popup_fixed_alert).mutate();
                 shadowDrawable2.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground), PorterDuff.Mode.MULTIPLY));
                 FrameLayout messageSeenLayout = new FrameLayout(contentView.getContext());
@@ -20116,7 +20116,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             args.putLong("user_id", user.id);
                             ProfileActivity fragment = new ProfileActivity(args);
                             presentFragment(fragment);
-                            mesageSeenUsersPopupWindow.dismiss();
+                            if (mesageSeenUsersPopupWindow != null) {
+                                mesageSeenUsersPopupWindow.dismiss();
+                            }
                         });
                     }
                 });
@@ -24648,7 +24650,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         themeDescriptions.add(new ThemeDescription(alertNameTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_chat_topPanelTitle));
         themeDescriptions.add(new ThemeDescription(alertTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_chat_topPanelMessage));
         themeDescriptions.add(new ThemeDescription(closePinned, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_chat_topPanelClose));
-        themeDescriptions.add(new ThemeDescription(pinnedListButton, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_chat_topPanelTitle));
+        themeDescriptions.add(new ThemeDescription(pinnedListButton, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_chat_topPanelClose));
         themeDescriptions.add(new ThemeDescription(closeReportSpam, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_chat_topPanelClose));
         themeDescriptions.add(new ThemeDescription(topChatPanelView, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_chat_topPanelBackground));
         themeDescriptions.add(new ThemeDescription(alertView, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_chat_topPanelBackground));
@@ -25041,7 +25043,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 }
             }
             if (!setup) {
-                Theme.refreshThemeColors();
+                Theme.refreshThemeColors(true, false);
             }
         }
 
@@ -25223,6 +25225,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     animatingMessageDrawable.crossfadeFromDrawable = parentLayout.messageDrawableOutStart;
                     animatingMessageMediaDrawable = (Theme.MessageDrawable) getThemedDrawable(Theme.key_drawable_msgOutMedia);
                     animatingMessageMediaDrawable.crossfadeFromDrawable = parentLayout.messageDrawableOutMediaStart;
+                    animatingMessageDrawable.crossfadeProgress = 0f;
+                    animatingMessageMediaDrawable.crossfadeProgress = 0f;
+                    updateMessagesVisiblePart(false);
                     updateServiceMessageColor(0);
                 };
                 animationSettings.afterAnimationRunnable = () -> {
@@ -25263,7 +25268,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
                 Theme.ThemeInfo activeTheme;
                 if (Theme.getActiveTheme().isDark() == isDark) {
-                    activeTheme = Theme.getCurrentTheme();
+                    activeTheme = Theme.getActiveTheme();
                 } else {
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("themeconfig", Activity.MODE_PRIVATE);
                     String dayThemeName = preferences.getString("lastDayTheme", "Blue");
@@ -25276,7 +25281,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     }
                     activeTheme = isDark ? Theme.getTheme(nightThemeName) : Theme.getTheme(dayThemeName);
                 }
-
 
                 Theme.applyTheme(activeTheme, false, isDark);
             } else {

@@ -316,7 +316,7 @@ public class Theme {
             } else {
                 num = currentType == TYPE_PREVIEW ? 1 : 0;
             }
-            if (gradientColor2 != 0 && animatedGradient && motionBackground[num] != null) {
+            if (!isCrossfadeBackground && gradientColor2 != 0 && animatedGradient && motionBackground[num] != null) {
                 int[] colors = motionBackground[num].getColors();
                 currentColor = colors[0];
                 currentGradientColor1 = colors[1];
@@ -325,8 +325,10 @@ public class Theme {
             }
             if (isCrossfadeBackground && gradientColor2 != 0 && animatedGradient) {
                 if (backgroundHeight != currentBackgroundHeight || crosfadeFromBitmapShader == null || currentColor != color || currentGradientColor1 != gradientColor1 || currentGradientColor2 != gradientColor2 || currentGradientColor3 != gradientColor3 || currentAnimateGradient != animatedGradient) {
-                    crosfadeFromBitmap = Bitmap.createBitmap(60, 80, Bitmap.Config.ARGB_8888);
-                    crosfadeFromBitmapShader = new BitmapShader(crosfadeFromBitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+                    if (crosfadeFromBitmap == null) {
+                        crosfadeFromBitmap = Bitmap.createBitmap(60, 80, Bitmap.Config.ARGB_8888);
+                        crosfadeFromBitmapShader = new BitmapShader(crosfadeFromBitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+                    }
                     if (motionBackground[num] == null) {
                         motionBackground[num] = new MotionBackgroundDrawable();
                         if (currentType != TYPE_PREVIEW) {

@@ -21,8 +21,12 @@ import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
@@ -57,7 +61,7 @@ public class MessageSeenView extends FrameLayout {
 
     FlickerLoadingView flickerLoadingView;
 
-    public MessageSeenView(@NonNull Context context, int currentAccount, MessageObject messageObject) {
+    public MessageSeenView(@NonNull Context context, int currentAccount, MessageObject messageObject, TLRPC.Chat chat) {
         super(context);
         this.currentAccount = currentAccount;
         isVoice = (messageObject.isRoundVideo() || messageObject.isVoice());
@@ -98,6 +102,7 @@ public class MessageSeenView extends FrameLayout {
         }
         long finalFromId = fromId;
         ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            FileLog.e("MessageSeenView request completed");
             if (error == null) {
                 TLRPC.Vector vector = (TLRPC.Vector) response;
                 ArrayList<Long> unknownUsers = new ArrayList<>();
@@ -112,7 +117,7 @@ public class MessageSeenView extends FrameLayout {
                         }
                         TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(peerId);
                         allPeers.add(peerId);
-                        if (user == null) {
+                        if (true || user == null) {
                             unknownUsers.add(peerId);
                         } else {
                             usersLocal.put(peerId, user);
@@ -127,25 +132,46 @@ public class MessageSeenView extends FrameLayout {
                     }
                     updateView();
                 } else {
-                    TLRPC.TL_users_getUsers usersReq = new TLRPC.TL_users_getUsers();
-                    for (int i = 0; i < unknownUsers.size(); i++) {
-                        usersReq.id.add(MessagesController.getInstance(currentAccount).getInputUser(unknownUsers.get(i)));
+                    if (ChatObject.isChannel(chat)) {
+                        TLRPC.TL_channels_getParticipants usersReq = new TLRPC.TL_channels_getParticipants();
+                        usersReq.limit = 50;
+                        usersReq.offset = 0;
+                        usersReq.filter = new TLRPC.TL_channelParticipantsRecent();
+                        usersReq.channel = MessagesController.getInstance(currentAccount).getInputChannel(chat.id);
+                        ConnectionsManager.getInstance(currentAccount).sendRequest(usersReq, (response1, error1) -> AndroidUtilities.runOnUIThread(() -> {
+                            if (response1 != null) {
+                                TLRPC.TL_channels_channelParticipants users = (TLRPC.TL_channels_channelParticipants) response1;
+                                for (int i = 0; i < users.users.size(); i++) {
+                                    TLRPC.User user = users.users.get(i);
+                                    MessagesController.getInstance(currentAccount).putUser(user, false);
+                                    usersLocal.put(user.id, user);
+                                }
+                                for (int i = 0; i < allPeers.size(); i++) {
+                                    peerIds.add(allPeers.get(i));
+                                    this.users.add(usersLocal.get(allPeers.get(i)));
+                                }
+                            }
+                            updateView();
+                        }));
+                    } else {
+                        TLRPC.TL_messages_getFullChat usersReq = new TLRPC.TL_messages_getFullChat();
+                        usersReq.chat_id = chat.id;
+                        ConnectionsManager.getInstance(currentAccount).sendRequest(usersReq, (response1, error1) -> AndroidUtilities.runOnUIThread(() -> {
+                            if (response1 != null) {
+                                TLRPC.TL_messages_chatFull chatFull = (TLRPC.TL_messages_chatFull) response1;
+                                for (int i = 0; i < chatFull.users.size(); i++) {
+                                    TLRPC.User user = chatFull.users.get(i);
+                                    MessagesController.getInstance(currentAccount).putUser(user, false);
+                                    usersLocal.put(user.id, user);
+                                }
+                                for (int i = 0; i < allPeers.size(); i++) {
+                                    peerIds.add(allPeers.get(i));
+                                    this.users.add(usersLocal.get(allPeers.get(i)));
+                                }
+                            }
+                            updateView();
+                        }));
                     }
-                    ConnectionsManager.getInstance(currentAccount).sendRequest(usersReq, (response1, error1) -> AndroidUtilities.runOnUIThread(() -> {
-                        if (response1 != null) {
-                            TLRPC.Vector users = (TLRPC.Vector) response1;
-                            for (int i = 0; i < users.objects.size(); i++) {
-                                TLRPC.User user = (TLRPC.User) users.objects.get(i);
-                                MessagesController.getInstance(currentAccount).putUser(user, false);
-                                usersLocal.put(user.id, user);
-                            }
-                            for (int i = 0; i < allPeers.size(); i++) {
-                                peerIds.add(allPeers.get(i));
-                                this.users.add(usersLocal.get(allPeers.get(i)));
-                            }
-                        }
-                        updateView();
-                    }));
                 }
             } else {
                 updateView();
