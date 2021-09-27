@@ -574,7 +574,9 @@ public class GroupCallUserCell extends FrameLayout {
     }
 
     private void applyParticipantChanges(boolean animated, boolean internal) {
-        TLRPC.Chat chat = accountInstance.getMessagesController().getChat(currentCall.chatId);
+        if (currentCall == null) {
+            return;
+        }
         muteButton.setEnabled(!isSelfUser() || participant.raise_hand_rating != 0);
 
         boolean hasVoice;

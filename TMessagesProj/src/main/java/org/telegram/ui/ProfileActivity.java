@@ -2497,7 +2497,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             }
             if (position == settingsKeyRow) {
                 Bundle args = new Bundle();
-                args.putLong("chat_id", DialogObject.getEncryptedChatId(dialogId));
+                args.putInt("chat_id", DialogObject.getEncryptedChatId(dialogId));
                 presentFragment(new IdenticonActivity(args));
             } else if (position == settingsTimerRow) {
                 showDialog(AlertsCreator.createTTLAlert(getParentActivity(), currentEncryptedChat, null).create());

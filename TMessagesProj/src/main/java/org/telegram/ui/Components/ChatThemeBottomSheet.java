@@ -565,7 +565,7 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
     }
 
     private void onAnimationStart() {
-        if (adapter != null) {
+        if (adapter != null && adapter.items != null) {
             for (ChatThemeItem item : adapter.items) {
                 item.isDark = forceDark;
             }

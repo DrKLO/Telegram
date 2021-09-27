@@ -3999,10 +3999,27 @@ public class MediaDataController extends BaseController {
                 if (messageObject == null) {
                     continue;
                 }
-                if (messageObject.getId() > 0 && messageObject.isReply() && messageObject.replyMessageObject == null) {
+                if (messageObject.getId() > 0 && messageObject.isReply()) {
                     int messageId = messageObject.messageOwner.reply_to.reply_to_msg_id;
-                    long did = MessageObject.getReplyToDialogId(messageObject.messageOwner);
-                    long channelId = messageObject.messageOwner.peer_id != null ? messageObject.messageOwner.peer_id.channel_id : 0;
+                    long channelId = 0;
+                    if (messageObject.messageOwner.reply_to.reply_to_peer_id != null) {
+                        if (messageObject.messageOwner.reply_to.reply_to_peer_id.channel_id != 0) {
+                            channelId = messageObject.messageOwner.reply_to.reply_to_peer_id.channel_id;
+                        }
+                    } else
+                        if (messageObject.messageOwner.peer_id.channel_id != 0) {
+                        channelId = messageObject.messageOwner.peer_id.channel_id;
+                    }
+
+                    if (messageObject.replyMessageObject != null) {
+                        if (messageObject.replyMessageObject.messageOwner == null || messageObject.replyMessageObject.messageOwner.peer_id == null || messageObject.messageOwner instanceof TLRPC.TL_messageEmpty) {
+                            continue;
+                        }
+                        if (messageObject.replyMessageObject.messageOwner.peer_id.channel_id == channelId) {
+                            continue;
+                        }
+                    }
+
                     SparseArray<ArrayList<MessageObject>> sparseArray = replyMessageOwners.get(dialogId);
                     ArrayList<Integer> ids = dialogReplyMessagesIds.get(channelId);
                     if (sparseArray == null) {
@@ -4013,12 +4030,12 @@ public class MediaDataController extends BaseController {
                         ids = new ArrayList<>();
                         dialogReplyMessagesIds.put(channelId, ids);
                     }
-                    ArrayList<MessageObject> arrayList = sparseArray.get(messageObject.messageOwner.reply_to.reply_to_msg_id);
+                    ArrayList<MessageObject> arrayList = sparseArray.get(messageId);
                     if (arrayList == null) {
                         arrayList = new ArrayList<>();
-                        sparseArray.put(messageObject.messageOwner.reply_to.reply_to_msg_id, arrayList);
-                        if (!ids.contains(messageObject.messageOwner.reply_to.reply_to_msg_id)) {
-                            ids.add(messageObject.messageOwner.reply_to.reply_to_msg_id);
+                        sparseArray.put(messageId, arrayList);
+                        if (!ids.contains(messageId)) {
+                            ids.add(messageId);
                         }
                     }
                     arrayList.add(messageObject);
@@ -4090,6 +4107,12 @@ public class MediaDataController extends BaseController {
                                 getConnectionsManager().sendRequest(req, (response, error) -> {
                                     if (error == null) {
                                         TLRPC.messages_Messages messagesRes = (TLRPC.messages_Messages) response;
+                                        for (int i = 0; i < messagesRes.messages.size(); i++) {
+                                            TLRPC.Message message = messagesRes.messages.get(i);
+                                            if (message.dialog_id == 0) {
+                                                message.dialog_id = dialogId;
+                                            }
+                                        }
                                         MessageObject.fixMessagePeer(messagesRes.messages, channelId);
                                         ImageLoader.saveMessagesThumbs(messagesRes.messages);
                                         broadcastReplyMessages(messagesRes.messages, replyMessageOwners, messagesRes.users, messagesRes.chats, dialogId, false);

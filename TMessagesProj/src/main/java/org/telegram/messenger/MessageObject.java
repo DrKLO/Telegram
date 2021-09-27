@@ -2958,8 +2958,8 @@ public class MessageObject {
                                 : LocaleController.formatString("ChatThemeDisabled", R.string.ChatThemeDisabled, userName, emoticon);
                     } else {
                         messageText = isUserSelf
-                                ? LocaleController.formatString("ChangedChatThemeYou", R.string.ChatThemeChangedYou, emoticon)
-                                : LocaleController.formatString("ChangedChatThemeTo", R.string.ChatThemeChangedTo, userName, emoticon);
+                                ? LocaleController.formatString("ChatThemeChangedYou", R.string.ChatThemeChangedYou, emoticon)
+                                : LocaleController.formatString("ChatThemeChangedTo", R.string.ChatThemeChangedTo, userName, emoticon);
                     }
                 }
             }

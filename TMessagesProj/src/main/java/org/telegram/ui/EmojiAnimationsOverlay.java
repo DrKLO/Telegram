@@ -381,7 +381,6 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
                         lastTappedTime = System.currentTimeMillis();
                         timeIntervals.clear();
                         animationIndexes.clear();
-                        ;
                         timeIntervals.add(0L);
                         animationIndexes.add(animation);
                     } else {

@@ -1506,26 +1506,28 @@ public class LoginActivity extends BaseFragment {
             TLRPC.TL_help_getCountriesList req = new TLRPC.TL_help_getCountriesList();
             req.lang_code = "";
             getConnectionsManager().sendRequest(req, (response, error) -> {
-                if (error == null) {
-                    countriesArray.clear();
-                    codesMap.clear();
-                    phoneFormatMap.clear();
-                    TLRPC.TL_help_countriesList help_countriesList = (TLRPC.TL_help_countriesList) response;
-                    for (int i = 0; i < help_countriesList.countries.size(); i++) {
-                        TLRPC.TL_help_country c = help_countriesList.countries.get(i);
-                        for (int k = 0; k < c.country_codes.size(); k++) {
-                            CountrySelectActivity.Country countryWithCode = new CountrySelectActivity.Country();
-                            countryWithCode.name = c.default_name;
-                            countryWithCode.code = c.country_codes.get(k).country_code;
+                AndroidUtilities.runOnUIThread(() -> {
+                    if (error == null) {
+                        countriesArray.clear();
+                        codesMap.clear();
+                        phoneFormatMap.clear();
+                        TLRPC.TL_help_countriesList help_countriesList = (TLRPC.TL_help_countriesList) response;
+                        for (int i = 0; i < help_countriesList.countries.size(); i++) {
+                            TLRPC.TL_help_country c = help_countriesList.countries.get(i);
+                            for (int k = 0; k < c.country_codes.size(); k++) {
+                                CountrySelectActivity.Country countryWithCode = new CountrySelectActivity.Country();
+                                countryWithCode.name = c.default_name;
+                                countryWithCode.code = c.country_codes.get(k).country_code;
 
-                            countriesArray.add(countryWithCode);
-                            codesMap.put(c.country_codes.get(k).country_code, countryWithCode);
-                            if (c.country_codes.get(k).patterns.size() > 0) {
-                                phoneFormatMap.put(c.country_codes.get(k).country_code, c.country_codes.get(k).patterns.get(0));
+                                countriesArray.add(countryWithCode);
+                                codesMap.put(c.country_codes.get(k).country_code, countryWithCode);
+                                if (c.country_codes.get(k).patterns.size() > 0) {
+                                    phoneFormatMap.put(c.country_codes.get(k).country_code, c.country_codes.get(k).patterns.get(0));
+                                }
                             }
                         }
                     }
-                }
+                });
             }, ConnectionsManager.RequestFlagWithoutLogin | ConnectionsManager.RequestFlagFailOnServerErrors);
         }
 

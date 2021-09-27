@@ -48,6 +48,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import androidx.annotation.UiThread;
 import androidx.collection.LongSparseArray;
 
+import com.google.android.exoplayer2.util.Log;
+
 public class MessagesStorage extends BaseController {
 
     public interface IntCallback {
@@ -440,7 +442,12 @@ public class MessagesStorage extends BaseController {
                     }
                 }
                 if (version < LAST_DB_VERSION) {
-                    updateDbToLastVersion(version);
+                    try {
+                        updateDbToLastVersion(version);
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                        throw new RuntimeException("malformed");
+                    }
                 }
             }
         } catch (Exception e) {
@@ -460,6 +467,13 @@ public class MessagesStorage extends BaseController {
                 openDatabase(openTries == 1 ? 2 : 3);
             }
         }
+
+        AndroidUtilities.runOnUIThread(() -> {
+            if (databaseMigrationInProgress) {
+                databaseMigrationInProgress = false;
+                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.onDatabaseMigration, false);
+            }
+        });
         loadDialogFilters();
         loadUnreadMessages();
         loadPendingTasks();
@@ -1264,8 +1278,12 @@ public class MessagesStorage extends BaseController {
 
             SQLiteCursor cursor;
 
-            cursor = database.queryFinalized("SELECT mid, uid, read_state, send_state, date, data, out, ttl, media, replydata, imp, mention, forwards, replies_data, thread_reply_id FROM messages WHERE 1");
-
+            try {
+                cursor = database.queryFinalized("SELECT mid, uid, read_state, send_state, date, data, out, ttl, media, replydata, imp, mention, forwards, replies_data, thread_reply_id FROM messages WHERE 1");
+            } catch (Exception e) {
+                cursor = null;
+                FileLog.e(e);
+            }
             if (cursor != null) {
                 SQLitePreparedStatement statement = database.executeFast("REPLACE INTO messages_v2 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 int num = 0;

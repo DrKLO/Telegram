@@ -15814,13 +15814,16 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
     private void clearHistory(boolean overwrite, TLRPC.TL_updates_channelDifferenceTooLong differenceTooLong) {
         if (overwrite) {
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.d("clear history by overwrite firstLoading=" + firstLoading + " minMessage=" + minMessageId[0] + " topMessage=" + differenceTooLong.dialog.top_message);
+            }
             if (firstLoading) {
+                waitingForLoad.clear();
                 chatWasReset = true;
                 last_message_id = differenceTooLong.dialog.top_message;
                 createUnreadMessageAfterId = 0;
             } else {
                 if (differenceTooLong.dialog.top_message > minMessageId[0]) {
-                    last_message_id = Math.max(last_message_id, differenceTooLong.dialog.top_message);
                     createUnreadMessageAfterId = Math.max(minMessageId[0] + 1, differenceTooLong.dialog.read_inbox_max_id);
                 }
             }
@@ -23827,7 +23830,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             if (BuildVars.LOGS_ENABLED) {
                 FileLog.d("notify data set changed");
             }
-            if (animated && fragmentOpened && BuildVars.DEBUG_VERSION) {
+            if (animated && fragmentOpened) {
                 if (chatListView.getItemAnimator() != chatListItemAnimator) {
                     chatListView.setItemAnimator(chatListItemAnimator);
                 }

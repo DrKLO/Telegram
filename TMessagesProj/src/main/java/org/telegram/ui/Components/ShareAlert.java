@@ -2145,14 +2145,14 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                     itemsCount += recentSearchObjects.size();
                 }
                 lastFilledItem = itemsCount++;
-                return itemsCount;
+                return lastItemCont = itemsCount;
             } else {
                 firstEmptyViewCell = itemsCount++;
                 searchResultsStartRow = itemsCount;
                 itemsCount += (searchResult.size() + searchAdapterHelper.getLocalServerSearch().size());
                 if (itemsCount == 1) {
                     firstEmptyViewCell = -1;
-                    return 0;
+                    return lastItemCont = itemsCount = 0;
                 }
                 lastFilledItem = itemsCount++;
             }
