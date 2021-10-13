@@ -85,7 +85,7 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
 
     private TLRPC.Chat currentChat;
     private TLRPC.ChatFull info;
-    private int chatId;
+    private long chatId;
     private boolean isChannel;
 
     private boolean canCreatePublic = true;
@@ -104,12 +104,12 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
     private boolean ignoreTextChanges;
 
     private boolean isForcePublic;
-    HashMap<Integer, TLRPC.User> usersMap = new HashMap<>();
+    HashMap<Long, TLRPC.User> usersMap = new HashMap<>();
 
     private final static int done_button = 1;
     private InviteLinkBottomSheet inviteLinkBottomSheet;
 
-    public ChatEditTypeActivity(int id, boolean forcePublic) {
+    public ChatEditTypeActivity(long id, boolean forcePublic) {
         chatId = id;
         isForcePublic = forcePublic;
     }
@@ -388,11 +388,6 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
 
         manageLinksTextView = new TextCell(context);
         manageLinksTextView.setBackgroundDrawable(Theme.getSelectorDrawable(true));
-        manageLinksTextView.setOnClickListener(v -> {
-            if (invite == null) {
-                return;
-            }
-        });
         manageLinksTextView.setTextAndIcon(LocaleController.getString("ManageInviteLinks", R.string.ManageInviteLinks), R.drawable.actions_link, false);
         manageLinksTextView.setOnClickListener(v -> {
             ManageLinksActivity fragment = new ManageLinksActivity(chatId, 0, 0);

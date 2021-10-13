@@ -27,6 +27,7 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.Spannable;
 import android.text.Spanned;
+import android.text.TextUtils;
 import android.text.style.DynamicDrawableSpan;
 import android.text.style.ImageSpan;
 import android.view.View;
@@ -49,6 +50,7 @@ public class Emoji {
     public static HashMap<String, String> emojiColor = new HashMap<>();
     private static boolean recentEmojiLoaded;
     private static Runnable invalidateUiRunnable = () -> NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.emojiLoaded);
+    public static float emojiDrawingYOffset;
 
     private final static int MAX_RECENT_EMOJI_COUNT = 48;
 
@@ -189,6 +191,9 @@ public class Emoji {
     }
 
     public static boolean isValidEmoji(CharSequence code) {
+        if (TextUtils.isEmpty(code)) {
+            return false;
+        }
         DrawableInfo info = rects.get(code);
         if (info == null) {
             CharSequence newCode = EmojiData.emojiAliasMap.get(code);
@@ -540,7 +545,16 @@ public class Emoji {
                 restoreAlpha = true;
                 getDrawable().setAlpha(paint.getAlpha());
             }
+            boolean needRestore = false;
+            if (emojiDrawingYOffset != 0) {
+                needRestore = true;
+                canvas.save();
+                canvas.translate(0, emojiDrawingYOffset);
+            }
             super.draw(canvas, text, start, end, x, top, y, bottom, paint);
+            if (needRestore) {
+                canvas.restore();
+            }
             if (restoreAlpha) {
                 getDrawable().setAlpha(255);
             }

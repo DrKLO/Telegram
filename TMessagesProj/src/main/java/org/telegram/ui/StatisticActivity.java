@@ -140,7 +140,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
 
     public StatisticActivity(Bundle args) {
         super(args);
-        int chatId = args.getInt("chat_id");
+        long chatId = args.getLong("chat_id");
         isMegagroup = args.getBoolean("is_megagroup", false);
         this.chat = getMessagesController().getChatFull(chatId);
     }
@@ -212,7 +212,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                 if (recentPostsAll.size() > 0) {
                     int lastPostId = recentPostsAll.get(0).counters.msg_id;
                     int count = recentPostsAll.size();
-                    getMessagesStorage().getMessages(-chat.id, 0, false, count, lastPostId, 0, 0, classGuid, 0, true, false, 0, 0, true);
+                    getMessagesStorage().getMessages(-chat.id, 0, false, count, lastPostId, 0, 0, classGuid, 0, false, 0, 0, true);
                 }
 
                 AndroidUtilities.runOnUIThread(() -> {
@@ -509,7 +509,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                         presentFragment(activity);
                     } else if (i == 1) {
                         Bundle bundle = new Bundle();
-                        bundle.putInt("chat_id", chat.id);
+                        bundle.putLong("chat_id", chat.id);
                         bundle.putInt("message_id", messageObject.getId());
                         bundle.putBoolean("need_remove_previous_same_chat_activity", false);
                         ChatActivity chatActivity = new ChatActivity(bundle);
@@ -2458,7 +2458,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
 
     public static class MemberData {
         public TLRPC.User user;
-        int user_id;
+        long user_id;
         public String description;
 
         public static MemberData from(TLRPC.TL_statsGroupTopPoster poster, ArrayList<TLRPC.User> users) {
@@ -2515,7 +2515,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
             return data;
         }
 
-        public static TLRPC.User find(int user_id, ArrayList<TLRPC.User> users) {
+        public static TLRPC.User find(long user_id, ArrayList<TLRPC.User> users) {
             for (TLRPC.User user : users) {
                 if (user.id == user_id) {
                     return user;
@@ -2526,7 +2526,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
 
         public void onClick(BaseFragment fragment) {
             Bundle bundle = new Bundle();
-            bundle.putInt("user_id", user.id);
+            bundle.putLong("user_id", user.id);
             MessagesController.getInstance(UserConfig.selectedAccount).putUser(user, false);
             fragment.presentFragment(new ProfileActivity(bundle));
         }
@@ -2577,26 +2577,24 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                 TLRPC.TL_channels_getParticipant request = new TLRPC.TL_channels_getParticipant();
                 request.channel = MessagesController.getInstance(UserConfig.selectedAccount).getInputChannel(chat.id);
                 request.participant = MessagesController.getInputPeer(user);
-                ConnectionsManager.getInstance(UserConfig.selectedAccount).sendRequest(request, (response, error) -> {
-                    AndroidUtilities.runOnUIThread(() -> {
-                        if (fragment.isFinishing() || fragment.getFragmentView() == null) {
-                            return;
-                        }
-                        if (progressDialog[0] == null) {
-                            return;
-                        }
-                        if (error == null) {
-                            TLRPC.TL_channels_channelParticipant participant = (TLRPC.TL_channels_channelParticipant) response;
-                            TLRPC.TL_chatChannelParticipant chatChannelParticipant = new TLRPC.TL_chatChannelParticipant();
-                            chatChannelParticipant.channelParticipant = participant.participant;
-                            chatChannelParticipant.user_id = user.id;
-                            chat.participants.participants.add(0, chatChannelParticipant);
-                            onLongClick(chat, fragment, progressDialog);
-                        } else {
-                            onLongClick(chat, fragment, progressDialog, false);
-                        }
-                    });
-                });
+                ConnectionsManager.getInstance(UserConfig.selectedAccount).sendRequest(request, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                    if (fragment.isFinishing() || fragment.getFragmentView() == null) {
+                        return;
+                    }
+                    if (progressDialog[0] == null) {
+                        return;
+                    }
+                    if (error == null) {
+                        TLRPC.TL_channels_channelParticipant participant = (TLRPC.TL_channels_channelParticipant) response;
+                        TLRPC.TL_chatChannelParticipant chatChannelParticipant = new TLRPC.TL_chatChannelParticipant();
+                        chatChannelParticipant.channelParticipant = participant.participant;
+                        chatChannelParticipant.user_id = user.id;
+                        chat.participants.participants.add(0, chatChannelParticipant);
+                        onLongClick(chat, fragment, progressDialog);
+                    } else {
+                        onLongClick(chat, fragment, progressDialog, false);
+                    }
+                }));
                 return;
             }
 
@@ -2688,8 +2686,8 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                     onClick(fragment);
                 } else {
                     Bundle bundle = new Bundle();
-                    bundle.putInt("chat_id", chat.id);
-                    bundle.putInt("search_from_user_id", user.id);
+                    bundle.putLong("chat_id", chat.id);
+                    bundle.putLong("search_from_user_id", user.id);
                     fragment.presentFragment(new ChatActivity(bundle));
                 }
             });

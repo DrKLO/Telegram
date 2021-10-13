@@ -366,10 +366,10 @@ void TL_restrictionReason::serializeToStream(NativeByteBuffer *stream) {
 User *User::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
     User *result = nullptr;
     switch (constructor) {
-        case 0x200250ba:
+        case 0xd3bc4b7a:
             result = new TL_userEmpty();
             break;
-        case 0x938458c1:
+        case 0x3ff6ecb0:
             result = new TL_user();
             break;
         default:
@@ -382,17 +382,17 @@ User *User::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_
 }
 
 void TL_userEmpty::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
-    id = stream->readInt32(&error);
+    id = stream->readInt64(&error);
 }
 
 void TL_userEmpty::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(constructor);
-    stream->writeInt32(id);
+    stream->writeInt64(id);
 }
 
 void TL_user::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
     flags = stream->readInt32(&error);
-    id = stream->readInt32(&error);
+    id = stream->readInt64(&error);
     if ((flags & 1) != 0) {
         access_hash = stream->readInt64(&error);
     }
@@ -444,7 +444,7 @@ void TL_user::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &er
 void TL_user::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(constructor);
     stream->writeInt32(flags);
-    stream->writeInt32(id);
+    stream->writeInt64(id);
     if ((flags & 1) != 0) {
         stream->writeInt64(access_hash);
     }
@@ -491,19 +491,19 @@ InputPeer *InputPeer::TLdeserialize(NativeByteBuffer *stream, uint32_t construct
         case 0x7da07ec9:
             result = new TL_inputPeerSelf();
             break;
-        case 0x7b8e7de6:
+        case 0xdde8a54c:
             result = new TL_inputPeerUser();
             break;
-        case 0x179be863:
+        case 0x35a95cb9:
             result = new TL_inputPeerChat();
             break;
-        case 0x17bae2e6:
+        case 0xa87b0a1c:
             result = new TL_inputPeerUserFromMessage();
             break;
-        case 0x9c95f7bb:
+        case 0xbd2a0840:
             result = new TL_inputPeerChannelFromMessage();
             break;
-        case 0x20adaef8:
+        case 0x27bcbbfc:
             result = new TL_inputPeerChannel();
             break;
         case 0x7f3b18ea:
@@ -523,59 +523,59 @@ void TL_inputPeerSelf::serializeToStream(NativeByteBuffer *stream) {
 }
 
 void TL_inputPeerUser::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
-    user_id = stream->readInt32(&error);
+    user_id = stream->readInt64(&error);
     access_hash = stream->readInt64(&error);
 }
 
 void TL_inputPeerUser::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(constructor);
-    stream->writeInt32(user_id);
+    stream->writeInt64(user_id);
     stream->writeInt64(access_hash);
 }
 
 void TL_inputPeerChat::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
-    chat_id = stream->readInt32(&error);
+    chat_id = stream->readInt64(&error);
 }
 
 void TL_inputPeerChat::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(constructor);
-    stream->writeInt32(chat_id);
+    stream->writeInt64(chat_id);
 }
 
 void TL_inputPeerUserFromMessage::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
     peer = std::unique_ptr<InputPeer>(InputPeer::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error));
     msg_id = stream->readInt32(&error);
-    user_id = stream->readInt32(&error);
+    user_id = stream->readInt64(&error);
 }
 
 void TL_inputPeerUserFromMessage::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(constructor);
     peer->serializeToStream(stream);
     stream->writeInt32(msg_id);
-    stream->writeInt32(user_id);
+    stream->writeInt64(user_id);
 }
 
 void TL_inputPeerChannelFromMessage::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
     peer = std::unique_ptr<InputPeer>(InputPeer::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error));
     msg_id = stream->readInt32(&error);
-    channel_id = stream->readInt32(&error);
+    channel_id = stream->readInt64(&error);
 }
 
 void TL_inputPeerChannelFromMessage::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(constructor);
     peer->serializeToStream(stream);
     stream->writeInt32(msg_id);
-    stream->writeInt32(channel_id);
+    stream->writeInt64(channel_id);
 }
 
 void TL_inputPeerChannel::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
-    channel_id = stream->readInt32(&error);
+    channel_id = stream->readInt64(&error);
     access_hash = stream->readInt64(&error);
 }
 
 void TL_inputPeerChannel::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(constructor);
-    stream->writeInt32(channel_id);
+    stream->writeInt64(channel_id);
     stream->writeInt64(access_hash);
 }
 
@@ -589,13 +589,13 @@ InputUser *InputUser::TLdeserialize(NativeByteBuffer *stream, uint32_t construct
         case 0xf7c1b13f:
             result = new TL_inputUserSelf();
             break;
-        case 0xd8292816:
+        case 0xf21158c6:
             result = new TL_inputUser();
             break;
         case 0xb98886cf:
             result = new TL_inputUserEmpty();
             break;
-        case 0x2d117597:
+        case 0x1da448e2:
             result = new TL_inputUserFromMessage();
             break;
         default:
@@ -612,13 +612,13 @@ void TL_inputUserSelf::serializeToStream(NativeByteBuffer *stream) {
 }
 
 void TL_inputUser::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
-    user_id = stream->readInt32(&error);
+    user_id = stream->readInt64(&error);
     access_hash = stream->readInt64(&error);
 }
 
 void TL_inputUser::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(constructor);
-    stream->writeInt32(user_id);
+    stream->writeInt64(user_id);
     stream->writeInt64(access_hash);
 }
 
@@ -629,14 +629,14 @@ void TL_inputUserEmpty::serializeToStream(NativeByteBuffer *stream) {
 void TL_inputUserFromMessage::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
     peer = std::unique_ptr<InputPeer>(InputPeer::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error));
     msg_id = stream->readInt32(&error);
-    user_id = stream->readInt32(&error);
+    user_id = stream->readInt64(&error);
 }
 
 void TL_inputUserFromMessage::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(constructor);
     peer->serializeToStream(stream);
     stream->writeInt32(msg_id);
-    stream->writeInt32(user_id);
+    stream->writeInt64(user_id);
 }
 
 MessageEntity *MessageEntity::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
@@ -666,7 +666,7 @@ MessageEntity *MessageEntity::TLdeserialize(NativeByteBuffer *stream, uint32_t c
         case 0xfa04579d:
             result = new TL_messageEntityMention();
             break;
-        case 0x352dca58:
+        case 0xdc7b1140:
             result = new TL_messageEntityMentionName();
             break;
         case 0x208e68c9:
@@ -800,14 +800,14 @@ void TL_messageEntityMention::serializeToStream(NativeByteBuffer *stream) {
 void TL_messageEntityMentionName::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
     offset = stream->readInt32(&error);
     length = stream->readInt32(&error);
-    user_id = stream->readInt32(&error);
+    user_id = stream->readInt64(&error);
 }
 
 void TL_messageEntityMentionName::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(constructor);
     stream->writeInt32(offset);
     stream->writeInt32(length);
-    stream->writeInt32(user_id);
+    stream->writeInt64(user_id);
 }
 
 void TL_inputMessageEntityMentionName::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
@@ -1045,7 +1045,7 @@ TL_auth_exportedAuthorization *TL_auth_exportedAuthorization::TLdeserialize(Nati
 }
 
 void TL_auth_exportedAuthorization::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
-    id = stream->readInt32(&error);
+    id = stream->readInt64(&error);
     bytes = std::unique_ptr<ByteArray>(stream->readByteArray(&error));
 }
 
@@ -1072,7 +1072,7 @@ TLObject *TL_auth_importAuthorization::deserializeResponse(NativeByteBuffer *str
 
 void TL_auth_importAuthorization::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(constructor);
-    stream->writeInt32(id);
+    stream->writeInt64(id);
     stream->writeByteArray(bytes.get());
 }
 

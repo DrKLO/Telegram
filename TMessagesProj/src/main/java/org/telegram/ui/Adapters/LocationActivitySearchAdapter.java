@@ -33,7 +33,7 @@ public class LocationActivitySearchAdapter extends BaseLocationAdapter {
 
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        return new RecyclerListView.Holder(new LocationCell(mContext, false));
+        return new RecyclerListView.Holder(new LocationCell(mContext, false, null));
     }
 
     @Override

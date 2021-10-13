@@ -28,28 +28,30 @@ public class LocationPoweredCell extends FrameLayout {
     private TextView textView;
     private TextView textView2;
     private ImageView imageView;
+    private final Theme.ResourcesProvider resourcesProvider;
 
-    public LocationPoweredCell(Context context) {
+    public LocationPoweredCell(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
 
         LinearLayout linearLayout = new LinearLayout(context);
         addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
 
         textView = new TextView(context);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3));
+        textView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText3));
         textView.setText("Powered by");
         linearLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
         imageView = new ImageView(context);
         imageView.setImageResource(R.drawable.foursquare);
-        imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3), PorterDuff.Mode.MULTIPLY));
+        imageView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteGrayText3), PorterDuff.Mode.MULTIPLY));
         imageView.setPadding(0, AndroidUtilities.dp(2), 0, 0);
         linearLayout.addView(imageView, LayoutHelper.createLinear(35, LayoutHelper.WRAP_CONTENT));
 
         textView2 = new TextView(context);
         textView2.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        textView2.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3));
+        textView2.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText3));
         textView2.setText("Foursquare");
         linearLayout.addView(textView2, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
     }
@@ -57,5 +59,10 @@ public class LocationPoweredCell extends FrameLayout {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(56), MeasureSpec.EXACTLY));
+    }
+
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
     }
 }

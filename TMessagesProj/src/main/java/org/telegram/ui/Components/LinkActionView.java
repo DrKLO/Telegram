@@ -6,14 +6,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
@@ -75,7 +73,7 @@ public class LinkActionView extends LinearLayout {
 
     float[] point = new float[2];
 
-    public LinkActionView(Context context, BaseFragment fragment, BottomSheet bottomSheet, int chatId, boolean permanent, boolean isChannel) {
+    public LinkActionView(Context context, BaseFragment fragment, BottomSheet bottomSheet, long chatId, boolean permanent, boolean isChannel) {
         super(context);
         this.fragment = fragment;
         this.permanent = permanent;
@@ -503,7 +501,7 @@ public class LinkActionView extends LinearLayout {
         }
     }
 
-    public void loadUsers(TLRPC.TL_chatInviteExported invite, int chatId) {
+    public void loadUsers(TLRPC.TL_chatInviteExported invite, long chatId) {
         if (invite == null) {
             setUsers(0, null);
             return;

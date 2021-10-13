@@ -41,9 +41,15 @@ public class SlideChooseView extends View {
     private int selectedIndex;
 
     private Callback callback;
+    private final Theme.ResourcesProvider resourcesProvider;
 
     public SlideChooseView(Context context) {
+        this(context, null);
+    }
+
+    public SlideChooseView(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
 
         paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
@@ -170,17 +176,17 @@ public class SlideChooseView extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        textPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        textPaint.setColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText));
         int cy = getMeasuredHeight() / 2 + AndroidUtilities.dp(11);
 
         for (int a = 0; a < optionsStr.length; a++) {
             int cx = sideSide + (lineSize + gapSize * 2 + circleSize) * a + circleSize / 2;
             if (a <= selectedIndex) {
-                int color = Theme.getColor(Theme.key_switchTrackChecked);
+                int color = getThemedColor(Theme.key_switchTrackChecked);
                 paint.setColor(color);
                 linePaint.setColor(color);
             } else {
-                int color = Theme.getColor(Theme.key_switchTrack);
+                int color = getThemedColor(Theme.key_switchTrack);
                 paint.setColor(color);
                 linePaint.setColor(color);
             }
@@ -235,6 +241,12 @@ public class SlideChooseView extends View {
     public int getSelectedIndex() {
         return selectedIndex;
     }
+
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
+    }
+
 
     public interface Callback {
         void onOptionSelected(int index);

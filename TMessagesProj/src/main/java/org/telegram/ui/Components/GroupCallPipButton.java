@@ -407,7 +407,13 @@ public class GroupCallPipButton extends FrameLayout implements NotificationCente
             }
             wavesEnter = showWaves ? 1f : 0f;
         }
-        String contentDescription = LocaleController.getString("VoipGroupVoiceChat", R.string.VoipGroupVoiceChat);
+        String contentDescription;
+        VoIPService voIPService = VoIPService.getSharedInstance();
+        if (voIPService != null && ChatObject.isChannelOrGiga(voIPService.getChat())) {
+            contentDescription = LocaleController.getString("VoipChannelVoiceChat", R.string.VoipChannelVoiceChat);
+        } else {
+            contentDescription = LocaleController.getString("VoipGroupVoiceChat", R.string.VoipGroupVoiceChat);
+        }
         if (state == MUTE_BUTTON_STATE_UNMUTE) {
             contentDescription +=  ", " + LocaleController.getString("VoipTapToMute", R.string.VoipTapToMute);
         } else if (state == MUTE_BUTTON_STATE_RECONNECT) {

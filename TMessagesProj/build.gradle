@@ -25,7 +25,7 @@ dependencies {
     compileOnly 'org.checkerframework:checker-qual:2.5.2'
     compileOnly 'org.checkerframework:checker-compat-qual:2.5.0'
     implementation 'com.google.firebase:firebase-messaging:22.0.0'
-    implementation 'com.google.firebase:firebase-config:21.0.0'
+    implementation 'com.google.firebase:firebase-config:21.0.1'
     implementation 'com.google.firebase:firebase-datatransport:18.0.1'
     implementation 'com.google.firebase:firebase-appindexing:20.0.0'
     implementation 'com.google.android.gms:play-services-maps:17.0.1'
@@ -299,7 +299,7 @@ android {
         }
     }
 
-    defaultConfig.versionCode = 2390
+    defaultConfig.versionCode = 2432
 
     applicationVariants.all { variant ->
         variant.outputs.all { output ->
@@ -318,7 +318,7 @@ android {
     defaultConfig {
         minSdkVersion 16
         targetSdkVersion 29
-        versionName "7.9.3"
+        versionName "8.1.2"
 
         vectorDrawables.generatedDensities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi']
 

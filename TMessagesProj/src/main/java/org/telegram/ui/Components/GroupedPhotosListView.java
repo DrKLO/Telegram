@@ -65,7 +65,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
     public interface GroupedPhotosListViewDelegate {
         int getCurrentIndex();
         int getCurrentAccount();
-        int getAvatarsDialogId();
+        long getAvatarsDialogId();
         int getSlideshowMessageId();
         ArrayList<ImageLocation> getImagesArrLocations();
         ArrayList<MessageObject> getImagesArr();
@@ -74,6 +74,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
         void setCurrentIndex(int index);
         void onShowAnimationStart();
         void onStopScrolling();
+        boolean validGroupId(long groupId);
     }
 
     public GroupedPhotosListView(Context context) {
@@ -122,9 +123,10 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
         } else if (imagesArr != null && !imagesArr.isEmpty()) {
             MessageObject messageObject = imagesArr.get(currentIndex);
             currentObject = messageObject;
-            if (messageObject.getGroupIdForUse() != currentGroupId) {
+            long localGroupId = delegate.validGroupId(messageObject.getGroupIdForUse()) ? messageObject.getGroupIdForUse() : 0;
+            if (localGroupId != currentGroupId) {
                 changed = true;
-                currentGroupId = messageObject.getGroupIdForUse();
+                currentGroupId = localGroupId;
             }
             if (currentGroupId != 0) {
                 hasPhotos = true;

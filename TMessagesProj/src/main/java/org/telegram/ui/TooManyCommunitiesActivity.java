@@ -67,7 +67,7 @@ public class TooManyCommunitiesActivity extends BaseFragment {
 
     private int buttonAnimation;
 
-    private Set<Integer> selectedIds = new HashSet<>();
+    private Set<Long> selectedIds = new HashSet<>();
 
     private TooManyCommunitiesHintCell hintCell;
 

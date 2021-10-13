@@ -33,6 +33,7 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
@@ -379,7 +380,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                 RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(position);
                 if (!enabled) {
                     getNotificationsController().setGlobalNotificationsEnabled(currentType, 0);
-                    checkCell.setChecked(!enabled);
+                    checkCell.setChecked(true);
                     if (holder != null) {
                         adapter.onBindViewHolder(holder, position);
                     }
@@ -602,14 +603,14 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
             ArrayList<NotificationsSettingsActivity.NotificationException> channelsResult = new ArrayList<>();
             LongSparseArray<NotificationsSettingsActivity.NotificationException> waitingForLoadExceptions = new LongSparseArray<>();
 
-            ArrayList<Integer> usersToLoad = new ArrayList<>();
-            ArrayList<Integer> chatsToLoad = new ArrayList<>();
+            ArrayList<Long> usersToLoad = new ArrayList<>();
+            ArrayList<Long> chatsToLoad = new ArrayList<>();
             ArrayList<Integer> encryptedChatsToLoad = new ArrayList<>();
 
             ArrayList<TLRPC.User> users = new ArrayList<>();
             ArrayList<TLRPC.Chat> chats = new ArrayList<>();
             ArrayList<TLRPC.EncryptedChat> encryptedChats = new ArrayList<>();
-            int selfId = getUserConfig().clientUserId;
+            long selfId = getUserConfig().clientUserId;
 
             SharedPreferences preferences = getNotificationsSettings();
             Map<String, ?> values = preferences.getAll();
@@ -631,37 +632,11 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                             }
                         }
 
-                        int lower_id = (int) did;
-                        int high_id = (int) (did << 32);
-                        if (lower_id != 0) {
-                            if (lower_id > 0) {
-                                TLRPC.User user = getMessagesController().getUser(lower_id);
-                                if (user == null) {
-                                    usersToLoad.add(lower_id);
-                                    waitingForLoadExceptions.put(did, exception);
-                                } else if (user.deleted) {
-                                    continue;
-                                }
-                                usersResult.add(exception);
-                            } else {
-                                TLRPC.Chat chat = getMessagesController().getChat(-lower_id);
-                                if (chat == null) {
-                                    chatsToLoad.add(-lower_id);
-                                    waitingForLoadExceptions.put(did, exception);
-                                    continue;
-                                } else if (chat.left || chat.kicked || chat.migrated_to != null) {
-                                    continue;
-                                }
-                                if (ChatObject.isChannel(chat) && !chat.megagroup) {
-                                    channelsResult.add(exception);
-                                } else {
-                                    chatsResult.add(exception);
-                                }
-                            }
-                        } else if (high_id != 0) {
-                            TLRPC.EncryptedChat encryptedChat = getMessagesController().getEncryptedChat(high_id);
+                        if (DialogObject.isEncryptedDialog(did)) {
+                            int encryptedChatId = DialogObject.getEncryptedChatId(did);
+                            TLRPC.EncryptedChat encryptedChat = getMessagesController().getEncryptedChat(encryptedChatId);
                             if (encryptedChat == null) {
-                                encryptedChatsToLoad.add(high_id);
+                                encryptedChatsToLoad.add(encryptedChatId);
                                 waitingForLoadExceptions.put(did, exception);
                             } else {
                                 TLRPC.User user = getMessagesController().getUser(encryptedChat.user_id);
@@ -673,6 +648,29 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                                 }
                             }
                             usersResult.add(exception);
+                        } else if (DialogObject.isUserDialog(did)) {
+                            TLRPC.User user = getMessagesController().getUser(did);
+                            if (user == null) {
+                                usersToLoad.add(did);
+                                waitingForLoadExceptions.put(did, exception);
+                            } else if (user.deleted) {
+                                continue;
+                            }
+                            usersResult.add(exception);
+                        } else {
+                            TLRPC.Chat chat = getMessagesController().getChat(-did);
+                            if (chat == null) {
+                                chatsToLoad.add(-did);
+                                waitingForLoadExceptions.put(did, exception);
+                                continue;
+                            } else if (chat.left || chat.kicked || chat.migrated_to != null) {
+                                continue;
+                            }
+                            if (ChatObject.isChannel(chat) && !chat.megagroup) {
+                                channelsResult.add(exception);
+                            } else {
+                                chatsResult.add(exception);
+                            }
                         }
                     }
                 }
@@ -716,11 +714,11 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                 }
                 for (int a = 0, size = encryptedChats.size(); a < size; a++) {
                     TLRPC.EncryptedChat encryptedChat = encryptedChats.get(a);
-                    waitingForLoadExceptions.remove(((long) encryptedChat.id) << 32);
+                    waitingForLoadExceptions.remove(DialogObject.makeEncryptedDialogId(encryptedChat.id));
                 }
                 for (int a = 0, size = waitingForLoadExceptions.size(); a < size; a++) {
                     long did = waitingForLoadExceptions.keyAt(a);
-                    if ((int) did < 0) {
+                    if (DialogObject.isChatDialog(did)) {
                         chatsResult.remove(waitingForLoadExceptions.valueAt(a));
                         channelsResult.remove(waitingForLoadExceptions.valueAt(a));
                     } else {
@@ -930,40 +928,34 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                     for (int a = 0; a < contactsCopy.size(); a++) {
                         NotificationsSettingsActivity.NotificationException exception = contactsCopy.get(a);
 
-                        int lower_id = (int) exception.did;
-                        int high_id = (int) (exception.did >> 32);
                         TLObject object = null;
 
-                        if (lower_id != 0) {
-                            if (lower_id > 0) {
-                                TLRPC.User user = getMessagesController().getUser(lower_id);
-                                if (user.deleted) {
-                                    continue;
-                                }
-                                if (user != null) {
-                                    names[0] = ContactsController.formatName(user.first_name, user.last_name);
-                                    names[1] = user.username;
-                                    object = user;
-                                }
-                            } else {
-                                TLRPC.Chat chat = getMessagesController().getChat(-lower_id);
-                                if (chat != null) {
-                                    if (chat.left || chat.kicked || chat.migrated_to != null) {
-                                        continue;
-                                    }
-                                    names[0] = chat.title;
-                                    names[1] = chat.username;
-                                    object = chat;
-                                }
-                            }
-                        } else {
-                            TLRPC.EncryptedChat encryptedChat = getMessagesController().getEncryptedChat(high_id);
+                        if (DialogObject.isEncryptedDialog(exception.did)) {
+                            TLRPC.EncryptedChat encryptedChat = getMessagesController().getEncryptedChat(DialogObject.getEncryptedChatId(exception.did));
                             if (encryptedChat != null) {
                                 TLRPC.User user = getMessagesController().getUser(encryptedChat.user_id);
                                 if (user != null) {
                                     names[0] = ContactsController.formatName(user.first_name, user.last_name);
                                     names[1] = user.username;
                                 }
+                            }
+                        } else if (DialogObject.isUserDialog(exception.did)) {
+                            TLRPC.User user = getMessagesController().getUser(exception.did);
+                            if (user == null || user.deleted) {
+                                continue;
+                            }
+                            names[0] = ContactsController.formatName(user.first_name, user.last_name);
+                            names[1] = user.username;
+                            object = user;
+                        } else {
+                            TLRPC.Chat chat = getMessagesController().getChat(-exception.did);
+                            if (chat != null) {
+                                if (chat.left || chat.kicked || chat.migrated_to != null) {
+                                    continue;
+                                }
+                                names[0] = chat.title;
+                                names[1] = chat.username;
+                                object = chat;
                             }
                         }
 

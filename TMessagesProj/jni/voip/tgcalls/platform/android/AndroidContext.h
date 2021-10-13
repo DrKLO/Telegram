@@ -19,7 +19,8 @@ public:
 
     void setJavaInstance(JNIEnv *env, jobject instance);
 
-    std::shared_ptr<BroadcastPartTask> streamTask;
+    std::vector<std::shared_ptr<BroadcastPartTask>> audioStreamTasks;
+    std::vector<std::shared_ptr<BroadcastPartTask>> videoStreamTasks;
     std::vector<std::shared_ptr<RequestMediaChannelDescriptionTask>> descriptionTasks;
 
 private:

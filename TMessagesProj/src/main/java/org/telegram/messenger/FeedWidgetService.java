@@ -35,7 +35,6 @@ class FeedRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactory, N
 
     private ArrayList<MessageObject> messages = new ArrayList<>();
     private Context mContext;
-    private int appWidgetId;
     private long dialogId;
     private int classGuid;
     private AccountInstance accountInstance;
@@ -43,7 +42,7 @@ class FeedRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactory, N
 
     public FeedRemoteViewsFactory(Context context, Intent intent) {
         mContext = context;
-        appWidgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID);
+        int appWidgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID);
         SharedPreferences preferences = context.getSharedPreferences("shortcut_widget", Activity.MODE_PRIVATE);
         int accountId = preferences.getInt("account" + appWidgetId, -1);
         if (accountId >= 0) {
@@ -107,7 +106,7 @@ class FeedRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactory, N
         }
 
         Bundle extras = new Bundle();
-        extras.putInt("chatId", (int) -messageObject.getDialogId());
+        extras.putLong("chatId", -messageObject.getDialogId());
         extras.putInt("message_id", messageObject.getId());
         extras.putInt("currentAccount", accountInstance.getCurrentAccount());
 
@@ -144,7 +143,7 @@ class FeedRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactory, N
             if (classGuid == 0) {
                 classGuid = ConnectionsManager.generateClassGuid();
             }
-            accountInstance.getMessagesController().loadMessages(dialogId, 0, false, 20, 0, 0, true, 0, classGuid, 0, 0, true, 0, 0, 0, 1);
+            accountInstance.getMessagesController().loadMessages(dialogId, 0, false, 20, 0, 0, true, 0, classGuid, 0, 0, 0, 0, 0, 1);
         });
         try {
             countDownLatch.await();

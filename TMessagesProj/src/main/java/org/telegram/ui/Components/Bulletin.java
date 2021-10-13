@@ -27,7 +27,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.CallSuper;
-import androidx.annotation.ColorInt;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -63,6 +62,8 @@ public final class Bulletin {
     public static final int TYPE_ERROR = 1;
     public static final int TYPE_BIO_CHANGED = 2;
     public static final int TYPE_NAME_CHANGED = 3;
+
+    public int tag;
 
     public static Bulletin make(@NonNull FrameLayout containerLayout, @NonNull Layout contentLayout, int duration) {
         return new Bulletin(containerLayout, contentLayout, duration);
@@ -108,7 +109,7 @@ public final class Bulletin {
     private final ParentLayout parentLayout;
     private final FrameLayout containerLayout;
     private final Runnable hideRunnable = this::hide;
-    private final int duration;
+    private int duration;
 
     private boolean showing;
     private boolean canHide;
@@ -140,6 +141,10 @@ public final class Bulletin {
         return visibleBulletin;
     }
 
+    public void setDuration(int duration) {
+        this.duration = duration;
+    }
+
     public Bulletin show() {
         if (!showing && containerLayout != null) {
             showing = true;
@@ -161,7 +166,7 @@ public final class Bulletin {
                     if (showing) {
                         layout.onShow();
                         currentDelegate = delegates.get(containerLayout);
-                        currentBottomOffset = currentDelegate != null ? currentDelegate.getBottomOffset() : 0;
+                        currentBottomOffset = currentDelegate != null ? currentDelegate.getBottomOffset(tag) : 0;
                         if (currentDelegate != null) {
                             currentDelegate.onShow(Bulletin.this);
                         }
@@ -303,7 +308,9 @@ public final class Bulletin {
     }
 
     public void updatePosition() {
-        layout.updatePosition();
+        if (layout != null) {
+            layout.updatePosition();
+        }
     }
 
     @Retention(SOURCE)
@@ -464,7 +471,7 @@ public final class Bulletin {
 
     public interface Delegate {
 
-        default int getBottomOffset() {
+        default int getBottomOffset(int tag) {
             return 0;
         }
 
@@ -488,25 +495,26 @@ public final class Bulletin {
         public float inOutOffset;
 
         protected Bulletin bulletin;
+        Drawable background;
 
         @WidthDef
         private int wideScreenWidth = ViewGroup.LayoutParams.WRAP_CONTENT;
         @GravityDef
         private int wideScreenGravity = Gravity.CENTER_HORIZONTAL;
+        private final Theme.ResourcesProvider resourcesProvider;
 
-        public Layout(@NonNull Context context) {
-            this(context, Theme.getColor(Theme.key_undo_background));
-        }
-
-        Drawable background;
-
-        public Layout(@NonNull Context context, @ColorInt int backgroundColor) {
+        public Layout(@NonNull Context context, Theme.ResourcesProvider resourcesProvider) {
             super(context);
+            this.resourcesProvider = resourcesProvider;
             setMinimumHeight(AndroidUtilities.dp(48));
-            background = Theme.createRoundRectDrawable(AndroidUtilities.dp(6), backgroundColor);
+            setBackground(getThemedColor(Theme.key_undo_background));
             updateSize();
             setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(8),  AndroidUtilities.dp(8),  AndroidUtilities.dp(8));
             setWillNotDraw(false);
+        }
+
+        protected void setBackground(int color) {
+            background = Theme.createRoundRectDrawable(AndroidUtilities.dp(6), color);
         }
 
         public final static FloatPropertyCompat<Layout> IN_OUT_OFFSET_Y = new FloatPropertyCompat<Layout>("offsetY") {
@@ -659,7 +667,7 @@ public final class Bulletin {
         public void updatePosition() {
             float tranlsation = 0;
             if (delegate != null) {
-                tranlsation += delegate.getBottomOffset() ;
+                tranlsation += delegate.getBottomOffset(bulletin != null ? bulletin.tag : 0) ;
             }
             setTranslationY(-tranlsation + inOutOffset);
         }
@@ -822,7 +830,7 @@ public final class Bulletin {
         protected void dispatchDraw(Canvas canvas) {
             background.setBounds(AndroidUtilities.dp(8), AndroidUtilities.dp(8), getMeasuredWidth() - AndroidUtilities.dp(8), getMeasuredHeight() - AndroidUtilities.dp(8));
             if (transitionRunning && delegate != null) {
-                int clipBottom = ((View)getParent()).getMeasuredHeight() - delegate.getBottomOffset();
+                int clipBottom = ((View)getParent()).getMeasuredHeight() - delegate.getBottomOffset(bulletin.tag);
                 int viewBottom = (int) (getY() + getMeasuredHeight());
                 canvas.save();
                 canvas.clipRect(0, 0, getMeasuredWidth(), getMeasuredHeight() - (viewBottom - clipBottom));
@@ -836,6 +844,10 @@ public final class Bulletin {
             }
         }
 
+        protected int getThemedColor(String key) {
+            Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+            return color != null ? color : Theme.getColor(key);
+        }
         //endregion
     }
 
@@ -846,12 +858,8 @@ public final class Bulletin {
 
         private int childrenMeasuredWidth;
 
-        public ButtonLayout(@NonNull Context context) {
-            super(context);
-        }
-
-        public ButtonLayout(@NonNull Context context, int backgroundColor) {
-            super(context, backgroundColor);
+        public ButtonLayout(@NonNull Context context, Theme.ResourcesProvider resourcesProvider) {
+            super(context, resourcesProvider);
         }
 
         @Override
@@ -897,10 +905,10 @@ public final class Bulletin {
         public final ImageView imageView;
         public final TextView textView;
 
-        public SimpleLayout(@NonNull Context context) {
-            super(context);
+        public SimpleLayout(@NonNull Context context, Theme.ResourcesProvider resourcesProvider) {
+            super(context, resourcesProvider);
 
-            final int undoInfoColor = Theme.getColor(Theme.key_undo_infoColor);
+            final int undoInfoColor = getThemedColor(Theme.key_undo_infoColor);
 
             imageView = new ImageView(context);
             imageView.setColorFilter(new PorterDuffColorFilter(undoInfoColor, PorterDuff.Mode.MULTIPLY));
@@ -922,10 +930,10 @@ public final class Bulletin {
         public final TextView titleTextView;
         public final TextView subtitleTextView;
 
-        public TwoLineLayout(@NonNull Context context) {
-            super(context);
+        public TwoLineLayout(@NonNull Context context, Theme.ResourcesProvider resourcesProvider) {
+            super(context, resourcesProvider);
 
-            final int undoInfoColor = Theme.getColor(Theme.key_undo_infoColor);
+            final int undoInfoColor = getThemedColor(Theme.key_undo_infoColor);
 
             addView(imageView = new BackupImageView(context), LayoutHelper.createFrameRelatively(29, 29, Gravity.START | Gravity.CENTER_VERTICAL, 12, 12, 12, 12));
 
@@ -958,19 +966,16 @@ public final class Bulletin {
 
         private final int textColor;
 
-        public TwoLineLottieLayout(@NonNull Context context) {
-            this(context, Theme.getColor(Theme.key_undo_background), Theme.getColor(Theme.key_undo_infoColor));
-        }
-
-        public TwoLineLottieLayout(@NonNull Context context, @ColorInt int backgroundColor, @ColorInt int textColor) {
-            super(context, backgroundColor);
-            this.textColor = textColor;
+        public TwoLineLottieLayout(@NonNull Context context, Theme.ResourcesProvider resourcesProvider) {
+            super(context, resourcesProvider);
+            this.textColor = getThemedColor(Theme.key_undo_infoColor);
+            setBackground(getThemedColor(Theme.key_undo_background));
 
             imageView = new RLottieImageView(context);
             imageView.setScaleType(ImageView.ScaleType.CENTER);
             addView(imageView, LayoutHelper.createFrameRelatively(56, 48, Gravity.START | Gravity.CENTER_VERTICAL));
 
-            final int undoInfoColor = Theme.getColor(Theme.key_undo_infoColor);
+            final int undoInfoColor = getThemedColor(Theme.key_undo_infoColor);
 
             final LinearLayout linearLayout = new LinearLayout(context);
             linearLayout.setOrientation(LinearLayout.VERTICAL);
@@ -1010,18 +1015,13 @@ public final class Bulletin {
 
     public static class LottieLayout extends ButtonLayout {
 
-        public final RLottieImageView imageView;
-        public final TextView textView;
+        public RLottieImageView imageView;
+        public TextView textView;
 
-        private final int textColor;
+        private int textColor;
 
-        public LottieLayout(@NonNull Context context) {
-            this(context, Theme.getColor(Theme.key_undo_background), Theme.getColor(Theme.key_undo_infoColor));
-        }
-
-        public LottieLayout(@NonNull Context context, @ColorInt int backgroundColor, @ColorInt int textColor) {
-            super(context, backgroundColor);
-            this.textColor = textColor;
+        public LottieLayout(@NonNull Context context, Theme.ResourcesProvider resourcesProvider) {
+            super(context, resourcesProvider);
 
             imageView = new RLottieImageView(context);
             imageView.setScaleType(ImageView.ScaleType.CENTER);
@@ -1029,12 +1029,25 @@ public final class Bulletin {
 
             textView = new TextView(context);
             textView.setSingleLine();
-            textView.setTextColor(textColor);
             textView.setTypeface(Typeface.SANS_SERIF);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             textView.setEllipsize(TextUtils.TruncateAt.END);
             textView.setPadding(0, AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8));
             addView(textView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 56, 0, 16, 0));
+
+            setTextColor(getThemedColor(Theme.key_undo_infoColor));
+            setBackground(getThemedColor(Theme.key_undo_background));
+        }
+
+        public LottieLayout(@NonNull Context context, Theme.ResourcesProvider resourcesProvider, int backgroundColor, int textColor) {
+            this(context, resourcesProvider);
+            setBackground(backgroundColor);
+            setTextColor(textColor);
+        }
+
+        public void setTextColor(int textColor) {
+            this.textColor = textColor;
+            textView.setTextColor(textColor);
         }
 
         @Override
@@ -1104,6 +1117,7 @@ public final class Bulletin {
     @SuppressLint("ViewConstructor")
     public static final class UndoButton extends Button {
 
+        private final Theme.ResourcesProvider resourcesProvider;
         private Runnable undoAction;
         private Runnable delayedAction;
 
@@ -1111,9 +1125,14 @@ public final class Bulletin {
         private boolean isUndone;
 
         public UndoButton(@NonNull Context context, boolean text) {
-            super(context);
+            this(context, text, null);
+        }
 
-            final int undoCancelColor = Theme.getColor(Theme.key_undo_cancelColor);
+        public UndoButton(@NonNull Context context, boolean text, Theme.ResourcesProvider resourcesProvider) {
+            super(context);
+            this.resourcesProvider = resourcesProvider;
+
+            final int undoCancelColor = getThemedColor(Theme.key_undo_cancelColor);
 
             if (text) {
                 TextView undoTextView = new TextView(context);
@@ -1170,6 +1189,11 @@ public final class Bulletin {
         public UndoButton setDelayedAction(Runnable delayedAction) {
             this.delayedAction = delayedAction;
             return this;
+        }
+
+        private int getThemedColor(String key) {
+            Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+            return color != null ? color : Theme.getColor(key);
         }
     }
     //endregion

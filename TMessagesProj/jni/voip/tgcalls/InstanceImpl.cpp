@@ -58,6 +58,12 @@ void InstanceImpl::setVideoCapture(std::shared_ptr<VideoCaptureInterface> videoC
     });
 }
 
+void InstanceImpl::sendVideoDeviceUpdated() {
+    _manager->perform(RTC_FROM_HERE, [](Manager *manager) {
+        manager->sendVideoDeviceUpdated();
+    });
+}
+
 void InstanceImpl::setRequestedVideoAspect(float aspect) {
     _manager->perform(RTC_FROM_HERE, [aspect](Manager *manager) {
         manager->setRequestedVideoAspect(aspect);

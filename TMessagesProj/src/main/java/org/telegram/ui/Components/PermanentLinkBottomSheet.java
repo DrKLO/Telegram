@@ -34,11 +34,11 @@ public class PermanentLinkBottomSheet extends BottomSheet {
     private final TextView manage;
     private final RLottieImageView imageView;
     private final LinkActionView linkActionView;
-    private int chatId;
+    private long chatId;
     private BaseFragment fragment;
     private boolean isChannel;
 
-    public PermanentLinkBottomSheet(Context context, boolean needFocus, BaseFragment fragment, TLRPC.ChatFull info, int chatId, boolean isChannel) {
+    public PermanentLinkBottomSheet(Context context, boolean needFocus, BaseFragment fragment, TLRPC.ChatFull info, long chatId, boolean isChannel) {
         super(context, needFocus);
         this.info = info;
         this.chatId = chatId;
@@ -147,17 +147,13 @@ public class PermanentLinkBottomSheet extends BottomSheet {
     @Override
     public void show() {
         super.show();
-        AndroidUtilities.runOnUIThread(() -> {
-            linkIcon.start();
-        }, 50);
+        AndroidUtilities.runOnUIThread(() -> linkIcon.start(), 50);
     }
 
     @Override
     public ArrayList<ThemeDescription> getThemeDescriptions() {
         ArrayList<ThemeDescription> arrayList = new ArrayList<>();
-        ThemeDescription.ThemeDescriptionDelegate descriptionDelegate = () -> {
-            updateColors();
-        };
+        ThemeDescription.ThemeDescriptionDelegate descriptionDelegate = this::updateColors;
         arrayList.add(new ThemeDescription(titleView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
         arrayList.add(new ThemeDescription(subtitle, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteGrayText));
         arrayList.add(new ThemeDescription(manage, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlueText));

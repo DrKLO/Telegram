@@ -367,7 +367,7 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
                     ManageChatUserCell cell = (ManageChatUserCell) view;
                     TLRPC.TL_peerLocated peerLocated = users.get(position - usersStartRow);
                     Bundle args1 = new Bundle();
-                    args1.putInt("user_id", peerLocated.peer.user_id);
+                    args1.putLong("user_id", peerLocated.peer.user_id);
                     if (cell.hasAvatarSet()) {
                         args1.putBoolean("expandPhoto", true);
                     }
@@ -378,13 +378,13 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
             } else if (position >= chatsStartRow && position < chatsEndRow) {
                 TLRPC.TL_peerLocated peerLocated = chats.get(position - chatsStartRow);
                 Bundle args1 = new Bundle();
-                int chatId;
+                long chatId;
                 if (peerLocated.peer instanceof TLRPC.TL_peerChat) {
                     chatId = peerLocated.peer.chat_id;
                 } else {
                     chatId = peerLocated.peer.channel_id;
                 }
-                args1.putInt("chat_id", chatId);
+                args1.putLong("chat_id", chatId);
                 ChatActivity chatActivity = new ChatActivity(args1);
                 presentFragment(chatActivity);
             } else if (position == chatsCreateRow) {
@@ -781,7 +781,7 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
                     if (ChatObject.isNotInChat(chat)) {
                         getMessagesController().deleteDialog(dialogId, 0, revoke);
                     } else {
-                        getMessagesController().deleteParticipantFromChat((int) -dialogId, getMessagesController().getUser(getUserConfig().getClientUserId()), null, null, revoke, revoke);
+                        getMessagesController().deleteParticipantFromChat(-dialogId, getMessagesController().getUser(getUserConfig().getClientUserId()), null, null, revoke, revoke);
                     }
                 } else {
                     getMessagesController().deleteDialog(dialogId, 0, revoke);
@@ -978,7 +978,7 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
                     } else if (position >= chatsStartRow && position < chatsEndRow) {
                         int index = position - chatsStartRow;
                         TLRPC.TL_peerLocated peerLocated = chats.get(index);
-                        int chatId;
+                        long chatId;
                         if (peerLocated.peer instanceof TLRPC.TL_peerChat) {
                             chatId = peerLocated.peer.chat_id;
                         } else {

@@ -19,40 +19,38 @@ public class AutoMessageHeardReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         ApplicationLoader.postInitApplication();
-        long dialog_id = intent.getLongExtra("dialog_id", 0);
-        int max_id = intent.getIntExtra("max_id", 0);
+        long dialogId = intent.getLongExtra("dialog_id", 0);
+        int maxId = intent.getIntExtra("max_id", 0);
         int currentAccount = intent.getIntExtra("currentAccount", 0);
-        if (dialog_id == 0 || max_id == 0 || !UserConfig.isValidAccount(currentAccount)) {
+        if (dialogId == 0 || maxId == 0 || !UserConfig.isValidAccount(currentAccount)) {
             return;
         }
-        int lowerId = (int) dialog_id;
-        int highId = (int) (dialog_id >> 32);
         AccountInstance accountInstance = AccountInstance.getInstance(currentAccount);
-        if (lowerId > 0) {
-            TLRPC.User user = accountInstance.getMessagesController().getUser(lowerId);
+        if (DialogObject.isUserDialog(dialogId)) {
+            TLRPC.User user = accountInstance.getMessagesController().getUser(dialogId);
             if (user == null) {
                 Utilities.globalQueue.postRunnable(() -> {
-                    TLRPC.User user1 = accountInstance.getMessagesStorage().getUserSync(lowerId);
+                    TLRPC.User user1 = accountInstance.getMessagesStorage().getUserSync(dialogId);
                     AndroidUtilities.runOnUIThread(() -> {
                         accountInstance.getMessagesController().putUser(user1, true);
-                        MessagesController.getInstance(currentAccount).markDialogAsRead(dialog_id, max_id, max_id, 0, false, 0, 0, true, 0);
+                        MessagesController.getInstance(currentAccount).markDialogAsRead(dialogId, maxId, maxId, 0, false, 0, 0, true, 0);
                     });
                 });
                 return;
             }
-        } else if (lowerId < 0) {
-            TLRPC.Chat chat = accountInstance.getMessagesController().getChat(-lowerId);
+        } else if (DialogObject.isChatDialog(dialogId)) {
+            TLRPC.Chat chat = accountInstance.getMessagesController().getChat(-dialogId);
             if (chat == null) {
                 Utilities.globalQueue.postRunnable(() -> {
-                    TLRPC.Chat chat1 = accountInstance.getMessagesStorage().getChatSync(-lowerId);
+                    TLRPC.Chat chat1 = accountInstance.getMessagesStorage().getChatSync(-dialogId);
                     AndroidUtilities.runOnUIThread(() -> {
                         accountInstance.getMessagesController().putChat(chat1, true);
-                        MessagesController.getInstance(currentAccount).markDialogAsRead(dialog_id, max_id, max_id, 0, false, 0, 0, true, 0);
+                        MessagesController.getInstance(currentAccount).markDialogAsRead(dialogId, maxId, maxId, 0, false, 0, 0, true, 0);
                     });
                 });
                 return;
             }
         }
-        MessagesController.getInstance(currentAccount).markDialogAsRead(dialog_id, max_id, max_id, 0, false, 0, 0, true, 0);
+        MessagesController.getInstance(currentAccount).markDialogAsRead(dialogId, maxId, maxId, 0, false, 0, 0, true, 0);
     }
 }

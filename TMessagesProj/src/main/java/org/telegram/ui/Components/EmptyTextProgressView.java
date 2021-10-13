@@ -25,17 +25,23 @@ import org.telegram.ui.ActionBar.Theme;
 
 public class EmptyTextProgressView extends FrameLayout {
 
+    private final Theme.ResourcesProvider resourcesProvider;
     private TextView textView;
     private View progressView;
     private boolean inLayout;
     private int showAtPos;
 
     public EmptyTextProgressView(Context context) {
-        this(context, null);
+        this(context, null, null);
     }
 
     public EmptyTextProgressView(Context context, View progressView) {
+        this(context, progressView, null);
+    }
+
+    public EmptyTextProgressView(Context context, View progressView, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
 
         if (progressView == null) {
             progressView = new RadialProgressView(context);
@@ -47,7 +53,7 @@ public class EmptyTextProgressView extends FrameLayout {
 
         textView = new TextView(context);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-        textView.setTextColor(Theme.getColor(Theme.key_emptyListPlaceholder));
+        textView.setTextColor(getThemedColor(Theme.key_emptyListPlaceholder));
         textView.setGravity(Gravity.CENTER);
         textView.setPadding(AndroidUtilities.dp(20), 0, AndroidUtilities.dp(20), 0);
         textView.setText(LocaleController.getString("NoResult", R.string.NoResult));
@@ -93,7 +99,7 @@ public class EmptyTextProgressView extends FrameLayout {
         } else {
             Drawable drawable = getContext().getResources().getDrawable(resId).mutate();
             if (drawable != null) {
-                drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_emptyListPlaceholder), PorterDuff.Mode.MULTIPLY));
+                drawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_emptyListPlaceholder), PorterDuff.Mode.MULTIPLY));
             }
             textView.setCompoundDrawablesWithIntrinsicBounds(null, drawable, null, null);
             textView.setCompoundDrawablePadding(AndroidUtilities.dp(1));
@@ -153,5 +159,10 @@ public class EmptyTextProgressView extends FrameLayout {
     @Override
     public boolean hasOverlappingRendering() {
         return false;
+    }
+
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
     }
 }

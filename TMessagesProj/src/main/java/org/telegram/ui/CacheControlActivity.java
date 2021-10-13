@@ -34,6 +34,7 @@ import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLiteDatabase;
 import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
@@ -63,6 +64,8 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SlideChooseView;
+import org.telegram.ui.Components.StorageDiagramView;
+import org.telegram.ui.Components.StroageUsageView;
 import org.telegram.ui.Components.UndoView;
 
 import java.io.File;
@@ -424,9 +427,9 @@ public class CacheControlActivity extends BaseFragment {
                 linearLayout.addView(circleDiagramView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 16, 0, 16));
                 CheckBoxCell lastCreatedCheckbox = null;
                 for (int a = 0; a < 7; a++) {
-                    long size = 0;
-                    String name = null;
-                    String color = null;
+                    long size;
+                    String name;
+                    String color;
                     if (a == 0) {
                         size = photoSize;
                         name = LocaleController.getString("LocalPhotoCache", R.string.LocalPhotoCache);
@@ -451,7 +454,7 @@ public class CacheControlActivity extends BaseFragment {
                         size = stickersSize;
                         name = LocaleController.getString("AnimatedStickers", R.string.AnimatedStickers);
                         color = Theme.key_statisticChartLine_lightgreen;
-                    } else if (a == 6) {
+                    } else {
                         size = cacheSize;
                         name = LocaleController.getString("LocalCache", R.string.LocalCache);
                         color = Theme.key_statisticChartLine_lightblue;
@@ -460,7 +463,7 @@ public class CacheControlActivity extends BaseFragment {
                         clearViewData[a] = new StorageDiagramView.ClearViewData(circleDiagramView);
                         clearViewData[a].size = size;
                         clearViewData[a].color = color;
-                        CheckBoxCell checkBoxCell = new CheckBoxCell(getParentActivity(), 4, 21);
+                        CheckBoxCell checkBoxCell = new CheckBoxCell(getParentActivity(), 4, 21, null);
                         lastCreatedCheckbox = checkBoxCell;
                         checkBoxCell.setTag(a);
                         checkBoxCell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
@@ -544,9 +547,7 @@ public class CacheControlActivity extends BaseFragment {
                     StringBuilder ids = new StringBuilder();
                     while (cursor.next()) {
                         long did = cursor.longValue(0);
-                        int lower_id = (int) did;
-                        int high_id = (int) (did >> 32);
-                        if (lower_id != 0 && high_id != 1) {
+                        if (!DialogObject.isEncryptedDialog(did)) {
                             dialogsToCleanup.add(did);
                         }
                     }
@@ -559,7 +560,7 @@ public class CacheControlActivity extends BaseFragment {
                     for (int a = 0; a < dialogsToCleanup.size(); a++) {
                         Long did = dialogsToCleanup.get(a);
                         int messagesCount = 0;
-                        cursor = database.queryFinalized("SELECT COUNT(mid) FROM messages WHERE uid = " + did);
+                        cursor = database.queryFinalized("SELECT COUNT(mid) FROM messages_v2 WHERE uid = " + did);
                         if (cursor.next()) {
                             messagesCount = cursor.intValue(0);
                         }
@@ -573,17 +574,17 @@ public class CacheControlActivity extends BaseFragment {
                         if (cursor.next()) {
                             long last_mid_i = cursor.longValue(0);
                             long last_mid = cursor.longValue(1);
-                            SQLiteCursor cursor2 = database.queryFinalized("SELECT data FROM messages WHERE uid = " + did + " AND mid IN (" + last_mid_i + "," + last_mid + ")");
+                            SQLiteCursor cursor2 = database.queryFinalized("SELECT data FROM messages_v2 WHERE uid = " + did + " AND mid IN (" + last_mid_i + "," + last_mid + ")");
                             try {
                                 while (cursor2.next()) {
                                     NativeByteBuffer data = cursor2.byteBufferValue(0);
                                     if (data != null) {
                                         TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
-                                        message.readAttachPath(data, UserConfig.getInstance(currentAccount).clientUserId);
-                                        data.reuse();
                                         if (message != null) {
                                             messageId = message.id;
+                                            message.readAttachPath(data, UserConfig.getInstance(currentAccount).clientUserId);
                                         }
+                                        data.reuse();
                                     }
                                 }
                             } catch (Exception e) {
@@ -591,11 +592,11 @@ public class CacheControlActivity extends BaseFragment {
                             }
                             cursor2.dispose();
 
-                            database.executeFast("DELETE FROM messages WHERE uid = " + did + " AND mid != " + last_mid_i + " AND mid != " + last_mid).stepThis().dispose();
+                            database.executeFast("DELETE FROM messages_v2 WHERE uid = " + did + " AND mid != " + last_mid_i + " AND mid != " + last_mid).stepThis().dispose();
                             database.executeFast("DELETE FROM messages_holes WHERE uid = " + did).stepThis().dispose();
                             database.executeFast("DELETE FROM bot_keyboard WHERE uid = " + did).stepThis().dispose();
                             database.executeFast("DELETE FROM media_counts_v2 WHERE uid = " + did).stepThis().dispose();
-                            database.executeFast("DELETE FROM media_v2 WHERE uid = " + did).stepThis().dispose();
+                            database.executeFast("DELETE FROM media_v3 WHERE uid = " + did).stepThis().dispose();
                             database.executeFast("DELETE FROM media_holes_v2 WHERE uid = " + did).stepThis().dispose();
                             MediaDataController.getInstance(currentAccount).clearBotKeyboard(did, null);
                             if (messageId != -1) {

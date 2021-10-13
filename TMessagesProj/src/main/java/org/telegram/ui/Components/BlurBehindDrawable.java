@@ -13,6 +13,7 @@ import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ChatActivity;
 
 import static android.graphics.Canvas.ALL_SAVE_FLAG;
 
@@ -20,6 +21,7 @@ public class BlurBehindDrawable {
 
     DispatchQueue queue;
 
+    private final int type;
     public static final int TAG_DRAWING_AS_BACKGROUND = (1 << 26) + 3;
 
     public static final int STATIC_CONTENT = 0;
@@ -41,6 +43,7 @@ public class BlurBehindDrawable {
     private float blurAlpha;
     private boolean show;
     private boolean error;
+    private boolean animateAlpha = true;
 
     private final float DOWN_SCALE = 6f;
     private int lastH;
@@ -56,18 +59,23 @@ public class BlurBehindDrawable {
 
     Paint emptyPaint = new Paint(Paint.FILTER_BITMAP_FLAG);
     Paint errorBlackoutPaint = new Paint();
+    private final Theme.ResourcesProvider resourcesProvider;
 
-    public BlurBehindDrawable(View behindView, View parentView) {
+    public BlurBehindDrawable(View behindView, View parentView, int type, Theme.ResourcesProvider resourcesProvider) {
+        this.type = type;
         this.behindView = behindView;
         this.parentView = parentView;
-
+        this.resourcesProvider = resourcesProvider;
         errorBlackoutPaint.setColor(Color.BLACK);
     }
 
-
     public void draw(Canvas canvas) {
+        if (type == 1 && !wasDraw && !animateAlpha) {
+            generateBlurredBitmaps();
+            invalidate = false;
+        }
         final Bitmap[] bitmap = renderingBitmap;
-        if (bitmap != null || error) {
+        if ((bitmap != null || error) && animateAlpha) {
             if (show && blurAlpha != 1f) {
                 blurAlpha += 0.09f;
                 if (blurAlpha > 1f) {
@@ -83,19 +91,33 @@ public class BlurBehindDrawable {
             }
         }
 
+        float alpha = animateAlpha ? blurAlpha : 1f;
         if (bitmap == null && error) {
-            errorBlackoutPaint.setAlpha((int) (50 * blurAlpha));
+            errorBlackoutPaint.setAlpha((int) (50 * alpha));
             canvas.drawPaint(errorBlackoutPaint);
             return;
         }
 
-        canvas.saveLayerAlpha(0, 0, parentView.getMeasuredWidth(), parentView.getMeasuredHeight(), (int) (blurAlpha * 255), ALL_SAVE_FLAG);
-        if (bitmap != null) {
-            emptyPaint.setAlpha((int) (255 * blurAlpha));
-            canvas.drawBitmap(bitmap[1], 0, 0, null);
+        if (alpha == 1f) {
             canvas.save();
-            canvas.translate(0, panTranslationY);
-            canvas.drawBitmap(bitmap[0], 0, 0, null);
+        } else {
+            canvas.saveLayerAlpha(0, 0, parentView.getMeasuredWidth(), parentView.getMeasuredHeight(), (int) (alpha * 255), ALL_SAVE_FLAG);
+        }
+        if (bitmap != null) {
+            emptyPaint.setAlpha((int) (255 * alpha));
+            if (type == 1) {
+                canvas.translate(0, panTranslationY);
+            }
+            canvas.save();
+            canvas.scale( parentView.getMeasuredWidth() / (float) bitmap[1].getWidth(),  parentView.getMeasuredHeight() / (float) bitmap[1].getHeight());
+            canvas.drawBitmap(bitmap[1], 0, 0, emptyPaint);
+            canvas.restore();
+            canvas.save();
+            if (type == 0) {
+                canvas.translate(0, panTranslationY);
+            }
+            canvas.scale(parentView.getMeasuredWidth() / (float) bitmap[0].getWidth(),toolbarH / (float) bitmap[0].getHeight());
+            canvas.drawBitmap(bitmap[0], 0, 0, emptyPaint);
             canvas.restore();
             wasDraw = true;
             canvas.drawColor(0x1a000000);
@@ -113,7 +135,7 @@ public class BlurBehindDrawable {
                 if (blurredBitmapTmp[i] == null || parentView.getMeasuredWidth() != lastW || parentView.getMeasuredHeight() != lastH) {
                     int lastH = parentView.getMeasuredHeight();
                     int lastW = parentView.getMeasuredWidth();
-                    toolbarH = AndroidUtilities.statusBarHeight + AndroidUtilities.dp(100);
+                    toolbarH = AndroidUtilities.statusBarHeight + AndroidUtilities.dp(200);
                     try {
                         int h = i == 0 ? toolbarH : lastH;
                         blurredBitmapTmp[i] = Bitmap.createBitmap((int) (lastW / DOWN_SCALE), (int) (h / DOWN_SCALE), Bitmap.Config.ARGB_8888);
@@ -126,13 +148,17 @@ public class BlurBehindDrawable {
                         });
                         return;
                     }
+                } else {
+                    blurredBitmapTmp[i].eraseColor(Color.TRANSPARENT);
                 }
-
+                if (i == 1) {
+                    blurredBitmapTmp[i].eraseColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                }
                 blurCanvas[i].save();
                 blurCanvas[i].scale(1f / DOWN_SCALE, 1f / DOWN_SCALE, 0, 0);
                 Drawable backDrawable = behindView.getBackground();
                 if (backDrawable == null) {
-                    backDrawable = Theme.getCachedWallpaperNonBlocking();
+                    backDrawable = getBackgroundDrawable();
                 }
                 behindView.setTag(TAG_DRAWING_AS_BACKGROUND, i);
                 if (i == STATIC_CONTENT) {
@@ -220,7 +246,7 @@ public class BlurBehindDrawable {
     }
 
     public boolean isFullyDrawing() {
-        return !skipDraw && wasDraw && blurAlpha == 1f && show;
+        return !skipDraw && wasDraw && (blurAlpha == 1f || !animateAlpha) && show && parentView.getAlpha() == 1f;
     }
 
     public void checkSizes() {
@@ -228,32 +254,53 @@ public class BlurBehindDrawable {
         if (bitmap == null || parentView.getMeasuredHeight() == 0 || parentView.getMeasuredWidth() == 0) {
             return;
         }
+        generateBlurredBitmaps();
+
+        lastH = parentView.getMeasuredHeight();
+        lastW = parentView.getMeasuredWidth();
+    }
+
+    private void generateBlurredBitmaps() {
+        Bitmap[] bitmap = renderingBitmap;
+        if (bitmap == null) {
+            bitmap = renderingBitmap = new Bitmap[2];
+            renderingBitmapCanvas = new Canvas[2];
+        }
+        if (blurredBitmapTmp == null) {
+            blurredBitmapTmp = new Bitmap[2];
+            blurCanvas = new Canvas[2];
+        }
         blurBackgroundTask.canceled = true;
         blurBackgroundTask = new BlurBackgroundTask();
 
         for (int i = 0; i < 2; i++) {
             int lastH = parentView.getMeasuredHeight();
             int lastW = parentView.getMeasuredWidth();
-            toolbarH = AndroidUtilities.statusBarHeight + AndroidUtilities.dp(100);
+            toolbarH = AndroidUtilities.statusBarHeight + AndroidUtilities.dp(200);
             int h = i == 0 ? toolbarH : lastH;
 
-            if (bitmap[i].getHeight() != h || bitmap[i].getWidth() != parentView.getMeasuredWidth()) {
+            if (bitmap[i] == null || bitmap[i].getHeight() != h || bitmap[i].getWidth() != parentView.getMeasuredWidth()) {
                 if (queue != null) {
                     queue.cleanupQueue();
                 }
 
                 blurredBitmapTmp[i] = Bitmap.createBitmap((int) (lastW / DOWN_SCALE), (int) (h / DOWN_SCALE), Bitmap.Config.ARGB_8888);
+                if (i == 1) {
+                    blurredBitmapTmp[i].eraseColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                }
                 blurCanvas[i] = new Canvas(blurredBitmapTmp[i]);
 
-                renderingBitmap[i] = Bitmap.createBitmap(lastW, i == 0 ? toolbarH : lastH, Bitmap.Config.ARGB_8888);
+                int bitmapH = (int) ((i == 0 ? toolbarH : lastH) / DOWN_SCALE);
+                int bitmapW = (int) (lastW / DOWN_SCALE);
+                renderingBitmap[i] = Bitmap.createBitmap(bitmapW, bitmapH, Bitmap.Config.ARGB_8888);
                 renderingBitmapCanvas[i] = new Canvas(renderingBitmap[i]);
-                renderingBitmapCanvas[i].scale(DOWN_SCALE, DOWN_SCALE);
+                renderingBitmapCanvas[i].scale((float) renderingBitmap[i].getWidth() / (float) blurredBitmapTmp[i].getWidth(), (float) renderingBitmap[i].getHeight() / (float) blurredBitmapTmp[i].getHeight());
 
                 blurCanvas[i].save();
                 blurCanvas[i].scale(1f / DOWN_SCALE, 1f / DOWN_SCALE, 0, 0);
                 Drawable backDrawable = behindView.getBackground();
                 if (backDrawable == null) {
-                    backDrawable = Theme.getCachedWallpaperNonBlocking();
+                    backDrawable = getBackgroundDrawable();
                 }
                 behindView.setTag(TAG_DRAWING_AS_BACKGROUND, i);
                 if (i == STATIC_CONTENT) {
@@ -274,16 +321,20 @@ public class BlurBehindDrawable {
 
                 Utilities.stackBlurBitmap(blurredBitmapTmp[i], getBlurRadius());
                 emptyPaint.setAlpha(255);
+                if (i == 1) {
+                    renderingBitmap[i].eraseColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                }
                 renderingBitmapCanvas[i].drawBitmap(blurredBitmapTmp[i], 0, 0, emptyPaint);
             }
         }
-
-        lastH = parentView.getMeasuredHeight();
-        lastW = parentView.getMeasuredWidth();
     }
 
     public void show(boolean show) {
         this.show = show;
+    }
+
+    public void setAnimateAlpha(boolean animateAlpha) {
+        this.animateAlpha = animateAlpha;
     }
 
     public void onPanTranslationUpdate(float y) {
@@ -303,9 +354,11 @@ public class BlurBehindDrawable {
                 backgroundBitmap = new Bitmap[2];
                 backgroundBitmapCanvas = new Canvas[2];
             }
+            int bitmapWidth = (int) (width / DOWN_SCALE);
             for (int i = 0; i < 2; i++) {
-                int h = i == 0 ? toolbarH : height;
-                if (backgroundBitmap[i] != null && (backgroundBitmap[i].getHeight() != h || backgroundBitmap[i].getWidth() != width)) {
+                int h = (int) ((i == 0 ? toolbarH : height) / DOWN_SCALE);
+
+                if (backgroundBitmap[i] != null && (backgroundBitmap[i].getHeight() != h || backgroundBitmap[i].getWidth() != bitmapWidth)) {
                     if (backgroundBitmap[i] != null) {
                         backgroundBitmap[i].recycle();
                         backgroundBitmap[i] = null;
@@ -313,17 +366,23 @@ public class BlurBehindDrawable {
                 }
                 long t = System.currentTimeMillis();
                 if (backgroundBitmap[i] == null) {
-                    int w = width;
+                    int w = bitmapWidth;
                     try {
                         backgroundBitmap[i] = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
                         backgroundBitmapCanvas[i] = new Canvas(backgroundBitmap[i]);
-                        backgroundBitmapCanvas[i].scale(DOWN_SCALE, DOWN_SCALE);
+                        backgroundBitmapCanvas[i].scale(bitmapWidth / (float) blurredBitmapTmp[i].getWidth(), h / (float) blurredBitmapTmp[i].getHeight());
                     } catch (Throwable e) {
                         FileLog.e(e);
                     }
                 }
+                if (i == 1) {
+                    backgroundBitmap[i].eraseColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                } else {
+                    backgroundBitmap[i].eraseColor(Color.TRANSPARENT);
+                }
                 emptyPaint.setAlpha(255);
                 Utilities.stackBlurBitmap(blurredBitmapTmp[i], getBlurRadius());
+
                 if (backgroundBitmapCanvas[i] != null) {
                     backgroundBitmapCanvas[i].drawBitmap(blurredBitmapTmp[i], 0, 0, emptyPaint);
                 }
@@ -351,5 +410,16 @@ public class BlurBehindDrawable {
                 }
             });
         }
+    }
+
+    private Drawable getBackgroundDrawable() {
+        return (resourcesProvider instanceof ChatActivity.ThemeDelegate)
+                ? ((ChatActivity.ThemeDelegate) resourcesProvider).getWallpaperDrawable()
+                : Theme.getCachedWallpaperNonBlocking();
+    }
+
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
     }
 }

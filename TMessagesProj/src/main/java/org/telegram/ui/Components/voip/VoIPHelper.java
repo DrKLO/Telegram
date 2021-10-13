@@ -161,8 +161,8 @@ public class VoIPHelper {
 		}
 		VoIPService voIPService = VoIPService.getSharedInstance();
 		if (voIPService != null) {
-			int newId = user != null ? user.id : -chat.id;
-			int callerId = VoIPService.getSharedInstance().getCallerId();
+			long newId = user != null ? user.id : -chat.id;
+			long callerId = VoIPService.getSharedInstance().getCallerId();
 			if (callerId != newId || voIPService.getAccount() != accountInstance.getCurrentAccount()) {
 				String newName;
 				String oldName;
@@ -235,7 +235,7 @@ public class VoIPHelper {
 		if (checkJoiner && chat != null && !createCall) {
 			TLRPC.ChatFull chatFull = accountInstance.getMessagesController().getChatFull(chat.id);
 			if (chatFull != null && chatFull.groupcall_default_join_as != null) {
-				int did = MessageObject.getPeerId(chatFull.groupcall_default_join_as);
+				long did = MessageObject.getPeerId(chatFull.groupcall_default_join_as);
 				TLRPC.InputPeer	inputPeer = accountInstance.getMessagesController().getInputPeer(did);
 				JoinCallAlert.checkFewUsers(activity, -chat.id, accountInstance, param -> {
 					if (!param && hash != null) {
@@ -277,8 +277,8 @@ public class VoIPHelper {
 		}
 		if (checkAnonymous && !hasFewPeers && peer instanceof TLRPC.TL_inputPeerUser && ChatObject.shouldSendAnonymously(chat) && (!ChatObject.isChannel(chat) || chat.megagroup)) {
 			new AlertDialog.Builder(activity)
-					.setTitle(LocaleController.getString("VoipGroupVoiceChat", R.string.VoipGroupVoiceChat))
-					.setMessage(LocaleController.getString("VoipGroupJoinAnonymouseAlert", R.string.VoipGroupJoinAnonymouseAlert))
+					.setTitle(ChatObject.isChannelOrGiga(chat) ? LocaleController.getString("VoipChannelVoiceChat", R.string.VoipChannelVoiceChat) : LocaleController.getString("VoipGroupVoiceChat", R.string.VoipGroupVoiceChat))
+					.setMessage(ChatObject.isChannelOrGiga(chat) ? LocaleController.getString("VoipChannelJoinAnonymouseAlert", R.string.VoipChannelJoinAnonymouseAlert) : LocaleController.getString("VoipGroupJoinAnonymouseAlert", R.string.VoipGroupJoinAnonymouseAlert))
 					.setPositiveButton(LocaleController.getString("VoipChatJoin", R.string.VoipChatJoin), (dialog, which) -> doInitiateCall(user, chat, hash, peer, false, videoCall, canVideoCall, createCall, activity, fragment, accountInstance, false, false))
 					.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null)
 					.show();

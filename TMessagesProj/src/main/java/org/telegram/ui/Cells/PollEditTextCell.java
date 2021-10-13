@@ -59,7 +59,7 @@ public class PollEditTextCell extends FrameLayout {
         super(context);
 
         if (caption) {
-            textView = new EditTextCaption(context) {
+            textView = new EditTextCaption(context, null) {
                 @Override
                 public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
                     InputConnection conn = super.onCreateInputConnection(outAttrs);

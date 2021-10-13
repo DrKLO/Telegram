@@ -37,7 +37,7 @@ public class BrightnessControlCell extends FrameLayout {
         leftImageView.setImageResource(R.drawable.brightness_low);
         addView(leftImageView, LayoutHelper.createFrame(24, 24, Gravity.LEFT | Gravity.TOP, 17, 12, 0, 0));
 
-        seekBarView = new SeekBarView(context, /* inPercents = */ true) {
+        seekBarView = new SeekBarView(context, /* inPercents = */ true, null) {
             @Override
             public boolean onTouchEvent(MotionEvent event) {
                 if (event.getAction() == MotionEvent.ACTION_DOWN) {

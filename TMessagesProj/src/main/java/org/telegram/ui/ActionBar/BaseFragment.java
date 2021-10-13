@@ -17,17 +17,19 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.SystemClock;
+import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
+import android.view.Window;
 import android.view.accessibility.AccessibilityManager;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AccountInstance;
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DownloadController;
@@ -65,6 +67,8 @@ public abstract class BaseFragment {
     protected boolean hasOwnBackground = false;
     protected boolean isPaused = true;
     protected Dialog parentDialog;
+    protected boolean inTransitionAnimation = false;
+    protected boolean fragmentBeginToShow;
 
     public BaseFragment() {
         classGuid = ConnectionsManager.generateClassGuid();
@@ -215,11 +219,11 @@ public abstract class BaseFragment {
 
     protected ActionBar createActionBar(Context context) {
         ActionBar actionBar = new ActionBar(context);
-        actionBar.setBackgroundColor(Theme.getColor(Theme.key_actionBarDefault));
-        actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_actionBarDefaultSelector), false);
-        actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_actionBarActionModeDefaultSelector), true);
-        actionBar.setItemsColor(Theme.getColor(Theme.key_actionBarDefaultIcon), false);
-        actionBar.setItemsColor(Theme.getColor(Theme.key_actionBarActionModeDefaultIcon), true);
+        actionBar.setBackgroundColor(getThemedColor(Theme.key_actionBarDefault));
+        actionBar.setItemsBackgroundColor(getThemedColor(Theme.key_actionBarDefaultSelector), false);
+        actionBar.setItemsBackgroundColor(getThemedColor(Theme.key_actionBarActionModeDefaultSelector), true);
+        actionBar.setItemsColor(getThemedColor(Theme.key_actionBarDefaultIcon), false);
+        actionBar.setItemsColor(getThemedColor(Theme.key_actionBarActionModeDefaultIcon), true);
         if (inPreviewMode || inBubbleMode) {
             actionBar.setOccupyStatusBar(false);
         }
@@ -435,11 +439,14 @@ public abstract class BaseFragment {
     }
 
     protected void onTransitionAnimationStart(boolean isOpen, boolean backward) {
-
+        inTransitionAnimation = true;
+        if (isOpen) {
+            fragmentBeginToShow = true;
+        }
     }
 
     protected void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
-
+        inTransitionAnimation = false;
     }
 
     protected void onBecomeFullyVisible() {
@@ -671,7 +678,40 @@ public abstract class BaseFragment {
         return actionBarLayout;
     }
 
+    public int getThemedColor(String key) {
+        return Theme.getColor(key);
+    }
+
+    public Drawable getThemedDrawable(String key) {
+        return Theme.getThemeDrawable(key);
+    }
+
+    public int getNavigationBarColor() {
+        return Theme.getColor(Theme.key_windowBackgroundGray);
+    }
+
+    public void setNavigationBarColor(int color) {
+        Activity activity = getParentActivity();
+        if (activity != null) {
+            Window window = activity.getWindow();
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && window != null && window.getNavigationBarColor() != color) {
+                window.setNavigationBarColor(color);
+                final float brightness = AndroidUtilities.computePerceivedBrightness(color);
+                AndroidUtilities.setLightNavigationBar(window, brightness >= 0.721f);
+            }
+        }
+    }
+
+    public boolean isBeginToShow() {
+        return fragmentBeginToShow;
+    }
+
     private void setParentDialog(Dialog dialog) {
         parentDialog = dialog;
     }
+
+    public Theme.ResourcesProvider getResourceProvider() {
+        return null;
+    }
+
 }

@@ -15,7 +15,7 @@ import org.telegram.ui.Components.voip.VoIPHelper;
 
 public final class VoIPPendingCall {
 
-    public static VoIPPendingCall startOrSchedule(Activity activity, int userId, boolean video, AccountInstance accountInstance) {
+    public static VoIPPendingCall startOrSchedule(Activity activity, long userId, boolean video, AccountInstance accountInstance) {
         return new VoIPPendingCall(activity, userId, video, 1000, accountInstance);
     }
 
@@ -27,7 +27,7 @@ public final class VoIPPendingCall {
 
     private final Runnable releaseRunnable = () -> onConnectionStateUpdated(true);
 
-    private final int userId;
+    private final long userId;
     private final boolean video;
     private final Activity activity;
 
@@ -36,7 +36,7 @@ public final class VoIPPendingCall {
     private boolean released;
     private AccountInstance accountInstance;
 
-    private VoIPPendingCall(Activity activity, int userId, boolean video, long expirationTime, AccountInstance accountInstance) {
+    private VoIPPendingCall(Activity activity, long userId, boolean video, long expirationTime, AccountInstance accountInstance) {
         this.activity = activity;
         this.userId = userId;
         this.video = video;

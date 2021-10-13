@@ -16,6 +16,7 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
 import org.telegram.PhoneFormat.PhoneFormat;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.LocaleController;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.MessagesController;
@@ -58,7 +59,7 @@ public class PrivacyUsersActivity extends BaseFragment implements NotificationCe
     private boolean blockedUsersActivity;
 
     private boolean isGroup;
-    private ArrayList<Integer> uidArray;
+    private ArrayList<Long> uidArray;
     private boolean isAlwaysShare;
 
     private PrivacyActivityDelegate delegate;
@@ -70,7 +71,7 @@ public class PrivacyUsersActivity extends BaseFragment implements NotificationCe
     public static final int TYPE_FILTER = 2;
 
     public interface PrivacyActivityDelegate {
-        void didUpdateUserList(ArrayList<Integer> ids, boolean added);
+        void didUpdateUserList(ArrayList<Long> ids, boolean added);
     }
 
     public PrivacyUsersActivity() {
@@ -79,7 +80,7 @@ public class PrivacyUsersActivity extends BaseFragment implements NotificationCe
         blockedUsersActivity = true;
     }
 
-    public PrivacyUsersActivity(int type, ArrayList<Integer> users, boolean group, boolean always) {
+    public PrivacyUsersActivity(int type, ArrayList<Long> users, boolean group, boolean always) {
         super();
         uidArray = users;
         isAlwaysShare = always;
@@ -177,7 +178,7 @@ public class PrivacyUsersActivity extends BaseFragment implements NotificationCe
                     }
                     GroupCreateActivity fragment = new GroupCreateActivity(args);
                     fragment.setDelegate(ids -> {
-                        for (Integer id1 : ids) {
+                        for (Long id1 : ids) {
                             if (uidArray.contains(id1)) {
                                 continue;
                             }
@@ -193,15 +194,15 @@ public class PrivacyUsersActivity extends BaseFragment implements NotificationCe
             } else if (position >= usersStartRow && position < usersEndRow) {
                 if (currentType == TYPE_BLOCKED) {
                     Bundle args = new Bundle();
-                    args.putInt("user_id", getMessagesController().blockePeers.keyAt(position - usersStartRow));
+                    args.putLong("user_id", getMessagesController().blockePeers.keyAt(position - usersStartRow));
                     presentFragment(new ProfileActivity(args));
                 } else {
                     Bundle args = new Bundle();
-                    int uid = uidArray.get(position - usersStartRow);
-                    if (uid > 0) {
-                        args.putInt("user_id", uid);
+                    long uid = uidArray.get(position - usersStartRow);
+                    if (DialogObject.isUserDialog(uid)) {
+                        args.putLong("user_id", uid);
                     } else {
-                        args.putInt("chat_id", -uid);
+                        args.putLong("chat_id", -uid);
                     }
                     presentFragment(new ProfileActivity(args));
                 }
@@ -253,7 +254,7 @@ public class PrivacyUsersActivity extends BaseFragment implements NotificationCe
         delegate = privacyActivityDelegate;
     }
 
-    private void showUnblockAlert(Integer uid) {
+    private void showUnblockAlert(Long uid) {
         if (getParentActivity() == null) {
             return;
         }
@@ -383,7 +384,7 @@ public class PrivacyUsersActivity extends BaseFragment implements NotificationCe
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     ((ManageChatUserCell) view).setDelegate((cell, click) -> {
                         if (click) {
-                            showUnblockAlert((Integer) cell.getTag());
+                            showUnblockAlert((Long) cell.getTag());
                         }
                         return true;
                     });
@@ -411,7 +412,7 @@ public class PrivacyUsersActivity extends BaseFragment implements NotificationCe
             switch (holder.getItemViewType()) {
                 case 0:
                     ManageChatUserCell userCell = (ManageChatUserCell) holder.itemView;
-                    int uid;
+                    long uid;
                     if (currentType == TYPE_BLOCKED) {
                         uid = getMessagesController().blockePeers.keyAt(position - usersStartRow);
                     } else {

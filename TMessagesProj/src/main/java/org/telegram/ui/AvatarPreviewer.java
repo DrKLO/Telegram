@@ -250,7 +250,7 @@ public class AvatarPreviewer {
 
         @Override
         protected void onReceiveNotification(Object... args) {
-            Integer uid = (Integer) args[0];
+            Long uid = (Long) args[0];
             if (uid == argument.id) {
                 onResult((TLRPC.UserFull) args[1]);
             }

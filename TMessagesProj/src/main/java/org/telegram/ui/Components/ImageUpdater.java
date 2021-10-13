@@ -340,9 +340,6 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
                         return;
                     }
                     if (button == 8 || button == 7) {
-                        if (button != 8) {
-                            chatAttachAlert.dismiss();
-                        }
                         HashMap<Object, Object> photos = chatAttachAlert.getPhotoLayout().getSelectedPhotos();
                         ArrayList<Object> order = chatAttachAlert.getPhotoLayout().getSelectedPhotosOrder();
 
@@ -387,6 +384,10 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
                             }
                         }
                         didSelectPhotos(media);
+
+                        if (button != 8) {
+                            chatAttachAlert.dismiss();
+                        }
                         return;
                     } else {
                         chatAttachAlert.dismissWithButtonClick(button);

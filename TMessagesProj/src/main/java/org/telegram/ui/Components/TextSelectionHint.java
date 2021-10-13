@@ -1,4 +1,4 @@
-package org.telegram.ui;
+package org.telegram.ui.Components;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -21,12 +21,11 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.CubicBezierInterpolator;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-class TextSelectionHint extends View {
+public class TextSelectionHint extends View {
 
     StaticLayout textLayout;
     TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
@@ -35,6 +34,7 @@ class TextSelectionHint extends View {
     int padding = AndroidUtilities.dp(24);
 
     private Interpolator interpolator = new OvershootInterpolator();
+    private final Theme.ResourcesProvider resourcesProvider;
 
     float enterValue;
     int start;
@@ -53,23 +53,19 @@ class TextSelectionHint extends View {
     float prepareProgress;
     Animator a;
 
-    Runnable dismissTunnable = new Runnable() {
-        @Override
-        public void run() {
-            hideInternal();
-        }
-    };
+    Runnable dismissTunnable = this::hideInternal;
     private boolean showOnMeasure;
 
-    public TextSelectionHint(Context context) {
+    public TextSelectionHint(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
-        int textColor = Theme.getColor(Theme.key_undo_infoColor);
+        this.resourcesProvider = resourcesProvider;
+        int textColor = getThemedColor(Theme.key_undo_infoColor);
         int alpha = Color.alpha(textColor);
         textPaint.setTextSize(AndroidUtilities.dp(15));
         textPaint.setColor(textColor);
         selectionPaint.setColor(textColor);
         selectionPaint.setAlpha((int) (alpha * 0.14));
-        setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(6), Theme.getColor(Theme.key_undo_background)));
+        setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(6), getThemedColor(Theme.key_undo_background)));
     }
 
 
@@ -365,5 +361,10 @@ class TextSelectionHint extends View {
 
     public float getPrepareProgress() {
         return prepareProgress;
+    }
+
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
     }
 }

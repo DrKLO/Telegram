@@ -642,10 +642,10 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
                         filter.pendingUnreadCount = filter.unreadCount = -1;
                         for (int b = 0; b < 2; b++) {
                             ArrayList<TLRPC.InputPeer> fromArray = b == 0 ? suggested.filter.include_peers : suggested.filter.exclude_peers;
-                            ArrayList<Integer> toArray = b == 0 ? filter.alwaysShow : filter.neverShow;
+                            ArrayList<Long> toArray = b == 0 ? filter.alwaysShow : filter.neverShow;
                             for (int a = 0, N = fromArray.size(); a < N; a++) {
                                 TLRPC.InputPeer peer = fromArray.get(a);
-                                int lowerId;
+                                long lowerId;
                                 if (peer.user_id != 0) {
                                     lowerId = peer.user_id;
                                 } else if (peer.chat_id != 0) {

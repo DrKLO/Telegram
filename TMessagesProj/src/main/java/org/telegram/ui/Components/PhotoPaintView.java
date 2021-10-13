@@ -131,9 +131,11 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
     private boolean inBubbleMode;
 
     private MediaController.CropState currentCropState;
+    private final Theme.ResourcesProvider resourcesProvider;
 
-    public PhotoPaintView(Context context, Bitmap bitmap, Bitmap originalBitmap, int originalRotation, ArrayList<VideoEditedInfo.MediaEntity> entities, MediaController.CropState cropState, Runnable onInit) {
+    public PhotoPaintView(Context context, Bitmap bitmap, Bitmap originalBitmap, int originalRotation, ArrayList<VideoEditedInfo.MediaEntity> entities, MediaController.CropState cropState, Runnable onInit, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
 
         inBubbleMode = context instanceof BubbleActivity;
         currentCropState = cropState;
@@ -283,7 +285,7 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
 
         doneTextView = new TextView(context);
         doneTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        doneTextView.setTextColor(Theme.getColor(Theme.key_dialogFloatingButton));
+        doneTextView.setTextColor(getThemedColor(Theme.key_dialogFloatingButton));
         doneTextView.setGravity(Gravity.CENTER);
         doneTextView.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.ACTION_BAR_PICKER_SELECTOR_COLOR, 0));
         doneTextView.setPadding(AndroidUtilities.dp(20), 0, AndroidUtilities.dp(20), 0);
@@ -417,7 +419,7 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
                 setCurrentSwatch(brushSwatch, true);
                 brushSwatch = null;
             }
-            paintButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogFloatingButton), PorterDuff.Mode.MULTIPLY));
+            paintButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_dialogFloatingButton), PorterDuff.Mode.MULTIPLY));
             paintButton.setImageResource(R.drawable.photo_paint);
         }
 
@@ -426,10 +428,10 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
 
     public void updateColors() {
         if (paintButton != null && paintButton.getColorFilter() != null) {
-            paintButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogFloatingButton), PorterDuff.Mode.MULTIPLY));
+            paintButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_dialogFloatingButton), PorterDuff.Mode.MULTIPLY));
         }
         if (doneTextView != null) {
-            doneTextView.setTextColor(Theme.getColor(Theme.key_dialogFloatingButton));
+            doneTextView.setTextColor(getThemedColor(Theme.key_dialogFloatingButton));
         }
     }
 
@@ -1033,7 +1035,7 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
     }
 
     private void openStickersView() {
-        StickerMasksAlert stickerMasksAlert = new StickerMasksAlert(getContext(), facesBitmap == null);
+        StickerMasksAlert stickerMasksAlert = new StickerMasksAlert(getContext(), facesBitmap == null, resourcesProvider);
         stickerMasksAlert.setDelegate((parentObject, sticker) -> createSticker(parentObject, sticker, true));
         stickerMasksAlert.setOnDismissListener(dialog -> onOpenCloseStickersAlert(false));
         stickerMasksAlert.show();
@@ -1234,7 +1236,7 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
             parent.setOrientation(LinearLayout.HORIZONTAL);
 
             TextView deleteView = new TextView(getContext());
-            deleteView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem));
+            deleteView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
             deleteView.setBackgroundDrawable(Theme.getSelectorDrawable(false));
             deleteView.setGravity(Gravity.CENTER_VERTICAL);
             deleteView.setPadding(AndroidUtilities.dp(16), 0, AndroidUtilities.dp(14), 0);
@@ -1252,7 +1254,7 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
 
             if (entityView instanceof TextPaintView) {
                 TextView editView = new TextView(getContext());
-                editView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem));
+                editView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
                 editView.setBackgroundDrawable(Theme.getSelectorDrawable(false));
                 editView.setGravity(Gravity.CENTER_VERTICAL);
                 editView.setPadding(AndroidUtilities.dp(16), 0, AndroidUtilities.dp(16), 0);
@@ -1270,7 +1272,7 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
             }
 
             TextView duplicateView = new TextView(getContext());
-            duplicateView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem));
+            duplicateView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
             duplicateView.setBackgroundDrawable(Theme.getSelectorDrawable(false));
             duplicateView.setGravity(Gravity.CENTER_VERTICAL);
             duplicateView.setPadding(AndroidUtilities.dp(14), 0, AndroidUtilities.dp(16), 0);
@@ -1315,11 +1317,11 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
         ImageView imageView = new ImageView(getContext());
         imageView.setScaleType(ImageView.ScaleType.CENTER);
         imageView.setImageResource(icon);
-        imageView.setColorFilter(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem));
+        imageView.setColorFilter(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
         button.addView(imageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 16, 0, 16, 0));
 
         TextView textView = new TextView(getContext());
-        textView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem));
+        textView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setText(text);
         textView.setMinWidth(AndroidUtilities.dp(70));
@@ -1328,7 +1330,7 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
         ImageView check = new ImageView(getContext());
         check.setImageResource(R.drawable.msg_text_check);
         check.setScaleType(ImageView.ScaleType.CENTER);
-        check.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_radioBackgroundChecked), PorterDuff.Mode.MULTIPLY));
+        check.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_radioBackgroundChecked), PorterDuff.Mode.MULTIPLY));
         check.setVisibility(selected ? VISIBLE : INVISIBLE);
         button.addView(check, LayoutHelper.createLinear(50, LayoutHelper.MATCH_PARENT));
 
@@ -1372,11 +1374,11 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
         ImageView imageView = new ImageView(getContext());
         imageView.setScaleType(ImageView.ScaleType.CENTER);
         imageView.setImageResource(icon);
-        imageView.setColorFilter(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem));
+        imageView.setColorFilter(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
         button.addView(imageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 16, 0, 16, 0));
 
         TextView textView = new TextView(getContext());
-        textView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem));
+        textView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setText(text);
         button.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 0, 0, 16, 0));
@@ -1385,7 +1387,7 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
             ImageView check = new ImageView(getContext());
             check.setImageResource(R.drawable.msg_text_check);
             check.setScaleType(ImageView.ScaleType.CENTER);
-            check.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_radioBackgroundChecked), PorterDuff.Mode.MULTIPLY));
+            check.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_radioBackgroundChecked), PorterDuff.Mode.MULTIPLY));
             button.addView(check, LayoutHelper.createLinear(50, LayoutHelper.MATCH_PARENT));
         }
 
@@ -1635,6 +1637,11 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
         }
 
         return false;
+    }
+
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
     }
 
     private static class StickerPosition {

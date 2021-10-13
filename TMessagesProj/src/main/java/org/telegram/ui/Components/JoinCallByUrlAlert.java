@@ -114,7 +114,11 @@ public class JoinCallByUrlAlert extends BottomSheet {
 
         BottomSheetCell clearButton = new BottomSheetCell(context);
         clearButton.setBackground(null);
-        clearButton.setText(LocaleController.getString("VoipGroupJoinVoiceChatUrl", R.string.VoipGroupJoinVoiceChatUrl));
+        if (ChatObject.isChannelOrGiga(chat)) {
+            clearButton.setText(LocaleController.getString("VoipChannelJoinVoiceChatUrl", R.string.VoipChannelJoinVoiceChatUrl));
+        } else {
+            clearButton.setText(LocaleController.getString("VoipGroupJoinVoiceChatUrl", R.string.VoipGroupJoinVoiceChatUrl));
+        }
         clearButton.background.setOnClickListener(v -> {
             joinAfterDismiss = true;
             dismiss();

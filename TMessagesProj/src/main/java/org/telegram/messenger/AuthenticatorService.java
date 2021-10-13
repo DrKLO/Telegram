@@ -22,11 +22,9 @@ import android.os.IBinder;
 public class AuthenticatorService extends Service {
 
     private static class Authenticator extends AbstractAccountAuthenticator {
-        private final Context context;
 
         public Authenticator(Context context) {
             super(context);
-            this.context = context;
         }
 
         @Override

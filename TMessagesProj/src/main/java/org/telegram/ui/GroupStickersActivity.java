@@ -93,7 +93,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
     private TLRPC.TL_messages_stickerSet selectedStickerSet;
 
     private TLRPC.ChatFull info;
-    private int chatId;
+    private long chatId;
 
     private boolean donePressed;
 
@@ -108,7 +108,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
 
     private final static int done_button = 1;
 
-    public GroupStickersActivity(int id) {
+    public GroupStickersActivity(long id) {
         super();
         chatId = id;
     }
@@ -696,7 +696,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
 
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View view = null;
+            View view;
             switch (viewType) {
                 case 0:
                 case 5:
@@ -715,6 +715,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
                     view.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                     break;
                 case 4:
+                default:
                     view = new HeaderCell(mContext);
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;

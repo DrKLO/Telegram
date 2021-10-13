@@ -52,6 +52,7 @@ import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ChatsWidgetProvider;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.ContactsWidgetProvider;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
@@ -260,9 +261,8 @@ public class EditWidgetActivity extends BaseFragment {
                     TLRPC.FileLocation photoPath = null;
                     TLRPC.User user = null;
                     TLRPC.Chat chat = null;
-                    int lowerId = (int) dialog.id;
-                    if (lowerId > 0) {
-                        user = getMessagesController().getUser(lowerId);
+                    if (DialogObject.isUserDialog(dialog.id)) {
+                        user = getMessagesController().getUser(dialog.id);
                         if (user != null) {
                             if (UserObject.isUserSelf(user)) {
                                 name = LocaleController.getString("SavedMessages", R.string.SavedMessages);
@@ -273,12 +273,12 @@ public class EditWidgetActivity extends BaseFragment {
                             } else {
                                 name = ContactsController.formatName(user.first_name, user.last_name);
                             }
-                            if (!UserObject.isReplyUser(user) && !UserObject.isUserSelf(user) && user != null && user.photo != null && user.photo.photo_small != null && user.photo.photo_small.volume_id != 0 && user.photo.photo_small.local_id != 0) {
+                            if (!UserObject.isReplyUser(user) && !UserObject.isUserSelf(user) && user.photo != null && user.photo.photo_small != null && user.photo.photo_small.volume_id != 0 && user.photo.photo_small.local_id != 0) {
                                 photoPath = user.photo.photo_small;
                             }
                         }
                     } else {
-                        chat = getMessagesController().getChat(-lowerId);
+                        chat = getMessagesController().getChat(-dialog.id);
                         if (chat != null) {
                             name = chat.title;
                             if (chat.photo != null && chat.photo.photo_small != null && chat.photo.photo_small.volume_id != 0 && chat.photo.photo_small.local_id != 0) {
@@ -337,7 +337,7 @@ public class EditWidgetActivity extends BaseFragment {
                     if (message != null) {
                         TLRPC.User fromUser = null;
                         TLRPC.Chat fromChat = null;
-                        int fromId = message.getFromChatId();
+                        long fromId = message.getFromChatId();
                         if (fromId > 0) {
                             fromUser = getMessagesController().getUser(fromId);
                         } else {
@@ -461,7 +461,7 @@ public class EditWidgetActivity extends BaseFragment {
                                         messageString = String.format("\uD83C\uDFA7 %s - %s", message.getMusicAuthor(), message.getMusicTitle());
                                     } else {
                                         messageString = message.messageText;
-                                        AndroidUtilities.highlightText(messageString, message.highlightedWords);
+                                        AndroidUtilities.highlightText(messageString, message.highlightedWords, null);
                                     }
                                     if (message.messageOwner.media != null && !message.isMediaEmpty()) {
                                         textColor = getContext().getResources().getColor(R.color.widget_action_text);
@@ -474,14 +474,14 @@ public class EditWidgetActivity extends BaseFragment {
                         ((TextView) cells[a].findViewById(R.id.shortcut_widget_item_message)).setText(messageString.toString());
                         ((TextView) cells[a].findViewById(R.id.shortcut_widget_item_message)).setTextColor(textColor);
                     } else {
-                        if (dialog != null && dialog.last_message_date != 0) {
+                        if (dialog.last_message_date != 0) {
                             ((TextView) cells[a].findViewById(R.id.shortcut_widget_item_time)).setText(LocaleController.stringForMessageListDate(dialog.last_message_date));
                         } else {
                             ((TextView) cells[a].findViewById(R.id.shortcut_widget_item_time)).setText("");
                         }
                         ((TextView) cells[a].findViewById(R.id.shortcut_widget_item_message)).setText("");
                     }
-                    if (dialog != null && dialog.unread_count > 0) {
+                    if (dialog.unread_count > 0) {
                         ((TextView) cells[a].findViewById(R.id.shortcut_widget_item_badge)).setText(String.format("%d", dialog.unread_count));
                         cells[a].findViewById(R.id.shortcut_widget_item_badge).setVisibility(VISIBLE);
                         if (getMessagesController().isDialogMuted(dialog.id)) {
@@ -502,7 +502,7 @@ public class EditWidgetActivity extends BaseFragment {
                         TLRPC.Dialog dialog;
                         if (selectedDialogs.isEmpty()) {
                             if (num < getMediaDataController().hints.size()) {
-                                int userId = getMediaDataController().hints.get(num).peer.user_id;
+                                long userId = getMediaDataController().hints.get(num).peer.user_id;
                                 dialog = getMessagesController().dialogs_dict.get(userId);
                                 if (dialog == null) {
                                     dialog = new TLRPC.TL_dialog();
@@ -536,12 +536,11 @@ public class EditWidgetActivity extends BaseFragment {
 
                         String name;
 
-                        int lowerId = (int) dialog.id;
                         TLRPC.FileLocation photoPath = null;
                         TLRPC.User user = null;
                         TLRPC.Chat chat = null;
-                        if (lowerId > 0) {
-                            user = getMessagesController().getUser(lowerId);
+                        if (DialogObject.isUserDialog(dialog.id)) {
+                            user = getMessagesController().getUser(dialog.id);
                             if (UserObject.isUserSelf(user)) {
                                 name = LocaleController.getString("SavedMessages", R.string.SavedMessages);
                             } else if (UserObject.isReplyUser(user)) {
@@ -555,7 +554,7 @@ public class EditWidgetActivity extends BaseFragment {
                                 photoPath = user.photo.photo_small;
                             }
                         } else {
-                            chat = getMessagesController().getChat(-lowerId);
+                            chat = getMessagesController().getChat(-dialog.id);
                             name = chat.title;
                             if (chat.photo != null && chat.photo.photo_small != null && chat.photo.photo_small.volume_id != 0 && chat.photo.photo_small.local_id != 0) {
                                 photoPath = chat.photo.photo_small;
@@ -603,7 +602,7 @@ public class EditWidgetActivity extends BaseFragment {
                             FileLog.e(e);
                         }
 
-                        if (dialog != null && dialog.unread_count > 0) {
+                        if (dialog.unread_count > 0) {
                             String count;
                             if (dialog.unread_count > 99) {
                                 count = String.format("%d+", 99);
@@ -842,7 +841,7 @@ public class EditWidgetActivity extends BaseFragment {
         itemTouchHelper.attachToRecyclerView(listView);
         listView.setOnItemClickListener((view, position) -> {
             if (position == selectChatsRow) {
-                InviteMembersBottomSheet bottomSheet = new InviteMembersBottomSheet(context, currentAccount, null, 0, EditWidgetActivity.this);
+                InviteMembersBottomSheet bottomSheet = new InviteMembersBottomSheet(context, currentAccount, null, 0, EditWidgetActivity.this, null);
                 bottomSheet.setDelegate(dids -> {
                     selectedDialogs.clear();
                     selectedDialogs.addAll(dids);
@@ -995,12 +994,11 @@ public class EditWidgetActivity extends BaseFragment {
                 case 3: {
                     GroupCreateUserCell cell = (GroupCreateUserCell) holder.itemView;
                     long did = selectedDialogs.get(position - chatsStartRow);
-                    int lowerId = (int) did;
-                    if (lowerId > 0) {
-                        TLRPC.User user = getMessagesController().getUser(lowerId);
+                    if (DialogObject.isUserDialog(did)) {
+                        TLRPC.User user = getMessagesController().getUser(did);
                         cell.setObject(user, null, null, position != chatsEndRow - 1);
                     } else {
-                        TLRPC.Chat chat = getMessagesController().getChat(-lowerId);
+                        TLRPC.Chat chat = getMessagesController().getChat(-did);
                         cell.setObject(chat, null, null, position != chatsEndRow - 1);
                     }
                 }

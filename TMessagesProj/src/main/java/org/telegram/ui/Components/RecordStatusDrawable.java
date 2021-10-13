@@ -74,6 +74,9 @@ public class RecordStatusDrawable extends StatusDrawable {
     @Override
     public void draw(Canvas canvas) {
         Paint paint = currentPaint == null ? Theme.chat_statusRecordPaint : currentPaint;
+        if (paint.getStrokeWidth() != AndroidUtilities.dp(2)) {
+            paint.setStrokeWidth(AndroidUtilities.dp(2));
+        }
         canvas.save();
         canvas.translate(0, getIntrinsicHeight() / 2 + AndroidUtilities.dp(isChat ? 1 : 2));
         for (int a = 0; a < 4; a++) {

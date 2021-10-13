@@ -186,7 +186,7 @@ public class QuickRepliesSettingsActivity extends BaseFragment {
 
 		@Override
 		public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-			View view = null;
+			View view;
 			switch (viewType) {
 				case 0:
 					view = new TextInfoPrivacyCell(mContext);
@@ -204,6 +204,7 @@ public class QuickRepliesSettingsActivity extends BaseFragment {
 					textCells[viewType - 9] = (EditTextSettingsCell) view;
 					break;
 				case 4:
+				default:
 					view = new TextCheckCell(mContext);
 					view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
 					break;

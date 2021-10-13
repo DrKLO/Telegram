@@ -9,15 +9,11 @@ import android.text.SpannableStringBuilder;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
-import android.text.style.ReplacementSpan;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
-
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DownloadController;
@@ -82,23 +78,29 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
 
     private TextPaint description2TextPaint;
     private TextPaint captionTextPaint;
+    private final Theme.ResourcesProvider resourcesProvider;
 
     public SharedAudioCell(Context context) {
-        this(context, VIEW_TYPE_DEFAULT);
+        this(context, VIEW_TYPE_DEFAULT, null);
     }
 
-    public SharedAudioCell(Context context, int viewType) {
+    public SharedAudioCell(Context context, Theme.ResourcesProvider resourcesProvider) {
+        this(context, VIEW_TYPE_DEFAULT, resourcesProvider);
+    }
+
+    public SharedAudioCell(Context context, int viewType, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
         this.viewType = viewType;
         setFocusable(true);
 
-        radialProgress = new RadialProgress2(this);
+        radialProgress = new RadialProgress2(this, resourcesProvider);
         radialProgress.setColors(Theme.key_chat_inLoader, Theme.key_chat_inLoaderSelected, Theme.key_chat_inMediaIcon, Theme.key_chat_inMediaIconSelected);
 
         TAG = DownloadController.getInstance(currentAccount).generateObserverTag();
         setWillNotDraw(false);
 
-        checkBox = new CheckBox2(context, 22);
+        checkBox = new CheckBox2(context, 22, resourcesProvider);
         checkBox.setVisibility(INVISIBLE);
         checkBox.setColor(null, Theme.key_windowBackgroundWhite, Theme.key_checkboxCheck);
         checkBox.setDrawUnchecked(false);
@@ -144,7 +146,7 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
             } else {
                 title = currentMessageObject.getMusicTitle().replace('\n', ' ');
             }
-            CharSequence titleH = AndroidUtilities.highlightText(title, currentMessageObject.highlightedWords);
+            CharSequence titleH = AndroidUtilities.highlightText(title, currentMessageObject.highlightedWords, resourcesProvider);
             if (titleH != null) {
                 title = titleH;
             }
@@ -156,7 +158,7 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
 
         if (currentMessageObject.hasHighlightedWords()) {
             CharSequence caption = Emoji.replaceEmoji(currentMessageObject.messageOwner.message.replace("\n", " ").replaceAll(" +", " ").trim(), Theme.chat_msgTextPaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
-            CharSequence sequence = AndroidUtilities.highlightText(caption, currentMessageObject.highlightedWords);
+            CharSequence sequence = AndroidUtilities.highlightText(caption, currentMessageObject.highlightedWords, resourcesProvider);
             if (sequence != null) {
                 sequence = TextUtils.ellipsize(AndroidUtilities.ellipsizeCenterEnd(sequence, currentMessageObject.highlightedWords.get(0), maxWidth, captionTextPaint, 130), captionTextPaint, maxWidth, TextUtils.TruncateAt.END);
                 captionLayout = new StaticLayout(sequence, captionTextPaint, maxWidth + AndroidUtilities.dp(4), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
@@ -170,7 +172,7 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
                 descriptionLayout = new StaticLayout(duration, paint, maxWidth + AndroidUtilities.dp(4), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             } else {
                 CharSequence author = currentMessageObject.getMusicAuthor().replace('\n', ' ');
-                CharSequence authorH = AndroidUtilities.highlightText(author, currentMessageObject.highlightedWords);
+                CharSequence authorH = AndroidUtilities.highlightText(author, currentMessageObject.highlightedWords, resourcesProvider);
                 if (authorH != null) {
                     author = authorH;
                 }
@@ -206,7 +208,7 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
         currentMessageObject = messageObject;
         TLRPC.Document document = messageObject.getDocument();
 
-        TLRPC.PhotoSize thumb = document != null ? FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 240) : null;
+        TLRPC.PhotoSize thumb = document != null ? FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 360) : null;
         if (thumb instanceof TLRPC.TL_photoSize || thumb instanceof TLRPC.TL_photoSizeProgressive) {
             radialProgress.setImageOverlay(thumb, document, messageObject);
         } else {
@@ -382,7 +384,7 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
     @Override
     protected void onDraw(Canvas canvas) {
         if (viewType == VIEW_TYPE_GLOBAL_SEARCH) {
-            description2TextPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3));
+            description2TextPaint.setColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText3));
         }
         if (dateLayout != null) {
             canvas.save();
@@ -399,7 +401,7 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
         }
 
         if (captionLayout != null) {
-            captionTextPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            captionTextPaint.setColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
             canvas.save();
             canvas.translate(AndroidUtilities.dp(LocaleController.isRTL ? 8 : AndroidUtilities.leftBaseline), captionY);
             captionLayout.draw(canvas);
@@ -407,14 +409,14 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
         }
 
         if (descriptionLayout != null) {
-            Theme.chat_contextResult_descriptionTextPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
+            Theme.chat_contextResult_descriptionTextPaint.setColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText2));
             canvas.save();
             canvas.translate(AndroidUtilities.dp(LocaleController.isRTL ? 8 : AndroidUtilities.leftBaseline), descriptionY);
             descriptionLayout.draw(canvas);
             canvas.restore();
         }
 
-        radialProgress.setProgressColor(Theme.getColor(buttonPressed ? Theme.key_chat_inAudioSelectedProgress : Theme.key_chat_inAudioProgress));
+        radialProgress.setProgressColor(getThemedColor(buttonPressed ? Theme.key_chat_inAudioSelectedProgress : Theme.key_chat_inAudioProgress));
         radialProgress.draw(canvas);
 
         if (needDivider) {
@@ -458,7 +460,7 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
             miniButtonState = -1;
         }
         if (hasMiniProgress != 0) {
-            radialProgress.setMiniProgressBackgroundColor(Theme.getColor(currentMessageObject.isOutOwner() ? Theme.key_chat_outLoader : Theme.key_chat_inLoader));
+            radialProgress.setMiniProgressBackgroundColor(getThemedColor(currentMessageObject.isOutOwner() ? Theme.key_chat_outLoader : Theme.key_chat_inLoader));
             boolean playing = MediaController.getInstance().isPlayingMessage(currentMessageObject);
             if (!playing || playing && MediaController.getInstance().isMessagePaused()) {
                 buttonState = 0;
@@ -574,6 +576,11 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         updateButtonState(false, true);
+    }
+
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
     }
 }
 

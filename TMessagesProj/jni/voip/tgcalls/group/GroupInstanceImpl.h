@@ -57,6 +57,9 @@ public:
 };
 
 struct BroadcastPart {
+    struct VideoParams {
+    };
+
     enum class Status {
         Success,
         NotReady,
@@ -66,7 +69,7 @@ struct BroadcastPart {
     int64_t timestampMilliseconds = 0;
     double responseTimestamp = 0;
     Status status = Status::NotReady;
-    std::vector<uint8_t> oggData;
+    std::vector<uint8_t> data;
 };
 
 enum class GroupConnectionMode {
@@ -150,7 +153,9 @@ struct GroupInstanceDescriptor {
     std::function<rtc::scoped_refptr<webrtc::AudioDeviceModule>(webrtc::TaskQueueFactory*)> createAudioDeviceModule;
     std::shared_ptr<VideoCaptureInterface> videoCapture; // deprecated
     std::function<webrtc::VideoTrackSourceInterface*()> getVideoSource;
-    std::function<std::shared_ptr<BroadcastPartTask>(std::shared_ptr<PlatformContext>, int64_t, int64_t, std::function<void(BroadcastPart &&)>)> requestBroadcastPart;
+    std::function<std::shared_ptr<BroadcastPartTask>(std::function<void(int64_t)>)> requestCurrentTime;
+    std::function<std::shared_ptr<BroadcastPartTask>(std::shared_ptr<PlatformContext>, int64_t, int64_t, std::function<void(BroadcastPart &&)>)> requestAudioBroadcastPart;
+    std::function<std::shared_ptr<BroadcastPartTask>(std::shared_ptr<PlatformContext>, int64_t, int64_t, int32_t, VideoChannelDescription::Quality, std::function<void(BroadcastPart &&)>)> requestVideoBroadcastPart;
     int outgoingAudioBitrateKbit{32};
     bool disableOutgoingAudioProcessing{false};
     VideoContentType videoContentType{VideoContentType::None};

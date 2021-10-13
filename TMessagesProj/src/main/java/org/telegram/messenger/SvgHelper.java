@@ -106,7 +106,6 @@ public class SvgHelper {
         protected int height;
         private static int[] parentPosition = new int[2];
 
-        private Shader backgroundGradient;
         private Bitmap backgroundBitmap;
         private Canvas backgroundCanvas;
         private LinearGradient placeholderGradient;
@@ -122,6 +121,8 @@ public class SvgHelper {
         private float colorAlpha;
         private float crossfadeAlpha = 1.0f;
 
+        private boolean aspectFill = true;
+
         @Override
         public int getIntrinsicHeight() {
             return width;
@@ -132,6 +133,16 @@ public class SvgHelper {
             return height;
         }
 
+        public void setAspectFill(boolean value) {
+            aspectFill = value;
+        }
+
+        public void overrideWidthAndHeight(int w, int h) {
+            width = w;
+            height = h;
+        }
+
+
         @Override
         public void draw(Canvas canvas) {
             if (currentColorKey != null) {
@@ -140,9 +151,12 @@ public class SvgHelper {
             Rect bounds = getBounds();
             float scaleX = bounds.width() / (float) width;
             float scaleY = bounds.height() / (float) height;
-            float scale = Math.max(scaleX, scaleY);
+            float scale = aspectFill ? Math.max(scaleX, scaleY) : Math.min(scaleX, scaleY);
             canvas.save();
             canvas.translate(bounds.left, bounds.top);
+            if (!aspectFill) {
+                canvas.translate((bounds.width() - width * scale) / 2, (bounds.height() - height * scale) / 2);
+            }
             canvas.scale(scale, scale);
             for (int a = 0, N = commands.size(); a < N; a++) {
                 Object object = commands.get(a);
@@ -248,6 +262,7 @@ public class SvgHelper {
                 color = Color.argb((int) (Color.alpha(color) / 2 * colorAlpha), Color.red(color), Color.green(color), Color.blue(color));
                 float centerX = (1.0f - w) / 2;
                 placeholderGradient = new LinearGradient(0, 0, gradientWidth, 0, new int[]{0x00000000, 0x00000000, color, 0x00000000, 0x00000000}, new float[]{0.0f, centerX - w / 2.0f, centerX, centerX + w / 2.0f, 1.0f}, Shader.TileMode.REPEAT);
+                Shader backgroundGradient;
                 if (Build.VERSION.SDK_INT >= 28) {
                     backgroundGradient = new LinearGradient(0, 0, gradientWidth, 0, new int[]{color, color}, null, Shader.TileMode.REPEAT);
                 } else {
@@ -1719,7 +1734,7 @@ public class SvgHelper {
                 int num = encoded[i] & 0xff;
                 if (num >= 128 + 64) {
                     int start = num - 128 - 64;
-                    path.append("AACAAAAHAAALMAAAQASTAVAAAZaacaaaahaaalmaaaqastava.az0123456789-,".substring(start, start + 1));
+                    path.append("AACAAAAHAAALMAAAQASTAVAAAZaacaaaahaaalmaaaqastava.az0123456789-,".charAt(start));
                 } else {
                     if (num >= 128) {
                         path.append(',');

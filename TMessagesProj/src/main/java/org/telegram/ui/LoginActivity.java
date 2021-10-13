@@ -68,24 +68,24 @@ import android.widget.Toast;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SRPHelper;
+import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
@@ -102,19 +102,20 @@ import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.ContextProgressView;
 import org.telegram.ui.Components.EditTextBoldCursor;
-import org.telegram.ui.Components.RLottieDrawable;
-import org.telegram.ui.Components.RLottieImageView;
-import org.telegram.ui.Components.VerticalPositionAutoAnimator;
 import org.telegram.ui.Components.HintEditText;
 import org.telegram.ui.Components.ImageUpdater;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.RLottieDrawable;
+import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.RadialProgressView;
 import org.telegram.ui.Components.SlideView;
+import org.telegram.ui.Components.VerticalPositionAutoAnimator;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -1127,9 +1128,8 @@ public class LoginActivity extends BaseFragment {
 
         private int countryState = 0;
 
-        private ArrayList<String> countriesArray = new ArrayList<>();
-        private HashMap<String, String> countriesMap = new HashMap<>();
-        private HashMap<String, String> codesMap = new HashMap<>();
+        private ArrayList<CountrySelectActivity.Country> countriesArray = new ArrayList<>();
+        private HashMap<String, CountrySelectActivity.Country> codesMap = new HashMap<>();
         private HashMap<String, String> phoneFormatMap = new HashMap<>();
 
         private boolean ignoreSelection = false;
@@ -1153,9 +1153,9 @@ public class LoginActivity extends BaseFragment {
             countryButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 7));
             addView(countryButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36, 0, 0, 0, 14));
             countryButton.setOnClickListener(view -> {
-                CountrySelectActivity fragment = new CountrySelectActivity(true);
-                fragment.setCountrySelectActivityDelegate((name, shortName) -> {
-                    selectCountry(name, shortName);
+                CountrySelectActivity fragment = new CountrySelectActivity(true, countriesArray);
+                fragment.setCountrySelectActivityDelegate((country) -> {
+                    selectCountry(country);
                     AndroidUtilities.runOnUIThread(() -> AndroidUtilities.showKeyboard(phoneField), 300);
                     phoneField.requestFocus();
                     phoneField.setSelection(phoneField.length());
@@ -1218,7 +1218,7 @@ public class LoginActivity extends BaseFragment {
                         phoneField.setHintText(null);
                         countryState = 1;
                     } else {
-                        String country;
+                        CountrySelectActivity.Country country;
                         boolean ok = false;
                         String textToSet = null;
                         if (text.length() > 4) {
@@ -1239,18 +1239,11 @@ public class LoginActivity extends BaseFragment {
                         }
                         country = codesMap.get(text);
                         if (country != null) {
-                            int index = countriesArray.indexOf(country);
-                            if (index != -1) {
-                                ignoreSelection = true;
-                                countryButton.setText(countriesArray.get(index));
-                                String hint = phoneFormatMap.get(text);
-                                phoneField.setHintText(hint != null ? hint.replace('X', '–') : null);
-                                countryState = 0;
-                            } else {
-                                countryButton.setText(LocaleController.getString("WrongCountry", R.string.WrongCountry));
-                                phoneField.setHintText(null);
-                                countryState = 2;
-                            }
+                            ignoreSelection = true;
+                            countryButton.setText(country.name);
+                            String hint = phoneFormatMap.get(text);
+                            phoneField.setHintText(hint != null ? hint.replace('X', '–') : null);
+                            countryState = 0;
                         } else {
                             countryButton.setText(LocaleController.getString("WrongCountry", R.string.WrongCountry));
                             phoneField.setHintText(null);
@@ -1425,9 +1418,9 @@ public class LoginActivity extends BaseFragment {
                             FileLog.e(e);
                         }
                         if (syncContacts) {
-                            BulletinFactory.of((FrameLayout) fragmentView).createSimpleBulletin(R.raw.contacts_sync_on, LocaleController.getString("SyncContactsOn", R.string.SyncContactsOn)).show();
+                            BulletinFactory.of((FrameLayout) fragmentView, null).createSimpleBulletin(R.raw.contacts_sync_on, LocaleController.getString("SyncContactsOn", R.string.SyncContactsOn)).show();
                         } else {
-                            BulletinFactory.of((FrameLayout) fragmentView).createSimpleBulletin(R.raw.contacts_sync_off, LocaleController.getString("SyncContactsOff", R.string.SyncContactsOff)).show();
+                            BulletinFactory.of((FrameLayout) fragmentView, null).createSimpleBulletin(R.raw.contacts_sync_off, LocaleController.getString("SyncContactsOff", R.string.SyncContactsOff)).show();
                         }
                     }
                 });
@@ -1448,14 +1441,18 @@ public class LoginActivity extends BaseFragment {
             }
 
             HashMap<String, String> languageMap = new HashMap<>();
+
             try {
                 BufferedReader reader = new BufferedReader(new InputStreamReader(getResources().getAssets().open("countries.txt")));
                 String line;
                 while ((line = reader.readLine()) != null) {
                     String[] args = line.split(";");
-                    countriesArray.add(0, args[2]);
-                    countriesMap.put(args[2], args[0]);
-                    codesMap.put(args[0], args[2]);
+                    CountrySelectActivity.Country countryWithCode = new CountrySelectActivity.Country();
+                    countryWithCode.name = args[2];
+                    countryWithCode.code = args[0];
+                    countryWithCode.shortname = args[1];
+                    countriesArray.add(0, countryWithCode);
+                    codesMap.put(args[0], countryWithCode);
                     if (args.length > 3) {
                         phoneFormatMap.put(args[0], args[3]);
                     }
@@ -1466,7 +1463,7 @@ public class LoginActivity extends BaseFragment {
                 FileLog.e(e);
             }
 
-            Collections.sort(countriesArray, String::compareTo);
+            Collections.sort(countriesArray, Comparator.comparing(o -> o.name));
 
             String country = null;
 
@@ -1505,28 +1502,58 @@ public class LoginActivity extends BaseFragment {
             } else {
                 codeField.requestFocus();
             }
+
+            TLRPC.TL_help_getCountriesList req = new TLRPC.TL_help_getCountriesList();
+            req.lang_code = "";
+            getConnectionsManager().sendRequest(req, (response, error) -> {
+                AndroidUtilities.runOnUIThread(() -> {
+                    if (error == null) {
+                        countriesArray.clear();
+                        codesMap.clear();
+                        phoneFormatMap.clear();
+                        TLRPC.TL_help_countriesList help_countriesList = (TLRPC.TL_help_countriesList) response;
+                        for (int i = 0; i < help_countriesList.countries.size(); i++) {
+                            TLRPC.TL_help_country c = help_countriesList.countries.get(i);
+                            for (int k = 0; k < c.country_codes.size(); k++) {
+                                CountrySelectActivity.Country countryWithCode = new CountrySelectActivity.Country();
+                                countryWithCode.name = c.default_name;
+                                countryWithCode.code = c.country_codes.get(k).country_code;
+
+                                countriesArray.add(countryWithCode);
+                                codesMap.put(c.country_codes.get(k).country_code, countryWithCode);
+                                if (c.country_codes.get(k).patterns.size() > 0) {
+                                    phoneFormatMap.put(c.country_codes.get(k).country_code, c.country_codes.get(k).patterns.get(0));
+                                }
+                            }
+                        }
+                    }
+                });
+            }, ConnectionsManager.RequestFlagWithoutLogin | ConnectionsManager.RequestFlagFailOnServerErrors);
         }
 
-        public void selectCountry(String name, String iso) {
-            int index = countriesArray.indexOf(name);
-            if (index != -1) {
-                ignoreOnTextChange = true;
-                String code = countriesMap.get(name);
-                codeField.setText(code);
-                countryButton.setText(name);
-                String hint = phoneFormatMap.get(code);
-                phoneField.setHintText(hint != null ? hint.replace('X', '–') : null);
-                countryState = 0;
-                ignoreOnTextChange = false;
-            }
+        public void selectCountry(CountrySelectActivity.Country country) {
+            ignoreOnTextChange = true;
+            String code = country.code;
+            codeField.setText(code);
+            countryButton.setText(country.name);
+            String hint = phoneFormatMap.get(code);
+            phoneField.setHintText(hint != null ? hint.replace('X', '–') : null);
+            countryState = 0;
+            ignoreOnTextChange = false;
         }
 
         private void setCountry(HashMap<String, String> languageMap, String country) {
-            String countryName = languageMap.get(country);
-            if (countryName != null) {
-                int index = countriesArray.indexOf(countryName);
-                if (index != -1) {
-                    codeField.setText(countriesMap.get(countryName));
+            String name = languageMap.get(country);
+            if (name != null && countriesArray != null) {
+                CountrySelectActivity.Country countryWithCode = null;
+                for (int i = 0; i < countriesArray.size(); i++) {
+                    if (countriesArray.get(i) != null && countriesArray.get(i).name.equals(country)) {
+                        countryWithCode = countriesArray.get(i);
+                        break;
+                    }
+                }
+                if (countryWithCode != null) {
+                    codeField.setText(countryWithCode.code);
                     countryState = 0;
                 }
             }
@@ -1544,8 +1571,8 @@ public class LoginActivity extends BaseFragment {
                 return;
             }
             ignoreOnTextChange = true;
-            String str = countriesArray.get(i);
-            codeField.setText(countriesMap.get(str));
+            CountrySelectActivity.Country countryWithCode = countriesArray.get(i);
+            codeField.setText(countryWithCode.code);
             ignoreOnTextChange = false;
         }
 
@@ -1775,7 +1802,7 @@ public class LoginActivity extends BaseFragment {
                             if (number.length() > 4) {
                                 for (int a = 4; a >= 1; a--) {
                                     String sub = number.substring(0, a);
-                                    String country = codesMap.get(sub);
+                                    CountrySelectActivity.Country country = codesMap.get(sub);
                                     if (country != null) {
                                         ok = true;
                                         textToSet = number.substring(a);
@@ -2021,7 +2048,7 @@ public class LoginActivity extends BaseFragment {
 
                         Intent mailer = new Intent(Intent.ACTION_SENDTO);
                         mailer.setData(Uri.parse("mailto:"));
-                        mailer.putExtra(Intent.EXTRA_EMAIL, new String[]{"sms@stel.com"});
+                        mailer.putExtra(Intent.EXTRA_EMAIL, new String[]{"reports@stel.com"});
                         mailer.putExtra(Intent.EXTRA_SUBJECT, "Android registration/login issue " + version + " " + emailPhone);
                         mailer.putExtra(Intent.EXTRA_TEXT, "Phone: " + requestPhone + "\nApp version: " + version + "\nOS version: SDK " + Build.VERSION.SDK_INT + "\nDevice Name: " + Build.MANUFACTURER + Build.MODEL + "\nLocale: " + Locale.getDefault() + "\nError: " + lastError);
                         getContext().startActivity(Intent.createChooser(mailer, "Send email..."));
@@ -3886,8 +3913,12 @@ public class LoginActivity extends BaseFragment {
                     avatarEditor.setAnimation(cameraDrawable);
                     cameraDrawable.setCurrentFrame(0);
                 }, dialog -> {
-                    cameraDrawable.setCustomEndFrame(86);
-                    avatarEditor.playAnimation();
+                    if (!imageUpdater.isUploadingImage()) {
+                        cameraDrawable.setCustomEndFrame(86);
+                        avatarEditor.playAnimation();
+                    } else {
+                        cameraDrawable.setCurrentFrame(0, false);
+                    }
                 });
                 cameraDrawable.setCurrentFrame(0);
                 cameraDrawable.setCustomEndFrame(43);

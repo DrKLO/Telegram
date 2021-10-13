@@ -97,14 +97,14 @@ public class LocationSharingService extends Service implements NotificationCente
         String str;
         if (infos.size() == 1) {
             LocationController.SharingLocationInfo info = infos.get(0);
-            int lower_id = (int) info.messageObject.getDialogId();
+            long dialogId = info.messageObject.getDialogId();
             int currentAccount = info.messageObject.currentAccount;
-            if (lower_id > 0) {
-                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(lower_id);
+            if (DialogObject.isUserDialog(dialogId)) {
+                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogId);
                 param = UserObject.getFirstName(user);
                 str = LocaleController.getString("AttachLiveLocationIsSharing", R.string.AttachLiveLocationIsSharing);
             } else {
-                TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lower_id);
+                TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
                 if (chat != null) {
                     param = chat.title;
                 } else {

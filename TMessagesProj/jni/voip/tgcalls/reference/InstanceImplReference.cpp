@@ -406,7 +406,10 @@ public:
         }
 		beginSendingVideo();
     }
-    
+
+    void sendVideoDeviceUpdated() {
+    }
+
     void setRequestedVideoAspect(float aspect) {
     }
 
@@ -1015,12 +1018,12 @@ PersistentState InstanceImplReference::getPersistentState() {
 
 void InstanceImplReference::stop(std::function<void(FinalState)> completion) {
     auto result = FinalState();
-    
+
     result.persistentState = getPersistentState();
     result.debugLog = logSink_->result();
     result.trafficStats = getTrafficStats();
     result.isRatingSuggested = false;
-    
+
     completion(result);
 }
 

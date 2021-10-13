@@ -71,11 +71,11 @@ public class FileRefController extends BaseController {
     public static String getKeyForParentObject(Object parentObject) {
         if (parentObject instanceof MessageObject) {
             MessageObject messageObject = (MessageObject) parentObject;
-            int channelId = messageObject.getChannelId();
+            long channelId = messageObject.getChannelId();
             return "message" + messageObject.getRealId() + "_" + channelId + "_" + messageObject.scheduled;
         } else if (parentObject instanceof TLRPC.Message) {
             TLRPC.Message message = (TLRPC.Message) parentObject;
-            int channelId = message.peer_id != null ? message.peer_id.channel_id : 0;
+            long channelId = message.peer_id != null ? message.peer_id.channel_id : 0;
             return "message" + message.id + "_" + channelId + "_" + message.from_scheduled;
         } else if (parentObject instanceof TLRPC.WebPage) {
             TLRPC.WebPage webPage = (TLRPC.WebPage) parentObject;
@@ -310,10 +310,10 @@ public class FileRefController extends BaseController {
     private void requestReferenceFromServer(Object parentObject, String locationKey, String parentKey, Object[] args) {
         if (parentObject instanceof MessageObject) {
             MessageObject messageObject = (MessageObject) parentObject;
-            int channelId = messageObject.getChannelId();
+            long channelId = messageObject.getChannelId();
             if (messageObject.scheduled) {
                 TLRPC.TL_messages_getScheduledMessages req = new TLRPC.TL_messages_getScheduledMessages();
-                req.peer = getMessagesController().getInputPeer((int) messageObject.getDialogId());
+                req.peer = getMessagesController().getInputPeer(messageObject.getDialogId());
                 req.id.add(messageObject.getRealId());
                 getConnectionsManager().sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true, false));
             } else if (channelId != 0) {
@@ -403,7 +403,7 @@ public class FileRefController extends BaseController {
                 }
                 getConnectionsManager().sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true, false));
             } else if (string.startsWith("avatar_")) {
-                int id = Utilities.parseInt(string);
+                long id = Utilities.parseLong(string);
                 if (id > 0) {
                     TLRPC.TL_photos_getUserPhotos req = new TLRPC.TL_photos_getUserPhotos();
                     req.limit = 80;
@@ -423,7 +423,7 @@ public class FileRefController extends BaseController {
             } else if (string.startsWith("sent_")) {
                 String[] params = string.split("_");
                 if (params.length == 3) {
-                    int channelId = Utilities.parseInt(params[1]);
+                    long channelId = Utilities.parseLong(params[1]);
                     if (channelId != 0) {
                         TLRPC.TL_channels_getMessages req = new TLRPC.TL_channels_getMessages();
                         req.channel = getMessagesController().getInputChannel(channelId);

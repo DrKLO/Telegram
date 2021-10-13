@@ -1,4 +1,4 @@
-package org.telegram.ui;
+package org.telegram.ui.Components;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -19,10 +19,6 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.NumberPicker;
-import org.telegram.ui.Components.RLottieDrawable;
-import org.telegram.ui.Components.RLottieImageView;
 
 public class SwipeGestureSettingsView extends FrameLayout {
 
@@ -158,12 +154,9 @@ public class SwipeGestureSettingsView extends FrameLayout {
             AndroidUtilities.updateViewVisibilityAnimated(iconViews[nextIconIndex], true, 0.5f, true);
             currentIconIndex = nextIconIndex;
 
-            AndroidUtilities.runOnUIThread(swapIconRunnable = new Runnable() {
-                @Override
-                public void run() {
-                    swapIconRunnable = null;
-                    swapIcons();
-                }
+            AndroidUtilities.runOnUIThread(swapIconRunnable = () -> {
+                swapIconRunnable = null;
+                swapIcons();
             }, 150);
         }
     }

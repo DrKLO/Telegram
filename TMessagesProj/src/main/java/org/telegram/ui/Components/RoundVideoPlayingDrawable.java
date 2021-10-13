@@ -32,8 +32,11 @@ public class RoundVideoPlayingDrawable extends Drawable {
     private View parentView;
     int alpha = 255;
 
-    public RoundVideoPlayingDrawable(View view) {
+    private final Theme.ResourcesProvider resourcesProvider;
+
+    public RoundVideoPlayingDrawable(View view, Theme.ResourcesProvider resourcesProvider) {
         super();
+        this.resourcesProvider = resourcesProvider;
         parentView = view;
     }
 
@@ -92,7 +95,7 @@ public class RoundVideoPlayingDrawable extends Drawable {
 
     @Override
     public void draw(Canvas canvas) {
-        paint.setColor(Theme.getColor(Theme.key_chat_serviceText));
+        paint.setColor(getThemedColor(Theme.key_chat_serviceText));
         if (alpha != 255) {
             paint.setAlpha((int) (alpha * (paint.getAlpha() / 255f)));
         }
@@ -131,5 +134,10 @@ public class RoundVideoPlayingDrawable extends Drawable {
     @Override
     public int getIntrinsicHeight() {
         return AndroidUtilities.dp(12);
+    }
+
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
     }
 }

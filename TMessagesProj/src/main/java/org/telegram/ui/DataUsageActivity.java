@@ -822,7 +822,7 @@ public class DataUsageActivity extends BaseFragment {
 
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View view = null;
+            View view;
             switch (viewType) {
                 case 0:
                     view = new ShadowSectionCell(mContext);
@@ -836,6 +836,7 @@ public class DataUsageActivity extends BaseFragment {
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
                 case 3:
+                default:
                     view = new TextInfoPrivacyCell(mContext);
                     break;
             }

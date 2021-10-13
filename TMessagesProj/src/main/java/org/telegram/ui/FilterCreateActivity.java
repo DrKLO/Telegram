@@ -8,7 +8,6 @@ import android.text.Editable;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.TextWatcher;
-import android.util.LongSparseArray;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,12 +18,14 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.support.LongSparseIntArray;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
@@ -95,9 +96,9 @@ public class FilterCreateActivity extends BaseFragment {
     private boolean creatingNew;
     private String newFilterName;
     private int newFilterFlags;
-    private ArrayList<Integer> newAlwaysShow;
-    private ArrayList<Integer> newNeverShow;
-    private LongSparseArray<Integer> newPinned;
+    private ArrayList<Long> newAlwaysShow;
+    private ArrayList<Long> newNeverShow;
+    private LongSparseIntArray newPinned;
 
     private static final int MAX_NAME_LENGTH = 12;
 
@@ -138,7 +139,7 @@ public class FilterCreateActivity extends BaseFragment {
         this(dialogFilter, null);
     }
 
-    public FilterCreateActivity(MessagesController.DialogFilter dialogFilter, ArrayList<Integer> alwaysShow) {
+    public FilterCreateActivity(MessagesController.DialogFilter dialogFilter, ArrayList<Long> alwaysShow) {
         super();
         filter = dialogFilter;
         if (filter == null) {
@@ -320,35 +321,35 @@ public class FilterCreateActivity extends BaseFragment {
                 excludeExpanded = true;
                 updateRows();
             } else if (position == includeAddRow || position == excludeAddRow) {
-                ArrayList<Integer> arrayList = position == excludeAddRow ? newNeverShow : newAlwaysShow;
+                ArrayList<Long> arrayList = position == excludeAddRow ? newNeverShow : newAlwaysShow;
                 FilterUsersActivity fragment = new FilterUsersActivity(position == includeAddRow, arrayList, newFilterFlags);
                 fragment.setDelegate((ids, flags) -> {
                     newFilterFlags = flags;
                     if (position == excludeAddRow) {
                         newNeverShow = ids;
                         for (int a = 0; a < newNeverShow.size(); a++) {
-                            Integer id = newNeverShow.get(a);
+                            Long id = newNeverShow.get(a);
                             newAlwaysShow.remove(id);
-                            newPinned.remove((long) id);
+                            newPinned.delete(id);
                         }
                     } else {
                         newAlwaysShow = ids;
                         for (int a = 0; a < newAlwaysShow.size(); a++) {
                             newNeverShow.remove(newAlwaysShow.get(a));
                         }
-                        ArrayList<Integer> toRemove = new ArrayList<>();
+                        ArrayList<Long> toRemove = new ArrayList<>();
                         for (int a = 0, N = newPinned.size(); a < N; a++) {
-                            Integer lowerId = (int) newPinned.keyAt(a);
-                            if (lowerId == 0) {
+                            Long did = newPinned.keyAt(a);
+                            if (DialogObject.isEncryptedDialog(did)) {
                                 continue;
                             }
-                            if (newAlwaysShow.contains(lowerId)) {
+                            if (newAlwaysShow.contains(did)) {
                                 continue;
                             }
-                            toRemove.add(lowerId);
+                            toRemove.add(did);
                         }
                         for (int a = 0, N = toRemove.size(); a < N; a++) {
-                            newPinned.remove(toRemove.get(a));
+                            newPinned.delete(toRemove.get(a));
                         }
                     }
                     fillFilterName();
@@ -557,7 +558,7 @@ public class FilterCreateActivity extends BaseFragment {
         });
     }
 
-    private static void processAddFilter(MessagesController.DialogFilter filter, int newFilterFlags, String newFilterName, ArrayList<Integer> newAlwaysShow, ArrayList<Integer> newNeverShow, boolean creatingNew, boolean atBegin, boolean hasUserChanged, boolean resetUnreadCounter, BaseFragment fragment, Runnable onFinish) {
+    private static void processAddFilter(MessagesController.DialogFilter filter, int newFilterFlags, String newFilterName, ArrayList<Long> newAlwaysShow, ArrayList<Long> newNeverShow, boolean creatingNew, boolean atBegin, boolean hasUserChanged, boolean resetUnreadCounter, BaseFragment fragment, Runnable onFinish) {
         if (filter.flags != newFilterFlags || hasUserChanged) {
             filter.pendingUnreadCount = -1;
             if (resetUnreadCounter) {
@@ -579,7 +580,7 @@ public class FilterCreateActivity extends BaseFragment {
         }
     }
 
-    public static void saveFilterToServer(MessagesController.DialogFilter filter, int newFilterFlags, String newFilterName, ArrayList<Integer> newAlwaysShow, ArrayList<Integer> newNeverShow, LongSparseArray<Integer> newPinned, boolean creatingNew, boolean atBegin, boolean hasUserChanged, boolean resetUnreadCounter, boolean progress, BaseFragment fragment, Runnable onFinish) {
+    public static void saveFilterToServer(MessagesController.DialogFilter filter, int newFilterFlags, String newFilterName, ArrayList<Long> newAlwaysShow, ArrayList<Long> newNeverShow, LongSparseIntArray newPinned, boolean creatingNew, boolean atBegin, boolean hasUserChanged, boolean resetUnreadCounter, boolean progress, BaseFragment fragment, Runnable onFinish) {
         if (fragment == null || fragment.getParentActivity() == null) {
             return;
         }
@@ -606,11 +607,11 @@ public class FilterCreateActivity extends BaseFragment {
         req.filter.id = filter.id;
         req.filter.title = newFilterName;
         MessagesController messagesController = fragment.getMessagesController();
-        ArrayList<Integer> pinArray = new ArrayList<>();
+        ArrayList<Long> pinArray = new ArrayList<>();
         if (newPinned.size() != 0) {
             for (int a = 0, N = newPinned.size(); a < N; a++) {
-                int key = (int) newPinned.keyAt(a);
-                if (key == 0) {
+                long key = newPinned.keyAt(a);
+                if (DialogObject.isEncryptedDialog(key)) {
                     continue;
                 }
                 pinArray.add(key);
@@ -627,7 +628,7 @@ public class FilterCreateActivity extends BaseFragment {
             });
         }
         for (int b = 0; b < 3; b++) {
-            ArrayList<Integer> fromArray;
+            ArrayList<Long> fromArray;
             ArrayList<TLRPC.InputPeer> toArray;
             if (b == 0) {
                 fromArray = newAlwaysShow;
@@ -644,27 +645,26 @@ public class FilterCreateActivity extends BaseFragment {
                 if (b == 0 && newPinned.indexOfKey(did) >= 0) {
                     continue;
                 }
-                int lowerId = (int) did;
-                if (lowerId != 0) {
-                    if (lowerId > 0) {
-                        TLRPC.User user = messagesController.getUser(lowerId);
+                if (!DialogObject.isEncryptedDialog(did)) {
+                    if (did > 0) {
+                        TLRPC.User user = messagesController.getUser(did);
                         if (user != null) {
                             TLRPC.InputPeer inputPeer = new TLRPC.TL_inputPeerUser();
-                            inputPeer.user_id = lowerId;
+                            inputPeer.user_id = did;
                             inputPeer.access_hash = user.access_hash;
                             toArray.add(inputPeer);
                         }
                     } else {
-                        TLRPC.Chat chat = messagesController.getChat(-lowerId);
+                        TLRPC.Chat chat = messagesController.getChat(-did);
                         if (chat != null) {
                             if (ChatObject.isChannel(chat)) {
                                 TLRPC.InputPeer inputPeer = new TLRPC.TL_inputPeerChannel();
-                                inputPeer.channel_id = -lowerId;
+                                inputPeer.channel_id = -did;
                                 inputPeer.access_hash = chat.access_hash;
                                 toArray.add(inputPeer);
                             } else {
                                 TLRPC.InputPeer inputPeer = new TLRPC.TL_inputPeerChat();
-                                inputPeer.chat_id = -lowerId;
+                                inputPeer.chat_id = -did;
                                 toArray.add(inputPeer);
                             }
                         }
@@ -890,7 +890,7 @@ public class FilterCreateActivity extends BaseFragment {
                 }
                 case 1: {
                     UserCell userCell = (UserCell) holder.itemView;
-                    Integer id;
+                    Long id;
                     boolean divider;
                     if (position >= includeStartRow && position < includeEndRow) {
                         id = newAlwaysShow.get(position - includeStartRow);

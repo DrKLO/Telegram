@@ -25,17 +25,23 @@ public class RadioColorCell extends FrameLayout {
 
     private TextView textView;
     private RadioButton radioButton;
+    private final Theme.ResourcesProvider resourcesProvider;
 
     public RadioColorCell(Context context) {
+        this(context, null);
+    }
+
+    public RadioColorCell(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
 
         radioButton = new RadioButton(context);
         radioButton.setSize(AndroidUtilities.dp(20));
-        radioButton.setColor(Theme.getColor(Theme.key_dialogRadioBackground), Theme.getColor(Theme.key_dialogRadioBackgroundChecked));
+        radioButton.setColor(getThemedColor(Theme.key_dialogRadioBackground), getThemedColor(Theme.key_dialogRadioBackgroundChecked));
         addView(radioButton, LayoutHelper.createFrame(22, 22, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 0 : 18), 14, (LocaleController.isRTL ? 18 : 0), 0));
 
         textView = new TextView(context);
-        textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        textView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setLines(1);
         textView.setMaxLines(1);
@@ -68,5 +74,10 @@ public class RadioColorCell extends FrameLayout {
         info.setClassName("android.widget.RadioButton");
         info.setCheckable(true);
         info.setChecked(radioButton.isChecked());
+    }
+
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
     }
 }

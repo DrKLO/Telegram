@@ -14,7 +14,6 @@ import android.os.Build;
 import android.os.SystemClock;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
-import android.util.SparseIntArray;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -29,8 +28,6 @@ import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.exoplayer2.util.Log;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.LocaleController;
@@ -39,6 +36,8 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserObject;
+import org.telegram.messenger.support.LongSparseIntArray;
+import org.telegram.messenger.voip.VoIPService;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BackDrawable;
@@ -63,7 +62,7 @@ public class GroupCallRenderersContainer extends FrameLayout {
     private final int touchSlop;
     public boolean inFullscreenMode;
     public float progressToFullscreenMode;
-    public int fullscreenPeerId;
+    public long fullscreenPeerId;
     public ChatObject.VideoParticipant fullscreenParticipant;
     public boolean hasPinnedVideo;
     public long lastUpdateTime;
@@ -72,7 +71,7 @@ public class GroupCallRenderersContainer extends FrameLayout {
     ValueAnimator fullscreenAnimator;
     public boolean inLayout;
 
-    private SparseIntArray attachedPeerIds = new SparseIntArray();
+    private LongSparseIntArray attachedPeerIds = new LongSparseIntArray();
 
     int animationIndex;
 
@@ -86,7 +85,7 @@ public class GroupCallRenderersContainer extends FrameLayout {
     private final AvatarsImageView speakingMembersAvatars;
     private final TextView speakingMembersText;
     private boolean showSpeakingMembersToast;
-    private int speakingToastPeerId;
+    private long speakingToastPeerId;
     private float showSpeakingMembersToastProgress;
 
     private float speakingMembersToastChangeProgress = 1f;
@@ -587,7 +586,7 @@ public class GroupCallRenderersContainer extends FrameLayout {
 //                return;
 //            }
 //        }
-        int peerId = videoParticipant == null ? 0 : MessageObject.getPeerId(videoParticipant.participant.peer);
+        long peerId = videoParticipant == null ? 0 : MessageObject.getPeerId(videoParticipant.participant.peer);
         if (fullscreenTextureView != null) {
             fullscreenTextureView.runDelayedAnimations();
         }
@@ -595,7 +594,14 @@ public class GroupCallRenderersContainer extends FrameLayout {
         if (replaceFullscreenViewAnimator != null) {
             replaceFullscreenViewAnimator.cancel();
         }
+        VoIPService service = VoIPService.getSharedInstance();
+        if (service != null && fullscreenParticipant != null) {
+            service.requestFullScreen(fullscreenParticipant.participant, false, fullscreenParticipant.presentation);
+        }
         fullscreenParticipant = videoParticipant;
+        if (service != null && fullscreenParticipant != null) {
+            service.requestFullScreen(fullscreenParticipant.participant, true, fullscreenParticipant.presentation);
+        }
         fullscreenPeerId = peerId;
 
         boolean oldInFullscreen = inFullscreenMode;
@@ -1300,12 +1306,12 @@ public class GroupCallRenderersContainer extends FrameLayout {
         lastUpdateTooltipTime = System.currentTimeMillis();
         SpannableStringBuilder spannableStringBuilder = null;
         for (int i = 0; i < call.currentSpeakingPeers.size(); i++) {
-            int key = call.currentSpeakingPeers.keyAt(i);
+            long key = call.currentSpeakingPeers.keyAt(i);
             TLRPC.TL_groupCallParticipant participant = call.currentSpeakingPeers.get(key);
             if (participant.self || participant.muted_by_you || MessageObject.getPeerId(fullscreenParticipant.participant.peer) == MessageObject.getPeerId(participant.peer)) {
                 continue;
             }
-            int peerId = MessageObject.getPeerId(participant.peer);
+            long peerId = MessageObject.getPeerId(participant.peer);
             long diff = SystemClock.uptimeMillis() - participant.lastSpeakTime;
             boolean newSpeaking = diff < 500;
             if (newSpeaking) {
@@ -1413,19 +1419,19 @@ public class GroupCallRenderersContainer extends FrameLayout {
     }
 
     public boolean isVisible(TLRPC.TL_groupCallParticipant participant) {
-        int peerId = MessageObject.getPeerId(participant.peer);
+        long peerId = MessageObject.getPeerId(participant.peer);
         return attachedPeerIds.get(peerId) > 0;
     }
 
     public void attach(GroupCallMiniTextureView view) {
         attachedRenderers.add(view);
-        int peerId = MessageObject.getPeerId(view.participant.participant.peer);
+        long peerId = MessageObject.getPeerId(view.participant.participant.peer);
         attachedPeerIds.put(peerId, attachedPeerIds.get(peerId, 0) + 1);
     }
 
     public void detach(GroupCallMiniTextureView view) {
         attachedRenderers.remove(view);
-        int peerId = MessageObject.getPeerId(view.participant.participant.peer);
+        long peerId = MessageObject.getPeerId(view.participant.participant.peer);
         attachedPeerIds.put(peerId, attachedPeerIds.get(peerId, 0) - 1);
     }
 
