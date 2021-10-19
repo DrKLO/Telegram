@@ -242,7 +242,7 @@ public class ApplicationLoader extends Application {
             pendingIntent = PendingIntent.getBroadcast(applicationContext, 0, i, 0);
 
             am.cancel(pendingIntent);
-            am.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), 60000, pendingIntent);
+            am.setInexactRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), 60000, pendingIntent);
             try {
                 Log.d("TFOSS", "Starting push service...");
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
