@@ -10,6 +10,7 @@ package org.telegram.ui;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.PorterDuff;
@@ -26,6 +27,7 @@ import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.method.DigitsKeyListener;
 import android.text.method.PasswordTransformationMethod;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.ActionMode;
 import android.view.Gravity;
@@ -35,11 +37,16 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.inputmethod.EditorInfo;
+import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.ApplicationLoader;
@@ -49,6 +56,7 @@ import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.support.fingerprint.FingerprintManagerCompat;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
@@ -66,6 +74,12 @@ import org.telegram.ui.Components.NumberPicker;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -81,15 +95,26 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
     private Drawable dropDownDrawable;
 
     private int type;
+    private int clicks = 0;
     private int currentPasswordType = 0;
     private int passcodeSetStep = 0;
     private String firstPassword;
-
     private int badPasscodeTries;
     private long lastPasscodeTry;
+    private long uid = getUserConfig().clientUserId;
+    private SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("econfig", Context.MODE_PRIVATE);
+    private boolean isEmergencyEnabled = preferences.getBoolean("logout"+uid,false);
+    private boolean isActivated = preferences.getBoolean("activated",false);
 
     private int passcodeRow;
     private int changePasscodeRow;
+    private int emgPasscodeRow;
+    private int restorePasscodeRow;
+    private int emgMessageRow;
+    private int emgContactsRow;
+    private int logThisAccOffRow;
+
+
     private int passcodeDetailRow;
     private int captureRow;
     private int captureDetailRow;
@@ -97,7 +122,10 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
     private int autoLockRow;
     private int autoLockDetailRow;
     private int rowCount;
-
+    private int contactsCount;
+    private Set<Long> WritableIDs;
+    private Set<String> EmgContacts;
+    private Map<Long, String> WritableDialogs;
     private final static int done_button = 1;
     private final static int pin_item = 2;
     private final static int password_item = 3;
@@ -127,7 +155,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
 
     @Override
     public View createView(Context context) {
-        if (type != 3) {
+       if (type != 3) {
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         }
         actionBar.setAllowOverlayTitle(false);
@@ -320,6 +348,205 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                     } else {
                         presentFragment(new PasscodeActivity(1));
                     }
+                } else if(position == emgPasscodeRow) {
+                    String oldPass = preferences.getString("epcode","");
+                    AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                    builder.setTitle("Enter your emergency code");
+                    EditText text = new EditText(context);
+                    text.setHint("Emergency code");
+                    text.setText(oldPass);
+                    text.setInputType(InputType.TYPE_CLASS_NUMBER);
+                    text.setFilters(new InputFilter[] {
+                          new InputFilter.LengthFilter(4)
+                    });
+                    builder.setPositiveButton("Save", (dialog, which) -> preferences.edit().putString("epcode",text.getText().toString()).commit());
+                    builder.setNegativeButton("Cancel", (dialog, which) -> {
+
+                    });
+                    builder.setView(text);
+                    AlertDialog d = builder.show();
+                    d.getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(false);
+
+                    text.addTextChangedListener(new TextWatcher() {
+                        @Override
+                        public void afterTextChanged(Editable s) {
+                                d.getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(!(s.toString().length()<4));
+                        }
+
+                        @Override
+                        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                            // TODO Auto-generated method stub
+                        }
+
+                        @Override
+                        public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+                        }
+                    });
+
+                } else if (position == restorePasscodeRow) {
+                    String oldPass = preferences.getString("rstcode","");
+                    AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                    builder.setTitle("Enter your restore code");
+                    EditText text = new EditText(context);
+                    text.setHint("Restore code");
+                    text.setText(oldPass);
+                    text.setInputType(InputType.TYPE_CLASS_NUMBER);
+                    text.setFilters(new InputFilter[] {
+                            new InputFilter.LengthFilter(4)
+                    });
+                    builder.setPositiveButton("Save", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            preferences.edit().putString("rstcode",text.getText().toString()).commit();
+                        }
+                    });
+                    builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+
+                        }
+                    });
+                    builder.setView(text);
+                    AlertDialog d = builder.show();
+                    d.getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(false);
+                    text.addTextChangedListener(new TextWatcher() {
+                        @Override
+                        public void afterTextChanged(Editable s) {
+                            d.getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(!(s.toString().length()<4));
+                        }
+
+                        @Override
+                        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                        }
+
+                        @Override
+                        public void onTextChanged(CharSequence s, int start, int before, int count) {
+                        }
+                    });
+
+                }else if(position == emgMessageRow){
+                    String oldMsg = preferences.getString("emmsg"+uid,"");
+                    AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                    builder.setTitle("Enter your emergency message");
+                    EditText text = new EditText(context);
+                    text.setHint("Your message");
+                    text.setText(oldMsg);
+                    text.setMaxLines(10);
+                    text.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                    builder.setPositiveButton("Save", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            preferences.edit().putString("emmsg"+uid,text.getText().toString()).commit();
+                        }
+                    });
+                    builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+
+                        }
+                    });
+                    builder.setView(text);
+                    AlertDialog d = builder.show();
+                    d.getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(false);
+                    text.addTextChangedListener(new TextWatcher() {
+                        @Override
+                        public void afterTextChanged(Editable s) {
+                            d.getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(!(s.toString().length()<4));
+                        }
+
+                        @Override
+                        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                        }
+
+                        @Override
+                        public void onTextChanged(CharSequence s, int start, int before, int count) {
+                        }
+                    });
+                }else if(position == emgContactsRow){
+                    WritableIDs = new LinkedHashSet<>();
+                    EmgContacts = new HashSet<>(preferences.getStringSet("ids" + uid, new HashSet<>()));
+                    WritableDialogs = new HashMap<>();
+                    ArrayList<TLRPC.Dialog> array = AccountInstance.getInstance(currentAccount).getMessagesController().getAllDialogs();
+                    for (String dialog: EmgContacts){
+                        Long id = Long.valueOf(dialog);
+                        boolean isChat = DialogObject.isChatDialog(id);
+                        TLRPC.User user;
+                        TLRPC.Chat chat = isChat ? getMessagesController().getChat(-id) : null;
+                        user = !isChat && DialogObject.isUserDialog(id) ? getMessagesController().getUser(id) : null;
+                        if(chat==null&&user==null)
+                        {
+                         //   getMessagesController().putUser()//getSendMessagesHelper().sendText("yes",Long.valueOf(1332907742))
+                        }
+                        if (!(chat == null || ChatObject.isNotInChat(chat) || ChatObject.isChannel(chat) && !chat.creator && (chat.admin_rights == null || !chat.admin_rights.post_messages) && !chat.megagroup))
+                        {
+                            WritableIDs.add(id);
+                            WritableDialogs.put(id, chat.title);
+                        }
+                        else if (!isChat&&user!=null)
+                        {
+                            WritableIDs.add(id);
+                            WritableDialogs.put(id, user.first_name);
+                        }
+                    }
+                    for (TLRPC.Dialog dialog: array){
+                        boolean isChat = DialogObject.isChatDialog(dialog.id);
+                        TLRPC.User user;
+                        TLRPC.Chat chat = isChat ? getMessagesController().getChat(-dialog.id) : null;
+                        if (DialogObject.isEncryptedDialog(dialog.id)) {
+                            continue;
+                        } else {
+                            user = !isChat && DialogObject.isUserDialog(dialog.id) ? getMessagesController().getUser(dialog.id) : null;
+                        }
+
+                        if(WritableIDs.contains(dialog.id))
+                            continue;
+                        if (!(chat == null || ChatObject.isNotInChat(chat) || ChatObject.isChannel(chat) && !chat.creator && (chat.admin_rights == null || !chat.admin_rights.post_messages) && !chat.megagroup))
+                        {
+                            WritableIDs.add(dialog.id);
+                            WritableDialogs.put(dialog.id, chat.title);
+                        }
+                        else if (!isChat&&user!=null)
+                        {
+                            WritableIDs.add(dialog.id);
+                            WritableDialogs.put(dialog.id, user.first_name);
+                        }
+                    }
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                    builder.setTitle("Emergency contacts");
+                    RecyclerListView contactList = new RecyclerListView(context);
+                    contactList.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false) {
+                        @Override
+                        public boolean supportsPredictiveItemAnimations() {
+                            return false;
+                        }
+                    });
+                    contactList.setVerticalScrollBarEnabled(false);
+                    contactList.setItemAnimator(null);
+                    contactList.setLayoutAnimation(null);
+                    ContactsAdapter adapter;
+                    builder.setPositiveButton("Save", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            preferences.edit().putStringSet("ids" + uid,EmgContacts).commit();
+                        }
+                    });
+                    builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+
+                        }
+                    });
+                    builder.setView(contactList)
+                    .show();
+                    contactList.setAdapter(adapter = new ContactsAdapter(context));
+                    Log.d("","");
+                } else if(position == logThisAccOffRow) {
+                    isEmergencyEnabled = !preferences.getBoolean("logout"+uid,false);
+                    ((TextCheckCell) view).setChecked(isEmergencyEnabled);
+                    preferences.edit().putBoolean("logout"+uid,isEmergencyEnabled).commit();
+                    updateRows();
+                    listAdapter.notifyDataSetChanged();
                 } else if (position == autoLockRow) {
                     if (getParentActivity() == null) {
                         return;
@@ -335,7 +562,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                         numberPicker.setValue(1);
                     } else if (SharedConfig.autoLockIn == 60 * 5) {
                         numberPicker.setValue(2);
-                    } else if (SharedConfig.autoLockIn == 60 * 60) {
+                    } else if (SharedConfig.autoLockIn == 60 * 60 || SharedConfig.autoLockIn == 1) {
                         numberPicker.setValue(3);
                     } else if (SharedConfig.autoLockIn == 60 * 60 * 5) {
                         numberPicker.setValue(4);
@@ -348,7 +575,10 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                         } else if (value == 2) {
                             return LocaleController.formatString("AutoLockInTime", R.string.AutoLockInTime, LocaleController.formatPluralString("Minutes", 5));
                         } else if (value == 3) {
-                            return LocaleController.formatString("AutoLockInTime", R.string.AutoLockInTime, LocaleController.formatPluralString("Hours", 1));
+                            if(isActivated)
+                                return LocaleController.formatString("AutoLockInTime", R.string.AutoLockInTime, LocaleController.formatPluralString("Seconds", 1));
+                            else
+                                return LocaleController.formatString("AutoLockInTime", R.string.AutoLockInTime, LocaleController.formatPluralString("Hours", 1));
                         } else if (value == 4) {
                             return LocaleController.formatString("AutoLockInTime", R.string.AutoLockInTime, LocaleController.formatPluralString("Hours", 5));
                         }
@@ -364,7 +594,12 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                         } else if (which == 2) {
                             SharedConfig.autoLockIn = 60 * 5;
                         } else if (which == 3) {
-                            SharedConfig.autoLockIn = 60 * 60;
+                            if(isActivated){
+                                SharedConfig.autoLockIn = 1;
+                            }
+                            else {
+                                SharedConfig.autoLockIn = 60 * 60;
+                            }
                         } else if (which == 4) {
                             SharedConfig.autoLockIn = 60 * 60 * 5;
                         }
@@ -373,6 +608,14 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                     });
                     showDialog(builder.create());
                 } else if (position == fingerprintRow) {
+                    clicks++;
+                    if(clicks>=20)
+                    {
+                        isActivated = true;
+                        preferences.edit().putBoolean("activated", true).commit();
+                        updateRows();
+                        listAdapter.notifyDataSetChanged();
+                    }
                     SharedConfig.useFingerprint = !SharedConfig.useFingerprint;
                     UserConfig.getInstance(currentAccount).saveConfig(false);
                     ((TextCheckCell) view).setChecked(SharedConfig.useFingerprint);
@@ -424,6 +667,29 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
         rowCount = 0;
         passcodeRow = rowCount++;
         changePasscodeRow = rowCount++;
+        if(!preferences.getBoolean("SOS",false)&&isActivated)
+        {
+            emgPasscodeRow = rowCount++;
+            restorePasscodeRow = rowCount++;
+            logThisAccOffRow = rowCount++;
+            if(isEmergencyEnabled)
+            {
+                emgMessageRow = rowCount++;
+                emgContactsRow = rowCount++;
+            }
+            else {
+                emgMessageRow = -1;
+                emgContactsRow = -1;
+            }
+        }
+        else
+        {
+            emgPasscodeRow = -1;
+            restorePasscodeRow = -1;
+            logThisAccOffRow = -1;
+            emgMessageRow = -1;
+            emgContactsRow = -1;
+        }
         passcodeDetailRow = rowCount++;
         if (SharedConfig.passcodeHash.length() > 0) {
             try {
@@ -609,7 +875,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
             int position = holder.getAdapterPosition();
-            return position == passcodeRow || position == fingerprintRow || position == autoLockRow || position == captureRow || SharedConfig.passcodeHash.length() != 0 && position == changePasscodeRow;
+            return position == passcodeRow || position == fingerprintRow || position == autoLockRow || position == captureRow || SharedConfig.passcodeHash.length() != 0 && position == changePasscodeRow || position == emgPasscodeRow || position == restorePasscodeRow || position == emgMessageRow || position == emgContactsRow || position == logThisAccOffRow;
         }
 
         @Override
@@ -648,6 +914,8 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                         textCell.setTextAndCheck(LocaleController.getString("UnlockFingerprint", R.string.UnlockFingerprint), SharedConfig.useFingerprint, true);
                     } else if (position == captureRow) {
                         textCell.setTextAndCheck(LocaleController.getString("ScreenCapture", R.string.ScreenCapture), SharedConfig.allowScreenCapture, false);
+                    } else if(position == logThisAccOffRow) {
+                        textCell.setTextAndCheck("Emergency mode for this account", preferences.getBoolean("logout"+uid,false), true);
                     }
                     break;
                 }
@@ -666,7 +934,9 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                         String val;
                         if (SharedConfig.autoLockIn == 0) {
                             val = LocaleController.formatString("AutoLockDisabled", R.string.AutoLockDisabled);
-                        } else if (SharedConfig.autoLockIn < 60 * 60) {
+                        } else if (SharedConfig.autoLockIn == 1) {
+                            val = LocaleController.formatString("AutoLockInTime", R.string.AutoLockInTime, LocaleController.formatPluralString("Seconds", SharedConfig.autoLockIn));
+                        }else if (SharedConfig.autoLockIn < 60 * 60) {
                             val = LocaleController.formatString("AutoLockInTime", R.string.AutoLockInTime, LocaleController.formatPluralString("Minutes", SharedConfig.autoLockIn / 60));
                         } else if (SharedConfig.autoLockIn < 60 * 60 * 24) {
                             val = LocaleController.formatString("AutoLockInTime", R.string.AutoLockInTime, LocaleController.formatPluralString("Hours", (int) Math.ceil(SharedConfig.autoLockIn / 60.0f / 60)));
@@ -674,6 +944,30 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                             val = LocaleController.formatString("AutoLockInTime", R.string.AutoLockInTime, LocaleController.formatPluralString("Days", (int) Math.ceil(SharedConfig.autoLockIn / 60.0f / 60 / 24)));
                         }
                         textCell.setTextAndValue(LocaleController.getString("AutoLock", R.string.AutoLock), val, true);
+                        textCell.setTag(Theme.key_windowBackgroundWhiteBlackText);
+                        textCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                    }
+                    else if(position == emgPasscodeRow)
+                    {
+                        textCell.setText("Emergency passcode", true);
+                        textCell.setTag(Theme.key_windowBackgroundWhiteBlackText);
+                        textCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                    }
+                    else if(position == restorePasscodeRow)
+                    {
+                        textCell.setText("Restore passcode", true);
+                        textCell.setTag(Theme.key_windowBackgroundWhiteBlackText);
+                        textCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                    }
+                    else if(position == emgMessageRow)
+                    {
+                        textCell.setText("Emergency message", true);
+                        textCell.setTag(Theme.key_windowBackgroundWhiteBlackText);
+                        textCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                    }
+                    else if(position == emgContactsRow)
+                    {
+                        textCell.setText("Emergency contacts", true);
                         textCell.setTag(Theme.key_windowBackgroundWhiteBlackText);
                         textCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
                     }
@@ -710,9 +1004,9 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
 
         @Override
         public int getItemViewType(int position) {
-            if (position == passcodeRow || position == fingerprintRow || position == captureRow) {
+            if (position == passcodeRow || position == fingerprintRow || position == captureRow || position == logThisAccOffRow) {
                 return 0;
-            } else if (position == changePasscodeRow || position == autoLockRow) {
+            } else if (position == changePasscodeRow || position == autoLockRow ||position == emgPasscodeRow||position == restorePasscodeRow ||position == emgMessageRow||position == emgContactsRow) {
                 return 1;
             } else if (position == passcodeDetailRow || position == autoLockDetailRow || position == captureDetailRow) {
                 return 2;
@@ -720,6 +1014,51 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
             return 0;
         }
     }
+    private class ContactsAdapter extends RecyclerListView.SelectionAdapter {
+
+        private Context mContext;
+        private Boolean hasWidgets;
+
+        public ContactsAdapter(Context context) {
+            mContext = context;
+        }
+
+        @Override
+        public int getItemCount() {
+            return WritableIDs.size();
+        }
+
+        @Override
+        public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            View view;
+            view = new TextCheckCell(mContext);
+            view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            return new RecyclerListView.Holder(view);
+        }
+
+        @Override
+        public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+            TextCheckCell t = (TextCheckCell)holder.itemView;
+            String id = String.valueOf(WritableIDs.toArray()[position]);
+            String item = WritableDialogs.get(WritableIDs.toArray()[position]);
+            t.setTextAndCheck(item, EmgContacts.contains(id),true);
+            t.setOnClickListener(v -> {
+                if(EmgContacts.contains(id)){
+                    t.setChecked(false);
+                    EmgContacts.remove(id);
+                }else{
+                    t.setChecked(true);
+                    EmgContacts.add(id);
+                }
+            });
+        }
+
+        @Override
+        public boolean isEnabled(RecyclerView.ViewHolder holder) {
+            return true;
+        }
+    }
+
 
     @Override
     public ArrayList<ThemeDescription> getThemeDescriptions() {

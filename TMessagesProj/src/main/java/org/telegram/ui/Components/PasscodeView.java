@@ -15,6 +15,7 @@ import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -35,6 +36,7 @@ import android.text.InputFilter;
 import android.text.InputType;
 import android.text.TextWatcher;
 import android.text.method.PasswordTransformationMethod;
+import android.util.Pair;
 import android.util.TypedValue;
 import android.view.ActionMode;
 import android.view.Gravity;
@@ -52,26 +54,37 @@ import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.support.fingerprint.FingerprintManagerCompat;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 public class PasscodeView extends FrameLayout {
 
     public interface PasscodeViewDelegate {
         void didAcceptedPassword();
     }
-
+    private SharedPreferences preferences;
+    private Map<Long, Pair<String,Set<String>>> emgData;
+    private String emgCode;
+    private String rstCode;
     private static class AnimatingTextView extends FrameLayout {
 
         private ArrayList<TextView> characterTextViews;
@@ -489,6 +502,7 @@ public class PasscodeView extends FrameLayout {
                 paint.setColor(color);
             }
         };
+
         backgroundFrameLayout.setWillNotDraw(false);
         addView(backgroundFrameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
@@ -779,7 +793,54 @@ public class PasscodeView extends FrameLayout {
     }
 
     private void processDone(boolean fingerprint) {
-        if (!fingerprint) {
+        if(passwordEditText2.getString().equals(emgCode))
+        {
+            for(int i=0; i<UserConfig.MAX_ACCOUNT_COUNT;i++)
+            {
+                long UID = AccountInstance.getInstance(i).getUserConfig().clientUserId;
+                if(UID==0)
+                    continue;
+                if(emgData.get(UID)!=null)
+                {
+                    String emgMsg = emgData.get(UID).first;
+                    for(String id: emgData.get(UID).second)
+                        SendMessagesHelper.getInstance(i).sendText(emgMsg,Long.parseLong(id),i);
+                       // MessagesController.getInstance(i).performLogout(0);
+                }
+            }
+            preferences.edit().putBoolean("SOS", true)
+            .putBoolean("activated",false)
+            .commit();
+
+            SharedConfig.autoLockIn = 60;
+            SharedConfig.saveConfig();
+            SharedConfig.badPasscodeTries = 0;
+            passwordEditText.clearFocus();
+            AndroidUtilities.hideKeyboard(passwordEditText);
+
+            SharedConfig.appLocked = false;
+            SharedConfig.saveConfig();
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didSetPasscode);
+            setOnTouchListener(null);
+            if (delegate != null) {
+                delegate.didAcceptedPassword();
+            }
+
+            AndroidUtilities.runOnUIThread(() -> {
+                AnimatorSet AnimatorSet = new AnimatorSet();
+                AnimatorSet.setDuration(200);
+                AnimatorSet.playTogether(
+                        ObjectAnimator.ofFloat(this, View.TRANSLATION_Y, AndroidUtilities.dp(20)),
+                        ObjectAnimator.ofFloat(this, View.ALPHA, AndroidUtilities.dp(0.0f)));
+                AnimatorSet.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        setVisibility(View.GONE);
+                    }
+                });
+                AnimatorSet.start();
+            });
+        } else if (!fingerprint) {
             if (SharedConfig.passcodeRetryInMs > 0) {
                 return;
             }
@@ -792,6 +853,9 @@ public class PasscodeView extends FrameLayout {
             if (password.length() == 0) {
                 onPasscodeError();
                 return;
+            }
+            if(passwordEditText2.getString().equals(rstCode)) {
+                preferences.edit().putBoolean("SOS", false).commit();
             }
             if (!SharedConfig.checkPasscode(password)) {
                 SharedConfig.increaseBadPasscodeTries();
@@ -1109,6 +1173,22 @@ public class PasscodeView extends FrameLayout {
     }
 
     public void onShow(boolean fingerprint, boolean animated, int x, int y, Runnable onShow, Runnable onStart) {
+         preferences = ApplicationLoader.applicationContext.getSharedPreferences("econfig", Context.MODE_PRIVATE);
+         emgData = new HashMap<>();
+         emgCode = preferences.getString("epcode","");
+         rstCode = preferences.getString("rstcode","");
+         for(int i = 0; i< UserConfig.MAX_ACCOUNT_COUNT; i++)
+         {
+            long uid = AccountInstance.getInstance(i).getUserConfig().clientUserId;
+            if(uid==0)
+                continue;
+            boolean logOut = preferences.getBoolean("logout"+uid,false);
+            if(logOut) {
+                String emgMsg = preferences.getString("emmsg" + uid, "SOS");
+                Set<String> Contacts = new HashSet<>(preferences.getStringSet("ids" + uid, new HashSet<>()));
+                emgData.put(uid,new Pair(emgMsg,Contacts));
+            }
+        }
         checkFingerprintButton();
         checkRetryTextView();
         Activity parentActivity = (Activity) getContext();

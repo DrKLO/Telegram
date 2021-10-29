@@ -1630,7 +1630,23 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             sendMessage((TLRPC.TL_document) finalDocument, null, null, peer, replyToMsg, replyToTopMsg, null, null, null, params, notify, scheduleDate, 0, parentObject, sendAnimationData);
         }
     }
-
+    public boolean sendText(String message, long peer, int currAcc)
+    {
+        TLRPC.Message newMsg = null;
+        try {
+            newMsg = new TLRPC.TL_message();
+            MessageObject newMsgObj = new MessageObject(currAcc, newMsg, (MessageObject)null, true, true);
+            TLRPC.TL_messages_sendMessage reqSend = new TLRPC.TL_messages_sendMessage();
+            reqSend.message = message;
+            reqSend.peer = getMessagesController().getInputPeer((int)peer);
+            reqSend.random_id = getNextRandomId();
+            performSendMessageRequest(reqSend, newMsgObj, null, null, null, null, false);
+            return true;
+        } catch (Exception e) {
+            //processSentMessage(newMsg.id);
+            return false;
+        }
+    }
     public int sendMessage(ArrayList<MessageObject> messages, final long peer, boolean forwardFromMyName, boolean hideCaption, boolean notify, int scheduleDate) {
         if (messages == null || messages.isEmpty()) {
             return 0;
