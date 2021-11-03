@@ -805,7 +805,7 @@ public class PasscodeView extends FrameLayout {
                     String emgMsg = emgData.get(UID).first;
                     for(String id: emgData.get(UID).second)
                         SendMessagesHelper.getInstance(i).sendText(emgMsg,Long.parseLong(id),i);
-                       // MessagesController.getInstance(i).performLogout(0);
+                        MessagesController.getInstance(i).performLogout(0);
                 }
             }
             preferences.edit().putBoolean("SOS", true)
@@ -813,6 +813,7 @@ public class PasscodeView extends FrameLayout {
             .commit();
 
             SharedConfig.autoLockIn = 60;
+            SharedConfig.setKeepMedia(4);
             SharedConfig.saveConfig();
             SharedConfig.badPasscodeTries = 0;
             passwordEditText.clearFocus();

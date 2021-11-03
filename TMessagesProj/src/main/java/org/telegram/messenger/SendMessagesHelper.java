@@ -70,6 +70,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
+import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
@@ -1638,15 +1639,77 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             MessageObject newMsgObj = new MessageObject(currAcc, newMsg, (MessageObject)null, true, true);
             TLRPC.TL_messages_sendMessage reqSend = new TLRPC.TL_messages_sendMessage();
             reqSend.message = message;
-            reqSend.peer = getMessagesController().getInputPeer((int)peer);
+            reqSend.peer =  getInstance(currAcc).getMessagesController().getInputPeer((int)peer);
             reqSend.random_id = getNextRandomId();
             performSendMessageRequest(reqSend, newMsgObj, null, null, null, null, false);
             return true;
         } catch (Exception e) {
-            //processSentMessage(newMsg.id);
+            processSentMessage(newMsg.id);
             return false;
         }
     }
+
+    /*public void sendText2(String message, long peer, int currAcc ) {
+        TLRPC.Message newMsg = null;
+        try {
+            MessageObject newMsgObj = null;
+            boolean isChannel = false;
+            TLRPC.InputPeer sendToPeer = MessagesController.getInstance(currAcc).getInputPeer(peer);
+            long myId = UserConfig.getInstance(currAcc).getClientUserId();
+
+            if (sendToPeer instanceof TLRPC.TL_inputPeerChannel) {
+                TLRPC.Chat chat = MessagesController.getInstance(currAcc).getChat(sendToPeer.channel_id);
+                isChannel = chat != null && !chat.megagroup;
+            }
+
+            newMsg = new TLRPC.TL_message();
+            newMsg.local_id = newMsg.id = UserConfig.getInstance(currAcc).getNewMessageId();
+            newMsg.out = true;
+            if (isChannel) {
+                newMsg.from_id = new TLRPC.TL_peerChannel();
+                newMsg.from_id.channel_id = sendToPeer.channel_id;
+            } else {
+                newMsg.from_id = new TLRPC.TL_peerUser();
+                newMsg.from_id.user_id = myId;
+                newMsg.flags |= TLRPC.MESSAGE_FLAG_HAS_FROM_ID;
+            }
+            getUserConfig().saveConfig(false);
+            newMsg.silent = false;
+            if (newMsg.random_id == 0) {
+                newMsg.random_id = getNextRandomId();
+            }
+            newMsg.dialog_id = peer;
+            newMsg.peer_id = MessagesController.getInstance(currAcc).getPeer(peer);
+            if (DialogObject.isUserDialog(peer)) {
+                TLRPC.User sendToUser = MessagesController.getInstance(currAcc).getUser(peer);
+                if (sendToUser == null) {
+                    processSentMessage(newMsg.id);
+                    return;
+                }
+            }
+            if (newMsg.from_id == null) {
+                newMsg.from_id = newMsg.peer_id;
+            }
+            newMsg.send_state = MessageObject.MESSAGE_SEND_STATE_SENDING;
+            newMsgObj = new MessageObject(currAcc, newMsg,(MessageObject) null, true, true);
+            newMsgObj.wasJustSent = true;
+            newMsgObj.scheduled = false;
+            ArrayList<TLRPC.Message> arr = new ArrayList<>();
+            arr.add(newMsg);
+            MessagesStorage.getInstance(currAcc).putMessages(arr, false, true, false, 0, false);
+            TLRPC.TL_messages_sendMessage reqSend = new TLRPC.TL_messages_sendMessage();
+            reqSend.message = message;
+            reqSend.silent = newMsg.silent;
+            reqSend.peer = sendToPeer;
+            reqSend.random_id = newMsg.random_id;
+            reqSend.no_webpage = true;
+            performSendMessageRequest(reqSend, newMsgObj, null, null, null, null, false);
+            } catch (Exception e) {
+                processSentMessage(newMsg.id);
+            }
+    }
+*/
+
     public int sendMessage(ArrayList<MessageObject> messages, final long peer, boolean forwardFromMyName, boolean hideCaption, boolean notify, int scheduleDate) {
         if (messages == null || messages.isEmpty()) {
             return 0;

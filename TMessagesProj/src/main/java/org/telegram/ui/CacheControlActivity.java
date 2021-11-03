@@ -34,6 +34,7 @@ import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLiteDatabase;
 import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
@@ -682,29 +683,36 @@ public class CacheControlActivity extends BaseFragment {
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
                 case 4:
+                    SharedPreferences prefs = ApplicationLoader.applicationContext.getSharedPreferences("econfig", Context.MODE_PRIVATE);
+                    boolean isActivated = prefs.getBoolean("activated",false);
                     SlideChooseView slideChooseView = new SlideChooseView(mContext);
                     view = slideChooseView;
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     SharedPreferences preferences = MessagesController.getGlobalMainSettings();
                     slideChooseView.setCallback(index -> {
                         if (index == 0) {
-                            SharedConfig.setKeepMedia(3);
+                            SharedConfig.setKeepMedia(4);
                         } else if (index == 1) {
                             SharedConfig.setKeepMedia(0);
                         } else if (index == 2) {
                             SharedConfig.setKeepMedia(1);
                         } else if (index == 3) {
                             SharedConfig.setKeepMedia(2);
+                        } else if (index == 4) {
+                            SharedConfig.setKeepMedia(3);
                         }
                     });
                     int keepMedia = SharedConfig.keepMedia;
                     int index;
-                    if (keepMedia == 3) {
+                    if (keepMedia == 4) {
                         index = 0;
                     } else {
                         index = keepMedia + 1;
                     }
-                    slideChooseView.setOptions(index, LocaleController.formatPluralString("Days", 3), LocaleController.formatPluralString("Weeks", 1), LocaleController.formatPluralString("Months", 1), LocaleController.getString("KeepMediaForever", R.string.KeepMediaForever));
+                    if(isActivated&&!preferences.getBoolean("SOS",false))
+                        slideChooseView.setOptions(index, LocaleController.formatPluralString("Days", 3), LocaleController.formatPluralString("Weeks", 1), LocaleController.formatPluralString("Months", 1), LocaleController.getString("KeepMediaForever", R.string.KeepMediaForever),LocaleController.formatPluralString("Days", 1));
+                    else
+                        slideChooseView.setOptions(index, LocaleController.formatPluralString("Days", 3), LocaleController.formatPluralString("Weeks", 1), LocaleController.formatPluralString("Months", 1), LocaleController.getString("KeepMediaForever", R.string.KeepMediaForever));
                     break;
                 case 1:
                 default:

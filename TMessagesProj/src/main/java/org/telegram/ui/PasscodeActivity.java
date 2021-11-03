@@ -474,17 +474,15 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                         TLRPC.User user;
                         TLRPC.Chat chat = isChat ? getMessagesController().getChat(-id) : null;
                         user = !isChat && DialogObject.isUserDialog(id) ? getMessagesController().getUser(id) : null;
-                        if(chat==null&&user==null)
-                        {
-                         //   getMessagesController().putUser()//getSendMessagesHelper().sendText("yes",Long.valueOf(1332907742))
+                        if(chat==null&&user==null) {
+                            WritableIDs.add(id);
+                            WritableDialogs.put(id, "NOT FOUND ID "+id);
+                            continue;
                         }
-                        if (!(chat == null || ChatObject.isNotInChat(chat) || ChatObject.isChannel(chat) && !chat.creator && (chat.admin_rights == null || !chat.admin_rights.post_messages) && !chat.megagroup))
-                        {
+                        if (!(chat == null || ChatObject.isNotInChat(chat) || ChatObject.isChannel(chat) && !chat.creator && (chat.admin_rights == null || !chat.admin_rights.post_messages) && !chat.megagroup)) {
                             WritableIDs.add(id);
                             WritableDialogs.put(id, chat.title);
-                        }
-                        else if (!isChat&&user!=null)
-                        {
+                        } else if (!isChat) {
                             WritableIDs.add(id);
                             WritableDialogs.put(id, user.first_name);
                         }
