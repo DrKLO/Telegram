@@ -68,15 +68,22 @@ android {
         disable 'BlockedPrivateApi'
     }
 
-    dexOptions {
-        jumboMode = true
-    }
-
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
 
         coreLibraryDesugaringEnabled true
+    }
+
+    task buildNativeDeps(type: Exec, description: 'Build native dependencies.') {
+        def ndkDir = android.ndkDirectory
+        println ndkDir
+        workingDir "${projectDir}/jni"
+        commandLine 'python3', 'prepare.py', 'silent', 'ndk=' + ndkDir, 'arm', 'arm64'
+    }
+
+    tasks.withType(JavaCompile) {
+        compileTask -> compileTask.dependsOn buildNativeDeps
     }
 
     defaultConfig.versionCode = Integer.parseInt(Utils['getVersionCode']())

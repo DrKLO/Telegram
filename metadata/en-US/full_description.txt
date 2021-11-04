@@ -1,0 +1,25 @@
+
+Features:
+— "Delete for everyone" option enabled by default.
+— Removed pencil floating icon.
+— Original message date for forwarded messages.
+— Smaller header in the sidebar.
+— Option to disable in—app camera.
+— Option to keep unmuted unread chats right after pinned dialogs.
+— See the correct full number of subscribers in groups/channels.
+— Option to go to the first message of a chat.
+— Added more mute duration options (3 hours, 1 day).
+— Quick share button for every media in private chats.
+— Option to start recording video messages with the rear camera.
+— Unlimited unarchived pinned chats (turns their sync off).
+— Option to disable big emojis.
+— Forward messages without quoting the original sender.
+— Added a lot of self—destruct timer's options in secret chats.
+— Tap on cloud GIF with pre—written text will send GIF with this text as caption.
+— Tap on sticker with pre—written text will send both.
+— Added upload date for profile photos.
+— Added ability to see the profile info from the dialogs list via context menu.
+— Added ability to see unread count when you want to mark as read multiple dialogs.
+— Option to directly open the archive on pulldown.
+— PiP mode for YouTube's in—app player.
+— And more…

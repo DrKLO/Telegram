@@ -1,0 +1,17 @@
+  - versionName: V_NAME
+    versionCode: V_CODE
+    commit: V_NAME
+    timeout: 18000
+    subdir: TMessagesProj_AppFork
+    submodules: true
+    sudo:
+      - apt-get update
+      - apt-get install -y ninja-build golang-go yasm cmake libuv1 make
+    gradle:
+      - V_AFAT
+    rm:
+      - TMessagesProj_AppHuawei
+    prebuild: ./prebuild_fdroid.sh V_NUM 14577864 54d3ae230fd8f985ce9adccf08fbd9d6
+    scandelete:
+      - TMessagesProj/jni
+    ndk: r21e

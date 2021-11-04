@@ -68,6 +68,10 @@ function build_one {
 	if [ "x86" = ${ARCH} ]; then
 		sed -i '20d' vpx_dsp/add_noise.c
 	fi
+
+	# For voip/webrtc includes.
+	p=`pwd`
+	cd ${PREFIX}/include && ln -s vpx libvpx && cd $p
 }
 
 function setCurrentPlatform {

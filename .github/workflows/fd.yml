@@ -1,0 +1,118 @@
+name: Fd
+
+on:
+  release:
+    types: released
+
+jobs:
+  linux:
+    name: Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3.1.0
+        with:
+          submodules: true
+
+      - uses: robinraju/release-downloader@v1.3
+        with:
+          repository: ${{ github.repository }}
+          latest: true
+          fileName: "*"
+
+      - name: Process.
+        env:
+          ADDITIONAL_BUILD: ${{ secrets.ADDITIONAL_BUILD_NUMBER }}
+        run: |
+          mkdir -p ~/.ssh/
+          install -m 600 /dev/null ~/.ssh/id_rsa
+          echo "${{ secrets.FD_SSH_PRIVATE }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+
+          fileApk=$(find -iname "*.apk")
+          echo "$fileApk"
+          fileAapt2=$(ls $ANDROID_SDK_ROOT/build-tools/**/aapt2 | tail -1)
+          echo "$fileAapt2"
+          $fileAapt2 dump badging $fileApk > output.txt
+
+          versionCode=`grep versionCode output.txt | sed "s/versionCode/#/g" | cut -d'#' -f  2 | cut -d"'" -f 2`
+          versionName=`grep versionName output.txt | sed "s/versionName/#/g" | cut -d'#' -f  2 | cut -d"'" -f 2`
+
+          echo "Found versionName ${versionName}."
+          echo "Found versionCode ${versionCode}."
+
+
+          echo "Host *" > ~/.ssh/config
+          echo "StrictHostKeyChecking no" >> ~/.ssh/config
+          echo "UserKnownHostsFile=/dev/null" >> ~/.ssh/config
+
+
+          git config --global user.email "${{ secrets.FD_GIT_EMAIL }}"
+          git config --global user.name "${{ secrets.FD_GIT_NAME }}"
+
+          git clone git@gitlab.com:fdroid/fdroiddata.git r
+          cd r
+          git remote add fork ${{ secrets.FD_SSH_URL }}
+          git branch update
+          git checkout update
+
+
+          file=`find . | grep forkgram`
+
+          cp `find .. -iname "fd_part.txt"` part.txt
+          cp `find .. -iname "fd_end.txt"` end.txt
+
+          function addPart() {
+            abiCode=$1
+
+            countLines=`wc -l end.txt | cut -d' ' -f 1`
+            for dummy in `seq 1 $countLines`
+            do
+              sed -i '$ d' $file
+            done
+
+            echo "`cat part.txt`" >> $file
+            echo "" >> $file
+            echo "`cat end.txt`" >> $file
+
+            ADDITIONAL_BUILD_NUMBER=$((ADDITIONAL_BUILD / 10000))
+
+            versionCodeWithoutAbi=`echo ${versionCode%?}`
+
+            sed -i "s/V_NAME/${versionName}/g" $file
+            sed -i "s/V_CODE/${versionCodeWithoutAbi}${abiCode}/g" $file
+            sed -i "s/V_NUM/${ADDITIONAL_BUILD_NUMBER}/g" $file
+            sed -i "s/V_AFAT/afatFd_v${abiCode}a/g" $file
+          }
+
+          addPart 7
+          addPart 8
+
+
+          git add $file
+          git commit -m "Updated Forkgram to ${versionName}."
+
+          git push --force --set-upstream fork update
+
+          echo "VERSION_CODE=${versionCode}" >> $GITHUB_ENV
+
+      - uses: actions/github-script@v6.3.3
+        env:
+          RELEASE_ID: ${{ github.event.release.id }}
+        with:
+          script: |
+            const { RELEASE_ID } = process.env;
+            const { VERSION_CODE } = process.env;
+            const release = await github.rest.repos.getRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: `${RELEASE_ID}`,
+            });
+            let desc = release.data.body;
+
+            github.rest.repos.updateRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: `${RELEASE_ID}`,
+              body: desc + "\nVersion code: " + `\`${VERSION_CODE}\`` + "."
+            });

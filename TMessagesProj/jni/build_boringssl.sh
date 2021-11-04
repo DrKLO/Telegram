@@ -2,12 +2,19 @@
 
 set -e
 
+
+if [[ -z "$(ANDROID_SDK)" ]]; then
+   cmakePath=""
+else
+   cmakePath=`find $ANDROID_SDK/cmake -executable -type f | grep cmake$ | head -n 1`/
+fi
+
 function build_one {
 	mkdir ${CPU}
 	cd ${CPU}
 
 	echo "Configuring..."
-	cmake \
+	${cmakePath}cmake \
 	-DANDROID_NATIVE_API_LEVEL=${API} \
 	-DANDROID_ABI=${CPU} \
 	-DCMAKE_BUILD_TYPE=Release \
@@ -17,7 +24,7 @@ function build_one {
 	../..
 
 	echo "Building..."
-	cmake --build .
+	${cmakePath}cmake --build .
 
 	cd ..
 }

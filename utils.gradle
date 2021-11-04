@@ -7,8 +7,13 @@ def getVersionCode = {
     return (APP_VERSION_CODE.toInteger() * 10 + ADDITIONAL_BUILD_NUMBER.toInteger()) + ""
 }
 
+def isFdroid = {
+    return ((F_DROID.toInteger() == 1) as Boolean)
+}
+
 ext {
     Utils = [:]
     Utils['getVersionName'] = getVersionName
     Utils['getVersionCode'] = getVersionCode
+    Utils['isFdroid'] = isFdroid
 }
