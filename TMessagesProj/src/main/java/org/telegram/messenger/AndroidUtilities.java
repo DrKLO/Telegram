@@ -529,10 +529,12 @@ public class AndroidUtilities {
         if (context == null || AndroidUtilities.statusBarHeight > 0) {
             return;
         }
+        AndroidUtilities.statusBarHeight = getStatusBarHeight(context);
+    }
+
+    public static int getStatusBarHeight(Context context) {
         int resourceId = context.getResources().getIdentifier("status_bar_height", "dimen", "android");
-        if (resourceId > 0) {
-            AndroidUtilities.statusBarHeight = context.getResources().getDimensionPixelSize(resourceId);
-        }
+        return resourceId > 0 ? context.getResources().getDimensionPixelSize(resourceId) : 0;
     }
 
     public static int getThumbForNameOrMime(String name, String mime, boolean media) {
@@ -2282,8 +2284,8 @@ public class AndroidUtilities {
         }
     }
 
-    private static File getAlbumDir(boolean secretChat) { //TODO scoped storage
-        if (secretChat || Build.VERSION.SDK_INT >= 23 && ApplicationLoader.applicationContext.checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+    private static File getAlbumDir(boolean secretChat) {
+        if (secretChat || !BuildVars.NO_SCOPED_STORAGE || (Build.VERSION.SDK_INT >= 23 && ApplicationLoader.applicationContext.checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)) {
             return FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE);
         }
         File storageDir = null;

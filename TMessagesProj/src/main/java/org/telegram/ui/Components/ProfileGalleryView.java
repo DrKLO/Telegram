@@ -738,6 +738,7 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
             if (did == dialogId && parentClassGuid == guid && adapter != null) {
                 boolean fromCache = (Boolean) args[2];
                 ArrayList<TLRPC.Photo> arrayList = (ArrayList<TLRPC.Photo>) args[4];
+
                 thumbsFileNames.clear();
                 videoFileNames.clear();
                 imagesLocations.clear();

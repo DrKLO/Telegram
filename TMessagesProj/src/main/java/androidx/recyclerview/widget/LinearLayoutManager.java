@@ -46,7 +46,7 @@ public class LinearLayoutManager extends RecyclerView.LayoutManager implements
 
     private static final String TAG = "LinearLayoutManager";
 
-    static final boolean DEBUG = BuildVars.DEBUG_VERSION;
+    static final boolean DEBUG = false;
 
     public static final int HORIZONTAL = RecyclerView.HORIZONTAL;
 

@@ -1396,6 +1396,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                     }
                                     if (exportingChatUri == null) {
                                         path = AndroidUtilities.getPath(uri);
+                                        if (!BuildVars.NO_SCOPED_STORAGE) {
+                                            path = MediaController.copyFileToCache(uri, "file");
+                                        }
                                         if (path != null) {
                                             if (path.startsWith("file:")) {
                                                 path = path.replace("file://", "");
@@ -3276,13 +3279,17 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 int notFound = 2;
                 if (response instanceof TLRPC.TL_theme) {
                     TLRPC.TL_theme t = (TLRPC.TL_theme) response;
-                    if (t.settings != null) {
-                        String key = Theme.getBaseThemeKey(t.settings);
+                    TLRPC.ThemeSettings settings = null;
+                    if (t.settings.size() > 0) {
+                        settings = t.settings.get(0);
+                    }
+                    if (settings != null) {
+                        String key = Theme.getBaseThemeKey(settings);
                         Theme.ThemeInfo info = Theme.getTheme(key);
                         if (info != null) {
                             TLRPC.TL_wallPaper object;
-                            if (t.settings.wallpaper instanceof TLRPC.TL_wallPaper) {
-                                object = (TLRPC.TL_wallPaper) t.settings.wallpaper;
+                            if (settings.wallpaper instanceof TLRPC.TL_wallPaper) {
+                                object = (TLRPC.TL_wallPaper) settings.wallpaper;
                                 File path = FileLoader.getPathToAttach(object.document, true);
                                 if (!path.exists()) {
                                     loadingThemeProgressDialog = progressDialog;
@@ -4563,6 +4570,8 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     themeSwitchImageView.setVisibility(View.VISIBLE);
                     themeSwitchSunDrawable = darkThemeView.getAnimatedDrawable();
                     float finalRadius = (float) Math.max(Math.sqrt((w - pos[0]) * (w - pos[0]) + (h - pos[1]) * (h - pos[1])), Math.sqrt(pos[0] * pos[0] + (h - pos[1]) * (h - pos[1])));
+                    float finalRadius2 = (float) Math.max(Math.sqrt((w - pos[0]) * (w - pos[0]) + pos[1] * pos[1]), Math.sqrt(pos[0] * pos[0] + pos[1] * pos[1]));
+                    finalRadius = Math.max(finalRadius, finalRadius2);
                     Animator anim = ViewAnimationUtils.createCircularReveal(toDark ? drawerLayoutContainer : themeSwitchImageView, pos[0], pos[1], toDark ? 0 : finalRadius, toDark ? finalRadius : 0);
                     anim.setDuration(400);
                     anim.setInterpolator(Easings.easeInOutQuad);

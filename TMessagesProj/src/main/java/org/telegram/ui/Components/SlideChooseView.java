@@ -32,6 +32,8 @@ public class SlideChooseView extends View {
     private boolean moving;
     private boolean startMoving;
     private float startX;
+    private float xTouchDown;
+    private float yTouchDown;
 
     private int startMovingPreset;
 
@@ -102,8 +104,10 @@ public class SlideChooseView extends View {
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         float x = event.getX();
+        float y = event.getY();
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
-            getParent().requestDisallowInterceptTouchEvent(true);
+            xTouchDown = x;
+            yTouchDown = y;
             for (int a = 0; a < optionsStr.length; a++) {
                 int cx = sideSide + (lineSize + gapSize * 2 + circleSize) * a + circleSize / 2;
                 if (x > cx - AndroidUtilities.dp(15) && x < cx + AndroidUtilities.dp(15)) {
@@ -114,6 +118,11 @@ public class SlideChooseView extends View {
                 }
             }
         } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
+            if (!moving) {
+                if (Math.abs(xTouchDown - x) > Math.abs(yTouchDown - y)) {
+                    getParent().requestDisallowInterceptTouchEvent(true);
+                }
+            }
             if (startMoving) {
                 if (Math.abs(startX - x) >= AndroidUtilities.getPixelsInCM(0.5f, true)) {
                     moving = true;
@@ -152,6 +161,7 @@ public class SlideChooseView extends View {
             }
             startMoving = false;
             moving = false;
+            getParent().requestDisallowInterceptTouchEvent(false);
         }
         return true;
     }
@@ -167,7 +177,6 @@ public class SlideChooseView extends View {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(74), MeasureSpec.EXACTLY));
-        int width = MeasureSpec.getSize(widthMeasureSpec);
         circleSize = AndroidUtilities.dp(6);
         gapSize = AndroidUtilities.dp(2);
         sideSide = AndroidUtilities.dp(22);
@@ -181,15 +190,9 @@ public class SlideChooseView extends View {
 
         for (int a = 0; a < optionsStr.length; a++) {
             int cx = sideSide + (lineSize + gapSize * 2 + circleSize) * a + circleSize / 2;
-            if (a <= selectedIndex) {
-                int color = getThemedColor(Theme.key_switchTrackChecked);
-                paint.setColor(color);
-                linePaint.setColor(color);
-            } else {
-                int color = getThemedColor(Theme.key_switchTrack);
-                paint.setColor(color);
-                linePaint.setColor(color);
-            }
+            int color = a <= selectedIndex ? getThemedColor(Theme.key_switchTrackChecked) : getThemedColor(Theme.key_switchTrack);
+            paint.setColor(color);
+            linePaint.setColor(color);
             canvas.drawCircle(cx, cy, a == selectedIndex ? AndroidUtilities.dp(6) : circleSize / 2, paint);
             if (a != 0) {
                 int x = cx - circleSize / 2 - gapSize - lineSize;

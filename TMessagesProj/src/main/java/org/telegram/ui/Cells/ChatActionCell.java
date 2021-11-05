@@ -11,11 +11,8 @@ package org.telegram.ui.Cells;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
 import android.text.Layout;
 import android.text.Spannable;
@@ -27,8 +24,6 @@ import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
 import android.view.ViewGroup;
 import android.view.accessibility.AccessibilityNodeInfo;
-
-import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DownloadController;
@@ -53,6 +48,8 @@ import org.telegram.ui.PhotoViewer;
 import java.util.ArrayList;
 
 public class ChatActionCell extends BaseCell implements DownloadController.FileDownloadProgressListener {
+
+    private boolean canDrawInParent;
 
     public interface ChatActionCellDelegate {
         default void didClickImage(ChatActionCell cell) {
@@ -95,6 +92,8 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
     private int previousWidth;
     private boolean imagePressed;
 
+    TextPaint textPaint;
+
     private float viewTop;
     private int backgroundHeight;
     private boolean visiblePartSet;
@@ -128,11 +127,12 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
     private ThemeDelegate themeDelegate;
 
     public ChatActionCell(Context context) {
-        this(context, null);
+        this(context, false, null);
     }
 
-    public ChatActionCell(Context context, ThemeDelegate themeDelegate) {
+    public ChatActionCell(Context context, boolean canDrawInParent, ThemeDelegate themeDelegate) {
         super(context);
+        this.canDrawInParent = canDrawInParent;
         this.themeDelegate = themeDelegate;
         imageReceiver = new ImageReceiver(this);
         imageReceiver.setRoundRadius(AndroidUtilities.roundMessageSize / 2);
@@ -257,9 +257,6 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         visiblePartSet = true;
         backgroundHeight = parentH;
         viewTop = visibleTop;
-        if (hasGradientService()) {
-            invalidate();
-        }
     }
 
     @Override
@@ -489,8 +486,30 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
             return;
         }
 
+        drawBackground(canvas, false);
+
+        if (textPaint != null) {
+            canvas.save();
+            canvas.translate(textXLeft, textY);
+            if (textLayout.getPaint() != textPaint) {
+                buildLayout();
+            }
+            textLayout.draw(canvas);
+            canvas.restore();
+        }
+    }
+
+    public void drawBackground(Canvas canvas, boolean fromParent) {
+        if (canDrawInParent) {
+            if (hasGradientService() && !fromParent) {
+                return;
+            }
+            if (!hasGradientService() && fromParent) {
+                return;
+            }
+        }
         Paint backgroundPaint = getThemedPaint(Theme.key_paint_chatActionBackground);
-        TextPaint textPaint = (TextPaint) getThemedPaint(Theme.key_paint_chatActionText);
+        textPaint = (TextPaint) getThemedPaint(Theme.key_paint_chatActionText);
         if (overrideBackground != null) {
             int color = getThemedColor(overrideBackground);
             if (overrideBackgroundPaint == null) {
@@ -641,22 +660,28 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         } else {
             Theme.applyServiceShaderMatrix(getMeasuredWidth(), backgroundHeight, 0, viewTop + AndroidUtilities.dp(4));
         }
+
+        int oldAlpha = -1;
+        int oldAlpha2 = -1;
+        if (fromParent && getAlpha() != 1f) {
+            oldAlpha = backgroundPaint.getAlpha();
+            oldAlpha2 = Theme.chat_actionBackgroundGradientDarkenPaint.getAlpha();
+            backgroundPaint.setAlpha((int) (oldAlpha * getAlpha()));
+            Theme.chat_actionBackgroundGradientDarkenPaint.setAlpha((int) (oldAlpha2 * getAlpha()));
+        }
         canvas.drawPath(backgroundPath, backgroundPaint);
         if (hasGradientService()) {
             canvas.drawPath(backgroundPath, Theme.chat_actionBackgroundGradientDarkenPaint);
         }
 
-        canvas.save();
-        canvas.translate(textXLeft, textY);
-        if (textLayout.getPaint() != textPaint) {
-            buildLayout();
+        if (oldAlpha >= 0) {
+            backgroundPaint.setAlpha(oldAlpha);
+            Theme.chat_actionBackgroundGradientDarkenPaint.setAlpha(oldAlpha2);
         }
-        textLayout.draw(canvas);
-        canvas.restore();
     }
 
-    protected boolean hasGradientService() {
-        return themeDelegate != null ? themeDelegate.hasGradientService() : Theme.hasGradientService();
+    public boolean hasGradientService() {
+        return overrideBackgroundPaint == null && (themeDelegate != null ? themeDelegate.hasGradientService() : Theme.hasGradientService());
     }
 
     @Override

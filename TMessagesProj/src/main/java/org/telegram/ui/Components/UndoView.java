@@ -1252,6 +1252,8 @@ public class UndoView extends FrameLayout {
             leftImageView.setAnimation(R.raw.chats_infotip, 36, 36);
             leftImageView.setProgress(0);
             leftImageView.playAnimation();
+
+            infoTextView.setMovementMethod(new AndroidUtilities.LinkMovementMethodMy());
         } else if (currentAction == ACTION_THEME_CHANGED) {
             infoTextView.setText(LocaleController.getString("ColorThemeChanged", R.string.ColorThemeChanged));
             leftImageView.setImageResource(R.drawable.toast_pallete);

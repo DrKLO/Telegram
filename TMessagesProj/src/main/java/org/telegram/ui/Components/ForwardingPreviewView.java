@@ -122,6 +122,14 @@ public class ForwardingPreviewView extends FrameLayout {
                 Drawable drawable = resourcesProvider.getWallpaperDrawable();
                 return drawable != null ? drawable : super.getNewDrawable();
             }
+
+            @Override
+            public boolean dispatchTouchEvent(MotionEvent ev) {
+                if (ev.getY() < currentTopOffset) {
+                    return false;
+                }
+                return super.dispatchTouchEvent(ev);
+            }
         };
         chatPreviewContainer.setBackgroundImage(resourcesProvider.getWallpaperDrawable(), resourcesProvider.isWallpaperMotion());
         chatPreviewContainer.setOccupyStatusBar(false);
@@ -326,6 +334,7 @@ public class ForwardingPreviewView extends FrameLayout {
                     }
                 }
             }
+
         };
         chatListView.setItemAnimator(itemAnimator = new ChatListItemAnimator(null, chatListView, resourcesProvider) {
 
@@ -961,7 +970,7 @@ public class ForwardingPreviewView extends FrameLayout {
         @NonNull
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            ChatMessageCell chatMessageCell = new ChatMessageCell(parent.getContext(), resourcesProvider);
+            ChatMessageCell chatMessageCell = new ChatMessageCell(parent.getContext(), false, resourcesProvider);
             return new RecyclerListView.Holder(chatMessageCell);
         }
 

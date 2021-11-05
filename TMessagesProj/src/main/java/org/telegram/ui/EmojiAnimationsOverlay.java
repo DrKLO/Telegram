@@ -21,6 +21,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Cells.ChatMessageCell;
@@ -264,7 +265,7 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
     }
 
     public void onTapItem(ChatMessageCell view, ChatActivity chatActivity) {
-        if (chatActivity.currentUser == null || chatActivity.isSecretChat()) {
+        if (chatActivity.currentUser == null || chatActivity.isSecretChat() || view.getMessageObject() == null || view.getMessageObject().getId() < 0) {
             return;
         }
         boolean show = showAnimationForCell(view, -1, true, false);
@@ -277,7 +278,7 @@ public class EmojiAnimationsOverlay implements NotificationCenter.NotificationCe
         if (printingType != null && printingType == 5) {
             canShowHint = false;
         }
-        if (canShowHint && hintRunnable == null && show && (Bulletin.getVisibleBulletin() == null || !Bulletin.getVisibleBulletin().isShowing()) && SharedConfig.emojiInteractionsHintCount > 0) {
+        if (canShowHint && hintRunnable == null && show && (Bulletin.getVisibleBulletin() == null || !Bulletin.getVisibleBulletin().isShowing()) && SharedConfig.emojiInteractionsHintCount > 0 && UserConfig.getInstance(currentAccount).getClientUserId() != chatActivity.currentUser.id) {
             SharedConfig.updateEmojiInteractionsHintCount(SharedConfig.emojiInteractionsHintCount - 1);
             TLRPC.Document document = MediaDataController.getInstance(currentAccount).getEmojiAnimatedSticker(view.getMessageObject().getStickerEmoji());
             StickerSetBulletinLayout layout = new StickerSetBulletinLayout(chatActivity.getParentActivity(), null, StickerSetBulletinLayout.TYPE_EMPTY, document, chatActivity.getResourceProvider());

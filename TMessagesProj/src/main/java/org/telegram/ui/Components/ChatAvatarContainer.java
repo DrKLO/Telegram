@@ -13,7 +13,6 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
-import android.graphics.Canvas;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
@@ -44,7 +43,6 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
-import org.telegram.ui.MediaActivity;
 import org.telegram.ui.ProfileActivity;
 
 public class ChatAvatarContainer extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
@@ -211,7 +209,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         if (key != null && !imageLoader.isInMemCache(key, false)) {
             Drawable drawable = imageReceiver.getDrawable();
             if (drawable instanceof BitmapDrawable) {
-                imageLoader.putImageToCache((BitmapDrawable) drawable, key);
+                imageLoader.putImageToCache((BitmapDrawable) drawable, key, false);
             }
         }
 
@@ -221,7 +219,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                 args.putLong("dialog_id", parentFragment.getDialogId());
                 int[] media = new int[MediaDataController.MEDIA_TYPES_COUNT];
                 System.arraycopy(sharedMediaPreloader.getLastMediaCount(), 0, media, 0, media.length);
-                MediaActivity fragment = new MediaActivity(args, media, sharedMediaPreloader.getSharedMediaData(), -1);
+                MediaActivity fragment = new MediaActivity(args, sharedMediaPreloader);
                 fragment.setChatInfo(parentFragment.getCurrentChatInfo());
                 parentFragment.presentFragment(fragment);
             } else {

@@ -36,6 +36,7 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DocumentObject;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
@@ -325,6 +326,7 @@ public class ManageLinksActivity extends BaseFragment {
 
                 TLRPC.TL_chatInviteExported finalPermanentLink = permanentLink;
                 AndroidUtilities.runOnUIThread(() -> getNotificationCenter().doOnIdle(() -> {
+                    DiffCallback callback = saveListState();
                     linksLoading = false;
                     hasMore = false;
                     if (finalPermanentLink != null) {
@@ -333,12 +335,10 @@ public class ManageLinksActivity extends BaseFragment {
                             info.exported_invite = finalPermanentLink;
                         }
                     }
-                    DiffCallback callback = saveListState();
                     boolean updateByDiffUtils = false;
 
                     if (error == null) {
                         TLRPC.TL_messages_exportedChatInvites invites = (TLRPC.TL_messages_exportedChatInvites) response;
-
 
                         if (revoked) {
                             for (int i = 0; i < invites.invites.size(); i++) {
@@ -560,7 +560,12 @@ public class ManageLinksActivity extends BaseFragment {
                 recyclerItemsEnterAnimator.onDetached();
             }
         };
-        LinearLayoutManager layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false);
+        LinearLayoutManager layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false) {
+            @Override
+            public boolean supportsPredictiveItemAnimations() {
+                return false;
+            }
+        };
         listView.setLayoutManager(layoutManager);
         listView.setAdapter(listViewAdapter = new ListAdapter(context));
         listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -1358,18 +1363,22 @@ public class ManageLinksActivity extends BaseFragment {
                 return;
             }
 
-            if (invite.link.startsWith("https://t.me/+")) {
+            if (!TextUtils.isEmpty(invite.title)) {
+                SpannableStringBuilder builder = new SpannableStringBuilder(invite.title);
+                Emoji.replaceEmoji(builder, titleView.getPaint().getFontMetricsInt(), (int) titleView.getPaint().getTextSize(), false);
+                titleView.setText(builder);
+            } else if (invite.link.startsWith("https://t.me/+")) {
                 titleView.setText(invite.link.substring("https://t.me/+".length()));
             } else if (invite.link.startsWith("https://t.me/joinchat/")) {
                 titleView.setText(invite.link.substring("https://t.me/joinchat/".length()));
-            }else if (invite.link.startsWith("https://")) {
+            } else if (invite.link.startsWith("https://")) {
                 titleView.setText(invite.link.substring("https://".length()));
             } else {
                 titleView.setText(invite.link);
             }
 
-            String joinedString;
-            if (invite.usage == 0 && invite.usage_limit == 0) {
+            String joinedString = "";
+            if (invite.usage == 0 && invite.usage_limit == 0 && invite.requested == 0) {
                 joinedString = LocaleController.getString("NoOneJoinedYet", R.string.NoOneJoinedYet);
             } else {
                 if (invite.usage_limit > 0 && invite.usage == 0 && !invite.expired && !invite.revoked) {
@@ -1377,7 +1386,15 @@ public class ManageLinksActivity extends BaseFragment {
                 } else if (invite.usage_limit > 0 && invite.expired && invite.revoked) {
                     joinedString = LocaleController.formatPluralString("PeopleJoined", invite.usage) + ", " + LocaleController.formatPluralString("PeopleJoinedRemaining", (invite.usage_limit - invite.usage));
                 } else {
-                    joinedString = LocaleController.formatPluralString("PeopleJoined", invite.usage);
+                    if (invite.usage > 0) {
+                        joinedString = LocaleController.formatPluralString("PeopleJoined", invite.usage);
+                    }
+                    if (invite.requested > 0) {
+                        if (invite.usage > 0) {
+                            joinedString = joinedString + ", ";
+                        }
+                        joinedString = joinedString + LocaleController.formatPluralString("JoinRequests", invite.requested);
+                    }
                 }
             }
             if (invite.permanent && !invite.revoked) {
@@ -1407,10 +1424,8 @@ public class ManageLinksActivity extends BaseFragment {
                 dotDividerSpan.setTopPadding(AndroidUtilities.dp(1.5f));
                 spannableStringBuilder.append("  .  ").setSpan(dotDividerSpan, spannableStringBuilder.length() - 3, spannableStringBuilder.length() - 2, 0);
 
-
                 long currentTime = System.currentTimeMillis() + timeDif * 1000L;
                 long expireTime = invite.expire_date * 1000L;
-
                 long timeLeft = expireTime - currentTime;
                 if (timeLeft < 0) {
                     timeLeft = 0;
@@ -1496,11 +1511,11 @@ public class ManageLinksActivity extends BaseFragment {
                 AndroidUtilities.runOnUIThread(() -> {
                     DiffCallback callback = saveListState();
                     invites.add(0, (TLRPC.TL_chatInviteExported) response);
-                    updateRecyclerViewAnimated(callback);
                     if (info != null) {
                         info.invitesCount++;
                         getMessagesStorage().saveChatLinksCount(currentChatId, info.invitesCount);
                     }
+                    updateRecyclerViewAnimated(callback);
                 }, 200);
             }
         }
@@ -1749,6 +1764,9 @@ public class ManageLinksActivity extends BaseFragment {
         super.onTransitionAnimationEnd(isOpen, backward);
         if (isOpen) {
             isOpened = true;
+            if (backward && inviteLinkBottomSheet != null && inviteLinkBottomSheet.isNeedReopen) {
+                inviteLinkBottomSheet.show();
+            }
         }
         NotificationCenter.getInstance(currentAccount).onAnimationFinish(animationIndex);
     }

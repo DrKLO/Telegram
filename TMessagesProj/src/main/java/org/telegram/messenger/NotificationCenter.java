@@ -223,6 +223,7 @@ public class NotificationCenter {
     public static final int appUpdateAvailable = totalEvents++;
     public static final int onDatabaseMigration = totalEvents++;
     public static final int onEmojiInteractionsReceived = totalEvents++;
+    public static final int emojiPreviewThemesChanged = totalEvents++;
 
     private SparseArray<ArrayList<NotificationCenterDelegate>> observers = new SparseArray<>();
     private SparseArray<ArrayList<NotificationCenterDelegate>> removeAfterBroadcast = new SparseArray<>();

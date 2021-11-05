@@ -45,6 +45,7 @@ import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.DotDividerSpan;
+import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LineProgressView;
 import org.telegram.ui.Components.RLottieDrawable;
@@ -89,6 +90,7 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
     private CharSequence caption;
     private RLottieDrawable statusDrawable;
     private final Theme.ResourcesProvider resourcesProvider;
+    FlickerLoadingView globalGradientView;
 
     public SharedDocumentCell(Context context) {
         this(context, VIEW_TYPE_DEFAULT);
@@ -190,7 +192,7 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
             addView(captionTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 8 : 72, 30, LocaleController.isRTL ? 72 : 8, 0));
             captionTextView.setVisibility(View.GONE);
         } else {
-            nameTextView.setMaxLines(2);
+            nameTextView.setMaxLines(1);
             addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 8 : 72, 5, LocaleController.isRTL ? 72 : 8, 0));
         }
 
@@ -563,9 +565,11 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         if (viewType == VIEW_TYPE_PICKER) {
             super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(64) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY));
+        } else if (viewType == VIEW_TYPE_DEFAULT) {
+            super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(56), MeasureSpec.EXACTLY));
         } else {
             super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(56), MeasureSpec.EXACTLY));
-            int h = AndroidUtilities.dp(5 + 29) + nameTextView.getMeasuredHeight() +  (needDivider ? 1 : 0);
+            int h = AndroidUtilities.dp(5 + 29) + nameTextView.getMeasuredHeight() + (needDivider ? 1 : 0);
             if (caption != null && captionTextView != null && message.hasHighlightedWords()) {
                 ignoreRequestLayout = true;
                 captionTextView.setText(AndroidUtilities.ellipsizeCenterEnd(caption, message.highlightedWords.get(0), captionTextView.getMeasuredWidth(), captionTextView.getPaint(), 130));
@@ -601,12 +605,6 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
         }
     }
 
-    @Override
-    protected void onDraw(Canvas canvas) {
-        if (needDivider) {
-            canvas.drawLine(AndroidUtilities.dp(72), getHeight() - 1, getWidth() - getPaddingRight(), getHeight() - 1, Theme.dividerPaint);
-        }
-    }
 
     @Override
     public void onFailedDownload(String name, boolean canceled) {
@@ -649,5 +647,43 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
     private int getThemedColor(String key) {
         Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
         return color != null ? color : Theme.getColor(key);
+    }
+
+    float enterAlpha = 1f;
+
+    public void setGlobalGradientView(FlickerLoadingView globalGradientView) {
+        this.globalGradientView = globalGradientView;
+    }
+
+    @Override
+    protected void dispatchDraw(Canvas canvas) {
+        if (enterAlpha != 1f && globalGradientView != null) {
+            canvas.saveLayerAlpha(0, 0, getMeasuredWidth(), getMeasuredHeight(), (int) ((1f - enterAlpha) * 255), Canvas.ALL_SAVE_FLAG);
+            globalGradientView.setViewType(FlickerLoadingView.FILES_TYPE);
+            globalGradientView.updateColors();
+            globalGradientView.updateGradient();
+            globalGradientView.draw(canvas);
+            canvas.restore();
+            canvas.saveLayerAlpha(0, 0, getMeasuredWidth(), getMeasuredHeight(), (int) (enterAlpha * 255), Canvas.ALL_SAVE_FLAG);
+            super.dispatchDraw(canvas);
+            drawDivider(canvas);
+            canvas.restore();
+        } else {
+            super.dispatchDraw(canvas);
+            drawDivider(canvas);
+        }
+    }
+
+    private void drawDivider(Canvas canvas) {
+        if (needDivider) {
+            canvas.drawLine(AndroidUtilities.dp(72), getHeight() - 1, getWidth() - getPaddingRight(), getHeight() - 1, Theme.dividerPaint);
+        }
+    }
+
+    public void setEnterAnimationAlpha(float alpha) {
+        if (enterAlpha != alpha) {
+            this.enterAlpha = alpha;
+            invalidate();
+        }
     }
 }

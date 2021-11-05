@@ -4373,7 +4373,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup viewGroup, int viewType) {
             View view;
             if (viewType == 0) {
-                view = new ChatMessageCell(mContext, new Theme.ResourcesProvider() {
+                view = new ChatMessageCell(mContext, false, new Theme.ResourcesProvider() {
                     @Override
                     public Integer getColor(String key) {
                         return Theme.getColor(key);

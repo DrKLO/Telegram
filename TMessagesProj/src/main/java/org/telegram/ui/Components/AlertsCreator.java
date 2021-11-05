@@ -9,6 +9,7 @@
 package org.telegram.ui.Components;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
@@ -20,6 +21,7 @@ import android.graphics.Color;
 import android.graphics.Outline;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
@@ -45,8 +47,10 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewOutlineProvider;
+import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
@@ -82,6 +86,7 @@ import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
+import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
@@ -123,7 +128,7 @@ public class AlertsCreator {
             TLRPC.InputPeer peer;
             if (request instanceof TLRPC.TL_messages_initHistoryImport) {
                 peer = ((TLRPC.TL_messages_initHistoryImport) request).peer;
-            } else  if (request instanceof TLRPC.TL_messages_startHistoryImport) {
+            } else if (request instanceof TLRPC.TL_messages_startHistoryImport) {
                 peer = ((TLRPC.TL_messages_startHistoryImport) request).peer;
             } else {
                 peer = null;
@@ -865,7 +870,7 @@ public class AlertsCreator {
                     setting = NotificationsController.SETTING_MUTE_HOUR;
                 } else if (i == 2) {
                     setting = NotificationsController.SETTING_MUTE_2_DAYS;
-                } else if (i == 4){
+                } else if (i == 4) {
                     setting = NotificationsController.SETTING_MUTE_FOREVER;
                 }
                 if (setting >= 0) {
@@ -1588,7 +1593,7 @@ public class AlertsCreator {
         checkTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4));
         checkTextView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         dialogView.addView(checkTextView, LayoutHelper.createFrame(20, 20, LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT, 0, 14, 21, 0));
-        editTextView.setPadding(LocaleController.isRTL ? AndroidUtilities.dp(24) : 0,  AndroidUtilities.dp(8), LocaleController.isRTL ? 0 : AndroidUtilities.dp(24), AndroidUtilities.dp(8));
+        editTextView.setPadding(LocaleController.isRTL ? AndroidUtilities.dp(24) : 0, AndroidUtilities.dp(8), LocaleController.isRTL ? 0 : AndroidUtilities.dp(24), AndroidUtilities.dp(8));
         editTextView.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
@@ -1602,7 +1607,7 @@ public class AlertsCreator {
 
             @Override
             public void afterTextChanged(Editable s) {
-                int count = maxSymbolsCount -  Character.codePointCount(s, 0, s.length());
+                int count = maxSymbolsCount - Character.codePointCount(s, 0, s.length());
                 if (count < 30) {
                     checkTextView.setNumber(count, checkTextView.getVisibility() == View.VISIBLE);
                     AndroidUtilities.updateViewVisibilityAnimated(checkTextView, true);
@@ -3525,7 +3530,7 @@ public class AlertsCreator {
         background.setBackground(new BitmapDrawable(SvgHelper.getBitmap(svg, AndroidUtilities.dp(320), AndroidUtilities.dp(320 * aspectRatio), false)));
         frameLayout.addView(background, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, 0, -1, -1, -1, -1));
 
-        frameLayout.addView(button, LayoutHelper.createFrame(117,117));
+        frameLayout.addView(button, LayoutHelper.createFrame(117, 117));
 
         builder.setTopView(frameLayout);
         builder.setTitle(LocaleController.getString("PermissionDrawAboveOtherAppsGroupCallTitle", R.string.PermissionDrawAboveOtherAppsGroupCallTitle));
@@ -4781,5 +4786,52 @@ public class AlertsCreator {
             result = minKey + " " + subjectives.get(Utilities.random.nextInt(subjectives.size()));
         }
         return result;
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    public static ActionBarPopupWindow showPopupMenu(ActionBarPopupWindow.ActionBarPopupWindowLayout popupLayout, View anchorView, int offsetX, int offsetY) {
+        Rect rect = new Rect();
+        ActionBarPopupWindow popupWindow = new ActionBarPopupWindow(popupLayout, LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT);
+        if (Build.VERSION.SDK_INT >= 19) {
+            popupWindow.setAnimationStyle(0);
+        } else {
+            popupWindow.setAnimationStyle(R.style.PopupAnimation);
+        }
+
+        popupWindow.setAnimationEnabled(true);
+
+        popupWindow.setOutsideTouchable(true);
+        popupWindow.setClippingEnabled(true);
+
+        popupWindow.setInputMethodMode(ActionBarPopupWindow.INPUT_METHOD_NOT_NEEDED);
+        popupWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED);
+        popupWindow.setFocusable(true);
+        popupLayout.setFocusableInTouchMode(true);
+        popupLayout.setOnKeyListener((v, keyCode, event) -> {
+            if (keyCode == KeyEvent.KEYCODE_MENU && event.getRepeatCount() == 0 && event.getAction() == KeyEvent.ACTION_UP && popupWindow.isShowing()) {
+                popupWindow.dismiss();
+                return true;
+            }
+            return false;
+        });
+
+        popupLayout.measure(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.x - AndroidUtilities.dp(40), View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.y, View.MeasureSpec.AT_MOST));
+        popupWindow.showAsDropDown(anchorView, offsetX, offsetY);
+
+        popupLayout.updateRadialSelectors();
+        popupWindow.startAnimation();
+
+        popupLayout.setOnTouchListener((v, event) -> {
+            if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+                if (popupWindow != null && popupWindow.isShowing()) {
+                    v.getHitRect(rect);
+                    if (!rect.contains((int) event.getX(), (int) event.getY())) {
+                        popupWindow.dismiss();
+                    }
+                }
+            }
+            return false;
+        });
+        return popupWindow;
     }
 }

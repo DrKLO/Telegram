@@ -25,6 +25,7 @@ import android.view.View;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.Utilities;
 
@@ -36,6 +37,8 @@ public class MotionBackgroundDrawable extends Drawable {
 
     private static final boolean useLegacyBitmap = Build.VERSION.SDK_INT < 28;
     private static final boolean useSoftLight = Build.VERSION.SDK_INT >= 29;
+    private static boolean errorWhileGenerateLegacyBitmap = false;
+    private static float legacyBitmapScale = 0.7f;
 
     private int[] colors = new int[]{
             0xff426D57,
@@ -94,6 +97,9 @@ public class MotionBackgroundDrawable extends Drawable {
     private int roundRadius;
     private float patternAlpha = 1f;
     private int alpha = 255;
+
+    private ColorFilter legacyBitmapColorFilter;
+    private int legacyBitmapColor;
 
     public MotionBackgroundDrawable() {
         super();
@@ -240,18 +246,27 @@ public class MotionBackgroundDrawable extends Drawable {
 
     private void generateNextGradient() {
         if (useLegacyBitmap && intensity < 0) {
-            if (legacyBitmap != null) {
-                if (legacyBitmap2 == null || legacyBitmap2.getHeight() != legacyBitmap.getHeight() || legacyBitmap2.getWidth() != legacyBitmap.getWidth()) {
-                    if (legacyBitmap2 != null) {
-                        legacyBitmap2.recycle();
+            try {
+                if (legacyBitmap != null) {
+                    if (legacyBitmap2 == null || legacyBitmap2.getHeight() != legacyBitmap.getHeight() || legacyBitmap2.getWidth() != legacyBitmap.getWidth()) {
+                        if (legacyBitmap2 != null) {
+                            legacyBitmap2.recycle();
+                        }
+                        legacyBitmap2 = Bitmap.createBitmap(legacyBitmap.getWidth(), legacyBitmap.getHeight(), Bitmap.Config.ARGB_8888);
+                        legacyCanvas2 = new Canvas(legacyBitmap2);
+                    } else {
+                        legacyBitmap2.eraseColor(Color.TRANSPARENT);
                     }
-                    legacyBitmap2 = Bitmap.createBitmap(legacyBitmap.getWidth(), legacyBitmap.getHeight(), Bitmap.Config.ARGB_8888);
-                    legacyCanvas2 = new Canvas(legacyBitmap2);
-                } else {
-                    legacyBitmap2.eraseColor(Color.TRANSPARENT);
+                    legacyCanvas2.drawBitmap(legacyBitmap, 0, 0, null);
                 }
-                legacyCanvas2.drawBitmap(legacyBitmap,0 ,0, null);
+            } catch (Exception e) {
+                FileLog.e(e);
+                if (legacyBitmap2 != null) {
+                    legacyBitmap2.recycle();
+                    legacyBitmap2 = null;
+                }
             }
+
             Utilities.generateGradient(currentBitmap, true, phase, 1f, currentBitmap.getWidth(), currentBitmap.getHeight(), currentBitmap.getRowBytes(), colors);
             invalidateLegacy = true;
         }
@@ -316,7 +331,6 @@ public class MotionBackgroundDrawable extends Drawable {
             AndroidUtilities.cancelRunOnUIThread(updateAnimationRunnable);
             AndroidUtilities.runOnUIThread(updateAnimationRunnable, 16);
         }
-       // invalidateLegacy = true;
     }
 
     public boolean hasPattern() {
@@ -371,7 +385,11 @@ public class MotionBackgroundDrawable extends Drawable {
                 matrix = new Matrix();
             } else {
                 createLegacyBitmap();
-                paint2.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_IN));
+                if (!errorWhileGenerateLegacyBitmap) {
+                    paint2.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_IN));
+                } else {
+                    paint2.setXfermode(null);
+                }
             }
         } else {
             if (!useLegacyBitmap) {
@@ -400,9 +418,9 @@ public class MotionBackgroundDrawable extends Drawable {
     }
 
     private void createLegacyBitmap() {
-        if (useLegacyBitmap && intensity < 0) {
-            int w = patternBounds.width();
-            int h = patternBounds.height();
+        if (useLegacyBitmap && intensity < 0 && !errorWhileGenerateLegacyBitmap) {
+            int w = (int) (patternBounds.width() * legacyBitmapScale);
+            int h = (int) (patternBounds.height() * legacyBitmapScale);
             if (w > 0 && h > 0 && (legacyBitmap == null || legacyBitmap.getWidth() != w || legacyBitmap.getHeight() != h)) {
                 if (legacyBitmap != null) {
                     legacyBitmap.recycle();
@@ -411,9 +429,20 @@ public class MotionBackgroundDrawable extends Drawable {
                     legacyBitmap2.recycle();
                     legacyBitmap2 = null;
                 }
-                legacyBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
-                legacyCanvas = new Canvas(legacyBitmap);
-                invalidateLegacy = true;
+                try {
+
+                    legacyBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+                    legacyCanvas = new Canvas(legacyBitmap);
+                    invalidateLegacy = true;
+                } catch (Exception e) {
+                    if (legacyBitmap != null) {
+                        legacyBitmap.recycle();
+                        legacyBitmap = null;
+                    }
+                    FileLog.e(e);
+                    errorWhileGenerateLegacyBitmap = true;
+                    paint2.setXfermode(null);
+                }
             }
         }
     }
@@ -441,7 +470,29 @@ public class MotionBackgroundDrawable extends Drawable {
             canvas.drawColor(ColorUtils.setAlphaComponent(Color.BLACK, alpha));
             if (patternBitmap != null) {
                 if (useLegacyBitmap) {
-                    if (legacyBitmap != null) {
+                    if (errorWhileGenerateLegacyBitmap) {
+                        bitmapWidth = patternBitmap.getWidth();
+                        bitmapHeight = patternBitmap.getHeight();
+                        maxScale = Math.max(w / bitmapWidth, h / bitmapHeight);
+                        width = bitmapWidth * maxScale;
+                        height = bitmapHeight * maxScale;
+                        x = (w - width) / 2;
+                        y = (h - height) / 2;
+                        rect.set(x, y, x + width, y + height);
+
+                        int averageColor = AndroidUtilities.getAverageColor(colors[2], AndroidUtilities.getAverageColor(colors[0], colors[1]));
+                        if (colors[3] != 0) {
+                            averageColor = AndroidUtilities.getAverageColor(colors[3], averageColor);
+                        }
+                        if (legacyBitmapColorFilter == null || averageColor != legacyBitmapColor) {
+                            legacyBitmapColor = averageColor;
+                            legacyBitmapColorFilter = new PorterDuffColorFilter(averageColor, PorterDuff.Mode.SRC_IN);
+                        }
+                        paint2.setColorFilter(legacyBitmapColorFilter);
+                        paint2.setAlpha((int) ((Math.abs(intensity) / 100f) * alpha * patternAlpha));
+                        canvas.translate(0, tr);
+                        canvas.drawBitmap(patternBitmap, null, rect, paint2);
+                    } else if (legacyBitmap != null) {
                         if (invalidateLegacy) {
                             rect.set(0, 0, legacyBitmap.getWidth(), legacyBitmap.getHeight());
                             int oldAlpha = paint.getAlpha();
@@ -460,7 +511,10 @@ public class MotionBackgroundDrawable extends Drawable {
 
                             paint2.setColorFilter(null);
                             paint2.setAlpha((int) ((Math.abs(intensity) / 100f) * 255));
+                            legacyCanvas.save();
+                            legacyCanvas.scale(legacyBitmapScale, legacyBitmapScale);
                             legacyCanvas.drawBitmap(patternBitmap, null, rect, paint2);
+                            legacyCanvas.restore();
                             invalidateLegacy = false;
                         }
 
@@ -477,6 +531,9 @@ public class MotionBackgroundDrawable extends Drawable {
                         }
                     }
                 } else {
+                    if (matrix == null) {
+                        matrix = new Matrix();
+                    }
                     matrix.reset();
                     matrix.setTranslate(x, y + tr);
                     float scaleW = (currentBitmap.getWidth() / (float) bounds.width());

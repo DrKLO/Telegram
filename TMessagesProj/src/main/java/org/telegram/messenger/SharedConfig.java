@@ -23,6 +23,7 @@ import android.util.SparseArray;
 import org.json.JSONObject;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.SerializedData;
+import org.telegram.ui.Components.SharedMediaLayout;
 import org.telegram.ui.Components.SwipeGestureSettingsView;
 import org.telegram.tgnet.TLRPC;
 
@@ -133,6 +134,8 @@ public class SharedConfig {
     private static int chatSwipeAction;
 
     public static int distanceSystemType;
+    public static int mediaColumnsCount = 3;
+    public static int fastScrollHintCount = 3;
 
     static {
         loadConfig();
@@ -370,6 +373,9 @@ public class SharedConfig {
             messageSeenHintCount = preferences.getInt("messageSeenCount", 3);
             emojiInteractionsHintCount = preferences.getInt("emojiInteractionsHintCount", 3);
             dayNightThemeSwitchHintCount = preferences.getInt("dayNightThemeSwitchHintCount", 3);
+            mediaColumnsCount = preferences.getInt("mediaColumnsCount", 3);
+            fastScrollHintCount = preferences.getInt("fastScrollHintCount", 3);
+
             preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
             showNotificationsForAllAccounts = preferences.getBoolean("AllAccounts", true);
 
@@ -1140,5 +1146,19 @@ public class SharedConfig {
         }
 
         return devicePerformanceClass;
+    }
+
+    public static void setMediaColumnsCount(int count) {
+        if (mediaColumnsCount != count) {
+            mediaColumnsCount = count;
+            ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE).edit().putInt("mediaColumnsCount", mediaColumnsCount).apply();
+        }
+    }
+
+    public static void setFastScrollHintCount(int count) {
+        if (fastScrollHintCount != count) {
+            fastScrollHintCount = count;
+            ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE).edit().putInt("fastScrollHintCount", fastScrollHintCount).apply();
+        }
     }
 }

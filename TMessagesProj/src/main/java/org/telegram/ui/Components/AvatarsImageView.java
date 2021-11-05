@@ -33,7 +33,6 @@ import java.util.Random;
 
 public class AvatarsImageView extends FrameLayout {
 
-
     public final static int STYLE_GROUP_CALL_TOOLTIP = 10;
     public final static int STYLE_MESSAGE_SEEN = 11;
 
@@ -53,6 +52,7 @@ public class AvatarsImageView extends FrameLayout {
     boolean centered;
 
     private boolean isInCall;
+    protected int count;
 
     public void commitTransition(boolean animated) {
         if (!wasDraw || !animated) {
@@ -471,5 +471,16 @@ public class AvatarsImageView extends FrameLayout {
 
     public void setCentered(boolean centered) {
         this.centered = centered;
+    }
+
+    public void setCount(int count) {
+        this.count = count;
+        requestLayout();
+    }
+
+    public void reset() {
+        for (int i = 0; i < animatingStates.length; ++i) {
+            setObject(0, 0, null);
+        }
     }
 }

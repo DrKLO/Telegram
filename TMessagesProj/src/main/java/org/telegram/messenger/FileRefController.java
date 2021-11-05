@@ -742,7 +742,7 @@ public class FileRefController extends BaseController {
             } else if (response instanceof TLRPC.TL_account_wallPapers) {
                 TLRPC.TL_account_wallPapers accountWallPapers = (TLRPC.TL_account_wallPapers) response;
                 for (int i = 0, size10 = accountWallPapers.wallpapers.size(); i < size10; i++) {
-                    result = getFileReference(((TLRPC.TL_wallPaper) accountWallPapers.wallpapers.get(i)).document, requester.location, needReplacement, locationReplacement);
+                    result = getFileReference(((TLRPC.WallPaper) accountWallPapers.wallpapers.get(i)).document, requester.location, needReplacement, locationReplacement);
                     if (result != null) {
                         break;
                     }

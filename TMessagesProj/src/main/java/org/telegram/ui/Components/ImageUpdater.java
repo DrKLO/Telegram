@@ -717,7 +717,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
             try {
                 Bitmap b = BitmapFactory.decodeFile(FileLoader.getPathToAttach(smallPhoto, true).getAbsolutePath());
                 String key = smallPhoto.location.volume_id + "_" + smallPhoto.location.local_id + "@50_50";
-                ImageLoader.getInstance().putImageToCache(new BitmapDrawable(b), key);
+                ImageLoader.getInstance().putImageToCache(new BitmapDrawable(b), key, true);
             } catch (Throwable ignore) {
 
             }
@@ -869,7 +869,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
                         try {
                             Bitmap b = BitmapFactory.decodeFile(FileLoader.getPathToAttach(smallPhoto, true).getAbsolutePath());
                             String key = smallPhoto.location.volume_id + "_" + smallPhoto.location.local_id + "@50_50";
-                            ImageLoader.getInstance().putImageToCache(new BitmapDrawable(b), key);
+                            ImageLoader.getInstance().putImageToCache(new BitmapDrawable(b), key, true);
                         } catch (Throwable ignore) {
 
                         }

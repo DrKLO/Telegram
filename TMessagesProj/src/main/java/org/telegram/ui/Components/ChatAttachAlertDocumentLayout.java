@@ -1935,8 +1935,9 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
         }
 
         @Override
-        public int getPositionForScrollProgress(float progress) {
-            return 0;
+        public void getPositionForScrollProgress(RecyclerListView listView, float progress, int[] position) {
+            position[0] = 0;
+            position[1] = 0;
         }
     }
 

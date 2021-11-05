@@ -2321,7 +2321,11 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                     objects.addAll(res.participants);
                     for (int a = 0, size = res.participants.size(); a < size; a++) {
                         TLRPC.ChannelParticipant participant = res.participants.get(a);
-                        map.put(MessageObject.getPeerId(participant.peer), participant);
+                        if (participant.user_id == selfId) {
+                            objects.remove(participant);
+                        } else {
+                            map.put(MessageObject.getPeerId(participant.peer), participant);
+                        }
                     }
                     if (type == TYPE_USERS) {
                         for (int a = 0, N = participants.size(); a < N; a++) {
@@ -2830,7 +2834,9 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                             peerObject = user;
                         } else {
                             TLRPC.Chat chat = getMessagesController().getChat(-peerId);
-                            un = chat.username;
+                            if (chat != null) {
+                                un = chat.username;
+                            }
                             peerObject = chat;
                         }
                     } else if (object instanceof TLRPC.ChatParticipant) {

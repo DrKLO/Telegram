@@ -2091,10 +2091,10 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         }
         if (!playlistEndReached[0]) {
             loadingPlaylist = true;
-            AccountInstance.getInstance(playingMessageObject.currentAccount).getMediaDataController().loadMedia(playingMessageObject.getDialogId(), 50, playlistMaxId[0], MediaDataController.MEDIA_MUSIC, 1, playlistClassGuid);
+            AccountInstance.getInstance(playingMessageObject.currentAccount).getMediaDataController().loadMedia(playingMessageObject.getDialogId(), 50, playlistMaxId[0], 0, MediaDataController.MEDIA_MUSIC, 1, playlistClassGuid, 0);
         } else if (playlistMergeDialogId != 0 && !playlistEndReached[1]) {
             loadingPlaylist = true;
-            AccountInstance.getInstance(playingMessageObject.currentAccount).getMediaDataController().loadMedia(playlistMergeDialogId, 50, playlistMaxId[0], MediaDataController.MEDIA_MUSIC, 1, playlistClassGuid);
+            AccountInstance.getInstance(playingMessageObject.currentAccount).getMediaDataController().loadMedia(playlistMergeDialogId, 50, playlistMaxId[0], 0, MediaDataController.MEDIA_MUSIC, 1, playlistClassGuid, 0);
         }
     }
 
@@ -4030,7 +4030,18 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
     public static String getStickerExt(Uri uri) {
         InputStream inputStream = null;
         try {
-            inputStream = ApplicationLoader.applicationContext.getContentResolver().openInputStream(uri);
+            try {
+                inputStream = ApplicationLoader.applicationContext.getContentResolver().openInputStream(uri);
+            } catch (Exception e) {
+                inputStream = null;
+            }
+            if (inputStream == null) {
+                File file = new File(uri.getPath());
+                if (file.exists()) {
+                    inputStream = new FileInputStream(file);
+                }
+            }
+
             byte[] header = new byte[12];
             if (inputStream.read(header, 0, 12) == 12) {
                 if (header[0] == (byte) 0x89 && header[1] == (byte) 0x50 && header[2] == (byte) 0x4E && header[3] == (byte) 0x47 && header[4] == (byte) 0x0D && header[5] == (byte) 0x0A && header[6] == (byte) 0x1A && header[7] == (byte) 0x0A) {

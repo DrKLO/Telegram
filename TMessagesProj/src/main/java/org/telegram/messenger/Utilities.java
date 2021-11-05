@@ -33,6 +33,7 @@ public class Utilities {
     public static volatile DispatchQueue cacheClearQueue = new DispatchQueue("cacheClearQueue");
     public static volatile DispatchQueue searchQueue = new DispatchQueue("searchQueue");
     public static volatile DispatchQueue phoneBookQueue = new DispatchQueue("phoneBookQueue");
+    public static volatile DispatchQueue themeQueue = new DispatchQueue("themeQueue");
 
     final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
 

@@ -547,7 +547,8 @@ public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
     }
 
     @Override
-    public int getPositionForScrollProgress(float progress) {
-        return (int) (getItemCount() * progress);
+    public void getPositionForScrollProgress(RecyclerListView listView, float progress, int[] position) {
+        position[0] = (int) (getItemCount() * progress);
+        position[1] = 0;
     }
 }

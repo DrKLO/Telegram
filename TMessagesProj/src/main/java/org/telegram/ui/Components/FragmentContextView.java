@@ -594,7 +594,9 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
                 if (fragment != null && messageObject != null) {
                     if (messageObject.isMusic()) {
-                        fragment.showDialog(new AudioPlayerAlert(getContext(), resourcesProvider));
+                        if (getContext() instanceof LaunchActivity) {
+                            fragment.showDialog(new AudioPlayerAlert(getContext(), resourcesProvider));
+                        }
                     } else {
                         long dialogId = 0;
                         if (fragment instanceof ChatActivity) {

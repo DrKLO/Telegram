@@ -10,6 +10,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -94,7 +95,9 @@ public class SponsoredMessageInfoView extends FrameLayout {
         linearLayout.addView(button, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 34, Gravity.CENTER_HORIZONTAL, 0, 14, 0, 0));
         linearLayout.addView(description4, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 14, 0, 0));
 
-        addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 22, 12, 22, 22));
+        ScrollView scrollView = new ScrollView(getContext());
+        scrollView.addView(linearLayout);
+        addView(scrollView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 22, 12, 22, 22));
 
     }
 }

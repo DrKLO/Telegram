@@ -375,6 +375,23 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                 addToSelectedPhotos(photoEntry, -1);
             }
             parentAlert.applyCaption();
+            if (PhotoViewer.getInstance().hasCaptionForAllMedia) {
+                HashMap<Object, Object> selectedPhotos = getSelectedPhotos();
+                ArrayList<Object> selectedPhotosOrder = getSelectedPhotosOrder();
+                if (!selectedPhotos.isEmpty()) {
+                    for (int a = 0; a < selectedPhotosOrder.size(); a++) {
+                        Object o = selectedPhotos.get(selectedPhotosOrder.get(a));
+                        if (o instanceof MediaController.PhotoEntry) {
+                            MediaController.PhotoEntry photoEntry1 = (MediaController.PhotoEntry) o;
+                            if (a == 0) {
+                                photoEntry1.caption = PhotoViewer.getInstance().captionForAllMedia;
+                            } else {
+                                photoEntry1.caption = null;
+                            }
+                        }
+                    }
+                }
+            }
             parentAlert.delegate.didPressedButton(7, true, notify, scheduleDate, forceDocument);
         }
     };
@@ -625,7 +642,9 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                     AndroidUtilities.hideKeyboard(parentAlert.baseFragment.getFragmentView().findFocus());
                     AndroidUtilities.hideKeyboard(parentAlert.getContainer().findFocus());
                 }
+                ((MediaController.PhotoEntry) arrayList.get(position)).caption = parentAlert.getCommentTextView().getText();
                 PhotoViewer.getInstance().openPhotoForSelect(arrayList, position, type, false, photoViewerProvider, chatActivity);
+                PhotoViewer.getInstance().setCaption(parentAlert.getCommentTextView().getText());
             } else {
                 if (SharedConfig.inappCamera) {
                     openCamera(true);

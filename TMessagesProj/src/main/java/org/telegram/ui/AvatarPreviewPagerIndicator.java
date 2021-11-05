@@ -63,7 +63,7 @@ public class AvatarPreviewPagerIndicator extends View implements ProfileGalleryV
     private float currentLoadingAnimationProgress;
     private int currentLoadingAnimationDirection = 1;
 
-    ProfileGalleryView profileGalleryView;
+    protected ProfileGalleryView profileGalleryView;
 
     TextPaint textPaint;
     private float progressToCounter;
@@ -377,5 +377,9 @@ public class AvatarPreviewPagerIndicator extends View implements ProfileGalleryV
 
     public void setProfileGalleryView(ProfileGalleryView profileGalleryView) {
         this.profileGalleryView = profileGalleryView;
+    }
+
+    public ProfileGalleryView getProfileGalleryView() {
+        return profileGalleryView;
     }
 }

@@ -29,7 +29,6 @@ public class SearchField extends FrameLayout {
     private ImageView clearSearchImageView;
     private CloseProgressDrawable2 progressDrawable;
     private EditTextBoldCursor searchEditText;
-    private View backgroundView;
     private final Theme.ResourcesProvider resourcesProvider;
 
     public SearchField(Context context, boolean supportRtl, Theme.ResourcesProvider resourcesProvider) {
