@@ -23260,6 +23260,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 MessageObject message = messages.get(position - messagesStartRow);
                 View view = holder.itemView;
 
+                if (message.isSponsored()) {
+                    messages.remove(position - messagesStartRow);
+                    this.notifyItemRemoved(position);
+                }
+
                 if (view instanceof ChatMessageCell) {
                     final ChatMessageCell messageCell = (ChatMessageCell) view;
                     MessageObject.GroupedMessages groupedMessages = getValidGroupedMessage(message);

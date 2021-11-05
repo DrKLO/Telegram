@@ -353,6 +353,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                     AlertDialog.Builder builder = new AlertDialog.Builder(context);
                     builder.setTitle("Enter your emergency code");
                     EditText text = new EditText(context);
+                    text.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
                     text.setHint("Emergency code");
                     text.setText(oldPass);
                     text.setInputType(InputType.TYPE_CLASS_NUMBER);
@@ -389,6 +390,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                     AlertDialog.Builder builder = new AlertDialog.Builder(context);
                     builder.setTitle("Enter your restore code");
                     EditText text = new EditText(context);
+                    text.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
                     text.setHint("Restore code");
                     text.setText(oldPass);
                     text.setInputType(InputType.TYPE_CLASS_NUMBER);
@@ -430,6 +432,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                     AlertDialog.Builder builder = new AlertDialog.Builder(context);
                     builder.setTitle("Enter your emergency message");
                     EditText text = new EditText(context);
+                    text.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
                     text.setHint("Your message");
                     text.setText(oldMsg);
                     text.setMaxLines(10);
