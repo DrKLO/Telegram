@@ -6026,19 +6026,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         getConnectionsManager().cancelRequest(editingMessageObjectReqId, true);
                         editingMessageObjectReqId = 0;
                     }
-
-                    for (int i = 0; i < messages.size(); i++) {
-                        View view = chatListView.getChildAt(i);
-                        if (view instanceof ChatMessageCell) {
-                            ChatMessageCell cell = (ChatMessageCell) view;
-                            MessageObject messageObject = cell.getMessageObject();
-                            if (messageObject.isReply() && messageObject.replyMessageObject.getId() == editingMessageObject.getId()) {
-                                messageObject.replyMessageObject.messageText = editingMessageObject.messageText;
-                                cell.setMessageObject(messageObject, cell.getCurrentMessagesGroup(), true, false);
-                            }
-                        }
-                    }
-
                     updatePinnedMessageView(true);
                     updateBottomOverlay();
                     updateVisibleRows();
