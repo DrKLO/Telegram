@@ -14606,6 +14606,13 @@ public class MessagesController extends BaseController implements NotificationCe
                 .apply();
     }
 
+    public void markSponsoredAsRead(long dialog_id, MessageObject object) {
+        ArrayList<MessageObject> messages = getSponsoredMessages(dialog_id);
+        if (messages != null) {
+            messages.remove(object);
+        }
+    }
+
     public interface MessagesLoadedCallback {
         void onMessagesLoaded(boolean fromCache);
         void onError();

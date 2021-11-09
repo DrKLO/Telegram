@@ -1931,7 +1931,7 @@ public class ImageLoader {
 
     @TargetApi(26)
     private static void moveDirectory(File source, File target) {
-        if (!target.exists() && !target.mkdir()) {
+        if (!source.exists() || (!target.exists() && !target.mkdir())) {
             return;
         }
         try (Stream<Path> files = Files.list(source.toPath())) {
@@ -1984,27 +1984,20 @@ public class ImageLoader {
                         }
                     }
                 }
-                telegramPath = new File(path, "Telegram");
-                telegramPath.mkdirs();
-                /*int version = 0;
-                try {
-                    PackageManager pm = ApplicationLoader.applicationContext.getPackageManager();
-                    ApplicationInfo applicationInfo = pm.getApplicationInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
-                    if (applicationInfo != null) {
-                        version = applicationInfo.targetSdkVersion;
-                    }
-                } catch (Throwable ignore) {
 
+                if (Build.VERSION.SDK_INT >= 30) {
+                    File newPath = ApplicationLoader.applicationContext.getExternalFilesDir(null);
+                    telegramPath = new File(newPath, "Telegram");
+//                    File oldPath = new File(path, "Telegram");
+//                    long moveStart = System.currentTimeMillis();
+//                    moveDirectory(oldPath, telegramPath);
+//                    long dt = System.currentTimeMillis() - moveStart;
+//                    FileLog.d("move time = " + dt);
+                } else {
+                    telegramPath = new File(path, "Telegram");
                 }
-                File newPath = ApplicationLoader.applicationContext.getExternalFilesDir(null);
-                telegramPath = new File(newPath, "Telegram"); //TODO
-                if (Build.VERSION.SDK_INT >= 29 && version < 30) {
-                    File oldPath = new File(path, "Telegram");
-                    long moveStart = SystemClock.elapsedRealtime();
-                    moveDirectory(oldPath, telegramPath);
-                    long dt = SystemClock.elapsedRealtime() - moveStart;
-                    FileLog.d("move time = " + dt);
-                }*/
+                telegramPath.mkdirs();
+
                 if (Build.VERSION.SDK_INT >= 19 && !telegramPath.isDirectory()) {
                     ArrayList<File> dirs = AndroidUtilities.getDataDirs();
                     for (int a = 0, N = dirs.size(); a < N; a++) {
