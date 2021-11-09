@@ -4809,4 +4809,7 @@
     <string name="UserAcceptedToGroupAction">un1 was accepted into the group</string>
     <string name="UserAcceptedToGroupPush">%1$s was accepted into the group</string>
     <string name="UserAcceptedToGroupPushWithGroup">%2$s|%1$s was accepted into the group</string>
+    <string name="ChannelSavingContent">Saving content</string>
+    <string name="ChannelRestrictSavingContent">Restrict saving content</string>
+    <string name="ChannelRestrictSavingContentHelp">Participants won\'t be able to forward messages from this channel or save media files</string>
 </resources>
