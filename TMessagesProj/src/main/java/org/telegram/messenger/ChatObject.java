@@ -1314,6 +1314,14 @@ public class ChatObject {
         return ((participant.flags & 128) != 0 ? participant.volume : 10000);
     }
 
+    public static boolean isToggleForwards(TLRPC.Chat chat) {
+        if (chat == null) {
+            return true;
+        }
+
+        return !chat.noforwards;
+    }
+
     private static boolean isBannableAction(int action) {
         switch (action) {
             case ACTION_PIN:
