@@ -10545,6 +10545,40 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             groupedPhotosListView.fillList();
             pageBlocksAdapter.updateSlideshowCell(pageBlock);
         }
+
+        if ((parentChatActivity != null && !ChatObject.isToggleForwards(parentChatActivity.getCurrentChat())) ||
+                !ChatObject.isToggleForwards(MessagesController.getInstance(currentAccount).getChat(-currentDialogId))) {
+            if (menuItem != null && sendItem != null) {
+                sendItem.setVisibility(View.GONE);
+                menuItem.hideSubItem(gallery_menu_save);
+                menuItem.hideSubItem(gallery_menu_savegif);
+            }
+            if (menuItem != null && shareButton != null) {
+                shareButton.setVisibility(View.GONE);
+                menuItem.hideSubItem(gallery_menu_share);
+                menuItem.hideSubItem(gallery_menu_share2);
+            }
+        } else {
+            if (menuItem != null && sendItem != null) {
+                sendItem.setVisibility(View.VISIBLE);
+                if (menuItem.isSubItemVisible(gallery_menu_save)) {
+                    menuItem.showSubItem(gallery_menu_save);
+                }
+                if (menuItem.isSubItemVisible(gallery_menu_savegif)) {
+                    menuItem.showSubItem(gallery_menu_savegif);
+                }
+            }
+            if (menuItem != null && shareButton != null) {
+                shareButton.setVisibility(View.VISIBLE);
+                if (menuItem.isSubItemVisible(gallery_menu_share)) {
+                    menuItem.showSubItem(gallery_menu_share);
+                }
+                if (menuItem.isSubItemVisible(gallery_menu_share2)) {
+                    menuItem.showSubItem(gallery_menu_share2);
+                }
+            }
+        }
+
         setCurrentCaption(newMessageObject, caption, animateCaption);
     }
 

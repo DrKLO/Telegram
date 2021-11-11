@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AppName">Telegram</string>
-    <string name="AppNameBeta">Telegram Beta</string>
+    <string name="AppName">Opengram</string>
+    <string name="AppNameBeta">Opengram Beta</string>
     <string name="LanguageName">English</string>
     <string name="English">English</string>
     <string name="LanguageNameInEnglish">English</string>
@@ -4812,4 +4812,6 @@
     <string name="ChannelSavingContent">Saving content</string>
     <string name="ChannelRestrictSavingContent">Restrict saving content</string>
     <string name="ChannelRestrictSavingContentHelp">Participants won\'t be able to forward messages from this channel or save media files</string>
+    <string name="ChannelRestrictSavingContentHelp_1">Forwards from this channel are restricted</string>
+    <string name="ChannelRestrictSavingContentHelp_2">Forwards from this channel\nare restricted</string>
 </resources>

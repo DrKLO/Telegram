@@ -18,12 +18,14 @@ import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
@@ -462,17 +464,23 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
     }
 
     private void processDone() {
-        if (trySetUsername() && (trySetToogleNoForwards() || !isPrivate)) {
+        if (trySetUsername()) {
+            if (trySetToogleNoForwards() && isRestrict) {
+                getParentActivity().getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
+            } else {
+                getParentActivity().getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
+            }
+
             finishFragment();
         }
     }
 
     private boolean trySetToogleNoForwards() {
-        if (isPrivate) {
-            getMessagesController().updateChannelToggleNoForwards(chatId, isRestrict);
-        } else {
+        if (!isPrivate) {
             return false;
         }
+
+        getMessagesController().updateChannelToggleNoForwards(chatId, isRestrict);
 
         return true;
     }

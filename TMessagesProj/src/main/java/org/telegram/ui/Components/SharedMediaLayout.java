@@ -437,6 +437,8 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
     private ArrayList<SharedPhotoVideoCell2> animationSupportingSortedCells = new ArrayList<>();
     private int animateToColumnsCount;
 
+    private HintView restrictForwardHintView;
+
     private static final Interpolator interpolator = t -> {
         --t;
         return t * t * t * t * t + 1.0F;
@@ -1431,7 +1433,6 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             forwardItem.setDuplicateParentStateEnabled(false);
             actionModeLayout.addView(forwardItem, new LinearLayout.LayoutParams(AndroidUtilities.dp(54), ViewGroup.LayoutParams.MATCH_PARENT));
             actionModeViews.add(forwardItem);
-            forwardItem.setOnClickListener(v -> onActionBarItemClick(forward));
         }
         deleteItem = new ActionBarMenuItem(context, null, Theme.getColor(Theme.key_actionBarActionModeDefaultSelector), Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2), false);
         deleteItem.setIcon(R.drawable.msg_delete);
@@ -1990,11 +1991,13 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             mediaPages[a].listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
                 @Override
                 public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+                    hideHints(true);
                     scrolling = newState != RecyclerView.SCROLL_STATE_IDLE;
                 }
 
                 @Override
                 public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                    hideHints(true);
                     checkLoadMoreScroll(mediaPage, (RecyclerListView) recyclerView, layoutManager);
                     if (dy != 0 && (mediaPages[0].selectedType == 0 || mediaPages[0].selectedType == 5) && !sharedMediaData[0].messages.isEmpty()) {
                         showFloatingDateView();
@@ -2140,6 +2143,14 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         switchToCurrentSelectedMode(false);
         if (hasMedia[0] >= 0) {
             loadFastScrollData(false);
+        }
+    }
+
+    private void hideHints(boolean scroll) {
+        if (scroll) {
+            if (restrictForwardHintView != null) {
+                restrictForwardHintView.hide();
+            }
         }
     }
 
@@ -3223,6 +3234,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
 
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
+        hideHints(true);
         return checkTabsAnimationInProgress() || scrollSlidingTextTabStrip.isAnimatingIndicator() || onTouchEvent(ev);
     }
 
@@ -3236,6 +3248,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
 
     @Override
     public boolean onTouchEvent(MotionEvent ev) {
+        hideHints(true);
         if (profileActivity.getParentLayout() != null && !profileActivity.getParentLayout().checkTransitionAnimation() && !checkTabsAnimationInProgress() && !isInPinchToZoomTouchMode) {
             if (ev != null) {
                 if (velocityTracker == null) {
@@ -3939,6 +3952,26 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
     }
 
     public void onResume() {
+        if (forwardItem != null) {
+            if (!ChatObject.isToggleForwards(profileActivity.getMessagesController().getChat(-dialog_id))) {
+                forwardItem.setAlpha(0.5f);
+                forwardItem.setOnClickListener(v -> {
+                    restrictForwardHintView = new HintView(getContext(), 9, profileActivity.getResourceProvider());
+                    restrictForwardHintView.setVisibility(View.INVISIBLE);
+                    restrictForwardHintView.setShowingDuration(2000);
+                    restrictForwardHintView.setAlpha(0.0f);
+                    restrictForwardHintView.setBottomOffset(-AndroidUtilities.dp(4));
+                    restrictForwardHintView.setText(LocaleController.getString("R.string.ChannelRestrictSavingContentHelp_1", R.string.ChannelRestrictSavingContentHelp_1));
+                    AndroidUtilities.runOnUIThread(() -> {
+                        restrictForwardHintView.showForView(forwardItem, true);
+                    });
+                    profileActivity.getLayoutContainer().addView(restrictForwardHintView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT | Gravity.TOP, 0, 0, 60, 0));
+                });
+            } else {
+                forwardItem.setAlpha(1.0f);
+                forwardItem.setOnClickListener(v -> onActionBarItemClick(forward));
+            }
+        }
         scrolling = true;
         if (photoVideoAdapter != null) {
             updatePhotosAdapter();
