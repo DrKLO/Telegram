@@ -519,7 +519,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
 
         playerShadow = new View(context);
         playerShadow.setBackgroundColor(getThemedColor(Theme.key_dialogShadowLine));
-        
+
         playerLayout = new FrameLayout(context) {
             @Override
             protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
@@ -1352,7 +1352,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                         if (message != null) {
                             SendMessagesHelper.getInstance(currentAccount).sendMessage(message.toString(), did, null, null, null, true, null, null, null, true, 0, null);
                         }
-                        SendMessagesHelper.getInstance(currentAccount).sendMessage(fmessages, did, false, false, true, 0);
+                        SendMessagesHelper.getInstance(currentAccount).sendMessage(fmessages, did, false, false, true, 0, fragment);
                     }
                     fragment1.finishFragment();
                 } else {

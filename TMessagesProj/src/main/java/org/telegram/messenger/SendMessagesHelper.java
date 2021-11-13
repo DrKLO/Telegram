@@ -1420,7 +1420,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         }
     }
 
-    public void processForwardFromMyName(MessageObject messageObject, long did) {
+    public void processForwardFromMyName(MessageObject messageObject, long did, final BaseFragment fragment) {
         if (messageObject == null) {
             return;
         }
@@ -1446,7 +1446,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             } else if (!DialogObject.isEncryptedDialog(did)) {
                 ArrayList<MessageObject> arrayList = new ArrayList<>();
                 arrayList.add(messageObject);
-                sendMessage(arrayList, did, true, false, true, 0);
+                sendMessage(arrayList, did, true, false, true, 0, fragment);
             }
         } else if (messageObject.messageOwner.message != null) {
             TLRPC.WebPage webPage = null;
@@ -1473,7 +1473,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         } else if (DialogObject.isEncryptedDialog(did)) {
             ArrayList<MessageObject> arrayList = new ArrayList<>();
             arrayList.add(messageObject);
-            sendMessage(arrayList, did, true, false, true, 0);
+            sendMessage(arrayList, did, true, false, true, 0, fragment);
         }
     }
 
@@ -1631,7 +1631,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         }
     }
 
-    public int sendMessage(ArrayList<MessageObject> messages, final long peer, boolean forwardFromMyName, boolean hideCaption, boolean notify, int scheduleDate) {
+    public int sendMessage(ArrayList<MessageObject> messages, final long peer, boolean forwardFromMyName, boolean hideCaption, boolean notify, int scheduleDate, final BaseFragment fragment) {
         if (messages == null || messages.isEmpty()) {
             return 0;
         }
@@ -2086,7 +2086,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                             }
                             getStatsController().incrementSentItemsCount(ApplicationLoader.getCurrentNetworkType(), StatsController.TYPE_MESSAGES, sentCount);
                         } else {
-                            AndroidUtilities.runOnUIThread(() -> AlertsCreator.processError(currentAccount, error, null, req));
+                            AndroidUtilities.runOnUIThread(() -> AlertsCreator.processError(currentAccount, error, fragment, req));
                         }
                         for (int a1 = 0; a1 < newMsgObjArr.size(); a1++) {
                             final TLRPC.Message newMsgObj1 = newMsgObjArr.get(a1);
@@ -2111,7 +2111,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             }
         } else {
             for (int a = 0; a < messages.size(); a++) {
-                processForwardFromMyName(messages.get(a), peer);
+                processForwardFromMyName(messages.get(a), peer, fragment);
             }
         }
         return sendResult;

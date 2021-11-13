@@ -590,8 +590,10 @@
     <string name="ChannelSettingsTitle">Channel Settings</string>
     <string name="TypePrivate">Private</string>
     <string name="TypePublic">Public</string>
+    <string name="TypePrivateRestricted">Private restricted</string>
     <string name="TypePrivateGroup">Private</string>
     <string name="TypePublicGroup">Public</string>
+    <string name="TypePrivateGroupRestricted">Private restricted</string>
     <string name="TypeLocationGroup">Link</string>
     <string name="TypeLocationGroupEdit">Tap to add a permanent link</string>
     <string name="ChoosePhoto">Choose photo</string>
@@ -641,6 +643,9 @@
     <string name="SlowmodeSendErrorTooLong">Sorry, this text is too long to send as one message.\n\nSlow Mode is enabled. You can\'t send more than one message at once.</string>
     <string name="UserSetAsAdminHint">**%1$s** promoted to admin</string>
     <string name="UserRemovedFromChatHint">**%1$s** removed from **%2$s**</string>
+    <string name="NoforwardsHelp">Participants won\'t be able to forward messages from this group or save media files.</string>
+    <string name="NoforwardsTitle">Saving content</string>
+    <string name="NoforwardsText">Restrict saving content</string>
     <!--polls-->
     <string name="NewPoll">New Poll</string>
     <string name="NewQuiz">New Quiz</string>
@@ -826,6 +831,8 @@
     <string name="EventLogVoiceChatUnmuted">un1 unmuted un2</string>
     <string name="EventLogVoiceChatAllowedToSpeak">un1 allowed new participants to speak</string>
     <string name="EventLogVoiceChatNotAllowedToSpeak">un1 muted new participants</string>
+    <string name="EventLogToggledNoForwardsOn">un1 enabled content saving restriction</string>
+    <string name="EventLogToggledNoForwardsOff">un1 disabled content saving restriction</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">New Broadcast List</string>
     <string name="EnterListName">Enter list name</string>
@@ -1233,6 +1240,8 @@
     <string name="HiddenSendersNameDescription">Sender names removed</string>
     <string name="ForwardingFromNameAndMessage">%s: %s</string>
     <string name="ForwardingFromNames">From %s</string>
+    <string name="ForwardsRestrictedChannel">Forwards from this channel\nare restricted.</string>
+    <string name="ForwardsRestrictedGroup">Forwards from this group\nare restricted.</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s set the self-destruct timer to %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">You set the self-destruct timer to %1$s</string>
@@ -2598,6 +2607,8 @@
     <string name="NoSharedLinksSecret">Shared links from this chat will be shown here.</string>
     <string name="NoSharedVoiceSecret">Voice messages from this chat will be shown here.</string>
     <string name="NoSharedGifSecret">GIFs from this chat will be shown here.</string>
+    <string name="ForwardsRestrictedHintChannel">Forwards from this channel are restricted</string>
+    <string name="ForwardsRestrictedHintGroup">Forwards from this group are restricted</string>
     <!--map view-->
     <string name="Map">Map</string>
     <string name="Satellite">Satellite</string>
@@ -3347,6 +3358,7 @@
     <string name="TosAgeText">Tap Agree to confirm that you are %1$s or over.</string>
     <string name="TosUpdateDecline">We\'re very sorry, but this means we must part ways here. Unlike others, we don\'t use your data for ad targeting or other commercial purposes. Telegram only stores the information it needs to function as a feature-rich cloud service. You can adjust how we use your data (e.g., delete synced contacts) in Privacy &amp; Security settings.\n\nBut if you\'re generally not OK with Telegram\'s modest needs, it won\'t be possible for us to provide this service. You can deactivate your account now — or look around some more and deactivate it later if you feel you\'re not happy with the way we use your data.</string>
     <string name="TosDeclineDeleteAccount">Warning, this will irreversibly delete your Telegram account along with all the data you store in the Telegram cloud.\n\nImportant: You can Cancel now and export your data before deleting your account instead of losing it all. (To do this, open the latest version of Telegram Desktop and go to Settings &gt; Export Telegram Data.)</string>
+    <string name="ForwardsRestrictedAlert">Sorry, the admins of this group have restricted you from saving and forwarding content.</string>
     <!--permissions-->
     <string name="PermissionContacts">To let you connect with friends across all your devices, your contacts will be continuously synced with Telegram\'s heavily encrypted cloud servers.</string>
     <string name="PermissionStorage">Telegram needs storage access so you can send and save photos, videos, music and other media.</string>

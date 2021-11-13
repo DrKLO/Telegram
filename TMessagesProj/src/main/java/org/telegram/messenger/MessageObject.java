@@ -1841,6 +1841,12 @@ public class MessageObject {
             messageText = replaceWithLink(LocaleController.getString("JoinedViaInviteLinkApproved", R.string.JoinedViaInviteLinkApproved), "un1", fromUser);
             messageText = replaceWithLink(messageText, "un2", action.invite);
             messageText = replaceWithLink(messageText, "un3", MessagesController.getInstance(currentAccount).getUser(action.approved_by));
+        } else if (event.action instanceof TLRPC.TL_channelAdminLogEventActionToggleNoForwards) {
+            if (((TLRPC.TL_channelAdminLogEventActionToggleNoForwards) event.action).new_value) {
+                messageText = replaceWithLink(LocaleController.getString("EventLogToggledNoForwardsOn", R.string.EventLogToggledNoForwardsOn), "un1", fromUser);
+            } else {
+                messageText = replaceWithLink(LocaleController.getString("EventLogToggledNoForwardsOff", R.string.EventLogToggledNoForwardsOff), "un1", fromUser);
+            }
         } else {
             messageText = "unsupported " + event.action;
         }
@@ -4213,11 +4219,15 @@ public class MessageObject {
                 }
                 TLRPC.Chat chat = messageOwner.peer_id != null && messageOwner.peer_id.channel_id != 0 ? getChat(null, null, messageOwner.peer_id.channel_id) : null;
                 if (ChatObject.isChannel(chat) && chat.megagroup) {
-                    return chat.username != null && chat.username.length() > 0 && !(messageOwner.media instanceof TLRPC.TL_messageMediaContact) && !(messageOwner.media instanceof TLRPC.TL_messageMediaGeo);
+                    return !chat.noforwards && chat.username != null && chat.username.length() > 0 && !(messageOwner.media instanceof TLRPC.TL_messageMediaContact) && !(messageOwner.media instanceof TLRPC.TL_messageMediaGeo);
                 }
             }
         } else if (messageOwner.from_id instanceof TLRPC.TL_peerChannel || messageOwner.post) {
             if (isSupergroup()) {
+                return false;
+            }
+            TLRPC.Chat chat = messageOwner.peer_id != null && messageOwner.peer_id.channel_id != 0 ? getChat(null, null, messageOwner.peer_id.channel_id) : null;
+            if (chat != null && chat.noforwards) {
                 return false;
             }
             if (messageOwner.peer_id.channel_id != 0 && (messageOwner.via_bot_id == 0 && messageOwner.reply_to == null || type != TYPE_STICKER && type != TYPE_ANIMATED_STICKER)) {

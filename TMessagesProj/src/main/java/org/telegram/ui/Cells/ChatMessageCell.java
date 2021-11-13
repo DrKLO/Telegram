@@ -6110,6 +6110,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
         accessibilityVirtualViewBounds.clear();
         transitionParams.updatePhotoImageX = true;
+
+        if (currentChat != null && currentChat.noforwards) {
+            drawSideButton = 0;
+        }
     }
 
     public void checkVideoPlayback(boolean allowStart, Bitmap thumb) {
@@ -7623,7 +7627,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             canvas.translate(timeAudioX + songX, AndroidUtilities.dp(13) + namesOffset + mediaOffsetY);
             songLayout.draw(canvas);
             canvas.restore();
-            
+
             boolean showSeekbar = MediaController.getInstance().isPlayingMessage(currentMessageObject);
             if (showSeekbar && toSeekBarProgress != 1f) {
                 toSeekBarProgress += 16f / 100f;
@@ -15052,7 +15056,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         Paint paint = resourcesProvider != null ? resourcesProvider.getPaint(paintKey) : null;
         return paint != null ? paint : Theme.getThemePaint(paintKey);
     }
-    
+
     private boolean hasGradientService() {
         return resourcesProvider != null ? resourcesProvider.hasGradientService() : Theme.hasGradientService();
     }

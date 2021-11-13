@@ -250,6 +250,18 @@ import java.util.Map;
 @SuppressWarnings("unchecked")
 public class PhotoViewer implements NotificationCenter.NotificationCenterDelegate, GestureDetector2.OnGestureListener, GestureDetector2.OnDoubleTapListener {
 
+    private class ViewsVisibility {
+        boolean shareButton;
+        boolean shareItem;
+        boolean sendItem;
+        boolean gallery_menu_share2;
+        boolean gallery_menu_savegif;
+        boolean gallery_menu_save;
+        boolean gallery_menu_share;
+        boolean allowShare;
+    }
+
+    final private ViewsVisibility viewsVisibility = new ViewsVisibility();
     private int classGuid;
     private PhotoViewerProvider placeProvider;
     private boolean isVisible;
@@ -3415,6 +3427,11 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     }
                 }
             }
+        } else if (id == NotificationCenter.updateInterfaces) {
+            int updateMask = (Integer) args[0];
+            if ((updateMask & MessagesController.UPDATE_MASK_NOFORWARDS) != 0) {
+                switchNoForwards(true);
+            }
         }
     }
 
@@ -3916,7 +3933,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                                 if (message != null) {
                                     SendMessagesHelper.getInstance(currentAccount).sendMessage(message.toString(), did, null, null, null, true, null, null, null, true, 0, null);
                                 }
-                                SendMessagesHelper.getInstance(currentAccount).sendMessage(fmessages, did, false, false, true, 0);
+                                SendMessagesHelper.getInstance(currentAccount).sendMessage(fmessages, did, false, false, true, 0, fragment);
                             }
                             fragment1.finishFragment();
                             if (parentChatActivityFinal != null) {
@@ -6110,6 +6127,18 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 flashAnimator.start();
             }
         }).start();
+    }
+
+    private TLRPC.Chat getChat() {
+        long dialogId = currentDialogId;
+        if (currentMessageObject != null) {
+            dialogId = currentMessageObject.getDialogId();
+        }
+        if (DialogObject.isUserDialog(dialogId)) {
+            return null;
+        } else {
+            return MessagesController.getInstance(currentAccount).getChat(-dialogId);
+        }
     }
 
     private TextView createCaptionTextView(LinkMovementMethod linkMovementMethod) {
@@ -10545,7 +10574,56 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             groupedPhotosListView.fillList();
             pageBlocksAdapter.updateSlideshowCell(pageBlock);
         }
+
+        viewsVisibility.gallery_menu_save = menuItem.isSubItemVisible(gallery_menu_save);
+        viewsVisibility.gallery_menu_savegif = menuItem.isSubItemVisible(gallery_menu_savegif);
+        viewsVisibility.gallery_menu_share = menuItem.isSubItemVisible(gallery_menu_share);
+        viewsVisibility.gallery_menu_share2 = menuItem.isSubItemVisible(gallery_menu_share2);
+        viewsVisibility.allowShare = allowShare;
+        viewsVisibility.sendItem = sendItem.getVisibility() == View.VISIBLE;
+        viewsVisibility.shareItem = shareItem.getVisibility() == View.VISIBLE;
+        viewsVisibility.shareButton = shareButton.getVisibility() == View.VISIBLE;
+
+        switchNoForwards(false);
+
         setCurrentCaption(newMessageObject, caption, animateCaption);
+    }
+
+    private void switchNoForwards(boolean animated) {
+        TLRPC.Chat chat = getChat();
+        if (chat != null && chat.noforwards) {
+            menuItem.hideSubItem(gallery_menu_save);
+            menuItem.hideSubItem(gallery_menu_savegif);
+            menuItem.hideSubItem(gallery_menu_share);
+            menuItem.hideSubItem(gallery_menu_share2);
+            setItemVisible(sendItem, false, animated);
+            setItemVisible(shareItem, false, animated);
+            setItemVisible(shareButton, false, animated);
+            allowShare = false;
+        } else {
+            allowShare = viewsVisibility.allowShare;
+            if (viewsVisibility.gallery_menu_save) {
+                menuItem.showSubItem(gallery_menu_save);
+            }
+            if (viewsVisibility.gallery_menu_share) {
+                menuItem.showSubItem(gallery_menu_share);
+            }
+            if (viewsVisibility.gallery_menu_savegif) {
+                menuItem.showSubItem(gallery_menu_savegif);
+            }
+            if (viewsVisibility.gallery_menu_share2) {
+                menuItem.showSubItem(gallery_menu_share2);
+            }
+            if (viewsVisibility.sendItem) {
+                setItemVisible(sendItem, true, animated);
+            }
+            if (viewsVisibility.shareItem) {
+                setItemVisible(shareItem, true, animated);
+            }
+            if (viewsVisibility.shareButton) {
+                setItemVisible(shareButton, true, animated);
+            }
+        }
     }
 
     private void showVideoTimeline(boolean show, boolean animated) {
@@ -12026,6 +12104,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.filePreparingFailed);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileNewChunkAvailable);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.updateInterfaces);
 
         placeProvider = provider;
         mergeDialogId = mDialogId;
@@ -12849,6 +12928,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.filePreparingFailed);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileNewChunkAvailable);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.updateInterfaces);
         ConnectionsManager.getInstance(currentAccount).cancelRequestsForGuid(classGuid);
     }
 
