@@ -173,7 +173,7 @@ public class JoinGroupAlert extends BottomSheet {
                                     layout.titleTextView.setText(LocaleController.getString("RequestToJoinSent", R.string.RequestToJoinSent));
                                     String subTitle = isChannel
                                             ? LocaleController.getString("RequestToJoinChannelSentDescription", R.string.RequestToJoinChannelSentDescription)
-                                            : LocaleController.getString("RequestToJoinSentDescription", R.string.RequestToJoinGroupSentDescription);
+                                            : LocaleController.getString("RequestToJoinGroupSentDescription", R.string.RequestToJoinGroupSentDescription);
                                     layout.subtitleTextView.setText(subTitle);
                                     Bulletin.make(fragment, layout, Bulletin.DURATION_LONG).show();
                                 });

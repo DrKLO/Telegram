@@ -5967,7 +5967,6 @@ public class MessageObject {
                 attachPathExists = f.exists();
             }
             if (!attachPathExists) {
-
                 File file = FileLoader.getPathToMessage(messageOwner);
                 if (type == 3 && needDrawBluredPreview()) {
                     mediaExists = new File(file.getAbsolutePath() + ".enc").exists();

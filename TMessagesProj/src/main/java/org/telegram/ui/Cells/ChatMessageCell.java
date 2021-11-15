@@ -1865,7 +1865,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         }
                     }
                     if (currentMessageObject.type == 12) {
-                        TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(currentMessageObject.messageOwner.media.user_id);
+                        long uid = currentMessageObject.messageOwner.media.user_id;
+                        TLRPC.User user = null;
+                        if (uid != 0) {
+                            user = MessagesController.getInstance(currentAccount).getUser(uid);
+                        }
                         if (user == null) {
                             imagePressed = false;
                             result = false;
@@ -2673,7 +2677,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 didPressButton(true, false);
             }
         } else if (currentMessageObject.type == 12) {
-            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(currentMessageObject.messageOwner.media.user_id);
+            long uid = currentMessageObject.messageOwner.media.user_id;
+            TLRPC.User user = null;
+            if (uid != 0) {
+                user = MessagesController.getInstance(currentAccount).getUser(uid);
+            }
             delegate.didPressUserAvatar(this, user, lastTouchX, lastTouchY);
         } else if (currentMessageObject.type == MessageObject.TYPE_ROUND_VIDEO) {
             if (buttonState != -1) {
@@ -4419,7 +4427,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 availableTimeWidth = backgroundWidth - AndroidUtilities.dp(31);
 
                 long uid = messageObject.messageOwner.media.user_id;
-                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(uid);
+                TLRPC.User user = null;
+                if (uid != 0) {
+                    user = MessagesController.getInstance(currentAccount).getUser(uid);
+                }
 
                 int maxWidth = getMaxNameWidth() - AndroidUtilities.dp(80);
                 if (maxWidth < 0) {
