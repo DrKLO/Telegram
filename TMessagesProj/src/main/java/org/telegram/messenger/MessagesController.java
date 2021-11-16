@@ -2068,7 +2068,7 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public TLRPC.InputPeer getInputPeer(TLRPC.Peer peer) {
-        TLRPC.InputPeer inputPeer;
+        TLRPC.InputPeer inputPeer = null;
         if (peer instanceof TLRPC.TL_peerChat) {
             inputPeer = new TLRPC.TL_inputPeerChat();
             inputPeer.chat_id = peer.chat_id;
@@ -2079,7 +2079,7 @@ public class MessagesController extends BaseController implements NotificationCe
             if (chat != null) {
                 inputPeer.access_hash = chat.access_hash;
             }
-        } else {
+        } else if (peer != null) {
             inputPeer = new TLRPC.TL_inputPeerUser();
             inputPeer.user_id = peer.user_id;
             TLRPC.User user = getUser(peer.user_id);
@@ -2114,12 +2114,12 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public static TLRPC.InputPeer getInputPeer(TLRPC.Chat chat) {
-        TLRPC.InputPeer inputPeer;
+        TLRPC.InputPeer inputPeer = null;
         if (ChatObject.isChannel(chat)) {
             inputPeer = new TLRPC.TL_inputPeerChannel();
             inputPeer.channel_id = chat.id;
             inputPeer.access_hash = chat.access_hash;
-        } else {
+        } else if (chat != null) {
             inputPeer = new TLRPC.TL_inputPeerChat();
             inputPeer.chat_id = chat.id;
         }
