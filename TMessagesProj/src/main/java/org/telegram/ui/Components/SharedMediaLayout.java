@@ -3965,7 +3965,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     AndroidUtilities.runOnUIThread(() -> {
                         restrictForwardHintView.showForView(forwardItem, true);
                     });
-                    profileActivity.getLayoutContainer().addView(restrictForwardHintView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT | Gravity.TOP, 0, 0, 60, 0));
+                    profileActivity.getLayoutContainer().addView(restrictForwardHintView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT | Gravity.TOP, 0, 0, 10, 0));
                 });
             } else {
                 forwardItem.setAlpha(1.0f);
