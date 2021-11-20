@@ -14,6 +14,7 @@ import android.text.TextPaint;
 import android.text.style.MetricAffectingSpan;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
 
 public class TypefaceSpan extends MetricAffectingSpan {
 
@@ -51,11 +52,11 @@ public class TypefaceSpan extends MetricAffectingSpan {
     }
 
     public boolean isBold() {
-        return typeface == AndroidUtilities.getTypeface("fonts/rmedium.ttf");
+        return typeface == LocaleController.getInstance().setMediumFont();
     }
 
     public boolean isItalic() {
-        return typeface == AndroidUtilities.getTypeface("fonts/ritalic.ttf");
+        return typeface == LocaleController.getInstance().setrItalicFont();
     }
 
     @Override

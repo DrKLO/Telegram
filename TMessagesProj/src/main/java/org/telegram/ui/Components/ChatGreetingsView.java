@@ -14,7 +14,6 @@ import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.tgnet.TLRPC;
@@ -42,7 +41,7 @@ public class ChatGreetingsView extends LinearLayout {
 
         titleView = new TextView(context);
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        titleView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        titleView.setTypeface(LocaleController.getInstance().setMediumFont());
         titleView.setGravity(Gravity.CENTER_HORIZONTAL);
 
         descriptionView = new TextView(context);

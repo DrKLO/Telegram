@@ -15,15 +15,23 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.graphics.Typeface;
+import android.icu.text.PluralRules;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.text.format.DateFormat;
+import android.util.Log;
 import android.util.Xml;
+
+import androidx.core.content.res.ResourcesCompat;
 
 import org.telegram.messenger.time.FastDateFormat;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.FontType;
+import org.telegram.ui.RequestRecordCell;
+import org.telegram.ui.RequestRecordType;
 import org.xmlpull.v1.XmlPullParser;
 
 import java.io.BufferedWriter;
@@ -36,8 +44,13 @@ import java.util.Calendar;
 import java.util.Currency;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
+
+import saman.zamani.persiandate.PersianDate;
+
+import static org.telegram.messenger.R.style.Theme_TMessages;
 
 public class LocaleController {
 
@@ -574,6 +587,67 @@ public class LocaleController {
         }
 
         return null;
+    }
+
+    public void saveSelectedFont(FontType fontType) {
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("fontconfig", Activity.MODE_PRIVATE);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putString("selected_font", fontType.fontPath);
+        editor.apply();
+    }
+
+    public String getSelectedFont() {
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("fontconfig", Activity.MODE_PRIVATE);
+        String font = preferences.getString("selected_font", null);
+        return font;
+    }
+
+    public Typeface setMediumFont() {
+        String fontPath = getSelectedFont();
+        if (fontPath != null) {
+            return AndroidUtilities.getTypeface(fontPath);
+        } else {
+            return AndroidUtilities.getTypeface("fonts/rmedium.ttf");
+        }
+    }
+
+    public Typeface setrItalicFont() {
+        String fontPath = getSelectedFont();
+        if (fontPath != null) {
+            if (!fontPath.equals(LocaleController.getString("Default_font", R.string.Default_font))) {
+                return AndroidUtilities.getTypeface(fontPath);
+            } else {
+                return AndroidUtilities.getTypeface("fonts/ritalic.ttf");
+            }
+        }else{
+            return AndroidUtilities.getTypeface("fonts/ritalic.ttf");
+        }
+    }
+
+    public Typeface setrMediumItalicFont() {
+        String fontPath = getSelectedFont();
+        if (fontPath != null) {
+            if (!fontPath.equals(LocaleController.getString("Default_font", R.string.Default_font))) {
+                return AndroidUtilities.getTypeface(fontPath);
+            } else {
+                return AndroidUtilities.getTypeface("fonts/rmediumitalic.ttf");
+            }
+        }else {
+            return AndroidUtilities.getTypeface("fonts/rmediumitalic.ttf");
+        }
+    }
+
+    public Typeface setrMonoFont() {
+        String fontPath = getSelectedFont();
+        if (fontPath != null) {
+            if (!fontPath.equals(LocaleController.getString("Default_font", R.string.Default_font))) {
+                return AndroidUtilities.getTypeface(fontPath);
+            } else {
+                return AndroidUtilities.getTypeface("fonts/rmono.ttf");
+            }
+        }else {
+            return AndroidUtilities.getTypeface("fonts/rmono.ttf");
+        }
     }
 
     public boolean applyLanguageFile(File file, int currentAccount) {
@@ -1431,16 +1505,30 @@ public class LocaleController {
 
     public static String formatDateChat(long date, boolean checkYear) {
         try {
-            Calendar calendar = Calendar.getInstance();
-            calendar.setTimeInMillis(System.currentTimeMillis());
-            int currentYear = calendar.get(Calendar.YEAR);
-            date *= 1000;
+            if (isUsingPersianDate()) {
+                PersianDate persianDate = new PersianDate(System.currentTimeMillis());
+                int currentYear = persianDate.getShYear();
+                date *= 1000;
+                persianDate = new PersianDate(date);
 
-            calendar.setTimeInMillis(date);
-            if (checkYear && currentYear == calendar.get(Calendar.YEAR) || !checkYear && Math.abs(System.currentTimeMillis() - date) < 31536000000L) {
-                return getInstance().chatDate.format(date);
+                if (checkYear && currentYear == persianDate.getShYear() || !checkYear && Math.abs(System.currentTimeMillis() - date) < 31536000000L) {
+                    return getInstance().chatDate.formatPersianDate(date);
+                }
+                return getInstance().chatFullDate.formatPersianDateFull(date);
+
+            } else {
+                Calendar calendar = Calendar.getInstance();
+                calendar.setTimeInMillis(System.currentTimeMillis());
+                int currentYear = calendar.get(Calendar.YEAR);
+                date *= 1000;
+
+                calendar.setTimeInMillis(date);
+
+                if (checkYear && currentYear == calendar.get(Calendar.YEAR) || !checkYear && Math.abs(System.currentTimeMillis() - date) < 31536000000L) {
+                    return getInstance().chatDate.format(date);
+                }
+                return getInstance().chatFullDate.format(date);
             }
-            return getInstance().chatFullDate.format(date);
         } catch (Exception e) {
             FileLog.e(e);
         }
@@ -1886,7 +1974,7 @@ public class LocaleController {
                     return getString("WithinAWeek", R.string.WithinAWeek);
                 } else if (user.status.expires == -102) {
                     return getString("WithinAMonth", R.string.WithinAMonth);
-                }  else {
+                } else {
                     return formatDateOnline(user.status.expires);
                 }
             }
@@ -3101,5 +3189,10 @@ public class LocaleController {
                 }
             }
         }
+    }
+
+    public static boolean isUsingPersianDate() {
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        return preferences.getBoolean("persian_calender", false);
     }
 }

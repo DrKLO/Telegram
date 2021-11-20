@@ -80,6 +80,7 @@ public class TextCheckCell extends FrameLayout {
         textView.setLines(1);
         textView.setMaxLines(1);
         textView.setSingleLine(true);
+        textView.setTypeface(LocaleController.getInstance().setMediumFont());
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         textView.setEllipsize(TextUtils.TruncateAt.END);
         addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 70 : padding, 0, LocaleController.isRTL ? padding : 70, 0));

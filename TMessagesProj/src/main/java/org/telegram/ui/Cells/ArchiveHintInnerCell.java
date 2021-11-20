@@ -9,7 +9,6 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
@@ -32,7 +31,7 @@ public class ArchiveHintInnerCell extends FrameLayout {
         headerTextView = new TextView(context);
         headerTextView.setTextColor(Theme.getColor(Theme.key_chats_nameMessage_threeLines));
         headerTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-        headerTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        headerTextView.setTypeface(LocaleController.getInstance().setMediumFont());
         headerTextView.setGravity(Gravity.CENTER);
         addView(headerTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 52, 75, 52, 0));
 

@@ -41,7 +41,7 @@ public class StickerSetGroupInfoCell extends LinearLayout {
         addButton.setGravity(Gravity.CENTER);
         addButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
         addButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        addButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        addButton.setTypeface(LocaleController.getInstance().setMediumFont());
         addButton.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
         addButton.setText(LocaleController.getString("ChooseStickerSet", R.string.ChooseStickerSet).toUpperCase());
         addView(addButton, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | Gravity.LEFT, 17, 10, 14, 8));

@@ -37,6 +37,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
@@ -462,7 +463,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                         deleteView.setGravity(Gravity.CENTER_VERTICAL);
                         deleteView.setPadding(AndroidUtilities.dp(20), 0, AndroidUtilities.dp(20), 0);
                         deleteView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-                        deleteView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                        deleteView.setTypeface(LocaleController.getInstance().setMediumFont());
                         deleteView.setText(textSelectionOverlay.getContext().getString(android.R.string.copy));
                         deleteView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
                         deleteView.setOnClickListener(v -> {

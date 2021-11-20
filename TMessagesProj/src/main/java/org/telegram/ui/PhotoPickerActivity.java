@@ -74,7 +74,6 @@ import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.DividerCell;
@@ -1127,7 +1126,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
             });
 
             textPaint.setTextSize(AndroidUtilities.dp(12));
-            textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            textPaint.setTypeface(LocaleController.getInstance().setMediumFont());
 
             selectedCountView = new View(context) {
                 @Override

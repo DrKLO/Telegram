@@ -23,7 +23,6 @@ import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
-import android.util.SparseArray;
 import android.util.SparseIntArray;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -3039,7 +3038,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                     textView.setTextColor(Theme.getColor(Theme.key_emptyListPlaceholder));
                     textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                     textView.setGravity(Gravity.CENTER_HORIZONTAL);
-                    textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                    textView.setTypeface(LocaleController.getInstance().setMediumFont());
                     linearLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 10, 0, 0));
 
                     textView = new TextView(mContext);

@@ -120,7 +120,7 @@ public class PhonebookShareAlert extends BottomSheet {
             addView(avatarImageView, LayoutHelper.createLinear(80, 80, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 32, 0, 0));
 
             TextView textView = new TextView(context);
-            textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            textView.setTypeface(LocaleController.getInstance().setMediumFont());
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
             textView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
             textView.setSingleLine(true);
@@ -619,7 +619,7 @@ public class PhonebookShareAlert extends BottomSheet {
         } else {
             buttonTextView.setText(LocaleController.getString("ShareContactTitle", R.string.ShareContactTitle));
         }
-        buttonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        buttonTextView.setTypeface(LocaleController.getInstance().setMediumFont());
         buttonTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), getThemedColor(Theme.key_featuredStickers_addButton), getThemedColor(Theme.key_featuredStickers_addButtonPressed)));
         frameLayout.addView(buttonTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 42, Gravity.LEFT | Gravity.BOTTOM, 16, 16, 16, 16));
         buttonTextView.setOnClickListener(v -> {

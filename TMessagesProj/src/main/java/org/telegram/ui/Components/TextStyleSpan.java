@@ -14,6 +14,7 @@ import android.text.TextPaint;
 import android.text.style.MetricAffectingSpan;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
 import org.telegram.tgnet.TLRPC;
 
 public class TextStyleSpan extends MetricAffectingSpan {
@@ -73,11 +74,11 @@ public class TextStyleSpan extends MetricAffectingSpan {
             if ((flags & FLAG_STYLE_MONO) != 0 || (flags & FLAG_STYLE_QUOTE) != 0) {
                 return Typeface.MONOSPACE;
             } else if ((flags & FLAG_STYLE_BOLD) != 0 && (flags & FLAG_STYLE_ITALIC) != 0) {
-                return AndroidUtilities.getTypeface("fonts/rmediumitalic.ttf");
+                return LocaleController.getInstance().setrMediumItalicFont();
             } else if ((flags & FLAG_STYLE_BOLD) != 0) {
-                return AndroidUtilities.getTypeface("fonts/rmedium.ttf");
+                return LocaleController.getInstance().setMediumFont();
             } else if ((flags & FLAG_STYLE_ITALIC) != 0) {
-                return AndroidUtilities.getTypeface("fonts/ritalic.ttf");
+                return LocaleController.getInstance().setrItalicFont();
             } else {
                 return null;
             }
@@ -130,15 +131,15 @@ public class TextStyleSpan extends MetricAffectingSpan {
     }
 
     public boolean isBold() {
-        return style.getTypeface() == AndroidUtilities.getTypeface("fonts/rmedium.ttf");
+        return style.getTypeface() == LocaleController.getInstance().setMediumFont();
     }
 
     public boolean isItalic() {
-        return style.getTypeface() == AndroidUtilities.getTypeface("fonts/ritalic.ttf");
+        return style.getTypeface() == LocaleController.getInstance().setrItalicFont();
     }
 
     public boolean isBoldItalic() {
-        return style.getTypeface() == AndroidUtilities.getTypeface("fonts/rmediumitalic.ttf");
+        return style.getTypeface() == LocaleController.getInstance().setrMediumItalicFont();
     }
 
     @Override

@@ -80,7 +80,7 @@ public class ArchivedStickerSetCell extends FrameLayout implements Checkable {
             deleteButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_removeButtonText));
             deleteButton.setText(LocaleController.getString("StickersRemove", R.string.StickersRemove));
             deleteButton.setBackground(Theme.getRoundRectSelectorDrawable(Theme.getColor(Theme.key_featuredStickers_removeButtonText)));
-            deleteButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            deleteButton.setTypeface(LocaleController.getInstance().setMediumFont());
             ViewHelper.setPadding(deleteButton, 8, 0, 8, 0);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 deleteButton.setOutlineProvider(null);

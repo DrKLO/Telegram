@@ -38,7 +38,6 @@ import android.view.ViewPropertyAnimator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
-import org.checkerframework.checker.units.qual.A;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
@@ -356,7 +355,7 @@ public class ActionBar extends FrameLayout {
         } else {
             titleTextView[i].setTextColor(getThemedColor(Theme.key_actionBarDefaultTitle));
         }
-        titleTextView[i].setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        titleTextView[i].setTypeface(LocaleController.getInstance().setMediumFont());
         addView(titleTextView[i], 0, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP));
     }
 

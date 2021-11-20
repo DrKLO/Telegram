@@ -152,7 +152,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
 
         lengthTextPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
         lengthTextPaint.setTextSize(AndroidUtilities.dp(13));
-        lengthTextPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        lengthTextPaint.setTypeface(LocaleController.getInstance().setMediumFont());
         lengthTextPaint.setColor(0xffd9d9d9);
 
         messageEditText = new EditTextCaption(context, null) {
@@ -356,7 +356,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
         captionLimitView.setVisibility(View.GONE);
         captionLimitView.setTextSize(15);
         captionLimitView.setTextColor(0xffffffff);
-        captionLimitView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        captionLimitView.setTypeface(LocaleController.getInstance().setMediumFont());
         captionLimitView.setCenterAlign(true);
         addView(captionLimitView, LayoutHelper.createFrame(48, 20, Gravity.BOTTOM | Gravity.RIGHT, 3, 0, 3, 48));
     }

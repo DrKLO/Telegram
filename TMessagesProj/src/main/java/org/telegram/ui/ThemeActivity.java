@@ -133,6 +133,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
     private int settings2Row;
     private int stickersRow;
     private int stickersSection2Row;
+    private  int persianCalender;
 
     private int emojiRow;
     private int contactsReimportRow;
@@ -487,6 +488,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         raiseToSpeakRow = -1;
         sendByEnterRow = -1;
         saveToGalleryRow = -1;
+        persianCalender = -1;
         distanceRow = -1;
         settings2Row = -1;
         stickersRow = -1;
@@ -550,6 +552,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             raiseToSpeakRow = rowCount++;
             sendByEnterRow = rowCount++;
             saveToGalleryRow = rowCount++;
+            persianCalender = rowCount++;
             distanceRow = rowCount++;
             settings2Row = rowCount++;
             stickersRow = rowCount++;
@@ -893,6 +896,11 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 SharedConfig.toggleSaveToGallery();
                 if (view instanceof TextCheckCell) {
                     ((TextCheckCell) view).setChecked(SharedConfig.saveToGallery);
+                }
+            }else if (position == persianCalender){
+                SharedConfig.togglePersianCalender();
+                if (view instanceof TextCheckCell) {
+                    ((TextCheckCell) view).setChecked(SharedConfig.persianCalender);
                 }
             } else if (position == distanceRow) {
                 if (getParentActivity() == null) {
@@ -1994,6 +2002,8 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                         textCheckCell.setTextAndValueAndCheck(LocaleController.getString("DirectShare", R.string.DirectShare), LocaleController.getString("DirectShareInfo", R.string.DirectShareInfo), SharedConfig.directShare, false, true);
                     } else if (position == emojiRow) {
                         textCheckCell.setTextAndCheck(LocaleController.getString("LargeEmoji", R.string.LargeEmoji), SharedConfig.allowBigEmoji, true);
+                    } else if (position == persianCalender) {
+                        textCheckCell.setTextAndCheck(LocaleController.getString("PersianCalender", R.string.persianCalender), SharedConfig.persianCalender, true);
                     }
                     break;
                 }
@@ -2081,7 +2091,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 return 6;
             } else if (position == scheduleLocationRow || position == enableAnimationsRow || position == sendByEnterRow ||
                     position == saveToGalleryRow || position == raiseToSpeakRow || position == customTabsRow ||
-                    position == directShareRow || position == emojiRow) {
+                    position == directShareRow || position == emojiRow || position == persianCalender) {
                 return 7;
             } else if (position == textSizeRow) {
                 return 8;

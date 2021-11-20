@@ -224,7 +224,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
         final ActionBarMenu actionMode = actionBar.createActionMode();
         selectedCountTextView = new NumberTextView(actionMode.getContext());
         selectedCountTextView.setTextSize(18);
-        selectedCountTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        selectedCountTextView.setTypeface(LocaleController.getInstance().setMediumFont());
         selectedCountTextView.setTextColor(Theme.getColor(Theme.key_actionBarActionModeDefaultIcon));
         actionMode.addView(selectedCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, 72, 0, 0, 0));
         selectedCountTextView.setOnTouchListener((v, event) -> true);

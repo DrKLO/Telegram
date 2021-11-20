@@ -5,7 +5,6 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ValueAnimator;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
@@ -105,7 +104,7 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
         counterDrawable.textPaint = textPaint;
 
         textPaint.setTextSize(AndroidUtilities.dp(13));
-        textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textPaint.setTypeface(LocaleController.getInstance().setMediumFont());
         textPaint2.setTextSize(AndroidUtilities.dp(14));
 
         xRefPaint.setColor(0xff000000);

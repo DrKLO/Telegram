@@ -5,16 +5,12 @@
     android:minHeight="110dp"
     android:minResizeWidth="180dp"
     android:minResizeHeight="40dp"
-    android:targetCellWidth="4"
-    android:targetCellHeight="2"
     android:updatePeriodMillis="3600000"
     android:initialLayout="@layout/shortcut_widget_layout_2"
     android:autoAdvanceViewId="@id/list_view"
     android:resizeMode="horizontal|vertical"
-    android:widgetCategory="home_screen"
     android:description="@string/EditWidgetChatsInfo"
     android:previewImage="@drawable/chats_widget_preview"
-    android:previewLayout="@layout/shortcut_widget_layout_preview"
-    android:widgetFeatures="reconfigurable|configuration_optional"
-    android:configure="org.telegram.ui.ChatsWidgetConfigActivity">
+
+    >
 </appwidget-provider>

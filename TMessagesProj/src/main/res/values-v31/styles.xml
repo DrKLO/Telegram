@@ -21,7 +21,7 @@
     <style name="Base.Theme.TMessages.AppWidget" parent="android:Theme.DeviceDefault.DayNight" />
 
     <style name="TMessages.AppWidget.Background" parent="Base.TMessages.AppWidget.Background">
-        <item name="android:clipToOutline">true</item>
+        <!--<item name="android:clipToOutline">true</item>-->
         <item name="android:background">@drawable/widget_background</item>
     </style>
 

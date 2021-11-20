@@ -15,10 +15,8 @@ import android.animation.ObjectAnimator;
 import android.animation.StateListAnimator;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
-import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.database.DataSetObserver;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Outline;
@@ -71,10 +69,7 @@ import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 import android.widget.TextView;
 
-import com.google.android.exoplayer2.util.Log;
-
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.ImageLocation;
@@ -100,7 +95,6 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Adapters.DialogsSearchAdapter;
 import org.telegram.ui.Cells.ContextLinkCell;
 import org.telegram.ui.Cells.EmptyCell;
 import org.telegram.ui.Cells.FeaturedStickerSetInfoCell;
@@ -4673,7 +4667,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
                             textView.setTextColor(getThemedColor(Theme.key_dialogTextBlue2));
                             textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-                            textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                            textView.setTypeface(LocaleController.getInstance().setMediumFont());
                             linearLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 24, 0, 0));
 
                             textView = new TextView(getContext());

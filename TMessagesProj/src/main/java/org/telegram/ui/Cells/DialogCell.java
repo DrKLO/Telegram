@@ -567,7 +567,7 @@ public class DialogCell extends BaseCell {
             int boldEnd = boldStart + title.length();
             builder.append(title);
             if (dialog.unread_count > 0) {
-                builder.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf"), 0, Theme.getColor(Theme.key_chats_nameArchived, resourcesProvider)), boldStart, boldEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                builder.setSpan(new TypefaceSpan(LocaleController.getInstance().setMediumFont(), 0, Theme.getColor(Theme.key_chats_nameArchived, resourcesProvider)), boldStart, boldEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
             if (builder.length() > 150) {
                 break;

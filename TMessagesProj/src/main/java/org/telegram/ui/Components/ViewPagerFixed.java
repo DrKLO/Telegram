@@ -41,6 +41,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.UserConfig;
@@ -872,9 +873,9 @@ public class ViewPagerFixed extends FrameLayout {
         public TabsView(Context context) {
             super(context);
             textCounterPaint.setTextSize(AndroidUtilities.dp(13));
-            textCounterPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            textCounterPaint.setTypeface(LocaleController.getInstance().setMediumFont());
             textPaint.setTextSize(AndroidUtilities.dp(15));
-            textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            textPaint.setTypeface(LocaleController.getInstance().setMediumFont());
             deletePaint.setStyle(Paint.Style.STROKE);
             deletePaint.setStrokeCap(Paint.Cap.ROUND);
             deletePaint.setStrokeWidth(AndroidUtilities.dp(1.5f));

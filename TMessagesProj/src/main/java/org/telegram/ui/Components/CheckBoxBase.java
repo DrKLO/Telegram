@@ -20,6 +20,7 @@ import android.text.TextPaint;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.Theme;
 
 public class CheckBoxBase {
@@ -387,7 +388,7 @@ public class CheckBoxBase {
                 if (checkedText != null) {
                     if (textPaint == null) {
                         textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-                        textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                        textPaint.setTypeface(LocaleController.getInstance().setMediumFont());
                     }
                     final float textSize, y;
                     switch (checkedText.length()) {

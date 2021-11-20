@@ -23,6 +23,7 @@ import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
@@ -70,7 +71,7 @@ public class AvatarDrawable extends Drawable {
         super();
         this.resourcesProvider = resourcesProvider;
         namePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-        namePaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        namePaint.setTypeface(LocaleController.getInstance().setMediumFont());
         namePaint.setTextSize(AndroidUtilities.dp(18));
     }
 

@@ -2026,6 +2026,9 @@
     <string name="DirectShareInfo">إظهار آخر المحادثات في قائمة المشاركة</string>
     <string name="Emoji">الرموز التعبيرية</string>
     <string name="LargeEmoji">رموز تعبيرية كبيرة</string>
+    <string name="persianCalender">التقويم الفارسي</string>
+    <string name="Font">الخط</string>
+    <string name="Request">الطلبات</string>
     <string name="EmojiUseDefault">استخدم الرموز التعبيرية الافتراضية</string>
     <string name="TelegramVersion">تيليجرام للأندرويد %1$s</string>
     <string name="DebugMenu">قائمة المعالجة</string>

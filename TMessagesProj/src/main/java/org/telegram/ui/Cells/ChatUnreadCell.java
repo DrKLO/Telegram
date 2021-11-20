@@ -18,6 +18,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.ActionBar.Theme;
@@ -48,7 +49,7 @@ public class ChatUnreadCell extends FrameLayout {
         textView.setPadding(0, 0, 0, AndroidUtilities.dp(1));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         textView.setTextColor(getColor(Theme.key_chat_unreadMessagesStartText));
-        textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textView.setTypeface(LocaleController.getInstance().setMediumFont());
         addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
     }
 

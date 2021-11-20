@@ -25,6 +25,7 @@ import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
 
 public class CheckBox extends View {
 
@@ -78,7 +79,7 @@ public class CheckBox extends View {
 
         textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         textPaint.setTextSize(AndroidUtilities.dp(18));
-        textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textPaint.setTypeface(LocaleController.getInstance().setMediumFont());
 
         checkDrawable = context.getResources().getDrawable(resId).mutate();
     }

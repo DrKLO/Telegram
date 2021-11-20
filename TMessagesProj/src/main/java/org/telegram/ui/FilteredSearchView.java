@@ -506,7 +506,6 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
 
         AndroidUtilities.runOnUIThread(searchRunnable = () -> {
             TLObject request;
-
             ArrayList<Object> resultArray = null;
             if (dialogId != 0) {
                 final TLRPC.TL_messages_search req = new TLRPC.TL_messages_search();

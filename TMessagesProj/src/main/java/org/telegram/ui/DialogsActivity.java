@@ -44,6 +44,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Vibrator;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.Property;
 import android.util.StateSet;
 import android.util.TypedValue;
@@ -68,6 +69,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
@@ -76,8 +78,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.LinearSmoothScrollerCustom;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
-
-import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
@@ -175,7 +175,10 @@ import org.telegram.ui.Components.ViewPagerFixed;
 import org.telegram.ui.Components.RecyclerItemsEnterAnimator;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.Locale;
 
 public class DialogsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -184,8 +187,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private int initialSearchType = -1;
 
     private final String ACTION_MODE_SEARCH_DIALOGS_TAG = "search_dialogs_action_mode";
+    private final String FILTER_SETUP_SHARED_PREF= "filter_setup";
+    private final String FILTER_SETUP_KEY= "org.telegram.ui_FILTER_SETUP_KEY";
 
-    private static class ViewPage extends FrameLayout {
+     private static class ViewPage extends FrameLayout {
         private DialogsRecyclerView listView;
         private LinearLayoutManager layoutManager;
         private DialogsAdapter dialogsAdapter;
@@ -631,7 +636,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             }
             tabsYOffset = 0;
             if (filtersTabAnimator != null && filterTabsView != null && filterTabsView.getVisibility() == View.VISIBLE) {
-                tabsYOffset = - (1f - filterTabsProgress) * filterTabsView.getMeasuredHeight();
+                tabsYOffset = -(1f - filterTabsProgress) * filterTabsView.getMeasuredHeight();
                 filterTabsView.setTranslationY(actionBar.getTranslationY() + tabsYOffset);
                 filterTabsView.setAlpha(filterTabsProgress);
                 viewPages[0].setTranslationY(-(1f - filterTabsProgress) * filterTabsMoveFrom);
@@ -1200,7 +1205,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
                     if ((view instanceof DialogCell && ((DialogCell) view).isMoving()) || (view instanceof DialogsAdapter.LastEmptyView && ((DialogsAdapter.LastEmptyView) view).moving)) {
                         if (view.getAlpha() != 1f) {
-                            rectF.set(view.getX(), view.getY(), view.getX() + view.getMeasuredWidth(), view.getY() +  view.getMeasuredHeight());
+                            rectF.set(view.getX(), view.getY(), view.getX() + view.getMeasuredWidth(), view.getY() + view.getMeasuredHeight());
                             canvas.saveLayerAlpha(rectF, (int) (255 * view.getAlpha()), Canvas.ALL_SAVE_FLAG);
                         } else {
                             canvas.save();
@@ -2065,7 +2070,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 searchViewPager.removeSearchFilter(filterData);
                 searchViewPager.onTextChanged(searchItem.getSearchField().getText().toString());
 
-                updateFiltersView(true, null, null,false, true);
+                updateFiltersView(true, null, null, false, true);
             }
 
             @Override
@@ -2177,7 +2182,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 //                        }
                         getMessagesController().removeFilter(dialogFilter);
                         getMessagesStorage().deleteDialogFilter(dialogFilter);
-                      //  filterTabsView.commitCrossfade();
+                        //  filterTabsView.commitCrossfade();
                     });
                     AlertDialog alertDialog = builder.create();
                     showDialog(alertDialog);
@@ -3118,7 +3123,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             }
         });
 
-        searchViewPager.setFilteredSearchViewDelegate((showMediaFilters, users, dates, archive) -> DialogsActivity.this.updateFiltersView(showMediaFilters, users, dates, archive,true));
+        searchViewPager.setFilteredSearchViewDelegate((showMediaFilters, users, dates, archive) -> DialogsActivity.this.updateFiltersView(showMediaFilters, users, dates, archive, true));
         searchViewPager.setVisibility(View.GONE);
 
         filtersView = new FiltersView(getParentActivity(), null);
@@ -3405,7 +3410,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
             updateTextView = new TextView(context);
             updateTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-            updateTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            updateTextView.setTypeface(LocaleController.getInstance().setMediumFont());
             updateTextView.setText(LocaleController.getString("AppUpdateNow", R.string.AppUpdateNow).toUpperCase());
             updateTextView.setTextColor(0xffffffff);
             updateTextView.setPadding(AndroidUtilities.dp(30), 0, 0, 0);
@@ -3532,6 +3537,18 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             }
         } else {
             showSearch(false, false);
+        }
+
+        SharedPreferences filterSetupSharedPreferences = ApplicationLoader.applicationContext.getSharedPreferences(FILTER_SETUP_SHARED_PREF,Context.MODE_PRIVATE);
+
+        if(!filterSetupSharedPreferences.getBoolean(FILTER_SETUP_KEY, false)) {
+            SharedPreferences.Editor filterSetupEditor = filterSetupSharedPreferences.edit();
+            setFilters(LocaleController.getString("FilterContacts", R.string.FilterContacts), MessagesController.DIALOG_FILTER_FLAG_CONTACTS, 2, getMessagesController().dialogFilters);
+            setFilters(LocaleController.getString("FilterGroups", R.string.FilterGroups), MessagesController.DIALOG_FILTER_FLAG_GROUPS, 3, getMessagesController().dialogFilters);
+            setFilters(LocaleController.getString("FilterChannels", R.string.FilterChannels), MessagesController.DIALOG_FILTER_FLAG_CHANNELS, 4, getMessagesController().dialogFilters);
+            setFilters(LocaleController.getString("FilterBots", R.string.FilterBots), MessagesController.DIALOG_FILTER_FLAG_BOTS, 5, getMessagesController().dialogFilters);
+            filterSetupEditor.putBoolean(FILTER_SETUP_KEY, true);
+            filterSetupEditor.apply();
         }
 
         updateMenuButton(false);
@@ -3705,7 +3722,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         selectedDialogsCountTextView = new NumberTextView(actionMode.getContext());
         selectedDialogsCountTextView.setTextSize(18);
-        selectedDialogsCountTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        selectedDialogsCountTextView.setTypeface(LocaleController.getInstance().setMediumFont());
         selectedDialogsCountTextView.setTextColor(Theme.getColor(Theme.key_actionBarActionModeDefaultIcon));
         actionMode.addView(selectedDialogsCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, 72, 0, 0, 0));
         selectedDialogsCountTextView.setOnTouchListener((v, event) -> true);
@@ -3875,6 +3892,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     }
 
     private boolean scrollBarVisible = true;
+
     private void showScrollbars(boolean show) {
         if (viewPages == null || scrollBarVisible == show) {
             return;
@@ -4351,7 +4369,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 editText.setHintTextColor(Theme.getColor(Theme.key_actionBarDefaultSearchPlaceholder));
                 editText.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSearch));
             }
-            searchViewPager.setKeyboardHeight(((ContentView)fragmentView).getKeyboardHeight());
+            searchViewPager.setKeyboardHeight(((ContentView) fragmentView).getKeyboardHeight());
             parentLayout.getDrawerLayoutContainer().setAllowOpenDrawerBySwipe(true);
 
             searchViewPager.clear();
@@ -4434,7 +4452,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     if (searchAnimationTabsDelayedCrossfade) {
                         tabsAlphaAnimator.setStartDelay(80);
                         tabsAlphaAnimator.setDuration(100);
-                    } else {  tabsAlphaAnimator.setDuration(show ? 200 : 180);
+                    } else {
+                        tabsAlphaAnimator.setDuration(show ? 200 : 180);
 
                     }
                 }
@@ -5459,7 +5478,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         continue;
                     }
                     pinedActionCount++;
-                    pinDialog(selectedDialog, true, filter, minPinnedNum,count == 1);
+                    pinDialog(selectedDialog, true, filter, minPinnedNum, count == 1);
                     if (filter != null) {
                         minPinnedNum++;
                         if (encryptedChat != null) {
@@ -5477,7 +5496,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         continue;
                     }
                     pinedActionCount++;
-                    pinDialog(selectedDialog, false, filter, minPinnedNum,count == 1);
+                    pinDialog(selectedDialog, false, filter, minPinnedNum, count == 1);
 
                 }
             } else if (action == read) {
@@ -6139,6 +6158,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     }
 
     private AnimatorSet doneItemAnimator;
+
     private void showDoneItem(boolean show) {
         if (doneItem == null) {
             return;
@@ -6602,6 +6622,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     }
 
     private String showingSuggestion;
+
     private void showNextSupportedSuggestion() {
         if (showingSuggestion != null) {
             return;
@@ -6650,6 +6671,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         preferences.edit().putBoolean("filterhint", true).commit();
         AndroidUtilities.runOnUIThread(() -> getUndoView().showWithAction(0, UndoView.ACTION_FILTERS_AVAILABLE, null, () -> presentFragment(new FiltersSetupActivity())), 1000);
     }
+
     private void setDialogsListFrozen(boolean frozen, boolean notify) {
         if (viewPages == null || dialogsListFrozen == frozen) {
             return;
@@ -6731,7 +6753,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
         floatingHidden = hide;
         AnimatorSet animatorSet = new AnimatorSet();
-        ValueAnimator valueAnimator = ValueAnimator.ofFloat(floatingButtonHideProgress,floatingHidden ? 1f : 0f);
+        ValueAnimator valueAnimator = ValueAnimator.ofFloat(floatingButtonHideProgress, floatingHidden ? 1f : 0f);
         valueAnimator.addUpdateListener(animation -> {
             floatingButtonHideProgress = (float) animation.getAnimatedValue();
             floatingButtonTranslation = AndroidUtilities.dp(100) * floatingButtonHideProgress;
@@ -6775,6 +6797,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private void updateVisibleRows(int mask) {
         updateVisibleRows(mask, true);
     }
+
     private void updateVisibleRows(int mask, boolean animated) {
         if ((dialogsListFrozen && (mask & MessagesController.UPDATE_MASK_REORDER) == 0) || isPaused) {
             return;
@@ -7678,6 +7701,21 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             if (searchViewPager.getTabsView().getCurrentTabId() != i) {
                 searchViewPager.getTabsView().scrollToTab(i, i);
             }
+        }
+    }
+
+    public void setFilters(String name, int flag, int id, ArrayList<MessagesController.DialogFilter> filters) {
+        MessagesController.DialogFilter filter = new MessagesController.DialogFilter();
+        filter.name = name;
+        filter.id = id;
+        filter.flags = flag;
+        if (!filters.contains(filter)) {
+            FilterCreateActivity.saveFilterToServer(filter, filter.flags,
+                    filter.name, filter.alwaysShow,
+                    filter.neverShow, filter.pinnedDialogs,
+                    true, false, false, true, true, this, () -> {
+                        getNotificationCenter().postNotificationName(NotificationCenter.dialogFiltersUpdated);
+                    });
         }
     }
 }

@@ -368,6 +368,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private int chatRow;
     private int filtersRow;
     private int devicesRow;
+    private int fontRow;
+    private int requestRow;
     private int devicesSectionRow;
     private int helpHeaderRow;
     private int questionRow;
@@ -698,15 +700,15 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             selectedBarPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             selectedBarPaint.setColor(0xffffffff);
 
-            topOverlayGradient = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[] {0x42000000, 0});
+            topOverlayGradient = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{0x42000000, 0});
             topOverlayGradient.setShape(GradientDrawable.RECTANGLE);
 
-            bottomOverlayGradient = new GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP, new int[] {0x42000000, 0});
+            bottomOverlayGradient = new GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP, new int[]{0x42000000, 0});
             bottomOverlayGradient.setShape(GradientDrawable.RECTANGLE);
 
             for (int i = 0; i < 2; i++) {
                 final GradientDrawable.Orientation orientation = i == 0 ? GradientDrawable.Orientation.LEFT_RIGHT : GradientDrawable.Orientation.RIGHT_LEFT;
-                pressedOverlayGradient[i] = new GradientDrawable(orientation, new int[] {0x32000000, 0});
+                pressedOverlayGradient[i] = new GradientDrawable(orientation, new int[]{0x32000000, 0});
                 pressedOverlayGradient[i].setShape(GradientDrawable.RECTANGLE);
             }
 
@@ -2022,7 +2024,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         layoutParams.topMargin = actionBarHeight;
                     }
                 }
-                
+
                 int height = MeasureSpec.getSize(heightMeasureSpec);
                 super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
 
@@ -2384,7 +2386,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
             @Override
             public boolean drawChild(Canvas canvas, View child, long drawingTime) {
-                if (getItemAnimator().isRunning() && child.getBackground() == null  && child.getTranslationY() != 0) {
+                if (getItemAnimator().isRunning() && child.getBackground() == null && child.getTranslationY() != 0) {
                     boolean useAlpha = listView.getChildAdapterPosition(child) == sharedMediaRow && child.getAlpha() != 1f;
                     if (useAlpha) {
                         whitePaint.setAlpha((int) (255 * listView.getAlpha() * child.getAlpha()));
@@ -2630,6 +2632,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 presentFragment(new FiltersSetupActivity());
             } else if (position == devicesRow) {
                 presentFragment(new SessionsActivity(0));
+            } else if (position == fontRow) {
+                presentFragment(new FontActivity());
+            } else if (position == requestRow) {
+                //todo launch requests activity
+                presentFragment(new RequestRecordsActivity());
             } else if (position == questionRow) {
                 showDialog(AlertsCreator.createSupportAlert(ProfileActivity.this));
             } else if (position == faqRow) {
@@ -2925,7 +2932,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText));
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             textView.setGravity(Gravity.CENTER);
-            textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            textView.setTypeface(LocaleController.getInstance().setMediumFont());
             textView.setText(LocaleController.getString("BanFromTheGroup", R.string.BanFromTheGroup));
             frameLayout1.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 1, 0, 0));
 
@@ -2947,7 +2954,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (transitionOnlineText != null) {
                     canvas.save();
                     canvas.translate(onlineTextView[0].getX(), onlineTextView[0].getY());
-                    canvas.saveLayerAlpha(0 ,0, transitionOnlineText.getMeasuredWidth(), transitionOnlineText.getMeasuredHeight(), (int) (255 * (1f - animationProgress)), Canvas.ALL_SAVE_FLAG);
+                    canvas.saveLayerAlpha(0, 0, transitionOnlineText.getMeasuredWidth(), transitionOnlineText.getMeasuredHeight(), (int) (255 * (1f - animationProgress)), Canvas.ALL_SAVE_FLAG);
                     transitionOnlineText.draw(canvas);
                     canvas.restore();
                     canvas.restore();
@@ -3017,6 +3024,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
         avatarProgressView = new RadialProgressView(context) {
             private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
             {
                 paint.setColor(0x55000000);
             }
@@ -3072,7 +3080,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             }
             nameTextView[a].setTextSize(18);
             nameTextView[a].setGravity(Gravity.LEFT);
-            nameTextView[a].setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            nameTextView[a].setTypeface(LocaleController.getInstance().setMediumFont());
             nameTextView[a].setLeftDrawableTopPadding(-AndroidUtilities.dp(1.3f));
             nameTextView[a].setPivotX(0);
             nameTextView[a].setPivotY(0);
@@ -3293,6 +3301,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         pinchToZoomHelper = new PinchToZoomHelper(decorView) {
 
             Paint statusBarPaint;
+
             @Override
             protected void invalidateViews() {
                 super.invalidateViews();
@@ -4814,7 +4823,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }
         invalidateIsInLandscapeMode();
         if (listAdapter != null) {
-           // saveScrollPosition();
+            // saveScrollPosition();
             firstLayout = true;
             listAdapter.notifyDataSetChanged();
         }
@@ -5384,6 +5393,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         chatRow = -1;
         filtersRow = -1;
         devicesRow = -1;
+        fontRow = -1;
+        requestRow = -1;
         devicesSectionRow = -1;
         helpHeaderRow = -1;
         questionRow = -1;
@@ -5478,6 +5489,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     filtersRow = rowCount++;
                 }
                 devicesRow = rowCount++;
+                fontRow = rowCount++;
+                requestRow = rowCount++;
                 languageRow = rowCount++;
                 devicesSectionRow = rowCount++;
                 helpHeaderRow = rowCount++;
@@ -7064,7 +7077,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         textCell.setText("Switch Backend", false);
                     } else if (position == devicesRow) {
                         textCell.setTextAndIcon(LocaleController.getString("Devices", R.string.Devices), R.drawable.menu_devices, true);
-                    } else if (position == setAvatarRow) {
+                    } else if (position == fontRow) {
+                        textCell.setTextAndIcon(LocaleController.getString("Font", R.string.Font), R.drawable.menu_work, true);
+                    } else if (position == requestRow) {
+                        textCell.setTextAndIcon(LocaleController.getString("Request", R.string.Request), R.drawable.menu_info, true);
+                    }  else if (position == setAvatarRow) {
                         textCell.setColors(Theme.key_windowBackgroundWhiteBlueIcon, Theme.key_windowBackgroundWhiteBlueButton);
                         textCell.setTextAndIcon(LocaleController.getString("SetProfilePhoto", R.string.SetProfilePhoto), R.drawable.msg_addphoto, false);
                     }
@@ -7196,7 +7213,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 return position == notificationRow || position == numberRow || position == privacyRow ||
                         position == languageRow || position == setUsernameRow || position == bioRow ||
                         position == versionRow || position == dataRow || position == chatRow ||
-                        position == questionRow || position == devicesRow || position == filtersRow ||
+                        position == questionRow || position == devicesRow || position == fontRow || position == requestRow || position == filtersRow ||
                         position == faqRow || position == policyRow || position == sendLogsRow || position == sendLastLogsRow ||
                         position == clearLogsRow || position == switchBackendRow || position == setAvatarRow;
             }
@@ -7234,7 +7251,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     position == addMemberRow || position == joinRow || position == unblockRow ||
                     position == sendMessageRow || position == notificationRow || position == privacyRow ||
                     position == languageRow || position == dataRow || position == chatRow ||
-                    position == questionRow || position == devicesRow || position == filtersRow ||
+                    position == questionRow || position == devicesRow || position == fontRow || position == requestRow || position == filtersRow ||
                     position == faqRow || position == policyRow || position == sendLogsRow || position == sendLastLogsRow ||
                     position == clearLogsRow || position == switchBackendRow || position == setAvatarRow) {
                 return 4;
@@ -8127,6 +8144,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             put(++pointer, chatRow, sparseIntArray);
             put(++pointer, filtersRow, sparseIntArray);
             put(++pointer, devicesRow, sparseIntArray);
+            put(++pointer, fontRow, sparseIntArray);
+            put(++pointer, requestRow, sparseIntArray);
             put(++pointer, devicesSectionRow, sparseIntArray);
             put(++pointer, helpHeaderRow, sparseIntArray);
             put(++pointer, questionRow, sparseIntArray);

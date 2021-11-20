@@ -113,6 +113,7 @@ public class SharedConfig {
     public static int repeatMode;
     public static boolean allowBigEmoji;
     public static boolean useSystemEmoji;
+    public static boolean persianCalender;
     public static int fontSize = 16;
     public static int bubbleRadius = 10;
     public static int ivFontSize = 16;
@@ -320,6 +321,7 @@ public class SharedConfig {
 
             preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
             saveToGallery = preferences.getBoolean("save_gallery", false);
+            persianCalender = preferences.getBoolean("persian_calender", false);
             autoplayGifs = preferences.getBoolean("autoplay_gif", true);
             autoplayVideo = preferences.getBoolean("autoplay_video", true);
             mapPreviewType = preferences.getInt("mapPreviewType", 2);
@@ -771,6 +773,14 @@ public class SharedConfig {
         editor.putBoolean("save_gallery", saveToGallery);
         editor.commit();
         checkSaveToGalleryFiles();
+    }
+
+    public static void togglePersianCalender() {
+        persianCalender = !persianCalender;
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean("persian_calender", persianCalender);
+        editor.commit();
     }
 
     public static void toggleAutoplayGifs() {

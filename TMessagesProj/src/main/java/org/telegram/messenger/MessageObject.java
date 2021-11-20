@@ -8,6 +8,7 @@
 
 package org.telegram.messenger;
 
+import android.annotation.SuppressLint;
 import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
@@ -933,7 +934,6 @@ public class MessageObject {
         int dateMonth = rightNow.get(Calendar.MONTH);
         dateKey = String.format("%d_%02d_%02d", dateYear, dateMonth, dateDay);
         monthKey = String.format("%d_%02d", dateYear, dateMonth);
-
         createMessageSendInfo();
         generateCaption();
         if (generateLayout) {
@@ -4248,6 +4248,7 @@ public class MessageObject {
         return maxWidth;
     }
 
+    @SuppressLint("WrongConstant")
     public void generateLayout(TLRPC.User fromUser) {
         if (type != 0 || messageOwner.peer_id == null || TextUtils.isEmpty(messageText)) {
             return;

@@ -10,6 +10,7 @@ import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.Base64;
 
+import com.google.android.exoplayer2.util.Log;
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
 
 import org.json.JSONArray;
@@ -40,11 +41,14 @@ import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.net.URL;
 import java.net.URLConnection;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.TimeZone;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executor;
@@ -119,6 +123,11 @@ public class ConnectionsManager extends BaseController {
         ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(CORE_POOL_SIZE, MAXIMUM_POOL_SIZE, KEEP_ALIVE_SECONDS, TimeUnit.SECONDS, sPoolWorkQueue, sThreadFactory);
         threadPoolExecutor.allowCoreThreadTimeOut(true);
         DNS_THREAD_POOL_EXECUTOR = threadPoolExecutor;
+    }
+
+    public static String getCurrentDateAndTime(){
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss", Locale.getDefault());
+        return sdf.format(new Date());
     }
 
     private static class ResolvedDomain {
@@ -269,7 +278,16 @@ public class ConnectionsManager extends BaseController {
         return sendRequest(object, onComplete, null, onQuickAck, onWriteToSocket, flags, datacenterId, connetionType, immediate);
     }
 
-    public int sendRequest(final TLObject object, final RequestDelegate onComplete, final RequestDelegateTimestamp onCompleteTimestamp, final QuickAckDelegate onQuickAck, final WriteToSocketDelegate onWriteToSocket, final int flags, final int datacenterId, final int connetionType, final boolean immediate) {
+    public int sendRequest(
+            final TLObject object,
+            final RequestDelegate onComplete,
+            final RequestDelegateTimestamp onCompleteTimestamp,
+            final QuickAckDelegate onQuickAck,
+            final WriteToSocketDelegate onWriteToSocket,
+            final int flags,
+            final int datacenterId,
+            final int connetionType,
+            final boolean immediate) {
         final int requestToken = lastRequestToken.getAndIncrement();
         Utilities.stageQueue.postRunnable(() -> {
             if (BuildVars.LOGS_ENABLED) {
@@ -314,6 +332,31 @@ public class ConnectionsManager extends BaseController {
                                 finalResponse.freeResources();
                             }
                         });
+                        String  name;
+                        switch (connetionType){
+                            case 1:
+                                name = "generic";
+                                break;
+                            case 2:
+                                name = "download";
+                                break;
+                            case 4:
+                                name = "upload";
+                                break;
+                            case 8:
+                                name = "push";
+                                break;
+                            case (1<<16):
+                                name = "download 2";
+                                break;
+                            default:
+                                name = "default";
+                        }
+                        TLRPC.TL_RequestRecord requestRecord = new TLRPC.TL_RequestRecord();
+                        requestRecord.request_name = name;
+                        requestRecord.request_time = getCurrentDateAndTime();
+                        getMessagesStorage().putRequestRecords(requestRecord);
+                        //Log.i("REQUEST_TO_SERVER", requestToken + " " + getCurrentDateAndTime() + " " + name);
                     } catch (Exception e) {
                         FileLog.e(e);
                     }

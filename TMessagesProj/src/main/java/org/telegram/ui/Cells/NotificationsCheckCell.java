@@ -62,6 +62,7 @@ public class NotificationsCheckCell extends FrameLayout {
         textView.setLines(1);
         textView.setMaxLines(1);
         textView.setSingleLine(true);
+        textView.setTypeface(LocaleController.getInstance().setMediumFont());
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         textView.setEllipsize(TextUtils.TruncateAt.END);
         addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 80 : (reorder ? 64 : padding), 13 + (currentHeight - 70) / 2, LocaleController.isRTL ? (reorder ? 64 : padding) : 80, 0));

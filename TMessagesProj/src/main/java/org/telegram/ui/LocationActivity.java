@@ -78,7 +78,6 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocationController;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
@@ -336,7 +335,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             nameTextView.setEllipsize(TextUtils.TruncateAt.END);
             nameTextView.setSingleLine(true);
             nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-            nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            nameTextView.setTypeface(LocaleController.getInstance().setMediumFont());
             nameTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             lastPressedMarkerView.addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), 18, 10, 18, 0));
 
@@ -715,7 +714,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             searchAreaButton.setBackgroundDrawable(drawable);
             searchAreaButton.setTextColor(Theme.getColor(Theme.key_location_actionActiveIcon));
             searchAreaButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            searchAreaButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            searchAreaButton.setTypeface(LocaleController.getInstance().setMediumFont());
             searchAreaButton.setText(LocaleController.getString("PlacesInThisArea", R.string.PlacesInThisArea));
             searchAreaButton.setGravity(Gravity.CENTER);
             searchAreaButton.setPadding(AndroidUtilities.dp(20), 0, AndroidUtilities.dp(20), 0);
@@ -943,7 +942,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         emptyTitleTextView = new TextView(context);
         emptyTitleTextView.setTextColor(Theme.getColor(Theme.key_dialogEmptyText));
         emptyTitleTextView.setGravity(Gravity.CENTER);
-        emptyTitleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        emptyTitleTextView.setTypeface(LocaleController.getInstance().setMediumFont());
         emptyTitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
         emptyTitleTextView.setText(LocaleController.getString("NoPlacesFound", R.string.NoPlacesFound));
         emptyView.addView(emptyTitleTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 11, 0, 0));

@@ -1569,7 +1569,7 @@ public class TLRPC {
 			stream.writeInt32(constructor);
 			text.serializeToStream(stream);
 			stream.writeString(phone);
-		}
+        }
 	}
 
 	public static class TL_textSuperscript extends RichText {
@@ -2057,7 +2057,6 @@ public class TLRPC {
 
     public static class TL_groupCall extends GroupCall {
         public static int constructor = 0xd597650c;
-        
 
         public void readParams(AbstractSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
@@ -30163,7 +30162,7 @@ public class TLRPC {
 
     public static class TL_encryptedChatDiscarded extends EncryptedChat {
         public static int constructor = 0x1e1c7c45;
-        
+
 
         public void readParams(AbstractSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
@@ -30355,6 +30354,58 @@ public class TLRPC {
             stream.writeInt32(constructor);
             stream.writeInt64(user_id);
             stream.writeBool(mutual);
+        }
+    }
+
+  /*  public static abstract class RequestRecord extends TLObject {
+        public String name;
+        public String time;
+
+        public static User TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
+            User result = null;
+            switch (constructor) {
+                case 0xcab35e19:
+                    result = new TL_RequestRecord();
+                    break;
+            }
+            if (result == null && exception) {
+                throw new RuntimeException(String.format("can't parse magic %x in RequestRecord", constructor));
+            }
+            if (result != null) {
+                result.readParams(stream, exception);
+            }
+            return result;
+        }
+    }*/
+
+    public static class TL_RequestRecord extends TLObject {
+        public static int constructor = 0xcab35e19;
+
+        public String request_name;
+        public String request_time;
+
+        public static TL_RequestRecord TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
+            if (TL_contact.constructor != constructor) {
+                if (exception) {
+                    throw new RuntimeException(String.format("can't parse magic %x in TL_RequestRecord", constructor));
+                } else {
+                    return null;
+                }
+            }
+            TL_RequestRecord result = new TL_RequestRecord();
+            result.readParams(stream, exception);
+            return result;
+        }
+
+        public void readParams(AbstractSerializedData stream, boolean exception) {
+            request_name = stream.readString(exception);
+            request_time = stream.readString(exception);
+        }
+
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeString(request_name);
+            stream.writeString(request_time);
         }
     }
 

@@ -2026,6 +2026,9 @@
     <string name="DirectShareInfo">공유 메뉴에 최근 대화방 띄우기</string>
     <string name="Emoji">이모지</string>
     <string name="LargeEmoji">대용량 이모지</string>
+    <string name="persianCalender">페르시아 달력</string>
+    <string name="Font">폰트</string>
+    <string name="Request">요청</string>
     <string name="EmojiUseDefault">시스템 기본 이모지 사용</string>
     <string name="TelegramVersion">Android용 텔레그램 %1$s</string>
     <string name="DebugMenu">디버그 메뉴</string>

@@ -14,6 +14,7 @@ import androidx.annotation.NonNull;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageLocation;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.UserConfig;
@@ -101,7 +102,7 @@ public class StickerEmptyView extends FrameLayout implements NotificationCenter.
 
         title = new TextView(context);
 
-        title.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        title.setTypeface(LocaleController.getInstance().setMediumFont());
         title.setTag(Theme.key_windowBackgroundWhiteBlackText);
         title.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
         title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);

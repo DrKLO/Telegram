@@ -1954,7 +1954,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                         String text = LocaleController.getInstance().formatCurrencyString(amount, paymentForm.invoice.currency);
                         TextView valueTextView = new TextView(context);
                         valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-                        valueTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                        valueTextView.setTypeface(LocaleController.getInstance().setMediumFont());
                         valueTextView.setLines(1);
                         valueTextView.setTag(amount);
                         valueTextView.setMaxLines(1);
@@ -2168,7 +2168,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 payTextView.setText(LocaleController.formatString("PaymentCheckoutPay", R.string.PaymentCheckoutPay, totalPrice[0]));
                 payTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                 payTextView.setGravity(Gravity.CENTER);
-                payTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                payTextView.setTypeface(LocaleController.getInstance().setMediumFont());
                 bottomLayout.addView(payTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
                 progressViewButton = new ContextProgressView(context, 0);

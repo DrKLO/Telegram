@@ -1004,7 +1004,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
 
         bottomOverlayChatText = new TextView(context);
         bottomOverlayChatText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        bottomOverlayChatText.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        bottomOverlayChatText.setTypeface(LocaleController.getInstance().setMediumFont());
         bottomOverlayChatText.setTextColor(Theme.getColor(Theme.key_chat_fieldOverlayText));
         bottomOverlayChatText.setText(LocaleController.getString("SETTINGS", R.string.SETTINGS).toUpperCase());
         bottomOverlayChat.addView(bottomOverlayChatText, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
@@ -1084,7 +1084,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
         searchCountText = new SimpleTextView(context);
         searchCountText.setTextColor(Theme.getColor(Theme.key_chat_searchPanelText));
         searchCountText.setTextSize(15);
-        searchCountText.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        searchCountText.setTypeface(LocaleController.getInstance().setMediumFont());
         searchContainer.addView(searchCountText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 108, 0, 0, 0));
 
         chatAdapter.updateRows();

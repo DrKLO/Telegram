@@ -64,6 +64,7 @@ public class TextSettingsCell extends FrameLayout {
         textView.setLines(1);
         textView.setMaxLines(1);
         textView.setSingleLine(true);
+        textView.setTypeface(LocaleController.getInstance().setMediumFont());
         textView.setEllipsize(TextUtils.TruncateAt.END);
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));

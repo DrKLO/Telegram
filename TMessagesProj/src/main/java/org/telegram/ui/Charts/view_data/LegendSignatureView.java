@@ -18,6 +18,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Charts.data.ChartData;
@@ -79,10 +80,10 @@ public class LegendSignatureView extends FrameLayout {
 
         time = new TextView(context);
         time.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        time.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        time.setTypeface(LocaleController.getInstance().setMediumFont());
         hourTime = new TextView(context);
         hourTime.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        hourTime.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        hourTime.setTypeface(LocaleController.getInstance().setMediumFont());
 
         chevron = new ImageView(context);
         chevron.setImageResource(R.drawable.ic_chevron_right_black_18dp);
@@ -262,7 +263,7 @@ public class LegendSignatureView extends FrameLayout {
                 root.addView(percentage = new TextView(getContext()));
                 percentage.getLayoutParams().width = AndroidUtilities.dp(36);
                 percentage.setVisibility(GONE);
-                percentage.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                percentage.setTypeface(LocaleController.getInstance().setMediumFont());
                 percentage.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             }
 
@@ -273,7 +274,7 @@ public class LegendSignatureView extends FrameLayout {
             signature.setGravity(Gravity.START);
             value.setGravity(Gravity.END);
 
-            value.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            value.setTypeface(LocaleController.getInstance().setMediumFont());
             value.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             value.setMinEms(4);
             value.setMaxEms(4);

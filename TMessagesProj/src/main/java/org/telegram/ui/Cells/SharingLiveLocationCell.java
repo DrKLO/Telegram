@@ -24,7 +24,6 @@ import com.google.android.gms.maps.model.LatLng;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
-import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.LocationController;
 import org.telegram.messenger.MessageObject;
@@ -78,7 +77,7 @@ public class SharingLiveLocationCell extends FrameLayout {
         nameTextView = new SimpleTextView(context);
         nameTextView.setTextSize(16);
         nameTextView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
-        nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        nameTextView.setTypeface(LocaleController.getInstance().setMediumFont());
         nameTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
 
         if (distance) {

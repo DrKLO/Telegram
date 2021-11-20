@@ -2026,6 +2026,8 @@
     <string name="DirectShareInfo">Recente chats in snel delen weergeven</string>
     <string name="Emoji">Emoji</string>
     <string name="LargeEmoji">Grote emoji</string>
+    <string name="Font">Lettertype</string>
+    <string name="persianCalender">Perzische kalender</string>
     <string name="EmojiUseDefault">Systeem-emoji gebruiken</string>
     <string name="TelegramVersion">Telegram voor Android %1$s</string>
     <string name="DebugMenu">Debug-menu</string>

@@ -1789,6 +1789,8 @@
     <string name="EnableAnimations">Enable Animations</string>
     <string name="ChatSettings">Chat Settings</string>
     <string name="Devices">Devices</string>
+    <string name="Font">Font</string>
+    <string name="Request">Requests</string>
     <string name="SettingsHelp">Help</string>
     <string name="SettingsDebug">Debug</string>
     <string name="Account">Account</string>
@@ -2058,6 +2060,7 @@
     <string name="DirectShareInfo">Show recent chats in Android share menu</string>
     <string name="Emoji">Emoji</string>
     <string name="LargeEmoji">Large Emoji</string>
+    <string name="persianCalender">Persian Calender</string>
     <string name="EmojiUseDefault">Use system default emoji</string>
     <string name="TelegramVersion">Telegram for Android %1$s</string>
     <string name="DebugMenu">Debug Menu</string>
@@ -4743,4 +4746,16 @@
     <string name="MessageSeenTooltipMessage">To protect privacy, views are only stored for **7 days**</string>
     <string name="EmojiInteractionTapHint">If **%s** were viewing the chat now, they would also see this animation.</string>
     <string name="ChatThemeDayNightSwitchTooltip">Tap here to view how **%s** will see this theme when using night mode.</string>
+
+    <string name="Default_font">Default</string>
+    <string name="Anton_font">Anton</string>
+    <string name="Fruktur_font">Fruktur</string>
+    <string name="Qahiri_font">Qahiri</string>
+    <string name="DancingScript_font">DancingScript</string>
+    <string name="ZenKurenaido_font">ZenKurenaido</string>
+    <string name="sample_text_for_fonts">"This is a sample text for select font"</string>
+    <string name="exitAppDialogTitle">"Exit Telegram"</string>
+    <string name="exitAppDialogContent">"In order to assign font to whole application you need to restart telegram. Do you want to restart it now?"</string>
+    <string name="confirmExitApp">exit</string>
+    <string name="declineExitApp">cancel</string>
 </resources>

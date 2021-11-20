@@ -234,7 +234,7 @@ public class LinkEditActivity extends BaseFragment {
         buttonTextView.setPadding(AndroidUtilities.dp(34), 0, AndroidUtilities.dp(34), 0);
         buttonTextView.setGravity(Gravity.CENTER);
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        buttonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        buttonTextView.setTypeface(LocaleController.getInstance().setMediumFont());
 
         if (type == CREATE_TYPE) {
             buttonTextView.setText(LocaleController.getString("CreateLink", R.string.CreateLink));

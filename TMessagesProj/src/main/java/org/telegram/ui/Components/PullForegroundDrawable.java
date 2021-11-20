@@ -23,6 +23,7 @@ import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.Theme;
 
 public class PullForegroundDrawable {
@@ -105,7 +106,7 @@ public class PullForegroundDrawable {
     };
 
     public PullForegroundDrawable(String pullText, String releaseText) {
-        tooltipTextPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        tooltipTextPaint.setTypeface(LocaleController.getInstance().setMediumFont());
         tooltipTextPaint.setTextAlign(Paint.Align.CENTER);
         tooltipTextPaint.setTextSize(AndroidUtilities.dp(16));
 

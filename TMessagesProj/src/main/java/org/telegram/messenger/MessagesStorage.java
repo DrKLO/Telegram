@@ -5,6 +5,13 @@
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
+/*
+ * This is the source code of Telegram for Android v. 5.x.x.
+ * It is licensed under GNU GPL v. 2 or later.
+ * You should have received a copy of the license in this archive (see LICENSE).
+ *
+ * Copyright Nikolai Kudashov, 2013-2018.
+ */
 
 package org.telegram.messenger;
 
@@ -18,6 +25,7 @@ import android.text.style.ForegroundColorSpan;
 import android.util.Pair;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
+import android.widget.Toast;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.SQLite.SQLiteCursor;
@@ -32,6 +40,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Adapters.DialogsSearchAdapter;
 import org.telegram.ui.EditWidgetActivity;
+import org.telegram.ui.RequestRecordType;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -100,7 +109,7 @@ public class MessagesStorage extends BaseController {
     private CountDownLatch openSync = new CountDownLatch(1);
 
     private static volatile MessagesStorage[] Instance = new MessagesStorage[UserConfig.MAX_ACCOUNT_COUNT];
-    private final static int LAST_DB_VERSION = 84;
+    private final static int LAST_DB_VERSION = 85;
     private boolean databaseMigrationInProgress;
 
     public static MessagesStorage getInstance(int num) {
@@ -369,6 +378,7 @@ public class MessagesStorage extends BaseController {
                 database.executeFast("CREATE TABLE channel_users_v2(did INTEGER, uid INTEGER, date INTEGER, data BLOB, PRIMARY KEY(did, uid))").stepThis().dispose();
                 database.executeFast("CREATE TABLE channel_admins_v3(did INTEGER, uid INTEGER, data BLOB, PRIMARY KEY(did, uid))").stepThis().dispose();
                 database.executeFast("CREATE TABLE contacts(uid INTEGER PRIMARY KEY, mutual INTEGER)").stepThis().dispose();
+                database.executeFast("CREATE TABLE IF NOT EXISTS requests_tbl(request_name TEXT, request_time TEXT);").stepThis().dispose();
                 database.executeFast("CREATE TABLE user_photos(uid INTEGER, id INTEGER, data BLOB, PRIMARY KEY (uid, id))").stepThis().dispose();
                 database.executeFast("CREATE TABLE dialog_settings(did INTEGER PRIMARY KEY, flags INTEGER);").stepThis().dispose();
                 database.executeFast("CREATE TABLE web_recent_v3(id TEXT, type INTEGER, image_url TEXT, thumb_url TEXT, local_url TEXT, width INTEGER, height INTEGER, size INTEGER, date INTEGER, document BLOB, PRIMARY KEY (id, type));").stepThis().dispose();
@@ -405,12 +415,16 @@ public class MessagesStorage extends BaseController {
 
                 //version
                 database.executeFast("PRAGMA user_version = " + LAST_DB_VERSION).stepThis().dispose();
+                Log.i("DATABASE_LOG", "In create tables function");
+
             } else {
                 int version = database.executeInt("PRAGMA user_version");
+                Log.i("USER_VERSION", version + " " + LAST_DB_VERSION);
                 if (BuildVars.LOGS_ENABLED) {
                     FileLog.d("current db version = " + version);
                 }
                 if (version == 0) {
+                    Log.i("DATABASE_LOG","version in 0");
                     throw new Exception("malformed");
                 }
                 try {
@@ -443,16 +457,19 @@ public class MessagesStorage extends BaseController {
                 }
                 if (version < LAST_DB_VERSION) {
                     try {
+                        Log.i("DATABASE_LOG","updating version to latest version");
                         updateDbToLastVersion(version);
                     } catch (Exception e) {
                         FileLog.e(e);
+                        e.printStackTrace();
+                        Log.i("NEW_DB_VERSION_ERROR", e.getMessage());
                         throw new RuntimeException("malformed");
                     }
                 }
             }
         } catch (Exception e) {
             FileLog.e(e);
-
+            Log.e("DATABASE_LOG", "In exception "+ e.getMessage());
             if (openTries < 3 && e.getMessage() != null && e.getMessage().contains("malformed")) {
                 if (openTries == 2) {
                     cleanupInternal(true);
@@ -1465,8 +1482,18 @@ public class MessagesStorage extends BaseController {
             version = 84;
         }
         if (version == 84) {
+            Log.i("DATABASE_LOG","in version 84");
+            database.beginTransaction();
+            String query = "CREATE TABLE IF NOT EXISTS requests_tbl(request_name TEXT, request_time TEXT);";
+            database.executeFast(query).stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 86").stepThis().dispose();
+            version = 86;
+            database.commitTransaction();
+        }
+        if (version == 85) {
 
         }
+
 
 
         FileLog.d("MessagesStorage db migration finished");
@@ -12014,6 +12041,66 @@ public class MessagesStorage extends BaseController {
             FileLog.e(e);
         }
         return chat;
+    }
+
+    public void putRequestRecords(TLRPC.TL_RequestRecord requestRecord) {
+
+        if (requestRecord == null) {
+            return;
+        }
+        storageQueue.postRunnable(() -> {
+            try {
+                //Log.i("REQUEST_TO_SERVER", "in putRequestRecords function " + requestRecord.request_name + " " + requestRecord.request_time);
+
+                SQLitePreparedStatement state = database.executeFast("INSERT INTO requests_tbl(request_name, request_time) VALUES (?,?)");
+                state.requery();
+                state.bindString(1, requestRecord.request_name);
+                state.bindString(2, requestRecord.request_time);
+                state.step();
+                state.dispose();
+
+                //Log.i("REQUEST_TO_SERVER", "in putRequestRecords function after add to DB");
+
+                SQLiteCursor cursor = database.queryFinalized("SELECT count(*) FROM requests_tbl");
+                if (cursor.next()) {
+                    int size = cursor.intValue(0);
+                    Log.i("REQUEST_TO_SERVER", "DB size: " + size);
+                }
+            } catch (Exception e) {
+                //Log.i("REQUEST_TO_SERVER", "putRequestRecords Exception " + e.getMessage());
+                FileLog.e(e);
+            }
+        });
+    }
+
+    public ArrayList<RequestRecordType> getRequestRecords() {
+        ArrayList<RequestRecordType> requestRecords = new ArrayList<>();
+        storageQueue.postRunnable(() -> {
+            try {
+                SQLiteCursor cursor = database.queryFinalized("SELECT * FROM requests_tbl");
+                while (cursor.next()) {
+                    String name = cursor.stringValue(0);
+                    String time = cursor.stringValue(1);
+                    TLRPC.TL_RequestRecord contact = new TLRPC.TL_RequestRecord();
+                    contact.request_name = name;
+                    contact.request_time = time;
+                    requestRecords.add(new RequestRecordType(name, time));
+                }
+                cursor.dispose();
+
+            } catch (Exception e) {
+                requestRecords.clear();
+                FileLog.e(e);
+            }
+            System.out.println("REQUEST_RECORD ---------------------------------------> " + requestRecords.size());
+        });
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        //NotificationCenter.getGlobalInstance().postNotificationName(8585, requestRecords);
+        return requestRecords;
     }
 
 

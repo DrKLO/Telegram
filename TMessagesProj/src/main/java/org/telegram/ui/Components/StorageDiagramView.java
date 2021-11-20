@@ -16,6 +16,7 @@ import android.view.View;
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.Theme;
 
 public class StorageDiagramView extends View {
@@ -50,7 +51,7 @@ public class StorageDiagramView extends View {
         rectF.set(AndroidUtilities.dp(3), AndroidUtilities.dp(3), getMeasuredWidth() - AndroidUtilities.dp(3), getMeasuredHeight() - AndroidUtilities.dp(3));
         updateDescription();
         textPaint.setTextSize(AndroidUtilities.dp(24));
-        textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textPaint.setTypeface(LocaleController.getInstance().setMediumFont());
 
         textPaint2.setTextSize(AndroidUtilities.dp(13));
     }

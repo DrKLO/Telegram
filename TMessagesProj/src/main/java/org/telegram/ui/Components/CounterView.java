@@ -16,9 +16,8 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.animation.OvershootInterpolator;
 
-import com.google.android.exoplayer2.util.Log;
-
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.Theme;
 
 public class CounterView extends View {
@@ -122,7 +121,7 @@ public class CounterView extends View {
             this.parent = parent;
             this.resourcesProvider = resourcesProvider;
             circlePaint.setColor(Color.BLACK);
-            textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            textPaint.setTypeface(LocaleController.getInstance().setMediumFont());
             textPaint.setTextSize(AndroidUtilities.dp(13));
         }
 

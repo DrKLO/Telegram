@@ -2026,6 +2026,9 @@
     <string name="DirectShareInfo">Chats recientes al compartir en Android</string>
     <string name="Emoji">Emoji</string>
     <string name="LargeEmoji">Emojis grandes</string>
+    <string name="persianCalender">Calendario persaCalender</string>
+    <string name="Font">Fuente</string>
+    <string name="Request">peticiones</string>
     <string name="EmojiUseDefault">Usar emoji predeterminado</string>
     <string name="TelegramVersion">Telegram para Android %1$s</string>
     <string name="DebugMenu">Menú de depuración</string>

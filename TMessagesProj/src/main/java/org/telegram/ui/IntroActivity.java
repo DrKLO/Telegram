@@ -15,7 +15,6 @@ import android.content.pm.ActivityInfo;
 import android.database.DataSetObserver;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.Shader;
 import android.graphics.SurfaceTexture;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
@@ -33,7 +32,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.FrameLayout;
-import android.widget.ImageView;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
@@ -250,7 +248,7 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
         startMessagingButton.setText(LocaleController.getString("StartMessaging", R.string.StartMessaging));
         startMessagingButton.setGravity(Gravity.CENTER);
         startMessagingButton.setTextColor(0xffffffff);
-        startMessagingButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        startMessagingButton.setTypeface(LocaleController.getInstance().setMediumFont());
         startMessagingButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         startMessagingButton.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), 0xff50a8eb, 0xff439bde));
         startMessagingButton.setPadding(AndroidUtilities.dp(34), 0, AndroidUtilities.dp(34), 0);

@@ -9,6 +9,7 @@ import android.util.TypedValue;
 import android.widget.Button;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.Theme;
 
 public class ProgressButton extends Button {
@@ -25,7 +26,7 @@ public class ProgressButton extends Button {
         super(context);
         setAllCaps(false);
         setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        setTypeface(LocaleController.getInstance().setMediumFont());
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             setOutlineProvider(null);
         }

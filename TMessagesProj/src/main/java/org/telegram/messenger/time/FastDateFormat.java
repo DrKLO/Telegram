@@ -26,6 +26,9 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
+import saman.zamani.persiandate.PersianDate;
+import saman.zamani.persiandate.PersianDateFormat;
+
 /**
  * <p>FastDateFormat is a fast and thread-safe version of
  * {@link java.text.SimpleDateFormat}.</p>
@@ -419,6 +422,18 @@ public class FastDateFormat extends Format implements DateParser, DatePrinter {
     @Override
     public String format(final long millis) {
         return printer.format(millis);
+    }
+
+    public String formatPersianDate(final  long millis){
+        PersianDate persianDate = new PersianDate(millis);
+        PersianDateFormat formater = new PersianDateFormat("F j");
+        return  formater.format(persianDate);
+    }
+
+    public String formatPersianDateFull(final  long millis){
+        PersianDate persianDate = new PersianDate(millis);
+        PersianDateFormat formater = new PersianDateFormat("Y F j");
+        return  formater.format(persianDate);
     }
 
     /**

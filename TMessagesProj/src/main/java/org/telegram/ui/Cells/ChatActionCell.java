@@ -11,11 +11,8 @@ package org.telegram.ui.Cells;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
 import android.text.Layout;
 import android.text.Spannable;
@@ -27,8 +24,6 @@ import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
 import android.view.ViewGroup;
 import android.view.accessibility.AccessibilityNodeInfo;
-
-import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DownloadController;
@@ -497,7 +492,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                 overrideBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
                 overrideBackgroundPaint.setColor(color);
                 overrideTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-                overrideTextPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                overrideTextPaint.setTypeface(LocaleController.getInstance().setMediumFont());
                 overrideTextPaint.setTextSize(AndroidUtilities.dp(Math.max(16, SharedConfig.fontSize) - 2));
                 overrideTextPaint.setColor(getThemedColor(overrideText));
             }

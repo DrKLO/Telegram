@@ -21,8 +21,8 @@ public class BuildVars {
     public static boolean NO_SCOPED_STORAGE = true/* || Build.VERSION.SDK_INT <= 28*/;
     public static int BUILD_VERSION = 2432;
     public static String BUILD_VERSION_STRING = "8.1.2";
-    public static int APP_ID = 4;
-    public static String APP_HASH = "014b35b6184100b085b0d0572f9b5103";
+    public static int APP_ID = 2259470;
+    public static String APP_HASH = "f76bca8206ad1c30f9ce4aada7c9df10";
     public static String SMS_HASH = isStandaloneApp() ? "w0lkcmTZkKh" : (DEBUG_VERSION ? "O2P2z+/jBpJ" : "oLeq9AcOZkT");
     public static String PLAYSTORE_APP_URL = "https://play.google.com/store/apps/details?id=org.telegram.messenger";
 

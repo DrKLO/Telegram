@@ -107,7 +107,7 @@ public class LinkActionView extends LinearLayout {
         copyView.setText(spannableStringBuilder);
         copyView.setPadding(AndroidUtilities.dp(10), AndroidUtilities.dp(10), AndroidUtilities.dp(10), AndroidUtilities.dp(10));
         copyView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        copyView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        copyView.setTypeface(LocaleController.getInstance().setMediumFont());
         copyView.setSingleLine(true);
         linearLayout.addView(copyView, LayoutHelper.createLinear(0, 40, 1f, 0, 4, 0, 4, 0));
 
@@ -122,7 +122,7 @@ public class LinkActionView extends LinearLayout {
         shareView.setPadding(AndroidUtilities.dp(10), AndroidUtilities.dp(10), AndroidUtilities.dp(10), AndroidUtilities.dp(10));
 
         shareView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        shareView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        shareView.setTypeface(LocaleController.getInstance().setMediumFont());
         shareView.setSingleLine(true);
         linearLayout.addView(shareView, LayoutHelper.createLinear(0, 40, 1f, 4, 0, 4, 0));
 
@@ -137,7 +137,7 @@ public class LinkActionView extends LinearLayout {
         removeView.setText(spannableStringBuilder);
         removeView.setPadding(AndroidUtilities.dp(10), AndroidUtilities.dp(10), AndroidUtilities.dp(10), AndroidUtilities.dp(10));
         removeView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        removeView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        removeView.setTypeface(LocaleController.getInstance().setMediumFont());
         removeView.setSingleLine(true);
         linearLayout.addView(removeView, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, 4, 0, 4, 0));
         removeView.setVisibility(View.GONE);
@@ -447,7 +447,7 @@ public class LinkActionView extends LinearLayout {
 
             countTextView = new TextView(context);
             countTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            countTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            countTextView.setTypeface(LocaleController.getInstance().setMediumFont());
 
             linearLayout.addView(avatarsImageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT));
             linearLayout.addView(countTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL));
