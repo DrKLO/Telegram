@@ -116,11 +116,17 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
         int newCount = 0;
         Object currentObject = null;
         if (imagesArrLocations != null && !imagesArrLocations.isEmpty()) {
+            if (currentIndex >= imagesArrLocations.size()) {
+                currentIndex = imagesArrLocations.size() - 1;
+            }
             ImageLocation location = imagesArrLocations.get(currentIndex);
             newCount = imagesArrLocations.size();
             currentObject = location;
             hasPhotos = true;
         } else if (imagesArr != null && !imagesArr.isEmpty()) {
+            if (currentIndex >= imagesArr.size()) {
+                currentIndex = imagesArr.size() - 1;
+            }
             MessageObject messageObject = imagesArr.get(currentIndex);
             currentObject = messageObject;
             long localGroupId = delegate.validGroupId(messageObject.getGroupIdForUse()) ? messageObject.getGroupIdForUse() : 0;

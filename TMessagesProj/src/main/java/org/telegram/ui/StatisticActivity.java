@@ -538,6 +538,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         frameLayout.addView(recyclerListView);
 
         avatarContainer = new ChatAvatarContainer(context, null, false);
+        avatarContainer.setOccupyStatusBar(!AndroidUtilities.isTablet());
         actionBar.addView(avatarContainer, 0, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, !inPreviewMode ? 56 : 0, 0, 40, 0));
 
         TLRPC.Chat chatLocal = getMessagesController().getChat(chat.id);

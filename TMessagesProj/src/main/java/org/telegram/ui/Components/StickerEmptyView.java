@@ -22,8 +22,9 @@ import org.telegram.ui.ActionBar.Theme;
 
 public class StickerEmptyView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
-    public final static int STICKER_TYPE_SEARCH = 1;
     public final static int STICKER_TYPE_NO_CONTACTS = 0;
+    public final static int STICKER_TYPE_SEARCH = 1;
+    public final static int STICKER_TYPE_DONE = 2;
 
     private LinearLayout linearLayout;
     public BackupImageView stickerView;
@@ -227,14 +228,24 @@ public class StickerEmptyView extends FrameLayout implements NotificationCenter.
     }
 
     private void setSticker() {
-        TLRPC.TL_messages_stickerSet set = MediaDataController.getInstance(currentAccount).getStickerSetByName(AndroidUtilities.STICKERS_PLACEHOLDER_PACK_NAME);
-        if (set == null) {
-            set = MediaDataController.getInstance(currentAccount).getStickerSetByEmojiOrName(AndroidUtilities.STICKERS_PLACEHOLDER_PACK_NAME);
+        String imageFilter = null;
+        TLRPC.Document document = null;
+        TLRPC.TL_messages_stickerSet set = null;
+        if (stickerType == STICKER_TYPE_DONE) {
+            document = MediaDataController.getInstance(currentAccount).getEmojiAnimatedSticker("\uD83D\uDC4D");
+        } else {
+            set = MediaDataController.getInstance(currentAccount).getStickerSetByName(AndroidUtilities.STICKERS_PLACEHOLDER_PACK_NAME);
+            if (set == null) {
+                set = MediaDataController.getInstance(currentAccount).getStickerSetByEmojiOrName(AndroidUtilities.STICKERS_PLACEHOLDER_PACK_NAME);
+            }
+            if (set != null && set.documents.size() >= 2) {
+                document = set.documents.get(stickerType);
+            }
+            imageFilter = "130_130";
         }
-        if (set != null && set.documents.size() >= 2) {
-            TLRPC.Document document = set.documents.get(stickerType);
+        if (document != null) {
             ImageLocation imageLocation = ImageLocation.getForDocument(document);
-            stickerView.setImage(imageLocation, "130_130", "tgs", stubDrawable, set);
+            stickerView.setImage(imageLocation, imageFilter, "tgs", stubDrawable, set);
             stickerView.getImageReceiver().setAutoRepeat(2);
         } else {
             MediaDataController.getInstance(currentAccount).loadStickersByEmojiOrName(AndroidUtilities.STICKERS_PLACEHOLDER_PACK_NAME, false, set == null);

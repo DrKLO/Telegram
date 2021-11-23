@@ -743,6 +743,10 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                         messageText = LocaleController.formatString("NotificationGroupAddSelfMega", R.string.NotificationGroupAddSelfMega, args[0], args[1]);
                                         break;
                                     }
+                                    case "CHAT_REQ_JOINED": {
+                                        messageText = LocaleController.formatString("UserAcceptedToGroupPushWithGroup", R.string.UserAcceptedToGroupPushWithGroup, args[0], args[1]);
+                                        break;
+                                    }
                                     case "CHAT_MESSAGE_FWDS": {
                                         messageText = LocaleController.formatString("NotificationGroupForwardedFew", R.string.NotificationGroupForwardedFew, args[0], args[1], LocaleController.formatPluralString("messages", Utilities.parseInt(args[2])));
                                         localMessage = true;

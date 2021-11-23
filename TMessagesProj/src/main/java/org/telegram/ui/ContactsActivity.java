@@ -216,7 +216,9 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     @Override
     protected void onTransitionAnimationProgress(boolean isOpen, float progress) {
         super.onTransitionAnimationProgress(isOpen, progress);
-        fragmentView.invalidate();
+        if (fragmentView != null) {
+            fragmentView.invalidate();
+        }
     }
 
     @Override
@@ -402,7 +404,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         };
         listView.setSectionsType(1);
         listView.setVerticalScrollBarEnabled(false);
-        listView.setFastScrollEnabled();
+        listView.setFastScrollEnabled(RecyclerListView.FastScroll.LETTER_TYPE);
         listView.setLayoutManager(layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
         listView.setAdapter(listViewAdapter);
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));

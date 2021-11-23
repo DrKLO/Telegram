@@ -38,6 +38,7 @@ import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
@@ -95,6 +96,7 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 
 import com.android.internal.telephony.ITelephony;
+import com.google.android.exoplayer2.util.Log;
 import com.google.android.gms.auth.api.phone.SmsRetriever;
 import com.google.android.gms.auth.api.phone.SmsRetrieverClient;
 import com.google.android.gms.tasks.Task;
@@ -529,10 +531,12 @@ public class AndroidUtilities {
         if (context == null || AndroidUtilities.statusBarHeight > 0) {
             return;
         }
+        AndroidUtilities.statusBarHeight = getStatusBarHeight(context);
+    }
+
+    public static int getStatusBarHeight(Context context) {
         int resourceId = context.getResources().getIdentifier("status_bar_height", "dimen", "android");
-        if (resourceId > 0) {
-            AndroidUtilities.statusBarHeight = context.getResources().getDimensionPixelSize(resourceId);
-        }
+        return resourceId > 0 ? context.getResources().getDimensionPixelSize(resourceId) : 0;
     }
 
     public static int getThumbForNameOrMime(String name, String mime, boolean media) {
@@ -2265,11 +2269,11 @@ public class AndroidUtilities {
             return;
         }
         File f = new File(fromPath);
-        Uri contentUri = Uri.fromFile(f);
-        addMediaToGallery(contentUri);
+        addMediaToGallery(f);
     }
 
-    public static void addMediaToGallery(Uri uri) {
+    public static void addMediaToGallery(File file) {
+        Uri uri = Uri.fromFile(file);
         if (uri == null) {
             return;
         }
@@ -2282,9 +2286,9 @@ public class AndroidUtilities {
         }
     }
 
-    private static File getAlbumDir(boolean secretChat) { //TODO scoped storage
-        if (secretChat || Build.VERSION.SDK_INT >= 23 && ApplicationLoader.applicationContext.checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            return FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE);
+    private static File getAlbumDir(boolean secretChat) {
+        if (secretChat || !BuildVars.NO_SCOPED_STORAGE ||(Build.VERSION.SDK_INT >= 23 && ApplicationLoader.applicationContext.checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)) {
+            return FileLoader.getDirectory(FileLoader.MEDIA_DIR_IMAGE);
         }
         File storageDir = null;
         if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
@@ -2397,15 +2401,23 @@ public class AndroidUtilities {
 
     public static File generatePicturePath(boolean secretChat, String ext) {
         try {
-            File storageDir = getAlbumDir(secretChat);
-            Date date = new Date();
-            date.setTime(System.currentTimeMillis() + Utilities.random.nextInt(1000) + 1);
-            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss_SSS", Locale.US).format(date);
-            return new File(storageDir, "IMG_" + timeStamp + "." + (TextUtils.isEmpty(ext) ? "jpg" : ext));
+            File storageDir = ApplicationLoader.applicationContext.getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+            return new File(storageDir, generateFileName(0, ext));
         } catch (Exception e) {
             FileLog.e(e);
         }
         return null;
+    }
+
+    public static String generateFileName(int type, String ext) {
+        Date date = new Date();
+        date.setTime(System.currentTimeMillis() + Utilities.random.nextInt(1000) + 1);
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss_SSS", Locale.US).format(date);
+        if (type == 0) {
+            return "IMG_" + timeStamp + "." + (TextUtils.isEmpty(ext) ? "jpg" : ext);
+        } else {
+            return  "VID_" + timeStamp + ".mp4";
+        }
     }
 
     public static CharSequence generateSearchName(String name, String name2, String q) {
@@ -2699,7 +2711,10 @@ public class AndroidUtilities {
     }
 
     public static boolean copyFile(InputStream sourceFile, File destFile) throws IOException {
-        OutputStream out = new FileOutputStream(destFile);
+        return copyFile(sourceFile, new FileOutputStream(destFile));
+    }
+
+    public static boolean copyFile(InputStream sourceFile, OutputStream out) throws IOException {
         byte[] buf = new byte[4096];
         int len;
         while ((len = sourceFile.read(buf)) > 0) {

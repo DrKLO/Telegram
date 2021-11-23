@@ -174,7 +174,7 @@ public class PatternCell extends BackupImageView implements DownloadController.F
     @Override
     protected void onDraw(Canvas canvas) {
         float intensity = delegate.getIntensity();
-        imageReceiver.setAlpha(Math.abs(intensity));
+        //imageReceiver.setAlpha(Math.abs(intensity));
         imageReceiver.setBlendMode(null);
 
         int backgroundColor = delegate.getBackgroundColor();

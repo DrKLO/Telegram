@@ -1595,10 +1595,14 @@ public class LoginActivity extends BaseFragment {
             boolean allowCall = true;
             boolean allowCancelCall = true;
             boolean allowReadCallLog = true;
+            boolean allowReadPhoneNumbers = true;
             if (Build.VERSION.SDK_INT >= 23 && simcardAvailable) {
                 allowCall = getParentActivity().checkSelfPermission(Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED;
                 allowCancelCall = getParentActivity().checkSelfPermission(Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED;
                 allowReadCallLog = Build.VERSION.SDK_INT < 28 || getParentActivity().checkSelfPermission(Manifest.permission.READ_CALL_LOG) == PackageManager.PERMISSION_GRANTED;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    allowReadPhoneNumbers = getParentActivity().checkSelfPermission(Manifest.permission.READ_PHONE_NUMBERS) == PackageManager.PERMISSION_GRANTED;
+                }
                 if (checkPermissions) {
                     permissionsItems.clear();
                     if (!allowCall) {
@@ -1609,6 +1613,9 @@ public class LoginActivity extends BaseFragment {
                     }
                     if (!allowReadCallLog) {
                         permissionsItems.add(Manifest.permission.READ_CALL_LOG);
+                    }
+                    if (!allowReadPhoneNumbers) {
+                        permissionsItems.add(Manifest.permission.READ_PHONE_NUMBERS);
                     }
                     boolean ok = true;
                     if (!permissionsItems.isEmpty()) {

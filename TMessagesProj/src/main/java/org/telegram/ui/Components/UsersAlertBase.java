@@ -7,6 +7,7 @@ import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.res.Configuration;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
@@ -46,8 +47,8 @@ public class UsersAlertBase extends BottomSheet {
 
     protected FrameLayout frameLayout;
     protected RecyclerListView listView;
-    protected RecyclerListView.SelectionAdapter searchListViewAdapter;
-    protected RecyclerListView.SelectionAdapter listViewAdapter;
+    protected RecyclerView.Adapter searchListViewAdapter;
+    protected RecyclerView.Adapter listViewAdapter;
     protected Drawable shadowDrawable;
     protected View shadow;
     protected AnimatorSet shadowAnimation;
@@ -63,6 +64,7 @@ public class UsersAlertBase extends BottomSheet {
     private int backgroundColor;
 
     protected boolean needSnapToTop = true;
+    protected boolean isEmptyViewVisible = true;
 
     protected String keyScrollUp = Theme.key_sheet_scrollUp;
     protected String keyListSelector = Theme.key_listSelector;
@@ -118,7 +120,7 @@ public class UsersAlertBase extends BottomSheet {
         listView = new RecyclerListView(context) {
             @Override
             protected boolean allowSelectChildAtPosition(float x, float y) {
-                return y >= AndroidUtilities.dp(58) + (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0);
+                return isAllowSelectChildAtPosition(x, y);
             }
 
             @Override
@@ -133,7 +135,7 @@ public class UsersAlertBase extends BottomSheet {
                 if (getAdapter() == null) {
                     return false;
                 }
-                return getAdapter().getItemCount() <= 2;
+                return isEmptyViewVisible && getAdapter().getItemCount() <= 2;
             }
         };
         listView.setTag(13);
@@ -183,8 +185,18 @@ public class UsersAlertBase extends BottomSheet {
         listView.setAnimateEmptyView(true, 0);
     }
 
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        AndroidUtilities.statusBarHeight = AndroidUtilities.getStatusBarHeight(getContext());
+    }
+
     protected ContainerView createContainerView(Context context) {
         return new ContainerView(context);
+    }
+
+    protected boolean isAllowSelectChildAtPosition(float x, float y) {
+        return y >= AndroidUtilities.dp(58) + (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0);
     }
 
     protected void updateColorKeys() {
@@ -376,7 +388,7 @@ public class UsersAlertBase extends BottomSheet {
     }
 
     @SuppressLint("NewApi")
-    private void updateLayout() {
+    protected void updateLayout() {
         if (listView.getChildCount() <= 0) {
             return;
         }
@@ -396,11 +408,16 @@ public class UsersAlertBase extends BottomSheet {
             runShadowAnimation(true);
         }
         if (scrollOffsetY != newOffset) {
-            listView.setTopGlowOffset(scrollOffsetY = (int) (newOffset));
-            frameLayout.setTranslationY(scrollOffsetY);
-            emptyView.setTranslationY(scrollOffsetY);
-            containerView.invalidate();
+            scrollOffsetY = newOffset;
+            setTranslationY(newOffset);
         }
+    }
+
+    protected void setTranslationY(int newOffset) {
+        listView.setTopGlowOffset(newOffset);
+        frameLayout.setTranslationY(newOffset);
+        emptyView.setTranslationY(newOffset);
+        containerView.invalidate();
     }
 
     private void runShadowAnimation(final boolean show) {

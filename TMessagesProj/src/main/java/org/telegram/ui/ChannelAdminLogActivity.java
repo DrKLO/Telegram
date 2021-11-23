@@ -1215,7 +1215,11 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
             }
             options.add(9);
         } else if (type == 8) {
-            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(selectedObject.messageOwner.media.user_id);
+            long uid = selectedObject.messageOwner.media.user_id;
+            TLRPC.User user = null;
+            if (uid != 0) {
+                user = MessagesController.getInstance(currentAccount).getUser(uid);
+            }
             if (user != null && user.id != UserConfig.getInstance(currentAccount).getClientUserId() && ContactsController.getInstance(currentAccount).contactsDict.get(user.id) == null) {
                 items.add(LocaleController.getString("AddContactTitle", R.string.AddContactTitle));
                 options.add(15);

@@ -104,9 +104,6 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
             SharedPreferences preferences = MessagesController.getGlobalMainSettings();
             showArchiveHint = preferences.getBoolean("archivehint", true);
             preferences.edit().putBoolean("archivehint", false).commit();
-            if (showArchiveHint) {
-                archiveHintCell = new ArchiveHintCell(context);
-            }
         }
         if (folder == 0) {
             this.preloader = new DialogsPreloader();
@@ -428,11 +425,8 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
                 break;
             }
             case 9:
+                archiveHintCell = new ArchiveHintCell(mContext);
                 view = archiveHintCell;
-                if (archiveHintCell.getParent() != null) {
-                    ViewGroup parent = (ViewGroup) archiveHintCell.getParent();
-                    parent.removeView(archiveHintCell);
-                }
                 break;
             case 10: {
                 view = new LastEmptyView(mContext);

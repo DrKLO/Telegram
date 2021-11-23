@@ -1111,6 +1111,10 @@ public class BottomSheet extends Dialog {
         onHideListener = listener;
     }
 
+    protected int getTargetOpenTranslationY() {
+        return 0;
+    }
+
     private void startOpenAnimation() {
         if (dismissed) {
             return;

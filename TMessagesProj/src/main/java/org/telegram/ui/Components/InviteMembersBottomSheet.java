@@ -124,8 +124,8 @@ public class InviteMembersBottomSheet extends UsersAlertBase implements Notifica
         void didSelectDialogs(ArrayList<Long> dids);
     }
 
-    public InviteMembersBottomSheet(Context context, int account, LongSparseArray<TLObject> ignoreUsers, long chatId, BaseFragment parentFragment,  Theme.ResourcesProvider resourcesProvider) {
-        super(context, false, account, null);
+    public InviteMembersBottomSheet(Context context, int account, LongSparseArray<TLObject> ignoreUsers, long chatId, BaseFragment parentFragment, Theme.ResourcesProvider resourcesProvider) {
+        super(context, false, account, resourcesProvider);
         this.ignoreUsers = ignoreUsers;
         needSnapToTop = false;
         this.parentFragment = parentFragment;

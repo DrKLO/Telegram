@@ -146,7 +146,7 @@ public class CountrySelectActivity extends BaseFragment {
         listView.setSectionsType(1);
         listView.setEmptyView(emptyView);
         listView.setVerticalScrollBarEnabled(false);
-        listView.setFastScrollEnabled();
+        listView.setFastScrollEnabled(RecyclerListView.FastScroll.LETTER_TYPE);
         listView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
         listView.setAdapter(listViewAdapter);
         listView.setVerticalScrollbarPosition(LocaleController.isRTL ? RecyclerListView.SCROLLBAR_POSITION_LEFT : RecyclerListView.SCROLLBAR_POSITION_RIGHT);
@@ -358,8 +358,9 @@ public class CountrySelectActivity extends BaseFragment {
         }
 
         @Override
-        public int getPositionForScrollProgress(float progress) {
-            return (int) (getItemCount() * progress);
+        public void getPositionForScrollProgress(RecyclerListView listView, float progress, int[] position) {
+            position[0] = (int) (getItemCount() * progress);
+            position[1] = 0;
         }
     }
 

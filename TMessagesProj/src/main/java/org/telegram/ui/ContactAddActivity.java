@@ -81,7 +81,10 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
         phone = getArguments().getString("phone");
         addContact = getArguments().getBoolean("addContact", false);
         needAddException = MessagesController.getNotificationsSettings(currentAccount).getBoolean("dialog_bar_exception" + user_id, false);
-        TLRPC.User user = getMessagesController().getUser(user_id);
+        TLRPC.User user = null;
+        if (user_id != 0) {
+            user = getMessagesController().getUser(user_id);
+        }
         return user != null && super.onFragmentCreate();
     }
 

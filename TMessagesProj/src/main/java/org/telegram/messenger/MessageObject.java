@@ -124,6 +124,7 @@ public class MessageObject {
     public long loadedFileSize;
 
     public byte[] sponsoredId;
+    public int sponsoredChannelPost;
     public String botStartParam;
 
     public boolean animateComments;
@@ -185,6 +186,9 @@ public class MessageObject {
     public ArrayList<String> highlightedWords;
     public String messageTrimmedToHighlight;
     public int parentWidth;
+
+    public ImageLocation mediaThumb;
+    public ImageLocation mediaSmallThumb;
 
     static final String[] excludeWords = new String[] {
             " vs. ",
@@ -1832,6 +1836,11 @@ public class MessageObject {
                 }
                 messageText = replaceWithLink(LocaleController.formatString("ActionTTLChanged", R.string.ActionTTLChanged, time), "un1", fromUser);
             }
+        } else if (event.action instanceof TLRPC.TL_channelAdminLogEventActionParticipantJoinByRequest) {
+            TLRPC.TL_channelAdminLogEventActionParticipantJoinByRequest action = (TLRPC.TL_channelAdminLogEventActionParticipantJoinByRequest) event.action;
+            messageText = replaceWithLink(LocaleController.getString("JoinedViaInviteLinkApproved", R.string.JoinedViaInviteLinkApproved), "un1", fromUser);
+            messageText = replaceWithLink(messageText, "un2", action.invite);
+            messageText = replaceWithLink(messageText, "un3", MessagesController.getInstance(currentAccount).getUser(action.approved_by));
         } else {
             messageText = "unsupported " + event.action;
         }
@@ -2960,6 +2969,15 @@ public class MessageObject {
                         messageText = isUserSelf
                                 ? LocaleController.formatString("ChatThemeChangedYou", R.string.ChatThemeChangedYou, emoticon)
                                 : LocaleController.formatString("ChatThemeChangedTo", R.string.ChatThemeChangedTo, userName, emoticon);
+                    }
+                } else if (messageOwner.action instanceof TLRPC.TL_messageActionChatJoinedByRequest) {
+                    if (UserObject.isUserSelf(fromUser)) {
+                        boolean isChannel = ChatObject.isChannelAndNotMegaGroup(messageOwner.peer_id.channel_id, currentAccount);
+                        messageText = isChannel
+                                ? LocaleController.getString("RequestToJoinChannelApproved", R.string.RequestToJoinChannelApproved)
+                                : LocaleController.getString("RequestToJoinGroupApproved", R.string.RequestToJoinGroupApproved);
+                    } else {
+                        messageText = replaceWithLink(LocaleController.getString("UserAcceptedToGroupAction", R.string.UserAcceptedToGroupAction), "un1", fromObject);
                     }
                 }
             }
@@ -4280,13 +4298,13 @@ public class MessageObject {
         if (useManualParse) {
             addLinks(isOutOwner(), messageText, true, true);
         } else {
-            if (messageText instanceof Spannable && messageText.length() < 1000) {
-                try {
-                    AndroidUtilities.addLinks((Spannable) messageText, Linkify.PHONE_NUMBERS);
-                } catch (Throwable e) {
-                    FileLog.e(e);
-                }
-            }
+//            if (messageText instanceof Spannable && messageText.length() < 1000) {
+//                try {
+//                    AndroidUtilities.addLinks((Spannable) messageText, Linkify.PHONE_NUMBERS);
+//                } catch (Throwable e) {
+//                    FileLog.e(e);
+//                }
+//            }
         }
         if (isYouTubeVideo() || replyMessageObject != null && replyMessageObject.isYouTubeVideo()) {
             addUrlsByPattern(isOutOwner(), messageText, false, 3, Integer.MAX_VALUE, false);
@@ -5776,6 +5794,9 @@ public class MessageObject {
         if (message == null) {
             return false;
         }
+        if (ChatObject.isChannelAndNotMegaGroup(chat) && message.action instanceof TLRPC.TL_messageActionChatJoinedByRequest) {
+            return false;
+        }
         if (message.id < 0) {
             return true;
         }
@@ -6116,6 +6137,21 @@ public class MessageObject {
                 }
                 messageTrimmedToHighlight = str;
             }
+        }
+    }
+
+    public void createMediaThumbs() {
+        if (isVideo()) {
+            TLRPC.Document document = getDocument();
+            TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 50);
+            TLRPC.PhotoSize qualityThumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 320);
+            mediaThumb = ImageLocation.getForDocument(qualityThumb, document);
+            mediaSmallThumb = ImageLocation.getForDocument(thumb, document);
+        } else if (messageOwner.media instanceof TLRPC.TL_messageMediaPhoto && messageOwner.media.photo != null && !photoThumbs.isEmpty()) {
+            TLRPC.PhotoSize currentPhotoObjectThumb = FileLoader.getClosestPhotoSizeWithSize(photoThumbs, 50);
+            TLRPC.PhotoSize currentPhotoObject = FileLoader.getClosestPhotoSizeWithSize(photoThumbs, 320, false, currentPhotoObjectThumb, false);
+            mediaThumb = ImageLocation.getForObject(currentPhotoObject, photoThumbsObject);
+            mediaSmallThumb = ImageLocation.getForObject(currentPhotoObjectThumb, photoThumbsObject);
         }
     }
 

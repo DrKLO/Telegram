@@ -596,7 +596,7 @@ public class CacheControlActivity extends BaseFragment {
                             database.executeFast("DELETE FROM messages_holes WHERE uid = " + did).stepThis().dispose();
                             database.executeFast("DELETE FROM bot_keyboard WHERE uid = " + did).stepThis().dispose();
                             database.executeFast("DELETE FROM media_counts_v2 WHERE uid = " + did).stepThis().dispose();
-                            database.executeFast("DELETE FROM media_v3 WHERE uid = " + did).stepThis().dispose();
+                            database.executeFast("DELETE FROM media_v4 WHERE uid = " + did).stepThis().dispose();
                             database.executeFast("DELETE FROM media_holes_v2 WHERE uid = " + did).stepThis().dispose();
                             MediaDataController.getInstance(currentAccount).clearBotKeyboard(did, null);
                             if (messageId != -1) {

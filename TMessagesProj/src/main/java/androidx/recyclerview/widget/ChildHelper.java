@@ -37,7 +37,7 @@ import java.util.List;
  */
 public class ChildHelper {
 
-    private static final boolean DEBUG = BuildVars.DEBUG_VERSION;
+    private static final boolean DEBUG = false;//BuildVars.DEBUG_VERSION;
 
     private static final String TAG = "ChildrenHelper";
 
