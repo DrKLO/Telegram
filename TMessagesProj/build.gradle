@@ -86,6 +86,7 @@ android {
             storePassword RELEASE_STORE_PASSWORD
             keyAlias RELEASE_KEY_ALIAS
             keyPassword RELEASE_KEY_PASSWORD
+            enableV3Signing = true
         }
     }
 
