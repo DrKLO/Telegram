@@ -5641,6 +5641,8 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 actionBarLayout.rebuildAllFragmentViews(last, last);
             }
         }
-        drawerLayoutAdapter.notifyDataSetChanged();
+        if (drawerLayoutAdapter != null) {
+            drawerLayoutAdapter.notifyDataSetChanged();
+        }
     }
 }
