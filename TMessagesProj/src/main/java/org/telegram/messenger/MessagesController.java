@@ -3445,7 +3445,11 @@ public class MessagesController extends BaseController implements NotificationCe
         }
         int reqId = getConnectionsManager().sendRequest(req, (response, error) -> {
             if (error == null) {
-                TLRPC.UserFull userFull = (TLRPC.UserFull) response;
+                TLRPC.TL_users_userFull res = (TLRPC.TL_users_userFull) response;
+                TLRPC.UserFull userFull = res.full_user;
+                putUsers(res.users, false);
+                putChats(res.chats, false);
+                res.full_user.user = getUser(res.full_user.id);
                 getMessagesStorage().updateUserInfo(userFull, false);
 
                 AndroidUtilities.runOnUIThread(() -> {
@@ -3736,7 +3740,12 @@ public class MessagesController extends BaseController implements NotificationCe
         getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             loadingPeerSettings.remove(dialogId);
             if (response != null) {
-                savePeerSettings(dialogId, (TLRPC.TL_peerSettings) response, false);
+                TLRPC.TL_messages_peerSettings res = (TLRPC.TL_messages_peerSettings) response;
+                TLRPC.TL_peerSettings settings = res.settings;
+                putUsers(res.users, false);
+                putChats(res.chats, false);
+
+                savePeerSettings(dialogId,  settings, false);
             }
         }));
     }
@@ -4688,9 +4697,9 @@ public class MessagesController extends BaseController implements NotificationCe
         if (offset == 0) {
             getMessagesStorage().deleteUserChatHistory(-chat.id, user.id);
         }
-        TLRPC.TL_channels_deleteUserHistory req = new TLRPC.TL_channels_deleteUserHistory();
+        TLRPC.TL_channels_deleteParticipantHistory req = new TLRPC.TL_channels_deleteParticipantHistory();
         req.channel = getInputChannel(chat);
-        req.user_id = getInputUser(user);
+        req.participant = getInputPeer(user);
         getConnectionsManager().sendRequest(req, (response, error) -> {
             if (error == null) {
                 TLRPC.TL_messages_affectedHistory res = (TLRPC.TL_messages_affectedHistory) response;
