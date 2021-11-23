@@ -6240,7 +6240,7 @@ public class TLRPC {
     }
 
     public static class TL_peerSettings extends TLObject {
-        public static int constructor = 0xa8228d2e;
+        public static int constructor = 0xa518110d;
 
         public int flags;
         public boolean report_spam;
@@ -6251,8 +6251,9 @@ public class TLRPC {
         public boolean report_geo;
         public boolean autoarchived;
         public boolean invite_members;
+        public boolean request_chat_broadcast;
         public int geo_distance;
-        public Peer request_chat;
+        public String request_chat_title;
         public int request_chat_date;
 
         public static TL_peerSettings TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
@@ -6278,11 +6279,12 @@ public class TLRPC {
             report_geo = (flags & 32) != 0;
             autoarchived = (flags & 128) != 0;
             invite_members = (flags & 256) != 0;
+            request_chat_broadcast = (flags & 1024) != 0;
             if ((flags & 64) != 0) {
                 geo_distance = stream.readInt32(exception);
             }
             if ((flags & 512) != 0) {
-                request_chat = Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
+                request_chat_title = stream.readString(exception);
             }
             if ((flags & 512) != 0) {
                 request_chat_date = stream.readInt32(exception);
@@ -6299,12 +6301,13 @@ public class TLRPC {
             flags = report_geo ? (flags | 32) : (flags &~ 32);
             flags = autoarchived ? (flags | 128) : (flags &~ 128);
             flags = invite_members ? (flags | 256) : (flags &~ 256);
+            flags = request_chat_broadcast ? (flags | 1024) : (flags &~ 1024);
             stream.writeInt32(flags);
             if ((flags & 64) != 0) {
                 stream.writeInt32(geo_distance);
             }
             if ((flags & 512) != 0) {
-                request_chat.serializeToStream(stream);
+                stream.writeString(request_chat_title);
             }
             if ((flags & 512) != 0) {
                 stream.writeInt32(request_chat_date);
@@ -52268,6 +52271,7 @@ public class TLRPC {
         public TL_messageReactions reactions;
         public ArrayList<TL_restrictionReason> restriction_reason = new ArrayList<>();
         public int ttl_period;
+        public boolean noforwards;
         public int send_state = 0; //custom
         public int fwd_msg_id = 0; //custom
         public String attachPath = ""; //custom
@@ -53077,6 +53081,7 @@ public class TLRPC {
             legacy = (flags & 524288) != 0;
             edit_hide = (flags & 2097152) != 0;
             pinned = (flags & 16777216) != 0;
+            noforwards = (flags & 67108864) != 0;
             id = stream.readInt32(exception);
             if ((flags & 256) != 0) {
                 from_id = Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
@@ -53173,6 +53178,7 @@ public class TLRPC {
             flags = legacy ? (flags | 524288) : (flags &~ 524288);
             flags = edit_hide ? (flags | 2097152) : (flags &~ 2097152);
             flags = pinned ? (flags | 16777216) : (flags &~ 16777216);
+            flags = noforwards ? (flags | 67108864) : (flags &~ 67108864);
             stream.writeInt32(flags);
             stream.writeInt32(id);
             if ((flags & 256) != 0) {
