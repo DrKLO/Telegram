@@ -459,11 +459,6 @@
         <meta-data android:name="com.sec.android.multiwindow.MINIMUM_SIZE_W" android:value="632dp" />
         <meta-data android:name="com.sec.android.multiwindow.MINIMUM_SIZE_H" android:value="598dp" />
 
-        <meta-data android:name="com.google.android.gms.wallet.api.enabled" android:value="true" />
-
-        <meta-data android:name="com.google.android.gms.car.notification.SmallIcon" android:resource="@drawable/ic_player" />
-        <meta-data android:name="com.google.android.gms.car.application" android:resource="@xml/automotive_app_desc" />
-
         <meta-data android:name="android.max_aspect" android:value="2.5" />
 
         <meta-data android:name="com.google.android.actions" android:resource="@xml/actions" />

@@ -30,8 +30,6 @@
         android:requestLegacyExternalStorage="true"
         tools:replace="android:supportsRtl">
 
-        <meta-data android:name="com.google.android.maps.v2.API_KEY" android:value="AIzaSyA-t0jLPjUt2FxrA8VPK2EiYHcYcboIR6k" />
-
         <service
             android:name=".GcmPushListenerService">
             <intent-filter>
