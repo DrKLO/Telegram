@@ -18,7 +18,7 @@
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
-        android:label="@string/AppNameBeta"
+        android:label="@string/catox_AppNameBeta"
         android:theme="@style/Theme.TMessages.Start"
         android:hardwareAccelerated="@bool/useHardwareAcceleration"
         android:largeHeap="true"
