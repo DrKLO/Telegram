@@ -302,6 +302,7 @@ android {
             sourceSets.standalone {
                 manifest.srcFile 'config/release/AndroidManifest_standalone.xml'
             }
+            minSdkVersion 23
             ext {
                 abiVersionCode = 9
             }
