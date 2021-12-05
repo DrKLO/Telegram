@@ -15,8 +15,6 @@ import android.view.MotionEvent;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 
-import com.airbnb.lottie.LottieDrawable;
-
 public abstract class BaseCell extends ViewGroup {
 
     private final class CheckForTap implements Runnable {
@@ -36,10 +34,11 @@ public abstract class BaseCell extends ViewGroup {
             if (checkingForLongPress && getParent() != null && currentPressCount == pressCount) {
                 checkingForLongPress = false;
                 performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
-                onLongPress();
-                MotionEvent event = MotionEvent.obtain(0, 0, MotionEvent.ACTION_CANCEL, 0, 0, 0);
-                onTouchEvent(event);
-                event.recycle();
+                if (onLongPress()) {
+                    MotionEvent event = MotionEvent.obtain(0, 0, MotionEvent.ACTION_CANCEL, 0, 0, 0);
+                    onTouchEvent(event);
+                    event.recycle();
+                }
             }
         }
     }
@@ -69,6 +68,12 @@ public abstract class BaseCell extends ViewGroup {
         }
     }
 
+    public static void setDrawableBounds(Drawable drawable, float x, float y, int w, int h) {
+        if (drawable != null) {
+            drawable.setBounds((int) x, (int) y, (int) x + w, (int) y + h);
+        }
+    }
+
     protected void startCheckLongPress() {
         if (checkingForLongPress) {
             return;
@@ -95,7 +100,7 @@ public abstract class BaseCell extends ViewGroup {
         return false;
     }
 
-    protected void onLongPress() {
-
+    protected boolean onLongPress() {
+        return true;
     }
 }

@@ -16,16 +16,19 @@ import android.content.Context;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.View;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.PhotoEditorSeekBar;
 
 public class PhotoEditToolCell extends FrameLayout {
 
+    private final Theme.ResourcesProvider resourcesProvider;
     private TextView nameTextView;
     private TextView valueTextView;
     private PhotoEditorSeekBar seekBar;
@@ -36,9 +39,9 @@ public class PhotoEditToolCell extends FrameLayout {
             valueTextView.setTag(null);
             valueAnimation = new AnimatorSet();
             valueAnimation.playTogether(
-                    ObjectAnimator.ofFloat(valueTextView, "alpha", 0.0f),
-                    ObjectAnimator.ofFloat(nameTextView, "alpha", 1.0f));
-            valueAnimation.setDuration(180);
+                    ObjectAnimator.ofFloat(valueTextView, View.ALPHA, 0.0f),
+                    ObjectAnimator.ofFloat(nameTextView, View.ALPHA, 1.0f));
+            valueAnimation.setDuration(250);
             valueAnimation.setInterpolator(new DecelerateInterpolator());
             valueAnimation.addListener(new AnimatorListenerAdapter() {
                 @Override
@@ -52,8 +55,9 @@ public class PhotoEditToolCell extends FrameLayout {
         }
     };
 
-    public PhotoEditToolCell(Context context) {
+    public PhotoEditToolCell(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
 
         nameTextView = new TextView(context);
         nameTextView.setGravity(Gravity.RIGHT);
@@ -65,7 +69,7 @@ public class PhotoEditToolCell extends FrameLayout {
         addView(nameTextView, LayoutHelper.createFrame(80, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 0, 0, 0, 0));
 
         valueTextView = new TextView(context);
-        valueTextView.setTextColor(0xff6cc3ff);
+        valueTextView.setTextColor(getThemedColor(Theme.key_dialogFloatingButton));
         valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
         valueTextView.setGravity(Gravity.RIGHT);
         valueTextView.setSingleLine(true);
@@ -76,37 +80,34 @@ public class PhotoEditToolCell extends FrameLayout {
     }
 
     public void setSeekBarDelegate(final PhotoEditorSeekBar.PhotoEditorSeekBarDelegate photoEditorSeekBarDelegate) {
-        seekBar.setDelegate(new PhotoEditorSeekBar.PhotoEditorSeekBarDelegate() {
-            @Override
-            public void onProgressChanged(int i, int progress) {
-                photoEditorSeekBarDelegate.onProgressChanged(i, progress);
-                if (progress > 0) {
-                    valueTextView.setText("+" + progress);
-                } else {
-                    valueTextView.setText("" + progress);
+        seekBar.setDelegate((i, progress) -> {
+            photoEditorSeekBarDelegate.onProgressChanged(i, progress);
+            if (progress > 0) {
+                valueTextView.setText("+" + progress);
+            } else {
+                valueTextView.setText("" + progress);
+            }
+            if (valueTextView.getTag() == null) {
+                if (valueAnimation != null) {
+                    valueAnimation.cancel();
                 }
-                if (valueTextView.getTag() == null) {
-                    if (valueAnimation != null) {
-                        valueAnimation.cancel();
+                valueTextView.setTag(1);
+                valueAnimation = new AnimatorSet();
+                valueAnimation.playTogether(
+                        ObjectAnimator.ofFloat(valueTextView, View.ALPHA, 1.0f),
+                        ObjectAnimator.ofFloat(nameTextView, View.ALPHA, 0.0f));
+                valueAnimation.setDuration(250);
+                valueAnimation.setInterpolator(new DecelerateInterpolator());
+                valueAnimation.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        AndroidUtilities.runOnUIThread(hideValueRunnable, 1000);
                     }
-                    valueTextView.setTag(1);
-                    valueAnimation = new AnimatorSet();
-                    valueAnimation.playTogether(
-                            ObjectAnimator.ofFloat(valueTextView, "alpha", 1.0f),
-                            ObjectAnimator.ofFloat(nameTextView, "alpha", 0.0f));
-                    valueAnimation.setDuration(180);
-                    valueAnimation.setInterpolator(new DecelerateInterpolator());
-                    valueAnimation.addListener(new AnimatorListenerAdapter() {
-                        @Override
-                        public void onAnimationEnd(Animator animation) {
-                            AndroidUtilities.runOnUIThread(hideValueRunnable, 1000);
-                        }
-                    });
-                    valueAnimation.start();
-                } else {
-                    AndroidUtilities.cancelRunOnUIThread(hideValueRunnable);
-                    AndroidUtilities.runOnUIThread(hideValueRunnable, 1000);
-                }
+                });
+                valueAnimation.start();
+            } else {
+                AndroidUtilities.cancelRunOnUIThread(hideValueRunnable);
+                AndroidUtilities.runOnUIThread(hideValueRunnable, 1000);
             }
         });
     }
@@ -139,5 +140,10 @@ public class PhotoEditToolCell extends FrameLayout {
         nameTextView.setAlpha(1.0f);
         seekBar.setMinMax(min, max);
         seekBar.setProgress((int) value, false);
+    }
+
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
     }
 }

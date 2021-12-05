@@ -15,6 +15,8 @@
  */
 package com.google.android.exoplayer2.audio;
 
+import static com.google.android.exoplayer2.util.Util.castNonNull;
+
 import android.os.Handler;
 import android.os.SystemClock;
 import androidx.annotation.Nullable;
@@ -105,8 +107,8 @@ public interface AudioRendererEventListener {
      * Invokes {@link AudioRendererEventListener#onAudioEnabled(DecoderCounters)}.
      */
     public void enabled(final DecoderCounters decoderCounters) {
-      if (listener != null) {
-        handler.post(() -> listener.onAudioEnabled(decoderCounters));
+      if (handler != null) {
+        handler.post(() -> castNonNull(listener).onAudioEnabled(decoderCounters));
       }
     }
 
@@ -115,11 +117,12 @@ public interface AudioRendererEventListener {
      */
     public void decoderInitialized(final String decoderName,
         final long initializedTimestampMs, final long initializationDurationMs) {
-      if (listener != null) {
+      if (handler != null) {
         handler.post(
             () ->
-                listener.onAudioDecoderInitialized(
-                    decoderName, initializedTimestampMs, initializationDurationMs));
+                castNonNull(listener)
+                    .onAudioDecoderInitialized(
+                        decoderName, initializedTimestampMs, initializationDurationMs));
       }
     }
 
@@ -127,8 +130,8 @@ public interface AudioRendererEventListener {
      * Invokes {@link AudioRendererEventListener#onAudioInputFormatChanged(Format)}.
      */
     public void inputFormatChanged(final Format format) {
-      if (listener != null) {
-        handler.post(() -> listener.onAudioInputFormatChanged(format));
+      if (handler != null) {
+        handler.post(() -> castNonNull(listener).onAudioInputFormatChanged(format));
       }
     }
 
@@ -137,9 +140,11 @@ public interface AudioRendererEventListener {
      */
     public void audioTrackUnderrun(final int bufferSize, final long bufferSizeMs,
         final long elapsedSinceLastFeedMs) {
-      if (listener != null) {
+      if (handler != null) {
         handler.post(
-            () -> listener.onAudioSinkUnderrun(bufferSize, bufferSizeMs, elapsedSinceLastFeedMs));
+            () ->
+                castNonNull(listener)
+                    .onAudioSinkUnderrun(bufferSize, bufferSizeMs, elapsedSinceLastFeedMs));
       }
     }
 
@@ -148,11 +153,11 @@ public interface AudioRendererEventListener {
      */
     public void disabled(final DecoderCounters counters) {
       counters.ensureUpdated();
-      if (listener != null) {
+      if (handler != null) {
         handler.post(
             () -> {
               counters.ensureUpdated();
-              listener.onAudioDisabled(counters);
+              castNonNull(listener).onAudioDisabled(counters);
             });
       }
     }
@@ -161,11 +166,9 @@ public interface AudioRendererEventListener {
      * Invokes {@link AudioRendererEventListener#onAudioSessionId(int)}.
      */
     public void audioSessionId(final int audioSessionId) {
-      if (listener != null) {
-        handler.post(() -> listener.onAudioSessionId(audioSessionId));
+      if (handler != null) {
+        handler.post(() -> castNonNull(listener).onAudioSessionId(audioSessionId));
       }
     }
-
   }
-
 }

@@ -24,20 +24,7 @@
 #include "../fipsmodule/rand/internal.h"
 
 void CRYPTO_sysrand(uint8_t *out, size_t requested) {
-  while (requested > 0) {
-    size_t output_bytes_this_pass = ZX_CPRNG_DRAW_MAX_LEN;
-    if (requested < output_bytes_this_pass) {
-      output_bytes_this_pass = requested;
-    }
-    size_t bytes_drawn;
-    zx_status_t status =
-        zx_cprng_draw(out, output_bytes_this_pass, &bytes_drawn);
-    if (status != ZX_OK) {
-      abort();
-    }
-    requested -= bytes_drawn;
-    out += bytes_drawn;
-  }
+  zx_cprng_draw(out, requested);
 }
 
 #endif  // OPENSSL_FUCHSIA && !BORINGSSL_UNSAFE_DETERMINISTIC_MODE

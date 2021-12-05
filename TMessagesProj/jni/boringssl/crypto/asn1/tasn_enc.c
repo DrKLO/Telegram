@@ -192,7 +192,7 @@ int ASN1_item_ex_i2d(ASN1_VALUE **pval, unsigned char **out,
         /* Use indefinite length constructed if requested */
         if (aclass & ASN1_TFLG_NDEF)
             ndef = 2;
-        /* fall through */
+        OPENSSL_FALLTHROUGH;
 
     case ASN1_ITYPE_SEQUENCE:
         i = asn1_enc_restore(&seqcontlen, out, pval, it);
@@ -583,6 +583,8 @@ int asn1_ex_i2c(ASN1_VALUE **pval, unsigned char *cout, int *putype,
         otmp = (ASN1_OBJECT *)*pval;
         cont = otmp->data;
         len = otmp->length;
+        if (cont == NULL || len == 0)
+            return -1;
         break;
 
     case V_ASN1_NULL:

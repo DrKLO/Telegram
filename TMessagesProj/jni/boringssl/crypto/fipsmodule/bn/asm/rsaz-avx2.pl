@@ -1,61 +1,30 @@
-#!/usr/bin/env perl
-
-##############################################################################
-#                                                                            #
-#  Copyright (c) 2012, Intel Corporation                                     #
-#                                                                            #
-#  All rights reserved.                                                      #
-#                                                                            #
-#  Redistribution and use in source and binary forms, with or without        #
-#  modification, are permitted provided that the following conditions are    #
-#  met:                                                                      #
-#                                                                            #
-#  *  Redistributions of source code must retain the above copyright         #
-#     notice, this list of conditions and the following disclaimer.          #
-#                                                                            #
-#  *  Redistributions in binary form must reproduce the above copyright      #
-#     notice, this list of conditions and the following disclaimer in the    #
-#     documentation and/or other materials provided with the                 #
-#     distribution.                                                          #
-#                                                                            #
-#  *  Neither the name of the Intel Corporation nor the names of its         #
-#     contributors may be used to endorse or promote products derived from   #
-#     this software without specific prior written permission.               #
-#                                                                            #
-#                                                                            #
-#  THIS SOFTWARE IS PROVIDED BY INTEL CORPORATION ""AS IS"" AND ANY          #
-#  EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE         #
-#  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR        #
-#  PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL INTEL CORPORATION OR            #
-#  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,     #
-#  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,       #
-#  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR        #
-#  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF    #
-#  LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING      #
-#  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS        #
-#  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.              #
-#                                                                            #
-##############################################################################
-# Developers and authors:                                                    #
-# Shay Gueron (1, 2), and Vlad Krasnov (1)                                   #
-# (1) Intel Corporation, Israel Development Center, Haifa, Israel            #
-# (2) University of Haifa, Israel                                            #
-##############################################################################
-# Reference:                                                                 #
-# [1] S. Gueron, V. Krasnov: "Software Implementation of Modular             #
-#     Exponentiation,  Using Advanced Vector Instructions Architectures",    #
-#     F. Ozbudak and F. Rodriguez-Henriquez (Eds.): WAIFI 2012, LNCS 7369,   #
-#     pp. 119?135, 2012. Springer-Verlag Berlin Heidelberg 2012              #
-# [2] S. Gueron: "Efficient Software Implementations of Modular              #
-#     Exponentiation", Journal of Cryptographic Engineering 2:31-43 (2012).  #
-# [3] S. Gueron, V. Krasnov: "Speeding up Big-numbers Squaring",IEEE         #
-#     Proceedings of 9th International Conference on Information Technology: #
-#     New Generations (ITNG 2012), pp.821-823 (2012)                         #
-# [4] S. Gueron, V. Krasnov: "[PATCH] Efficient and side channel analysis    #
-#     resistant 1024-bit modular exponentiation, for optimizing RSA2048      #
-#     on AVX2 capable x86_64 platforms",                                     #
-#     http://rt.openssl.org/Ticket/Display.html?id=2850&user=guest&pass=guest#
-##############################################################################
+#! /usr/bin/env perl
+# Copyright 2013-2016 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright (c) 2012, Intel Corporation. All Rights Reserved.
+#
+# Licensed under the OpenSSL license (the "License").  You may not use
+# this file except in compliance with the License.  You can obtain a copy
+# in the file LICENSE in the source distribution or at
+# https://www.openssl.org/source/license.html
+#
+# Originally written by Shay Gueron (1, 2), and Vlad Krasnov (1)
+# (1) Intel Corporation, Israel Development Center, Haifa, Israel
+# (2) University of Haifa, Israel
+#
+# References:
+# [1] S. Gueron, V. Krasnov: "Software Implementation of Modular
+#     Exponentiation,  Using Advanced Vector Instructions Architectures",
+#     F. Ozbudak and F. Rodriguez-Henriquez (Eds.): WAIFI 2012, LNCS 7369,
+#     pp. 119?135, 2012. Springer-Verlag Berlin Heidelberg 2012
+# [2] S. Gueron: "Efficient Software Implementations of Modular
+#     Exponentiation", Journal of Cryptographic Engineering 2:31-43 (2012).
+# [3] S. Gueron, V. Krasnov: "Speeding up Big-numbers Squaring",IEEE
+#     Proceedings of 9th International Conference on Information Technology:
+#     New Generations (ITNG 2012), pp.821-823 (2012)
+# [4] S. Gueron, V. Krasnov: "[PATCH] Efficient and side channel analysis
+#     resistant 1024-bit modular exponentiation, for optimizing RSA2048
+#     on AVX2 capable x86_64 platforms",
+#     http://rt.openssl.org/Ticket/Display.html?id=2850&user=guest&pass=guest
 #
 # +13% improvement over original submission by <appro@openssl.org>
 #
@@ -82,10 +51,7 @@ die "can't locate x86_64-xlate.pl";
 # In upstream, this is controlled by shelling out to the compiler to check
 # versions, but BoringSSL is intended to be used with pre-generated perlasm
 # output, so this isn't useful anyway.
-#
-# TODO(davidben): Set $addx to one once build problems are resolved.
 $avx = 2;
-$addx = 0;
 
 open OUT,"| \"$^X\" \"$xlate\" $flavour \"$output\"";
 *STDOUT = *OUT;
@@ -1507,6 +1473,7 @@ $code.=<<___;
 .type	rsaz_1024_red2norm_avx2,\@abi-omnipotent
 .align	32
 rsaz_1024_red2norm_avx2:
+.cfi_startproc
 	sub	\$-128,$inp	# size optimization
 	xor	%rax,%rax
 ___
@@ -1540,12 +1507,14 @@ ___
 }
 $code.=<<___;
 	ret
+.cfi_endproc
 .size	rsaz_1024_red2norm_avx2,.-rsaz_1024_red2norm_avx2
 
 .globl	rsaz_1024_norm2red_avx2
 .type	rsaz_1024_norm2red_avx2,\@abi-omnipotent
 .align	32
 rsaz_1024_norm2red_avx2:
+.cfi_startproc
 	sub	\$-128,$out	# size optimization
 	mov	($inp),@T[0]
 	mov	\$0x1fffffff,%eax
@@ -1577,6 +1546,7 @@ $code.=<<___;
 	mov	@T[0],`8*($j+2)-128`($out)
 	mov	@T[0],`8*($j+3)-128`($out)
 	ret
+.cfi_endproc
 .size	rsaz_1024_norm2red_avx2,.-rsaz_1024_norm2red_avx2
 ___
 }
@@ -1588,6 +1558,7 @@ $code.=<<___;
 .type	rsaz_1024_scatter5_avx2,\@abi-omnipotent
 .align	32
 rsaz_1024_scatter5_avx2:
+.cfi_startproc
 	vzeroupper
 	vmovdqu	.Lscatter_permd(%rip),%ymm5
 	shl	\$4,$power
@@ -1607,6 +1578,7 @@ rsaz_1024_scatter5_avx2:
 
 	vzeroupper
 	ret
+.cfi_endproc
 .size	rsaz_1024_scatter5_avx2,.-rsaz_1024_scatter5_avx2
 
 .globl	rsaz_1024_gather5_avx2
@@ -1766,27 +1738,6 @@ ___
 }
 
 $code.=<<___;
-.extern	OPENSSL_ia32cap_P
-.globl	rsaz_avx2_eligible
-.type	rsaz_avx2_eligible,\@abi-omnipotent
-.align	32
-rsaz_avx2_eligible:
-	leaq	OPENSSL_ia32cap_P(%rip),%rax
-	mov	8(%rax),%eax
-___
-$code.=<<___	if ($addx);
-	mov	\$`1<<8|1<<19`,%ecx
-	mov	\$0,%edx
-	and	%eax,%ecx
-	cmp	\$`1<<8|1<<19`,%ecx	# check for BMI2+AD*X
-	cmove	%edx,%eax
-___
-$code.=<<___;
-	and	\$`1<<5`,%eax
-	shr	\$5,%eax
-	ret
-.size	rsaz_avx2_eligible,.-rsaz_avx2_eligible
-
 .align	64
 .Land_mask:
 	.quad	0x1fffffff,0x1fffffff,0x1fffffff,0x1fffffff
@@ -1989,4 +1940,4 @@ rsaz_1024_gather5_avx2:
 ___
 }}}
 
-close STDOUT;
+close STDOUT or die "error closing STDOUT";

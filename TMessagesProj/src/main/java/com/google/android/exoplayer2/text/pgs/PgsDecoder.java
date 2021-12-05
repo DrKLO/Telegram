@@ -16,6 +16,7 @@
 package com.google.android.exoplayer2.text.pgs;
 
 import android.graphics.Bitmap;
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.text.Cue;
 import com.google.android.exoplayer2.text.SimpleSubtitleDecoder;
 import com.google.android.exoplayer2.text.Subtitle;
@@ -41,7 +42,7 @@ public final class PgsDecoder extends SimpleSubtitleDecoder {
   private final ParsableByteArray inflatedBuffer;
   private final CueBuilder cueBuilder;
 
-  private Inflater inflater;
+  @Nullable private Inflater inflater;
 
   public PgsDecoder() {
     super("PgsDecoder");
@@ -76,6 +77,7 @@ public final class PgsDecoder extends SimpleSubtitleDecoder {
     }
   }
 
+  @Nullable
   private static Cue readNextSection(ParsableByteArray buffer, CueBuilder cueBuilder) {
     int limit = buffer.limit();
     int sectionType = buffer.readUnsignedByte();
@@ -197,6 +199,7 @@ public final class PgsDecoder extends SimpleSubtitleDecoder {
       bitmapY = buffer.readUnsignedShort();
     }
 
+    @Nullable
     public Cue build() {
       if (planeWidth == 0
           || planeHeight == 0

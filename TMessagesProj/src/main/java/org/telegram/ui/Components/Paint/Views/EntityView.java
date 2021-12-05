@@ -21,6 +21,9 @@ public class EntityView extends FrameLayout {
         boolean onEntitySelected(EntityView entityView);
         boolean onEntityLongClicked(EntityView entityView);
         boolean allowInteraction(EntityView entityView);
+        int[] getCenterLocation(EntityView entityView);
+        float[] getTransformedTouch(float x, float y);
+        float getCropRotation();
     }
 
     private float previousLocationX;
@@ -33,11 +36,8 @@ public class EntityView extends FrameLayout {
 
     private EntityViewDelegate delegate;
 
-    protected Point position = new Point();
+    protected Point position;
     protected SelectionView selectionView;
-
-    private int offsetX;
-    private int offsetY;
 
     private GestureDetector gestureDetector;
 
@@ -90,11 +90,6 @@ public class EntityView extends FrameLayout {
         delegate = entityViewDelegate;
     }
 
-    public void setOffset(int x, int y) {
-        offsetX = x;
-        offsetY = y;
-    }
-
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
         return delegate.allowInteraction(this);
@@ -102,11 +97,12 @@ public class EntityView extends FrameLayout {
 
     private boolean onTouchMove(float x, float y) {
         float scale = ((View) getParent()).getScaleX();
-        Point translation = new Point((x - previousLocationX) / scale, (y - previousLocationY) / scale);
-        float distance = (float) Math.hypot(translation.x, translation.y);
+        float tx = (x - previousLocationX) / scale;
+        float ty = (y - previousLocationY) / scale;
+        float distance = (float) Math.hypot(tx, ty);
         float minDistance = hasPanned ? 6 : 16;
         if (distance > minDistance) {
-            pan(translation);
+            pan(tx, ty);
             previousLocationX = x;
             previousLocationY = y;
             hasPanned = true;
@@ -132,8 +128,7 @@ public class EntityView extends FrameLayout {
             return false;
         }
 
-        float x = event.getRawX();
-        float y = event.getRawY();
+        float[] xy = delegate.getTransformedTouch(event.getRawX(), event.getRawY());
         int action = event.getActionMasked();
         boolean handled = false;
 
@@ -144,15 +139,15 @@ public class EntityView extends FrameLayout {
                     delegate.onEntitySelected(this);
                     announcedSelection = true;
                 }
-                previousLocationX = x;
-                previousLocationY = y;
+                previousLocationX = xy[0];
+                previousLocationY = xy[1];
                 handled = true;
                 hasReleased = false;
             }
             break;
 
             case MotionEvent.ACTION_MOVE: {
-                handled = onTouchMove(x, y);
+                handled = onTouchMove(xy[0], xy[1]);
             }
             break;
 
@@ -170,22 +165,21 @@ public class EntityView extends FrameLayout {
         return handled;
     }
 
-    public void pan(Point translation) {
-        position.x += translation.x;
-        position.y += translation.y;
+    public void pan(float tx, float ty) {
+        position.x += tx;
+        position.y += ty;
         updatePosition();
     }
 
     protected void updatePosition() {
-        float halfWidth = getWidth() / 2.0f;
-        float halfHeight = getHeight() / 2.0f;
+        float halfWidth = getMeasuredWidth() / 2.0f;
+        float halfHeight = getMeasuredHeight() / 2.0f;
         setX(position.x - halfWidth);
         setY(position.y - halfHeight);
         updateSelectionView();
     }
 
     public void scale(float scale) {
-
         float newScale = Math.max(getScale() * scale, 0.1f);
         setScale(newScale);
         updateSelectionView();
@@ -265,8 +259,8 @@ public class EntityView extends FrameLayout {
         protected void updatePosition() {
             Rect bounds = getSelectionBounds();
             LayoutParams layoutParams = (LayoutParams) getLayoutParams();
-            layoutParams.leftMargin = (int)bounds.x + offsetX;
-            layoutParams.topMargin = (int)bounds.y + offsetY;
+            layoutParams.leftMargin = (int) bounds.x;
+            layoutParams.topMargin = (int) bounds.y;
             layoutParams.width = (int) bounds.width;
             layoutParams.height = (int) bounds.height;
             setLayoutParams(layoutParams);
@@ -282,14 +276,19 @@ public class EntityView extends FrameLayout {
             int action = event.getActionMasked();
             boolean handled = false;
 
+            float rawX = event.getRawX();
+            float rawY = event.getRawY();
+            float[] xy = delegate.getTransformedTouch(rawX, rawY);
+            float x = xy[0];
+            float y = xy[1];
             switch (action) {
                 case MotionEvent.ACTION_POINTER_DOWN:
                 case MotionEvent.ACTION_DOWN: {
                     int handle = pointInsideHandle(event.getX(), event.getY());
                     if (handle != 0) {
                         currentHandle = handle;
-                        previousLocationX = event.getRawX();
-                        previousLocationY = event.getRawY();
+                        previousLocationX = x;
+                        previousLocationY = y;
                         hasReleased = false;
                         handled = true;
                     }
@@ -298,41 +297,36 @@ public class EntityView extends FrameLayout {
 
                 case MotionEvent.ACTION_MOVE: {
                     if (currentHandle == SELECTION_WHOLE_HANDLE) {
-                        float x = event.getRawX();
-                        float y = event.getRawY();
-
                         handled = onTouchMove(x, y);
-                    }
-                    else if (currentHandle != 0) {
-                        hasTransformed = true;
+                    } else if (currentHandle != 0) {
 
-                        Point translation = new Point(event.getRawX() - previousLocationX, event.getRawY() - previousLocationY);
-                        float radAngle = (float) Math.toRadians(getRotation());
-                        float delta = (float) (translation.x * Math.cos(radAngle) + translation.y * Math.sin(radAngle));
-                        if (currentHandle == SELECTION_LEFT_HANDLE) {
-                            delta *= -1;
+                        float tx = x - previousLocationX;
+                        float ty = y - previousLocationY;
+
+                        if (hasTransformed || Math.abs(tx) > AndroidUtilities.dp(2) || Math.abs(ty) > AndroidUtilities.dp(2)) {
+                            hasTransformed = true;
+                            float radAngle = (float) Math.toRadians(getRotation());
+                            float delta = (float) (tx * Math.cos(radAngle) + ty * Math.sin(radAngle));
+                            if (currentHandle == SELECTION_LEFT_HANDLE) {
+                                delta *= -1;
+                            }
+
+                            float scaleDelta = 1 + (delta * 2) / getMeasuredWidth();
+                            scale(scaleDelta);
+
+                            int[] pos = delegate.getCenterLocation(EntityView.this);
+                            float angle = 0;
+                            if (currentHandle == SELECTION_LEFT_HANDLE) {
+                                angle = (float) Math.atan2(pos[1] - rawY, pos[0] - rawX);
+                            } else if (currentHandle == SELECTION_RIGHT_HANDLE) {
+                                angle = (float) Math.atan2(rawY - pos[1], rawX - pos[0]);
+                            }
+
+                            rotate((float) Math.toDegrees(angle) - delegate.getCropRotation());
+
+                            previousLocationX = x;
+                            previousLocationY = y;
                         }
-
-                        float scaleDelta = 1 + (delta * 2) / getWidth();
-                        scale(scaleDelta);
-
-                        float centerX = getLeft() + getWidth() / 2;
-                        float centerY = getTop() + getHeight() / 2;
-
-                        float parentX = event.getRawX() - ((View) getParent()).getLeft();
-                        float parentY = event.getRawY() - ((View) getParent()).getTop() - AndroidUtilities.statusBarHeight;
-
-                        float angle = 0;
-                        if (currentHandle == SELECTION_LEFT_HANDLE) {
-                            angle = (float) Math.atan2(centerY - parentY, centerX - parentX);
-                        } else if (currentHandle == SELECTION_RIGHT_HANDLE) {
-                            angle = (float) Math.atan2(parentY - centerY, parentX - centerX);
-                        }
-
-                        rotate((float) Math.toDegrees(angle));
-
-                        previousLocationX = event.getRawX();
-                        previousLocationY = event.getRawY();
 
                         handled = true;
                     }

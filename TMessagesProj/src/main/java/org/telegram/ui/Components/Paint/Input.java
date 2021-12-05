@@ -18,6 +18,7 @@ public class Input {
 
     private Point lastLocation;
     private double lastRemainder;
+    private float lastAngle;
 
     private Point[] points = new Point[3];
     private int pointsCount;
@@ -34,7 +35,7 @@ public class Input {
         m.invert(invertMatrix);
     }
 
-    public void process(MotionEvent event) {
+    public void process(MotionEvent event, float scale) {
         int action = event.getActionMasked();
         float x = event.getX();
         float y = renderView.getHeight() - event.getY();
@@ -61,7 +62,7 @@ public class Input {
                     clearBuffer = true;
                 } else {
                     float distance = location.getDistanceTo(lastLocation);
-                    if (distance < AndroidUtilities.dp(5.0f)) {
+                    if (distance < AndroidUtilities.dp(5.0f) / scale) {
                         return;
                     }
 
@@ -74,14 +75,14 @@ public class Input {
                     pointsCount++;
 
                     if (pointsCount == 3) {
+                        lastAngle = (float) Math.atan2(points[2].y - points[1].y, points[2].x - points[1].x);
                         smoothenAndPaintPoints(false);
                     }
 
                     lastLocation = location;
                 }
+                break;
             }
-            break;
-
             case MotionEvent.ACTION_UP: {
                 if (!hasMoved) {
                     if (renderView.shouldDraw()) {
@@ -91,6 +92,24 @@ public class Input {
                     reset();
                 } else if (pointsCount > 0) {
                     smoothenAndPaintPoints(true);
+
+                    Brush brush = renderView.getCurrentBrush();
+                    if (brush instanceof Brush.Arrow) {
+                        float arrowLength = renderView.getCurrentWeight() * 4.5f;
+                        float angle = lastAngle;
+                        location = points[pointsCount - 1];
+
+                        Point tip = new Point(location.x, location.y, 0.8f);
+                        Point leftTip = new Point(location.x + Math.cos(angle - Math.PI / 4 * 3) * arrowLength, location.y + Math.sin(angle - Math.PI / 4 * 3.2) * arrowLength, 1.0);
+                        leftTip.edge = true;
+                        Path left = new Path(new Point[]{tip, leftTip});
+                        paintPath(left);
+
+                        Point rightTip = new Point(location.x + Math.cos(angle + Math.PI / 4 * 3) * arrowLength, location.y + Math.sin(angle + Math.PI / 4 * 3.2) * arrowLength, 1.0);
+                        rightTip.edge = true;
+                        Path right = new Path(new Point[]{tip, rightTip});
+                        paintPath(right);
+                    }
                 }
 
                 pointsCount = 0;
@@ -99,8 +118,14 @@ public class Input {
                 beganDrawing = false;
 
                 renderView.onFinishedDrawing(hasMoved);
+                break;
             }
-            break;
+            case MotionEvent.ACTION_CANCEL: {
+                renderView.getPainting().clearStroke();
+                pointsCount = 0;
+                beganDrawing = false;
+                break;
+            }
         }
     }
 
@@ -158,8 +183,7 @@ public class Input {
             } else {
                 pointsCount = 2;
             }
-        }
-        else {
+        } else {
             Point[] result = new Point[pointsCount];
             System.arraycopy(this.points, 0, result, 0, pointsCount);
             Path path = new Path(result);
@@ -184,17 +208,7 @@ public class Input {
 
         path.remainder = lastRemainder;
 
-        renderView.getPainting().paintStroke(path, clearBuffer, new Runnable() {
-            @Override
-            public void run() {
-                AndroidUtilities.runOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        lastRemainder = path.remainder;
-                        clearBuffer = false;
-                    }
-                });
-            }
-        });
+        renderView.getPainting().paintStroke(path, clearBuffer, () -> AndroidUtilities.runOnUIThread(() -> lastRemainder = path.remainder));
+        clearBuffer = false;
     }
 }

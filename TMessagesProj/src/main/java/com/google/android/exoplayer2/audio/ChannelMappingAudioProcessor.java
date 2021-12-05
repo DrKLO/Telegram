@@ -17,40 +17,22 @@ package com.google.android.exoplayer2.audio;
 
 import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.C.Encoding;
-import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.util.Assertions;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.Arrays;
 
 /**
  * An {@link AudioProcessor} that applies a mapping from input channels onto specified output
  * channels. This can be used to reorder, duplicate or discard channels.
  */
-/* package */ final class ChannelMappingAudioProcessor implements AudioProcessor {
+@SuppressWarnings("nullness:initialization.fields.uninitialized")
+/* package */ final class ChannelMappingAudioProcessor extends BaseAudioProcessor {
 
-  private int channelCount;
-  private int sampleRateHz;
-  private @Nullable int[] pendingOutputChannels;
-
-  private boolean active;
-  private @Nullable int[] outputChannels;
-  private ByteBuffer buffer;
-  private ByteBuffer outputBuffer;
-  private boolean inputEnded;
-
-  /** Creates a new processor that applies a channel mapping. */
-  public ChannelMappingAudioProcessor() {
-    buffer = EMPTY_BUFFER;
-    outputBuffer = EMPTY_BUFFER;
-    channelCount = Format.NO_VALUE;
-    sampleRateHz = Format.NO_VALUE;
-  }
+  @Nullable private int[] pendingOutputChannels;
+  @Nullable private int[] outputChannels;
 
   /**
-   * Resets the channel mapping. After calling this method, call {@link #configure(int, int, int)}
-   * to start using the new channel map.
+   * Resets the channel mapping. After calling this method, call {@link #configure(AudioFormat)} to
+   * start using the new channel map.
    *
    * @param outputChannels The mapping from input to output channel indices, or {@code null} to
    *     leave the input unchanged.
@@ -61,111 +43,57 @@ import java.util.Arrays;
   }
 
   @Override
-  public boolean configure(int sampleRateHz, int channelCount, @Encoding int encoding)
-      throws UnhandledFormatException {
-    boolean outputChannelsChanged = !Arrays.equals(pendingOutputChannels, outputChannels);
-    outputChannels = pendingOutputChannels;
+  public AudioFormat onConfigure(AudioFormat inputAudioFormat)
+      throws UnhandledAudioFormatException {
+    @Nullable int[] outputChannels = pendingOutputChannels;
     if (outputChannels == null) {
-      active = false;
-      return outputChannelsChanged;
+      return AudioFormat.NOT_SET;
     }
-    if (encoding != C.ENCODING_PCM_16BIT) {
-      throw new UnhandledFormatException(sampleRateHz, channelCount, encoding);
-    }
-    if (!outputChannelsChanged && this.sampleRateHz == sampleRateHz
-        && this.channelCount == channelCount) {
-      return false;
-    }
-    this.sampleRateHz = sampleRateHz;
-    this.channelCount = channelCount;
 
-    active = channelCount != outputChannels.length;
+    if (inputAudioFormat.encoding != C.ENCODING_PCM_16BIT) {
+      throw new UnhandledAudioFormatException(inputAudioFormat);
+    }
+
+    boolean active = inputAudioFormat.channelCount != outputChannels.length;
     for (int i = 0; i < outputChannels.length; i++) {
       int channelIndex = outputChannels[i];
-      if (channelIndex >= channelCount) {
-        throw new UnhandledFormatException(sampleRateHz, channelCount, encoding);
+      if (channelIndex >= inputAudioFormat.channelCount) {
+        throw new UnhandledAudioFormatException(inputAudioFormat);
       }
       active |= (channelIndex != i);
     }
-    return true;
-  }
-
-  @Override
-  public boolean isActive() {
-    return active;
-  }
-
-  @Override
-  public int getOutputChannelCount() {
-    return outputChannels == null ? channelCount : outputChannels.length;
-  }
-
-  @Override
-  public int getOutputEncoding() {
-    return C.ENCODING_PCM_16BIT;
-  }
-
-  @Override
-  public int getOutputSampleRateHz() {
-    return sampleRateHz;
+    return active
+        ? new AudioFormat(inputAudioFormat.sampleRate, outputChannels.length, C.ENCODING_PCM_16BIT)
+        : AudioFormat.NOT_SET;
   }
 
   @Override
   public void queueInput(ByteBuffer inputBuffer) {
-    Assertions.checkState(outputChannels != null);
+    int[] outputChannels = Assertions.checkNotNull(this.outputChannels);
     int position = inputBuffer.position();
     int limit = inputBuffer.limit();
-    int frameCount = (limit - position) / (2 * channelCount);
-    int outputSize = frameCount * outputChannels.length * 2;
-    if (buffer.capacity() < outputSize) {
-      buffer = ByteBuffer.allocateDirect(outputSize).order(ByteOrder.nativeOrder());
-    } else {
-      buffer.clear();
-    }
+    int frameCount = (limit - position) / inputAudioFormat.bytesPerFrame;
+    int outputSize = frameCount * outputAudioFormat.bytesPerFrame;
+    ByteBuffer buffer = replaceOutputBuffer(outputSize);
     while (position < limit) {
       for (int channelIndex : outputChannels) {
         buffer.putShort(inputBuffer.getShort(position + 2 * channelIndex));
       }
-      position += channelCount * 2;
+      position += inputAudioFormat.bytesPerFrame;
     }
     inputBuffer.position(limit);
     buffer.flip();
-    outputBuffer = buffer;
   }
 
   @Override
-  public void queueEndOfStream() {
-    inputEnded = true;
+  protected void onFlush() {
+    outputChannels = pendingOutputChannels;
   }
 
   @Override
-  public ByteBuffer getOutput() {
-    ByteBuffer outputBuffer = this.outputBuffer;
-    this.outputBuffer = EMPTY_BUFFER;
-    return outputBuffer;
-  }
-
-  @SuppressWarnings("ReferenceEquality")
-  @Override
-  public boolean isEnded() {
-    return inputEnded && outputBuffer == EMPTY_BUFFER;
-  }
-
-  @Override
-  public void flush() {
-    outputBuffer = EMPTY_BUFFER;
-    inputEnded = false;
-  }
-
-  @Override
-  public void reset() {
-    flush();
-    buffer = EMPTY_BUFFER;
-    channelCount = Format.NO_VALUE;
-    sampleRateHz = Format.NO_VALUE;
+  protected void onReset() {
     outputChannels = null;
     pendingOutputChannels = null;
-    active = false;
   }
 
 }

@@ -70,6 +70,7 @@ import java.net.URLConnection;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
@@ -189,11 +190,11 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
     private static final Pattern playerIdPattern = Pattern.compile(".*?-([a-zA-Z0-9_-]+)(?:/watch_as3|/html5player(?:-new)?|(?:/[a-z]{2}_[A-Z]{2})?/base)?\\.([a-z]+)$");
     private static final String exprName = "[a-zA-Z_$][a-zA-Z_$0-9]*";
 
-    private abstract class function {
+    private static abstract class function {
         public abstract Object run(Object[] args);
     }
 
-    private class JSExtractor {
+    private static class JSExtractor {
 
         ArrayList<String> codeLines = new ArrayList<>();
 
@@ -297,7 +298,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
                 if (expr.charAt(expr.length() - 1) != ')') {
                     throw new Exception("last char not ')'");
                 }
-                String argvals[];
+                String[] argvals;
                 if (arg_str.length() != 0) {
                     String[] args = arg_str.split(",");
                     for (int a = 0; a < args.length; a++) {
@@ -392,8 +393,8 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
             for (int a = 0; a < argNames.length; a++) {
                 localVars.put(argNames[a], "");
             }
-            String stmts[] = funcCode.split(";");
-            boolean abort[] = new boolean[1];
+            String[] stmts = funcCode.split(";");
+            boolean[] abort = new boolean[1];
             for (int a = 0; a < stmts.length; a++) {
                 interpretStatement(stmts[a], localVars, abort, 100);
                 if (abort[0]) {
@@ -426,7 +427,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
         void jsCallFinished(String value);
     }
 
-    public class JavaScriptInterface {
+    public static class JavaScriptInterface {
         private final CallJavaResultInterface callJavaResultInterface;
 
         public JavaScriptInterface(CallJavaResultInterface callJavaResult) {
@@ -551,7 +552,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
                                 if (result == null) {
                                     result = new StringBuilder();
                                 }
-                                result.append(new String(data, 0, read, "UTF-8"));
+                                result.append(new String(data, 0, read, StandardCharsets.UTF_8));
                             } else if (read == -1) {
                                 done = true;
                                 break;
@@ -616,7 +617,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
 
             boolean encrypted = false;
             String otherUrl = null;
-            String extra[] = new String[] {"", "&el=leanback", "&el=embedded", "&el=detailpage", "&el=vevo"};
+            String[] extra = new String[]{"", "&el=leanback", "&el=embedded", "&el=detailpage", "&el=vevo"};
             for (int i = 0; i < extra.length; i++) {
                 String videoInfo = downloadUrlContent(this, "https://www.youtube.com/get_video_info?" + params + extra[i]);
                 if (isCancelled()) {
@@ -626,11 +627,11 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
                 String hls = null;
                 boolean isLive = false;
                 if (videoInfo != null) {
-                    String args[] = videoInfo.split("&");
+                    String[] args = videoInfo.split("&");
                     for (int a = 0; a < args.length; a++) {
                         if (args[a].startsWith("dashmpd")) {
                             exists = true;
-                            String args2[] = args[a].split("=");
+                            String[] args2 = args[a].split("=");
                             if (args2.length == 2) {
                                 try {
                                     result[0] = URLDecoder.decode(args2[1], "UTF-8");
@@ -639,14 +640,14 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
                                 }
                             }
                         } else if (args[a].startsWith("url_encoded_fmt_stream_map")) {
-                            String args2[] = args[a].split("=");
+                            String[] args2 = args[a].split("=");
                             if (args2.length == 2) {
                                 try {
-                                    String args3[] = URLDecoder.decode(args2[1], "UTF-8").split("[&,]");
+                                    String[] args3 = URLDecoder.decode(args2[1], "UTF-8").split("[&,]");
                                     String currentUrl = null;
                                     boolean isMp4 = false;
                                     for (int c = 0; c < args3.length; c++) {
-                                        String args4[] = args3[c].split("=");
+                                        String[] args4 = args3[c].split("=");
                                         if (args4[0].startsWith("type")) {
                                             String type = URLDecoder.decode(args4[1], "UTF-8");
                                             if (type.contains("video/mp4")) {
@@ -668,14 +669,14 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
                                 }
                             }
                         } else if (args[a].startsWith("use_cipher_signature")) {
-                            String args2[] = args[a].split("=");
+                            String[] args2 = args[a].split("=");
                             if (args2.length == 2) {
                                 if (args2[1].toLowerCase().equals("true")) {
                                     encrypted = true;
                                 }
                             }
                         } else if (args[a].startsWith("hlsvp")) {
-                            String args2[] = args[a].split("=");
+                            String[] args2 = args[a].split("=");
                             if (args2.length == 2) {
                                 try {
                                     hls = URLDecoder.decode(args2[1], "UTF-8");
@@ -684,7 +685,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
                                 }
                             }
                         } else if (args[a].startsWith("livestream")) {
-                            String args2[] = args[a].split("=");
+                            String[] args2 = args[a].split("=");
                             if (args2.length == 2) {
                                 if (args2[1].toLowerCase().equals("1")) {
                                     isLive = true;
@@ -798,7 +799,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
                                     } else {
                                         try {
                                             String javascript = "<script>" + functionCodeFinal + "</script>";
-                                            byte[] data = javascript.getBytes("UTF-8");
+                                            byte[] data = javascript.getBytes(StandardCharsets.UTF_8);
                                             final String base64 = Base64.encodeToString(data, Base64.DEFAULT);
                                             webView.loadUrl("data:text/html;charset=utf-8;base64," + base64);
                                         } catch (Exception e) {
@@ -1093,7 +1094,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
                 source.setCharAt(a, c == lower ? Character.toUpperCase(c) : lower);
             }
             try {
-                return new String(Base64.decode(source.toString(), Base64.DEFAULT), "UTF-8");
+                return new String(Base64.decode(source.toString(), Base64.DEFAULT), StandardCharsets.UTF_8);
             } catch (Exception ignore) {
                 return null;
             }
@@ -1106,7 +1107,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
             }
             try {
                 JSONObject json = new JSONObject(playerCode).getJSONObject("file_versions").getJSONObject("mobile");
-                String video = decodeUrl(json.getString("gifv"));
+                String video = json.getString("video");
                 String audio = json.getJSONArray("audio").getString(0);
                 if (video != null && audio != null) {
                     results[0] = video;
@@ -1284,7 +1285,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
                 return;
             }
             duration = value;
-            durationLayout = new StaticLayout(String.format(Locale.US, "%d:%02d", duration / 60, duration % 60), textPaint, AndroidUtilities.dp(1000), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            durationLayout = new StaticLayout(AndroidUtilities.formatShortDuration(duration), textPaint, AndroidUtilities.dp(1000), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             if (durationLayout.getLineCount() > 0) {
                 durationWidth = (int) Math.ceil(durationLayout.getLineWidth(0));
             }
@@ -1301,7 +1302,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
                 return;
             }
             progress = value;
-            progressLayout = new StaticLayout(String.format(Locale.US, "%d:%02d", progress / 60, progress % 60), textPaint, AndroidUtilities.dp(1000), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            progressLayout = new StaticLayout(AndroidUtilities.formatShortDuration(progress), textPaint, AndroidUtilities.dp(1000), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             invalidate();
         }
 
@@ -1316,7 +1317,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
             if (isVisible) {
                 if (animated) {
                     currentAnimation = new AnimatorSet();
-                    currentAnimation.playTogether(ObjectAnimator.ofFloat(this, "alpha", 1.0f));
+                    currentAnimation.playTogether(ObjectAnimator.ofFloat(this, View.ALPHA, 1.0f));
                     currentAnimation.setDuration(150);
                     currentAnimation.addListener(new AnimatorListenerAdapter() {
                         @Override
@@ -1331,7 +1332,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
             } else {
                 if (animated) {
                     currentAnimation = new AnimatorSet();
-                    currentAnimation.playTogether(ObjectAnimator.ofFloat(this, "alpha", 0.0f));
+                    currentAnimation.playTogether(ObjectAnimator.ofFloat(this, View.ALPHA, 0.0f));
                     currentAnimation.setDuration(150);
                     currentAnimation.addListener(new AnimatorListenerAdapter() {
                         @Override
@@ -1761,7 +1762,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
     }
 
     @Override
-    public void onError(Exception e) {
+    public void onError(VideoPlayer player, Exception e) {
         FileLog.e(e);
         onInitFailed();
     }
@@ -1877,29 +1878,31 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
 
     @Override
     public void onAudioFocusChange(int focusChange) {
-        if (focusChange == AudioManager.AUDIOFOCUS_LOSS) {
-            if (videoPlayer.isPlaying()) {
-                videoPlayer.pause();
-                updatePlayButton();
+        AndroidUtilities.runOnUIThread(() -> {
+            if (focusChange == AudioManager.AUDIOFOCUS_LOSS) {
+                if (videoPlayer.isPlaying()) {
+                    videoPlayer.pause();
+                    updatePlayButton();
+                }
+                hasAudioFocus = false;
+                audioFocus = AUDIO_NO_FOCUS_NO_DUCK;
+            } else if (focusChange == AudioManager.AUDIOFOCUS_GAIN) {
+                audioFocus = AUDIO_FOCUSED;
+                if (resumeAudioOnFocusGain) {
+                    resumeAudioOnFocusGain = false;
+                    videoPlayer.play();
+                }
+            } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK) {
+                audioFocus = AUDIO_NO_FOCUS_CAN_DUCK;
+            } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
+                audioFocus = AUDIO_NO_FOCUS_NO_DUCK;
+                if (videoPlayer.isPlaying()) {
+                    resumeAudioOnFocusGain = true;
+                    videoPlayer.pause();
+                    updatePlayButton();
+                }
             }
-            hasAudioFocus = false;
-            audioFocus = AUDIO_NO_FOCUS_NO_DUCK;
-        } else if (focusChange == AudioManager.AUDIOFOCUS_GAIN) {
-            audioFocus = AUDIO_FOCUSED;
-            if (resumeAudioOnFocusGain) {
-                resumeAudioOnFocusGain = false;
-                videoPlayer.play();
-            }
-        } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK) {
-            audioFocus = AUDIO_NO_FOCUS_CAN_DUCK;
-        } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
-            audioFocus = AUDIO_NO_FOCUS_NO_DUCK;
-            if (videoPlayer.isPlaying()) {
-                resumeAudioOnFocusGain = true;
-                videoPlayer.pause();
-                updatePlayButton();
-            }
-        }
+        });
     }
 
     private void updateFullscreenButton() {
@@ -2068,16 +2071,116 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
         return inFullscreen;
     }
 
+    public static String getYouTubeVideoId(String url) {
+        Matcher matcher = youtubeIdRegex.matcher(url);
+        String id = null;
+        if (matcher.find()) {
+            id = matcher.group(1);
+        }
+        return id;
+    }
+
+    public boolean canHandleUrl(String url) {
+        if (url != null) {
+            if (url.endsWith(".mp4")) {
+                return true;
+            } else {
+                try {
+                    Matcher matcher = youtubeIdRegex.matcher(url);
+                    String id = null;
+                    if (matcher.find()) {
+                        id = matcher.group(1);
+                    }
+                    if (id != null) {
+                        return true;
+                    }
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+                try {
+                    Matcher matcher = vimeoIdRegex.matcher(url);
+                    String id = null;
+                    if (matcher.find()) {
+                        id = matcher.group(3);
+                    }
+                    if (id != null) {
+                        return true;
+                    }
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+                try {
+                    Matcher matcher = aparatIdRegex.matcher(url);
+                    String id = null;
+                    if (matcher.find()) {
+                        id = matcher.group(1);
+                    }
+                    if (id != null) {
+                        return true;
+                    }
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+                try {
+                    Matcher matcher = twitchClipIdRegex.matcher(url);
+                    String id = null;
+                    if (matcher.find()) {
+                        id = matcher.group(1);
+                    }
+                    if (id != null) {
+                        return true;
+                    }
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+                try {
+                    Matcher matcher = twitchStreamIdRegex.matcher(url);
+                    String id = null;
+                    if (matcher.find()) {
+                        id = matcher.group(1);
+                    }
+                    if (id != null) {
+                        return true;
+                    }
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+                try {
+                    Matcher matcher = coubIdRegex.matcher(url);
+                    String id = null;
+                    if (matcher.find()) {
+                        id = matcher.group(1);
+                    }
+                    if (id != null) {
+                        return true;
+                    }
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+            }
+        }
+        return false;
+    }
+
+    public void willHandle() {
+        controlsView.setVisibility(INVISIBLE);
+        controlsView.show(false, false);
+        showProgress(true, false);
+    }
+
     public boolean loadVideo(String url, TLRPC.Photo thumb, Object parentObject, String originalUrl, boolean autoplay) {
         String youtubeId = null;
         String vimeoId = null;
-        String coubId = null;
+        String coubId = getCoubId(url);
+        if (coubId == null) {
+            coubId = getCoubId(originalUrl);
+        }
         String twitchClipId = null;
         String twitchStreamId = null;
         String mp4File = null;
         String aparatId = null;
         seekToTime = -1;
-        if (url != null) {
+        if (coubId == null && url != null) {
             if (url.endsWith(".mp4")) {
                 mp4File = url;
             } else {
@@ -2091,7 +2194,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
                             }
                             if (t != null) {
                                 if (t.contains("m")) {
-                                    String args[] = t.split("m");
+                                    String[] args = t.split("m");
                                     seekToTime = Utilities.parseInt(args[0]) * 60 + Utilities.parseInt(args[1]);
                                 } else {
                                     seekToTime = Utilities.parseInt(t);
@@ -2268,6 +2371,25 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
         }
         controlsView.setVisibility(GONE);
         return false;
+    }
+
+    public String getCoubId(String url) {
+        if (TextUtils.isEmpty(url)) {
+            return null;
+        }
+        try {
+            Matcher matcher = coubIdRegex.matcher(url);
+            String id = null;
+            if (matcher.find()) {
+                id = matcher.group(1);
+            }
+            if (id != null) {
+                return id;
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return null;
     }
 
     public View getAspectRatioView() {

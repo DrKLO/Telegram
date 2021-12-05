@@ -30,7 +30,7 @@ public class JoinSheetUserCell extends FrameLayout {
     private BackupImageView imageView;
     private TextView nameTextView;
     private AvatarDrawable avatarDrawable = new AvatarDrawable();
-    private int result[] = new int[1];
+    private int[] result = new int[1];
 
     public JoinSheetUserCell(Context context) {
         super(context);
@@ -47,7 +47,7 @@ public class JoinSheetUserCell extends FrameLayout {
         nameTextView.setLines(1);
         nameTextView.setSingleLine(true);
         nameTextView.setEllipsize(TextUtils.TruncateAt.END);
-        addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 6, 64, 6, 0));
+        addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 6, 65, 6, 0));
     }
 
     @Override
@@ -58,12 +58,12 @@ public class JoinSheetUserCell extends FrameLayout {
     public void setUser(TLRPC.User user) {
         nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
         avatarDrawable.setInfo(user);
-        imageView.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable, user);
+        imageView.setForUserOrChat(user, avatarDrawable);
     }
 
     public void setCount(int count) {
         nameTextView.setText("");
-        avatarDrawable.setInfo(0, null, null, false, "+" + LocaleController.formatShortNumber(count, result));
+        avatarDrawable.setInfo(0, null, null, "+" + LocaleController.formatShortNumber(count, result));
         imageView.setImage(null, "50_50", avatarDrawable, null);
     }
 }

@@ -23,6 +23,7 @@ public class SnowflakesEffect {
 
     private Paint particlePaint;
     private Paint particleThinPaint;
+    private String colorKey = Theme.key_actionBarDefaultTitle;
 
     private long lastAnimationTime;
 
@@ -84,21 +85,37 @@ public class SnowflakesEffect {
     private ArrayList<Particle> particles = new ArrayList<>();
     private ArrayList<Particle> freeParticles = new ArrayList<>();
 
+    private int color;
+
     public SnowflakesEffect() {
         particlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         particlePaint.setStrokeWidth(AndroidUtilities.dp(1.5f));
-        particlePaint.setColor(Theme.getColor(Theme.key_actionBarDefaultTitle) & 0xffe6e6e6);
         particlePaint.setStrokeCap(Paint.Cap.ROUND);
         particlePaint.setStyle(Paint.Style.STROKE);
 
         particleThinPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         particleThinPaint.setStrokeWidth(AndroidUtilities.dp(0.5f));
-        particleThinPaint.setColor(Theme.getColor(Theme.key_actionBarDefaultTitle) & 0xffe6e6e6);
         particleThinPaint.setStrokeCap(Paint.Cap.ROUND);
         particleThinPaint.setStyle(Paint.Style.STROKE);
 
+        updateColors();
+
         for (int a = 0; a < 20; a++) {
             freeParticles.add(new Particle());
+        }
+    }
+
+    public void setColorKey(String key) {
+        colorKey = key;
+        updateColors();
+    }
+
+    public void updateColors() {
+        final int color = Theme.getColor(colorKey) & 0xffe6e6e6;
+        if (this.color != color) {
+            this.color = color;
+            particlePaint.setColor(color);
+            particleThinPaint.setColor(color);
         }
     }
 

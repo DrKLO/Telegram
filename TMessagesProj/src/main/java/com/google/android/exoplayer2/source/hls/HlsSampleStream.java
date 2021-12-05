@@ -62,12 +62,19 @@ import java.io.IOException;
     if (sampleQueueIndex == HlsSampleStreamWrapper.SAMPLE_QUEUE_INDEX_NO_MAPPING_FATAL) {
       throw new SampleQueueMappingException(
           sampleStreamWrapper.getTrackGroups().get(trackGroupIndex).getFormat(0).sampleMimeType);
+    } else if (sampleQueueIndex == HlsSampleStreamWrapper.SAMPLE_QUEUE_INDEX_PENDING) {
+      sampleStreamWrapper.maybeThrowError();
+    } else if (sampleQueueIndex != HlsSampleStreamWrapper.SAMPLE_QUEUE_INDEX_NO_MAPPING_NON_FATAL) {
+      sampleStreamWrapper.maybeThrowError(sampleQueueIndex);
     }
-    sampleStreamWrapper.maybeThrowError();
   }
 
   @Override
   public int readData(FormatHolder formatHolder, DecoderInputBuffer buffer, boolean requireFormat) {
+    if (sampleQueueIndex == HlsSampleStreamWrapper.SAMPLE_QUEUE_INDEX_NO_MAPPING_NON_FATAL) {
+      buffer.addFlag(C.BUFFER_FLAG_END_OF_STREAM);
+      return C.RESULT_BUFFER_READ;
+    }
     return hasValidSampleQueueIndex()
         ? sampleStreamWrapper.readData(sampleQueueIndex, formatHolder, buffer, requireFormat)
         : C.RESULT_NOTHING_READ;

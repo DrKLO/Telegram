@@ -58,7 +58,7 @@
 
 
 // least significant word
-#define BN_lsw(n) (((n)->top == 0) ? (BN_ULONG) 0 : (n)->d[0])
+#define BN_lsw(n) (((n)->width == 0) ? (BN_ULONG) 0 : (n)->d[0])
 
 int bn_jacobi(const BIGNUM *a, const BIGNUM *b, BN_CTX *ctx) {
   // In 'tab', only odd-indexed entries are relevant:

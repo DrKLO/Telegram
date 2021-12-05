@@ -256,6 +256,9 @@ public class PipRoundVideoView implements NotificationCenter.NotificationCenterD
         windowView.setScaleY(0.8f);
 
         textureView = new TextureView(activity);
+        float scale = (AndroidUtilities.dpf2(120) + AndroidUtilities.dpf2(2)) / AndroidUtilities.dpf2(120);
+        textureView.setScaleX(scale);
+        textureView.setScaleY(scale);
         aspectRatioFrameLayout.addView(textureView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         imageView = new ImageView(activity);
@@ -519,10 +522,12 @@ public class PipRoundVideoView implements NotificationCenter.NotificationCenterD
         }
     }
 
+    @Keep
     public int getX() {
         return windowLayoutParams.x;
     }
 
+    @Keep
     public int getY() {
         return windowLayoutParams.y;
     }

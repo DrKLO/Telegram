@@ -135,6 +135,35 @@ int X509_CRL_up_ref(X509_CRL *crl)
     return 1;
 }
 
+const ASN1_TIME *X509_CRL_get0_lastUpdate(const X509_CRL *crl)
+{
+    return crl->crl->lastUpdate;
+}
+
+const ASN1_TIME *X509_CRL_get0_nextUpdate(const X509_CRL *crl)
+{
+    return crl->crl->nextUpdate;
+}
+
+void X509_CRL_get0_signature(const X509_CRL *crl, const ASN1_BIT_STRING **psig,
+                             const X509_ALGOR **palg)
+{
+    if (psig != NULL)
+        *psig = crl->signature;
+    if (palg != NULL)
+        *palg = crl->sig_alg;
+}
+
+int X509_CRL_get_signature_nid(const X509_CRL *crl)
+{
+    return OBJ_obj2nid(crl->sig_alg->algorithm);
+}
+
+const ASN1_TIME *X509_REVOKED_get0_revocationDate(const X509_REVOKED *x)
+{
+    return x->revocationDate;
+}
+
 int X509_REVOKED_set_revocationDate(X509_REVOKED *x, ASN1_TIME *tm)
 {
     ASN1_TIME *in;
@@ -152,6 +181,11 @@ int X509_REVOKED_set_revocationDate(X509_REVOKED *x, ASN1_TIME *tm)
     return (in != NULL);
 }
 
+const ASN1_INTEGER *X509_REVOKED_get0_serialNumber(const X509_REVOKED *x)
+{
+    return x->serialNumber;
+}
+
 int X509_REVOKED_set_serialNumber(X509_REVOKED *x, ASN1_INTEGER *serial)
 {
     ASN1_INTEGER *in;
@@ -167,4 +201,10 @@ int X509_REVOKED_set_serialNumber(X509_REVOKED *x, ASN1_INTEGER *serial)
         }
     }
     return (in != NULL);
+}
+
+int i2d_re_X509_CRL_tbs(X509_CRL *crl, unsigned char **pp)
+{
+    crl->crl->enc.modified = 1;
+    return i2d_X509_CRL_INFO(crl->crl, pp);
 }

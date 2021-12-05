@@ -16,29 +16,32 @@
 package com.google.android.exoplayer2.extractor.ogg;
 
 import androidx.annotation.VisibleForTesting;
+import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ParserException;
 import com.google.android.exoplayer2.extractor.ExtractorInput;
 import com.google.android.exoplayer2.extractor.SeekMap;
 import com.google.android.exoplayer2.extractor.SeekPoint;
 import com.google.android.exoplayer2.util.Assertions;
+import com.google.android.exoplayer2.util.Util;
 import java.io.EOFException;
 import java.io.IOException;
 
 /** Seeks in an Ogg stream. */
 /* package */ final class DefaultOggSeeker implements OggSeeker {
 
-  @VisibleForTesting public static final int MATCH_RANGE = 72000;
-  @VisibleForTesting public static final int MATCH_BYTE_RANGE = 100000;
+  private static final int MATCH_RANGE = 72000;
+  private static final int MATCH_BYTE_RANGE = 100000;
   private static final int DEFAULT_OFFSET = 30000;
 
   private static final int STATE_SEEK_TO_END = 0;
   private static final int STATE_READ_LAST_PAGE = 1;
   private static final int STATE_SEEK = 2;
-  private static final int STATE_IDLE = 3;
+  private static final int STATE_SKIP = 3;
+  private static final int STATE_IDLE = 4;
 
   private final OggPageHeader pageHeader = new OggPageHeader();
-  private final long startPosition;
-  private final long endPosition;
+  private final long payloadStartPosition;
+  private final long payloadEndPosition;
   private final StreamReader streamReader;
 
   private int state;
@@ -54,26 +57,27 @@ import java.io.IOException;
   /**
    * Constructs an OggSeeker.
    *
-   * @param startPosition Start position of the payload (inclusive).
-   * @param endPosition End position of the payload (exclusive).
    * @param streamReader The {@link StreamReader} that owns this seeker.
+   * @param payloadStartPosition Start position of the payload (inclusive).
+   * @param payloadEndPosition End position of the payload (exclusive).
    * @param firstPayloadPageSize The total size of the first payload page, in bytes.
    * @param firstPayloadPageGranulePosition The granule position of the first payload page.
-   * @param firstPayloadPageIsLastPage Whether the first payload page is also the last page in the
-   *     ogg stream.
+   * @param firstPayloadPageIsLastPage Whether the first payload page is also the last page.
    */
   public DefaultOggSeeker(
-      long startPosition,
-      long endPosition,
       StreamReader streamReader,
+      long payloadStartPosition,
+      long payloadEndPosition,
       long firstPayloadPageSize,
       long firstPayloadPageGranulePosition,
       boolean firstPayloadPageIsLastPage) {
-    Assertions.checkArgument(startPosition >= 0 && endPosition > startPosition);
+    Assertions.checkArgument(
+        payloadStartPosition >= 0 && payloadEndPosition > payloadStartPosition);
     this.streamReader = streamReader;
-    this.startPosition = startPosition;
-    this.endPosition = endPosition;
-    if (firstPayloadPageSize == endPosition - startPosition || firstPayloadPageIsLastPage) {
+    this.payloadStartPosition = payloadStartPosition;
+    this.payloadEndPosition = payloadEndPosition;
+    if (firstPayloadPageSize == payloadEndPosition - payloadStartPosition
+        || firstPayloadPageIsLastPage) {
       totalGranules = firstPayloadPageGranulePosition;
       state = STATE_IDLE;
     } else {
@@ -90,7 +94,7 @@ import java.io.IOException;
         positionBeforeSeekToEnd = input.getPosition();
         state = STATE_READ_LAST_PAGE;
         // Seek to the end just before the last page of stream to get the duration.
-        long lastPageSearchPosition = endPosition - OggPageHeader.MAX_PAGE_SIZE;
+        long lastPageSearchPosition = payloadEndPosition - OggPageHeader.MAX_PAGE_SIZE;
         if (lastPageSearchPosition > positionBeforeSeekToEnd) {
           return lastPageSearchPosition;
         }
@@ -100,18 +104,16 @@ import java.io.IOException;
         state = STATE_IDLE;
         return positionBeforeSeekToEnd;
       case STATE_SEEK:
-        long currentGranule;
-        if (targetGranule == 0) {
-          currentGranule = 0;
-        } else {
-          long position = getNextSeekPosition(targetGranule, input);
-          if (position >= 0) {
-            return position;
-          }
-          currentGranule = skipToPageOfGranule(input, targetGranule, -(position + 2));
+        long position = getNextSeekPosition(input);
+        if (position != C.POSITION_UNSET) {
+          return position;
         }
+        state = STATE_SKIP;
+        // Fall through.
+      case STATE_SKIP:
+        skipToPageOfTargetGranule(input);
         state = STATE_IDLE;
-        return -(currentGranule + 2);
+        return -(startGranule + 2);
       default:
         // Never happens.
         throw new IllegalStateException();
@@ -119,126 +121,93 @@ import java.io.IOException;
   }
 
   @Override
-  public long startSeek(long timeUs) {
-    Assertions.checkArgument(state == STATE_IDLE || state == STATE_SEEK);
-    targetGranule = timeUs == 0 ? 0 : streamReader.convertTimeToGranule(timeUs);
-    state = STATE_SEEK;
-    resetSeeking();
-    return targetGranule;
-  }
-
-  @Override
   public OggSeekMap createSeekMap() {
     return totalGranules != 0 ? new OggSeekMap() : null;
   }
 
-  @VisibleForTesting
-  public void resetSeeking() {
-    start = startPosition;
-    end = endPosition;
+  @Override
+  public void startSeek(long targetGranule) {
+    this.targetGranule = Util.constrainValue(targetGranule, 0, totalGranules - 1);
+    state = STATE_SEEK;
+    start = payloadStartPosition;
+    end = payloadEndPosition;
     startGranule = 0;
     endGranule = totalGranules;
   }
 
   /**
-   * Returns a position converging to the {@code targetGranule} to which the {@link ExtractorInput}
-   * has to seek and then be passed for another call until a negative number is returned. If a
-   * negative number is returned the input is at a position which is before the target page and at
-   * which it is sensible to just skip pages to the target granule and pre-roll instead of doing
-   * another seek request.
+   * Performs a single step of a seeking binary search, returning the byte position from which data
+   * should be provided for the next step, or {@link C#POSITION_UNSET} if the search has converged.
+   * If the search has converged then {@link #skipToPageOfTargetGranule(ExtractorInput)} should be
+   * called to skip to the target page.
    *
-   * @param targetGranule the target granule position to seek to.
-   * @param input the {@link ExtractorInput} to read from.
-   * @return the position to seek the {@link ExtractorInput} to for a next call or -(currentGranule
-   *     + 2) if it's close enough to skip to the target page.
-   * @throws IOException thrown if reading from the input fails.
-   * @throws InterruptedException thrown if interrupted while reading from the input.
+   * @param input The {@link ExtractorInput} to read from.
+   * @return The byte position from which data should be provided for the next step, or {@link
+   *     C#POSITION_UNSET} if the search has converged.
+   * @throws IOException If reading from the input fails.
+   * @throws InterruptedException If interrupted while reading from the input.
    */
-  @VisibleForTesting
-  public long getNextSeekPosition(long targetGranule, ExtractorInput input)
-      throws IOException, InterruptedException {
+  private long getNextSeekPosition(ExtractorInput input) throws IOException, InterruptedException {
     if (start == end) {
-      return -(startGranule + 2);
+      return C.POSITION_UNSET;
     }
 
-    long initialPosition = input.getPosition();
+    long currentPosition = input.getPosition();
     if (!skipToNextPage(input, end)) {
-      if (start == initialPosition) {
+      if (start == currentPosition) {
         throw new IOException("No ogg page can be found.");
       }
       return start;
     }
 
-    pageHeader.populate(input, false);
+    pageHeader.populate(input, /* quiet= */ false);
     input.resetPeekPosition();
 
     long granuleDistance = targetGranule - pageHeader.granulePosition;
     int pageSize = pageHeader.headerSize + pageHeader.bodySize;
-    if (granuleDistance < 0 || granuleDistance > MATCH_RANGE) {
-      if (granuleDistance < 0) {
-        end = initialPosition;
-        endGranule = pageHeader.granulePosition;
-      } else {
-        start = input.getPosition() + pageSize;
-        startGranule = pageHeader.granulePosition;
-        if (end - start + pageSize < MATCH_BYTE_RANGE) {
-          input.skipFully(pageSize);
-          return -(startGranule + 2);
-        }
-      }
-
-      if (end - start < MATCH_BYTE_RANGE) {
-        end = start;
-        return start;
-      }
-
-      long offset = pageSize * (granuleDistance <= 0 ? 2L : 1L);
-      long nextPosition = input.getPosition() - offset
-          + (granuleDistance * (end - start) / (endGranule - startGranule));
-
-      nextPosition = Math.max(nextPosition, start);
-      nextPosition = Math.min(nextPosition, end - 1);
-      return nextPosition;
+    if (0 <= granuleDistance && granuleDistance < MATCH_RANGE) {
+      return C.POSITION_UNSET;
     }
 
-    // position accepted (before target granule and within MATCH_RANGE)
-    input.skipFully(pageSize);
-    return -(pageHeader.granulePosition + 2);
+    if (granuleDistance < 0) {
+      end = currentPosition;
+      endGranule = pageHeader.granulePosition;
+    } else {
+      start = input.getPosition() + pageSize;
+      startGranule = pageHeader.granulePosition;
+    }
+
+    if (end - start < MATCH_BYTE_RANGE) {
+      end = start;
+      return start;
+    }
+
+    long offset = pageSize * (granuleDistance <= 0 ? 2L : 1L);
+    long nextPosition =
+        input.getPosition()
+            - offset
+            + (granuleDistance * (end - start) / (endGranule - startGranule));
+    return Util.constrainValue(nextPosition, start, end - 1);
   }
 
-  private long getEstimatedPosition(long position, long granuleDistance, long offset) {
-    position += (granuleDistance * (endPosition - startPosition) / totalGranules) - offset;
-    if (position < startPosition) {
-      position = startPosition;
+  /**
+   * Skips forward to the start of the page containing the {@code targetGranule}.
+   *
+   * @param input The {@link ExtractorInput} to read from.
+   * @throws ParserException If populating the page header fails.
+   * @throws IOException If reading from the input fails.
+   * @throws InterruptedException If interrupted while reading from the input.
+   */
+  private void skipToPageOfTargetGranule(ExtractorInput input)
+      throws IOException, InterruptedException {
+    pageHeader.populate(input, /* quiet= */ false);
+    while (pageHeader.granulePosition <= targetGranule) {
+      input.skipFully(pageHeader.headerSize + pageHeader.bodySize);
+      start = input.getPosition();
+      startGranule = pageHeader.granulePosition;
+      pageHeader.populate(input, /* quiet= */ false);
     }
-    if (position >= endPosition) {
-      position = endPosition - 1;
-    }
-    return position;
-  }
-
-  private class OggSeekMap implements SeekMap {
-
-    @Override
-    public boolean isSeekable() {
-      return true;
-    }
-
-    @Override
-    public SeekPoints getSeekPoints(long timeUs) {
-      if (timeUs == 0) {
-        return new SeekPoints(new SeekPoint(0, startPosition));
-      }
-      long granule = streamReader.convertTimeToGranule(timeUs);
-      long estimatedPosition = getEstimatedPosition(startPosition, granule, DEFAULT_OFFSET);
-      return new SeekPoints(new SeekPoint(timeUs, estimatedPosition));
-    }
-
-    @Override
-    public long getDurationUs() {
-      return streamReader.convertGranuleToTime(totalGranules);
-    }
-
+    input.resetPeekPosition();
   }
 
   /**
@@ -251,7 +220,7 @@ import java.io.IOException;
    */
   @VisibleForTesting
   void skipToNextPage(ExtractorInput input) throws IOException, InterruptedException {
-    if (!skipToNextPage(input, endPosition)) {
+    if (!skipToNextPage(input, payloadEndPosition)) {
       // Not found until eof.
       throw new EOFException();
     }
@@ -263,13 +232,12 @@ import java.io.IOException;
    * @param input The {@code ExtractorInput} to skip to the next page.
    * @param limit The limit up to which the search should take place.
    * @return Whether the next page was found.
-   * @throws IOException thrown if peeking/reading from the input fails.
-   * @throws InterruptedException thrown if interrupted while peeking/reading from the input.
+   * @throws IOException If peeking/reading from the input fails.
+   * @throws InterruptedException If interrupted while peeking/reading from the input.
    */
-  @VisibleForTesting
-  boolean skipToNextPage(ExtractorInput input, long limit)
+  private boolean skipToNextPage(ExtractorInput input, long limit)
       throws IOException, InterruptedException {
-    limit = Math.min(limit + 3, endPosition);
+    limit = Math.min(limit + 3, payloadEndPosition);
     byte[] buffer = new byte[2048];
     int peekLength = buffer.length;
     while (true) {
@@ -310,39 +278,35 @@ import java.io.IOException;
   long readGranuleOfLastPage(ExtractorInput input) throws IOException, InterruptedException {
     skipToNextPage(input);
     pageHeader.reset();
-    while ((pageHeader.type & 0x04) != 0x04 && input.getPosition() < endPosition) {
-      pageHeader.populate(input, false);
+    while ((pageHeader.type & 0x04) != 0x04 && input.getPosition() < payloadEndPosition) {
+      pageHeader.populate(input, /* quiet= */ false);
       input.skipFully(pageHeader.headerSize + pageHeader.bodySize);
     }
     return pageHeader.granulePosition;
   }
 
-  /**
-   * Skips to the position of the start of the page containing the {@code targetGranule} and returns
-   * the granule of the page previous to the target page.
-   *
-   * @param input the {@link ExtractorInput} to read from.
-   * @param targetGranule the target granule.
-   * @param currentGranule the current granule or -1 if it's unknown.
-   * @return the granule of the prior page or the {@code currentGranule} if there isn't a prior
-   *     page.
-   * @throws ParserException thrown if populating the page header fails.
-   * @throws IOException thrown if reading from the input fails.
-   * @throws InterruptedException thrown if interrupted while reading from the input.
-   */
-  @VisibleForTesting
-  long skipToPageOfGranule(ExtractorInput input, long targetGranule, long currentGranule)
-      throws IOException, InterruptedException {
-    pageHeader.populate(input, false);
-    while (pageHeader.granulePosition < targetGranule) {
-      input.skipFully(pageHeader.headerSize + pageHeader.bodySize);
-      // Store in a member field to be able to resume after IOExceptions.
-      currentGranule = pageHeader.granulePosition;
-      // Peek next header.
-      pageHeader.populate(input, false);
-    }
-    input.resetPeekPosition();
-    return currentGranule;
-  }
+  private final class OggSeekMap implements SeekMap {
 
+    @Override
+    public boolean isSeekable() {
+      return true;
+    }
+
+    @Override
+    public SeekPoints getSeekPoints(long timeUs) {
+      long targetGranule = streamReader.convertTimeToGranule(timeUs);
+      long estimatedPosition =
+          payloadStartPosition
+              + (targetGranule * (payloadEndPosition - payloadStartPosition) / totalGranules)
+              - DEFAULT_OFFSET;
+      estimatedPosition =
+          Util.constrainValue(estimatedPosition, payloadStartPosition, payloadEndPosition - 1);
+      return new SeekPoints(new SeekPoint(timeUs, estimatedPosition));
+    }
+
+    @Override
+    public long getDurationUs() {
+      return streamReader.convertGranuleToTime(totalGranules);
+    }
+  }
 }

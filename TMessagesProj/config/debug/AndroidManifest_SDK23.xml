@@ -16,8 +16,9 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.CALL_PHONE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.READ_CALL_LOG" />
 
-    <permission android:name="org.telegram.messenger.permission.MAPS_RECEIVE" android:protectionLevel="signature"/>
+
 
     <application
         android:allowBackup="false"
@@ -29,6 +30,7 @@
         android:hardwareAccelerated="@bool/useHardwareAcceleration"
         android:largeHeap="true"
         android:supportsRtl="false"
+        android:requestLegacyExternalStorage="true"
         tools:replace="android:supportsRtl">
 
         <meta-data android:name="com.google.android.maps.v2.API_KEY" android:value="AIzaSyA-t0jLPjUt2FxrA8VPK2EiYHcYcboIR6k" />

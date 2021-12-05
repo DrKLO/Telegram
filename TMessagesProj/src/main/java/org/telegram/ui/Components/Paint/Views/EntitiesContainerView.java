@@ -60,13 +60,11 @@ public class EntitiesContainerView extends FrameLayout implements ScaleGestureDe
             return false;
         }
 
-        if (event.getPointerCount() == 1)
-        {
+        if (event.getPointerCount() == 1) {
             int action = event.getActionMasked();
             if (action == MotionEvent.ACTION_DOWN) {
                 hasTransformed = false;
-            }
-            else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_MOVE) {
+            } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_MOVE) {
                 if (!hasTransformed && delegate != null) {
                     delegate.onEntityDeselect();
                 }
@@ -122,5 +120,16 @@ public class EntitiesContainerView extends FrameLayout implements ScaleGestureDe
     @Override
     public void onRotationEnd(RotationGestureDetector rotationDetector) {
 
+    }
+
+    @Override
+    protected void measureChildWithMargins(View child, int parentWidthMeasureSpec, int widthUsed, int parentHeightMeasureSpec, int heightUsed) {
+        if (child instanceof TextPaintView) {
+            final MarginLayoutParams lp = (MarginLayoutParams) child.getLayoutParams();
+            final int childWidthMeasureSpec = getChildMeasureSpec(parentWidthMeasureSpec, getPaddingLeft() + getPaddingRight() + lp.leftMargin + lp.rightMargin + widthUsed, lp.width);
+            child.measure(childWidthMeasureSpec, MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
+        } else {
+            super.measureChildWithMargins(child, parentWidthMeasureSpec, widthUsed, parentHeightMeasureSpec, heightUsed);
+        }
     }
 }

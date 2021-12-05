@@ -85,8 +85,8 @@ public final class TrackSelectorResult {
 
   /**
    * Returns whether this result is equivalent to {@code other} for the renderer at the given index.
-   * The results are equivalent if they have equal renderersEnabled array, track selections, and
-   * configurations for the renderer.
+   * The results are equivalent if they have equal track selections and configurations for the
+   * renderer.
    *
    * @param other The other {@link TrackSelectorResult}. May be null, in which case {@code false}
    *     will be returned.

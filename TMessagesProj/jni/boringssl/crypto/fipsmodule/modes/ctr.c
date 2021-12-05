@@ -69,7 +69,8 @@ static void ctr128_inc(uint8_t *counter) {
   } while (n);
 }
 
-OPENSSL_COMPILE_ASSERT((16 % sizeof(size_t)) == 0, bad_size_t_size_ctr);
+OPENSSL_STATIC_ASSERT(16 % sizeof(size_t) == 0,
+                      "block cannot be divided into size_t");
 
 // The input encrypted as though 128bit counter mode is being used.  The extra
 // state information to record how much of the 128bit block we have used is
@@ -82,7 +83,7 @@ OPENSSL_COMPILE_ASSERT((16 % sizeof(size_t)) == 0, bad_size_t_size_ctr);
 // of the IV.  This implementation takes NO responsibility for checking that
 // the counter doesn't overflow into the rest of the IV when incremented.
 void CRYPTO_ctr128_encrypt(const uint8_t *in, uint8_t *out, size_t len,
-                           const void *key, uint8_t ivec[16],
+                           const AES_KEY *key, uint8_t ivec[16],
                            uint8_t ecount_buf[16], unsigned int *num,
                            block128_f block) {
   unsigned int n;
@@ -98,26 +99,6 @@ void CRYPTO_ctr128_encrypt(const uint8_t *in, uint8_t *out, size_t len,
     --len;
     n = (n + 1) % 16;
   }
-
-#if STRICT_ALIGNMENT
-  if (((uintptr_t)in | (uintptr_t)out |
-        (uintptr_t)ecount_buf) % sizeof(size_t) != 0) {
-    size_t l = 0;
-    while (l < len) {
-      if (n == 0) {
-        (*block)(ivec, ecount_buf, key);
-        ctr128_inc(ivec);
-      }
-      out[l] = in[l] ^ ecount_buf[n];
-      ++l;
-      n = (n + 1) % 16;
-    }
-
-    *num = n;
-    return;
-  }
-#endif
-
   while (len >= 16) {
     (*block)(ivec, ecount_buf, key);
     ctr128_inc(ivec);
@@ -153,11 +134,10 @@ static void ctr96_inc(uint8_t *counter) {
   } while (n);
 }
 
-void CRYPTO_ctr128_encrypt_ctr32(const uint8_t *in, uint8_t *out,
-                                 size_t len, const void *key,
-                                 uint8_t ivec[16],
-                                 uint8_t ecount_buf[16],
-                                 unsigned int *num, ctr128_f func) {
+void CRYPTO_ctr128_encrypt_ctr32(const uint8_t *in, uint8_t *out, size_t len,
+                                 const AES_KEY *key, uint8_t ivec[16],
+                                 uint8_t ecount_buf[16], unsigned int *num,
+                                 ctr128_f func) {
   unsigned int n, ctr32;
 
   assert(key && ecount_buf && num);

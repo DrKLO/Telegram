@@ -222,6 +222,9 @@ OPENSSL_EXPORT void OBJ_NAME_do_all(int type, void (*callback)(const OBJ_NAME *,
                                                                void *arg),
                                     void *arg);
 
+// OBJ_cleanup does nothing.
+OPENSSL_EXPORT void OBJ_cleanup(void);
+
 
 #if defined(__cplusplus)
 }  // extern C

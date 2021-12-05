@@ -255,6 +255,11 @@ const EVP_PKEY_ASN1_METHOD dsa_asn1_meth = {
   dsa_priv_decode,
   dsa_priv_encode,
 
+  NULL /* set_priv_raw */,
+  NULL /* set_pub_raw */,
+  NULL /* get_priv_raw */,
+  NULL /* get_pub_raw */,
+
   NULL /* pkey_opaque */,
 
   int_dsa_size,

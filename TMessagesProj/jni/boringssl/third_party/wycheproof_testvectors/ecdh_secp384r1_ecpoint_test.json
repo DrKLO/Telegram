@@ -1,0 +1,722 @@
+{
+  "algorithm" : "ECDH",
+  "generatorVersion" : "0.4.12",
+  "notes" : {
+    "AddSubChain" : "The private key has a special value. Implementations using addition subtraction chains for the point multiplication may get the point at infinity as an intermediate result. See CVE_2017_10176",
+    "CompressedPoint" : "The point in the public key is compressed. Not every library supports points in compressed format."
+  },
+  "numberOfTests" : 77,
+  "header" : [],
+  "testGroups" : [
+    {
+      "curve" : "secp384r1",
+      "encoding" : "ecpoint",
+      "type" : "ECHDComp",
+      "tests" : [
+        {
+          "tcId" : 1,
+          "comment" : "normal case",
+          "public" : "04790a6e059ef9a5940163183d4a7809135d29791643fc43a2f17ee8bf677ab84f791b64a6be15969ffa012dd9185d8796d9b954baa8a75e82df711b3b56eadff6b0f668c3b26b4b1aeb308a1fcc1c680d329a6705025f1c98a0b5e5bfcb163caa",
+          "private" : "766e61425b2da9f846c09fc3564b93a6f8603b7392c785165bf20da948c49fd1fb1dee4edd64356b9f21c588b75dfd81",
+          "shared" : "6461defb95d996b24296f5a1832b34db05ed031114fbe7d98d098f93859866e4de1e229da71fef0c77fe49b249190135",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 2,
+          "comment" : "compressed public key",
+          "public" : "02790a6e059ef9a5940163183d4a7809135d29791643fc43a2f17ee8bf677ab84f791b64a6be15969ffa012dd9185d8796",
+          "private" : "766e61425b2da9f846c09fc3564b93a6f8603b7392c785165bf20da948c49fd1fb1dee4edd64356b9f21c588b75dfd81",
+          "shared" : "6461defb95d996b24296f5a1832b34db05ed031114fbe7d98d098f93859866e4de1e229da71fef0c77fe49b249190135",
+          "result" : "acceptable",
+          "flags" : [
+            "CompressedPoint"
+          ]
+        },
+        {
+          "tcId" : 3,
+          "comment" : "edge case for shared secret",
+          "public" : "04490e96d17f4c6ceccd45def408cea33e9704a5f1b01a3de2eaaa3409fd160d78d395d6b3b003d71fd1f590fad95bf1c9d8665efc2070d059aa847125c2f707435955535c7c5df6d6c079ec806dce6b6849d337140db7ca50616f9456de1323c4",
+          "private" : "0a2b6442a37f8a3759d2cb91df5eca75b14f5a6766da8035cc1943b15a8e4ebb6025f373be334080f22ab821a3535a6a7",
+          "shared" : "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 4,
+          "comment" : "edge case for shared secret",
+          "public" : "040161328909675213e32098d35a6b8308a8d500cca39dcee5e804e73bdb8deaf06fe417291fd9793b231ef5fe86945444a97a01f3ae3a8310c4af49b592cb291ef70ee5bc7f5534d3c23dc9eefde2304842c7737ae937ccf9bd215c28103e9fe2",
+          "private" : "0a2b6442a37f8a3759d2cb91df5eca75b14f5a6766da8035cc1943b15a8e4ebb6025f373be334080f22ab821a3535a6a7",
+          "shared" : "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 5,
+          "comment" : "edge case for shared secret",
+          "public" : "04af4ae964e3bcbd923accda5da3175d411fd62d17dd3c3a1c410bef1730985a6265d90e950ac0fc50743b1ed771906ff33b68cf4d3d83a885a87097fdd329ce83b189f98cec5be44c31d1a3a2bba10f471963232b8ba7610fa8c72179050eb86d",
+          "private" : "0a2b6442a37f8a3759d2cb91df5eca75b14f5a6766da8035cc1943b15a8e4ebb6025f373be334080f22ab821a3535a6a7",
+          "shared" : "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 6,
+          "comment" : "edge case for shared secret",
+          "public" : "041478ab6e032b9545eda9ac2c264e57a11f08acbc76d16a0ab77b04dbdaf20f215c4183437b32afc471eaa603d14c7c5d8a4c84ee0e895bec5c37f0a1ca075e106ff6bf38801b5c697409d39675231108d33c4a5ea65aaa8c03e939c95d96c4c4",
+          "private" : "0a2b6442a37f8a3759d2cb91df5eca75b14f5a6766da8035cc1943b15a8e4ebb6025f373be334080f22ab821a3535a6a7",
+          "shared" : "0000000000000000ffffffffffffffff0000000000000000ffffffffffffffff00000000000000010000000000000001",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 7,
+          "comment" : "edge case for shared secret",
+          "public" : "04f63208e34e7e90bb5fb036432467a89981444010663b8533b47bfa94bd2bc16f38aa516b930a4726e3876d3091bfb72ec783ed4da0cac06320817dc8bc64f59ccf06f48abc4386a150913fa95743a7b4601190e1c6ee8f8bf6354b254ecace45",
+          "private" : "0a2b6442a37f8a3759d2cb91df5eca75b14f5a6766da8035cc1943b15a8e4ebb6025f373be334080f22ab821a3535a6a7",
+          "shared" : "00000000ffffffff00000000ffffffff00000000ffffffff00000000ffffffff00000000ffffffff00000000ffffffff",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 8,
+          "comment" : "edge case for shared secret",
+          "public" : "04033271ef42d92ad47b273b09ea2f45401161baa52696590d0e175ff2d1c0dfa3fea40e4266d446546c05e480d57fabec7889f16a8bcc176602f6d46561614a2f4284abe697b7cb9ce79f7e2e71b155cb1f155ce925d16391a680eda23152e6e1",
+          "private" : "0a2b6442a37f8a3759d2cb91df5eca75b14f5a6766da8035cc1943b15a8e4ebb6025f373be334080f22ab821a3535a6a7",
+          "shared" : "0000ffff0000ffff0000ffff0000ffff0000ffff0000ffff0000ffff0000ffff0000ffff0000ffff0000ffff0000ffff",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 9,
+          "comment" : "edge case for shared secret",
+          "public" : "04737e8437e18683de2455b68945bba31daec3e754d72f0a0776d3192b2f9298bb95ca1464baa6687aabb679f804cf6ec6c2b4d47d61a60404df63b1e9ac0954b3419bbc2ad52a0409aeeb82f4703758588059165b20367dcb4b235b0caf71d727",
+          "private" : "0a2b6442a37f8a3759d2cb91df5eca75b14f5a6766da8035cc1943b15a8e4ebb6025f373be334080f22ab821a3535a6a7",
+          "shared" : "007fff0001fffc0007fff0001fffc0007fff0001fffc0007fff0001fffc0007fff0001fffc0007fff0001fffc0008000",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 10,
+          "comment" : "edge case for shared secret",
+          "public" : "0437f9004983156bbd9c47891e75237bb13016bd7fe6f4e0f71cef0e63f16a672f0d3b0e20165c33407e146b6a4ae6962dd3b57ccb99e7aaf1303240516d0ebe08e585513e3695d42c467dcab5340ef761990cadc8d8840aacc944481415c07feb",
+          "private" : "0a2b6442a37f8a3759d2cb91df5eca75b14f5a6766da8035cc1943b15a8e4ebb6025f373be334080f22ab821a3535a6a7",
+          "shared" : "3b5eed80727bcbc5113b8a9e4db1c81b1dddc2d99ff56d9c3c1054348913bde296311c4bd2fa899b4d0e66aaa1b6a0dd",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 11,
+          "comment" : "edge case for shared secret",
+          "public" : "049655d8e5622718b317cfbc09894357f75a6b13fa516bcd6630721b869a620196cf0c3dec8860b32d27ed9bac2cf263af17321698116d7d811ae8da9b9cbbf9382c1e36e2b67d6c6af9bcea7d9de00ca72b398606c098a0a0f0c4b8941943ed65",
+          "private" : "0a2b6442a37f8a3759d2cb91df5eca75b14f5a6766da8035cc1943b15a8e4ebb6025f373be334080f22ab821a3535a6a7",
+          "shared" : "6a99a5acd4a7edb1c707d7f8be12e81140338e3e14ba563c703c681a319a3f9ce1f90f032bf840f3758e89cb852ceca6",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 12,
+          "comment" : "edge case for shared secret",
+          "public" : "04ccb13d427b3c4bb33dd4f20cddabc68600eaf97eeb2c81e8c218ae90743e74ff38ca56f0c0224379db464dcf4a40f04350cd7a659b2c4851a5dcf8c990fc920c07d4d5aa50a2185750e6b84c42e83cff635050482decb4780f812e4c49fc7404",
+          "private" : "0a2b6442a37f8a3759d2cb91df5eca75b14f5a6766da8035cc1943b15a8e4ebb6025f373be334080f22ab821a3535a6a7",
+          "shared" : "7c25a4f57f76ab13b25cab3c265db9d9bd925fecbf7bf93bef1308778646628decab067ed988a9755cd88e88de367104",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 13,
+          "comment" : "edge case for shared secret",
+          "public" : "042664624307c02ef487030a632162c515f841d15ea3152d98ff2364232d7aab39343d5f703a4d5a31092aa7356c3a2f671c1cd603addfd8b5477552a3b32a18edaf3e33bec22ee2167f9da729636002a7974eaeb5ff082b2aabf8c7056b84c3ab",
+          "private" : "0a2b6442a37f8a3759d2cb91df5eca75b14f5a6766da8035cc1943b15a8e4ebb6025f373be334080f22ab821a3535a6a7",
+          "shared" : "7fffffe000000ffffffc000001ffffff8000003ffffff0000007fffffe000000ffffffc000001ffffff8000004000002",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 14,
+          "comment" : "edge case for shared secret",
+          "public" : "04665f1f320b6ab1c1b52d144e52d87a154c2b4489838c9119de622c2d1b52b65b0a3955e44e0d4859175360c0f63dee813f14f69972f18caed7916c94a4d20ec344591e7536a4a7a4d8c9832818c96d60b1a81fabe64ea02c5f647e361bf5b60f",
+          "private" : "0a2b6442a37f8a3759d2cb91df5eca75b14f5a6766da8035cc1943b15a8e4ebb6025f373be334080f22ab821a3535a6a7",
+          "shared" : "800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 15,
+          "comment" : "edge case for shared secret",
+          "public" : "0491357ca87dbb08e85d7b1acecfd1e086078a82d19f81474da389364a39fe2543eb934b440173c38e61a1d9407855b5d89ef0d9e920764b6d7765b084cf9541dacc43d1dabaa390b0fb856097b0c00a8556f4e3848568ab4ae790c3d346ca01b6",
+          "private" : "0a2b6442a37f8a3759d2cb91df5eca75b14f5a6766da8035cc1943b15a8e4ebb6025f373be334080f22ab821a3535a6a7",
+          "shared" : "fff00000001fffffffc00000007fffffff00000001fffffffc00000007fffffff00000001fffffffc00000007fffffff",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 16,
+          "comment" : "edge case for shared secret",
+          "public" : "04d5a833bae33b2d10fdff6db7c5477adb614b191c70d97c6f130a14e93931cc1dc058053fee54a264a00fdd16d3166fdc42992276b79925bafcd183b03ed18235350980abfe67b814c6c11074c38f74cd4e734ad58cdb49d9fcd2181d1b8f1119",
+          "private" : "0a2b6442a37f8a3759d2cb91df5eca75b14f5a6766da8035cc1943b15a8e4ebb6025f373be334080f22ab821a3535a6a7",
+          "shared" : "fffff0000003ffffff0000003ffffff0000003ffffff0000003ffffff0000003ffffff0000003ffffff0000004000000",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 17,
+          "comment" : "edge case for shared secret",
+          "public" : "0467547cda7fbe8f16be5a4477cbb02979f1af72fc0f39302773552fbcf4667a8e23abc0e12856ee6234deeca5f22ae0503a4df7c068e7432417260cb9fe0d68b9c7fcf7e16a2ada05687d8f8900b84723103edbff0a42b27517da2760b7d38843",
+          "private" : "0a2b6442a37f8a3759d2cb91df5eca75b14f5a6766da8035cc1943b15a8e4ebb6025f373be334080f22ab821a3535a6a7",
+          "shared" : "ffffff00000003fffffff00000003fffffff00000003fffffff00000003fffffff00000003fffffff00000003fffffff",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 18,
+          "comment" : "edge case for shared secret",
+          "public" : "041363e3b99008e09bb3f085949b9b6ea26a318f496de568a96630fdb9d4c72c2814df3087a1741f32f24989b428167f93c653cb3ae8c3ecfaec57efd54bb8ce9d79c7bf6cc70fb1114f939be8f1a99bf1e42b97431124ef9fa33450faa4e76839",
+          "private" : "0a2b6442a37f8a3759d2cb91df5eca75b14f5a6766da8035cc1943b15a8e4ebb6025f373be334080f22ab821a3535a6a7",
+          "shared" : "ffffffffffff00000000000000ffffffffffffff00000000000000ffffffffffffff0000000000000100000000000001",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 19,
+          "comment" : "edge case for shared secret",
+          "public" : "04ba2be8d7147e2417c2ec80b24b4c1aa94464ffd0aae1fa2e078b3afbc77c144489ca9d064acbb7a9cfa6196d0f467b7e65ee1ca1eb1351ff9968f553dfe2e4c59ff8ba34c22a42b3baa13a9a1adc7f13abd40f1fd25d46bc5330852b9371966a",
+          "private" : "0a2b6442a37f8a3759d2cb91df5eca75b14f5a6766da8035cc1943b15a8e4ebb6025f373be334080f22ab821a3535a6a7",
+          "shared" : "ffffffffffffffffffffffffffffffff00000000000000000000000000000000ffffffffffffffffffffffffffffffff",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 20,
+          "comment" : "edge case for shared secret",
+          "public" : "04d69850ccbacc4736ea200ff2f8488f26247945a2ab48dd3708f494b293d8cba83417f48974881c7fb03854089bbf66cc1c773ec03cb8cd5f007ec3b03bdd05a409b352103f0decf25b41673ab8ca3d04334babee01219f15701f2bca22d40b37",
+          "private" : "0a2b6442a37f8a3759d2cb91df5eca75b14f5a6766da8035cc1943b15a8e4ebb6025f373be334080f22ab821a3535a6a7",
+          "shared" : "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000fffffffe",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 21,
+          "comment" : "y-coordinate of the public key has many trailing 0's",
+          "public" : "046fcaf82d982d222d6096ba83e55b1c7dcb71a41e88f323333f44284d95c4bd3616da7a1bef928f31c26f885ba7adb487826fde2ed9f5649c11cf8465f8bf8ad50f68914936fc39666f68219d066506bea4001fdc816c9a90e7e2afb19bea085f",
+          "private" : "0a2b6442a37f8a3759d2cb91df5eca75b14f5a6766da8035cc1943b15a8e4ebb6025f373be334080f22ab821a3535a6a7",
+          "shared" : "000000000000000000000000000000000000000000000000000000001f03123b00000000000000000000000000000000",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 22,
+          "comment" : "y-coordinate of the public key has many trailing 1's",
+          "public" : "046fcaf82d982d222d6096ba83e55b1c7dcb71a41e88f323333f44284d95c4bd3616da7a1bef928f31c26f885ba7adb4877d9021d1260a9b63ee307b9a0740752af0976eb6c903c6999097de62f99af9405bffe0227e93656f181d504f6415f7a0",
+          "private" : "0a2b6442a37f8a3759d2cb91df5eca75b14f5a6766da8035cc1943b15a8e4ebb6025f373be334080f22ab821a3535a6a7",
+          "shared" : "000000000000000000000000000000000000000000000000000000001f03123b00000000000000000000000000000000",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 23,
+          "comment" : "y-coordinate of the public key is small",
+          "public" : "04bfeb47fb40a65878e6b642f40b8e15022ade9ecfa8cb618043063494e2bc5d2df10d36f37869b58ef12dcc35e3982835fd2e55ec41fdfe8cabbbb7bcd8163645a19e9dac59630f3fe93b208094ff87cd461b53cef53482e70e2e8ea87200cc3f",
+          "private" : "0a2b6442a37f8a3759d2cb91df5eca75b14f5a6766da8035cc1943b15a8e4ebb6025f373be334080f22ab821a3535a6a7",
+          "shared" : "0000000000000000000000000000000000000000000000000000000036a2907c00000000000000000000000000000000",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 24,
+          "comment" : "y-coordinate of the public key is large",
+          "public" : "04bfeb47fb40a65878e6b642f40b8e15022ade9ecfa8cb618043063494e2bc5d2df10d36f37869b58ef12dcc35e398283502d1aa13be0201735444484327e9c9ba5e616253a69cf0c016c4df7f6b007831b9e4ac300acb7d18f1d171588dff33c0",
+          "private" : "0a2b6442a37f8a3759d2cb91df5eca75b14f5a6766da8035cc1943b15a8e4ebb6025f373be334080f22ab821a3535a6a7",
+          "shared" : "0000000000000000000000000000000000000000000000000000000036a2907c00000000000000000000000000000000",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 25,
+          "comment" : "edge cases for ephemeral key",
+          "public" : "040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003cf99ef04f51a5ea630ba3f9f960dd593a14c9be39fd2bd215d3b4b08aaaf86bbf927f2c46e52ab06fb742b8850e521e",
+          "private" : "2bc15cf3981eab6102c39f9a925aa1309db59c2c02a54411928d73c3945d157848dc36959efef7495c8528ea284c1c97",
+          "shared" : "6092a1757ddd43a04e185ff9472a0d18c7f7a7dc802f7e059e0c69ae16c802651719406e04de27652ff83da4a780ef2f",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 26,
+          "comment" : "edge cases for ephemeral key",
+          "public" : "04000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002732152442fb6ee5c3e6ce1d920c059bc623563814d79042b903ce60f1d4487fccd450a86da03f3e6ed525d02017bfdb3",
+          "private" : "2bc15cf3981eab6102c39f9a925aa1309db59c2c02a54411928d73c3945d157848dc36959efef7495c8528ea284c1c97",
+          "shared" : "89c804cb81443386b185bcd9e2e6c35ee6177c3b90298985c4e81a89d520cceb17d729540e56ecc343c26bf314f2d052",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 27,
+          "comment" : "edge cases for ephemeral key",
+          "public" : "040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000036660041b1c7984620e8d7fd7ccdb50cc3ba816da14d41a4d8affaba8488867f0ca5a24f8d42dd7e44b530a27dc5b58da",
+          "private" : "2bc15cf3981eab6102c39f9a925aa1309db59c2c02a54411928d73c3945d157848dc36959efef7495c8528ea284c1c97",
+          "shared" : "35513157e804bd918d04de202778b81a6fc7ad8aa541ee94116a0f18466725d75e71c6942bf044b1b0ecba19db33e0de",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 28,
+          "comment" : "edge cases for ephemeral key",
+          "public" : "040000000000000000ffffffffffffffff0000000000000000ffffffffffffffff00000000000000010000000000000001141b9ee5310ea8170131b604484a6d677ed42576045b7143c026710ae92b277afbbea0c4458c220d561e69404dc7d888",
+          "private" : "2bc15cf3981eab6102c39f9a925aa1309db59c2c02a54411928d73c3945d157848dc36959efef7495c8528ea284c1c97",
+          "shared" : "102080c047881d19aefb01c29c82a4fb328a8ea6e6d6c914af73100507c8ee499799aaa646de0ea8c2727c0b5ed2439b",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 29,
+          "comment" : "edge cases for ephemeral key",
+          "public" : "0400000000ffffffff00000000ffffffff00000000ffffffff00000000ffffffff00000000ffffffff00000000ffffffff70370385413d3eff6fa3407ba24f682c2b01b51445dbdf5ef7b0dd0979f17e713e09081571f1e94dfb66bf282002f39f",
+          "private" : "2bc15cf3981eab6102c39f9a925aa1309db59c2c02a54411928d73c3945d157848dc36959efef7495c8528ea284c1c97",
+          "shared" : "f689f6e475b4e15162521acab4637a3cdb9cb42aa92f9114b0ee300ddae89d5eafff3463a1f5004a2a1bd4aeffa47b78",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 30,
+          "comment" : "edge cases for ephemeral key",
+          "public" : "040000ffff0000ffff0000ffff0000ffff0000ffff0000ffff0000ffff0000ffff0000ffff0000ffff0000ffff0000ffff112e191f1f78bbc54b6cc4f0b1e59ae8c6ff1a07f5128e41dfa2828e1b6538d4fa2ca2394c6aab3449dcb3fc4eb44c09",
+          "private" : "2bc15cf3981eab6102c39f9a925aa1309db59c2c02a54411928d73c3945d157848dc36959efef7495c8528ea284c1c97",
+          "shared" : "f3486244119b3632fd55be9e6951eb5d9c8c62f6a27042f94b924155ecfd4ff8744ba3d25bcf85a7b925bd28a12b897f",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 31,
+          "comment" : "edge cases for ephemeral key",
+          "public" : "04007fff0001fffc0007fff0001fffc0007fff0001fffc0007fff0001fffc0007fff0001fffc0007fff0001fffc0008000028a4c8da5a05112fe6025ef41908969de20d05d9668e5c852ef2d492172ddc2a0a622fc488164fcc1a076b872942af2",
+          "private" : "2bc15cf3981eab6102c39f9a925aa1309db59c2c02a54411928d73c3945d157848dc36959efef7495c8528ea284c1c97",
+          "shared" : "8171b7c80d4c90bb58ae54393921ab9c5c0b3196f045e9fe5c8b168f0e5f6a77e1aa34ecedc5481ce55ab34c14e0f2e8",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 32,
+          "comment" : "edge cases for ephemeral key",
+          "public" : "043b5eed80727bcbc5113b8a9e4db1c81b1dddc2d99ff56d9c3c1054348913bde296311c4bd2fa899b4d0e66aaa1b6a0dd7b7f0f28d55e2f3a50f1f1bef3976834a05b43418e979303bc0363ed16d2d0b4011cc37b3c06ad73154faeab7915cd87",
+          "private" : "2bc15cf3981eab6102c39f9a925aa1309db59c2c02a54411928d73c3945d157848dc36959efef7495c8528ea284c1c97",
+          "shared" : "1fe6fea5f00d3005abaae2267ff18e430915838d87909ab503885edf38be7618ecb321f0a4df71b0913fbf12c76fc1f0",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 33,
+          "comment" : "edge cases for ephemeral key",
+          "public" : "046a99a5acd4a7edb1c707d7f8be12e81140338e3e14ba563c703c681a319a3f9ce1f90f032bf840f3758e89cb852ceca63cf99ef04f51a5ea630ba3f9f960dd593a14c9be39fd2bd215d3b4b08aaaf86bbf927f2c46e52ab06fb742b8850e521e",
+          "private" : "2bc15cf3981eab6102c39f9a925aa1309db59c2c02a54411928d73c3945d157848dc36959efef7495c8528ea284c1c97",
+          "shared" : "f58adc13ff997d38383910db7befb17670393a33d95b049c2aa19d760c8e728ecedd32168476b90b26a3742dcc121b07",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 34,
+          "comment" : "edge cases for ephemeral key",
+          "public" : "047c25a4f57f76ab13b25cab3c265db9d9bd925fecbf7bf93bef1308778646628decab067ed988a9755cd88e88de367104562ee0c57e71d96cefe31b4c4045bd4086a38e8ab9adf2d5567be318051d70f3aa68b753f271ab032b6abcce919e2962",
+          "private" : "2bc15cf3981eab6102c39f9a925aa1309db59c2c02a54411928d73c3945d157848dc36959efef7495c8528ea284c1c97",
+          "shared" : "56299684ec5ceb09ba4d94d1231005a826c9c08a5219c757e0136cbe8b6430badd4925172f2939891da7c7893850512f",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 35,
+          "comment" : "edge cases for ephemeral key",
+          "public" : "047fffffe000000ffffffc000001ffffff8000003ffffff0000007fffffe000000ffffffc000001ffffff80000040000024480ab33cb4bf7cb79c024eeade3fd641e2f3003698400e8986a7343a5da59a3b26eea4b4176e53239371437d834a1a7",
+          "private" : "2bc15cf3981eab6102c39f9a925aa1309db59c2c02a54411928d73c3945d157848dc36959efef7495c8528ea284c1c97",
+          "shared" : "1911a0ee6aebe263fdcf3db073f2598cdafabec2123a2f24a28c3d9151c871f32d6dc2f31d25af9c498fd68da23e5bef",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 36,
+          "comment" : "edge cases for ephemeral key",
+          "public" : "048000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020797da4c0751ced16de80d16ab7c654a5dc27d092626d0865a192a1c5ea7c1b88c9fcab057946741e41cc28c80ec0b9a",
+          "private" : "2bc15cf3981eab6102c39f9a925aa1309db59c2c02a54411928d73c3945d157848dc36959efef7495c8528ea284c1c97",
+          "shared" : "15900643e2e0583976974b05f83c7a96611425f7c4a6eb51916ab958a037fd9cc172bdcfff4540a2ff3ce64e6505557e",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 37,
+          "comment" : "edge cases for ephemeral key",
+          "public" : "04fff00000001fffffffc00000007fffffff00000001fffffffc00000007fffffff00000001fffffffc00000007fffffff6c70898ae6fb31fa2f086562af2d10486ba4c6fd5e41dfe4aa61598b4707a3bc276a62feb1b98557e3b17c025f7adf4e",
+          "private" : "2bc15cf3981eab6102c39f9a925aa1309db59c2c02a54411928d73c3945d157848dc36959efef7495c8528ea284c1c97",
+          "shared" : "88a544a769d5c34a051416bd509dfac911863f604c83ea844bf0e4c5c272dec86d057a88b152a9274701938c705900c3",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 38,
+          "comment" : "edge cases for ephemeral key",
+          "public" : "04fffff0000003ffffff0000003ffffff0000003ffffff0000003ffffff0000003ffffff0000003ffffff00000040000000eb1592858b6e6e3a199c0f3e7c5f0b4a92915936efb8bc0407680eb7274be7422156ce8cfc8b505b2d902c39992380f",
+          "private" : "2bc15cf3981eab6102c39f9a925aa1309db59c2c02a54411928d73c3945d157848dc36959efef7495c8528ea284c1c97",
+          "shared" : "b7db26b286e7527cb1f454782fe541862ff0f8d7eed960e22855deb7ac2a69611668c777c53bb74c2bcd40edfbf7944d",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 39,
+          "comment" : "edge cases for ephemeral key",
+          "public" : "04ffffff00000003fffffff00000003fffffff00000003fffffff00000003fffffff00000003fffffff00000003fffffff4987abae412809c2fa48fd23b1bdf9e622f5a606c44117215ffa61b18ef46e54a7fbbf11f9a6ba59c991b4ae501fedce",
+          "private" : "2bc15cf3981eab6102c39f9a925aa1309db59c2c02a54411928d73c3945d157848dc36959efef7495c8528ea284c1c97",
+          "shared" : "b1e8aab1aa633d98dc6b768594e1e3edb801a9ef483f287c83e19744d2ad343ad3debdc4dc178213ad6876b52284f552",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 40,
+          "comment" : "edge cases for ephemeral key",
+          "public" : "04ffffffffffff00000000000000ffffffffffffff00000000000000ffffffffffffff00000000000001000000000000013691fe493d4d28bf8ee1dfec812d6c306eae0842919eda6dc525f0d49ac2d26a992251912139a2936849f9d6fa949a68",
+          "private" : "2bc15cf3981eab6102c39f9a925aa1309db59c2c02a54411928d73c3945d157848dc36959efef7495c8528ea284c1c97",
+          "shared" : "b0de006f80f6f89e4eea6e46dfe305153005612d1e903171ec2886230971961b5202a9f3187bdac413ac24c836adf7a0",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 41,
+          "comment" : "edge cases for ephemeral key",
+          "public" : "04ffffffffffffffffffffffffffffffff00000000000000000000000000000000ffffffffffffffffffffffffffffffff615842aa06b06f78f0a66f7bea88d4b6ee59653eeaa00dc5e0a2b658f969b71af90c9b4e96bd3ca33846955bdccbd359",
+          "private" : "2bc15cf3981eab6102c39f9a925aa1309db59c2c02a54411928d73c3945d157848dc36959efef7495c8528ea284c1c97",
+          "shared" : "ca8cfa42c5e374914c14d6402b1a99208e47e02ec49818913694ea0822a2cc6c310259a8f3ab7559b9974bc4c2fa337e",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 42,
+          "comment" : "edge cases for ephemeral key",
+          "public" : "04fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000fffffffe732152442fb6ee5c3e6ce1d920c059bc623563814d79042b903ce60f1d4487fccd450a86da03f3e6ed525d02017bfdb3",
+          "private" : "2bc15cf3981eab6102c39f9a925aa1309db59c2c02a54411928d73c3945d157848dc36959efef7495c8528ea284c1c97",
+          "shared" : "edf040bace18d90bf9ce720df2a3b31d76d95b7ed9530a159ac0b24e82a871033eada40552f9e606f7115e6a78927511",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 43,
+          "comment" : "edge cases for ephemeral key",
+          "public" : "04000000000000000000000000000000000000000000000000000000001f03123b0000000000000000000000000000000071bd1e700c34075c3cade8ce29d33724af68a7672b265a4e157055360440ab7c461b8e9ac8024e63a8b9c17c00000000",
+          "private" : "2bc15cf3981eab6102c39f9a925aa1309db59c2c02a54411928d73c3945d157848dc36959efef7495c8528ea284c1c97",
+          "shared" : "ea817dff44f1944a38444498f1b6c1a70a8b913aa326bc2acc5068805d8ddd7a5e41b8ee5b8371a1cf3f7a094258e3a6",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 44,
+          "comment" : "edge cases for ephemeral key",
+          "public" : "04000000000000000000000000000000000000000000000000000000001f03123b000000000000000000000000000000008e42e18ff3cbf8a3c3521731d62cc8db50975898d4d9a5b1ea8faac9fbbf5482b9e4716437fdb19c57463e84ffffffff",
+          "private" : "2bc15cf3981eab6102c39f9a925aa1309db59c2c02a54411928d73c3945d157848dc36959efef7495c8528ea284c1c97",
+          "shared" : "ea817dff44f1944a38444498f1b6c1a70a8b913aa326bc2acc5068805d8ddd7a5e41b8ee5b8371a1cf3f7a094258e3a6",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 45,
+          "comment" : "edge cases for ephemeral key",
+          "public" : "040000000000000000000000000000000000000000000000000000000036a2907c00000000000000000000000000000000000000007f57b69a014783dbfa4967b2f9cfa678a6f0b6e9cfd41648cec5b3c498e72152da3f82d3da2e8e9f8ef37b11",
+          "private" : "2bc15cf3981eab6102c39f9a925aa1309db59c2c02a54411928d73c3945d157848dc36959efef7495c8528ea284c1c97",
+          "shared" : "bfa93e184f76279fd707d53ddcb3628855cfafb111bcbd0b4df6ef77aee624924d681626a153fa4e59c923b71fc090b3",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 46,
+          "comment" : "edge cases for ephemeral key",
+          "public" : "040000000000000000000000000000000000000000000000000000000036a2907c00000000000000000000000000000000ffffffff80a84965feb87c2405b6984d06305987590f4916302be9b7313a4c3a6718deac25c07d2c25d17161710c84ee",
+          "private" : "2bc15cf3981eab6102c39f9a925aa1309db59c2c02a54411928d73c3945d157848dc36959efef7495c8528ea284c1c97",
+          "shared" : "bfa93e184f76279fd707d53ddcb3628855cfafb111bcbd0b4df6ef77aee624924d681626a153fa4e59c923b71fc090b3",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 47,
+          "comment" : "edge case private key",
+          "public" : "04e9dfaaab808b3aac1ccca7cc6242a7ee583249afe8ee8f66b904cc8eec34ad334456e00f33a94de8b5169cf0199550c020156e9651734ff999c5f3ea62b83d0083a6093f234457251ecf72c41e4df7cea2420b5454a7f690034380bac981e92e",
+          "private" : "3",
+          "shared" : "455aea9924330bd6d2d6403478327900e172e93598e254cf6d8eb13f0a3d21be51a46107333844e61dfa3d80df6928e9",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 48,
+          "comment" : "edge case private key",
+          "public" : "04e9dfaaab808b3aac1ccca7cc6242a7ee583249afe8ee8f66b904cc8eec34ad334456e00f33a94de8b5169cf0199550c020156e9651734ff999c5f3ea62b83d0083a6093f234457251ecf72c41e4df7cea2420b5454a7f690034380bac981e92e",
+          "private" : "0ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "shared" : "db1d8ef1117282870db8113aa4f58723c756ce598686eb8ea531aa4d39abb1b982b1e7bb2648a6c268d2d351204db8d5",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 49,
+          "comment" : "edge case private key",
+          "public" : "04e9dfaaab808b3aac1ccca7cc6242a7ee583249afe8ee8f66b904cc8eec34ad334456e00f33a94de8b5169cf0199550c020156e9651734ff999c5f3ea62b83d0083a6093f234457251ecf72c41e4df7cea2420b5454a7f690034380bac981e92e",
+          "private" : "10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "shared" : "e98062df47ef884c9411e16466af84ad271d586008b1fbc50aeb3b36836a35a770dd42e0db84d39b26f4dcd2dc03d90b",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 50,
+          "comment" : "edge case private key",
+          "public" : "04e9dfaaab808b3aac1ccca7cc6242a7ee583249afe8ee8f66b904cc8eec34ad334456e00f33a94de8b5169cf0199550c020156e9651734ff999c5f3ea62b83d0083a6093f234457251ecf72c41e4df7cea2420b5454a7f690034380bac981e92e",
+          "private" : "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "shared" : "898aae0ebf1cb49fb6b1234d60f59006325421049a8a320820e1ad6af6593cdc2229a08c500aa55ca05999d12829db9c",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 51,
+          "comment" : "edge case private key",
+          "public" : "04e9dfaaab808b3aac1ccca7cc6242a7ee583249afe8ee8f66b904cc8eec34ad334456e00f33a94de8b5169cf0199550c020156e9651734ff999c5f3ea62b83d0083a6093f234457251ecf72c41e4df7cea2420b5454a7f690034380bac981e92e",
+          "private" : "0800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "shared" : "83f862f496ab8af12b82a8a0c047d836bdfa36281324b3a1eb2e9c1d46699d81cb125cbe4b93939fd84e1ae86d8a83cb",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 52,
+          "comment" : "edge case private key",
+          "public" : "04e9dfaaab808b3aac1ccca7cc6242a7ee583249afe8ee8f66b904cc8eec34ad334456e00f33a94de8b5169cf0199550c020156e9651734ff999c5f3ea62b83d0083a6093f234457251ecf72c41e4df7cea2420b5454a7f690034380bac981e92e",
+          "private" : "0ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a779ecec196accc52973",
+          "shared" : "9a26894887a0342ca559a74a4d4a8e1d6b2084f02e1c65b3097121a9a9af047d8810fb945dc25bbf02222b3b625f1e0a",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 53,
+          "comment" : "edge case private key",
+          "public" : "04e9dfaaab808b3aac1ccca7cc6242a7ee583249afe8ee8f66b904cc8eec34ad334456e00f33a94de8b5169cf0199550c020156e9651734ff999c5f3ea62b83d0083a6093f234457251ecf72c41e4df7cea2420b5454a7f690034380bac981e92e",
+          "private" : "0ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecdc196accc52973",
+          "shared" : "8a8d9dc194a26910cbdae7908d185b6ad04b620c94c5ee331e584ed804e495bebc2290a2d7006a06e65b9bcace86c6f6",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 54,
+          "comment" : "edge case private key",
+          "public" : "04e9dfaaab808b3aac1ccca7cc6242a7ee583249afe8ee8f66b904cc8eec34ad334456e00f33a94de8b5169cf0199550c020156e9651734ff999c5f3ea62b83d0083a6093f234457251ecf72c41e4df7cea2420b5454a7f690034380bac981e92e",
+          "private" : "0ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aece4196accc52973",
+          "shared" : "d57f6aa12d3f07e8958499f249e52cfbe5be58482e146c5414dbbf984fc5333710350e2ce96b33beb7678381f40f1dcb",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 55,
+          "comment" : "edge case private key",
+          "public" : "04e9dfaaab808b3aac1ccca7cc6242a7ee583249afe8ee8f66b904cc8eec34ad334456e00f33a94de8b5169cf0199550c020156e9651734ff999c5f3ea62b83d0083a6093f234457251ecf72c41e4df7cea2420b5454a7f690034380bac981e92e",
+          "private" : "0ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec1969ccc52973",
+          "shared" : "188e8041d9a5f0b6cfdad315ada4823beda0146774fad65b500e6ef94376ebf8af7a40ff6f6b45019a09dde7d7fb5552",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 56,
+          "comment" : "edge case private key",
+          "public" : "04e9dfaaab808b3aac1ccca7cc6242a7ee583249afe8ee8f66b904cc8eec34ad334456e00f33a94de8b5169cf0199550c020156e9651734ff999c5f3ea62b83d0083a6093f234457251ecf72c41e4df7cea2420b5454a7f690034380bac981e92e",
+          "private" : "0ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52959",
+          "shared" : "2ecf9dc47e8b07ae61ddbd1680ead02698e9e8469f78d5a28328e48d0c9d7a2ac787e50cba58cc44a32fb1235d2d7027",
+          "result" : "valid",
+          "flags" : [
+            "AddSubChain"
+          ]
+        },
+        {
+          "tcId" : 57,
+          "comment" : "edge case private key",
+          "public" : "04e9dfaaab808b3aac1ccca7cc6242a7ee583249afe8ee8f66b904cc8eec34ad334456e00f33a94de8b5169cf0199550c020156e9651734ff999c5f3ea62b83d0083a6093f234457251ecf72c41e4df7cea2420b5454a7f690034380bac981e92e",
+          "private" : "0ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52969",
+          "shared" : "06ee9f55079d3d3c18c683ba33e0d2521be97c4fbf7917bf3b6287d58ffcde2df88842e3f5530b39549ac20974b1b60e",
+          "result" : "valid",
+          "flags" : [
+            "AddSubChain"
+          ]
+        },
+        {
+          "tcId" : 58,
+          "comment" : "edge case private key",
+          "public" : "04e9dfaaab808b3aac1ccca7cc6242a7ee583249afe8ee8f66b904cc8eec34ad334456e00f33a94de8b5169cf0199550c020156e9651734ff999c5f3ea62b83d0083a6093f234457251ecf72c41e4df7cea2420b5454a7f690034380bac981e92e",
+          "private" : "0ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52970",
+          "shared" : "455aea9924330bd6d2d6403478327900e172e93598e254cf6d8eb13f0a3d21be51a46107333844e61dfa3d80df6928e9",
+          "result" : "valid",
+          "flags" : []
+        },
+        {
+          "tcId" : 59,
+          "comment" : "edge case private key",
+          "public" : "04e9dfaaab808b3aac1ccca7cc6242a7ee583249afe8ee8f66b904cc8eec34ad334456e00f33a94de8b5169cf0199550c020156e9651734ff999c5f3ea62b83d0083a6093f234457251ecf72c41e4df7cea2420b5454a7f690034380bac981e92e",
+          "private" : "0ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52971",
+          "shared" : "024c5281487216058270cd1cfe259e948310e4adc263a9edaa4da0bc3f5f8ce8ffc88ae41b2c050bf6dd9c8c66857237",
+          "result" : "valid",
+          "flags" : [
+            "AddSubChain"
+          ]
+        },
+        {
+          "tcId" : 60,
+          "comment" : "point is not on curve",
+          "public" : "04000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "private" : "0c6cafb74e2a50c82c7a63d13294bfea13d0bc504ba2b08a392c9081bf3815d9e44d969ed7f05ffd1d8594355053c6147",
+          "shared" : "",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 61,
+          "comment" : "point is not on curve",
+          "public" : "04000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001",
+          "private" : "0c6cafb74e2a50c82c7a63d13294bfea13d0bc504ba2b08a392c9081bf3815d9e44d969ed7f05ffd1d8594355053c6147",
+          "shared" : "",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 62,
+          "comment" : "point is not on curve",
+          "public" : "04000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000fffffffe",
+          "private" : "0c6cafb74e2a50c82c7a63d13294bfea13d0bc504ba2b08a392c9081bf3815d9e44d969ed7f05ffd1d8594355053c6147",
+          "shared" : "",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 63,
+          "comment" : "point is not on curve",
+          "public" : "04000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff",
+          "private" : "0c6cafb74e2a50c82c7a63d13294bfea13d0bc504ba2b08a392c9081bf3815d9e44d969ed7f05ffd1d8594355053c6147",
+          "shared" : "",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 64,
+          "comment" : "point is not on curve",
+          "public" : "04000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "private" : "0c6cafb74e2a50c82c7a63d13294bfea13d0bc504ba2b08a392c9081bf3815d9e44d969ed7f05ffd1d8594355053c6147",
+          "shared" : "",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 65,
+          "comment" : "point is not on curve",
+          "public" : "04000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001",
+          "private" : "0c6cafb74e2a50c82c7a63d13294bfea13d0bc504ba2b08a392c9081bf3815d9e44d969ed7f05ffd1d8594355053c6147",
+          "shared" : "",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 66,
+          "comment" : "point is not on curve",
+          "public" : "04000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000fffffffe",
+          "private" : "0c6cafb74e2a50c82c7a63d13294bfea13d0bc504ba2b08a392c9081bf3815d9e44d969ed7f05ffd1d8594355053c6147",
+          "shared" : "",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 67,
+          "comment" : "point is not on curve",
+          "public" : "04000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff",
+          "private" : "0c6cafb74e2a50c82c7a63d13294bfea13d0bc504ba2b08a392c9081bf3815d9e44d969ed7f05ffd1d8594355053c6147",
+          "shared" : "",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 68,
+          "comment" : "point is not on curve",
+          "public" : "04fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000fffffffe000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "private" : "0c6cafb74e2a50c82c7a63d13294bfea13d0bc504ba2b08a392c9081bf3815d9e44d969ed7f05ffd1d8594355053c6147",
+          "shared" : "",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 69,
+          "comment" : "point is not on curve",
+          "public" : "04fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000fffffffe000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001",
+          "private" : "0c6cafb74e2a50c82c7a63d13294bfea13d0bc504ba2b08a392c9081bf3815d9e44d969ed7f05ffd1d8594355053c6147",
+          "shared" : "",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 70,
+          "comment" : "point is not on curve",
+          "public" : "04fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000fffffffefffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000fffffffe",
+          "private" : "0c6cafb74e2a50c82c7a63d13294bfea13d0bc504ba2b08a392c9081bf3815d9e44d969ed7f05ffd1d8594355053c6147",
+          "shared" : "",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 71,
+          "comment" : "point is not on curve",
+          "public" : "04fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000fffffffefffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff",
+          "private" : "0c6cafb74e2a50c82c7a63d13294bfea13d0bc504ba2b08a392c9081bf3815d9e44d969ed7f05ffd1d8594355053c6147",
+          "shared" : "",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 72,
+          "comment" : "point is not on curve",
+          "public" : "04fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "private" : "0c6cafb74e2a50c82c7a63d13294bfea13d0bc504ba2b08a392c9081bf3815d9e44d969ed7f05ffd1d8594355053c6147",
+          "shared" : "",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 73,
+          "comment" : "point is not on curve",
+          "public" : "04fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001",
+          "private" : "0c6cafb74e2a50c82c7a63d13294bfea13d0bc504ba2b08a392c9081bf3815d9e44d969ed7f05ffd1d8594355053c6147",
+          "shared" : "",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 74,
+          "comment" : "point is not on curve",
+          "public" : "04fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000fffffffe",
+          "private" : "0c6cafb74e2a50c82c7a63d13294bfea13d0bc504ba2b08a392c9081bf3815d9e44d969ed7f05ffd1d8594355053c6147",
+          "shared" : "",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 75,
+          "comment" : "point is not on curve",
+          "public" : "04fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff",
+          "private" : "0c6cafb74e2a50c82c7a63d13294bfea13d0bc504ba2b08a392c9081bf3815d9e44d969ed7f05ffd1d8594355053c6147",
+          "shared" : "",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 76,
+          "comment" : "",
+          "public" : "",
+          "private" : "0c6cafb74e2a50c82c7a63d13294bfea13d0bc504ba2b08a392c9081bf3815d9e44d969ed7f05ffd1d8594355053c6147",
+          "shared" : "",
+          "result" : "invalid",
+          "flags" : []
+        },
+        {
+          "tcId" : 77,
+          "comment" : "invalid public key",
+          "public" : "024424530ea70bace90601f8d5869e4179a6cd689b6a18fdfec50cecf17cb836d24820211ada67815b42c2c2606303f69e",
+          "private" : "2b9e57572da6cf4fb58cb94eab8df19383a136f219f2a515776a8bf48e1538dd1d811946c16d9f0184c9ce5cdf1dac51",
+          "shared" : "",
+          "result" : "invalid",
+          "flags" : [
+            "CompressedPoint"
+          ]
+        }
+      ]
+    }
+  ]
+}

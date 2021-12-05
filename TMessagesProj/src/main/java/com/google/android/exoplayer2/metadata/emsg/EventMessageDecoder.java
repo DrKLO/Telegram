@@ -15,41 +15,33 @@
  */
 package com.google.android.exoplayer2.metadata.emsg;
 
-import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.metadata.Metadata;
 import com.google.android.exoplayer2.metadata.MetadataDecoder;
 import com.google.android.exoplayer2.metadata.MetadataInputBuffer;
 import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.ParsableByteArray;
-import com.google.android.exoplayer2.util.Util;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-/**
- * Decodes Event Message (emsg) atoms, as defined in ISO/IEC 23009-1:2014, Section 5.10.3.3.
- * <p>
- * Atom data should be provided to the decoder without the full atom header (i.e. starting from the
- * first byte of the scheme_id_uri field).
- */
+/** Decodes data encoded by {@link EventMessageEncoder}. */
 public final class EventMessageDecoder implements MetadataDecoder {
 
   @SuppressWarnings("ByteBufferBackingArray")
   @Override
   public Metadata decode(MetadataInputBuffer inputBuffer) {
-    ByteBuffer buffer = inputBuffer.data;
+    ByteBuffer buffer = Assertions.checkNotNull(inputBuffer.data);
     byte[] data = buffer.array();
     int size = buffer.limit();
-    ParsableByteArray emsgData = new ParsableByteArray(data, size);
-    String schemeIdUri = Assertions.checkNotNull(emsgData.readNullTerminatedString());
-    String value = Assertions.checkNotNull(emsgData.readNullTerminatedString());
-    long timescale = emsgData.readUnsignedInt();
-    long presentationTimeUs = Util.scaleLargeTimestamp(emsgData.readUnsignedInt(),
-        C.MICROS_PER_SECOND, timescale);
-    long durationMs = Util.scaleLargeTimestamp(emsgData.readUnsignedInt(), 1000, timescale);
-    long id = emsgData.readUnsignedInt();
-    byte[] messageData = Arrays.copyOfRange(data, emsgData.getPosition(), size);
-    return new Metadata(new EventMessage(schemeIdUri, value, durationMs, id, messageData,
-        presentationTimeUs));
+    return new Metadata(decode(new ParsableByteArray(data, size)));
   }
 
+  public EventMessage decode(ParsableByteArray emsgData) {
+    String schemeIdUri = Assertions.checkNotNull(emsgData.readNullTerminatedString());
+    String value = Assertions.checkNotNull(emsgData.readNullTerminatedString());
+    long durationMs = emsgData.readUnsignedInt();
+    long id = emsgData.readUnsignedInt();
+    byte[] messageData =
+        Arrays.copyOfRange(emsgData.data, emsgData.getPosition(), emsgData.limit());
+    return new EventMessage(schemeIdUri, value, durationMs, id, messageData);
+  }
 }

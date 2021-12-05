@@ -1,0 +1,21 @@
+diff --git a/base/third_party/cityhash_v103/src/city_v103.h b/base/third_party/cityhash_v103/src/city_v103.h
+index c2ab352cb56c..398de9b6e303 100644
+--- a/base/third_party/cityhash_v103/src/city_v103.h
++++ b/base/third_party/cityhash_v103/src/city_v103.h
+@@ -40,8 +40,8 @@
+ // of a+b is easily derived from the hashes of a and b.  This property
+ // doesn't hold for any hash functions in this file.
+ 
+-#ifndef CITY_HASH_H_
+-#define CITY_HASH_H_
++#ifndef BASE_THIRD_PARTY_CITYHASH_V103_SRC_CITY_V103_H_
++#define BASE_THIRD_PARTY_CITYHASH_V103_SRC_CITY_V103_H_
+ 
+ #include <stdlib.h>  // for size_t.
+ #include <stdint.h>
+@@ -87,4 +87,4 @@ inline uint64 Hash128to64(const uint128& x) {
+   return b;
+ }
+ 
+-#endif  // CITY_HASH_H_
++#endif  // BASE_THIRD_PARTY_CITYHASH_V103_SRC_CITY_V103_H_

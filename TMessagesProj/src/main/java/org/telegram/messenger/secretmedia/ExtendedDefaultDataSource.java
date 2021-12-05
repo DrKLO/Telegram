@@ -169,8 +169,6 @@ public final class ExtendedDefaultDataSource implements DataSource {
                 listener,
                 new DefaultHttpDataSource(
                         userAgent,
-                        /* contentTypePredicate= */ null,
-                        listener,
                         connectTimeoutMillis,
                         readTimeoutMillis,
                         allowCrossProtocolRedirects,
@@ -194,6 +192,7 @@ public final class ExtendedDefaultDataSource implements DataSource {
         this(context, baseDataSource);
         if (listener != null) {
             transferListeners.add(listener);
+            baseDataSource.addTransferListener(listener);
         }
     }
 

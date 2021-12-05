@@ -35,7 +35,7 @@ import java.util.Map;
 
 public class Track {
 
-    private class SamplePresentationTime {
+    private static class SamplePresentationTime {
 
         private int index;
         private long presentationTime;
@@ -224,8 +224,19 @@ public class Track {
             slConfigDescriptor.setPredefined(2);
             descriptor.setSlConfigDescriptor(slConfigDescriptor);
 
+            String mime;
+            if (format.containsKey("mime")) {
+                mime = format.getString("mime");
+            } else {
+                mime = "audio/mp4-latm";
+            }
+
             DecoderConfigDescriptor decoderConfigDescriptor = new DecoderConfigDescriptor();
-            decoderConfigDescriptor.setObjectTypeIndication(0x40);
+            if ("audio/mpeg".equals(mime)) {
+                decoderConfigDescriptor.setObjectTypeIndication(0x69);
+            } else {
+                decoderConfigDescriptor.setObjectTypeIndication(0x40);
+            }
             decoderConfigDescriptor.setStreamType(5);
             decoderConfigDescriptor.setBufferSizeDB(1536);
             if (format.containsKey("max-bitrate")) {
@@ -286,7 +297,7 @@ public class Track {
             if (presentationTime.index != 0) {
                 duration += delta;
             }
-            if (delta != 0) {
+            if (delta > 0 && delta < Integer.MAX_VALUE) {
                 minDelta = Math.min(minDelta, delta);
             }
             if (presentationTime.index != a) {
@@ -315,6 +326,10 @@ public class Track {
 
     public ArrayList<Sample> getSamples() {
         return samples;
+    }
+
+    public long getLastFrameTimestamp() {
+        return ((duration - sampleDurations[sampleDurations.length - 1]) * 1000000 - 500000) / timeScale;
     }
 
     public long getDuration() {

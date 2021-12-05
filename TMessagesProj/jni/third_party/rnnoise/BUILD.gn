@@ -1,0 +1,17 @@
+# Copyright 2018 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import("//testing/test.gni")
+
+group("rnnoise") {
+  deps = [ ":rnn_vad" ]
+}
+
+source_set("rnn_vad") {
+  sources = [
+    "src/rnn_activations.h",
+    "src/rnn_vad_weights.cc",
+    "src/rnn_vad_weights.h",
+  ]
+}

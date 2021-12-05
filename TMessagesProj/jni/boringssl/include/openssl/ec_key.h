@@ -84,6 +84,12 @@ extern "C" {
 
 
 // EC key objects.
+//
+// An |EC_KEY| object represents a public or private EC key. A given object may
+// be used concurrently on multiple threads by non-mutating functions, provided
+// no other thread is concurrently calling a mutating function. Unless otherwise
+// documented, functions which take a |const| pointer are non-mutating and
+// functions which take a non-|const| pointer are mutating.
 
 // EC_KEY_new returns a fresh |EC_KEY| object or NULL on error.
 OPENSSL_EXPORT EC_KEY *EC_KEY_new(void);
@@ -99,13 +105,11 @@ OPENSSL_EXPORT EC_KEY *EC_KEY_new_by_curve_name(int nid);
 // EC_KEY_free frees all the data owned by |key| and |key| itself.
 OPENSSL_EXPORT void EC_KEY_free(EC_KEY *key);
 
-// EC_KEY_copy sets |dst| equal to |src| and returns |dst| or NULL on error.
-OPENSSL_EXPORT EC_KEY *EC_KEY_copy(EC_KEY *dst, const EC_KEY *src);
-
 // EC_KEY_dup returns a fresh copy of |src| or NULL on error.
 OPENSSL_EXPORT EC_KEY *EC_KEY_dup(const EC_KEY *src);
 
-// EC_KEY_up_ref increases the reference count of |key| and returns one.
+// EC_KEY_up_ref increases the reference count of |key| and returns one. It does
+// not mutate |key| for thread-safety purposes and may be used concurrently.
 OPENSSL_EXPORT int EC_KEY_up_ref(EC_KEY *key);
 
 // EC_KEY_is_opaque returns one if |key| is opaque and doesn't expose its key
@@ -116,8 +120,8 @@ OPENSSL_EXPORT int EC_KEY_is_opaque(const EC_KEY *key);
 OPENSSL_EXPORT const EC_GROUP *EC_KEY_get0_group(const EC_KEY *key);
 
 // EC_KEY_set_group sets the |EC_GROUP| object that |key| will use to |group|.
-// It returns one on success and zero otherwise. If |key| already has a group,
-// it is an error to change to a different one.
+// It returns one on success and zero if |key| is already configured with a
+// different group.
 OPENSSL_EXPORT int EC_KEY_set_group(EC_KEY *key, const EC_GROUP *group);
 
 // EC_KEY_get0_private_key returns a pointer to the private key inside |key|.
@@ -170,8 +174,14 @@ OPENSSL_EXPORT int EC_KEY_check_fips(const EC_KEY *key);
 // EC_KEY_set_public_key_affine_coordinates sets the public key in |key| to
 // (|x|, |y|). It returns one on success and zero otherwise.
 OPENSSL_EXPORT int EC_KEY_set_public_key_affine_coordinates(EC_KEY *key,
-                                                            BIGNUM *x,
-                                                            BIGNUM *y);
+                                                            const BIGNUM *x,
+                                                            const BIGNUM *y);
+
+// EC_KEY_key2buf encodes the public key in |key| to an allocated octet string
+// and sets |*out_buf| to point to it. It returns the length of the encoded
+// octet string or zero if an error occurred.
+OPENSSL_EXPORT size_t EC_KEY_key2buf(EC_KEY *key, point_conversion_form_t form,
+                                     unsigned char **out_buf, BN_CTX *ctx);
 
 
 // Key generation.
@@ -332,11 +342,12 @@ OPENSSL_EXPORT int i2o_ECPublicKey(const EC_KEY *key, unsigned char **outp);
 
 extern "C++" {
 
-namespace bssl {
+BSSL_NAMESPACE_BEGIN
 
 BORINGSSL_MAKE_DELETER(EC_KEY, EC_KEY_free)
+BORINGSSL_MAKE_UP_REF(EC_KEY, EC_KEY_up_ref)
 
-}  // namespace bssl
+BSSL_NAMESPACE_END
 
 }  // extern C++
 

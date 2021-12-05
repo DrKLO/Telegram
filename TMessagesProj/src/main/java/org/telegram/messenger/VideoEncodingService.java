@@ -31,10 +31,15 @@ public class VideoEncodingService extends Service implements NotificationCenter.
     }
 
     public void onDestroy() {
-        stopForeground(true);
+        super.onDestroy();
+        try {
+            stopForeground(true);
+        } catch (Throwable ignore) {
+
+        }
         NotificationManagerCompat.from(ApplicationLoader.applicationContext).cancel(4);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.stopEncodingService);
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.FileUploadProgressChanged);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileUploadProgressChanged);
         if (BuildVars.LOGS_ENABLED) {
             FileLog.d("destroy video service");
         }
@@ -42,11 +47,13 @@ public class VideoEncodingService extends Service implements NotificationCenter.
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.FileUploadProgressChanged) {
+        if (id == NotificationCenter.fileUploadProgressChanged) {
             String fileName = (String) args[0];
             if (account == currentAccount && path != null && path.equals(fileName)) {
-                Float progress = (Float) args[1];
-                Boolean enc = (Boolean) args[2];
+                Long loadedSize = (Long) args[1];
+                Long totalSize = (Long) args[2];
+                float progress = Math.min(1f, loadedSize / (float) totalSize);
+                Boolean enc = (Boolean) args[3];
                 currentProgress = (int) (progress * 100);
                 builder.setProgress(100, currentProgress, currentProgress == 0);
                 try {
@@ -68,9 +75,13 @@ public class VideoEncodingService extends Service implements NotificationCenter.
         path = intent.getStringExtra("path");
         int oldAccount = currentAccount;
         currentAccount = intent.getIntExtra("currentAccount", UserConfig.selectedAccount);
+        if (!UserConfig.isValidAccount(currentAccount)) {
+            stopSelf();
+            return Service.START_NOT_STICKY;
+        }
         if (oldAccount != currentAccount) {
-            NotificationCenter.getInstance(oldAccount).removeObserver(this, NotificationCenter.FileUploadProgressChanged);
-            NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.FileUploadProgressChanged);
+            NotificationCenter.getInstance(oldAccount).removeObserver(this, NotificationCenter.fileUploadProgressChanged);
+            NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileUploadProgressChanged);
         }
         boolean isGif = intent.getBooleanExtra("gif", false);
         if (path == null) {
@@ -96,7 +107,7 @@ public class VideoEncodingService extends Service implements NotificationCenter.
             }
         }
         currentProgress = 0;
-        builder.setProgress(100, currentProgress, currentProgress == 0);
+        builder.setProgress(100, currentProgress, true);
         startForeground(4, builder.build());
         NotificationManagerCompat.from(ApplicationLoader.applicationContext).notify(4, builder.build());
         return Service.START_NOT_STICKY;

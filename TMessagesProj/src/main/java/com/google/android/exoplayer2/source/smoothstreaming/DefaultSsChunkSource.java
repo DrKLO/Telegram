@@ -74,10 +74,10 @@ public class DefaultSsChunkSource implements SsChunkSource {
 
   private final LoaderErrorThrower manifestLoaderErrorThrower;
   private final int streamElementIndex;
-  private final TrackSelection trackSelection;
   private final ChunkExtractorWrapper[] extractorWrappers;
   private final DataSource dataSource;
 
+  private TrackSelection trackSelection;
   private SsManifest manifest;
   private int currentManifestChunkOffset;
 
@@ -113,9 +113,12 @@ public class DefaultSsChunkSource implements SsChunkSource {
       Track track = new Track(manifestTrackIndex, streamElement.type, streamElement.timescale,
           C.TIME_UNSET, manifest.durationUs, format, Track.TRANSFORMATION_NONE,
           trackEncryptionBoxes, nalUnitLengthFieldLength, null, null);
-      FragmentedMp4Extractor extractor = new FragmentedMp4Extractor(
-          FragmentedMp4Extractor.FLAG_WORKAROUND_EVERY_VIDEO_FRAME_IS_SYNC_FRAME
-          | FragmentedMp4Extractor.FLAG_WORKAROUND_IGNORE_TFDT_BOX, null, track, null);
+      FragmentedMp4Extractor extractor =
+          new FragmentedMp4Extractor(
+              FragmentedMp4Extractor.FLAG_WORKAROUND_EVERY_VIDEO_FRAME_IS_SYNC_FRAME
+                  | FragmentedMp4Extractor.FLAG_WORKAROUND_IGNORE_TFDT_BOX,
+              /* timestampAdjuster= */ null,
+              track);
       extractorWrappers[i] = new ChunkExtractorWrapper(extractor, streamElement.type, format);
     }
   }
@@ -153,6 +156,11 @@ public class DefaultSsChunkSource implements SsChunkSource {
       }
     }
     manifest = newManifest;
+  }
+
+  @Override
+  public void updateTrackSelection(TrackSelection trackSelection) {
+    this.trackSelection = trackSelection;
   }
 
   // ChunkSource implementation.

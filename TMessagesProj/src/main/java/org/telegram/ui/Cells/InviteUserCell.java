@@ -20,7 +20,6 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox2;
-import org.telegram.ui.Components.GroupCreateCheckBox;
 import org.telegram.ui.Components.LayoutHelper;
 
 public class InviteUserCell extends FrameLayout {
@@ -54,9 +53,8 @@ public class InviteUserCell extends FrameLayout {
         addView(statusTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 28 : 72, 39, LocaleController.isRTL ? 72 : 28, 0));
 
         if (needCheck) {
-            checkBox = new CheckBox2(context);
+            checkBox = new CheckBox2(context, 21);
             checkBox.setColor(null, Theme.key_windowBackgroundWhite, Theme.key_checkboxCheck);
-            checkBox.setSize(21);
             checkBox.setDrawUnchecked(false);
             checkBox.setDrawBackgroundAsArc(3);
             addView(checkBox, LayoutHelper.createFrame(24, 24, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 40, 40, LocaleController.isRTL ? 39 : 0, 0));
@@ -92,7 +90,7 @@ public class InviteUserCell extends FrameLayout {
         }
         String newName = null;
 
-        avatarDrawable.setInfo(currentContact.contact_id, currentContact.first_name, currentContact.last_name, false);
+        avatarDrawable.setInfo(currentContact.contact_id, currentContact.first_name, currentContact.last_name);
 
         if (currentName != null) {
             nameTextView.setText(currentName, true);

@@ -490,7 +490,8 @@ public final class ParsableByteArray {
    * @return The string not including any terminating NUL byte, or null if the end of the data has
    *     already been reached.
    */
-  public @Nullable String readNullTerminatedString() {
+  @Nullable
+  public String readNullTerminatedString() {
     if (bytesLeft() == 0) {
       return null;
     }
@@ -516,7 +517,8 @@ public final class ParsableByteArray {
    * @return The line not including any line-termination characters, or null if the end of the data
    *     has already been reached.
    */
-  public @Nullable String readLine() {
+  @Nullable
+  public String readLine() {
     if (bytesLeft() == 0) {
       return null;
     }

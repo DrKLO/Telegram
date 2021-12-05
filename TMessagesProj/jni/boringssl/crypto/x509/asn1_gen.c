@@ -65,6 +65,7 @@
 #include <openssl/x509v3.h>
 
 #include "../internal.h"
+#include "../x509v3/internal.h"
 
 /*
  * Although this file is in crypto/x509 for layering purposes, it emits
@@ -769,7 +770,7 @@ static ASN1_TYPE *asn1_str2type(const char *str, int format, int utype)
 
         if (format == ASN1_GEN_FORMAT_HEX) {
 
-            if (!(rdata = string_to_hex((char *)str, &rdlen))) {
+            if (!(rdata = x509v3_hex_to_bytes((char *)str, &rdlen))) {
                 OPENSSL_PUT_ERROR(ASN1, ASN1_R_ILLEGAL_HEX);
                 goto bad_str;
             }

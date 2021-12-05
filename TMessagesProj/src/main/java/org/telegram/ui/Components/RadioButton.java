@@ -69,6 +69,7 @@ public class RadioButton extends View {
         invalidate();
     }
 
+    @Keep
     public float getProgress() {
         return progress;
     }
@@ -78,6 +79,10 @@ public class RadioButton extends View {
             return;
         }
         size = value;
+    }
+
+    public int getColor() {
+        return color;
     }
 
     public void setColor(int color1, int color2) {

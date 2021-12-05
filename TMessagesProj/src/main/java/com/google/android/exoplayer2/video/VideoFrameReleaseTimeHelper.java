@@ -21,18 +21,17 @@ import android.hardware.display.DisplayManager;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
-import androidx.annotation.Nullable;
 import android.view.Choreographer;
 import android.view.Choreographer.FrameCallback;
 import android.view.Display;
 import android.view.WindowManager;
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.util.Util;
 
 /**
  * Makes a best effort to adjust frame release timestamps for a smoother visual result.
  */
-@TargetApi(16)
 public final class VideoFrameReleaseTimeHelper {
 
   private static final long CHOREOGRAPHER_SAMPLE_DELAY_MILLIS = 500;

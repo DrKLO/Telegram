@@ -10,14 +10,18 @@ package org.telegram.ui.Cells;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Switch;
@@ -26,6 +30,8 @@ public class NotificationsCheckCell extends FrameLayout {
 
     private TextView textView;
     private TextView valueTextView;
+    @SuppressWarnings("FieldCanBeLocal")
+    private ImageView moveImageView;
     private Switch checkBox;
     private boolean needDivider;
     private boolean drawLine = true;
@@ -33,13 +39,22 @@ public class NotificationsCheckCell extends FrameLayout {
     private int currentHeight;
 
     public NotificationsCheckCell(Context context) {
-        this(context, 21, 70);
+        this(context, 21, 70, false);
     }
 
-    public NotificationsCheckCell(Context context, int padding, int height) {
+    public NotificationsCheckCell(Context context, int padding, int height, boolean reorder) {
         super(context);
         setWillNotDraw(false);
         currentHeight = height;
+
+        if (reorder) {
+            moveImageView = new ImageView(context);
+            moveImageView.setFocusable(false);
+            moveImageView.setScaleType(ImageView.ScaleType.CENTER);
+            moveImageView.setImageResource(R.drawable.poll_reorder);
+            moveImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.MULTIPLY));
+            addView(moveImageView, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL, 6, 0, 6, 0));
+        }
 
         textView = new TextView(context);
         textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -49,7 +64,7 @@ public class NotificationsCheckCell extends FrameLayout {
         textView.setSingleLine(true);
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         textView.setEllipsize(TextUtils.TruncateAt.END);
-        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 80 : 23, 13 + (currentHeight - 70) / 2, LocaleController.isRTL ? 23 : 80, 0));
+        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 80 : (reorder ? 64 : padding), 13 + (currentHeight - 70) / 2, LocaleController.isRTL ? (reorder ? 64 : padding) : 80, 0));
 
         valueTextView = new TextView(context);
         valueTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
@@ -60,7 +75,7 @@ public class NotificationsCheckCell extends FrameLayout {
         valueTextView.setSingleLine(true);
         valueTextView.setPadding(0, 0, 0, 0);
         valueTextView.setEllipsize(TextUtils.TruncateAt.END);
-        addView(valueTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 80 : 23, 38 + (currentHeight - 70) / 2, LocaleController.isRTL ? 23 : 80, 0));
+        addView(valueTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 80 : (reorder ? 64 : padding), 38 + (currentHeight - 70) / 2, LocaleController.isRTL ? (reorder ? 64 : padding) : 80, 0));
 
         checkBox = new Switch(context);
         checkBox.setColors(Theme.key_switchTrack, Theme.key_switchTrackChecked, Theme.key_windowBackgroundWhite, Theme.key_windowBackgroundWhite);

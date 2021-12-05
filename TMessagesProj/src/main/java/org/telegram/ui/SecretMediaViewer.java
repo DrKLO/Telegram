@@ -53,13 +53,14 @@ import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.AnimationProperties;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Scroller;
+import org.telegram.ui.Components.TimerParticles;
 import org.telegram.ui.Components.VideoPlayer;
 
 import java.io.File;
@@ -92,30 +93,15 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
 
     private class SecretDeleteTimer extends FrameLayout {
 
-        private Paint deleteProgressPaint;
         private Paint afterDeleteProgressPaint;
         private Paint circlePaint;
         private Paint particlePaint;
         private RectF deleteProgressRect = new RectF();
+        private TimerParticles timerParticles = new TimerParticles();
 
         private long destroyTime;
-        private long lastAnimationTime;
         private long destroyTtl;
         private boolean useVideoProgress;
-
-        private class Particle {
-            float x;
-            float y;
-            float vx;
-            float vy;
-            float velocity;
-            float alpha;
-            float lifeTime;
-            float currentTime;
-        }
-
-        private ArrayList<Particle> particles = new ArrayList<>();
-        private ArrayList<Particle> freeParticles = new ArrayList<>();
 
         private Drawable drawable;
 
@@ -129,9 +115,6 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
             particlePaint.setStrokeCap(Paint.Cap.ROUND);
             particlePaint.setStyle(Paint.Style.STROKE);
 
-            deleteProgressPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-            deleteProgressPaint.setColor(0xffe6e6e6);
-
             afterDeleteProgressPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             afterDeleteProgressPaint.setStyle(Paint.Style.STROKE);
             afterDeleteProgressPaint.setStrokeCap(Paint.Cap.ROUND);
@@ -142,37 +125,13 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
             circlePaint.setColor(0x7f000000);
 
             drawable = context.getResources().getDrawable(R.drawable.flame_small);
-            for (int a = 0; a < 40; a++) {
-                freeParticles.add(new Particle());
-            }
         }
 
         private void setDestroyTime(long time, long ttl, boolean videoProgress) {
             destroyTime = time;
             destroyTtl = ttl;
             useVideoProgress = videoProgress;
-            lastAnimationTime = System.currentTimeMillis();
             invalidate();
-        }
-
-        private void updateParticles(long dt) {
-            int count = particles.size();
-            for (int a = 0; a < count; a++) {
-                Particle particle = particles.get(a);
-                if (particle.currentTime >= particle.lifeTime) {
-                    if (freeParticles.size() < 40) {
-                        freeParticles.add(particle);
-                    }
-                    particles.remove(a);
-                    a--;
-                    count--;
-                    continue;
-                }
-                particle.alpha = 1.0f - AndroidUtilities.decelerateInterpolator.getInterpolation(particle.currentTime / particle.lifeTime);
-                particle.x += particle.vx * particle.velocity * dt / 500.0f;
-                particle.y += particle.vy * particle.velocity * dt / 500.0f;
-                particle.currentTime += dt;
-            }
         }
 
         @Override
@@ -217,48 +176,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
             float radProgress = -360 * progress;
             canvas.drawArc(deleteProgressRect, -90, radProgress, false, afterDeleteProgressPaint);
 
-            int count = particles.size();
-            for (int a = 0; a < count; a++) {
-                Particle particle = particles.get(a);
-                particlePaint.setAlpha((int) (255 * particle.alpha));
-                canvas.drawPoint(particle.x, particle.y, particlePaint);
-            }
-
-            double vx = Math.sin(Math.PI / 180.0 * (radProgress - 90));
-            double vy = -Math.cos(Math.PI / 180.0 * (radProgress - 90));
-            int rad = AndroidUtilities.dp(14);
-            float cx = (float) (-vy * rad + deleteProgressRect.centerX());
-            float cy = (float) (vx * rad + deleteProgressRect.centerY());
-            for (int a = 0; a < 1; a++) {
-                Particle newParticle;
-                if (!freeParticles.isEmpty()) {
-                    newParticle = freeParticles.get(0);
-                    freeParticles.remove(0);
-                } else {
-                    newParticle = new Particle();
-                }
-                newParticle.x = cx;
-                newParticle.y = cy;
-
-                double angle = (Math.PI / 180.0) * (Utilities.random.nextInt(140) - 70);
-                if (angle < 0) {
-                    angle = Math.PI * 2 + angle;
-                }
-                newParticle.vx = (float) (vx * Math.cos(angle) - vy * Math.sin(angle));
-                newParticle.vy = (float) (vx * Math.sin(angle) + vy * Math.cos(angle));
-
-                newParticle.alpha = 1.0f;
-                newParticle.currentTime = 0;
-
-                newParticle.lifeTime = 400 + Utilities.random.nextInt(100);
-                newParticle.velocity = 20.0f + Utilities.random.nextFloat() * 4.0f;
-                particles.add(newParticle);
-            }
-
-            long newTime = System.currentTimeMillis();
-            long dt = (newTime - lastAnimationTime);
-            updateParticles(dt);
-            lastAnimationTime = newTime;
+            timerParticles.draw(canvas, particlePaint, deleteProgressRect, radProgress, 1.0f);
             invalidate();
         }
     }
@@ -304,7 +222,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
     private ImageReceiver centerImage = new ImageReceiver();
     private SecretDeleteTimer secretDeleteTimer;
     private boolean isVisible;
-    private int currentChannelId;
+    private long currentDialogId;
     private AspectRatioFrameLayout aspectRatioFrameLayout;
     private TextureView videoTextureView;
     private VideoPlayer videoPlayer;
@@ -387,6 +305,8 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
     private VelocityTracker velocityTracker;
     private Scroller scroller;
 
+    private boolean closeAfterAnimation;
+
     @SuppressLint("StaticFieldLeak")
     private static volatile SecretMediaViewer Instance = null;
     public static SecretMediaViewer getInstance() {
@@ -410,40 +330,41 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.messagesDeleted) {
+            boolean scheduled = (Boolean) args[2];
+            if (scheduled) {
+                return;
+            }
             if (currentMessageObject == null) {
                 return;
             }
-            int channelId = (Integer) args[1];
+            long channelId = (Long) args[1];
             if (channelId != 0) {
                 return;
             }
-            ArrayList<Integer> markAsDeletedMessages = (ArrayList<Integer>)args[0];
+            ArrayList<Integer> markAsDeletedMessages = (ArrayList<Integer>) args[0];
             if (markAsDeletedMessages.contains(currentMessageObject.getId())) {
                 if (isVideo && !videoWatchedOneTime) {
                     closeVideoAfterWatch = true;
                 } else {
-                    closePhoto(true, true);
+                    if (!closePhoto(true, true)) {
+                        closeAfterAnimation = true;
+                    }
                 }
             }
         } else if (id == NotificationCenter.didCreatedNewDeleteTask) {
             if (currentMessageObject == null || secretDeleteTimer == null) {
                 return;
             }
-            SparseArray<ArrayList<Long>> mids = (SparseArray<ArrayList<Long>>)args[0];
-            for(int i = 0; i < mids.size(); i++) {
+            long dialogId = (long) args[0];
+            if (dialogId != currentDialogId) {
+                return;
+            }
+            SparseArray<ArrayList<Integer>> mids = (SparseArray<ArrayList<Integer>>) args[1];
+            for (int i = 0; i < mids.size(); i++) {
                 int key = mids.keyAt(i);
-                ArrayList<Long> arr = mids.get(key);
+                ArrayList<Integer> arr = mids.get(key);
                 for (int a = 0; a < arr.size(); a++) {
                     long mid = arr.get(a);
-                    if (a == 0) {
-                        int channelId = (int) (mid >> 32);
-                        if (channelId < 0) {
-                            channelId = 0;
-                        }
-                        if (channelId != currentChannelId) {
-                            return;
-                        }
-                    }
                     if (currentMessageObject.getId() == mid) {
                         currentMessageObject.messageOwner.destroyTime = key;
                         secretDeleteTimer.invalidate();
@@ -457,7 +378,9 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
                 if (isVideo && !videoWatchedOneTime) {
                     closeVideoAfterWatch = true;
                 } else {
-                    closePhoto(true, true);
+                    if (!closePhoto(true, true)) {
+                        closeAfterAnimation = true;
+                    }
                 }
             }
         }
@@ -524,7 +447,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
                 }
 
                 @Override
-                public void onError(Exception e) {
+                public void onError(VideoPlayer player, Exception e) {
                     if (playerRetryPlayCount > 0) {
                         playerRetryPlayCount--;
                         AndroidUtilities.runOnUIThread(() -> preparePlayer(file), 100);
@@ -645,6 +568,19 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
                     updateMinMax(scale);
                 }
             }
+
+            @Override
+            protected void onDraw(Canvas canvas) {
+                if (Build.VERSION.SDK_INT >= 21 && isVisible && lastInsets != null) {
+                    WindowInsets insets = (WindowInsets) lastInsets;
+                    if (photoAnimationInProgress != 0) {
+                        blackPaint.setAlpha(photoBackgroundDrawable.getAlpha());
+                    } else {
+                        blackPaint.setAlpha(255);
+                    }
+                    canvas.drawRect(0, getMeasuredHeight(), getMeasuredWidth(), getMeasuredHeight() + insets.getSystemWindowInsetBottom(), blackPaint);
+                }
+            }
         };
         windowView.setBackgroundDrawable(photoBackgroundDrawable);
         windowView.setFocusable(true);
@@ -675,7 +611,11 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
                 if (oldInsets == null || !oldInsets.toString().equals(insets.toString())) {
                     windowView.requestLayout();
                 }
-                return insets.consumeSystemWindowInsets();
+                if (Build.VERSION.SDK_INT >= 30) {
+                    return WindowInsets.CONSUMED;
+                } else {
+                    return insets.consumeSystemWindowInsets();
+                }
             });
             containerView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
         }
@@ -723,7 +663,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         centerImage.setForceCrossfade(true);
     }
 
-    public void openMedia(MessageObject messageObject, PhotoViewer.PhotoViewerProvider provider) {
+    public void openMedia(MessageObject messageObject, PhotoViewer.PhotoViewerProvider provider, Runnable onOpen) {
         if (parentActivity == null || messageObject == null || !messageObject.needDrawBluredPreview() || provider == null) {
             return;
         }
@@ -807,7 +747,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagesDeleted);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.updateMessageMedia);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.didCreatedNewDeleteTask);
-        currentChannelId = messageObject.messageOwner.to_id != null ? messageObject.messageOwner.to_id.channel_id : 0;
+        currentDialogId = MessageObject.getPeerId(messageObject.messageOwner.peer_id);
         toggleActionBar(true, false);
 
         currentMessageObject = messageObject;
@@ -839,9 +779,9 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
                 isVideo = true;
                 centerImage.setImage(null, null, currentThumb != null ? new BitmapDrawable(currentThumb.bitmap) : null, -1, null, messageObject, 2);
                 long destroyTime = (long) messageObject.messageOwner.destroyTime * 1000;
-                long currentTime = System.currentTimeMillis() + ConnectionsManager.getInstance(currentAccount).getTimeDifference() * 1000;
+                long currentTime = System.currentTimeMillis() + ConnectionsManager.getInstance(currentAccount).getTimeDifference() * 1000L;
                 long timeToDestroy = destroyTime - currentTime;
-                long duration = messageObject.getDuration() * 1000;
+                long duration = messageObject.getDuration() * 1000L;
                 if (duration > timeToDestroy) {
                     secretDeleteTimer.setDestroyTime(-1, -1, true);
                 } else {
@@ -870,16 +810,19 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
 
         imageMoveAnimation = new AnimatorSet();
         imageMoveAnimation.playTogether(
-                ObjectAnimator.ofFloat(actionBar, "alpha", 0, 1.0f),
-                ObjectAnimator.ofFloat(secretDeleteTimer, "alpha", 0, 1.0f),
-                ObjectAnimator.ofInt(photoBackgroundDrawable, "alpha", 0, 255),
-                ObjectAnimator.ofFloat(secretDeleteTimer, "alpha", 0, 1.0f),
+                ObjectAnimator.ofFloat(actionBar, View.ALPHA, 0, 1.0f),
+                ObjectAnimator.ofFloat(secretDeleteTimer, View.ALPHA, 0, 1.0f),
+                ObjectAnimator.ofInt(photoBackgroundDrawable, AnimationProperties.COLOR_DRAWABLE_ALPHA, 0, 255),
+                ObjectAnimator.ofFloat(secretDeleteTimer, View.ALPHA, 0, 1.0f),
                 ObjectAnimator.ofFloat(this, "animationValue", 0, 1)
         );
         photoAnimationInProgress = 3;
         photoAnimationEndRunnable = () -> {
             photoAnimationInProgress = 0;
             imageMoveAnimation = null;
+            if (onOpen != null) {
+                onOpen.run();
+            }
             if (containerView == null) {
                 return;
             }
@@ -887,6 +830,9 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
                 containerView.setLayerType(View.LAYER_TYPE_NONE, null);
             }
             containerView.invalidate();
+            if (closeAfterAnimation) {
+                closePhoto(true, true);
+            }
         };
         imageMoveAnimation.setDuration(250);
         imageMoveAnimation.addListener(new AnimatorListenerAdapter() {
@@ -924,7 +870,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
 
         if (animated) {
             ArrayList<Animator> arrayList = new ArrayList<>();
-            arrayList.add(ObjectAnimator.ofFloat(actionBar, "alpha", show ? 1.0f : 0.0f));
+            arrayList.add(ObjectAnimator.ofFloat(actionBar, View.ALPHA, show ? 1.0f : 0.0f));
             currentActionBarAnimation = new AnimatorSet();
             currentActionBarAnimation.playTogether(arrayList);
             if (!show) {
@@ -1166,9 +1112,9 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         return currentMessageObject;
     }
 
-    public void closePhoto(boolean animated, boolean byDelete) {
+    public boolean closePhoto(boolean animated, boolean byDelete) {
         if (parentActivity == null || !isPhotoVisible || checkPhotoAnimation()) {
-            return;
+            return false;
         }
 
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagesDeleted);
@@ -1233,19 +1179,19 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
                 videoCrossfadeStarted = false;
                 textureUploaded = false;
                 imageMoveAnimation.playTogether(
-                        ObjectAnimator.ofInt(photoBackgroundDrawable, "alpha", 0),
+                        ObjectAnimator.ofInt(photoBackgroundDrawable, AnimationProperties.COLOR_DRAWABLE_ALPHA, 0),
                         ObjectAnimator.ofFloat(this, "animationValue", 0, 1),
-                        ObjectAnimator.ofFloat(actionBar, "alpha", 0),
-                        ObjectAnimator.ofFloat(secretDeleteTimer, "alpha", 0),
+                        ObjectAnimator.ofFloat(actionBar, View.ALPHA, 0),
+                        ObjectAnimator.ofFloat(secretDeleteTimer, View.ALPHA, 0),
                         ObjectAnimator.ofFloat(this, "videoCrossfadeAlpha", 0)
                 );
             } else {
                 centerImage.setManualAlphaAnimator(true);
                 imageMoveAnimation.playTogether(
-                        ObjectAnimator.ofInt(photoBackgroundDrawable, "alpha", 0),
+                        ObjectAnimator.ofInt(photoBackgroundDrawable, AnimationProperties.COLOR_DRAWABLE_ALPHA, 0),
                         ObjectAnimator.ofFloat(this, "animationValue", 0, 1),
-                        ObjectAnimator.ofFloat(actionBar, "alpha", 0),
-                        ObjectAnimator.ofFloat(secretDeleteTimer, "alpha", 0),
+                        ObjectAnimator.ofFloat(actionBar, View.ALPHA, 0),
+                        ObjectAnimator.ofFloat(secretDeleteTimer, View.ALPHA, 0),
                         ObjectAnimator.ofFloat(centerImage, "currentAlpha", 0.0f)
                 );
             }
@@ -1285,10 +1231,10 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         } else {
             AnimatorSet animatorSet = new AnimatorSet();
             animatorSet.playTogether(
-                    ObjectAnimator.ofFloat(containerView, "scaleX", 0.9f),
-                    ObjectAnimator.ofFloat(containerView, "scaleY", 0.9f),
-                    ObjectAnimator.ofInt(photoBackgroundDrawable, "alpha", 0),
-                    ObjectAnimator.ofFloat(actionBar, "alpha", 0)
+                    ObjectAnimator.ofFloat(containerView, View.SCALE_X, 0.9f),
+                    ObjectAnimator.ofFloat(containerView, View.SCALE_Y, 0.9f),
+                    ObjectAnimator.ofInt(photoBackgroundDrawable, AnimationProperties.COLOR_DRAWABLE_ALPHA, 0),
+                    ObjectAnimator.ofFloat(actionBar, View.ALPHA, 0)
             );
             photoAnimationInProgress = 2;
             photoAnimationEndRunnable = () -> {
@@ -1320,6 +1266,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
             }
             animatorSet.start();
         }
+        return true;
     }
 
     private void onPhotoClosed(PhotoViewer.PlaceProviderObject object) {

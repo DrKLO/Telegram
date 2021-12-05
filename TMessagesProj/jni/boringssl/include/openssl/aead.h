@@ -91,14 +91,43 @@ extern "C" {
 // AEAD algorithms.
 
 // EVP_aead_aes_128_gcm is AES-128 in Galois Counter Mode.
+//
+// Note: AES-GCM should only be used with 12-byte (96-bit) nonces. Although it
+// is specified to take a variable-length nonce, nonces with other lengths are
+// effectively randomized, which means one must consider collisions. Unless
+// implementing an existing protocol which has already specified incorrect
+// parameters, only use 12-byte nonces.
 OPENSSL_EXPORT const EVP_AEAD *EVP_aead_aes_128_gcm(void);
 
+// EVP_aead_aes_192_gcm is AES-192 in Galois Counter Mode.
+//
+// WARNING: AES-192 is superfluous and shouldn't exist. NIST should never have
+// defined it. Use only when interop with another system requires it, never
+// de novo.
+//
+// Note: AES-GCM should only be used with 12-byte (96-bit) nonces. Although it
+// is specified to take a variable-length nonce, nonces with other lengths are
+// effectively randomized, which means one must consider collisions. Unless
+// implementing an existing protocol which has already specified incorrect
+// parameters, only use 12-byte nonces.
+OPENSSL_EXPORT const EVP_AEAD *EVP_aead_aes_192_gcm(void);
+
 // EVP_aead_aes_256_gcm is AES-256 in Galois Counter Mode.
+//
+// Note: AES-GCM should only be used with 12-byte (96-bit) nonces. Although it
+// is specified to take a variable-length nonce, nonces with other lengths are
+// effectively randomized, which means one must consider collisions. Unless
+// implementing an existing protocol which has already specified incorrect
+// parameters, only use 12-byte nonces.
 OPENSSL_EXPORT const EVP_AEAD *EVP_aead_aes_256_gcm(void);
 
 // EVP_aead_chacha20_poly1305 is the AEAD built from ChaCha20 and
 // Poly1305 as described in RFC 7539.
 OPENSSL_EXPORT const EVP_AEAD *EVP_aead_chacha20_poly1305(void);
+
+// EVP_aead_xchacha20_poly1305 is ChaCha20-Poly1305 with an extended nonce that
+// makes random generation of nonces safe.
+OPENSSL_EXPORT const EVP_AEAD *EVP_aead_xchacha20_poly1305(void);
 
 // EVP_aead_aes_128_ctr_hmac_sha256 is AES-128 in CTR mode with HMAC-SHA256 for
 // authentication. The nonce is 12 bytes; the bottom 32-bits are used as the
@@ -116,6 +145,16 @@ OPENSSL_EXPORT const EVP_AEAD *EVP_aead_aes_128_gcm_siv(void);
 // EVP_aead_aes_256_gcm_siv is AES-256 in GCM-SIV mode. See
 // https://tools.ietf.org/html/draft-irtf-cfrg-gcmsiv-02
 OPENSSL_EXPORT const EVP_AEAD *EVP_aead_aes_256_gcm_siv(void);
+
+// EVP_aead_aes_128_ccm_bluetooth is AES-128-CCM with M=4 and L=2 (4-byte tags
+// and 13-byte nonces), as decribed in the Bluetooth Core Specification v5.0,
+// Volume 6, Part E, Section 1.
+OPENSSL_EXPORT const EVP_AEAD *EVP_aead_aes_128_ccm_bluetooth(void);
+
+// EVP_aead_aes_128_ccm_bluetooth_8 is AES-128-CCM with M=8 and L=2 (8-byte tags
+// and 13-byte nonces), as used in the Bluetooth Mesh Networking Specification
+// v1.0.
+OPENSSL_EXPORT const EVP_AEAD *EVP_aead_aes_128_ccm_bluetooth_8(void);
 
 // EVP_has_aes_hardware returns one if we enable hardware support for fast and
 // constant-time AES-GCM.
@@ -144,13 +183,16 @@ OPENSSL_EXPORT size_t EVP_AEAD_max_tag_len(const EVP_AEAD *aead);
 
 // AEAD operations.
 
+union evp_aead_ctx_st_state {
+  uint8_t opaque[580];
+  uint64_t alignment;
+};
+
 // An EVP_AEAD_CTX represents an AEAD algorithm configured with a specific key
 // and message-independent IV.
 typedef struct evp_aead_ctx_st {
   const EVP_AEAD *aead;
-  // aead_state is an opaque pointer to whatever state the AEAD needs to
-  // maintain.
-  void *aead_state;
+  union evp_aead_ctx_st_state state;
   // tag_len may contain the actual length of the authentication tag if it is
   // known at initialization time.
   uint8_t tag_len;
@@ -162,7 +204,7 @@ typedef struct evp_aead_ctx_st {
 
 // EVP_AEAD_MAX_NONCE_LENGTH contains the maximum nonce length used by
 // any AEAD defined in this header.
-#define EVP_AEAD_MAX_NONCE_LENGTH 16
+#define EVP_AEAD_MAX_NONCE_LENGTH 24
 
 // EVP_AEAD_MAX_OVERHEAD contains the maximum overhead used by any AEAD
 // defined in this header.
@@ -351,19 +393,13 @@ OPENSSL_EXPORT const EVP_AEAD *EVP_aead_aes_128_gcm_tls12(void);
 // 1.2 nonce construction.
 OPENSSL_EXPORT const EVP_AEAD *EVP_aead_aes_256_gcm_tls12(void);
 
+// EVP_aead_aes_128_gcm_tls13 is AES-128 in Galois Counter Mode using the TLS
+// 1.3 nonce construction.
+OPENSSL_EXPORT const EVP_AEAD *EVP_aead_aes_128_gcm_tls13(void);
 
-// SSLv3-specific AEAD algorithms.
-//
-// These AEAD primitives do not meet the definition of generic AEADs. They are
-// all specific to SSLv3 and should not be used outside of that context. They
-// must be initialized with |EVP_AEAD_CTX_init_with_direction|, are stateful,
-// and may not be used concurrently. They only accept an |ad| parameter of
-// length 9 (the standard TLS one with length and version omitted).
-
-OPENSSL_EXPORT const EVP_AEAD *EVP_aead_aes_128_cbc_sha1_ssl3(void);
-OPENSSL_EXPORT const EVP_AEAD *EVP_aead_aes_256_cbc_sha1_ssl3(void);
-OPENSSL_EXPORT const EVP_AEAD *EVP_aead_des_ede3_cbc_sha1_ssl3(void);
-OPENSSL_EXPORT const EVP_AEAD *EVP_aead_null_sha1_ssl3(void);
+// EVP_aead_aes_256_gcm_tls13 is AES-256 in Galois Counter Mode using the TLS
+// 1.3 nonce construction.
+OPENSSL_EXPORT const EVP_AEAD *EVP_aead_aes_256_gcm_tls13(void);
 
 
 // Obscure functions.
@@ -383,7 +419,7 @@ OPENSSL_EXPORT int EVP_AEAD_CTX_init_with_direction(
 
 // EVP_AEAD_CTX_get_iv sets |*out_len| to the length of the IV for |ctx| and
 // sets |*out_iv| to point to that many bytes of the current IV. This is only
-// meaningful for AEADs with implicit IVs (i.e. CBC mode in SSLv3 and TLS 1.0).
+// meaningful for AEADs with implicit IVs (i.e. CBC mode in TLS 1.0).
 //
 // It returns one on success or zero on error.
 OPENSSL_EXPORT int EVP_AEAD_CTX_get_iv(const EVP_AEAD_CTX *ctx,
@@ -405,7 +441,7 @@ OPENSSL_EXPORT int EVP_AEAD_CTX_tag_len(const EVP_AEAD_CTX *ctx,
 #if !defined(BORINGSSL_NO_CXX)
 extern "C++" {
 
-namespace bssl {
+BSSL_NAMESPACE_BEGIN
 
 using ScopedEVP_AEAD_CTX =
     internal::StackAllocated<EVP_AEAD_CTX, void, EVP_AEAD_CTX_zero,
@@ -413,7 +449,7 @@ using ScopedEVP_AEAD_CTX =
 
 BORINGSSL_MAKE_DELETER(EVP_AEAD_CTX, EVP_AEAD_CTX_free)
 
-}  // namespace bssl
+BSSL_NAMESPACE_END
 
 }  // extern C++
 #endif

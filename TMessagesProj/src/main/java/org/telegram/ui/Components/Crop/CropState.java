@@ -49,12 +49,12 @@ public class CropState {
 
     public float getX() {
         updateValues();
-        return values[matrix.MTRANS_X];
+        return values[Matrix.MTRANS_X];
     }
 
     public float getY() {
         updateValues();
-        return values[matrix.MTRANS_Y];
+        return values[Matrix.MTRANS_Y];
     }
 
     public void scale(float s, float pivotX, float pivotY) {
@@ -73,18 +73,6 @@ public class CropState {
 
     public float getRotation() {
         return rotation;
-    }
-
-    public void reset(CropAreaView areaView) {
-        matrix.reset();
-
-        x = 0.0f;
-        y = 0.0f;
-        rotation = 0.0f;
-        minimumScale = areaView.getCropWidth() / width;
-        scale = minimumScale;
-
-        matrix.postScale(scale, scale);
     }
 
     public void getConcatMatrix(Matrix toMatrix) {

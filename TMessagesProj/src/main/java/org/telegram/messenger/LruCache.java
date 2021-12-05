@@ -71,6 +71,13 @@ public class LruCache<T> {
         return null;
     }
 
+    public void moveToFront(String key) {
+        T value = map.remove(key);
+        if (value != null) {
+            map.put(key, value);
+        }
+    }
+
     /**
      * Caches {@code value} for {@code key}. The value is moved to the head of
      * the queue.

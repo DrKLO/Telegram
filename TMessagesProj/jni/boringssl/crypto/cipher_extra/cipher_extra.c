@@ -94,20 +94,49 @@ const EVP_CIPHER *EVP_get_cipherbyname(const char *name) {
   } else if (OPENSSL_strcasecmp(name, "des-cbc") == 0) {
     return EVP_des_cbc();
   } else if (OPENSSL_strcasecmp(name, "des-ede3-cbc") == 0 ||
+             // This is not a name used by OpenSSL, but tcpdump registers it
+             // with |EVP_add_cipher_alias|. Our |EVP_add_cipher_alias| is a
+             // no-op, so we support the name here.
              OPENSSL_strcasecmp(name, "3des") == 0) {
     return EVP_des_ede3_cbc();
   } else if (OPENSSL_strcasecmp(name, "aes-128-cbc") == 0) {
     return EVP_aes_128_cbc();
+  } else if (OPENSSL_strcasecmp(name, "aes-192-cbc") == 0) {
+    return EVP_aes_192_cbc();
   } else if (OPENSSL_strcasecmp(name, "aes-256-cbc") == 0) {
     return EVP_aes_256_cbc();
   } else if (OPENSSL_strcasecmp(name, "aes-128-ctr") == 0) {
     return EVP_aes_128_ctr();
+  } else if (OPENSSL_strcasecmp(name, "aes-192-ctr") == 0) {
+    return EVP_aes_192_ctr();
   } else if (OPENSSL_strcasecmp(name, "aes-256-ctr") == 0) {
     return EVP_aes_256_ctr();
   } else if (OPENSSL_strcasecmp(name, "aes-128-ecb") == 0) {
     return EVP_aes_128_ecb();
+  } else if (OPENSSL_strcasecmp(name, "aes-192-ecb") == 0) {
+    return EVP_aes_192_ecb();
   } else if (OPENSSL_strcasecmp(name, "aes-256-ecb") == 0) {
     return EVP_aes_256_ecb();
+  } else if (OPENSSL_strcasecmp(name, "aes-128-gcm") == 0) {
+    return EVP_aes_128_gcm();
+  } else if (OPENSSL_strcasecmp(name, "aes-192-gcm") == 0) {
+    return EVP_aes_192_gcm();
+  } else if (OPENSSL_strcasecmp(name, "aes-256-gcm") == 0) {
+    return EVP_aes_256_gcm();
+  } else if (OPENSSL_strcasecmp(name, "aes-128-ofb") == 0) {
+    return EVP_aes_128_ofb();
+  } else if (OPENSSL_strcasecmp(name, "aes-192-ofb") == 0) {
+    return EVP_aes_192_ofb();
+  } else if (OPENSSL_strcasecmp(name, "aes-256-ofb") == 0) {
+    return EVP_aes_256_ofb();
+  } else if (OPENSSL_strcasecmp(name, "des-ecb") == 0) {
+    return EVP_des_ecb();
+  } else if (OPENSSL_strcasecmp(name, "des-ede") == 0) {
+    return EVP_des_ede();
+  } else if (OPENSSL_strcasecmp(name, "des-ede-cbc") == 0) {
+    return EVP_des_ede_cbc();
+  } else if (OPENSSL_strcasecmp(name, "rc2-cbc") == 0) {
+    return EVP_rc2_cbc();
   }
 
   return NULL;

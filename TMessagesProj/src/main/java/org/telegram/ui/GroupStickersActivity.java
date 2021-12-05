@@ -29,14 +29,13 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
-import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.DataQuery;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -77,7 +76,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
     private ContextProgressView progressView;
     private AnimatorSet doneItemAnimation;
     private LinearLayout nameContainer;
-    private EditText editText;
+    private EditTextBoldCursor editText;
     private EditTextBoldCursor usernameTextView;
     private LinearLayoutManager layoutManager;
     private ImageView eraseImageView;
@@ -94,7 +93,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
     private TLRPC.TL_messages_stickerSet selectedStickerSet;
 
     private TLRPC.ChatFull info;
-    private int chatId;
+    private long chatId;
 
     private boolean donePressed;
 
@@ -109,7 +108,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
 
     private final static int done_button = 1;
 
-    public GroupStickersActivity(int id) {
+    public GroupStickersActivity(long id) {
         super();
         chatId = id;
     }
@@ -117,7 +116,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
-        DataQuery.getInstance(currentAccount).checkStickers(DataQuery.TYPE_IMAGE);
+        MediaDataController.getInstance(currentAccount).checkStickers(MediaDataController.TYPE_IMAGE);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.stickersDidLoad);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.chatInfoDidLoad);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.groupStickersDidLoad);
@@ -158,7 +157,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
         });
 
         ActionBarMenu menu = actionBar.createMenu();
-        doneItem = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
+        doneItem = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56), LocaleController.getString("Done", R.string.Done));
         progressView = new ContextProgressView(context, 1);
         progressView.setAlpha(0.0f);
         progressView.setScaleX(0.1f);
@@ -185,7 +184,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
         nameContainer.setOrientation(LinearLayout.HORIZONTAL);
         nameContainer.setPadding(AndroidUtilities.dp(17), 0, AndroidUtilities.dp(14), 0);
 
-        editText = new EditText(context);
+        editText = new EditTextBoldCursor(context);
         editText.setText(MessagesController.getInstance(currentAccount).linkPrefix + "/addstickers/");
         editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
         editText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
@@ -328,7 +327,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
                 if (holder != null) {
                     top = holder.itemView.getTop();
                 }
-                selectedStickerSet = DataQuery.getInstance(currentAccount).getStickerSets(DataQuery.TYPE_IMAGE).get(position - stickersStartRow);
+                selectedStickerSet = MediaDataController.getInstance(currentAccount).getStickerSets(MediaDataController.TYPE_IMAGE).get(position - stickersStartRow);
                 ignoreTextChanges = true;
                 usernameTextView.setText(selectedStickerSet.set.short_name);
                 usernameTextView.setSelection(usernameTextView.length());
@@ -360,14 +359,14 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.stickersDidLoad) {
-            if ((Integer) args[0] == DataQuery.TYPE_IMAGE) {
+            if ((Integer) args[0] == MediaDataController.TYPE_IMAGE) {
                 updateRows();
             }
         } else if (id == NotificationCenter.chatInfoDidLoad) {
             TLRPC.ChatFull chatFull = (TLRPC.ChatFull) args[0];
             if (chatFull.id == chatId) {
                 if (info == null && chatFull.stickerset != null) {
-                    selectedStickerSet = DataQuery.getInstance(currentAccount).getGroupStickerSetById(chatFull.stickerset);
+                    selectedStickerSet = MediaDataController.getInstance(currentAccount).getGroupStickerSetById(chatFull.stickerset);
                 }
                 info = chatFull;
                 updateRows();
@@ -383,7 +382,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
     public void setInfo(TLRPC.ChatFull chatFull) {
         info = chatFull;
         if (info != null && info.stickerset != null) {
-            selectedStickerSet = DataQuery.getInstance(currentAccount).getGroupStickerSetById(info.stickerset);
+            selectedStickerSet = MediaDataController.getInstance(currentAccount).getGroupStickerSetById(info.stickerset);
         }
     }
 
@@ -411,7 +410,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
         searching = true;
         searchWas = true;
         final String query = usernameTextView.getText().toString();
-        TLRPC.TL_messages_stickerSet existingSet = DataQuery.getInstance(currentAccount).getStickerSetByName(query);
+        TLRPC.TL_messages_stickerSet existingSet = MediaDataController.getInstance(currentAccount).getStickerSetByName(query);
         if (existingSet != null) {
             selectedStickerSet = existingSet;
         }
@@ -495,7 +494,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
                     info.stickerset = null;
                 } else {
                     info.stickerset = selectedStickerSet.set;
-                    DataQuery.getInstance(currentAccount).putGroupStickerSet(selectedStickerSet);
+                    MediaDataController.getInstance(currentAccount).putGroupStickerSet(selectedStickerSet);
                 }
                 if (info.stickerset == null) {
                     info.flags |= 256;
@@ -503,7 +502,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
                     info.flags = info.flags &~ 256;
                 }
                 MessagesStorage.getInstance(currentAccount).updateChatInfo(info, false);
-                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.chatInfoDidLoad, info, 0, true, null);
+                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.chatInfoDidLoad, info, 0, true, false);
                 finishFragment();
             } else {
                 Toast.makeText(getParentActivity(), LocaleController.getString("ErrorOccurred", R.string.ErrorOccurred) + "\n" + error.text, Toast.LENGTH_SHORT).show();
@@ -522,7 +521,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
             selectedStickerRow = -1;
         }
         infoRow = rowCount++;
-        ArrayList<TLRPC.TL_messages_stickerSet> stickerSets = DataQuery.getInstance(currentAccount).getStickerSets(DataQuery.TYPE_IMAGE);
+        ArrayList<TLRPC.TL_messages_stickerSet> stickerSets = MediaDataController.getInstance(currentAccount).getStickerSets(MediaDataController.TYPE_IMAGE);
         if (!stickerSets.isEmpty()) {
             headerRow = rowCount++;
             stickersStartRow = rowCount;
@@ -569,22 +568,22 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
             progressView.setVisibility(View.VISIBLE);
             doneItem.setEnabled(false);
             doneItemAnimation.playTogether(
-                    ObjectAnimator.ofFloat(doneItem.getImageView(), "scaleX", 0.1f),
-                    ObjectAnimator.ofFloat(doneItem.getImageView(), "scaleY", 0.1f),
-                    ObjectAnimator.ofFloat(doneItem.getImageView(), "alpha", 0.0f),
+                    ObjectAnimator.ofFloat(doneItem.getContentView(), "scaleX", 0.1f),
+                    ObjectAnimator.ofFloat(doneItem.getContentView(), "scaleY", 0.1f),
+                    ObjectAnimator.ofFloat(doneItem.getContentView(), "alpha", 0.0f),
                     ObjectAnimator.ofFloat(progressView, "scaleX", 1.0f),
                     ObjectAnimator.ofFloat(progressView, "scaleY", 1.0f),
                     ObjectAnimator.ofFloat(progressView, "alpha", 1.0f));
         } else {
-            doneItem.getImageView().setVisibility(View.VISIBLE);
+            doneItem.getContentView().setVisibility(View.VISIBLE);
             doneItem.setEnabled(true);
             doneItemAnimation.playTogether(
                     ObjectAnimator.ofFloat(progressView, "scaleX", 0.1f),
                     ObjectAnimator.ofFloat(progressView, "scaleY", 0.1f),
                     ObjectAnimator.ofFloat(progressView, "alpha", 0.0f),
-                    ObjectAnimator.ofFloat(doneItem.getImageView(), "scaleX", 1.0f),
-                    ObjectAnimator.ofFloat(doneItem.getImageView(), "scaleY", 1.0f),
-                    ObjectAnimator.ofFloat(doneItem.getImageView(), "alpha", 1.0f));
+                    ObjectAnimator.ofFloat(doneItem.getContentView(), "scaleX", 1.0f),
+                    ObjectAnimator.ofFloat(doneItem.getContentView(), "scaleY", 1.0f),
+                    ObjectAnimator.ofFloat(doneItem.getContentView(), "alpha", 1.0f));
 
         }
         doneItemAnimation.addListener(new AnimatorListenerAdapter() {
@@ -594,7 +593,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
                     if (!show) {
                         progressView.setVisibility(View.INVISIBLE);
                     } else {
-                        doneItem.getImageView().setVisibility(View.INVISIBLE);
+                        doneItem.getContentView().setVisibility(View.INVISIBLE);
                     }
                 }
             }
@@ -627,7 +626,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
             switch (holder.getItemViewType()) {
                 case 0: {
-                    ArrayList<TLRPC.TL_messages_stickerSet> arrayList = DataQuery.getInstance(currentAccount).getStickerSets(DataQuery.TYPE_IMAGE);
+                    ArrayList<TLRPC.TL_messages_stickerSet> arrayList = MediaDataController.getInstance(currentAccount).getStickerSets(MediaDataController.TYPE_IMAGE);
                     int row = position - stickersStartRow;
                     StickerSetCell cell = (StickerSetCell) holder.itemView;
                     TLRPC.TL_messages_stickerSet set = arrayList.get(row);
@@ -697,7 +696,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
 
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View view = null;
+            View view;
             switch (viewType) {
                 case 0:
                 case 5:
@@ -716,6 +715,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
                     view.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                     break;
                 case 4:
+                default:
                     view = new HeaderCell(mContext);
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
@@ -744,41 +744,43 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
     }
 
     @Override
-    public ThemeDescription[] getThemeDescriptions() {
-        return new ThemeDescription[]{
-                new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{StickerSetCell.class, TextSettingsCell.class}, null, null, null, Theme.key_windowBackgroundWhite),
-                new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundGray),
+    public ArrayList<ThemeDescription> getThemeDescriptions() {
+        ArrayList<ThemeDescription> themeDescriptions = new ArrayList<>();
 
-                new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault),
-                new ThemeDescription(listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault),
-                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon),
-                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle),
-                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector),
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{StickerSetCell.class, TextSettingsCell.class}, null, null, null, Theme.key_windowBackgroundWhite));
+        themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundGray));
 
-                new ThemeDescription(listView, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector),
+        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault));
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault));
+        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon));
+        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle));
+        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector));
 
-                new ThemeDescription(listView, 0, new Class[]{View.class}, Theme.dividerPaint, null, null, Theme.key_divider),
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector));
 
-                new ThemeDescription(editText, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
-                new ThemeDescription(editText, ThemeDescription.FLAG_HINTTEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteHintText),
-                new ThemeDescription(usernameTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
-                new ThemeDescription(usernameTextView, ThemeDescription.FLAG_HINTTEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteHintText),
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{View.class}, Theme.dividerPaint, null, null, Theme.key_divider));
 
-                new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{TextInfoPrivacyCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow),
-                new ThemeDescription(listView, 0, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText4),
-                new ThemeDescription(listView, ThemeDescription.FLAG_LINKCOLOR, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteLinkText),
+        themeDescriptions.add(new ThemeDescription(editText, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+        themeDescriptions.add(new ThemeDescription(editText, ThemeDescription.FLAG_HINTTEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteHintText));
+        themeDescriptions.add(new ThemeDescription(usernameTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+        themeDescriptions.add(new ThemeDescription(usernameTextView, ThemeDescription.FLAG_HINTTEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteHintText));
 
-                new ThemeDescription(listView, 0, new Class[]{TextSettingsCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
-                new ThemeDescription(listView, 0, new Class[]{TextSettingsCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteValueText),
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{TextInfoPrivacyCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText4));
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_LINKCOLOR, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteLinkText));
 
-                new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{ShadowSectionCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow),
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextSettingsCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextSettingsCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteValueText));
 
-                new ThemeDescription(nameContainer, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite),
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{ShadowSectionCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow));
 
-                new ThemeDescription(listView, 0, new Class[]{StickerSetCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
-                new ThemeDescription(listView, 0, new Class[]{StickerSetCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2),
-                new ThemeDescription(listView, ThemeDescription.FLAG_USEBACKGROUNDDRAWABLE | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, new Class[]{StickerSetCell.class}, new String[]{"optionsButton"}, null, null, null, Theme.key_stickers_menuSelector),
-                new ThemeDescription(listView, 0, new Class[]{StickerSetCell.class}, new String[]{"optionsButton"}, null, null, null, Theme.key_stickers_menu),
-        };
+        themeDescriptions.add(new ThemeDescription(nameContainer, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
+
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{StickerSetCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{StickerSetCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_USEBACKGROUNDDRAWABLE | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, new Class[]{StickerSetCell.class}, new String[]{"optionsButton"}, null, null, null, Theme.key_stickers_menuSelector));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{StickerSetCell.class}, new String[]{"optionsButton"}, null, null, null, Theme.key_stickers_menu));
+
+        return themeDescriptions;
     }
 }

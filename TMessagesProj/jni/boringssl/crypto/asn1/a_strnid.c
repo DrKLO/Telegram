@@ -223,6 +223,7 @@ ASN1_STRING_TABLE *ASN1_STRING_TABLE_get(int nid)
         return ttmp;
     if (!stable)
         return NULL;
+    sk_ASN1_STRING_TABLE_sort(stable);
     found = sk_ASN1_STRING_TABLE_find(stable, &idx, &fnd);
     if (!found)
         return NULL;

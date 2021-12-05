@@ -100,8 +100,8 @@ public class DialogMeUrlCell extends BaseCell {
     public void buildLayout() {
         String nameString = "";
         CharSequence messageString;
-        TextPaint currentNamePaint = Theme.dialogs_namePaint;
-        TextPaint currentMessagePaint = Theme.dialogs_messagePaint;
+        TextPaint currentNamePaint = Theme.dialogs_namePaint[0];
+        TextPaint currentMessagePaint = Theme.dialogs_messagePaint[0];
 
         drawNameGroup = false;
         drawNameBroadcast = false;
@@ -129,7 +129,7 @@ public class DialogMeUrlCell extends BaseCell {
             }
             nameString = chat.title;
             avatarDrawable.setInfo(chat);
-            avatarImage.setImage(ImageLocation.getForChat(chat, false), "50_50", avatarDrawable, null, recentMeUrl, 0);
+            avatarImage.setForUserOrChat(chat, avatarDrawable, recentMeUrl);
         } else if (recentMeUrl instanceof TLRPC.TL_recentMeUrlUser) {
             TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(recentMeUrl.user_id);
             if (!LocaleController.isRTL) {
@@ -153,7 +153,7 @@ public class DialogMeUrlCell extends BaseCell {
             }
             nameString = UserObject.getUserName(user);
             avatarDrawable.setInfo(user);
-            avatarImage.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable, null, recentMeUrl, 0);
+            avatarImage.setForUserOrChat(user, avatarDrawable, recentMeUrl);
         } else if (recentMeUrl instanceof TLRPC.TL_recentMeUrlStickerSet) {
             if (!LocaleController.isRTL) {
                 nameLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline);
@@ -161,7 +161,7 @@ public class DialogMeUrlCell extends BaseCell {
                 nameLeft = AndroidUtilities.dp(14);
             }
             nameString = recentMeUrl.set.set.title;
-            avatarDrawable.setInfo(5, recentMeUrl.set.set.title, null, false);
+            avatarDrawable.setInfo(5, recentMeUrl.set.set.title, null);
             avatarImage.setImage(ImageLocation.getForDocument(recentMeUrl.set.cover), null, avatarDrawable, null, recentMeUrl, 0);
         } else if (recentMeUrl instanceof TLRPC.TL_recentMeUrlChatInvite) {
             if (!LocaleController.isRTL) {
@@ -180,10 +180,10 @@ public class DialogMeUrlCell extends BaseCell {
                     nameLockTop = AndroidUtilities.dp(17.5f);
                 }
                 drawVerified = recentMeUrl.chat_invite.chat.verified;
-                avatarImage.setImage(ImageLocation.getForChat(recentMeUrl.chat_invite.chat, false), "50_50", avatarDrawable, null, recentMeUrl, 0);
+                avatarImage.setForUserOrChat(recentMeUrl.chat_invite.chat, avatarDrawable, recentMeUrl);
             } else {
                 nameString = recentMeUrl.chat_invite.title;
-                avatarDrawable.setInfo(5, recentMeUrl.chat_invite.title, null, false);
+                avatarDrawable.setInfo(5, recentMeUrl.chat_invite.title, null);
                 if (recentMeUrl.chat_invite.broadcast || recentMeUrl.chat_invite.channel) {
                     drawNameBroadcast = true;
                     nameLockTop = AndroidUtilities.dp(16.5f);

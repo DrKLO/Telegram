@@ -1,0 +1,20 @@
+Name: C++ Signal/Slot Library
+Short Name: sigslot
+URL: http://sigslot.sourceforge.net/
+Version: 0
+Date: 2018-07-09
+License: Custom license
+License File: LICENSE
+Security Critical: yes
+
+Description:
+C++ Signal/Slot Library
+
+This file has been modified such that has_slots and signalx do not have to be
+using the same threading requirements. E.g. it is possible to connect a
+has_slots<single_threaded> and signal0<multi_threaded_local> or
+has_slots<multi_threaded_local> and signal0<single_threaded>.
+If has_slots is single threaded the user must ensure that it is not trying
+to connect or disconnect to signalx concurrently or data race may occur.
+If signalx is single threaded the user must ensure that disconnect, connect
+or signal is not happening concurrently or data race may occur.

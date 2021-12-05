@@ -8,6 +8,7 @@
 
 package org.telegram.ui.Components;
 
+import android.app.Activity;
 import android.content.Context;
 import android.graphics.Rect;
 import android.view.View;
@@ -23,13 +24,15 @@ public class SizeNotifierFrameLayoutPhoto extends FrameLayout {
     private SizeNotifierFrameLayoutPhotoDelegate delegate;
     private WindowManager windowManager;
     private boolean withoutWindow;
+    private boolean useSmoothKeyboard;
 
     public interface SizeNotifierFrameLayoutPhotoDelegate {
         void onSizeChanged(int keyboardHeight, boolean isWidthGreater);
     }
 
-    public SizeNotifierFrameLayoutPhoto(Context context) {
+    public SizeNotifierFrameLayoutPhoto(Context context, boolean smoothKeyboard) {
         super(context);
+        useSmoothKeyboard = smoothKeyboard;
     }
 
     public void setDelegate(SizeNotifierFrameLayoutPhotoDelegate sizeNotifierFrameLayoutPhotoDelegate) {
@@ -53,9 +56,7 @@ public class SizeNotifierFrameLayoutPhoto extends FrameLayout {
             int usableViewHeight = rootView.getHeight() - (rect.top != 0 ? AndroidUtilities.statusBarHeight : 0) - AndroidUtilities.getViewInset(rootView);
             return usableViewHeight - (rect.bottom - rect.top);
         } else {
-            int usableViewHeight = rootView.getHeight() - AndroidUtilities.getViewInset(rootView);
-            int top = rect.top;
-            int size = AndroidUtilities.displaySize.y - top - usableViewHeight;
+            int size = ((Activity) rootView.getContext()).getWindow().getDecorView().getHeight() - AndroidUtilities.getViewInset(rootView) - rootView.getBottom();
             if (size <= Math.max(AndroidUtilities.dp(10), AndroidUtilities.statusBarHeight)) {
                 size = 0;
             }
@@ -67,12 +68,9 @@ public class SizeNotifierFrameLayoutPhoto extends FrameLayout {
         if (delegate != null) {
             keyboardHeight = getKeyboardHeight();
             final boolean isWidthGreater = AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y;
-            post(new Runnable() {
-                @Override
-                public void run() {
-                    if (delegate != null) {
-                        delegate.onSizeChanged(keyboardHeight, isWidthGreater);
-                    }
+            post(() -> {
+                if (delegate != null) {
+                    delegate.onSizeChanged(keyboardHeight, isWidthGreater);
                 }
             });
         }

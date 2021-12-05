@@ -9,24 +9,39 @@
 package org.telegram.ui.Components;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.graphics.SurfaceTexture;
 import android.net.Uri;
 import android.os.Handler;
+import android.os.Looper;
+import android.view.Surface;
 import android.view.TextureView;
+import android.view.ViewGroup;
+
+import androidx.annotation.Nullable;
 
 import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.Player;
-import com.google.android.exoplayer2.source.LoopingMediaSource;
 import com.google.android.exoplayer2.DefaultLoadControl;
 import com.google.android.exoplayer2.DefaultRenderersFactory;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.ExoPlayerFactory;
 import com.google.android.exoplayer2.PlaybackParameters;
+import com.google.android.exoplayer2.Player;
+import com.google.android.exoplayer2.Renderer;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.Timeline;
+import com.google.android.exoplayer2.analytics.AnalyticsListener;
+import com.google.android.exoplayer2.audio.AudioProcessor;
+import com.google.android.exoplayer2.audio.AudioRendererEventListener;
+import com.google.android.exoplayer2.audio.TeeAudioProcessor;
+import com.google.android.exoplayer2.drm.DrmSessionManager;
+import com.google.android.exoplayer2.drm.FrameworkMediaCrypto;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
+import com.google.android.exoplayer2.mediacodec.MediaCodecRenderer;
+import com.google.android.exoplayer2.mediacodec.MediaCodecSelector;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
+import com.google.android.exoplayer2.source.LoopingMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.source.dash.DashMediaSource;
@@ -43,26 +58,40 @@ import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DefaultAllocator;
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
+import com.google.android.exoplayer2.video.SurfaceNotValidException;
 
+import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.FourierTransform;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.secretmedia.ExtendedDefaultDataSourceFactory;
-import org.telegram.messenger.ApplicationLoader;
+
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
 
 @SuppressLint("NewApi")
-public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.VideoListener, NotificationCenter.NotificationCenterDelegate {
-
-    public interface RendererBuilder {
-        void buildRenderers(VideoPlayer player);
-        void cancel();
-    }
+public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.VideoListener, AnalyticsListener, NotificationCenter.NotificationCenterDelegate {
 
     public interface VideoPlayerDelegate {
         void onStateChanged(boolean playWhenReady, int playbackState);
-        void onError(Exception e);
+        void onError(VideoPlayer player, Exception e);
         void onVideoSizeChanged(int width, int height, int unappliedRotationDegrees, float pixelWidthHeightRatio);
         void onRenderedFirstFrame();
         void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture);
         boolean onSurfaceDestroyed(SurfaceTexture surfaceTexture);
+        default void onRenderedFirstFrame(EventTime eventTime) {
+
+        }
+        default void onSeekStarted(EventTime eventTime) {
+
+        }
+        default void onSeekFinished(EventTime eventTime) {
+
+        }
+    }
+
+    public interface AudioVisualizerDelegate {
+        void onVisualizerUpdate(boolean playing, boolean animate, float[] values);
+        boolean needUpdate();
     }
 
     private SimpleExoPlayer player;
@@ -71,15 +100,21 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
     private Handler mainHandler;
     private DataSource.Factory mediaDataSourceFactory;
     private TextureView textureView;
+    private Surface surface;
     private boolean isStreaming;
     private boolean autoplay;
     private boolean mixedAudio;
+
+    private boolean triedReinit;
+
+    private Uri currentUri;
 
     private boolean videoPlayerReady;
     private boolean audioPlayerReady;
     private boolean mixedPlayWhenReady;
 
     private VideoPlayerDelegate delegate;
+    private AudioVisualizerDelegate audioVisualizerDelegate;
     private int lastReportedPlaybackState;
     private boolean lastReportedPlayWhenReady;
 
@@ -87,9 +122,23 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
     private static final int RENDERER_BUILDING_STATE_BUILDING = 2;
     private static final int RENDERER_BUILDING_STATE_BUILT = 3;
 
+    private Uri videoUri, audioUri;
+    private String videoType, audioType;
+    private boolean loopingMediaSource;
+    private boolean looping;
+    private int repeatCount;
+
+    private boolean shouldPauseOther;
+
+    Handler audioUpdateHandler = new Handler(Looper.getMainLooper());
+
     private static final DefaultBandwidthMeter BANDWIDTH_METER = new DefaultBandwidthMeter();
 
     public VideoPlayer() {
+        this(true);
+    }
+
+    public VideoPlayer(boolean pauseOther) {
         mediaDataSourceFactory = new ExtendedDefaultDataSourceFactory(ApplicationLoader.applicationContext, BANDWIDTH_METER, new DefaultHttpDataSourceFactory("Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20150101 Firefox/47.0 (Chrome)", BANDWIDTH_METER));
 
         mainHandler = new Handler();
@@ -98,7 +147,10 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
         trackSelector = new DefaultTrackSelector(videoTrackSelectionFactory);
 
         lastReportedPlaybackState = ExoPlayer.STATE_IDLE;
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.playerDidStartPlaying);
+        shouldPauseOther = pauseOther;
+        if (pauseOther) {
+            NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.playerDidStartPlaying);
+        }
     }
 
     @Override
@@ -121,11 +173,25 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
                 DefaultLoadControl.DEFAULT_TARGET_BUFFER_BYTES,
                 DefaultLoadControl.DEFAULT_PRIORITIZE_TIME_OVER_SIZE_THRESHOLDS);
         if (player == null) {
-            player = ExoPlayerFactory.newSimpleInstance(ApplicationLoader.applicationContext, trackSelector, loadControl, null, DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER);
+            DefaultRenderersFactory factory;
+            if (audioVisualizerDelegate != null) {
+                factory = new AudioVisualizerRenderersFactory(ApplicationLoader.applicationContext);
+            } else {
+                factory = new DefaultRenderersFactory(ApplicationLoader.applicationContext);
+            }
+            factory.setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER);
+            player = ExoPlayerFactory.newSimpleInstance(ApplicationLoader.applicationContext, factory, trackSelector, loadControl, null);
+
+            player.addAnalyticsListener(this);
             player.addListener(this);
             player.setVideoListener(this);
-            player.setVideoTextureView(textureView);
+            if (textureView != null) {
+                player.setVideoTextureView(textureView);
+            } else if (surface != null) {
+                player.setVideoSurface(surface);
+            }
             player.setPlayWhenReady(autoplay);
+            player.setRepeatMode(looping ? ExoPlayer.REPEAT_MODE_ALL : ExoPlayer.REPEAT_MODE_OFF);
         }
         if (mixedAudio) {
             if (audioPlayer == null) {
@@ -191,6 +257,12 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
     }
 
     public void preparePlayerLoop(Uri videoUri, String videoType, Uri audioUri, String audioType) {
+        this.videoUri = videoUri;
+        this.audioUri = audioUri;
+        this.videoType = videoType;
+        this.audioType = audioType;
+        this.loopingMediaSource = true;
+
         mixedAudio = true;
         audioPlayerReady = false;
         videoPlayerReady = false;
@@ -212,7 +284,7 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
                     mediaSource = new DashMediaSource(uri, mediaDataSourceFactory, new DefaultDashChunkSource.Factory(mediaDataSourceFactory), mainHandler, null);
                     break;
                 case "hls":
-                    mediaSource = new HlsMediaSource(uri, mediaDataSourceFactory, mainHandler, null);
+                    mediaSource = new HlsMediaSource.Factory(mediaDataSourceFactory).createMediaSource(uri);
                     break;
                 case "ss":
                     mediaSource = new SsMediaSource(uri, mediaDataSourceFactory, new DefaultSsChunkSource.Factory(mediaDataSourceFactory), mainHandler, null);
@@ -233,8 +305,15 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
     }
 
     public void preparePlayer(Uri uri, String type) {
+        this.videoUri = uri;
+        this.videoType = type;
+        this.audioUri = null;
+        this.audioType = null;
+        this.loopingMediaSource = false;
+
         videoPlayerReady = false;
         mixedAudio = false;
+        currentUri = uri;
         String scheme = uri.getScheme();
         isStreaming = scheme != null && !scheme.startsWith("file");
         ensurePleyaerCreated();
@@ -244,7 +323,7 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
                 mediaSource = new DashMediaSource(uri, mediaDataSourceFactory, new DefaultDashChunkSource.Factory(mediaDataSourceFactory), mainHandler, null);
                 break;
             case "hls":
-                mediaSource = new HlsMediaSource(uri, mediaDataSourceFactory, mainHandler, null);
+                mediaSource = new HlsMediaSource.Factory(mediaDataSourceFactory).createMediaSource(uri);
                 break;
             case "ss":
                 mediaSource = new SsMediaSource(uri, mediaDataSourceFactory, new DefaultSsChunkSource.Factory(mediaDataSourceFactory), mainHandler, null);
@@ -269,7 +348,30 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
             audioPlayer.release(async);
             audioPlayer = null;
         }
-        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.playerDidStartPlaying);
+        if (shouldPauseOther) {
+            NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.playerDidStartPlaying);
+        }
+    }
+
+    @Override
+    public void onSeekStarted(EventTime eventTime) {
+        if (delegate != null) {
+            delegate.onSeekStarted(eventTime);
+        }
+    }
+
+    @Override
+    public void onSeekProcessed(EventTime eventTime) {
+        if (delegate != null) {
+            delegate.onSeekFinished(eventTime);
+        }
+    }
+
+    @Override
+    public void onRenderedFirstFrame(EventTime eventTime, Surface surface) {
+        if (delegate != null) {
+            delegate.onRenderedFirstFrame(eventTime);
+        }
     }
 
     public void setTextureView(TextureView texture) {
@@ -283,12 +385,27 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
         player.setVideoTextureView(textureView);
     }
 
+    public void setSurface(Surface s) {
+        if (surface == s) {
+            return;
+        }
+        surface = s;
+        if (player == null) {
+            return;
+        }
+        player.setVideoSurface(surface);
+    }
+
     public boolean getPlayWhenReady() {
         return player.getPlayWhenReady();
     }
 
     public int getPlaybackState() {
         return player.getPlaybackState();
+    }
+
+    public Uri getCurrentUri() {
+        return currentUri;
     }
 
     public void play() {
@@ -320,6 +437,12 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
         if (audioPlayer != null) {
             audioPlayer.setPlayWhenReady(false);
         }
+
+        if (audioVisualizerDelegate != null) {
+            audioUpdateHandler.removeCallbacksAndMessages(null);
+            audioVisualizerDelegate.onVisualizerUpdate(false, true, null);
+        }
+
     }
 
     public void setPlaybackSpeed(float speed) {
@@ -359,7 +482,7 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
     }
 
     public boolean isMuted() {
-        return player.getVolume() == 0.0f;
+        return player != null && player.getVolume() == 0.0f;
     }
 
     public void setMute(boolean value) {
@@ -400,6 +523,10 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
         delegate = videoPlayerDelegate;
     }
 
+    public void setAudioVisualizerDelegate(AudioVisualizerDelegate audioVisualizerDelegate) {
+        this.audioVisualizerDelegate = audioVisualizerDelegate;
+    }
+
     public int getBufferedPercentage() {
         return isStreaming ? (player != null ? player.getBufferedPercentage() : 0) : 100;
     }
@@ -429,6 +556,19 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
         }
     }
 
+    public void setLooping(boolean looping) {
+        if (this.looping != looping) {
+            this.looping = looping;
+            if (player != null) {
+                player.setRepeatMode(looping ? ExoPlayer.REPEAT_MODE_ALL : ExoPlayer.REPEAT_MODE_OFF);
+            }
+        }
+    }
+
+    public boolean isLooping() {
+        return looping;
+    }
+
     private void checkPlayersReady() {
         if (audioPlayerReady && videoPlayerReady && mixedPlayWhenReady) {
             play();
@@ -443,12 +583,18 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
     @Override
     public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
         maybeReportPlayerState();
-        if (playWhenReady && playbackState == Player.STATE_READY) {
+        if (playWhenReady && playbackState == Player.STATE_READY && !isMuted() && shouldPauseOther) {
             NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.playerDidStartPlaying, this);
         }
         if (!videoPlayerReady && playbackState == Player.STATE_READY) {
             videoPlayerReady = true;
             checkPlayersReady();
+        }
+        if (playbackState != Player.STATE_READY) {
+            audioUpdateHandler.removeCallbacksAndMessages(null);
+            if (audioVisualizerDelegate != null) {
+                audioVisualizerDelegate.onVisualizerUpdate(false, true, null);
+            }
         }
     }
 
@@ -464,7 +610,9 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
 
     @Override
     public void onPositionDiscontinuity(int reason) {
-
+        if (reason == Player.DISCONTINUITY_REASON_PERIOD_TRANSITION) {
+            repeatCount++;
+        }
     }
 
     @Override
@@ -474,7 +622,28 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
 
     @Override
     public void onPlayerError(ExoPlaybackException error) {
-        delegate.onError(error);
+        Throwable cause = error.getCause();
+        if (textureView != null && (!triedReinit && cause instanceof MediaCodecRenderer.DecoderInitializationException || cause instanceof SurfaceNotValidException)) {
+            triedReinit = true;
+            if (player != null) {
+                ViewGroup parent = (ViewGroup) textureView.getParent();
+                if (parent != null) {
+                    int i = parent.indexOfChild(textureView);
+                    parent.removeView(textureView);
+                    parent.addView(textureView, i);
+                }
+                player.clearVideoTextureView(textureView);
+                player.setVideoTextureView(textureView);
+                if (loopingMediaSource) {
+                    preparePlayerLoop(videoUri, videoType, audioUri, audioType);
+                } else {
+                    preparePlayer(videoUri, videoType);
+                }
+                play();
+            }
+        } else {
+            delegate.onError(this, error);
+        }
     }
 
     @Override
@@ -517,6 +686,135 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
             delegate.onStateChanged(playWhenReady, playbackState);
             lastReportedPlayWhenReady = playWhenReady;
             lastReportedPlaybackState = playbackState;
+        }
+    }
+
+    public int getRepeatCount() {
+        return repeatCount;
+    }
+
+    private class AudioVisualizerRenderersFactory extends DefaultRenderersFactory {
+
+        public AudioVisualizerRenderersFactory(Context context) {
+            super(context);
+        }
+
+        @Override
+        protected void buildAudioRenderers(Context context, int extensionRendererMode, MediaCodecSelector mediaCodecSelector, @Nullable DrmSessionManager<FrameworkMediaCrypto> drmSessionManager, boolean playClearSamplesWithoutKeys, boolean enableDecoderFallback, AudioProcessor[] audioProcessors, Handler eventHandler, AudioRendererEventListener eventListener, ArrayList<Renderer> out) {
+            AudioProcessor audioProcessor = new TeeAudioProcessor(new VisualizerBufferSink());
+            super.buildAudioRenderers(context, extensionRendererMode, mediaCodecSelector, drmSessionManager, playClearSamplesWithoutKeys, enableDecoderFallback, new AudioProcessor[]{audioProcessor}, eventHandler, eventListener, out);
+        }
+    }
+
+    private class VisualizerBufferSink implements TeeAudioProcessor.AudioBufferSink {
+
+        private final int BUFFER_SIZE = 1024;
+        private final int MAX_BUFFER_SIZE = BUFFER_SIZE * 8;
+        FourierTransform.FFT fft = new FourierTransform.FFT(BUFFER_SIZE, 48000);
+        float[] real = new float[BUFFER_SIZE];
+        ByteBuffer byteBuffer;
+        int position = 0;
+
+        public VisualizerBufferSink() {
+            byteBuffer = ByteBuffer.allocateDirect(MAX_BUFFER_SIZE);
+            byteBuffer.position(0);
+        }
+
+        @Override
+        public void flush(int sampleRateHz, int channelCount, int encoding) {
+            
+        }
+
+
+        long lastUpdateTime;
+
+        @Override
+        public void handleBuffer(ByteBuffer buffer) {
+            if (audioVisualizerDelegate == null) {
+                return;
+            }
+            if (buffer == AudioProcessor.EMPTY_BUFFER || !mixedPlayWhenReady) {
+                audioUpdateHandler.postDelayed(() -> {
+                    audioUpdateHandler.removeCallbacksAndMessages(null);
+                    audioVisualizerDelegate.onVisualizerUpdate(false, true, null);
+                }, 80);
+                return;
+            }
+
+            if (!audioVisualizerDelegate.needUpdate()) {
+                return;
+            }
+
+            int len = buffer.limit();
+            if (len > MAX_BUFFER_SIZE) {
+                audioUpdateHandler.removeCallbacksAndMessages(null);
+                audioVisualizerDelegate.onVisualizerUpdate(false, true, null);
+                return;
+//                len = MAX_BUFFER_SIZE;
+//                byte[] bytes = new byte[BUFFER_SIZE];
+//                buffer.get(bytes);
+//                byteBuffer.put(bytes, 0, BUFFER_SIZE);
+            } else {
+                byteBuffer.put(buffer);
+            }
+            position += len;
+
+            if (position >= BUFFER_SIZE) {
+                len = BUFFER_SIZE;
+                byteBuffer.position(0);
+                for (int i = 0; i < len; i++) {
+                    real[i] = (byteBuffer.getShort()) / 32768.0F;
+                }
+                byteBuffer.rewind();
+                position = 0;
+
+                fft.forward(real);
+                float sum = 0;
+                for (int i = 0; i < len; i++) {
+                    float r = fft.getSpectrumReal()[i];
+                    float img = fft.getSpectrumImaginary()[i];
+                    float peak = (float) Math.sqrt(r * r + img * img) / 30f;
+                    if (peak > 1f) {
+                        peak = 1f;
+                    } else if (peak < 0) {
+                        peak = 0;
+                    }
+                    sum += peak * peak;
+                }
+                float amplitude = (float) (Math.sqrt(sum / len));
+
+                float[] partsAmplitude = new float[7];
+                partsAmplitude[6] = amplitude;
+                if (amplitude < 0.4f) {
+                    for (int k = 0; k < 7; k++) {
+                        partsAmplitude[k] = 0;
+                    }
+                } else {
+                    int part = len / 6;
+
+                    for (int k = 0; k < 6; k++) {
+                        int start = part * k;
+                        float r = fft.getSpectrumReal()[start];
+                        float img = fft.getSpectrumImaginary()[start];
+                        partsAmplitude[k] = (float) (Math.sqrt(r * r + img * img) / 30f);
+
+                        if (partsAmplitude[k] > 1f) {
+                            partsAmplitude[k] = 1f;
+                        } else if (partsAmplitude[k] < 0) {
+                            partsAmplitude[k] = 0;
+                        }
+                    }
+                }
+
+                int updateInterval = 64;
+
+                if (System.currentTimeMillis() - lastUpdateTime < updateInterval) {
+                    return;
+                }
+                lastUpdateTime = System.currentTimeMillis();
+
+                audioUpdateHandler.postDelayed(() -> audioVisualizerDelegate.onVisualizerUpdate(true, true, partsAmplitude), 130);
+            }
         }
     }
 }

@@ -44,8 +44,8 @@ public interface LoadErrorHandlingPolicy {
    *
    * @param dataType One of the {@link C C.DATA_TYPE_*} constants indicating the type of data to
    *     load.
-   * @param loadDurationMs The duration in milliseconds of the load up to the point at which the
-   *     error occurred, including any previous attempts.
+   * @param loadDurationMs The duration in milliseconds of the load from the start of the first load
+   *     attempt up to the point at which the error occurred.
    * @param exception The load error.
    * @param errorCount The number of errors this load has encountered, including this one.
    * @return The blacklist duration in milliseconds, or {@link C#TIME_UNSET} if the resource should
@@ -64,8 +64,8 @@ public interface LoadErrorHandlingPolicy {
    *
    * @param dataType One of the {@link C C.DATA_TYPE_*} constants indicating the type of data to
    *     load.
-   * @param loadDurationMs The duration in milliseconds of the load up to the point at which the
-   *     error occurred, including any previous attempts.
+   * @param loadDurationMs The duration in milliseconds of the load from the start of the first load
+   *     attempt up to the point at which the error occurred.
    * @param exception The load error.
    * @param errorCount The number of errors this load has encountered, including this one.
    * @return The number of milliseconds to wait before attempting the load again, or {@link

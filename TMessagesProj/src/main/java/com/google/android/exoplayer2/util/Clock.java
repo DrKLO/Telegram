@@ -30,6 +30,13 @@ public interface Clock {
    */
   Clock DEFAULT = new SystemClock();
 
+  /**
+   * Returns the current time in milliseconds since the Unix Epoch.
+   *
+   * @see System#currentTimeMillis()
+   */
+  long currentTimeMillis();
+
   /** @see android.os.SystemClock#elapsedRealtime() */
   long elapsedRealtime();
 

@@ -17,6 +17,7 @@ package com.google.android.exoplayer2.util;
 
 import android.os.Looper;
 import android.os.Message;
+import androidx.annotation.Nullable;
 
 /** The standard implementation of {@link HandlerWrapper}. */
 /* package */ final class SystemHandlerWrapper implements HandlerWrapper {
@@ -38,7 +39,7 @@ import android.os.Message;
   }
 
   @Override
-  public Message obtainMessage(int what, Object obj) {
+  public Message obtainMessage(int what, @Nullable Object obj) {
     return handler.obtainMessage(what, obj);
   }
 
@@ -48,7 +49,7 @@ import android.os.Message;
   }
 
   @Override
-  public Message obtainMessage(int what, int arg1, int arg2, Object obj) {
+  public Message obtainMessage(int what, int arg1, int arg2, @Nullable Object obj) {
     return handler.obtainMessage(what, arg1, arg2, obj);
   }
 
@@ -68,7 +69,7 @@ import android.os.Message;
   }
 
   @Override
-  public void removeCallbacksAndMessages(Object token) {
+  public void removeCallbacksAndMessages(@Nullable Object token) {
     handler.removeCallbacksAndMessages(token);
   }
 

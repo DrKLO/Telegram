@@ -65,8 +65,8 @@ public class WallpaperParallaxEffect implements SensorEventListener {
 		float z = event.values[2] / SensorManager.GRAVITY_EARTH;
 
 
-		float pitch=(float)(Math.atan2(x, Math.sqrt(y*y+z*z))/Math.PI*2.0);
-		float roll=(float)(Math.atan2(y, Math.sqrt(x*x+z*z))/Math.PI*2.0);
+		float pitch = (float) (Math.atan2(x, Math.sqrt(y * y + z * z)) / Math.PI * 2.0);
+		float roll = (float) (Math.atan2(y, Math.sqrt(x * x + z * z)) / Math.PI * 2.0);
 
 		switch (rotation) {
 			case Surface.ROTATION_0:
@@ -105,8 +105,20 @@ public class WallpaperParallaxEffect implements SensorEventListener {
 		}
 		int offsetX = Math.round(pitch * AndroidUtilities.dpf2(16));
 		int offsetY = Math.round(roll * AndroidUtilities.dpf2(16));
-		if (callback != null)
-			callback.onOffsetsChanged(offsetX, offsetY);
+		float vx = Math.max(-1.0f, Math.min(1.0f, -pitch / 0.45f));
+		float vy = Math.max(-1.0f, Math.min(1.0f, -roll / 0.45f));
+		float len = (float) Math.sqrt(vx * vx + vy * vy);
+		vx /= len;
+		vy /= len;
+		float y2 = -1;
+		float x2 = 0;
+		float angle = (float) (Math.atan2(vx * y2 - vy * x2, vx * x2 + vy * y2) / (Math.PI / 180.0f));
+		if (angle < 0) {
+			angle += 360;
+		}
+		if (callback != null) {
+			callback.onOffsetsChanged(offsetX, offsetY, angle);
+		}
 	}
 
 	@Override
@@ -115,6 +127,6 @@ public class WallpaperParallaxEffect implements SensorEventListener {
 	}
 
 	public interface Callback {
-		void onOffsetsChanged(int offsetX, int offsetY);
+		void onOffsetsChanged(int offsetX, int offsetY, float angle);
 	}
 }

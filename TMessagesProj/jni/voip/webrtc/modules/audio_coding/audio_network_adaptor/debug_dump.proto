@@ -1,0 +1,42 @@
+syntax = "proto2";
+option optimize_for = LITE_RUNTIME;
+package webrtc.audio_network_adaptor.debug_dump;
+
+import "config.proto";
+
+message NetworkMetrics {
+  optional int32 uplink_bandwidth_bps = 1;
+  optional float uplink_packet_loss_fraction = 2;
+  optional int32 target_audio_bitrate_bps = 3;
+  optional int32 rtt_ms = 4;
+  optional int32 uplink_recoverable_packet_loss_fraction = 5;
+}
+
+message EncoderRuntimeConfig {
+  optional int32 bitrate_bps = 1;
+  optional int32 frame_length_ms = 2;
+  // Note: This is what we tell the encoder. It doesn't have to reflect
+  // the actual NetworkMetrics; it's subject to our decision.
+  optional float uplink_packet_loss_fraction = 3;
+  optional bool enable_fec = 4;
+  optional bool enable_dtx = 5;
+  // Some encoders can encode fewer channels than the actual input to make
+  // better use of the bandwidth. |num_channels| sets the number of channels
+  // to encode.
+  optional uint32 num_channels = 6;
+}
+
+message Event {
+  enum Type {
+    NETWORK_METRICS = 0;
+    ENCODER_RUNTIME_CONFIG = 1;
+    CONTROLLER_MANAGER_CONFIG = 2;
+  }
+  required Type type = 1;
+  required uint32 timestamp = 2;
+  optional NetworkMetrics network_metrics = 3;
+  optional EncoderRuntimeConfig encoder_runtime_config = 4;
+  optional webrtc.audio_network_adaptor.config.ControllerManager
+      controller_manager_config = 5;
+}
+

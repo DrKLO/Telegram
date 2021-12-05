@@ -138,14 +138,15 @@ int X509_load_cert_file(X509_LOOKUP *ctx, const char *file, int type)
         for (;;) {
             x = PEM_read_bio_X509_AUX(in, NULL, NULL, NULL);
             if (x == NULL) {
-                if ((ERR_GET_REASON(ERR_peek_last_error()) ==
-                     PEM_R_NO_START_LINE) && (count > 0)) {
+                uint32_t error = ERR_peek_last_error();
+                if (ERR_GET_LIB(error) == ERR_LIB_PEM &&
+                    ERR_GET_REASON(error) == PEM_R_NO_START_LINE &&
+                    count > 0) {
                     ERR_clear_error();
                     break;
-                } else {
-                    OPENSSL_PUT_ERROR(X509, ERR_R_PEM_LIB);
-                    goto err;
                 }
+                OPENSSL_PUT_ERROR(X509, ERR_R_PEM_LIB);
+                goto err;
             }
             i = X509_STORE_add_cert(ctx->store_ctx, x);
             if (!i)
@@ -197,14 +198,15 @@ int X509_load_crl_file(X509_LOOKUP *ctx, const char *file, int type)
         for (;;) {
             x = PEM_read_bio_X509_CRL(in, NULL, NULL, NULL);
             if (x == NULL) {
-                if ((ERR_GET_REASON(ERR_peek_last_error()) ==
-                     PEM_R_NO_START_LINE) && (count > 0)) {
+                uint32_t error = ERR_peek_last_error();
+                if (ERR_GET_LIB(error) == ERR_LIB_PEM &&
+                    ERR_GET_REASON(error) == PEM_R_NO_START_LINE &&
+                    count > 0) {
                     ERR_clear_error();
                     break;
-                } else {
-                    OPENSSL_PUT_ERROR(X509, ERR_R_PEM_LIB);
-                    goto err;
                 }
+                OPENSSL_PUT_ERROR(X509, ERR_R_PEM_LIB);
+                goto err;
             }
             i = X509_STORE_add_crl(ctx->store_ctx, x);
             if (!i)

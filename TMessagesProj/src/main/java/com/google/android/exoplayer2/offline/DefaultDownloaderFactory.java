@@ -76,32 +76,31 @@ public class DefaultDownloaderFactory implements DownloaderFactory {
   }
 
   @Override
-  public Downloader createDownloader(DownloadAction action) {
-    switch (action.type) {
-      case DownloadAction.TYPE_PROGRESSIVE:
+  public Downloader createDownloader(DownloadRequest request) {
+    switch (request.type) {
+      case DownloadRequest.TYPE_PROGRESSIVE:
         return new ProgressiveDownloader(
-            action.uri, action.customCacheKey, downloaderConstructorHelper);
-      case DownloadAction.TYPE_DASH:
-        return createDownloader(action, DASH_DOWNLOADER_CONSTRUCTOR);
-      case DownloadAction.TYPE_HLS:
-        return createDownloader(action, HLS_DOWNLOADER_CONSTRUCTOR);
-      case DownloadAction.TYPE_SS:
-        return createDownloader(action, SS_DOWNLOADER_CONSTRUCTOR);
+            request.uri, request.customCacheKey, downloaderConstructorHelper);
+      case DownloadRequest.TYPE_DASH:
+        return createDownloader(request, DASH_DOWNLOADER_CONSTRUCTOR);
+      case DownloadRequest.TYPE_HLS:
+        return createDownloader(request, HLS_DOWNLOADER_CONSTRUCTOR);
+      case DownloadRequest.TYPE_SS:
+        return createDownloader(request, SS_DOWNLOADER_CONSTRUCTOR);
       default:
-        throw new IllegalArgumentException("Unsupported type: " + action.type);
+        throw new IllegalArgumentException("Unsupported type: " + request.type);
     }
   }
 
   private Downloader createDownloader(
-      DownloadAction action, @Nullable Constructor<? extends Downloader> constructor) {
+      DownloadRequest request, @Nullable Constructor<? extends Downloader> constructor) {
     if (constructor == null) {
-      throw new IllegalStateException("Module missing for: " + action.type);
+      throw new IllegalStateException("Module missing for: " + request.type);
     }
     try {
-      // TODO: Support customCacheKey in DASH/HLS/SS, for completeness.
-      return constructor.newInstance(action.uri, action.getKeys(), downloaderConstructorHelper);
+      return constructor.newInstance(request.uri, request.streamKeys, downloaderConstructorHelper);
     } catch (Exception e) {
-      throw new RuntimeException("Failed to instantiate downloader for: " + action.type, e);
+      throw new RuntimeException("Failed to instantiate downloader for: " + request.type, e);
     }
   }
 
@@ -113,7 +112,7 @@ public class DefaultDownloaderFactory implements DownloaderFactory {
           .getConstructor(Uri.class, List.class, DownloaderConstructorHelper.class);
     } catch (NoSuchMethodException e) {
       // The downloader is present, but the expected constructor is missing.
-      throw new RuntimeException("DASH downloader constructor missing", e);
+      throw new RuntimeException("Downloader constructor missing", e);
     }
   }
   // LINT.ThenChange(../../../../../../../../proguard-rules.txt)

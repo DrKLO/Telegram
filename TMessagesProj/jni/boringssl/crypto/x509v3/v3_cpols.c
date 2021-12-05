@@ -69,6 +69,7 @@
 #include <openssl/stack.h>
 #include <openssl/x509v3.h>
 
+#include "internal.h"
 #include "pcy_int.h"
 
 /* Certificate policies extension support: this one is a bit complex... */
@@ -231,7 +232,7 @@ static POLICYINFO *policy_section(X509V3_CTX *ctx,
             }
             pol->policyid = pobj;
 
-        } else if (!name_cmp(cnf->name, "CPS")) {
+        } else if (!x509v3_name_cmp(cnf->name, "CPS")) {
             if (!pol->qualifiers)
                 pol->qualifiers = sk_POLICYQUALINFO_new_null();
             if (!(qual = POLICYQUALINFO_new()))
@@ -251,7 +252,7 @@ static POLICYINFO *policy_section(X509V3_CTX *ctx,
             if (!ASN1_STRING_set(qual->d.cpsuri, cnf->value,
                                  strlen(cnf->value)))
                 goto merr;
-        } else if (!name_cmp(cnf->name, "userNotice")) {
+        } else if (!x509v3_name_cmp(cnf->name, "userNotice")) {
             STACK_OF(CONF_VALUE) *unot;
             if (*cnf->value != '@') {
                 OPENSSL_PUT_ERROR(X509V3, X509V3_R_EXPECTED_A_SECTION_NAME);

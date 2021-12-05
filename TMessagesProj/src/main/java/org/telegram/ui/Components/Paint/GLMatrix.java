@@ -12,7 +12,7 @@ public class GLMatrix {
         float ty = -(top + bottom) / (top - bottom);
         float tz = -(far + near) / (far - near);
 
-        float out[] = new float[16];
+        float[] out = new float[16];
 
         out[0] = 2.0f / r_l;
         out[1] = 0.0f;
@@ -38,8 +38,8 @@ public class GLMatrix {
     }
 
     public static float[] LoadGraphicsMatrix(Matrix matrix) {
-        float m[] = new float[16];
-        float v[] = new float[9];
+        float[] m = new float[16];
+        float[] v = new float[9];
         matrix.getValues(v);
 
         m[0] = v[Matrix.MSCALE_X]; //m.a;
@@ -66,7 +66,7 @@ public class GLMatrix {
     }
 
     public static float[] MultiplyMat4f(float[] a, float[] b) {
-        float out[] = new float[16];
+        float[] out = new float[16];
 
         out[0] = a[0] * b[0] + a[4] * b[1] + a[8] * b[2] + a[12] * b[3];
         out[1] = a[1] * b[0] + a[5] * b[1] + a[9] * b[2] + a[13] * b[3];

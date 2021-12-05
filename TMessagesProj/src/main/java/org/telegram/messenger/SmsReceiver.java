@@ -8,15 +8,12 @@
 
 package org.telegram.messenger;
 
-import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.provider.Telephony;
-import android.telephony.SmsMessage;
 import android.text.TextUtils;
 
 import com.google.android.gms.auth.api.phone.SmsRetriever;
@@ -24,7 +21,6 @@ import com.google.android.gms.auth.api.phone.SmsRetriever;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@TargetApi(26)
 public class SmsReceiver extends BroadcastReceiver {
 
     @Override
@@ -42,20 +38,6 @@ public class SmsReceiver extends BroadcastReceiver {
                 }
                 Bundle bundle = intent.getExtras();
                 message = (String) bundle.get(SmsRetriever.EXTRA_SMS_MESSAGE);
-            } else {
-                if (TextUtils.isEmpty(hash)) {
-                    return;
-                }
-                SmsMessage[] msgs = Telephony.Sms.Intents.getMessagesFromIntent(intent);
-                if (msgs == null || msgs.length <= 0) {
-                    return;
-                }
-                for (int i = 0; i < msgs.length; i++) {
-                    message += msgs[i].getMessageBody();
-                }
-                if (!message.contains(hash)) {
-                    return;
-                }
             }
             if (TextUtils.isEmpty(message)) {
                 return;
@@ -65,7 +47,7 @@ public class SmsReceiver extends BroadcastReceiver {
             if (matcher.find()) {
                 String code = matcher.group(0).replace("-", "");
                 if (code.length() >= 3) {
-                    if (preferences != null && hash != null) {
+                    if (hash != null) {
                         preferences.edit().putString("sms_hash_code", hash + "|" + code).commit();
                     }
                     AndroidUtilities.runOnUIThread(() -> NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didReceiveSmsCode, code));

@@ -6,7 +6,7 @@
  * are met:
  *
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
+ *    notice, this list of conditions and the following disclaimer.
  *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
@@ -76,18 +76,18 @@ struct aes_key_st {
 typedef struct aes_key_st AES_KEY;
 
 // AES_set_encrypt_key configures |aeskey| to encrypt with the |bits|-bit key,
-// |key|.
+// |key|. |key| must point to |bits|/8 bytes. It returns zero on success and a
+// negative number if |bits| is an invalid AES key size.
 //
-// WARNING: unlike other OpenSSL functions, this returns zero on success and a
-// negative number on error.
+// WARNING: this function breaks the usual return value convention.
 OPENSSL_EXPORT int AES_set_encrypt_key(const uint8_t *key, unsigned bits,
                                        AES_KEY *aeskey);
 
 // AES_set_decrypt_key configures |aeskey| to decrypt with the |bits|-bit key,
-// |key|.
+// |key|. |key| must point to |bits|/8 bytes. It returns zero on success and a
+// negative number if |bits| is an invalid AES key size.
 //
-// WARNING: unlike other OpenSSL functions, this returns zero on success and a
-// negative number on error.
+// WARNING: this function breaks the usual return value convention.
 OPENSSL_EXPORT int AES_set_decrypt_key(const uint8_t *key, unsigned bits,
                                        AES_KEY *aeskey);
 
@@ -170,6 +170,31 @@ OPENSSL_EXPORT int AES_wrap_key(const AES_KEY *key, const uint8_t *iv,
 OPENSSL_EXPORT int AES_unwrap_key(const AES_KEY *key, const uint8_t *iv,
                                   uint8_t *out, const uint8_t *in,
                                   size_t in_len);
+
+
+// AES key wrap with padding.
+//
+// These functions implement AES Key Wrap with Padding mode, as defined in RFC
+// 5649. They should never be used except to interoperate with existing systems
+// that use this mode.
+
+// AES_wrap_key_padded performs a padded AES key wrap on |in| which must be
+// between 1 and 2^32-1 bytes. |key| must have been configured for encryption.
+// On success it writes at most |max_out| bytes of ciphertext to |out|, sets
+// |*out_len| to the number of bytes written, and returns one. On failure it
+// returns zero. To ensure success, set |max_out| to at least |in_len| + 15.
+OPENSSL_EXPORT int AES_wrap_key_padded(const AES_KEY *key, uint8_t *out,
+                                       size_t *out_len, size_t max_out,
+                                       const uint8_t *in, size_t in_len);
+
+// AES_unwrap_key_padded performs a padded AES key unwrap on |in| which must be
+// a multiple of 8 bytes. |key| must have been configured for decryption. On
+// success it writes at most |max_out| bytes to |out|, sets |*out_len| to the
+// number of bytes written, and returns one. On failure it returns zero. Setting
+// |max_out| to |in_len| is a sensible estimate.
+OPENSSL_EXPORT int AES_unwrap_key_padded(const AES_KEY *key, uint8_t *out,
+                                         size_t *out_len, size_t max_out,
+                                         const uint8_t *in, size_t in_len);
 
 
 #if defined(__cplusplus)

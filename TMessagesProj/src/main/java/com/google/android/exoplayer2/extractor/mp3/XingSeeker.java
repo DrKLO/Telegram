@@ -24,10 +24,8 @@ import com.google.android.exoplayer2.util.Log;
 import com.google.android.exoplayer2.util.ParsableByteArray;
 import com.google.android.exoplayer2.util.Util;
 
-/**
- * MP3 seeker that uses metadata from a Xing header.
- */
-/* package */ final class XingSeeker implements Mp3Extractor.Seeker {
+/** MP3 seeker that uses metadata from a Xing header. */
+/* package */ final class XingSeeker implements Seeker {
 
   private static final String TAG = "XingSeeker";
 
@@ -62,7 +60,7 @@ import com.google.android.exoplayer2.util.Util;
       return new XingSeeker(position, mpegAudioHeader.frameSize, durationUs);
     }
 
-    long dataSize = frame.readUnsignedIntToInt();
+    long dataSize = frame.readUnsignedInt();
     long[] tableOfContents = new long[100];
     for (int i = 0; i < 100; i++) {
       tableOfContents[i] = frame.readUnsignedByte();
@@ -90,7 +88,7 @@ import com.google.android.exoplayer2.util.Util;
    * Entries are in the range [0, 255], but are stored as long integers for convenience. Null if the
    * table of contents was missing from the header, in which case seeking is not be supported.
    */
-  private final @Nullable long[] tableOfContents;
+  @Nullable private final long[] tableOfContents;
 
   private XingSeeker(long dataStartPosition, int xingFrameSize, long durationUs) {
     this(

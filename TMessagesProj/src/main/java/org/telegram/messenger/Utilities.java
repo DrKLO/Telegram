@@ -30,8 +30,10 @@ public class Utilities {
 
     public static volatile DispatchQueue stageQueue = new DispatchQueue("stageQueue");
     public static volatile DispatchQueue globalQueue = new DispatchQueue("globalQueue");
+    public static volatile DispatchQueue cacheClearQueue = new DispatchQueue("cacheClearQueue");
     public static volatile DispatchQueue searchQueue = new DispatchQueue("searchQueue");
     public static volatile DispatchQueue phoneBookQueue = new DispatchQueue("phoneBookQueue");
+    public static volatile DispatchQueue themeQueue = new DispatchQueue("themeQueue");
 
     final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
 
@@ -52,19 +54,24 @@ public class Utilities {
     public native static void unpinBitmap(Bitmap bitmap);
     public native static void blurBitmap(Object bitmap, int radius, int unpin, int width, int height, int stride);
     public native static int needInvert(Object bitmap, int unpin, int width, int height, int stride);
-    public native static void calcCDT(ByteBuffer hsvBuffer, int width, int height, ByteBuffer buffer);
+    public native static void calcCDT(ByteBuffer hsvBuffer, int width, int height, ByteBuffer buffer, ByteBuffer calcBuffer);
     public native static boolean loadWebpImage(Bitmap bitmap, ByteBuffer buffer, int len, BitmapFactory.Options options, boolean unpin);
     public native static int convertVideoFrame(ByteBuffer src, ByteBuffer dest, int destFormat, int width, int height, int padding, int swap);
     private native static void aesIgeEncryption(ByteBuffer buffer, byte[] key, byte[] iv, boolean encrypt, int offset, int length);
+    private native static void aesIgeEncryptionByteArray(byte[] buffer, byte[] key, byte[] iv, boolean encrypt, int offset, int length);
     public native static void aesCtrDecryption(ByteBuffer buffer, byte[] key, byte[] iv, int offset, int length);
     public native static void aesCtrDecryptionByteArray(byte[] buffer, byte[] key, byte[] iv, int offset, int length, int n);
     private native static void aesCbcEncryptionByteArray(byte[] buffer, byte[] key, byte[] iv, int offset, int length, int n, int encrypt);
     public native static void aesCbcEncryption(ByteBuffer buffer, byte[] key, byte[] iv, int offset, int length, int encrypt);
     public native static String readlink(String path);
-    public native static long getDirSize(String path, int docType);
-    public native static void clearDir(String path, int docType, long time);
+    public native static String readlinkFd(int fd);
+    public native static long getDirSize(String path, int docType, boolean subdirs);
+    public native static void clearDir(String path, int docType, long time, boolean subdirs);
     private native static int pbkdf2(byte[] password, byte[] salt, byte[] dst, int iterations);
     public static native void stackBlurBitmap(Bitmap bitmap, int radius);
+    public static native void drawDitheredGradient(Bitmap bitmap, int[] colors, int startX, int startY, int endX, int endY);
+    public static native int saveProgressiveJpeg(Bitmap bitmap, int width, int height, int stride, int quality, String path);
+    public static native void generateGradient(Bitmap bitmap, boolean unpin, int phase, float progress, int width, int height, int stride, int[] colors);
 
     public static Bitmap blurWallpaper(Bitmap src) {
         if (src == null) {
@@ -87,23 +94,27 @@ public class Utilities {
         aesIgeEncryption(buffer, key, changeIv ? iv : iv.clone(), encrypt, offset, length);
     }
 
+    public static void aesIgeEncryptionByteArray(byte[] buffer, byte[] key, byte[] iv, boolean encrypt, boolean changeIv, int offset, int length) {
+        aesIgeEncryptionByteArray(buffer, key, changeIv ? iv : iv.clone(), encrypt, offset, length);
+    }
+
     public static void aesCbcEncryptionByteArraySafe(byte[] buffer, byte[] key, byte[] iv, int offset, int length, int n, int encrypt) {
         aesCbcEncryptionByteArray(buffer, key, iv.clone(), offset, length, n, encrypt);
     }
 
-    public static Integer parseInt(String value) {
+    public static Integer parseInt(CharSequence value) {
         if (value == null) {
             return 0;
         }
-        Integer val = 0;
+        int val = 0;
         try {
             Matcher matcher = pattern.matcher(value);
             if (matcher.find()) {
                 String num = matcher.group(0);
                 val = Integer.parseInt(num);
             }
-        } catch (Exception e) {
-            FileLog.e(e);
+        } catch (Exception ignore) {
+
         }
         return val;
     }
@@ -112,15 +123,15 @@ public class Utilities {
         if (value == null) {
             return 0L;
         }
-        Long val = 0L;
+        long val = 0L;
         try {
             Matcher matcher = pattern.matcher(value);
             if (matcher.find()) {
                 String num = matcher.group(0);
                 val = Long.parseLong(num);
             }
-        } catch (Exception e) {
-            FileLog.e(e);
+        } catch (Exception ignore) {
+
         }
         return val;
     }
@@ -359,6 +370,14 @@ public class Utilities {
 
     public static int bytesToInt(byte[] bytes) {
         return (((int) bytes[3] & 0xFF) << 24) + (((int) bytes[2] & 0xFF) << 16) + (((int) bytes[1] & 0xFF) << 8) + ((int) bytes[0] & 0xFF);
+    }
+
+    public static byte[] intToBytes(int value) {
+        return new byte[]{
+                (byte) (value >>> 24),
+                (byte) (value >>> 16),
+                (byte) (value >>> 8),
+                (byte) value};
     }
 
     public static String MD5(String md5) {

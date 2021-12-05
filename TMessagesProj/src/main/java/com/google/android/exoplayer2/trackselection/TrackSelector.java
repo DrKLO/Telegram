@@ -36,8 +36,6 @@ import com.google.android.exoplayer2.util.Assertions;
  *
  * The following interactions occur between the player and its track selector during playback.
  *
- * <p>
- *
  * <ul>
  *   <li>When the player is created it will initialize the track selector by calling {@link
  *       #init(InvalidationListener, BandwidthMeter)}.
@@ -75,7 +73,7 @@ import com.google.android.exoplayer2.util.Assertions;
  * the two are tightly bound together. It may only be possible to play a certain combination tracks
  * if the renderers are configured in a particular way. Equally, it may only be possible to
  * configure renderers in a particular way if certain tracks are selected. Hence it makes sense to
- * determined the track selection and corresponding renderer configurations in a single step.
+ * determine the track selection and corresponding renderer configurations in a single step.
  *
  * <h3>Threading model</h3>
  *
@@ -98,8 +96,8 @@ public abstract class TrackSelector {
 
   }
 
-  private @Nullable InvalidationListener listener;
-  private @Nullable BandwidthMeter bandwidthMeter;
+  @Nullable private InvalidationListener listener;
+  @Nullable private BandwidthMeter bandwidthMeter;
 
   /**
    * Called by the player to initialize the selector.

@@ -20,6 +20,15 @@ public class NotificationDismissReceiver extends BroadcastReceiver {
             return;
         }
         int currentAccount = intent.getIntExtra("currentAccount", UserConfig.selectedAccount);
-        MessagesController.getNotificationsSettings(currentAccount).edit().putInt("dismissDate", intent.getIntExtra("messageDate", 0)).commit();
+        if (!UserConfig.isValidAccount(currentAccount)) {
+            return;
+        }
+        long dialogId = intent.getLongExtra("dialogId", 0);
+        int date = intent.getIntExtra("messageDate", 0);
+        if (dialogId == 0) {
+            MessagesController.getNotificationsSettings(currentAccount).edit().putInt("dismissDate", date).commit();
+        } else {
+            MessagesController.getNotificationsSettings(currentAccount).edit().putInt("dismissDate" + dialogId, date).commit();
+        }
     }
 }

@@ -1,0 +1,25 @@
+package main
+
+type Statement Peg {}
+
+Statement <- WS? (Assignment / Action / Expression) WS? !.
+Assignment <- Variable WS? '=' WS? Expression
+Variable <- [a-zA-Z_][a-zA-Z0-9_]*
+Expression <- (StringLiteral / Indexing / Search / Variable)
+StringLiteral <- '"' QuotedText '"'
+QuotedText <- (EscapedChar / [^\\"])*
+EscapedChar <- '\\' [\\n"]
+Indexing <- Variable ('[' Index ']')+
+Index <- [0-9a-z]+
+Search <- Variable '[' WS? 'where' WS Query ']'
+Action <- Expression '.' Command
+Command <- Function '(' Args? ')'
+Function <- [a-zA-Z]+
+Args <- StringLiteral (WS? ',' WS? Args)
+Query <- Conjunctions (WS? '||' WS? Conjunctions)?
+Conjunctions <- Conjunction (WS? '&&' WS? Conjunctions)?
+Conjunction <- Field WS? Relation WS? StringLiteral
+Field <- [a-z][a-zA-Z0-9]*
+Relation <- ('==' / '!=' / 'contains' / 'startsWith' / 'endsWith')
+
+WS <- [ \t]+

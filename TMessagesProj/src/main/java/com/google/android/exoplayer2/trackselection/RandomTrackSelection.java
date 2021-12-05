@@ -135,7 +135,8 @@ public final class RandomTrackSelection extends BaseTrackSelection {
   }
 
   @Override
-  public @Nullable Object getSelectionData() {
+  @Nullable
+  public Object getSelectionData() {
     return null;
   }
 

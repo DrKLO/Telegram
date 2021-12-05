@@ -8,18 +8,17 @@
 
 package org.telegram.ui.Components;
 
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Application;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.SystemClock;
 
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 
 import java.util.concurrent.CopyOnWriteArrayList;
 
-@SuppressLint("NewApi")
 public class ForegroundDetector implements Application.ActivityLifecycleCallbacks {
 
     public interface Listener {
@@ -61,7 +60,7 @@ public class ForegroundDetector implements Application.ActivityLifecycleCallback
     @Override
     public void onActivityStarted(Activity activity) {
         if (++refs == 1) {
-            if (System.currentTimeMillis() - enterBackgroundTime < 200) {
+            if (SystemClock.elapsedRealtime() - enterBackgroundTime < 200) {
                 wasInBackground = false;
             }
             if (BuildVars.LOGS_ENABLED) {
@@ -78,7 +77,7 @@ public class ForegroundDetector implements Application.ActivityLifecycleCallback
     }
 
     public boolean isWasInBackground(boolean reset) {
-        if (reset && Build.VERSION.SDK_INT >= 21 && (System.currentTimeMillis() - enterBackgroundTime < 200)) {
+        if (reset && Build.VERSION.SDK_INT >= 21 && (SystemClock.elapsedRealtime() - enterBackgroundTime < 200)) {
             wasInBackground = false;
         }
         return wasInBackground;
@@ -91,7 +90,7 @@ public class ForegroundDetector implements Application.ActivityLifecycleCallback
     @Override
     public void onActivityStopped(Activity activity) {
         if (--refs == 0) {
-            enterBackgroundTime = System.currentTimeMillis();
+            enterBackgroundTime = SystemClock.elapsedRealtime();
             wasInBackground = true;
             if (BuildVars.LOGS_ENABLED) {
                 FileLog.d("switch to background");

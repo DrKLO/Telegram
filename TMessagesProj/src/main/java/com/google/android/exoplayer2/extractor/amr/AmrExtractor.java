@@ -140,7 +140,7 @@ public final class AmrExtractor implements Extractor {
 
   private ExtractorOutput extractorOutput;
   private TrackOutput trackOutput;
-  private @Nullable SeekMap seekMap;
+  @Nullable private SeekMap seekMap;
   private boolean hasOutputFormat;
 
   public AmrExtractor() {

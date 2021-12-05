@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/shortcut_widget_item"
+    android:layout_width="match_parent"
+    android:layout_height="72dp"
+    android:minHeight="72dp"
+    android:theme="@style/Theme.TMessages.AppWidget">
+
+    <ImageView android:id="@+id/shortcut_widget_item_avatar"
+        android:layout_width="54dp"
+        android:layout_height="54dp"
+        android:layout_marginStart="10dp"
+        android:layout_marginLeft="10dp"
+        android:layout_marginRight="10dp"
+        android:layout_gravity="start|center_vertical"
+        android:src="?attr/widgetPreviewImage"
+        android:gravity="start" />
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="76dp"
+        android:layout_marginTop="11dp"
+        android:layout_gravity="top|start"
+        android:layout_marginEnd="16dp">
+
+        <TextView android:id="@+id/shortcut_widget_item_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:gravity="start"
+            android:textSize="17dp"
+            android:fontFamily="sans-serif-medium"
+            android:textColor="@color/widget_name"
+            android:layout_alignParentStart="true"
+            android:layout_marginEnd="4dp"
+            android:text="?attr/widgetPreviewTitle"
+            android:layout_toStartOf="@+id/shortcut_widget_item_time"/>
+        
+        <TextView android:id="@+id/shortcut_widget_item_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_marginTop="3dp"
+            android:textSize="13dp"
+            android:text="?attr/widgetPreviewTime"
+            android:textColor="@color/widget_time" />
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginStart="76dp"
+        android:layout_marginTop="37dp"
+        android:layout_gravity="top|start"
+        android:layout_marginEnd="16dp">
+
+        <TextView android:id="@+id/shortcut_widget_item_message"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:gravity="start"
+            android:textSize="16dp"
+            android:textColor="@color/widget_text"
+            android:autoLink="none"
+            android:textColorLink="@color/widget_text"
+            android:layout_alignParentStart="true"
+            android:text="?attr/widgetPreviewContent"
+            android:layout_toStartOf="@+id/shortcut_widget_item_badge"/>
+
+        <TextView
+            android:id="@+id/shortcut_widget_item_badge"
+            style="@style/TMessages.AppWidget.Badge"
+            android:layout_alignParentEnd="true"
+            android:layout_marginStart="4dp"
+            android:text="2"
+            android:visibility="?attr/widgetPreviewDot" />
+
+    </RelativeLayout>
+
+    <FrameLayout android:id="@+id/shortcut_widget_item_divider"
+        android:layout_marginStart="76dp"
+        android:layout_width="match_parent"
+        android:layout_height="1px"
+        android:layout_marginEnd="8dp"
+        android:layout_gravity="bottom|start"
+        android:background="@color/widget_divider"/>
+
+</FrameLayout>

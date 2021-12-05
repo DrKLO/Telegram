@@ -3,7 +3,6 @@ apply plugin: 'com.android.application'
 repositories {
     mavenCentral()
     google()
-    jcenter()
 }
 
 configurations {
@@ -12,46 +11,55 @@ configurations {
 
 configurations.all {
     exclude group: 'com.google.firebase', module: 'firebase-core'
+    exclude group: 'androidx.recyclerview', module: 'recyclerview'
 }
 
 dependencies {
-    implementation 'androidx.core:core:1.1.0-beta01'
+    implementation 'androidx.core:core:1.6.0'
     implementation 'androidx.palette:palette:1.0.0'
-    implementation 'androidx.exifinterface:exifinterface:1.0.0'
-
-    implementation 'com.airbnb.android:lottie:3.0.3'
+    implementation 'androidx.exifinterface:exifinterface:1.3.3'
+    implementation 'androidx.dynamicanimation:dynamicanimation:1.0.0'
+    implementation 'androidx.multidex:multidex:2.0.1'
+    implementation "androidx.sharetarget:sharetarget:1.1.0"
 
     compileOnly 'org.checkerframework:checker-qual:2.5.2'
     compileOnly 'org.checkerframework:checker-compat-qual:2.5.0'
-    implementation 'com.google.firebase:firebase-messaging:18.0.0'
-    implementation 'com.google.firebase:firebase-config:16.5.0'
-    implementation 'com.google.android.gms:play-services-maps:16.1.0'
-    implementation 'com.google.android.gms:play-services-auth:16.0.1'
-    implementation 'com.google.android.gms:play-services-vision:16.2.0'
-    implementation 'com.google.android.gms:play-services-wallet:16.0.1'
-    implementation 'com.google.android.gms:play-services-wearable:16.0.1'
-    implementation 'net.hockeyapp.android:HockeySDK:5.1.1'
+    implementation 'com.google.firebase:firebase-messaging:22.0.0'
+    implementation 'com.google.firebase:firebase-config:21.0.1'
+    implementation 'com.google.firebase:firebase-datatransport:18.1.0'
+    implementation 'com.google.firebase:firebase-appindexing:20.0.0'
+    implementation 'com.google.android.gms:play-services-maps:17.0.1'
+    implementation 'com.google.android.gms:play-services-auth:19.2.0'
+    implementation 'com.google.android.gms:play-services-vision:20.1.3'
+    implementation 'com.google.android.gms:play-services-wearable:17.1.0'
+    implementation 'com.google.android.gms:play-services-location:18.0.0'
+    implementation 'com.google.android.gms:play-services-wallet:18.1.3'
     implementation 'com.googlecode.mp4parser:isoparser:1.0.6'
     implementation 'com.stripe:stripe-android:2.0.2'
+    implementation files('libs/libgsaverification-client.aar')
+
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
 }
 
 android {
-    compileSdkVersion 28
-    buildToolsVersion '28.0.3'
+    compileSdkVersion 31
+    buildToolsVersion '31.0.0'
+    ndkVersion "21.4.7075529"
 
     defaultConfig.applicationId = "org.telegram.messenger"
 
     sourceSets.main.jniLibs.srcDirs = ['./jni/']
 
     externalNativeBuild {
-        ndkBuild {
-            path "jni/Android.mk"
+        cmake {
+            path 'jni/CMakeLists.txt'
         }
     }
 
     lintOptions {
         disable 'MissingTranslation'
         disable 'ExtraTranslation'
+        disable 'BlockedPrivateApi'
     }
 
     dexOptions {
@@ -61,6 +69,8 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
+
+        coreLibraryDesugaringEnabled true
     }
 
     signingConfigs {
@@ -85,19 +95,41 @@ android {
             jniDebuggable true
             signingConfig signingConfigs.debug
             applicationIdSuffix ".beta"
-            minifyEnabled true
+            minifyEnabled false
+            shrinkResources false
+            multiDexEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            ndk.debugSymbolLevel = 'FULL'
         }
 
-        debugMultidex {
-            initWith debug
-            minifyEnabled false
+        /*debugAsan {
+            debuggable true
+            jniDebuggable true
+            signingConfig signingConfigs.debug
+            applicationIdSuffix ".beta"
+            minifyEnabled true
             multiDexEnabled true
-            dependencies {
-                implementation 'com.android.support:multidex:1.0.3'
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+
+            packagingOptions {
+                doNotStrip "**.so"
             }
-            manifestPlaceholders = [applicationClassName: "MultiDexApplicationLoader"]
-        }
+
+            sourceSets {
+                main {
+                    jniLibs {
+                        srcDir {
+                            'jniLibs'
+                        }
+                    }
+                    resources {
+                        srcDir {
+                            'jniRes'
+                        }
+                    }
+                }
+            }
+        }*/
 
         HA {
             debuggable false
@@ -105,7 +137,20 @@ android {
             signingConfig signingConfigs.debug
             applicationIdSuffix ".beta"
             minifyEnabled true
+            multiDexEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            ndk.debugSymbolLevel = 'FULL'
+        }
+
+        standalone {
+            debuggable false
+            jniDebuggable false
+            signingConfig signingConfigs.release
+            applicationIdSuffix ".web"
+            minifyEnabled true
+            multiDexEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            ndk.debugSymbolLevel = 'FULL'
         }
 
         release {
@@ -114,7 +159,9 @@ android {
             signingConfig signingConfigs.release
             minifyEnabled true
             shrinkResources false
+            multiDexEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            ndk.debugSymbolLevel = 'FULL'
         }
     }
 
@@ -122,13 +169,16 @@ android {
         manifest.srcFile 'config/debug/AndroidManifest.xml'
     }
 
-    sourceSets.debugMultidex {
+    /*sourceSets.debugAsan {
         manifest.srcFile 'config/debug/AndroidManifest.xml'
-        java.srcDirs = ['src/multidex/java']
-    }
+    }*/
 
     sourceSets.HA {
         manifest.srcFile 'config/debug/AndroidManifest.xml'
+    }
+
+    sourceSets.standalone {
+        manifest.srcFile 'config/release/AndroidManifest.xml'
     }
 
     sourceSets.release {
@@ -231,39 +281,30 @@ android {
             }
         }
         afat {
+            ndk {
+                abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
+            }
             sourceSets.debug {
                 manifest.srcFile 'config/debug/AndroidManifest_SDK23.xml'
             }
             sourceSets.release {
                 manifest.srcFile 'config/release/AndroidManifest_SDK23.xml'
             }
+            sourceSets.standalone {
+                manifest.srcFile 'config/release/AndroidManifest_standalone.xml'
+            }
             ext {
-                abiVersionCode = 0
+                abiVersionCode = 9
             }
         }
     }
 
-    defaultConfig.versionCode = 1608
+    defaultConfig.versionCode = 2470
 
     applicationVariants.all { variant ->
         variant.outputs.all { output ->
-            output.getProcessManifestProvider().get().doLast {
-                def abiVersion = variant.productFlavors.get(0).abiVersionCode
-
-                def outputDir = manifestOutputDirectory
-                File directory
-                if (outputDir instanceof File) {
-                    directory = outputDir
-                } else {
-                    directory = outputDir.get().asFile
-                }
-
-                String manifestPath = directory.toString() + "/AndroidManifest.xml"
-                def manifestContent = file(manifestPath).getText()
-
-                manifestContent = manifestContent.replace(String.format('android:versionCode="%d"', defaultConfig.versionCode), String.format('android:versionCode="%s"', defaultConfig.versionCode * 10 + abiVersion))
-                file(manifestPath).write(manifestContent)
-            }
+            outputFileName = "app.apk"
+            output.versionCodeOverride = defaultConfig.versionCode * 10 + variant.productFlavors.get(0).abiVersionCode
         }
     }
 
@@ -276,19 +317,17 @@ android {
 
     defaultConfig {
         minSdkVersion 16
-        targetSdkVersion 27
-        versionName "5.7.1"
+        targetSdkVersion 30
+        versionName "8.2.7"
 
         vectorDrawables.generatedDensities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi']
 
         externalNativeBuild {
-            ndkBuild {
-                arguments "NDK_APPLICATION_MK:=jni/Application.mk", "APP_PLATFORM:=android-16", "-j8"
-                abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
+            cmake {
+                version '3.10.2'
+                arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-16', "-j=16"
             }
         }
-
-        manifestPlaceholders = [applicationClassName: "ApplicationLoader"]
     }
 }
 

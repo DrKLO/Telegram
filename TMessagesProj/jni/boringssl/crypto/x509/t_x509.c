@@ -72,17 +72,14 @@
 int X509_print_ex_fp(FILE *fp, X509 *x, unsigned long nmflag,
                      unsigned long cflag)
 {
-    BIO *b;
-    int ret;
-
-    if ((b = BIO_new(BIO_s_file())) == NULL) {
+    BIO *b = BIO_new_fp(fp, BIO_NOCLOSE);
+    if (b == NULL) {
         OPENSSL_PUT_ERROR(X509, ERR_R_BUF_LIB);
-        return (0);
+        return 0;
     }
-    BIO_set_fp(b, fp, BIO_NOCLOSE);
-    ret = X509_print_ex(b, x, nmflag, cflag);
+    int ret = X509_print_ex(b, x, nmflag, cflag);
     BIO_free(b);
-    return (ret);
+    return ret;
 }
 
 int X509_print_fp(FILE *fp, X509 *x)

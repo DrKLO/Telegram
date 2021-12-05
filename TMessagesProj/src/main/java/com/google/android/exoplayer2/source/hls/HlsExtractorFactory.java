@@ -16,9 +16,8 @@
 package com.google.android.exoplayer2.source.hls;
 
 import android.net.Uri;
-import android.util.Pair;
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.Format;
-import com.google.android.exoplayer2.drm.DrmInitData;
 import com.google.android.exoplayer2.extractor.Extractor;
 import com.google.android.exoplayer2.extractor.ExtractorInput;
 import com.google.android.exoplayer2.extractor.PositionHolder;
@@ -32,6 +31,33 @@ import java.util.Map;
  */
 public interface HlsExtractorFactory {
 
+  /** Holds an {@link Extractor} and associated parameters. */
+  final class Result {
+
+    /** The created extractor; */
+    public final Extractor extractor;
+    /** Whether the segments for which {@link #extractor} is created are packed audio segments. */
+    public final boolean isPackedAudioExtractor;
+    /**
+     * Whether {@link #extractor} may be reused for following continuous (no immediately preceding
+     * discontinuities) segments of the same variant.
+     */
+    public final boolean isReusable;
+
+    /**
+     * Creates a result.
+     *
+     * @param extractor See {@link #extractor}.
+     * @param isPackedAudioExtractor See {@link #isPackedAudioExtractor}.
+     * @param isReusable See {@link #isReusable}.
+     */
+    public Result(Extractor extractor, boolean isPackedAudioExtractor, boolean isReusable) {
+      this.extractor = extractor;
+      this.isPackedAudioExtractor = isPackedAudioExtractor;
+      this.isReusable = isReusable;
+    }
+  }
+
   HlsExtractorFactory DEFAULT = new DefaultHlsExtractorFactory();
 
   /**
@@ -44,25 +70,21 @@ public interface HlsExtractorFactory {
    * @param format A {@link Format} associated with the chunk to extract.
    * @param muxedCaptionFormats List of muxed caption {@link Format}s. Null if no closed caption
    *     information is available in the master playlist.
-   * @param drmInitData {@link DrmInitData} associated with the chunk.
    * @param timestampAdjuster Adjuster corresponding to the provided discontinuity sequence number.
    * @param responseHeaders The HTTP response headers associated with the media segment or
    *     initialization section to extract.
    * @param sniffingExtractorInput The first extractor input that will be passed to the returned
    *     extractor's {@link Extractor#read(ExtractorInput, PositionHolder)}. Must only be used to
    *     call {@link Extractor#sniff(ExtractorInput)}.
-   * @return A pair containing the {@link Extractor} and a boolean that indicates whether it is a
-   *     packed audio extractor. The first element may be {@code previousExtractor} if the factory
-   *     has determined it can be re-used.
+   * @return A {@link Result}.
    * @throws InterruptedException If the thread is interrupted while sniffing.
    * @throws IOException If an I/O error is encountered while sniffing.
    */
-  Pair<Extractor, Boolean> createExtractor(
-      Extractor previousExtractor,
+  Result createExtractor(
+      @Nullable Extractor previousExtractor,
       Uri uri,
       Format format,
-      List<Format> muxedCaptionFormats,
-      DrmInitData drmInitData,
+      @Nullable List<Format> muxedCaptionFormats,
       TimestampAdjuster timestampAdjuster,
       Map<String, List<String>> responseHeaders,
       ExtractorInput sniffingExtractorInput)

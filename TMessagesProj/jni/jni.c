@@ -9,11 +9,11 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <sys/stat.h>
-#include "image.h"
-#include "libtgvoip/client/android/tg_voip_jni.h"
 
 int registerNativeTgNetFunctions(JavaVM *vm, JNIEnv *env);
 int videoOnJNILoad(JavaVM *vm, JNIEnv *env);
+int imageOnJNILoad(JavaVM *vm, JNIEnv *env);
+int tgvoipOnJNILoad(JavaVM *vm, JNIEnv *env);
 
 jint JNI_OnLoad(JavaVM *vm, void *reserved) {
 	JNIEnv *env = 0;
@@ -22,7 +22,7 @@ jint JNI_OnLoad(JavaVM *vm, void *reserved) {
 	if ((*vm)->GetEnv(vm, (void **) &env, JNI_VERSION_1_6) != JNI_OK) {
 		return -1;
 	}
-    
+
     if (imageOnJNILoad(vm, env) != JNI_TRUE) {
         return -1;
     }
@@ -35,8 +35,8 @@ jint JNI_OnLoad(JavaVM *vm, void *reserved) {
         return -1;
     }
 
-    tgvoipRegisterNatives(env);
-    
+    tgvoipOnJNILoad(vm, env);
+
 	return JNI_VERSION_1_6;
 }
 
@@ -59,6 +59,24 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_aesIgeEncryption(JNIEnv *en
     }
     (*env)->ReleaseByteArrayElements(env, key, keyBuff, JNI_ABORT);
     (*env)->ReleaseByteArrayElements(env, iv, ivBuff, 0);
+}
+
+JNIEXPORT void Java_org_telegram_messenger_Utilities_aesIgeEncryptionByteArray(JNIEnv *env, jclass class, jbyteArray buffer, jbyteArray key, jbyteArray iv, jboolean encrypt, jint offset, jint length) {
+    unsigned char *bufferBuff = (unsigned char *) (*env)->GetByteArrayElements(env, buffer, NULL);
+    unsigned char *keyBuff = (unsigned char *) (*env)->GetByteArrayElements(env, key, NULL);
+    unsigned char *ivBuff = (unsigned char *) (*env)->GetByteArrayElements(env, iv, NULL);
+
+    AES_KEY akey;
+    if (!encrypt) {
+        AES_set_decrypt_key(keyBuff, 32 * 8, &akey);
+        AES_ige_encrypt(bufferBuff, bufferBuff, length, &akey, ivBuff, AES_DECRYPT);
+    } else {
+        AES_set_encrypt_key(keyBuff, 32 * 8, &akey);
+        AES_ige_encrypt(bufferBuff, bufferBuff, length, &akey, ivBuff, AES_ENCRYPT);
+    }
+    (*env)->ReleaseByteArrayElements(env, key, keyBuff, JNI_ABORT);
+    (*env)->ReleaseByteArrayElements(env, iv, ivBuff, 0);
+    (*env)->ReleaseByteArrayElements(env, buffer, bufferBuff, 0);
 }
 
 JNIEXPORT jint Java_org_telegram_messenger_Utilities_pbkdf2(JNIEnv *env, jclass class, jbyteArray password, jbyteArray salt, jbyteArray dst, jint iterations) {
@@ -168,7 +186,7 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_aesCbcEncryption(JNIEnv *en
     (*env)->ReleaseByteArrayElements(env, iv, ivBuff, JNI_ABORT);
 }
 
-int64_t listdir(const char *fileName, int32_t mode, int32_t docType, int64_t time) {
+int64_t listdir(const char *fileName, int32_t mode, int32_t docType, int64_t time, uint8_t subdirs) {
     int64_t value = 0;
     DIR *dir;
     struct stat attrib;
@@ -197,7 +215,9 @@ int64_t listdir(const char *fileName, int32_t mode, int32_t docType, int64_t tim
             strncat(buff, "/", 4095);
             strncat(buff, entry->d_name, 4095);
             if (entry->d_type == DT_DIR) {
-                value += listdir(buff, mode, docType, time);
+                if (subdirs) {
+                    value += listdir(buff, mode, docType, time, subdirs);
+                }
             } else {
                 stat(buff, &attrib);
                 if (mode == 0) {
@@ -220,15 +240,15 @@ int64_t listdir(const char *fileName, int32_t mode, int32_t docType, int64_t tim
     return value;
 }
 
-JNIEXPORT jlong Java_org_telegram_messenger_Utilities_getDirSize(JNIEnv *env, jclass class, jstring path, jint docType) {
+JNIEXPORT jlong Java_org_telegram_messenger_Utilities_getDirSize(JNIEnv *env, jclass class, jstring path, jint docType, jboolean subdirs) {
     const char *fileName = (*env)->GetStringUTFChars(env, path, NULL);
-    jlong value = listdir(fileName, 0, docType, 0);
+    jlong value = listdir(fileName, 0, docType, 0, subdirs);
     (*env)->ReleaseStringUTFChars(env, path, fileName);
     return value;
 }
 
-JNIEXPORT void Java_org_telegram_messenger_Utilities_clearDir(JNIEnv *env, jclass class, jstring path, jint docType, jlong time) {
+JNIEXPORT void Java_org_telegram_messenger_Utilities_clearDir(JNIEnv *env, jclass class, jstring path, jint docType, jlong time, jboolean subdirs) {
     const char *fileName = (*env)->GetStringUTFChars(env, path, NULL);
-    listdir(fileName, 1, docType, time);
+    listdir(fileName, 1, docType, time, subdirs);
     (*env)->ReleaseStringUTFChars(env, path, fileName);
 }

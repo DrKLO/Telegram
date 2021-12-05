@@ -81,9 +81,9 @@ OPENSSL_EXPORT void BF_decrypt(uint32_t *data, const BF_KEY *key);
 
 OPENSSL_EXPORT void BF_ecb_encrypt(const uint8_t *in, uint8_t *out,
                                    const BF_KEY *key, int enc);
-OPENSSL_EXPORT void BF_cbc_encrypt(const uint8_t *in, uint8_t *out, long length,
-                                   const BF_KEY *schedule, uint8_t *ivec,
-                                   int enc);
+OPENSSL_EXPORT void BF_cbc_encrypt(const uint8_t *in, uint8_t *out,
+                                   size_t length, const BF_KEY *schedule,
+                                   uint8_t *ivec, int enc);
 
 
 #ifdef  __cplusplus

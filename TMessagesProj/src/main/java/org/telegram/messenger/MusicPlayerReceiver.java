@@ -53,16 +53,23 @@ public class MusicPlayerReceiver extends BroadcastReceiver {
                     break;
             }
         } else {
-            if (intent.getAction().equals(MusicPlayerService.NOTIFY_PLAY)) {
-                MediaController.getInstance().playMessage(MediaController.getInstance().getPlayingMessageObject());
-            } else if (intent.getAction().equals(MusicPlayerService.NOTIFY_PAUSE) || intent.getAction().equals(android.media.AudioManager.ACTION_AUDIO_BECOMING_NOISY)) {
-                MediaController.getInstance().pauseMessage(MediaController.getInstance().getPlayingMessageObject());
-            } else if (intent.getAction().equals(MusicPlayerService.NOTIFY_NEXT)) {
-                MediaController.getInstance().playNextMessage();
-            } else if (intent.getAction().equals(MusicPlayerService.NOTIFY_CLOSE)) {
-                MediaController.getInstance().cleanupPlayer(true, true);
-            } else if (intent.getAction().equals(MusicPlayerService.NOTIFY_PREVIOUS)) {
-                MediaController.getInstance().playPreviousMessage();
+            switch (intent.getAction()) {
+                case MusicPlayerService.NOTIFY_PLAY:
+                    MediaController.getInstance().playMessage(MediaController.getInstance().getPlayingMessageObject());
+                    break;
+                case MusicPlayerService.NOTIFY_PAUSE:
+                case android.media.AudioManager.ACTION_AUDIO_BECOMING_NOISY:
+                    MediaController.getInstance().pauseMessage(MediaController.getInstance().getPlayingMessageObject());
+                    break;
+                case MusicPlayerService.NOTIFY_NEXT:
+                    MediaController.getInstance().playNextMessage();
+                    break;
+                case MusicPlayerService.NOTIFY_CLOSE:
+                    MediaController.getInstance().cleanupPlayer(true, true);
+                    break;
+                case MusicPlayerService.NOTIFY_PREVIOUS:
+                    MediaController.getInstance().playPreviousMessage();
+                    break;
             }
         }
     }

@@ -19,12 +19,14 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
 
+import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.CustomTabsCopyReceiver;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.ShareBroadcastReceiver;
@@ -45,6 +47,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.LaunchActivity;
 
 import java.lang.ref.WeakReference;
+import java.net.URLEncoder;
 import java.util.List;
 
 public class Browser {
@@ -168,6 +171,13 @@ public class Browser {
         openUrl(context, Uri.parse(url), allowCustom, tryTelegraph);
     }
 
+    public static boolean isTelegraphUrl(String url, boolean equals) {
+        if (equals) {
+            return url.equals("telegra.ph") || url.equals("te.legra.ph") || url.equals("graph.org");
+        }
+        return url.contains("telegra.ph") || url.contains("te.legra.ph") || url.contains("graph.org");
+    }
+
     public static void openUrl(final Context context, Uri uri, final boolean allowCustom, boolean tryTelegraph) {
         if (context == null || uri == null) {
             return;
@@ -178,7 +188,7 @@ public class Browser {
         if (tryTelegraph) {
             try {
                 String host = uri.getHost().toLowerCase();
-                if (host.equals("telegra.ph") || uri.toString().toLowerCase().contains("telegram.org/faq")) {
+                if (isTelegraphUrl(host, true) || uri.toString().toLowerCase().contains("telegram.org/faq") || uri.toString().toLowerCase().contains("telegram.org/privacy")) {
                     final AlertDialog[] progressDialog = new AlertDialog[]{new AlertDialog(context, 3)};
 
                     Uri finalUri = uri;
@@ -229,6 +239,24 @@ public class Browser {
                 } catch (Exception e) {
                     FileLog.e(e);
                 }
+            }
+            String host = uri.getHost() != null ? uri.getHost().toLowerCase() : "";
+            if (AccountInstance.getInstance(currentAccount).getMessagesController().autologinDomains.contains(host)) {
+                String token = "autologin_token=" + URLEncoder.encode(AccountInstance.getInstance(UserConfig.selectedAccount).getMessagesController().autologinToken, "UTF-8");
+                String url = uri.toString();
+                int idx = url.indexOf("://");
+                String path = idx >= 0 ? url.substring(idx + 3) : url;
+                String fragment = uri.getEncodedFragment();
+                String finalPath = fragment == null ? path : path.substring(0, path.indexOf("#" + fragment));
+                if (finalPath.indexOf('?') >= 0) {
+                    finalPath += "&" + token;
+                } else {
+                    finalPath += "?" + token;
+                }
+                if (fragment != null) {
+                    finalPath += "#" + fragment;
+                }
+                uri = Uri.parse("https://" + finalPath);
             }
             if (allowCustom && SharedConfig.customTabs && !internalUri && !scheme.equals("tel")) {
                 String[] browserPackageNames = null;
@@ -287,9 +315,10 @@ public class Browser {
 
                     CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder(getSession());
                     builder.addMenuItem(LocaleController.getString("CopyLink", R.string.CopyLink), copy);
-                    builder.setToolbarColor(Theme.getColor(Theme.key_actionBarDefault));
+
+                    builder.setToolbarColor(Theme.getColor(Theme.key_actionBarBrowser));
                     builder.setShowTitle(true);
-                    builder.setActionButton(BitmapFactory.decodeResource(context.getResources(), R.drawable.abc_ic_menu_share_mtrl_alpha), LocaleController.getString("ShareFile", R.string.ShareFile), PendingIntent.getBroadcast(ApplicationLoader.applicationContext, 0, share, 0), false);
+                    builder.setActionButton(BitmapFactory.decodeResource(context.getResources(), R.drawable.abc_ic_menu_share_mtrl_alpha), LocaleController.getString("ShareFile", R.string.ShareFile), PendingIntent.getBroadcast(ApplicationLoader.applicationContext, 0, share, 0), true);
                     CustomTabsIntent intent = builder.build();
                     intent.setUseNewTask();
                     intent.launchUrl(context, uri);
@@ -314,7 +343,11 @@ public class Browser {
     }
 
     public static boolean isInternalUrl(String url, boolean[] forceBrowser) {
-        return isInternalUri(Uri.parse(url), forceBrowser);
+        return isInternalUri(Uri.parse(url), false, forceBrowser);
+    }
+
+    public static boolean isInternalUrl(String url, boolean all, boolean[] forceBrowser) {
+        return isInternalUri(Uri.parse(url), all, forceBrowser);
     }
 
     public static boolean isPassportUrl(String url) {
@@ -333,13 +366,31 @@ public class Browser {
     }
 
     public static boolean isInternalUri(Uri uri, boolean[] forceBrowser) {
+        return isInternalUri(uri, false, forceBrowser);
+    }
+
+    public static boolean isInternalUri(Uri uri, boolean all, boolean[] forceBrowser) {
         String host = uri.getHost();
         host = host != null ? host.toLowerCase() : "";
-        if ("tg".equals(uri.getScheme())) {
+        if ("ton".equals(uri.getScheme())) {
+            try {
+                Intent viewIntent = new Intent(Intent.ACTION_VIEW, uri);
+                List<ResolveInfo> allActivities = ApplicationLoader.applicationContext.getPackageManager().queryIntentActivities(viewIntent, 0);
+                if (allActivities != null && allActivities.size() > 1) {
+                    return false;
+                }
+            } catch (Exception ignore) {
+
+            }
+            return true;
+        } else if ("tg".equals(uri.getScheme())) {
             return true;
         } else if ("telegram.dog".equals(host)) {
             String path = uri.getPath();
             if (path != null && path.length() > 1) {
+                if (all) {
+                    return true;
+                }
                 path = path.substring(1).toLowerCase();
                 if (path.startsWith("blog") || path.equals("iv") || path.startsWith("faq") || path.equals("apps") || path.startsWith("s/")) {
                     if (forceBrowser != null) {
@@ -352,6 +403,9 @@ public class Browser {
         } else if ("telegram.me".equals(host) || "t.me".equals(host)) {
             String path = uri.getPath();
             if (path != null && path.length() > 1) {
+                if (all) {
+                    return true;
+                }
                 path = path.substring(1).toLowerCase();
                 if (path.equals("iv") || path.startsWith("s/")) {
                     if (forceBrowser != null) {
@@ -359,6 +413,10 @@ public class Browser {
                     }
                     return false;
                 }
+                return true;
+            }
+        } else if (all) {
+            if (host.endsWith("telegram.org") || host.endsWith("telegra.ph") || host.endsWith("telesco.pe")) {
                 return true;
             }
         }

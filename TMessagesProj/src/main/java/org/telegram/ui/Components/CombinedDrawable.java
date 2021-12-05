@@ -113,11 +113,16 @@ public class CombinedDrawable extends Drawable implements Drawable.Callback {
         background.setBounds(getBounds());
         background.draw(canvas);
         if (icon != null) {
-            int x;
-            int y;
             if (fullSize) {
-                icon.setBounds(getBounds());
+                android.graphics.Rect bounds = getBounds();
+                if (left != 0) {
+                    icon.setBounds(bounds.left + left, bounds.top + top, bounds.right - left, bounds.bottom - top);
+                } else {
+                    icon.setBounds(bounds);
+                }
             } else {
+                int x;
+                int y;
                 if (iconWidth != 0) {
                     x = getBounds().centerX() - iconWidth / 2 + left + offsetX;
                     y = getBounds().centerY() - iconHeight / 2 + top + offsetY;

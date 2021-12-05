@@ -25,6 +25,7 @@ import android.text.style.BackgroundColorSpan;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.StyleSpan;
 import android.text.style.UnderlineSpan;
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.text.Cue;
@@ -152,7 +153,8 @@ public final class Cea708Decoder extends CeaDecoder {
   private DtvCcPacket currentDtvCcPacket;
   private int currentWindow;
 
-  public Cea708Decoder(int accessibilityChannel, List<byte[]> initializationData) {
+  // TODO: Retrieve isWideAspectRatio from initializationData and use it.
+  public Cea708Decoder(int accessibilityChannel, @Nullable List<byte[]> initializationData) {
     ccData = new ParsableByteArray();
     serviceBlockPacket = new ParsableBitArray();
     selectedServiceNumber = accessibilityChannel == Format.NO_VALUE ? 1 : accessibilityChannel;

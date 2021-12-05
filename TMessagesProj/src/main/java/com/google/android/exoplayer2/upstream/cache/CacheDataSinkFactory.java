@@ -26,9 +26,6 @@ public final class CacheDataSinkFactory implements DataSink.Factory {
   private final long fragmentSize;
   private final int bufferSize;
 
-  private boolean syncFileDescriptor;
-  private boolean respectCacheFragmentationFlag;
-
   /** @see CacheDataSink#CacheDataSink(Cache, long) */
   public CacheDataSinkFactory(Cache cache, long fragmentSize) {
     this(cache, fragmentSize, CacheDataSink.DEFAULT_BUFFER_SIZE);
@@ -41,32 +38,8 @@ public final class CacheDataSinkFactory implements DataSink.Factory {
     this.bufferSize = bufferSize;
   }
 
-  /**
-   * See {@link CacheDataSink#experimental_setSyncFileDescriptor(boolean)}.
-   *
-   * <p>This method is experimental, and will be renamed or removed in a future release.
-   */
-  public CacheDataSinkFactory experimental_setSyncFileDescriptor(boolean syncFileDescriptor) {
-    this.syncFileDescriptor = syncFileDescriptor;
-    return this;
-  }
-
-  /**
-   * See {@link CacheDataSink#experimental_setRespectCacheFragmentationFlag(boolean)}.
-   *
-   * <p>This method is experimental, and will be renamed or removed in a future release.
-   */
-  public CacheDataSinkFactory experimental_setRespectCacheFragmentationFlag(
-      boolean respectCacheFragmentationFlag) {
-    this.respectCacheFragmentationFlag = respectCacheFragmentationFlag;
-    return this;
-  }
-
   @Override
   public DataSink createDataSink() {
-    CacheDataSink dataSink = new CacheDataSink(cache, fragmentSize, bufferSize);
-    dataSink.experimental_setSyncFileDescriptor(syncFileDescriptor);
-    dataSink.experimental_setRespectCacheFragmentationFlag(respectCacheFragmentationFlag);
-    return dataSink;
+    return new CacheDataSink(cache, fragmentSize, bufferSize);
   }
 }

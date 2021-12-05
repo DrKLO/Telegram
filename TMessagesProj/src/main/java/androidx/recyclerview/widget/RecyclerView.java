@@ -59,6 +59,8 @@ import android.widget.LinearLayout;
 import android.widget.OverScroller;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BuildVars;
+import org.telegram.messenger.FileLog;
 
 import androidx.annotation.CallSuper;
 import androidx.annotation.IntDef;
@@ -363,7 +365,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
 
     private final RecyclerViewDataObserver mObserver = new RecyclerViewDataObserver();
 
-    final Recycler mRecycler = new Recycler();
+    public final Recycler mRecycler = new Recycler();
 
     private SavedState mPendingSavedState;
 
@@ -375,7 +377,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
     /**
      * Handles abstraction between LayoutManager children and RecyclerView children
      */
-    ChildHelper mChildHelper;
+    public ChildHelper mChildHelper;
 
     /**
      * Keeps data about views to be used for animations
@@ -575,7 +577,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
 
     private int topGlowOffset = 0;
     private int bottomGlowOffset = 0;
-    private int glowColor = 0;
+    private Integer glowColor = null;
 
     public void setTopGlowOffset(int offset) {
         topGlowOffset = offset;
@@ -620,7 +622,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
     }
 
     void applyEdgeEffectColor(EdgeEffect edgeEffect) {
-        if (edgeEffect != null && Build.VERSION.SDK_INT >= 21 && glowColor != 0) {
+        if (edgeEffect != null && Build.VERSION.SDK_INT >= 21 && glowColor != null) {
             edgeEffect.setColor(glowColor);
         }
     }
@@ -896,13 +898,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
                     // lazy detach occurs, it will receive invalid attach/detach sequencing.
                     child.clearAnimation();
                 }
-                if (VERBOSE_TRACING) {
-                    TraceCompat.beginSection("RV removeViewAt");
-                }
                 RecyclerView.this.removeViewAt(index);
-                if (VERBOSE_TRACING) {
-                    TraceCompat.endSection();
-                }
             }
 
             @Override
@@ -939,9 +935,6 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
                         throw new IllegalArgumentException("Called attach on a child which is not"
                                 + " detached: " + vh + exceptionLabel());
                     }
-                    if (DEBUG) {
-                        Log.d(TAG, "reAttach " + vh);
-                    }
                     vh.clearTmpDetachFlag();
                 }
                 RecyclerView.this.attachViewToParent(child, index, layoutParams);
@@ -956,9 +949,6 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
                         if (vh.isTmpDetached() && !vh.shouldIgnore()) {
                             throw new IllegalArgumentException("called detach on an already"
                                     + " detached child " + vh + exceptionLabel());
-                        }
-                        if (DEBUG) {
-                            Log.d(TAG, "tmpDetach " + vh);
                         }
                         vh.addFlags(ViewHolder.FLAG_TMP_DETACHED);
                     }
@@ -1233,6 +1223,16 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
         }
         mRecycler.onAdapterChanged(oldAdapter, mAdapter, compatibleWithPrevious);
         mState.mStructureChanged = true;
+    }
+
+    public void prepareForFastScroll() {
+        stopScroll();
+        removeAndRecycleViews();
+        mAdapterHelper.reset();
+        mRecycler.onAdapterChanged(mAdapter, mAdapter, false);
+        mState.mStructureChanged = true;
+        mChildHelper.removeAllViewsUnfiltered();
+        mRecycler.updateViewCacheSize();
     }
 
     /**
@@ -1559,7 +1559,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
         if (state == mScrollState) {
             return;
         }
-        if (DEBUG) {
+        if (false) {
             Log.d(TAG, "setting scroll state to " + state + " from " + mScrollState,
                     new Exception());
         }
@@ -2418,6 +2418,14 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
         return false;
     }
 
+    public float getCurrentVelocity() {
+        if (mVelocityTracker != null) {
+            mVelocityTracker.computeCurrentVelocity(1000, mMaxFlingVelocity);
+            return mVelocityTracker.getYVelocity();
+        }
+        return 0;
+    }
+
     /**
      * Stop any current scroll in progress, such as one started by
      * {@link #smoothScrollBy(int, int)}, {@link #fling(int, int)} or a touch-initiated fling.
@@ -2767,7 +2775,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
      * same View may still get the focus as a result of that search.
      */
     private boolean isPreferredNextFocus(View focused, View next, int direction) {
-        if (next == null || next == this) {
+        if (next == null || next == this || next == focused) {
             return false;
         }
         // panic, result view is not a child anymore, maybe workaround b/37864393
@@ -2817,9 +2825,9 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
             case View.FOCUS_DOWN:
                 return downness > 0;
             case View.FOCUS_FORWARD:
-                return downness > 0 || (downness == 0 && rightness * rtl >= 0);
+                return downness > 0 || (downness == 0 && rightness * rtl > 0);
             case View.FOCUS_BACKWARD:
-                return downness < 0 || (downness == 0 && rightness * rtl <= 0);
+                return downness < 0 || (downness == 0 && rightness * rtl < 0);
         }
         throw new IllegalArgumentException("Invalid direction: " + direction + exceptionLabel());
     }
@@ -2841,7 +2849,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
      * @param focused The descendant view that actually has the focus if child is focusable, null
      *                otherwise.
      */
-    private void requestChildOnScreen(@NonNull View child, @Nullable View focused) {
+    protected void requestChildOnScreen(@NonNull View child, @Nullable View focused) {
         View rectView = (focused != null) ? focused : child;
         mTempRect.set(0, 0, rectView.getWidth(), rectView.getHeight());
 
@@ -4083,48 +4091,60 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
             // Step 3: Find out where things are now, and process change animations.
             // traverse list in reverse because we may call animateChange in the loop which may
             // remove the target view holder.
-            for (int i = mChildHelper.getChildCount() - 1; i >= 0; i--) {
-                ViewHolder holder = getChildViewHolderInt(mChildHelper.getChildAt(i));
-                if (holder.shouldIgnore()) {
-                    continue;
-                }
-                long key = getChangedHolderKey(holder);
-                final ItemHolderInfo animationInfo = mItemAnimator
-                        .recordPostLayoutInformation(mState, holder);
-                ViewHolder oldChangeViewHolder = mViewInfoStore.getFromOldChangeHolders(key);
-                if (oldChangeViewHolder != null && !oldChangeViewHolder.shouldIgnore()) {
-                    // run a change animation
-
-                    // If an Item is CHANGED but the updated version is disappearing, it creates
-                    // a conflicting case.
-                    // Since a view that is marked as disappearing is likely to be going out of
-                    // bounds, we run a change animation. Both views will be cleaned automatically
-                    // once their animations finish.
-                    // On the other hand, if it is the same view holder instance, we run a
-                    // disappearing animation instead because we are not going to rebind the updated
-                    // VH unless it is enforced by the layout manager.
-                    final boolean oldDisappearing = mViewInfoStore.isDisappearing(
-                            oldChangeViewHolder);
-                    final boolean newDisappearing = mViewInfoStore.isDisappearing(holder);
-                    if (oldDisappearing && oldChangeViewHolder == holder) {
-                        // run disappear animation instead of change
-                        mViewInfoStore.addToPostLayout(holder, animationInfo);
-                    } else {
-                        final ItemHolderInfo preInfo = mViewInfoStore.popFromPreLayout(
-                                oldChangeViewHolder);
-                        // we add and remove so that any post info is merged.
-                        mViewInfoStore.addToPostLayout(holder, animationInfo);
-                        ItemHolderInfo postInfo = mViewInfoStore.popFromPostLayout(holder);
-                        if (preInfo == null) {
-                            handleMissingPreInfoForChangeError(key, holder, oldChangeViewHolder);
-                        } else {
-                            animateChange(oldChangeViewHolder, holder, preInfo, postInfo,
-                                    oldDisappearing, newDisappearing);
-                        }
+            try {
+                for (int i = mChildHelper.getChildCount() - 1; i >= 0; i--) {
+                    ViewHolder holder = getChildViewHolderInt(mChildHelper.getChildAt(i));
+                    if (holder.shouldIgnore()) {
+                        continue;
                     }
-                } else {
-                    mViewInfoStore.addToPostLayout(holder, animationInfo);
+                    long key = getChangedHolderKey(holder);
+                    final ItemHolderInfo animationInfo = mItemAnimator
+                            .recordPostLayoutInformation(mState, holder);
+                    ViewHolder oldChangeViewHolder = mViewInfoStore.getFromOldChangeHolders(key);
+                    if (oldChangeViewHolder != null && !oldChangeViewHolder.shouldIgnore()) {
+                        // run a change animation
+
+                        // If an Item is CHANGED but the updated version is disappearing, it creates
+                        // a conflicting case.
+                        // Since a view that is marked as disappearing is likely to be going out of
+                        // bounds, we run a change animation. Both views will be cleaned automatically
+                        // once their animations finish.
+                        // On the other hand, if it is the same view holder instance, we run a
+                        // disappearing animation instead because we are not going to rebind the updated
+                        // VH unless it is enforced by the layout manager.
+                        final boolean oldDisappearing = mViewInfoStore.isDisappearing(
+                                oldChangeViewHolder);
+                        final boolean newDisappearing = mViewInfoStore.isDisappearing(holder);
+                        if (oldDisappearing && oldChangeViewHolder == holder) {
+                            // run disappear animation instead of change
+                            mViewInfoStore.addToPostLayout(holder, animationInfo);
+                        } else {
+                            final ItemHolderInfo preInfo = mViewInfoStore.popFromPreLayout(
+                                    oldChangeViewHolder);
+                            // we add and remove so that any post info is merged.
+                            mViewInfoStore.addToPostLayout(holder, animationInfo);
+                            ItemHolderInfo postInfo = mViewInfoStore.popFromPostLayout(holder);
+                            if (preInfo == null) {
+                                handleMissingPreInfoForChangeError(key, holder, oldChangeViewHolder);
+                            } else {
+                                animateChange(oldChangeViewHolder, holder, preInfo, postInfo,
+                                        oldDisappearing, newDisappearing);
+                            }
+                        }
+                    } else {
+                        mViewInfoStore.addToPostLayout(holder, animationInfo);
+                    }
                 }
+            } catch (Exception e) {
+                StringBuilder builder = new StringBuilder();
+                for (int i = mChildHelper.getChildCount() - 1; i >= 0; i--) {
+                    ViewHolder holder = getChildViewHolderInt(mChildHelper.getChildAt(i));
+                    if (holder.shouldIgnore()) {
+                        continue;
+                    }
+                    builder.append("Holder at" + i + " " + holder + "\n");
+                }
+                throw new RuntimeException(builder.toString(), e);
             }
 
             // Step 4: Process view info lists and trigger animations
@@ -4362,42 +4382,44 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
         // TODO If padding is not 0 and clipChildrenToPadding is false, to draw glows properly, we
         // need find children closest to edges. Not sure if it is worth the effort.
         boolean needsInvalidate = false;
-        if (mLeftGlow != null && !mLeftGlow.isFinished()) {
-            final int restore = c.save();
-            final int padding = mClipToPadding ? getPaddingBottom() : 0;
-            c.rotate(270);
-            c.translate(-getHeight() + padding, 0);
-            needsInvalidate = mLeftGlow != null && mLeftGlow.draw(c);
-            c.restoreToCount(restore);
-        }
-        if (mTopGlow != null && !mTopGlow.isFinished()) {
-            final int restore = c.save();
-            if (mClipToPadding) {
-                c.translate(getPaddingLeft(), getPaddingTop());
+        if (glowColor == null || glowColor != 0) {
+            if (mLeftGlow != null && !mLeftGlow.isFinished()) {
+                final int restore = c.save();
+                final int padding = mClipToPadding ? getPaddingBottom() : 0;
+                c.rotate(270);
+                c.translate(-getHeight() + padding, 0);
+                needsInvalidate = mLeftGlow != null && mLeftGlow.draw(c);
+                c.restoreToCount(restore);
             }
-            c.translate(0, topGlowOffset);
-            needsInvalidate |= mTopGlow != null && mTopGlow.draw(c);
-            c.restoreToCount(restore);
-        }
-        if (mRightGlow != null && !mRightGlow.isFinished()) {
-            final int restore = c.save();
-            final int width = getWidth();
-            final int padding = mClipToPadding ? getPaddingTop() : 0;
-            c.rotate(90);
-            c.translate(-padding, -width);
-            needsInvalidate |= mRightGlow != null && mRightGlow.draw(c);
-            c.restoreToCount(restore);
-        }
-        if (mBottomGlow != null && !mBottomGlow.isFinished()) {
-            final int restore = c.save();
-            c.rotate(180);
-            if (mClipToPadding) {
-                c.translate(-getWidth() + getPaddingRight(), -getHeight() + getPaddingBottom());
-            } else {
-                c.translate(-getWidth(), -getHeight() + bottomGlowOffset);
+            if (mTopGlow != null && !mTopGlow.isFinished()) {
+                final int restore = c.save();
+                if (mClipToPadding) {
+                    c.translate(getPaddingLeft(), getPaddingTop());
+                }
+                c.translate(0, topGlowOffset);
+                needsInvalidate |= mTopGlow != null && mTopGlow.draw(c);
+                c.restoreToCount(restore);
             }
-            needsInvalidate |= mBottomGlow != null && mBottomGlow.draw(c);
-            c.restoreToCount(restore);
+            if (mRightGlow != null && !mRightGlow.isFinished()) {
+                final int restore = c.save();
+                final int width = getWidth();
+                final int padding = mClipToPadding ? getPaddingTop() : 0;
+                c.rotate(90);
+                c.translate(-padding, -width);
+                needsInvalidate |= mRightGlow != null && mRightGlow.draw(c);
+                c.restoreToCount(restore);
+            }
+            if (mBottomGlow != null && !mBottomGlow.isFinished()) {
+                final int restore = c.save();
+                c.rotate(180);
+                if (mClipToPadding) {
+                    c.translate(-getWidth() + getPaddingRight(), -getHeight() + getPaddingBottom());
+                } else {
+                    c.translate(-getWidth(), -getHeight() + bottomGlowOffset);
+                }
+                needsInvalidate |= mBottomGlow != null && mBottomGlow.draw(c);
+                c.restoreToCount(restore);
+            }
         }
 
         // If some views are animating, ItemDecorators are likely to move/change with them.
@@ -4469,8 +4491,8 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
         for (int i = 0; i < childCount; i++) {
             final ViewHolder holder = getChildViewHolderInt(mChildHelper.getUnfilteredChildAt(i));
             if (DEBUG && holder.mPosition == -1 && !holder.isRemoved()) {
-                throw new IllegalStateException("view holder cannot have position -1 unless it"
-                        + " is removed" + exceptionLabel());
+                FileLog.e(new IllegalStateException("view holder cannot have position -1 unless it"
+                        + " is removed" + exceptionLabel()));
             }
             if (!holder.shouldIgnore()) {
                 holder.saveOldPosition();
@@ -5084,7 +5106,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
         // but some general-purpose code may choose to respond to changes this way.
         final int scrollX = getScrollX();
         final int scrollY = getScrollY();
-        onScrollChanged(scrollX, scrollY, scrollX, scrollY);
+        onScrollChanged(scrollX, scrollY, scrollX - hresult, scrollY - vresult);
 
         // Pass the real deltas to onScrolled, the RecyclerView-specific method.
         onScrolled(hresult, vresult);
@@ -5304,7 +5326,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
 
                     postOnAnimation();
                     if (mGapWorker != null) {
-                        mGapWorker.postFromTraversal(RecyclerView.this, unconsumedX, unconsumedY);
+                        mGapWorker.postFromTraversal(RecyclerView.this, consumedX, consumedY);
                     }
                 }
             }
@@ -7531,7 +7553,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
 
                     @Override
                     public int getParentStart() {
-                        return LayoutManager.this.getPaddingTop();
+                        return LayoutManager.this.getParentStart();
                     }
 
                     @Override
@@ -8808,6 +8830,10 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
          */
         public void removeAndRecycleViewAt(int index, @NonNull Recycler recycler) {
             final View view = getChildAt(index);
+            ViewHolder holder = getChildViewHolderInt(view);
+            if (holder.shouldIgnore()) {
+                return;
+            }
             removeViewAt(index);
             recycler.recycleView(view);
         }
@@ -9729,7 +9755,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
          * @return The array containing the scroll amount in x and y directions that brings the
          * given rect into RV's padded area.
          */
-        private int[] getChildRectangleOnScreenScrollAmount(View child, Rect rect) {
+        protected int[] getChildRectangleOnScreenScrollAmount(View child, Rect rect) {
             int[] out = new int[2];
             final int parentLeft = getPaddingLeft();
             final int parentTop = getPaddingTop();
@@ -10564,6 +10590,22 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
             /** {@link androidx.recyclerview.R.attr#stackFromEnd} */
             public boolean stackFromEnd;
         }
+
+        /**
+         *  Custom methods for ignoring padding
+         */
+        protected int getParentStart() {
+            return getPaddingTop();
+        }
+
+
+        public int getStartAfterPadding() {
+            return getPaddingTop();
+        }
+
+        public int getTotalSpace() {
+            return getHeight() - getPaddingTop() - getPaddingBottom();
+        }
     }
 
     /**
@@ -11003,7 +11045,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
             }
         }
 
-        boolean shouldIgnore() {
+        public boolean shouldIgnore() {
             return (mFlags & FLAG_IGNORE) != 0;
         }
 
@@ -11292,7 +11334,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
             mIsRecyclableCount = recyclable ? mIsRecyclableCount - 1 : mIsRecyclableCount + 1;
             if (mIsRecyclableCount < 0) {
                 mIsRecyclableCount = 0;
-                if (DEBUG) {
+                if (BuildVars.DEBUG_VERSION) {
                     throw new RuntimeException("isRecyclable decremented below 0: "
                             + "unmatched pair of setIsRecyable() calls for " + this);
                 }
@@ -11490,7 +11532,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
      * to store any additional required per-child view metadata about the layout.
      */
     public static class LayoutParams extends android.view.ViewGroup.MarginLayoutParams {
-        ViewHolder mViewHolder;
+        public ViewHolder mViewHolder;
         public final Rect mDecorInsets = new Rect();
         boolean mInsetsDirty = true;
         // Flag is set to true if the view is bound while it is detached from RV.

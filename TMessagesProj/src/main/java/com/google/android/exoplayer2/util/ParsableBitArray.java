@@ -163,7 +163,7 @@ public final class ParsableBitArray {
    * Reads up to 32 bits.
    *
    * @param numBits The number of bits to read.
-   * @return An integer whose bottom n bits hold the read data.
+   * @return An integer whose bottom {@code numBits} bits hold the read data.
    */
   public int readBits(int numBits) {
     if (numBits == 0) {
@@ -186,11 +186,24 @@ public final class ParsableBitArray {
   }
 
   /**
+   * Reads up to 64 bits.
+   *
+   * @param numBits The number of bits to read.
+   * @return A long whose bottom {@code numBits} bits hold the read data.
+   */
+  public long readBitsToLong(int numBits) {
+    if (numBits <= 32) {
+      return Util.toUnsignedLong(readBits(numBits));
+    }
+    return Util.toLong(readBits(numBits - 32), readBits(32));
+  }
+
+  /**
    * Reads {@code numBits} bits into {@code buffer}.
    *
-   * @param buffer The array into which the read data should be written. The trailing
-   *     {@code numBits % 8} bits are written into the most significant bits of the last modified
-   *     {@code buffer} byte. The remaining ones are unmodified.
+   * @param buffer The array into which the read data should be written. The trailing {@code numBits
+   *     % 8} bits are written into the most significant bits of the last modified {@code buffer}
+   *     byte. The remaining ones are unmodified.
    * @param offset The offset in {@code buffer} at which the read data should be written.
    * @param numBits The number of bits to read.
    */

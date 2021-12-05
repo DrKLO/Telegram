@@ -16,9 +16,6 @@
  */
 package org.telegram.messenger.time;
 
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.R;
-
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;

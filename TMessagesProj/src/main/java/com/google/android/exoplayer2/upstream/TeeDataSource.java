@@ -80,7 +80,8 @@ public final class TeeDataSource implements DataSource {
   }
 
   @Override
-  public @Nullable Uri getUri() {
+  @Nullable
+  public Uri getUri() {
     return upstream.getUri();
   }
 

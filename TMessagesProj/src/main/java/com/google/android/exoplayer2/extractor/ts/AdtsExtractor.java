@@ -16,6 +16,8 @@
 package com.google.android.exoplayer2.extractor.ts;
 
 import static com.google.android.exoplayer2.extractor.ts.TsPayloadReader.FLAG_DATA_ALIGNMENT_INDICATOR;
+import static com.google.android.exoplayer2.metadata.id3.Id3Decoder.ID3_HEADER_LENGTH;
+import static com.google.android.exoplayer2.metadata.id3.Id3Decoder.ID3_TAG;
 
 import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
@@ -32,7 +34,7 @@ import com.google.android.exoplayer2.extractor.ts.TsPayloadReader.TrackIdGenerat
 import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.ParsableBitArray;
 import com.google.android.exoplayer2.util.ParsableByteArray;
-import com.google.android.exoplayer2.util.Util;
+import java.io.EOFException;
 import java.io.IOException;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
@@ -66,7 +68,6 @@ public final class AdtsExtractor implements Extractor {
   public static final int FLAG_ENABLE_CONSTANT_BITRATE_SEEKING = 1;
 
   private static final int MAX_PACKET_SIZE = 2 * 1024;
-  private static final int ID3_TAG = Util.getIntegerCodeForString("ID3");
   /**
    * The maximum number of bytes to search when sniffing, excluding the header, before giving up.
    * Frame sizes are represented by 13-bit fields, so expect a valid frame in the first 8192 bytes.
@@ -84,9 +85,8 @@ public final class AdtsExtractor implements Extractor {
   private final ParsableByteArray packetBuffer;
   private final ParsableByteArray scratch;
   private final ParsableBitArray scratchBits;
-  private final long firstStreamSampleTimestampUs;
 
-  private @Nullable ExtractorOutput extractorOutput;
+  @Nullable private ExtractorOutput extractorOutput;
 
   private long firstSampleTimestampUs;
   private long firstFramePosition;
@@ -95,28 +95,24 @@ public final class AdtsExtractor implements Extractor {
   private boolean startedPacket;
   private boolean hasOutputSeekMap;
 
+  /** Creates a new extractor for ADTS bitstreams. */
   public AdtsExtractor() {
-    this(0);
-  }
-
-  public AdtsExtractor(long firstStreamSampleTimestampUs) {
-    this(/* firstStreamSampleTimestampUs= */ firstStreamSampleTimestampUs, /* flags= */ 0);
+    this(/* flags= */ 0);
   }
 
   /**
-   * @param firstStreamSampleTimestampUs The timestamp to be used for the first sample of the stream
-   *     output from this extractor.
+   * Creates a new extractor for ADTS bitstreams.
+   *
    * @param flags Flags that control the extractor's behavior.
    */
-  public AdtsExtractor(long firstStreamSampleTimestampUs, @Flags int flags) {
-    this.firstStreamSampleTimestampUs = firstStreamSampleTimestampUs;
-    this.firstSampleTimestampUs = firstStreamSampleTimestampUs;
+  public AdtsExtractor(@Flags int flags) {
     this.flags = flags;
     reader = new AdtsReader(true);
     packetBuffer = new ParsableByteArray(MAX_PACKET_SIZE);
     averageFrameSize = C.LENGTH_UNSET;
     firstFramePosition = C.POSITION_UNSET;
-    scratch = new ParsableByteArray(10);
+    // Allocate scratch space for an ID3 header. The same buffer is also used to read 4 byte values.
+    scratch = new ParsableByteArray(ID3_HEADER_LENGTH);
     scratchBits = new ParsableBitArray(scratch.data);
   }
 
@@ -173,7 +169,7 @@ public final class AdtsExtractor implements Extractor {
   public void seek(long position, long timeUs) {
     startedPacket = false;
     reader.seek();
-    firstSampleTimestampUs = firstStreamSampleTimestampUs + timeUs;
+    firstSampleTimestampUs = timeUs;
   }
 
   @Override
@@ -216,14 +212,14 @@ public final class AdtsExtractor implements Extractor {
   private int peekId3Header(ExtractorInput input) throws IOException, InterruptedException {
     int firstFramePosition = 0;
     while (true) {
-      input.peekFully(scratch.data, 0, 10);
+      input.peekFully(scratch.data, /* offset= */ 0, ID3_HEADER_LENGTH);
       scratch.setPosition(0);
       if (scratch.readUnsignedInt24() != ID3_TAG) {
         break;
       }
       scratch.skipBytes(3);
       int length = scratch.readSynchSafeInt();
-      firstFramePosition += 10 + length;
+      firstFramePosition += ID3_HEADER_LENGTH + length;
       input.advancePeekPosition(length);
     }
     input.resetPeekPosition();
@@ -271,36 +267,43 @@ public final class AdtsExtractor implements Extractor {
 
     int numValidFrames = 0;
     long totalValidFramesSize = 0;
-    while (input.peekFully(
-        scratch.data, /* offset= */ 0, /* length= */ 2, /* allowEndOfInput= */ true)) {
-      scratch.setPosition(0);
-      int syncBytes = scratch.readUnsignedShort();
-      if (!AdtsReader.isAdtsSyncWord(syncBytes)) {
-        // Invalid sync byte pattern.
-        // Constant bit-rate seeking will probably fail for this stream.
-        numValidFrames = 0;
-        break;
-      } else {
-        // Read the frame size.
-        if (!input.peekFully(
-            scratch.data, /* offset= */ 0, /* length= */ 4, /* allowEndOfInput= */ true)) {
+    try {
+      while (input.peekFully(
+          scratch.data, /* offset= */ 0, /* length= */ 2, /* allowEndOfInput= */ true)) {
+        scratch.setPosition(0);
+        int syncBytes = scratch.readUnsignedShort();
+        if (!AdtsReader.isAdtsSyncWord(syncBytes)) {
+          // Invalid sync byte pattern.
+          // Constant bit-rate seeking will probably fail for this stream.
+          numValidFrames = 0;
           break;
-        }
-        scratchBits.setPosition(14);
-        int currentFrameSize = scratchBits.readBits(13);
-        // Either the stream is malformed OR we're not parsing an ADTS stream.
-        if (currentFrameSize <= 6) {
-          hasCalculatedAverageFrameSize = true;
-          throw new ParserException("Malformed ADTS stream");
-        }
-        totalValidFramesSize += currentFrameSize;
-        if (++numValidFrames == NUM_FRAMES_FOR_AVERAGE_FRAME_SIZE) {
-          break;
-        }
-        if (!input.advancePeekPosition(currentFrameSize - 6, /* allowEndOfInput= */ true)) {
-          break;
+        } else {
+          // Read the frame size.
+          if (!input.peekFully(
+              scratch.data, /* offset= */ 0, /* length= */ 4, /* allowEndOfInput= */ true)) {
+            break;
+          }
+          scratchBits.setPosition(14);
+          int currentFrameSize = scratchBits.readBits(13);
+          // Either the stream is malformed OR we're not parsing an ADTS stream.
+          if (currentFrameSize <= 6) {
+            hasCalculatedAverageFrameSize = true;
+            throw new ParserException("Malformed ADTS stream");
+          }
+          totalValidFramesSize += currentFrameSize;
+          if (++numValidFrames == NUM_FRAMES_FOR_AVERAGE_FRAME_SIZE) {
+            break;
+          }
+          if (!input.advancePeekPosition(currentFrameSize - 6, /* allowEndOfInput= */ true)) {
+            break;
+          }
         }
       }
+    } catch (EOFException e) {
+      // We reached the end of the input during a peekFully() or advancePeekPosition() operation.
+      // This is OK, it just means the input has an incomplete ADTS frame at the end. Ideally
+      // ExtractorInput would allow these operations to encounter end-of-input without throwing an
+      // exception [internal: b/145586657].
     }
     input.resetPeekPosition();
     if (numValidFrames > 0) {

@@ -481,7 +481,7 @@ int SPAKE2_process_msg(SPAKE2_CTX *ctx, uint8_t *out_key, size_t *out_key_len,
   }
 
   ge_p3 Qstar;
-  if (0 != x25519_ge_frombytes_vartime(&Qstar, their_msg)) {
+  if (!x25519_ge_frombytes_vartime(&Qstar, their_msg)) {
     // Point received from peer was not on the curve.
     return 0;
   }

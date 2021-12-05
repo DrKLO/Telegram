@@ -14,7 +14,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
-import org.telegram.messenger.DataQuery;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -51,10 +51,10 @@ public class FeaturedStickersActivity extends BaseFragment implements Notificati
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
-        DataQuery.getInstance(currentAccount).checkFeaturedStickers();
+        MediaDataController.getInstance(currentAccount).checkFeaturedStickers();
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.featuredStickersDidLoad);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.stickersDidLoad);
-        ArrayList<Long> arrayList = DataQuery.getInstance(currentAccount).getUnreadStickerSets();
+        ArrayList<Long> arrayList = MediaDataController.getInstance(currentAccount).getUnreadStickerSets();
         if (arrayList != null) {
             unreadStickers = new ArrayList<>(arrayList);
         }
@@ -107,7 +107,7 @@ public class FeaturedStickersActivity extends BaseFragment implements Notificati
         listView.setAdapter(listAdapter);
         listView.setOnItemClickListener((view, position) -> {
             if (position >= stickersStartRow && position < stickersEndRow && getParentActivity() != null) {
-                final TLRPC.StickerSetCovered stickerSet = DataQuery.getInstance(currentAccount).getFeaturedStickerSets().get(position);
+                final TLRPC.StickerSetCovered stickerSet = MediaDataController.getInstance(currentAccount).getFeaturedStickerSets().get(position);
                 TLRPC.InputStickerSet inputStickerSet;
                 if (stickerSet.set.id != 0) {
                     inputStickerSet = new TLRPC.TL_inputStickerSetID();
@@ -122,7 +122,7 @@ public class FeaturedStickersActivity extends BaseFragment implements Notificati
                     @Override
                     public void onStickerSetInstalled() {
                         FeaturedStickerSetCell cell = (FeaturedStickerSetCell) view;
-                        cell.setDrawProgress(true);
+                        cell.setDrawProgress(true, true);
                         installingStickerSets.put(stickerSet.set.id, stickerSet);
                     }
 
@@ -141,7 +141,7 @@ public class FeaturedStickersActivity extends BaseFragment implements Notificati
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.featuredStickersDidLoad) {
             if (unreadStickers == null) {
-                unreadStickers = DataQuery.getInstance(currentAccount).getUnreadStickerSets();
+                unreadStickers = MediaDataController.getInstance(currentAccount).getUnreadStickerSets();
             }
             updateRows();
         } else if (id == NotificationCenter.stickersDidLoad) {
@@ -166,7 +166,7 @@ public class FeaturedStickersActivity extends BaseFragment implements Notificati
 
     private void updateRows() {
         rowCount = 0;
-        ArrayList<TLRPC.StickerSetCovered> stickerSets = DataQuery.getInstance(currentAccount).getFeaturedStickerSets();
+        ArrayList<TLRPC.StickerSetCovered> stickerSets = MediaDataController.getInstance(currentAccount).getFeaturedStickerSets();
         if (!stickerSets.isEmpty()) {
             stickersStartRow = rowCount;
             stickersEndRow = rowCount + stickerSets.size();
@@ -180,7 +180,7 @@ public class FeaturedStickersActivity extends BaseFragment implements Notificati
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
         }
-        DataQuery.getInstance(currentAccount).markFaturedStickersAsRead(true);
+        MediaDataController.getInstance(currentAccount).markFaturedStickersAsRead(true);
     }
 
     @Override
@@ -207,7 +207,7 @@ public class FeaturedStickersActivity extends BaseFragment implements Notificati
         @Override
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
             if (getItemViewType(position) == 0) {
-                ArrayList<TLRPC.StickerSetCovered> arrayList = DataQuery.getInstance(currentAccount).getFeaturedStickerSets();
+                ArrayList<TLRPC.StickerSetCovered> arrayList = MediaDataController.getInstance(currentAccount).getFeaturedStickerSets();
                 FeaturedStickerSetCell cell = (FeaturedStickerSetCell) holder.itemView;
                 cell.setTag(position);
                 TLRPC.StickerSetCovered stickerSet = arrayList.get(position);
@@ -216,9 +216,8 @@ public class FeaturedStickersActivity extends BaseFragment implements Notificati
                 if (installing && cell.isInstalled()) {
                     installingStickerSets.remove(stickerSet.set.id);
                     installing = false;
-                    cell.setDrawProgress(false);
                 }
-                cell.setDrawProgress(installing);
+                cell.setDrawProgress(installing, false);
             }
         }
 
@@ -229,7 +228,7 @@ public class FeaturedStickersActivity extends BaseFragment implements Notificati
 
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View view = null;
+            View view;
             switch (viewType) {
                 case 0:
                     view = new FeaturedStickerSetCell(mContext);
@@ -241,11 +240,12 @@ public class FeaturedStickersActivity extends BaseFragment implements Notificati
                             return;
                         }
                         installingStickerSets.put(pack.set.id, pack);
-                        DataQuery.getInstance(currentAccount).removeStickersSet(getParentActivity(), pack.set, 2, FeaturedStickersActivity.this, false);
-                        parent1.setDrawProgress(true);
+                        MediaDataController.getInstance(currentAccount).toggleStickerSet(getParentActivity(), pack, 2, FeaturedStickersActivity.this, false, false);
+                        parent1.setDrawProgress(true, true);
                     });
                     break;
                 case 1:
+                default:
                     view = new TextInfoPrivacyCell(mContext);
                     view.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                     break;
@@ -266,30 +266,32 @@ public class FeaturedStickersActivity extends BaseFragment implements Notificati
     }
 
     @Override
-    public ThemeDescription[] getThemeDescriptions() {
-        return new ThemeDescription[]{
-                new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{FeaturedStickerSetCell.class}, null, null, null, Theme.key_windowBackgroundWhite),
-                new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundGray),
+    public ArrayList<ThemeDescription> getThemeDescriptions() {
+        ArrayList<ThemeDescription> themeDescriptions = new ArrayList<>();
 
-                new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault),
-                new ThemeDescription(listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault),
-                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon),
-                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle),
-                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector),
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{FeaturedStickerSetCell.class}, null, null, null, Theme.key_windowBackgroundWhite));
+        themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundGray));
 
-                new ThemeDescription(listView, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector),
+        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault));
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault));
+        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon));
+        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle));
+        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector));
 
-                new ThemeDescription(listView, 0, new Class[]{View.class}, Theme.dividerPaint, null, null, Theme.key_divider),
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector));
 
-                new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{TextInfoPrivacyCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow),
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{View.class}, Theme.dividerPaint, null, null, Theme.key_divider));
 
-                new ThemeDescription(listView, 0, new Class[]{FeaturedStickerSetCell.class}, new String[]{"progressPaint"}, null, null, null, Theme.key_featuredStickers_buttonProgress),
-                new ThemeDescription(listView, 0, new Class[]{FeaturedStickerSetCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
-                new ThemeDescription(listView, 0, new Class[]{FeaturedStickerSetCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2),
-                new ThemeDescription(listView, 0, new Class[]{FeaturedStickerSetCell.class}, new String[]{"addButton"}, null, null, null, Theme.key_featuredStickers_buttonText),
-                new ThemeDescription(listView, 0, new Class[]{FeaturedStickerSetCell.class}, new String[]{"checkImage"}, null, null, null, Theme.key_featuredStickers_addedIcon),
-                new ThemeDescription(listView, ThemeDescription.FLAG_USEBACKGROUNDDRAWABLE, new Class[]{FeaturedStickerSetCell.class}, new String[]{"addButton"}, null, null, null, Theme.key_featuredStickers_addButton),
-                new ThemeDescription(listView, ThemeDescription.FLAG_USEBACKGROUNDDRAWABLE | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, new Class[]{FeaturedStickerSetCell.class}, new String[]{"addButton"}, null, null, null, Theme.key_featuredStickers_addButtonPressed),
-        };
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{TextInfoPrivacyCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow));
+
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{FeaturedStickerSetCell.class}, new String[]{"progressPaint"}, null, null, null, Theme.key_featuredStickers_buttonProgress));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{FeaturedStickerSetCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{FeaturedStickerSetCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{FeaturedStickerSetCell.class}, new String[]{"addButton"}, null, null, null, Theme.key_featuredStickers_buttonText));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{FeaturedStickerSetCell.class}, new String[]{"checkImage"}, null, null, null, Theme.key_featuredStickers_addedIcon));
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_USEBACKGROUNDDRAWABLE, new Class[]{FeaturedStickerSetCell.class}, new String[]{"addButton"}, null, null, null, Theme.key_featuredStickers_addButton));
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_USEBACKGROUNDDRAWABLE | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, new Class[]{FeaturedStickerSetCell.class}, new String[]{"addButton"}, null, null, null, Theme.key_featuredStickers_addButtonPressed));
+
+        return themeDescriptions;
     }
 }

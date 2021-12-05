@@ -158,7 +158,7 @@ final class GapWorker implements Runnable {
 
     public void add(RecyclerView recyclerView) {
         if (RecyclerView.DEBUG && mRecyclerViews.contains(recyclerView)) {
-            throw new IllegalStateException("RecyclerView already present in worker list!");
+            return;
         }
         mRecyclerViews.add(recyclerView);
     }

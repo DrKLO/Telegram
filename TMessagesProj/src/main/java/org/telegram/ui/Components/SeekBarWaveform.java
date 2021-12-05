@@ -38,10 +38,23 @@ public class SeekBarWaveform {
     private int outerColor;
     private int selectedColor;
 
+    private float clearProgress = 1f;
+    private int clearFromX;
+    private boolean isUnread;
+
+    private float waveScaling = 1f;
+
     public SeekBarWaveform(Context context) {
         if (paintInner == null) {
-            paintInner = new Paint();
-            paintOuter = new Paint();
+            paintInner = new Paint(Paint.ANTI_ALIAS_FLAG);
+            paintOuter = new Paint(Paint.ANTI_ALIAS_FLAG);
+            paintInner.setStyle(Paint.Style.STROKE);
+            paintOuter.setStyle(Paint.Style.STROKE);
+            paintInner.setStrokeWidth(AndroidUtilities.dpf2(2));
+            paintOuter.setStrokeWidth(AndroidUtilities.dpf2(2));
+            paintInner.setStrokeCap(Paint.Cap.ROUND);
+            paintOuter.setStrokeCap(Paint.Cap.ROUND);
+
         }
     }
 
@@ -115,7 +128,22 @@ public class SeekBarWaveform {
         return false;
     }
 
+    public float getProgress() {
+        return thumbX / (float) width;
+    }
+
     public void setProgress(float progress) {
+        setProgress(progress, false);
+    }
+
+    public void setProgress(float progress, boolean animated) {
+        int currentThumbX = isUnread ? width : thumbX;
+        if (animated && currentThumbX != 0 && progress == 0) {
+            clearFromX = currentThumbX;
+            clearProgress = 0f;
+        } else if (!animated) {
+            clearProgress = 1f;
+        }
         thumbX = (int) Math.ceil(width * progress);
         if (thumbX < 0) {
             thumbX = 0;
@@ -133,7 +161,7 @@ public class SeekBarWaveform {
         height = h;
     }
 
-    public void draw(Canvas canvas) {
+    public void draw(Canvas canvas, View parentView) {
         if (waveformBytes == null || width == 0) {
             return;
         }
@@ -147,13 +175,23 @@ public class SeekBarWaveform {
         float barCounter = 0;
         int nextBarNum = 0;
 
-        paintInner.setColor(messageObject != null && !messageObject.isOutOwner() && messageObject.isContentUnread() ? outerColor : (selected ? selectedColor : innerColor));
+        isUnread = messageObject != null && !messageObject.isOutOwner() && messageObject.isContentUnread() && thumbX == 0;
+        paintInner.setColor(isUnread ? outerColor : (selected ? selectedColor : innerColor));
         paintOuter.setColor(outerColor);
 
         int y = (height - AndroidUtilities.dp(14)) / 2;
         int barNum = 0;
         int lastBarNum;
         int drawBarCount;
+
+        if (clearProgress != 1f) {
+            clearProgress += 16 / 150f;
+            if (clearProgress > 1f) {
+                clearProgress = 1f;
+            } else {
+                parentView.invalidate();
+            }
+        }
 
         for (int a = 0; a < samplesCount; a++) {
             if (a != nextBarNum) {
@@ -179,17 +217,48 @@ public class SeekBarWaveform {
             }
 
             for (int b = 0; b < drawBarCount; b++) {
-                int x = barNum * AndroidUtilities.dp(3);
+                float x = barNum * AndroidUtilities.dpf2(3);
+                float h = AndroidUtilities.dpf2(Math.max(0, 7 * value / 31.0f));
+
                 if (x < thumbX && x + AndroidUtilities.dp(2) < thumbX) {
-                    canvas.drawRect(x, y + AndroidUtilities.dp(14 - Math.max(1, 14.0f * value / 31.0f)), x + AndroidUtilities.dp(2), y + AndroidUtilities.dp(14), paintOuter);
+                    drawLine(canvas,x, y, h, paintOuter);
                 } else {
-                    canvas.drawRect(x, y + AndroidUtilities.dp(14 - Math.max(1, 14.0f * value / 31.0f)), x + AndroidUtilities.dp(2), y + AndroidUtilities.dp(14), paintInner);
+                    drawLine(canvas,x, y, h, paintInner);
                     if (x < thumbX) {
-                        canvas.drawRect(x, y + AndroidUtilities.dp(14 - Math.max(1, 14.0f * value / 31.0f)), thumbX, y + AndroidUtilities.dp(14), paintOuter);
+                        canvas.save();
+                        canvas.clipRect(x - AndroidUtilities.dpf2(1), y, thumbX, y + AndroidUtilities.dp(14));
+                        drawLine(canvas,x, y, h, paintOuter);
+                        canvas.restore();
                     }
+                }
+                if (clearProgress != 1f) {
+                    int alpha = paintOuter.getAlpha();
+                    paintOuter.setAlpha((int) (alpha * (1f - clearProgress)));
+                    if (x < clearFromX && x + AndroidUtilities.dp(2) < clearFromX) {
+                        drawLine(canvas, x, y, h, paintOuter);
+                    } else if (x < clearFromX) {
+                        canvas.save();
+                        canvas.clipRect(x - AndroidUtilities.dpf2(1), y, clearFromX, y + AndroidUtilities.dp(14));
+                        drawLine(canvas, x, y, h, paintOuter);
+                        canvas.restore();
+                    }
+                    paintOuter.setAlpha(alpha);
                 }
                 barNum++;
             }
         }
+    }
+
+    private void drawLine(Canvas canvas, float x, int y, float h, Paint paint) {
+        h *= waveScaling;
+        if (h == 0) {
+            canvas.drawPoint(x + AndroidUtilities.dpf2(1), y + AndroidUtilities.dp(7), paint);
+        } else {
+            canvas.drawLine(x + AndroidUtilities.dpf2(1), y + AndroidUtilities.dp(7) - h, x + AndroidUtilities.dpf2(1), y + AndroidUtilities.dp(7) + h, paint);
+        }
+    }
+
+    public void setWaveScaling(float waveScaling) {
+        this.waveScaling = waveScaling;
     }
 }

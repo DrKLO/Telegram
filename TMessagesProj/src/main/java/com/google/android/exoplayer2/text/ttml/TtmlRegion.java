@@ -28,6 +28,7 @@ import com.google.android.exoplayer2.text.Cue;
   public final @Cue.LineType int lineType;
   public final @Cue.AnchorType int lineAnchor;
   public final float width;
+  public final float height;
   public final @Cue.TextSizeType int textSizeType;
   public final float textSize;
 
@@ -39,6 +40,7 @@ import com.google.android.exoplayer2.text.Cue;
         /* lineType= */ Cue.TYPE_UNSET,
         /* lineAnchor= */ Cue.TYPE_UNSET,
         /* width= */ Cue.DIMEN_UNSET,
+        /* height= */ Cue.DIMEN_UNSET,
         /* textSizeType= */ Cue.TYPE_UNSET,
         /* textSize= */ Cue.DIMEN_UNSET);
   }
@@ -50,6 +52,7 @@ import com.google.android.exoplayer2.text.Cue;
       @Cue.LineType int lineType,
       @Cue.AnchorType int lineAnchor,
       float width,
+      float height,
       int textSizeType,
       float textSize) {
     this.id = id;
@@ -58,6 +61,7 @@ import com.google.android.exoplayer2.text.Cue;
     this.lineType = lineType;
     this.lineAnchor = lineAnchor;
     this.width = width;
+    this.height = height;
     this.textSizeType = textSizeType;
     this.textSize = textSize;
   }

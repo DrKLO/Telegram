@@ -49,7 +49,8 @@ public final class PsshAtomUtil {
    * @param data The scheme specific data.
    * @return The PSSH atom.
    */
-  @SuppressWarnings("ParameterNotNullable")
+  // dereference of possibly-null reference keyId
+  @SuppressWarnings({"ParameterNotNullable", "nullness:dereference.of.nullable"})
   public static byte[] buildPsshAtom(
       UUID systemId, @Nullable UUID[] keyIds, @Nullable byte[] data) {
     int dataLength = data != null ? data.length : 0;

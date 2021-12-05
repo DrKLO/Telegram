@@ -15,13 +15,16 @@
  */
 package com.google.android.exoplayer2.metadata.scte35;
 
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.metadata.Metadata;
 import com.google.android.exoplayer2.metadata.MetadataDecoder;
 import com.google.android.exoplayer2.metadata.MetadataInputBuffer;
+import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.ParsableBitArray;
 import com.google.android.exoplayer2.util.ParsableByteArray;
 import com.google.android.exoplayer2.util.TimestampAdjuster;
 import java.nio.ByteBuffer;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
 /**
  * Decodes splice info sections and produces splice commands.
@@ -37,7 +40,7 @@ public final class SpliceInfoDecoder implements MetadataDecoder {
   private final ParsableByteArray sectionData;
   private final ParsableBitArray sectionHeader;
 
-  private TimestampAdjuster timestampAdjuster;
+  @MonotonicNonNull private TimestampAdjuster timestampAdjuster;
 
   public SpliceInfoDecoder() {
     sectionData = new ParsableByteArray();
@@ -47,6 +50,8 @@ public final class SpliceInfoDecoder implements MetadataDecoder {
   @SuppressWarnings("ByteBufferBackingArray")
   @Override
   public Metadata decode(MetadataInputBuffer inputBuffer) {
+    ByteBuffer buffer = Assertions.checkNotNull(inputBuffer.data);
+
     // Internal timestamps adjustment.
     if (timestampAdjuster == null
         || inputBuffer.subsampleOffsetUs != timestampAdjuster.getTimestampOffsetUs()) {
@@ -54,7 +59,6 @@ public final class SpliceInfoDecoder implements MetadataDecoder {
       timestampAdjuster.adjustSampleTimestamp(inputBuffer.timeUs - inputBuffer.subsampleOffsetUs);
     }
 
-    ByteBuffer buffer = inputBuffer.data;
     byte[] data = buffer.array();
     int size = buffer.limit();
     sectionData.reset(data, size);
@@ -68,7 +72,7 @@ public final class SpliceInfoDecoder implements MetadataDecoder {
     sectionHeader.skipBits(20);
     int spliceCommandLength = sectionHeader.readBits(12);
     int spliceCommandType = sectionHeader.readBits(8);
-    SpliceCommand command = null;
+    @Nullable SpliceCommand command = null;
     // Go to the start of the command by skipping all fields up to command_type.
     sectionData.skipBytes(14);
     switch (spliceCommandType) {

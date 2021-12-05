@@ -15,6 +15,8 @@
  */
 package androidx.recyclerview.widget;
 
+import org.telegram.messenger.FileLog;
+
 import static androidx.recyclerview.widget.ViewInfoStore.InfoRecord.FLAG_APPEAR;
 import static androidx.recyclerview.widget.ViewInfoStore.InfoRecord.FLAG_APPEAR_AND_DISAPPEAR;
 import static androidx.recyclerview.widget.ViewInfoStore.InfoRecord.FLAG_APPEAR_PRE_AND_POST;
@@ -216,7 +218,15 @@ class ViewInfoStore {
     void process(ProcessCallback callback) {
         for (int index = mLayoutHolderMap.size() - 1; index >= 0; index--) {
             final RecyclerView.ViewHolder viewHolder = mLayoutHolderMap.keyAt(index);
-            final InfoRecord record = mLayoutHolderMap.removeAt(index);
+            InfoRecord record = null;
+            try {
+                record = mLayoutHolderMap.removeAt(index);
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+            if (record == null) {
+                continue;
+            }
             if ((record.flags & FLAG_APPEAR_AND_DISAPPEAR) == FLAG_APPEAR_AND_DISAPPEAR) {
                 // Appeared then disappeared. Not useful for animations.
                 callback.unused(viewHolder);
@@ -261,8 +271,9 @@ class ViewInfoStore {
                 break;
             }
         }
-        final InfoRecord info = mLayoutHolderMap.remove(holder);
+        final InfoRecord info = mLayoutHolderMap.get(holder);
         if (info != null) {
+            mLayoutHolderMap.remove(holder);
             InfoRecord.recycle(info);
         }
     }

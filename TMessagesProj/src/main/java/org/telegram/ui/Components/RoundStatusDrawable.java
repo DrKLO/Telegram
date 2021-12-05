@@ -10,6 +10,7 @@ package org.telegram.ui.Components;
 
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
+import android.graphics.Paint;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
@@ -21,6 +22,21 @@ public class RoundStatusDrawable extends StatusDrawable {
     private boolean started = false;
     private float progress;
     private int progressDirection = 1;
+
+    private Paint currentPaint;
+
+    public RoundStatusDrawable(boolean createPaint) {
+        if (createPaint) {
+            currentPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        }
+    }
+
+    @Override
+    public void setColor(int color) {
+        if (currentPaint != null) {
+            currentPaint.setColor(color);
+        }
+    }
 
     public void setIsChat(boolean value) {
         isChat = value;
@@ -56,8 +72,9 @@ public class RoundStatusDrawable extends StatusDrawable {
 
     @Override
     public void draw(Canvas canvas) {
-        Theme.chat_statusPaint.setAlpha(55 + (int) (200 * progress));
-        canvas.drawCircle(AndroidUtilities.dp(6), AndroidUtilities.dp(isChat ? 8 : 9), AndroidUtilities.dp(4), Theme.chat_statusPaint);
+        Paint paint = currentPaint == null ? Theme.chat_statusPaint : currentPaint;
+        paint.setAlpha(55 + (int) (200 * progress));
+        canvas.drawCircle(AndroidUtilities.dp(6), AndroidUtilities.dp(isChat ? 8 : 9), AndroidUtilities.dp(4), paint);
         if (started) {
             update();
         }

@@ -15,6 +15,7 @@
  */
 package com.google.android.exoplayer2.source.chunk;
 
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.upstream.DataSource;
@@ -44,8 +45,14 @@ public abstract class DataChunk extends Chunk {
    * @param trackSelectionData See {@link #trackSelectionData}.
    * @param data An optional recycled array that can be used as a holder for the data.
    */
-  public DataChunk(DataSource dataSource, DataSpec dataSpec, int type, Format trackFormat,
-      int trackSelectionReason, Object trackSelectionData, byte[] data) {
+  public DataChunk(
+      DataSource dataSource,
+      DataSpec dataSpec,
+      int type,
+      Format trackFormat,
+      int trackSelectionReason,
+      @Nullable Object trackSelectionData,
+      byte[] data) {
     super(dataSource, dataSpec, type, trackFormat, trackSelectionReason, trackSelectionData,
         C.TIME_UNSET, C.TIME_UNSET);
     this.data = data;

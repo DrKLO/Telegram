@@ -69,9 +69,20 @@ import java.util.Collections;
       } else if (audioFormat == AUDIO_FORMAT_ALAW || audioFormat == AUDIO_FORMAT_ULAW) {
         String type = audioFormat == AUDIO_FORMAT_ALAW ? MimeTypes.AUDIO_ALAW
             : MimeTypes.AUDIO_MLAW;
-        int pcmEncoding = (header & 0x01) == 1 ? C.ENCODING_PCM_16BIT : C.ENCODING_PCM_8BIT;
-        Format format = Format.createAudioSampleFormat(null, type, null, Format.NO_VALUE,
-            Format.NO_VALUE, 1, 8000, pcmEncoding, null, null, 0, null);
+        Format format =
+            Format.createAudioSampleFormat(
+                /* id= */ null,
+                /* sampleMimeType= */ type,
+                /* codecs= */ null,
+                /* bitrate= */ Format.NO_VALUE,
+                /* maxInputSize= */ Format.NO_VALUE,
+                /* channelCount= */ 1,
+                /* sampleRate= */ 8000,
+                /* pcmEncoding= */ Format.NO_VALUE,
+                /* initializationData= */ null,
+                /* drmInitData= */ null,
+                /* selectionFlags= */ 0,
+                /* language= */ null);
         output.format(format);
         hasOutputFormat = true;
       } else if (audioFormat != AUDIO_FORMAT_AAC) {
@@ -86,11 +97,12 @@ import java.util.Collections;
   }
 
   @Override
-  protected void parsePayload(ParsableByteArray data, long timeUs) throws ParserException {
+  protected boolean parsePayload(ParsableByteArray data, long timeUs) throws ParserException {
     if (audioFormat == AUDIO_FORMAT_MP3) {
       int sampleSize = data.bytesLeft();
       output.sampleData(data, sampleSize);
       output.sampleMetadata(timeUs, C.BUFFER_FLAG_KEY_FRAME, sampleSize, 0, null);
+      return true;
     } else {
       int packetType = data.readUnsignedByte();
       if (packetType == AAC_PACKET_TYPE_SEQUENCE_HEADER && !hasOutputFormat) {
@@ -104,12 +116,15 @@ import java.util.Collections;
             Collections.singletonList(audioSpecificConfig), null, 0, null);
         output.format(format);
         hasOutputFormat = true;
+        return false;
       } else if (audioFormat != AUDIO_FORMAT_AAC || packetType == AAC_PACKET_TYPE_AAC_RAW) {
         int sampleSize = data.bytesLeft();
         output.sampleData(data, sampleSize);
         output.sampleMetadata(timeUs, C.BUFFER_FLAG_KEY_FRAME, sampleSize, 0, null);
+        return true;
+      } else {
+        return false;
       }
     }
   }
-
 }

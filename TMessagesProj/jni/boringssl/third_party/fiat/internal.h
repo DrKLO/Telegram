@@ -27,14 +27,9 @@
 extern "C" {
 #endif
 
+#include <openssl/base.h>
 
-#if defined(OPENSSL_X86_64) && !defined(OPENSSL_SMALL) && \
-    !defined(OPENSSL_WINDOWS) && !defined(OPENSSL_NO_ASM)
-#define BORINGSSL_X25519_X86_64
-
-void x25519_x86_64(uint8_t out[32], const uint8_t scalar[32],
-                   const uint8_t point[32]);
-#endif
+#include "../../crypto/internal.h"
 
 
 #if defined(OPENSSL_ARM) && !defined(OPENSSL_NO_ASM) && !defined(OPENSSL_APPLE)
@@ -45,6 +40,22 @@ void x25519_NEON(uint8_t out[32], const uint8_t scalar[32],
                  const uint8_t point[32]);
 #endif
 
+#if defined(BORINGSSL_HAS_UINT128)
+#define BORINGSSL_CURVE25519_64BIT
+#endif
+
+#if defined(BORINGSSL_CURVE25519_64BIT)
+// fe means field element. Here the field is \Z/(2^255-19). An element t,
+// entries t[0]...t[4], represents the integer t[0]+2^51 t[1]+2^102 t[2]+2^153
+// t[3]+2^204 t[4].
+// fe limbs are bounded by 1.125*2^51.
+// Multiplication and carrying produce fe from fe_loose.
+typedef struct fe { uint64_t v[5]; } fe;
+
+// fe_loose limbs are bounded by 3.375*2^51.
+// Addition and subtraction produce fe_loose from (fe, fe).
+typedef struct fe_loose { uint64_t v[5]; } fe_loose;
+#else
 // fe means field element. Here the field is \Z/(2^255-19). An element t,
 // entries t[0]...t[9], represents the integer t[0]+2^26 t[1]+2^51 t[2]+2^77
 // t[3]+2^102 t[4]+...+2^230 t[9].
@@ -55,6 +66,7 @@ typedef struct fe { uint32_t v[10]; } fe;
 // fe_loose limbs are bounded by 3.375*2^26,3.375*2^25,3.375*2^26,3.375*2^25,etc.
 // Addition and subtraction produce fe_loose from (fe, fe).
 typedef struct fe_loose { uint32_t v[10]; } fe_loose;
+#endif
 
 // ge means group element.
 //

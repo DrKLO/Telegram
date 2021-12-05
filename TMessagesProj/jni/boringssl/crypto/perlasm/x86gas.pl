@@ -265,6 +265,14 @@ ___
 sub ::dataseg
 {   push(@out,".data\n");   }
 
+sub ::preprocessor_ifndef
+{ my($define)=@_;
+    push(@out,"#ifndef ${define}\n");
+}
+
+sub ::preprocessor_endif
+{ push(@out,"#endif\n");    }
+
 *::hidden = sub { push(@out,".hidden\t$nmdecor$_[0]\n"); } if ($::elf);
 
 1;

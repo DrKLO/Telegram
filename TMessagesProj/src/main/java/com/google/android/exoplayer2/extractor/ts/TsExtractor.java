@@ -17,10 +17,10 @@ package com.google.android.exoplayer2.extractor.ts;
 
 import static com.google.android.exoplayer2.extractor.ts.TsPayloadReader.FLAG_PAYLOAD_UNIT_START_INDICATOR;
 
-import androidx.annotation.IntDef;
 import android.util.SparseArray;
 import android.util.SparseBooleanArray;
 import android.util.SparseIntArray;
+import androidx.annotation.IntDef;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ParserException;
 import com.google.android.exoplayer2.extractor.Extractor;
@@ -87,6 +87,7 @@ public final class TsExtractor implements Extractor {
   public static final int TS_STREAM_TYPE_DTS = 0x8A;
   public static final int TS_STREAM_TYPE_HDMV_DTS = 0x82;
   public static final int TS_STREAM_TYPE_E_AC3 = 0x87;
+  public static final int TS_STREAM_TYPE_AC4 = 0xAC; // DVB/ATSC AC-4 Descriptor
   public static final int TS_STREAM_TYPE_H262 = 0x02;
   public static final int TS_STREAM_TYPE_H264 = 0x1B;
   public static final int TS_STREAM_TYPE_H265 = 0x24;
@@ -100,9 +101,10 @@ public final class TsExtractor implements Extractor {
   private static final int TS_PAT_PID = 0;
   private static final int MAX_PID_PLUS_ONE = 0x2000;
 
-  private static final long AC3_FORMAT_IDENTIFIER = Util.getIntegerCodeForString("AC-3");
-  private static final long E_AC3_FORMAT_IDENTIFIER = Util.getIntegerCodeForString("EAC3");
-  private static final long HEVC_FORMAT_IDENTIFIER = Util.getIntegerCodeForString("HEVC");
+  private static final long AC3_FORMAT_IDENTIFIER = 0x41432d33;
+  private static final long E_AC3_FORMAT_IDENTIFIER = 0x45414333;
+  private static final long AC4_FORMAT_IDENTIFIER = 0x41432d34;
+  private static final long HEVC_FORMAT_IDENTIFIER = 0x48455643;
 
   private static final int BUFFER_SIZE = TS_PACKET_SIZE * 50;
   private static final int SNIFF_TS_PACKET_COUNT = 5;
@@ -266,8 +268,7 @@ public final class TsExtractor implements Extractor {
       }
 
       if (tsBinarySearchSeeker != null && tsBinarySearchSeeker.isSeeking()) {
-        return tsBinarySearchSeeker.handlePendingSeek(
-            input, seekPosition, /* outputFrameHolder= */ null);
+        return tsBinarySearchSeeker.handlePendingSeek(input, seekPosition);
       }
     }
 
@@ -459,10 +460,15 @@ public final class TsExtractor implements Extractor {
         // See ISO/IEC 13818-1, section 2.4.4.4 for more information on table id assignment.
         return;
       }
-      // section_syntax_indicator(1), '0'(1), reserved(2), section_length(12),
-      // transport_stream_id (16), reserved (2), version_number (5), current_next_indicator (1),
-      // section_number (8), last_section_number (8)
-      sectionData.skipBytes(7);
+      // section_syntax_indicator(1), '0'(1), reserved(2), section_length(4)
+      int secondHeaderByte = sectionData.readUnsignedByte();
+      if ((secondHeaderByte & 0x80) == 0) {
+        // section_syntax_indicator must be 1. See ISO/IEC 13818-1, section 2.4.4.5.
+        return;
+      }
+      // section_length(8), transport_stream_id (16), reserved (2), version_number (5),
+      // current_next_indicator (1), section_number (8), last_section_number (8)
+      sectionData.skipBytes(6);
 
       int programCount = sectionData.bytesLeft() / 4;
       for (int i = 0; i < programCount; i++) {
@@ -494,7 +500,10 @@ public final class TsExtractor implements Extractor {
     private static final int TS_PMT_DESC_AC3 = 0x6A;
     private static final int TS_PMT_DESC_EAC3 = 0x7A;
     private static final int TS_PMT_DESC_DTS = 0x7B;
+    private static final int TS_PMT_DESC_DVB_EXT = 0x7F;
     private static final int TS_PMT_DESC_DVBSUBS = 0x59;
+
+    private static final int TS_PMT_DESC_DVB_EXT_AC4 = 0x15;
 
     private final ParsableBitArray pmtScratch;
     private final SparseArray<TsPayloadReader> trackIdToReaderScratch;
@@ -531,8 +540,14 @@ public final class TsExtractor implements Extractor {
         timestampAdjusters.add(timestampAdjuster);
       }
 
-      // section_syntax_indicator(1), '0'(1), reserved(2), section_length(12)
-      sectionData.skipBytes(2);
+      // section_syntax_indicator(1), '0'(1), reserved(2), section_length(4)
+      int secondHeaderByte = sectionData.readUnsignedByte();
+      if ((secondHeaderByte & 0x80) == 0) {
+        // section_syntax_indicator must be 1. See ISO/IEC 13818-1, section 2.4.4.9.
+        return;
+      }
+      // section_length(8)
+      sectionData.skipBytes(1);
       int programNumber = sectionData.readUnsignedShort();
 
       // Skip 3 bytes (24 bits), including:
@@ -648,6 +663,8 @@ public final class TsExtractor implements Extractor {
             streamType = TS_STREAM_TYPE_AC3;
           } else if (formatIdentifier == E_AC3_FORMAT_IDENTIFIER) {
             streamType = TS_STREAM_TYPE_E_AC3;
+          } else if (formatIdentifier == AC4_FORMAT_IDENTIFIER) {
+            streamType = TS_STREAM_TYPE_AC4;
           } else if (formatIdentifier == HEVC_FORMAT_IDENTIFIER) {
             streamType = TS_STREAM_TYPE_H265;
           }
@@ -655,6 +672,13 @@ public final class TsExtractor implements Extractor {
           streamType = TS_STREAM_TYPE_AC3;
         } else if (descriptorTag == TS_PMT_DESC_EAC3) { // enhanced_AC-3_descriptor
           streamType = TS_STREAM_TYPE_E_AC3;
+        } else if (descriptorTag == TS_PMT_DESC_DVB_EXT) {
+          // Extension descriptor in DVB (ETSI EN 300 468).
+          int descriptorTagExt = data.readUnsignedByte();
+          if (descriptorTagExt == TS_PMT_DESC_DVB_EXT_AC4) {
+            // AC-4_descriptor in DVB (ETSI EN 300 468).
+            streamType = TS_STREAM_TYPE_AC4;
+          }
         } else if (descriptorTag == TS_PMT_DESC_DTS) { // DTS_descriptor
           streamType = TS_STREAM_TYPE_DTS;
         } else if (descriptorTag == TS_PMT_DESC_ISO639_LANG) {

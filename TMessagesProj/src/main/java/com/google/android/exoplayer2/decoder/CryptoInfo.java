@@ -25,27 +25,41 @@ import com.google.android.exoplayer2.util.Util;
 public final class CryptoInfo {
 
   /**
+   * The 16 byte initialization vector. If the initialization vector of the content is shorter than
+   * 16 bytes, 0 byte padding is appended to extend the vector to the required 16 byte length.
+   *
    * @see android.media.MediaCodec.CryptoInfo#iv
    */
   public byte[] iv;
   /**
+   * The 16 byte key id.
+   *
    * @see android.media.MediaCodec.CryptoInfo#key
    */
   public byte[] key;
   /**
+   * The type of encryption that has been applied. Must be one of the {@link C.CryptoMode} values.
+   *
    * @see android.media.MediaCodec.CryptoInfo#mode
    */
-  @C.CryptoMode
-  public int mode;
+  @C.CryptoMode public int mode;
   /**
+   * The number of leading unencrypted bytes in each sub-sample. If null, all bytes are treated as
+   * encrypted and {@link #numBytesOfEncryptedData} must be specified.
+   *
    * @see android.media.MediaCodec.CryptoInfo#numBytesOfClearData
    */
   public int[] numBytesOfClearData;
   /**
+   * The number of trailing encrypted bytes in each sub-sample. If null, all bytes are treated as
+   * clear and {@link #numBytesOfClearData} must be specified.
+   *
    * @see android.media.MediaCodec.CryptoInfo#numBytesOfEncryptedData
    */
   public int[] numBytesOfEncryptedData;
   /**
+   * The number of subSamples that make up the buffer's contents.
+   *
    * @see android.media.MediaCodec.CryptoInfo#numSubSamples
    */
   public int numSubSamples;
@@ -62,7 +76,7 @@ public final class CryptoInfo {
   private final PatternHolderV24 patternHolder;
 
   public CryptoInfo() {
-    frameworkCryptoInfo = Util.SDK_INT >= 16 ? newFrameworkCryptoInfoV16() : null;
+    frameworkCryptoInfo = new android.media.MediaCodec.CryptoInfo();
     patternHolder = Util.SDK_INT >= 24 ? new PatternHolderV24(frameworkCryptoInfo) : null;
   }
 
@@ -79,34 +93,8 @@ public final class CryptoInfo {
     this.mode = mode;
     this.encryptedBlocks = encryptedBlocks;
     this.clearBlocks = clearBlocks;
-    if (Util.SDK_INT >= 16) {
-      updateFrameworkCryptoInfoV16();
-    }
-  }
-
-  /**
-   * Returns an equivalent {@link android.media.MediaCodec.CryptoInfo} instance.
-   * <p>
-   * Successive calls to this method on a single {@link CryptoInfo} will return the same instance.
-   * Changes to the {@link CryptoInfo} will be reflected in the returned object. The return object
-   * should not be modified directly.
-   *
-   * @return The equivalent {@link android.media.MediaCodec.CryptoInfo} instance.
-   */
-  @TargetApi(16)
-  public android.media.MediaCodec.CryptoInfo getFrameworkCryptoInfoV16() {
-    return frameworkCryptoInfo;
-  }
-
-  @TargetApi(16)
-  private android.media.MediaCodec.CryptoInfo newFrameworkCryptoInfoV16() {
-    return new android.media.MediaCodec.CryptoInfo();
-  }
-
-  @TargetApi(16)
-  private void updateFrameworkCryptoInfoV16() {
-    // Update fields directly because the framework's CryptoInfo.set performs an unnecessary object
-    // allocation on Android N.
+    // Update frameworkCryptoInfo fields directly because CryptoInfo.set performs an unnecessary
+    // object allocation on Android N.
     frameworkCryptoInfo.numSubSamples = numSubSamples;
     frameworkCryptoInfo.numBytesOfClearData = numBytesOfClearData;
     frameworkCryptoInfo.numBytesOfEncryptedData = numBytesOfEncryptedData;
@@ -116,6 +104,25 @@ public final class CryptoInfo {
     if (Util.SDK_INT >= 24) {
       patternHolder.set(encryptedBlocks, clearBlocks);
     }
+  }
+
+  /**
+   * Returns an equivalent {@link android.media.MediaCodec.CryptoInfo} instance.
+   *
+   * <p>Successive calls to this method on a single {@link CryptoInfo} will return the same
+   * instance. Changes to the {@link CryptoInfo} will be reflected in the returned object. The
+   * return object should not be modified directly.
+   *
+   * @return The equivalent {@link android.media.MediaCodec.CryptoInfo} instance.
+   */
+  public android.media.MediaCodec.CryptoInfo getFrameworkCryptoInfo() {
+    return frameworkCryptoInfo;
+  }
+
+  /** @deprecated Use {@link #getFrameworkCryptoInfo()}. */
+  @Deprecated
+  public android.media.MediaCodec.CryptoInfo getFrameworkCryptoInfoV16() {
+    return getFrameworkCryptoInfo();
   }
 
   @TargetApi(24)

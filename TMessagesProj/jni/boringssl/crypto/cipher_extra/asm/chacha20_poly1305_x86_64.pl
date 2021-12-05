@@ -2478,6 +2478,7 @@ if (!$win64) {
   print $code;
 } else {
   print <<___;
+.text
 .globl dummy_chacha20_poly1305_asm
 .type dummy_chacha20_poly1305_asm,\@abi-omnipotent
 dummy_chacha20_poly1305_asm:
@@ -2485,4 +2486,4 @@ dummy_chacha20_poly1305_asm:
 ___
 }
 
-close STDOUT;
+close STDOUT or die "error closing STDOUT";

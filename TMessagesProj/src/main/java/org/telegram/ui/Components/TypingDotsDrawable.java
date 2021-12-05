@@ -10,6 +10,7 @@ package org.telegram.ui.Components;
 
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
+import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.view.animation.DecelerateInterpolator;
 
@@ -28,6 +29,21 @@ public class TypingDotsDrawable extends StatusDrawable {
     private long lastUpdateTime = 0;
     private boolean started = false;
     private DecelerateInterpolator decelerateInterpolator = new DecelerateInterpolator();
+
+    private Paint currentPaint;
+
+    public TypingDotsDrawable(boolean createPaint) {
+        if (createPaint) {
+            currentPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        }
+    }
+
+    @Override
+    public void setColor(int color) {
+        if (currentPaint != null) {
+            currentPaint.setColor(color);
+        }
+    }
 
     public void setIsChat(boolean value) {
         isChat = value;
@@ -91,10 +107,17 @@ public class TypingDotsDrawable extends StatusDrawable {
         } else {
             y = AndroidUtilities.dp(9.3f) + getBounds().top;
         }
-        Theme.chat_statusPaint.setAlpha(255);
-        canvas.drawCircle(AndroidUtilities.dp(3), y, scales[0] * AndroidUtilities.density, Theme.chat_statusPaint);
-        canvas.drawCircle(AndroidUtilities.dp(9), y, scales[1] * AndroidUtilities.density, Theme.chat_statusPaint);
-        canvas.drawCircle(AndroidUtilities.dp(15), y, scales[2] * AndroidUtilities.density, Theme.chat_statusPaint);
+        Paint paint;
+        if (currentPaint == null) {
+            paint = Theme.chat_statusPaint;
+            paint.setAlpha(255);
+        } else {
+            paint = currentPaint;
+        }
+
+        canvas.drawCircle(AndroidUtilities.dp(3), y, scales[0] * AndroidUtilities.density, paint);
+        canvas.drawCircle(AndroidUtilities.dp(9), y, scales[1] * AndroidUtilities.density, paint);
+        canvas.drawCircle(AndroidUtilities.dp(15), y, scales[2] * AndroidUtilities.density, paint);
         checkUpdate();
     }
 

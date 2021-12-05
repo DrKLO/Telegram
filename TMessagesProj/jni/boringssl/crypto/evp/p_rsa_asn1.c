@@ -178,6 +178,11 @@ const EVP_PKEY_ASN1_METHOD rsa_asn1_meth = {
   rsa_priv_decode,
   rsa_priv_encode,
 
+  NULL /* set_priv_raw */,
+  NULL /* set_pub_raw */,
+  NULL /* get_priv_raw */,
+  NULL /* get_pub_raw */,
+
   rsa_opaque,
 
   int_rsa_size,

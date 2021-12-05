@@ -45,7 +45,7 @@ public class Render {
         Point unitVector = new Point(1.0f, 1.0f, 0.0f);
         float vectorAngle = Math.abs(state.angle) > 0.0f ? state.angle : (float) Math.atan2(vector.y, vector.x);
 
-        float brushWeight = state.baseWeight * state.scale;
+        float brushWeight = state.baseWeight * state.scale * 1f / state.viewportScale;
         double step = Math.max(1.0f, state.spacing * brushWeight);
 
         if (distance > 0.0) {
@@ -85,7 +85,7 @@ public class Render {
     }
 
     private static void PaintStamp(Point point, RenderState state) {
-        float brushWeight = state.baseWeight * state.scale;
+        float brushWeight = state.baseWeight * state.scale * 1f / state.viewportScale;
         PointF start = point.toPointF();
         float angle = Math.abs(state.angle) > 0.0f ? state.angle : 0.0f;
         float alpha = state.alpha;

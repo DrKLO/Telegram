@@ -60,14 +60,9 @@
 
 #include <openssl/mem.h>
 
+#include "internal.h"
 #include "../../internal.h"
 
-
-#if !defined(OPENSSL_NO_ASM) &&                         \
-    (defined(OPENSSL_X86) || defined(OPENSSL_X86_64) || \
-     defined(OPENSSL_ARM) || defined(OPENSSL_AARCH64))
-#define SHA256_ASM
-#endif
 
 int SHA224_Init(SHA256_CTX *sha) {
   OPENSSL_memset(sha, 0, sizeof(SHA256_CTX));
@@ -97,7 +92,8 @@ int SHA256_Init(SHA256_CTX *sha) {
   return 1;
 }
 
-uint8_t *SHA224(const uint8_t *data, size_t len, uint8_t *out) {
+uint8_t *SHA224(const uint8_t *data, size_t len,
+                uint8_t out[SHA224_DIGEST_LENGTH]) {
   SHA256_CTX ctx;
   SHA224_Init(&ctx);
   SHA224_Update(&ctx, data, len);
@@ -106,7 +102,8 @@ uint8_t *SHA224(const uint8_t *data, size_t len, uint8_t *out) {
   return out;
 }
 
-uint8_t *SHA256(const uint8_t *data, size_t len, uint8_t *out) {
+uint8_t *SHA256(const uint8_t *data, size_t len,
+                uint8_t out[SHA256_DIGEST_LENGTH]) {
   SHA256_CTX ctx;
   SHA256_Init(&ctx);
   SHA256_Update(&ctx, data, len);
@@ -119,14 +116,17 @@ int SHA224_Update(SHA256_CTX *ctx, const void *data, size_t len) {
   return SHA256_Update(ctx, data, len);
 }
 
-int SHA224_Final(uint8_t *md, SHA256_CTX *ctx) {
-  return SHA256_Final(md, ctx);
+int SHA224_Final(uint8_t out[SHA224_DIGEST_LENGTH], SHA256_CTX *ctx) {
+  // SHA224_Init sets |ctx->md_len| to |SHA224_DIGEST_LENGTH|, so this has a
+  // smaller output.
+  return SHA256_Final(out, ctx);
 }
 
 #define DATA_ORDER_IS_BIG_ENDIAN
 
 #define HASH_CTX SHA256_CTX
 #define HASH_CBLOCK 64
+#define HASH_DIGEST_LENGTH 32
 
 // Note that FIPS180-2 discusses "Truncation of the Hash Function Output."
 // default: case below covers for it. It's not clear however if it's permitted
@@ -172,9 +172,9 @@ int SHA224_Final(uint8_t *md, SHA256_CTX *ctx) {
 #define HASH_FINAL SHA256_Final
 #define HASH_BLOCK_DATA_ORDER sha256_block_data_order
 #ifndef SHA256_ASM
-static
+static void sha256_block_data_order(uint32_t *state, const uint8_t *in,
+                                    size_t num);
 #endif
-void sha256_block_data_order(uint32_t *state, const uint8_t *in, size_t num);
 
 #include "../digest/md32_common.h"
 
@@ -316,9 +316,15 @@ static void sha256_block_data_order(uint32_t *state, const uint8_t *data,
 
 #endif  // !SHA256_ASM
 
+void SHA256_TransformBlocks(uint32_t state[8], const uint8_t *data,
+                            size_t num_blocks) {
+  sha256_block_data_order(state, data, num_blocks);
+}
+
 #undef DATA_ORDER_IS_BIG_ENDIAN
 #undef HASH_CTX
 #undef HASH_CBLOCK
+#undef HASH_DIGEST_LENGTH
 #undef HASH_MAKE_STRING
 #undef HASH_UPDATE
 #undef HASH_TRANSFORM

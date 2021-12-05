@@ -339,13 +339,37 @@ void TL_account_registerDevice::serializeToStream(NativeByteBuffer *stream) {
     stream->writeString(token);
 }
 
+TL_restrictionReason *TL_restrictionReason::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
+    if (TL_restrictionReason::constructor != constructor) {
+        error = true;
+        if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in TL_restrictionReason", constructor);
+        return nullptr;
+    }
+    TL_restrictionReason *result = new TL_restrictionReason();
+    result->readParams(stream, instanceNum, error);
+    return result;
+}
+
+void TL_restrictionReason::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    platform = stream->readString(&error);
+    reason = stream->readString(&error);
+    text = stream->readString(&error);
+}
+
+void TL_restrictionReason::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeString(platform);
+    stream->writeString(reason);
+    stream->writeString(text);
+}
+
 User *User::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
     User *result = nullptr;
     switch (constructor) {
-        case 0x200250ba:
+        case 0xd3bc4b7a:
             result = new TL_userEmpty();
             break;
-        case 0x2e13f4c3:
+        case 0x3ff6ecb0:
             result = new TL_user();
             break;
         default:
@@ -358,17 +382,17 @@ User *User::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_
 }
 
 void TL_userEmpty::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
-    id = stream->readInt32(&error);
+    id = stream->readInt64(&error);
 }
 
 void TL_userEmpty::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(constructor);
-    stream->writeInt32(id);
+    stream->writeInt64(id);
 }
 
 void TL_user::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
     flags = stream->readInt32(&error);
-    id = stream->readInt32(&error);
+    id = stream->readInt64(&error);
     if ((flags & 1) != 0) {
         access_hash = stream->readInt64(&error);
     }
@@ -394,7 +418,20 @@ void TL_user::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &er
         bot_info_version = stream->readInt32(&error);
     }
     if ((flags & 262144) != 0) {
-        restriction_reason = stream->readString(&error);
+        uint32_t magic = stream->readUint32(&error);
+        if (magic != 0x1cb5c415) {
+            error = true;
+            if (LOGS_ENABLED) DEBUG_E("wrong Vector magic, got %x", magic);
+            return;
+        }
+        int32_t count = stream->readInt32(&error);
+        for (int32_t a = 0; a < count; a++) {
+            TL_restrictionReason *object = TL_restrictionReason::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error);
+            if (object == nullptr) {
+                return;
+            }
+            restriction_reason.push_back(std::unique_ptr<TL_restrictionReason>(object));
+        }
     }
     if ((flags & 524288) != 0) {
         bot_inline_placeholder = stream->readString(&error);
@@ -407,7 +444,7 @@ void TL_user::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &er
 void TL_user::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(constructor);
     stream->writeInt32(flags);
-    stream->writeInt32(id);
+    stream->writeInt64(id);
     if ((flags & 1) != 0) {
         stream->writeInt64(access_hash);
     }
@@ -433,7 +470,12 @@ void TL_user::serializeToStream(NativeByteBuffer *stream) {
         stream->writeInt32(bot_info_version);
     }
     if ((flags & 262144) != 0) {
-        stream->writeString(restriction_reason);
+        stream->writeInt32(0x1cb5c415);
+        uint32_t count = (uint32_t) restriction_reason.size();
+        stream->writeInt32(count);
+        for (int a = 0; a < count; a++) {
+            restriction_reason[a]->serializeToStream(stream);
+        }
     }
     if ((flags & 524288) != 0) {
         stream->writeString(bot_inline_placeholder);
@@ -443,15 +485,535 @@ void TL_user::serializeToStream(NativeByteBuffer *stream) {
     }
 }
 
-TL_auth_authorization *TL_auth_authorization::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
-    if (TL_auth_authorization::constructor != constructor) {
-        error = true;
-        if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in TL_auth_authorization", constructor);
-        return nullptr;
+InputPeer *InputPeer::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
+    InputPeer *result = nullptr;
+    switch (constructor) {
+        case 0x7da07ec9:
+            result = new TL_inputPeerSelf();
+            break;
+        case 0xdde8a54c:
+            result = new TL_inputPeerUser();
+            break;
+        case 0x35a95cb9:
+            result = new TL_inputPeerChat();
+            break;
+        case 0xa87b0a1c:
+            result = new TL_inputPeerUserFromMessage();
+            break;
+        case 0xbd2a0840:
+            result = new TL_inputPeerChannelFromMessage();
+            break;
+        case 0x27bcbbfc:
+            result = new TL_inputPeerChannel();
+            break;
+        case 0x7f3b18ea:
+            result = new TL_inputPeerEmpty();
+            break;
+        default:
+            error = true;
+            if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in InputPeer", constructor);
+            return nullptr;
     }
-    TL_auth_authorization *result = new TL_auth_authorization();
     result->readParams(stream, instanceNum, error);
     return result;
+}
+
+void TL_inputPeerSelf::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+}
+
+void TL_inputPeerUser::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    user_id = stream->readInt64(&error);
+    access_hash = stream->readInt64(&error);
+}
+
+void TL_inputPeerUser::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeInt64(user_id);
+    stream->writeInt64(access_hash);
+}
+
+void TL_inputPeerChat::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    chat_id = stream->readInt64(&error);
+}
+
+void TL_inputPeerChat::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeInt64(chat_id);
+}
+
+void TL_inputPeerUserFromMessage::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    peer = std::unique_ptr<InputPeer>(InputPeer::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error));
+    msg_id = stream->readInt32(&error);
+    user_id = stream->readInt64(&error);
+}
+
+void TL_inputPeerUserFromMessage::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    peer->serializeToStream(stream);
+    stream->writeInt32(msg_id);
+    stream->writeInt64(user_id);
+}
+
+void TL_inputPeerChannelFromMessage::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    peer = std::unique_ptr<InputPeer>(InputPeer::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error));
+    msg_id = stream->readInt32(&error);
+    channel_id = stream->readInt64(&error);
+}
+
+void TL_inputPeerChannelFromMessage::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    peer->serializeToStream(stream);
+    stream->writeInt32(msg_id);
+    stream->writeInt64(channel_id);
+}
+
+void TL_inputPeerChannel::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    channel_id = stream->readInt64(&error);
+    access_hash = stream->readInt64(&error);
+}
+
+void TL_inputPeerChannel::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeInt64(channel_id);
+    stream->writeInt64(access_hash);
+}
+
+void TL_inputPeerEmpty::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+}
+
+InputUser *InputUser::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
+    InputUser *result = nullptr;
+    switch (constructor) {
+        case 0xf7c1b13f:
+            result = new TL_inputUserSelf();
+            break;
+        case 0xf21158c6:
+            result = new TL_inputUser();
+            break;
+        case 0xb98886cf:
+            result = new TL_inputUserEmpty();
+            break;
+        case 0x1da448e2:
+            result = new TL_inputUserFromMessage();
+            break;
+        default:
+            error = true;
+            if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in InputUser", constructor);
+            return nullptr;
+    }
+    result->readParams(stream, instanceNum, error);
+    return result;
+}
+
+void TL_inputUserSelf::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+}
+
+void TL_inputUser::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    user_id = stream->readInt64(&error);
+    access_hash = stream->readInt64(&error);
+}
+
+void TL_inputUser::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeInt64(user_id);
+    stream->writeInt64(access_hash);
+}
+
+void TL_inputUserEmpty::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+}
+
+void TL_inputUserFromMessage::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    peer = std::unique_ptr<InputPeer>(InputPeer::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error));
+    msg_id = stream->readInt32(&error);
+    user_id = stream->readInt64(&error);
+}
+
+void TL_inputUserFromMessage::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    peer->serializeToStream(stream);
+    stream->writeInt32(msg_id);
+    stream->writeInt64(user_id);
+}
+
+MessageEntity *MessageEntity::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
+    MessageEntity *result = nullptr;
+    switch (constructor) {
+        case 0x76a6d327:
+            result = new TL_messageEntityTextUrl();
+            break;
+        case 0x6cef8ac7:
+            result = new TL_messageEntityBotCommand();
+            break;
+        case 0x64e475c2:
+            result = new TL_messageEntityEmail();
+            break;
+        case 0x73924be0:
+            result = new TL_messageEntityPre();
+            break;
+        case 0xbb92ba95:
+            result = new TL_messageEntityUnknown();
+            break;
+        case 0x6ed02538:
+            result = new TL_messageEntityUrl();
+            break;
+        case 0x826f8b60:
+            result = new TL_messageEntityItalic();
+            break;
+        case 0xfa04579d:
+            result = new TL_messageEntityMention();
+            break;
+        case 0xdc7b1140:
+            result = new TL_messageEntityMentionName();
+            break;
+        case 0x208e68c9:
+            result = new TL_inputMessageEntityMentionName();
+            break;
+        case 0x4c4e743f:
+            result = new TL_messageEntityCashtag();
+            break;
+        case 0xbd610bc9:
+            result = new TL_messageEntityBold();
+            break;
+        case 0x6f635b0d:
+            result = new TL_messageEntityHashtag();
+            break;
+        case 0x28a20571:
+            result = new TL_messageEntityCode();
+            break;
+        case 0xbf0693d4:
+            result = new TL_messageEntityStrike();
+            break;
+        case 0x20df5d0:
+            result = new TL_messageEntityBlockquote();
+            break;
+        case 0x9c4e7e8b:
+            result = new TL_messageEntityUnderline();
+            break;
+        case 0x9b69e34b:
+            result = new TL_messageEntityPhone();
+            break;
+        default:
+            error = true;
+            if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in MessageEntity", constructor);
+            return nullptr;
+    }
+    result->readParams(stream, instanceNum, error);
+    return result;
+}
+
+void TL_messageEntityTextUrl::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    offset = stream->readInt32(&error);
+    length = stream->readInt32(&error);
+    url = stream->readString(&error);
+}
+
+void TL_messageEntityTextUrl::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeInt32(offset);
+    stream->writeInt32(length);
+    stream->writeString(url);
+}
+
+void TL_messageEntityBotCommand::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    offset = stream->readInt32(&error);
+    length = stream->readInt32(&error);
+}
+
+void TL_messageEntityBotCommand::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeInt32(offset);
+    stream->writeInt32(length);
+}
+
+void TL_messageEntityEmail::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    offset = stream->readInt32(&error);
+    length = stream->readInt32(&error);
+}
+
+void TL_messageEntityEmail::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeInt32(offset);
+    stream->writeInt32(length);
+}
+
+void TL_messageEntityPre::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    offset = stream->readInt32(&error);
+    length = stream->readInt32(&error);
+    language = stream->readString(&error);
+}
+
+void TL_messageEntityPre::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeInt32(offset);
+    stream->writeInt32(length);
+    stream->writeString(language);
+}
+
+void TL_messageEntityUnknown::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    offset = stream->readInt32(&error);
+    length = stream->readInt32(&error);
+}
+
+void TL_messageEntityUnknown::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeInt32(offset);
+    stream->writeInt32(length);
+}
+
+void TL_messageEntityUrl::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    offset = stream->readInt32(&error);
+    length = stream->readInt32(&error);
+}
+
+void TL_messageEntityUrl::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeInt32(offset);
+    stream->writeInt32(length);
+}
+
+void TL_messageEntityItalic::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    offset = stream->readInt32(&error);
+    length = stream->readInt32(&error);
+}
+
+void TL_messageEntityItalic::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeInt32(offset);
+    stream->writeInt32(length);
+}
+
+void TL_messageEntityMention::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    offset = stream->readInt32(&error);
+    length = stream->readInt32(&error);
+}
+
+void TL_messageEntityMention::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeInt32(offset);
+    stream->writeInt32(length);
+}
+
+void TL_messageEntityMentionName::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    offset = stream->readInt32(&error);
+    length = stream->readInt32(&error);
+    user_id = stream->readInt64(&error);
+}
+
+void TL_messageEntityMentionName::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeInt32(offset);
+    stream->writeInt32(length);
+    stream->writeInt64(user_id);
+}
+
+void TL_inputMessageEntityMentionName::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    offset = stream->readInt32(&error);
+    length = stream->readInt32(&error);
+    user_id = std::unique_ptr<InputUser>(InputUser::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error));
+}
+
+void TL_inputMessageEntityMentionName::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeInt32(offset);
+    stream->writeInt32(length);
+    user_id->serializeToStream(stream);
+}
+
+void TL_messageEntityCashtag::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    offset = stream->readInt32(&error);
+    length = stream->readInt32(&error);
+}
+
+void TL_messageEntityCashtag::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeInt32(offset);
+    stream->writeInt32(length);
+}
+
+void TL_messageEntityBold::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    offset = stream->readInt32(&error);
+    length = stream->readInt32(&error);
+}
+
+void TL_messageEntityBold::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeInt32(offset);
+    stream->writeInt32(length);
+}
+
+void TL_messageEntityHashtag::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    offset = stream->readInt32(&error);
+    length = stream->readInt32(&error);
+}
+
+void TL_messageEntityHashtag::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeInt32(offset);
+    stream->writeInt32(length);
+}
+
+void TL_messageEntityCode::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    offset = stream->readInt32(&error);
+    length = stream->readInt32(&error);
+}
+
+void TL_messageEntityCode::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeInt32(offset);
+    stream->writeInt32(length);
+}
+
+void TL_messageEntityStrike::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    offset = stream->readInt32(&error);
+    length = stream->readInt32(&error);
+}
+
+void TL_messageEntityStrike::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeInt32(offset);
+    stream->writeInt32(length);
+}
+
+void TL_messageEntityBlockquote::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    offset = stream->readInt32(&error);
+    length = stream->readInt32(&error);
+}
+
+void TL_messageEntityBlockquote::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeInt32(offset);
+    stream->writeInt32(length);
+}
+
+void TL_messageEntityUnderline::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    offset = stream->readInt32(&error);
+    length = stream->readInt32(&error);
+}
+
+void TL_messageEntityUnderline::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeInt32(offset);
+    stream->writeInt32(length);
+}
+
+void TL_messageEntityPhone::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    offset = stream->readInt32(&error);
+    length = stream->readInt32(&error);
+}
+
+void TL_messageEntityPhone::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeInt32(offset);
+    stream->writeInt32(length);
+}
+
+TL_dataJSON *TL_dataJSON::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
+    if (TL_dataJSON::constructor != constructor) {
+        error = true;
+        if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in TL_dataJSON", constructor);
+        return nullptr;
+    }
+    TL_dataJSON *result = new TL_dataJSON();
+    result->readParams(stream, instanceNum, error);
+    return result;
+}
+
+void TL_dataJSON::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    data = stream->readString(&error);
+}
+
+void TL_dataJSON::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeString(data);
+}
+
+TL_help_termsOfService *TL_help_termsOfService::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
+    if (TL_help_termsOfService::constructor != constructor) {
+        error = true;
+        if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in TL_help_termsOfService", constructor);
+        return nullptr;
+    }
+    TL_help_termsOfService *result = new TL_help_termsOfService();
+    result->readParams(stream, instanceNum, error);
+    return result;
+}
+
+void TL_help_termsOfService::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    flags = stream->readInt32(&error);
+    popup = (flags & 1) != 0;
+    id = std::unique_ptr<TL_dataJSON>(TL_dataJSON::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error));
+    text = stream->readString(&error);
+    int magic = stream->readInt32(&error);
+    if (magic != 0x1cb5c415) {
+        error = true;
+        if (LOGS_ENABLED) DEBUG_E("wrong Vector magic, got %x", magic);
+        return;
+    }
+    int count = stream->readInt32(&error);
+    for (int a = 0; a < count; a++) {
+        MessageEntity *object = MessageEntity::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error);
+        if (object == nullptr) {
+            return;
+        }
+        entities.push_back(std::unique_ptr<MessageEntity>(object));
+    }
+    if ((flags & 2) != 0) {
+        min_age_confirm = stream->readInt32(&error);
+    }
+}
+
+void TL_help_termsOfService::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    flags = popup ? (flags | 1) : (flags & ~1);
+    stream->writeInt32(flags);
+    id->serializeToStream(stream);
+    stream->writeString(text);
+    stream->writeInt32(0x1cb5c415);
+    int32_t count = (int32_t) entities.size();
+    stream->writeInt32(count);
+    for (int a = 0; a < count; a++) {
+        entities[a]->serializeToStream(stream);
+    }
+    if ((flags & 2) != 0) {
+        stream->writeInt32(min_age_confirm);
+    }
+}
+
+auth_Authorization *auth_Authorization::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
+    auth_Authorization *result = nullptr;
+    switch (constructor) {
+        case 0x44747e9a:
+            result = new TL_auth_authorizationSignUpRequired();
+            break;
+        case 0xcd050916:
+            result = new TL_auth_authorization();
+            break;
+        default:
+            error = true;
+            if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in auth_Authorization", constructor);
+            return nullptr;
+    }
+    result->readParams(stream, instanceNum, error);
+    return result;
+}
+
+void TL_auth_authorizationSignUpRequired::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    flags = stream->readInt32(&error);
+    if ((flags & 1) != 0) {
+        terms_of_service = std::unique_ptr<TL_help_termsOfService>(TL_help_termsOfService::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error));
+    }
+}
+
+void TL_auth_authorizationSignUpRequired::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeInt32(flags);
+    if ((flags & 1) != 0) {
+        terms_of_service->serializeToStream(stream);
+    }
 }
 
 void TL_auth_authorization::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
@@ -460,6 +1022,15 @@ void TL_auth_authorization::readParams(NativeByteBuffer *stream, int32_t instanc
         tmp_sessions = stream->readInt32(&error);
     }
     user = std::unique_ptr<User>(User::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error));
+}
+
+void TL_auth_authorization::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeInt32(flags);
+    if ((flags & 1) != 0) {
+        stream->writeInt32(tmp_sessions);
+    }
+    user->serializeToStream(stream);
 }
 
 TL_auth_exportedAuthorization *TL_auth_exportedAuthorization::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
@@ -474,7 +1045,7 @@ TL_auth_exportedAuthorization *TL_auth_exportedAuthorization::TLdeserialize(Nati
 }
 
 void TL_auth_exportedAuthorization::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
-    id = stream->readInt32(&error);
+    id = stream->readInt64(&error);
     bytes = std::unique_ptr<ByteArray>(stream->readByteArray(&error));
 }
 
@@ -496,12 +1067,12 @@ bool TL_auth_importAuthorization::isNeedLayer() {
 }
 
 TLObject *TL_auth_importAuthorization::deserializeResponse(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
-    return TL_auth_authorization::TLdeserialize(stream, constructor, instanceNum, error);
+    return auth_Authorization::TLdeserialize(stream, constructor, instanceNum, error);
 }
 
 void TL_auth_importAuthorization::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(constructor);
-    stream->writeInt32(id);
+    stream->writeInt64(id);
     stream->writeByteArray(bytes.get());
 }
 
@@ -601,7 +1172,7 @@ UserProfilePhoto *UserProfilePhoto::TLdeserialize(NativeByteBuffer *stream, uint
         case 0x4f11bae1:
             result = new TL_userProfilePhotoEmpty();
             break;
-        case 0xecd75d8c:
+        case 0x82d1f706:
             result = new TL_userProfilePhoto();
             break;
         default:
@@ -618,17 +1189,23 @@ void TL_userProfilePhotoEmpty::serializeToStream(NativeByteBuffer *stream) {
 }
 
 void TL_userProfilePhoto::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    flags = stream->readInt32(&error);
+    has_video = (flags & 1) != 0;
     photo_id = stream->readInt64(&error);
-    photo_small = std::unique_ptr<FileLocation>(FileLocation::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error));
-    photo_big = std::unique_ptr<FileLocation>(FileLocation::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error));
+    if ((flags & 2) != 0) {
+        stripped_thumb = std::unique_ptr<ByteArray>(stream->readByteArray(&error));
+    }
     dc_id = stream->readInt32(&error);
 }
 
 void TL_userProfilePhoto::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(constructor);
+    flags = has_video ? (flags | 1) : (flags &~ 1);
+    stream->writeInt32(flags);
     stream->writeInt64(photo_id);
-    photo_small->serializeToStream(stream);
-    photo_big->serializeToStream(stream);
+    if ((flags & 2) != 0) {
+        stream->writeByteArray(stripped_thumb.get());
+    }
     stream->writeInt32(dc_id);
 }
 

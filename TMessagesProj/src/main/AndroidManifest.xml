@@ -40,12 +40,16 @@
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.USE_FINGERPRINT" />
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     <uses-permission android:name="android.permission.INSTALL_SHORTCUT" />
     <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT" />
     <uses-permission android:name="com.android.launcher.permission.UNINSTALL_SHORTCUT"/>
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.MANAGE_OWN_CALLS"/>
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.READ_PHONE_NUMBERS" />
 
     <uses-permission android:name="com.sec.android.provider.badge.permission.READ"/>
     <uses-permission android:name="com.sec.android.provider.badge.permission.WRITE"/>
@@ -63,27 +67,30 @@
     <uses-permission android:name="com.oppo.launcher.permission.WRITE_SETTINGS"/>
     <uses-permission android:name="me.everything.badger.permission.BADGE_COUNT_READ"/>
     <uses-permission android:name="me.everything.badger.permission.BADGE_COUNT_WRITE"/>
+    <!-- <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" tools:ignore="ScopedStorage" /> -->
 
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:node="replace" />
 
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+
     <application
-        android:name="org.telegram.messenger.${applicationClassName}"
+        android:name="org.telegram.messenger.ApplicationLoader"
         android:allowBackup="false"
         android:hardwareAccelerated="@bool/useHardwareAcceleration"
-        android:icon="@mipmap/ic_launcher"
-        android:roundIcon="@mipmap/ic_launcher_round"
         android:largeHeap="true"
         android:theme="@style/Theme.TMessages.Start"
         android:manageSpaceActivity="org.telegram.ui.ExternalActionActivity"
         android:supportsRtl="false"
+        android:requestLegacyExternalStorage="true"
+        android:allowAudioPlaybackCapture="true"
         tools:replace="android:supportsRtl">
 
         <activity
             android:name="org.telegram.ui.LaunchActivity"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
             android:hardwareAccelerated="@bool/useHardwareAcceleration"
             android:launchMode="singleTask"
-            android:windowSoftInputMode="adjustPan">
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -141,11 +148,36 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:scheme="tg" />
             </intent-filter>
-            <meta-data android:name="android.service.chooser.chooser_target_service" android:value=".TgChooserTargetService" />
+            <intent-filter>
+                <action android:name="org.telegram.messenger.CREATE_STICKER_PACK"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="*/*"/>
+            </intent-filter>
+            <meta-data android:name="android.service.chooser.chooser_target_service" android:value="androidx.sharetarget.ChooserTargetServiceCompat" />
+            <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
         </activity>
+        <activity-alias
+            android:name="org.telegram.ui.CallsActivity"
+            android:targetActivity="org.telegram.ui.LaunchActivity"
+            android:permission="android.permission.CALL_PHONE">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="vnd.android.cursor.item/vnd.org.telegram.messenger.android.call"/>
+                <data android:mimeType="vnd.android.cursor.item/vnd.org.telegram.messenger.android.call.video"/>
+            </intent-filter>
+        </activity-alias>
+        <activity
+            android:name="org.telegram.ui.BubbleActivity"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
+            android:hardwareAccelerated="@bool/useHardwareAcceleration"
+            android:windowSoftInputMode="adjustResize"
+            android:allowEmbedded="true"
+            android:documentLaunchMode="always"
+            android:resizeableActivity="true"/>
         <activity
             android:name="org.telegram.ui.ShareActivity"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
             android:hardwareAccelerated="@bool/useHardwareAcceleration"
             android:windowSoftInputMode="adjustPan"
             android:excludeFromRecents="true"
@@ -160,7 +192,7 @@
         </activity>
         <activity
             android:name="org.telegram.ui.ExternalActionActivity"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
             android:hardwareAccelerated="@bool/useHardwareAcceleration"
             android:windowSoftInputMode="adjustPan">
             <intent-filter android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round">
@@ -169,13 +201,40 @@
             </intent-filter>
         </activity>
         <activity
+            android:name="org.telegram.ui.ChatsWidgetConfigActivity"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
+            android:hardwareAccelerated="@bool/useHardwareAcceleration"
+            android:windowSoftInputMode="adjustPan">
+            <intent-filter android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round">
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE"/>
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="org.telegram.ui.ContactsWidgetConfigActivity"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
+            android:hardwareAccelerated="@bool/useHardwareAcceleration"
+            android:windowSoftInputMode="adjustPan">
+            <intent-filter android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round">
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE"/>
+            </intent-filter>
+        </activity>
+<!--        <activity-->
+<!--            android:name="org.telegram.ui.FeedWidgetConfigActivity"-->
+<!--            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"-->
+<!--            android:hardwareAccelerated="@bool/useHardwareAcceleration"-->
+<!--            android:windowSoftInputMode="adjustPan">-->
+<!--            <intent-filter android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round">-->
+<!--                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE"/>-->
+<!--            </intent-filter>-->
+<!--        </activity>-->
+        <activity
             android:name="org.telegram.ui.IntroActivity"
             android:launchMode="singleTask"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize">
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode">
         </activity>
         <activity
             android:name="org.telegram.messenger.OpenChatReceiver"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
             android:exported="true">
         </activity>
         <activity
@@ -189,26 +248,21 @@
             android:windowSoftInputMode="adjustResize|stateHidden">
         </activity>
         <activity
-            android:name="org.telegram.ui.VoIPActivity"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
-            android:excludeFromRecents="true"
-            android:windowSoftInputMode="adjustNothing"
-			android:taskAffinity="${applicationId}.voip">
-        </activity>
-        <activity
-            android:name="org.telegram.ui.VoIPGroupActivity"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
-            android:excludeFromRecents="true"
-			android:windowSoftInputMode="adjustNothing"
-            android:taskAffinity="${applicationId}.voip">
+            android:name=".GoogleVoiceClientActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.android.voicesearch.SEND_MESSAGE_TO_CONTACTS" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
         </activity>
         <activity android:name="org.telegram.ui.VoIPPermissionActivity"
-                  android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
+                  android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
                   android:taskAffinity="${applicationId}.voip"
                   android:excludeFromRecents="true"
                 android:theme="@style/Theme.TMessages.Transparent"/>
         <activity android:name="org.telegram.ui.VoIPFeedbackActivity"
-                  android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
+                  android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
 				  android:taskAffinity="${applicationId}.voip_feedback"
                   android:excludeFromRecents="true"
                 android:theme="@style/Theme.TMessages.TransparentWithAlerts"/>
@@ -218,6 +272,14 @@
             android:exported="false">
             <intent-filter>
                 <action android:name="org.telegram.messenger.ACTION_MESSAGE_HEARD"/>
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".NotificationsDisabledReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.app.action.NOTIFICATION_CHANNEL_BLOCK_STATE_CHANGED"/>
             </intent-filter>
         </receiver>
 
@@ -261,39 +323,23 @@
                 android:resource="@xml/contacts" />
         </service>
 
-        <service
-            android:name="org.telegram.messenger.TgChooserTargetService"
-            android:label="@string/AppName"
-            android:permission="android.permission.BIND_CHOOSER_TARGET_SERVICE">
-            <intent-filter>
-                <action android:name="android.service.chooser.ChooserTargetService" />
-            </intent-filter>
-        </service>
-
         <service android:name=".KeepAliveJob"
                  android:exported="false"
                  android:permission="android.permission.BIND_JOB_SERVICE"/>
         <service android:name=".BringAppForegroundService" android:enabled="true"/>
         <service android:name=".NotificationsService" android:enabled="true"/>
         <service android:name=".NotificationRepeat" android:exported="false"/>
-        <service android:name=".ClearCacheService" android:exported="false"/>
         <service android:name=".VideoEncodingService" android:enabled="true"/>
-        <service android:name=".LocationSharingService" android:enabled="true"/>
-        <service android:name=".voip.VoIPService" android:enabled="true"/>
-        <service android:name=".MusicPlayerService" android:exported="true" android:enabled="true"/>
+        <service android:name=".ImportingService" android:enabled="true"/>
+        <service android:name=".LocationSharingService"
+            android:foregroundServiceType="location"
+            android:enabled="true"/>
+        <service android:name=".voip.VoIPService" android:enabled="true" android:foregroundServiceType="mediaProjection|camera|microphone|mediaPlayback"/>
+        <service android:name=".GoogleVoiceClientService"/>
+        <service android:name=".MusicPlayerService" android:exported="true" android:enabled="true" android:foregroundServiceType="mediaPlayback"/>
         <service android:name=".MusicBrowserService" android:exported="true">
             <intent-filter>
                 <action android:name="android.media.browse.MediaBrowserService"/>
-            </intent-filter>
-        </service>
-        <service android:name=".WearDataLayerListenerService">
-            <intent-filter>
-                <!-- listeners receive events that match the action and data filters -->
-                <action android:name="com.google.android.gms.wearable.DATA_CHANGED" />
-                <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
-                <action android:name="com.google.android.gms.wearable.CAPABILITY_CHANGED" />
-                <action android:name="com.google.android.gms.wearable.CHANNEL_EVENT" />
-                <data android:scheme="wear" android:host="*" />
             </intent-filter>
         </service>
         <service android:name=".voip.TelegramConnectionService" android:permission="android.permission.BIND_TELECOM_CONNECTION_SERVICE">
@@ -313,7 +359,7 @@
                 <action android:name="android.media.AUDIO_BECOMING_NOISY" />
             </intent-filter>
         </receiver>
-        <receiver android:name=".voip.VoIPMediaButtonReceiver">
+        <receiver android:name=".voip.VoIPMediaButtonReceiver" android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
             </intent-filter>
@@ -369,7 +415,41 @@
             android:name=".voip.CallNotificationSoundProvider"
             android:exported="true"/>
 
-        <uses-library android:name="org.apache.http.legacy" android:required="false"/>
+        <receiver android:name=".ChatsWidgetProvider" android:exported="false">
+            <meta-data android:name="android.appwidget.provider"
+                android:resource="@xml/chats_widget_info" />
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+        </receiver>
+
+        <service android:name=".ChatsWidgetService"
+            android:permission="android.permission.BIND_REMOTEVIEWS"
+            android:exported="false" />
+
+        <receiver android:name=".ContactsWidgetProvider" android:exported="false">
+            <meta-data android:name="android.appwidget.provider"
+                android:resource="@xml/contacts_widget_info" />
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+        </receiver>
+
+        <service android:name=".ContactsWidgetService"
+            android:permission="android.permission.BIND_REMOTEVIEWS"
+            android:exported="false" />
+
+<!--        <receiver android:name=".FeedWidgetProvider">-->
+<!--            <meta-data android:name="android.appwidget.provider"-->
+<!--                android:resource="@xml/feed_widget_info" />-->
+<!--            <intent-filter>-->
+<!--                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />-->
+<!--            </intent-filter>-->
+<!--        </receiver>-->
+
+<!--        <service android:name=".FeedWidgetService"-->
+<!--            android:permission="android.permission.BIND_REMOTEVIEWS"-->
+<!--            android:exported="false" />-->
 
         <uses-library android:name="com.sec.android.app.multiwindow" android:required="false" />
         <meta-data android:name="com.sec.android.support.multiwindow" android:value="true" />
@@ -378,14 +458,16 @@
         <meta-data android:name="com.sec.android.multiwindow.MINIMUM_SIZE_W" android:value="632dp" />
         <meta-data android:name="com.sec.android.multiwindow.MINIMUM_SIZE_H" android:value="598dp" />
 
-        <!--<meta-data android:name="com.google.android.gms.wallet.api.enabled" android:value="true" />-->
+        <meta-data android:name="com.google.android.gms.wallet.api.enabled" android:value="true" />
 
         <meta-data android:name="com.google.android.gms.car.notification.SmallIcon" android:resource="@drawable/ic_player" />
         <meta-data android:name="com.google.android.gms.car.application" android:resource="@xml/automotive_app_desc" />
 
-        <meta-data android:name="com.google.android.gms.vision.DEPENDENCIES" android:value="face" />
+        <meta-data android:name="com.google.android.gms.vision.DEPENDENCIES" android:value="face,barcode" />
 
         <meta-data android:name="android.max_aspect" android:value="2.5" />
+
+        <meta-data android:name="com.google.android.actions" android:resource="@xml/actions" />
 
     </application>
 

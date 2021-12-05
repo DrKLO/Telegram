@@ -42,10 +42,11 @@ import java.util.Map;
  *   <li>rtmp: For fetching data over RTMP. Only supported if the project using ExoPlayer has an
  *       explicit dependency on ExoPlayer's RTMP extension.
  *   <li>data: For parsing data inlined in the URI as defined in RFC 2397.
+ *   <li>udp: For fetching data over UDP (e.g. udp://something.com/media).
  *   <li>http(s): For fetching data over HTTP and HTTPS (e.g. https://www.something.com/media.mp4),
- *       if constructed using {@link #DefaultDataSource(Context, TransferListener, String,
- *       boolean)}, or any other schemes supported by a base data source if constructed using {@link
- *       #DefaultDataSource(Context, TransferListener, DataSource)}.
+ *       if constructed using {@link #DefaultDataSource(Context, String, boolean)}, or any other
+ *       schemes supported by a base data source if constructed using {@link
+ *       #DefaultDataSource(Context, DataSource)}.
  * </ul>
  */
 public final class DefaultDataSource implements DataSource {
@@ -55,6 +56,7 @@ public final class DefaultDataSource implements DataSource {
   private static final String SCHEME_ASSET = "asset";
   private static final String SCHEME_CONTENT = "content";
   private static final String SCHEME_RTMP = "rtmp";
+  private static final String SCHEME_UDP = "udp";
   private static final String SCHEME_RAW = RawResourceDataSource.RAW_RESOURCE_SCHEME;
 
   private final Context context;
@@ -62,14 +64,15 @@ public final class DefaultDataSource implements DataSource {
   private final DataSource baseDataSource;
 
   // Lazily initialized.
-  private @Nullable DataSource fileDataSource;
-  private @Nullable DataSource assetDataSource;
-  private @Nullable DataSource contentDataSource;
-  private @Nullable DataSource rtmpDataSource;
-  private @Nullable DataSource dataSchemeDataSource;
-  private @Nullable DataSource rawResourceDataSource;
+  @Nullable private DataSource fileDataSource;
+  @Nullable private DataSource assetDataSource;
+  @Nullable private DataSource contentDataSource;
+  @Nullable private DataSource rtmpDataSource;
+  @Nullable private DataSource udpDataSource;
+  @Nullable private DataSource dataSchemeDataSource;
+  @Nullable private DataSource rawResourceDataSource;
 
-  private @Nullable DataSource dataSource;
+  @Nullable private DataSource dataSource;
 
   /**
    * Constructs a new instance, optionally configured to follow cross-protocol redirects.
@@ -110,7 +113,6 @@ public final class DefaultDataSource implements DataSource {
         context,
         new DefaultHttpDataSource(
             userAgent,
-            /* contentTypePredicate= */ null,
             connectTimeoutMillis,
             readTimeoutMillis,
             allowCrossProtocolRedirects,
@@ -131,85 +133,6 @@ public final class DefaultDataSource implements DataSource {
     transferListeners = new ArrayList<>();
   }
 
-  /**
-   * Constructs a new instance, optionally configured to follow cross-protocol redirects.
-   *
-   * @param context A context.
-   * @param listener An optional listener.
-   * @param userAgent The User-Agent to use when requesting remote data.
-   * @param allowCrossProtocolRedirects Whether cross-protocol redirects (i.e. redirects from HTTP
-   *     to HTTPS and vice versa) are enabled when fetching remote data.
-   * @deprecated Use {@link #DefaultDataSource(Context, String, boolean)} and {@link
-   *     #addTransferListener(TransferListener)}.
-   */
-  @Deprecated
-  @SuppressWarnings("deprecation")
-  public DefaultDataSource(
-      Context context,
-      @Nullable TransferListener listener,
-      String userAgent,
-      boolean allowCrossProtocolRedirects) {
-    this(context, listener, userAgent, DefaultHttpDataSource.DEFAULT_CONNECT_TIMEOUT_MILLIS,
-        DefaultHttpDataSource.DEFAULT_READ_TIMEOUT_MILLIS, allowCrossProtocolRedirects);
-  }
-
-  /**
-   * Constructs a new instance, optionally configured to follow cross-protocol redirects.
-   *
-   * @param context A context.
-   * @param listener An optional listener.
-   * @param userAgent The User-Agent to use when requesting remote data.
-   * @param connectTimeoutMillis The connection timeout that should be used when requesting remote
-   *     data, in milliseconds. A timeout of zero is interpreted as an infinite timeout.
-   * @param readTimeoutMillis The read timeout that should be used when requesting remote data, in
-   *     milliseconds. A timeout of zero is interpreted as an infinite timeout.
-   * @param allowCrossProtocolRedirects Whether cross-protocol redirects (i.e. redirects from HTTP
-   *     to HTTPS and vice versa) are enabled when fetching remote data.
-   * @deprecated Use {@link #DefaultDataSource(Context, String, int, int, boolean)} and {@link
-   *     #addTransferListener(TransferListener)}.
-   */
-  @Deprecated
-  @SuppressWarnings("deprecation")
-  public DefaultDataSource(
-      Context context,
-      @Nullable TransferListener listener,
-      String userAgent,
-      int connectTimeoutMillis,
-      int readTimeoutMillis,
-      boolean allowCrossProtocolRedirects) {
-    this(
-        context,
-        listener,
-        new DefaultHttpDataSource(
-            userAgent,
-            /* contentTypePredicate= */ null,
-            listener,
-            connectTimeoutMillis,
-            readTimeoutMillis,
-            allowCrossProtocolRedirects,
-            /* defaultRequestProperties= */ null));
-  }
-
-  /**
-   * Constructs a new instance that delegates to a provided {@link DataSource} for URI schemes other
-   * than file, asset and content.
-   *
-   * @param context A context.
-   * @param listener An optional listener.
-   * @param baseDataSource A {@link DataSource} to use for URI schemes other than file, asset and
-   *     content. This {@link DataSource} should normally support at least http(s).
-   * @deprecated Use {@link #DefaultDataSource(Context, DataSource)} and {@link
-   *     #addTransferListener(TransferListener)}.
-   */
-  @Deprecated
-  public DefaultDataSource(
-      Context context, @Nullable TransferListener listener, DataSource baseDataSource) {
-    this(context, baseDataSource);
-    if (listener != null) {
-      transferListeners.add(listener);
-    }
-  }
-
   @Override
   public void addTransferListener(TransferListener transferListener) {
     baseDataSource.addTransferListener(transferListener);
@@ -218,6 +141,7 @@ public final class DefaultDataSource implements DataSource {
     maybeAddListenerToDataSource(assetDataSource, transferListener);
     maybeAddListenerToDataSource(contentDataSource, transferListener);
     maybeAddListenerToDataSource(rtmpDataSource, transferListener);
+    maybeAddListenerToDataSource(udpDataSource, transferListener);
     maybeAddListenerToDataSource(dataSchemeDataSource, transferListener);
     maybeAddListenerToDataSource(rawResourceDataSource, transferListener);
   }
@@ -240,6 +164,8 @@ public final class DefaultDataSource implements DataSource {
       dataSource = getContentDataSource();
     } else if (SCHEME_RTMP.equals(scheme)) {
       dataSource = getRtmpDataSource();
+    } else if (SCHEME_UDP.equals(scheme)) {
+      dataSource = getUdpDataSource();
     } else if (DataSchemeDataSource.SCHEME_DATA.equals(scheme)) {
       dataSource = getDataSchemeDataSource();
     } else if (SCHEME_RAW.equals(scheme)) {
@@ -257,7 +183,8 @@ public final class DefaultDataSource implements DataSource {
   }
 
   @Override
-  public @Nullable Uri getUri() {
+  @Nullable
+  public Uri getUri() {
     return dataSource == null ? null : dataSource.getUri();
   }
 
@@ -275,6 +202,14 @@ public final class DefaultDataSource implements DataSource {
         dataSource = null;
       }
     }
+  }
+
+  private DataSource getUdpDataSource() {
+    if (udpDataSource == null) {
+      udpDataSource = new UdpDataSource();
+      addListenersToDataSource(udpDataSource);
+    }
+    return udpDataSource;
   }
 
   private DataSource getFileDataSource() {

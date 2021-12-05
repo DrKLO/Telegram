@@ -67,9 +67,11 @@ if ($flavour && $flavour ne "void") {
     ( $xlate="${dir}../../../perlasm/arm-xlate.pl" and -f $xlate) or
     die "can't locate arm-xlate.pl";
 
-    open STDOUT,"| \"$^X\" $xlate $flavour $output";
+    open OUT,"| \"$^X\" $xlate $flavour $output";
+    *STDOUT=*OUT;
 } else {
-    open STDOUT,">$output";
+    open OUT,">$output";
+    *STDOUT=*OUT;
 }
 
 $ctx="r0";	# parameter block
@@ -670,4 +672,4 @@ while(<SELF>) {
 close SELF;
 
 print $code;
-close STDOUT; # enforce flush
+close STDOUT or die "error closing STDOUT"; # enforce flush

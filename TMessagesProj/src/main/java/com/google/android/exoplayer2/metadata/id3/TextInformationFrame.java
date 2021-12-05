@@ -27,7 +27,7 @@ import com.google.android.exoplayer2.util.Util;
  */
 public final class TextInformationFrame extends Id3Frame {
 
-  public final @Nullable String description;
+  @Nullable public final String description;
   public final String value;
 
   public TextInformationFrame(String id, @Nullable String description, String value) {
@@ -66,7 +66,7 @@ public final class TextInformationFrame extends Id3Frame {
 
   @Override
   public String toString() {
-    return id + ": value=" + value;
+    return id + ": description=" + description + ": value=" + value;
   }
 
   // Parcelable implementation.

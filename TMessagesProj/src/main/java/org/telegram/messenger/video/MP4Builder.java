@@ -169,6 +169,10 @@ public class MP4Builder {
         return 0;
     }
 
+    public long getLastFrameTimestamp(int trackIndex) {
+        return currentMp4Movie.getLastFrameTimestamp(trackIndex);
+    }
+
     public int addTrack(MediaFormat mediaFormat, boolean isAudio) {
         return currentMp4Movie.addTrack(mediaFormat, isAudio);
     }
@@ -205,7 +209,7 @@ public class MP4Builder {
         return new FileTypeBox("isom", 512, minorBrands);
     }
 
-    private class InterleaveChunkMdat implements Box {
+    private static class InterleaveChunkMdat implements Box {
         private Container parent;
         private long contentSize = 1024 * 1024 * 1024;
         private long dataOffset = 0;

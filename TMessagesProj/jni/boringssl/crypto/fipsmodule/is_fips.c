@@ -25,3 +25,5 @@ int FIPS_mode(void) {
   return 0;
 #endif
 }
+
+int FIPS_mode_set(int on) { return on == FIPS_mode(); }

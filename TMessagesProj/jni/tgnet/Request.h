@@ -11,7 +11,6 @@
 
 #include <stdint.h>
 #include <vector>
-#include <bits/unique_ptr.h>
 #include "Defines.h"
 
 #ifdef ANDROID
@@ -48,6 +47,7 @@ public:
     int64_t startTimeMillis = 0;
     int32_t minStartTime = 0;
     int32_t lastResendTime = 0;
+    bool isResending = false;
     int32_t instanceNum = 0;
     uint32_t serverFailureCount = 0;
     TLObject *rawRequest;
@@ -59,7 +59,7 @@ public:
     void addRespondMessageId(int64_t id);
     bool respondsToMessageId(int64_t id);
     void clear(bool time);
-    void onComplete(TLObject *result, TL_error *error, int32_t networkType);
+    void onComplete(TLObject *result, TL_error *error, int32_t networkType, int64_t responseTime);
     void onQuickAck();
     void onWriteToSocket();
     bool isMediaRequest();

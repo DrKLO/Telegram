@@ -51,7 +51,7 @@ import javax.crypto.spec.SecretKeySpec;
   private final byte[] encryptionKey;
   private final byte[] encryptionIv;
 
-  private @Nullable CipherInputStream cipherInputStream;
+  @Nullable private CipherInputStream cipherInputStream;
 
   /**
    * @param upstream The upstream {@link DataSource}.
@@ -105,7 +105,8 @@ import javax.crypto.spec.SecretKeySpec;
   }
 
   @Override
-  public final @Nullable Uri getUri() {
+  @Nullable
+  public final Uri getUri() {
     return upstream.getUri();
   }
 

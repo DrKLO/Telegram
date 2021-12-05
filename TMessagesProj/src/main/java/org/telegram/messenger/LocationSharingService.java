@@ -36,20 +36,15 @@ public class LocationSharingService extends Service implements NotificationCente
     public void onCreate() {
         super.onCreate();
         handler = new Handler();
-        runnable = new Runnable() {
-            public void run() {
-                handler.postDelayed(runnable, 60000);
-                Utilities.stageQueue.postRunnable(new Runnable() {
-                    @Override
-                    public void run() {
-                        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
-                            LocationController.getInstance(a).update();
-                        }
-                    }
-                });
-            }
+        runnable = () -> {
+            handler.postDelayed(runnable, 1000);
+            Utilities.stageQueue.postRunnable(() -> {
+                for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                    LocationController.getInstance(a).update();
+                }
+            });
         };
-        handler.postDelayed(runnable, 60000);
+        handler.postDelayed(runnable, 1000);
     }
 
     public IBinder onBind(Intent arg2) {
@@ -57,10 +52,12 @@ public class LocationSharingService extends Service implements NotificationCente
     }
 
     public void onDestroy() {
+        super.onDestroy();
         if (handler != null) {
             handler.removeCallbacks(runnable);
         }
         stopForeground(true);
+        NotificationManagerCompat.from(ApplicationLoader.applicationContext).cancel(6);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.liveLocationsChanged);
     }
 
@@ -68,15 +65,12 @@ public class LocationSharingService extends Service implements NotificationCente
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.liveLocationsChanged) {
             if (handler != null) {
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        ArrayList<LocationController.SharingLocationInfo> infos = getInfos();
-                        if (infos.isEmpty()) {
-                            stopSelf();
-                        } else {
-                            updateNotification(true);
-                        }
+                handler.post(() -> {
+                    ArrayList<LocationController.SharingLocationInfo> infos = getInfos();
+                    if (infos.isEmpty()) {
+                        stopSelf();
+                    } else {
+                        updateNotification(true);
                     }
                 });
             }
@@ -100,27 +94,31 @@ public class LocationSharingService extends Service implements NotificationCente
         }
         String param;
         ArrayList<LocationController.SharingLocationInfo> infos = getInfos();
+        String str;
         if (infos.size() == 1) {
             LocationController.SharingLocationInfo info = infos.get(0);
-            int lower_id = (int) info.messageObject.getDialogId();
+            long dialogId = info.messageObject.getDialogId();
             int currentAccount = info.messageObject.currentAccount;
-            if (lower_id > 0) {
-                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(lower_id);
+            if (DialogObject.isUserDialog(dialogId)) {
+                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogId);
                 param = UserObject.getFirstName(user);
+                str = LocaleController.getString("AttachLiveLocationIsSharing", R.string.AttachLiveLocationIsSharing);
             } else {
-                TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lower_id);
+                TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
                 if (chat != null) {
                     param = chat.title;
                 } else {
                     param = "";
                 }
+                str = LocaleController.getString("AttachLiveLocationIsSharingChat", R.string.AttachLiveLocationIsSharingChat);
             }
         } else {
             param = LocaleController.formatPluralString("Chats", infos.size());
+            str = LocaleController.getString("AttachLiveLocationIsSharingChats", R.string.AttachLiveLocationIsSharingChats);
         }
-        String str = String.format(LocaleController.getString("AttachLiveLocationIsSharing", R.string.AttachLiveLocationIsSharing), LocaleController.getString("AttachLiveLocation", R.string.AttachLiveLocation), param);
-        builder.setTicker(str);
-        builder.setContentText(str);
+        String text = String.format(str, LocaleController.getString("AttachLiveLocation", R.string.AttachLiveLocation), param);
+        builder.setTicker(text);
+        builder.setContentText(text);
         if (post) {
             NotificationManagerCompat.from(ApplicationLoader.applicationContext).notify(6, builder.build());
         }

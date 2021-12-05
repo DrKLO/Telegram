@@ -19,10 +19,9 @@ import android.util.Pair;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.Timeline;
+import com.google.android.exoplayer2.util.Assertions;
 
-/**
- * Abstract base class for the concatenation of one or more {@link Timeline}s.
- */
+/** Abstract base class for the concatenation of one or more {@link Timeline}s. */
 /* package */ abstract class AbstractConcatenatedTimeline extends Timeline {
 
   private final int childCount;
@@ -35,6 +34,7 @@ import com.google.android.exoplayer2.Timeline;
    * @param concatenatedUid UID of a period in a concatenated timeline.
    * @return UID of the child timeline this period belongs to.
    */
+  @SuppressWarnings("nullness:return.type.incompatible")
   public static Object getChildTimelineUidFromConcatenatedUid(Object concatenatedUid) {
     return ((Pair<?, ?>) concatenatedUid).first;
   }
@@ -45,19 +45,20 @@ import com.google.android.exoplayer2.Timeline;
    * @param concatenatedUid UID of a period in a concatenated timeline.
    * @return UID of the period in the child timeline.
    */
+  @SuppressWarnings("nullness:return.type.incompatible")
   public static Object getChildPeriodUidFromConcatenatedUid(Object concatenatedUid) {
     return ((Pair<?, ?>) concatenatedUid).second;
   }
 
   /**
-   * Returns concatenated UID for a period in a child timeline.
+   * Returns a concatenated UID for a period or window in a child timeline.
    *
-   * @param childTimelineUid UID of the child timeline this period belongs to.
-   * @param childPeriodUid UID of the period in the child timeline.
-   * @return UID of the period in the concatenated timeline.
+   * @param childTimelineUid UID of the child timeline this period or window belongs to.
+   * @param childPeriodOrWindowUid UID of the period or window in the child timeline.
+   * @return UID of the period or window in the concatenated timeline.
    */
-  public static Object getConcatenatedUid(Object childTimelineUid, Object childPeriodUid) {
-    return Pair.create(childTimelineUid, childPeriodUid);
+  public static Object getConcatenatedUid(Object childTimelineUid, Object childPeriodOrWindowUid) {
+    return Pair.create(childTimelineUid, childPeriodOrWindowUid);
   }
 
   /**
@@ -75,8 +76,8 @@ import com.google.android.exoplayer2.Timeline;
   }
 
   @Override
-  public int getNextWindowIndex(int windowIndex, @Player.RepeatMode int repeatMode,
-      boolean shuffleModeEnabled) {
+  public int getNextWindowIndex(
+      int windowIndex, @Player.RepeatMode int repeatMode, boolean shuffleModeEnabled) {
     if (isAtomic) {
       // Adapt repeat and shuffle mode to atomic concatenation.
       repeatMode = repeatMode == Player.REPEAT_MODE_ONE ? Player.REPEAT_MODE_ALL : repeatMode;
@@ -85,10 +86,12 @@ import com.google.android.exoplayer2.Timeline;
     // Find next window within current child.
     int childIndex = getChildIndexByWindowIndex(windowIndex);
     int firstWindowIndexInChild = getFirstWindowIndexByChildIndex(childIndex);
-    int nextWindowIndexInChild = getTimelineByChildIndex(childIndex).getNextWindowIndex(
-        windowIndex - firstWindowIndexInChild,
-        repeatMode == Player.REPEAT_MODE_ALL ? Player.REPEAT_MODE_OFF : repeatMode,
-        shuffleModeEnabled);
+    int nextWindowIndexInChild =
+        getTimelineByChildIndex(childIndex)
+            .getNextWindowIndex(
+                windowIndex - firstWindowIndexInChild,
+                repeatMode == Player.REPEAT_MODE_ALL ? Player.REPEAT_MODE_OFF : repeatMode,
+                shuffleModeEnabled);
     if (nextWindowIndexInChild != C.INDEX_UNSET) {
       return firstWindowIndexInChild + nextWindowIndexInChild;
     }
@@ -109,8 +112,8 @@ import com.google.android.exoplayer2.Timeline;
   }
 
   @Override
-  public int getPreviousWindowIndex(int windowIndex, @Player.RepeatMode int repeatMode,
-      boolean shuffleModeEnabled) {
+  public int getPreviousWindowIndex(
+      int windowIndex, @Player.RepeatMode int repeatMode, boolean shuffleModeEnabled) {
     if (isAtomic) {
       // Adapt repeat and shuffle mode to atomic concatenation.
       repeatMode = repeatMode == Player.REPEAT_MODE_ONE ? Player.REPEAT_MODE_ALL : repeatMode;
@@ -119,10 +122,12 @@ import com.google.android.exoplayer2.Timeline;
     // Find previous window within current child.
     int childIndex = getChildIndexByWindowIndex(windowIndex);
     int firstWindowIndexInChild = getFirstWindowIndexByChildIndex(childIndex);
-    int previousWindowIndexInChild = getTimelineByChildIndex(childIndex).getPreviousWindowIndex(
-        windowIndex - firstWindowIndexInChild,
-        repeatMode == Player.REPEAT_MODE_ALL ? Player.REPEAT_MODE_OFF : repeatMode,
-        shuffleModeEnabled);
+    int previousWindowIndexInChild =
+        getTimelineByChildIndex(childIndex)
+            .getPreviousWindowIndex(
+                windowIndex - firstWindowIndexInChild,
+                repeatMode == Player.REPEAT_MODE_ALL ? Player.REPEAT_MODE_OFF : repeatMode,
+                shuffleModeEnabled);
     if (previousWindowIndexInChild != C.INDEX_UNSET) {
       return firstWindowIndexInChild + previousWindowIndexInChild;
     }
@@ -186,14 +191,18 @@ import com.google.android.exoplayer2.Timeline;
   }
 
   @Override
-  public final Window getWindow(
-      int windowIndex, Window window, boolean setTag, long defaultPositionProjectionUs) {
+  public final Window getWindow(int windowIndex, Window window, long defaultPositionProjectionUs) {
     int childIndex = getChildIndexByWindowIndex(windowIndex);
     int firstWindowIndexInChild = getFirstWindowIndexByChildIndex(childIndex);
     int firstPeriodIndexInChild = getFirstPeriodIndexByChildIndex(childIndex);
     getTimelineByChildIndex(childIndex)
-        .getWindow(
-            windowIndex - firstWindowIndexInChild, window, setTag, defaultPositionProjectionUs);
+        .getWindow(windowIndex - firstWindowIndexInChild, window, defaultPositionProjectionUs);
+    Object childUid = getChildUidByChildIndex(childIndex);
+    // Don't create new objects if the child is using SINGLE_WINDOW_UID.
+    window.uid =
+        Window.SINGLE_WINDOW_UID.equals(window.uid)
+            ? childUid
+            : getConcatenatedUid(childUid, window.uid);
     window.firstPeriodIndex += firstPeriodIndexInChild;
     window.lastPeriodIndex += firstPeriodIndexInChild;
     return window;
@@ -216,11 +225,13 @@ import com.google.android.exoplayer2.Timeline;
     int childIndex = getChildIndexByPeriodIndex(periodIndex);
     int firstWindowIndexInChild = getFirstWindowIndexByChildIndex(childIndex);
     int firstPeriodIndexInChild = getFirstPeriodIndexByChildIndex(childIndex);
-    getTimelineByChildIndex(childIndex).getPeriod(periodIndex - firstPeriodIndexInChild, period,
-        setIds);
+    getTimelineByChildIndex(childIndex)
+        .getPeriod(periodIndex - firstPeriodIndexInChild, period, setIds);
     period.windowIndex += firstWindowIndexInChild;
     if (setIds) {
-      period.uid = getConcatenatedUid(getChildUidByChildIndex(childIndex), period.uid);
+      period.uid =
+          getConcatenatedUid(
+              getChildUidByChildIndex(childIndex), Assertions.checkNotNull(period.uid));
     }
     return period;
   }
@@ -237,7 +248,8 @@ import com.google.android.exoplayer2.Timeline;
       return C.INDEX_UNSET;
     }
     int periodIndexInChild = getTimelineByChildIndex(childIndex).getIndexOfPeriod(periodUid);
-    return periodIndexInChild == C.INDEX_UNSET ? C.INDEX_UNSET
+    return periodIndexInChild == C.INDEX_UNSET
+        ? C.INDEX_UNSET
         : getFirstPeriodIndexByChildIndex(childIndex) + periodIndexInChild;
   }
 
@@ -302,13 +314,14 @@ import com.google.android.exoplayer2.Timeline;
   protected abstract Object getChildUidByChildIndex(int childIndex);
 
   private int getNextChildIndex(int childIndex, boolean shuffleModeEnabled) {
-    return shuffleModeEnabled ? shuffleOrder.getNextIndex(childIndex)
+    return shuffleModeEnabled
+        ? shuffleOrder.getNextIndex(childIndex)
         : childIndex < childCount - 1 ? childIndex + 1 : C.INDEX_UNSET;
   }
 
   private int getPreviousChildIndex(int childIndex, boolean shuffleModeEnabled) {
-    return shuffleModeEnabled ? shuffleOrder.getPreviousIndex(childIndex)
+    return shuffleModeEnabled
+        ? shuffleOrder.getPreviousIndex(childIndex)
         : childIndex > 0 ? childIndex - 1 : C.INDEX_UNSET;
   }
-
 }

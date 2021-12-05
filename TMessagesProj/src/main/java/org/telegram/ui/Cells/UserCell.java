@@ -21,13 +21,13 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.Theme;
@@ -48,15 +48,18 @@ public class UserCell extends FrameLayout {
     private CheckBox checkBox;
     private CheckBoxSquare checkBoxBig;
     private TextView adminTextView;
+    private TextView addButton;
 
     private AvatarDrawable avatarDrawable;
-    private TLObject currentObject;
+    private Object currentObject;
     private TLRPC.EncryptedChat encryptedChat;
 
     private CharSequence currentName;
     private CharSequence currentStatus;
     private int currentId;
     private int currentDrawable;
+
+    private boolean selfAsSavedMessages;
 
     private String lastName;
     private int lastStatus;
@@ -70,7 +73,27 @@ public class UserCell extends FrameLayout {
     private boolean needDivider;
 
     public UserCell(Context context, int padding, int checkbox, boolean admin) {
+        this(context, padding, checkbox, admin, false);
+    }
+
+    public UserCell(Context context, int padding, int checkbox, boolean admin, boolean needAddButton) {
         super(context);
+
+        int additionalPadding;
+        if (needAddButton) {
+            addButton = new TextView(context);
+            addButton.setGravity(Gravity.CENTER);
+            addButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
+            addButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            addButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            addButton.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
+            addButton.setText(LocaleController.getString("Add", R.string.Add));
+            addButton.setPadding(AndroidUtilities.dp(17), 0, AndroidUtilities.dp(17), 0);
+            addView(addButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT), LocaleController.isRTL ? 14 : 0, 15, LocaleController.isRTL ? 0 : 14, 0));
+            additionalPadding = (int) Math.ceil((addButton.getPaint().measureText(addButton.getText().toString()) + AndroidUtilities.dp(34 + 14)) / AndroidUtilities.density);
+        } else {
+            additionalPadding = 0;
+        }
 
         statusColor = Theme.getColor(Theme.key_windowBackgroundWhiteGrayText);
         statusOnlineColor = Theme.getColor(Theme.key_windowBackgroundWhiteBlueText);
@@ -86,12 +109,12 @@ public class UserCell extends FrameLayout {
         nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         nameTextView.setTextSize(16);
         nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
-        addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 28 + (checkbox == 2 ? 18 : 0) : (64 + padding), 10, LocaleController.isRTL ? (64 + padding) : 28 + (checkbox == 2 ? 18 : 0), 0));
+        addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 28 + (checkbox == 2 ? 18 : 0) + additionalPadding : (64 + padding), 10, LocaleController.isRTL ? (64 + padding) : 28 + (checkbox == 2 ? 18 : 0) + additionalPadding, 0));
 
         statusTextView = new SimpleTextView(context);
         statusTextView.setTextSize(15);
         statusTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
-        addView(statusTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 28 : (64 + padding), 32, LocaleController.isRTL ? (64 + padding) : 28, 0));
+        addView(statusTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 28 + additionalPadding : (64 + padding), 32, LocaleController.isRTL ? (64 + padding) : 28 + additionalPadding, 0));
 
         imageView = new ImageView(context);
         imageView.setScaleType(ImageView.ScaleType.CENTER);
@@ -115,16 +138,17 @@ public class UserCell extends FrameLayout {
             adminTextView.setTextColor(Theme.getColor(Theme.key_profile_creatorIcon));
             addView(adminTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, LocaleController.isRTL ? 23 : 0, 10, LocaleController.isRTL ? 0 : 23, 0));
         }
+
         setFocusable(true);
     }
 
     public void setAvatarPadding(int padding) {
-        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) avatarImageView.getLayoutParams();
+        LayoutParams layoutParams = (LayoutParams) avatarImageView.getLayoutParams();
         layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 0 : 7 + padding);
         layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 7 + padding : 0);
         avatarImageView.setLayoutParams(layoutParams);
 
-        layoutParams = (FrameLayout.LayoutParams) nameTextView.getLayoutParams();
+        layoutParams = (LayoutParams) nameTextView.getLayoutParams();
         layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 28 + (checkBoxBig != null ? 18 : 0) : (64 + padding));
         layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? (64 + padding) : 28 + (checkBoxBig != null ? 18 : 0));
 
@@ -139,17 +163,20 @@ public class UserCell extends FrameLayout {
         }
     }
 
-    public void setIsAdmin(int value) {
+    public void setAddButtonVisible(boolean value) {
+        if (addButton == null) {
+            return;
+        }
+        addButton.setVisibility(value ? VISIBLE : GONE);
+    }
+
+    public void setAdminRole(String role) {
         if (adminTextView == null) {
             return;
         }
-        adminTextView.setVisibility(value != 0 ? VISIBLE : GONE);
-        if (value == 1) {
-            adminTextView.setText(LocaleController.getString("ChannelCreator", R.string.ChannelCreator));
-        } else if (value == 2) {
-            adminTextView.setText(LocaleController.getString("ChannelAdmin", R.string.ChannelAdmin));
-        }
-        if (value != 0) {
+        adminTextView.setVisibility(role != null ? VISIBLE : GONE);
+        adminTextView.setText(role);
+        if (role != null) {
             CharSequence text = adminTextView.getText();
             int size = (int) Math.ceil(adminTextView.getPaint().measureText(text, 0, text.length()));
             nameTextView.setPadding(LocaleController.isRTL ? size + AndroidUtilities.dp(6) : 0, 0, !LocaleController.isRTL ? size + AndroidUtilities.dp(6) : 0, 0);
@@ -158,15 +185,19 @@ public class UserCell extends FrameLayout {
         }
     }
 
-    public void setData(TLObject object, CharSequence name, CharSequence status, int resId) {
+    public CharSequence getName() {
+        return nameTextView.getText();
+    }
+
+    public void setData(Object object, CharSequence name, CharSequence status, int resId) {
         setData(object, null, name, status, resId, false);
     }
 
-    public void setData(TLObject object, CharSequence name, CharSequence status, int resId, boolean divider) {
+    public void setData(Object object, CharSequence name, CharSequence status, int resId, boolean divider) {
         setData(object, null, name, status, resId, divider);
     }
 
-    public void setData(TLObject object, TLRPC.EncryptedChat ec, CharSequence name, CharSequence status, int resId, boolean divider) {
+    public void setData(Object object, TLRPC.EncryptedChat ec, CharSequence name, CharSequence status, int resId, boolean divider) {
         if (object == null && name == null && status == null) {
             currentStatus = null;
             currentName = null;
@@ -184,6 +215,10 @@ public class UserCell extends FrameLayout {
         needDivider = divider;
         setWillNotDraw(!needDivider);
         update(0);
+    }
+
+    public Object getCurrentObject() {
+        return currentObject;
     }
 
     public void setException(NotificationsSettingsActivity.NotificationException exception, CharSequence name, boolean divider) {
@@ -229,27 +264,23 @@ public class UserCell extends FrameLayout {
             text = LocaleController.getString("NotificationsOff", R.string.NotificationsOff);
         }
 
-        int lower_id = (int) exception.did;
-        int high_id = (int) (exception.did >> 32);
-        if (lower_id != 0) {
-            if (lower_id > 0) {
-                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(lower_id);
-                if (user != null) {
-                    setData(user, null, name, text, 0, divider);
-                }
-            } else {
-                TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lower_id);
-                if (chat != null) {
-                    setData(chat, null, name, text, 0, divider);
-                }
-            }
-        } else {
-            TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance(currentAccount).getEncryptedChat(high_id);
+        if (DialogObject.isEncryptedDialog(exception.did)) {
+            TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance(currentAccount).getEncryptedChat(DialogObject.getEncryptedChatId(exception.did));
             if (encryptedChat != null) {
                 TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(encryptedChat.user_id);
                 if (user != null) {
                     setData(user, encryptedChat, name, text, 0, false);
                 }
+            }
+        } else if (DialogObject.isUserDialog(exception.did)) {
+            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(exception.did);
+            if (user != null) {
+                setData(user, null, name, text, 0, divider);
+            }
+        } else {
+            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-exception.did);
+            if (chat != null) {
+                setData(chat, null, name, text, 0, divider);
             }
         }
     }
@@ -310,18 +341,6 @@ public class UserCell extends FrameLayout {
             if (currentUser.photo != null) {
                 photo = currentUser.photo.photo_small;
             }
-            /*if (encryptedChat != null) {
-                drawNameLock = true;
-                dialog_id = ((long) encryptedChat.id) << 32;
-                if (!LocaleController.isRTL) {
-                    nameLockLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline);
-                    nameLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline + 4) + Theme.dialogs_lockDrawable.getIntrinsicWidth();
-                } else {
-                    nameLockLeft = getMeasuredWidth() - AndroidUtilities.dp(AndroidUtilities.leftBaseline + 2) - Theme.dialogs_lockDrawable.getIntrinsicWidth();
-                    nameLeft = AndroidUtilities.dp(11);
-                }
-                nameLockTop = AndroidUtilities.dp(16.5f);
-            }*/
         } else if (currentObject instanceof TLRPC.Chat) {
             currentChat = (TLRPC.Chat) currentObject;
             if (currentChat.photo != null) {
@@ -332,7 +351,7 @@ public class UserCell extends FrameLayout {
         if (mask != 0) {
             boolean continueUpdate = false;
             if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0) {
-                if (lastAvatar != null && photo == null || lastAvatar == null && photo != null && lastAvatar != null && photo != null && (lastAvatar.volume_id != photo.volume_id || lastAvatar.local_id != photo.local_id)) {
+                if (lastAvatar != null && photo == null || lastAvatar == null && photo != null || lastAvatar != null && (lastAvatar.volume_id != photo.volume_id || lastAvatar.local_id != photo.local_id)) {
                     continueUpdate = true;
                 }
             }
@@ -360,19 +379,61 @@ public class UserCell extends FrameLayout {
             }
         }
 
-        if (currentUser != null) {
-            avatarDrawable.setInfo(currentUser);
-            if (currentUser.status != null) {
-                lastStatus = currentUser.status.expires;
-            } else {
-                lastStatus = 0;
+        if (currentObject instanceof String) {
+            ((LayoutParams) nameTextView.getLayoutParams()).topMargin = AndroidUtilities.dp(19);
+            String str = (String) currentObject;
+            switch (str) {
+                case "contacts":
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_CONTACTS);
+                    break;
+                case "non_contacts":
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_NON_CONTACTS);
+                    break;
+                case "groups":
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_GROUPS);
+                    break;
+                case "channels":
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_CHANNELS);
+                    break;
+                case "bots":
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_BOTS);
+                    break;
+                case "muted":
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_MUTED);
+                    break;
+                case "read":
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_READ);
+                    break;
+                case "archived":
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_ARCHIVED);
+                    break;
             }
-        } else if (currentChat != null) {
-            avatarDrawable.setInfo(currentChat);
-        } else if (currentName != null) {
-            avatarDrawable.setInfo(currentId, currentName.toString(), null, false);
+            avatarImageView.setImage(null, "50_50", avatarDrawable);
+            currentStatus = "";
         } else {
-            avatarDrawable.setInfo(currentId, "#", null, false);
+            ((LayoutParams) nameTextView.getLayoutParams()).topMargin = AndroidUtilities.dp(10);
+            if (currentUser != null) {
+                if (selfAsSavedMessages && UserObject.isUserSelf(currentUser)) {
+                    nameTextView.setText(LocaleController.getString("SavedMessages", R.string.SavedMessages), true);
+                    statusTextView.setText(null);
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_SAVED);
+                    avatarImageView.setImage(null, "50_50", avatarDrawable, currentUser);
+                    ((LayoutParams) nameTextView.getLayoutParams()).topMargin = AndroidUtilities.dp(19);
+                    return;
+                }
+                avatarDrawable.setInfo(currentUser);
+                if (currentUser.status != null) {
+                    lastStatus = currentUser.status.expires;
+                } else {
+                    lastStatus = 0;
+                }
+            } else if (currentChat != null) {
+                avatarDrawable.setInfo(currentChat);
+            } else if (currentName != null) {
+                avatarDrawable.setInfo(currentId, currentName.toString(), null);
+            } else {
+                avatarDrawable.setInfo(currentId, "#", null);
+            }
         }
 
         if (currentName != null) {
@@ -381,8 +442,10 @@ public class UserCell extends FrameLayout {
         } else {
             if (currentUser != null) {
                 lastName = newName == null ? UserObject.getUserName(currentUser) : newName;
-            } else {
+            } else if (currentChat != null) {
                 lastName = newName == null ? currentChat.title : newName;
+            } else {
+                lastName = "";
             }
             nameTextView.setText(lastName);
         }
@@ -415,10 +478,21 @@ public class UserCell extends FrameLayout {
 
         lastAvatar = photo;
         if (currentUser != null) {
-            avatarImageView.setImage(ImageLocation.getForUser(currentUser, false), "50_50", avatarDrawable, currentUser);
+            avatarImageView.setForUserOrChat(currentUser, avatarDrawable);
         } else if (currentChat != null) {
-            avatarImageView.setImage(ImageLocation.getForChat(currentChat, false), "50_50", avatarDrawable, currentChat);
+            avatarImageView.setForUserOrChat(currentChat, avatarDrawable);
+        } else {
+            avatarImageView.setImageDrawable(avatarDrawable);
         }
+
+        nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        if (adminTextView != null) {
+            adminTextView.setTextColor(Theme.getColor(Theme.key_profile_creatorIcon));
+        }
+    }
+
+    public void setSelfAsSavedMessages(boolean value) {
+        selfAsSavedMessages = value;
     }
 
     @Override

@@ -92,11 +92,11 @@ public final class FfmpegAudioRenderer extends SimpleDecoderAudioRenderer {
   }
 
   @Override
-  protected int supportsFormatInternal(DrmSessionManager<ExoMediaCrypto> drmSessionManager,
-      Format format) {
+  @FormatSupport
+  protected int supportsFormatInternal(
+      @Nullable DrmSessionManager<ExoMediaCrypto> drmSessionManager, Format format) {
     Assertions.checkNotNull(format.sampleMimeType);
-    if (!FfmpegLibrary.supportsFormat(format.sampleMimeType, format.pcmEncoding)
-        || !isOutputSupported(format)) {
+    if (!FfmpegLibrary.supportsFormat(format.sampleMimeType) || !isOutputSupported(format)) {
       return FORMAT_UNSUPPORTED_SUBTYPE;
     } else if (!supportsFormatDrm(drmSessionManager, format.drmInitData)) {
       return FORMAT_UNSUPPORTED_DRM;
@@ -106,12 +106,13 @@ public final class FfmpegAudioRenderer extends SimpleDecoderAudioRenderer {
   }
 
   @Override
+  @AdaptiveSupport
   public final int supportsMixedMimeTypeAdaptation() throws ExoPlaybackException {
     return ADAPTIVE_NOT_SEAMLESS;
   }
 
   @Override
-  protected FfmpegDecoder createDecoder(Format format, ExoMediaCrypto mediaCrypto)
+  protected FfmpegDecoder createDecoder(Format format, @Nullable ExoMediaCrypto mediaCrypto)
       throws FfmpegDecoderException {
     int initialInputBufferSize =
         format.maxInputSize != Format.NO_VALUE ? format.maxInputSize : DEFAULT_INPUT_BUFFER_SIZE;

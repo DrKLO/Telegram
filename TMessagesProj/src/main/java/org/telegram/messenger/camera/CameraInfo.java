@@ -9,16 +9,27 @@
 package org.telegram.messenger.camera;
 
 import android.hardware.Camera;
+import android.hardware.camera2.CameraCaptureSession;
+import android.hardware.camera2.CameraCharacteristics;
+import android.hardware.camera2.CameraDevice;
+import android.hardware.camera2.CaptureRequest;
 
 import java.util.ArrayList;
 
 public class CameraInfo {
+
 
     protected int cameraId;
     protected Camera camera;
     protected ArrayList<Size> pictureSizes = new ArrayList<>();
     protected ArrayList<Size> previewSizes = new ArrayList<>();
     protected final int frontCamera;
+
+    protected CameraDevice cameraDevice;
+    CameraCharacteristics cameraCharacteristics;
+    CaptureRequest.Builder captureRequestBuilder;
+    public CameraCaptureSession cameraCaptureSession;
+
 
     public CameraInfo(int id, int frontFace) {
         cameraId = id;

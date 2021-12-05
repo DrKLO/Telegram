@@ -2,6 +2,8 @@ package org.telegram.ui.Components.Crop;
 
 import android.content.Context;
 import androidx.core.view.MotionEventCompat;
+
+import android.os.SystemClock;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.VelocityTracker;
@@ -12,10 +14,10 @@ import org.telegram.messenger.AndroidUtilities;
 public class CropGestureDetector {
     private ScaleGestureDetector mDetector;
     private CropGestureListener mListener;
-    float mLastTouchX;
-    float mLastTouchY;
-    final float mTouchSlop;
-    final float mMinimumVelocity;
+    private float mLastTouchX;
+    private float mLastTouchY;
+    private final float mTouchSlop;
+    private final float mMinimumVelocity;
     private VelocityTracker mVelocityTracker;
     private boolean mIsDragging;
 
@@ -23,12 +25,15 @@ public class CropGestureDetector {
     private int mActivePointerId;
     private int mActivePointerIndex;
 
+    private long touchTime;
+
     private boolean started;
 
     public interface CropGestureListener {
         void onDrag(float dx, float dy);
         void onFling(float startX, float startY, float velocityX, float velocityY);
         void onScale(float scaleFactor, float focusX, float focusY);
+        void onTapUp();
     }
 
     public CropGestureDetector(Context context) {
@@ -103,9 +108,13 @@ public class CropGestureDetector {
         switch (ev.getAction() & MotionEventCompat.ACTION_MASK) {
             case MotionEvent.ACTION_DOWN:
                 this.mActivePointerId = ev.getPointerId(0);
+                touchTime = SystemClock.elapsedRealtime();
                 break;
             case MotionEvent.ACTION_CANCEL:
             case MotionEvent.ACTION_UP:
+                if (!mIsDragging && SystemClock.elapsedRealtime() - touchTime < 800) {
+                    mListener.onTapUp();
+                }
                 this.mActivePointerId = INVALID_POINTER_ID;
                 break;
             case MotionEvent.ACTION_POINTER_UP:

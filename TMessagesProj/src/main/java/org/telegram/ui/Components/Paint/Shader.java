@@ -17,7 +17,7 @@ public class Shader {
 
     protected Map<String, Integer> uniformsMap = new HashMap<>();
 
-    public Shader(String vertexShader, String fragmentShader, String attributes[], String uniforms[]) {
+    public Shader(String vertexShader, String fragmentShader, String[] attributes, String[] uniforms) {
         this.program = GLES20.glCreateProgram();
 
         CompilationResult vResult = compileShader(GLES20.GL_VERTEX_SHADER, vertexShader);
@@ -70,7 +70,7 @@ public class Shader {
         }
     }
 
-    private class CompilationResult {
+    private static class CompilationResult {
         int shader;
         int status;
 

@@ -16,6 +16,7 @@
 package com.google.android.exoplayer2.text.dvb;
 
 import com.google.android.exoplayer2.text.SimpleSubtitleDecoder;
+import com.google.android.exoplayer2.text.Subtitle;
 import com.google.android.exoplayer2.util.ParsableByteArray;
 import java.util.List;
 
@@ -38,7 +39,7 @@ public final class DvbDecoder extends SimpleSubtitleDecoder {
   }
 
   @Override
-  protected DvbSubtitle decode(byte[] data, int length, boolean reset) {
+  protected Subtitle decode(byte[] data, int length, boolean reset) {
     if (reset) {
       parser.reset();
     }

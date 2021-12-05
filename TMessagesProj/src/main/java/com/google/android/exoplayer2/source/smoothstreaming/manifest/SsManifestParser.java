@@ -19,6 +19,7 @@ import android.net.Uri;
 import android.text.TextUtils;
 import android.util.Base64;
 import android.util.Pair;
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.ParserException;
@@ -40,6 +41,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
+import org.checkerframework.checker.nullness.compatqual.NullableType;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlPullParserFactory;
@@ -94,10 +96,10 @@ public class SsManifestParser implements ParsingLoadable.Parser<SsManifest> {
     private final String baseUri;
     private final String tag;
 
-    private final ElementParser parent;
-    private final List<Pair<String, Object>> normalizedAttributes;
+    @Nullable private final ElementParser parent;
+    private final List<Pair<String, @NullableType Object>> normalizedAttributes;
 
-    public ElementParser(ElementParser parent, String baseUri, String tag) {
+    public ElementParser(@Nullable ElementParser parent, String baseUri, String tag) {
       this.parent = parent;
       this.baseUri = baseUri;
       this.tag = tag;
@@ -174,24 +176,25 @@ public class SsManifestParser implements ParsingLoadable.Parser<SsManifest> {
      * Stash an attribute that may be normalized at this level. In other words, an attribute that
      * may have been pulled up from the child elements because its value was the same in all
      * children.
-     * <p>
-     * Stashing an attribute allows child element parsers to retrieve the values of normalized
+     *
+     * <p>Stashing an attribute allows child element parsers to retrieve the values of normalized
      * attributes using {@link #getNormalizedAttribute(String)}.
      *
      * @param key The name of the attribute.
      * @param value The value of the attribute.
      */
-    protected final void putNormalizedAttribute(String key, Object value) {
+    protected final void putNormalizedAttribute(String key, @Nullable Object value) {
       normalizedAttributes.add(Pair.create(key, value));
     }
 
     /**
-     * Attempt to retrieve a stashed normalized attribute. If there is no stashed attribute with
-     * the provided name, the parent element parser will be queried, and so on up the chain.
+     * Attempt to retrieve a stashed normalized attribute. If there is no stashed attribute with the
+     * provided name, the parent element parser will be queried, and so on up the chain.
      *
      * @param key The name of the attribute.
      * @return The stashed value, or null if the attribute was not be found.
      */
+    @Nullable
     protected final Object getNormalizedAttribute(String key) {
       for (int i = 0; i < normalizedAttributes.size(); i++) {
         Pair<String, Object> pair = normalizedAttributes.get(i);
@@ -340,7 +343,7 @@ public class SsManifestParser implements ParsingLoadable.Parser<SsManifest> {
     private long dvrWindowLength;
     private int lookAheadCount;
     private boolean isLive;
-    private ProtectionElement protectionElement;
+    @Nullable private ProtectionElement protectionElement;
 
     public SmoothStreamingMediaParser(ElementParser parent, String baseUri) {
       super(parent, baseUri, TAG);
@@ -586,6 +589,7 @@ public class SsManifestParser implements ParsingLoadable.Parser<SsManifest> {
       } else {
         subType = parser.getAttributeValue(null, KEY_SUB_TYPE);
       }
+      putNormalizedAttribute(KEY_SUB_TYPE, subType);
       name = parser.getAttributeValue(null, KEY_NAME);
       url = parseRequiredString(parser, KEY_URL);
       maxWidth = parseInt(parser, KEY_MAX_WIDTH, Format.NO_VALUE);
@@ -645,6 +649,7 @@ public class SsManifestParser implements ParsingLoadable.Parser<SsManifest> {
     private static final String KEY_CHANNELS = "Channels";
     private static final String KEY_FOUR_CC = "FourCC";
     private static final String KEY_TYPE = "Type";
+    private static final String KEY_SUB_TYPE = "Subtype";
     private static final String KEY_LANGUAGE = "Language";
     private static final String KEY_NAME = "Name";
     private static final String KEY_MAX_WIDTH = "MaxWidth";
@@ -676,12 +681,14 @@ public class SsManifestParser implements ParsingLoadable.Parser<SsManifest> {
                 MimeTypes.VIDEO_MP4,
                 sampleMimeType,
                 /* codecs= */ null,
+                /* metadata= */ null,
                 bitrate,
                 width,
                 height,
                 /* frameRate= */ Format.NO_VALUE,
                 codecSpecificData,
-                /* selectionFlags= */ 0);
+                /* selectionFlags= */ 0,
+                /* roleFlags= */ 0);
       } else if (type == C.TRACK_TYPE_AUDIO) {
         sampleMimeType = sampleMimeType == null ? MimeTypes.AUDIO_AAC : sampleMimeType;
         int channels = parseRequiredInt(parser, KEY_CHANNELS);
@@ -700,13 +707,27 @@ public class SsManifestParser implements ParsingLoadable.Parser<SsManifest> {
                 MimeTypes.AUDIO_MP4,
                 sampleMimeType,
                 /* codecs= */ null,
+                /* metadata= */ null,
                 bitrate,
                 channels,
                 samplingRate,
                 codecSpecificData,
                 /* selectionFlags= */ 0,
+                /* roleFlags= */ 0,
                 language);
       } else if (type == C.TRACK_TYPE_TEXT) {
+        String subType = (String) getNormalizedAttribute(KEY_SUB_TYPE);
+        @C.RoleFlags int roleFlags = 0;
+        switch (subType) {
+          case "CAPT":
+            roleFlags = C.ROLE_FLAG_CAPTION;
+            break;
+          case "DESC":
+            roleFlags = C.ROLE_FLAG_DESCRIBES_MUSIC_AND_SOUND;
+            break;
+          default:
+            break;
+        }
         String language = (String) getNormalizedAttribute(KEY_LANGUAGE);
         format =
             Format.createTextContainerFormat(
@@ -717,6 +738,7 @@ public class SsManifestParser implements ParsingLoadable.Parser<SsManifest> {
                 /* codecs= */ null,
                 bitrate,
                 /* selectionFlags= */ 0,
+                roleFlags,
                 language);
       } else {
         format =
@@ -728,6 +750,7 @@ public class SsManifestParser implements ParsingLoadable.Parser<SsManifest> {
                 /* codecs= */ null,
                 bitrate,
                 /* selectionFlags= */ 0,
+                /* roleFlags= */ 0,
                 /* language= */ null);
       }
     }

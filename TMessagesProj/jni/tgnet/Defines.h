@@ -12,19 +12,17 @@
 #include <functional>
 #include <list>
 #include <limits.h>
-#include <bits/unique_ptr.h>
 #include <sstream>
 #include <inttypes.h>
 #include "ByteArray.h"
 
 #define USE_DEBUG_SESSION false
-#define READ_BUFFER_SIZE 1024 * 128
+#define READ_BUFFER_SIZE 1024 * 1024 * 2
 //#define DEBUG_VERSION
-#define USE_OLD_KEYS
-#define PFS_ENABLED 0
+#define PFS_ENABLED 1
 #define DEFAULT_DATACENTER_ID INT_MAX
 #define DC_UPDATE_TIME 60 * 60
-#define TEMP_AUTH_KEY_EXPIRE_TIME 32 * 60 * 60
+#define TEMP_AUTH_KEY_EXPIRE_TIME 24 * 60 * 60
 #define PROXY_CONNECTIONS_COUNT 4
 #define DOWNLOAD_CONNECTIONS_COUNT 2
 #define UPLOAD_CONNECTIONS_COUNT 4
@@ -32,11 +30,9 @@
 #define MAX_ACCOUNT_COUNT 3
 #define USE_DELEGATE_HOST_RESOLVE
 
-#define DOWNLOAD_CHUNK_SIZE 1024 * 32
-#define DOWNLOAD_CHUNK_BIG_SIZE 1024 * 128
-#define DOWNLOAD_MAX_REQUESTS 4
-#define DOWNLOAD_MAX_BIG_REQUESTS 4
-#define DOWNLOAD_BIG_FILE_MIN_SIZE 1024 * 1024
+#define USE_IPV4_ONLY 0
+#define USE_IPV6_ONLY 1
+#define USE_IPV4_IPV6_RANDOM 2
 
 #define NETWORK_TYPE_MOBILE 0
 #define NETWORK_TYPE_WIFI 1
@@ -51,7 +47,7 @@ class NativeByteBuffer;
 class Handshake;
 class ConnectionSocket;
 
-typedef std::function<void(TLObject *response, TL_error *error, int32_t networkType)> onCompleteFunc;
+typedef std::function<void(TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime)> onCompleteFunc;
 typedef std::function<void()> onQuickAckFunc;
 typedef std::function<void()> onWriteToSocketFunc;
 typedef std::function<void(int64_t messageId)> fillParamsFunc;
@@ -63,6 +59,7 @@ typedef struct NetworkMessage {
     std::unique_ptr<TL_message> message;
     bool invokeAfter = false;
     bool needQuickAck = false;
+    bool forceContainer = false;
     int32_t requestId;
 } NetworkMessage;
 
@@ -171,7 +168,8 @@ enum RequestFlag {
     RequestFlagForceDownload = 32,
     RequestFlagInvokeAfter = 64,
     RequestFlagNeedQuickAck = 128,
-    RequestFlagUseUnboundKey = 256
+    RequestFlagUseUnboundKey = 256,
+    RequestFlagResendAfter = 512
 };
 
 inline std::string to_string_int32(int32_t value) {
@@ -184,6 +182,17 @@ inline std::string to_string_uint64(uint64_t value) {
     char buf[30];
     int len = sprintf(buf, "%" PRIu64, value);
     return std::string(buf, (uint32_t) len);
+}
+
+inline int32_t char2int(char input) {
+    if (input >= '0' && input <= '9') {
+        return input - '0';
+    } else if (input >= 'A' && input <= 'F') {
+        return (char) (input - 'A' + 10);
+    } else if (input >= 'a' && input <= 'f') {
+        return (char) (input - 'a' + 10);
+    }
+    return 0;
 }
 
 #endif

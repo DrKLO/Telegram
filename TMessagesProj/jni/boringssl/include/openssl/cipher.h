@@ -136,8 +136,8 @@ OPENSSL_EXPORT int EVP_CIPHER_CTX_copy(EVP_CIPHER_CTX *out,
                                        const EVP_CIPHER_CTX *in);
 
 // EVP_CIPHER_CTX_reset calls |EVP_CIPHER_CTX_cleanup| followed by
-// |EVP_CIPHER_CTX_init|.
-OPENSSL_EXPORT void EVP_CIPHER_CTX_reset(EVP_CIPHER_CTX *ctx);
+// |EVP_CIPHER_CTX_init| and returns one.
+OPENSSL_EXPORT int EVP_CIPHER_CTX_reset(EVP_CIPHER_CTX *ctx);
 
 
 // Cipher context configuration.
@@ -242,6 +242,10 @@ OPENSSL_EXPORT const EVP_CIPHER *EVP_CIPHER_CTX_cipher(
 // |ctx| (e.g. |NID_aes_128_gcm|). It will crash if no cipher has been
 // configured.
 OPENSSL_EXPORT int EVP_CIPHER_CTX_nid(const EVP_CIPHER_CTX *ctx);
+
+// EVP_CIPHER_CTX_encrypting returns one if |ctx| is configured for encryption
+// and zero otherwise.
+OPENSSL_EXPORT int EVP_CIPHER_CTX_encrypting(const EVP_CIPHER_CTX *ctx);
 
 // EVP_CIPHER_CTX_block_size returns the block size, in bytes, of the cipher
 // underlying |ctx|, or one if the cipher is a stream cipher. It will crash if
@@ -413,14 +417,37 @@ OPENSSL_EXPORT const EVP_CIPHER *EVP_aes_192_ecb(void);
 OPENSSL_EXPORT const EVP_CIPHER *EVP_aes_192_cbc(void);
 OPENSSL_EXPORT const EVP_CIPHER *EVP_aes_192_ctr(void);
 OPENSSL_EXPORT const EVP_CIPHER *EVP_aes_192_gcm(void);
+OPENSSL_EXPORT const EVP_CIPHER *EVP_aes_192_ofb(void);
+
+// EVP_des_ede3_ecb is an alias for |EVP_des_ede3|. Use the former instead.
+OPENSSL_EXPORT const EVP_CIPHER *EVP_des_ede3_ecb(void);
 
 // EVP_aes_128_cfb128 is only available in decrepit.
 OPENSSL_EXPORT const EVP_CIPHER *EVP_aes_128_cfb128(void);
 
+// EVP_aes_256_cfb128 is only available in decrepit.
+OPENSSL_EXPORT const EVP_CIPHER *EVP_aes_256_cfb128(void);
+
+// EVP_bf_ecb is Blowfish in ECB mode and is only available in decrepit.
+OPENSSL_EXPORT const EVP_CIPHER *EVP_bf_ecb(void);
+
+// EVP_bf_cbc is Blowfish in CBC mode and is only available in decrepit.
+OPENSSL_EXPORT const EVP_CIPHER *EVP_bf_cbc(void);
+
+// EVP_bf_cfb is Blowfish in 64-bit CFB mode and is only available in decrepit.
+OPENSSL_EXPORT const EVP_CIPHER *EVP_bf_cfb(void);
+
+// EVP_cast5_ecb is CAST5 in ECB mode and is only available in decrepit.
+OPENSSL_EXPORT const EVP_CIPHER *EVP_cast5_ecb(void);
+
+// EVP_cast5_cbc is CAST5 in CBC mode and is only available in decrepit.
+OPENSSL_EXPORT const EVP_CIPHER *EVP_cast5_cbc(void);
+
 // The following flags do nothing and are included only to make it easier to
 // compile code with BoringSSL.
-#define EVP_CIPH_CCM_MODE 0
-#define EVP_CIPH_WRAP_MODE 0
+#define EVP_CIPH_CCM_MODE (-1)
+#define EVP_CIPH_OCB_MODE (-2)
+#define EVP_CIPH_WRAP_MODE (-3)
 #define EVP_CIPHER_CTX_FLAG_WRAP_ALLOW 0
 
 // EVP_CIPHER_CTX_set_flags does nothing.
@@ -433,7 +460,7 @@ OPENSSL_EXPORT void EVP_CIPHER_CTX_set_flags(const EVP_CIPHER_CTX *ctx,
 // EVP_CIPH_NO_PADDING disables padding in block ciphers.
 #define EVP_CIPH_NO_PADDING 0x800
 
-// EVP_CIPHER_CTX_ctrl commands.
+// The following are |EVP_CIPHER_CTX_ctrl| commands.
 #define EVP_CTRL_INIT 0x0
 #define EVP_CTRL_SET_KEY_LENGTH 0x1
 #define EVP_CTRL_GET_RC2_KEY_BITS 0x2
@@ -443,22 +470,25 @@ OPENSSL_EXPORT void EVP_CIPHER_CTX_set_flags(const EVP_CIPHER_CTX *ctx,
 #define EVP_CTRL_RAND_KEY 0x6
 #define EVP_CTRL_PBE_PRF_NID 0x7
 #define EVP_CTRL_COPY 0x8
-#define EVP_CTRL_GCM_SET_IVLEN 0x9
-#define EVP_CTRL_GCM_GET_TAG 0x10
-#define EVP_CTRL_GCM_SET_TAG 0x11
-#define EVP_CTRL_GCM_SET_IV_FIXED 0x12
+#define EVP_CTRL_AEAD_SET_IVLEN 0x9
+#define EVP_CTRL_AEAD_GET_TAG 0x10
+#define EVP_CTRL_AEAD_SET_TAG 0x11
+#define EVP_CTRL_AEAD_SET_IV_FIXED 0x12
 #define EVP_CTRL_GCM_IV_GEN 0x13
 #define EVP_CTRL_AEAD_SET_MAC_KEY 0x17
-// Set the GCM invocation field, decrypt only
+// EVP_CTRL_GCM_SET_IV_INV sets the GCM invocation field, decrypt only
 #define EVP_CTRL_GCM_SET_IV_INV 0x18
 
-// GCM TLS constants
-// Length of fixed part of IV derived from PRF
+// The following constants are unused.
 #define EVP_GCM_TLS_FIXED_IV_LEN 4
-// Length of explicit part of IV part of TLS records
 #define EVP_GCM_TLS_EXPLICIT_IV_LEN 8
-// Length of tag for TLS
 #define EVP_GCM_TLS_TAG_LEN 16
+
+// The following are legacy aliases for AEAD |EVP_CIPHER_CTX_ctrl| values.
+#define EVP_CTRL_GCM_SET_IVLEN EVP_CTRL_AEAD_SET_IVLEN
+#define EVP_CTRL_GCM_GET_TAG EVP_CTRL_AEAD_GET_TAG
+#define EVP_CTRL_GCM_SET_TAG EVP_CTRL_AEAD_SET_TAG
+#define EVP_CTRL_GCM_SET_IV_FIXED EVP_CTRL_AEAD_SET_IV_FIXED
 
 #define EVP_MAX_KEY_LENGTH 64
 #define EVP_MAX_IV_LENGTH 16
@@ -563,7 +593,7 @@ struct evp_cipher_st {
 #if !defined(BORINGSSL_NO_CXX)
 extern "C++" {
 
-namespace bssl {
+BSSL_NAMESPACE_BEGIN
 
 BORINGSSL_MAKE_DELETER(EVP_CIPHER_CTX, EVP_CIPHER_CTX_free)
 
@@ -571,7 +601,7 @@ using ScopedEVP_CIPHER_CTX =
     internal::StackAllocated<EVP_CIPHER_CTX, int, EVP_CIPHER_CTX_init,
                              EVP_CIPHER_CTX_cleanup>;
 
-}  // namespace bssl
+BSSL_NAMESPACE_END
 
 }  // extern C++
 #endif

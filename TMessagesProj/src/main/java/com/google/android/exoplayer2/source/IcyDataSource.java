@@ -110,7 +110,7 @@ import java.util.Map;
   /**
    * Reads an ICY stream metadata block, passing it to {@link #listener} unless the block is empty.
    *
-   * @return True if the block was extracted, including if it's length byte indicated a length of
+   * @return True if the block was extracted, including if its length byte indicated a length of
    *     zero. False if the end of the stream was reached.
    * @throws IOException If an error occurs reading from the wrapped {@link DataSource}.
    */

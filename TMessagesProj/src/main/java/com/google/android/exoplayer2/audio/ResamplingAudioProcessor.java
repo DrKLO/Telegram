@@ -18,65 +18,38 @@ package com.google.android.exoplayer2.audio;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 /**
- * An {@link AudioProcessor} that converts 8-bit, 24-bit and 32-bit integer PCM audio to 16-bit
- * integer PCM audio.
+ * An {@link AudioProcessor} that converts different PCM audio encodings to 16-bit integer PCM. The
+ * following encodings are supported as input:
+ *
+ * <ul>
+ *   <li>{@link C#ENCODING_PCM_8BIT}
+ *   <li>{@link C#ENCODING_PCM_16BIT} ({@link #isActive()} will return {@code false})
+ *   <li>{@link C#ENCODING_PCM_16BIT_BIG_ENDIAN}
+ *   <li>{@link C#ENCODING_PCM_24BIT}
+ *   <li>{@link C#ENCODING_PCM_32BIT}
+ *   <li>{@link C#ENCODING_PCM_FLOAT}
+ * </ul>
  */
-/* package */ final class ResamplingAudioProcessor implements AudioProcessor {
-
-  private int sampleRateHz;
-  private int channelCount;
-  private @C.PcmEncoding int encoding;
-  private ByteBuffer buffer;
-  private ByteBuffer outputBuffer;
-  private boolean inputEnded;
-
-  /** Creates a new audio processor that converts audio data to {@link C#ENCODING_PCM_16BIT}. */
-  public ResamplingAudioProcessor() {
-    sampleRateHz = Format.NO_VALUE;
-    channelCount = Format.NO_VALUE;
-    encoding = C.ENCODING_INVALID;
-    buffer = EMPTY_BUFFER;
-    outputBuffer = EMPTY_BUFFER;
-  }
+/* package */ final class ResamplingAudioProcessor extends BaseAudioProcessor {
 
   @Override
-  public boolean configure(int sampleRateHz, int channelCount, @C.Encoding int encoding)
-      throws UnhandledFormatException {
-    if (encoding != C.ENCODING_PCM_8BIT && encoding != C.ENCODING_PCM_16BIT
-        && encoding != C.ENCODING_PCM_24BIT && encoding != C.ENCODING_PCM_32BIT) {
-      throw new UnhandledFormatException(sampleRateHz, channelCount, encoding);
+  public AudioFormat onConfigure(AudioFormat inputAudioFormat)
+      throws UnhandledAudioFormatException {
+    @C.PcmEncoding int encoding = inputAudioFormat.encoding;
+    if (encoding != C.ENCODING_PCM_8BIT
+        && encoding != C.ENCODING_PCM_16BIT
+        && encoding != C.ENCODING_PCM_16BIT_BIG_ENDIAN
+        && encoding != C.ENCODING_PCM_24BIT
+        && encoding != C.ENCODING_PCM_32BIT
+        && encoding != C.ENCODING_PCM_FLOAT) {
+      throw new UnhandledAudioFormatException(inputAudioFormat);
     }
-    if (this.sampleRateHz == sampleRateHz && this.channelCount == channelCount
-        && this.encoding == encoding) {
-      return false;
-    }
-    this.sampleRateHz = sampleRateHz;
-    this.channelCount = channelCount;
-    this.encoding = encoding;
-    return true;
-  }
-
-  @Override
-  public boolean isActive() {
-    return encoding != C.ENCODING_INVALID && encoding != C.ENCODING_PCM_16BIT;
-  }
-
-  @Override
-  public int getOutputChannelCount() {
-    return channelCount;
-  }
-
-  @Override
-  public int getOutputEncoding() {
-    return C.ENCODING_PCM_16BIT;
-  }
-
-  @Override
-  public int getOutputSampleRateHz() {
-    return sampleRateHz;
+    return encoding != C.ENCODING_PCM_16BIT
+        ? new AudioFormat(
+            inputAudioFormat.sampleRate, inputAudioFormat.channelCount, C.ENCODING_PCM_16BIT)
+        : AudioFormat.NOT_SET;
   }
 
   @Override
@@ -86,58 +59,68 @@ import java.nio.ByteOrder;
     int limit = inputBuffer.limit();
     int size = limit - position;
     int resampledSize;
-    switch (encoding) {
+    switch (inputAudioFormat.encoding) {
       case C.ENCODING_PCM_8BIT:
         resampledSize = size * 2;
+        break;
+      case C.ENCODING_PCM_16BIT_BIG_ENDIAN:
+        resampledSize = size;
         break;
       case C.ENCODING_PCM_24BIT:
         resampledSize = (size / 3) * 2;
         break;
       case C.ENCODING_PCM_32BIT:
+      case C.ENCODING_PCM_FLOAT:
         resampledSize = size / 2;
         break;
       case C.ENCODING_PCM_16BIT:
-      case C.ENCODING_PCM_FLOAT:
-      case C.ENCODING_PCM_A_LAW:
-      case C.ENCODING_PCM_MU_LAW:
       case C.ENCODING_INVALID:
       case Format.NO_VALUE:
       default:
         throw new IllegalStateException();
     }
-    if (buffer.capacity() < resampledSize) {
-      buffer = ByteBuffer.allocateDirect(resampledSize).order(ByteOrder.nativeOrder());
-    } else {
-      buffer.clear();
-    }
 
     // Resample the little endian input and update the input/output buffers.
-    switch (encoding) {
+    ByteBuffer buffer = replaceOutputBuffer(resampledSize);
+    switch (inputAudioFormat.encoding) {
       case C.ENCODING_PCM_8BIT:
-        // 8->16 bit resampling. Shift each byte from [0, 256) to [-128, 128) and scale up.
+        // 8 -> 16 bit resampling. Shift each byte from [0, 256) to [-128, 128) and scale up.
         for (int i = position; i < limit; i++) {
           buffer.put((byte) 0);
           buffer.put((byte) ((inputBuffer.get(i) & 0xFF) - 128));
         }
         break;
+      case C.ENCODING_PCM_16BIT_BIG_ENDIAN:
+        // Big endian to little endian resampling. Swap the byte order.
+        for (int i = position; i < limit; i += 2) {
+          buffer.put(inputBuffer.get(i + 1));
+          buffer.put(inputBuffer.get(i));
+        }
+        break;
       case C.ENCODING_PCM_24BIT:
-        // 24->16 bit resampling. Drop the least significant byte.
+        // 24 -> 16 bit resampling. Drop the least significant byte.
         for (int i = position; i < limit; i += 3) {
           buffer.put(inputBuffer.get(i + 1));
           buffer.put(inputBuffer.get(i + 2));
         }
         break;
       case C.ENCODING_PCM_32BIT:
-        // 32->16 bit resampling. Drop the two least significant bytes.
+        // 32 -> 16 bit resampling. Drop the two least significant bytes.
         for (int i = position; i < limit; i += 4) {
           buffer.put(inputBuffer.get(i + 2));
           buffer.put(inputBuffer.get(i + 3));
         }
         break;
-      case C.ENCODING_PCM_16BIT:
       case C.ENCODING_PCM_FLOAT:
-      case C.ENCODING_PCM_A_LAW:
-      case C.ENCODING_PCM_MU_LAW:
+        // 32 bit floating point -> 16 bit resampling. Floating point values are in the range
+        // [-1.0, 1.0], so need to be scaled by Short.MAX_VALUE.
+        for (int i = position; i < limit; i += 4) {
+          short value = (short) (inputBuffer.getFloat(i) * Short.MAX_VALUE);
+          buffer.put((byte) (value & 0xFF));
+          buffer.put((byte) ((value >> 8) & 0xFF));
+        }
+        break;
+      case C.ENCODING_PCM_16BIT:
       case C.ENCODING_INVALID:
       case Format.NO_VALUE:
       default:
@@ -146,40 +129,6 @@ import java.nio.ByteOrder;
     }
     inputBuffer.position(inputBuffer.limit());
     buffer.flip();
-    outputBuffer = buffer;
-  }
-
-  @Override
-  public void queueEndOfStream() {
-    inputEnded = true;
-  }
-
-  @Override
-  public ByteBuffer getOutput() {
-    ByteBuffer outputBuffer = this.outputBuffer;
-    this.outputBuffer = EMPTY_BUFFER;
-    return outputBuffer;
-  }
-
-  @SuppressWarnings("ReferenceEquality")
-  @Override
-  public boolean isEnded() {
-    return inputEnded && outputBuffer == EMPTY_BUFFER;
-  }
-
-  @Override
-  public void flush() {
-    outputBuffer = EMPTY_BUFFER;
-    inputEnded = false;
-  }
-
-  @Override
-  public void reset() {
-    flush();
-    sampleRateHz = Format.NO_VALUE;
-    channelCount = Format.NO_VALUE;
-    encoding = C.ENCODING_INVALID;
-    buffer = EMPTY_BUFFER;
   }
 
 }

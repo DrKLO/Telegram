@@ -88,10 +88,10 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
             NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.messagePlayingDidSeek);
             NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
             NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.httpFileDidLoad);
-            NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.fileDidLoad);
+            NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.fileLoaded);
         }
         imageReceiver = new ImageReceiver(null);
-        imageReceiver.setDelegate((imageReceiver, set, thumb) -> {
+        imageReceiver.setDelegate((imageReceiver, set, thumb, memCache) -> {
             if (set && !TextUtils.isEmpty(loadingFilePath)) {
                 MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
                 if (messageObject != null) {
@@ -276,25 +276,30 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
                 bldr.setLargeIcon(albumArtPlaceholder);
             }
 
+            final String nextDescription = LocaleController.getString("Next", R.string.Next);
+            final String previousDescription = LocaleController.getString("AccDescrPrevious", R.string.AccDescrPrevious);
+
             if (MediaController.getInstance().isDownloadingCurrentMessage()) {
                 playbackState.setState(PlaybackState.STATE_BUFFERING, 0, 1).setActions(0);
-                bldr.addAction(new Notification.Action.Builder(R.drawable.ic_action_previous, "", pendingPrev).build())
-                        .addAction(new Notification.Action.Builder(R.drawable.loading_animation2, "", null).build())
-                        .addAction(new Notification.Action.Builder(R.drawable.ic_action_next, "", pendingNext).build());
+                bldr.addAction(new Notification.Action.Builder(R.drawable.ic_action_previous, previousDescription, pendingPrev).build())
+                        .addAction(new Notification.Action.Builder(R.drawable.loading_animation2, LocaleController.getString("Loading", R.string.Loading), null).build())
+                        .addAction(new Notification.Action.Builder(R.drawable.ic_action_next, nextDescription, pendingNext).build());
             } else {
                 playbackState.setState(isPlaying ? PlaybackState.STATE_PLAYING : PlaybackState.STATE_PAUSED,
                         MediaController.getInstance().getPlayingMessageObject().audioProgressSec * 1000L,
                         isPlaying ? 1 : 0)
                         .setActions(PlaybackState.ACTION_PLAY_PAUSE | PlaybackState.ACTION_PLAY | PlaybackState.ACTION_PAUSE | PlaybackState.ACTION_SEEK_TO | PlaybackState.ACTION_SKIP_TO_PREVIOUS | PlaybackState.ACTION_SKIP_TO_NEXT);
-                bldr.addAction(new Notification.Action.Builder(R.drawable.ic_action_previous, "", pendingPrev).build())
-                        .addAction(new Notification.Action.Builder(isPlaying ? R.drawable.ic_action_pause : R.drawable.ic_action_play, "", pendingPlaypause).build())
-                        .addAction(new Notification.Action.Builder(R.drawable.ic_action_next, "", pendingNext).build());
+                final String playPauseTitle = isPlaying ? LocaleController.getString("AccActionPause", R.string.AccActionPause) : LocaleController.getString("AccActionPlay", R.string.AccActionPlay);
+                bldr.addAction(new Notification.Action.Builder(R.drawable.ic_action_previous, previousDescription, pendingPrev).build())
+                        .addAction(new Notification.Action.Builder(isPlaying ? R.drawable.ic_action_pause : R.drawable.ic_action_play, playPauseTitle, pendingPlaypause).build())
+                        .addAction(new Notification.Action.Builder(R.drawable.ic_action_next, nextDescription, pendingNext).build());
             }
 
             mediaSession.setPlaybackState(playbackState.build());
             MediaMetadata.Builder meta = new MediaMetadata.Builder()
                     .putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, fullAlbumArt)
                     .putString(MediaMetadata.METADATA_KEY_ALBUM_ARTIST, authorName)
+                    .putString(MediaMetadata.METADATA_KEY_ARTIST, authorName)
                     .putLong(MediaMetadata.METADATA_KEY_DURATION, duration)
                     .putString(MediaMetadata.METADATA_KEY_TITLE, songName)
                     .putString(MediaMetadata.METADATA_KEY_ALBUM, audioInfo != null ? audioInfo.getAlbum() : null);
@@ -396,7 +401,6 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
             }
             notification.flags |= Notification.FLAG_ONGOING_EVENT;
             startForeground(ID_NOTIFICATION, notification);
-
         }
 
         if (remoteControlClient != null) {
@@ -505,7 +509,7 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
             NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.messagePlayingDidSeek);
             NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
             NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.httpFileDidLoad);
-            NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.fileDidLoad);
+            NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.fileLoaded);
         }
     }
 
@@ -532,7 +536,7 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
             if (messageObject != null && loadingFilePath != null && loadingFilePath.equals(path)) {
                 createNotification(messageObject, false);
             }
-        } else if (id == NotificationCenter.fileDidLoad) {
+        } else if (id == NotificationCenter.fileLoaded) {
             final String path = (String) args[0];
             MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
             if (messageObject != null && loadingFilePath != null && loadingFilePath.equals(path)) {

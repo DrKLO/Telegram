@@ -152,14 +152,34 @@ OPENSSL_EXPORT PKCS12* d2i_PKCS12_bio(BIO *bio, PKCS12 **out_p12);
 // d2i_PKCS12_fp acts like |d2i_PKCS12| but reads from a |FILE|.
 OPENSSL_EXPORT PKCS12* d2i_PKCS12_fp(FILE *fp, PKCS12 **out_p12);
 
+// i2d_PKCS12 is a dummy function which copies the contents of |p12|. If |out|
+// is not NULL then the result is written to |*out| and |*out| is advanced just
+// past the output. It returns the number of bytes in the result, whether
+// written or not, or a negative value on error.
+OPENSSL_EXPORT int i2d_PKCS12(const PKCS12 *p12, uint8_t **out);
+
+// i2d_PKCS12_bio writes the contents of |p12| to |bio|. It returns one on
+// success and zero on error.
+OPENSSL_EXPORT int i2d_PKCS12_bio(BIO *bio, const PKCS12 *p12);
+
+// i2d_PKCS12_fp writes the contents of |p12| to |fp|. It returns one on
+// success and zero on error.
+OPENSSL_EXPORT int i2d_PKCS12_fp(FILE *fp, const PKCS12 *p12);
+
 // PKCS12_parse calls |PKCS12_get_key_and_certs| on the ASN.1 data stored in
 // |p12|. The |out_pkey| and |out_cert| arguments must not be NULL and, on
-// successful exit, the private key and first certificate will be stored in
+// successful exit, the private key and matching certificate will be stored in
 // them. The |out_ca_certs| argument may be NULL but, if not, then any extra
 // certificates will be appended to |*out_ca_certs|. If |*out_ca_certs| is NULL
 // then it will be set to a freshly allocated stack containing the extra certs.
 //
+// Note if |p12| does not contain a private key, both |*out_pkey| and
+// |*out_cert| will be set to NULL and all certificates will be returned via
+// |*out_ca_certs|.
+//
 // It returns one on success and zero on error.
+//
+// Use |PKCS12_get_key_and_certs| instead.
 OPENSSL_EXPORT int PKCS12_parse(const PKCS12 *p12, const char *password,
                                 EVP_PKEY **out_pkey, X509 **out_cert,
                                 STACK_OF(X509) **out_ca_certs);
@@ -175,6 +195,23 @@ OPENSSL_EXPORT int PKCS12_parse(const PKCS12 *p12, const char *password,
 OPENSSL_EXPORT int PKCS12_verify_mac(const PKCS12 *p12, const char *password,
                                      int password_len);
 
+// PKCS12_create returns a newly-allocated |PKCS12| object containing |pkey|,
+// |cert|, and |chain|, encrypted with the specified password. |name|, if not
+// NULL, specifies a user-friendly name to encode with the key and
+// certificate. The key and certificates are encrypted with |key_nid| and
+// |cert_nid|, respectively, using |iterations| iterations in the
+// KDF. |mac_iterations| is the number of iterations when deriving the MAC
+// key. |key_type| must be zero. |pkey| and |cert| may be NULL to omit them.
+//
+// Each of |key_nid|, |cert_nid|, |iterations|, and |mac_iterations| may be zero
+// to use defaults, which are |NID_pbe_WithSHA1And3_Key_TripleDES_CBC|,
+// |NID_pbe_WithSHA1And40BitRC2_CBC|, 2048, and one, respectively.
+OPENSSL_EXPORT PKCS12 *PKCS12_create(const char *password, const char *name,
+                                     const EVP_PKEY *pkey, X509 *cert,
+                                     const STACK_OF(X509) *chain, int key_nid,
+                                     int cert_nid, int iterations,
+                                     int mac_iterations, int key_type);
+
 // PKCS12_free frees |p12| and its contents.
 OPENSSL_EXPORT void PKCS12_free(PKCS12 *p12);
 
@@ -184,12 +221,12 @@ OPENSSL_EXPORT void PKCS12_free(PKCS12 *p12);
 
 extern "C++" {
 
-namespace bssl {
+BSSL_NAMESPACE_BEGIN
 
 BORINGSSL_MAKE_DELETER(PKCS12, PKCS12_free)
 BORINGSSL_MAKE_DELETER(PKCS8_PRIV_KEY_INFO, PKCS8_PRIV_KEY_INFO_free)
 
-}  // namespace bssl
+BSSL_NAMESPACE_END
 
 }  // extern C++
 
@@ -226,5 +263,7 @@ BORINGSSL_MAKE_DELETER(PKCS8_PRIV_KEY_INFO, PKCS8_PRIV_KEY_INFO_free)
 #define PKCS8_R_UNSUPPORTED_KEY_DERIVATION_FUNCTION 128
 #define PKCS8_R_BAD_ITERATION_COUNT 129
 #define PKCS8_R_UNSUPPORTED_PRF 130
+#define PKCS8_R_INVALID_CHARACTERS 131
+#define PKCS8_R_UNSUPPORTED_OPTIONS 132
 
 #endif  // OPENSSL_HEADER_PKCS8_H

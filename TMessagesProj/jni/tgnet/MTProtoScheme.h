@@ -12,7 +12,6 @@
 #include <vector>
 #include <memory>
 #include <map>
-#include <bits/unique_ptr.h>
 #include "TLObject.h"
 
 class ByteArray;
@@ -22,7 +21,6 @@ class TLClassStore {
 
 public:
     static TLObject *TLdeserialize(NativeByteBuffer *stream, uint32_t bytes, uint32_t constructor, int32_t instanceNum, bool &error);
-
 };
 
 class TL_api_request : public TLObject {
@@ -32,7 +30,7 @@ public:
 
     ~TL_api_request();
     bool isNeedLayer();
-    TLObject *deserializeResponse(NativeByteBuffer *stream, uint32_t bytes, bool &error);
+    TLObject *deserializeResponse(NativeByteBuffer *stream, uint32_t bytes, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
 };
 
@@ -743,10 +741,92 @@ public:
     void serializeToStream(NativeByteBuffer *stream);
 };
 
+class JSONValue : public TLObject {
+
+public:
+    static JSONValue *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
+};
+
+class TL_jsonObjectValue : public TLObject {
+
+public:
+    static const uint32_t constructor = 0xc0de1bd9;
+
+    std::string key;
+    std::unique_ptr<JSONValue> value;
+
+    static TL_jsonObjectValue *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_jsonBool : public JSONValue {
+
+public:
+    static const uint32_t constructor = 0xc7345e6a;
+
+    bool value;
+
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_jsonNull : public JSONValue {
+
+public:
+    static const uint32_t constructor = 0x3f6d7b68;
+
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_jsonString : public JSONValue {
+
+public:
+    static const uint32_t constructor = 0xb71e767a;
+
+    std::string value;
+
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_jsonArray : public JSONValue {
+
+public:
+    static const uint32_t constructor = 0xf7444763;
+
+    std::vector<std::unique_ptr<JSONValue>> value;
+
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_jsonObject : public JSONValue {
+
+public:
+    static const uint32_t constructor = 0x99c1d49d;
+
+    std::vector<std::unique_ptr<TL_jsonObjectValue>> value;
+
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_jsonNumber : public JSONValue {
+
+public:
+    static const uint32_t constructor = 0x2be0dfa4;
+
+    double value;
+
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
 class initConnection : public TLObject {
 
 public:
-    static const uint32_t constructor = 0x785188b8;
+    static const uint32_t constructor = 0xc1cd5ea9;
 
     int32_t flags;
     int32_t api_id;
@@ -757,6 +837,7 @@ public:
     std::string lang_pack;
     std::string lang_code;
     std::unique_ptr<TL_inputClientProxy> proxy;
+    std::unique_ptr<JSONValue> params;
     std::unique_ptr<TLObject> query;
 
     void serializeToStream(NativeByteBuffer *stream);

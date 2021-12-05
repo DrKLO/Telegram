@@ -12,14 +12,23 @@ import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.graphics.drawable.Drawable;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Vibrator;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
 import android.widget.DatePicker;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -28,6 +37,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -35,21 +45,26 @@ import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
+import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.DialogRadioCell;
 import org.telegram.ui.Cells.HeaderCell;
+import org.telegram.ui.Cells.PollEditTextCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.TextCheckCell2;
 import org.telegram.ui.Cells.TextDetailCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
-import org.telegram.ui.Cells2.UserCell;
+import org.telegram.ui.Cells.UserCell2;
+import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 
+import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -58,7 +73,7 @@ public class ChatRightsEditActivity extends BaseFragment {
     private ListAdapter listViewAdapter;
     private RecyclerListView listView;
 
-    private int chatId;
+    private long chatId;
     private TLRPC.User currentUser;
     private TLRPC.Chat currentChat;
     private int currentType;
@@ -71,6 +86,8 @@ public class ChatRightsEditActivity extends BaseFragment {
     private TLRPC.TL_chatBannedRights bannedRights;
     private TLRPC.TL_chatBannedRights defaultBannedRights;
     private String currentBannedRights = "";
+    private String currentRank;
+    private String initialRank;
 
     private int rowCount;
     private int changeInfoRow;
@@ -78,6 +95,7 @@ public class ChatRightsEditActivity extends BaseFragment {
     private int editMesagesRow;
     private int deleteMessagesRow;
     private int addAdminsRow;
+    private int anonymousRow;
     private int banUsersRow;
     private int addUsersRow;
     private int pinMessagesRow;
@@ -85,37 +103,48 @@ public class ChatRightsEditActivity extends BaseFragment {
     private int removeAdminRow;
     private int removeAdminShadowRow;
     private int cantEditInfoRow;
+    private int transferOwnerShadowRow;
+    private int transferOwnerRow;
+    private int rankHeaderRow;
+    private int rankRow;
+    private int rankInfoRow;
 
     private int sendMessagesRow;
     private int sendMediaRow;
     private int sendStickersRow;
     private int sendPollsRow;
     private int embedLinksRow;
+    private int startVoiceChatRow;
     private int untilSectionRow;
     private int untilDateRow;
 
     private ChatRightsEditActivityDelegate delegate;
 
     private boolean isAddingNew;
+    private boolean initialIsSet;
 
     public static final int TYPE_ADMIN = 0;
     public static final int TYPE_BANNED = 1;
 
     public interface ChatRightsEditActivityDelegate {
-        void didSetRights(int rights, TLRPC.TL_chatAdminRights rightsAdmin, TLRPC.TL_chatBannedRights rightsBanned);
+        void didSetRights(int rights, TLRPC.TL_chatAdminRights rightsAdmin, TLRPC.TL_chatBannedRights rightsBanned, String rank);
+        void didChangeOwner(TLRPC.User user);
     }
 
     private final static int done_button = 1;
 
-    public ChatRightsEditActivity(int userId, int channelId, TLRPC.TL_chatAdminRights rightsAdmin, TLRPC.TL_chatBannedRights rightsBannedDefault, TLRPC.TL_chatBannedRights rightsBanned, int type, boolean edit, boolean addingNew) {
+    public ChatRightsEditActivity(long userId, long channelId, TLRPC.TL_chatAdminRights rightsAdmin, TLRPC.TL_chatBannedRights rightsBannedDefault, TLRPC.TL_chatBannedRights rightsBanned, String rank, int type, boolean edit, boolean addingNew) {
         super();
         isAddingNew = addingNew;
         chatId = channelId;
         currentUser = MessagesController.getInstance(currentAccount).getUser(userId);
         currentType = type;
         canEdit = edit;
-        boolean initialIsSet;
         currentChat = MessagesController.getInstance(currentAccount).getChat(chatId);
+        if (rank == null) {
+            rank = "";
+        }
+        initialRank = currentRank = rank;
         if (currentChat != null) {
             isChannel = ChatObject.isChannel(currentChat) && !currentChat.megagroup;
             myAdminRights = currentChat.admin_rights;
@@ -124,7 +153,7 @@ public class ChatRightsEditActivity extends BaseFragment {
             myAdminRights = new TLRPC.TL_chatAdminRights();
             myAdminRights.change_info = myAdminRights.post_messages = myAdminRights.edit_messages =
             myAdminRights.delete_messages = myAdminRights.ban_users = myAdminRights.invite_users =
-            myAdminRights.pin_messages = myAdminRights.add_admins = true;
+            myAdminRights.pin_messages = myAdminRights.add_admins = myAdminRights.manage_call = true;
         }
         if (type == TYPE_ADMIN) {
             adminRights = new TLRPC.TL_chatAdminRights();
@@ -133,6 +162,7 @@ public class ChatRightsEditActivity extends BaseFragment {
                 adminRights.post_messages = myAdminRights.post_messages;
                 adminRights.edit_messages = myAdminRights.edit_messages;
                 adminRights.delete_messages = myAdminRights.delete_messages;
+                adminRights.manage_call = myAdminRights.manage_call;
                 adminRights.ban_users = myAdminRights.ban_users;
                 adminRights.invite_users = myAdminRights.invite_users;
                 adminRights.pin_messages = myAdminRights.pin_messages;
@@ -142,14 +172,16 @@ public class ChatRightsEditActivity extends BaseFragment {
                 adminRights.post_messages = rightsAdmin.post_messages;
                 adminRights.edit_messages = rightsAdmin.edit_messages;
                 adminRights.delete_messages = rightsAdmin.delete_messages;
+                adminRights.manage_call = rightsAdmin.manage_call;
                 adminRights.ban_users = rightsAdmin.ban_users;
                 adminRights.invite_users = rightsAdmin.invite_users;
                 adminRights.pin_messages = rightsAdmin.pin_messages;
                 adminRights.add_admins = rightsAdmin.add_admins;
+                adminRights.anonymous = rightsAdmin.anonymous;
 
                 initialIsSet = adminRights.change_info || adminRights.post_messages || adminRights.edit_messages ||
                         adminRights.delete_messages || adminRights.ban_users || adminRights.invite_users ||
-                        adminRights.pin_messages || adminRights.add_admins;
+                        adminRights.pin_messages || adminRights.add_admins || adminRights.manage_call || adminRights.anonymous;
             }
         } else {
             defaultBannedRights = rightsBannedDefault;
@@ -223,51 +255,7 @@ public class ChatRightsEditActivity extends BaseFragment {
 
             initialIsSet = rightsBanned == null || !rightsBanned.view_messages;
         }
-        rowCount += 3;
-        if (type == TYPE_ADMIN) {
-            if (isChannel) {
-                changeInfoRow = rowCount++;
-                postMessagesRow = rowCount++;
-                editMesagesRow = rowCount++;
-                deleteMessagesRow = rowCount++;
-                addUsersRow = rowCount++;
-                addAdminsRow = rowCount++;
-            } else {
-                changeInfoRow = rowCount++;
-                deleteMessagesRow = rowCount++;
-                banUsersRow = rowCount++;
-                addUsersRow = rowCount++;
-                pinMessagesRow = rowCount++;
-                addAdminsRow = rowCount++;
-            }
-        } else if (type == TYPE_BANNED) {
-            sendMessagesRow = rowCount++;
-            sendMediaRow = rowCount++;
-            sendStickersRow = rowCount++;
-            sendPollsRow = rowCount++;
-            embedLinksRow = rowCount++;
-            addUsersRow = rowCount++;
-            pinMessagesRow = rowCount++;
-            changeInfoRow = rowCount++;
-            untilSectionRow = rowCount++;
-            untilDateRow = rowCount++;
-        }
-
-        if (canEdit && initialIsSet) {
-            rightsShadowRow = rowCount++;
-            removeAdminRow = rowCount++;
-            removeAdminShadowRow = rowCount++;
-            cantEditInfoRow = -1;
-        } else {
-            removeAdminRow = -1;
-            removeAdminShadowRow = -1;
-            if (type == TYPE_ADMIN && !canEdit) {
-                rightsShadowRow = -1;
-                cantEditInfoRow = rowCount++;
-            } else {
-                rightsShadowRow = rowCount++;
-            }
-        }
+        updateRows(false);
     }
 
     @Override
@@ -293,7 +281,7 @@ public class ChatRightsEditActivity extends BaseFragment {
             }
         });
 
-        if (canEdit) {
+        if (canEdit || !isChannel && currentChat.creator && UserObject.isUserSelf(currentUser)) {
             ActionBarMenu menu = actionBar.createMenu();
             menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56), LocaleController.getString("Done", R.string.Done));
         }
@@ -301,32 +289,40 @@ public class ChatRightsEditActivity extends BaseFragment {
         fragmentView = new FrameLayout(context);
         fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
         FrameLayout frameLayout = (FrameLayout) fragmentView;
+        fragmentView.setFocusableInTouchMode(true);
 
         listView = new RecyclerListView(context);
-        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false) {
-            @Override
-            public boolean supportsPredictiveItemAnimations() {
-                return false;
-            }
-        };
-        listView.setItemAnimator(null);
-        listView.setLayoutAnimation(null);
+        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false);
+        ((DefaultItemAnimator) listView.getItemAnimator()).setDelayAnimations(false);
         listView.setLayoutManager(linearLayoutManager);
         listView.setAdapter(listViewAdapter = new ListAdapter(context));
         listView.setVerticalScrollbarPosition(LocaleController.isRTL ? RecyclerListView.SCROLLBAR_POSITION_LEFT : RecyclerListView.SCROLLBAR_POSITION_RIGHT);
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
+        listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+                if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
+                    AndroidUtilities.hideKeyboard(getParentActivity().getCurrentFocus());
+                }
+            }
+        });
+
         listView.setOnItemClickListener((view, position) -> {
-            if (!canEdit) {
+            if (!canEdit && (!currentChat.creator || currentType != TYPE_ADMIN || position != anonymousRow)) {
                 return;
             }
             if (position == 0) {
                 Bundle args = new Bundle();
-                args.putInt("user_id", currentUser.id);
+                args.putLong("user_id", currentUser.id);
                 presentFragment(new ProfileActivity(args));
             } else if (position == removeAdminRow) {
                 if (currentType == TYPE_ADMIN) {
-                    MessagesController.getInstance(currentAccount).setUserAdminRole(chatId, currentUser, new TLRPC.TL_chatAdminRights(), isChannel, getFragmentForAlert(0), isAddingNew);
+                    MessagesController.getInstance(currentAccount).setUserAdminRole(chatId, currentUser, new TLRPC.TL_chatAdminRights(), currentRank, isChannel, getFragmentForAlert(0), isAddingNew);
+                    if (delegate != null) {
+                        delegate.didSetRights(0, adminRights, bannedRights, currentRank);
+                    }
+                    finishFragment();
                 } else if (currentType == TYPE_BANNED) {
                     bannedRights = new TLRPC.TL_chatBannedRights();
                     bannedRights.view_messages = true;
@@ -342,12 +338,10 @@ public class ChatRightsEditActivity extends BaseFragment {
                     bannedRights.invite_users = true;
                     bannedRights.change_info = true;
                     bannedRights.until_date = 0;
-                    MessagesController.getInstance(currentAccount).setUserBannedRole(chatId, currentUser, bannedRights, isChannel, getFragmentForAlert(0));
+                    onDonePressed();
                 }
-                if (delegate != null) {
-                    delegate.didSetRights(0, adminRights, bannedRights);
-                }
-                finishFragment();
+            } else if (position == transferOwnerRow) {
+                initTransfer(null, null);
             } else if (position == untilDateRow) {
                 if (getParentActivity() == null) {
                     return;
@@ -358,7 +352,7 @@ public class ChatRightsEditActivity extends BaseFragment {
                 LinearLayout linearLayout = new LinearLayout(context);
                 linearLayout.setOrientation(LinearLayout.VERTICAL);
 
-                HeaderCell headerCell = new HeaderCell(context, true, 23, 15, false);
+                HeaderCell headerCell = new HeaderCell(context, Theme.key_dialogTextBlue2, 23, 15, false);
                 headerCell.setHeight(47);
                 headerCell.setText(LocaleController.getString("UserRestrictionsDuration", R.string.UserRestrictionsDuration));
                 linearLayout.addView(headerCell);
@@ -371,7 +365,7 @@ public class ChatRightsEditActivity extends BaseFragment {
 
                 for (int a = 0; a < buttons.length; a++) {
                     buttons[a] = new BottomSheet.BottomSheetCell(context, 0);
-                    buttons[a].setPadding(AndroidUtilities.dp(23), 0, AndroidUtilities.dp(23), 0);
+                    buttons[a].setPadding(AndroidUtilities.dp(7), 0, AndroidUtilities.dp(7), 0);
                     buttons[a].setTag(a);
                     buttons[a].setBackgroundDrawable(Theme.getSelectorDrawable(false));
                     String text;
@@ -390,7 +384,7 @@ public class ChatRightsEditActivity extends BaseFragment {
                             break;
                         case 4:
                         default:
-                            text = LocaleController.getString("NotificationsCustom", R.string.NotificationsCustom);
+                            text = LocaleController.getString("UserRestrictionsCustom", R.string.UserRestrictionsCustom);
                             break;
                     }
                     buttons[a].setTextAndIcon(text, 0);
@@ -508,8 +502,12 @@ public class ChatRightsEditActivity extends BaseFragment {
                     adminRights.delete_messages = !adminRights.delete_messages;
                 } else if (position == addAdminsRow) {
                     adminRights.add_admins = !adminRights.add_admins;
+                } else if (position == anonymousRow) {
+                    adminRights.anonymous = !adminRights.anonymous;
                 } else if (position == banUsersRow) {
                     adminRights.ban_users = !adminRights.ban_users;
+                } else if (position == startVoiceChatRow) {
+                    adminRights.manage_call = !adminRights.manage_call;
                 } else if (position == addUsersRow) {
                     if (currentType == TYPE_ADMIN) {
                         adminRights.invite_users = !adminRights.invite_users;
@@ -584,6 +582,7 @@ public class ChatRightsEditActivity extends BaseFragment {
                         }
                     }
                 }
+                updateRows(true);
             }
         });
         return fragmentView;
@@ -595,37 +594,339 @@ public class ChatRightsEditActivity extends BaseFragment {
         if (listViewAdapter != null) {
             listViewAdapter.notifyDataSetChanged();
         }
+        AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid);
     }
 
     private boolean isDefaultAdminRights() {
-        return adminRights.change_info && adminRights.delete_messages && adminRights.ban_users && adminRights.invite_users && adminRights.pin_messages && !adminRights.add_admins ||
-                !adminRights.change_info && !adminRights.delete_messages && !adminRights.ban_users && !adminRights.invite_users && !adminRights.pin_messages && !adminRights.add_admins;
+        return adminRights.change_info && adminRights.delete_messages && adminRights.ban_users && adminRights.invite_users && adminRights.pin_messages && adminRights.manage_call && !adminRights.add_admins && !adminRights.anonymous ||
+                !adminRights.change_info && !adminRights.delete_messages && !adminRights.ban_users && !adminRights.invite_users && !adminRights.pin_messages && !adminRights.manage_call && !adminRights.add_admins && !adminRights.anonymous;
+    }
+
+    private boolean hasAllAdminRights() {
+        if (isChannel) {
+            return adminRights.change_info && adminRights.post_messages && adminRights.edit_messages && adminRights.delete_messages && adminRights.invite_users && adminRights.add_admins && adminRights.manage_call;
+        } else {
+            return adminRights.change_info && adminRights.delete_messages && adminRights.ban_users && adminRights.invite_users && adminRights.pin_messages && adminRights.add_admins && adminRights.manage_call;
+        }
+    }
+
+    private void initTransfer(TLRPC.InputCheckPasswordSRP srp, TwoStepVerificationActivity passwordFragment) {
+        if (getParentActivity() == null) {
+            return;
+        }
+        if (srp != null && !ChatObject.isChannel(currentChat)) {
+            MessagesController.getInstance(currentAccount).convertToMegaGroup(getParentActivity(), chatId, this, param -> {
+                if (param != 0) {
+                    chatId = param;
+                    currentChat = MessagesController.getInstance(currentAccount).getChat(param);
+                    initTransfer(srp, passwordFragment);
+                }
+            });
+            return;
+        }
+        TLRPC.TL_channels_editCreator req = new TLRPC.TL_channels_editCreator();
+        if (ChatObject.isChannel(currentChat)) {
+            req.channel = new TLRPC.TL_inputChannel();
+            req.channel.channel_id = currentChat.id;
+            req.channel.access_hash = currentChat.access_hash;
+        } else {
+            req.channel = new TLRPC.TL_inputChannelEmpty();
+        }
+        req.password = srp != null ? srp : new TLRPC.TL_inputCheckPasswordEmpty();
+        req.user_id = getMessagesController().getInputUser(currentUser);
+        getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            if (error != null) {
+                if (getParentActivity() == null) {
+                    return;
+                }
+                if ("PASSWORD_HASH_INVALID".equals(error.text)) {
+                    if (srp == null) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        if (isChannel) {
+                            builder.setTitle(LocaleController.getString("EditAdminChannelTransfer", R.string.EditAdminChannelTransfer));
+                        } else {
+                            builder.setTitle(LocaleController.getString("EditAdminGroupTransfer", R.string.EditAdminGroupTransfer));
+                        }
+                        builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("EditAdminTransferReadyAlertText", R.string.EditAdminTransferReadyAlertText, currentChat.title, UserObject.getFirstName(currentUser))));
+                        builder.setPositiveButton(LocaleController.getString("EditAdminTransferChangeOwner", R.string.EditAdminTransferChangeOwner), (dialogInterface, i) -> {
+                            TwoStepVerificationActivity fragment = new TwoStepVerificationActivity();
+                            fragment.setDelegate(password -> initTransfer(password, fragment));
+                            presentFragment(fragment);
+                        });
+                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        showDialog(builder.create());
+                    }
+                } else if ("PASSWORD_MISSING".equals(error.text) || error.text.startsWith("PASSWORD_TOO_FRESH_") || error.text.startsWith("SESSION_TOO_FRESH_")) {
+                    if (passwordFragment != null) {
+                        passwordFragment.needHideProgress();
+                    }
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                    builder.setTitle(LocaleController.getString("EditAdminTransferAlertTitle", R.string.EditAdminTransferAlertTitle));
+
+                    LinearLayout linearLayout = new LinearLayout(getParentActivity());
+                    linearLayout.setPadding(AndroidUtilities.dp(24), AndroidUtilities.dp(2), AndroidUtilities.dp(24), 0);
+                    linearLayout.setOrientation(LinearLayout.VERTICAL);
+                    builder.setView(linearLayout);
+
+                    TextView messageTextView = new TextView(getParentActivity());
+                    messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+                    messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+                    messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
+                    if (isChannel) {
+                        messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("EditChannelAdminTransferAlertText", R.string.EditChannelAdminTransferAlertText, UserObject.getFirstName(currentUser))));
+                    } else {
+                        messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("EditAdminTransferAlertText", R.string.EditAdminTransferAlertText, UserObject.getFirstName(currentUser))));
+                    }
+                    linearLayout.addView(messageTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+                    LinearLayout linearLayout2 = new LinearLayout(getParentActivity());
+                    linearLayout2.setOrientation(LinearLayout.HORIZONTAL);
+                    linearLayout.addView(linearLayout2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 11, 0, 0));
+
+                    ImageView dotImageView = new ImageView(getParentActivity());
+                    dotImageView.setImageResource(R.drawable.list_circle);
+                    dotImageView.setPadding(LocaleController.isRTL ? AndroidUtilities.dp(11) : 0, AndroidUtilities.dp(9), LocaleController.isRTL ? 0 : AndroidUtilities.dp(11), 0);
+                    dotImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogTextBlack), PorterDuff.Mode.MULTIPLY));
+
+                    messageTextView = new TextView(getParentActivity());
+                    messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+                    messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+                    messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
+                    messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString("EditAdminTransferAlertText1", R.string.EditAdminTransferAlertText1)));
+                    if (LocaleController.isRTL) {
+                        linearLayout2.addView(messageTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+                        linearLayout2.addView(dotImageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT));
+                    } else {
+                        linearLayout2.addView(dotImageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+                        linearLayout2.addView(messageTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+                    }
+
+                    linearLayout2 = new LinearLayout(getParentActivity());
+                    linearLayout2.setOrientation(LinearLayout.HORIZONTAL);
+                    linearLayout.addView(linearLayout2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 11, 0, 0));
+
+                    dotImageView = new ImageView(getParentActivity());
+                    dotImageView.setImageResource(R.drawable.list_circle);
+                    dotImageView.setPadding(LocaleController.isRTL ? AndroidUtilities.dp(11) : 0, AndroidUtilities.dp(9), LocaleController.isRTL ? 0 : AndroidUtilities.dp(11), 0);
+                    dotImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogTextBlack), PorterDuff.Mode.MULTIPLY));
+
+                    messageTextView = new TextView(getParentActivity());
+                    messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+                    messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+                    messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
+                    messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString("EditAdminTransferAlertText2", R.string.EditAdminTransferAlertText2)));
+                    if (LocaleController.isRTL) {
+                        linearLayout2.addView(messageTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+                        linearLayout2.addView(dotImageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT));
+                    } else {
+                        linearLayout2.addView(dotImageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+                        linearLayout2.addView(messageTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+                    }
+
+                    if ("PASSWORD_MISSING".equals(error.text)) {
+                        builder.setPositiveButton(LocaleController.getString("EditAdminTransferSetPassword", R.string.EditAdminTransferSetPassword), (dialogInterface, i) -> presentFragment(new TwoStepVerificationSetupActivity(TwoStepVerificationSetupActivity.TYPE_INTRO, null)));
+                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                    } else {
+                        messageTextView = new TextView(getParentActivity());
+                        messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+                        messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+                        messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
+                        messageTextView.setText(LocaleController.getString("EditAdminTransferAlertText3", R.string.EditAdminTransferAlertText3));
+                        linearLayout.addView(messageTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 11, 0, 0));
+
+                        builder.setNegativeButton(LocaleController.getString("OK", R.string.OK), null);
+                    }
+                    showDialog(builder.create());
+                } else if ("SRP_ID_INVALID".equals(error.text)) {
+                    TLRPC.TL_account_getPassword getPasswordReq = new TLRPC.TL_account_getPassword();
+                    ConnectionsManager.getInstance(currentAccount).sendRequest(getPasswordReq, (response2, error2) -> AndroidUtilities.runOnUIThread(() -> {
+                        if (error2 == null) {
+                            TLRPC.TL_account_password currentPassword = (TLRPC.TL_account_password) response2;
+                            passwordFragment.setCurrentPasswordInfo(null, currentPassword);
+                            TwoStepVerificationActivity.initPasswordNewAlgo(currentPassword);
+                            initTransfer(passwordFragment.getNewSrpPassword(), passwordFragment);
+                        }
+                    }), ConnectionsManager.RequestFlagWithoutLogin);
+                } else if (error.text.equals("CHANNELS_TOO_MUCH")) {
+                    presentFragment(new TooManyCommunitiesActivity(TooManyCommunitiesActivity.TYPE_EDIT));
+                } else {
+                    if (passwordFragment != null) {
+                        passwordFragment.needHideProgress();
+                        passwordFragment.finishFragment();
+                    }
+                    AlertsCreator.showAddUserAlert(error.text, ChatRightsEditActivity.this, isChannel, req);
+                }
+            } else {
+                if (srp != null) {
+                    delegate.didChangeOwner(currentUser);
+                    removeSelfFromStack();
+                    passwordFragment.needHideProgress();
+                    passwordFragment.finishFragment();
+                }
+            }
+        }));
+    }
+
+    private void updateRows(boolean update) {
+        int transferOwnerShadowRowPrev = Math.min(transferOwnerShadowRow, transferOwnerRow);
+
+        changeInfoRow = -1;
+        postMessagesRow = -1;
+        editMesagesRow = -1;
+        deleteMessagesRow = -1;
+        addAdminsRow = -1;
+        anonymousRow = -1;
+        banUsersRow = -1;
+        addUsersRow = -1;
+        pinMessagesRow = -1;
+        rightsShadowRow = -1;
+        removeAdminRow = -1;
+        removeAdminShadowRow = -1;
+        cantEditInfoRow = -1;
+        transferOwnerShadowRow = -1;
+        transferOwnerRow = -1;
+        rankHeaderRow = -1;
+        rankRow = -1;
+        rankInfoRow = -1;
+
+        sendMessagesRow = -1;
+        sendMediaRow = -1;
+        sendStickersRow = -1;
+        sendPollsRow = -1;
+        embedLinksRow = -1;
+        startVoiceChatRow = -1;
+        untilSectionRow = -1;
+        untilDateRow = -1;
+
+        rowCount = 3;
+        if (currentType == TYPE_ADMIN) {
+            if (isChannel) {
+                changeInfoRow = rowCount++;
+                postMessagesRow = rowCount++;
+                editMesagesRow = rowCount++;
+                deleteMessagesRow = rowCount++;
+                addUsersRow = rowCount++;
+                startVoiceChatRow = rowCount++;
+                addAdminsRow = rowCount++;
+            } else {
+                changeInfoRow = rowCount++;
+                deleteMessagesRow = rowCount++;
+                banUsersRow = rowCount++;
+                addUsersRow = rowCount++;
+                pinMessagesRow = rowCount++;
+                startVoiceChatRow = rowCount++;
+                addAdminsRow = rowCount++;
+                anonymousRow = rowCount++;
+            }
+        } else if (currentType == TYPE_BANNED) {
+            sendMessagesRow = rowCount++;
+            sendMediaRow = rowCount++;
+            sendStickersRow = rowCount++;
+            sendPollsRow = rowCount++;
+            embedLinksRow = rowCount++;
+            addUsersRow = rowCount++;
+            pinMessagesRow = rowCount++;
+            changeInfoRow = rowCount++;
+            untilSectionRow = rowCount++;
+            untilDateRow = rowCount++;
+        }
+
+        if (canEdit) {
+            if (!isChannel && currentType == TYPE_ADMIN) {
+                rightsShadowRow = rowCount++;
+                rankHeaderRow = rowCount++;
+                rankRow = rowCount++;
+                rankInfoRow = rowCount++;
+            }
+            if (currentChat != null && currentChat.creator && currentType == TYPE_ADMIN && hasAllAdminRights() && !currentUser.bot) {
+                if (rightsShadowRow == -1) {
+                    transferOwnerShadowRow = rowCount++;
+                }
+                transferOwnerRow = rowCount++;
+                if (rightsShadowRow != -1) {
+                    transferOwnerShadowRow = rowCount++;
+                }
+            }
+            if (initialIsSet) {
+                if (rightsShadowRow == -1) {
+                    rightsShadowRow = rowCount++;
+                }
+                removeAdminRow = rowCount++;
+                removeAdminShadowRow = rowCount++;
+            }
+        } else {
+            if (currentType == TYPE_ADMIN) {
+                if (!isChannel && currentType == TYPE_ADMIN && (!currentRank.isEmpty() || currentChat.creator && UserObject.isUserSelf(currentUser))) {
+                    rightsShadowRow = rowCount++;
+                    rankHeaderRow = rowCount++;
+                    rankRow = rowCount++;
+                    if (currentChat.creator && UserObject.isUserSelf(currentUser)) {
+                        rankInfoRow = rowCount++;
+                    } else {
+                        cantEditInfoRow = rowCount++;
+                    }
+                } else {
+                    cantEditInfoRow = rowCount++;
+                }
+            } else {
+                rightsShadowRow = rowCount++;
+            }
+        }
+        if (update) {
+            if (transferOwnerShadowRowPrev == -1 && transferOwnerShadowRow != -1) {
+                listViewAdapter.notifyItemRangeInserted(Math.min(transferOwnerShadowRow, transferOwnerRow), 2);
+            } else if (transferOwnerShadowRowPrev != -1 && transferOwnerShadowRow == -1) {
+                listViewAdapter.notifyItemRangeRemoved(transferOwnerShadowRowPrev, 2);
+            }
+        }
     }
 
     private void onDonePressed() {
-        if (!ChatObject.isChannel(currentChat) && (currentType == TYPE_BANNED || currentType == TYPE_ADMIN && !isDefaultAdminRights())) {
-            MessagesController.getInstance(currentAccount).convertToMegaGroup(getParentActivity(), chatId, param -> {
-                chatId = param;
-                currentChat = MessagesController.getInstance(currentAccount).getChat(param);
-                onDonePressed();
+        if (!ChatObject.isChannel(currentChat) && (currentType == TYPE_BANNED || currentType == TYPE_ADMIN && (!isDefaultAdminRights() || rankRow != -1 && currentRank.codePointCount(0, currentRank.length()) > MAX_RANK_LENGTH))) {
+            MessagesController.getInstance(currentAccount).convertToMegaGroup(getParentActivity(), chatId, this, param -> {
+                if (param != 0) {
+                    chatId = param;
+                    currentChat = MessagesController.getInstance(currentAccount).getChat(param);
+                    onDonePressed();
+                }
             });
             return;
         }
         if (currentType == TYPE_ADMIN) {
+            if (rankRow != -1 && currentRank.codePointCount(0, currentRank.length()) > MAX_RANK_LENGTH) {
+                listView.smoothScrollToPosition(rankRow);
+                Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
+                if (v != null) {
+                    v.vibrate(200);
+                }
+                RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(rankHeaderRow);
+                if (holder != null) {
+                    AndroidUtilities.shakeView(holder.itemView, 2, 0);
+                }
+                return;
+            }
             if (isChannel) {
                 adminRights.pin_messages = adminRights.ban_users = false;
             } else {
                 adminRights.post_messages = adminRights.edit_messages = false;
             }
-            MessagesController.getInstance(currentAccount).setUserAdminRole(chatId, currentUser, adminRights, isChannel, getFragmentForAlert(1), isAddingNew);
+            if (!adminRights.change_info && !adminRights.post_messages && !adminRights.edit_messages &&
+                    !adminRights.delete_messages && !adminRights.ban_users && !adminRights.invite_users &&
+                    !adminRights.pin_messages && !adminRights.add_admins && !adminRights.anonymous && !adminRights.manage_call) {
+                adminRights.other = true;
+            } else {
+                adminRights.other = false;
+            }
+            MessagesController.getInstance(currentAccount).setUserAdminRole(chatId, currentUser, adminRights, currentRank, isChannel, getFragmentForAlert(1), isAddingNew);
             if (delegate != null) {
                 delegate.didSetRights(
                         adminRights.change_info || adminRights.post_messages || adminRights.edit_messages ||
                         adminRights.delete_messages || adminRights.ban_users || adminRights.invite_users ||
-                        adminRights.pin_messages || adminRights.add_admins ? 1 : 0, adminRights, bannedRights);
+                        adminRights.pin_messages || adminRights.add_admins || adminRights.anonymous || adminRights.manage_call ||
+                        adminRights.other ? 1 : 0, adminRights, bannedRights, currentRank);
             }
         } else if (currentType == TYPE_BANNED) {
-            MessagesController.getInstance(currentAccount).setUserBannedRole(chatId, currentUser, bannedRights, isChannel, getFragmentForAlert(1));
+            MessagesController.getInstance(currentAccount).setParticipantBannedRole(chatId, currentUser, null, bannedRights, isChannel, getFragmentForAlert(1));
             int rights;
             if (bannedRights.send_messages || bannedRights.send_stickers || bannedRights.embed_links || bannedRights.send_media ||
                     bannedRights.send_gifs || bannedRights.send_games || bannedRights.send_inline) {
@@ -635,7 +936,7 @@ public class ChatRightsEditActivity extends BaseFragment {
                 rights = 2;
             }
             if (delegate != null) {
-                delegate.didSetRights(rights, adminRights, bannedRights);
+                delegate.didSetRights(rights, adminRights, bannedRights, currentRank);
             }
         }
         finishFragment();
@@ -646,11 +947,14 @@ public class ChatRightsEditActivity extends BaseFragment {
     }
 
     private boolean checkDiscard() {
-        if (currentType != TYPE_BANNED) {
-            return true;
+        boolean changed;
+        if (currentType == TYPE_BANNED) {
+            String newBannedRights = ChatObject.getBannedRightsString(bannedRights);
+            changed = !currentBannedRights.equals(newBannedRights);
+        } else {
+            changed = !initialRank.equals(currentRank);
         }
-        String newBannedRights = ChatObject.getBannedRightsString(bannedRights);
-        if (!currentBannedRights.equals(newBannedRights)) {
+        if (changed) {
             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
             builder.setTitle(LocaleController.getString("UserRestrictionsApplyChanges", R.string.UserRestrictionsApplyChanges));
             TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(chatId);
@@ -663,6 +967,24 @@ public class ChatRightsEditActivity extends BaseFragment {
         return true;
     }
 
+    private final static int MAX_RANK_LENGTH = 16;
+
+    private void setTextLeft(View cell) {
+        if (cell instanceof HeaderCell) {
+            HeaderCell headerCell = (HeaderCell) cell;
+            int left = MAX_RANK_LENGTH - (currentRank != null ? currentRank.codePointCount(0, currentRank.length()) : 0);
+            if (left <= MAX_RANK_LENGTH - MAX_RANK_LENGTH * 0.7f) {
+                headerCell.setText2(String.format("%d", left));
+                SimpleTextView textView = headerCell.getTextView2();
+                String key = left < 0 ? Theme.key_windowBackgroundWhiteRedText5 : Theme.key_windowBackgroundWhiteGrayText3;
+                textView.setTextColor(Theme.getColor(key));
+                textView.setTag(key);
+            } else {
+                headerCell.setText2("");
+            }
+        }
+    }
+
     @Override
     public boolean onBackPressed() {
         return checkDiscard();
@@ -671,6 +993,7 @@ public class ChatRightsEditActivity extends BaseFragment {
     private class ListAdapter extends RecyclerListView.SelectionAdapter {
 
         private Context mContext;
+        private boolean ignoreTextChange;
 
         public ListAdapter(Context context) {
             mContext = context;
@@ -678,10 +1001,13 @@ public class ChatRightsEditActivity extends BaseFragment {
 
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
+            int type = holder.getItemViewType();
+            if (currentChat.creator && currentType == TYPE_ADMIN && type == 4 && holder.getAdapterPosition() == anonymousRow) {
+                return true;
+            }
             if (!canEdit) {
                 return false;
             }
-            int type = holder.getItemViewType();
             if (currentType == TYPE_ADMIN && type == 4) {
                 int position = holder.getAdapterPosition();
                 if (position == changeInfoRow) {
@@ -692,8 +1018,12 @@ public class ChatRightsEditActivity extends BaseFragment {
                     return myAdminRights.edit_messages;
                 } else if (position == deleteMessagesRow) {
                     return myAdminRights.delete_messages;
+                } else if (position == startVoiceChatRow) {
+                    return myAdminRights.manage_call;
                 } else if (position == addAdminsRow) {
                     return myAdminRights.add_admins;
+                } else if (position == anonymousRow) {
+                    return myAdminRights.anonymous;
                 } else if (position == banUsersRow) {
                     return myAdminRights.ban_users;
                 } else if (position == addUsersRow) {
@@ -715,7 +1045,7 @@ public class ChatRightsEditActivity extends BaseFragment {
             View view;
             switch (viewType) {
                 case 0:
-                    view = new UserCell(mContext, 4, 0);
+                    view = new UserCell2(mContext, 4, 0);
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
                 case 1:
@@ -727,7 +1057,7 @@ public class ChatRightsEditActivity extends BaseFragment {
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
                 case 3:
-                    view = new HeaderCell(mContext);
+                    view = new HeaderCell(mContext, Theme.key_windowBackgroundWhiteBlueHeader, 21, 15, true);
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
                 case 4:
@@ -738,9 +1068,37 @@ public class ChatRightsEditActivity extends BaseFragment {
                     view = new ShadowSectionCell(mContext);
                     break;
                 case 6:
-                default:
                     view = new TextDetailCell(mContext);
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    break;
+                case 7:
+                default:
+                    PollEditTextCell cell = new PollEditTextCell(mContext, null);
+                    cell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    cell.addTextWatcher(new TextWatcher() {
+                        @Override
+                        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+                        }
+
+                        @Override
+                        public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+                        }
+
+                        @Override
+                        public void afterTextChanged(Editable s) {
+                            if (ignoreTextChange) {
+                                return;
+                            }
+                            currentRank = s.toString();
+                            RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(rankHeaderRow);
+                            if (holder != null) {
+                                setTextLeft(holder.itemView);
+                            }
+                        }
+                    });
+                    view = cell;
                     break;
             }
             return new RecyclerListView.Holder(view);
@@ -750,13 +1108,21 @@ public class ChatRightsEditActivity extends BaseFragment {
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
             switch (holder.getItemViewType()) {
                 case 0:
-                    UserCell userCell = (UserCell) holder.itemView;
-                    userCell.setData(currentUser, null, null, 0);
+                    UserCell2 userCell2 = (UserCell2) holder.itemView;
+                    userCell2.setData(currentUser, null, null, 0);
                     break;
                 case 1:
                     TextInfoPrivacyCell privacyCell = (TextInfoPrivacyCell) holder.itemView;
                     if (position == cantEditInfoRow) {
                         privacyCell.setText(LocaleController.getString("EditAdminCantEdit", R.string.EditAdminCantEdit));
+                    } else if (position == rankInfoRow) {
+                        String hint;
+                        if (UserObject.isUserSelf(currentUser) && currentChat.creator) {
+                            hint = LocaleController.getString("ChannelCreator", R.string.ChannelCreator);
+                        } else {
+                            hint = LocaleController.getString("ChannelAdmin", R.string.ChannelAdmin);
+                        }
+                        privacyCell.setText(LocaleController.formatString("EditAdminRankInfo", R.string.EditAdminRankInfo, hint));
                     }
                     break;
                 case 2:
@@ -769,14 +1135,26 @@ public class ChatRightsEditActivity extends BaseFragment {
                         } else if (currentType == TYPE_BANNED) {
                             actionCell.setText(LocaleController.getString("UserRestrictionsBlock", R.string.UserRestrictionsBlock), false);
                         }
+                    } else if (position == transferOwnerRow) {
+                        actionCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                        actionCell.setTag(Theme.key_windowBackgroundWhiteBlackText);
+                        if (isChannel) {
+                            actionCell.setText(LocaleController.getString("EditAdminChannelTransfer", R.string.EditAdminChannelTransfer), false);
+                        } else {
+                            actionCell.setText(LocaleController.getString("EditAdminGroupTransfer", R.string.EditAdminGroupTransfer), false);
+                        }
                     }
                     break;
                 case 3:
                     HeaderCell headerCell = (HeaderCell) holder.itemView;
-                    if (currentType == TYPE_ADMIN) {
-                        headerCell.setText(LocaleController.getString("EditAdminWhatCanDo", R.string.EditAdminWhatCanDo));
-                    } else if (currentType == TYPE_BANNED) {
-                        headerCell.setText(LocaleController.getString("UserRestrictionsCanDo", R.string.UserRestrictionsCanDo));
+                    if (position == 2) {
+                        if (currentType == TYPE_ADMIN) {
+                            headerCell.setText(LocaleController.getString("EditAdminWhatCanDo", R.string.EditAdminWhatCanDo));
+                        } else if (currentType == TYPE_BANNED) {
+                            headerCell.setText(LocaleController.getString("UserRestrictionsCanDo", R.string.UserRestrictionsCanDo));
+                        }
+                    } else if (position == rankHeaderRow) {
+                        headerCell.setText(LocaleController.getString("EditAdminRank", R.string.EditAdminRank));
                     }
                     break;
                 case 4:
@@ -803,9 +1181,13 @@ public class ChatRightsEditActivity extends BaseFragment {
                             checkCell.setTextAndCheck(LocaleController.getString("EditAdminGroupDeleteMessages", R.string.EditAdminGroupDeleteMessages), adminRights.delete_messages, true);
                         }
                     } else if (position == addAdminsRow) {
-                        checkCell.setTextAndCheck(LocaleController.getString("EditAdminAddAdmins", R.string.EditAdminAddAdmins), adminRights.add_admins, false);
+                        checkCell.setTextAndCheck(LocaleController.getString("EditAdminAddAdmins", R.string.EditAdminAddAdmins), adminRights.add_admins, anonymousRow != -1);
+                    } else if (position == anonymousRow) {
+                        checkCell.setTextAndCheck(LocaleController.getString("EditAdminSendAnonymously", R.string.EditAdminSendAnonymously), adminRights.anonymous, false);
                     } else if (position == banUsersRow) {
                         checkCell.setTextAndCheck(LocaleController.getString("EditAdminBanUsers", R.string.EditAdminBanUsers), adminRights.ban_users, true);
+                    } else if (position == startVoiceChatRow) {
+                        checkCell.setTextAndCheck(LocaleController.getString("StartVoipChatPermission", R.string.StartVoipChatPermission), adminRights.manage_call, true);
                     } else if (position == addUsersRow) {
                         if (currentType == TYPE_ADMIN) {
                             if (ChatObject.isActionBannedByDefault(currentChat, ChatObject.ACTION_INVITE)) {
@@ -850,9 +1232,11 @@ public class ChatRightsEditActivity extends BaseFragment {
                 case 5:
                     ShadowSectionCell shadowCell = (ShadowSectionCell) holder.itemView;
                     if (position == rightsShadowRow) {
-                        shadowCell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, removeAdminRow == -1 ? R.drawable.greydivider_bottom : R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+                        shadowCell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, removeAdminRow == -1 && rankRow == -1 ? R.drawable.greydivider_bottom : R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
                     } else if (position == removeAdminShadowRow) {
                         shadowCell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+                    } else if (position == rankInfoRow) {
+                        shadowCell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, canEdit ? R.drawable.greydivider : R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                     } else {
                         shadowCell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
                     }
@@ -869,6 +1253,35 @@ public class ChatRightsEditActivity extends BaseFragment {
                         detailCell.setTextAndValue(LocaleController.getString("UserRestrictionsDuration", R.string.UserRestrictionsDuration), value, false);
                     }
                     break;
+                case 7:
+                    PollEditTextCell textCell = (PollEditTextCell) holder.itemView;
+                    String hint;
+                    if (UserObject.isUserSelf(currentUser) && currentChat.creator) {
+                        hint = LocaleController.getString("ChannelCreator", R.string.ChannelCreator);
+                    } else {
+                        hint = LocaleController.getString("ChannelAdmin", R.string.ChannelAdmin);
+                    }
+                    ignoreTextChange = true;
+                    textCell.getTextView().setEnabled(canEdit || currentChat.creator);
+                    textCell.getTextView().setSingleLine(true);
+                    textCell.getTextView().setImeOptions(EditorInfo.IME_ACTION_DONE);
+                    textCell.setTextAndHint(currentRank, hint, false);
+                    ignoreTextChange = false;
+                    break;
+            }
+        }
+
+        @Override
+        public void onViewAttachedToWindow(RecyclerView.ViewHolder holder) {
+            if (holder.getAdapterPosition() == rankHeaderRow) {
+                setTextLeft(holder.itemView);
+            }
+        }
+
+        @Override
+        public void onViewDetachedFromWindow(RecyclerView.ViewHolder holder) {
+            if (holder.getAdapterPosition() == rankRow && getParentActivity() != null) {
+                AndroidUtilities.hideKeyboard(getParentActivity().getCurrentFocus());
             }
         }
 
@@ -876,19 +1289,21 @@ public class ChatRightsEditActivity extends BaseFragment {
         public int getItemViewType(int position) {
             if (position == 0) {
                 return 0;
-            } else if (position == 1 || position == rightsShadowRow || position == removeAdminShadowRow || position == untilSectionRow) {
+            } else if (position == 1 || position == rightsShadowRow || position == removeAdminShadowRow || position == untilSectionRow || position == transferOwnerShadowRow) {
                 return 5;
-            } else if (position == 2) {
+            } else if (position == 2 || position == rankHeaderRow) {
                 return 3;
             } else if (position == changeInfoRow || position == postMessagesRow || position == editMesagesRow || position == deleteMessagesRow ||
                     position == addAdminsRow || position == banUsersRow || position == addUsersRow || position == pinMessagesRow ||
                     position == sendMessagesRow || position == sendMediaRow || position == sendStickersRow || position == embedLinksRow ||
-                    position == sendPollsRow) {
+                    position == sendPollsRow || position == anonymousRow || position == startVoiceChatRow) {
                 return 4;
-            } else if (position == cantEditInfoRow) {
+            } else if (position == cantEditInfoRow || position == rankInfoRow) {
                 return 1;
             } else if (position == untilDateRow) {
                 return 6;
+            } else if (position == rankRow) {
+                return 7;
             } else {
                 return 2;
             }
@@ -896,69 +1311,76 @@ public class ChatRightsEditActivity extends BaseFragment {
     }
 
     @Override
-    public ThemeDescription[] getThemeDescriptions() {
+    public ArrayList<ThemeDescription> getThemeDescriptions() {
+        ArrayList<ThemeDescription> themeDescriptions = new ArrayList<>();
+
         ThemeDescription.ThemeDescriptionDelegate cellDelegate = () -> {
             if (listView != null) {
                 int count = listView.getChildCount();
                 for (int a = 0; a < count; a++) {
                     View child = listView.getChildAt(a);
-                    if (child instanceof UserCell) {
-                        ((UserCell) child).update(0);
+                    if (child instanceof UserCell2) {
+                        ((UserCell2) child).update(0);
                     }
                 }
             }
         };
 
-        return new ThemeDescription[]{
-                new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{UserCell.class, TextSettingsCell.class, TextCheckCell2.class, HeaderCell.class, TextDetailCell.class}, null, null, null, Theme.key_windowBackgroundWhite),
-                new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundGray),
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{UserCell2.class, TextSettingsCell.class, TextCheckCell2.class, HeaderCell.class, TextDetailCell.class, PollEditTextCell.class}, null, null, null, Theme.key_windowBackgroundWhite));
+        themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundGray));
 
-                new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault),
-                new ThemeDescription(listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault),
-                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon),
-                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle),
-                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector),
+        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault));
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault));
+        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon));
+        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle));
+        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector));
 
-                new ThemeDescription(listView, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector),
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector));
 
-                new ThemeDescription(listView, 0, new Class[]{View.class}, Theme.dividerPaint, null, null, Theme.key_divider),
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{View.class}, Theme.dividerPaint, null, null, Theme.key_divider));
 
-                new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{TextInfoPrivacyCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow),
-                new ThemeDescription(listView, 0, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText4),
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{TextInfoPrivacyCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText4));
 
-                new ThemeDescription(listView, ThemeDescription.FLAG_CHECKTAG, new Class[]{TextSettingsCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteRedText5),
-                new ThemeDescription(listView, ThemeDescription.FLAG_CHECKTAG, new Class[]{TextSettingsCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
-                new ThemeDescription(listView, 0, new Class[]{TextSettingsCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteValueText),
-                new ThemeDescription(listView, 0, new Class[]{TextSettingsCell.class}, new String[]{"valueImageView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayIcon),
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CHECKTAG, new Class[]{TextSettingsCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteRedText5));
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CHECKTAG, new Class[]{TextSettingsCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextSettingsCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteValueText));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextSettingsCell.class}, new String[]{"valueImageView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayIcon));
 
-                new ThemeDescription(listView, 0, new Class[]{TextDetailCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
-                new ThemeDescription(listView, 0, new Class[]{TextDetailCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2),
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextDetailCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextDetailCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
 
-                new ThemeDescription(listView, 0, new Class[]{TextCheckCell2.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
-                new ThemeDescription(listView, 0, new Class[]{TextCheckCell2.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2),
-                new ThemeDescription(listView, 0, new Class[]{TextCheckCell2.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switch2Track),
-                new ThemeDescription(listView, 0, new Class[]{TextCheckCell2.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switch2TrackChecked),
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCheckCell2.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCheckCell2.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCheckCell2.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switch2Track));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCheckCell2.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switch2TrackChecked));
 
-                new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{ShadowSectionCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow),
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{ShadowSectionCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow));
 
-                new ThemeDescription(listView, 0, new Class[]{HeaderCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader),
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{HeaderCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader));
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CHECKTAG, new Class[]{HeaderCell.class}, new String[]{"textView2"}, null, null, null, Theme.key_windowBackgroundWhiteRedText5));
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CHECKTAG, new Class[]{HeaderCell.class}, new String[]{"textView2"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText3));
 
-                new ThemeDescription(listView, 0, new Class[]{UserCell.class}, new String[]{"nameTextView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
-                new ThemeDescription(listView, 0, new Class[]{UserCell.class}, new String[]{"statusColor"}, null, null, cellDelegate, Theme.key_windowBackgroundWhiteGrayText),
-                new ThemeDescription(listView, 0, new Class[]{UserCell.class}, new String[]{"statusOnlineColor"}, null, null, cellDelegate, Theme.key_windowBackgroundWhiteBlueText),
-                new ThemeDescription(listView, 0, new Class[]{UserCell.class}, null, new Drawable[]{Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, null, Theme.key_avatar_text),
-                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundRed),
-                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundOrange),
-                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundViolet),
-                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundGreen),
-                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundCyan),
-                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundBlue),
-                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundPink),
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{PollEditTextCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_HINTTEXTCOLOR, new Class[]{PollEditTextCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteHintText));
 
-                new ThemeDescription(null, 0, new Class[]{DialogRadioCell.class}, new String[]{"textView"}, null, null, null, Theme.key_dialogTextBlack),
-                new ThemeDescription(null, 0, new Class[]{DialogRadioCell.class}, new String[]{"textView"}, null, null, null, Theme.key_dialogTextGray2),
-                new ThemeDescription(null, ThemeDescription.FLAG_CHECKBOX, new Class[]{DialogRadioCell.class}, new String[]{"radioButton"}, null, null, null, Theme.key_dialogRadioBackground),
-                new ThemeDescription(null, ThemeDescription.FLAG_CHECKBOXCHECK, new Class[]{DialogRadioCell.class}, new String[]{"radioButton"}, null, null, null, Theme.key_dialogRadioBackgroundChecked),
-        };
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{UserCell2.class}, new String[]{"nameTextView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{UserCell2.class}, new String[]{"statusColor"}, null, null, cellDelegate, Theme.key_windowBackgroundWhiteGrayText));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{UserCell2.class}, new String[]{"statusOnlineColor"}, null, null, cellDelegate, Theme.key_windowBackgroundWhiteBlueText));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{UserCell2.class}, null, Theme.avatarDrawables, null, Theme.key_avatar_text));
+        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundRed));
+        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundOrange));
+        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundViolet));
+        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundGreen));
+        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundCyan));
+        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundBlue));
+        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundPink));
+
+        themeDescriptions.add(new ThemeDescription(null, 0, new Class[]{DialogRadioCell.class}, new String[]{"textView"}, null, null, null, Theme.key_dialogTextBlack));
+        themeDescriptions.add(new ThemeDescription(null, 0, new Class[]{DialogRadioCell.class}, new String[]{"textView"}, null, null, null, Theme.key_dialogTextGray2));
+        themeDescriptions.add(new ThemeDescription(null, ThemeDescription.FLAG_CHECKBOX, new Class[]{DialogRadioCell.class}, new String[]{"radioButton"}, null, null, null, Theme.key_dialogRadioBackground));
+        themeDescriptions.add(new ThemeDescription(null, ThemeDescription.FLAG_CHECKBOXCHECK, new Class[]{DialogRadioCell.class}, new String[]{"radioButton"}, null, null, null, Theme.key_dialogRadioBackgroundChecked));
+
+        return themeDescriptions;
     }
 }

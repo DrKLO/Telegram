@@ -15,7 +15,6 @@
 #include <sys/epoll.h>
 #include <map>
 #include <atomic>
-#include <bits/unique_ptr.h>
 #include "Defines.h"
 
 #ifdef ANDROID
@@ -46,32 +45,32 @@ public:
     int64_t getCurrentTimeMillis();
     int64_t getCurrentTimeMonotonicMillis();
     int32_t getCurrentTime();
+    uint32_t getCurrentDatacenterId();
     bool isTestBackend();
     int32_t getTimeDifference();
     int32_t sendRequest(TLObject *object, onCompleteFunc onComplete, onQuickAckFunc onQuickAck, uint32_t flags, uint32_t datacenterId, ConnectionType connetionType, bool immediate);
     int32_t sendRequest(TLObject *object, onCompleteFunc onComplete, onQuickAckFunc onQuickAck, uint32_t flags, uint32_t datacenterId, ConnectionType connetionType, bool immediate, int32_t requestToken);
     void cancelRequest(int32_t token, bool notifyServer);
-    void cleanUp(bool resetKeys);
+    void cleanUp(bool resetKeys, int32_t datacenterId);
     void cancelRequestsForGuid(int32_t guid);
     void bindRequestToGuid(int32_t requestToken, int32_t guid);
     void applyDatacenterAddress(uint32_t datacenterId, std::string ipAddress, uint32_t port);
     void setDelegate(ConnectiosManagerDelegate *connectiosManagerDelegate);
     ConnectionState getConnectionState();
-    void setUserId(int32_t userId);
-    void switchBackend();
+    void setUserId(int64_t userId);
+    void switchBackend(bool restart);
     void resumeNetwork(bool partial);
     void pauseNetwork();
     void setNetworkAvailable(bool value, int32_t type, bool slow);
-    void setUseIpv6(bool value);
-    void init(uint32_t version, int32_t layer, int32_t apiId, std::string deviceModel, std::string systemVersion, std::string appVersion, std::string langCode, std::string systemLangCode, std::string configPath, std::string logPath, int32_t userId, bool isPaused, bool enablePushConnection, bool hasNetwork, int32_t networkType);
+    void setIpStrategy(uint8_t value);
+    void init(uint32_t version, int32_t layer, int32_t apiId, std::string deviceModel, std::string systemVersion, std::string appVersion, std::string langCode, std::string systemLangCode, std::string configPath, std::string logPath, std::string regId, std::string cFingerprint, std::string installerId, std::string packageId, int32_t timezoneOffset, int64_t userId, bool isPaused, bool enablePushConnection, bool hasNetwork, int32_t networkType);
     void setProxySettings(std::string address, uint16_t port, std::string username, std::string password, std::string secret);
     void setLangCode(std::string langCode);
+    void setRegId(std::string regId);
     void setSystemLangCode(std::string langCode);
     void updateDcSettings(uint32_t datacenterId, bool workaround);
     void setPushConnectionEnabled(bool value);
-    void applyDnsConfig(NativeByteBuffer *buffer, std::string phone);
-    void setMtProtoVersion(int version);
-    int32_t getMtProtoVersion();
+    void applyDnsConfig(NativeByteBuffer *buffer, std::string phone, int32_t date);
     int64_t checkProxy(std::string address, uint16_t port, std::string username, std::string password, std::string secret, onRequestTimeFunc requestTimeFunc, jobject ptr1);
 
 #ifdef ANDROID
@@ -92,7 +91,7 @@ private:
     void sendPing(Datacenter *datacenter, bool usePushConnection);
     void sendMessagesToConnection(std::vector<std::unique_ptr<NetworkMessage>> &messages, Connection *connection, bool reportAck);
     void sendMessagesToConnectionWithConfirmation(std::vector<std::unique_ptr<NetworkMessage>> &messages, Connection *connection, bool reportAck);
-    void requestSaltsForDatacenter(Datacenter *datacenter);
+    void requestSaltsForDatacenter(Datacenter *datacenter, bool media, bool useTempConnection);
     void clearRequestsForDatacenter(Datacenter *datacenter, HandshakeType type);
     void registerForInternalPushUpdates();
     void processRequestQueue(uint32_t connectionType, uint32_t datacenterId);
@@ -122,13 +121,14 @@ private:
     void onDatacenterHandshakeComplete(Datacenter *datacenter, HandshakeType type, int32_t timeDiff);
     void onDatacenterExportAuthorizationComplete(Datacenter *datacenter);
     int64_t generateMessageId();
-    bool isIpv6Enabled();
+    uint8_t getIpStratagy();
     bool isNetworkAvailable();
 
+    void scheduleCheckProxyInternal(ProxyCheckInfo *proxyCheckInfo);
     void checkProxyInternal(ProxyCheckInfo *proxyCheckInfo);
 
     int32_t instanceNum = 0;
-    uint32_t configVersion = 4;
+    uint32_t configVersion = 5;
     Config *config = nullptr;
 
     std::list<EventObject *> events;
@@ -152,6 +152,7 @@ private:
     bool updatingDcSettings = false;
     bool updatingDcSettingsWorkaround = false;
     int32_t disconnectTimeoutAmount = 0;
+    bool requestingSecondAddressByTlsHashMismatch = false;
     int32_t requestingSecondAddress = 0;
     int32_t updatingDcStartTime = 0;
     int32_t lastDcUpdateTime = 0;
@@ -159,6 +160,8 @@ private:
     bool networkPaused = false;
     int32_t nextSleepTimeout = CONNECTION_BACKGROUND_KEEP_TIME;
     int64_t lastPauseTime = 0;
+    int64_t lastMonotonicPauseTime = 0;
+    int32_t lastSystemPauseTime = 0;
     ConnectionState connectionState = ConnectionStateConnecting;
     std::unique_ptr<ByteArray> movingAuthorization;
     std::vector<int64_t> sessionsToDestroy;
@@ -187,17 +190,21 @@ private:
     int64_t lastOutgoingMessageId = 0;
     bool networkAvailable = true;
     bool networkSlow = false;
-    bool ipv6Enabled = false;
+    uint8_t ipStrategy = USE_IPV4_ONLY;
+    bool lastProtocolIsIpv6 = false;
+    bool lastProtocolUsefullData = false;
     std::vector<ConnectionSocket *> activeConnections;
+    std::vector<ConnectionSocket *> activeConnectionsCopy;
     int epolFd;
     int eventFd;
-    int *pipeFd;
+    int *pipeFd = nullptr;
     NativeByteBuffer *networkBuffer;
 
     requestsList requestsQueue;
     requestsList runningRequests;
     std::vector<uint32_t> requestingSaltsForDc;
     int32_t lastPingId = 0;
+    int64_t lastInvokeAfterMessageId = 0;
 
     int32_t currentNetworkType = NETWORK_TYPE_WIFI;
     uint32_t currentVersion = 1;
@@ -207,13 +214,17 @@ private:
     std::string currentSystemVersion;
     std::string currentAppVersion;
     std::string currentLangCode;
+    std::string currentRegId;
+    std::string certFingerprint;
+    std::string installer;
+    std::string package;
+    int32_t currentDeviceTimezone = 0;
     std::string currentSystemLangCode;
     std::string currentConfigPath;
     std::string currentLogPath;
-    int32_t currentUserId = 0;
+    int64_t currentUserId = 0;
     bool registeredForInternalPush = false;
     bool pushConnectionEnabled = true;
-    int32_t mtProtoVersion = 2;
 
     std::map<uint32_t, std::vector<std::unique_ptr<NetworkMessage>>> genericMessagesToDatacenters;
     std::map<uint32_t, std::vector<std::unique_ptr<NetworkMessage>>> genericMediaMessagesToDatacenters;

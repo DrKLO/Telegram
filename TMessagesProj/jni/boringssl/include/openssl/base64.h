@@ -67,7 +67,10 @@ extern "C" {
 // base64 functions.
 //
 // For historical reasons, these functions have the EVP_ prefix but just do
-// base64 encoding and decoding.
+// base64 encoding and decoding. Note that BoringSSL is a cryptography library,
+// so these functions are implemented with side channel protections, at a
+// performance cost. For other base64 uses, use a general-purpose base64
+// implementation.
 
 
 // Encoding

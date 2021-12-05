@@ -27,6 +27,7 @@ public class ManageChatTextCell extends FrameLayout {
     private SimpleTextView valueTextView;
     private ImageView imageView;
     private boolean divider;
+    private String dividerColor;
 
     public ManageChatTextCell(Context context) {
         super(context);
@@ -55,6 +56,10 @@ public class ManageChatTextCell extends FrameLayout {
 
     public SimpleTextView getValueTextView() {
         return valueTextView;
+    }
+
+    public void setDividerColor(String key) {
+        dividerColor = key;
     }
 
     @Override
@@ -99,6 +104,10 @@ public class ManageChatTextCell extends FrameLayout {
     }
 
     public void setText(String text, String value, int resId, boolean needDivider) {
+        setText(text, value, resId, 5, needDivider);
+    }
+
+    public void setText(String text, String value, int resId, int paddingTop, boolean needDivider) {
         textView.setText(text);
         if (value != null) {
             valueTextView.setText(value);
@@ -106,7 +115,7 @@ public class ManageChatTextCell extends FrameLayout {
         } else {
             valueTextView.setVisibility(INVISIBLE);
         }
-        imageView.setPadding(0, AndroidUtilities.dp(5), 0, 0);
+        imageView.setPadding(0, AndroidUtilities.dp(paddingTop), 0, 0);
         imageView.setImageResource(resId);
         divider = needDivider;
         setWillNotDraw(!divider);
@@ -115,7 +124,10 @@ public class ManageChatTextCell extends FrameLayout {
     @Override
     protected void onDraw(Canvas canvas) {
         if (divider) {
-            canvas.drawLine(AndroidUtilities.dp(71), getMeasuredHeight() - 1, getMeasuredWidth(), getMeasuredHeight() - 1, Theme.dividerPaint);
+            if (dividerColor != null) {
+                Theme.dividerExtraPaint.setColor(Theme.getColor(dividerColor));
+            }
+            canvas.drawLine(AndroidUtilities.dp(71), getMeasuredHeight() - 1, getMeasuredWidth(), getMeasuredHeight() - 1, dividerColor != null ? Theme.dividerExtraPaint : Theme.dividerPaint);
         }
     }
 }

@@ -10,7 +10,6 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.FileLog;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BottomPagesView;
 import org.telegram.ui.Components.LayoutHelper;
@@ -54,12 +53,12 @@ public class ArchiveHintCell extends FrameLayout {
 
             @Override
             public void onPageSelected(int i) {
-                FileLog.d("test1");
+
             }
 
             @Override
             public void onPageScrollStateChanged(int i) {
-                FileLog.d("test1");
+
             }
         });
 

@@ -1,0 +1,32 @@
+<!--
+  ~ This is the source code of Telegram for Android v. 5.x.x.
+  ~ It is licensed under GNU GPL v. 2 or later.
+  ~ You should have received a copy of the license in this archive (see LICENSE).
+  ~
+  ~ Copyright Nikolai Kudashov, 2013-2018.
+  -->
+
+<resources
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--THEMES-->
+
+    <style name="Theme.TMessages.Start" parent="@android:style/Theme.Material">
+        <item name="android:actionBarStyle">@style/ActionBar.Transparent.TMessages.Start</item>
+        <item name="android:colorBackground">#1f2732</item>
+        <item name="android:windowBackground">#1f2732</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:colorPrimaryDark">#1c242e</item>
+        <item name="android:colorPrimary">#232d3a</item>
+        <item name="android:navigationBarColor">#000000</item>
+        <item name="android:forceDarkAllowed">false</item>
+    </style>
+
+    <style name="ActionBar.Transparent.TMessages.Start" parent="android:style/Widget.Material.Light.ActionBar">
+        <item name="android:background">#ff232d3a</item>
+        <item name="android:textColor">#ffffff</item>
+        <item name="android:logo">@drawable/transparent</item>
+        <item name="android:title">""</item>
+    </style>
+
+</resources>

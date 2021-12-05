@@ -14,8 +14,6 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Vibrator;
 import android.telephony.TelephonyManager;
@@ -69,6 +67,7 @@ import static android.widget.LinearLayout.HORIZONTAL;
 
 public class NewContactActivity extends BaseFragment implements AdapterView.OnItemSelectedListener {
 
+    private LinearLayout contentLayout;
     private ActionBarMenuItem editDoneItem;
     private ContextProgressView editDoneItemProgress;
     private EditTextBoldCursor firstNameField;
@@ -92,6 +91,10 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
     private int countryState;
     private boolean ignoreSelection;
     private boolean donePressed;
+    private String initialPhoneNumber;
+    private boolean initialPhoneNumberWithCountryCode;
+    private String initialFirstName;
+    private String initialLastName;
 
     private final static int done_button = 1;
 
@@ -155,7 +158,7 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
                                     }
                                     showEditDoneProgress(false, true);
                                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                                    builder.setTitle(LocaleController.getString("ContactNotRegisteredTitle", R.string.ContactNotRegisteredTitle));
                                     builder.setMessage(LocaleController.formatString("ContactNotRegistered", R.string.ContactNotRegistered, ContactsController.formatName(inputPhoneContact.first_name, inputPhoneContact.last_name)));
                                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                                     builder.setPositiveButton(LocaleController.getString("Invite", R.string.Invite), (dialog, which) -> {
@@ -181,7 +184,7 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
         });
 
         avatarDrawable = new AvatarDrawable();
-        avatarDrawable.setInfo(5, "", "", false);
+        avatarDrawable.setInfo(5, "", "");
 
         ActionBarMenu menu = actionBar.createMenu();
         editDoneItem = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
@@ -193,18 +196,19 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
 
         fragmentView = new ScrollView(context);
 
-        LinearLayout linearLayout = new LinearLayout(context);
-        linearLayout.setPadding(AndroidUtilities.dp(24), 0, AndroidUtilities.dp(24), 0);
-        linearLayout.setOrientation(LinearLayout.VERTICAL);
-        ((ScrollView) fragmentView).addView(linearLayout, LayoutHelper.createScroll(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP));
-        linearLayout.setOnTouchListener((v, event) -> true);
+        contentLayout = new LinearLayout(context);
+        contentLayout.setPadding(AndroidUtilities.dp(24), 0, AndroidUtilities.dp(24), 0);
+        contentLayout.setOrientation(LinearLayout.VERTICAL);
+        ((ScrollView) fragmentView).addView(contentLayout, LayoutHelper.createScroll(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP));
+        contentLayout.setOnTouchListener((v, event) -> true);
 
         FrameLayout frameLayout = new FrameLayout(context);
-        linearLayout.addView(frameLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 24, 0, 0));
+        contentLayout.addView(frameLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 24, 0, 0));
 
         avatarImage = new BackupImageView(context);
         avatarImage.setImageDrawable(avatarDrawable);
         frameLayout.addView(avatarImage, LayoutHelper.createFrame(60, 60, Gravity.LEFT | Gravity.TOP, 0, 9, 0, 0));
+        boolean needInvalidateAvatar = false;
 
         firstNameField = new EditTextBoldCursor(context);
         firstNameField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
@@ -221,6 +225,11 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
         firstNameField.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         firstNameField.setCursorSize(AndroidUtilities.dp(20));
         firstNameField.setCursorWidth(1.5f);
+        if (initialFirstName != null) {
+            firstNameField.setText(initialFirstName);
+            initialFirstName = null;
+            needInvalidateAvatar = true;
+        }
         frameLayout.addView(firstNameField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 34, Gravity.LEFT | Gravity.TOP, 84, 0, 0, 0));
         firstNameField.setOnEditorActionListener((textView, i, keyEvent) -> {
             if (i == EditorInfo.IME_ACTION_NEXT) {
@@ -243,8 +252,7 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
 
             @Override
             public void afterTextChanged(Editable editable) {
-                avatarDrawable.setInfo(5, firstNameField.getText().toString(), lastNameField.getText().toString(), false);
-                avatarImage.invalidate();
+                invalidateAvatar();
             }
         });
 
@@ -263,6 +271,11 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
         lastNameField.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         lastNameField.setCursorSize(AndroidUtilities.dp(20));
         lastNameField.setCursorWidth(1.5f);
+        if (initialLastName != null) {
+            lastNameField.setText(initialLastName);
+            initialLastName = null;
+            needInvalidateAvatar = true;
+        }
         frameLayout.addView(lastNameField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 34, Gravity.LEFT | Gravity.TOP, 84, 44, 0, 0));
         lastNameField.setOnEditorActionListener((textView, i, keyEvent) -> {
             if (i == EditorInfo.IME_ACTION_NEXT) {
@@ -285,26 +298,28 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
 
             @Override
             public void afterTextChanged(Editable editable) {
-                avatarDrawable.setInfo(5, firstNameField.getText().toString(), lastNameField.getText().toString(), false);
-                avatarImage.invalidate();
+                invalidateAvatar();
             }
         });
 
+        if (needInvalidateAvatar) {
+            invalidateAvatar();
+        }
+
         countryButton = new TextView(context);
         countryButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
-        countryButton.setPadding(AndroidUtilities.dp(6), AndroidUtilities.dp(10), AndroidUtilities.dp(6), 0);
+        countryButton.setPadding(0, AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4));
         countryButton.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         countryButton.setMaxLines(1);
         countryButton.setSingleLine(true);
         countryButton.setEllipsize(TextUtils.TruncateAt.END);
         countryButton.setGravity(Gravity.LEFT | Gravity.CENTER_HORIZONTAL);
-        countryButton.setBackgroundResource(R.drawable.spinner_states);
-        linearLayout.addView(countryButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36, 0, 24, 0, 14));
+        countryButton.setBackground(Theme.getSelectorDrawable(true));
+        contentLayout.addView(countryButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36, 0, 24, 0, 14));
         countryButton.setOnClickListener(view -> {
             CountrySelectActivity fragment = new CountrySelectActivity(true);
-            fragment.setCountrySelectActivityDelegate((name, shortName) -> {
-                selectCountry(name);
-                AndroidUtilities.runOnUIThread(() -> AndroidUtilities.showKeyboard(phoneField), 300);
+            fragment.setCountrySelectActivityDelegate((country) -> {
+                selectCountry(country.name);
                 phoneField.requestFocus();
                 phoneField.setSelection(phoneField.length());
             });
@@ -314,11 +329,11 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
         lineView = new View(context);
         lineView.setPadding(AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8), 0);
         lineView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayLine));
-        linearLayout.addView(lineView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 1, 0, -17.5f, 0, 0));
+        contentLayout.addView(lineView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 1, 0, -17.5f, 0, 0));
 
         LinearLayout linearLayout2 = new LinearLayout(context);
         linearLayout2.setOrientation(HORIZONTAL);
-        linearLayout.addView(linearLayout2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 20, 0, 0));
+        contentLayout.addView(linearLayout2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 20, 0, 0));
 
         textView = new TextView(context);
         textView.setText("+");
@@ -374,14 +389,14 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
                             country = codesMap.get(sub);
                             if (country != null) {
                                 ok = true;
-                                textToSet = text.substring(a, text.length()) + phoneField.getText().toString();
+                                textToSet = text.substring(a) + phoneField.getText().toString();
                                 codeField.setText(text = sub);
                                 break;
                             }
                         }
                         if (!ok) {
                             ignoreOnTextChange = true;
-                            textToSet = text.substring(1, text.length()) + phoneField.getText().toString();
+                            textToSet = text.substring(1) + phoneField.getText().toString();
                             codeField.setText(text = text.substring(0, 1));
                         }
                     }
@@ -408,7 +423,9 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
                         codeField.setSelection(codeField.getText().length());
                     }
                     if (textToSet != null) {
-                        phoneField.requestFocus();
+                        if (initialPhoneNumber == null) {
+                            phoneField.requestFocus();
+                        }
                         phoneField.setText(textToSet);
                         phoneField.setSelection(phoneField.length());
                     }
@@ -474,7 +491,7 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
                 String phoneChars = "0123456789";
                 String str = phoneField.getText().toString();
                 if (characterAction == 3) {
-                    str = str.substring(0, actionPosition) + str.substring(actionPosition + 1, str.length());
+                    str = str.substring(0, actionPosition) + str.substring(actionPosition + 1);
                     start--;
                 }
                 StringBuilder builder = new StringBuilder(str.length());
@@ -507,7 +524,7 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
                 }
                 phoneField.setText(builder);
                 if (start >= 0) {
-                    phoneField.setSelection(start <= phoneField.length() ? start : phoneField.length());
+                    phoneField.setSelection(Math.min(start, phoneField.length()));
                 }
                 phoneField.onTextChange();
                 ignoreOnPhoneChange = false;
@@ -551,53 +568,111 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
 
         Collections.sort(countriesArray, String::compareTo);
 
-        String country = null;
-
-        try {
-            TelephonyManager telephonyManager = (TelephonyManager) ApplicationLoader.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
-            if (telephonyManager != null) {
-                country = telephonyManager.getSimCountryIso().toUpperCase();
+        if (!TextUtils.isEmpty(initialPhoneNumber)) {
+            TLRPC.User user = getUserConfig().getCurrentUser();
+            if (initialPhoneNumber.startsWith("+")) {
+                codeField.setText(initialPhoneNumber.substring(1));
+            } else if (initialPhoneNumberWithCountryCode || user == null || TextUtils.isEmpty(user.phone)) {
+                codeField.setText(initialPhoneNumber);
+            } else {
+                String phone = user.phone;
+                for (int a = 4; a >= 1; a--) {
+                    String sub = phone.substring(0, a);
+                    String country = codesMap.get(sub);
+                    if (country != null) {
+                        codeField.setText(sub);
+                        break;
+                    }
+                }
+                phoneField.setText(initialPhoneNumber);
             }
-        } catch (Exception e) {
-            FileLog.e(e);
-        }
+            initialPhoneNumber = null;
+        } else {
+            String country = null;
+            try {
+                TelephonyManager telephonyManager = (TelephonyManager) ApplicationLoader.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
+                if (telephonyManager != null) {
+                    country = telephonyManager.getSimCountryIso().toUpperCase();
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
 
-        if (country != null) {
-            String countryName = languageMap.get(country);
-            if (countryName != null) {
-                int index = countriesArray.indexOf(countryName);
-                if (index != -1) {
-                    codeField.setText(countriesMap.get(countryName));
-                    countryState = 0;
+            if (country != null) {
+                String countryName = languageMap.get(country);
+                if (countryName != null) {
+                    int index = countriesArray.indexOf(countryName);
+                    if (index != -1) {
+                        codeField.setText(countriesMap.get(countryName));
+                        countryState = 0;
+                    }
                 }
             }
-        }
-        if (codeField.length() == 0) {
-            countryButton.setText(LocaleController.getString("ChooseCountry", R.string.ChooseCountry));
-            phoneField.setHintText(null);
-            countryState = 1;
+            if (codeField.length() == 0) {
+                countryButton.setText(LocaleController.getString("ChooseCountry", R.string.ChooseCountry));
+                phoneField.setHintText(null);
+                countryState = 1;
+            }
         }
 
         return fragmentView;
     }
 
-    @Override
-    public void onResume() {
-        super.onResume();
-        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-        boolean animations = preferences.getBoolean("view_animations", true);
-        if (!animations) {
-            firstNameField.requestFocus();
-            AndroidUtilities.showKeyboard(firstNameField);
+    public static String getPhoneNumber(Context context, TLRPC.User user, String number, boolean withCoutryCode) {
+        HashMap<String, String> codesMap = new HashMap<>();
+        try {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(context.getResources().getAssets().open("countries.txt")));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] args = line.split(";");
+                codesMap.put(args[0], args[2]);
+            }
+            reader.close();
+        } catch (Exception e) {
+            FileLog.e(e);
         }
+        if (number.startsWith("+")) {
+            return number;
+        } else if (withCoutryCode || user == null || TextUtils.isEmpty(user.phone)) {
+            return "+" + number;
+        } else {
+            String phone = user.phone;
+            for (int a = 4; a >= 1; a--) {
+                String sub = phone.substring(0, a);
+                String country = codesMap.get(sub);
+                if (country != null) {
+                    return "+" + sub + number;
+                }
+            }
+            return number;
+        }
+    }
+
+    private void invalidateAvatar() {
+        avatarDrawable.setInfo(5, firstNameField.getText().toString(), lastNameField.getText().toString());
+        avatarImage.invalidate();
     }
 
     @Override
     public void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
         if (isOpen) {
-            firstNameField.requestFocus();
-            AndroidUtilities.showKeyboard(firstNameField);
+            View focusedView = contentLayout.findFocus();
+            if (focusedView == null) {
+                firstNameField.requestFocus();
+                focusedView = firstNameField;
+            }
+            AndroidUtilities.showKeyboard(focusedView);
         }
+    }
+
+    public void setInitialPhoneNumber(String value, boolean withCoutryCode) {
+        initialPhoneNumber = value;
+        initialPhoneNumberWithCountryCode = withCoutryCode;
+    }
+
+    public void setInitialName(String firstName, String lastName) {
+        initialFirstName = firstName;
+        initialLastName = lastName;
     }
 
     public void selectCountry(String name) {
@@ -637,23 +712,23 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
         }
         if (!animated) {
             if (show) {
-                editDoneItem.getImageView().setScaleX(0.1f);
-                editDoneItem.getImageView().setScaleY(0.1f);
-                editDoneItem.getImageView().setAlpha(0.0f);
+                editDoneItem.getContentView().setScaleX(0.1f);
+                editDoneItem.getContentView().setScaleY(0.1f);
+                editDoneItem.getContentView().setAlpha(0.0f);
                 editDoneItemProgress.setScaleX(1.0f);
                 editDoneItemProgress.setScaleY(1.0f);
                 editDoneItemProgress.setAlpha(1.0f);
-                editDoneItem.getImageView().setVisibility(View.INVISIBLE);
+                editDoneItem.getContentView().setVisibility(View.INVISIBLE);
                 editDoneItemProgress.setVisibility(View.VISIBLE);
                 editDoneItem.setEnabled(false);
             } else {
                 editDoneItemProgress.setScaleX(0.1f);
                 editDoneItemProgress.setScaleY(0.1f);
                 editDoneItemProgress.setAlpha(0.0f);
-                editDoneItem.getImageView().setScaleX(1.0f);
-                editDoneItem.getImageView().setScaleY(1.0f);
-                editDoneItem.getImageView().setAlpha(1.0f);
-                editDoneItem.getImageView().setVisibility(View.VISIBLE);
+                editDoneItem.getContentView().setScaleX(1.0f);
+                editDoneItem.getContentView().setScaleY(1.0f);
+                editDoneItem.getContentView().setAlpha(1.0f);
+                editDoneItem.getContentView().setVisibility(View.VISIBLE);
                 editDoneItemProgress.setVisibility(View.INVISIBLE);
                 editDoneItem.setEnabled(true);
             }
@@ -663,22 +738,22 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
                 editDoneItemProgress.setVisibility(View.VISIBLE);
                 editDoneItem.setEnabled(false);
                 editDoneItemAnimation.playTogether(
-                        ObjectAnimator.ofFloat(editDoneItem.getImageView(), "scaleX", 0.1f),
-                        ObjectAnimator.ofFloat(editDoneItem.getImageView(), "scaleY", 0.1f),
-                        ObjectAnimator.ofFloat(editDoneItem.getImageView(), "alpha", 0.0f),
+                        ObjectAnimator.ofFloat(editDoneItem.getContentView(), "scaleX", 0.1f),
+                        ObjectAnimator.ofFloat(editDoneItem.getContentView(), "scaleY", 0.1f),
+                        ObjectAnimator.ofFloat(editDoneItem.getContentView(), "alpha", 0.0f),
                         ObjectAnimator.ofFloat(editDoneItemProgress, "scaleX", 1.0f),
                         ObjectAnimator.ofFloat(editDoneItemProgress, "scaleY", 1.0f),
                         ObjectAnimator.ofFloat(editDoneItemProgress, "alpha", 1.0f));
             } else {
-                editDoneItem.getImageView().setVisibility(View.VISIBLE);
+                editDoneItem.getContentView().setVisibility(View.VISIBLE);
                 editDoneItem.setEnabled(true);
                 editDoneItemAnimation.playTogether(
                         ObjectAnimator.ofFloat(editDoneItemProgress, "scaleX", 0.1f),
                         ObjectAnimator.ofFloat(editDoneItemProgress, "scaleY", 0.1f),
                         ObjectAnimator.ofFloat(editDoneItemProgress, "alpha", 0.0f),
-                        ObjectAnimator.ofFloat(editDoneItem.getImageView(), "scaleX", 1.0f),
-                        ObjectAnimator.ofFloat(editDoneItem.getImageView(), "scaleY", 1.0f),
-                        ObjectAnimator.ofFloat(editDoneItem.getImageView(), "alpha", 1.0f));
+                        ObjectAnimator.ofFloat(editDoneItem.getContentView(), "scaleX", 1.0f),
+                        ObjectAnimator.ofFloat(editDoneItem.getContentView(), "scaleY", 1.0f),
+                        ObjectAnimator.ofFloat(editDoneItem.getContentView(), "alpha", 1.0f));
 
             }
             editDoneItemAnimation.addListener(new AnimatorListenerAdapter() {
@@ -688,7 +763,7 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
                         if (!show) {
                             editDoneItemProgress.setVisibility(View.INVISIBLE);
                         } else {
-                            editDoneItem.getImageView().setVisibility(View.INVISIBLE);
+                            editDoneItem.getContentView().setVisibility(View.INVISIBLE);
                         }
                     }
                 }
@@ -706,59 +781,62 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
     }
 
     @Override
-    public ThemeDescription[] getThemeDescriptions() {
+    public ArrayList<ThemeDescription> getThemeDescriptions() {
+        ArrayList<ThemeDescription> themeDescriptions = new ArrayList<>();
+
         ThemeDescription.ThemeDescriptionDelegate cellDelegate = () -> {
             if (avatarImage != null) {
-                avatarDrawable.setInfo(5, firstNameField.getText().toString(), lastNameField.getText().toString(), false);
-                avatarImage.invalidate();
+                invalidateAvatar();
             }
         };
 
-        return new ThemeDescription[]{
-                new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite),
+        themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
 
-                new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault),
-                new ThemeDescription(fragmentView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault),
-                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon),
-                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle),
-                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector),
+        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault));
+        themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault));
+        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon));
+        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle));
+        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector));
 
-                new ThemeDescription(firstNameField, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
-                new ThemeDescription(firstNameField, ThemeDescription.FLAG_HINTTEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteHintText),
-                new ThemeDescription(firstNameField, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_windowBackgroundWhiteInputField),
-                new ThemeDescription(firstNameField, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_windowBackgroundWhiteInputFieldActivated),
+        themeDescriptions.add(new ThemeDescription(firstNameField, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+        themeDescriptions.add(new ThemeDescription(firstNameField, ThemeDescription.FLAG_HINTTEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteHintText));
+        themeDescriptions.add(new ThemeDescription(firstNameField, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_windowBackgroundWhiteInputField));
+        themeDescriptions.add(new ThemeDescription(firstNameField, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_windowBackgroundWhiteInputFieldActivated));
 
-                new ThemeDescription(lastNameField, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
-                new ThemeDescription(lastNameField, ThemeDescription.FLAG_HINTTEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteHintText),
-                new ThemeDescription(lastNameField, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_windowBackgroundWhiteInputField),
-                new ThemeDescription(lastNameField, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_windowBackgroundWhiteInputFieldActivated),
+        themeDescriptions.add(new ThemeDescription(lastNameField, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+        themeDescriptions.add(new ThemeDescription(lastNameField, ThemeDescription.FLAG_HINTTEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteHintText));
+        themeDescriptions.add(new ThemeDescription(lastNameField, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_windowBackgroundWhiteInputField));
+        themeDescriptions.add(new ThemeDescription(lastNameField, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_windowBackgroundWhiteInputFieldActivated));
 
-                new ThemeDescription(codeField, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
-                new ThemeDescription(codeField, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_windowBackgroundWhiteInputField),
-                new ThemeDescription(codeField, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_windowBackgroundWhiteInputFieldActivated),
+        themeDescriptions.add(new ThemeDescription(codeField, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+        themeDescriptions.add(new ThemeDescription(codeField, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_windowBackgroundWhiteInputField));
+        themeDescriptions.add(new ThemeDescription(codeField, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_windowBackgroundWhiteInputFieldActivated));
 
-                new ThemeDescription(phoneField, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
-                new ThemeDescription(phoneField, ThemeDescription.FLAG_HINTTEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteHintText),
-                new ThemeDescription(phoneField, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_windowBackgroundWhiteInputField),
-                new ThemeDescription(phoneField, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_windowBackgroundWhiteInputFieldActivated),
+        themeDescriptions.add(new ThemeDescription(phoneField, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+        themeDescriptions.add(new ThemeDescription(phoneField, ThemeDescription.FLAG_HINTTEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteHintText));
+        themeDescriptions.add(new ThemeDescription(phoneField, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_windowBackgroundWhiteInputField));
+        themeDescriptions.add(new ThemeDescription(phoneField, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_windowBackgroundWhiteInputFieldActivated));
 
-                new ThemeDescription(textView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
+        themeDescriptions.add(new ThemeDescription(textView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
 
-                new ThemeDescription(lineView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhiteGrayLine),
+        themeDescriptions.add(new ThemeDescription(lineView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhiteGrayLine));
 
-                new ThemeDescription(countryButton, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
+        themeDescriptions.add(new ThemeDescription(countryButton, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+        themeDescriptions.add(new ThemeDescription(countryButton, ThemeDescription.FLAG_SELECTORWHITE, null, null, null, null, Theme.key_windowBackgroundWhite));
+        themeDescriptions.add(new ThemeDescription(countryButton, ThemeDescription.FLAG_SELECTORWHITE, null, null, null, null, Theme.key_listSelector));
 
-                new ThemeDescription(editDoneItemProgress, 0, null, null, null, null, Theme.key_contextProgressInner2),
-                new ThemeDescription(editDoneItemProgress, 0, null, null, null, null, Theme.key_contextProgressOuter2),
+        themeDescriptions.add(new ThemeDescription(editDoneItemProgress, 0, null, null, null, null, Theme.key_contextProgressInner2));
+        themeDescriptions.add(new ThemeDescription(editDoneItemProgress, 0, null, null, null, null, Theme.key_contextProgressOuter2));
 
-                new ThemeDescription(null, 0, null, null, new Drawable[]{Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, cellDelegate, Theme.key_avatar_text),
-                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundRed),
-                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundOrange),
-                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundViolet),
-                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundGreen),
-                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundCyan),
-                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundBlue),
-                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundPink),
-        };
+        themeDescriptions.add(new ThemeDescription(null, 0, null, null, Theme.avatarDrawables, cellDelegate, Theme.key_avatar_text));
+        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundRed));
+        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundOrange));
+        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundViolet));
+        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundGreen));
+        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundCyan));
+        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundBlue));
+        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundPink));
+
+        return themeDescriptions;
     }
 }

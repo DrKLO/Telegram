@@ -74,15 +74,7 @@ int ECDSA_sign(int type, const uint8_t *digest, size_t digest_len, uint8_t *sig,
   }
 
   int ret = 0;
-  ECDSA_SIG *s = NULL;
-
-  if (eckey->ecdsa_meth && eckey->ecdsa_meth->sign) {
-    OPENSSL_PUT_ERROR(ECDSA, ECDSA_R_NOT_IMPLEMENTED);
-    *sig_len = 0;
-    goto err;
-  }
-
-  s = ECDSA_do_sign(digest, digest_len, eckey);
+  ECDSA_SIG *s = ECDSA_do_sign(digest, digest_len, eckey);
   if (s == NULL) {
     *sig_len = 0;
     goto err;

@@ -8,22 +8,35 @@
 
 package org.telegram.ui;
 
+import android.annotation.TargetApi;
 import android.content.Context;
-import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
-import android.widget.ImageView;
 
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.MediaActionDrawable;
+import org.webrtc.Camera1Enumerator;
+import org.webrtc.Camera2Enumerator;
+import org.webrtc.CameraEnumerator;
+import org.webrtc.VideoCapturer;
 
+@TargetApi(18)
 public class TestActivity extends BaseFragment {
 
-    int num = 0;
-    int p = 0;
+    public TestActivity() {
+        super();
+    }
+
+    @Override
+    public boolean onFragmentCreate() {
+        return super.onFragmentCreate();
+    }
+
+    @Override
+    public void onFragmentDestroy() {
+        super.onFragmentDestroy();
+    }
 
     @Override
     public View createView(Context context) {
@@ -41,30 +54,23 @@ public class TestActivity extends BaseFragment {
         });
 
         FrameLayout frameLayout = new FrameLayout(context);
-        frameLayout.setBackgroundColor(0xff000000);
+        frameLayout.setBackgroundColor(0xffffffff);
         fragmentView = frameLayout;
 
-        MediaActionDrawable actionDrawable2 = new MediaActionDrawable();
-        actionDrawable2.setIcon(MediaActionDrawable.ICON_DOWNLOAD, false);
-
-        ImageView imageView = new ImageView(context);
-        imageView.setImageDrawable(actionDrawable2);
-        actionDrawable2.setDelegate(imageView::invalidate);
-        frameLayout.addView(imageView, LayoutHelper.createFrame(48, 48, Gravity.CENTER));
-        frameLayout.setOnClickListener(v -> {
-            int icon = actionDrawable2.getCurrentIcon();
-            boolean animated = true;
-            if (icon == MediaActionDrawable.ICON_DOWNLOAD) {
-                icon = MediaActionDrawable.ICON_CANCEL;
-            } else if (icon == MediaActionDrawable.ICON_CANCEL) {
-                icon = MediaActionDrawable.ICON_PLAY;
-            } else if (icon == MediaActionDrawable.ICON_PLAY) {
-                icon = MediaActionDrawable.ICON_DOWNLOAD;
-                animated = false;
-            }
-            actionDrawable2.setIcon(icon, animated);
-        });
-
         return fragmentView;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+    }
+
+    private void hangup() {
+
+    }
+
+    private static VideoCapturer createVideoCapturer(Context context) {
+        CameraEnumerator enumerator = Camera2Enumerator.isSupported(context) ? new Camera2Enumerator(context) : new Camera1Enumerator();
+        return enumerator.createCapturer(enumerator.getDeviceNames()[0], null);
     }
 }

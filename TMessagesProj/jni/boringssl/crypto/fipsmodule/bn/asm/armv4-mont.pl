@@ -64,9 +64,11 @@ if ($flavour && $flavour ne "void") {
     ( $xlate="${dir}../../../perlasm/arm-xlate.pl" and -f $xlate) or
     die "can't locate arm-xlate.pl";
 
-    open STDOUT,"| \"$^X\" $xlate $flavour $output";
+    open OUT,"| \"$^X\" $xlate $flavour $output";
+    *STDOUT=*OUT;
 } else {
-    open STDOUT,">$output";
+    open OUT,">$output";
+    *STDOUT=*OUT;
 }
 
 $num="r0";	# starts as num argument, but holds &tp[num-1]
@@ -266,14 +268,15 @@ bn_mul_mont:
 	mov	$tp,sp			@ "rewind" $tp
 	sub	$rp,$rp,$aj		@ "rewind" $rp
 
-	and	$ap,$tp,$nhi
-	bic	$np,$rp,$nhi
-	orr	$ap,$ap,$np		@ ap=borrow?tp:rp
-
-.Lcopy:	ldr	$tj,[$ap],#4		@ copy or in-place refresh
+.Lcopy:	ldr	$tj,[$tp]		@ conditional copy
+	ldr	$aj,[$rp]
 	str	sp,[$tp],#4		@ zap tp
-	str	$tj,[$rp],#4
-	cmp	$tp,$num
+#ifdef	__thumb2__
+	it	cc
+#endif
+	movcc	$aj,$tj
+	str	$aj,[$rp],#4
+	teq	$tp,$num		@ preserve carry
 	bne	.Lcopy
 
 	mov	sp,$num
@@ -758,4 +761,4 @@ foreach (split("\n",$code)) {
 	print $_,"\n";
 }
 
-close STDOUT;
+close STDOUT or die "error closing STDOUT";

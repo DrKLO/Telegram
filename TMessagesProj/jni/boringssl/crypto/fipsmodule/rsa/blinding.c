@@ -215,46 +215,22 @@ int BN_BLINDING_invert(BIGNUM *n, const BN_BLINDING *b, BN_MONT_CTX *mont,
 
 static int bn_blinding_create_param(BN_BLINDING *b, const BIGNUM *e,
                                     const BN_MONT_CTX *mont, BN_CTX *ctx) {
-  int retry_counter = 32;
-
-  do {
-    if (!BN_rand_range_ex(b->A, 1, &mont->N)) {
-      OPENSSL_PUT_ERROR(RSA, ERR_R_INTERNAL_ERROR);
-      return 0;
-    }
-
-    // |BN_from_montgomery| + |BN_mod_inverse_blinded| is equivalent to, but
-    // more efficient than, |BN_mod_inverse_blinded| + |BN_to_montgomery|.
-    if (!BN_from_montgomery(b->Ai, b->A, mont, ctx)) {
-      OPENSSL_PUT_ERROR(RSA, ERR_R_INTERNAL_ERROR);
-      return 0;
-    }
-
-    int no_inverse;
-    if (BN_mod_inverse_blinded(b->Ai, &no_inverse, b->Ai, mont, ctx)) {
-      break;
-    }
-
-    if (!no_inverse) {
-      OPENSSL_PUT_ERROR(RSA, ERR_R_INTERNAL_ERROR);
-      return 0;
-    }
-
-    // For reasonably-sized RSA keys, it should almost never be the case that a
-    // random value doesn't have an inverse.
-    if (retry_counter-- == 0) {
-      OPENSSL_PUT_ERROR(RSA, RSA_R_TOO_MANY_ITERATIONS);
-      return 0;
-    }
-    ERR_clear_error();
-  } while (1);
-
-  if (!BN_mod_exp_mont(b->A, b->A, e, &mont->N, ctx, mont)) {
-    OPENSSL_PUT_ERROR(RSA, ERR_R_INTERNAL_ERROR);
-    return 0;
-  }
-
-  if (!BN_to_montgomery(b->A, b->A, mont, ctx)) {
+  int no_inverse;
+  if (!BN_rand_range_ex(b->A, 1, &mont->N) ||
+      // Compute |b->A|^-1 in Montgomery form. Note |BN_from_montgomery| +
+      // |BN_mod_inverse_blinded| is equivalent to, but more efficient than,
+      // |BN_mod_inverse_blinded| + |BN_to_montgomery|.
+      //
+      // We do not retry if |b->A| has no inverse. Finding a non-invertible
+      // value of |b->A| is equivalent to factoring |mont->N|. There is
+      // negligible probability of stumbling on one at random.
+      !BN_from_montgomery(b->Ai, b->A, mont, ctx) ||
+      !BN_mod_inverse_blinded(b->Ai, &no_inverse, b->Ai, mont, ctx) ||
+      // TODO(davidben): |BN_mod_exp_mont| internally computes the result in
+      // Montgomery form. Save a pair of Montgomery reductions and a
+      // multiplication by returning that value directly.
+      !BN_mod_exp_mont(b->A, b->A, e, &mont->N, ctx, mont) ||
+      !BN_to_montgomery(b->A, b->A, mont, ctx)) {
     OPENSSL_PUT_ERROR(RSA, ERR_R_INTERNAL_ERROR);
     return 0;
   }

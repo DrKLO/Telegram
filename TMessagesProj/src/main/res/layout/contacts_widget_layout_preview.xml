@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@style/TMessages.AppWidget.Background"
+    android:layout_width="match_parent"
+    android:layout_height="176dp"
+    android:orientation="vertical"
+    android:theme="@style/Theme.TMessages.AppWidget">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <include
+            layout="@layout/contacts_widget_item_1"
+            android:theme="@style/Theme.TMessages.AppWidget.Preview4" />
+
+        <include
+            layout="@layout/contacts_widget_item_2"
+            android:theme="@style/Theme.TMessages.AppWidget.Preview5" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:weightSum="1">
+
+        <include
+            layout="@layout/contacts_widget_item_2"
+            android:theme="@style/Theme.TMessages.AppWidget.Preview6" />
+
+        <include
+            layout="@layout/contacts_widget_item_2"
+            android:theme="@style/Theme.TMessages.AppWidget.Preview7" />
+
+    </LinearLayout>
+
+</LinearLayout>

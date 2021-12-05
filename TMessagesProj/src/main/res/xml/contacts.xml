@@ -1,9 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-
-<ContactsSource xmlns:android="http://schemas.android.com/apk/res/android">
+<ContactsAccountType xmlns:android="http://schemas.android.com/apk/res/android">
     <ContactsDataKind android:icon="@drawable/ic_launcher_dr"
         android:mimeType="vnd.android.cursor.item/vnd.org.telegram.messenger.android.profile"
         android:summaryColumn="data2"
         android:detailColumn="data3"
         android:detailSocialSummary="true"/>
-</ContactsSource>
+    <ContactsDataKind android:icon="@drawable/ic_launcher_dr"
+        android:mimeType="vnd.android.cursor.item/vnd.org.telegram.messenger.android.call"
+        android:summaryColumn="data2"
+        android:detailColumn="data3"
+        android:detailSocialSummary="true"/>
+    <ContactsDataKind android:icon="@drawable/ic_launcher_dr"
+        android:mimeType="vnd.android.cursor.item/vnd.org.telegram.messenger.android.call.video"
+        android:summaryColumn="data2"
+        android:detailColumn="data3"
+        android:detailSocialSummary="true"/>
+</ContactsAccountType>

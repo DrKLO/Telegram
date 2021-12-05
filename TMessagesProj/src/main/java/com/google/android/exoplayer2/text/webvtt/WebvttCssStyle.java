@@ -16,8 +16,10 @@
 package com.google.android.exoplayer2.text.webvtt;
 
 import android.graphics.Typeface;
-import androidx.annotation.IntDef;
 import android.text.Layout;
+import android.text.TextUtils;
+import androidx.annotation.IntDef;
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.util.Util;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
@@ -25,6 +27,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 
 /**
  * Style object of a Css style block in a Webvtt file.
@@ -80,7 +83,7 @@ public final class WebvttCssStyle {
   private String targetVoice;
 
   // Style properties.
-  private String fontFamily;
+  @Nullable private String fontFamily;
   private int fontColor;
   private boolean hasFontColor;
   private int backgroundColor;
@@ -91,12 +94,16 @@ public final class WebvttCssStyle {
   @OptionalBoolean private int italic;
   @FontSizeUnit private int fontSizeUnit;
   private float fontSize;
-  private Layout.Alignment textAlign;
+  @Nullable private Layout.Alignment textAlign;
 
+  // Calling reset() is forbidden because `this` isn't initialized. This can be safely suppressed
+  // because reset() only assigns fields, it doesn't read any.
+  @SuppressWarnings("nullness:method.invocation.invalid")
   public WebvttCssStyle() {
     reset();
   }
 
+  @EnsuresNonNull({"targetId", "targetTag", "targetClasses", "targetVoice"})
   public void reset() {
     targetId = "";
     targetTag = "";
@@ -133,14 +140,13 @@ public final class WebvttCssStyle {
    * Returns a value in a score system compliant with the CSS Specificity rules.
    *
    * @see <a href="https://www.w3.org/TR/CSS2/cascade.html">CSS Cascading</a>
-   *
-   * The score works as follows:
-   * <ul>
-   * <li> Id match adds 0x40000000 to the score.
-   * <li> Each class and voice match adds 4 to the score.
-   * <li> Tag matching adds 2 to the score.
-   * <li> Universal selector matching scores 1.
-   * </ul>
+   *     <p>The score works as follows:
+   *     <ul>
+   *       <li>Id match adds 0x40000000 to the score.
+   *       <li>Each class and voice match adds 4 to the score.
+   *       <li>Tag matching adds 2 to the score.
+   *       <li>Universal selector matching scores 1.
+   *     </ul>
    *
    * @param id The id of the cue if present, {@code null} otherwise.
    * @param tag Name of the tag, {@code null} if it refers to the entire cue.
@@ -148,12 +154,13 @@ public final class WebvttCssStyle {
    * @param voice Annotated voice if present, {@code null} otherwise.
    * @return The score of the match, zero if there is no match.
    */
-  public int getSpecificityScore(String id, String tag, String[] classes, String voice) {
+  public int getSpecificityScore(
+      @Nullable String id, @Nullable String tag, String[] classes, @Nullable String voice) {
     if (targetId.isEmpty() && targetTag.isEmpty() && targetClasses.isEmpty()
         && targetVoice.isEmpty()) {
       // The selector is universal. It matches with the minimum score if and only if the given
       // element is a whole cue.
-      return tag.isEmpty() ? 1 : 0;
+      return TextUtils.isEmpty(tag) ? 1 : 0;
     }
     int score = 0;
     score = updateScoreForMatch(score, targetId, id, 0x40000000);
@@ -208,11 +215,12 @@ public final class WebvttCssStyle {
     return this;
   }
 
+  @Nullable
   public String getFontFamily() {
     return fontFamily;
   }
 
-  public WebvttCssStyle setFontFamily(String fontFamily) {
+  public WebvttCssStyle setFontFamily(@Nullable String fontFamily) {
     this.fontFamily = Util.toLowerInvariant(fontFamily);
     return this;
   }
@@ -251,11 +259,12 @@ public final class WebvttCssStyle {
     return hasBackgroundColor;
   }
 
+  @Nullable
   public Layout.Alignment getTextAlign() {
     return textAlign;
   }
 
-  public WebvttCssStyle setTextAlign(Layout.Alignment textAlign) {
+  public WebvttCssStyle setTextAlign(@Nullable Layout.Alignment textAlign) {
     this.textAlign = textAlign;
     return this;
   }
@@ -309,8 +318,8 @@ public final class WebvttCssStyle {
     }
   }
 
-  private static int updateScoreForMatch(int currentScore, String target, String actual,
-      int score) {
+  private static int updateScoreForMatch(
+      int currentScore, String target, @Nullable String actual, int score) {
     if (target.isEmpty() || currentScore == -1) {
       return currentScore;
     }

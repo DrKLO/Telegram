@@ -24,6 +24,7 @@ import com.google.android.exoplayer2.decoder.SimpleOutputBuffer;
 import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.MimeTypes;
 import com.google.android.exoplayer2.util.ParsableByteArray;
+import com.google.android.exoplayer2.util.Util;
 import java.nio.ByteBuffer;
 import java.util.List;
 
@@ -42,7 +43,7 @@ import java.util.List;
   private static final int DECODER_ERROR_OTHER = -2;
 
   private final String codecName;
-  private final @Nullable byte[] extraData;
+  @Nullable private final byte[] extraData;
   private final @C.Encoding int encoding;
   private final int outputBufferSize;
 
@@ -60,9 +61,7 @@ import java.util.List;
       throws FfmpegDecoderException {
     super(new DecoderInputBuffer[numInputBuffers], new SimpleOutputBuffer[numOutputBuffers]);
     Assertions.checkNotNull(format.sampleMimeType);
-    codecName =
-        Assertions.checkNotNull(
-            FfmpegLibrary.getCodecName(format.sampleMimeType, format.pcmEncoding));
+    codecName = Assertions.checkNotNull(FfmpegLibrary.getCodecName(format.sampleMimeType));
     extraData = getExtraData(format.sampleMimeType, format.initializationData);
     encoding = outputFloat ? C.ENCODING_PCM_FLOAT : C.ENCODING_PCM_16BIT;
     outputBufferSize = outputFloat ? OUTPUT_BUFFER_SIZE_32BIT : OUTPUT_BUFFER_SIZE_16BIT;
@@ -103,7 +102,7 @@ import java.util.List;
         return new FfmpegDecoderException("Error resetting (see logcat).");
       }
     }
-    ByteBuffer inputData = inputBuffer.data;
+    ByteBuffer inputData = Util.castNonNull(inputBuffer.data);
     int inputSize = inputData.limit();
     ByteBuffer outputData = outputBuffer.init(inputBuffer.timeUs, outputBufferSize);
     int result = ffmpegDecode(nativeContext, inputData, inputSize, outputData, outputBufferSize);
@@ -129,8 +128,8 @@ import java.util.List;
       }
       hasOutputFormat = true;
     }
-    outputBuffer.data.position(0);
-    outputBuffer.data.limit(result);
+    outputData.position(0);
+    outputData.limit(result);
     return null;
   }
 
@@ -141,16 +140,12 @@ import java.util.List;
     nativeContext = 0;
   }
 
-  /**
-   * Returns the channel count of output audio. May only be called after {@link #decode}.
-   */
+  /** Returns the channel count of output audio. */
   public int getChannelCount() {
     return channelCount;
   }
 
-  /**
-   * Returns the sample rate of output audio. May only be called after {@link #decode}.
-   */
+  /** Returns the sample rate of output audio. */
   public int getSampleRate() {
     return sampleRate;
   }
@@ -169,26 +164,47 @@ import java.util.List;
   private static @Nullable byte[] getExtraData(String mimeType, List<byte[]> initializationData) {
     switch (mimeType) {
       case MimeTypes.AUDIO_AAC:
-      case MimeTypes.AUDIO_ALAC:
       case MimeTypes.AUDIO_OPUS:
         return initializationData.get(0);
+      case MimeTypes.AUDIO_ALAC:
+        return getAlacExtraData(initializationData);
       case MimeTypes.AUDIO_VORBIS:
-        byte[] header0 = initializationData.get(0);
-        byte[] header1 = initializationData.get(1);
-        byte[] extraData = new byte[header0.length + header1.length + 6];
-        extraData[0] = (byte) (header0.length >> 8);
-        extraData[1] = (byte) (header0.length & 0xFF);
-        System.arraycopy(header0, 0, extraData, 2, header0.length);
-        extraData[header0.length + 2] = 0;
-        extraData[header0.length + 3] = 0;
-        extraData[header0.length + 4] =  (byte) (header1.length >> 8);
-        extraData[header0.length + 5] = (byte) (header1.length & 0xFF);
-        System.arraycopy(header1, 0, extraData, header0.length + 6, header1.length);
-        return extraData;
+        return getVorbisExtraData(initializationData);
       default:
         // Other codecs do not require extra data.
         return null;
     }
+  }
+
+  private static byte[] getAlacExtraData(List<byte[]> initializationData) {
+    // FFmpeg's ALAC decoder expects an ALAC atom, which contains the ALAC "magic cookie", as extra
+    // data. initializationData[0] contains only the magic cookie, and so we need to package it into
+    // an ALAC atom. See:
+    // https://ffmpeg.org/doxygen/0.6/alac_8c.html
+    // https://github.com/macosforge/alac/blob/master/ALACMagicCookieDescription.txt
+    byte[] magicCookie = initializationData.get(0);
+    int alacAtomLength = 12 + magicCookie.length;
+    ByteBuffer alacAtom = ByteBuffer.allocate(alacAtomLength);
+    alacAtom.putInt(alacAtomLength);
+    alacAtom.putInt(0x616c6163); // type=alac
+    alacAtom.putInt(0); // version=0, flags=0
+    alacAtom.put(magicCookie, /* offset= */ 0, magicCookie.length);
+    return alacAtom.array();
+  }
+
+  private static byte[] getVorbisExtraData(List<byte[]> initializationData) {
+    byte[] header0 = initializationData.get(0);
+    byte[] header1 = initializationData.get(1);
+    byte[] extraData = new byte[header0.length + header1.length + 6];
+    extraData[0] = (byte) (header0.length >> 8);
+    extraData[1] = (byte) (header0.length & 0xFF);
+    System.arraycopy(header0, 0, extraData, 2, header0.length);
+    extraData[header0.length + 2] = 0;
+    extraData[header0.length + 3] = 0;
+    extraData[header0.length + 4] = (byte) (header1.length >> 8);
+    extraData[header0.length + 5] = (byte) (header1.length & 0xFF);
+    System.arraycopy(header1, 0, extraData, header0.length + 6, header1.length);
+    return extraData;
   }
 
   private native long ffmpegInitialize(

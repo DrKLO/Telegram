@@ -10,6 +10,7 @@ package org.telegram.ui.Cells;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.drawable.Drawable;
 import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -27,7 +28,6 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
-import org.telegram.messenger.browser.Browser;
 import org.telegram.ui.Components.LinkPath;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.TypefaceSpan;
@@ -42,18 +42,23 @@ public class BotHelpCell extends View {
     private int height;
     private int textX;
     private int textY;
+    public boolean wasDraw;
 
     private ClickableSpan pressedLink;
     private LinkPath urlPath = new LinkPath();
 
     private BotHelpCellDelegate delegate;
+    private final Theme.ResourcesProvider resourcesProvider;
+
+    private boolean animating;
 
     public interface BotHelpCellDelegate {
         void didPressUrl(String url);
     }
 
-    public BotHelpCell(Context context) {
+    public BotHelpCell(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
     }
 
     public void setDelegate(BotHelpCellDelegate botHelpCellDelegate) {
@@ -67,7 +72,7 @@ public class BotHelpCell extends View {
         invalidate();
     }
 
-    public void setText(String text) {
+    public void setText(boolean bot, String text) {
         if (text == null || text.length() == 0) {
             setVisibility(GONE);
             return;
@@ -75,7 +80,7 @@ public class BotHelpCell extends View {
         if (text != null && text.equals(oldText)) {
             return;
         }
-        oldText = text;
+        oldText = AndroidUtilities.getSafeString(text);
         setVisibility(VISIBLE);
         int maxWidth;
         if (AndroidUtilities.isTablet()) {
@@ -86,8 +91,10 @@ public class BotHelpCell extends View {
         String[] lines = text.split("\n");
         SpannableStringBuilder stringBuilder = new SpannableStringBuilder();
         String help = LocaleController.getString("BotInfoTitle", R.string.BotInfoTitle);
-        stringBuilder.append(help);
-        stringBuilder.append("\n\n");
+        if (bot) {
+            stringBuilder.append(help);
+            stringBuilder.append("\n\n");
+        }
         for (int a = 0; a < lines.length; a++) {
             stringBuilder.append(lines[a].trim());
             if (a != lines.length - 1) {
@@ -95,7 +102,9 @@ public class BotHelpCell extends View {
             }
         }
         MessageObject.addLinks(false, stringBuilder);
-        stringBuilder.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf")), 0, help.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        if (bot) {
+            stringBuilder.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf")), 0, help.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
         Emoji.replaceEmoji(stringBuilder, Theme.chat_msgTextPaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
         try {
             textLayout = new StaticLayout(stringBuilder, Theme.chat_msgTextPaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
@@ -166,7 +175,9 @@ public class BotHelpCell extends View {
                             }
                         } else {
                             if (pressedLink instanceof URLSpan) {
-                                Browser.openUrl(getContext(), ((URLSpan) pressedLink).getURL());
+                                if (delegate != null) {
+                                    delegate.didPressUrl(((URLSpan) pressedLink).getURL());
+                                }
                             } else {
                                 pressedLink.onClick(this);
                             }
@@ -192,13 +203,25 @@ public class BotHelpCell extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         int x = (getWidth() - width) / 2;
-        int y = AndroidUtilities.dp(4);
-        Theme.chat_msgInMediaShadowDrawable.setBounds(x, y, width + x, height + y);
-        Theme.chat_msgInMediaShadowDrawable.draw(canvas);
-        Theme.chat_msgInMediaDrawable.setBounds(x, y, width + x, height + y);
-        Theme.chat_msgInMediaDrawable.draw(canvas);
-        Theme.chat_msgTextPaint.setColor(Theme.getColor(Theme.key_chat_messageTextIn));
-        Theme.chat_msgTextPaint.linkColor = Theme.getColor(Theme.key_chat_messageLinkIn);
+        int y = AndroidUtilities.dp(2);
+        Drawable shadowDrawable = Theme.chat_msgInMediaDrawable.getShadowDrawable();
+        if (shadowDrawable != null) {
+            shadowDrawable.setBounds(x, y, width + x, height + y);
+            shadowDrawable.draw(canvas);
+        }
+        int w = AndroidUtilities.displaySize.x;
+        int h = AndroidUtilities.displaySize.y;
+        if (getParent() instanceof View) {
+            View view = (View) getParent();
+            w = view.getMeasuredWidth();
+            h = view.getMeasuredHeight();
+        }
+        Theme.MessageDrawable drawable = (Theme.MessageDrawable) getThemedDrawable(Theme.key_drawable_msgInMedia);
+        drawable.setTop((int) getY(), w, h, false, false);
+        drawable.setBounds(x, y, width + x, height + y);
+        drawable.draw(canvas);
+        Theme.chat_msgTextPaint.setColor(getThemedColor(Theme.key_chat_messageTextIn));
+        Theme.chat_msgTextPaint.linkColor = getThemedColor(Theme.key_chat_messageLinkIn);
         canvas.save();
         canvas.translate(textX = AndroidUtilities.dp(2 + 9) + x, textY = AndroidUtilities.dp(2 + 9) + y);
         if (pressedLink != null) {
@@ -208,11 +231,37 @@ public class BotHelpCell extends View {
             textLayout.draw(canvas);
         }
         canvas.restore();
+        wasDraw = true;
+    }
+
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        wasDraw = false;
     }
 
     @Override
     public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
         super.onInitializeAccessibilityNodeInfo(info);
         info.setText(textLayout.getText());
+    }
+
+    public boolean animating() {
+        return animating;
+    }
+
+    public void setAnimating(boolean animating) {
+        this.animating = animating;
+    }
+    
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
+    }
+
+    private Drawable getThemedDrawable(String drawableKey) {
+        Drawable drawable = resourcesProvider != null ? resourcesProvider.getDrawable(drawableKey) : null;
+        return drawable != null ? drawable : Theme.getThemeDrawable(drawableKey);
     }
 }

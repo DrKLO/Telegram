@@ -15,10 +15,11 @@
  */
 package com.google.android.exoplayer2;
 
-import androidx.annotation.Nullable;
 import android.util.Pair;
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.source.ads.AdPlaybackState;
 import com.google.android.exoplayer2.util.Assertions;
+import com.google.android.exoplayer2.util.Util;
 
 /**
  * A flexible representation of the structure of media. A timeline is able to represent the
@@ -26,101 +27,112 @@ import com.google.android.exoplayer2.util.Assertions;
  * complex compositions of media such as playlists and streams with inserted ads. Instances are
  * immutable. For cases where media is changing dynamically (e.g. live streams), a timeline provides
  * a snapshot of the current state.
- * <p>
- * A timeline consists of related {@link Period}s and {@link Window}s. A period defines a single
- * logical piece of media, for example a media file. It may also define groups of ads inserted into
- * the media, along with information about whether those ads have been loaded and played. A window
- * spans one or more periods, defining the region within those periods that's currently available
- * for playback along with additional information such as whether seeking is supported within the
- * window. Each window defines a default position, which is the position from which playback will
- * start when the player starts playing the window. The following examples illustrate timelines for
- * various use cases.
+ *
+ * <p>A timeline consists of {@link Window Windows} and {@link Period Periods}.
+ *
+ * <ul>
+ *   <li>A {@link Window} usually corresponds to one playlist item. It may span one or more periods
+ *       and it defines the region within those periods that's currently available for playback. The
+ *       window also provides additional information such as whether seeking is supported within the
+ *       window and the default position, which is the position from which playback will start when
+ *       the player starts playing the window.
+ *   <li>A {@link Period} defines a single logical piece of media, for example a media file. It may
+ *       also define groups of ads inserted into the media, along with information about whether
+ *       those ads have been loaded and played.
+ * </ul>
+ *
+ * <p>The following examples illustrate timelines for various use cases.
  *
  * <h3 id="single-file">Single media file or on-demand stream</h3>
- * <p align="center">
- *   <img src="doc-files/timeline-single-file.svg" alt="Example timeline for a single file">
- * </p>
- * A timeline for a single media file or on-demand stream consists of a single period and window.
- * The window spans the whole period, indicating that all parts of the media are available for
- * playback. The window's default position is typically at the start of the period (indicated by the
- * black dot in the figure above).
+ *
+ * <p style="align:center"><img src="doc-files/timeline-single-file.svg" alt="Example timeline for a
+ * single file"> A timeline for a single media file or on-demand stream consists of a single period
+ * and window. The window spans the whole period, indicating that all parts of the media are
+ * available for playback. The window's default position is typically at the start of the period
+ * (indicated by the black dot in the figure above).
  *
  * <h3>Playlist of media files or on-demand streams</h3>
- * <p align="center">
- *   <img src="doc-files/timeline-playlist.svg" alt="Example timeline for a playlist of files">
- * </p>
- * A timeline for a playlist of media files or on-demand streams consists of multiple periods, each
- * with its own window. Each window spans the whole of the corresponding period, and typically has a
- * default position at the start of the period. The properties of the periods and windows (e.g.
- * their durations and whether the window is seekable) will often only become known when the player
- * starts buffering the corresponding file or stream.
+ *
+ * <p style="align:center"><img src="doc-files/timeline-playlist.svg" alt="Example timeline for a
+ * playlist of files"> A timeline for a playlist of media files or on-demand streams consists of
+ * multiple periods, each with its own window. Each window spans the whole of the corresponding
+ * period, and typically has a default position at the start of the period. The properties of the
+ * periods and windows (e.g. their durations and whether the window is seekable) will often only
+ * become known when the player starts buffering the corresponding file or stream.
  *
  * <h3 id="live-limited">Live stream with limited availability</h3>
- * <p align="center">
- *   <img src="doc-files/timeline-live-limited.svg" alt="Example timeline for a live stream with
- *       limited availability">
- * </p>
- * A timeline for a live stream consists of a period whose duration is unknown, since it's
- * continually extending as more content is broadcast. If content only remains available for a
- * limited period of time then the window may start at a non-zero position, defining the region of
- * content that can still be played. The window will have {@link Window#isDynamic} set to true if
- * the stream is still live. Its default position is typically near to the live edge (indicated by
- * the black dot in the figure above).
+ *
+ * <p style="align:center"><img src="doc-files/timeline-live-limited.svg" alt="Example timeline for
+ * a live stream with limited availability"> A timeline for a live stream consists of a period whose
+ * duration is unknown, since it's continually extending as more content is broadcast. If content
+ * only remains available for a limited period of time then the window may start at a non-zero
+ * position, defining the region of content that can still be played. The window will have {@link
+ * Window#isLive} set to true to indicate it's a live stream and {@link Window#isDynamic} set to
+ * true as long as we expect changes to the live window. Its default position is typically near to
+ * the live edge (indicated by the black dot in the figure above).
  *
  * <h3>Live stream with indefinite availability</h3>
- * <p align="center">
- *   <img src="doc-files/timeline-live-indefinite.svg" alt="Example timeline for a live stream with
- *       indefinite availability">
- * </p>
- * A timeline for a live stream with indefinite availability is similar to the
- * <a href="#live-limited">Live stream with limited availability</a> case, except that the window
- * starts at the beginning of the period to indicate that all of the previously broadcast content
- * can still be played.
+ *
+ * <p style="align:center"><img src="doc-files/timeline-live-indefinite.svg" alt="Example timeline
+ * for a live stream with indefinite availability"> A timeline for a live stream with indefinite
+ * availability is similar to the <a href="#live-limited">Live stream with limited availability</a>
+ * case, except that the window starts at the beginning of the period to indicate that all of the
+ * previously broadcast content can still be played.
  *
  * <h3 id="live-multi-period">Live stream with multiple periods</h3>
- * <p align="center">
- *   <img src="doc-files/timeline-live-multi-period.svg" alt="Example timeline for a live stream
- *       with multiple periods">
- * </p>
- * This case arises when a live stream is explicitly divided into separate periods, for example at
- * content boundaries. This case is similar to the <a href="#live-limited">Live stream with limited
- * availability</a> case, except that the window may span more than one period. Multiple periods are
- * also possible in the indefinite availability case.
+ *
+ * <p style="align:center"><img src="doc-files/timeline-live-multi-period.svg" alt="Example timeline
+ * for a live stream with multiple periods"> This case arises when a live stream is explicitly
+ * divided into separate periods, for example at content boundaries. This case is similar to the <a
+ * href="#live-limited">Live stream with limited availability</a> case, except that the window may
+ * span more than one period. Multiple periods are also possible in the indefinite availability
+ * case.
  *
  * <h3>On-demand stream followed by live stream</h3>
- * <p align="center">
- *   <img src="doc-files/timeline-advanced.svg" alt="Example timeline for an on-demand stream
- *       followed by a live stream">
- * </p>
- * This case is the concatenation of the <a href="#single-file">Single media file or on-demand
- * stream</a> and <a href="#multi-period">Live stream with multiple periods</a> cases. When playback
- * of the on-demand stream ends, playback of the live stream will start from its default position
- * near the live edge.
+ *
+ * <p style="align:center"><img src="doc-files/timeline-advanced.svg" alt="Example timeline for an
+ * on-demand stream followed by a live stream"> This case is the concatenation of the <a
+ * href="#single-file">Single media file or on-demand stream</a> and <a href="#multi-period">Live
+ * stream with multiple periods</a> cases. When playback of the on-demand stream ends, playback of
+ * the live stream will start from its default position near the live edge.
  *
  * <h3 id="single-file-midrolls">On-demand stream with mid-roll ads</h3>
- * <p align="center">
- *   <img src="doc-files/timeline-single-file-midrolls.svg" alt="Example timeline for an on-demand
- *       stream with mid-roll ad groups">
- * </p>
- * This case includes mid-roll ad groups, which are defined as part of the timeline's single period.
- * The period can be queried for information about the ad groups and the ads they contain.
+ *
+ * <p style="align:center"><img src="doc-files/timeline-single-file-midrolls.svg" alt="Example
+ * timeline for an on-demand stream with mid-roll ad groups"> This case includes mid-roll ad groups,
+ * which are defined as part of the timeline's single period. The period can be queried for
+ * information about the ad groups and the ads they contain.
  */
 public abstract class Timeline {
 
   /**
-   * Holds information about a window in a {@link Timeline}. A window defines a region of media
-   * currently available for playback along with additional information such as whether seeking is
-   * supported within the window. The figure below shows some of the information defined by a
-   * window, as well as how this information relates to corresponding {@link Period}s in the
-   * timeline.
-   * <p align="center">
-   *   <img src="doc-files/timeline-window.svg" alt="Information defined by a timeline window">
-   * </p>
+   * Holds information about a window in a {@link Timeline}. A window usually corresponds to one
+   * playlist item and defines a region of media currently available for playback along with
+   * additional information such as whether seeking is supported within the window. The figure below
+   * shows some of the information defined by a window, as well as how this information relates to
+   * corresponding {@link Period Periods} in the timeline.
+   *
+   * <p style="align:center"><img src="doc-files/timeline-window.svg" alt="Information defined by a
+   * timeline window">
    */
   public static final class Window {
 
+    /**
+     * A {@link #uid} for a window that must be used for single-window {@link Timeline Timelines}.
+     */
+    public static final Object SINGLE_WINDOW_UID = new Object();
+
+    /**
+     * A unique identifier for the window. Single-window {@link Timeline Timelines} must use {@link
+     * #SINGLE_WINDOW_UID}.
+     */
+    public Object uid;
+
     /** A tag for the window. Not necessarily unique. */
     @Nullable public Object tag;
+
+    /** The manifest of the window. May be {@code null}. */
+    @Nullable public Object manifest;
 
     /**
      * The start time of the presentation to which this window belongs in milliseconds since the
@@ -148,8 +160,13 @@ public abstract class Timeline {
     public boolean isDynamic;
 
     /**
-     * The index of the first period that belongs to this window.
+     * Whether the media in this window is live. For informational purposes only.
+     *
+     * <p>Check {@link #isDynamic} to know whether this window may still change.
      */
+    public boolean isLive;
+
+    /** The index of the first period that belongs to this window. */
     public int firstPeriodIndex;
 
     /**
@@ -176,23 +193,34 @@ public abstract class Timeline {
      */
     public long positionInFirstPeriodUs;
 
+    /** Creates window. */
+    public Window() {
+      uid = SINGLE_WINDOW_UID;
+    }
+
     /** Sets the data held by this window. */
     public Window set(
+        Object uid,
         @Nullable Object tag,
+        @Nullable Object manifest,
         long presentationStartTimeMs,
         long windowStartTimeMs,
         boolean isSeekable,
         boolean isDynamic,
+        boolean isLive,
         long defaultPositionUs,
         long durationUs,
         int firstPeriodIndex,
         int lastPeriodIndex,
         long positionInFirstPeriodUs) {
+      this.uid = uid;
       this.tag = tag;
+      this.manifest = manifest;
       this.presentationStartTimeMs = presentationStartTimeMs;
       this.windowStartTimeMs = windowStartTimeMs;
       this.isSeekable = isSeekable;
       this.isDynamic = isDynamic;
+      this.isLive = isLive;
       this.defaultPositionUs = defaultPositionUs;
       this.durationUs = durationUs;
       this.firstPeriodIndex = firstPeriodIndex;
@@ -251,18 +279,60 @@ public abstract class Timeline {
       return positionInFirstPeriodUs;
     }
 
+    @Override
+    public boolean equals(@Nullable Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (obj == null || !getClass().equals(obj.getClass())) {
+        return false;
+      }
+      Window that = (Window) obj;
+      return Util.areEqual(uid, that.uid)
+          && Util.areEqual(tag, that.tag)
+          && Util.areEqual(manifest, that.manifest)
+          && presentationStartTimeMs == that.presentationStartTimeMs
+          && windowStartTimeMs == that.windowStartTimeMs
+          && isSeekable == that.isSeekable
+          && isDynamic == that.isDynamic
+          && isLive == that.isLive
+          && defaultPositionUs == that.defaultPositionUs
+          && durationUs == that.durationUs
+          && firstPeriodIndex == that.firstPeriodIndex
+          && lastPeriodIndex == that.lastPeriodIndex
+          && positionInFirstPeriodUs == that.positionInFirstPeriodUs;
+    }
+
+    @Override
+    public int hashCode() {
+      int result = 7;
+      result = 31 * result + uid.hashCode();
+      result = 31 * result + (tag == null ? 0 : tag.hashCode());
+      result = 31 * result + (manifest == null ? 0 : manifest.hashCode());
+      result = 31 * result + (int) (presentationStartTimeMs ^ (presentationStartTimeMs >>> 32));
+      result = 31 * result + (int) (windowStartTimeMs ^ (windowStartTimeMs >>> 32));
+      result = 31 * result + (isSeekable ? 1 : 0);
+      result = 31 * result + (isDynamic ? 1 : 0);
+      result = 31 * result + (isLive ? 1 : 0);
+      result = 31 * result + (int) (defaultPositionUs ^ (defaultPositionUs >>> 32));
+      result = 31 * result + (int) (durationUs ^ (durationUs >>> 32));
+      result = 31 * result + firstPeriodIndex;
+      result = 31 * result + lastPeriodIndex;
+      result = 31 * result + (int) (positionInFirstPeriodUs ^ (positionInFirstPeriodUs >>> 32));
+      return result;
+    }
   }
 
   /**
    * Holds information about a period in a {@link Timeline}. A period defines a single logical piece
    * of media, for example a media file. It may also define groups of ads inserted into the media,
    * along with information about whether those ads have been loaded and played.
-   * <p>
-   * The figure below shows some of the information defined by a period, as well as how this
+   *
+   * <p>The figure below shows some of the information defined by a period, as well as how this
    * information relates to a corresponding {@link Window} in the timeline.
-   * <p align="center">
-   *   <img src="doc-files/timeline-period.svg" alt="Information defined by a period">
-   * </p>
+   *
+   * <p style="align:center"><img src="doc-files/timeline-period.svg" alt="Information defined by a
+   * period">
    */
   public static final class Period {
 
@@ -396,7 +466,8 @@ public abstract class Timeline {
      * microseconds.
      *
      * @param adGroupIndex The ad group index.
-     * @return The time of the ad group at the index, in microseconds.
+     * @return The time of the ad group at the index relative to the start of the enclosing {@link
+     *     Period}, in microseconds, or {@link C#TIME_END_OF_SOURCE} for a post-roll ad group.
      */
     public long getAdGroupTimeUs(int adGroupIndex) {
       return adPlaybackState.adGroupTimesUs[adGroupIndex];
@@ -439,22 +510,23 @@ public abstract class Timeline {
     }
 
     /**
-     * Returns the index of the ad group at or before {@code positionUs}, if that ad group is
-     * unplayed. Returns {@link C#INDEX_UNSET} if the ad group at or before {@code positionUs} has
-     * no ads remaining to be played, or if there is no such ad group.
+     * Returns the index of the ad group at or before {@code positionUs} in the period, if that ad
+     * group is unplayed. Returns {@link C#INDEX_UNSET} if the ad group at or before {@code
+     * positionUs} has no ads remaining to be played, or if there is no such ad group.
      *
-     * @param positionUs The position at or before which to find an ad group, in microseconds.
+     * @param positionUs The period position at or before which to find an ad group, in
+     *     microseconds.
      * @return The index of the ad group, or {@link C#INDEX_UNSET}.
      */
     public int getAdGroupIndexForPositionUs(long positionUs) {
-      return adPlaybackState.getAdGroupIndexForPositionUs(positionUs);
+      return adPlaybackState.getAdGroupIndexForPositionUs(positionUs, durationUs);
     }
 
     /**
-     * Returns the index of the next ad group after {@code positionUs} that has ads remaining to be
-     * played. Returns {@link C#INDEX_UNSET} if there is no such ad group.
+     * Returns the index of the next ad group after {@code positionUs} in the period that has ads
+     * remaining to be played. Returns {@link C#INDEX_UNSET} if there is no such ad group.
      *
-     * @param positionUs The position after which to find an ad group, in microseconds.
+     * @param positionUs The period position after which to find an ad group, in microseconds.
      * @return The index of the ad group, or {@link C#INDEX_UNSET}.
      */
     public int getAdGroupIndexAfterPositionUs(long positionUs) {
@@ -506,6 +578,34 @@ public abstract class Timeline {
       return adPlaybackState.adResumePositionUs;
     }
 
+    @Override
+    public boolean equals(@Nullable Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (obj == null || !getClass().equals(obj.getClass())) {
+        return false;
+      }
+      Period that = (Period) obj;
+      return Util.areEqual(id, that.id)
+          && Util.areEqual(uid, that.uid)
+          && windowIndex == that.windowIndex
+          && durationUs == that.durationUs
+          && positionInWindowUs == that.positionInWindowUs
+          && Util.areEqual(adPlaybackState, that.adPlaybackState);
+    }
+
+    @Override
+    public int hashCode() {
+      int result = 7;
+      result = 31 * result + (id == null ? 0 : id.hashCode());
+      result = 31 * result + (uid == null ? 0 : uid.hashCode());
+      result = 31 * result + windowIndex;
+      result = 31 * result + (int) (durationUs ^ (durationUs >>> 32));
+      result = 31 * result + (int) (positionInWindowUs ^ (positionInWindowUs >>> 32));
+      result = 31 * result + (adPlaybackState == null ? 0 : adPlaybackState.hashCode());
+      return result;
+    }
   }
 
   /** An empty timeline. */
@@ -518,8 +618,7 @@ public abstract class Timeline {
         }
 
         @Override
-        public Window getWindow(
-            int windowIndex, Window window, boolean setTag, long defaultPositionProjectionUs) {
+        public Window getWindow(int windowIndex, Window window, long defaultPositionProjectionUs) {
           throw new IndexOutOfBoundsException();
         }
 
@@ -631,28 +730,20 @@ public abstract class Timeline {
   }
 
   /**
-   * Populates a {@link Window} with data for the window at the specified index. Does not populate
-   * {@link Window#tag}.
+   * Populates a {@link Window} with data for the window at the specified index.
    *
    * @param windowIndex The index of the window.
    * @param window The {@link Window} to populate. Must not be null.
    * @return The populated {@link Window}, for convenience.
    */
   public final Window getWindow(int windowIndex, Window window) {
-    return getWindow(windowIndex, window, false);
+    return getWindow(windowIndex, window, /* defaultPositionProjectionUs= */ 0);
   }
 
-  /**
-   * Populates a {@link Window} with data for the window at the specified index.
-   *
-   * @param windowIndex The index of the window.
-   * @param window The {@link Window} to populate. Must not be null.
-   * @param setTag Whether {@link Window#tag} should be populated. If false, the field will be set
-   *     to null. The caller should pass false for efficiency reasons unless the field is required.
-   * @return The populated {@link Window}, for convenience.
-   */
+  /** @deprecated Use {@link #getWindow(int, Window)} instead. Tags will always be set. */
+  @Deprecated
   public final Window getWindow(int windowIndex, Window window, boolean setTag) {
-    return getWindow(windowIndex, window, setTag, 0);
+    return getWindow(windowIndex, window, /* defaultPositionProjectionUs= */ 0);
   }
 
   /**
@@ -660,14 +751,12 @@ public abstract class Timeline {
    *
    * @param windowIndex The index of the window.
    * @param window The {@link Window} to populate. Must not be null.
-   * @param setTag Whether {@link Window#tag} should be populated. If false, the field will be set
-   *     to null. The caller should pass false for efficiency reasons unless the field is required.
    * @param defaultPositionProjectionUs A duration into the future that the populated window's
    *     default start position should be projected.
    * @return The populated {@link Window}, for convenience.
    */
   public abstract Window getWindow(
-      int windowIndex, Window window, boolean setTag, long defaultPositionProjectionUs);
+      int windowIndex, Window window, long defaultPositionProjectionUs);
 
   /**
    * Returns the number of periods in the timeline.
@@ -748,7 +837,7 @@ public abstract class Timeline {
       long windowPositionUs,
       long defaultPositionProjectionUs) {
     Assertions.checkIndex(windowIndex, 0, getWindowCount());
-    getWindow(windowIndex, window, false, defaultPositionProjectionUs);
+    getWindow(windowIndex, window, defaultPositionProjectionUs);
     if (windowPositionUs == C.TIME_UNSET) {
       windowPositionUs = window.getDefaultPositionUs();
       if (windowPositionUs == C.TIME_UNSET) {
@@ -802,8 +891,8 @@ public abstract class Timeline {
   public abstract Period getPeriod(int periodIndex, Period period, boolean setIds);
 
   /**
-   * Returns the index of the period identified by its unique {@code id}, or {@link C#INDEX_UNSET}
-   * if the period is not in the timeline.
+   * Returns the index of the period identified by its unique {@link Period#uid}, or {@link
+   * C#INDEX_UNSET} if the period is not in the timeline.
    *
    * @param uid A unique identifier for a period.
    * @return The index of the period, or {@link C#INDEX_UNSET} if the period was not found.
@@ -817,4 +906,50 @@ public abstract class Timeline {
    * @return The unique id of the period.
    */
   public abstract Object getUidOfPeriod(int periodIndex);
+
+  @Override
+  public boolean equals(@Nullable Object obj) {
+    if (this == obj) {
+      return true;
+    }
+    if (!(obj instanceof Timeline)) {
+      return false;
+    }
+    Timeline other = (Timeline) obj;
+    if (other.getWindowCount() != getWindowCount() || other.getPeriodCount() != getPeriodCount()) {
+      return false;
+    }
+    Timeline.Window window = new Timeline.Window();
+    Timeline.Period period = new Timeline.Period();
+    Timeline.Window otherWindow = new Timeline.Window();
+    Timeline.Period otherPeriod = new Timeline.Period();
+    for (int i = 0; i < getWindowCount(); i++) {
+      if (!getWindow(i, window).equals(other.getWindow(i, otherWindow))) {
+        return false;
+      }
+    }
+    for (int i = 0; i < getPeriodCount(); i++) {
+      if (!getPeriod(i, period, /* setIds= */ true)
+          .equals(other.getPeriod(i, otherPeriod, /* setIds= */ true))) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  @Override
+  public int hashCode() {
+    Window window = new Window();
+    Period period = new Period();
+    int result = 7;
+    result = 31 * result + getWindowCount();
+    for (int i = 0; i < getWindowCount(); i++) {
+      result = 31 * result + getWindow(i, window).hashCode();
+    }
+    result = 31 * result + getPeriodCount();
+    for (int i = 0; i < getPeriodCount(); i++) {
+      result = 31 * result + getPeriod(i, period, /* setIds= */ true).hashCode();
+    }
+    return result;
+  }
 }

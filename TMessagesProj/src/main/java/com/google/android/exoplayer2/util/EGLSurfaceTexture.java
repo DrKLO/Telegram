@@ -83,12 +83,12 @@ public final class EGLSurfaceTexture implements SurfaceTexture.OnFrameAvailableL
 
   private final Handler handler;
   private final int[] textureIdHolder;
-  private final @Nullable TextureImageListener callback;
+  @Nullable private final TextureImageListener callback;
 
-  private @Nullable EGLDisplay display;
-  private @Nullable EGLContext context;
-  private @Nullable EGLSurface surface;
-  private @Nullable SurfaceTexture texture;
+  @Nullable private EGLDisplay display;
+  @Nullable private EGLContext context;
+  @Nullable private EGLSurface surface;
+  @Nullable private SurfaceTexture texture;
 
   /**
    * @param handler The {@link Handler} that will be used to call {@link

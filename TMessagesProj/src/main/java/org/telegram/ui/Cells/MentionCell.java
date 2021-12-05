@@ -16,7 +16,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.DataQuery;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.UserObject;
@@ -76,13 +76,36 @@ public class MentionCell extends LinearLayout {
         }
         avatarDrawable.setInfo(user);
         if (user.photo != null && user.photo.photo_small != null) {
-            imageView.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable, user);
+            imageView.setForUserOrChat(user, avatarDrawable);
         } else {
             imageView.setImageDrawable(avatarDrawable);
         }
         nameTextView.setText(UserObject.getUserName(user));
         if (user.username != null) {
             usernameTextView.setText("@" + user.username);
+        } else {
+            usernameTextView.setText("");
+        }
+        imageView.setVisibility(VISIBLE);
+        usernameTextView.setVisibility(VISIBLE);
+    }
+
+    public void setChat(TLRPC.Chat chat) {
+        if (chat == null) {
+            nameTextView.setText("");
+            usernameTextView.setText("");
+            imageView.setImageDrawable(null);
+            return;
+        }
+        avatarDrawable.setInfo(chat);
+        if (chat.photo != null && chat.photo.photo_small != null) {
+            imageView.setForUserOrChat(chat, avatarDrawable);
+        } else {
+            imageView.setImageDrawable(avatarDrawable);
+        }
+        nameTextView.setText(chat.title);
+        if (chat.username != null) {
+            usernameTextView.setText("@" + chat.username);
         } else {
             usernameTextView.setText("");
         }
@@ -102,7 +125,7 @@ public class MentionCell extends LinearLayout {
         nameTextView.invalidate();
     }
 
-    public void setEmojiSuggestion(DataQuery.KeywordResult suggestion) {
+    public void setEmojiSuggestion(MediaDataController.KeywordResult suggestion) {
         imageView.setVisibility(INVISIBLE);
         usernameTextView.setVisibility(INVISIBLE);
         StringBuilder stringBuilder = new StringBuilder(suggestion.emoji.length() + suggestion.keyword.length() + 4);
@@ -117,7 +140,7 @@ public class MentionCell extends LinearLayout {
             imageView.setVisibility(VISIBLE);
             avatarDrawable.setInfo(user);
             if (user.photo != null && user.photo.photo_small != null) {
-                imageView.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable, user);
+                imageView.setForUserOrChat(user, avatarDrawable);
             } else {
                 imageView.setImageDrawable(avatarDrawable);
             }

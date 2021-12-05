@@ -66,7 +66,8 @@ public final class DashUtil {
    * @throws IOException Thrown when there is an error while loading.
    * @throws InterruptedException Thrown if the thread was interrupted.
    */
-  public static @Nullable DrmInitData loadDrmInitData(DataSource dataSource, Period period)
+  @Nullable
+  public static DrmInitData loadDrmInitData(DataSource dataSource, Period period)
       throws IOException, InterruptedException {
     int primaryTrackType = C.TRACK_TYPE_VIDEO;
     Representation representation = getFirstRepresentation(period, primaryTrackType);
@@ -95,7 +96,8 @@ public final class DashUtil {
    * @throws IOException Thrown when there is an error while loading.
    * @throws InterruptedException Thrown if the thread was interrupted.
    */
-  public static @Nullable Format loadSampleFormat(
+  @Nullable
+  public static Format loadSampleFormat(
       DataSource dataSource, int trackType, Representation representation)
       throws IOException, InterruptedException {
     ChunkExtractorWrapper extractorWrapper = loadInitializationData(dataSource, trackType,
@@ -116,7 +118,8 @@ public final class DashUtil {
    * @throws IOException Thrown when there is an error while loading.
    * @throws InterruptedException Thrown if the thread was interrupted.
    */
-  public static @Nullable ChunkIndex loadChunkIndex(
+  @Nullable
+  public static ChunkIndex loadChunkIndex(
       DataSource dataSource, int trackType, Representation representation)
       throws IOException, InterruptedException {
     ChunkExtractorWrapper extractorWrapper = loadInitializationData(dataSource, trackType,
@@ -138,7 +141,8 @@ public final class DashUtil {
    * @throws IOException Thrown when there is an error while loading.
    * @throws InterruptedException Thrown if the thread was interrupted.
    */
-  private static @Nullable ChunkExtractorWrapper loadInitializationData(
+  @Nullable
+  private static ChunkExtractorWrapper loadInitializationData(
       DataSource dataSource, int trackType, Representation representation, boolean loadIndex)
       throws IOException, InterruptedException {
     RangedUri initializationUri = representation.getInitializationUri();
@@ -187,7 +191,8 @@ public final class DashUtil {
     return new ChunkExtractorWrapper(extractor, trackType, format);
   }
 
-  private static @Nullable Representation getFirstRepresentation(Period period, int type) {
+  @Nullable
+  private static Representation getFirstRepresentation(Period period, int type) {
     int index = period.getAdaptationSetIndex(type);
     if (index == C.INDEX_UNSET) {
       return null;
@@ -197,5 +202,4 @@ public final class DashUtil {
   }
 
   private DashUtil() {}
-
 }

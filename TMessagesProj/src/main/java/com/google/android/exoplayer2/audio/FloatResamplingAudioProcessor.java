@@ -19,138 +19,77 @@ import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.util.Util;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 /**
- * An {@link AudioProcessor} that converts 24-bit and 32-bit integer PCM audio to 32-bit float PCM
- * audio.
+ * An {@link AudioProcessor} that converts high resolution PCM audio to 32-bit float. The following
+ * encodings are supported as input:
+ *
+ * <ul>
+ *   <li>{@link C#ENCODING_PCM_24BIT}
+ *   <li>{@link C#ENCODING_PCM_32BIT}
+ *   <li>{@link C#ENCODING_PCM_FLOAT} ({@link #isActive()} will return {@code false})
+ * </ul>
  */
-/* package */ final class FloatResamplingAudioProcessor implements AudioProcessor {
+/* package */ final class FloatResamplingAudioProcessor extends BaseAudioProcessor {
 
   private static final int FLOAT_NAN_AS_INT = Float.floatToIntBits(Float.NaN);
   private static final double PCM_32_BIT_INT_TO_PCM_32_BIT_FLOAT_FACTOR = 1.0 / 0x7FFFFFFF;
 
-  private int sampleRateHz;
-  private int channelCount;
-  private @C.PcmEncoding int sourceEncoding;
-  private ByteBuffer buffer;
-  private ByteBuffer outputBuffer;
-  private boolean inputEnded;
-
-  /** Creates a new audio processor that converts audio data to {@link C#ENCODING_PCM_FLOAT}. */
-  public FloatResamplingAudioProcessor() {
-    sampleRateHz = Format.NO_VALUE;
-    channelCount = Format.NO_VALUE;
-    sourceEncoding = C.ENCODING_INVALID;
-    buffer = EMPTY_BUFFER;
-    outputBuffer = EMPTY_BUFFER;
-  }
-
   @Override
-  public boolean configure(int sampleRateHz, int channelCount, @C.Encoding int encoding)
-      throws UnhandledFormatException {
-    if (!Util.isEncodingHighResolutionIntegerPcm(encoding)) {
-      throw new UnhandledFormatException(sampleRateHz, channelCount, encoding);
+  public AudioFormat onConfigure(AudioFormat inputAudioFormat)
+      throws UnhandledAudioFormatException {
+    @C.PcmEncoding int encoding = inputAudioFormat.encoding;
+    if (!Util.isEncodingHighResolutionPcm(encoding)) {
+      throw new UnhandledAudioFormatException(inputAudioFormat);
     }
-    if (this.sampleRateHz == sampleRateHz
-        && this.channelCount == channelCount
-        && sourceEncoding == encoding) {
-      return false;
-    }
-    this.sampleRateHz = sampleRateHz;
-    this.channelCount = channelCount;
-    sourceEncoding = encoding;
-    return true;
-  }
-
-  @Override
-  public boolean isActive() {
-    return Util.isEncodingHighResolutionIntegerPcm(sourceEncoding);
-  }
-
-  @Override
-  public int getOutputChannelCount() {
-    return channelCount;
-  }
-
-  @Override
-  public int getOutputEncoding() {
-    return C.ENCODING_PCM_FLOAT;
-  }
-
-  @Override
-  public int getOutputSampleRateHz() {
-    return sampleRateHz;
+    return encoding != C.ENCODING_PCM_FLOAT
+        ? new AudioFormat(
+            inputAudioFormat.sampleRate, inputAudioFormat.channelCount, C.ENCODING_PCM_FLOAT)
+        : AudioFormat.NOT_SET;
   }
 
   @Override
   public void queueInput(ByteBuffer inputBuffer) {
-    boolean isInput32Bit = sourceEncoding == C.ENCODING_PCM_32BIT;
     int position = inputBuffer.position();
     int limit = inputBuffer.limit();
     int size = limit - position;
 
-    int resampledSize = isInput32Bit ? size : (size / 3) * 4;
-    if (buffer.capacity() < resampledSize) {
-      buffer = ByteBuffer.allocateDirect(resampledSize).order(ByteOrder.nativeOrder());
-    } else {
-      buffer.clear();
-    }
-    if (isInput32Bit) {
-      for (int i = position; i < limit; i += 4) {
-        int pcm32BitInteger =
-            (inputBuffer.get(i) & 0xFF)
-                | ((inputBuffer.get(i + 1) & 0xFF) << 8)
-                | ((inputBuffer.get(i + 2) & 0xFF) << 16)
-                | ((inputBuffer.get(i + 3) & 0xFF) << 24);
-        writePcm32BitFloat(pcm32BitInteger, buffer);
-      }
-    } else {
-      for (int i = position; i < limit; i += 3) {
-        int pcm32BitInteger =
-            ((inputBuffer.get(i) & 0xFF) << 8)
-                | ((inputBuffer.get(i + 1) & 0xFF) << 16)
-                | ((inputBuffer.get(i + 2) & 0xFF) << 24);
-        writePcm32BitFloat(pcm32BitInteger, buffer);
-      }
+    ByteBuffer buffer;
+    switch (inputAudioFormat.encoding) {
+      case C.ENCODING_PCM_24BIT:
+        buffer = replaceOutputBuffer((size / 3) * 4);
+        for (int i = position; i < limit; i += 3) {
+          int pcm32BitInteger =
+              ((inputBuffer.get(i) & 0xFF) << 8)
+                  | ((inputBuffer.get(i + 1) & 0xFF) << 16)
+                  | ((inputBuffer.get(i + 2) & 0xFF) << 24);
+          writePcm32BitFloat(pcm32BitInteger, buffer);
+        }
+        break;
+      case C.ENCODING_PCM_32BIT:
+        buffer = replaceOutputBuffer(size);
+        for (int i = position; i < limit; i += 4) {
+          int pcm32BitInteger =
+              (inputBuffer.get(i) & 0xFF)
+                  | ((inputBuffer.get(i + 1) & 0xFF) << 8)
+                  | ((inputBuffer.get(i + 2) & 0xFF) << 16)
+                  | ((inputBuffer.get(i + 3) & 0xFF) << 24);
+          writePcm32BitFloat(pcm32BitInteger, buffer);
+        }
+        break;
+      case C.ENCODING_PCM_8BIT:
+      case C.ENCODING_PCM_16BIT:
+      case C.ENCODING_PCM_16BIT_BIG_ENDIAN:
+      case C.ENCODING_PCM_FLOAT:
+      case C.ENCODING_INVALID:
+      case Format.NO_VALUE:
+      default:
+        // Never happens.
+        throw new IllegalStateException();
     }
 
     inputBuffer.position(inputBuffer.limit());
     buffer.flip();
-    outputBuffer = buffer;
-  }
-
-  @Override
-  public void queueEndOfStream() {
-    inputEnded = true;
-  }
-
-  @Override
-  public ByteBuffer getOutput() {
-    ByteBuffer outputBuffer = this.outputBuffer;
-    this.outputBuffer = EMPTY_BUFFER;
-    return outputBuffer;
-  }
-
-  @SuppressWarnings("ReferenceEquality")
-  @Override
-  public boolean isEnded() {
-    return inputEnded && outputBuffer == EMPTY_BUFFER;
-  }
-
-  @Override
-  public void flush() {
-    outputBuffer = EMPTY_BUFFER;
-    inputEnded = false;
-  }
-
-  @Override
-  public void reset() {
-    flush();
-    sampleRateHz = Format.NO_VALUE;
-    channelCount = Format.NO_VALUE;
-    sourceEncoding = C.ENCODING_INVALID;
-    buffer = EMPTY_BUFFER;
   }
 
   /**
