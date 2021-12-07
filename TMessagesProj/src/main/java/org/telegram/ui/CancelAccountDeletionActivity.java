@@ -150,7 +150,7 @@ public class CancelAccountDeletionActivity extends BaseFragment {
             @Override
             public void onItemClick(int id) {
                 if (id == done_button) {
-                    views[currentViewNum].onNextPressed();
+                    views[currentViewNum].onNextPressed(null);
                 } else if (id == -1) {
                     finishFragment();
                 }
@@ -337,7 +337,7 @@ public class CancelAccountDeletionActivity extends BaseFragment {
         }
 
         @Override
-        public void onNextPressed() {
+        public void onNextPressed(String code) {
             if (getParentActivity() == null || nextPressed) {
                 return;
             }
@@ -392,7 +392,7 @@ public class CancelAccountDeletionActivity extends BaseFragment {
         @Override
         public void onShow() {
             super.onShow();
-            onNextPressed();
+            onNextPressed(null);
         }
     }
 
@@ -556,7 +556,7 @@ public class CancelAccountDeletionActivity extends BaseFragment {
 
                         Intent mailer = new Intent(Intent.ACTION_SENDTO);
                         mailer.setData(Uri.parse("mailto:"));
-                        mailer.putExtra(Intent.EXTRA_EMAIL, new String[]{"reports@stel.com"});
+                        mailer.putExtra(Intent.EXTRA_EMAIL, new String[]{"sms@telegram.org"});
                         mailer.putExtra(Intent.EXTRA_SUBJECT, "Android cancel account deletion issue " + version + " " + phone);
                         mailer.putExtra(Intent.EXTRA_TEXT, "Phone: " + phone + "\nApp version: " + version + "\nOS version: SDK " + Build.VERSION.SDK_INT + "\nDevice Name: " + Build.MANUFACTURER + Build.MODEL + "\nLocale: " + Locale.getDefault() + "\nError: " + lastError);
                         getContext().startActivity(Intent.createChooser(mailer, "Send email..."));
@@ -744,7 +744,7 @@ public class CancelAccountDeletionActivity extends BaseFragment {
                                     codeField[num + 1].requestFocus();
                                 }
                                 if ((num == length - 1 || num == length - 2 && len >= 2) && getCode().length() == length) {
-                                    onNextPressed();
+                                    onNextPressed(null);
                                 }
                             }
                         }
@@ -760,7 +760,7 @@ public class CancelAccountDeletionActivity extends BaseFragment {
                     });
                     codeField[a].setOnEditorActionListener((textView, i, keyEvent) -> {
                         if (i == EditorInfo.IME_ACTION_NEXT) {
-                            onNextPressed();
+                            onNextPressed(null);
                             return true;
                         }
                         return false;
@@ -965,11 +965,13 @@ public class CancelAccountDeletionActivity extends BaseFragment {
         }
 
         @Override
-        public void onNextPressed() {
+        public void onNextPressed(String code) {
             if (nextPressed) {
                 return;
             }
-            String code = getCode();
+            if (code == null) {
+                code = getCode();
+            }
             if (TextUtils.isEmpty(code)) {
                 AndroidUtilities.shakeView(codeFieldContainer, 2, 0);
                 return;
@@ -1070,7 +1072,7 @@ public class CancelAccountDeletionActivity extends BaseFragment {
             }
             if (id == NotificationCenter.didReceiveSmsCode) {
                 codeField[0].setText("" + args[0]);
-                onNextPressed();
+                onNextPressed(null);
             } else if (id == NotificationCenter.didReceiveCall) {
                 String num = "" + args[0];
                 if (!AndroidUtilities.checkPhonePattern(pattern, num)) {
@@ -1079,7 +1081,7 @@ public class CancelAccountDeletionActivity extends BaseFragment {
                 ignoreOnTextChange = true;
                 codeField[0].setText(num);
                 ignoreOnTextChange = false;
-                onNextPressed();
+                onNextPressed(null);
             }
         }
     }

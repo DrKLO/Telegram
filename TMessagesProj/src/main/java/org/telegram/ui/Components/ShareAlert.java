@@ -963,18 +963,6 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         searchGridView = new RecyclerListView(context, resourcesProvider) {
 
             @Override
-            protected void dispatchDraw(Canvas canvas) {
-                recyclerItemsEnterAnimator.dispatchDraw();
-                super.dispatchDraw(canvas);
-            }
-
-            @Override
-            protected void onDetachedFromWindow() {
-                super.onDetachedFromWindow();
-                recyclerItemsEnterAnimator.onDetached();
-            }
-
-            @Override
             protected boolean allowSelectChildAtPosition(float x, float y) {
                 return y >= AndroidUtilities.dp(darkTheme && linkToCopy[1] != null ? 111 : 58) + (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0);
             }

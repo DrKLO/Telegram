@@ -3167,7 +3167,7 @@
     <string name="InvalidLastName">죄송합니다. 본 성을 사용하실 수 없습니다</string>
     <string name="Loading">불러오는 중...</string>
     <string name="NoPlayerInstalled">동영상 재생기가 없습니다. 계속하려면 앱을 설치하세요.</string>
-    <string name="NoMailInstalled">발생한 문제를 자세히 적어 reports@stel.com으로 이메일을 보내 주세요.</string>
+    <string name="NoMailInstalled">발생한 문제를 자세히 적어 sms@telegram.org으로 이메일을 보내 주세요.</string>
     <string name="NoHandleAppInstalled">\'%1$s\' 파일 유형을 처리할 수 있는 응용 프로그램이 없습니다. 계속하려면 프로그램을 설치해 주세요</string>
     <string name="InviteUser">지인분이 아직 텔레그램을 설치하지 않았습니다. 초대장을 보낼까요?</string>
     <string name="AreYouSure">확실하십니까?</string>

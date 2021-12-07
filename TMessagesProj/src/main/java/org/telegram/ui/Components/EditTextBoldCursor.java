@@ -119,7 +119,7 @@ public class EditTextBoldCursor extends EditText {
     private ViewTreeObserver.OnPreDrawListener listenerFixer;
 
     private FloatingToolbar floatingToolbar;
-    private FloatingActionMode floatingActionMode;
+    public FloatingActionMode floatingActionMode;
     private ViewTreeObserver.OnPreDrawListener floatingToolbarPreDrawListener;
     private View windowView;
     private View attachedToWindow;

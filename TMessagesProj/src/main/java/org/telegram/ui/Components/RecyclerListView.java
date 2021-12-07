@@ -144,6 +144,7 @@ public class RecyclerListView extends RecyclerView {
     float lastY = Float.MAX_VALUE;
     int[] listPaddings;
     HashSet<Integer> selectedPositions;
+    RecyclerItemsEnterAnimator itemsEnterAnimator;
 
     protected final Theme.ResourcesProvider resourcesProvider;
 
@@ -367,6 +368,7 @@ public class RecyclerListView extends RecyclerView {
         private TextPaint letterPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         private String currentLetter;
         private Path path = new Path();
+        private Path arrowPath = new Path();
         private float[] radii = new float[8];
         private float textX;
         private float textY;
@@ -381,7 +383,7 @@ public class RecyclerListView extends RecyclerView {
         private int[] positionWithOffset = new int[2];
         boolean isVisible;
         float touchSlop;
-
+        Drawable fastScrollShadowDrawable;
         Drawable fastScrollBackgroundDrawable;
 
         Runnable hideFloatingDateRunnable = new Runnable() {
@@ -407,7 +409,7 @@ public class RecyclerListView extends RecyclerView {
                 letterPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
                 paint2.setColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                 fastScrollBackgroundDrawable = ContextCompat.getDrawable(context, R.drawable.calendar_date).mutate();
-                fastScrollBackgroundDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhite), PorterDuff.Mode.MULTIPLY));
+                fastScrollBackgroundDrawable.setColorFilter(new PorterDuffColorFilter(ColorUtils.blendARGB(Theme.getColor(Theme.key_windowBackgroundWhite), Color.WHITE, 0.1f), PorterDuff.Mode.MULTIPLY));
             }
             for (int a = 0; a < 8; a++) {
                 radii[a] = AndroidUtilities.dp(44);
@@ -418,6 +420,7 @@ public class RecyclerListView extends RecyclerView {
             setFocusableInTouchMode(true);
             ViewConfiguration vc = ViewConfiguration.get(context);
             touchSlop = vc.getScaledTouchSlop();
+            fastScrollShadowDrawable = ContextCompat.getDrawable(context, R.drawable.fast_scroll_shadow);
         }
 
         private void updateColors() {
@@ -436,6 +439,8 @@ public class RecyclerListView extends RecyclerView {
         float startY;
         boolean isMoving;
         long startTime;
+        float visibilityAlpha;
+        float viewAlpha;
 
         @Override
         public boolean onTouchEvent(MotionEvent event) {
@@ -450,6 +455,11 @@ public class RecyclerListView extends RecyclerView {
                     float currentY = (float) Math.ceil((getMeasuredHeight() - AndroidUtilities.dp(24 + 30)) * progress) + AndroidUtilities.dp(12);
                     if (LocaleController.isRTL && x > AndroidUtilities.dp(25) || !LocaleController.isRTL && x < AndroidUtilities.dp(107) || lastY < currentY || lastY > currentY + AndroidUtilities.dp(30)) {
                         return false;
+                    }
+                    if (type == DATE_TYPE && !floatingDateVisible) {
+                        if (LocaleController.isRTL && x > AndroidUtilities.dp(25) || !LocaleController.isRTL && x < (getMeasuredWidth() - AndroidUtilities.dp(25)) || lastY < currentY || lastY > currentY + AndroidUtilities.dp(30)) {
+                            return false;
+                        }
                     }
                     startDy = lastY - currentY;
                     startTime = System.currentTimeMillis();
@@ -558,14 +568,42 @@ public class RecyclerListView extends RecyclerView {
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
             setMeasuredDimension(AndroidUtilities.dp(type == LETTER_TYPE ? 132 : 240), MeasureSpec.getSize(heightMeasureSpec));
+
+            arrowPath.reset();
+            arrowPath.setLastPoint(0, 0);
+            arrowPath.lineTo(AndroidUtilities.dp(4), -AndroidUtilities.dp(4));
+            arrowPath.lineTo(-AndroidUtilities.dp(4), -AndroidUtilities.dp(4));
+            arrowPath.close();
+
         }
 
         @Override
         protected void onDraw(Canvas canvas) {
-            paint.setColor(ColorUtils.blendARGB(inactiveColor, activeColor, bubbleProgress));
             int y = (int) Math.ceil((getMeasuredHeight() - AndroidUtilities.dp(24 + 30)) * progress);
             rect.set(scrollX, AndroidUtilities.dp(12) + y, scrollX + AndroidUtilities.dp(5), AndroidUtilities.dp(12 + 30) + y);
-            canvas.drawRoundRect(rect, AndroidUtilities.dp(2), AndroidUtilities.dp(2), paint);
+            if (type == LETTER_TYPE) {
+                paint.setColor(ColorUtils.blendARGB(inactiveColor, activeColor, bubbleProgress));
+                canvas.drawRoundRect(rect, AndroidUtilities.dp(2), AndroidUtilities.dp(2), paint);
+            } else {
+                paint.setColor(ColorUtils.blendARGB(Theme.getColor(Theme.key_windowBackgroundWhite), Color.WHITE, 0.1f));
+
+                float cy = y + AndroidUtilities.dp(12 + 15);
+                fastScrollShadowDrawable.setBounds(getMeasuredWidth() - fastScrollShadowDrawable.getIntrinsicWidth(), (int) (cy - fastScrollShadowDrawable.getIntrinsicHeight() / 2), getMeasuredWidth(), (int) (cy + fastScrollShadowDrawable.getIntrinsicHeight() / 2));
+                fastScrollShadowDrawable.draw(canvas);
+                canvas.drawCircle(scrollX + AndroidUtilities.dp(8), y + AndroidUtilities.dp(12 + 15), AndroidUtilities.dp(24), paint);
+
+                paint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                canvas.save();
+                canvas.translate(scrollX + AndroidUtilities.dp(4), y + AndroidUtilities.dp(12 + 15 + 2 + 5) + AndroidUtilities.dp(2) * bubbleProgress);
+                canvas.drawPath(arrowPath, paint);
+                canvas.restore();
+
+                canvas.save();
+                canvas.translate(scrollX + AndroidUtilities.dp(4), y + AndroidUtilities.dp(12 + 15 + 2  - 5) - AndroidUtilities.dp(2) * bubbleProgress);
+                canvas.rotate(180, 0, -AndroidUtilities.dp(2));
+                canvas.drawPath(arrowPath, paint);
+                canvas.restore();
+            }
             if (type == LETTER_TYPE) {
                 if ((isMoving || bubbleProgress != 0)) {
                     paint.setAlpha((int) (255 * bubbleProgress));
@@ -617,7 +655,7 @@ public class RecyclerListView extends RecyclerView {
                     canvas.scale(s, s, rect.right - AndroidUtilities.dp(12), rect.centerY());
 
                     float cy = rect.centerY();
-                    float x = rect.left - AndroidUtilities.dp(30) * bubbleProgress;
+                    float x = rect.left - AndroidUtilities.dp(30) * bubbleProgress - AndroidUtilities.dp(8);
                     float r = letterLayout.getHeight() / 2f + AndroidUtilities.dp(6);
                     rect.set(x - letterLayout.getWidth() - AndroidUtilities.dp(36), cy - letterLayout.getHeight() / 2f - AndroidUtilities.dp(8),  x - AndroidUtilities.dp(12), cy + letterLayout.getHeight() / 2f + AndroidUtilities.dp(8));
 
@@ -626,6 +664,7 @@ public class RecyclerListView extends RecyclerView {
                     paint2.setAlpha((int) (oldAlpha1 * floatingDateProgress));
                     letterPaint.setAlpha((int) (oldAlpha2 * floatingDateProgress));
                     fastScrollBackgroundDrawable.setBounds((int) rect.left, (int) rect.top, (int) rect.right, (int) rect.bottom);
+                    fastScrollBackgroundDrawable.setAlpha((int) (255 * floatingDateProgress));
                     fastScrollBackgroundDrawable.draw(canvas);
                     canvas.save();
                     canvas.translate(x - letterLayout.getWidth() - AndroidUtilities.dp(24), cy - letterLayout.getHeight() / 2f);
@@ -702,12 +741,35 @@ public class RecyclerListView extends RecyclerView {
                 invalidate();
             }
             AndroidUtilities.cancelRunOnUIThread(hideFloatingDateRunnable);
-            AndroidUtilities.runOnUIThread(hideFloatingDateRunnable, 4000);
+            AndroidUtilities.runOnUIThread(hideFloatingDateRunnable, 2000);
         }
 
         public void setIsVisible(boolean visible) {
-            this.isVisible = visible;
-            setAlpha(visible ? 1f : 0f);
+            if (isVisible != visible) {
+                this.isVisible = visible;
+                visibilityAlpha = visible ? 1f : 0f;
+                super.setAlpha(viewAlpha * visibilityAlpha);
+            }
+        }
+
+        public void setVisibilityAlpha(float v) {
+            if (visibilityAlpha != v) {
+                visibilityAlpha = v;
+                super.setAlpha(viewAlpha * visibilityAlpha);
+            }
+        }
+
+        @Override
+        public void setAlpha(float alpha) {
+            if (viewAlpha != alpha) {
+                viewAlpha = alpha;
+                super.setAlpha(viewAlpha * visibilityAlpha);
+            }
+        }
+
+        @Override
+        public float getAlpha() {
+            return viewAlpha;
         }
 
         public int getScrollBarY() {
@@ -717,6 +779,7 @@ public class RecyclerListView extends RecyclerView {
         public float getProgress() {
             return progress;
         }
+
     }
 
     private class RecyclerListViewItemClickListener implements OnItemTouchListener {
@@ -1963,6 +2026,10 @@ public class RecyclerListView extends RecyclerView {
 
     @Override
     protected void dispatchDraw(Canvas canvas) {
+        if (itemsEnterAnimator != null) {
+            itemsEnterAnimator.dispatchDraw();
+        }
+
         if (drawSelectorBehind && !selectorRect.isEmpty()) {
             selectorDrawable.setBounds(selectorRect);
             selectorDrawable.draw(canvas);
@@ -2026,6 +2093,9 @@ public class RecyclerListView extends RecyclerView {
         super.onDetachedFromWindow();
         selectorPosition = NO_POSITION;
         selectorRect.setEmpty();
+        if (itemsEnterAnimator != null) {
+            itemsEnterAnimator.onDetached();
+        }
     }
 
     public void addOverlayView(View view, FrameLayout.LayoutParams layoutParams) {
@@ -2307,5 +2377,9 @@ public class RecyclerListView extends RecyclerView {
         boolean limitReached();
         void getPaddings(int paddings[]);
         void scrollBy(int dy);
+    }
+
+    public void setItemsEnterAnimator(RecyclerItemsEnterAnimator itemsEnterAnimator) {
+        this.itemsEnterAnimator = itemsEnterAnimator;
     }
 }

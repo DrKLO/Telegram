@@ -80,6 +80,7 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
     private String currentGroupCreateAddress;
     private String currentGroupCreateDisplayAddress;
     private Location currentGroupCreateLocation;
+    private boolean showingAsBottomSheet;
 
     private ActionIntroQRLoginDelegate qrLoginDelegate;
 
@@ -103,23 +104,26 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
 
     @Override
     public View createView(Context context) {
-        actionBar.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setItemsColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2), false);
-        actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_actionBarWhiteSelector), false);
-        actionBar.setCastShadows(false);
-        actionBar.setAddToContainer(false);
-        if (!AndroidUtilities.isTablet()) {
-            actionBar.showActionModeTop();
-        }
-        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
-            @Override
-            public void onItemClick(int id) {
-                if (id == -1) {
-                    finishFragment();
-                }
+        if (actionBar != null) {
+            actionBar.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+
+            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+            actionBar.setItemsColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2), false);
+            actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_actionBarWhiteSelector), false);
+            actionBar.setCastShadows(false);
+            actionBar.setAddToContainer(false);
+            if (!AndroidUtilities.isTablet()) {
+                actionBar.showActionModeTop();
             }
-        });
+            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+                @Override
+                public void onItemClick(int id) {
+                    if (id == -1) {
+                        finishFragment();
+                    }
+                }
+            });
+        }
 
         fragmentView = new ViewGroup(context) {
 
@@ -128,8 +132,9 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
                 int width = MeasureSpec.getSize(widthMeasureSpec);
                 int height = MeasureSpec.getSize(heightMeasureSpec);
 
-                actionBar.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), heightMeasureSpec);
-
+                if (actionBar != null) {
+                    actionBar.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), heightMeasureSpec);
+                }
                 switch (currentType) {
                     case ACTION_TYPE_CHANNEL_CREATE: {
                         if (width > height) {
@@ -146,7 +151,13 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
                         break;
                     }
                     case ACTION_TYPE_QR_LOGIN: {
-                        if (width > height) {
+                        if (showingAsBottomSheet) {
+                            imageView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec((int) (height * 0.32f), MeasureSpec.EXACTLY));
+                            titleTextView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED));
+                            descriptionLayout.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED));
+                            buttonTextView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(42), MeasureSpec.EXACTLY));
+                            height = imageView.getMeasuredHeight() + titleTextView.getMeasuredHeight() + AndroidUtilities.dp(20) + titleTextView.getMeasuredHeight() + descriptionLayout.getMeasuredHeight() + buttonTextView.getMeasuredHeight();
+                        } else if (width > height) {
                             imageView.measure(MeasureSpec.makeMeasureSpec((int) (width * 0.45f), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec((int) (height * 0.68f), MeasureSpec.EXACTLY));
                             titleTextView.measure(MeasureSpec.makeMeasureSpec((int) (width * 0.6f), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED));
                             descriptionLayout.measure(MeasureSpec.makeMeasureSpec((int) (width * 0.6f), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED));
@@ -214,7 +225,9 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
 
             @Override
             protected void onLayout(boolean changed, int l, int t, int r, int b) {
-                actionBar.layout(0, 0, r, actionBar.getMeasuredHeight());
+                if (actionBar != null) {
+                    actionBar.layout(0, 0, r, actionBar.getMeasuredHeight());
+                }
 
                 int width = r - l;
                 int height = b - t;
@@ -247,7 +260,21 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
                         break;
                     }
                     case ACTION_TYPE_QR_LOGIN: {
-                        if (r > b) {
+                        if (showingAsBottomSheet) {
+                            int y;
+
+                            y = 0;
+                            imageView.layout(0, y, imageView.getMeasuredWidth(), y + imageView.getMeasuredHeight());
+                            y = (int) (height * 0.403f);
+                            titleTextView.layout(0, y, titleTextView.getMeasuredWidth(), y + titleTextView.getMeasuredHeight());
+                            y = (int) (height * 0.631f);
+
+                            int x = (getMeasuredWidth() - descriptionLayout.getMeasuredWidth()) / 2;
+                            descriptionLayout.layout(x, y, x + descriptionLayout.getMeasuredWidth(), y + descriptionLayout.getMeasuredHeight());
+                            x = (width - buttonTextView.getMeasuredWidth()) / 2;
+                            y = (int) (height * 0.853f);
+                            buttonTextView.layout(x, y, x + buttonTextView.getMeasuredWidth(), y + buttonTextView.getMeasuredHeight());
+                        } else if (r > b) {
                             int y = (height - imageView.getMeasuredHeight()) / 2;
                             imageView.layout(0, y, imageView.getMeasuredWidth(), y + imageView.getMeasuredHeight());
                             int x = (int) (width * 0.4f);
@@ -383,7 +410,9 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
         ViewGroup viewGroup = (ViewGroup) fragmentView;
         viewGroup.setOnTouchListener((v, event) -> true);
 
-        viewGroup.addView(actionBar);
+        if (actionBar != null) {
+            viewGroup.addView(actionBar);
+        }
 
         imageView = new RLottieImageView(context);
         viewGroup.addView(imageView);
@@ -796,7 +825,7 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
     }
 
     private void processOpenQrReader() {
-        CameraScanActivity.showAsSheet(this, false, new CameraScanActivity.CameraScanActivityDelegate() {
+        CameraScanActivity.showAsSheet(this, false, CameraScanActivity.TYPE_QR, new CameraScanActivity.CameraScanActivityDelegate() {
             @Override
             public void didFindQr(String text) {
                 finishFragment(false);
@@ -809,6 +838,10 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
         return currentType;
     }
 
+    public void setShowingAsBottomSheet(boolean showingAsBottomSheet) {
+        this.showingAsBottomSheet = showingAsBottomSheet;
+    }
+
     @Override
     public ArrayList<ThemeDescription> getThemeDescriptions() {
         ArrayList<ThemeDescription> themeDescriptions = new ArrayList<>();
@@ -817,9 +850,11 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
 
         themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, delegate, Theme.key_windowBackgroundWhite));
 
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarWhiteSelector));
+        if (actionBar != null) {
+            themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
+            themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
+            themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarWhiteSelector));
+        }
 
         themeDescriptions.add(new ThemeDescription(titleTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, delegate, Theme.key_windowBackgroundWhiteBlackText));
         themeDescriptions.add(new ThemeDescription(subtitleTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));

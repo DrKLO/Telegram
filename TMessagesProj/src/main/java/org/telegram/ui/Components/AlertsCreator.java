@@ -1487,6 +1487,80 @@ public class AlertsCreator {
         }
     }
 
+    public static void createClearDaysDialogAlert(BaseFragment fragment, int days, TLRPC.User user, MessagesStorage.BooleanCallback onProcessRunnable, Theme.ResourcesProvider resourcesProvider) {
+        if (fragment == null || fragment.getParentActivity() == null || user == null) {
+            return;
+        }
+        int account = fragment.getCurrentAccount();
+
+        Context context = fragment.getParentActivity();
+        AlertDialog.Builder builder = new AlertDialog.Builder(context, resourcesProvider);
+        long selfUserId = UserConfig.getInstance(account).getClientUserId();
+
+        CheckBoxCell[] cell = new CheckBoxCell[1];
+
+        TextView messageTextView = new TextView(context);
+        messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
+
+        FrameLayout frameLayout = new FrameLayout(context) {
+            @Override
+            protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+                if (cell[0] != null) {
+                    setMeasuredDimension(getMeasuredWidth(), getMeasuredHeight() + cell[0].getMeasuredHeight());
+                }
+            }
+        };
+        builder.setView(frameLayout);
+
+        TextView textView = new TextView(context);
+        textView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem));
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
+        textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textView.setLines(1);
+        textView.setMaxLines(1);
+        textView.setSingleLine(true);
+        textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
+        textView.setEllipsize(TextUtils.TruncateAt.END);
+
+        textView.setText(LocaleController.formatPluralString("DeleteDays", days));
+
+        frameLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 24, 11, 24, 0));
+        frameLayout.addView(messageTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 24, 48, 24, 18));
+
+        messageTextView.setText(LocaleController.getString("DeleteHistoryByDaysMessage", R.string.DeleteHistoryByDaysMessage));
+        final boolean[] deleteForAll = new boolean[]{false};
+
+        if (user.id != selfUserId) {
+            cell[0] = new CheckBoxCell(context, 1, resourcesProvider);
+            cell[0].setBackgroundDrawable(Theme.getSelectorDrawable(false));
+            cell[0].setText(LocaleController.formatString("DeleteMessagesOptionAlso", R.string.DeleteMessagesOptionAlso, UserObject.getFirstName(user)), "", false, false);
+
+            cell[0].setPadding(LocaleController.isRTL ? AndroidUtilities.dp(16) : AndroidUtilities.dp(8), 0, LocaleController.isRTL ? AndroidUtilities.dp(8) : AndroidUtilities.dp(16), 0);
+            frameLayout.addView(cell[0], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM | Gravity.LEFT, 0, 0, 0, 0));
+
+            cell[0].setChecked(false, false);
+            cell[0].setOnClickListener(v -> {
+                CheckBoxCell cell1 = (CheckBoxCell) v;
+                deleteForAll[0] = !deleteForAll[0];
+                cell1.setChecked(deleteForAll[0], true);
+            });
+        }
+
+        builder.setPositiveButton(LocaleController.getString("Delete", R.string.Delete), (dialogInterface, i) -> {
+            onProcessRunnable.run(deleteForAll[0]);
+        });
+        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+        AlertDialog alertDialog = builder.create();
+        fragment.showDialog(alertDialog);
+        TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
+        if (button != null) {
+            button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+        }
+    }
+
     public static void createCallDialogAlert(BaseFragment fragment, TLRPC.User user, boolean videoCall) {
         if (fragment == null || fragment.getParentActivity() == null || user == null || UserObject.isDeleted(user) || UserConfig.getInstance(fragment.getCurrentAccount()).getClientUserId() == user.id) {
             return;
@@ -1829,6 +1903,43 @@ public class AlertsCreator {
             firstNameEditTextView.setOnEditorActionListener(actionListener);
         }
 
+    }
+
+    public static void showChatWithAdmin(BaseFragment fragment, TLRPC.User user, String chatWithAdmin, boolean isChannel, int chatWithAdminDate) {
+        if (fragment.getParentActivity() == null) {
+            return;
+        }
+        BottomSheet.Builder builder = new BottomSheet.Builder(fragment.getParentActivity());
+        builder.setTitle(isChannel ? LocaleController.getString("ChatWithAdminChannelTitle", R.string.ChatWithAdminChannelTitle) : LocaleController.getString("ChatWithAdminGroupTitle", R.string.ChatWithAdminGroupTitle), true);
+        LinearLayout linearLayout = new LinearLayout(fragment.getParentActivity());
+        linearLayout.setOrientation(LinearLayout.VERTICAL);
+        TextView messageTextView = new TextView(fragment.getParentActivity());
+        linearLayout.addView(messageTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, 0, 24, 16, 24, 24));
+        messageTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+
+        messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("ChatWithAdminMessage", R.string.ChatWithAdminMessage, chatWithAdmin, LocaleController.formatDateAudio(chatWithAdminDate, false))));
+
+
+        TextView buttonTextView = new TextView(fragment.getParentActivity());
+        buttonTextView.setPadding(AndroidUtilities.dp(34), 0, AndroidUtilities.dp(34), 0);
+        buttonTextView.setGravity(Gravity.CENTER);
+        buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        buttonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        buttonTextView.setText(LocaleController.getString("IUnderstand", R.string.IUnderstand));
+
+        buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
+        buttonTextView.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(6), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
+
+        linearLayout.addView(buttonTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 0, 24, 15, 16, 24));
+
+
+        builder.setCustomView(linearLayout);
+        BottomSheet bottomSheet = builder.show();
+
+        buttonTextView.setOnClickListener((v) -> {
+            bottomSheet.dismiss();
+        });
     }
 
     public interface BlockDialogCallback {

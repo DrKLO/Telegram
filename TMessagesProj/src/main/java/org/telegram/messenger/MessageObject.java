@@ -1784,6 +1784,22 @@ public class MessageObject {
         } else if (event.action instanceof TLRPC.TL_channelAdminLogEventActionParticipantJoinByInvite) {
             TLRPC.TL_channelAdminLogEventActionParticipantJoinByInvite action = (TLRPC.TL_channelAdminLogEventActionParticipantJoinByInvite) event.action;
             messageText = replaceWithLink(LocaleController.getString("ActionInviteUser", R.string.ActionInviteUser), "un1", fromUser);
+        } else if (event.action instanceof TLRPC.TL_channelAdminLogEventActionToggleNoForwards) {
+            TLRPC.TL_channelAdminLogEventActionToggleNoForwards action = (TLRPC.TL_channelAdminLogEventActionToggleNoForwards) event.action;
+            boolean isChannel = ChatObject.isChannel(chat) && !chat.megagroup;
+            if (action.new_value) {
+                if (isChannel) {
+                    messageText = replaceWithLink(LocaleController.getString("ActionForwardsRestrictedChannel", R.string.ActionForwardsRestrictedChannel), "un1", fromUser);
+                } else {
+                    messageText = replaceWithLink(LocaleController.getString("ActionForwardsRestrictedGroup", R.string.ActionForwardsRestrictedGroup), "un1", fromUser);
+                }
+            } else {
+                if (isChannel) {
+                    messageText = replaceWithLink(LocaleController.getString("ActionForwardsEnabledChannel", R.string.ActionForwardsEnabledChannel), "un1", fromUser);
+                } else {
+                    messageText = replaceWithLink(LocaleController.getString("ActionForwardsEnabledGroup", R.string.ActionForwardsEnabledGroup), "un1", fromUser);
+                }
+            }
         } else if (event.action instanceof TLRPC.TL_channelAdminLogEventActionExportedInviteDelete) {
             TLRPC.TL_channelAdminLogEventActionExportedInviteDelete action = (TLRPC.TL_channelAdminLogEventActionExportedInviteDelete) event.action;
             messageText = replaceWithLink(LocaleController.formatString("ActionDeletedInviteLinkClickable", R.string.ActionDeletedInviteLinkClickable), "un1", fromUser);
@@ -1841,6 +1857,9 @@ public class MessageObject {
             messageText = replaceWithLink(LocaleController.getString("JoinedViaInviteLinkApproved", R.string.JoinedViaInviteLinkApproved), "un1", fromUser);
             messageText = replaceWithLink(messageText, "un2", action.invite);
             messageText = replaceWithLink(messageText, "un3", MessagesController.getInstance(currentAccount).getUser(action.approved_by));
+        } else if (event.action instanceof TLRPC.TL_channelAdminLogEventActionSendMessage) {
+            message = ((TLRPC.TL_channelAdminLogEventActionSendMessage) event.action).message;
+            messageText = replaceWithLink(LocaleController.getString("EventLogSendMessages", R.string.EventLogSendMessages), "un1", fromUser);
         } else {
             messageText = "unsupported " + event.action;
         }

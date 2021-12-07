@@ -13,14 +13,20 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
+import android.app.Application;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Environment;
 import android.os.StatFs;
+import android.os.storage.StorageManager;
+import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.SparseArray;
 import android.view.Gravity;
@@ -29,10 +35,12 @@ import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.TextView;
 
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
@@ -57,6 +65,7 @@ import org.telegram.ui.Cells.GraySectionCell;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.SharedDocumentCell;
+import org.telegram.ui.Cells.TextCheckBoxCell;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.FilteredSearchView;
 import org.telegram.ui.PhotoPickerActivity;
@@ -327,10 +336,40 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
                 ListItem item = (ListItem) object;
                 File file = item.file;
                 boolean isExternalStorageManager = false;
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-                    isExternalStorageManager = Environment.isExternalStorageManager();
-                }
-                if (file == null) {
+//                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+//                    isExternalStorageManager = Environment.isExternalStorageManager();
+//                }
+                if (!BuildVars.NO_SCOPED_STORAGE && (item.icon == R.drawable.files_storage || item.icon == R.drawable.files_internal)) {
+                   //if (SharedConfig.dontAskManageStorage) {
+                        delegate.startDocumentSelectActivity();
+                    /*} else {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                        builder.setTopImage(R.drawable.doc_big, Theme.getColor(Theme.key_dialogTopBackground));
+                        builder.setMessage(AndroidUtilities.replaceTags(LocaleController.getString("ManageAllFilesRational", R.string.ManageAllFilesRational)));
+
+                        TextCheckBoxCell textCheckBoxCell = new TextCheckBoxCell(context, true, true);
+                        textCheckBoxCell.setTextAndCheck(LocaleController.getString("DontAskAgain", R.string.DontAskAgain), false, false);
+                        textCheckBoxCell.setOnClickListener(new OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                textCheckBoxCell.setChecked(!textCheckBoxCell.isChecked());
+                            }
+                        });
+                        builder.setView(textCheckBoxCell);
+
+                        builder.setPositiveButton(LocaleController.getString("Allow", R.string.Allow), (i1, i2) -> {
+                            Uri uri = Uri.parse("package:" + BuildConfig.APPLICATION_ID);
+                            context.startActivity(new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, uri));
+                        });
+                        builder.setNegativeButton(LocaleController.getString("UseFileManger", R.string.UseFileManger), (i1, i2) -> {
+                            if (textCheckBoxCell.isChecked()) {
+                                SharedConfig.setDontAskManageStorage(true);
+                            }
+                            delegate.startDocumentSelectActivity();
+                        });
+                        builder.show();
+                    }*/
+                } else if (file == null) {
                     if (item.icon == R.drawable.files_gallery) {
                         HashMap<Object, Object> selectedPhotos = new HashMap<>();
                         ArrayList<Object> selectedPhotosOrder = new ArrayList<>();
@@ -373,8 +412,6 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
                         if (delegate != null) {
                             delegate.startMusicSelectActivity();
                         }
-                    } else if (!BuildVars.NO_SCOPED_STORAGE && item.icon == R.drawable.files_storage && !isExternalStorageManager) {
-                        delegate.startDocumentSelectActivity();
                     } else {
                         int top = getTopForScroll();
                         HistoryEntry he = history.remove(history.size() - 1);
@@ -950,13 +987,13 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
             isExternalStorageManager = Environment.isExternalStorageManager();
         }
-        if (!BuildVars.NO_SCOPED_STORAGE && !isExternalStorageManager) {
-            ListItem ext = new ListItem();
-            ext.title = LocaleController.getString("InternalStorage", R.string.InternalStorage);
-            ext.icon = R.drawable.files_storage;
-            ext.subtitle = LocaleController.getString("InternalFolderInfo", R.string.InternalFolderInfo);
-            items.add(ext);
-        } else {
+//        if (!BuildVars.NO_SCOPED_STORAGE && !isExternalStorageManager) {
+//            ListItem ext = new ListItem();
+//            ext.title = LocaleController.getString("InternalStorage", R.string.InternalStorage);
+//            ext.icon = R.drawable.files_storage;
+//            ext.subtitle = LocaleController.getString("InternalFolderInfo", R.string.InternalFolderInfo);
+//            items.add(ext);
+//        } else {
             String defaultPath = Environment.getExternalStorageDirectory().getPath();
             String defaultPathState = Environment.getExternalStorageState();
             if (defaultPathState.equals(Environment.MEDIA_MOUNTED) || defaultPathState.equals(Environment.MEDIA_MOUNTED_READ_ONLY)) {
@@ -1031,7 +1068,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
                     }
                 }
             }
-        }
+        //}
 
         ListItem fs;
         try {

@@ -52,6 +52,8 @@ public class MenuDrawable extends Drawable {
     public static int TYPE_UDPATE_AVAILABLE = 1;
     public static int TYPE_UDPATE_DOWNLOADING = 2;
 
+    private int alpha = 255;
+
     public MenuDrawable() {
         this(TYPE_DEFAULT);
     }
@@ -69,6 +71,10 @@ public class MenuDrawable extends Drawable {
 
     public void setRotateToBack(boolean value) {
         rotateToBack = value;
+    }
+
+    public float getCurrentRotation() {
+        return currentRotation;
     }
 
     public void setRotation(float rotation, boolean animated) {
@@ -164,6 +170,7 @@ public class MenuDrawable extends Drawable {
         if (rotateToBack) {
             canvas.rotate(currentRotation * (reverseAngle ? -180 : 180), AndroidUtilities.dp(9), 0);
             paint.setColor(color1);
+            paint.setAlpha(alpha);
             canvas.drawLine(0, 0, AndroidUtilities.dp(18) - AndroidUtilities.dp(3.0f) * currentRotation - diffMiddle, 0, paint);
             endYDiff = AndroidUtilities.dp(5) * (1 - Math.abs(currentRotation)) - AndroidUtilities.dp(0.5f) * Math.abs(currentRotation);
             endXDiff = AndroidUtilities.dp(18) - AndroidUtilities.dp(2.5f) * Math.abs(currentRotation);
@@ -173,6 +180,7 @@ public class MenuDrawable extends Drawable {
             canvas.rotate(currentRotation * (reverseAngle ? -225 : 135), AndroidUtilities.dp(9), 0);
             if (miniIcon) {
                 paint.setColor(color1);
+                paint.setAlpha(alpha);
                 canvas.drawLine(AndroidUtilities.dpf2(2) * (1 - Math.abs(currentRotation)) + AndroidUtilities.dp(1) * currentRotation, 0, AndroidUtilities.dpf2(16) * (1f - currentRotation) + AndroidUtilities.dp(17) * currentRotation - diffMiddle, 0, paint);
                 endYDiff = AndroidUtilities.dpf2(5) * (1 - Math.abs(currentRotation)) - AndroidUtilities.dpf2(0.5f) * Math.abs(currentRotation);
                 endXDiff = AndroidUtilities.dpf2(16) * (1 - Math.abs(currentRotation)) + (AndroidUtilities.dpf2(9)) * Math.abs(currentRotation);
@@ -184,6 +192,7 @@ public class MenuDrawable extends Drawable {
                 int backColor2 = Theme.getColor(Theme.key_actionBarActionModeDefault);
                 backColor1 = AndroidUtilities.getOffsetColor(backColor1, backColor2, currentRotation, 1.0f);
                 paint.setColor(AndroidUtilities.getOffsetColor(color1, color2, currentRotation, 1.0f));
+                paint.setAlpha(alpha);
                 canvas.drawLine(AndroidUtilities.dp(1) * currentRotation, 0, AndroidUtilities.dp(18) - AndroidUtilities.dp(1) * currentRotation - diffMiddle, 0, paint);
                 endYDiff = AndroidUtilities.dp(5) * (1 - Math.abs(currentRotation)) - AndroidUtilities.dp(0.5f) * Math.abs(currentRotation);
                 endXDiff = AndroidUtilities.dp(18) - AndroidUtilities.dp(9) * Math.abs(currentRotation);
@@ -207,13 +216,14 @@ public class MenuDrawable extends Drawable {
                 rad *= (1.0f - typeAnimationProgress);
             }
             backPaint.setColor(backColor1);
+            backPaint.setAlpha(alpha);
             canvas.drawCircle(cx, cy, rad, paint);
             if (type == TYPE_UDPATE_AVAILABLE || previousType == TYPE_UDPATE_AVAILABLE) {
                 backPaint.setStrokeWidth(AndroidUtilities.density * 1.66f);
                 if (previousType == TYPE_UDPATE_AVAILABLE) {
-                    backPaint.setAlpha((int) (255 * (1.0f - typeAnimationProgress)));
+                    backPaint.setAlpha((int) (alpha * (1.0f - typeAnimationProgress)));
                 } else {
-                    backPaint.setAlpha(255);
+                    backPaint.setAlpha(alpha);
                 }
                 canvas.drawLine(cx, cy - AndroidUtilities.dp(2), cx, cy, backPaint);
                 canvas.drawPoint(cx, cy + AndroidUtilities.dp(2.5f), backPaint);
@@ -221,9 +231,9 @@ public class MenuDrawable extends Drawable {
             if (type == TYPE_UDPATE_DOWNLOADING || previousType == TYPE_UDPATE_DOWNLOADING) {
                 backPaint.setStrokeWidth(AndroidUtilities.dp(2));
                 if (previousType == TYPE_UDPATE_DOWNLOADING) {
-                    backPaint.setAlpha((int) (255 * (1.0f - typeAnimationProgress)));
+                    backPaint.setAlpha((int) (alpha * (1.0f - typeAnimationProgress)));
                 } else {
-                    backPaint.setAlpha(255);
+                    backPaint.setAlpha(alpha);
                 }
                 float arcRad = Math.max(4, 360 * animatedDownloadProgress);
                 rect.set(cx - AndroidUtilities.dp(3), cy - AndroidUtilities.dp(3), cx + AndroidUtilities.dp(3), cy + AndroidUtilities.dp(3));
@@ -266,7 +276,12 @@ public class MenuDrawable extends Drawable {
 
     @Override
     public void setAlpha(int alpha) {
-
+        if (this.alpha != alpha) {
+            this.alpha = alpha;
+            paint.setAlpha(alpha);
+            backPaint.setAlpha(alpha);
+            invalidateSelf();
+        }
     }
 
     @Override

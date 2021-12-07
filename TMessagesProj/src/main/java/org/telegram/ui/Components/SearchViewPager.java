@@ -104,19 +104,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
             }
         };
 
-        searchListView = new RecyclerListView(context) {
-            @Override
-            protected void dispatchDraw(Canvas canvas) {
-                itemsEnterAnimator.dispatchDraw();
-                super.dispatchDraw(canvas);
-            }
-
-            @Override
-            protected void onDetachedFromWindow() {
-                super.onDetachedFromWindow();
-                itemsEnterAnimator.onDetached();
-            }
-        };
+        searchListView = new RecyclerListView(context);
         searchListView.setPivotY(0);
         searchListView.setAdapter(dialogsSearchAdapter);
         searchListView.setVerticalScrollBarEnabled(true);

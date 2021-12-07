@@ -547,19 +547,7 @@ public class ManageLinksActivity extends BaseFragment {
         FrameLayout frameLayout = (FrameLayout) fragmentView;
 
 
-        listView = new RecyclerListView(context) {
-            @Override
-            protected void dispatchDraw(Canvas canvas) {
-                recyclerItemsEnterAnimator.dispatchDraw();
-                super.dispatchDraw(canvas);
-            }
-
-            @Override
-            protected void onDetachedFromWindow() {
-                super.onDetachedFromWindow();
-                recyclerItemsEnterAnimator.onDetached();
-            }
-        };
+        listView = new RecyclerListView(context);
         LinearLayoutManager layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false) {
             @Override
             public boolean supportsPredictiveItemAnimations() {

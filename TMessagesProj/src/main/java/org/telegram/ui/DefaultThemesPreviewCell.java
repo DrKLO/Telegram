@@ -1,16 +1,21 @@
 package org.telegram.ui;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 
+import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
@@ -23,8 +28,10 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.EmojiThemes;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Cells.DrawerProfileCell;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Components.ChatThemeBottomSheet;
+import org.telegram.ui.Components.ThemeSmallPreviewView;
 import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RLottieDrawable;
@@ -57,7 +64,7 @@ public class DefaultThemesPreviewCell extends LinearLayout {
         addView(frameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
 
-        adapter = new ChatThemeBottomSheet.Adapter(parentFragment.getCurrentAccount(), null, currentType == ThemeActivity.THEME_TYPE_BASIC ? ChatThemeBottomSheet.Adapter.TYPE_DEFAULT : ChatThemeBottomSheet.Adapter.TYPE_GRID);
+        adapter = new ChatThemeBottomSheet.Adapter(parentFragment.getCurrentAccount(), null, currentType == ThemeActivity.THEME_TYPE_BASIC ? ThemeSmallPreviewView.TYPE_DEFAULT : ThemeSmallPreviewView.TYPE_GRID);
         recyclerView = new RecyclerListView(getContext());
         recyclerView.setAdapter(adapter);
         recyclerView.setClipChildren(false);
@@ -79,12 +86,13 @@ public class DefaultThemesPreviewCell extends LinearLayout {
             recyclerView.setLayoutManager(layoutManager = gridLayoutManager);
         }
 
+        recyclerView.setFocusable(false);
         recyclerView.setPadding(AndroidUtilities.dp(12), 0, AndroidUtilities.dp(12), 0);
         recyclerView.setOnItemClickListener((view, position) -> {
             ChatThemeBottomSheet.ChatThemeItem chatTheme = adapter.items.get(position);
             Theme.ThemeInfo info = chatTheme.chatTheme.getThemeInfo(themeIndex);
             int accentId = -1;
-            if (chatTheme.chatTheme.getEmoticon().equals("\uD83C\uDFE0")) {
+            if (chatTheme.chatTheme.getEmoticon().equals("\uD83C\uDFE0") || chatTheme.chatTheme.getEmoticon().equals("\uD83C\uDFA8")) {
                 accentId = chatTheme.chatTheme.getAccentId(themeIndex);
             }
             if (info == null) {
@@ -104,18 +112,28 @@ public class DefaultThemesPreviewCell extends LinearLayout {
                 }
             }
 
-            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, info, false, null, accentId);
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, info, true, null, accentId);
 
             selectedPosition = position;
+            for (int i = 0; i < adapter.items.size(); i++) {
+                adapter.items.get(i).isSelected = i == selectedPosition;
+            }
             adapter.setSelectedItem(selectedPosition);
 
             for (int i = 0; i < recyclerView.getChildCount(); i++) {
-                ChatThemeBottomSheet.Adapter.ChatThemeView child = (ChatThemeBottomSheet.Adapter.ChatThemeView) recyclerView.getChildAt(i);
+                ThemeSmallPreviewView child = (ThemeSmallPreviewView) recyclerView.getChildAt(i);
                 if (child != view) {
                     child.cancelAnimation();
                 }
             }
-            ((ChatThemeBottomSheet.Adapter.ChatThemeView) view).playEmojiAnimation();
+            ((ThemeSmallPreviewView) view).playEmojiAnimation();
+
+            if (info != null) {
+                SharedPreferences.Editor editor = ApplicationLoader.applicationContext.getSharedPreferences("themeconfig", Activity.MODE_PRIVATE).edit();
+                editor.putString(currentType == ThemeActivity.THEME_TYPE_NIGHT || info.isDark() ? "lastDarkTheme" : "lastDayTheme", info.getKey());
+                editor.commit();
+            }
+
         });
 
         progressView = new FlickerLoadingView(getContext(), null);
@@ -141,7 +159,6 @@ public class DefaultThemesPreviewCell extends LinearLayout {
             darkThemeDrawable.commitApplyLayerColors();
 
             dayNightCell = new TextCell(context);
-            dayNightCell.setTextAndIcon(LocaleController.getString("SettingsSwitchToNightMode", R.string.SettingsSwitchToNightMode), darkThemeDrawable, true);
             dayNightCell.imageLeft = 21;
             addView(dayNightCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
@@ -154,6 +171,11 @@ public class DefaultThemesPreviewCell extends LinearLayout {
                 @SuppressLint("NotifyDataSetChanged")
                 @Override
                 public void onClick(View view) {
+                    if (DrawerProfileCell.switchingTheme) {
+                        return;
+                    }
+                    int iconOldColor = Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4);
+                    DrawerProfileCell.switchingTheme = true;
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("themeconfig", Activity.MODE_PRIVATE);
                     String dayThemeName = preferences.getString("lastDayTheme", "Blue");
                     if (Theme.getTheme(dayThemeName) == null || Theme.getTheme(dayThemeName).isDark()) {
@@ -190,6 +212,32 @@ public class DefaultThemesPreviewCell extends LinearLayout {
 
                     updateDayNightMode();
                     updateSelectedPosition();
+
+                    int iconNewColor = Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4);
+                    darkThemeDrawable.setColorFilter(new PorterDuffColorFilter(iconNewColor, PorterDuff.Mode.SRC_IN));
+                    ValueAnimator valueAnimator = ValueAnimator.ofFloat(0, 1f);
+                    valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                        @Override
+                        public void onAnimationUpdate(ValueAnimator valueAnimator) {
+                            int color = ColorUtils.blendARGB(iconOldColor, iconNewColor, (Float) valueAnimator.getAnimatedValue());
+                            darkThemeDrawable.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN));
+                        }
+                    });
+                    valueAnimator.addListener(new AnimatorListenerAdapter() {
+                        @Override
+                        public void onAnimationEnd(Animator animation) {
+                            darkThemeDrawable.setColorFilter(new PorterDuffColorFilter(iconNewColor, PorterDuff.Mode.SRC_IN));
+                            super.onAnimationEnd(animation);
+                        }
+                    });
+                    valueAnimator.setDuration(350);
+                    valueAnimator.start();
+
+                    if (Theme.isCurrentThemeDay()) {
+                        dayNightCell.setTextAndIcon(LocaleController.getString("SettingsSwitchToNightMode", R.string.SettingsSwitchToNightMode), darkThemeDrawable, true);
+                    } else {
+                        dayNightCell.setTextAndIcon(LocaleController.getString("SettingsSwitchToDayMode", R.string.SettingsSwitchToDayMode), darkThemeDrawable, true);
+                    }
                 }
             });
 
@@ -200,12 +248,14 @@ public class DefaultThemesPreviewCell extends LinearLayout {
 
             if (!Theme.isCurrentThemeDay()) {
                 darkThemeDrawable.setCurrentFrame(darkThemeDrawable.getFramesCount() - 1);
+                dayNightCell.setTextAndIcon(LocaleController.getString("SettingsSwitchToDaytMode", R.string.SettingsSwitchToDayMode), darkThemeDrawable, true);
+            } else {
+                dayNightCell.setTextAndIcon(LocaleController.getString("SettingsSwitchToNightMode", R.string.SettingsSwitchToNightMode), darkThemeDrawable, true);
             }
         }
 
         if (!Theme.defaultEmojiThemes.isEmpty()) {
-            ArrayList<ChatThemeBottomSheet.ChatThemeItem> themes = new ArrayList<>();
-            themes.addAll(Theme.defaultEmojiThemes);
+            ArrayList<ChatThemeBottomSheet.ChatThemeItem> themes = new ArrayList<>(Theme.defaultEmojiThemes);
             if (currentType == ThemeActivity.THEME_TYPE_BASIC) {
 
                 EmojiThemes chatTheme = EmojiThemes.createPreviewCustom();
@@ -263,19 +313,35 @@ public class DefaultThemesPreviewCell extends LinearLayout {
         selectedPosition = -1;
         for (int i = 0; i < adapter.items.size(); i++) {
             TLRPC.TL_theme theme = adapter.items.get(i).chatTheme.getTlTheme(themeIndex);
+            Theme.ThemeInfo themeInfo = adapter.items.get(i).chatTheme.getThemeInfo(themeIndex);
             if (theme != null) {
                 int settingsIndex = adapter.items.get(i).chatTheme.getSettingsIndex(themeIndex);
                 String key = Theme.getBaseThemeKey(theme.settings.get(settingsIndex));
-                if (Theme.getCurrentTheme().name.equals(key)) {
-                    Theme.ThemeAccent accent = Theme.getCurrentTheme().accentsByThemeId.get(theme.id);
-                    if (accent != null && accent.id == Theme.getCurrentTheme().currentAccentId) {
+                if (Theme.getActiveTheme().name.equals(key)) {
+                    if (Theme.getActiveTheme().accentsByThemeId == null) {
                         selectedPosition = i;
+                        break;
+                    } else {
+                        Theme.ThemeAccent accent = Theme.getActiveTheme().accentsByThemeId.get(theme.id);
+                        if (accent != null && accent.id == Theme.getActiveTheme().currentAccentId) {
+                            selectedPosition = i;
+                            break;
+                        }
                     }
+                }
+            } else if (themeInfo != null) {
+                String key = themeInfo.getKey();
+                if (Theme.getActiveTheme().name.equals(key) && adapter.items.get(i).chatTheme.getAccentId(themeIndex) == Theme.getActiveTheme().currentAccentId) {
+                    selectedPosition = i;
+                    break;
                 }
             }
         }
-        if (selectedPosition == -1) {
+        if (selectedPosition == -1 && currentType != ThemeActivity.THEME_TYPE_THEMES_BROWSER) {
             selectedPosition = adapter.items.size() - 1;
+        }
+        for (int i = 0; i < adapter.items.size(); i++) {
+            adapter.items.get(i).isSelected = i == selectedPosition;
         }
         adapter.setSelectedItem(selectedPosition);
     }
@@ -300,7 +366,7 @@ public class DefaultThemesPreviewCell extends LinearLayout {
             }
             Theme.setCurrentNightTheme(themeInfo);
         } else {
-            if (themeInfo == Theme.getCurrentTheme()) {
+            if (themeInfo == Theme.getActiveTheme()) {
                 return;
             }
             NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, themeInfo, false, null, -1);
@@ -318,10 +384,7 @@ public class DefaultThemesPreviewCell extends LinearLayout {
 
     public void updateColors() {
         if (currentType == ThemeActivity.THEME_TYPE_BASIC) {
-            darkThemeDrawable.setLayerColor("Sunny.**", Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
-            darkThemeDrawable.setLayerColor("Path.**", Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
-            darkThemeDrawable.setLayerColor("Path 10.**", Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
-            darkThemeDrawable.setLayerColor("Path 11.**", Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
+            darkThemeDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4), PorterDuff.Mode.SRC_IN));
 
             dayNightCell.setBackground(Theme.createSelectorWithBackgroundDrawable(Theme.getColor(Theme.key_windowBackgroundWhite), Theme.getColor(Theme.key_listSelector)));
             browseThemesCell.setBackground(Theme.createSelectorWithBackgroundDrawable(Theme.getColor(Theme.key_windowBackgroundWhite), Theme.getColor(Theme.key_listSelector)));

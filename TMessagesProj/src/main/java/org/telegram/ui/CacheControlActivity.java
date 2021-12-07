@@ -10,10 +10,13 @@ package org.telegram.ui;
 
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.os.StatFs;
+import android.provider.Settings;
 import android.text.TextUtils;
 import android.transition.ChangeBounds;
 import android.transition.Fade;
@@ -22,18 +25,25 @@ import android.transition.TransitionSet;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.RequiresApi;
 import androidx.core.widget.NestedScrollView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLiteDatabase;
 import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.BuildConfig;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
@@ -69,7 +79,11 @@ import org.telegram.ui.Components.StroageUsageView;
 import org.telegram.ui.Components.UndoView;
 
 import java.io.File;
+import java.nio.file.CopyOption;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.stream.Stream;
 
 public class CacheControlActivity extends BaseFragment {
 
@@ -99,10 +113,12 @@ public class CacheControlActivity extends BaseFragment {
     private long totalSize = -1;
     private long totalDeviceSize = -1;
     private long totalDeviceFreeSize = -1;
+    private long migrateOldFolderRow = -1;
     private StorageDiagramView.ClearViewData[] clearViewData = new StorageDiagramView.ClearViewData[7];
     private boolean calculating = true;
 
     private volatile boolean canceled = false;
+    private boolean hasOldFolder;
 
     private View bottomSheetView;
     private BottomSheet bottomSheet;
@@ -115,18 +131,6 @@ public class CacheControlActivity extends BaseFragment {
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
-
-        rowCount = 0;
-
-        keepMediaHeaderRow = rowCount++;
-        keepMediaChooserRow = rowCount++;
-        keepMediaInfoRow = rowCount++;
-        deviseStorageHeaderRow = rowCount++;
-        storageUsageRow = rowCount++;
-
-        cacheInfoRow = rowCount++;
-        databaseRow = rowCount++;
-        databaseInfoRow = rowCount++;
 
         databaseSize = MessagesStorage.getInstance(currentAccount).getDatabaseSize();
 
@@ -209,7 +213,43 @@ public class CacheControlActivity extends BaseFragment {
         });
 
         fragmentCreateTime = System.currentTimeMillis();
+
+        if (Build.VERSION.SDK_INT >= 30) {
+            File path = Environment.getExternalStorageDirectory();
+            if (Build.VERSION.SDK_INT >= 19 && !TextUtils.isEmpty(SharedConfig.storageCacheDir)) {
+                ArrayList<File> dirs = AndroidUtilities.getRootDirs();
+                if (dirs != null) {
+                    for (int a = 0, N = dirs.size(); a < N; a++) {
+                        File dir = dirs.get(a);
+                        if (dir.getAbsolutePath().startsWith(SharedConfig.storageCacheDir)) {
+                            path = dir;
+                            break;
+                        }
+                    }
+                }
+            }
+            File oldDirectory = new File(path, "Telegram");
+            hasOldFolder = oldDirectory.exists();
+        }
+        updateRows();
         return true;
+    }
+
+    private void updateRows() {
+        rowCount = 0;
+
+        keepMediaHeaderRow = rowCount++;
+        keepMediaChooserRow = rowCount++;
+        keepMediaInfoRow = rowCount++;
+        deviseStorageHeaderRow = rowCount++;
+        storageUsageRow = rowCount++;
+
+        cacheInfoRow = rowCount++;
+        databaseRow = rowCount++;
+        databaseInfoRow = rowCount++;
+//        if (hasOldFolder) {
+//            migrateOldFolderRow = rowCount++;
+//        }
     }
 
     private void updateStorageUsageRow() {
@@ -406,7 +446,9 @@ public class CacheControlActivity extends BaseFragment {
             if (getParentActivity() == null) {
                 return;
             }
-            if (position == databaseRow) {
+            if (position == migrateOldFolderRow) {
+                migrateOldFolder();
+            } else if (position == databaseRow) {
                 clearDatabase();
             } else if (position == storageUsageRow) {
                 if (totalSize <= 0 || getParentActivity() == null) {
@@ -523,6 +565,115 @@ public class CacheControlActivity extends BaseFragment {
         frameLayout.addView(cacheRemovedTooltip, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.LEFT, 8, 0, 8, 8));
 
         return fragmentView;
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.R)
+    private void migrateOldFolder() {
+        boolean isExternalStorageManager = Environment.isExternalStorageManager();
+
+        if (!BuildVars.NO_SCOPED_STORAGE && !isExternalStorageManager) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+            builder.setTitle(LocaleController.getString("MigrateOldFolder", R.string.MigrateOldFolder));
+            builder.setMessage(LocaleController.getString("ManageAllFilesRational2", R.string.ManageAllFilesRational2));
+            builder.setPositiveButton(LocaleController.getString("Allow", R.string.Allow), (i1, i2) -> {
+                Uri uri = Uri.parse("package:" + BuildConfig.APPLICATION_ID);
+                getParentActivity().startActivity(new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, uri));
+            });
+            builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), (i1, i2) -> {
+
+            });
+            builder.show();
+            return;
+        }
+
+        Thread thread = new Thread() {
+
+            int totalFilesCount;
+            int movedFilesCount;
+            @Override
+            public void run() {
+                super.run();
+                File path = Environment.getExternalStorageDirectory();
+                if (Build.VERSION.SDK_INT >= 19 && !TextUtils.isEmpty(SharedConfig.storageCacheDir)) {
+                    ArrayList<File> dirs = AndroidUtilities.getRootDirs();
+                    if (dirs != null) {
+                        for (int a = 0, N = dirs.size(); a < N; a++) {
+                            File dir = dirs.get(a);
+                            if (dir.getAbsolutePath().startsWith(SharedConfig.storageCacheDir)) {
+                                path = dir;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                File newPath = ApplicationLoader.applicationContext.getExternalFilesDir(null);
+                File telegramPath = new File(newPath, "Telegram");
+                File oldPath = new File(path, "Telegram");
+
+                totalFilesCount = getFilesCount(oldPath);
+
+                long moveStart = System.currentTimeMillis();
+                moveDirectory(oldPath, telegramPath);
+                long dt = System.currentTimeMillis() - moveStart;
+                FileLog.d("move time = " + dt);
+            }
+
+            private int getFilesCount(File source) {
+                if (!source.exists()) {
+                    return 0;
+                }
+                int count = 0;
+                File[] fileList = source.listFiles();
+                for (int i = 0; i < fileList.length; i++) {
+                    if (fileList[i].isDirectory()) {
+                        count += getFilesCount(fileList[i]);
+                    } else {
+                        count++;
+                    }
+                }
+                return count;
+            }
+
+            private void moveDirectory(File source, File target) {
+                if (!source.exists() || (!target.exists() && !target.mkdir())) {
+                    return;
+                }
+                try (Stream<Path> files = Files.list(source.toPath())) {
+                    files.forEach(path -> {
+                        File dest = new File(target, path.getFileName().toString());
+                        if (Files.isDirectory(path)) {
+                            moveDirectory(path.toFile(), dest);
+                        } else {
+                            try {
+                                Files.move(path, dest.toPath());
+                            } catch (Exception e) {
+                                FileLog.e(e);
+                                try {
+                                    path.toFile().delete();
+                                } catch (Exception e1) {
+                                    FileLog.e(e1);
+                                }
+                            }
+                            movedFilesCount++;
+                            updateProgress();
+                        }
+                    });
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+                try {
+                    source.delete();
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+            }
+
+            private void updateProgress() {
+                float p = movedFilesCount / (float) totalFilesCount;
+            }
+        };
+        thread.start();
     }
 
     private void clearDatabase() {
@@ -657,7 +808,7 @@ public class CacheControlActivity extends BaseFragment {
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
             int position = holder.getAdapterPosition();
-            return position == databaseRow || (position == storageUsageRow && (totalSize > 0) && !calculating);
+            return position == migrateOldFolderRow || position == databaseRow || (position == storageUsageRow && (totalSize > 0) && !calculating);
         }
 
         @Override
@@ -721,6 +872,8 @@ public class CacheControlActivity extends BaseFragment {
                     TextSettingsCell textCell = (TextSettingsCell) holder.itemView;
                     if (position == databaseRow) {
                         textCell.setTextAndValue(LocaleController.getString("ClearLocalDatabase", R.string.ClearLocalDatabase), AndroidUtilities.formatFileSize(databaseSize), false);
+                    } else if (position == migrateOldFolderRow) {
+                        textCell.setTextAndValue(LocaleController.getString("MigrateOldFolder", R.string.MigrateOldFolder), null, false);
                     }
                     break;
                 case 1:

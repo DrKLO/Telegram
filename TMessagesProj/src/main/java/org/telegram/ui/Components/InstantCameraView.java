@@ -2609,7 +2609,9 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         if (zoom > 0f) {
             finishZoomTransition = ValueAnimator.ofFloat(zoom, 0);
             finishZoomTransition.addUpdateListener(valueAnimator -> {
-                cameraSession.setZoom((float) valueAnimator.getAnimatedValue());
+                if (cameraSession != null) {
+                    cameraSession.setZoom((float) valueAnimator.getAnimatedValue());
+                }
             });
             finishZoomTransition.addListener(new AnimatorListenerAdapter() {
                 @Override

@@ -18,6 +18,7 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.SystemClock;
 import android.view.View;
@@ -83,6 +84,7 @@ public class MotionBackgroundDrawable extends Drawable {
     private Bitmap legacyBitmap;
     private Canvas legacyCanvas2;
     private Bitmap legacyBitmap2;
+    private GradientDrawable gradientDrawable = new GradientDrawable();
     private boolean invalidateLegacy;
 
     private boolean rotationBack;
@@ -107,12 +109,13 @@ public class MotionBackgroundDrawable extends Drawable {
     }
 
     public MotionBackgroundDrawable(int c1, int c2, int c3, int c4, boolean preview) {
+        this(c1, c2, c3 ,c4, 0, preview);
+    }
+
+    public MotionBackgroundDrawable(int c1, int c2, int c3, int c4, int rotation, boolean preview) {
         super();
-        colors[0] = c1;
-        colors[1] = c2;
-        colors[2] = c3;
-        colors[3] = c4;
         isPreview = preview;
+        setColors(c1, c2, c3, c4, rotation, false);
         init();
     }
 
@@ -298,7 +301,7 @@ public class MotionBackgroundDrawable extends Drawable {
     }
 
     public void setColors(int c1, int c2, int c3, int c4) {
-        setColors(c1, c2, c3, c4, true);
+        setColors(c1, c2, c3, c4, 0, true);
     }
 
     public void setColors(int c1, int c2, int c3, int c4, Bitmap bitmap) {
@@ -309,14 +312,21 @@ public class MotionBackgroundDrawable extends Drawable {
         Utilities.generateGradient(bitmap, true, phase, interpolator.getInterpolation(posAnimationProgress), currentBitmap.getWidth(), currentBitmap.getHeight(), currentBitmap.getRowBytes(), colors);
     }
 
-    public void setColors(int c1, int c2, int c3, int c4, boolean invalidate) {
+    public void setColors(int c1, int c2, int c3, int c4, int rotation, boolean invalidate) {
+        if (isPreview && c3 == 0 && c4 == 0) {
+            gradientDrawable = new GradientDrawable(BackgroundGradientDrawable.getGradientOrientation(rotation), new int[]{c1, c2});
+        } else {
+            gradientDrawable = null;
+        }
         colors[0] = c1;
         colors[1] = c2;
         colors[2] = c3;
         colors[3] = c4;
-        Utilities.generateGradient(currentBitmap, true, phase, interpolator.getInterpolation(posAnimationProgress), currentBitmap.getWidth(), currentBitmap.getHeight(), currentBitmap.getRowBytes(), colors);
-        if (invalidate) {
-            invalidateParent();
+        if (currentBitmap != null) {
+            Utilities.generateGradient(currentBitmap, true, phase, interpolator.getInterpolation(posAnimationProgress), currentBitmap.getWidth(), currentBitmap.getHeight(), currentBitmap.getRowBytes(), colors);
+            if (invalidate) {
+                invalidateParent();
+            }
         }
     }
 
@@ -573,8 +583,13 @@ public class MotionBackgroundDrawable extends Drawable {
                 canvas.drawRoundRect(rect, roundRadius, roundRadius, paint);
             } else {
                 canvas.translate(0, tr);
-                rect.set(x, y, x + width, y + height);
-                canvas.drawBitmap(currentBitmap, null, rect, paint);
+                if (gradientDrawable != null) {
+                    gradientDrawable.setBounds((int) x, (int) y, (int) (x + width), (int) (y + height));
+                    gradientDrawable.draw(canvas);
+                } else {
+                    rect.set(x, y, x + width, y + height);
+                    canvas.drawBitmap(currentBitmap, null, rect, paint);
+                }
             }
 
             if (patternBitmap != null) {
@@ -722,5 +737,9 @@ public class MotionBackgroundDrawable extends Drawable {
     @Override
     public int getOpacity() {
         return PixelFormat.TRANSPARENT;
+    }
+
+    public boolean isOneColor() {
+        return colors[0] == colors[1] && colors[0] == colors[2] && colors[0] == colors[3];
     }
 }

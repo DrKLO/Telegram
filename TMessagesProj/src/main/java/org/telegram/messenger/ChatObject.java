@@ -1478,6 +1478,10 @@ public class ChatObject {
         return chat == null || chat instanceof TLRPC.TL_chatEmpty || chat instanceof TLRPC.TL_chatForbidden || chat instanceof TLRPC.TL_channelForbidden || chat.left || chat.kicked || chat.deactivated;
     }
 
+    public static boolean canSendAsPeers(TLRPC.Chat chat) {
+        return ChatObject.isChannel(chat) && chat.megagroup && (!TextUtils.isEmpty(chat.username) || chat.has_geo || chat.has_link);
+    }
+
     public static boolean isChannel(TLRPC.Chat chat) {
         return chat instanceof TLRPC.TL_channel || chat instanceof TLRPC.TL_channelForbidden;
     }
@@ -1549,6 +1553,21 @@ public class ChatObject {
 
     public static boolean shouldSendAnonymously(TLRPC.Chat chat) {
         return chat != null && chat.admin_rights != null && chat.admin_rights.anonymous;
+    }
+
+    public static long getSendAsPeerId(TLRPC.Chat chat, TLRPC.ChatFull chatFull) {
+        return getSendAsPeerId(chat, chatFull, false);
+    }
+
+    public static long getSendAsPeerId(TLRPC.Chat chat, TLRPC.ChatFull chatFull, boolean invertChannel) {
+        if (chat != null && chatFull != null && chatFull.default_send_as != null) {
+            TLRPC.Peer p = chatFull.default_send_as;
+            return p.user_id != 0 ? p.user_id : invertChannel ? -p.channel_id : p.channel_id;
+        }
+        if (chat != null && chat.admin_rights != null && chat.admin_rights.anonymous) {
+            return invertChannel ? -chat.id : chat.id;
+        }
+        return UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId();
     }
 
     public static boolean canAddBotsToChat(TLRPC.Chat chat) {

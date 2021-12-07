@@ -11,13 +11,14 @@ package org.telegram.ui.Components;
 import android.graphics.Path;
 import android.graphics.RectF;
 import android.os.Build;
+import android.text.Layout;
 import android.text.StaticLayout;
 
 import org.telegram.messenger.AndroidUtilities;
 
 public class LinkPath extends Path {
 
-    private StaticLayout currentLayout;
+    private Layout currentLayout;
     private int currentLine;
     private float lastTop = -1;
     private float heightOffset;
@@ -36,7 +37,7 @@ public class LinkPath extends Path {
         useRoundRect = roundRect;
     }
 
-    public void setCurrentLayout(StaticLayout layout, int start, float yOffset) {
+    public void setCurrentLayout(Layout layout, int start, float yOffset) {
         currentLayout = layout;
         currentLine = layout.getLineForOffset(start);
         lastTop = -1;

@@ -111,7 +111,7 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
     public TextMessageEnterTransition(ChatMessageCell messageView, ChatActivity chatActivity, RecyclerListView listView, MessageEnterTransitionContainer container, Theme.ResourcesProvider resourcesProvider) {
         this.resourcesProvider = resourcesProvider;
         currentAccount = UserConfig.selectedAccount;
-        if (messageView.getMessageObject().textLayoutBlocks.size() > 1 || messageView.getMessageObject().textLayoutBlocks.get(0).textLayout.getLineCount() > 10) {
+        if (messageView.getMessageObject().textLayoutBlocks.size() > 1 || messageView.getMessageObject().textLayoutBlocks.isEmpty() || messageView.getMessageObject().textLayoutBlocks.get(0).textLayout.getLineCount() > 10) {
             return;
         }
         this.messageView = messageView;

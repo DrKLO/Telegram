@@ -2828,9 +2828,11 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                         peerObject = object;
                     } else if (object instanceof TLRPC.ChannelParticipant) {
                         long peerId = MessageObject.getPeerId(((TLRPC.ChannelParticipant) object).peer);
-                        if (peerId > 0) {
+                        if (peerId >= 0) {
                             TLRPC.User user = getMessagesController().getUser(peerId);
-                            un = user.username;
+                            if (user != null) {
+                                un = user.username;
+                            }
                             peerObject = user;
                         } else {
                             TLRPC.Chat chat = getMessagesController().getChat(-peerId);
