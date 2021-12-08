@@ -51,7 +51,7 @@ typedef struct LottieInfo {
     volatile uint32_t framesAvailableInCache = 0;
 };
 
-JNIEXPORT jlong Java_org_telegram_ui_Components_RLottieDrawable_create(JNIEnv *env, jclass clazz, jstring src, jstring json, jint w, jint h, jintArray data, jboolean precache, jintArray colorReplacement, jboolean limitFps) {
+JNIEXPORT jlong Java_org_telegram_ui_Components_RLottieDrawable_create(JNIEnv *env, jclass clazz, jstring src, jstring json, jint w, jint h, jintArray data, jboolean precache, jintArray colorReplacement, jboolean limitFps, jint fitzModifier) {
     auto info = new LottieInfo();
 
     std::map<int32_t, int32_t> *colors = nullptr;
@@ -71,16 +71,35 @@ JNIEXPORT jlong Java_org_telegram_ui_Components_RLottieDrawable_create(JNIEnv *e
         }
     }
 
+
+    FitzModifier modifier = FitzModifier::None;
+    switch (fitzModifier) {
+        case 12:
+            modifier = FitzModifier::Type12;
+            break;
+        case 3:
+            modifier = FitzModifier::Type3;
+            break;
+        case 4:
+            modifier = FitzModifier::Type4;
+            break;
+        case 5:
+            modifier = FitzModifier::Type5;
+            break;
+        case 6:
+            modifier = FitzModifier::Type6;
+            break;
+    }
     char const *srcString = env->GetStringUTFChars(src, nullptr);
     info->path = srcString;
     if (json != nullptr) {
         char const *jsonString = env->GetStringUTFChars(json, nullptr);
         if (jsonString) {
-            info->animation = rlottie::Animation::loadFromData(jsonString, info->path, colors);
+            info->animation = rlottie::Animation::loadFromData(jsonString, info->path, colors, modifier);
             env->ReleaseStringUTFChars(json, jsonString);
         }
     } else {
-        info->animation = rlottie::Animation::loadFromFile(info->path, colors);
+        info->animation = rlottie::Animation::loadFromFile(info->path, colors, modifier);
     }
     if (srcString) {
         env->ReleaseStringUTFChars(src, srcString);

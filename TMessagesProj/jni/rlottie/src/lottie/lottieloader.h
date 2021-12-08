@@ -22,13 +22,14 @@
 #include <sstream>
 #include <memory>
 #include <map>
+#include <rlottie.h>
 
 class LOTModel;
 class LottieLoader
 {
 public:
-   bool load(const std::string &filePath, std::map<int32_t, int32_t> *colorReplacement);
-   bool loadFromData(std::string &&jsonData, const std::string &key, std::map<int32_t, int32_t> *colorReplacement, const std::string &resourcePath);
+   bool load(const std::string &filePath, std::map<int32_t, int32_t> *colorReplacement, rlottie::FitzModifier fitzModifier);
+   bool loadFromData(std::string &&jsonData, const std::string &key, std::map<int32_t, int32_t> *colorReplacement, const std::string &resourcePath, rlottie::FitzModifier fitzModifier);
    std::shared_ptr<LOTModel> model();
 private:
    std::shared_ptr<LOTModel>    mModel;
