@@ -105,6 +105,16 @@ public class SessionCell extends FrameLayout {
             linearLayout.addView(onlineTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.RIGHT | Gravity.TOP, 0, 2, 0, 0));
         }
 
+        int leftMargin;
+        int rightMargin;
+        if (LocaleController.isRTL) {
+            rightMargin = type == 0 ? 72 : 21;
+            leftMargin = 21;
+        } else {
+            leftMargin = type == 0 ? 72 : 21;
+            rightMargin = 21;
+        }
+
         detailTextView = new TextView(context);
         detailTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         detailTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -113,7 +123,7 @@ public class SessionCell extends FrameLayout {
         detailTextView.setSingleLine(true);
         detailTextView.setEllipsize(TextUtils.TruncateAt.END);
         detailTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
-        addView(detailTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, type == 0 ? 72 : 21, 36, 21, 0));
+        addView(detailTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, leftMargin, 36, rightMargin, 0));
 
         detailExTextView = new TextView(context);
         detailExTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3));
@@ -123,7 +133,7 @@ public class SessionCell extends FrameLayout {
         detailExTextView.setSingleLine(true);
         detailExTextView.setEllipsize(TextUtils.TruncateAt.END);
         detailExTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
-        addView(detailExTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, type == 0 ? 72 : 21, 59, 21, 0));
+        addView(detailExTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, leftMargin, 59, rightMargin, 0));
     }
 
     @Override
@@ -136,11 +146,7 @@ public class SessionCell extends FrameLayout {
 
         if (object instanceof TLRPC.TL_authorization) {
             TLRPC.TL_authorization session = (TLRPC.TL_authorization) object;
-
-
             imageView.setImageDrawable(createDrawable(session));
-          //  nameTextView.setText(String.format(Locale.US, "%s %s", session.app_name, session.app_version));
-
 
             StringBuilder stringBuilder = new StringBuilder();
             if (session.device_model.length() != 0) {

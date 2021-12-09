@@ -4889,4 +4889,9 @@
     <string name="ChatWithAdminMessage">You received this message because you requested to join **%1$s** on %2$s</string>
     <string name="EventLogSendMessages">un1 sent this message:</string>
     <string name="DidNotGetTheCodePhone">Get code on this phone</string>
+    <string name="MigrationNotification">Migration</string>
+    <string name="MigrateOldFolderButton">Move Files Now</string>
+    <string name="MigrateOldFolderTitle">Migrate Files to Scoped Storage</string>
+    <string name="MigrateOldFolderDescription">Due to a change made by **Google**, we need to move the files you downloaded using **Telegram** to a new folder.\n\nThis may take a few moments. You can continue using the app while the files are moved.</string>
+    <string name="MigratingFiles">Migrating files</string>
 </resources>

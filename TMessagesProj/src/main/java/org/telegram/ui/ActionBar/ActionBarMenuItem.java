@@ -1590,6 +1590,7 @@ public class ActionBarMenuItem extends FrameLayout {
         if (view != null && view.getVisibility() != GONE) {
             view.setVisibility(GONE);
             measurePopup = true;
+            checkHideMenuItem();
         }
     }
 
@@ -1618,6 +1619,7 @@ public class ActionBarMenuItem extends FrameLayout {
             popupLayout.getItemAt(a).setVisibility(GONE);
         }
         measurePopup = true;
+        checkHideMenuItem();
     }
 
     public boolean isSubItemVisible(int id) {
@@ -1636,6 +1638,7 @@ public class ActionBarMenuItem extends FrameLayout {
         if (view != null && view.getVisibility() != VISIBLE) {
             view.setVisibility(VISIBLE);
             measurePopup = true;
+            checkHideMenuItem();
         }
     }
 

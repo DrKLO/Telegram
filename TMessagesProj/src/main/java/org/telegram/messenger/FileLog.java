@@ -166,7 +166,7 @@ public class FileLog {
         if (!BuildVars.LOGS_ENABLED) {
             return;
         }
-        if (BuildVars.DEBUG_VERSION && needSent(e)) {
+        if (BuildVars.DEBUG_VERSION && needSent(e) && logToAppCenter) {
             AndroidUtilities.appCenterLog(e);
         }
         ensureInitied();

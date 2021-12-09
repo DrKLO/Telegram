@@ -385,6 +385,7 @@ public class RecyclerListView extends RecyclerView {
         float touchSlop;
         Drawable fastScrollShadowDrawable;
         Drawable fastScrollBackgroundDrawable;
+        boolean isRtl;
 
         Runnable hideFloatingDateRunnable = new Runnable() {
             @Override
@@ -404,7 +405,9 @@ public class RecyclerListView extends RecyclerView {
             this.type = type;
             if (type == LETTER_TYPE) {
                 letterPaint.setTextSize(AndroidUtilities.dp(45));
+                isRtl = LocaleController.isRTL;
             } else {
+                isRtl = false;
                 letterPaint.setTextSize(AndroidUtilities.dp(13));
                 letterPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
                 paint2.setColor(Theme.getColor(Theme.key_windowBackgroundWhite));
@@ -415,7 +418,7 @@ public class RecyclerListView extends RecyclerView {
                 radii[a] = AndroidUtilities.dp(44);
             }
 
-            scrollX = LocaleController.isRTL ? AndroidUtilities.dp(10) : AndroidUtilities.dp((type == LETTER_TYPE ? 132 : 240) - 15);
+            scrollX = isRtl ? AndroidUtilities.dp(10) : AndroidUtilities.dp((type == LETTER_TYPE ? 132 : 240) - 15);
             updateColors();
             setFocusableInTouchMode(true);
             ViewConfiguration vc = ViewConfiguration.get(context);
@@ -453,11 +456,11 @@ public class RecyclerListView extends RecyclerView {
                     float x = event.getX();
                     startY = lastY = event.getY();
                     float currentY = (float) Math.ceil((getMeasuredHeight() - AndroidUtilities.dp(24 + 30)) * progress) + AndroidUtilities.dp(12);
-                    if (LocaleController.isRTL && x > AndroidUtilities.dp(25) || !LocaleController.isRTL && x < AndroidUtilities.dp(107) || lastY < currentY || lastY > currentY + AndroidUtilities.dp(30)) {
+                    if (isRtl && x > AndroidUtilities.dp(25) || !isRtl && x < AndroidUtilities.dp(107) || lastY < currentY || lastY > currentY + AndroidUtilities.dp(30)) {
                         return false;
                     }
                     if (type == DATE_TYPE && !floatingDateVisible) {
-                        if (LocaleController.isRTL && x > AndroidUtilities.dp(25) || !LocaleController.isRTL && x < (getMeasuredWidth() - AndroidUtilities.dp(25)) || lastY < currentY || lastY > currentY + AndroidUtilities.dp(30)) {
+                        if (isRtl && x > AndroidUtilities.dp(25) || !isRtl && x < (getMeasuredWidth() - AndroidUtilities.dp(25)) || lastY < currentY || lastY > currentY + AndroidUtilities.dp(30)) {
                             return false;
                         }
                     }
@@ -552,7 +555,7 @@ public class RecyclerListView extends RecyclerView {
                             if (letterLayout.getLineCount() > 0) {
                                 float lWidth = letterLayout.getLineWidth(0);
                                 float lleft = letterLayout.getLineLeft(0);
-                                if (LocaleController.isRTL) {
+                                if (isRtl) {
                                     textX = AndroidUtilities.dp(10) + (AndroidUtilities.dp(88) - letterLayout.getLineWidth(0)) / 2 - letterLayout.getLineLeft(0);
                                 } else {
                                     textX = (AndroidUtilities.dp(88) - letterLayout.getLineWidth(0)) / 2 - letterLayout.getLineLeft(0);
@@ -625,8 +628,8 @@ public class RecyclerListView extends RecyclerView {
                         raduisBottom = AndroidUtilities.dp(44);
                         raduisTop = AndroidUtilities.dp(4) + (1.0f - diff / AndroidUtilities.dp(29)) * AndroidUtilities.dp(40);
                     }
-                    if (LocaleController.isRTL && (radii[0] != raduisTop || radii[6] != raduisBottom) || !LocaleController.isRTL && (radii[2] != raduisTop || radii[4] != raduisBottom)) {
-                        if (LocaleController.isRTL) {
+                    if (isRtl && (radii[0] != raduisTop || radii[6] != raduisBottom) || !isRtl && (radii[2] != raduisTop || radii[4] != raduisBottom)) {
+                        if (isRtl) {
                             radii[0] = radii[1] = raduisTop;
                             radii[6] = radii[7] = raduisBottom;
                         } else {
@@ -634,7 +637,7 @@ public class RecyclerListView extends RecyclerView {
                             radii[4] = radii[5] = raduisBottom;
                         }
                         path.reset();
-                        rect.set(LocaleController.isRTL ? AndroidUtilities.dp(10) : 0, 0, AndroidUtilities.dp(LocaleController.isRTL ? 98 : 88), AndroidUtilities.dp(88));
+                        rect.set(isRtl ? AndroidUtilities.dp(10) : 0, 0, AndroidUtilities.dp(isRtl ? 98 : 88), AndroidUtilities.dp(88));
                         path.addRoundRect(rect, radii, Path.Direction.CW);
                         path.close();
                     }
@@ -1225,7 +1228,7 @@ public class RecyclerListView extends RecyclerView {
         if (fastScroll != null) {
             selfOnLayout = true;
             t += getPaddingTop();
-            if (LocaleController.isRTL) {
+            if (fastScroll.isRtl) {
                 fastScroll.layout(0, t, fastScroll.getMeasuredWidth(), t + fastScroll.getMeasuredHeight());
             } else {
                 int x = getMeasuredWidth() - fastScroll.getMeasuredWidth();

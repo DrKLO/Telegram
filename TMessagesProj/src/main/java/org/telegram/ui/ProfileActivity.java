@@ -3886,7 +3886,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     participant.inviter_id = participant.channelParticipant.inviter_id;
                     participant.user_id = MessageObject.getPeerId(participant.channelParticipant.peer);
                     participant.date = participant.channelParticipant.date;
-                    if (participant.user_id != 0 && participantsMap.indexOfKey(participant.user_id) < 0) {
+                    if (participantsMap.indexOfKey(participant.user_id) < 0) {
                         if (chatInfo.participants == null) {
                             chatInfo.participants = new TLRPC.TL_chatParticipants();
                         }

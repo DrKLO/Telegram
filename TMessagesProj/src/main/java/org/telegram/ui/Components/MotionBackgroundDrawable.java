@@ -440,7 +440,6 @@ public class MotionBackgroundDrawable extends Drawable {
                     legacyBitmap2 = null;
                 }
                 try {
-
                     legacyBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
                     legacyCanvas = new Canvas(legacyBitmap);
                     invalidateLegacy = true;

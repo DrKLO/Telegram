@@ -49905,29 +49905,29 @@ public class TLRPC {
         }
     }
 
-	public static class TL_channels_reportSpam extends TLObject {
-		public static int constructor = 0xfe087810;
+    public static class TL_channels_reportSpam extends TLObject {
+        public static int constructor = 0xf44a8315;
 
-		public InputChannel channel;
-		public InputUser user_id;
-		public ArrayList<Integer> id = new ArrayList<>();
+        public InputChannel channel;
+        public InputPeer participant;
+        public ArrayList<Integer> id = new ArrayList<>();
 
-		public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
-			return Bool.TLdeserialize(stream, constructor, exception);
-		}
+        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+            return Bool.TLdeserialize(stream, constructor, exception);
+        }
 
-		public void serializeToStream(AbstractSerializedData stream) {
-			stream.writeInt32(constructor);
-			channel.serializeToStream(stream);
-			user_id.serializeToStream(stream);
-			stream.writeInt32(0x1cb5c415);
-			int count = id.size();
-			stream.writeInt32(count);
-			for (int a = 0; a < count; a++) {
-				stream.writeInt32(id.get(a));
-			}
-		}
-	}
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            channel.serializeToStream(stream);
+            participant.serializeToStream(stream);
+            stream.writeInt32(0x1cb5c415);
+            int count = id.size();
+            stream.writeInt32(count);
+            for (int a = 0; a < count; a++) {
+                stream.writeInt32(id.get(a));
+            }
+        }
+    }
 
     public static class TL_channels_getMessages extends TLObject {
         public static int constructor = 0x93d7b347;

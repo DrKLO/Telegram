@@ -4659,7 +4659,6 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     messageEditText.setAlpha(1f);
                     messageEditText.setTranslationX(0);
                     messageEditText.requestFocus();
-                    updateSendAsButton();
 
                 }
             });
@@ -6816,7 +6815,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             }
         }
         boolean wasVisible = senderSelectView.getVisibility() == View.VISIBLE;
-        boolean isVisible = delegate.getSendAsPeers() != null && defPeer != null && delegate.getSendAsPeers().peers.size() > 1 && !isEditingMessage() && !isRecordingAudioVideo() && (recordedAudioPanel == null || recordedAudioPanel.getVisibility() == View.GONE);
+        boolean isVisible = delegate.getSendAsPeers() != null && defPeer != null && delegate.getSendAsPeers().peers.size() > 1 && !isEditingMessage() && !isRecordingAudioVideo();
         int pad = AndroidUtilities.dp(2);
         MarginLayoutParams params = (MarginLayoutParams) senderSelectView.getLayoutParams();
         float sA = isVisible ? 0 : 1;
@@ -6832,8 +6831,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             }
 
             if (parentFragment.getOtherSameChatsDiff() == 0 && parentFragment.fragmentOpened) {
-                ValueAnimator anim = ValueAnimator.ofFloat(0, 1).setDuration(220);
-                anim.setInterpolator(CubicBezierInterpolator.DEFAULT);
+                ValueAnimator anim = ValueAnimator.ofFloat(0, 1).setDuration(150);
                 anim.addUpdateListener(animation -> {
                     float val = (float) animation.getAnimatedValue();
 

@@ -13,6 +13,8 @@ import androidx.annotation.UiThread;
 import android.os.SystemClock;
 import android.util.SparseArray;
 
+import com.google.android.exoplayer2.util.Log;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
