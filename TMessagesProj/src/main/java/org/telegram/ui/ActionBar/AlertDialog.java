@@ -88,6 +88,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
     private int topResId;
     private View topView;
     private int topAnimationId;
+    private int topAnimationSize;
     private int topHeight = 132;
     private Drawable topDrawable;
     private int topBackgroundColor;
@@ -138,6 +139,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
     private float aspectRatio;
     private boolean dimEnabled = true;
     private final Theme.ResourcesProvider resourcesProvider;
+    private boolean topAnimationAutoRepeat = true;
 
     public static class AlertDialogCell extends FrameLayout {
 
@@ -461,8 +463,8 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
             } else if (topResId != 0) {
                 topImageView.setImageResource(topResId);
             } else {
-                topImageView.setAutoRepeat(true);
-                topImageView.setAnimation(topAnimationId, 94, 94);
+                topImageView.setAutoRepeat(topAnimationAutoRepeat);
+                topImageView.setAnimation(topAnimationId, topAnimationSize, topAnimationSize);
                 topImageView.playAnimation();
             }
             topImageView.setScaleType(ImageView.ScaleType.CENTER);
@@ -1059,7 +1061,11 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
     }
 
     public void setTopAnimation(int resId, int backgroundColor) {
+        setTopAnimation(resId, 94, backgroundColor);
+    }
+    public void setTopAnimation(int resId, int size, int backgroundColor) {
         topAnimationId = resId;
+        topAnimationSize = size;
         topBackgroundColor = backgroundColor;
     }
 
@@ -1273,10 +1279,15 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
             return this;
         }
 
-        public Builder setTopAnimation(int resId, int backgroundColor) {
+        public Builder setTopAnimation(int resId, int size, boolean autoRepeat, int backgroundColor) {
             alertDialog.topAnimationId = resId;
+            alertDialog.topAnimationSize = size;
+            alertDialog.topAnimationAutoRepeat = autoRepeat;
             alertDialog.topBackgroundColor = backgroundColor;
             return this;
+        }
+        public Builder setTopAnimation(int resId, int backgroundColor) {
+            return setTopAnimation(resId, 94, true, backgroundColor);
         }
 
         public Builder setTopImage(Drawable drawable, int backgroundColor) {

@@ -3167,7 +3167,7 @@
     <string name="InvalidLastName">Lo sentimos, este apellido no se puede usar</string>
     <string name="Loading">Cargando...</string>
     <string name="NoPlayerInstalled">No tienes reproductor de video. Por favor, instala uno para continuar.</string>
-    <string name="NoMailInstalled">Por favor, envía un correo describiendo tu problema a reports@stel.com</string>
+    <string name="NoMailInstalled">Por favor, envía un correo describiendo tu problema a sms@telegram.org</string>
     <string name="NoHandleAppInstalled">No tienes aplicaciones que puedan manejar el tipo de archivo “%1$s”. Por favor, instala una para continuar.</string>
     <string name="InviteUser">Este usuario aún no tiene Telegram. ¿Enviarle una invitación?</string>
     <string name="AreYouSure">¿Quieres hacerlo?</string>

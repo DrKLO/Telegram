@@ -2349,10 +2349,26 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
 
             Drawable background = backgroundImage.getBackground();
             Bitmap bitmap = backgroundImage.getImageReceiver().getBitmap();
+            if (background instanceof MotionBackgroundDrawable) {
+                FileOutputStream stream = new FileOutputStream(toFile);
+                bitmap.compress(Bitmap.CompressFormat.PNG, 87, stream);
+                stream.close();
+            } else {
+                Bitmap dst = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap.Config.ARGB_8888);
+                Canvas canvas = new Canvas(dst);
+                background.setBounds(0, 0, bitmap.getWidth(), bitmap.getHeight());
+                background.draw(canvas);
 
-            FileOutputStream stream = new FileOutputStream(toFile);
-            bitmap.compress(background instanceof MotionBackgroundDrawable ? Bitmap.CompressFormat.PNG : Bitmap.CompressFormat.JPEG, 87, stream);
-            stream.close();
+                Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG);
+                paint.setColorFilter(new PorterDuffColorFilter(patternColor, blendMode));
+                paint.setAlpha((int) (255 * currentIntensity));
+                canvas.drawBitmap(bitmap, 0, 0, paint);
+
+                FileOutputStream stream = new FileOutputStream(toFile);
+                dst.compress(Bitmap.CompressFormat.JPEG, 87, stream);
+                stream.close();
+            }
+
         } catch (Throwable e) {
             FileLog.e(e);
         }

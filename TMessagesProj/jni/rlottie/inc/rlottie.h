@@ -52,6 +52,15 @@ struct LOTLayerNode;
 
 namespace rlottie {
 
+    enum class FitzModifier {
+        None,
+        Type12,
+        Type3,
+        Type4,
+        Type5,
+        Type6
+    };
+
 struct Color {
     Color() = default;
     Color(float r, float g , float b):_r(r), _g(g), _b(b){}
@@ -258,7 +267,7 @@ public:
      *  @internal
      */
     static std::unique_ptr<Animation>
-    loadFromFile(const std::string &path, std::map<int32_t, int32_t> *colorReplacement);
+    loadFromFile(const std::string &path, std::map<int32_t, int32_t> *colorReplacement, FitzModifier fitzModifier);
 
     /**
      *  @brief Constructs an animation object from JSON string data.
@@ -273,7 +282,7 @@ public:
      *  @internal
      */
     static std::unique_ptr<Animation>
-    loadFromData(std::string jsonData, const std::string &key, std::map<int32_t, int32_t> *colorReplacement, const std::string &resourcePath="");
+    loadFromData(std::string jsonData, const std::string &key, std::map<int32_t, int32_t> *colorReplacement, FitzModifier fitzModifier = FitzModifier::None, const std::string &resourcePath="");
 
     /**
      *  @brief Returns default framerate of the Lottie resource.

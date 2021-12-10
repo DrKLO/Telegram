@@ -2167,8 +2167,9 @@
     <string name="AuthAnotherClientTokenError">Token invalid or already expired.</string>
     <string name="AuthAnotherClientNotFound">No auth token found</string>
     <string name="AuthAnotherClientOk">Auth successfull</string>
-    <string name="AuthAnotherClientDownloadClientUrl">https://desktop.telegram.org/</string>
-    <string name="AuthAnotherClientInfo1">Download Telegram on your computer from *desktop.telegram.org*.</string>
+    <string name="AuthAnotherClientDownloadClientUrl">https://getdesktop.telegram.org/</string>
+    <string name="AuthAnotherWebClientUrl">https://web.telegram.org/</string>
+    <string name="AuthAnotherClientInfo1">Download Telegram on your computer from *getdesktop.telegram.org*.</string>
     <string name="AuthAnotherClientInfo2">Run Telegram Desktop to get the QR code.</string>
     <string name="AuthAnotherClientInfo3">Scan the QR code to connect your account.</string>
     <string name="AuthAnotherClientUrl">This code can be used to allow someone to log in to your Telegram account.\n\nTo confirm Telegram login, please go to Settings &gt; Devices &gt; Scan QR and scan the code.</string>
@@ -2429,7 +2430,6 @@
     <string name="NoOtherSessionsInfo">You can log in to Telegram from other mobile, tablet and desktop devices, using the same phone number. All your data will be instantly synchronized.</string>
     <string name="OtherSessions">Active sessions</string>
     <string name="SessionsInfo">Control your sessions on other devices.</string>
-    <string name="TerminateSessionInfo">Tap on a session to terminate.</string>
     <string name="TerminateSessionQuestion">Terminate this session?</string>
     <string name="TerminateSessionText">Are you sure you want to terminate this session?</string>
     <string name="ClearOtherSessionsHelp">Logs out all devices except for this one.</string>
@@ -3026,7 +3026,7 @@
     <string name="P2PContactsMinusPlus">My Contacts (-%1$d, +%2$d)</string>
     <string name="P2PNobodyPlus">Nobody (+%1$d)</string>
     <string name="SecurityTitle">Security</string>
-    <string name="DeleteAccountTitle">Account self-destructs</string>
+    <string name="DeleteAccountTitle">Account self-destruct</string>
     <string name="NewChatsFromNonContacts">New chats from unknown users</string>
     <string name="ArchiveAndMute">Archive and Mute</string>
     <string name="ArchiveAndMuteInfo">Automatically archive and mute new chats, groups and channels from non-contacts.</string>
@@ -3245,7 +3245,7 @@
     <string name="InvalidLastName">Sorry, this last name can\'t be used</string>
     <string name="Loading">Loading...</string>
     <string name="NoPlayerInstalled">You don\'t have a video player, please install one to continue</string>
-    <string name="NoMailInstalled">Please send an email describing your problem to reports@stel.com</string>
+    <string name="NoMailInstalled">Please send an email describing your problem to sms@telegram.org</string>
     <string name="NoHandleAppInstalled">You don\'t have applications that can handle the file type \'%1$s\', please install one to continue</string>
     <string name="InviteUser">This user does not have Telegram yet, send an invitation?</string>
     <string name="AreYouSure">Are you sure?</string>
@@ -3862,6 +3862,28 @@
     <string name="ContactShortcutVoiceCall">Voice call %1$s</string>
     <string name="ContactShortcutVideoCall">Video call %1$s</string>
     <!--plural-->
+
+    <string name="ForceSetPasswordAlertMessage_zero">Proceed without a password? If you do not set a password, you will only be able to log into your account via SMS once every %1$s days.</string>
+    <string name="ForceSetPasswordAlertMessage_one">Proceed without a password? If you do not set a password, you will only be able to log into your account via SMS once every %1$s day.</string>
+    <string name="ForceSetPasswordAlertMessage_two">Proceed without a password? If you do not set a password, you will only be able to log into your account via SMS once every %1$s days.</string>
+    <string name="ForceSetPasswordAlertMessage_few">Proceed without a password? If you do not set a password, you will only be able to log into your account via SMS once every %1$s days.</string>
+    <string name="ForceSetPasswordAlertMessage_many">Proceed without a password? If you do not set a password, you will only be able to log into your account via SMS once every %1$s days.</string>
+    <string name="ForceSetPasswordAlertMessage_other">Proceed without a password? If you do not set a password, you will only be able to log into your account via SMS once every %1$s days.</string>
+
+    <string name="MessagesDeletedUndo_zero">Messages for %1$s days deleted</string>
+    <string name="MessagesDeletedUndo_one">Messages for %1$s day deleted</string>
+    <string name="MessagesDeletedUndo_two">Messages for %1$s days deleted</string>
+    <string name="MessagesDeletedUndo_few">Messages for %1$s days deleted</string>
+    <string name="MessagesDeletedUndo_many">Messages for %1$s days deleted</string>
+    <string name="MessagesDeletedUndo_other">Messages for %1$s days deleted</string>
+
+    <string name="DeleteDays_zero">Delete %1$s days</string>
+    <string name="DeleteDays_one">Delete %1$s day</string>
+    <string name="DeleteDays_two">Delete %1$s days</string>
+    <string name="DeleteDays_few">Delete %1$s days</string>
+    <string name="DeleteDays_many">Delete %1$s days</string>
+    <string name="DeleteDays_other">Delete %1$s days</string>
+
     <string name="MembersAreSpeakingToast_zero">un1 are speaking</string>
     <string name="MembersAreSpeakingToast_one">un1 is speaking</string>
     <string name="MembersAreSpeakingToast_two">un1 are speaking</string>
@@ -4751,6 +4773,7 @@
     <string name="MediaShowVideos">Show videos</string>
     <string name="SharedMediaFastScrollHint">You can hold and move this bar for faster scrolling</string>
     <string name="SettingsSwitchToNightMode">Switch to Night Mode</string>
+    <string name="SettingsSwitchToDayMode">Switch to Day Mode</string>
     <string name="SettingsBrowseThemes">Browse Themes</string>
     <string name="BrowseThemes">Browse Themes</string>
     <string name="BuildMyOwnTheme">Build my own theme</string>
@@ -4809,5 +4832,66 @@
     <string name="UserAcceptedToGroupAction">un1 was accepted into the group</string>
     <string name="UserAcceptedToGroupPush">%1$s was accepted into the group</string>
     <string name="UserAcceptedToGroupPushWithGroup">%2$s|%1$s was accepted into the group</string>
+    <string name="ForwardsRestrictedInfoChannel">Сopying and forwarding is not allowed in this channel.</string>
+    <string name="ForwardsRestrictedInfoGroup">Сopying and forwarding is not allowed in this group.</string>
+    <string name="SendMessageAsTitle">Send message as...</string>
     <string name="OpenChannelPost">VIEW POST</string>
+    <string name="SavingContentTitle">Saving content</string>
+    <string name="RestrictSavingContent">Restrict saving content</string>
+    <string name="RestrictSavingContentInfoGroup">Members won\'t be able to forward messages from this group or save media files.</string>
+    <string name="RestrictSavingContentInfoChannel">Subscribers won\'t be able to forward messages from this group or save media files.</string>
+    <string name="ManageAllFilesRational">Please allow **Telegram** to manage all files to open in-app file browser</string>
+    <string name="ManageAllFilesRational2">Telegram needs permission to manage all files to migrate old cache files to Scoped Storage</string>
+    <string name="Allow">Allow</string>
+    <string name="UseFileManger">Use Another App</string>
+    <string name="Application">Application</string>
+    <string name="Location">Location based on the IP address</string>
+    <string name="IpAddress">IP address</string>
+    <string name="AcceptSecretChats">Accept Secret Chats</string>
+    <string name="AcceptSecretChatsDescription">Use this device for Secret Chats</string>
+    <string name="TerminateSession">Terminate Session</string>
+    <string name="AuthAnotherClientInfo4">Link *Telegram Desktop* or *Telegram Web* by scanning the QR.</string>
+    <string name="LinkDesktopDevice">Link Desktop Device</string>
+    <string name="TerminateOldSessionHeader">Automatically terminate old sessions</string>
+    <string name="IfInactiveFor">if inactive for</string>
+    <string name="AuthAnotherClientInfo5">Go to *getdesktop.telegram.org* or *web.telegram.org* to get a QR code</string>
+    <string name="SessionsListInfo">The official Telegram app is available for Android, iPhone, iPad, Windows, macOS and Linux.</string>
+    <string name="MigrateOldFolder">Migrate old folder to Scoped Storage</string>
+    <string name="SelectThisDay">Select this day</string>
+    <string name="NoMessagesForThisDay">No messages for this day</string>
+    <string name="DontAskAgain">Don\'t ask again</string>
+    <string name="SelectDays">Select Days</string>
+    <string name="ClearHistoryForTheseDays">Clear History for these days</string>
+    <string name="ActionForwardsEnabledGroup">un1 enabled forwarding from this group</string>
+    <string name="ActionForwardsEnabledChannel">un1 enabled forwarding from this channel</string>
+    <string name="ActionForwardsRestrictedGroup">un1 restricted forwarding from this group</string>
+    <string name="ActionForwardsRestrictedChannel">un1 restricted forwarding from this channel</string>
+
+    <string name="TypePrivateRestrictedForwards">Private restricted</string>
+    <string name="TypePrivateGroupRestrictedForwards">Private restricted</string>
+    <string name="ClearHistoryForThisDay">Clear History for this day</string>
+    <string name="SelectDaysTooltip">Please select one ore more days first.</string>
+    <string name="MissedCallDescriptionTitle">Enter the missing digits</string>
+    <string name="MissedCallDescriptionSubtitle">Within next few seconds you should receive a short call from:</string>
+    <string name="MissedCallDescriptionSubtitle2">Please enter the last digits of the number that called</string>
+    <string name="DeleteHistoryByDaysMessage">Are you sure you want to delete all messages for the selected days?</string>
+    <string name="AcceptCallsChatsDescription">Use this device for Calls</string>
+    <string name="AcceptCalls">Accept Calls</string>
+    <string name="ForceSetPasswordCancel">Yes, i\'m sure</string>
+    <string name="Warning">Warning</string>
+    <string name="ForceSetPasswordContinue">No, let me set a password</string>
+    <string name="ChatWithGroupAdmin">**%1$s** is an admin of **%2$s**, a group you requested to join.</string>
+    <string name="ChatWithChannelAdmin">**%1$s** is an admin of **%2$s**, a channel you requested to join.</string>
+    <string name="ChatWithAdminChannelTitle">Chat with channel\'s admin</string>
+    <string name="ChatWithAdminGroupTitle">Chat with group\'s admin</string>
+    <string name="IUnderstand">I understand</string>
+    <string name="SessionsSelfDestruct">Sessions self-destruct</string>
+    <string name="ChatWithAdminMessage">You received this message because you requested to join **%1$s** on %2$s</string>
+    <string name="EventLogSendMessages">un1 sent this message:</string>
+    <string name="DidNotGetTheCodePhone">Get code on this phone</string>
+    <string name="MigrationNotification">Migration</string>
+    <string name="MigrateOldFolderButton">Move Files Now</string>
+    <string name="MigrateOldFolderTitle">Migrate Files to Scoped Storage</string>
+    <string name="MigrateOldFolderDescription">Due to a change made by **Google**, we need to move the files you downloaded using **Telegram** to a new folder.\n\nThis may take a few moments. You can continue using the app while the files are moved.</string>
+    <string name="MigratingFiles">Migrating files</string>
 </resources>

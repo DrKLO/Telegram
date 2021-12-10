@@ -50,6 +50,25 @@ import androidx.collection.LongSparseArray;
 
 public class MessagesStorage extends BaseController {
 
+    public ArrayList<Integer> getCachedMessagesInRange(long dialogId, int minDate, int maxDate) {
+        ArrayList<Integer> messageIds = new ArrayList<>();
+        try {
+            SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT mid FROM messages_v2 WHERE uid = %d AND date >= %d AND date <= %d", dialogId, minDate, maxDate));
+            try {
+                while (cursor.next()) {
+                    int mid = cursor.intValue(0);
+                    messageIds.add(mid);
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+            cursor.dispose();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return messageIds;
+    }
+
     public interface IntCallback {
         void run(int param);
     }
@@ -273,7 +292,7 @@ public class MessagesStorage extends BaseController {
         shmCacheFile = new File(filesDir, "cache4.db-shm");
 
         boolean createTable = false;
-        //cacheFile.delete();
+
         if (!cacheFile.exists()) {
             createTable = true;
         }
@@ -433,6 +452,9 @@ public class MessagesStorage extends BaseController {
                     }
                     cursor.dispose();
                 } catch (Exception e) {
+                    if (e.getMessage() != null && e.getMessage().contains("malformed")) {
+                        throw new RuntimeException("malformed");
+                    }
                     FileLog.e(e);
                     try {
                         database.executeFast("CREATE TABLE IF NOT EXISTS params(id INTEGER PRIMARY KEY, seq INTEGER, pts INTEGER, date INTEGER, qts INTEGER, lsv INTEGER, sg INTEGER, pbytes BLOB)").stepThis().dispose();
@@ -5996,6 +6018,9 @@ public class MessagesStorage extends BaseController {
                             participant = TLRPC.ChannelParticipant.TLdeserialize(data, data.readInt32(false), false);
                             data.reuse();
                         }
+                        if (participant != null && participant.user_id == getUserConfig().clientUserId) {
+                            user = getUserConfig().getCurrentUser();
+                        }
                         if (user != null && participant != null) {
                             if (user.status != null) {
                                 user.status.expires = cursor.intValue(1);
@@ -8729,7 +8754,7 @@ public class MessagesStorage extends BaseController {
             try {
                 SQLitePreparedStatement state = database.executeFast("UPDATE messages_v2 SET replies_data = ? WHERE mid = ? AND uid = ?");
                 TLRPC.MessageReplies currentReplies = null;
-                SQLiteCursor cursor = database.queryFinalized(String.format("SELECT replies_data FROM messages_v2 WHERE mid = %d AND uid = %d", mid, -chatId));
+                SQLiteCursor cursor = database.queryFinalized(String.format(Locale.ENGLISH, "SELECT replies_data FROM messages_v2 WHERE mid = %d AND uid = %d", mid, -chatId));
                 if (cursor.next()) {
                     NativeByteBuffer data = cursor.byteBufferValue(0);
                     if (data != null) {
@@ -10571,7 +10596,7 @@ public class MessagesStorage extends BaseController {
                             try {
                                 database.executeFast(String.format(Locale.US, "UPDATE media_holes_v2 SET end = %d WHERE uid = %d AND type = %d AND start = %d AND end = %d", minId, did, hole.type, hole.start, hole.end)).stepThis().dispose();
                             } catch (Exception e) {
-                                FileLog.e(e);
+                                FileLog.e(e, false);
                             }
                         }
                     } else if (minId <= hole.start + 1) {
@@ -10579,7 +10604,7 @@ public class MessagesStorage extends BaseController {
                             try {
                                 database.executeFast(String.format(Locale.US, "UPDATE media_holes_v2 SET start = %d WHERE uid = %d AND type = %d AND start = %d AND end = %d", maxId, did, hole.type, hole.start, hole.end)).stepThis().dispose();
                             } catch (Exception e) {
-                                FileLog.e(e);
+                                FileLog.e(e, false);
                             }
                         }
                     } else {
@@ -10633,7 +10658,7 @@ public class MessagesStorage extends BaseController {
                             try {
                                 database.executeFast(String.format(Locale.US, "UPDATE " + table + " SET end = %d WHERE uid = %d AND start = %d AND end = %d", minId, did, hole.start, hole.end)).stepThis().dispose();
                             } catch (Exception e) {
-                                FileLog.e(e);
+                                FileLog.e(e, false);
                             }
                         }
                     } else if (minId <= hole.start + 1) {
@@ -10641,7 +10666,7 @@ public class MessagesStorage extends BaseController {
                             try {
                                 database.executeFast(String.format(Locale.US, "UPDATE " + table + " SET start = %d WHERE uid = %d AND start = %d AND end = %d", maxId, did, hole.start, hole.end)).stepThis().dispose();
                             } catch (Exception e) {
-                                FileLog.e(e);
+                                FileLog.e(e, false);
                             }
                         }
                     } else {

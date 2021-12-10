@@ -10,6 +10,7 @@ import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.Base64;
 
+import com.google.android.exoplayer2.util.Log;
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
 
 import org.json.JSONArray;
@@ -1017,14 +1018,14 @@ public class ConnectionsManager extends BaseController {
                     buffer.writeBytes(bytes);
                     return buffer;
                 } catch (Throwable e) {
-                    FileLog.e(e);
+                    FileLog.e(e, false);
                 } finally {
                     try {
                         if (httpConnectionStream != null) {
                             httpConnectionStream.close();
                         }
                     } catch (Throwable e) {
-                        FileLog.e(e);
+                        FileLog.e(e, false);
                     }
                     try {
                         if (outbuf != null) {

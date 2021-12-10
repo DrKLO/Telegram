@@ -29,6 +29,7 @@ public class Tooltip extends TextView {
         animator.start();
     };
 
+
     public Tooltip(Context context, ViewGroup parentView, int backgroundColor, int textColor) {
         super(context);
 

@@ -67,7 +67,6 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.Bitmaps;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatThemeController;
-import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
@@ -120,7 +119,6 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -207,6 +205,7 @@ public class Theme {
         private Shader crosfadeFromBitmapShader;
 
         PathDrawParams pathDrawCacheParams;
+        private int overrideRoundRadius;
 
         public MessageDrawable(int type, boolean out, boolean selected) {
             this(type, out, selected, null);
@@ -658,7 +657,10 @@ public class Theme {
             int padding = dp(2);
             int rad;
             int nearRad;
-            if (currentType == TYPE_PREVIEW) {
+            if (overrideRoundRadius != 0) {
+                rad = overrideRoundRadius;
+                nearRad = overrideRoundRadius;
+            } else if (currentType == TYPE_PREVIEW) {
                 rad = dp(6);
                 nearRad = dp(6);
             } else {
@@ -864,6 +866,10 @@ public class Theme {
             if (crossfadeFromDrawable != null) {
                 crossfadeFromDrawable.setBounds(left, top, right, bottom);
             }
+        }
+
+        public void setRoundRadius(int radius) {
+            this.overrideRoundRadius = radius;
         }
 
         public static class PathDrawParams {
@@ -1519,7 +1525,7 @@ public class Theme {
             if (id < 100) {
                 return !TextUtils.isEmpty(patternSlug) ? new File(ApplicationLoader.getFilesDirFixed(), String.format(Locale.US, "%s_%d_%s_v5.jpg", parentTheme.getKey(), id, patternSlug)) : null;
             } else {
-                return !TextUtils.isEmpty(patternSlug) ? new File(ApplicationLoader.getFilesDirFixed(), String.format(Locale.US, "%s_%d_%s_v8_dubug.jpg", parentTheme.getKey(), id, patternSlug)) : null;
+                return !TextUtils.isEmpty(patternSlug) ? new File(ApplicationLoader.getFilesDirFixed(), String.format(Locale.US, "%s_%d_%s_v8_debug.jpg", parentTheme.getKey(), id, patternSlug)) : null;
             }
         }
 
@@ -2140,6 +2146,9 @@ public class Theme {
             for (int a = 0; a < accent.length; a++) {
                 ThemeAccent themeAccent = new ThemeAccent();
                 themeAccent.id = ids != null ? ids[a] : a;
+                if (isHome(themeAccent)) {
+                    themeAccent.isDefault = true;
+                }
                 themeAccent.accentColor = accent[a];
                 themeAccent.parentTheme = this;
                 if (myMessages != null) {
@@ -2356,6 +2365,7 @@ public class Theme {
                 themeAccent.account = account;
                 themeAccentsMap.put(id, themeAccent);
                 themeAccents.add(0, themeAccent);
+                sortAccents(this);
                 accentsByThemeId.put(info.id, themeAccent);
                 return themeAccent;
             }
@@ -2393,6 +2403,7 @@ public class Theme {
                 overrideWallpaper = themeAccent.overrideWallpaper;
                 themeAccentsMap.put(id, themeAccent);
                 themeAccents.add(0, themeAccent);
+                sortAccents(this);
                 return themeAccent;
             } else {
                 return accent;
@@ -4839,6 +4850,7 @@ public class Theme {
                 new int[]    {          0,                            180,                            45,                             0,                            45,                           180,                             0,                             0,                             0,                             0,                             0,                             0,                             0,                             0,                             0,                             0 },
                 new int[]    {          0,                             52,                            46,                            57,                            45,                            64,                            52,                            35,                            36,                            41,                            50,                            50,                            35,                            38,                            37,                            30 }
                 );
+        sortAccents(themeInfo);
         themes.add(currentDayTheme = currentTheme = defaultTheme = themeInfo);
         themesDict.put("Blue", themeInfo);
 
@@ -4862,6 +4874,7 @@ public class Theme {
                 new int[]    {                           225,                            45,                           225,                           135,                            45,                           225,                            45,                             0,                             0,                             0,                             0,                             0,                             0,                             0,                             0,                             0,                             0,                             0 },
                 new int[]    {                            40,                            40,                            31,                            50,                            25,                            34,                            35,                            35,                            38,                            29,                            24,                            34,                            34,                            31,                            29,                            37,                            21,                            38 }
                 );
+        sortAccents(themeInfo);
         themes.add(themeInfo);
         themesDict.put("Dark Blue", currentNightTheme = themeInfo);
 
@@ -4885,6 +4898,7 @@ public class Theme {
                 new int[]    {                           315,                           315,                           225,                           315,                             0,                           180,                             0,                             0,                             0,                             0,                             0,                             0,                             0,                             0,                             0 },
                 new int[]    {                            50,                            50,                            58,                            47,                            46,                            50,                            49,                            46,                            51,                            50,                            49,                            34,                            54,                            50,                            40 }
                 );
+        sortAccents(themeInfo);
         themes.add(themeInfo);
         themesDict.put("Arctic Blue", themeInfo);
 
@@ -4908,6 +4922,7 @@ public class Theme {
                 new int[]    {          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0 },
                 new int[]    {          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0 }
                 );
+        sortAccents(themeInfo);
         themes.add(themeInfo);
         themesDict.put("Day", themeInfo);
 
@@ -4931,15 +4946,21 @@ public class Theme {
                 new int[]    {                            45,                           135,                             0,                           180,                             0,                             0,                             0,                             0,                             0,                             0,                             0,                             0,                             0,                             0 },
                 new int[]    {                            34,                            47,                            52,                            48,                            54,                            50,                            37,                            56,                            48,                            49,                            40,                            64,                            38,                            48 }
                 );
+        sortAccents(themeInfo);
         themes.add(themeInfo);
         themesDict.put("Night", themeInfo);
 
         String themesString = themeConfig.getString("themes2", null);
 
-        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
-            remoteThemesHash[a] = themeConfig.getLong("2remoteThemesHash" + (a != 0 ? a : ""), 0);
-            lastLoadingThemesTime[a] = themeConfig.getInt("lastLoadingThemesTime" + (a != 0 ? a : ""), 0);
+        int remoteVersion = themeConfig.getInt("remote_version", 0);
+        int appRemoteThemesVersion = 1;
+        if (remoteVersion == appRemoteThemesVersion) {
+            for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                remoteThemesHash[a] = themeConfig.getLong("2remoteThemesHash" + (a != 0 ? a : ""), 0);
+                lastLoadingThemesTime[a] = themeConfig.getInt("lastLoadingThemesTime" + (a != 0 ? a : ""), 0);
+            }
         }
+        themeConfig.edit().putInt("remote_version", appRemoteThemesVersion).apply();
         if (!TextUtils.isEmpty(themesString)) {
             try {
                 JSONArray jsonArray = new JSONArray(themesString);
@@ -5150,15 +5171,8 @@ public class Theme {
                         }
                     }
                     if (!newAccents.isEmpty()) {
-                        Collections.sort(newAccents, (o1, o2) -> {
-                            if (o1.id > o2.id) {
-                                return -1;
-                            } else if (o1.id < o2.id) {
-                                return 1;
-                            }
-                            return 0;
-                        });
                         info.themeAccents.addAll(0, newAccents);
+                        sortAccents(info);
                     }
                     if (info.themeAccentsMap != null && info.themeAccentsMap.get(info.currentAccentId) == null) {
                         info.currentAccentId = info.firstAccentIsDefault ? DEFALT_THEME_ACCENT_ID : 0;
@@ -5252,7 +5266,10 @@ public class Theme {
             SerializedData serializedData = new SerializedData(Utilities.hexToBytes(value));
             try {
                 TLRPC.TL_theme theme = TLRPC.Theme.TLdeserialize(serializedData, serializedData.readInt32(true), true);
-                previewItems.add(new ChatThemeBottomSheet.ChatThemeItem(EmojiThemes.createPreviewFullTheme(theme)));
+                EmojiThemes fullTheme = EmojiThemes.createPreviewFullTheme(theme);
+                if (fullTheme.items.size() >= 4) {
+                    previewItems.add(new ChatThemeBottomSheet.ChatThemeItem(fullTheme));
+                }
 
                 ChatThemeController.chatThemeQueue.postRunnable(new Runnable() {
                     @Override
@@ -5263,7 +5280,6 @@ public class Theme {
                         AndroidUtilities.runOnUIThread(() -> {
                             defaultEmojiThemes.clear();
                             defaultEmojiThemes.addAll(previewItems);
-                            NotificationCenter.getInstance(0).postNotificationName(NotificationCenter.emojiPreviewThemesChanged);
                         });
                     }
                 });
@@ -5271,6 +5287,42 @@ public class Theme {
                 FileLog.e(e);
             }
         }
+    }
+
+    private static void sortAccents(ThemeInfo info) {
+        Collections.sort(info.themeAccents, (o1, o2) -> {
+            if (isHome(o1)) {
+                return -1;
+            }
+            if (isHome(o2)) {
+                return 1;
+            }
+            int i1 = o1.isDefault ? 1 : 0;
+            int i2 = o2.isDefault ? 1 : 0;
+
+            if (i1 == i2) {
+                if (o1.isDefault) {
+                    if (o1.id > o2.id) {
+                        return 1;
+                    } else if (o1.id < o2.id) {
+                        return -1;
+                    }
+                } else {
+                    if (o1.id > o2.id) {
+                        return -1;
+                    } else if (o1.id < o2.id) {
+                        return 1;
+                    }
+                }
+            } else {
+                if (i1 > i2) {
+                    return -1;
+                } else {
+                    return 1;
+                }
+            }
+            return 0;
+        });
     }
 
     private static Method StateListDrawable_getStateDrawableMethod;
@@ -7112,7 +7164,7 @@ public class Theme {
     }
 
     public static void loadRemoteThemes(final int currentAccount, boolean force) {
-        if (loadingRemoteThemes[currentAccount]) {
+        if (loadingRemoteThemes[currentAccount] || !force && Math.abs(System.currentTimeMillis() / 1000 - lastLoadingThemesTime[currentAccount]) < 60 * 60 || !UserConfig.getInstance(currentAccount).isClientActivated()) {
             return;
         }
         loadingRemoteThemes[currentAccount] = true;
@@ -7143,15 +7195,13 @@ public class Theme {
                 boolean loadPatterns = false;
                 boolean added = false;
                 for (int a = 0, N = res.themes.size(); a < N; a++) {
-                    TLRPC.Theme t = res.themes.get(a);
+                    TLRPC.TL_theme t = res.themes.get(a);
                     if (!(t instanceof TLRPC.TL_theme)) {
                         continue;
                     }
-                    TLRPC.TL_theme theme = (TLRPC.TL_theme) t;
+                    TLRPC.TL_theme theme = t;
                     if (theme.isDefault) {
-                        //TODO new emoji themes
-                        continue;
-                        //emojiPreviewThemes.add(theme);
+                        emojiPreviewThemes.add(theme);
                     }
                     if (theme.settings != null && theme.settings.size() > 0) {
                         for (int i = 0; i < theme.settings.size(); i++) {
@@ -7183,7 +7233,7 @@ public class Theme {
                                     accent.patternMotion = settings.wallpaper != null && settings.wallpaper.settings != null && settings.wallpaper.settings.motion;
                                     oldServerThemes.remove(accent);
                                 } else {
-                                    accent = info.createNewAccent(theme, currentAccount);
+                                    accent = info.createNewAccent(theme, currentAccount, false, i);
                                     if (!TextUtils.isEmpty(accent.patternSlug)) {
                                         loadPatterns = true;
                                     }
@@ -7262,7 +7312,6 @@ public class Theme {
             SerializedData data = new SerializedData(tlChatTheme.getObjectSize());
             tlChatTheme.serializeToStream(data);
             editor.putString("theme_" + i, Utilities.bytesToHex(data.toByteArray()));
-            EmojiThemes chatTheme = new EmojiThemes(tlChatTheme, false);
         }
         editor.apply();
 
@@ -7273,7 +7322,9 @@ public class Theme {
                 TLRPC.TL_theme theme = emojiPreviewThemes.get(i);
                 EmojiThemes chatTheme = EmojiThemes.createPreviewFullTheme(theme);
                 ChatThemeBottomSheet.ChatThemeItem item = new ChatThemeBottomSheet.ChatThemeItem(chatTheme);
-                previewItems.add(item);
+                if (chatTheme.items.size() >= 4) {
+                    previewItems.add(item);
+                }
             }
             ChatThemeController.chatThemeQueue.postRunnable(new Runnable() {
                 @Override
@@ -7284,13 +7335,13 @@ public class Theme {
                     AndroidUtilities.runOnUIThread(() -> {
                         defaultEmojiThemes.clear();
                         defaultEmojiThemes.addAll(previewItems);
-                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.emojiPreviewThemesChanged);
+                        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.emojiPreviewThemesChanged);
                     });
                 }
             });
         } else {
             defaultEmojiThemes.clear();
-            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.emojiPreviewThemesChanged);
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.emojiPreviewThemesChanged);
         }
     }
 
@@ -9438,6 +9489,7 @@ public class Theme {
             Integer gradientToColor2 = currentColors.get(key_chat_wallpaper_gradient_to2);
             gradientToColor2 = currentColors.get(key_chat_wallpaper_gradient_to2);
             Integer gradientToColor1 = currentColors.get(key_chat_wallpaper_gradient_to1);
+
             if (wallpaperFile != null && wallpaperFile.exists()) {
                 try {
                     if (backgroundColor != null && gradientToColor1 != null && gradientToColor2 != null) {
@@ -9971,5 +10023,20 @@ public class Theme {
 
     public static boolean isCurrentThemeDay() {
         return !getActiveTheme().isDark();
+    }
+
+    public static boolean isHome(ThemeAccent accent) {
+        if (accent.parentTheme != null) {
+            if (accent.parentTheme.getKey().equals("Blue") && accent.id == 99) {
+                return true;
+            }
+            if (accent.parentTheme.getKey().equals("Day") && accent.id == 9) {
+                return true;
+            }
+            if ((accent.parentTheme.getKey().equals("Night") || accent.parentTheme.getKey().equals("Dark Blue")) && accent.id == 0) {
+                return true;
+            }
+        }
+        return false;
     }
 }

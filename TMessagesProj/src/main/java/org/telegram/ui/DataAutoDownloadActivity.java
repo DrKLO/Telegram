@@ -316,7 +316,7 @@ public class DataAutoDownloadActivity extends BaseFragment {
 
                     TextCheckBoxCell[] cells = new TextCheckBoxCell[4];
                     for (int a = 0; a < 4; a++) {
-                        TextCheckBoxCell checkBoxCell = cells[a] = new TextCheckBoxCell(getParentActivity(), true);
+                        TextCheckBoxCell checkBoxCell = cells[a] = new TextCheckBoxCell(getParentActivity(), true, false);
                         if (a == 0) {
                             cells[a].setTextAndCheck(LocaleController.getString("AutodownloadContacts", R.string.AutodownloadContacts), (currentPreset.mask[DownloadController.PRESET_NUM_CONTACT] & type) != 0, true);
                         } else if (a == 1) {

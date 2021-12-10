@@ -989,7 +989,7 @@ auth_Authorization *auth_Authorization::TLdeserialize(NativeByteBuffer *stream, 
         case 0x44747e9a:
             result = new TL_auth_authorizationSignUpRequired();
             break;
-        case 0xcd050916:
+        case 0x33fb7bb8:
             result = new TL_auth_authorization();
             break;
         default:

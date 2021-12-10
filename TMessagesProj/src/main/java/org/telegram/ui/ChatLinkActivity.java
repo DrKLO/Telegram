@@ -120,7 +120,7 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
         }
 
         private void setSticker() {
-            TLRPC.TL_messages_stickerSet set = MediaDataController.getInstance(currentAccount).getStickerSetByName(stickerSetName);
+            TLRPC.messages_StickerSet set = MediaDataController.getInstance(currentAccount).getStickerSetByName(stickerSetName);
             if (set == null) {
                 set = MediaDataController.getInstance(currentAccount).getStickerSetByEmojiOrName(stickerSetName);
             }

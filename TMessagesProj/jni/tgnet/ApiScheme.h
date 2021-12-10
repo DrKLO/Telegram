@@ -680,7 +680,7 @@ public:
 class TL_auth_authorization : public auth_Authorization {
     
 public:
-    static const uint32_t constructor = 0xcd050916;
+    static const uint32_t constructor = 0x33fb7bb8;
 
     int32_t flags;
     int32_t tmp_sessions;

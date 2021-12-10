@@ -1590,6 +1590,24 @@ public class ActionBarMenuItem extends FrameLayout {
         if (view != null && view.getVisibility() != GONE) {
             view.setVisibility(GONE);
             measurePopup = true;
+            checkHideMenuItem();
+        }
+    }
+
+    /**
+     * Hides this menu item if no subitems are available
+     */
+    public void checkHideMenuItem() {
+        boolean isVisible = false;
+        for (int i = 0; i < popupLayout.getItemsCount(); i++) {
+            if (popupLayout.getItemAt(i).getVisibility() == VISIBLE) {
+                isVisible = true;
+                break;
+            }
+        }
+        int v = isVisible ? VISIBLE : GONE;
+        if (v != getVisibility()) {
+            setVisibility(v);
         }
     }
 
@@ -1601,6 +1619,7 @@ public class ActionBarMenuItem extends FrameLayout {
             popupLayout.getItemAt(a).setVisibility(GONE);
         }
         measurePopup = true;
+        checkHideMenuItem();
     }
 
     public boolean isSubItemVisible(int id) {
@@ -1619,6 +1638,7 @@ public class ActionBarMenuItem extends FrameLayout {
         if (view != null && view.getVisibility() != VISIBLE) {
             view.setVisibility(VISIBLE);
             measurePopup = true;
+            checkHideMenuItem();
         }
     }
 

@@ -378,7 +378,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                                         } else if (url.startsWith("http")) {
                                             Browser.openUrl(getContext(), url);
                                         } else {
-                                            delegate.needOpenUserProfile(Integer.parseInt(url));
+                                            delegate.needOpenUserProfile(Long.parseLong(url));
                                         }
                                     }
                                     result = true;

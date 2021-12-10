@@ -915,7 +915,7 @@ public class LocationController extends BaseController implements NotificationCe
                 LocationServices.FusedLocationApi.removeLocationUpdates(googleApiClient, fusedLocationListener);
                 googleApiClient.disconnect();
             } catch (Throwable e) {
-                FileLog.e(e);
+                FileLog.e(e, false);
             }
         }
         locationManager.removeUpdates(gpsLocationListener);

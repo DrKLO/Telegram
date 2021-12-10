@@ -407,7 +407,7 @@ public class ImageLoader {
                 } else if (e instanceof FileNotFoundException) {
                     canRetry = false;
                 }
-                FileLog.e(e);
+                FileLog.e(e, false);
             } finally {
                 try {
                     if (httpConnection != null) {
@@ -521,20 +521,25 @@ public class ImageLoader {
                         fileOutputStream = new RandomAccessFile(cacheImage.tempFilePath, "rws");
                     }
                 } catch (Throwable e) {
+                    boolean sentLogs =  true;
                     if (e instanceof SocketTimeoutException) {
                         if (ApplicationLoader.isNetworkOnline()) {
                             canRetry = false;
                         }
+                        sentLogs = false;
                     } else if (e instanceof UnknownHostException) {
                         canRetry = false;
+                        sentLogs = false;
                     } else if (e instanceof SocketException) {
                         if (e.getMessage() != null && e.getMessage().contains("ECONNRESET")) {
                             canRetry = false;
                         }
+                        sentLogs = false;
                     } else if (e instanceof FileNotFoundException) {
                         canRetry = false;
+                        sentLogs = false;
                     }
-                    FileLog.e(e);
+                    FileLog.e(e, sentLogs);
                 }
             }
 
@@ -840,6 +845,7 @@ public class ImageLoader {
                 int autoRepeat = 1;
                 int[] colors = null;
                 String diceEmoji = null;
+                int fitzModifier = 0;
                 if (cacheImage.filter != null) {
                     String[] args = cacheImage.filter.split("_");
                     if (args.length >= 2) {
@@ -871,15 +877,15 @@ public class ImageLoader {
                     }
                     if (args.length >= 5) {
                         if ("c1".equals(args[4])) {
-                            colors = new int[]{0xf77e41, 0xcb7b55, 0xffb139, 0xf6b689, 0xffd140, 0xffcda7, 0xffdf79, 0xffdfc5};
+                            fitzModifier = 12;
                         } else if ("c2".equals(args[4])) {
-                            colors = new int[]{0xf77e41, 0xa45a38, 0xffb139, 0xdf986b, 0xffd140, 0xedb183, 0xffdf79, 0xf4c3a0};
+                            fitzModifier = 3;
                         } else if ("c3".equals(args[4])) {
-                            colors = new int[]{0xf77e41, 0x703a17, 0xffb139, 0xab673d, 0xffd140, 0xc37f4e, 0xffdf79, 0xd89667};
+                            fitzModifier = 4;
                         } else if ("c4".equals(args[4])) {
-                            colors = new int[]{0xf77e41, 0x4a2409, 0xffb139, 0x7d3e0e, 0xffd140, 0x965529, 0xffdf79, 0xa96337};
+                            fitzModifier = 5;
                         } else if ("c5".equals(args[4])) {
-                            colors = new int[]{0xf77e41, 0x200f0a, 0xffb139, 0x412924, 0xffd140, 0x593d37, 0xffdf79, 0x63453f};
+                            fitzModifier = 6;
                         }
                     }
                 }
@@ -918,9 +924,9 @@ public class ImageLoader {
                         }
                     }
                     if (compressed) {
-                        lottieDrawable = new RLottieDrawable(cacheImage.finalFilePath, decompressGzip(cacheImage.finalFilePath), w, h, precache, limitFps, colors);
+                        lottieDrawable = new RLottieDrawable(cacheImage.finalFilePath, decompressGzip(cacheImage.finalFilePath), w, h, precache, limitFps, null, fitzModifier);
                     } else {
-                        lottieDrawable = new RLottieDrawable(cacheImage.finalFilePath, w, h, precache, limitFps, colors);
+                        lottieDrawable = new RLottieDrawable(cacheImage.finalFilePath, w, h, precache, limitFps, null, fitzModifier);
                     }
                 }
                 lottieDrawable.setAutoRepeat(autoRepeat);
@@ -1153,7 +1159,11 @@ public class ImageLoader {
                         }
                     }
                 } catch (Throwable e) {
-                    FileLog.e(e);
+                    boolean sentLog = true;
+                    if (e instanceof FileNotFoundException) {
+                        sentLog = false;
+                    }
+                    FileLog.e(e, sentLog);
                 }
 
                 if (cacheImage.type == ImageReceiver.TYPE_THUMB) {

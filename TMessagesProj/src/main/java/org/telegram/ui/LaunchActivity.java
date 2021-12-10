@@ -1942,12 +1942,12 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                         String msgID = data.getQueryParameter("message_id");
                                         if (userID != null) {
                                             try {
-                                                push_user_id = Integer.parseInt(userID);
+                                                push_user_id = Long.parseLong(userID);
                                             } catch (NumberFormatException ignore) {
                                             }
                                         } else if (chatID != null) {
                                             try {
-                                                push_chat_id = Integer.parseInt(chatID);
+                                                push_chat_id = Long.parseLong(chatID);
                                             } catch (NumberFormatException ignore) {
                                             }
                                         }

@@ -3167,7 +3167,7 @@
     <string name="InvalidLastName">المعذرة، لا يمكن استخدام اسم العائلة هذا.</string>
     <string name="Loading">يتم التحميل...</string>
     <string name="NoPlayerInstalled">لا تملك أي مشغل للمقاطع المرئية على جهازك، يرجى تنزيل واحد للمتابعة</string>
-    <string name="NoMailInstalled">يرجى مراسلتنا عبر البريد الإلكتروني reports@stel.com لإخبارنا بمشكلتك.</string>
+    <string name="NoMailInstalled">يرجى مراسلتنا عبر البريد الإلكتروني sms@telegram.org لإخبارنا بمشكلتك.</string>
     <string name="NoHandleAppInstalled">لا تملك تطبيقًا يمكنه فتح صيغة الملفات \'%1$s\'، يرجى تنزيل تطبيق مناسب للاستمرار</string>
     <string name="InviteUser">هذا المستخدم ليس لديه تيليجرام بعد، هل تريد دعوته؟</string>
     <string name="AreYouSure">هل أنت متأكد؟</string>

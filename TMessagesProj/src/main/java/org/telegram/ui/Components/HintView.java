@@ -30,6 +30,7 @@ import org.telegram.ui.Cells.ChatMessageCell;
 public class HintView extends FrameLayout {
 
     public static final int TYPE_SEARCH_AS_LIST = 3;
+    public static final int TYPE_COMMON = 4;
     public static final int TYPE_POLL_VOTE = 5;
 
     private TextView textView;

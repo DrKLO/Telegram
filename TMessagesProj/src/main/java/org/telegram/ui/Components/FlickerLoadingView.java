@@ -531,7 +531,9 @@ public class FlickerLoadingView extends View {
             }
             matrix.setTranslate(parentXOffset, totalTranslation);
         }
-        gradient.setLocalMatrix(matrix);
+        if (gradient != null) {
+            gradient.setLocalMatrix(matrix);
+        }
     }
 
     public void updateColors() {
