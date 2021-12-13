@@ -19,6 +19,7 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
@@ -27,6 +28,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.CounterView;
 import org.telegram.ui.Components.LayoutHelper;
 
@@ -40,15 +42,18 @@ public class HintDialogCell extends FrameLayout {
     private int lastUnreadCount;
     private TLRPC.User currentUser;
 
-    private long dialog_id;
+    private long dialogId;
     private int currentAccount = UserConfig.selectedAccount;
     float showOnlineProgress;
     boolean wasDraw;
 
     CounterView counterView;
+    CheckBox2 checkBox;
+    private final boolean drawCheckbox;
 
-    public HintDialogCell(Context context) {
+    public HintDialogCell(Context context, boolean drawCheckbox) {
         super(context);
+        this.drawCheckbox = drawCheckbox;
 
         imageView = new BackupImageView(context);
         imageView.setRoundRadius(AndroidUtilities.dp(27));
@@ -63,16 +68,32 @@ public class HintDialogCell extends FrameLayout {
         nameTextView.setEllipsize(TextUtils.TruncateAt.END);
         addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 6, 64, 6, 0));
 
-        counterView = new CounterView(context);
+        counterView = new CounterView(context, null);
         addView(counterView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 28, Gravity.TOP,0 ,4,0,0));
         counterView.setColors(Theme.key_chats_unreadCounterText, Theme.key_chats_unreadCounter);
         counterView.setGravity(Gravity.RIGHT);
+
+        if (drawCheckbox) {
+            checkBox = new CheckBox2(context, 21);
+            checkBox.setColor(Theme.key_dialogRoundCheckBox, Theme.key_dialogBackground, Theme.key_dialogRoundCheckBoxCheck);
+            checkBox.setDrawUnchecked(false);
+            checkBox.setDrawBackgroundAsArc(4);
+            checkBox.setProgressDelegate(progress -> {
+                float scale = 1.0f - (1.0f - 0.857f) * checkBox.getProgress();
+                imageView.setScaleX(scale);
+                imageView.setScaleY(scale);
+                invalidate();
+            });
+            addView(checkBox, LayoutHelper.createFrame(24, 24, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 19, 42, 0, 0));
+            checkBox.setChecked(true, false);
+            setWillNotDraw(false);
+        }
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(86), MeasureSpec.EXACTLY));
-        counterView.horizontalPadding = AndroidUtilities.dp(13);
+        counterView.counterDrawable.horizontalPadding = AndroidUtilities.dp(13);
     }
 
     public void update(int mask) {
@@ -86,7 +107,7 @@ public class HintDialogCell extends FrameLayout {
         if (mask != 0 && (mask & MessagesController.UPDATE_MASK_READ_DIALOG_MESSAGE) == 0 && (mask & MessagesController.UPDATE_MASK_NEW_MESSAGE) == 0) {
             return;
         }
-        TLRPC.Dialog dialog = MessagesController.getInstance(currentAccount).dialogs_dict.get(dialog_id);
+        TLRPC.Dialog dialog = MessagesController.getInstance(currentAccount).dialogs_dict.get(dialogId);
         if (dialog != null && dialog.unread_count != 0) {
             if (lastUnreadCount != dialog.unread_count) {
                 lastUnreadCount = dialog.unread_count;
@@ -99,24 +120,23 @@ public class HintDialogCell extends FrameLayout {
     }
 
     public void update() {
-        int uid = (int) dialog_id;
-        if (uid > 0) {
-            currentUser = MessagesController.getInstance(currentAccount).getUser(uid);
+        if (DialogObject.isUserDialog(dialogId)) {
+            currentUser = MessagesController.getInstance(currentAccount).getUser(dialogId);
             avatarDrawable.setInfo(currentUser);
         } else {
-            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-uid);
+            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
             avatarDrawable.setInfo(chat);
             currentUser = null;
         }
     }
 
-    public void setDialog(int uid, boolean counter, CharSequence name) {
-        if (dialog_id != uid) {
+    public void setDialog(long uid, boolean counter, CharSequence name) {
+        if (dialogId != uid) {
             wasDraw = false;
             invalidate();
         }
-        dialog_id = uid;
-        if (uid > 0) {
+        dialogId = uid;
+        if (DialogObject.isUserDialog(uid)) {
             currentUser = MessagesController.getInstance(currentAccount).getUser(uid);
             if (name != null) {
                 nameTextView.setText(name);
@@ -180,5 +200,26 @@ public class HintDialogCell extends FrameLayout {
             wasDraw = true;
         }
         return result;
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        if (drawCheckbox) {
+            int cx = imageView.getLeft() + imageView.getMeasuredWidth() / 2;
+            int cy = imageView.getTop() + imageView.getMeasuredHeight() / 2;
+            Theme.checkboxSquare_checkPaint.setColor(Theme.getColor(Theme.key_dialogRoundCheckBox));
+            Theme.checkboxSquare_checkPaint.setAlpha((int) (checkBox.getProgress() * 255));
+            canvas.drawCircle(cx, cy, AndroidUtilities.dp(28), Theme.checkboxSquare_checkPaint);
+        }
+    }
+
+    public void setChecked(boolean checked, boolean animated) {
+        if (drawCheckbox) {
+            checkBox.setChecked(checked, animated);
+        }
+    }
+
+    public long getDialogId() {
+        return dialogId;
     }
 }

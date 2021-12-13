@@ -46,7 +46,7 @@ public class LinearLayoutManager extends RecyclerView.LayoutManager implements
 
     private static final String TAG = "LinearLayoutManager";
 
-    static final boolean DEBUG = BuildVars.DEBUG_VERSION;
+    static final boolean DEBUG = false;
 
     public static final int HORIZONTAL = RecyclerView.HORIZONTAL;
 
@@ -152,6 +152,8 @@ public class LinearLayoutManager extends RecyclerView.LayoutManager implements
     // This should only be used used transiently and should not be used to retain any state over
     // time.
     private int[] mReusableIntPair = new int[2];
+
+    private boolean needFixGap = true;
 
     /**
      * Creates a vertical LinearLayoutManager
@@ -945,6 +947,9 @@ public class LinearLayoutManager extends RecyclerView.LayoutManager implements
      */
     private int fixLayoutEndGap(int endOffset, RecyclerView.Recycler recycler,
             RecyclerView.State state, boolean canOffsetChildren) {
+        if (!needFixGap) {
+            return 0;
+        }
         int gap = mOrientationHelper.getEndAfterPadding() - endOffset;
         int fixOffset = 0;
         if (gap > 0) {
@@ -974,6 +979,9 @@ public class LinearLayoutManager extends RecyclerView.LayoutManager implements
      */
     private int fixLayoutStartGap(int startOffset, RecyclerView.Recycler recycler,
             RecyclerView.State state, boolean canOffsetChildren) {
+        if (!needFixGap) {
+            return 0;
+        }
         int gap = startOffset - getStarForFixGap();
         int fixOffset = 0;
         if (gap > 0) {
@@ -2577,5 +2585,9 @@ public class LinearLayoutManager extends RecyclerView.LayoutManager implements
             mIgnoreConsumed = false;
             mFocusable = false;
         }
+    }
+
+    public void setNeedFixGap(boolean needFixGap) {
+        this.needFixGap = needFixGap;
     }
 }

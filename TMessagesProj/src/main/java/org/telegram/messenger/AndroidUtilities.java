@@ -47,12 +47,6 @@ import android.provider.CallLog;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.provider.Settings;
-
-import androidx.core.content.FileProvider;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-import androidx.viewpager.widget.ViewPager;
-
 import android.telephony.TelephonyManager;
 import android.text.Layout;
 import android.text.Selection;
@@ -71,8 +65,8 @@ import android.util.StateSet;
 import android.util.TypedValue;
 import android.view.ContextThemeWrapper;
 import android.view.Display;
-import android.view.MotionEvent;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
@@ -93,6 +87,11 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ScrollView;
 import android.widget.TextView;
+
+import androidx.core.content.FileProvider;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.viewpager.widget.ViewPager;
 
 import com.android.internal.telephony.ITelephony;
 import com.google.android.gms.auth.api.phone.SmsRetriever;
@@ -243,6 +242,8 @@ public class AndroidUtilities {
             R.drawable.media_doc_yellow_b
     };
 
+    public static final String STICKERS_PLACEHOLDER_PACK_NAME = "tg_placeholders_android";
+
     private static boolean containsUnsupportedCharacters(String text) {
         if (text.contains("\u202C")) {
             return true;
@@ -337,13 +338,13 @@ public class AndroidUtilities {
         return str;
     }
 
-    public static CharSequence highlightText(CharSequence str, ArrayList<String> query) {
+    public static CharSequence highlightText(CharSequence str, ArrayList<String> query, Theme.ResourcesProvider resourcesProvider) {
         if (query == null) {
             return null;
         }
         int emptyCount = 0;
         for (int i = 0; i < query.size(); i++) {
-            CharSequence strTmp = highlightText(str, query.get(i));
+            CharSequence strTmp = highlightText(str, query.get(i), resourcesProvider);
             if (strTmp != null) {
                 str = strTmp;
             } else {
@@ -356,7 +357,7 @@ public class AndroidUtilities {
         return str;
     }
 
-    public static CharSequence highlightText(CharSequence str, String query) {
+    public static CharSequence highlightText(CharSequence str, String query, Theme.ResourcesProvider resourcesProvider) {
         if (TextUtils.isEmpty(query) || TextUtils.isEmpty(str)) {
             return null;
         }
@@ -365,7 +366,7 @@ public class AndroidUtilities {
         int i = s.indexOf(query);
         while (i >= 0) {
             try {
-                spannableStringBuilder.setSpan(new ForegroundColorSpanThemable(Theme.key_windowBackgroundWhiteBlueText4), i, Math.min(i + query.length(), str.length()), 0);
+                spannableStringBuilder.setSpan(new ForegroundColorSpanThemable(Theme.key_windowBackgroundWhiteBlueText4, resourcesProvider), i, Math.min(i + query.length(), str.length()), 0);
             } catch (Exception e) {
                 FileLog.e(e);
             }
@@ -527,10 +528,12 @@ public class AndroidUtilities {
         if (context == null || AndroidUtilities.statusBarHeight > 0) {
             return;
         }
+        AndroidUtilities.statusBarHeight = getStatusBarHeight(context);
+    }
+
+    public static int getStatusBarHeight(Context context) {
         int resourceId = context.getResources().getIdentifier("status_bar_height", "dimen", "android");
-        if (resourceId > 0) {
-            AndroidUtilities.statusBarHeight = context.getResources().getDimensionPixelSize(resourceId);
-        }
+        return resourceId > 0 ? context.getResources().getDimensionPixelSize(resourceId) : 0;
     }
 
     public static int getThumbForNameOrMime(String name, String mime, boolean media) {
@@ -1616,6 +1619,15 @@ public class AndroidUtilities {
         return -1;
     }
 
+    public static int compare(long lhs, long rhs) {
+        if (lhs == rhs) {
+            return 0;
+        } else if (lhs > rhs) {
+            return 1;
+        }
+        return -1;
+    }
+
     public static float dpf2(float value) {
         if (value == 0) {
             return 0;
@@ -2231,12 +2243,16 @@ public class AndroidUtilities {
     }*/
 
     public static void startAppCenter(Activity context) {
-        
+
     }
 
     private static long lastUpdateCheckTime;
     public static void checkForUpdates() {
-        
+
+    }
+
+    public static void appCenterLog(Throwable e) {
+
     }
 
     public static void addToClipboard(CharSequence str) {
@@ -2254,11 +2270,11 @@ public class AndroidUtilities {
             return;
         }
         File f = new File(fromPath);
-        Uri contentUri = Uri.fromFile(f);
-        addMediaToGallery(contentUri);
+        addMediaToGallery(f);
     }
 
-    public static void addMediaToGallery(Uri uri) {
+    public static void addMediaToGallery(File file) {
+        Uri uri = Uri.fromFile(file);
         if (uri == null) {
             return;
         }
@@ -2271,9 +2287,9 @@ public class AndroidUtilities {
         }
     }
 
-    private static File getAlbumDir(boolean secretChat) { //TODO scoped storage
-        if (secretChat || Build.VERSION.SDK_INT >= 23 && ApplicationLoader.applicationContext.checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            return FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE);
+    private static File getAlbumDir(boolean secretChat) {
+        if (secretChat || !BuildVars.NO_SCOPED_STORAGE ||(Build.VERSION.SDK_INT >= 23 && ApplicationLoader.applicationContext.checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)) {
+            return FileLoader.getDirectory(FileLoader.MEDIA_DIR_IMAGE);
         }
         File storageDir = null;
         if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
@@ -2386,15 +2402,23 @@ public class AndroidUtilities {
 
     public static File generatePicturePath(boolean secretChat, String ext) {
         try {
-            File storageDir = getAlbumDir(secretChat);
-            Date date = new Date();
-            date.setTime(System.currentTimeMillis() + Utilities.random.nextInt(1000) + 1);
-            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss_SSS", Locale.US).format(date);
-            return new File(storageDir, "IMG_" + timeStamp + "." + (TextUtils.isEmpty(ext) ? "jpg" : ext));
+            File storageDir = ApplicationLoader.applicationContext.getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+            return new File(storageDir, generateFileName(0, ext));
         } catch (Exception e) {
             FileLog.e(e);
         }
         return null;
+    }
+
+    public static String generateFileName(int type, String ext) {
+        Date date = new Date();
+        date.setTime(System.currentTimeMillis() + Utilities.random.nextInt(1000) + 1);
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss_SSS", Locale.US).format(date);
+        if (type == 0) {
+            return "IMG_" + timeStamp + "." + (TextUtils.isEmpty(ext) ? "jpg" : ext);
+        } else {
+            return  "VID_" + timeStamp + ".mp4";
+        }
     }
 
     public static CharSequence generateSearchName(String name, String name2, String q) {
@@ -2688,7 +2712,10 @@ public class AndroidUtilities {
     }
 
     public static boolean copyFile(InputStream sourceFile, File destFile) throws IOException {
-        OutputStream out = new FileOutputStream(destFile);
+        return copyFile(sourceFile, new FileOutputStream(destFile));
+    }
+
+    public static boolean copyFile(InputStream sourceFile, OutputStream out) throws IOException {
         byte[] buf = new byte[4096];
         int len;
         while ((len = sourceFile.read(buf)) > 0) {
@@ -2804,7 +2831,7 @@ public class AndroidUtilities {
         }
     }
 
-    public static boolean openForView(File f, String fileName, String mimeType, final Activity activity) {
+    public static boolean openForView(File f, String fileName, String mimeType, final Activity activity, Theme.ResourcesProvider resourcesProvider) {
         if (f != null && f.exists()) {
             String realMimeType = null;
             Intent intent = new Intent(Intent.ACTION_VIEW);
@@ -2822,7 +2849,7 @@ public class AndroidUtilities {
                 }
             }
             if (Build.VERSION.SDK_INT >= 26 && realMimeType != null && realMimeType.equals("application/vnd.android.package-archive") && !ApplicationLoader.applicationContext.getPackageManager().canRequestPackageInstalls()) {
-                AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+                AlertDialog.Builder builder = new AlertDialog.Builder(activity, resourcesProvider);
                 builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                 builder.setMessage(LocaleController.getString("ApkRestricted", R.string.ApkRestricted));
                 builder.setPositiveButton(LocaleController.getString("PermissionOpenSettings", R.string.PermissionOpenSettings), (dialogInterface, i) -> {
@@ -2860,7 +2887,7 @@ public class AndroidUtilities {
         return false;
     }
 
-    public static boolean openForView(MessageObject message, Activity activity) {
+    public static boolean openForView(MessageObject message, Activity activity, Theme.ResourcesProvider resourcesProvider) {
         File f = null;
         if (message.messageOwner.attachPath != null && message.messageOwner.attachPath.length() != 0) {
             f = new File(message.messageOwner.attachPath);
@@ -2869,13 +2896,13 @@ public class AndroidUtilities {
             f = FileLoader.getPathToMessage(message.messageOwner);
         }
         String mimeType = message.type == 9 || message.type == 0 ? message.getMimeType() : null;
-        return openForView(f, message.getFileName(), mimeType, activity);
+        return openForView(f, message.getFileName(), mimeType, activity, resourcesProvider);
     }
 
     public static boolean openForView(TLRPC.Document document, boolean forceCache, Activity activity) {
         String fileName = FileLoader.getAttachFileName(document);
         File f = FileLoader.getPathToAttach(document, true);
-        return openForView(f, fileName, document.mime_type, activity);
+        return openForView(f, fileName, document.mime_type, activity, null);
     }
 
     public static CharSequence replaceNewLines(CharSequence original) {
@@ -3717,38 +3744,35 @@ public class AndroidUtilities {
             animated = false;
         }
 
-        if (show && view.getTag() == null) {
-            view.animate().setListener(null).cancel();
-            if (animated) {
-                if (view.getVisibility() != View.VISIBLE) {
-                    view.setVisibility(View.VISIBLE);
-                    view.setAlpha(0f);
-                    view.setScaleX(scaleFactor);
-                    view.setScaleY(scaleFactor);
-                }
-                view.animate().alpha(1f).scaleY(1f).scaleX(1f).setDuration(150).start();
-            } else {
-                view.setVisibility(View.VISIBLE);
-                view.setAlpha(1f);
-                view.setScaleX(1f);
-                view.setScaleY(1f);
-            }
-            view.setTag(1);
-        } else if (!show && view.getTag() != null){
-            view.animate().setListener(null).cancel();
-            if (animated) {
-                view.animate().alpha(0).scaleY(scaleFactor).scaleX(scaleFactor).setListener(new HideViewAfterAnimation(view)).setDuration(150).start();
-            } else {
-                view.setVisibility(View.GONE);
-            }
-            view.setTag(null);
-        } else if (!animated) {
+        if (!animated) {
             view.animate().setListener(null).cancel();
             view.setVisibility(show ? View.VISIBLE : View.GONE);
             view.setTag(show ? 1 : null);
             view.setAlpha(1f);
             view.setScaleX(1f);
             view.setScaleY(1f);
+        } else if (show && view.getTag() == null) {
+            view.animate().setListener(null).cancel();
+            if (view.getVisibility() != View.VISIBLE) {
+                view.setVisibility(View.VISIBLE);
+                view.setAlpha(0f);
+                view.setScaleX(scaleFactor);
+                view.setScaleY(scaleFactor);
+            }
+            view.animate().alpha(1f).scaleY(1f).scaleX(1f).setDuration(150).start();
+            view.setTag(1);
+        } else if (!show && view.getTag() != null) {
+            view.animate().setListener(null).cancel();
+            view.animate().alpha(0).scaleY(scaleFactor).scaleX(scaleFactor).setListener(new HideViewAfterAnimation(view)).setDuration(150).start();
+            view.setTag(null);
+        }
+    }
+
+    public static long getPrefIntOrLong(SharedPreferences preferences, String key, long defaultValue) {
+        try {
+            return preferences.getLong(key, defaultValue);
+        } catch (Exception e) {
+            return preferences.getInt(key, (int) defaultValue);
         }
     }
 }

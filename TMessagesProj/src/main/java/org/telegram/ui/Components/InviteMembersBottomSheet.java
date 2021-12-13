@@ -20,7 +20,6 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
-import android.util.SparseArray;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -31,6 +30,7 @@ import android.widget.ImageView;
 import android.widget.ScrollView;
 
 import androidx.annotation.NonNull;
+import androidx.collection.LongSparseArray;
 import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.RecyclerView;
@@ -38,6 +38,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
@@ -61,7 +62,7 @@ import java.util.ArrayList;
 
 public class InviteMembersBottomSheet extends UsersAlertBase implements NotificationCenter.NotificationCenterDelegate {
 
-    private SparseArray<TLObject> ignoreUsers;
+    private LongSparseArray<TLObject> ignoreUsers;
     private final SpansContainer spansContainer;
     private final ScrollView spansScrollView;
     private SearchAdapter searchAdapter;
@@ -78,7 +79,7 @@ public class InviteMembersBottomSheet extends UsersAlertBase implements Notifica
     private AnimatorSet currentAnimation;
 
     private ArrayList<TLObject> contacts = new ArrayList<>();
-    private SparseArray<GroupCreateSpan> selectedContacts = new SparseArray<>();
+    private LongSparseArray<GroupCreateSpan> selectedContacts = new LongSparseArray<>();
 
     private boolean spanEnter;
     private float spansEnterProgress = 0;
@@ -117,14 +118,14 @@ public class InviteMembersBottomSheet extends UsersAlertBase implements Notifica
     private final ImageView floatingButton;
     private AnimatorSet currentDoneButtonAnimation;
     private int searchAdditionalHeight;
-    private int chatId;
+    private long chatId;
 
     public interface InviteMembersBottomSheetDelegate {
         void didSelectDialogs(ArrayList<Long> dids);
     }
 
-    public InviteMembersBottomSheet(Context context, int account, SparseArray<TLObject> ignoreUsers, int chatId, BaseFragment parentFragment) {
-        super(context, false, account);
+    public InviteMembersBottomSheet(Context context, int account, LongSparseArray<TLObject> ignoreUsers, long chatId, BaseFragment parentFragment, Theme.ResourcesProvider resourcesProvider) {
+        super(context, false, account, resourcesProvider);
         this.ignoreUsers = ignoreUsers;
         needSnapToTop = false;
         this.parentFragment = parentFragment;
@@ -195,7 +196,7 @@ public class InviteMembersBottomSheet extends UsersAlertBase implements Notifica
             }
 
             if (object != null) {
-                int id;
+                long id;
                 if (object instanceof TLRPC.User) {
                     id = ((TLRPC.User) object).id;
                 } else if (object instanceof TLRPC.Chat) {
@@ -287,8 +288,8 @@ public class InviteMembersBottomSheet extends UsersAlertBase implements Notifica
             if (dialogsDelegate != null) {
                 ArrayList<Long> dialogs = new ArrayList<>();
                 for (int a = 0; a < selectedContacts.size(); a++) {
-                    int uid = selectedContacts.keyAt(a);
-                    dialogs.add((long) uid);
+                    long uid = selectedContacts.keyAt(a);
+                    dialogs.add(uid);
                 }
                 dialogsDelegate.didSelectDialogs(dialogs);
                 dismiss();
@@ -301,7 +302,7 @@ public class InviteMembersBottomSheet extends UsersAlertBase implements Notifica
                 }
                 StringBuilder stringBuilder = new StringBuilder();
                 for (int a = 0; a < selectedContacts.size(); a++) {
-                    int uid = selectedContacts.keyAt(a);
+                    long uid = selectedContacts.keyAt(a);
                     TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(uid);
                     if (user == null) {
                         continue;
@@ -362,12 +363,12 @@ public class InviteMembersBottomSheet extends UsersAlertBase implements Notifica
 
     public void setSelectedContacts(ArrayList<Long> dialogs) {
         for (int a = 0, N = dialogs.size(); a < N; a++) {
-            int lowerId = (int) (long) dialogs.get(a);
+            long dialogId = dialogs.get(a);
             TLObject object;
-            if (lowerId < 0) {
-                object = MessagesController.getInstance(currentAccount).getChat(-lowerId);
+            if (DialogObject.isChatDialog(dialogId)) {
+                object = MessagesController.getInstance(currentAccount).getChat(-dialogId);
             } else {
-                object = MessagesController.getInstance(currentAccount).getUser(lowerId);
+                object = MessagesController.getInstance(currentAccount).getUser(dialogId);
             }
             GroupCreateSpan span = new GroupCreateSpan(spansContainer.getContext(), object);
             spansContainer.addSpan(span, false);
@@ -598,11 +599,10 @@ public class InviteMembersBottomSheet extends UsersAlertBase implements Notifica
         public TLObject getObject(int position) {
             if (dialogsDelegate != null) {
                 TLRPC.Dialog dialog = dialogsServerOnly.get(position - contactsStartRow);
-                int lowerId = (int) dialog.id;
-                if (lowerId > 0) {
-                    return MessagesController.getInstance(currentAccount).getUser(lowerId);
+                if (DialogObject.isUserDialog(dialog.id)) {
+                    return MessagesController.getInstance(currentAccount).getUser(dialog.id);
                 } else {
-                    return MessagesController.getInstance(currentAccount).getChat(-lowerId);
+                    return MessagesController.getInstance(currentAccount).getChat(-dialog.id);
                 }
             } else {
                 return contacts.get(position - contactsStartRow);
@@ -620,7 +620,7 @@ public class InviteMembersBottomSheet extends UsersAlertBase implements Notifica
                     TLObject object = getObject(position);
 
                     Object oldObject = cell.getObject();
-                    int oldId;
+                    long oldId;
                     if (oldObject instanceof TLRPC.User) {
                         oldId = ((TLRPC.User) oldObject).id;
                     } else if (oldObject instanceof TLRPC.Chat) {
@@ -630,7 +630,7 @@ public class InviteMembersBottomSheet extends UsersAlertBase implements Notifica
                     }
 
                     cell.setObject(object, null, null, position != contactsEndRow);
-                    int id;
+                    long id;
                     if (object instanceof TLRPC.User) {
                         id = ((TLRPC.User) object).id;
                     } else if (object instanceof TLRPC.Chat) {
@@ -811,7 +811,7 @@ public class InviteMembersBottomSheet extends UsersAlertBase implements Notifica
 
 
                     Object oldObject = cell.getObject();
-                    int oldId;
+                    long oldId;
                     if (oldObject instanceof TLRPC.User) {
                         oldId = ((TLRPC.User) oldObject).id;
                     } else if (oldObject instanceof TLRPC.Chat) {
@@ -821,7 +821,7 @@ public class InviteMembersBottomSheet extends UsersAlertBase implements Notifica
                     }
 
                     cell.setObject(object, name, username);
-                    int id;
+                    long id;
                     if (object instanceof TLRPC.User) {
                         id = ((TLRPC.User) object).id;
                     } else if (object instanceof TLRPC.Chat) {

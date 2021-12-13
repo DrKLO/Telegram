@@ -14,7 +14,6 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.Shader;
 import android.os.Bundle;
-import android.util.LongSparseArray;
 import android.view.View;
 import android.widget.RemoteViews;
 import android.widget.RemoteViewsService;
@@ -26,6 +25,8 @@ import org.telegram.ui.EditWidgetActivity;
 
 import java.io.File;
 import java.util.ArrayList;
+
+import androidx.collection.LongSparseArray;
 
 public class ContactsWidgetService extends RemoteViewsService {
     @Override
@@ -104,8 +105,8 @@ class ContactsRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactor
                 TLRPC.FileLocation photoPath = null;
                 TLRPC.User user = null;
                 TLRPC.Chat chat = null;
-                if (id > 0) {
-                    user = accountInstance.getMessagesController().getUser((int) (long) id);
+                if (DialogObject.isUserDialog(id)) {
+                    user = accountInstance.getMessagesController().getUser(id);
                     if (UserObject.isUserSelf(user)) {
                         name = LocaleController.getString("SavedMessages", R.string.SavedMessages);
                     } else if (UserObject.isReplyUser(user)) {
@@ -119,7 +120,7 @@ class ContactsRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactor
                         photoPath = user.photo.photo_small;
                     }
                 } else {
-                    chat = accountInstance.getMessagesController().getChat(-(int) (long) id);
+                    chat = accountInstance.getMessagesController().getChat(-id);
                     if (chat != null) {
                         name = chat.title;
                         if (chat.photo != null && chat.photo.photo_small != null && chat.photo.photo_small.volume_id != 0 && chat.photo.photo_small.local_id != 0) {
@@ -193,10 +194,10 @@ class ContactsRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactor
 
                 Bundle extras = new Bundle();
 
-                if (id > 0) {
-                    extras.putInt("userId", (int) (long) id);
+                if (DialogObject.isUserDialog(id)) {
+                    extras.putLong("userId", id);
                 } else {
-                    extras.putInt("chatId", -(int) (long) id);
+                    extras.putLong("chatId", -id);
                 }
                 extras.putInt("currentAccount", accountInstance.getCurrentAccount());
 

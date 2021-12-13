@@ -55,6 +55,7 @@ import org.telegram.ui.Components.NumberTextView;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ReorderingBulletinLayout;
 import org.telegram.ui.Components.ReorderingHintDrawable;
+import org.telegram.ui.Components.ShareAlert;
 import org.telegram.ui.Components.StickersAlert;
 import org.telegram.ui.Components.TrendingStickersAlert;
 import org.telegram.ui.Components.TrendingStickersLayout;
@@ -78,6 +79,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
 
     private static final int MENU_ARCHIVE = 0;
     private static final int MENU_DELETE = 1;
+    private static final int MENU_SHARE = 2;
 
     private RecyclerListView listView;
     private ListAdapter listAdapter;
@@ -90,6 +92,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
 
     private ActionBarMenuItem archiveMenuItem;
     private ActionBarMenuItem deleteMenuItem;
+    private ActionBarMenuItem shareMenuItem;
 
     private int activeReorderingRequests;
     private boolean needReorder;
@@ -205,7 +208,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                     if (onBackPressed()) {
                         finishFragment();
                     }
-                } else if (id == MENU_ARCHIVE || id == MENU_DELETE) {
+                } else if (id == MENU_ARCHIVE || id == MENU_DELETE || id == MENU_SHARE) {
                     if (!needReorder) {
                         if (activeReorderingRequests == 0) {
                             listAdapter.processSelectionMenu(id);
@@ -226,8 +229,10 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
         actionMode.addView(selectedCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, 72, 0, 0, 0));
         selectedCountTextView.setOnTouchListener((v, event) -> true);
 
+        shareMenuItem = actionMode.addItemWithWidth(MENU_SHARE, R.drawable.msg_share, AndroidUtilities.dp(54));
         archiveMenuItem = actionMode.addItemWithWidth(MENU_ARCHIVE, R.drawable.msg_archive, AndroidUtilities.dp(54));
         deleteMenuItem = actionMode.addItemWithWidth(MENU_DELETE, R.drawable.msg_delete, AndroidUtilities.dp(54));
+
 
         listAdapter = new ListAdapter(context, MediaDataController.getInstance(currentAccount).getStickerSets(currentType));
 
@@ -282,7 +287,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                         MediaDataController.getInstance(currentAccount).toggleStickerSet(getParentActivity(), stickerSet, 0, StickersActivity.this, false, false);
                     }
                 };
-                trendingStickersAlert = new TrendingStickersAlert(context, this, new TrendingStickersLayout(context, trendingDelegate));
+                trendingStickersAlert = new TrendingStickersAlert(context, this, new TrendingStickersLayout(context, trendingDelegate), null);
                 trendingStickersAlert.show();
             } else if (position == archivedRow) {
                 presentFragment(new ArchivedStickersActivity(currentType));
@@ -558,7 +563,33 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
         }
 
         private void processSelectionMenu(int which) {
-            if (which == MENU_ARCHIVE || which == MENU_DELETE) {
+            if (which == MENU_SHARE) {
+                StringBuilder stringBuilder = new StringBuilder();
+                for (int i = 0, size = stickerSets.size(); i < size; i++) {
+                    final TLRPC.TL_messages_stickerSet stickerSet = stickerSets.get(i);
+                    if (selectedItems.get(stickerSet.set.id, false)) {
+                        if (stringBuilder.length() != 0) {
+                            stringBuilder.append("\n");
+                        }
+                        stringBuilder.append(getLinkForSet(stickerSet));
+                    }
+                }
+                String link = stringBuilder.toString();
+                ShareAlert shareAlert = ShareAlert.createShareAlert(fragmentView.getContext(), null, link, false, link, false);
+                shareAlert.setDelegate(new ShareAlert.ShareAlertDelegate() {
+                    @Override
+                    public void didShare() {
+                        clearSelected();
+                    }
+
+                    @Override
+                    public boolean didCopy() {
+                        clearSelected();
+                        return true;
+                    }
+                });
+                shareAlert.show();
+            } else if (which == MENU_ARCHIVE || which == MENU_DELETE) {
                 final ArrayList<TLRPC.StickerSet> stickerSetList = new ArrayList<>(selectedItems.size());
 
                 for (int i = 0, size = stickerSets.size(); i < size; i++) {
@@ -624,7 +655,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                 try {
                     Intent intent = new Intent(Intent.ACTION_SEND);
                     intent.setType("text/plain");
-                    intent.putExtra(Intent.EXTRA_TEXT, String.format(Locale.US, "https://" + MessagesController.getInstance(currentAccount).linkPrefix + "/addstickers/%s", stickerSet.set.short_name));
+                    intent.putExtra(Intent.EXTRA_TEXT, getLinkForSet(stickerSet));
                     getParentActivity().startActivityForResult(Intent.createChooser(intent, LocaleController.getString("StickersShare", R.string.StickersShare)), 500);
                 } catch (Exception e) {
                     FileLog.e(e);
@@ -759,7 +790,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
         @Override
         @SuppressLint("ClickableViewAccessibility")
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View view = null;
+            View view;
             switch (viewType) {
                 case 0:
                     view = new StickerSetCell(mContext, 1);
@@ -825,6 +856,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                     view = new ShadowSectionCell(mContext);
                     break;
                 case 4:
+                default:
                     view = new TextCheckCell(mContext);
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
@@ -915,7 +947,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                     if (!SharedConfig.stickersReorderingHintUsed) {
                         SharedConfig.setStickersReorderingHintUsed(true);
                         final String stickersReorderHint = LocaleController.getString("StickersReorderHint", R.string.StickersReorderHint);
-                        Bulletin.make(parentLayout, new ReorderingBulletinLayout(mContext, stickersReorderHint), ReorderingHintDrawable.DURATION * 2 + 250).show();
+                        Bulletin.make(parentLayout, new ReorderingBulletinLayout(mContext, stickersReorderHint, null), ReorderingHintDrawable.DURATION * 2 + 250).show();
                     }
                 }
             } else if (actionModeShowed) {
@@ -968,6 +1000,10 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                 return text;
             }
         }
+    }
+
+    private String getLinkForSet(TLRPC.TL_messages_stickerSet stickerSet) {
+        return String.format(Locale.US, "https://" + MessagesController.getInstance(currentAccount).linkPrefix + "/addstickers/%s", stickerSet.set.short_name);
     }
 
     @Override

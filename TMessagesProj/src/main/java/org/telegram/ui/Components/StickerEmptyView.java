@@ -22,8 +22,9 @@ import org.telegram.ui.ActionBar.Theme;
 
 public class StickerEmptyView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
-    public final static int STICKER_TYPE_SEARCH = 1;
     public final static int STICKER_TYPE_NO_CONTACTS = 0;
+    public final static int STICKER_TYPE_SEARCH = 1;
+    public final static int STICKER_TYPE_DONE = 2;
 
     private LinearLayout linearLayout;
     public BackupImageView stickerView;
@@ -31,8 +32,8 @@ public class StickerEmptyView extends FrameLayout implements NotificationCenter.
     private RadialProgressView progressBar;
     public final TextView title;
     public final TextView subtitle;
-    private final String stickerSetName = "tg_placeholders";
     private boolean progressShowing;
+    private final Theme.ResourcesProvider resourcesProvider;
 
     private int stickerType;
 
@@ -62,7 +63,12 @@ public class StickerEmptyView extends FrameLayout implements NotificationCenter.
     private boolean animateLayoutChange;
 
     public StickerEmptyView(@NonNull Context context, View progressView, int type) {
+        this(context, progressView, type, null);
+    }
+
+    public StickerEmptyView(@NonNull Context context, View progressView, int type, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
         this.progressView = progressView;
         stickerType = type;
 
@@ -98,13 +104,13 @@ public class StickerEmptyView extends FrameLayout implements NotificationCenter.
 
         title.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         title.setTag(Theme.key_windowBackgroundWhiteBlackText);
-        title.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        title.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
         title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         title.setGravity(Gravity.CENTER);
 
         subtitle = new TextView(context);
         subtitle.setTag(Theme.key_windowBackgroundWhiteGrayText);
-        subtitle.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        subtitle.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText));
         subtitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         subtitle.setGravity(Gravity.CENTER);
 
@@ -114,7 +120,7 @@ public class StickerEmptyView extends FrameLayout implements NotificationCenter.
         addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 56, 0, 56, 30));
 
         if (progressView == null) {
-            progressBar = new RadialProgressView(context);
+            progressBar = new RadialProgressView(context, resourcesProvider);
             progressBar.setAlpha(0);
             progressBar.setScaleY(0.5f);
             progressBar.setScaleX(0.5f);
@@ -145,10 +151,10 @@ public class StickerEmptyView extends FrameLayout implements NotificationCenter.
 
     public void setColors(String titleKey, String subtitleKey, String key1, String key2) {
         title.setTag(titleKey);
-        title.setTextColor(Theme.getColor(titleKey));
+        title.setTextColor(getThemedColor(titleKey));
 
         subtitle.setTag(subtitleKey);
-        subtitle.setTextColor(Theme.getColor(subtitleKey));
+        subtitle.setTextColor(getThemedColor(subtitleKey));
 
         stubDrawable.setColors(key1, key2);
     }
@@ -222,17 +228,27 @@ public class StickerEmptyView extends FrameLayout implements NotificationCenter.
     }
 
     private void setSticker() {
-        TLRPC.TL_messages_stickerSet set = MediaDataController.getInstance(currentAccount).getStickerSetByName(stickerSetName);
-        if (set == null) {
-            set = MediaDataController.getInstance(currentAccount).getStickerSetByEmojiOrName(stickerSetName);
+        String imageFilter = null;
+        TLRPC.Document document = null;
+        TLRPC.TL_messages_stickerSet set = null;
+        if (stickerType == STICKER_TYPE_DONE) {
+            document = MediaDataController.getInstance(currentAccount).getEmojiAnimatedSticker("\uD83D\uDC4D");
+        } else {
+            set = MediaDataController.getInstance(currentAccount).getStickerSetByName(AndroidUtilities.STICKERS_PLACEHOLDER_PACK_NAME);
+            if (set == null) {
+                set = MediaDataController.getInstance(currentAccount).getStickerSetByEmojiOrName(AndroidUtilities.STICKERS_PLACEHOLDER_PACK_NAME);
+            }
+            if (set != null && set.documents.size() >= 2) {
+                document = set.documents.get(stickerType);
+            }
+            imageFilter = "130_130";
         }
-        if (set != null && set.documents.size() >= 2) {
-            TLRPC.Document document = set.documents.get(stickerType);
+        if (document != null) {
             ImageLocation imageLocation = ImageLocation.getForDocument(document);
-            stickerView.setImage(imageLocation, "130_130", "tgs", stubDrawable, set);
+            stickerView.setImage(imageLocation, imageFilter, "tgs", stubDrawable, set);
             stickerView.getImageReceiver().setAutoRepeat(2);
         } else {
-            MediaDataController.getInstance(currentAccount).loadStickersByEmojiOrName(stickerSetName, false, set == null);
+            MediaDataController.getInstance(currentAccount).loadStickersByEmojiOrName(AndroidUtilities.STICKERS_PLACEHOLDER_PACK_NAME, false, set == null);
             stickerView.setImageDrawable(stubDrawable);
         }
     }
@@ -242,7 +258,7 @@ public class StickerEmptyView extends FrameLayout implements NotificationCenter.
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.diceStickersDidLoad) {
             String name = (String) args[0];
-            if (stickerSetName.equals(name) && getVisibility() == VISIBLE) {
+            if (AndroidUtilities.STICKERS_PLACEHOLDER_PACK_NAME.equals(name) && getVisibility() == VISIBLE) {
                 setSticker();
             }
         }
@@ -343,5 +359,10 @@ public class StickerEmptyView extends FrameLayout implements NotificationCenter.
                 progressBar.setTranslationY(0);
             }
         }
+    }
+
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
     }
 }

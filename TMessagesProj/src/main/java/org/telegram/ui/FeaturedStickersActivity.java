@@ -228,7 +228,7 @@ public class FeaturedStickersActivity extends BaseFragment implements Notificati
 
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View view = null;
+            View view;
             switch (viewType) {
                 case 0:
                     view = new FeaturedStickerSetCell(mContext);
@@ -245,6 +245,7 @@ public class FeaturedStickersActivity extends BaseFragment implements Notificati
                     });
                     break;
                 case 1:
+                default:
                     view = new TextInfoPrivacyCell(mContext);
                     view.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                     break;

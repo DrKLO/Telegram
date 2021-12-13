@@ -239,6 +239,7 @@ public class CameraController implements MediaRecorder.OnInfoListener {
                     NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.cameraInitied);
                 });
             } catch (Exception e) {
+                FileLog.e(e);
                 AndroidUtilities.runOnUIThread(() -> {
                     onFinishCameraInitRunnables.clear();
                     loadingCameras = false;
@@ -247,7 +248,6 @@ public class CameraController implements MediaRecorder.OnInfoListener {
                         AndroidUtilities.runOnUIThread(() -> initCamera(onInitRunnable, true), 1000);
                     }
                 });
-
             }
         });
     }
@@ -430,7 +430,7 @@ public class CameraController implements MediaRecorder.OnInfoListener {
                             outputStream.getFD().sync();
                             outputStream.close();
                             if (scaled != null) {
-                                ImageLoader.getInstance().putImageToCache(new BitmapDrawable(scaled), key);
+                                ImageLoader.getInstance().putImageToCache(new BitmapDrawable(scaled), key, false);
                             }
                             if (callback != null) {
                                 callback.run();
@@ -446,7 +446,7 @@ public class CameraController implements MediaRecorder.OnInfoListener {
                     outputStream.getFD().sync();
                     outputStream.close();
                     if (bitmap != null) {
-                        ImageLoader.getInstance().putImageToCache(new BitmapDrawable(bitmap), key);
+                        ImageLoader.getInstance().putImageToCache(new BitmapDrawable(bitmap), key, false);
                     }
                 } catch (Exception e) {
                     FileLog.e(e);
@@ -726,7 +726,7 @@ public class CameraController implements MediaRecorder.OnInfoListener {
             if (onVideoTakeCallback != null) {
                 String path = cacheFile.getAbsolutePath();
                 if (bitmapFinal != null) {
-                    ImageLoader.getInstance().putImageToCache(new BitmapDrawable(bitmapFinal), Utilities.MD5(path));
+                    ImageLoader.getInstance().putImageToCache(new BitmapDrawable(bitmapFinal), Utilities.MD5(path), false);
                 }
                 onVideoTakeCallback.onFinishVideoRecording(path, durationFinal);
                 onVideoTakeCallback = null;

@@ -11,6 +11,7 @@ package org.telegram.ui;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.Typeface;
+import android.os.Bundle;
 import android.os.Vibrator;
 import android.text.InputType;
 import android.text.TextUtils;
@@ -101,6 +102,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
     private int rowCount;
 
     private boolean forgotPasswordOnShow;
+    int otherwiseReloginDays = -1;
 
     private TwoStepVerificationActivityDelegate delegate;
 
@@ -169,7 +171,11 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
-                    finishFragment();
+                    if (otherwiseReloginDays >= 0) {
+                        showSetForcePasswordAlert();
+                    } else {
+                        finishFragment();
+                    }
                 } else if (id == done_button) {
                     processDone();
                 }
@@ -1102,5 +1108,44 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         themeDescriptions.add(new ThemeDescription(passwordEditText, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_windowBackgroundWhiteInputFieldActivated));
 
         return themeDescriptions;
+    }
+
+    @Override
+    public boolean onBackPressed() {
+        if (otherwiseReloginDays >= 0) {
+            showSetForcePasswordAlert();
+            return false;
+        }
+        return super.onBackPressed();
+    }
+
+    private void showSetForcePasswordAlert() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+        builder.setTitle(LocaleController.getString("Warning", R.string.Warning));
+        builder.setMessage(LocaleController.formatPluralString("ForceSetPasswordAlertMessage", otherwiseReloginDays));
+        builder.setPositiveButton(LocaleController.getString("ForceSetPasswordContinue", R.string.ForceSetPasswordContinue), (a1, a2) -> {
+
+        });
+
+        builder.setNegativeButton(LocaleController.getString("ForceSetPasswordCancel", R.string.ForceSetPasswordCancel), (a1, a2) -> {
+            finishFragment();
+        });
+        AlertDialog alertDialog = builder.show();
+        ((TextView)alertDialog.getButton(DialogInterface.BUTTON_NEGATIVE)).setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+    }
+
+    public void setBlockingAlert(int otherwiseRelogin) {
+        otherwiseReloginDays = otherwiseRelogin;
+    }
+
+    @Override
+    public void finishFragment() {
+        if (otherwiseReloginDays >= 0) {
+            final Bundle args = new Bundle();
+            args.putBoolean("afterSignup", true);
+            presentFragment(new DialogsActivity(args), true);
+        } else {
+            super.finishFragment();
+        }
     }
 }

@@ -127,11 +127,13 @@ public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate,
         }
 
         int h = AndroidUtilities.displaySize.y;
+        int w = AndroidUtilities.displaySize.x;
         if (getParent() instanceof View) {
             View view = (View) getParent();
+            w = view.getMeasuredWidth();
             h = view.getMeasuredHeight();
         }
-        Theme.chat_msgInMediaDrawable.setTop((int) getY(), h, false, false);
+        Theme.chat_msgInMediaDrawable.setTop((int) getY(), w, h, false, false);
         setDrawableBounds(Theme.chat_msgInMediaDrawable, 0, 0, getMeasuredWidth(), getMeasuredHeight());
         Theme.chat_msgInMediaDrawable.draw(canvas);
 

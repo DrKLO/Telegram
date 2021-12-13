@@ -20,6 +20,7 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
@@ -162,27 +163,23 @@ public class ProfileSearchCell extends BaseCell {
             text = LocaleController.getString("NotificationsOff", R.string.NotificationsOff);
         }
 
-        int lower_id = (int) exception.did;
-        int high_id = (int) (exception.did >> 32);
-        if (lower_id != 0) {
-            if (lower_id > 0) {
-                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(lower_id);
-                if (user != null) {
-                    setData(user, null, name, text, false, false);
-                }
-            } else {
-                TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lower_id);
-                if (chat != null) {
-                    setData(chat, null, name, text, false, false);
-                }
-            }
-        } else {
-            TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance(currentAccount).getEncryptedChat(high_id);
+        if (DialogObject.isEncryptedDialog(exception.did)) {
+            TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance(currentAccount).getEncryptedChat(DialogObject.getEncryptedChatId(exception.did));
             if (encryptedChat != null) {
                 TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(encryptedChat.user_id);
                 if (user != null) {
                     setData(user, encryptedChat, name, text, false, false);
                 }
+            }
+        } else if (DialogObject.isUserDialog(exception.did)) {
+            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(exception.did);
+            if (user != null) {
+                setData(user, null, name, text, false, false);
+            }
+        } else {
+            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-exception.did);
+            if (chat != null) {
+                setData(chat, null, name, text, false, false);
             }
         }
     }
@@ -247,7 +244,7 @@ public class ProfileSearchCell extends BaseCell {
 
         if (encryptedChat != null) {
             drawNameLock = true;
-            dialog_id = ((long) encryptedChat.id) << 32;
+            dialog_id = DialogObject.makeEncryptedDialogId(encryptedChat.id);
             if (!LocaleController.isRTL) {
                 nameLockLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline);
                 nameLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline + 4) + Theme.dialogs_lockDrawable.getIntrinsicWidth();
@@ -534,7 +531,7 @@ public class ProfileSearchCell extends BaseCell {
         if (mask != 0) {
             boolean continueUpdate = false;
             if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0 && user != null || (mask & MessagesController.UPDATE_MASK_CHAT_AVATAR) != 0 && chat != null) {
-                if (lastAvatar != null && photo == null || lastAvatar == null && photo != null || lastAvatar != null && photo != null && (lastAvatar.volume_id != photo.volume_id || lastAvatar.local_id != photo.local_id)) {
+                if (lastAvatar != null && photo == null || lastAvatar == null && photo != null || lastAvatar != null && (lastAvatar.volume_id != photo.volume_id || lastAvatar.local_id != photo.local_id)) {
                     continueUpdate = true;
                 }
             }

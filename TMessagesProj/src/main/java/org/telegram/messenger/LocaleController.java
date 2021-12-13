@@ -466,7 +466,7 @@ public class LocaleController {
     }
 
     public void checkUpdateForCurrentRemoteLocale(int currentAccount, int version, int baseVersion) {
-        if (currentLocaleInfo == null || currentLocaleInfo != null && !currentLocaleInfo.isRemote() && !currentLocaleInfo.isUnofficial()) {
+        if (currentLocaleInfo == null || !currentLocaleInfo.isRemote() && !currentLocaleInfo.isUnofficial()) {
             return;
         }
         if (currentLocaleInfo.hasBaseLang()) {
@@ -734,10 +734,8 @@ public class LocaleController {
                 if (remoteLanguagesDict.containsKey(localeInfo.getKey())) {
                     continue;
                 }
-                if (localeInfo != null) {
-                    remoteLanguages.add(localeInfo);
-                    remoteLanguagesDict.put(localeInfo.getKey(), localeInfo);
-                }
+                remoteLanguages.add(localeInfo);
+                remoteLanguagesDict.put(localeInfo.getKey(), localeInfo);
             }
         }
         locales = preferences.getString("unofficial", null);
@@ -749,9 +747,7 @@ public class LocaleController {
                     continue;
                 }
                 localeInfo.shortName = localeInfo.shortName.replace("-", "_");
-                if (localeInfo != null) {
-                    unofficialLanguages.add(localeInfo);
-                }
+                unofficialLanguages.add(localeInfo);
             }
         }
     }
@@ -1727,6 +1723,11 @@ public class LocaleController {
     }
 
     public static String formatSectionDate(long date) {
+        return formatYearMont(date, false);
+    }
+
+
+    public static String formatYearMont(long date, boolean alwaysShowYear) {
         try {
             date *= 1000;
             Calendar rightNow = Calendar.getInstance();
@@ -1749,7 +1750,7 @@ public class LocaleController {
                     LocaleController.getString("November", R.string.November),
                     LocaleController.getString("December", R.string.December)
             };
-            if (year == dateYear) {
+            if (year == dateYear && !alwaysShowYear) {
                 return months[month];
             } else {
                 return months[month] + " " + dateYear;

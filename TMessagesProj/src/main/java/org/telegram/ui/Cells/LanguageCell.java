@@ -36,6 +36,9 @@ public class LanguageCell extends FrameLayout {
 
     public LanguageCell(Context context, boolean dialog) {
         super(context);
+        if (Theme.dividerPaint == null) {
+            Theme.createCommonResources(context);
+        }
 
         setWillNotDraw(false);
         isDialog = dialog;

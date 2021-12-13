@@ -18,7 +18,13 @@ import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.view.View;
+import android.view.WindowInsets;
 import android.widget.FrameLayout;
+
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+
+import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -47,6 +53,7 @@ public class SizeNotifierFrameLayout extends FrameLayout {
     private int emojiHeight;
     private float emojiOffset;
     private boolean animationInProgress;
+    private boolean skipBackgroundDrawing;
 
     public interface SizeNotifierFrameLayoutDelegate {
         void onSizeChanged(int keyboardHeight, boolean isWidthGreater);
@@ -213,12 +220,12 @@ public class SizeNotifierFrameLayout extends FrameLayout {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        if (backgroundDrawable == null) {
+        if (backgroundDrawable == null || skipBackgroundDrawing) {
             super.onDraw(canvas);
             return;
         }
         //int kbHeight = SharedConfig.smoothKeyboard ? 0 : keyboardHeight;
-        Drawable newDrawable = Theme.getCachedWallpaperNonBlocking();
+        Drawable newDrawable = getNewDrawable();
         if (newDrawable != backgroundDrawable && newDrawable != null) {
             if (Theme.isAnimatingColor()) {
                 oldBackgroundDrawable = backgroundDrawable;
@@ -334,5 +341,19 @@ public class SizeNotifierFrameLayout extends FrameLayout {
 
     protected AdjustPanLayoutHelper createAdjustPanLayoutHelper() {
         return null;
+    }
+
+    public void setSkipBackgroundDrawing(boolean skipBackgroundDrawing) {
+        this.skipBackgroundDrawing = skipBackgroundDrawing;
+        invalidate();
+    }
+
+    protected Drawable getNewDrawable() {
+        return Theme.getCachedWallpaperNonBlocking();
+    }
+
+    @Override
+    protected boolean verifyDrawable(Drawable who) {
+        return who == getBackgroundImage() || super.verifyDrawable(who);
     }
 }

@@ -11,6 +11,7 @@ package org.telegram.ui;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Environment;
 import android.os.StatFs;
@@ -26,6 +27,7 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.RequiresApi;
 import androidx.core.widget.NestedScrollView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -34,8 +36,10 @@ import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLiteDatabase;
 import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.FilesMigrationService;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
@@ -63,6 +67,8 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SlideChooseView;
+import org.telegram.ui.Components.StorageDiagramView;
+import org.telegram.ui.Components.StroageUsageView;
 import org.telegram.ui.Components.UndoView;
 
 import java.io.File;
@@ -96,6 +102,7 @@ public class CacheControlActivity extends BaseFragment {
     private long totalSize = -1;
     private long totalDeviceSize = -1;
     private long totalDeviceFreeSize = -1;
+    private long migrateOldFolderRow = -1;
     private StorageDiagramView.ClearViewData[] clearViewData = new StorageDiagramView.ClearViewData[7];
     private boolean calculating = true;
 
@@ -112,18 +119,6 @@ public class CacheControlActivity extends BaseFragment {
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
-
-        rowCount = 0;
-
-        keepMediaHeaderRow = rowCount++;
-        keepMediaChooserRow = rowCount++;
-        keepMediaInfoRow = rowCount++;
-        deviseStorageHeaderRow = rowCount++;
-        storageUsageRow = rowCount++;
-
-        cacheInfoRow = rowCount++;
-        databaseRow = rowCount++;
-        databaseInfoRow = rowCount++;
 
         databaseSize = MessagesStorage.getInstance(currentAccount).getDatabaseSize();
 
@@ -206,19 +201,34 @@ public class CacheControlActivity extends BaseFragment {
         });
 
         fragmentCreateTime = System.currentTimeMillis();
+        updateRows();
         return true;
+    }
+
+    private void updateRows() {
+        rowCount = 0;
+
+        keepMediaHeaderRow = rowCount++;
+        keepMediaChooserRow = rowCount++;
+        keepMediaInfoRow = rowCount++;
+        deviseStorageHeaderRow = rowCount++;
+        storageUsageRow = rowCount++;
+
+        cacheInfoRow = rowCount++;
+        databaseRow = rowCount++;
+        databaseInfoRow = rowCount++;
     }
 
     private void updateStorageUsageRow() {
         View view = layoutManager.findViewByPosition(storageUsageRow);
         if (view instanceof StroageUsageView) {
             StroageUsageView stroageUsageView = ((StroageUsageView) view);
-            long currentTime =  System.currentTimeMillis();
+            long currentTime = System.currentTimeMillis();
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT && currentTime - fragmentCreateTime > 250) {
                 TransitionSet transition = new TransitionSet();
                 ChangeBounds changeBounds = new ChangeBounds();
                 changeBounds.setDuration(250);
-                changeBounds.excludeTarget(stroageUsageView.legendLayout,true);
+                changeBounds.excludeTarget(stroageUsageView.legendLayout, true);
                 Fade in = new Fade(Fade.IN);
                 in.setDuration(290);
                 transition
@@ -403,7 +413,9 @@ public class CacheControlActivity extends BaseFragment {
             if (getParentActivity() == null) {
                 return;
             }
-            if (position == databaseRow) {
+            if (position == migrateOldFolderRow) {
+                migrateOldFolder();
+            } else if (position == databaseRow) {
                 clearDatabase();
             } else if (position == storageUsageRow) {
                 if (totalSize <= 0 || getParentActivity() == null) {
@@ -424,9 +436,9 @@ public class CacheControlActivity extends BaseFragment {
                 linearLayout.addView(circleDiagramView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 16, 0, 16));
                 CheckBoxCell lastCreatedCheckbox = null;
                 for (int a = 0; a < 7; a++) {
-                    long size = 0;
-                    String name = null;
-                    String color = null;
+                    long size;
+                    String name;
+                    String color;
                     if (a == 0) {
                         size = photoSize;
                         name = LocaleController.getString("LocalPhotoCache", R.string.LocalPhotoCache);
@@ -451,7 +463,7 @@ public class CacheControlActivity extends BaseFragment {
                         size = stickersSize;
                         name = LocaleController.getString("AnimatedStickers", R.string.AnimatedStickers);
                         color = Theme.key_statisticChartLine_lightgreen;
-                    } else if (a == 6) {
+                    } else {
                         size = cacheSize;
                         name = LocaleController.getString("LocalCache", R.string.LocalCache);
                         color = Theme.key_statisticChartLine_lightblue;
@@ -460,7 +472,7 @@ public class CacheControlActivity extends BaseFragment {
                         clearViewData[a] = new StorageDiagramView.ClearViewData(circleDiagramView);
                         clearViewData[a].size = size;
                         clearViewData[a].color = color;
-                        CheckBoxCell checkBoxCell = new CheckBoxCell(getParentActivity(), 4, 21);
+                        CheckBoxCell checkBoxCell = new CheckBoxCell(getParentActivity(), 4, 21, null);
                         lastCreatedCheckbox = checkBoxCell;
                         checkBoxCell.setTag(a);
                         checkBoxCell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
@@ -522,6 +534,11 @@ public class CacheControlActivity extends BaseFragment {
         return fragmentView;
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.R)
+    private void migrateOldFolder() {
+        FilesMigrationService.checkBottomSheet(this);
+    }
+
     private void clearDatabase() {
         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
         builder.setTitle(LocaleController.getString("LocalDatabaseClearTextTitle", R.string.LocalDatabaseClearTextTitle));
@@ -544,9 +561,7 @@ public class CacheControlActivity extends BaseFragment {
                     StringBuilder ids = new StringBuilder();
                     while (cursor.next()) {
                         long did = cursor.longValue(0);
-                        int lower_id = (int) did;
-                        int high_id = (int) (did >> 32);
-                        if (lower_id != 0 && high_id != 1) {
+                        if (!DialogObject.isEncryptedDialog(did)) {
                             dialogsToCleanup.add(did);
                         }
                     }
@@ -559,7 +574,7 @@ public class CacheControlActivity extends BaseFragment {
                     for (int a = 0; a < dialogsToCleanup.size(); a++) {
                         Long did = dialogsToCleanup.get(a);
                         int messagesCount = 0;
-                        cursor = database.queryFinalized("SELECT COUNT(mid) FROM messages WHERE uid = " + did);
+                        cursor = database.queryFinalized("SELECT COUNT(mid) FROM messages_v2 WHERE uid = " + did);
                         if (cursor.next()) {
                             messagesCount = cursor.intValue(0);
                         }
@@ -573,17 +588,17 @@ public class CacheControlActivity extends BaseFragment {
                         if (cursor.next()) {
                             long last_mid_i = cursor.longValue(0);
                             long last_mid = cursor.longValue(1);
-                            SQLiteCursor cursor2 = database.queryFinalized("SELECT data FROM messages WHERE uid = " + did + " AND mid IN (" + last_mid_i + "," + last_mid + ")");
+                            SQLiteCursor cursor2 = database.queryFinalized("SELECT data FROM messages_v2 WHERE uid = " + did + " AND mid IN (" + last_mid_i + "," + last_mid + ")");
                             try {
                                 while (cursor2.next()) {
                                     NativeByteBuffer data = cursor2.byteBufferValue(0);
                                     if (data != null) {
                                         TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
-                                        message.readAttachPath(data, UserConfig.getInstance(currentAccount).clientUserId);
-                                        data.reuse();
                                         if (message != null) {
                                             messageId = message.id;
+                                            message.readAttachPath(data, UserConfig.getInstance(currentAccount).clientUserId);
                                         }
+                                        data.reuse();
                                     }
                                 }
                             } catch (Exception e) {
@@ -591,11 +606,11 @@ public class CacheControlActivity extends BaseFragment {
                             }
                             cursor2.dispose();
 
-                            database.executeFast("DELETE FROM messages WHERE uid = " + did + " AND mid != " + last_mid_i + " AND mid != " + last_mid).stepThis().dispose();
+                            database.executeFast("DELETE FROM messages_v2 WHERE uid = " + did + " AND mid != " + last_mid_i + " AND mid != " + last_mid).stepThis().dispose();
                             database.executeFast("DELETE FROM messages_holes WHERE uid = " + did).stepThis().dispose();
                             database.executeFast("DELETE FROM bot_keyboard WHERE uid = " + did).stepThis().dispose();
                             database.executeFast("DELETE FROM media_counts_v2 WHERE uid = " + did).stepThis().dispose();
-                            database.executeFast("DELETE FROM media_v2 WHERE uid = " + did).stepThis().dispose();
+                            database.executeFast("DELETE FROM media_v4 WHERE uid = " + did).stepThis().dispose();
                             database.executeFast("DELETE FROM media_holes_v2 WHERE uid = " + did).stepThis().dispose();
                             MediaDataController.getInstance(currentAccount).clearBotKeyboard(did, null);
                             if (messageId != -1) {
@@ -656,7 +671,7 @@ public class CacheControlActivity extends BaseFragment {
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
             int position = holder.getAdapterPosition();
-            return position == databaseRow || (position == storageUsageRow && (totalSize > 0) && !calculating);
+            return position == migrateOldFolderRow || position == databaseRow || (position == storageUsageRow && (totalSize > 0) && !calculating);
         }
 
         @Override
@@ -720,6 +735,8 @@ public class CacheControlActivity extends BaseFragment {
                     TextSettingsCell textCell = (TextSettingsCell) holder.itemView;
                     if (position == databaseRow) {
                         textCell.setTextAndValue(LocaleController.getString("ClearLocalDatabase", R.string.ClearLocalDatabase), AndroidUtilities.formatFileSize(databaseSize), false);
+                    } else if (position == migrateOldFolderRow) {
+                        textCell.setTextAndValue(LocaleController.getString("MigrateOldFolder", R.string.MigrateOldFolder), null, false);
                     }
                     break;
                 case 1:
@@ -827,5 +844,22 @@ public class CacheControlActivity extends BaseFragment {
         arrayList.add(new ThemeDescription(bottomSheetView, 0, null, null, null, null, Theme.key_statisticChartLine_orange));
         arrayList.add(new ThemeDescription(bottomSheetView, 0, null, null, null, null, Theme.key_statisticChartLine_indigo));
         return arrayList;
+    }
+
+    @Override
+    public void onRequestPermissionsResultFragment(int requestCode, String[] permissions, int[] grantResults) {
+        if (requestCode == 4) {
+            boolean allGranted = true;
+            for (int a = 0; a < grantResults.length; a++) {
+                if (grantResults[a] != PackageManager.PERMISSION_GRANTED) {
+                    allGranted = false;
+                    break;
+                }
+            }
+            if (allGranted && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && FilesMigrationService.filesMigrationBottomSheet != null) {
+                FilesMigrationService.filesMigrationBottomSheet.migrateOldFolder();
+            }
+
+        }
     }
 }

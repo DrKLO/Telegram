@@ -11,6 +11,7 @@ package org.telegram.messenger;
 import android.util.Log;
 
 import org.telegram.messenger.time.FastDateFormat;
+import org.telegram.messenger.video.MediaCodecVideoConvertor;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -158,8 +159,15 @@ public class FileLog {
     }
 
     public static void e(final Throwable e) {
+        e(e, true);
+    }
+
+    public static void e(final Throwable e, boolean logToAppCenter) {
         if (!BuildVars.LOGS_ENABLED) {
             return;
+        }
+        if (BuildVars.DEBUG_VERSION && needSent(e) && logToAppCenter) {
+            AndroidUtilities.appCenterLog(e);
         }
         ensureInitied();
         e.printStackTrace();
@@ -179,6 +187,13 @@ public class FileLog {
         } else {
             e.printStackTrace();
         }
+    }
+
+    private static boolean needSent(Throwable e) {
+        if (e instanceof InterruptedException || e instanceof MediaCodecVideoConvertor.ConversionCanceledException) {
+            return false;
+        }
+        return true;
     }
 
     public static void d(final String message) {

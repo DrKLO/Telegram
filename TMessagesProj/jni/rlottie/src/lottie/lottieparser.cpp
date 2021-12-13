@@ -182,8 +182,8 @@ protected:
 
 class LottieParserImpl : protected LookaheadParserHandler {
 public:
-    LottieParserImpl(char *str, const char *dir_path, std::map<int32_t, int32_t> *colorReplacement)
-        : LookaheadParserHandler(str), mDirPath(dir_path), colorMap(colorReplacement)
+    LottieParserImpl(char *str, const char *dir_path, std::map<int32_t, int32_t> *colorReplacement, rlottie::FitzModifier fitzModifier)
+        : LookaheadParserHandler(str), mDirPath(dir_path), colorMap(colorReplacement), mFitzModifier(fitzModifier)
     {
     }
 
@@ -270,6 +270,9 @@ public:
     void parseShapeProperty(LOTAnimatable<LottieShapeData> &obj);
     void parseDashProperty(LOTDashProperty &dash);
 
+    void parseFitzColorReplacements();
+    void parseFitzColorReplacement();
+
     std::shared_ptr<VInterpolator> interpolator(VPointF, VPointF, std::string);
 
     LottieColor toColor(const char *str);
@@ -279,6 +282,7 @@ public:
     bool hasParsingError();
 
 protected:
+    const rlottie::FitzModifier                mFitzModifier;
     std::unordered_map<std::string, std::shared_ptr<VInterpolator>>
                                                mInterpolatorCache;
     std::shared_ptr<LOTCompositionData>        mComposition;
@@ -611,6 +615,8 @@ void LottieParserImpl::parseComposition() {
             parseAssets(comp);
         } else if (0 == strcmp(key, "layers")) {
             parseLayers(comp);
+        } else if (0 == strcmp(key, "fitz")) {
+            parseFitzColorReplacements();
         } else {
 #ifdef DEBUG_PARSER
             vWarning << "Composition Attribute Skipped : " << key;
@@ -657,6 +663,79 @@ void LottieParserImpl::parseAssets(LOTCompositionData *composition) {
         return;
     }
     // update the precomp layers with the actual layer object
+}
+
+void LottieParserImpl::parseFitzColorReplacements()
+{
+    RAPIDJSON_ASSERT(PeekType() == kArrayType);
+    EnterArray();
+    while (NextArrayValue()) {
+        parseFitzColorReplacement();
+    }
+}
+
+void LottieParserImpl::parseFitzColorReplacement()
+{
+    uint32_t original = 0;
+    uint32_t type12 = 0;
+    uint32_t type3 = 0;
+    uint32_t type4 = 0;
+    uint32_t type5 = 0;
+    uint32_t type6 = 0;
+
+    EnterObject();
+    while (const char *key = NextObjectKey()) {
+        if (0 == strcmp(key, "o")) {
+            RAPIDJSON_ASSERT(PeekType() == kNumberType);
+            original = GetInt();
+        } else if (0 == strcmp(key, "f12")) {
+            RAPIDJSON_ASSERT(PeekType() == kNumberType);
+            type12 = GetInt();
+        } else if (0 == strcmp(key, "f3")) {
+            RAPIDJSON_ASSERT(PeekType() == kNumberType);
+            type3 = GetInt();
+        } else if (0 == strcmp(key, "f4")) {
+            RAPIDJSON_ASSERT(PeekType() == kNumberType);
+            type4 = GetInt();
+        } else if (0 == strcmp(key, "f5")) {
+            RAPIDJSON_ASSERT(PeekType() == kNumberType);
+            type5 = GetInt();
+        } else if (0 == strcmp(key, "f6")) {
+            RAPIDJSON_ASSERT(PeekType() == kNumberType);
+            type6 = GetInt();
+        } else {
+            Skip(key);
+        }
+    }
+
+    uint32_t replacedType = 0;
+
+    switch (mFitzModifier) {
+        case rlottie::FitzModifier::None:
+            break;
+        case rlottie::FitzModifier::Type12:
+            replacedType = type12;
+            break;
+        case rlottie::FitzModifier::Type3:
+            replacedType = type3;
+            break;
+        case rlottie::FitzModifier::Type4:
+            replacedType = type4;
+            break;
+        case rlottie::FitzModifier::Type5:
+            replacedType = type5;
+            break;
+        case rlottie::FitzModifier::Type6:
+            replacedType = type6;
+            break;
+    }
+
+    if (replacedType != 0) {
+        if (colorMap == NULL) {
+            colorMap = new std::map<int32_t, int32_t>();
+        }
+        colorMap->insert(std::pair<int32_t, int32_t>(original, replacedType));
+    }
 }
 
 static constexpr const unsigned char B64index[256] = {
@@ -2654,8 +2733,8 @@ LottieParser::~LottieParser()
     delete d;
 }
 
-LottieParser::LottieParser(char *str, const char *dir_path, std::map<int32_t, int32_t> *colorReplacement)
-    : d(new LottieParserImpl(str, dir_path, colorReplacement))
+LottieParser::LottieParser(char *str, const char *dir_path, std::map<int32_t, int32_t> *colorReplacement, rlottie::FitzModifier fitzModifier)
+    : d(new LottieParserImpl(str, dir_path, colorReplacement, fitzModifier))
 {
     d->parseComposition();
     if (d->hasParsingError()) {

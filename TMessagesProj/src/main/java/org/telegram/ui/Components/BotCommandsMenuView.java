@@ -10,7 +10,6 @@ import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
-import android.util.SparseArray;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -19,6 +18,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.collection.LongSparseArray;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -65,7 +65,7 @@ public class BotCommandsMenuView extends View {
 
     private void updateColors() {
         paint.setColor(Theme.getColor(Theme.key_chat_messagePanelVoiceBackground));
-        int textColor = Theme.getColor(Theme.key_windowBackgroundWhite);
+        int textColor = Theme.getColor(Theme.key_chat_messagePanelVoicePressed);
         backDrawable.setBackColor(textColor);
         backDrawable.setIconColor(textColor);
         textPaint.setColor(textColor);
@@ -200,7 +200,7 @@ public class BotCommandsMenuView extends View {
             return newResult.size();
         }
 
-        public void setBotInfo(SparseArray<TLRPC.BotInfo> botInfo) {
+        public void setBotInfo(LongSparseArray<TLRPC.BotInfo> botInfo) {
             newResult.clear();
             newResultHelp.clear();
             for (int b = 0; b < botInfo.size(); b++) {

@@ -192,7 +192,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
 
     private String initialValues;
     private int currentActivityType;
-    private int currentBotId;
+    private long currentBotId;
     private String currentPayload;
     private String currentNonce;
     private boolean useCurrentValue;
@@ -666,7 +666,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         }
     }
 
-    public PassportActivity(int type, int botId, String scope, String publicKey, String payload, String nonce, String callbackUrl, TLRPC.TL_account_authorizationForm form, TLRPC.TL_account_password accountPassword) {
+    public PassportActivity(int type, long botId, String scope, String publicKey, String payload, String nonce, String callbackUrl, TLRPC.TL_account_authorizationForm form, TLRPC.TL_account_password accountPassword) {
         this(type, form, accountPassword, null, null, null, null, null, null);
         currentBotId = botId;
         currentPayload = payload;
@@ -1145,7 +1145,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                         return;
                     }
                     if (currentActivityType == TYPE_PHONE_VERIFICATION) {
-                        views[currentViewNum].onNextPressed();
+                        views[currentViewNum].onNextPressed(null);
                     } else {
                         final Runnable finishRunnable = () -> finishFragment();
                         final ErrorRunnable errorRunnable = new ErrorRunnable() {
@@ -2860,12 +2860,12 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                     }
                     if (event.getAction() == MotionEvent.ACTION_UP) {
                         CountrySelectActivity fragment = new CountrySelectActivity(false);
-                        fragment.setCountrySelectActivityDelegate((name, shortName) -> {
-                            inputFields[FIELD_PHONECOUNTRY].setText(name);
-                            int index = countriesArray.indexOf(name);
+                        fragment.setCountrySelectActivityDelegate(country -> {
+                            inputFields[FIELD_PHONECOUNTRY].setText(country.name);
+                            int index = countriesArray.indexOf(country.name);
                             if (index != -1) {
                                 ignoreOnTextChange = true;
-                                String code = countriesMap.get(name);
+                                String code = countriesMap.get(country.name);
                                 inputFields[FIELD_PHONECODE].setText(code);
                                 String hint = phoneFormatMap.get(code);
                                 inputFields[FIELD_PHONE].setHintText(hint != null ? hint.replace('X', '–') : null);
@@ -3355,9 +3355,9 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                     }
                     if (event.getAction() == MotionEvent.ACTION_UP) {
                         CountrySelectActivity fragment = new CountrySelectActivity(false);
-                        fragment.setCountrySelectActivityDelegate((name, shortName) -> {
-                            inputFields[FIELD_COUNTRY].setText(name);
-                            currentCitizeship = shortName;
+                        fragment.setCountrySelectActivityDelegate((country) -> {
+                            inputFields[FIELD_COUNTRY].setText(country.name);
+                            currentCitizeship = country.shortname;
                         });
                         presentFragment(fragment);
                     }
@@ -3694,7 +3694,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                     for (int a = 0, size = translationDocuments.size(); a < size; a++) {
                         SecureDocument document = translationDocuments.get(a);
                         String key = "translation" + getDocumentHash(document);
-                        if (key != null && errorsValues.containsKey(key)) {
+                        if (errorsValues.containsKey(key)) {
                             onFieldError(documentsCells.get(document));
                             return true;
                         }
@@ -4150,15 +4150,15 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                     }
                     if (event.getAction() == MotionEvent.ACTION_UP) {
                         CountrySelectActivity fragment = new CountrySelectActivity(false);
-                        fragment.setCountrySelectActivityDelegate((name, shortName) -> {
+                        fragment.setCountrySelectActivityDelegate((country) -> {
                             int field12 = (Integer) v.getTag();
                             final EditTextBoldCursor editText = inputFields[field12];
                             if (field12 == FIELD_CITIZENSHIP) {
-                                currentCitizeship = shortName;
+                                currentCitizeship = country.shortname;
                             } else {
-                                currentResidence = shortName;
+                                currentResidence = country.shortname;
                             }
-                            editText.setText(name);
+                            editText.setText(country.name);
                         });
                         presentFragment(fragment);
                     }
@@ -7385,7 +7385,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
 
                         Intent mailer = new Intent(Intent.ACTION_SENDTO);
                         mailer.setData(Uri.parse("mailto:"));
-                        mailer.putExtra(Intent.EXTRA_EMAIL, new String[]{"sms@stel.com"});
+                        mailer.putExtra(Intent.EXTRA_EMAIL, new String[]{"sms@telegram.org"});
                         mailer.putExtra(Intent.EXTRA_SUBJECT, "Android registration/login issue " + version + " " + phone);
                         mailer.putExtra(Intent.EXTRA_TEXT, "Phone: " + phone + "\nApp version: " + version + "\nOS version: SDK " + Build.VERSION.SDK_INT + "\nDevice Name: " + Build.MANUFACTURER + Build.MODEL + "\nLocale: " + Locale.getDefault() + "\nError: " + lastError);
                         getContext().startActivity(Intent.createChooser(mailer, "Send email..."));
@@ -7565,7 +7565,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                                     codeField[num + 1].requestFocus();
                                 }
                                 if ((num == length - 1 || num == length - 2 && len >= 2) && getCode().length() == length) {
-                                    onNextPressed();
+                                    onNextPressed(null);
                                 }
                             }
                         }
@@ -7581,7 +7581,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                     });
                     codeField[a].setOnEditorActionListener((textView, i, keyEvent) -> {
                         if (i == EditorInfo.IME_ACTION_NEXT) {
-                            onNextPressed();
+                            onNextPressed(null);
                             return true;
                         }
                         return false;
@@ -7780,11 +7780,13 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         }
 
         @Override
-        public void onNextPressed() {
+        public void onNextPressed(String code) {
             if (nextPressed) {
                 return;
             }
-            String code = getCode();
+            if (code == null) {
+                code = getCode();
+            }
             if (TextUtils.isEmpty(code)) {
                 AndroidUtilities.shakeView(codeFieldContainer, 2, 0);
                 return;
@@ -7915,7 +7917,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             }
             if (id == NotificationCenter.didReceiveSmsCode) {
                 codeField[0].setText("" + args[0]);
-                onNextPressed();
+                onNextPressed(null);
             } else if (id == NotificationCenter.didReceiveCall) {
                 String num = "" + args[0];
                 if (!AndroidUtilities.checkPhonePattern(pattern, num)) {
@@ -7924,7 +7926,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 ignoreOnTextChange = true;
                 codeField[0].setText(num);
                 ignoreOnTextChange = false;
-                onNextPressed();
+                onNextPressed(null);
             }
         }
     }

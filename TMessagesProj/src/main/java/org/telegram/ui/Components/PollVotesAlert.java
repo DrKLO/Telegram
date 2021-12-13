@@ -790,7 +790,7 @@ public class PollVotesAlert extends BottomSheet {
                 }
                 TLRPC.User currentUser = parentFragment.getCurrentUser();
                 Bundle args = new Bundle();
-                args.putInt("user_id", userCell.currentUser.id);
+                args.putLong("user_id", userCell.currentUser.id);
                 dismiss();
                 ProfileActivity fragment = new ProfileActivity(args);
                 fragment.setPlayProfileAnimation(currentUser != null && currentUser.id == userCell.currentUser.id ? 1 : 0);
@@ -1188,8 +1188,9 @@ public class PollVotesAlert extends BottomSheet {
         }
 
         @Override
-        public int getPositionForScrollProgress(float progress) {
-            return 0;
+        public void getPositionForScrollProgress(RecyclerListView listView, float progress, int[] position) {
+            position[0] = 0;
+            position[1] = 0;
         }
     }
 

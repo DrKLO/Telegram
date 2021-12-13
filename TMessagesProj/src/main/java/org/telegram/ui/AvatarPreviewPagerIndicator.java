@@ -17,8 +17,6 @@ import android.os.SystemClock;
 import android.text.TextPaint;
 import android.view.View;
 
-import com.google.android.exoplayer2.util.Log;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -65,7 +63,7 @@ public class AvatarPreviewPagerIndicator extends View implements ProfileGalleryV
     private float currentLoadingAnimationProgress;
     private int currentLoadingAnimationDirection = 1;
 
-    ProfileGalleryView profileGalleryView;
+    protected ProfileGalleryView profileGalleryView;
 
     TextPaint textPaint;
     private float progressToCounter;
@@ -379,5 +377,9 @@ public class AvatarPreviewPagerIndicator extends View implements ProfileGalleryV
 
     public void setProfileGalleryView(ProfileGalleryView profileGalleryView) {
         this.profileGalleryView = profileGalleryView;
+    }
+
+    public ProfileGalleryView getProfileGalleryView() {
+        return profileGalleryView;
     }
 }

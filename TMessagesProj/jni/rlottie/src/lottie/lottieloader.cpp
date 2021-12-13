@@ -75,7 +75,7 @@ static std::string dirname(const std::string &path)
     return std::string(path, 0, len);
 }
 
-bool LottieLoader::load(const std::string &path, std::map<int32_t, int32_t> *colorReplacement)
+bool LottieLoader::load(const std::string &path, std::map<int32_t, int32_t> *colorReplacement, rlottie::FitzModifier fitzModifier)
 {
     mModel = LottieFileCache::instance().find(path);
     if (mModel) return true;
@@ -95,7 +95,7 @@ bool LottieLoader::load(const std::string &path, std::map<int32_t, int32_t> *col
         if (content.empty()) return false;
 
         const char *str = content.c_str();
-        LottieParser parser(const_cast<char *>(str), dirname(path).c_str(), colorReplacement);
+        LottieParser parser(const_cast<char *>(str), dirname(path).c_str(), colorReplacement, fitzModifier);
         if (parser.hasParsingError()) {
             return false;
         }
@@ -111,12 +111,12 @@ bool LottieLoader::load(const std::string &path, std::map<int32_t, int32_t> *col
 
 bool LottieLoader::loadFromData(std::string &&jsonData, const std::string &key,
                                 std::map<int32_t, int32_t> *colorReplacement,
-                                const std::string &resourcePath)
+                                const std::string &resourcePath, rlottie::FitzModifier fitzModifier)
 {
     mModel = LottieFileCache::instance().find(key);
     if (mModel) return true;
 
-    LottieParser parser(const_cast<char *>(jsonData.c_str()), resourcePath.c_str(), colorReplacement);
+    LottieParser parser(const_cast<char *>(jsonData.c_str()), resourcePath.c_str(), colorReplacement, fitzModifier);
     mModel = parser.model();
 
     if (!mModel) return false;

@@ -36,6 +36,8 @@ import org.telegram.ui.Components.RecyclableDrawable;
 
 import androidx.annotation.Keep;
 
+import java.util.ArrayList;
+
 public class ImageReceiver implements NotificationCenter.NotificationCenterDelegate {
 
     public interface ImageReceiverDelegate {
@@ -248,7 +250,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
     private boolean forcePreview;
     private boolean forceCrossfade;
     private int[] roundRadius = new int[4];
-    private boolean isRoundRect;
+    private boolean isRoundRect = true;
 
     private Paint roundPaint;
     private RectF roundRect = new RectF();
@@ -272,6 +274,8 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
     private int crossfadeDuration = DEFAULT_CROSSFADE_DURATION;
     private float pressedProgress;
     private int animateFromIsPressed;
+    private String uniqKeyPrefix;
+    private ArrayList<Runnable> loadingOperations = new ArrayList<>();
 
     public ImageReceiver() {
         this(null);
@@ -447,6 +451,10 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         }
         if (imageKey != null && imageFilter != null) {
             imageKey += "@" + imageFilter;
+        }
+
+        if (uniqKeyPrefix != null) {
+            imageKey = uniqKeyPrefix + imageKey;
         }
 
         String mediaKey = mediaLocation != null ? mediaLocation.getKey(parentObject, null, false) : null;
@@ -1011,7 +1019,11 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
 
                         if (isRoundRect) {
                             try {
-                                canvas.drawRoundRect(roundRect, roundRadius[0], roundRadius[0], roundPaint);
+                                if (roundRadius[0] == 0) {
+                                    canvas.drawRect(roundRect, roundPaint);
+                                } else {
+                                    canvas.drawRoundRect(roundRect, roundRadius[0], roundRadius[0], roundPaint);
+                                }
                             } catch (Exception e) {
                                 onBitmapException(bitmapDrawable);
                                 FileLog.e(e);
@@ -1106,7 +1118,11 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
 
                         if (isRoundRect) {
                             try {
-                                canvas.drawRoundRect(roundRect, roundRadius[0], roundRadius[0], roundPaint);
+                                if (roundRadius[0] == 0) {
+                                    canvas.drawRect(roundRect, roundPaint);
+                                } else {
+                                    canvas.drawRoundRect(roundRect, roundRadius[0], roundRadius[0], roundPaint);
+                                }
                             } catch (Exception e) {
                                 onBitmapException(bitmapDrawable);
                                 FileLog.e(e);
@@ -1424,12 +1440,15 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                             }
                             if (thumbDrawable != null) {
                                 int alpha;
-                                if (thumbDrawable instanceof SvgHelper.SvgDrawable) {
+                                if (thumbDrawable instanceof SvgHelper.SvgDrawable || thumbDrawable instanceof Emoji.EmojiDrawable) {
                                     alpha = (int) (overrideAlpha * 255 * (1.0f - currentAlpha));
                                 } else {
                                     alpha = (int) (overrideAlpha * 255);
                                 }
                                 drawDrawable(canvas, thumbDrawable, alpha, thumbShaderToUse, thumbOrientation);
+                                if (alpha != 255 && thumbDrawable instanceof Emoji.EmojiDrawable) {
+                                    thumbDrawable.setAlpha(255);
+                                }
                             }
                         }
                         drawDrawable(canvas, drawable, (int) (overrideAlpha * currentAlpha * 255), shaderToUse, orientation);
@@ -2051,12 +2070,12 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             }
             updateDrawableRadius(drawable);
 
-            if (isVisible && (!memCache && !forcePreview || forceCrossfade)) {
+            if (isVisible && (!memCache && !forcePreview || forceCrossfade) && crossfadeDuration != 0) {
                 boolean allowCorssfade = true;
                 if (currentMediaDrawable instanceof AnimatedFileDrawable && ((AnimatedFileDrawable) currentMediaDrawable).hasBitmap()) {
                     allowCorssfade = false;
                 } else if (currentImageDrawable instanceof RLottieDrawable) {
-                    allowCorssfade = staticThumbDrawable instanceof LoadingStickerDrawable || staticThumbDrawable instanceof SvgHelper.SvgDrawable;
+                    allowCorssfade = staticThumbDrawable instanceof LoadingStickerDrawable || staticThumbDrawable instanceof SvgHelper.SvgDrawable || staticThumbDrawable instanceof Emoji.EmojiDrawable;
                 }
                 if (allowCorssfade && (currentThumbDrawable == null && staticThumbDrawable == null || currentAlpha == 1.0f || forceCrossfade)) {
                     currentAlpha = 0.0f;
@@ -2302,5 +2321,26 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         crossfadeWithThumb = true;
         currentAlpha = 0f;
         updateDrawableRadius(staticThumbDrawable);
+    }
+
+    public void setUniqKeyPrefix(String prefix) {
+        uniqKeyPrefix = prefix;
+    }
+
+    public String getUniqKeyPrefix() {
+        return uniqKeyPrefix;
+    }
+
+    public void addLoadingImageRunnable(Runnable loadOperationRunnable) {
+        loadingOperations.add(loadOperationRunnable);
+    }
+
+    public ArrayList<Runnable> getLoadingOperations() {
+        return loadingOperations;
+    }
+
+    public void moveImageToFront() {
+        ImageLoader.getInstance().moveToFront(currentImageKey);
+        ImageLoader.getInstance().moveToFront(currentThumbKey);
     }
 }

@@ -19,6 +19,7 @@ import android.graphics.drawable.RippleDrawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.StateListDrawable;
 import android.os.Build;
+import android.text.Spanned;
 import android.text.SpannedString;
 import android.text.TextPaint;
 import android.view.View;
@@ -30,6 +31,7 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
+import org.telegram.ui.Components.AnimatedArrowDrawable;
 import org.telegram.ui.Components.AudioPlayerAlert;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
@@ -115,9 +117,11 @@ public class ThemeDescription {
 
     private HashMap<String, Field> cachedFields;
     private HashMap<String, Boolean> notFoundCachedFields;
+    public Theme.ResourcesProvider resourcesProvider;
 
     public interface ThemeDescriptionDelegate {
         void didSetColor();
+        default void onAnimationProgress(float progress) {}
     }
 
     public ThemeDescription(View view, int flags, Class[] classes, Paint[] paint, Drawable[] drawables, ThemeDescriptionDelegate themeDescriptionDelegate, String key, Object unused) {
@@ -254,6 +258,8 @@ public class ThemeDescription {
                     }
                 } else if (drawablesToUpdate[a] instanceof AvatarDrawable) {
                     ((AvatarDrawable) drawablesToUpdate[a]).setColor(color);
+                } else if (drawablesToUpdate[a] instanceof AnimatedArrowDrawable) {
+                    ((AnimatedArrowDrawable) drawablesToUpdate[a]).setColor(color);
                 } else {
                     drawablesToUpdate[a].setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
                 }
@@ -734,6 +740,15 @@ public class ThemeDescription {
                                                 TextView textView = i == 0 ? ((AudioPlayerAlert.ClippingTextViewSwitcher) object).getTextView() : ((AudioPlayerAlert.ClippingTextViewSwitcher) object).getNextTextView();
                                                 if (textView != null) {
                                                     textView.setTextColor(color);
+                                                    CharSequence text = textView.getText();
+                                                    if (text instanceof SpannedString) {
+                                                        TypefaceSpan[] spans = ((SpannedString) text).getSpans(0, text.length(), TypefaceSpan.class);
+                                                        if (spans != null && spans.length > 0) {
+                                                            for (int spanIdx = 0; spanIdx < spans.length; spanIdx++) {
+                                                                spans[spanIdx].setColor(color);
+                                                            }
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }
@@ -765,7 +780,16 @@ public class ThemeDescription {
     }
 
     public int getSetColor() {
-        return Theme.getColor(currentKey);
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(currentKey) : null;
+        return color != null ? color : Theme.getColor(currentKey);
+    }
+
+    public void setAnimatedColor(int color) {
+        if (resourcesProvider != null) {
+            resourcesProvider.setAnimatedColor(getCurrentKey(), color);
+        } else {
+            Theme.setAnimatedColor(getCurrentKey(), color);
+        }
     }
 
     public void setDefaultColor() {

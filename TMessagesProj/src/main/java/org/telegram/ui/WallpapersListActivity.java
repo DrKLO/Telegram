@@ -42,10 +42,12 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -416,7 +418,7 @@ public class WallpapersListActivity extends BaseFragment implements Notification
             NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.wallpapersNeedReload);
             getMessagesStorage().getWallpapers();
         } else {
-            boolean darkTheme = Theme.isCurrentThemeNight();
+            boolean darkTheme = Theme.isCurrentThemeDark();
             int[][] defaultColors = darkTheme ? defaultColorsDark : defaultColorsLight;
             for (int a = 0; a < defaultColors.length; a++) {
                 if (defaultColors[a].length == 1) {
@@ -601,20 +603,16 @@ public class WallpapersListActivity extends BaseFragment implements Notification
                             fragment1.finishFragment();
                         } else {
                             long did = dids.get(0);
-                            int lower_part = (int) did;
-                            int high_part = (int) (did >> 32);
                             Bundle args1 = new Bundle();
                             args1.putBoolean("scrollToTopOnResume", true);
-                            if (lower_part != 0) {
-                                if (lower_part > 0) {
-                                    args1.putInt("user_id", lower_part);
-                                } else if (lower_part < 0) {
-                                    args1.putInt("chat_id", -lower_part);
-                                }
+                            if (DialogObject.isEncryptedDialog(did)) {
+                                args1.putInt("enc_id", DialogObject.getEncryptedChatId(did));
                             } else {
-                                args1.putInt("enc_id", high_part);
-                            }
-                            if (lower_part != 0) {
+                                if (DialogObject.isUserDialog(did)) {
+                                    args1.putLong("user_id", did);
+                                } else if (DialogObject.isChatDialog(did)) {
+                                    args1.putLong("chat_id", -did);
+                                }
                                 if (!MessagesController.getInstance(currentAccount).checkCanOpenChat(args1, fragment1)) {
                                     return;
                                 }
@@ -991,6 +989,9 @@ public class WallpapersListActivity extends BaseFragment implements Notification
                     }
                     allWallPapersDict.put(wallPaper.slug, wallPaper);
                     if (currentType != TYPE_COLOR && (!wallPaper.pattern || wallPaper.settings != null && wallPaper.settings.background_color != 0)) {
+                        if (!Theme.isCurrentThemeDark() && wallPaper.settings != null && wallPaper.settings.intensity < 0) {
+                            continue;
+                        }
                         wallPapers.add(wallPaper);
                     }
                 } else if (wallPaper.settings.background_color != 0) {
@@ -1015,6 +1016,9 @@ public class WallpapersListActivity extends BaseFragment implements Notification
                         }
                         localWallPapers.add(colorWallpaper);
                         localDict.put(hash, colorWallpaper);
+                    }
+                    if (!Theme.isCurrentThemeDark() && wallPaper.settings != null && wallPaper.settings.intensity < 0) {
+                        continue;
                     }
                     wallPapers.add(colorWallpaper);
                 }
@@ -1051,14 +1055,11 @@ public class WallpapersListActivity extends BaseFragment implements Notification
                 if (wallPaper.id < 0) {
                     continue;
                 }
-                int high_id = (int) (wallPaper.id >> 32);
-                int lower_id = (int) wallPaper.id;
-                acc = ((acc * 20261) + 0x80000000L + high_id) % 0x80000000L;
-                acc = ((acc * 20261) + 0x80000000L + lower_id) % 0x80000000L;
+                acc = MediaDataController.calcHash(acc, wallPaper.id);
             }
         }
         TLRPC.TL_account_getWallPapers req = new TLRPC.TL_account_getWallPapers();
-        req.hash = (int) acc;
+        req.hash = acc;
         int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             if (response instanceof TLRPC.TL_account_wallPapers) {
                 TLRPC.TL_account_wallPapers res = (TLRPC.TL_account_wallPapers) response;
@@ -1083,9 +1084,15 @@ public class WallpapersListActivity extends BaseFragment implements Notification
                             patternsDict.put(wallPaper.document.id, wallPaper);
                         }
                         if (currentType != TYPE_COLOR && (!wallPaper.pattern || wallPaper.settings != null && wallPaper.settings.background_color != 0)) {
+                            if (!Theme.isCurrentThemeDark() && wallPaper.settings != null && wallPaper.settings.intensity < 0) {
+                                continue;
+                            }
                             wallPapers.add(wallPaper);
                         }
                     } else if (wallPaper.settings.background_color != 0) {
+                        if (!Theme.isCurrentThemeDark() && wallPaper.settings != null && wallPaper.settings.intensity < 0) {
+                            continue;
+                        }
                         ColorWallpaper colorWallpaper;
                         if (wallPaper.settings.second_background_color != 0 && wallPaper.settings.third_background_color != 0) {
                             colorWallpaper = new ColorWallpaper(null, wallPaper.settings.background_color, wallPaper.settings.second_background_color, wallPaper.settings.third_background_color, wallPaper.settings.fourth_background_color);

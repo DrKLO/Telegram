@@ -19,12 +19,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.TextView;
 
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
@@ -181,7 +181,7 @@ public class JoinCallAlert extends BottomSheet {
         }
     }
 
-    public static void checkFewUsers(Context context, int did, AccountInstance accountInstance, MessagesStorage.BooleanCallback callback) {
+    public static void checkFewUsers(Context context, long did, AccountInstance accountInstance, MessagesStorage.BooleanCallback callback) {
         if (lastCachedAccount == accountInstance.getCurrentAccount() && lastCacheDid == did && cachedChats != null && SystemClock.elapsedRealtime() - lastCacheTime < 4 * 60 * 1000) {
             callback.run(cachedChats.size() == 1);
             return;
@@ -214,7 +214,7 @@ public class JoinCallAlert extends BottomSheet {
         }
     }
 
-    public static void open(Context context, int did, AccountInstance accountInstance, BaseFragment fragment, int type, TLRPC.Peer scheduledPeer, JoinCallAlertDelegate delegate) {
+    public static void open(Context context, long did, AccountInstance accountInstance, BaseFragment fragment, int type, TLRPC.Peer scheduledPeer, JoinCallAlertDelegate delegate) {
         if (context == null || delegate == null) {
             return;
         }
@@ -281,7 +281,7 @@ public class JoinCallAlert extends BottomSheet {
         shadowDrawable = context.getResources().getDrawable(R.drawable.sheet_shadow_round).mutate();
         if (type == TYPE_DISPLAY) {
             if (VoIPService.getSharedInstance() != null) {
-                int did = VoIPService.getSharedInstance().getSelfId();
+                long did = VoIPService.getSharedInstance().getSelfId();
                 for (int a = 0, N = chats.size(); a < N; a++) {
                     TLRPC.Peer p = chats.get(a);
                     if (MessageObject.getPeerId(p) == did) {
@@ -421,6 +421,8 @@ public class JoinCallAlert extends BottomSheet {
             containerView.setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, 0);
         }
 
+        TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
+
         listView = new RecyclerListView(context) {
             @Override
             public void requestLayout() {
@@ -464,7 +466,7 @@ public class JoinCallAlert extends BottomSheet {
                 }
             }
             if (currentType != TYPE_CREATE) {
-                updateDoneButton(true);
+                updateDoneButton(true, chat);
             }
         });
         if (type != TYPE_CREATE) {
@@ -493,13 +495,21 @@ public class JoinCallAlert extends BottomSheet {
         textView.setSingleLine(true);
         textView.setEllipsize(TextUtils.TruncateAt.END);
         if (type == TYPE_CREATE) {
-            textView.setText(LocaleController.getString("StartVoipChatTitle", R.string.StartVoipChatTitle));
+            if (ChatObject.isChannelOrGiga(chat)) {
+                textView.setText(LocaleController.getString("StartVoipChannelTitle", R.string.StartVoipChannelTitle));
+            } else {
+                textView.setText(LocaleController.getString("StartVoipChatTitle", R.string.StartVoipChatTitle));
+            }
             internalLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 23, 16, 23, 0));
         } else {
             if (type == TYPE_DISPLAY) {
                 textView.setText(LocaleController.getString("VoipGroupDisplayAs", R.string.VoipGroupDisplayAs));
             } else {
-                textView.setText(LocaleController.getString("VoipGroupJoinAs", R.string.VoipGroupJoinAs));
+                if (ChatObject.isChannelOrGiga(chat)) {
+                    textView.setText(LocaleController.getString("VoipChannelJoinAs", R.string.VoipChannelJoinAs));
+                } else {
+                    textView.setText(LocaleController.getString("VoipGroupJoinAs", R.string.VoipGroupJoinAs));
+                }
             }
             internalLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 23, 8, 23, 0));
         }
@@ -513,10 +523,10 @@ public class JoinCallAlert extends BottomSheet {
         messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         boolean hasGroup = false;
         for (int a = 0, N = chats.size(); a < N; a++) {
-            int peerId = MessageObject.getPeerId(chats.get(a));
+            long peerId = MessageObject.getPeerId(chats.get(a));
             if (peerId < 0) {
-                TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-peerId);
-                if (!ChatObject.isChannel(chat) || chat.megagroup) {
+                TLRPC.Chat peerChat = MessagesController.getInstance(currentAccount).getChat(-peerId);
+                if (!ChatObject.isChannel(peerChat) || peerChat.megagroup) {
                     hasGroup = true;
                     break;
                 }
@@ -525,7 +535,6 @@ public class JoinCallAlert extends BottomSheet {
         messageTextView.setMovementMethod(new AndroidUtilities.LinkMovementMethodMy());
         messageTextView.setLinkTextColor(Theme.getColor(Theme.key_dialogTextLink));
         if (type == TYPE_CREATE) {
-            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat((int) -dialogId);
             StringBuilder builder = new StringBuilder();
             if (ChatObject.isChannel(chat) && !chat.megagroup) {
                 builder.append(LocaleController.getString("VoipChannelStart2", R.string.VoipChannelStart2));
@@ -570,7 +579,11 @@ public class JoinCallAlert extends BottomSheet {
             internalLayout.addView(doneButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 50, Gravity.LEFT | Gravity.TOP, 0, 0, 0, 0));
 
             BottomSheetCell scheduleButton = new BottomSheetCell(context, true);
-            scheduleButton.setText(LocaleController.getString("VoipGroupScheduleVoiceChat", R.string.VoipGroupScheduleVoiceChat), false);
+            if (ChatObject.isChannelOrGiga(chat)) {
+                scheduleButton.setText(LocaleController.getString("VoipChannelScheduleVoiceChat", R.string.VoipChannelScheduleVoiceChat), false);
+            } else {
+                scheduleButton.setText(LocaleController.getString("VoipGroupScheduleVoiceChat", R.string.VoipGroupScheduleVoiceChat), false);
+            }
             scheduleButton.background.setOnClickListener(v -> {
                 selectAfterDismiss = MessagesController.getInstance(currentAccount).getInputPeer(MessageObject.getPeerId(selectedPeer));
                 schedule = true;
@@ -580,20 +593,24 @@ public class JoinCallAlert extends BottomSheet {
         } else {
             internalLayout.addView(doneButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 50, Gravity.LEFT | Gravity.BOTTOM, 0, 0, 0, 0));
         }
-        updateDoneButton(false);
+        updateDoneButton(false, chat);
     }
 
-    private void updateDoneButton(boolean animated) {
+    private void updateDoneButton(boolean animated, TLRPC.Chat chat) {
         if (currentType == TYPE_CREATE) {
-            doneButton.setText(LocaleController.formatString("VoipGroupStartVoiceChat", R.string.VoipGroupStartVoiceChat), animated);
+            if (ChatObject.isChannelOrGiga(chat)) {
+                doneButton.setText(LocaleController.formatString("VoipChannelStartVoiceChat", R.string.VoipChannelStartVoiceChat), animated);
+            } else {
+                doneButton.setText(LocaleController.formatString("VoipGroupStartVoiceChat", R.string.VoipGroupStartVoiceChat), animated);
+            }
         } else {
-            int did = MessageObject.getPeerId(selectedPeer);
-            if (did > 0) {
+            long did = MessageObject.getPeerId(selectedPeer);
+            if (DialogObject.isUserDialog(did)) {
                 TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(did);
                 doneButton.setText(LocaleController.formatString("VoipGroupContinueAs", R.string.VoipGroupContinueAs, UserObject.getFirstName(user)), animated);
             } else {
-                TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-did);
-                doneButton.setText(LocaleController.formatString("VoipGroupContinueAs", R.string.VoipGroupContinueAs, chat != null ? chat.title : ""), animated);
+                TLRPC.Chat peerChat = MessagesController.getInstance(currentAccount).getChat(-did);
+                doneButton.setText(LocaleController.formatString("VoipGroupContinueAs", R.string.VoipGroupContinueAs, peerChat != null ? peerChat.title : ""), animated);
             }
         }
     }
@@ -659,7 +676,7 @@ public class JoinCallAlert extends BottomSheet {
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             View view;
             if (currentType == TYPE_CREATE) {
-                view = new ShareDialogCell(context, ShareDialogCell.TYPE_CREATE);
+                view = new ShareDialogCell(context, ShareDialogCell.TYPE_CREATE, null);
                 view.setLayoutParams(new RecyclerView.LayoutParams(AndroidUtilities.dp(80), AndroidUtilities.dp(100)));
             } else {
                 view = new GroupCreateUserCell(context, 2, 0, false, currentType == TYPE_DISPLAY);
@@ -692,7 +709,7 @@ public class JoinCallAlert extends BottomSheet {
 
         @Override
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-            int did = MessageObject.getPeerId(chats.get(position));
+            long did = MessageObject.getPeerId(chats.get(position));
             TLObject object;
             String status;
             if (did > 0) {

@@ -49,13 +49,19 @@ public class RadialProgressView extends View {
     private float toCircleProgress;
 
     private boolean noProgress = true;
+    private final Theme.ResourcesProvider resourcesProvider;
 
     public RadialProgressView(Context context) {
+        this(context, null);
+    }
+
+    public RadialProgressView(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
 
         size = AndroidUtilities.dp(40);
 
-        progressColor = Theme.getColor(Theme.key_progressCircle);
+        progressColor = getThemedColor(Theme.key_progressCircle);
         decelerateInterpolator = new DecelerateInterpolator();
         accelerateInterpolator = new AccelerateInterpolator();
         progressPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -213,5 +219,10 @@ public class RadialProgressView extends View {
 
     public boolean isCircle() {
         return Math.abs(drawingCircleLenght) >= 360;
+    }
+
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
     }
 }

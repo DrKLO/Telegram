@@ -55,12 +55,7 @@ public class NotificationBadge {
             intent.putExtra(CLASSNAME, componentName.getClassName());
             intent.putExtra(COUNT, badgeCount);
             if (canResolveBroadcast(intent)) {
-                AndroidUtilities.runOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        ApplicationLoader.applicationContext.sendBroadcast(intent);
-                    }
-                });
+                AndroidUtilities.runOnUIThread(() -> ApplicationLoader.applicationContext.sendBroadcast(intent));
             }
         }
 
@@ -88,12 +83,7 @@ public class NotificationBadge {
             intent.putExtra(COUNT, badgeCount);
             intent.putExtra(CLASS, componentName.getClassName());
             if (canResolveBroadcast(intent)) {
-                AndroidUtilities.runOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        ApplicationLoader.applicationContext.sendBroadcast(intent);
-                    }
-                });
+                AndroidUtilities.runOnUIThread(() -> ApplicationLoader.applicationContext.sendBroadcast(intent));
             }
         }
 
@@ -118,12 +108,7 @@ public class NotificationBadge {
             intent.putExtra(INTENT_EXTRA_ACTIVITY_NAME, componentName.getClassName());
             intent.putExtra("badge_vip_count", 0);
             if (canResolveBroadcast(intent)) {
-                AndroidUtilities.runOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        ApplicationLoader.applicationContext.sendBroadcast(intent);
-                    }
-                });
+                AndroidUtilities.runOnUIThread(() -> ApplicationLoader.applicationContext.sendBroadcast(intent));
             }
         }
 
@@ -145,14 +130,11 @@ public class NotificationBadge {
             intent.putExtra(INTENT_EXTRA_BADGE_COUNT, badgeCount);
             intent.putExtra(INTENT_EXTRA_PACKAGENAME, componentName.getPackageName());
             intent.putExtra(INTENT_EXTRA_ACTIVITY_NAME, componentName.getClassName());
-            AndroidUtilities.runOnUIThread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        ApplicationLoader.applicationContext.sendBroadcast(intent);
-                    } catch (Exception ignore) {
+            AndroidUtilities.runOnUIThread(() -> {
+                try {
+                    ApplicationLoader.applicationContext.sendBroadcast(intent);
+                } catch (Exception ignore) {
 
-                    }
                 }
             });
         }
@@ -175,14 +157,11 @@ public class NotificationBadge {
             localBundle.putString("package", ApplicationLoader.applicationContext.getPackageName());
             localBundle.putString("class", componentName.getClassName());
             localBundle.putInt("badgenumber", badgeCount);
-            AndroidUtilities.runOnUIThread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        ApplicationLoader.applicationContext.getContentResolver().call(Uri.parse("content://com.huawei.android.launcher.settings/badge/"), "change_badge", null, localBundle);
-                    } catch (Exception e) {
-                        FileLog.e(e);
-                    }
+            AndroidUtilities.runOnUIThread(() -> {
+                try {
+                    ApplicationLoader.applicationContext.getContentResolver().call(Uri.parse("content://com.huawei.android.launcher.settings/badge/"), "change_badge", null, localBundle);
+                } catch (Exception e) {
+                    FileLog.e(e);
                 }
             });
         }
@@ -216,12 +195,9 @@ public class NotificationBadge {
             intent.putExtra(COUNT, badgeCount);
 
             if (canResolveBroadcast(intent1) || canResolveBroadcast(intent)) {
-                AndroidUtilities.runOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        ApplicationLoader.applicationContext.sendBroadcast(intent1);
-                        ApplicationLoader.applicationContext.sendBroadcast(intent);
-                    }
+                AndroidUtilities.runOnUIThread(() -> {
+                    ApplicationLoader.applicationContext.sendBroadcast(intent1);
+                    ApplicationLoader.applicationContext.sendBroadcast(intent);
                 });
             }
         }
@@ -390,12 +366,7 @@ public class NotificationBadge {
             intent.putExtra(INTENT_EXTRA_ACTIVITY_NAME, componentName.getClassName());
             intent.putExtra(INTENT_EXTRA_MESSAGE, String.valueOf(badgeCount));
             intent.putExtra(INTENT_EXTRA_SHOW_MESSAGE, badgeCount > 0);
-            AndroidUtilities.runOnUIThread(new Runnable() {
-                @Override
-                public void run() {
-                    ApplicationLoader.applicationContext.sendBroadcast(intent);
-                }
-            });
+            AndroidUtilities.runOnUIThread(() -> ApplicationLoader.applicationContext.sendBroadcast(intent));
         }
 
         private void executeBadgeByContentProvider(int badgeCount) {
@@ -488,14 +459,11 @@ public class NotificationBadge {
         public void executeBadge(int badgeCount) {
             final Bundle extra = new Bundle();
             extra.putInt("app_badge_count", badgeCount);
-            AndroidUtilities.runOnUIThread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        ApplicationLoader.applicationContext.getContentResolver().call(CONTENT_URI, "setAppBadgeCount", null, extra);
-                    } catch (Exception e) {
-                        FileLog.e(e);
-                    }
+            AndroidUtilities.runOnUIThread(() -> {
+                try {
+                    ApplicationLoader.applicationContext.getContentResolver().call(CONTENT_URI, "setAppBadgeCount", null, extra);
+                } catch (Exception e) {
+                    FileLog.e(e);
                 }
             });
         }

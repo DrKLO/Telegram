@@ -38,13 +38,23 @@ public class TextInfoPrivacyCell extends FrameLayout {
     private int fixedSize;
 
     private CharSequence text;
+    private final Theme.ResourcesProvider resourcesProvider;
 
     public TextInfoPrivacyCell(Context context) {
-        this(context, 21);
+        this(context, 21, null);
+    }
+
+    public TextInfoPrivacyCell(Context context, Theme.ResourcesProvider resourcesProvider) {
+        this(context, 21, resourcesProvider);
     }
 
     public TextInfoPrivacyCell(Context context, int padding) {
+        this(context, padding, null);
+    }
+
+    public TextInfoPrivacyCell(Context context, int padding, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
 
         textView = new TextView(context) {
             @Override
@@ -58,8 +68,8 @@ public class TextInfoPrivacyCell extends FrameLayout {
         textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         textView.setPadding(0, AndroidUtilities.dp(10), 0, AndroidUtilities.dp(17));
         textView.setMovementMethod(LinkMovementMethod.getInstance());
-        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4));
-        textView.setLinkTextColor(Theme.getColor(linkTextColorKey));
+        textView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText4));
+        textView.setLinkTextColor(getThemedColor(linkTextColorKey));
         textView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, padding, 0, padding, 0));
     }
@@ -125,7 +135,7 @@ public class TextInfoPrivacyCell extends FrameLayout {
     }
 
     public void setTextColor(String key) {
-        textView.setTextColor(Theme.getColor(key));
+        textView.setTextColor(getThemedColor(key));
         textView.setTag(key);
     }
 
@@ -150,5 +160,10 @@ public class TextInfoPrivacyCell extends FrameLayout {
         super.onInitializeAccessibilityNodeInfo(info);
         info.setClassName(TextView.class.getName());
         info.setText(text);
+    }
+
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
     }
 }

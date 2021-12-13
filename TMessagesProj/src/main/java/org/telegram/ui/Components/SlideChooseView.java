@@ -32,6 +32,8 @@ public class SlideChooseView extends View {
     private boolean moving;
     private boolean startMoving;
     private float startX;
+    private float xTouchDown;
+    private float yTouchDown;
 
     private int startMovingPreset;
 
@@ -41,9 +43,15 @@ public class SlideChooseView extends View {
     private int selectedIndex;
 
     private Callback callback;
+    private final Theme.ResourcesProvider resourcesProvider;
 
     public SlideChooseView(Context context) {
+        this(context, null);
+    }
+
+    public SlideChooseView(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
 
         paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
@@ -96,8 +104,10 @@ public class SlideChooseView extends View {
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         float x = event.getX();
+        float y = event.getY();
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
-            getParent().requestDisallowInterceptTouchEvent(true);
+            xTouchDown = x;
+            yTouchDown = y;
             for (int a = 0; a < optionsStr.length; a++) {
                 int cx = sideSide + (lineSize + gapSize * 2 + circleSize) * a + circleSize / 2;
                 if (x > cx - AndroidUtilities.dp(15) && x < cx + AndroidUtilities.dp(15)) {
@@ -108,6 +118,11 @@ public class SlideChooseView extends View {
                 }
             }
         } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
+            if (!moving) {
+                if (Math.abs(xTouchDown - x) > Math.abs(yTouchDown - y)) {
+                    getParent().requestDisallowInterceptTouchEvent(true);
+                }
+            }
             if (startMoving) {
                 if (Math.abs(startX - x) >= AndroidUtilities.getPixelsInCM(0.5f, true)) {
                     moving = true;
@@ -146,6 +161,7 @@ public class SlideChooseView extends View {
             }
             startMoving = false;
             moving = false;
+            getParent().requestDisallowInterceptTouchEvent(false);
         }
         return true;
     }
@@ -161,7 +177,6 @@ public class SlideChooseView extends View {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(74), MeasureSpec.EXACTLY));
-        int width = MeasureSpec.getSize(widthMeasureSpec);
         circleSize = AndroidUtilities.dp(6);
         gapSize = AndroidUtilities.dp(2);
         sideSide = AndroidUtilities.dp(22);
@@ -170,20 +185,14 @@ public class SlideChooseView extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        textPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        textPaint.setColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText));
         int cy = getMeasuredHeight() / 2 + AndroidUtilities.dp(11);
 
         for (int a = 0; a < optionsStr.length; a++) {
             int cx = sideSide + (lineSize + gapSize * 2 + circleSize) * a + circleSize / 2;
-            if (a <= selectedIndex) {
-                int color = Theme.getColor(Theme.key_switchTrackChecked);
-                paint.setColor(color);
-                linePaint.setColor(color);
-            } else {
-                int color = Theme.getColor(Theme.key_switchTrack);
-                paint.setColor(color);
-                linePaint.setColor(color);
-            }
+            int color = a <= selectedIndex ? getThemedColor(Theme.key_switchTrackChecked) : getThemedColor(Theme.key_switchTrack);
+            paint.setColor(color);
+            linePaint.setColor(color);
             canvas.drawCircle(cx, cy, a == selectedIndex ? AndroidUtilities.dp(6) : circleSize / 2, paint);
             if (a != 0) {
                 int x = cx - circleSize / 2 - gapSize - lineSize;
@@ -235,6 +244,12 @@ public class SlideChooseView extends View {
     public int getSelectedIndex() {
         return selectedIndex;
     }
+
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
+    }
+
 
     public interface Callback {
         void onOptionSelected(int index);

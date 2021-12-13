@@ -1,16 +1,16 @@
 package org.telegram.messenger;
 
 import android.os.SystemClock;
-
-import java.util.HashMap;
-import java.util.LinkedList;
+import android.util.SparseIntArray;
 
 import androidx.annotation.UiThread;
+
+import java.util.LinkedList;
 
 public class DispatchQueuePool {
 
     private LinkedList<DispatchQueue> queues = new LinkedList<>();
-    private HashMap<DispatchQueue, Integer> busyQueuesMap = new HashMap<>();
+    private SparseIntArray busyQueuesMap = new SparseIntArray();
     private LinkedList<DispatchQueue> busyQueues = new LinkedList<>();
     private int maxCount;
     private int createdCount;
@@ -66,22 +66,19 @@ public class DispatchQueuePool {
         }
         totalTasksCount++;
         busyQueues.add(queue);
-        Integer count = busyQueuesMap.get(queue);
-        if (count == null) {
-            count = 0;
-        }
-        busyQueuesMap.put(queue, count + 1);
+        int count = busyQueuesMap.get(queue.index, 0);
+        busyQueuesMap.put(queue.index, count + 1);
         queue.postRunnable(() -> {
             runnable.run();
             AndroidUtilities.runOnUIThread(() -> {
                 totalTasksCount--;
-                int remainingTasksCount = busyQueuesMap.get(queue) - 1;
+                int remainingTasksCount = busyQueuesMap.get(queue.index) - 1;
                 if (remainingTasksCount == 0) {
-                    busyQueuesMap.remove(queue);
+                    busyQueuesMap.delete(queue.index);
                     busyQueues.remove(queue);
                     queues.add(queue);
                 } else {
-                    busyQueuesMap.put(queue, remainingTasksCount);
+                    busyQueuesMap.put(queue.index, remainingTasksCount);
                 }
             });
         });

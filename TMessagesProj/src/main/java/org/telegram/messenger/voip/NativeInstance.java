@@ -47,7 +47,7 @@ public class NativeInstance {
     }
 
     public interface RequestBroadcastPartCallback {
-        void run(long timestamp, long duration);
+        void run(long timestamp, long duration, int videoChannel, int quality);
     }
 
     public static NativeInstance make(String version, Instance.Config config, String path, Instance.Endpoint[] endpoints, Instance.Proxy proxy, int networkType, Instance.EncryptionKey encryptionKey, VideoSink remoteSink, long videoCapturer, AudioLevelsCallback audioLevelsCallback) {
@@ -152,12 +152,12 @@ public class NativeInstance {
         }
     }
 
-    private void onRequestBroadcastPart(long timestamp, long duration) {
-        requestBroadcastPartCallback.run(timestamp, duration);
+    private void onRequestBroadcastPart(long timestamp, long duration, int videoChannel, int quality) {
+        requestBroadcastPartCallback.run(timestamp, duration, videoChannel, quality);
     }
 
-    private void onCancelRequestBroadcastPart(long timestamp) {
-        cancelRequestBroadcastPartCallback.run(timestamp, 0);
+    private void onCancelRequestBroadcastPart(long timestamp, int videoChannel, int quality) {
+        cancelRequestBroadcastPartCallback.run(timestamp, 0, 0, 0);
     }
 
     public native void setJoinResponsePayload(String payload);
@@ -222,6 +222,6 @@ public class NativeInstance {
     public native void switchCamera(boolean front);
     public native void setVideoState(int videoState);
     public native void onSignalingDataReceive(byte[] data);
-    public native void onStreamPartAvailable(long ts, ByteBuffer buffer, int size, long timestamp);
+    public native void onStreamPartAvailable(long ts, ByteBuffer buffer, int size, long timestamp, int videoChannel, int quality);
     public native boolean hasVideoCapturer();
 }

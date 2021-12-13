@@ -107,7 +107,7 @@ public class VideoEncodingService extends Service implements NotificationCenter.
             }
         }
         currentProgress = 0;
-        builder.setProgress(100, currentProgress, currentProgress == 0);
+        builder.setProgress(100, currentProgress, true);
         startForeground(4, builder.build());
         NotificationManagerCompat.from(ApplicationLoader.applicationContext).notify(4, builder.build());
         return Service.START_NOT_STICKY;

@@ -38,6 +38,7 @@ public class LinearSmoothScrollerCustom extends RecyclerView.SmoothScroller {
 
     public static final int POSITION_MIDDLE = 0;
     public static final int POSITION_END = 1;
+    public static final int POSITION_TOP = 2;
 
     public LinearSmoothScrollerCustom(Context context, int position) {
         MILLISECONDS_PER_PX = MILLISECONDS_PER_INCH / context.getResources().getDisplayMetrics().densityDpi;
@@ -125,7 +126,9 @@ public class LinearSmoothScrollerCustom extends RecyclerView.SmoothScroller {
 
         int boxSize = end - start;
         int viewSize = bottom - top;
-        if (viewSize > boxSize) {
+        if (scrollPosition == POSITION_TOP) {
+            start = layoutManager.getPaddingTop();
+        } else if (viewSize > boxSize) {
             start = 0;
         } else if (scrollPosition == POSITION_MIDDLE) {
             start = (boxSize - viewSize) / 2;

@@ -69,160 +69,157 @@ public class PhotoCropActivity extends BaseFragment {
             halfPaint.setColor(0xc8000000);
             setBackgroundColor(0xff333333);
 
-            setOnTouchListener(new OnTouchListener() {
-                @Override
-                public boolean onTouch(View view, MotionEvent motionEvent) {
-                    float x = motionEvent.getX();
-                    float y = motionEvent.getY();
-                    int cornerSide = AndroidUtilities.dp(14);
-                    if (motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
-                        if (rectX - cornerSide < x && rectX + cornerSide > x && rectY - cornerSide < y && rectY + cornerSide > y) {
-                            draggingState = 1;
-                        } else if (rectX - cornerSide + rectSizeX < x && rectX + cornerSide + rectSizeX > x && rectY - cornerSide < y && rectY + cornerSide > y) {
-                            draggingState = 2;
-                        } else if (rectX - cornerSide < x && rectX + cornerSide > x && rectY - cornerSide + rectSizeY < y && rectY + cornerSide + rectSizeY > y) {
-                            draggingState = 3;
-                        } else if (rectX - cornerSide + rectSizeX < x && rectX + cornerSide + rectSizeX > x && rectY - cornerSide + rectSizeY < y && rectY + cornerSide + rectSizeY > y) {
-                            draggingState = 4;
-                        } else if (rectX < x && rectX + rectSizeX > x && rectY < y && rectY + rectSizeY > y) {
-                            draggingState = 5;
-                        } else {
-                            draggingState = 0;
-                        }
-                        if (draggingState != 0) {
-                            PhotoCropView.this.requestDisallowInterceptTouchEvent(true);
-                        }
-                        oldX = x;
-                        oldY = y;
-                    } else if (motionEvent.getAction() == MotionEvent.ACTION_UP) {
+            setOnTouchListener((view, motionEvent) -> {
+                float x = motionEvent.getX();
+                float y = motionEvent.getY();
+                int cornerSide = AndroidUtilities.dp(14);
+                if (motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
+                    if (rectX - cornerSide < x && rectX + cornerSide > x && rectY - cornerSide < y && rectY + cornerSide > y) {
+                        draggingState = 1;
+                    } else if (rectX - cornerSide + rectSizeX < x && rectX + cornerSide + rectSizeX > x && rectY - cornerSide < y && rectY + cornerSide > y) {
+                        draggingState = 2;
+                    } else if (rectX - cornerSide < x && rectX + cornerSide > x && rectY - cornerSide + rectSizeY < y && rectY + cornerSide + rectSizeY > y) {
+                        draggingState = 3;
+                    } else if (rectX - cornerSide + rectSizeX < x && rectX + cornerSide + rectSizeX > x && rectY - cornerSide + rectSizeY < y && rectY + cornerSide + rectSizeY > y) {
+                        draggingState = 4;
+                    } else if (rectX < x && rectX + rectSizeX > x && rectY < y && rectY + rectSizeY > y) {
+                        draggingState = 5;
+                    } else {
                         draggingState = 0;
-                    } else if (motionEvent.getAction() == MotionEvent.ACTION_MOVE && draggingState != 0) {
-                        float diffX = x - oldX;
-                        float diffY = y - oldY;
-                        if (draggingState == 5) {
-                            rectX += diffX;
-                            rectY += diffY;
+                    }
+                    if (draggingState != 0) {
+                        PhotoCropView.this.requestDisallowInterceptTouchEvent(true);
+                    }
+                    oldX = x;
+                    oldY = y;
+                } else if (motionEvent.getAction() == MotionEvent.ACTION_UP) {
+                    draggingState = 0;
+                } else if (motionEvent.getAction() == MotionEvent.ACTION_MOVE && draggingState != 0) {
+                    float diffX = x - oldX;
+                    float diffY = y - oldY;
+                    if (draggingState == 5) {
+                        rectX += diffX;
+                        rectY += diffY;
 
-                            if (rectX < bitmapX) {
-                                rectX = bitmapX;
-                            } else if (rectX + rectSizeX > bitmapX + bitmapWidth) {
-                                rectX = bitmapX + bitmapWidth - rectSizeX;
+                        if (rectX < bitmapX) {
+                            rectX = bitmapX;
+                        } else if (rectX + rectSizeX > bitmapX + bitmapWidth) {
+                            rectX = bitmapX + bitmapWidth - rectSizeX;
+                        }
+                        if (rectY < bitmapY) {
+                            rectY = bitmapY;
+                        } else if (rectY + rectSizeY > bitmapY + bitmapHeight) {
+                            rectY = bitmapY + bitmapHeight - rectSizeY;
+                        }
+                    } else {
+                        if (draggingState == 1) {
+                            if (rectSizeX - diffX < 160) {
+                                diffX = rectSizeX - 160;
                             }
-                            if (rectY < bitmapY) {
-                                rectY = bitmapY;
-                            } else if (rectY + rectSizeY > bitmapY + bitmapHeight) {
-                                rectY = bitmapY + bitmapHeight - rectSizeY;
+                            if (rectX + diffX < bitmapX) {
+                                diffX = bitmapX - rectX;
                             }
-                        } else {
-                            if (draggingState == 1) {
-                                if (rectSizeX - diffX < 160) {
-                                    diffX = rectSizeX - 160;
+                            if (!freeform) {
+                                if (rectY + diffX < bitmapY) {
+                                    diffX = bitmapY - rectY;
                                 }
-                                if (rectX + diffX < bitmapX) {
-                                    diffX = bitmapX - rectX;
+                                rectX += diffX;
+                                rectY += diffX;
+                                rectSizeX -= diffX;
+                                rectSizeY -= diffX;
+                            } else {
+                                if (rectSizeY - diffY < 160) {
+                                    diffY = rectSizeY - 160;
                                 }
-                                if (!freeform) {
-                                    if (rectY + diffX < bitmapY) {
-                                        diffX = bitmapY - rectY;
-                                    }
-                                    rectX += diffX;
-                                    rectY += diffX;
-                                    rectSizeX -= diffX;
-                                    rectSizeY -= diffX;
-                                } else {
-                                    if (rectSizeY - diffY < 160) {
-                                        diffY = rectSizeY - 160;
-                                    }
-                                    if (rectY + diffY < bitmapY) {
-                                        diffY = bitmapY - rectY;
-                                    }
-                                    rectX += diffX;
-                                    rectY += diffY;
-                                    rectSizeX -= diffX;
-                                    rectSizeY -= diffY;
+                                if (rectY + diffY < bitmapY) {
+                                    diffY = bitmapY - rectY;
                                 }
-                            } else if (draggingState == 2) {
-                                if (rectSizeX + diffX < 160) {
-                                    diffX = -(rectSizeX - 160);
+                                rectX += diffX;
+                                rectY += diffY;
+                                rectSizeX -= diffX;
+                                rectSizeY -= diffY;
+                            }
+                        } else if (draggingState == 2) {
+                            if (rectSizeX + diffX < 160) {
+                                diffX = -(rectSizeX - 160);
+                            }
+                            if (rectX + rectSizeX + diffX > bitmapX + bitmapWidth) {
+                                diffX = bitmapX + bitmapWidth - rectX - rectSizeX;
+                            }
+                            if (!freeform) {
+                                if (rectY - diffX < bitmapY) {
+                                    diffX = rectY - bitmapY;
                                 }
-                                if (rectX + rectSizeX + diffX > bitmapX + bitmapWidth) {
-                                    diffX = bitmapX + bitmapWidth - rectX - rectSizeX;
+                                rectY -= diffX;
+                                rectSizeX += diffX;
+                                rectSizeY += diffX;
+                            } else {
+                                if (rectSizeY - diffY < 160) {
+                                    diffY = rectSizeY - 160;
                                 }
-                                if (!freeform) {
-                                    if (rectY - diffX < bitmapY) {
-                                        diffX = rectY - bitmapY;
-                                    }
-                                    rectY -= diffX;
-                                    rectSizeX += diffX;
-                                    rectSizeY += diffX;
-                                } else {
-                                    if (rectSizeY - diffY < 160) {
-                                        diffY = rectSizeY - 160;
-                                    }
-                                    if (rectY + diffY < bitmapY) {
-                                        diffY = bitmapY - rectY;
-                                    }
-                                    rectY += diffY;
-                                    rectSizeX += diffX;
-                                    rectSizeY -= diffY;
+                                if (rectY + diffY < bitmapY) {
+                                    diffY = bitmapY - rectY;
                                 }
-                            } else if (draggingState == 3) {
-                                if (rectSizeX - diffX < 160) {
-                                    diffX = rectSizeX - 160;
+                                rectY += diffY;
+                                rectSizeX += diffX;
+                                rectSizeY -= diffY;
+                            }
+                        } else if (draggingState == 3) {
+                            if (rectSizeX - diffX < 160) {
+                                diffX = rectSizeX - 160;
+                            }
+                            if (rectX + diffX < bitmapX) {
+                                diffX = bitmapX - rectX;
+                            }
+                            if (!freeform) {
+                                if (rectY + rectSizeX - diffX > bitmapY + bitmapHeight) {
+                                    diffX = rectY + rectSizeX - bitmapY - bitmapHeight;
                                 }
-                                if (rectX + diffX < bitmapX) {
-                                    diffX = bitmapX - rectX;
+                                rectX += diffX;
+                                rectSizeX -= diffX;
+                                rectSizeY -= diffX;
+                            } else {
+                                if (rectY + rectSizeY + diffY > bitmapY + bitmapHeight) {
+                                    diffY = bitmapY + bitmapHeight - rectY - rectSizeY;
                                 }
-                                if (!freeform) {
-                                    if (rectY + rectSizeX - diffX > bitmapY + bitmapHeight) {
-                                        diffX = rectY + rectSizeX - bitmapY - bitmapHeight;
-                                    }
-                                    rectX += diffX;
-                                    rectSizeX -= diffX;
-                                    rectSizeY -= diffX;
-                                } else {
-                                    if (rectY + rectSizeY + diffY > bitmapY + bitmapHeight) {
-                                        diffY = bitmapY + bitmapHeight - rectY - rectSizeY;
-                                    }
-                                    rectX += diffX;
-                                    rectSizeX -= diffX;
-                                    rectSizeY += diffY;
-                                    if (rectSizeY < 160) {
-                                        rectSizeY = 160;
-                                    }
-                                }
-                            } else if (draggingState == 4) {
-                                if (rectX + rectSizeX + diffX > bitmapX + bitmapWidth) {
-                                    diffX = bitmapX + bitmapWidth - rectX - rectSizeX;
-                                }
-                                if (!freeform) {
-                                    if (rectY + rectSizeX + diffX > bitmapY + bitmapHeight) {
-                                        diffX = bitmapY + bitmapHeight - rectY - rectSizeX;
-                                    }
-                                    rectSizeX += diffX;
-                                    rectSizeY += diffX;
-                                } else {
-                                    if (rectY + rectSizeY + diffY > bitmapY + bitmapHeight) {
-                                        diffY = bitmapY + bitmapHeight - rectY - rectSizeY;
-                                    }
-                                    rectSizeX += diffX;
-                                    rectSizeY += diffY;
-                                }
-                                if (rectSizeX < 160) {
-                                    rectSizeX = 160;
-                                }
+                                rectX += diffX;
+                                rectSizeX -= diffX;
+                                rectSizeY += diffY;
                                 if (rectSizeY < 160) {
                                     rectSizeY = 160;
                                 }
                             }
+                        } else if (draggingState == 4) {
+                            if (rectX + rectSizeX + diffX > bitmapX + bitmapWidth) {
+                                diffX = bitmapX + bitmapWidth - rectX - rectSizeX;
+                            }
+                            if (!freeform) {
+                                if (rectY + rectSizeX + diffX > bitmapY + bitmapHeight) {
+                                    diffX = bitmapY + bitmapHeight - rectY - rectSizeX;
+                                }
+                                rectSizeX += diffX;
+                                rectSizeY += diffX;
+                            } else {
+                                if (rectY + rectSizeY + diffY > bitmapY + bitmapHeight) {
+                                    diffY = bitmapY + bitmapHeight - rectY - rectSizeY;
+                                }
+                                rectSizeX += diffX;
+                                rectSizeY += diffY;
+                            }
+                            if (rectSizeX < 160) {
+                                rectSizeX = 160;
+                            }
+                            if (rectSizeY < 160) {
+                                rectSizeY = 160;
+                            }
                         }
-
-                        oldX = x;
-                        oldY = y;
-                        invalidate();
                     }
-                    return true;
+
+                    oldX = x;
+                    oldY = y;
+                    invalidate();
                 }
+                return true;
             });
         }
 
@@ -240,10 +237,10 @@ public class PhotoCropActivity extends BaseFragment {
             float scaleY = viewHeight / h;
             if (scaleX > scaleY) {
                 bitmapHeight = viewHeight;
-                bitmapWidth = (int)Math.ceil(w * scaleY);
+                bitmapWidth = (int) Math.ceil(w * scaleY);
             } else {
                 bitmapWidth = viewWidth;
-                bitmapHeight = (int)Math.ceil(h * scaleX);
+                bitmapHeight = (int) Math.ceil(h * scaleX);
             }
             bitmapX = (viewWidth - bitmapWidth) / 2 + AndroidUtilities.dp(14);
             bitmapY = (viewHeight - bitmapHeight) / 2 + AndroidUtilities.dp(14);
@@ -289,10 +286,10 @@ public class PhotoCropActivity extends BaseFragment {
             float percY = (rectY - bitmapY) / bitmapHeight;
             float percSizeX = rectSizeX / bitmapWidth;
             float percSizeY = rectSizeY / bitmapWidth;
-            int x = (int)(percX * imageToCrop.getWidth());
-            int y = (int)(percY * imageToCrop.getHeight());
-            int sizeX = (int)(percSizeX * imageToCrop.getWidth());
-            int sizeY = (int)(percSizeY * imageToCrop.getWidth());
+            int x = (int) (percX * imageToCrop.getWidth());
+            int y = (int) (percY * imageToCrop.getHeight());
+            int sizeX = (int) (percSizeX * imageToCrop.getWidth());
+            int sizeY = (int) (percSizeY * imageToCrop.getWidth());
             if (x < 0) {
                 x = 0;
             }

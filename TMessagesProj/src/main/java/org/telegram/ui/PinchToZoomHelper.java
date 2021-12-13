@@ -42,6 +42,7 @@ import org.telegram.ui.Components.LayoutHelper;
 public class PinchToZoomHelper {
 
     private final ViewGroup parentView;
+    private final ViewGroup fragmentView;
 
     private ZoomOverlayView overlayView;
     private View child;
@@ -53,6 +54,9 @@ public class PinchToZoomHelper {
 
     float parentOffsetX;
     float parentOffsetY;
+
+    float fragmentOffsetX;
+    float fragmentOffsetY;
 
     float pinchCenterX;
     float pinchCenterY;
@@ -89,8 +93,9 @@ public class PinchToZoomHelper {
 
     private boolean isHardwareVideo;
 
-    public PinchToZoomHelper(ViewGroup parentView) {
+    public PinchToZoomHelper(ViewGroup parentView, ViewGroup fragmentView) {
         this.parentView = parentView;
+        this.fragmentView = fragmentView;
     }
 
     public void startZoom(View child, ImageReceiver image, MessageObject messageObject) {
@@ -217,6 +222,21 @@ public class PinchToZoomHelper {
             currentView = (View) currentView.getParent();
         }
 
+        float fragmentOffsetX = 0;
+        float fragmentOffsetY = 0;
+        currentView = child;
+        while (currentView != fragmentView) {
+            if (currentView == null) {
+                return false;
+            }
+            fragmentOffsetX += currentView.getLeft();
+            fragmentOffsetY += currentView.getTop();
+            currentView = (View) currentView.getParent();
+        }
+
+        this.fragmentOffsetX = fragmentOffsetX;
+        this.fragmentOffsetY = fragmentOffsetY;
+
         this.parentOffsetX = parentOffsetX;
         this.parentOffsetY = parentOffsetY;
         return true;
@@ -243,8 +263,6 @@ public class PinchToZoomHelper {
                 }
             }
         });
-//        finishTransition.setDuration(350);
-//        finishTransition.setInterpolator(new OvershootInterpolator(1.05f));
 
         finishTransition.setDuration(220);
         finishTransition.setInterpolator(CubicBezierInterpolator.DEFAULT);
@@ -302,7 +320,7 @@ public class PinchToZoomHelper {
 
     public boolean onTouchEvent(MotionEvent ev) {
         if (updateViewsLocation() && child != null) {
-            ev.offsetLocation(-parentOffsetX, -parentOffsetY);
+            ev.offsetLocation(-fragmentOffsetX, -fragmentOffsetY);
             return child.onTouchEvent(ev);
         }
         return false;

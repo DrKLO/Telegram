@@ -12,8 +12,6 @@ import android.content.Context;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
-import android.util.LongSparseArray;
-import android.util.SparseArray;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,12 +22,12 @@ import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
-import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
@@ -55,6 +53,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
+import androidx.collection.LongSparseArray;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -84,7 +83,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
     private int dialogsType;
     private SearchAdapterHelper searchAdapterHelper;
     private RecyclerListView innerListView;
-    private int selfUserId;
+    private long selfUserId;
 
     private int currentAccount = UserConfig.selectedAccount;
 
@@ -93,8 +92,8 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
     private ArrayList<FiltersView.DateData> localTipDates = new ArrayList<>();
     private boolean localTipArchive;
     private FilteredSearchView.Delegate filtersDelegate;
-    private int folderId;
     private int currentItemCount;
+    private int folderId;
 
     public boolean isSearching() {
         return waitingResponseCount > 0;
@@ -106,22 +105,32 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
         public CharSequence name;
     }
 
-    protected static class RecentSearchObject {
-        TLObject object;
-        int date;
-        long did;
+    public static class RecentSearchObject {
+        public TLObject object;
+        public int date;
+        public long did;
     }
 
     public interface DialogsSearchAdapterDelegate {
         void searchStateChanged(boolean searching, boolean animated);
         void didPressedOnSubDialog(long did);
-        void needRemoveHint(int did);
+        void needRemoveHint(long did);
         void needClearList();
         void runResultsEnterAnimation();
         boolean isSelected(long dialogId);
     }
 
-    private class CategoryAdapterRecycler extends RecyclerListView.SelectionAdapter {
+    public static class CategoryAdapterRecycler extends RecyclerListView.SelectionAdapter {
+
+        private final Context mContext;
+        private final int currentAccount;
+        private boolean drawChecked;
+
+        public CategoryAdapterRecycler(Context context, int account, boolean drawChecked) {
+            this.drawChecked = drawChecked;
+            mContext = context;
+            currentAccount = account;
+        }
 
         public void setIndex(int value) {
             notifyDataSetChanged();
@@ -129,7 +138,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
 
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View view = new HintDialogCell(mContext);
+            View view = new HintDialogCell(mContext, drawChecked);
             view.setLayoutParams(new RecyclerView.LayoutParams(AndroidUtilities.dp(80), AndroidUtilities.dp(86)));
             return new RecyclerListView.Holder(view);
         }
@@ -147,7 +156,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
             TLRPC.Dialog dialog = new TLRPC.TL_dialog();
             TLRPC.Chat chat = null;
             TLRPC.User user = null;
-            int did = 0;
+            long did = 0;
             if (peer.peer.user_id != 0) {
                 did = peer.peer.user_id;
                 user = MessagesController.getInstance(currentAccount).getUser(peer.peer.user_id);
@@ -174,8 +183,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
         }
     }
 
-    public DialogsSearchAdapter(Context context, int messagesSearch, int type, int folderId) {
-        this.folderId = folderId;
+    public DialogsSearchAdapter(Context context, int messagesSearch, int type) {
         searchAdapterHelper = new SearchAdapterHelper(false);
         searchAdapterHelper.setDelegate(new SearchAdapterHelper.SearchAdapterHelperDelegate() {
             @Override
@@ -272,14 +280,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
             MessageObject lastMessage = searchResultMessages.get(searchResultMessages.size() - 1);
             req.offset_id = lastMessage.getId();
             req.offset_rate = nextSearchRate;
-            int id;
-            if (lastMessage.messageOwner.peer_id.channel_id != 0) {
-                id = -lastMessage.messageOwner.peer_id.channel_id;
-            } else if (lastMessage.messageOwner.peer_id.chat_id != 0) {
-                id = -lastMessage.messageOwner.peer_id.chat_id;
-            } else {
-                id = lastMessage.messageOwner.peer_id.user_id;
-            }
+            long id = MessageObject.getPeerId(lastMessage.messageOwner.peer_id);
             req.offset_peer = MessagesController.getInstance(currentAccount).getInputPeer(id);
         } else {
             req.offset_rate = 0;
@@ -292,8 +293,8 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
             final ArrayList<MessageObject> messageObjects = new ArrayList<>();
             if (error == null) {
                 TLRPC.messages_Messages res = (TLRPC.messages_Messages) response;
-                SparseArray<TLRPC.Chat> chatsMap = new SparseArray<>();
-                SparseArray<TLRPC.User> usersMap = new SparseArray<>();
+                LongSparseArray<TLRPC.Chat> chatsMap = new LongSparseArray<>();
+                LongSparseArray<TLRPC.User> usersMap = new LongSparseArray<>();
                 for (int a = 0; a < res.chats.size(); a++) {
                     TLRPC.Chat chat = res.chats.get(a);
                     chatsMap.put(chat.id, chat);
@@ -325,8 +326,8 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                         for (int a = 0; a < res.messages.size(); a++) {
                             TLRPC.Message message = res.messages.get(a);
                             long did = MessageObject.getDialogId(message);
-                            Integer maxId = MessagesController.getInstance(currentAccount).deletedHistory.get(did);
-                            if (maxId != null && message.id <= maxId) {
+                            int maxId = MessagesController.getInstance(currentAccount).deletedHistory.get(did);
+                            if (maxId != 0 && message.id <= maxId) {
                                 continue;
                             }
                             searchResultMessages.add(messageObjects.get(a));
@@ -371,12 +372,18 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
     }
 
     public void loadRecentSearch() {
+        loadRecentSearch(currentAccount, dialogsType, (arrayList, hashMap) -> {
+            DialogsSearchAdapter.this.setRecentSearch(arrayList, hashMap);
+        });
+    }
+
+    public static void loadRecentSearch(int currentAccount, int dialogsType, OnRecentSearchLoaded callback) {
         MessagesStorage.getInstance(currentAccount).getStorageQueue().postRunnable(() -> {
             try {
                 SQLiteCursor cursor = MessagesStorage.getInstance(currentAccount).getDatabase().queryFinalized("SELECT did, date FROM search_recent WHERE 1");
 
-                ArrayList<Integer> usersToLoad = new ArrayList<>();
-                ArrayList<Integer> chatsToLoad = new ArrayList<>();
+                ArrayList<Long> usersToLoad = new ArrayList<>();
+                ArrayList<Long> chatsToLoad = new ArrayList<>();
                 ArrayList<Integer> encryptedToLoad = new ArrayList<>();
                 ArrayList<TLRPC.User> encUsers = new ArrayList<>();
 
@@ -386,23 +393,22 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                     long did = cursor.longValue(0);
 
                     boolean add = false;
-                    int lower_id = (int) did;
-                    int high_id = (int) (did >> 32);
-                    if (lower_id != 0) {
-                        if (lower_id > 0) {
-                            if (dialogsType != 2 && !usersToLoad.contains(lower_id)) {
-                                usersToLoad.add(lower_id);
-                                add = true;
-                            }
-                        } else {
-                            if (!chatsToLoad.contains(-lower_id)) {
-                                chatsToLoad.add(-lower_id);
+                    if (DialogObject.isEncryptedDialog(did)) {
+                        if (dialogsType == 0 || dialogsType == 3) {
+                            int encryptedChatId = DialogObject.getEncryptedChatId(did);
+                            if (!encryptedToLoad.contains(encryptedChatId)) {
+                                encryptedToLoad.add(encryptedChatId);
                                 add = true;
                             }
                         }
-                    } else if (dialogsType == 0 || dialogsType == 3) {
-                        if (!encryptedToLoad.contains(high_id)) {
-                            encryptedToLoad.add(high_id);
+                    } else if (DialogObject.isUserDialog(did)) {
+                        if (dialogsType != 2 && !usersToLoad.contains(did)) {
+                            usersToLoad.add(did);
+                            add = true;
+                        }
+                    } else {
+                        if (!chatsToLoad.contains(-did)) {
+                            chatsToLoad.add(-did);
                             add = true;
                         }
                     }
@@ -423,7 +429,10 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                     ArrayList<TLRPC.EncryptedChat> encryptedChats = new ArrayList<>();
                     MessagesStorage.getInstance(currentAccount).getEncryptedChatsInternal(TextUtils.join(",", encryptedToLoad), encryptedChats, usersToLoad);
                     for (int a = 0; a < encryptedChats.size(); a++) {
-                        hashMap.get((long) encryptedChats.get(a).id << 32).object = encryptedChats.get(a);
+                        RecentSearchObject recentSearchObject = hashMap.get(DialogObject.makeEncryptedDialogId(encryptedChats.get(a).id));
+                        if (recentSearchObject != null) {
+                            recentSearchObject.object = encryptedChats.get(a);
+                        }
                     }
                 }
 
@@ -440,7 +449,10 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                                 arrayList.remove(recentSearchObject);
                             }
                         } else {
-                            hashMap.get(did).object = chat;
+                            RecentSearchObject recentSearchObject = hashMap.get(did);
+                            if (recentSearchObject != null) {
+                                recentSearchObject.object = chat;
+                            }
                         }
                     }
                 }
@@ -465,7 +477,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                         return 0;
                     }
                 });
-                AndroidUtilities.runOnUIThread(() -> setRecentSearch(arrayList, hashMap));
+                AndroidUtilities.runOnUIThread(() -> callback.setRecentSearch(arrayList, hashMap));
             } catch (Exception e) {
                 FileLog.e(e);
             }
@@ -595,7 +607,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
             searchWas = true;
             for (int a = 0; a < result.size(); a++) {
                 Object obj = result.get(a);
-                int dialogId = 0;
+                long dialogId = 0;
                 if (obj instanceof TLRPC.User) {
                     TLRPC.User user = (TLRPC.User) obj;
                     MessagesController.getInstance(currentAccount).putUser(user, true);
@@ -612,7 +624,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 if (dialogId != 0) {
                     TLRPC.Dialog dialog = MessagesController.getInstance(currentAccount).dialogs_dict.get(dialogId);
                     if (dialog == null) {
-                        int finalDialogId = dialogId;
+                        long finalDialogId = dialogId;
                         MessagesStorage.getInstance(currentAccount).getDialogFolderId(dialogId, param -> {
                             if (param != -1) {
                                 TLRPC.Dialog newDialog = new TLRPC.TL_dialog();
@@ -892,7 +904,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
 
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        View view = null;
+        View view;
         switch (viewType) {
             case 0:
                 view = new ProfileSearchCell(mContext);
@@ -934,15 +946,15 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 layoutManager.setOrientation(LinearLayoutManager.HORIZONTAL);
                 horizontalListView.setLayoutManager(layoutManager);
                 //horizontalListView.setDisallowInterceptTouchEvents(true);
-                horizontalListView.setAdapter(new CategoryAdapterRecycler());
+                horizontalListView.setAdapter(new CategoryAdapterRecycler(mContext, currentAccount, false));
                 horizontalListView.setOnItemClickListener((view1, position) -> {
                     if (delegate != null) {
-                        delegate.didPressedOnSubDialog((Integer) view1.getTag());
+                        delegate.didPressedOnSubDialog((Long) view1.getTag());
                     }
                 });
                 horizontalListView.setOnItemLongClickListener((view12, position) -> {
                     if (delegate != null) {
-                        delegate.needRemoveHint((Integer) view12.getTag());
+                        delegate.needRemoveHint((Long) view12.getTag());
                     }
                     return true;
                 });
@@ -950,6 +962,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 innerListView = horizontalListView;
                 break;
             case 6:
+            default:
                 view = new TextCell(mContext, 16, false);
                 break;
         }
@@ -1222,5 +1235,9 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
 
     public int getCurrentItemCount() {
         return currentItemCount;
+    }
+
+    public interface OnRecentSearchLoaded {
+        void setRecentSearch(ArrayList<RecentSearchObject> arrayList, LongSparseArray<RecentSearchObject> hashMap);
     }
 }

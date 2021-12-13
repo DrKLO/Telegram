@@ -48,6 +48,7 @@ public class SeekBarView extends FrameLayout {
     private int transitionThumbX;
 
     private boolean twoSided;
+    private final Theme.ResourcesProvider resourcesProvider;
 
     public interface SeekBarViewDelegate {
         void onSeekBarDrag(boolean stop, float progress);
@@ -61,23 +62,28 @@ public class SeekBarView extends FrameLayout {
     }
 
     public SeekBarView(Context context) {
-        this(context, false);
+        this(context, null);
     }
 
-    public SeekBarView(Context context, boolean inPercents) {
+    public SeekBarView(Context context, Theme.ResourcesProvider resourcesProvider) {
+        this(context, false, resourcesProvider);
+    }
+
+    public SeekBarView(Context context, boolean inPercents, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
         setWillNotDraw(false);
         innerPaint1 = new Paint(Paint.ANTI_ALIAS_FLAG);
 
         outerPaint1 = new Paint(Paint.ANTI_ALIAS_FLAG);
-        outerPaint1.setColor(Theme.getColor(Theme.key_player_progress));
+        outerPaint1.setColor(getThemedColor(Theme.key_player_progress));
 
         selectorWidth = AndroidUtilities.dp(32);
         thumbSize = AndroidUtilities.dp(24);
         currentRadius = AndroidUtilities.dp(6);
 
         if (Build.VERSION.SDK_INT >= 21) {
-            hoverDrawable = Theme.createSelectorDrawable(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_player_progress), 40), 1, AndroidUtilities.dp(16));
+            hoverDrawable = Theme.createSelectorDrawable(ColorUtils.setAlphaComponent(getThemedColor(Theme.key_player_progress), 40), 1, AndroidUtilities.dp(16));
             hoverDrawable.setCallback(this);
             hoverDrawable.setVisible(true, false);
         }
@@ -338,10 +344,10 @@ public class SeekBarView extends FrameLayout {
     @Override
     protected void onDraw(Canvas canvas) {
         int y = (getMeasuredHeight() - thumbSize) / 2;
-        innerPaint1.setColor(Theme.getColor(Theme.key_player_progressBackground));
+        innerPaint1.setColor(getThemedColor(Theme.key_player_progressBackground));
         canvas.drawRect(selectorWidth / 2, getMeasuredHeight() / 2 - AndroidUtilities.dp(1), getMeasuredWidth() - selectorWidth / 2, getMeasuredHeight() / 2 + AndroidUtilities.dp(1), innerPaint1);
         if (bufferedProgress > 0) {
-            innerPaint1.setColor(Theme.getColor(Theme.key_player_progressCachedBackground));
+            innerPaint1.setColor(getThemedColor(Theme.key_player_progressCachedBackground));
             canvas.drawRect(selectorWidth / 2, getMeasuredHeight() / 2 - AndroidUtilities.dp(1), selectorWidth / 2 + bufferedProgress * (getMeasuredWidth() - selectorWidth), getMeasuredHeight() / 2 + AndroidUtilities.dp(1), innerPaint1);
         }
         if (twoSided) {
@@ -406,5 +412,10 @@ public class SeekBarView extends FrameLayout {
 
     public SeekBarAccessibilityDelegate getSeekBarAccessibilityDelegate() {
         return seekBarAccessibilityDelegate;
+    }
+
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
     }
 }

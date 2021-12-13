@@ -17,17 +17,19 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.SystemClock;
+import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
+import android.view.Window;
 import android.view.accessibility.AccessibilityManager;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AccountInstance;
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DownloadController;
@@ -59,12 +61,15 @@ public abstract class BaseFragment {
     protected ActionBarLayout parentLayout;
     protected ActionBar actionBar;
     protected boolean inPreviewMode;
+    protected boolean inMenuMode;
     protected boolean inBubbleMode;
     protected int classGuid;
     protected Bundle arguments;
     protected boolean hasOwnBackground = false;
     protected boolean isPaused = true;
     protected Dialog parentDialog;
+    protected boolean inTransitionAnimation = false;
+    protected boolean fragmentBeginToShow;
 
     public BaseFragment() {
         classGuid = ConnectionsManager.generateClassGuid();
@@ -118,6 +123,14 @@ public abstract class BaseFragment {
         return inBubbleMode;
     }
 
+    public boolean getInPreviewMode() {
+        return inPreviewMode;
+    }
+
+    public boolean getInPassivePreviewMode() {
+        return parentLayout != null && parentLayout.isInPassivePreviewMode();
+    }
+
     protected void setInPreviewMode(boolean value) {
         inPreviewMode = value;
         if (actionBar != null) {
@@ -127,6 +140,10 @@ public abstract class BaseFragment {
                 actionBar.setOccupyStatusBar(Build.VERSION.SDK_INT >= 21);
             }
         }
+    }
+
+    protected void setInMenuMode(boolean value) {
+        inMenuMode = value;
     }
 
     protected void onPreviewOpenAnimationEnd() {
@@ -215,11 +232,11 @@ public abstract class BaseFragment {
 
     protected ActionBar createActionBar(Context context) {
         ActionBar actionBar = new ActionBar(context);
-        actionBar.setBackgroundColor(Theme.getColor(Theme.key_actionBarDefault));
-        actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_actionBarDefaultSelector), false);
-        actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_actionBarActionModeDefaultSelector), true);
-        actionBar.setItemsColor(Theme.getColor(Theme.key_actionBarDefaultIcon), false);
-        actionBar.setItemsColor(Theme.getColor(Theme.key_actionBarActionModeDefaultIcon), true);
+        actionBar.setBackgroundColor(getThemedColor(Theme.key_actionBarDefault));
+        actionBar.setItemsBackgroundColor(getThemedColor(Theme.key_actionBarDefaultSelector), false);
+        actionBar.setItemsBackgroundColor(getThemedColor(Theme.key_actionBarActionModeDefaultSelector), true);
+        actionBar.setItemsColor(getThemedColor(Theme.key_actionBarDefaultIcon), false);
+        actionBar.setItemsColor(getThemedColor(Theme.key_actionBarActionModeDefaultIcon), true);
         if (inPreviewMode || inBubbleMode) {
             actionBar.setOccupyStatusBar(false);
         }
@@ -357,19 +374,23 @@ public abstract class BaseFragment {
     }
 
     public boolean presentFragmentAsPreview(BaseFragment fragment) {
-        return parentLayout != null && parentLayout.presentFragmentAsPreview(fragment);
+        return allowPresentFragment() && parentLayout != null && parentLayout.presentFragmentAsPreview(fragment);
+    }
+
+    public boolean presentFragmentAsPreviewWithMenu(BaseFragment fragment, View menu) {
+        return allowPresentFragment() && parentLayout != null && parentLayout.presentFragmentAsPreviewWithMenu(fragment, menu);
     }
 
     public boolean presentFragment(BaseFragment fragment) {
-        return parentLayout != null && parentLayout.presentFragment(fragment);
+        return allowPresentFragment() && parentLayout != null && parentLayout.presentFragment(fragment);
     }
 
     public boolean presentFragment(BaseFragment fragment, boolean removeLast) {
-        return parentLayout != null && parentLayout.presentFragment(fragment, removeLast);
+        return allowPresentFragment() && parentLayout != null && parentLayout.presentFragment(fragment, removeLast);
     }
 
     public boolean presentFragment(BaseFragment fragment, boolean removeLast, boolean forceWithoutAnimation) {
-        return parentLayout != null && parentLayout.presentFragment(fragment, removeLast, forceWithoutAnimation, true, false);
+        return allowPresentFragment() && parentLayout != null && parentLayout.presentFragment(fragment, removeLast, forceWithoutAnimation, true, false, null);
     }
 
     public Activity getParentActivity() {
@@ -435,11 +456,14 @@ public abstract class BaseFragment {
     }
 
     protected void onTransitionAnimationStart(boolean isOpen, boolean backward) {
-
+        inTransitionAnimation = true;
+        if (isOpen) {
+            fragmentBeginToShow = true;
+        }
     }
 
     protected void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
-
+        inTransitionAnimation = false;
     }
 
     protected void onBecomeFullyVisible() {
@@ -671,7 +695,44 @@ public abstract class BaseFragment {
         return actionBarLayout;
     }
 
+    public int getThemedColor(String key) {
+        return Theme.getColor(key);
+    }
+
+    public Drawable getThemedDrawable(String key) {
+        return Theme.getThemeDrawable(key);
+    }
+
+    public int getNavigationBarColor() {
+        return Theme.getColor(Theme.key_windowBackgroundGray);
+    }
+
+    public void setNavigationBarColor(int color) {
+        Activity activity = getParentActivity();
+        if (activity != null) {
+            Window window = activity.getWindow();
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && window != null && window.getNavigationBarColor() != color) {
+                window.setNavigationBarColor(color);
+                final float brightness = AndroidUtilities.computePerceivedBrightness(color);
+                AndroidUtilities.setLightNavigationBar(window, brightness >= 0.721f);
+            }
+        }
+    }
+
+    public boolean isBeginToShow() {
+        return fragmentBeginToShow;
+    }
+
     private void setParentDialog(Dialog dialog) {
         parentDialog = dialog;
     }
+
+    public Theme.ResourcesProvider getResourceProvider() {
+        return null;
+    }
+
+    protected boolean allowPresentFragment() {
+        return true;
+    }
+
 }

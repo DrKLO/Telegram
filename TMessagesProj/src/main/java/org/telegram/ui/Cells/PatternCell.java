@@ -174,7 +174,7 @@ public class PatternCell extends BackupImageView implements DownloadController.F
     @Override
     protected void onDraw(Canvas canvas) {
         float intensity = delegate.getIntensity();
-        imageReceiver.setAlpha(Math.abs(intensity));
+        //imageReceiver.setAlpha(Math.abs(intensity));
         imageReceiver.setBlendMode(null);
 
         int backgroundColor = delegate.getBackgroundColor();
@@ -195,7 +195,7 @@ public class PatternCell extends BackupImageView implements DownloadController.F
                 if (backgroundGradientColor2 != 0) {
                     gradientShader = null;
                     if (backgroundDrawable != null) {
-                        backgroundDrawable.setColors(backgroundColor, backgroundGradientColor1, backgroundGradientColor2, backgroundGradientColor3, false);
+                        backgroundDrawable.setColors(backgroundColor, backgroundGradientColor1, backgroundGradientColor2, backgroundGradientColor3, 0, false);
                     } else {
                         backgroundDrawable = new MotionBackgroundDrawable(backgroundColor, backgroundGradientColor1, backgroundGradientColor2, backgroundGradientColor3, true);
                         backgroundDrawable.setRoundRadius(AndroidUtilities.dp(6));

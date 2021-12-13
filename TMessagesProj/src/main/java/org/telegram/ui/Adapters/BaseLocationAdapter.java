@@ -12,6 +12,7 @@ import android.location.Location;
 import android.os.Build;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.UserConfig;
@@ -144,12 +145,10 @@ public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdap
         req.geo_point._long = AndroidUtilities.fixLocationCoord(coordinate.getLongitude());
         req.flags |= 1;
 
-        int lower_id = (int) dialogId;
-        int high_id = (int) (dialogId >> 32);
-        if (lower_id != 0) {
-            req.peer = MessagesController.getInstance(currentAccount).getInputPeer(lower_id);
-        } else {
+        if (DialogObject.isEncryptedDialog(dialogId)) {
             req.peer = new TLRPC.TL_inputPeerEmpty();
+        } else {
+            req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
         }
 
         currentRequestNum = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {

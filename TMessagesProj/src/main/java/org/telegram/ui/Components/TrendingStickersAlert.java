@@ -35,8 +35,8 @@ public class TrendingStickersAlert extends BottomSheet {
 
     private int scrollOffsetY;
 
-    public TrendingStickersAlert(@NonNull Context context, BaseFragment parentFragment, TrendingStickersLayout trendingStickersLayout) {
-        super(context, true);
+    public TrendingStickersAlert(@NonNull Context context, BaseFragment parentFragment, TrendingStickersLayout trendingStickersLayout, Theme.ResourcesProvider resourcesProvider) {
+        super(context, true, resourcesProvider);
 
         alertContainerView = new AlertContainerView(context);
         alertContainerView.addView(trendingStickersLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
@@ -230,7 +230,7 @@ public class TrendingStickersAlert extends BottomSheet {
             // mutable top corners
             if (fraction > 0f && fraction < 1f) {
                 final float radius = AndroidUtilities.dp(12) * fraction;
-                shapeDrawable.setColor(Theme.getColor(Theme.key_dialogBackground));
+                shapeDrawable.setColor(getThemedColor(Theme.key_dialogBackground));
                 radii[0] = radii[1] = radii[2] = radii[3] = radius;
                 shapeDrawable.setCornerRadii(radii);
                 shapeDrawable.setBounds(backgroundPaddingLeft, scrollOffsetY + offset, getWidth() - backgroundPaddingLeft, scrollOffsetY + offset + AndroidUtilities.dp(24));
@@ -254,7 +254,7 @@ public class TrendingStickersAlert extends BottomSheet {
             final int h = AndroidUtilities.dp(4);
             final int offset = (int) (h * 2f * (1f - fraction));
             shapeDrawable.setCornerRadius(AndroidUtilities.dp(2));
-            final int sheetScrollUpColor = Theme.getColor(Theme.key_sheet_scrollUp);
+            final int sheetScrollUpColor = getThemedColor(Theme.key_sheet_scrollUp);
             shapeDrawable.setColor(ColorUtils.setAlphaComponent(sheetScrollUpColor, (int) (Color.alpha(sheetScrollUpColor) * fraction)));
             shapeDrawable.setBounds((getWidth() - w) / 2, scrollOffsetY + AndroidUtilities.dp(10) + offset, (getWidth() + w) / 2, scrollOffsetY + AndroidUtilities.dp(10) + offset + h);
             shapeDrawable.draw(canvas);
@@ -264,7 +264,7 @@ public class TrendingStickersAlert extends BottomSheet {
             // status bar
             setStatusBarVisible(fraction == 0f && Build.VERSION.SDK_INT >= 21 && !isDismissed(), true);
             if (statusBarAlpha > 0f) {
-                final int color = Theme.getColor(Theme.key_dialogBackground);
+                final int color = getThemedColor(Theme.key_dialogBackground);
                 paint.setColor(Color.argb((int) (0xff * statusBarAlpha), (int) (Color.red(color) * 0.8f), (int) (Color.green(color) * 0.8f), (int) (Color.blue(color) * 0.8f)));
                 canvas.drawRect(backgroundPaddingLeft, 0, getMeasuredWidth() - backgroundPaddingLeft, AndroidUtilities.statusBarHeight, paint);
             }
