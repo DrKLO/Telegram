@@ -1,0 +1,76 @@
+name: Build APK
+
+on: [push]
+
+jobs:
+  linux:
+    name: Build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        type: [debug, release, beta]
+        include:
+          - type: debug
+            arch: Afat
+            flavour: Debug
+            flavdir: debug
+            name: "Debug"
+          - type: beta
+            arch: Afat
+            flavour: HA
+            flavdir: HA
+            name: "Beta"
+          - type: release
+            arch: Afat
+            flavour: Release
+            flavdir: release
+            name: "Release"
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: Extract secret data.
+        env:
+          SECRET1: ${{ secrets.SECRET1 }}
+          SECRET2: ${{ secrets.SECRET2 }}
+          SECRET3: ${{ secrets.SECRET3 }}
+          SECRET4: ${{ secrets.SECRET4 }}
+        run: |
+          mkdir ~/.gradle
+          base64 -d <<<$SECRET1 >TMessagesProj/google-services.json
+          base64 -d <<<$SECRET2 >API_KEYS
+          base64 -d <<<$SECRET3 >~/release.keystore
+          base64 -d <<<$SECRET4 >~/.gradle/gradle.properties
+      - name: Prepare CI.
+        run: |
+          yes | $ANDROID_HOME/tools/bin/sdkmanager --sdk_root=$ANDROID_HOME --licenses
+          sudo apt update
+          sudo apt install openjdk-17-jdk openjdk-17-jre ninja-build yasm
+      - name: Set up ccache.
+        uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: ${{ matrix.type }}
+          max-size: 5000M
+      - name: Build NDK dependencies.
+        run: |
+          export NINJA_PATH=/usr/bin/ninja NDK="$ANDROID_HOME/ndk/$(grep ndkVersion TMessagesProj/build.gradle | cut -d\" -f 2)" PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH" NDK_CCACHE="/usr/bin/ccache"
+          cd TMessagesProj/jni
+          ./build_ffmpeg_clang.sh
+          ./patch_ffmpeg.sh
+          ./patch_boringssl.sh
+          ./build_boringssl.sh
+          ./build_libvpx_clang.sh
+          cd ../..
+      - name: Build the app.
+        run: |
+          export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH" NDK_CCACHE="/usr/bin/ccache"
+          ./gradlew assemble${{ matrix.arch }}${{ matrix.flavour }}
+      - name: Archive artifact.
+        run: |
+          mkdir artifact
+          mv TMessagesProj/build/outputs/apk/afat/${{ matrix.flavdir }}/app.apk "artifact/Catogram X ${{ matrix.name }} $(grep BUILD_VERSION_STRING TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java | cut -d\" -f 2).apk"
+      - uses: actions/upload-artifact@master
+        name: Upload artifact.
+        with:
+          name: CatoX
+          path: artifact/
