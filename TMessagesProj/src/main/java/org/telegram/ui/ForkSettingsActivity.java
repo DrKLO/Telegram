@@ -152,6 +152,7 @@ public class ForkSettingsActivity extends BaseFragment {
     private int formatWithSeconds;
     private int disableThumbsInDialogList;
     private int fullRecentStickersRow;
+    private int hideSendAsRow;
 
     private int stickerSizeRow;
 
@@ -211,6 +212,7 @@ public class ForkSettingsActivity extends BaseFragment {
         replaceForward = rowCount++;
         rearVideoMessages = rowCount++;
         fullRecentStickersRow = rowCount++;
+        hideSendAsRow = rowCount++;
     
         emptyRows.add(rowCount++);
         sectionRows.add(rowCount++);
@@ -307,6 +309,8 @@ public class ForkSettingsActivity extends BaseFragment {
                 toggleGlobalMainSetting("rearVideoMessages", view, false);
             } else if (position == fullRecentStickersRow) {
                 toggleGlobalMainSetting("fullRecentStickers", view, false);
+            } else if (position == hideSendAsRow) {
+                toggleGlobalMainSetting("hideSendAs", view, false);
             } else if (position == replaceForward) {
                 toggleGlobalMainSetting("replaceForward", view, true);
             } else if (position == mentionByName) {
@@ -393,6 +397,9 @@ public class ForkSettingsActivity extends BaseFragment {
                     } else if (position == fullRecentStickersRow) {
                         String t = LocaleController.getString("FullRecentStickers", R.string.FullRecentStickers);
                         textCell.setTextAndCheck(t, preferences.getBoolean("fullRecentStickers", false), false);
+                    } else if (position == hideSendAsRow) {
+                        String t = LocaleController.getString("HideSendAs", R.string.HideSendAs);
+                        textCell.setTextAndCheck(t, preferences.getBoolean("hideSendAs", false), false);
                     } else if (position == replaceForward) {
                         String t = LocaleController.getString("ReplaceForward", R.string.ReplaceForward);
                         textCell.setTextAndCheck(t, preferences.getBoolean("replaceForward", true), false);
@@ -447,6 +454,7 @@ public class ForkSettingsActivity extends BaseFragment {
                         || position == unmutedOnTopRow
                         || position == rearVideoMessages
                         || position == fullRecentStickersRow
+                        || position == hideSendAsRow
                         || position == replaceForward
                         || position == mentionByName
                         || position == openArchiveOnPull
@@ -504,6 +512,7 @@ public class ForkSettingsActivity extends BaseFragment {
                 || position == syncPinsRow
                 || position == rearVideoMessages
                 || position == fullRecentStickersRow
+                || position == hideSendAsRow
                 || position == replaceForward
                 || position == mentionByName
                 || position == openArchiveOnPull
