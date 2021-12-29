@@ -151,6 +151,7 @@ public class ForkSettingsActivity extends BaseFragment {
     private int disableFlipPhotos;
     private int formatWithSeconds;
     private int disableThumbsInDialogList;
+    private int customTitleRow;
     private int fullRecentStickersRow;
     private int hideSendAsRow;
 
@@ -203,6 +204,7 @@ public class ForkSettingsActivity extends BaseFragment {
         unmutedOnTopRow = rowCount++;
         openArchiveOnPull = rowCount++;
         disableThumbsInDialogList = rowCount++;
+        customTitleRow = rowCount++;
     
         emptyRows.add(rowCount++);
         sectionRows.add(rowCount++);
@@ -329,6 +331,31 @@ public class ForkSettingsActivity extends BaseFragment {
                 toggleGlobalMainSetting("syncPins", view, true);
             } else if (position == hideSensitiveDataRow) {
                 toggleGlobalMainSetting("hideSensitiveData", view, false);
+            } else if (position == customTitleRow) {
+                final String defaultValue = "Fork Client";
+                org.telegram.messenger.forkgram.ForkDialogs.CreateFieldAlert(
+                    context,
+                    LocaleController.getString("EditAdminRank", R.string.EditAdminRank),
+                    MessagesController.getGlobalMainSettings().getString("forkCustomTitle", defaultValue),
+                    (result) -> {
+                        if (result.isEmpty()) {
+                            result = defaultValue;
+                        }
+                        SharedPreferences.Editor editor = MessagesController.getGlobalMainSettings().edit();
+                        editor.putString("forkCustomTitle", result);
+                        editor.commit();
+                        if (view instanceof TextSettingsCell) {
+                            ((TextSettingsCell) view).getValueTextView().setText(result);
+                        }
+
+                        BaseFragment previousFragment = parentLayout.getFragmentStack().size() > 2
+                            ? parentLayout.getFragmentStack().get(parentLayout.getFragmentStack().size() - 3)
+                            : null;
+                        if (previousFragment instanceof DialogsActivity) {
+                            ((DialogsActivity) previousFragment).getActionBar().setTitle(result);
+                        }
+                        return null;
+                    });
             }
         });
 
@@ -361,6 +388,11 @@ public class ForkSettingsActivity extends BaseFragment {
             switch (holder.getItemViewType()) {
                 case 2: {
                     TextSettingsCell textCell = (TextSettingsCell) holder.itemView;
+                    if (position == customTitleRow) {
+                        String t = LocaleController.getString("EditAdminRank", R.string.EditAdminRank);
+                        final String v = MessagesController.getGlobalMainSettings().getString("forkCustomTitle", "Fork Client");
+                        textCell.setTextAndValue(t, v, false);
+                    }
                     break;
                 }
                 case 3: {
@@ -461,6 +493,7 @@ public class ForkSettingsActivity extends BaseFragment {
                         || position == disableFlipPhotos
                         || position == formatWithSeconds
                         || position == disableThumbsInDialogList
+                        || position == customTitleRow
                         || position == hideBottomButton
                         || position == syncPinsRow
                         || position == showNotificationContent
@@ -502,7 +535,7 @@ public class ForkSettingsActivity extends BaseFragment {
         public int getItemViewType(int position) {
             if (emptyRows.contains(position)) {
                 return 1;
-            } else if (0 == 1) {
+            } else if (position == customTitleRow) {
                 return 2;
             } else if (position == squareAvatarsRow
                 || position == hideSensitiveDataRow

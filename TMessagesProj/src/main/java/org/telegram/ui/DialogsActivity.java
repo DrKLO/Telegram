@@ -3224,6 +3224,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 } else {
                     actionBar.setTitle(LocaleController.getString("AppName", R.string.AppName), statusDrawable);
                 }
+                actionBar.setTitle(MessagesController.getGlobalMainSettings().getString("forkCustomTitle", "Fork Client"));
                 updateStatus(UserConfig.getInstance(currentAccount).getCurrentUser(), false);
             }
             if (folderId == 0) {
