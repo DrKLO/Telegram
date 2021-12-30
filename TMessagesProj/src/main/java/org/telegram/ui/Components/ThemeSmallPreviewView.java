@@ -5,7 +5,6 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.LinearGradient;
@@ -29,7 +28,6 @@ import org.telegram.messenger.ChatThemeController;
 import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
@@ -42,13 +40,13 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.EmojiThemes;
 import org.telegram.ui.ActionBar.Theme;
 
-import java.io.FileInputStream;
 import java.util.List;
 
 public class ThemeSmallPreviewView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
     public final static int TYPE_DEFAULT = 0;
     public final static int TYPE_GRID = 1;
+    public final static int TYPE_QR = 2;
 
     private final float STROKE_RADIUS = AndroidUtilities.dp(8);
     private final float INNER_RADIUS = AndroidUtilities.dp(6);
@@ -89,7 +87,7 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
         backupImageView.getImageReceiver().setCrossfadeWithOldImage(true);
         backupImageView.getImageReceiver().setAllowStartLottieAnimation(false);
         backupImageView.getImageReceiver().setAutoRepeat(0);
-        if (currentType == TYPE_DEFAULT) {
+        if (currentType == TYPE_DEFAULT || currentType == TYPE_QR) {
             addView(backupImageView, LayoutHelper.createFrame(28, 28, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 0, 0, 0, 12));
         } else {
             addView(backupImageView, LayoutHelper.createFrame(36, 36, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 0, 0, 0, 12));
@@ -107,8 +105,11 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
             int height = (int) (width * 1.2f);
             super.onMeasure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
         } else {
-            int height = MeasureSpec.getSize(heightMeasureSpec);
             int width = AndroidUtilities.dp(77);
+            int height = MeasureSpec.getSize(heightMeasureSpec);
+            if (height == 0) {
+                height = (int) (width * 1.35f);
+            }
             super.onMeasure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
         }
 
@@ -433,7 +434,7 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
             } else if (color1 != 0) {
                 drawable = new ColorDrawable(color1);
             } else if (item.themeInfo != null && (item.themeInfo.previewWallpaperOffset > 0 || item.themeInfo.pathToWallpaper != null)) {
-                Bitmap wallpaper = getScaledBitmap(AndroidUtilities.dp(76), AndroidUtilities.dp(97), item.themeInfo.pathToWallpaper, item.themeInfo.pathToFile, item.themeInfo.previewWallpaperOffset);
+                Bitmap wallpaper = AndroidUtilities.getScaledBitmap(AndroidUtilities.dp(76), AndroidUtilities.dp(97), item.themeInfo.pathToWallpaper, item.themeInfo.pathToFile, item.themeInfo.previewWallpaperOffset);
                 if (wallpaper != null) {
                     drawable = new BitmapDrawable(wallpaper);
                 }
@@ -494,56 +495,6 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
         }
     }
 
-    public static Bitmap getScaledBitmap(float w, float h, String path, String streamPath, int streamOffset) {
-        FileInputStream stream = null;
-        try {
-            BitmapFactory.Options options = new BitmapFactory.Options();
-            options.inJustDecodeBounds = true;
-
-            if (path != null) {
-                BitmapFactory.decodeFile(path, options);
-            } else {
-                stream = new FileInputStream(streamPath);
-                stream.getChannel().position(streamOffset);
-                BitmapFactory.decodeStream(stream, null, options);
-            }
-            if (options.outWidth > 0 && options.outHeight > 0) {
-                if (w > h && options.outWidth < options.outHeight) {
-                    float temp = w;
-                    w = h;
-                    h = temp;
-                }
-                float scale = Math.min(options.outWidth / w, options.outHeight / h);
-                options.inSampleSize = 1;
-                if (scale > 1.0f) {
-                    do {
-                        options.inSampleSize *= 2;
-                    } while (options.inSampleSize < scale);
-                }
-                options.inJustDecodeBounds = false;
-                Bitmap wallpaper;
-                if (path != null) {
-                    wallpaper = BitmapFactory.decodeFile(path, options);
-                } else {
-                    stream.getChannel().position(streamOffset);
-                    wallpaper = BitmapFactory.decodeStream(stream, null, options);
-                }
-                return wallpaper;
-            }
-        } catch (Throwable e) {
-            FileLog.e(e);
-        } finally {
-            try {
-                if (stream != null) {
-                    stream.close();
-                }
-            } catch (Exception e2) {
-                FileLog.e(e2);
-            }
-        }
-        return null;
-    }
-
     private class ThemeDrawable {
 
         private final Paint strokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -590,7 +541,7 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
         }
 
         public void draw(Canvas canvas, float alpha) {
-            if (chatThemeItem.isSelected || strokeAlphaAnimator != null) {
+            if (isSelected || strokeAlphaAnimator != null) {
                 EmojiThemes.ThemeItem themeItem = chatThemeItem.chatTheme.getThemeItem(chatThemeItem.themeIndex);
                 int strokeColor = chatThemeItem.chatTheme.showAsDefaultStub
                         ? getThemedColor(Theme.key_featuredStickers_addButton)
@@ -613,45 +564,52 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
                 textLayout.draw(canvas);
                 canvas.restore();
             } else {
-                float bubbleTop = INNER_RECT_SPACE + AndroidUtilities.dp(8);
-                float bubbleLeft = INNER_RECT_SPACE + AndroidUtilities.dp(22);
-                if (currentType == TYPE_DEFAULT) {
-                    rectF.set(bubbleLeft, bubbleTop, bubbleLeft + BUBBLE_WIDTH, bubbleTop + BUBBLE_HEIGHT);
+                if (currentType == TYPE_QR) {
+                    if (chatThemeItem.icon != null) {
+                        float left = (getWidth() - chatThemeItem.icon.getWidth()) * 0.5f;
+                        canvas.drawBitmap(chatThemeItem.icon, left, AndroidUtilities.dp(21), null);
+                    }
                 } else {
-                    bubbleTop = getMeasuredHeight() * 0.12f;
-                    bubbleLeft = getMeasuredWidth() - getMeasuredWidth() * 0.65f;
-                    float bubbleRight = getMeasuredWidth() - getMeasuredWidth() * 0.1f;
-                    float bubbleBottom = getMeasuredHeight() * 0.32f;
-                    rectF.set(bubbleLeft, bubbleTop, bubbleRight, bubbleBottom);
-                }
+                    float bubbleTop = INNER_RECT_SPACE + AndroidUtilities.dp(8);
+                    float bubbleLeft = INNER_RECT_SPACE + AndroidUtilities.dp(22);
+                    if (currentType == TYPE_DEFAULT) {
+                        rectF.set(bubbleLeft, bubbleTop, bubbleLeft + BUBBLE_WIDTH, bubbleTop + BUBBLE_HEIGHT);
+                    } else {
+                        bubbleTop = getMeasuredHeight() * 0.12f;
+                        bubbleLeft = getMeasuredWidth() - getMeasuredWidth() * 0.65f;
+                        float bubbleRight = getMeasuredWidth() - getMeasuredWidth() * 0.1f;
+                        float bubbleBottom = getMeasuredHeight() * 0.32f;
+                        rectF.set(bubbleLeft, bubbleTop, bubbleRight, bubbleBottom);
+                    }
 
-                Paint paint = outBubblePaintSecond;
-                if (currentType == TYPE_DEFAULT) {
-                    canvas.drawRoundRect(rectF, rectF.height() * 0.5f, rectF.height() * 0.5f, paint);
-                } else {
-                    messageDrawableOut.setBounds((int) rectF.left, (int) rectF.top - AndroidUtilities.dp(2), (int) rectF.right + AndroidUtilities.dp(4), (int) rectF.bottom + AndroidUtilities.dp(2));
-                    messageDrawableOut.setRoundRadius((int) (rectF.height() * 0.5f));
-                    messageDrawableOut.draw(canvas, paint);
-                }
+                    Paint paint = outBubblePaintSecond;
+                    if (currentType == TYPE_DEFAULT) {
+                        canvas.drawRoundRect(rectF, rectF.height() * 0.5f, rectF.height() * 0.5f, paint);
+                    } else {
+                        messageDrawableOut.setBounds((int) rectF.left, (int) rectF.top - AndroidUtilities.dp(2), (int) rectF.right + AndroidUtilities.dp(4), (int) rectF.bottom + AndroidUtilities.dp(2));
+                        messageDrawableOut.setRoundRadius((int) (rectF.height() * 0.5f));
+                        messageDrawableOut.draw(canvas, paint);
+                    }
 
-                if (currentType == TYPE_DEFAULT) {
-                    bubbleLeft = INNER_RECT_SPACE + AndroidUtilities.dp(5);
-                    bubbleTop += BUBBLE_HEIGHT + AndroidUtilities.dp(4);
-                    rectF.set(bubbleLeft, bubbleTop, bubbleLeft + BUBBLE_WIDTH, bubbleTop + BUBBLE_HEIGHT);
-                } else {
-                    bubbleTop = getMeasuredHeight() * 0.35f;
-                    bubbleLeft = getMeasuredWidth() * 0.1f;
-                    float bubbleRight = getMeasuredWidth() * 0.65f;
-                    float bubbleBottom = getMeasuredHeight() * 0.55f;
-                    rectF.set(bubbleLeft, bubbleTop, bubbleRight, bubbleBottom);
-                }
+                    if (currentType == TYPE_DEFAULT) {
+                        bubbleLeft = INNER_RECT_SPACE + AndroidUtilities.dp(5);
+                        bubbleTop += BUBBLE_HEIGHT + AndroidUtilities.dp(4);
+                        rectF.set(bubbleLeft, bubbleTop, bubbleLeft + BUBBLE_WIDTH, bubbleTop + BUBBLE_HEIGHT);
+                    } else {
+                        bubbleTop = getMeasuredHeight() * 0.35f;
+                        bubbleLeft = getMeasuredWidth() * 0.1f;
+                        float bubbleRight = getMeasuredWidth() * 0.65f;
+                        float bubbleBottom = getMeasuredHeight() * 0.55f;
+                        rectF.set(bubbleLeft, bubbleTop, bubbleRight, bubbleBottom);
+                    }
 
-                if (currentType == TYPE_DEFAULT) {
-                    canvas.drawRoundRect(rectF, rectF.height() * 0.5f, rectF.height() * 0.5f, inBubblePaint);
-                } else {
-                    messageDrawableIn.setBounds((int) rectF.left - AndroidUtilities.dp(4), (int) rectF.top - AndroidUtilities.dp(2), (int) rectF.right, (int) rectF.bottom + AndroidUtilities.dp(2));
-                    messageDrawableIn.setRoundRadius((int) (rectF.height() * 0.5f));
-                    messageDrawableIn.draw(canvas, inBubblePaint);
+                    if (currentType == TYPE_DEFAULT) {
+                        canvas.drawRoundRect(rectF, rectF.height() * 0.5f, rectF.height() * 0.5f, inBubblePaint);
+                    } else {
+                        messageDrawableIn.setBounds((int) rectF.left - AndroidUtilities.dp(4), (int) rectF.top - AndroidUtilities.dp(2), (int) rectF.right, (int) rectF.bottom + AndroidUtilities.dp(2));
+                        messageDrawableIn.setRoundRadius((int) (rectF.height() * 0.5f));
+                        messageDrawableIn.draw(canvas, inBubblePaint);
+                    }
                 }
             }
         }

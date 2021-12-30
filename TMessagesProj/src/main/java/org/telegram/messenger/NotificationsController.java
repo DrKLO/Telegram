@@ -1317,7 +1317,7 @@ public class NotificationsController extends BaseController {
                     }
                 }
             }
-            return messageObject.messageOwner.message;
+            return replaceSpoilers(messageObject);
         }
         long selfUsedId = getUserConfig().getClientUserId();
         if (fromId == 0) {
@@ -1766,13 +1766,13 @@ public class NotificationsController extends BaseController {
                 } else {
                     if (messageObject.isMediaEmpty()) {
                         if (!TextUtils.isEmpty(messageObject.messageOwner.message)) {
-                            return messageObject.messageOwner.message;
+                            return replaceSpoilers(messageObject);
                         } else {
                             return LocaleController.getString("Message", R.string.Message);
                         }
                     } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto) {
                         if (Build.VERSION.SDK_INT >= 19 && !TextUtils.isEmpty(messageObject.messageOwner.message)) {
-                            return "\uD83D\uDDBC " + messageObject.messageOwner.message;
+                            return "\uD83D\uDDBC " + replaceSpoilers(messageObject);
                         } else if (messageObject.messageOwner.media.ttl_seconds != 0) {
                             return LocaleController.getString("AttachDestructingPhoto", R.string.AttachDestructingPhoto);
                         } else {
@@ -1780,7 +1780,7 @@ public class NotificationsController extends BaseController {
                         }
                     } else if (messageObject.isVideo()) {
                         if (Build.VERSION.SDK_INT >= 19 && !TextUtils.isEmpty(messageObject.messageOwner.message)) {
-                            return "\uD83D\uDCF9 " + messageObject.messageOwner.message;
+                            return "\uD83D\uDCF9 " + replaceSpoilers(messageObject);
                         } else if (messageObject.messageOwner.media.ttl_seconds != 0) {
                             return LocaleController.getString("AttachDestructingVideo", R.string.AttachDestructingVideo);
                         } else {
@@ -1816,19 +1816,19 @@ public class NotificationsController extends BaseController {
                             }
                         } else if (messageObject.isGif()) {
                             if (Build.VERSION.SDK_INT >= 19 && !TextUtils.isEmpty(messageObject.messageOwner.message)) {
-                                return "\uD83C\uDFAC " + messageObject.messageOwner.message;
+                                return "\uD83C\uDFAC " + replaceSpoilers(messageObject);
                             } else {
                                 return LocaleController.getString("AttachGif", R.string.AttachGif);
                             }
                         } else {
                             if (Build.VERSION.SDK_INT >= 19 && !TextUtils.isEmpty(messageObject.messageOwner.message)) {
-                                return "\uD83D\uDCCE " + messageObject.messageOwner.message;
+                                return "\uD83D\uDCCE " + replaceSpoilers(messageObject);
                             } else {
                                 return LocaleController.getString("AttachDocument", R.string.AttachDocument);
                             }
                         }
                     } else if (!TextUtils.isEmpty(messageObject.messageText)) {
-                        return messageObject.messageText.toString();
+                        return replaceSpoilers(messageObject);
                     } else {
                         return LocaleController.getString("Message", R.string.Message);
                     }
@@ -1841,6 +1841,27 @@ public class NotificationsController extends BaseController {
             }
         }
         return null;
+    }
+
+    char[] spoilerChars = new char[] {
+            '⠌', '⡢', '⢑','⠨',
+    };
+
+    private String replaceSpoilers(MessageObject messageObject) {
+        String text = messageObject.messageOwner.message;
+        if (text == null || messageObject == null || messageObject.messageOwner == null || messageObject.messageOwner.entities == null) {
+            return null;
+        }
+        StringBuilder stringBuilder = new StringBuilder(text);
+        for (int i = 0; i < messageObject.messageOwner.entities.size(); i++) {
+            if (messageObject.messageOwner.entities.get(i) instanceof TLRPC.TL_messageEntitySpoiler) {
+                TLRPC.TL_messageEntitySpoiler spoiler = (TLRPC.TL_messageEntitySpoiler) messageObject.messageOwner.entities.get(i);
+                for (int j = 0; j < spoiler.length; j++) {
+                    stringBuilder.setCharAt(spoiler.offset + j, spoilerChars[j % spoilerChars.length]);
+                }
+            }
+        }
+        return stringBuilder.toString();
     }
 
     private String getStringForMessage(MessageObject messageObject, boolean shortMessage, boolean[] text, boolean[] preview) {

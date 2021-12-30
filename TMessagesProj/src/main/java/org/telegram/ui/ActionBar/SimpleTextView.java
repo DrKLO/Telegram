@@ -12,13 +12,17 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.LinearGradient;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
+import android.graphics.Region;
 import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.os.SystemClock;
 import android.text.Layout;
+import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.StaticLayout;
 import android.text.TextPaint;
@@ -31,6 +35,11 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.Components.EmptyStubSpan;
 import org.telegram.ui.Components.StaticLayoutEx;
+import org.telegram.ui.Components.spoilers.SpoilerEffect;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Stack;
 
 public class SimpleTextView extends View implements Drawable.Callback {
 
@@ -87,6 +96,10 @@ public class SimpleTextView extends View implements Drawable.Callback {
 
     private int minusWidth;
     private int fullTextMaxLines = 3;
+
+    private List<SpoilerEffect> spoilers = new ArrayList<>();
+    private Stack<SpoilerEffect> spoilersPool = new Stack<>();
+    private Path path = new Path();
 
     public SimpleTextView(Context context) {
         super(context);
@@ -294,6 +307,13 @@ public class SimpleTextView extends View implements Drawable.Callback {
                     }*/
                     layout = new StaticLayout(string, 0, string.length(), textPaint, scrollNonFitText ? AndroidUtilities.dp(2000) : width + AndroidUtilities.dp(8), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                 }
+
+                spoilersPool.addAll(spoilers);
+                spoilers.clear();
+                if (layout != null && layout.getText() instanceof Spannable) {
+                    SpoilerEffect.addSpoilers(this, layout, spoilersPool, spoilers);
+                }
+
                 calcOffset(width);
             } catch (Exception ignore) {
 
@@ -702,11 +722,36 @@ public class SimpleTextView extends View implements Drawable.Callback {
         if (fullAlpha > 0 && fullLayoutLeftOffset != 0) {
             canvas.save();
             canvas.translate(-fullLayoutLeftOffset * fullAlpha + fullLayoutLeftCharactersOffset * fullAlpha, 0);
+
+            canvas.save();
+            clipOutSpoilers(canvas);
             layout.draw(canvas);
             canvas.restore();
+
+            drawSpoilers(canvas);
+            canvas.restore();
         } else {
+            canvas.save();
+            clipOutSpoilers(canvas);
             layout.draw(canvas);
+            canvas.restore();
+
+            drawSpoilers(canvas);
         }
+    }
+
+    private void clipOutSpoilers(Canvas canvas) {
+        path.rewind();
+        for (SpoilerEffect eff : spoilers) {
+            Rect b = eff.getBounds();
+            path.addRect(b.left, b.top, b.right, b.bottom, Path.Direction.CW);
+        }
+        canvas.clipPath(path, Region.Op.DIFFERENCE);
+    }
+
+    private void drawSpoilers(Canvas canvas) {
+        for (SpoilerEffect eff : spoilers)
+            eff.draw(canvas);
     }
 
     private void updateScrollAnimation() {

@@ -112,7 +112,7 @@ public class DefaultThemesPreviewCell extends LinearLayout {
                 }
             }
 
-            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, info, true, null, accentId);
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, info, false, null, accentId);
 
             selectedPosition = position;
             for (int i = 0; i < adapter.items.size(); i++) {

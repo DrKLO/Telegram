@@ -20,8 +20,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.graphics.drawable.BitmapDrawable;
-import androidx.exifinterface.media.ExifInterface;
-
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -32,7 +30,7 @@ import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.util.SparseArray;
 
-import com.google.android.exoplayer2.util.Log;
+import androidx.exifinterface.media.ExifInterface;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -361,7 +359,7 @@ public class ImageLoader {
                         }
                     }
                 } catch (Exception e) {
-                    FileLog.e(e);
+                    FileLog.e(e, false);
                 }
                 httpConnectionStream = httpConnection.getInputStream();
 
@@ -853,7 +851,7 @@ public class ImageLoader {
                         float h_filter = Float.parseFloat(args[1]);
                         w = Math.min(512, (int) (w_filter * AndroidUtilities.density));
                         h = Math.min(512, (int) (h_filter * AndroidUtilities.density));
-                        if (w_filter <= 90 && h_filter <= 90) {
+                        if (w_filter <= 90 && h_filter <= 90 && !cacheImage.filter.contains("nolimit")) {
                             w = Math.min(w, 160);
                             h = Math.min(h, 160);
                             limitFps = true;

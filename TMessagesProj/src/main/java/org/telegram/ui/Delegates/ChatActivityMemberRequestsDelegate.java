@@ -78,7 +78,7 @@ public class ChatActivityMemberRequestsDelegate {
             avatarsView = new AvatarsImageView(fragment.getParentActivity(), false) {
                 @Override
                 protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                    int width = count == 0 ? 0 : (20 * (count - 1) + 24);
+                    int width = avatarsDarawable.count == 0 ? 0 : (20 * (avatarsDarawable.count - 1) + 24);
                     super.onMeasure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(width), MeasureSpec.EXACTLY), heightMeasureSpec);
                 }
             };

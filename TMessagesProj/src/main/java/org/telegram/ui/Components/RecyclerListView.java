@@ -25,6 +25,7 @@ import android.graphics.drawable.TransitionDrawable;
 import android.os.Build;
 import android.os.SystemClock;
 import android.text.Layout;
+import android.text.SpannableStringBuilder;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.util.SparseIntArray;
@@ -39,11 +40,17 @@ import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.ViewPropertyAnimator;
 import android.view.accessibility.AccessibilityEvent;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 
+import androidx.core.content.ContextCompat;
+import androidx.core.graphics.ColorUtils;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 
@@ -51,11 +58,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashSet;
-
-import androidx.core.content.ContextCompat;
-import androidx.core.graphics.ColorUtils;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 public class RecyclerListView extends RecyclerView {
 
@@ -106,7 +108,7 @@ public class RecyclerListView extends RecyclerView {
 
     public boolean scrollingByUser;
 
-    private GestureDetector gestureDetector;
+    private GestureDetectorFixDoubleTap gestureDetector;
     private View currentChildView;
     private int currentChildPosition;
     private boolean interceptedByChild;
@@ -148,6 +150,18 @@ public class RecyclerListView extends RecyclerView {
 
     protected final Theme.ResourcesProvider resourcesProvider;
 
+    private boolean accessibilityEnabled = true;
+
+    private AccessibilityDelegate accessibilityDelegate = new AccessibilityDelegate() {
+        @Override
+        public void onInitializeAccessibilityNodeInfo(View host, AccessibilityNodeInfo info) {
+            super.onInitializeAccessibilityNodeInfo(host, info);
+            if (host.isEnabled()) {
+                info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
+            }
+        }
+    };
+
     public FastScroll getFastScroll() {
         return fastScroll;
     }
@@ -157,6 +171,14 @@ public class RecyclerListView extends RecyclerView {
     }
 
     public interface OnItemClickListenerExtended {
+
+        default boolean hasDoubleTap(View view, int position) {
+            return false;
+        }
+
+        default void onDoubleTap(View view, int position, float x, float y) {
+        }
+
         void onItemClick(View view, int position, float x, float y);
     }
 
@@ -166,8 +188,12 @@ public class RecyclerListView extends RecyclerView {
 
     public interface OnItemLongClickListenerExtended {
         boolean onItemClick(View view, int position, float x, float y);
-        void onMove(float dx, float dy);
-        void onLongClickRelease();
+
+        default void onMove(float dx, float dy) {
+        }
+
+        default void onLongClickRelease() {
+        }
     }
 
     public interface OnInterceptTouchListener {
@@ -184,10 +210,13 @@ public class RecyclerListView extends RecyclerView {
 
     public abstract static class FastScrollAdapter extends SelectionAdapter {
         public abstract String getLetter(int position);
+
         public abstract void getPositionForScrollProgress(RecyclerListView listView, float progress, int[] position);
+
         public void onStartFastScroll() {
 
         }
+
         public void onFinishFastScroll(RecyclerListView listView) {
 
         }
@@ -203,6 +232,7 @@ public class RecyclerListView extends RecyclerView {
         public boolean fastScrollIsVisible(RecyclerListView listView) {
             return true;
         }
+
         public void onFastScrollSingleTap() {
 
         }
@@ -336,11 +366,17 @@ public class RecyclerListView extends RecyclerView {
         }
 
         public abstract int getSectionCount();
+
         public abstract int getCountForSection(int section);
+
         public abstract boolean isEnabled(ViewHolder holder, int section, int row);
+
         public abstract int getItemViewType(int section, int position);
+
         public abstract Object getItem(int section, int position);
+
         public abstract void onBindViewHolder(int section, int position, ViewHolder holder);
+
         public abstract View getSectionHeaderView(int section, View view);
     }
 
@@ -365,6 +401,13 @@ public class RecyclerListView extends RecyclerView {
         private boolean pressed;
         private StaticLayout letterLayout;
         private StaticLayout oldLetterLayout;
+        private StaticLayout outLetterLayout;
+        private StaticLayout inLetterLayout;
+        private StaticLayout stableLetterLayout;
+        private float replaceLayoutProgress = 1f;
+        private boolean fromTop;
+        private float lastLetterY;
+        private float fromWidth;
         private TextPaint letterPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         private String currentLetter;
         private Path path = new Path();
@@ -545,11 +588,41 @@ public class RecyclerListView extends RecyclerView {
                             }
                             letterLayout = null;
                         } else if (!newLetter.equals(currentLetter)) {
+                            currentLetter = newLetter;
                             if (type == LETTER_TYPE) {
                                 letterLayout = new StaticLayout(newLetter, letterPaint, 1000, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                             } else {
+                                outLetterLayout = letterLayout;
                                 int w = ((int) letterPaint.measureText(newLetter)) + 1;
                                 letterLayout = new StaticLayout(newLetter, letterPaint, w, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                                if (outLetterLayout != null) {
+                                    String[] newSplits = newLetter.split(" ");
+                                    String[] oldSplits = outLetterLayout.getText().toString().split(" ");
+                                    if (newSplits != null && oldSplits != null && newSplits.length == 2 && oldSplits.length == 2 && newSplits[1].equals(oldSplits[1])) {
+                                        String oldText = outLetterLayout.getText().toString();
+                                        SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(oldText);
+                                        spannableStringBuilder.setSpan(new EmptyStubSpan(), oldSplits[0].length(), oldText.length(), 0);
+                                        int oldW = ((int) letterPaint.measureText(oldText)) + 1;
+                                        outLetterLayout = new StaticLayout(spannableStringBuilder, letterPaint, oldW, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+
+                                        spannableStringBuilder = new SpannableStringBuilder(newLetter);
+                                        spannableStringBuilder.setSpan(new EmptyStubSpan(), newSplits[0].length(), newLetter.length(), 0);
+                                        inLetterLayout = new StaticLayout(spannableStringBuilder, letterPaint, w, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+
+                                        spannableStringBuilder = new SpannableStringBuilder(newLetter);
+                                        spannableStringBuilder.setSpan(new EmptyStubSpan(), 0, newSplits[0].length(), 0);
+                                        stableLetterLayout = new StaticLayout(spannableStringBuilder, letterPaint, w, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                                    } else {
+                                        inLetterLayout = letterLayout;
+                                        stableLetterLayout = null;
+                                    }
+
+                                    fromWidth = outLetterLayout.getWidth();
+                                    replaceLayoutProgress = 0f;
+                                    fromTop = getProgress() > lastLetterY;
+                                }
+
+                                lastLetterY = getProgress();
                             }
                             oldLetterLayout = null;
                             if (letterLayout.getLineCount() > 0) {
@@ -660,19 +733,61 @@ public class RecyclerListView extends RecyclerView {
                     float cy = rect.centerY();
                     float x = rect.left - AndroidUtilities.dp(30) * bubbleProgress - AndroidUtilities.dp(8);
                     float r = letterLayout.getHeight() / 2f + AndroidUtilities.dp(6);
-                    rect.set(x - letterLayout.getWidth() - AndroidUtilities.dp(36), cy - letterLayout.getHeight() / 2f - AndroidUtilities.dp(8),  x - AndroidUtilities.dp(12), cy + letterLayout.getHeight() / 2f + AndroidUtilities.dp(8));
+                    float width = replaceLayoutProgress * letterLayout.getWidth() + fromWidth * (1f - replaceLayoutProgress);
+                    rect.set(x - width - AndroidUtilities.dp(36), cy - letterLayout.getHeight() / 2f - AndroidUtilities.dp(8),  x - AndroidUtilities.dp(12), cy + letterLayout.getHeight() / 2f + AndroidUtilities.dp(8));
 
                     int oldAlpha1 = paint2.getAlpha();
                     int oldAlpha2 = letterPaint.getAlpha();
                     paint2.setAlpha((int) (oldAlpha1 * floatingDateProgress));
-                    letterPaint.setAlpha((int) (oldAlpha2 * floatingDateProgress));
+
                     fastScrollBackgroundDrawable.setBounds((int) rect.left, (int) rect.top, (int) rect.right, (int) rect.bottom);
                     fastScrollBackgroundDrawable.setAlpha((int) (255 * floatingDateProgress));
                     fastScrollBackgroundDrawable.draw(canvas);
-                    canvas.save();
-                    canvas.translate(x - letterLayout.getWidth() - AndroidUtilities.dp(24), cy - letterLayout.getHeight() / 2f);
-                    letterLayout.draw(canvas);
-                    canvas.restore();
+
+                    if (replaceLayoutProgress != 1f) {
+                        replaceLayoutProgress += 16f / 150f;
+                        if (replaceLayoutProgress > 1f) {
+                            replaceLayoutProgress = 1f;
+                        } else {
+                            invalidate();
+                        }
+                    }
+
+                    if (replaceLayoutProgress != 1f) {
+                        canvas.save();
+                        rect.inset(AndroidUtilities.dp(4), AndroidUtilities.dp(2));
+                        canvas.clipRect(rect);
+                        if (outLetterLayout != null) {
+                            letterPaint.setAlpha((int) (oldAlpha2 * floatingDateProgress * (1f - replaceLayoutProgress)));
+                            canvas.save();
+                            canvas.translate(x - outLetterLayout.getWidth() - AndroidUtilities.dp(24), cy - outLetterLayout.getHeight() / 2f + (fromTop ? -1 : 1) * AndroidUtilities.dp(15) * replaceLayoutProgress);
+                            outLetterLayout.draw(canvas);
+                            canvas.restore();
+                        }
+
+                        if (inLetterLayout != null) {
+                            letterPaint.setAlpha((int) (oldAlpha2 * floatingDateProgress * replaceLayoutProgress));
+                            canvas.save();
+                            canvas.translate(x - inLetterLayout.getWidth() - AndroidUtilities.dp(24), cy - inLetterLayout.getHeight() / 2f + (fromTop ? 1 : -1) * AndroidUtilities.dp(15) * (1f - replaceLayoutProgress));
+                            inLetterLayout.draw(canvas);
+                            canvas.restore();
+                        }
+
+                        if (stableLetterLayout != null) {
+                            letterPaint.setAlpha((int) (oldAlpha2 * floatingDateProgress));
+                            canvas.save();
+                            canvas.translate(x - stableLetterLayout.getWidth() - AndroidUtilities.dp(24), cy - stableLetterLayout.getHeight() / 2f);
+                            stableLetterLayout.draw(canvas);
+                            canvas.restore();
+                        }
+                        canvas.restore();
+                    } else {
+                        letterPaint.setAlpha((int) (oldAlpha2 * floatingDateProgress));
+                        canvas.save();
+                        canvas.translate(x - letterLayout.getWidth() - AndroidUtilities.dp(24), cy - letterLayout.getHeight() / 2f + AndroidUtilities.dp(15) * (1f - replaceLayoutProgress));
+                        letterLayout.draw(canvas);
+                        canvas.restore();
+                    }
 
                     paint2.setAlpha(oldAlpha1);
                     letterPaint.setAlpha(oldAlpha2);
@@ -788,14 +903,50 @@ public class RecyclerListView extends RecyclerView {
     private class RecyclerListViewItemClickListener implements OnItemTouchListener {
 
         public RecyclerListViewItemClickListener(Context context) {
-            gestureDetector = new GestureDetector(context, new GestureDetector.OnGestureListener() {
+            gestureDetector = new GestureDetectorFixDoubleTap(context, new GestureDetector.SimpleOnGestureListener() {
+                private View doubleTapView;
+
                 @Override
                 public boolean onSingleTapUp(MotionEvent e) {
-                    if (currentChildView != null && (onItemClickListener != null || onItemClickListenerExtended != null)) {
+                    if (currentChildView != null) {
+                        if (onItemClickListenerExtended != null && onItemClickListenerExtended.hasDoubleTap(currentChildView, currentChildPosition)) {
+                            doubleTapView = currentChildView;
+                        } else {
+                            onPressItem(currentChildView, e);
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+
+                @Override
+                public boolean onSingleTapConfirmed(MotionEvent e) {
+                    if (doubleTapView != null && onItemClickListenerExtended != null) {
+                        if (onItemClickListenerExtended.hasDoubleTap(doubleTapView, currentChildPosition)) {
+                            onPressItem(doubleTapView, e);
+                            doubleTapView = null;
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+
+                @Override
+                public boolean onDoubleTap(MotionEvent e) {
+                    if (doubleTapView != null && onItemClickListenerExtended != null && onItemClickListenerExtended.hasDoubleTap(doubleTapView, currentChildPosition)) {
+                        onItemClickListenerExtended.onDoubleTap(doubleTapView, currentChildPosition, e.getX(), e.getY());
+                        doubleTapView = null;
+                        return true;
+                    }
+                    return false;
+                }
+
+                private void onPressItem(View cv, MotionEvent e) {
+                    if (cv != null && (onItemClickListener != null || onItemClickListenerExtended != null)) {
                         final float x = e.getX();
                         final float y = e.getY();
-                        onChildPressed(currentChildView, x, y, true);
-                        final View view = currentChildView;
+                        onChildPressed(cv, x, y, true);
+                        final View view = cv;
                         final int position = currentChildPosition;
                         if (instantClick && position != -1) {
                             view.playSoundEffect(SoundEffectConstants.CLICK);
@@ -830,15 +981,13 @@ public class RecyclerListView extends RecyclerView {
                         }, ViewConfiguration.getPressedStateDuration());
 
                         if (selectChildRunnable != null) {
-                            View pressedChild = currentChildView;
                             AndroidUtilities.cancelRunOnUIThread(selectChildRunnable);
                             selectChildRunnable = null;
                             currentChildView = null;
                             interceptedByChild = false;
-                            removeSelection(pressedChild, e);
+                            removeSelection(cv, e);
                         }
                     }
-                    return true;
                 }
 
                 @Override
@@ -863,21 +1012,6 @@ public class RecyclerListView extends RecyclerView {
 
                 @Override
                 public boolean onDown(MotionEvent e) {
-                    return false;
-                }
-
-                @Override
-                public void onShowPress(MotionEvent e) {
-
-                }
-
-                @Override
-                public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
-                    return false;
-                }
-
-                @Override
-                public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
                     return false;
                 }
             });
@@ -1877,9 +2011,13 @@ public class RecyclerListView extends RecyclerView {
             ViewHolder holder = findContainingViewHolder(child);
             if (holder != null) {
                 child.setEnabled(((SelectionAdapter) getAdapter()).isEnabled(holder));
+                if (accessibilityEnabled) {
+                    child.setAccessibilityDelegate(accessibilityDelegate);
+                }
             }
         } else {
             child.setEnabled(false);
+            child.setAccessibilityDelegate(null);
         }
         super.onChildAttachedToWindow(child);
     }
@@ -2171,11 +2309,12 @@ public class RecyclerListView extends RecyclerView {
                 y = event.getY();
                 onFocus = true;
                 parent.requestDisallowInterceptTouchEvent(true);
-            } if (event.getAction() == MotionEvent.ACTION_MOVE) {
+            }
+            if (event.getAction() == MotionEvent.ACTION_MOVE) {
                 float dx = (x - event.getX());
                 float dy = (y - event.getY());
                 float touchSlop = ViewConfiguration.get(v.getContext()).getScaledTouchSlop();
-                if (onFocus && Math.sqrt(dx * dx + dy * dy) >touchSlop) {
+                if (onFocus && Math.sqrt(dx * dx + dy * dy) > touchSlop) {
                     onFocus = false;
                     parent.requestDisallowInterceptTouchEvent(false);
                 }
@@ -2215,7 +2354,7 @@ public class RecyclerListView extends RecyclerView {
         if (fastScroll != null && fastScroll.pressed) {
             return false;
         }
-        if (multiSelectionGesture && e.getAction() != MotionEvent.ACTION_DOWN &&e.getAction() != MotionEvent.ACTION_UP && e.getAction() != MotionEvent.ACTION_CANCEL) {
+        if (multiSelectionGesture && e.getAction() != MotionEvent.ACTION_DOWN && e.getAction() != MotionEvent.ACTION_UP && e.getAction() != MotionEvent.ACTION_CANCEL) {
             if (lastX == Float.MAX_VALUE && lastY == Float.MAX_VALUE) {
                 lastX = e.getX();
                 lastY = e.getY();
@@ -2384,5 +2523,9 @@ public class RecyclerListView extends RecyclerView {
 
     public void setItemsEnterAnimator(RecyclerItemsEnterAnimator itemsEnterAnimator) {
         this.itemsEnterAnimator = itemsEnterAnimator;
+    }
+
+    public void setAccessibilityEnabled(boolean accessibilityEnabled) {
+        this.accessibilityEnabled = accessibilityEnabled;
     }
 }

@@ -1,8 +1,6 @@
 package org.telegram.ui;
 
 import android.content.Context;
-import android.graphics.Canvas;
-import android.graphics.ColorFilter;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
@@ -21,23 +19,19 @@ import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.exoplayer2.util.Log;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
-import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.RequestDelegate;
-import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AvatarDrawable;
+import org.telegram.ui.Components.AvatarsDarawable;
 import org.telegram.ui.Components.AvatarsImageView;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.FlickerLoadingView;
@@ -47,7 +41,6 @@ import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Vector;
 
 public class MessageSeenView extends FrameLayout {
 
@@ -79,7 +72,7 @@ public class MessageSeenView extends FrameLayout {
         addView(titleView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 40, 0, 62, 0));
 
         avatarsImageView = new AvatarsImageView(context, false);
-        avatarsImageView.setStyle(AvatarsImageView.STYLE_MESSAGE_SEEN);
+        avatarsImageView.setStyle(AvatarsDarawable.STYLE_MESSAGE_SEEN);
         addView(avatarsImageView, LayoutHelper.createFrame(24 + 12 + 12 + 8, LayoutHelper.MATCH_PARENT, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 0, 0));
 
         titleView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem));
@@ -102,7 +95,6 @@ public class MessageSeenView extends FrameLayout {
         }
         long finalFromId = fromId;
         ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-            FileLog.e("MessageSeenView request completed");
             if (error == null) {
                 TLRPC.Vector vector = (TLRPC.Vector) response;
                 ArrayList<Long> unknownUsers = new ArrayList<>();
@@ -227,7 +219,11 @@ public class MessageSeenView extends FrameLayout {
         if (peerIds.size() == 1 && users.get(0) != null) {
             titleView.setText(ContactsController.formatName(users.get(0).first_name, users.get(0).last_name));
         } else {
-            titleView.setText(LocaleController.formatPluralString(isVoice ? "MessagePlayed" : "MessageSeen", peerIds.size()));
+            if (peerIds.size() == 0) {
+                titleView.setText(LocaleController.getString(LocaleController.getString("NobodyViewed", R.string.NobodyViewed)));
+            } else {
+                titleView.setText(LocaleController.formatPluralString(isVoice ? "MessagePlayed" : "MessageSeen", peerIds.size()));
+            }
         }
         titleView.animate().alpha(1f).setDuration(220).start();
         avatarsImageView.animate().alpha(1f).setDuration(220).start();

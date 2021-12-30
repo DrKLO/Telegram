@@ -340,35 +340,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
                     isExternalStorageManager = Environment.isExternalStorageManager();
                 }
                 if (!BuildVars.NO_SCOPED_STORAGE && (item.icon == R.drawable.files_storage || item.icon == R.drawable.files_internal) && !isExternalStorageManager) {
-                    if (SharedConfig.dontAskManageStorage) {
-                        delegate.startDocumentSelectActivity();
-                    } else {
-                        AlertDialog.Builder builder = new AlertDialog.Builder(context);
-                        builder.setTopImage(R.drawable.doc_big, Theme.getColor(Theme.key_dialogTopBackground));
-                        builder.setMessage(AndroidUtilities.replaceTags(LocaleController.getString("ManageAllFilesRational", R.string.ManageAllFilesRational)));
-
-                        TextCheckBoxCell textCheckBoxCell = new TextCheckBoxCell(context, true, true);
-                        textCheckBoxCell.setTextAndCheck(LocaleController.getString("DontAskAgain", R.string.DontAskAgain), false, false);
-                        textCheckBoxCell.setOnClickListener(new OnClickListener() {
-                            @Override
-                            public void onClick(View view) {
-                                textCheckBoxCell.setChecked(!textCheckBoxCell.isChecked());
-                            }
-                        });
-                        builder.setView(textCheckBoxCell);
-
-                        builder.setPositiveButton(LocaleController.getString("Allow", R.string.Allow), (i1, i2) -> {
-                            Uri uri = Uri.parse("package:" + BuildConfig.APPLICATION_ID);
-                            context.startActivity(new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, uri));
-                        });
-                        builder.setNegativeButton(LocaleController.getString("UseFileManger", R.string.UseFileManger), (i1, i2) -> {
-                            if (textCheckBoxCell.isChecked()) {
-                                SharedConfig.setDontAskManageStorage(true);
-                            }
-                            delegate.startDocumentSelectActivity();
-                        });
-                        builder.show();
-                    }
+                    delegate.startDocumentSelectActivity();
                 } else if (file == null) {
                     if (item.icon == R.drawable.files_gallery) {
                         HashMap<Object, Object> selectedPhotos = new HashMap<>();

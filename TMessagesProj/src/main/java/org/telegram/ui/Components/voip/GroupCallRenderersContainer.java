@@ -1,5 +1,8 @@
 package org.telegram.ui.Components.voip;
 
+import static org.telegram.ui.GroupCallActivity.TRANSITION_DURATION;
+import static org.telegram.ui.GroupCallActivity.isLandscapeMode;
+
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ObjectAnimator;
@@ -42,6 +45,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.AvatarsDarawable;
 import org.telegram.ui.Components.AvatarsImageView;
 import org.telegram.ui.Components.CrossOutDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -52,9 +56,6 @@ import org.telegram.ui.Components.UndoView;
 import org.telegram.ui.GroupCallActivity;
 
 import java.util.ArrayList;
-
-import static org.telegram.ui.GroupCallActivity.TRANSITION_DURATION;
-import static org.telegram.ui.GroupCallActivity.isLandscapeMode;
 
 @SuppressLint("ViewConstructor")
 public class GroupCallRenderersContainer extends FrameLayout {
@@ -287,7 +288,7 @@ public class GroupCallRenderersContainer extends FrameLayout {
         };
 
         speakingMembersAvatars = new AvatarsImageView(context, true);
-        speakingMembersAvatars.setStyle(AvatarsImageView.STYLE_GROUP_CALL_TOOLTIP);
+        speakingMembersAvatars.setStyle(AvatarsDarawable.STYLE_GROUP_CALL_TOOLTIP);
 
         speakingMembersToast.setClipChildren(false);
         speakingMembersToast.setClipToPadding(false);

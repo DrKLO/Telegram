@@ -16,6 +16,7 @@ import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
@@ -98,5 +99,12 @@ public class DrawerActionCell extends FrameLayout {
         } catch (Throwable e) {
             FileLog.e(e);
         }
+    }
+
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
+        info.addAction(AccessibilityNodeInfo.ACTION_LONG_CLICK);
     }
 }

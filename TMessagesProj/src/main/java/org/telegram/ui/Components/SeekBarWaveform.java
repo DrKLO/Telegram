@@ -54,7 +54,6 @@ public class SeekBarWaveform {
             paintOuter.setStrokeWidth(AndroidUtilities.dpf2(2));
             paintInner.setStrokeCap(Paint.Cap.ROUND);
             paintOuter.setStrokeCap(Paint.Cap.ROUND);
-
         }
     }
 

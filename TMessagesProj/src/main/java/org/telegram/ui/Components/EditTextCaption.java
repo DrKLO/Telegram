@@ -126,6 +126,12 @@ public class EditTextCaption extends EditTextBoldCursor {
         applyTextStyleToSelection(new TextStyleSpan(run));
     }
 
+    public void makeSelectedSpoiler() {
+        TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
+        run.flags |= TextStyleSpan.FLAG_STYLE_SPOILER;
+        applyTextStyleToSelection(new TextStyleSpan(run));
+    }
+
     public void makeSelectedItalic() {
         TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
         run.flags |= TextStyleSpan.FLAG_STYLE_ITALIC;
@@ -360,6 +366,9 @@ public class EditTextCaption extends EditTextBoldCursor {
         } else if (itemId == R.id.menu_underline) {
             makeSelectedUnderline();
             return true;
+        } else if (itemId == R.id.menu_spoiler) {
+            makeSelectedSpoiler();
+            return true;
         }
         return false;
     }
@@ -475,6 +484,7 @@ public class EditTextCaption extends EditTextBoldCursor {
             }
         }
         if (hasSelection()) {
+            infoCompat.addAction(new AccessibilityNodeInfoCompat.AccessibilityActionCompat(R.id.menu_spoiler, LocaleController.getString("Spoiler", R.string.Spoiler)));
             infoCompat.addAction(new AccessibilityNodeInfoCompat.AccessibilityActionCompat(R.id.menu_bold, LocaleController.getString("Bold", R.string.Bold)));
             infoCompat.addAction(new AccessibilityNodeInfoCompat.AccessibilityActionCompat(R.id.menu_italic, LocaleController.getString("Italic", R.string.Italic)));
             infoCompat.addAction(new AccessibilityNodeInfoCompat.AccessibilityActionCompat(R.id.menu_mono, LocaleController.getString("Mono", R.string.Mono)));

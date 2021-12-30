@@ -57,7 +57,7 @@ public class MotionBackgroundDrawable extends Drawable {
 
     private boolean isPreview;
 
-    private float posAnimationProgress = 1.0f;
+    public float posAnimationProgress = 1.0f;
     private int phase;
 
     private RectF rect = new RectF();
@@ -102,6 +102,9 @@ public class MotionBackgroundDrawable extends Drawable {
 
     private ColorFilter legacyBitmapColorFilter;
     private int legacyBitmapColor;
+
+    private boolean isIndeterminateAnimation;
+    private Paint overrideBitmapPaint;
 
     public MotionBackgroundDrawable() {
         super();
@@ -587,7 +590,7 @@ public class MotionBackgroundDrawable extends Drawable {
                     gradientDrawable.draw(canvas);
                 } else {
                     rect.set(x, y, x + width, y + height);
-                    canvas.drawBitmap(currentBitmap, null, rect, paint);
+                    canvas.drawBitmap(currentBitmap, null, rect, overrideBitmapPaint != null ? overrideBitmapPaint : paint);
                 }
             }
 
@@ -611,7 +614,7 @@ public class MotionBackgroundDrawable extends Drawable {
         updateAnimation();
     }
 
-    private void updateAnimation() {
+    public void updateAnimation() {
         long newTime = SystemClock.elapsedRealtime();
         long dt = newTime - lastUpdateTime;
         if (dt > 20) {
@@ -622,79 +625,94 @@ public class MotionBackgroundDrawable extends Drawable {
             return;
         }
 
+        if (isIndeterminateAnimation && posAnimationProgress == 1.0f) {
+            posAnimationProgress = 0f;
+        }
         if (posAnimationProgress < 1.0f) {
             float progress;
-            if (rotatingPreview) {
-                int stageBefore;
-                float progressBefore = interpolator.getInterpolation(posAnimationProgress);
-                if (progressBefore <= 0.25f) {
-                    stageBefore = 0;
-                } else if (progressBefore <= 0.5f) {
-                    stageBefore = 1;
-                } else if (progressBefore <= 0.75f) {
-                    stageBefore = 2;
-                } else {
-                    stageBefore = 3;
+            boolean isNeedGenerateGradient = postInvalidateParent || rotatingPreview;
+            if (isIndeterminateAnimation) {
+                posAnimationProgress += dt / 12000f;
+                if (posAnimationProgress >= 1.0f) {
+                    posAnimationProgress = 0.0f;
                 }
-                posAnimationProgress += dt / (rotationBack ? 1000.0f : 2000.0f);
-                if (posAnimationProgress > 1.0f) {
-                    posAnimationProgress = 1.0f;
-                }
-                progress = interpolator.getInterpolation(posAnimationProgress);
-                if (stageBefore == 0 && progress > 0.25f ||
-                        stageBefore == 1 && progress > 0.5f ||
-                        stageBefore == 2 && progress > 0.75f) {
-                    if (rotationBack) {
-                        phase++;
-                        if (phase > 7) {
-                            phase = 0;
-                        }
-                    } else {
-                        phase--;
-                        if (phase < 0) {
-                            phase = 7;
-                        }
-                    }
-                }
-                if (progress <= 0.25f) {
-                    progress /= 0.25f;
-                } else if (progress <= 0.5f) {
-                    progress = (progress - 0.25f) / 0.25f;
-                } else if (progress <= 0.75f) {
-                    progress = (progress - 0.5f) / 0.25f;
-                } else {
-                    progress = (progress - 0.75f) / 0.25f;
-                }
-                if (rotationBack) {
-                    float prevProgress = progress;
-                    progress = 1.0f - progress;
-                    if (posAnimationProgress >= 1.0f) {
-                        phase++;
-                        if (phase > 7) {
-                            phase = 0;
-                        }
-                        progress = 1.0f;
-                    }
-                }
+                float progressPerPhase = 1f / 8f;
+                phase = (int) (posAnimationProgress / progressPerPhase);
+                progress = 1f - (posAnimationProgress - phase * progressPerPhase) / progressPerPhase;
+                isNeedGenerateGradient = true;
             } else {
-                posAnimationProgress += dt / (fastAnimation ? 300.0f : 500.0f);
-                if (posAnimationProgress > 1.0f) {
-                    posAnimationProgress = 1.0f;
-                }
-                progress = interpolator.getInterpolation(posAnimationProgress);
-                if (rotationBack) {
-                    progress = 1.0f - progress;
-                    if (posAnimationProgress >= 1.0f) {
-                        phase++;
-                        if (phase > 7) {
-                            phase = 0;
+                if (rotatingPreview) {
+                    int stageBefore;
+                    float progressBefore = interpolator.getInterpolation(posAnimationProgress);
+                    if (progressBefore <= 0.25f) {
+                        stageBefore = 0;
+                    } else if (progressBefore <= 0.5f) {
+                        stageBefore = 1;
+                    } else if (progressBefore <= 0.75f) {
+                        stageBefore = 2;
+                    } else {
+                        stageBefore = 3;
+                    }
+                    posAnimationProgress += dt / (rotationBack ? 1000.0f : 2000.0f);
+                    if (posAnimationProgress > 1.0f) {
+                        posAnimationProgress = 1.0f;
+                    }
+                    progress = interpolator.getInterpolation(posAnimationProgress);
+                    if (stageBefore == 0 && progress > 0.25f ||
+                            stageBefore == 1 && progress > 0.5f ||
+                            stageBefore == 2 && progress > 0.75f) {
+                        if (rotationBack) {
+                            phase++;
+                            if (phase > 7) {
+                                phase = 0;
+                            }
+                        } else {
+                            phase--;
+                            if (phase < 0) {
+                                phase = 7;
+                            }
                         }
-                        progress = 1.0f;
+                    }
+                    if (progress <= 0.25f) {
+                        progress /= 0.25f;
+                    } else if (progress <= 0.5f) {
+                        progress = (progress - 0.25f) / 0.25f;
+                    } else if (progress <= 0.75f) {
+                        progress = (progress - 0.5f) / 0.25f;
+                    } else {
+                        progress = (progress - 0.75f) / 0.25f;
+                    }
+                    if (rotationBack) {
+                        float prevProgress = progress;
+                        progress = 1.0f - progress;
+                        if (posAnimationProgress >= 1.0f) {
+                            phase++;
+                            if (phase > 7) {
+                                phase = 0;
+                            }
+                            progress = 1.0f;
+                        }
+                    }
+                } else {
+                    posAnimationProgress += dt / (fastAnimation ? 300.0f : 500.0f);
+                    if (posAnimationProgress > 1.0f) {
+                        posAnimationProgress = 1.0f;
+                    }
+                    progress = interpolator.getInterpolation(posAnimationProgress);
+                    if (rotationBack) {
+                        progress = 1.0f - progress;
+                        if (posAnimationProgress >= 1.0f) {
+                            phase++;
+                            if (phase > 7) {
+                                phase = 0;
+                            }
+                            progress = 1.0f;
+                        }
                     }
                 }
             }
 
-            if (postInvalidateParent || rotatingPreview) {
+            if (isNeedGenerateGradient) {
                 Utilities.generateGradient(currentBitmap, true, phase, progress, currentBitmap.getWidth(), currentBitmap.getHeight(), currentBitmap.getRowBytes(), colors);
                 invalidateLegacy = true;
             } else {
@@ -740,5 +758,13 @@ public class MotionBackgroundDrawable extends Drawable {
 
     public boolean isOneColor() {
         return colors[0] == colors[1] && colors[0] == colors[2] && colors[0] == colors[3];
+    }
+
+    public void setIndeterminateAnimation(boolean isIndeterminateAnimation) {
+        this.isIndeterminateAnimation = isIndeterminateAnimation;
+    }
+
+    public void setOverrideBitmapPaint(Paint overrideBitmapPaint) {
+        this.overrideBitmapPaint = overrideBitmapPaint;
     }
 }

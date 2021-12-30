@@ -701,6 +701,9 @@ public class LoginActivity extends BaseFragment {
             return;
         }
         if (showDoneAnimation[currentDoneType] != null) {
+            if (animated) {
+                showDoneAnimation[currentDoneType].removeAllListeners();
+            }
             showDoneAnimation[currentDoneType].cancel();
         }
         doneButtonVisible[currentDoneType] = show;
@@ -708,7 +711,10 @@ public class LoginActivity extends BaseFragment {
             showDoneAnimation[currentDoneType] = new AnimatorSet();
             if (show) {
                 if (floating) {
-                    floatingButtonContainer.setVisibility(View.VISIBLE);
+                    if (floatingButtonContainer.getVisibility() != View.VISIBLE) {
+                        floatingButtonContainer.setTranslationY(AndroidUtilities.dpf2(70f));
+                        floatingButtonContainer.setVisibility(View.VISIBLE);
+                    }
                     showDoneAnimation[currentDoneType].play(ObjectAnimator.ofFloat(floatingButtonContainer, View.TRANSLATION_Y, 0f));
                 } else {
                     doneItem.setVisibility(View.VISIBLE);

@@ -77,8 +77,6 @@ import androidx.recyclerview.widget.LinearSmoothScrollerCustom;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
 
-import com.google.android.exoplayer2.util.Log;
-
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -166,6 +164,7 @@ import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.RadialProgress2;
 import org.telegram.ui.Components.RecyclerAnimationScrollHelper;
+import org.telegram.ui.Components.RecyclerItemsEnterAnimator;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SearchViewPager;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
@@ -173,7 +172,6 @@ import org.telegram.ui.Components.StickersAlert;
 import org.telegram.ui.Components.SwipeGestureSettingsView;
 import org.telegram.ui.Components.UndoView;
 import org.telegram.ui.Components.ViewPagerFixed;
-import org.telegram.ui.Components.RecyclerItemsEnterAnimator;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -1856,6 +1854,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             accountInstance.getMediaDataController().loadRecents(MediaDataController.TYPE_FAVE, false, true, false);
             accountInstance.getMediaDataController().loadRecents(MediaDataController.TYPE_GREETINGS, false, true, false);
             accountInstance.getMediaDataController().checkFeaturedStickers();
+            accountInstance.getMediaDataController().checkReactions();
             for (String emoji : messagesController.diceEmojies) {
                 accountInstance.getMediaDataController().loadStickersByEmojiOrName(emoji, true, true);
             }
@@ -2524,6 +2523,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             viewPage.addView(viewPage.progressView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
 
             viewPage.listView = new DialogsRecyclerView(context, viewPage);
+            viewPage.listView.setAccessibilityEnabled(false);
             viewPage.listView.setAnimateEmptyView(true, 0);
             viewPage.listView.setClipToPadding(false);
             viewPage.listView.setPivotY(0);

@@ -58,11 +58,13 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.messenger.camera.CameraController;
@@ -2507,15 +2509,17 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
     }
 
     @Override
-    void applyCaption(String text) {
+    void applyCaption(CharSequence text) {
         int imageId = (Integer) selectedPhotosOrder.get(0);
         Object entry = selectedPhotos.get(imageId);
         if (entry instanceof MediaController.PhotoEntry) {
             MediaController.PhotoEntry photoEntry = (MediaController.PhotoEntry) entry;
             photoEntry.caption = text;
+            photoEntry.entities = MediaDataController.getInstance(UserConfig.selectedAccount).getEntities(new CharSequence[] {text}, false);
         } else if (entry instanceof MediaController.SearchImage) {
             MediaController.SearchImage searchImage = (MediaController.SearchImage) entry;
             searchImage.caption = text;
+            searchImage.entities = MediaDataController.getInstance(UserConfig.selectedAccount).getEntities(new CharSequence[] {text}, false);
         }
     }
 

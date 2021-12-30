@@ -883,14 +883,14 @@ public class ConnectionsManager extends BaseController {
                 }
                 done = true;
             } catch (Throwable e) {
-                FileLog.e(e);
+                FileLog.e(e, false);
             } finally {
                 try {
                     if (httpConnectionStream != null) {
                         httpConnectionStream.close();
                     }
                 } catch (Throwable e) {
-                    FileLog.e(e);
+                    FileLog.e(e, false);
                 }
                 try {
                     if (outbuf != null) {
@@ -907,7 +907,7 @@ public class ConnectionsManager extends BaseController {
                     addresses.add(address.getHostAddress());
                     return new ResolvedDomain(addresses, SystemClock.elapsedRealtime());
                 } catch (Exception e) {
-                    FileLog.e(e);
+                    FileLog.e(e, false);
                 }
             }
             return null;
