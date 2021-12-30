@@ -186,22 +186,18 @@ public class EmojiThemes {
         return themeItem;
     }
 
-    public static EmojiThemes createHome() {
+    public static EmojiThemes createHomeQrTheme() {
         EmojiThemes themeItem = new EmojiThemes();
         themeItem.emoji = "\uD83C\uDFE0";
 
         ThemeItem blue = new ThemeItem();
-        blue.themeInfo = getDefaultThemeInfo(false);
-        if (blue.themeInfo.getKey().equals("Blue")) {
-            blue.accentId = 99;
-        }
+        blue.themeInfo = Theme.getTheme("Blue");
+        blue.accentId = 99;
         themeItem.items.add(blue);
 
         ThemeItem nightBlue = new ThemeItem();
-        nightBlue.themeInfo = getDefaultThemeInfo(true);
-        if (nightBlue.themeInfo.getKey().equals("Night")) {
-            nightBlue.accentId = 0;
-        }
+        nightBlue.themeInfo = Theme.getTheme("Dark Blue");
+        nightBlue.accentId = 0;
         themeItem.items.add(nightBlue);
 
         return themeItem;

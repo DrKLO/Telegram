@@ -387,7 +387,7 @@ public class ReactionsContainerLayout extends FrameLayout {
         Runnable playRunnable = new Runnable() {
             @Override
             public void run() {
-                if (backupImageView.getImageReceiver().getLottieAnimation() != null) {
+                if (backupImageView.getImageReceiver().getLottieAnimation() != null && !backupImageView.getImageReceiver().getLottieAnimation().isRunning()) {
                     backupImageView.getImageReceiver().getLottieAnimation().start();
                 }
             }
@@ -410,11 +410,12 @@ public class ReactionsContainerLayout extends FrameLayout {
         public void play(int delay) {
             AndroidUtilities.cancelRunOnUIThread(playRunnable);
             if (backupImageView.getImageReceiver().getLottieAnimation() != null) {
-                backupImageView.getImageReceiver().getLottieAnimation().setCurrentFrame(0);
+                backupImageView.getImageReceiver().getLottieAnimation().setCurrentFrame(0, false);
                 if (delay == 0) {
                     playRunnable.run();
                 } else {
                     backupImageView.getImageReceiver().getLottieAnimation().stop();
+                    backupImageView.getImageReceiver().getLottieAnimation().setCurrentFrame(0, false);
                     AndroidUtilities.runOnUIThread(playRunnable, delay);
                 }
 

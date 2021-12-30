@@ -5285,10 +5285,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         }
                     }
                     if (!reactionsLayoutInBubble.isSmall && !reactionsLayoutInBubble.isEmpty) {
-                        reactionsLayoutInBubble.positionOffsetY += AndroidUtilities.dp(12);
+                       // reactionsLayoutInBubble.positionOffsetY += AndroidUtilities.dp(12);
                         reactionsLayoutInBubble.totalHeight = reactionsLayoutInBubble.height + AndroidUtilities.dp(8);
                         measureTime(messageObject);
                         int timeLeft = backgroundWidth - reactionsLayoutInBubble.lastLineX - AndroidUtilities.dp(24);
+
                         if (timeLeft < timeWidth) {
                             reactionsLayoutInBubble.totalHeight += AndroidUtilities.dp(12);
                             reactionsLayoutInBubble.positionOffsetY -= AndroidUtilities.dp(12);
@@ -8377,6 +8378,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             if (captionLayout != null) {
                 reactionsLayoutInBubble.y -= AndroidUtilities.dp(14);
             }
+            if (!botButtons.isEmpty() && currentMessageObject.type == 9) {
+                reactionsLayoutInBubble.y += AndroidUtilities.dp(10);
+            }
             reactionsLayoutInBubble.y = reactionsLayoutInBubble.y + reactionsLayoutInBubble.positionOffsetY;
         }
         if (reactionsLayoutInBubble.isSmall && !reactionsLayoutInBubble.isEmpty) {
@@ -10482,7 +10486,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         mess = mess.replace('\n', ' ');
                         stringFinalText = Emoji.replaceEmoji(mess, Theme.chat_replyTextPaint.getFontMetricsInt(), AndroidUtilities.dp(14), false);
                         stringFinalText = TextUtils.ellipsize(stringFinalText, Theme.chat_replyTextPaint, maxWidth, TextUtils.TruncateAt.END);
-                        MediaDataController.addTextStyleRuns(messageObject.replyMessageObject.messageOwner.entities, messageObject.replyMessageObject.caption, (Spannable) stringFinalText);
+                        if (stringFinalText instanceof Spannable) {
+                            MediaDataController.addTextStyleRuns(messageObject.replyMessageObject.messageOwner.entities, messageObject.replyMessageObject.caption, (Spannable) stringFinalText);
+                        }
                     } else if (messageObject.replyMessageObject.messageText != null && messageObject.replyMessageObject.messageText.length() > 0) {
                         String mess = messageObject.replyMessageObject.messageText.toString();
                         if (mess.length() > 150) {
@@ -12498,7 +12504,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
         }
         if (reactionsLayoutInBubble.isSmall) {
-            Log.d("kek", transitionParams.shouldAnimateTimeX + " " + transitionParams.animateBackgroundBoundsInner + " " + transitionParams.animateFromTimeX + " " + this.timeX);
             if (transitionParams.animateBackgroundBoundsInner && transitionParams.deltaRight != 0) {
                 timeTitleTimeX += reactionsLayoutInBubble.getCurrentWidth(1f);
             } else {

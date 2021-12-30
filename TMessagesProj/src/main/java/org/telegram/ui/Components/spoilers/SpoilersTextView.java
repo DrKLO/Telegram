@@ -2,7 +2,10 @@ package org.telegram.ui.Components.spoilers;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.Region;
 import android.text.Layout;
@@ -22,6 +25,7 @@ public class SpoilersTextView extends TextView {
     private Stack<SpoilerEffect> spoilersPool = new Stack<>();
     private boolean isSpoilersRevealed;
     private Path path = new Path();
+    private Paint xRefPaint;
 
     public SpoilersTextView(Context context) {
         super(context);
@@ -82,19 +86,38 @@ public class SpoilersTextView extends TextView {
         canvas.save();
         canvas.clipPath(path);
         path.rewind();
-        if (!spoilers.isEmpty())
+        if (!spoilers.isEmpty()) {
             spoilers.get(0).getRipplePath(path);
+        }
         canvas.clipPath(path);
         super.onDraw(canvas);
         canvas.restore();
 
-        canvas.save();
-        canvas.translate(getPaddingLeft(), getPaddingTop() + AndroidUtilities.dp(2));
-        for (SpoilerEffect eff : spoilers) {
-            eff.setColor(getPaint().getColor());
-            eff.draw(canvas);
+        if (!spoilers.isEmpty()) {
+            boolean useAlphaLayer = spoilers.get(0).getRippleProgress() != -1;
+            if (useAlphaLayer) {
+                canvas.saveLayer(0, 0, getMeasuredWidth(), getMeasuredHeight(), null, canvas.ALL_SAVE_FLAG);
+            } else {
+                canvas.save();
+            }
+            canvas.translate(getPaddingLeft(), getPaddingTop() + AndroidUtilities.dp(2));
+            for (SpoilerEffect eff : spoilers) {
+                eff.setColor(getPaint().getColor());
+                eff.draw(canvas);
+            }
+
+            if (useAlphaLayer) {
+                path.rewind();
+                spoilers.get(0).getRipplePath(path);
+                if (xRefPaint == null) {
+                    xRefPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    xRefPaint.setColor(0xff000000);
+                    xRefPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
+                }
+                canvas.drawPath(path, xRefPaint);
+            }
+            canvas.restore();
         }
-        canvas.restore();
     }
 
     private void invalidateSpoilers() {

@@ -375,11 +375,12 @@ public class ReactionsLayoutInBubble {
             counterDrawable.updateVisibility = false;
             if (reactionCount.chosen) {
                 backgroundColor = Theme.getColor(messageObject.isOutOwner() ? Theme.key_chat_outReactionButtonBackground : Theme.key_chat_inReactionButtonBackground, resourcesProvider);
-                textColor = Theme.getColor(messageObject.isOutOwner() ? Theme.key_chat_outReactionButtonText : Theme.key_chat_inReactionButtonText, resourcesProvider);
+                textColor = Theme.getColor(messageObject.isOutOwner() ? Theme.key_chat_outReactionButtonTextSelected : Theme.key_chat_inReactionButtonTextSelected, resourcesProvider);
                 serviceTextColor = Theme.getColor(messageObject.isOutOwner() ? Theme.key_chat_outReactionButtonBackground : Theme.key_chat_inReactionButtonBackground, resourcesProvider);
                 serviceBackgroundColor = Theme.getColor(messageObject.isOutOwner() ? Theme.key_chat_outBubble : Theme.key_chat_inBubble);
             } else {
-                textColor = backgroundColor = Theme.getColor(messageObject.isOutOwner() ? Theme.key_chat_outReactionButtonBackground : Theme.key_chat_inReactionButtonBackground, resourcesProvider);
+                textColor = Theme.getColor(messageObject.isOutOwner() ? Theme.key_chat_outReactionButtonText : Theme.key_chat_inReactionButtonText, resourcesProvider);
+                backgroundColor = Theme.getColor(messageObject.isOutOwner() ? Theme.key_chat_outReactionButtonBackground : Theme.key_chat_inReactionButtonBackground, resourcesProvider);
                 backgroundColor = ColorUtils.setAlphaComponent(backgroundColor, (int) (Color.alpha(backgroundColor) * 0.156f));
                 serviceTextColor = Theme.getColor(Theme.key_chat_serviceText, resourcesProvider);
                 serviceBackgroundColor = Color.TRANSPARENT;

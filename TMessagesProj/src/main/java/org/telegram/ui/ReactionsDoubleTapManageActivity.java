@@ -29,12 +29,9 @@ import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SimpleThemeDescription;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class ReactionsDoubleTapManageActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
-
-    private List<String> chatReactions = Collections.emptyList();
 
     private LinearLayout contentView;
     private RecyclerListView listView;
@@ -159,7 +156,7 @@ public class ReactionsDoubleTapManageActivity extends BaseFragment implements No
     }
 
     private List<TLRPC.TL_availableReaction> getAvailableReactions() {
-        return getMediaDataController().getReactionsList();
+        return getMediaDataController().getEnabledReactionsList();
     }
 
     @Override
