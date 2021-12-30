@@ -3669,52 +3669,83 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
             new Thread(() -> {
                 try {
-                    File dir;
-                    if (isMusic) {
-                        dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC);
+                    if (Build.VERSION.SDK_INT >= 29) {
+                        for (int b = 0, N = messageObjects.size(); b < N; b++) {
+                            MessageObject message = messageObjects.get(b);
+                            String path = message.messageOwner.attachPath;
+                            String name = message.getDocumentName();
+                            if (path != null && path.length() > 0) {
+                                File temp = new File(path);
+                                if (!temp.exists()) {
+                                    path = null;
+                                }
+                            }
+                            if (path == null || path.length() == 0) {
+                                path = FileLoader.getPathToMessage(message.messageOwner).toString();
+                            }
+                            File sourceFile = new File(path);
+                            if (!sourceFile.exists()) {
+                                waitingForFile = new CountDownLatch(1);
+                                addMessageToLoad(message);
+                                waitingForFile.await();
+                            }
+                            if (cancelled) {
+                                break;
+                            }
+                            if (sourceFile.exists()) {
+                                saveFileInternal(isMusic ? 3 : 2, sourceFile, name);
+                            }
+                        }
                     } else {
-                        dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-                    }
-                    dir.mkdir();
-                    for (int b = 0, N = messageObjects.size(); b < N; b++) {
-                        MessageObject message = messageObjects.get(b);
-                        String name = message.getDocumentName();
-                        File destFile = new File(dir, name);
-                        if (destFile.exists()) {
-                            int idx = name.lastIndexOf('.');
-                            for (int a = 0; a < 10; a++) {
-                                String newName;
-                                if (idx != -1) {
-                                    newName = name.substring(0, idx) + "(" + (a + 1) + ")" + name.substring(idx);
-                                } else {
-                                    newName = name + "(" + (a + 1) + ")";
-                                }
-                                destFile = new File(dir, newName);
-                                if (!destFile.exists()) {
-                                    break;
+                        File dir;
+                        if (isMusic) {
+                            dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC);
+                        } else {
+                            dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                        }
+                        dir.mkdir();
+                        for (int b = 0, N = messageObjects.size(); b < N; b++) {
+                            MessageObject message = messageObjects.get(b);
+                            String name = message.getDocumentName();
+                            File destFile = new File(dir, name);
+                            if (destFile.exists()) {
+                                int idx = name.lastIndexOf('.');
+                                for (int a = 0; a < 10; a++) {
+                                    String newName;
+                                    if (idx != -1) {
+                                        newName = name.substring(0, idx) + "(" + (a + 1) + ")" + name.substring(idx);
+                                    } else {
+                                        newName = name + "(" + (a + 1) + ")";
+                                    }
+                                    destFile = new File(dir, newName);
+                                    if (!destFile.exists()) {
+                                        break;
+                                    }
                                 }
                             }
-                        }
-                        if (!destFile.exists()) {
-                            destFile.createNewFile();
-                        }
-                        String path = message.messageOwner.attachPath;
-                        if (path != null && path.length() > 0) {
-                            File temp = new File(path);
-                            if (!temp.exists()) {
-                                path = null;
+                            if (!destFile.exists()) {
+                                destFile.createNewFile();
+                            }
+                            String path = message.messageOwner.attachPath;
+                            if (path != null && path.length() > 0) {
+                                File temp = new File(path);
+                                if (!temp.exists()) {
+                                    path = null;
+                                }
+                            }
+                            if (path == null || path.length() == 0) {
+                                path = FileLoader.getPathToMessage(message.messageOwner).toString();
+                            }
+                            File sourceFile = new File(path);
+                            if (!sourceFile.exists()) {
+                                waitingForFile = new CountDownLatch(1);
+                                addMessageToLoad(message);
+                                waitingForFile.await();
+                            }
+                            if (sourceFile.exists()) {
+                                copyFile(sourceFile, destFile, message.getMimeType());
                             }
                         }
-                        if (path == null || path.length() == 0) {
-                            path = FileLoader.getPathToMessage(message.messageOwner).toString();
-                        }
-                        File sourceFile = new File(path);
-                        if (!sourceFile.exists()) {
-                            waitingForFile = new CountDownLatch(1);
-                            addMessageToLoad(message);
-                            waitingForFile.await();
-                        }
-                        copyFile(sourceFile, destFile, message.getMimeType());
                     }
                     checkIfFinished();
                 } catch (Exception e) {
@@ -3927,59 +3958,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
                     boolean result = true;
                     if (Build.VERSION.SDK_INT >= 29) {
-                        try {
-                            int selectedType = type;
-                            ContentValues contentValues = new ContentValues();
-                            String extension = MimeTypeMap.getFileExtensionFromUrl(sourceFile.getAbsolutePath());
-                            String mimeType = null;
-                            if (extension != null) {
-                                mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
-                            }
-                            Uri uriToInsert = null;
-                            if ((type == 0 || type == 1) && mimeType != null) {
-                                if (mimeType.startsWith("image")) {
-                                    selectedType = 0;
-                                }
-                                if (mimeType.startsWith("video")) {
-                                    selectedType = 1;
-                                }
-                            }
-                            if (selectedType == 0) {
-                                uriToInsert = MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY);
-                                File dirDest = new File(Environment.DIRECTORY_PICTURES, "Telegram");
-                                contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH, dirDest + File.separator);
-                                contentValues.put(MediaStore.Images.Media.DISPLAY_NAME, AndroidUtilities.generateFileName(0, extension));
-                                contentValues.put(MediaStore.Images.Media.MIME_TYPE, mimeType);
-                            } else if (selectedType == 1) {
-                                File dirDest = new File(Environment.DIRECTORY_MOVIES, "Telegram");
-                                contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH, dirDest + File.separator);
-                                uriToInsert = MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY);
-                                contentValues.put(MediaStore.Video.Media.DISPLAY_NAME, AndroidUtilities.generateFileName(1, extension));
-                            } else if (selectedType == 2) {
-                                File dirDest = new File(Environment.DIRECTORY_DOWNLOADS, "Telegram");
-                                contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH, dirDest + File.separator);
-                                uriToInsert = MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY);
-                                contentValues.put(MediaStore.Downloads.DISPLAY_NAME, sourceFile.getName());
-                            } else {
-                                File dirDest = new File(Environment.DIRECTORY_MUSIC, "Telegram");
-                                contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH, dirDest + File.separator);
-                                uriToInsert = MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY);
-                                contentValues.put(MediaStore.Audio.Media.DISPLAY_NAME, sourceFile.getName());
-                            }
-
-                            contentValues.put(MediaStore.MediaColumns.MIME_TYPE, mimeType);
-
-                            Uri dstUri = context.getContentResolver().insert(uriToInsert, contentValues);
-                            if (dstUri != null) {
-                                FileInputStream fileInputStream = new FileInputStream(sourceFile);
-                                OutputStream outputStream = context.getContentResolver().openOutputStream(dstUri);
-                                AndroidUtilities.copyFile(fileInputStream, outputStream);
-                                fileInputStream.close();
-                            }
-                        } catch (Exception e) {
-                            FileLog.e(e);
-                            result = false;
-                        }
+                        result = saveFileInternal(type, sourceFile, null);
                     } else {
                         File destFile;
                         if (type == 0) {
@@ -4096,6 +4075,75 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                     });
                 }
             }).start();
+        }
+    }
+
+    private static boolean saveFileInternal(int type, File sourceFile, String filename) {
+        try {
+            int selectedType = type;
+            ContentValues contentValues = new ContentValues();
+            String extension = MimeTypeMap.getFileExtensionFromUrl(sourceFile.getAbsolutePath());
+            String mimeType = null;
+            if (extension != null) {
+                mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
+            }
+            Uri uriToInsert = null;
+            if ((type == 0 || type == 1) && mimeType != null) {
+                if (mimeType.startsWith("image")) {
+                    selectedType = 0;
+                }
+                if (mimeType.startsWith("video")) {
+                    selectedType = 1;
+                }
+            }
+            if (selectedType == 0) {
+                if (filename == null) {
+                    filename = AndroidUtilities.generateFileName(0, extension);
+                }
+                uriToInsert = MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY);
+                File dirDest = new File(Environment.DIRECTORY_PICTURES, "Telegram");
+                contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH, dirDest + File.separator);
+                contentValues.put(MediaStore.Images.Media.DISPLAY_NAME, filename);
+                contentValues.put(MediaStore.Images.Media.MIME_TYPE, mimeType);
+            } else if (selectedType == 1) {
+                if (filename == null) {
+                    filename = AndroidUtilities.generateFileName(1, extension);
+                }
+                File dirDest = new File(Environment.DIRECTORY_MOVIES, "Telegram");
+                contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH, dirDest + File.separator);
+                uriToInsert = MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY);
+                contentValues.put(MediaStore.Video.Media.DISPLAY_NAME, filename);
+            } else if (selectedType == 2) {
+                if (filename == null) {
+                    filename = sourceFile.getName();
+                }
+                File dirDest = new File(Environment.DIRECTORY_DOWNLOADS, "Telegram");
+                contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH, dirDest + File.separator);
+                uriToInsert = MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY);
+                contentValues.put(MediaStore.Downloads.DISPLAY_NAME, filename);
+            } else {
+                if (filename == null) {
+                    filename = sourceFile.getName();
+                }
+                File dirDest = new File(Environment.DIRECTORY_MUSIC, "Telegram");
+                contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH, dirDest + File.separator);
+                uriToInsert = MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY);
+                contentValues.put(MediaStore.Audio.Media.DISPLAY_NAME, filename);
+            }
+
+            contentValues.put(MediaStore.MediaColumns.MIME_TYPE, mimeType);
+
+            Uri dstUri = ApplicationLoader.applicationContext.getContentResolver().insert(uriToInsert, contentValues);
+            if (dstUri != null) {
+                FileInputStream fileInputStream = new FileInputStream(sourceFile);
+                OutputStream outputStream = ApplicationLoader.applicationContext.getContentResolver().openOutputStream(dstUri);
+                AndroidUtilities.copyFile(fileInputStream, outputStream);
+                fileInputStream.close();
+            }
+            return true;
+        } catch (Exception e) {
+            FileLog.e(e);
+            return false;
         }
     }
 

@@ -1860,7 +1860,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                     frameLayout.invalidate();
                 }
 
-                updateAvatars(avatars.wasDraw && updateAnimated);
+                updateAvatars(avatars.avatarsDarawable.wasDraw && updateAnimated);
             } else {
                 if (voIPService != null && voIPService.groupCall != null) {
                     updateAvatars(currentStyle == 3);
@@ -1919,14 +1919,14 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
 
     private void updateAvatars(boolean animated) {
         if (!animated) {
-            if (avatars.transitionProgressAnimator != null) {
-                avatars.transitionProgressAnimator.cancel();
-                avatars.transitionProgressAnimator = null;
+            if (avatars.avatarsDarawable.transitionProgressAnimator != null) {
+                avatars.avatarsDarawable.transitionProgressAnimator.cancel();
+                avatars.avatarsDarawable.transitionProgressAnimator = null;
             }
         }
         ChatObject.Call call;
         TLRPC.User userCall;
-        if (avatars.transitionProgressAnimator == null) {
+        if (avatars.avatarsDarawable.transitionProgressAnimator == null) {
             int currentAccount;
             if (currentStyle == 4) {
                 if (fragment instanceof ChatActivity) {

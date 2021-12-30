@@ -199,6 +199,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
 
         };
 
+        messageEditText.setDelegate(() -> messageEditText.invalidateEffects());
         messageEditText.setWindowView(windowView);
         messageEditText.setHint(LocaleController.getString("AddCaption", R.string.AddCaption));
         messageEditText.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);

@@ -239,9 +239,9 @@ public class UpdateAppAlertDialog extends BottomSheet {
             ImageLocation imageLocation = ImageLocation.getForDocument(thumb, appUpdate.sticker);
 
             if (svgThumb != null) {
-                imageView.setImage(ImageLocation.getForDocument(appUpdate.sticker), "50_50", svgThumb, 0, "update");
+                imageView.setImage(ImageLocation.getForDocument(appUpdate.sticker), "160_160", svgThumb, 0, "update");
             } else {
-                imageView.setImage(ImageLocation.getForDocument(appUpdate.sticker), "50_50", imageLocation, null, 0, "update");
+                imageView.setImage(ImageLocation.getForDocument(appUpdate.sticker), "160_160", imageLocation, null, 0, "update");
             }
             linearLayout.addView(imageView, LayoutHelper.createLinear(160, 160, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 17, 8, 17, 0));
         }

@@ -38,7 +38,6 @@ import android.view.ViewPropertyAnimator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
-import org.checkerframework.checker.units.qual.A;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
@@ -208,7 +207,7 @@ public class ActionBar extends FrameLayout {
                 manualStart = true;
                 if (snowflakesEffect == null) {
                     fireworksEffect = null;
-                    snowflakesEffect = new SnowflakesEffect();
+                    snowflakesEffect = new SnowflakesEffect(0);
                     titleTextView[0].invalidate();
                     invalidate();
                 } else {
@@ -256,7 +255,7 @@ public class ActionBar extends FrameLayout {
 
                 if (Theme.canStartHolidayAnimation()) {
                     if (snowflakesEffect == null) {
-                        snowflakesEffect = new SnowflakesEffect();
+                        snowflakesEffect = new SnowflakesEffect(0);
                     }
                 } else if (!manualStart) {
                     if (snowflakesEffect != null) {

@@ -148,7 +148,7 @@ public class CodeNumberField extends EditTextBoldCursor {
             if (event.getAction() == MotionEvent.ACTION_UP && pressed) {
                 if (isFocused() && codeFieldContainer != null) {
                     ClipboardManager clipboard = ContextCompat.getSystemService(getContext(), ClipboardManager.class);
-                    if (clipboard == null) {
+                    if (clipboard == null || clipboard.getPrimaryClipDescription() == null) {
                         return false;
                     }
                     clipboard.getPrimaryClipDescription().hasMimeType(ClipDescription.MIMETYPE_TEXT_PLAIN);

@@ -30,7 +30,7 @@ public class SettingsSearchCell extends FrameLayout {
     private boolean needDivider;
     private int left;
 
-    public class VerticalImageSpan extends ImageSpan {
+    public static class VerticalImageSpan extends ImageSpan {
 
         public VerticalImageSpan(Drawable drawable) {
             super(drawable);

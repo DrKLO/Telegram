@@ -58,7 +58,6 @@ import android.text.style.ImageSpan;
 import android.util.Property;
 import android.util.TypedValue;
 import android.view.ActionMode;
-import android.view.DisplayCutout;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.KeyEvent;
@@ -136,6 +135,7 @@ import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.GroupStickersActivity;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PhotoViewer;
+import org.telegram.ui.ProfileActivity;
 import org.telegram.ui.StickersActivity;
 
 import java.io.File;
@@ -1839,6 +1839,9 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             @Override
             public InputConnection onCreateInputConnection(EditorInfo editorInfo) {
                 final InputConnection ic = super.onCreateInputConnection(editorInfo);
+                if (ic == null) {
+                    return null;
+                }
                 try {
                     EditorInfoCompat.setContentMimeTypes(editorInfo, new String[]{"image/gif", "image/*", "image/jpg", "image/png", "image/webp"});
 
@@ -1975,51 +1978,72 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                         ArrayList<Object> entries = new ArrayList<>();
                         entries.add(photoEntry);
                         AndroidUtilities.runOnUIThread(() -> {
-                            PhotoViewer.getInstance().setParentActivity(parentActivity, resourcesProvider);
-                            PhotoViewer.getInstance().openPhotoForSelect(entries, 0, 2, false, new PhotoViewer.EmptyPhotoViewerProvider() {
-                                boolean sending;
-                                @Override
-                                public void sendButtonPressed(int index, VideoEditedInfo videoEditedInfo, boolean notify, int scheduleDate, boolean forceDocument) {
-                                    ArrayList<SendMessagesHelper.SendingMediaInfo> photos = new ArrayList<>();
-                                    SendMessagesHelper.SendingMediaInfo info = new SendMessagesHelper.SendingMediaInfo();
-                                    if (!photoEntry.isVideo && photoEntry.imagePath != null) {
-                                        info.path = photoEntry.imagePath;
-                                    } else if (photoEntry.path != null) {
-                                        info.path = photoEntry.path;
-                                    }
-                                    info.thumbPath = photoEntry.thumbPath;
-                                    info.isVideo = photoEntry.isVideo;
-                                    info.caption = photoEntry.caption != null ? photoEntry.caption.toString() : null;
-                                    info.entities = photoEntry.entities;
-                                    info.masks = photoEntry.stickers;
-                                    info.ttl = photoEntry.ttl;
-                                    info.videoEditedInfo = videoEditedInfo;
-                                    info.canDeleteAfter = true;
-                                    photos.add(info);
-                                    photoEntry.reset();
-                                    sending = true;
-                                    SendMessagesHelper.prepareSendingMedia(accountInstance, photos, dialog_id, replyingMessageObject, getThreadMessage(), null, false, false, editingMessageObject, notify, scheduleDate);
-                                    if (delegate != null) {
-                                        delegate.onMessageSend(null, true, scheduleDate);
-                                    }
-                                }
-
-                                @Override
-                                public void willHidePhotoViewer() {
-                                    if (!sending) {
-                                        try {
-                                            file.delete();
-                                        } catch (Throwable ignore) {
-
-                                        }
-                                    }
-                                }
-                            }, parentFragment);
+                            openPhotoViewerForEdit(entries, file);
                         });
                     } catch (Throwable e) {
                         e.printStackTrace();
                     }
                 });
+            }
+
+            private void openPhotoViewerForEdit(ArrayList<Object> entries, File sourceFile) {
+                MediaController.PhotoEntry photoEntry = (MediaController.PhotoEntry) entries.get(0);
+                if (keyboardVisible) {
+                    AndroidUtilities.hideKeyboard(messageEditText);
+                    AndroidUtilities.runOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            openPhotoViewerForEdit(entries, sourceFile);
+                        }
+                    }, 100);
+                    return;
+                }
+
+                PhotoViewer.getInstance().setParentActivity(parentActivity, resourcesProvider);
+                PhotoViewer.getInstance().openPhotoForSelect(entries, 0, 2, false, new PhotoViewer.EmptyPhotoViewerProvider() {
+                    boolean sending;
+                    @Override
+                    public void sendButtonPressed(int index, VideoEditedInfo videoEditedInfo, boolean notify, int scheduleDate, boolean forceDocument) {
+                        ArrayList<SendMessagesHelper.SendingMediaInfo> photos = new ArrayList<>();
+                        SendMessagesHelper.SendingMediaInfo info = new SendMessagesHelper.SendingMediaInfo();
+                        if (!photoEntry.isVideo && photoEntry.imagePath != null) {
+                            info.path = photoEntry.imagePath;
+                        } else if (photoEntry.path != null) {
+                            info.path = photoEntry.path;
+                        }
+                        info.thumbPath = photoEntry.thumbPath;
+                        info.isVideo = photoEntry.isVideo;
+                        info.caption = photoEntry.caption != null ? photoEntry.caption.toString() : null;
+                        info.entities = photoEntry.entities;
+                        info.masks = photoEntry.stickers;
+                        info.ttl = photoEntry.ttl;
+                        info.videoEditedInfo = videoEditedInfo;
+                        info.canDeleteAfter = true;
+                        photos.add(info);
+                        photoEntry.reset();
+                        sending = true;
+                        SendMessagesHelper.prepareSendingMedia(accountInstance, photos, dialog_id, replyingMessageObject, getThreadMessage(), null, false, false, editingMessageObject, notify, scheduleDate);
+                        if (delegate != null) {
+                            delegate.onMessageSend(null, true, scheduleDate);
+                        }
+                    }
+
+                    @Override
+                    public void willHidePhotoViewer() {
+                        if (!sending) {
+                            try {
+                                sourceFile.delete();
+                            } catch (Throwable ignore) {
+
+                            }
+                        }
+                    }
+
+                    @Override
+                    public boolean canCaptureMorePhotos() {
+                        return false;
+                    }
+                }, parentFragment);
             }
 
             @Override
@@ -2028,6 +2052,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             }
         };
         messageEditText.setDelegate(() -> {
+            messageEditText.invalidateEffects();
             if (delegate != null) {
                 delegate.onTextSpansChanged(messageEditText.getText());
             }
@@ -4779,7 +4804,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
         CharSequence[] message = new CharSequence[]{AndroidUtilities.getTrimmedString(messageEditText.getText())};
         ArrayList<TLRPC.MessageEntity> entities = MediaDataController.getInstance(currentAccount).getEntities(message, supportsSendingNewEntities());
-        if (!TextUtils.equals(message[0], editingMessageObject.messageText) || entities != null && !entities.isEmpty() || entities == null && !editingMessageObject.messageOwner.entities.isEmpty() || editingMessageObject.messageOwner.media instanceof TLRPC.TL_messageMediaWebPage) {
+        if (!TextUtils.equals(message[0], editingMessageObject.messageText) || entities != null && !entities.isEmpty() || (entities == null || entities.isEmpty()) && !editingMessageObject.messageOwner.entities.isEmpty() || editingMessageObject.messageOwner.media instanceof TLRPC.TL_messageMediaWebPage) {
             editingMessageObject.editingMessage = message[0];
             editingMessageObject.editingMessageEntities = entities;
             editingMessageObject.editingMessageSearchWebPage = messageWebPageSearch;
@@ -6392,6 +6417,10 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                                 MediaDataController.addStyleToText(new TextStyleSpan(run), entity.offset, entity.offset + entity.length, stringBuilder, true);
                             } else if (entity instanceof TLRPC.TL_messageEntityTextUrl) {
                                 stringBuilder.setSpan(new URLSpanReplacement(entity.url), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            } else if (entity instanceof TLRPC.TL_messageEntitySpoiler) {
+                                TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
+                                run.flags |= TextStyleSpan.FLAG_STYLE_SPOILER;
+                                MediaDataController.addStyleToText(new TextStyleSpan(run), entity.offset, entity.offset + entity.length, stringBuilder, true);
                             }
                         }
                     } catch (Exception e) {
@@ -7122,6 +7151,13 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                         fragment1.finishFragment();
                     }
                 });
+                parentFragment.presentFragment(fragment);
+            }
+        } else if (button instanceof TLRPC.TL_keyboardButtonUserProfile) {
+            if (MessagesController.getInstance(currentAccount).getUser(button.user_id) != null) {
+                Bundle args = new Bundle();
+                args.putLong("user_id", button.user_id);
+                ProfileActivity fragment = new ProfileActivity(args);
                 parentFragment.presentFragment(fragment);
             }
         }

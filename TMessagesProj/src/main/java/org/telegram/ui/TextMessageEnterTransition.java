@@ -41,9 +41,9 @@ import org.telegram.ui.Components.ChatActivityEnterView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EmptyStubSpan;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.spoilers.SpoilerEffect;
 
 public class TextMessageEnterTransition implements MessageEnterTransitionContainer.Transition {
-
     float fromRadius;
     float progress;
 
@@ -561,7 +561,17 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
             if (messageView.replyTextLayout != null) {
                 canvas.save();
                 canvas.translate(replyMessageX, replyY + AndroidUtilities.dp(19));
+
+                canvas.save();
+                SpoilerEffect.clipOutCanvas(canvas, messageView.replySpoilers);
                 messageView.replyTextLayout.draw(canvas);
+                canvas.restore();
+
+                for (SpoilerEffect eff : messageView.replySpoilers) {
+                    if (eff.shouldInvalidateColor()) eff.setColor(messageView.replyTextLayout.getPaint().getColor());
+                    eff.draw(canvas);
+                }
+
                 canvas.restore();
             }
 

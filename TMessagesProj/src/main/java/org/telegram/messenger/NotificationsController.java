@@ -1317,7 +1317,7 @@ public class NotificationsController extends BaseController {
                     }
                 }
             }
-            return messageObject.messageOwner.message;
+            return replaceSpoilers(messageObject);
         }
         long selfUsedId = getUserConfig().getClientUserId();
         if (fromId == 0) {
@@ -1841,6 +1841,27 @@ public class NotificationsController extends BaseController {
             }
         }
         return null;
+    }
+
+    char[] spoilerChars = new char[] {
+            '⠌', '⡢', '⢑','⠨',
+    };
+
+    private String replaceSpoilers(MessageObject messageObject) {
+        String text = messageObject.messageOwner.message;
+        if (text == null || messageObject == null || messageObject.messageOwner == null || messageObject.messageOwner.entities == null) {
+            return null;
+        }
+        StringBuilder stringBuilder = new StringBuilder(text);
+        for (int i = 0; i < messageObject.messageOwner.entities.size(); i++) {
+            if (messageObject.messageOwner.entities.get(i) instanceof TLRPC.TL_messageEntitySpoiler) {
+                TLRPC.TL_messageEntitySpoiler spoiler = (TLRPC.TL_messageEntitySpoiler) messageObject.messageOwner.entities.get(i);
+                for (int j = 0; j < spoiler.length; j++) {
+                    stringBuilder.setCharAt(spoiler.offset + j, spoilerChars[j % spoilerChars.length]);
+                }
+            }
+        }
+        return stringBuilder.toString();
     }
 
     private String getStringForMessage(MessageObject messageObject, boolean shortMessage, boolean[] text, boolean[] preview) {

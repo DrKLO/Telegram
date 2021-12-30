@@ -54,7 +54,7 @@ import org.telegram.ui.ActionBar.Theme;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
-public class EditTextBoldCursor extends EditText {
+public class EditTextBoldCursor extends EditTextEffects {
 
     private static Field mEditor;
     private static Field mShowCursorField;

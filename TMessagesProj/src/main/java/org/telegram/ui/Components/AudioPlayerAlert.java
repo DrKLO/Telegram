@@ -41,6 +41,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -900,6 +901,12 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 }
                 return true;
             }
+
+            @Override
+            public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+                super.onInitializeAccessibilityNodeInfo(info);
+                info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
+            }
         };
         prevButton.setScaleType(ImageView.ScaleType.CENTER);
         prevButton.setAnimation(R.raw.player_prev, 20, 20);
@@ -1015,6 +1022,12 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                         break;
                 }
                 return true;
+            }
+
+            @Override
+            public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+                super.onInitializeAccessibilityNodeInfo(info);
+                info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
             }
 
         };

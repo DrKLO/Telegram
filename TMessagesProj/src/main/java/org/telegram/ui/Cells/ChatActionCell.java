@@ -34,6 +34,7 @@ import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
@@ -43,11 +44,28 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.URLSpanNoUnderline;
+import org.telegram.ui.Components.spoilers.SpoilerEffect;
 import org.telegram.ui.PhotoViewer;
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Stack;
 
-public class ChatActionCell extends BaseCell implements DownloadController.FileDownloadProgressListener {
+public class ChatActionCell extends BaseCell implements DownloadController.FileDownloadProgressListener, NotificationCenter.NotificationCenterDelegate {
+
+    @Override
+    public void didReceivedNotification(int id, int account, Object... args) {
+        if (id == NotificationCenter.startSpoilers) {
+            setSpoilersSuppressed(false);
+        } else if (id == NotificationCenter.stopSpoilers) {
+            setSpoilersSuppressed(true);
+        }
+    }
+
+    public void setSpoilersSuppressed(boolean s) {
+        for (SpoilerEffect eff : spoilers)
+            eff.setSuppressUpdates(s);
+    }
 
     private boolean canDrawInParent;
 
@@ -91,6 +109,9 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
     private int textXLeft;
     private int previousWidth;
     private boolean imagePressed;
+
+    public List<SpoilerEffect> spoilers = new ArrayList<>();
+    private Stack<SpoilerEffect> spoilersPool = new Stack<>();
 
     TextPaint textPaint;
 
@@ -407,6 +428,12 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         int maxWidth = width - AndroidUtilities.dp(30);
         invalidatePath = true;
         textLayout = new StaticLayout(text, (TextPaint) getThemedPaint(Theme.key_paint_chatActionText), maxWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
+
+        spoilersPool.addAll(spoilers);
+        spoilers.clear();
+        if (text instanceof Spannable)
+            SpoilerEffect.addSpoilers(this, textLayout, (Spannable) text, spoilersPool, spoilers);
+
         textHeight = 0;
         textWidth = 0;
         try {
@@ -494,7 +521,16 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
             if (textLayout.getPaint() != textPaint) {
                 buildLayout();
             }
+            canvas.save();
+            SpoilerEffect.clipOutCanvas(canvas, spoilers);
             textLayout.draw(canvas);
+            canvas.restore();
+
+            for (SpoilerEffect eff : spoilers) {
+                eff.setColor(textLayout.getPaint().getColor());
+                eff.draw(canvas);
+            }
+
             canvas.restore();
         }
     }

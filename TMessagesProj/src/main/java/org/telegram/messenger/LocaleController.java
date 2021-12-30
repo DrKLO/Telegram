@@ -33,10 +33,12 @@ import java.io.FileWriter;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Currency;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.TimeZone;
 
 public class LocaleController {
@@ -411,6 +413,13 @@ public class LocaleController {
             return null;
         }
         return languagesDict.get(key.toLowerCase().replace("-", "_"));
+    }
+    public LocaleInfo getLanguageByPlural(String plural) {
+        Collection<LocaleInfo> values = languagesDict.values();
+        for (LocaleInfo l : values)
+            if (l.pluralLangCode != null && l.pluralLangCode.equals(plural))
+                return l;
+        return null;
     }
 
     private void addRules(String[] languages, PluralRules rules) {
