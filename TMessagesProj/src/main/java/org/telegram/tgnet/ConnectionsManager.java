@@ -554,6 +554,7 @@ public class ConnectionsManager extends BaseController {
     }
 
     public static int getInitFlags() {
+        if (true) return 0;
         int flags = 0;
         EmuDetector detector = EmuDetector.with(ApplicationLoader.applicationContext);
         if (detector.detect()) {
