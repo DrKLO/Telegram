@@ -974,12 +974,15 @@ bool ConnectionsManager::hasPendingRequestsForConnection(Connection *connection)
         uint32_t token = connection->getConnectionToken();
         if (type == ConnectionTypeGeneric) {
             if (sendingPing && type == ConnectionTypeGeneric && datacenter->getDatacenterId() == currentDatacenterId) {
+                if (LOGS_ENABLED) DEBUG_E("connection(%p) sendingPing", connection);
                 return true;
             } else if (datacenter->isHandshaking(false)) {
+                if (LOGS_ENABLED) DEBUG_E("connection(%p) not sendingPing", connection);
                 return true;
             }
         } else if (type == ConnectionTypeGenericMedia) {
             if (datacenter->isHandshaking(true)) {
+                if (LOGS_ENABLED) DEBUG_E("connection(%p) type is ConnectionTypeGenericMedia", connection);
                 return true;
             }
         }
@@ -988,11 +991,14 @@ bool ConnectionsManager::hasPendingRequestsForConnection(Connection *connection)
             auto connectionNum = (uint8_t) (request->connectionType >> 16);
             auto connectionType = (ConnectionType) (request->connectionType & 0x0000ffff);
             if ((connectionType == type && connectionNum == num) || request->connectionToken == token) {
+                if (LOGS_ENABLED) DEBUG_E("connection(%p) request (msg_id: %lld)", request->messageId);
+                if (LOGS_ENABLED) DEBUG_E("connection(%p) (type: %d == %d && num: %d == %d) || (token: %d == %d)", connection, connectionType, type, connectionNum, num, request->connectionToken, token);
                 return true;
             }
         }
         return false;
     }
+    if (LOGS_ENABLED) DEBUG_E("connection(%p) return true", connection);
     return true;
 }
 
@@ -1680,14 +1686,16 @@ void ConnectionsManager::initDatacenters() {
     if (!testBackend) {
         if (datacenters.find(1) == datacenters.end()) {
             datacenter = new Datacenter(instanceNum, 1);
-            datacenter->addAddressAndPort("192.168.1.150", 443, 0, "");
+            datacenter->addAddressAndPort("47.103.102.219", 10443, 0, "");
+            // datacenter->addAddressAndPort("47.103.102.219", 10443, 0, "");
             // datacenter->addAddressAndPort("2001:b28:f23d:f001:0000:0000:0000:000a", 443, 1, "");
             datacenters[1] = datacenter;
         }
     } else {
         if (datacenters.find(1) == datacenters.end()) {
             datacenter = new Datacenter(instanceNum, 1);
-            datacenter->addAddressAndPort("192.168.1.150", 443, 0, "");
+            datacenter->addAddressAndPort("47.103.102.219", 10443, 0, "");
+            // datacenter->addAddressAndPort("47.103.102.219", 10443, 0, "");
             // datacenter->addAddressAndPort("2001:b28:f23d:f001:0000:0000:0000:000e", 443, 1, "");
             datacenters[1] = datacenter;
         }
@@ -2164,7 +2172,7 @@ void ConnectionsManager::processRequestQueue(uint32_t connectionTypes, uint32_t 
         Datacenter *requestDatacenter = getDatacenterWithId(datacenterId);
         if (requestDatacenter == nullptr) {
             if (std::find(unknownDatacenterIds.begin(), unknownDatacenterIds.end(), datacenterId) == unknownDatacenterIds.end()) {
-                unknownDatacenterIds.push_back(datacenterId);
+                // unknownDatacenterIds.push_back(datacenterId);
             }
             iter++;
             continue;
@@ -2407,7 +2415,7 @@ void ConnectionsManager::processRequestQueue(uint32_t connectionTypes, uint32_t 
         Datacenter *requestDatacenter = getDatacenterWithId(datacenterId);
         if (requestDatacenter == nullptr) {
             if (std::find(unknownDatacenterIds.begin(), unknownDatacenterIds.end(), datacenterId) == unknownDatacenterIds.end()) {
-                unknownDatacenterIds.push_back(datacenterId);
+                // unknownDatacenterIds.push_back(datacenterId);
             }
             iter++;
             continue;

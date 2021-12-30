@@ -989,7 +989,10 @@ time_t ConnectionSocket::getTimeout() {
 
 bool ConnectionSocket::checkTimeout(int64_t now) {
     if (timeout != 0 && (now - lastEventTime) > (int64_t) timeout * 1000) {
-        if (!onConnectedSent || hasPendingRequests()) {
+        bool hasPending = hasPendingRequests();
+        if (!onConnectedSent || hasPending) {
+            if (LOGS_ENABLED) DEBUG_E("connection(%p) closeSocket by {connectionType: %d, hasPending: %d}", this, dynamic_cast<Connection*>(this)->getConnectionType(), hasPending);
+
             closeSocket(2, 0);
             return true;
         } else {

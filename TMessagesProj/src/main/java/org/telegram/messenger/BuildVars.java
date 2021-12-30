@@ -18,7 +18,7 @@ public class BuildVars {
     public static boolean LOGS_ENABLED = true;
     public static boolean USE_CLOUD_STRINGS = true;
     public static boolean CHECK_UPDATES = false;
-    public static boolean NO_SCOPED_STORAGE = true; /* Build.VERSION.SDK_INT <= 29; */
+    public static boolean NO_SCOPED_STORAGE = Build.VERSION.SDK_INT <= 29;
     public static int BUILD_VERSION = 2495;
     public static String BUILD_VERSION_STRING = "8.3.1";
     public static int APP_ID = 4;
@@ -40,7 +40,7 @@ public class BuildVars {
     private static Boolean standaloneApp;
     public static boolean isStandaloneApp() {
         if (standaloneApp == null) {
-            standaloneApp = ApplicationLoader.applicationContext != null && "org.telegram.messenger.web".equals(ApplicationLoader.applicationContext.getPackageName());
+            standaloneApp = ApplicationLoader.applicationContext != null && "org.chatengine.messenger.web".equals(ApplicationLoader.applicationContext.getPackageName());
         }
         return standaloneApp;
     }
@@ -48,7 +48,7 @@ public class BuildVars {
     private static Boolean betaApp;
     public static boolean isBetaApp() {
         if (betaApp == null) {
-            betaApp = ApplicationLoader.applicationContext != null && "org.telegram.messenger.beta".equals(ApplicationLoader.applicationContext.getPackageName());
+            betaApp = ApplicationLoader.applicationContext != null && "org.chatengine.messenger.beta".equals(ApplicationLoader.applicationContext.getPackageName());
         }
         return betaApp;
     }

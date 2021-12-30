@@ -559,7 +559,7 @@ void Handshake::processHandshakeResponse(TLObject *message, int64_t messageId) {
             sendAckRequest(messageId);
             sendRequestData(request, true);
         } else {
-            if (LOGS_ENABLED) DEBUG_E("account%u dc%u handshake: invalid client nonce, type = %d", currentDatacenter->instanceNum, currentDatacenter->datacenterId, handshakeType);
+            if (LOGS_ENABLED) DEBUG_E("account%u dc%u handshake: invalid client nonce, type = %d, authNonce: %s, resNonce: %s", currentDatacenter->instanceNum, currentDatacenter->datacenterId, handshakeType, authNonce->binary_to_string().c_str(), result->nonce->binary_to_string().c_str());
             beginHandshake(false);
         }
     } else if (dynamic_cast<Server_DH_Params *>(message)) {

@@ -10,6 +10,7 @@
 #define BYTEARRAY_H
 
 #include <stdint.h>
+#include <string>
 
 class ByteArray {
 
@@ -26,6 +27,17 @@ public:
 
     bool isEqualTo(ByteArray *byteArray);
 
+
+    std::string binary_to_string() {
+        std::string destination;
+        for(unsigned int i = 0; i < length; i++)
+        {
+            char digit[3];
+            sprintf(digit, "%02x", bytes[i]);
+            destination.append(digit);
+        }
+        return destination;
+    }
 };
 
 #endif
