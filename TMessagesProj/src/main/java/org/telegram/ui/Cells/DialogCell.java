@@ -73,7 +73,6 @@ import org.telegram.ui.Components.URLSpanNoUnderline;
 import org.telegram.ui.Components.URLSpanNoUnderlineBold;
 import org.telegram.ui.Components.spoilers.SpoilerEffect;
 import org.telegram.ui.DialogsActivity;
-import org.telegram.ui.Components.SwipeGestureSettingsView;
 
 import java.util.ArrayList;
 import java.util.List;
