@@ -7343,7 +7343,7 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
                     return;
                 }
                 AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity, resourcesProvider);
-                builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                builder.setTitle(LocaleController.getString("catox_AppName", R.string.catox_AppName));
                 builder.setMessage(LocaleController.getString("ClearRecentEmoji", R.string.ClearRecentEmoji));
                 builder.setPositiveButton(LocaleController.getString("ClearButton", R.string.ClearButton).toUpperCase(), (dialogInterface, i) -> emojiView.clearRecentEmoji());
                 builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);

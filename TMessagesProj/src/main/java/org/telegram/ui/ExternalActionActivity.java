@@ -283,7 +283,7 @@ public class ExternalActionActivity extends Activity implements ActionBarLayout.
                     }
 
                     AlertDialog.Builder builder = new AlertDialog.Builder(ExternalActionActivity.this);
-                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                    builder.setTitle(LocaleController.getString("catox_AppName", R.string.catox_AppName));
                     builder.setMessage(LocaleController.getString("PleaseLoginPassport", R.string.PleaseLoginPassport));
                     builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
                     builder.show();

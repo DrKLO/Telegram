@@ -1041,7 +1041,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                         AdminedChannelCell cell = (AdminedChannelCell) view.getParent();
                         final TLRPC.Chat channel = cell.getCurrentChannel();
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                        builder.setTitle(LocaleController.getString("catox_AppName", R.string.catox_AppName));
                         if (channel.megagroup) {
                             builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("RevokeLinkAlert", R.string.RevokeLinkAlert, MessagesController.getInstance(currentAccount).linkPrefix + "/" + channel.username, channel.title)));
                         } else {
@@ -1165,7 +1165,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
             return;
         }
         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+        builder.setTitle(LocaleController.getString("catox_AppName", R.string.catox_AppName));
         switch (error) {
             case "USERNAME_INVALID":
                 builder.setMessage(LocaleController.getString("LinkInvalid", R.string.LinkInvalid));

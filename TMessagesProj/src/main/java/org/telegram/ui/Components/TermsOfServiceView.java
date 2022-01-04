@@ -98,7 +98,7 @@ public class TermsOfServiceView extends FrameLayout {
             builder.setPositiveButton(LocaleController.getString("DeclineDeactivate", R.string.DeclineDeactivate), (dialog, which) -> {
                 AlertDialog.Builder builder12 = new AlertDialog.Builder(getContext());
                 builder12.setMessage(LocaleController.getString("TosDeclineDeleteAccount", R.string.TosDeclineDeleteAccount));
-                builder12.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                builder12.setTitle(LocaleController.getString("catox_AppName", R.string.catox_AppName));
                 builder12.setPositiveButton(LocaleController.getString("Deactivate", R.string.Deactivate), (dialogInterface, i) -> {
                     final AlertDialog progressDialog = new AlertDialog(getContext(), 3);
                     progressDialog.setCanCacnel(false);
@@ -119,7 +119,7 @@ public class TermsOfServiceView extends FrameLayout {
                                 errorText += "\n" + error.text;
                             }
                             AlertDialog.Builder builder1 = new AlertDialog.Builder(getContext());
-                            builder1.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                            builder1.setTitle(LocaleController.getString("catox_AppName", R.string.catox_AppName));
                             builder1.setMessage(errorText);
                             builder1.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
                             builder1.show();

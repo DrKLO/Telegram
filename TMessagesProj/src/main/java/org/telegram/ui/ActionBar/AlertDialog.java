@@ -942,7 +942,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
             return;
         }
         Builder builder = new Builder(getContext());
-        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+        builder.setTitle(LocaleController.getString("catox_AppName", R.string.catox_AppName));
         builder.setMessage(LocaleController.getString("StopLoading", R.string.StopLoading));
         builder.setPositiveButton(LocaleController.getString("WaitMore", R.string.WaitMore), null);
         builder.setNegativeButton(LocaleController.getString("Stop", R.string.Stop), (dialogInterface, i) -> {

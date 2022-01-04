@@ -344,7 +344,7 @@ public class VoIPHelper {
 	public static void permissionDenied(final Activity activity, final Runnable onFinish, int code) {
 		if (!activity.shouldShowRequestPermissionRationale(Manifest.permission.RECORD_AUDIO) || code == 102 && !activity.shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
 			AlertDialog dlg = new AlertDialog.Builder(activity)
-					.setTitle(LocaleController.getString("AppName", R.string.AppName))
+					.setTitle(LocaleController.getString("catox_AppName", R.string.catox_AppName))
 					.setMessage(code == 102 ? LocaleController.getString("VoipNeedMicCameraPermission", R.string.VoipNeedMicCameraPermission) : LocaleController.getString("VoipNeedMicPermission", R.string.VoipNeedMicPermission))
 					.setPositiveButton(LocaleController.getString("OK", R.string.OK), null)
 					.setNegativeButton(LocaleController.getString("Settings", R.string.Settings), (dialog, which) -> {

@@ -548,7 +548,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                 return;
             }
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+            builder.setTitle(LocaleController.getString("catox_AppName", R.string.catox_AppName));
             builder.setMessage(LocaleController.getString("PermissionNoAudio", R.string.PermissionNoAudio));
             builder.setNegativeButton(LocaleController.getString("PermissionOpenSettings", R.string.PermissionOpenSettings), (dialog, which) -> {
                 try {
