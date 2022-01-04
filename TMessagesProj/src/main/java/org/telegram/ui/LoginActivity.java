@@ -1481,7 +1481,7 @@ public class LoginActivity extends BaseFragment {
                 });
             }
 
-            if (BuildVars.DEBUG_PRIVATE_VERSION) {
+            if (true) {
                 testBackendCheckBox = new CheckBoxCell(context, 2);
                 testBackendCheckBox.setText("Test Backend", "", testBackend, false);
                 addView(testBackendCheckBox, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 0, 0, 0, 0));
