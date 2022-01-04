@@ -216,7 +216,7 @@ public class DoubleLinearChartView extends BaseChartView<DoubleLinearChartData, 
 
         float additionalOutAlpha = 1f;
         if (n > 2) {
-            float v = (a.values[1] - a.values[0]) / (float) (currentMaxHeight - currentMinHeight);
+            float v = (a.values[1] - a.values[0]) / (currentMaxHeight - currentMinHeight);
             if (v < 0.1) {
                 additionalOutAlpha = v / 0.1f;
             }

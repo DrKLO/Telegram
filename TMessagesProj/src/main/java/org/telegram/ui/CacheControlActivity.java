@@ -83,6 +83,8 @@ public class CacheControlActivity extends BaseFragment {
 
     private int databaseRow;
     private int databaseInfoRow;
+    private int forceCleanRow;
+    private int forceCleanInfoRow;
     private int keepMediaHeaderRow;
     private int keepMediaInfoRow;
     private int cacheInfoRow;
@@ -217,6 +219,8 @@ public class CacheControlActivity extends BaseFragment {
         cacheInfoRow = rowCount++;
         databaseRow = rowCount++;
         databaseInfoRow = rowCount++;
+        forceCleanRow = rowCount++;
+        forceCleanInfoRow = rowCount++;
     }
 
     private void updateStorageUsageRow() {
@@ -269,6 +273,10 @@ public class CacheControlActivity extends BaseFragment {
     }
 
     private void cleanupFolders() {
+        cleanupFolders(false);
+    }
+
+    private void cleanupFolders(boolean skipViewCheck) {
         final AlertDialog progressDialog = new AlertDialog(getParentActivity(), 3);
         progressDialog.setCanCacnel(false);
         progressDialog.showDelayed(500);
@@ -276,7 +284,7 @@ public class CacheControlActivity extends BaseFragment {
             boolean imagesCleared = false;
             long clearedSize = 0;
             for (int a = 0; a < 7; a++) {
-                if (clearViewData[a] == null || !clearViewData[a].clear) {
+                if ((clearViewData[a] == null || !clearViewData[a].clear) && !skipViewCheck) {
                     continue;
                 }
                 int type = -1;
@@ -417,6 +425,9 @@ public class CacheControlActivity extends BaseFragment {
                 migrateOldFolder();
             } else if (position == databaseRow) {
                 clearDatabase();
+            } else if (position == forceCleanRow) {
+                cleanupFolders(true);
+                onBackPressed();
             } else if (position == storageUsageRow) {
                 if (totalSize <= 0 || getParentActivity() == null) {
                     return;
@@ -674,7 +685,7 @@ public class CacheControlActivity extends BaseFragment {
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
             int position = holder.getAdapterPosition();
-            return position == migrateOldFolderRow || position == databaseRow || (position == storageUsageRow && (totalSize > 0) && !calculating);
+            return position == migrateOldFolderRow || position == databaseRow || position == forceCleanRow || (position == storageUsageRow && (totalSize > 0) && !calculating);
         }
 
         @Override
@@ -705,23 +716,34 @@ public class CacheControlActivity extends BaseFragment {
                     SharedPreferences preferences = MessagesController.getGlobalMainSettings();
                     slideChooseView.setCallback(index -> {
                         if (index == 0) {
-                            SharedConfig.setKeepMedia(3);
+                            SharedConfig.setKeepMedia(1001);
                         } else if (index == 1) {
-                            SharedConfig.setKeepMedia(0);
+                            SharedConfig.setKeepMedia(3);
                         } else if (index == 2) {
-                            SharedConfig.setKeepMedia(1);
+                            SharedConfig.setKeepMedia(0);
                         } else if (index == 3) {
+                            SharedConfig.setKeepMedia(1);
+                        } else if (index == 4) {
                             SharedConfig.setKeepMedia(2);
                         }
                     });
                     int keepMedia = SharedConfig.keepMedia;
                     int index;
                     if (keepMedia == 3) {
+                        index = 1;
+                    } else if (keepMedia == 1001) {
                         index = 0;
                     } else {
-                        index = keepMedia + 1;
+                        index = keepMedia + 2; // TODO: one?
                     }
-                    slideChooseView.setOptions(index, LocaleController.formatPluralString("Days", 3), LocaleController.formatPluralString("Weeks", 1), LocaleController.formatPluralString("Months", 1), LocaleController.getString("KeepMediaForever", R.string.KeepMediaForever));
+                    slideChooseView.setOptions(
+                            index,
+                            LocaleController.formatPluralString("Days", 1),
+                            LocaleController.formatPluralString("Days", 3),
+                            LocaleController.formatPluralString("Weeks", 1),
+                            LocaleController.formatPluralString("Months", 1)
+                            , LocaleController.getString("KeepMediaForever", R.string.KeepMediaForever)
+                    );
                     break;
                 case 1:
                 default:
@@ -738,6 +760,8 @@ public class CacheControlActivity extends BaseFragment {
                     TextSettingsCell textCell = (TextSettingsCell) holder.itemView;
                     if (position == databaseRow) {
                         textCell.setTextAndValue(LocaleController.getString("ClearLocalDatabase", R.string.ClearLocalDatabase), AndroidUtilities.formatFileSize(databaseSize), false);
+                    } else if (position == forceCleanRow) {
+                        textCell.setText(LocaleController.getString("CG_ForceClean", R.string.CG_ForceClean), false);
                     } else if (position == migrateOldFolderRow) {
                         textCell.setTextAndValue(LocaleController.getString("MigrateOldFolder", R.string.MigrateOldFolder), null, false);
                     }
@@ -752,6 +776,9 @@ public class CacheControlActivity extends BaseFragment {
                         privacyCell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
                     } else if (position == keepMediaInfoRow) {
                         privacyCell.setText(AndroidUtilities.replaceTags(LocaleController.getString("KeepMediaInfo", R.string.KeepMediaInfo)));
+                        privacyCell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+                    } else if (position == forceCleanInfoRow) {
+                        privacyCell.setText(AndroidUtilities.replaceTags(LocaleController.getString("CG_ForceCleanInfo", R.string.CG_ForceCleanInfo)));
                         privacyCell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
                     }
                     break;
@@ -772,7 +799,7 @@ public class CacheControlActivity extends BaseFragment {
 
         @Override
         public int getItemViewType(int i) {
-            if (i == databaseInfoRow || i == cacheInfoRow || i == keepMediaInfoRow) {
+            if (i == databaseInfoRow || i == forceCleanInfoRow || i == cacheInfoRow || i == keepMediaInfoRow) {
                 return 1;
             }
             if (i == storageUsageRow) {

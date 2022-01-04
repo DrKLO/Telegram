@@ -5,6 +5,7 @@ import org.telegram.messenger.FileLog;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
 
 public class NativeByteBuffer extends AbstractSerializedData {
@@ -199,7 +200,7 @@ public class NativeByteBuffer extends AbstractSerializedData {
 
     public void writeString(String s) {
         try {
-            writeByteArray(s.getBytes("UTF-8"));
+            writeByteArray(s.getBytes(StandardCharsets.UTF_8));
         } catch (Exception e) {
             if (BuildVars.LOGS_ENABLED) {
                 FileLog.e("write string error");
@@ -474,7 +475,7 @@ public class NativeByteBuffer extends AbstractSerializedData {
                 buffer.get();
                 i++;
             }
-            return new String(b, "UTF-8");
+            return new String(b, StandardCharsets.UTF_8);
         } catch (Exception e) {
             if (exception) {
                 throw new RuntimeException("read string error", e);
@@ -487,6 +488,36 @@ public class NativeByteBuffer extends AbstractSerializedData {
             position(startReadPosition);
         }
         return "";
+    }
+
+    public byte[] readStringAsByteArray(boolean exception) {
+        int startReadPosition = getPosition();
+        try {
+            int sl = 1;
+            int l = getIntFromByte(buffer.get());
+            if (l >= 254) {
+                l = getIntFromByte(buffer.get()) | (getIntFromByte(buffer.get()) << 8) | (getIntFromByte(buffer.get()) << 16);
+                sl = 4;
+            }
+            byte[] b = new byte[l];
+            buffer.get(b);
+            int i = sl;
+            while ((l + i) % 4 != 0) {
+                buffer.get();
+                i++;
+            }
+            return b;
+        } catch (Exception e) {
+            if (exception) {
+                throw new RuntimeException("read string error", e);
+            } else {
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("read string error");
+                }
+            }
+            position(startReadPosition);
+        }
+        return new byte[1];
     }
 
     public byte[] readByteArray(boolean exception) {

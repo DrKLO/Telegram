@@ -679,7 +679,7 @@ public class ItemTouchHelper extends RecyclerView.ItemDecoration
             mSelected = selected;
 
             if (actionState == ACTION_STATE_DRAG) {
-                mSelected.itemView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                ua.itaysonlab.extras.CatogramExtras.performHapticFeedback(mSelected.itemView, HapticFeedbackConstants.LONG_PRESS);
             }
         }
         final ViewParent rvParent = mRecyclerView.getParent();

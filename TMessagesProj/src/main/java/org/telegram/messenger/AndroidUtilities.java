@@ -136,6 +136,7 @@ import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.IDN;
+import java.nio.charset.StandardCharsets;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.text.SimpleDateFormat;
@@ -151,6 +152,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import ua.itaysonlab.extras.CatogramExtras;
 
 public class AndroidUtilities {
 
@@ -438,10 +441,7 @@ public class AndroidUtilities {
         if (start == 0) {
             return true;
         }
-        if (s.charAt(start - 1) == '@') {
-            return false;
-        }
-        return true;
+        return s.charAt(start - 1) != '@';
     };
 
     public static boolean addLinks(Spannable text, int mask) {
@@ -841,6 +841,9 @@ public class AndroidUtilities {
         if (pathString.endsWith(".attheme")) {
             return false;
         }
+        if (pathString.endsWith(".webp")) {
+            return false;
+        }
         return pathString != null && pathString.toLowerCase().contains("/data/data/" + ApplicationLoader.applicationContext.getPackageName());
     }
 
@@ -1116,7 +1119,7 @@ public class AndroidUtilities {
 
     public static byte[] getStringBytes(String src) {
         try {
-            return src.getBytes("UTF-8");
+            return src.getBytes(StandardCharsets.UTF_8);
         } catch (Exception ignore) {
 
         }
@@ -1138,7 +1141,7 @@ public class AndroidUtilities {
             ArrayList<VcardData> vcardDatas = new ArrayList<>();
             VcardData currentData = null;
 
-            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(stream, "UTF-8"));
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8));
             String line;
             String originalLine;
             String pendingLine = null;
@@ -1307,30 +1310,19 @@ public class AndroidUtilities {
 
     public static Typeface getTypeface(String assetPath) {
         synchronized (typefaceCache) {
-            if (!typefaceCache.containsKey(assetPath)) {
-                try {
-                    Typeface t;
-                    if (Build.VERSION.SDK_INT >= 26) {
-                        Typeface.Builder builder = new Typeface.Builder(ApplicationLoader.applicationContext.getAssets(), assetPath);
-                        if (assetPath.contains("medium")) {
-                            builder.setWeight(700);
-                        }
-                        if (assetPath.contains("italic")) {
-                            builder.setItalic(true);
-                        }
-                        t = builder.build();
-                    } else {
-                        t = Typeface.createFromAsset(ApplicationLoader.applicationContext.getAssets(), assetPath);
-                    }
-                    typefaceCache.put(assetPath, t);
-                } catch (Exception e) {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.e("Could not get typeface '" + assetPath + "' because " + e.getMessage());
-                    }
-                    return null;
-                }
+            switch (assetPath) {
+                case "fonts/rmediumitalic.ttf":
+                    return Typeface.create("sans-serif-medium", Typeface.BOLD_ITALIC);
+                case "fonts/ritalic.ttf":
+                    return Typeface.create("sans-serif-medium", Typeface.ITALIC);
+                case "fonts/rmono.ttf":
+                    return Typeface.MONOSPACE;
+                case "fonts/mw_bold.ttf":
+                    return Typeface.create("sans-serif", Typeface.BOLD);
+                default:
+                    return Typeface.create("sans-serif-medium", Typeface.NORMAL);
             }
-            return typefaceCache.get(assetPath);
+
         }
     }
 
@@ -3166,10 +3158,7 @@ public class AndroidUtilities {
             return false;
         }
         float scale = Settings.Global.getFloat(ApplicationLoader.applicationContext.getContentResolver(), Settings.Global.ANIMATOR_DURATION_SCALE, 1.0f);
-        if (scale <= 0.0f) {
-            return false;
-        }
-        return true;
+        return !(scale <= 0.0f);
     }
 
     public static void showProxyAlert(Activity activity, final String address, final String port, final String user, final String password, final String secret) {
@@ -3699,6 +3688,7 @@ public class AndroidUtilities {
                 if ((flags & View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR) == 0) {
                     flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
                     decorView.setSystemUiVisibility(flags);
+                    window.setStatusBarColor(CatogramExtras.getLightStatusbarColor());
                     if (!SharedConfig.noStatusBar) {
                         window.setStatusBarColor(0x0f000000);
                     }
@@ -3707,6 +3697,7 @@ public class AndroidUtilities {
                 if ((flags & View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR) != 0) {
                     flags &= ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
                     decorView.setSystemUiVisibility(flags);
+                    window.setStatusBarColor(CatogramExtras.getDarkStatusbarColor());
                     if (!SharedConfig.noStatusBar) {
                         window.setStatusBarColor(0x33000000);
                     }
@@ -3798,10 +3789,7 @@ public class AndroidUtilities {
     }
 
     public static boolean checkInlinePermissions(Context context) {
-        if (Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(context)) {
-            return true;
-        }
-        return false;
+        return Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(context);
     }
 
     public static void updateVisibleRows(RecyclerListView listView) {

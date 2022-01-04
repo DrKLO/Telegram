@@ -16,6 +16,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
@@ -34,6 +35,8 @@ import org.telegram.ui.BubbleActivity;
 import org.telegram.ui.Components.Crop.CropRotationWheel;
 import org.telegram.ui.Components.Crop.CropTransform;
 import org.telegram.ui.Components.Crop.CropView;
+
+import java.util.ArrayList;
 
 public class PhotoCropView extends FrameLayout {
 
@@ -63,6 +66,9 @@ public class PhotoCropView extends FrameLayout {
 
     private Paint circlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Theme.ResourcesProvider resourcesProvider;
+
+    private ArrayList<Rect> exclusionRects = new ArrayList<>();
+    private Rect exclustionRect = new Rect();
 
     public final Property<PhotoCropView, Float> ANIMATION_VALUE = new AnimationProperties.FloatProperty<PhotoCropView>("thumbAnimationProgress") {
         @Override
@@ -165,6 +171,8 @@ public class PhotoCropView extends FrameLayout {
             }
         });
         addView(wheelView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER | Gravity.BOTTOM, 0, 0, 0, 0));
+
+        exclusionRects.add(exclustionRect);
     }
 
     @Override
@@ -375,6 +383,10 @@ public class PhotoCropView extends FrameLayout {
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
         cropView.updateLayout();
+        if (Build.VERSION.SDK_INT >= 29) {
+            exclustionRect.set(left, 0, right, getMeasuredHeight());
+            setSystemGestureExclusionRects(exclusionRects);
+        }
     }
 
     @Override

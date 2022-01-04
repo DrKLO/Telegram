@@ -108,7 +108,7 @@ public class ChangeBioActivity extends BaseFragment {
                 if (result != null && source != null && result.length() != source.length()) {
                     Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
                     if (v != null) {
-                        v.vibrate(200);
+                        ua.itaysonlab.extras.CatogramExtras.vibrate(v, 200);
                     }
                     AndroidUtilities.shakeView(checkTextView, 2, 0);
                 }

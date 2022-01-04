@@ -19,10 +19,11 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.drawable.Drawable;
-import androidx.annotation.Keep;
 import android.text.TextPaint;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
+
+import androidx.annotation.Keep;
 
 import org.telegram.messenger.AndroidUtilities;
 

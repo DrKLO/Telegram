@@ -1735,9 +1735,8 @@ JNIEXPORT void Java_org_telegram_messenger_Intro_onDrawFrame(JNIEnv *env, jclass
 
     float private_back_k = .8;
 
-    glClearColor(1, 1, 1, 1);
+    glClearColor(0, 0, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT);
-
 
     if (current_page == 0) {
         rglNormalDraw();

@@ -12,6 +12,7 @@ import android.animation.Animator;
 import android.animation.AnimatorSet;
 import android.app.Activity;
 import android.app.Dialog;
+import android.app.assist.AssistContent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -577,7 +578,7 @@ public abstract class BaseFragment {
         return getAccountInstance().getMessagesController();
     }
 
-    protected ContactsController getContactsController() {
+    public ContactsController getContactsController() {
         return getAccountInstance().getContactsController();
     }
 
@@ -727,6 +728,10 @@ public abstract class BaseFragment {
 
     private void setParentDialog(Dialog dialog) {
         parentDialog = dialog;
+    }
+
+    public void onProvideAssistContent(AssistContent outContent) {
+
     }
 
     public Theme.ResourcesProvider getResourceProvider() {

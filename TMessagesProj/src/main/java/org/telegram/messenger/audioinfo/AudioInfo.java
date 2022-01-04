@@ -137,7 +137,7 @@ public abstract class AudioInfo {
 
 	public static AudioInfo getAudioInfo(File file) {
         try {
-            byte header[] = new byte[12];
+            byte[] header = new byte[12];
             RandomAccessFile randomAccessFile = new RandomAccessFile(file, "r");
             randomAccessFile.readFully(header, 0, 8);
             randomAccessFile.close();

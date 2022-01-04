@@ -25,18 +25,18 @@ import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.UserObject;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.messenger.UserConfig;
+import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox;
 import org.telegram.ui.Components.CheckBoxSquare;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.NotificationsSettingsActivity;
 
 public class UserCell extends FrameLayout {
@@ -489,6 +489,7 @@ public class UserCell extends FrameLayout {
         if (adminTextView != null) {
             adminTextView.setTextColor(Theme.getColor(Theme.key_profile_creatorIcon));
         }
+        if (currentUser != null && currentUser.id != UserConfig.getInstance(currentAccount).getClientUserId() && currentUser.mutual_contact) statusTextView.setText(statusTextView.getText() + " (" + LocaleController.getString("CG_Mutual_Contact", R.string.CG_Mutual_Contact) + ")");
     }
 
     public void setSelfAsSavedMessages(boolean value) {

@@ -14,9 +14,9 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
 
-import org.telegram.tgnet.TLRPC;
-
 import androidx.core.app.RemoteInput;
+
+import org.telegram.tgnet.TLRPC;
 
 public class WearReplyReceiver extends BroadcastReceiver {
 

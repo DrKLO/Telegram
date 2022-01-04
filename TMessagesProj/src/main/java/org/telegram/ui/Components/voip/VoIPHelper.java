@@ -61,6 +61,8 @@ import java.util.Collections;
 import java.util.Locale;
 import java.util.Set;
 
+import ua.itaysonlab.catogram.CatogramConfig;
+
 public class VoIPHelper {
 
 	public static long lastCallTime = 0;
@@ -68,6 +70,10 @@ public class VoIPHelper {
 	private static final int VOIP_SUPPORT_ID = 4244000;
 
 	public static void startCall(TLRPC.User user, boolean videoCall, boolean canVideoCall, final Activity activity, TLRPC.UserFull userFull, AccountInstance accountInstance) {
+		startCall(user, videoCall, canVideoCall, activity, userFull, accountInstance, false);
+	}
+
+	public static void startCall(TLRPC.User user, boolean videoCall, boolean canVideoCall, final Activity activity, TLRPC.UserFull userFull, AccountInstance accountInstance, boolean confirmed) {
 		if (userFull != null && userFull.phone_calls_private) {
 			new AlertDialog.Builder(activity)
 					.setTitle(LocaleController.getString("VoipFailed", R.string.VoipFailed))
@@ -94,6 +100,16 @@ public class VoIPHelper {
 			} catch (Exception e) {
 				FileLog.e(e);
 			}
+			return;
+		}
+
+		if (CatogramConfig.INSTANCE.getConfirmCalls() && !confirmed) {
+			new AlertDialog.Builder(activity)
+					.setTitle(LocaleController.getString("CG_ConfirmCalling_Header", R.string.CG_ConfirmCalling_Header))
+					.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("CG_ConfirmCalling_Question", R.string.CG_ConfirmCalling_Question, ContactsController.formatName(user.first_name, user.last_name))))
+					.setPositiveButton(LocaleController.getString("CG_ConfirmCalling_Action", R.string.CG_ConfirmCalling_Action), (dialog, which) -> startCall(user, videoCall, canVideoCall, activity, userFull, accountInstance, true))
+					.setNeutralButton(LocaleController.getString("CG_ConfirmCalling_Action_Cancel", R.string.CG_ConfirmCalling_Action_Cancel), null)
+					.show();
 			return;
 		}
 

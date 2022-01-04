@@ -5,11 +5,10 @@ import android.text.TextUtils;
 
 import androidx.core.graphics.ColorUtils;
 
-import org.telegram.messenger.SegmentTree;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.telegram.messenger.SegmentTree;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;

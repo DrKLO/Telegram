@@ -100,9 +100,12 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CountDownLatch;
 
+import ua.itaysonlab.catogram.CatogramConfig;
+import ua.itaysonlab.catogram.voicerec.InstantVideoBridge;
+
 public class MediaController implements AudioManager.OnAudioFocusChangeListener, NotificationCenter.NotificationCenterDelegate, SensorEventListener {
 
-    private native int startRecord(String path, int sampleRate);
+    private native int startRecord(String path, int sampleRate, int channelCount, int selfBitrate);
 
     private native int writeFrame(ByteBuffer frame, int len);
 
@@ -569,7 +572,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
     private ArrayList<ByteBuffer> recordBuffers = new ArrayList<>();
     private ByteBuffer fileBuffer;
     public int recordBufferSize = 1280;
-    public int sampleRate = 16000;
+    public int sampleRate = CatogramConfig.INSTANCE.getHqVoice() ? 48000 : 16000;
     private int sendAfterDone;
     private boolean sendAfterDoneNotify;
     private int sendAfterDoneScheduleDate;
@@ -859,8 +862,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
         recordQueue.postRunnable(() -> {
             try {
-                sampleRate = 16000;
-                int minBuferSize = AudioRecord.getMinBufferSize(sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
+                int minBuferSize = AudioRecord.getMinBufferSize(sampleRate, InstantVideoBridge.getInstantAudioChannelType(), AudioFormat.ENCODING_PCM_16BIT);
                 if (minBuferSize <= 0) {
                     minBuferSize = 1280;
                 }
@@ -894,7 +896,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 }
                 proximitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY);
                 PowerManager powerManager = (PowerManager) ApplicationLoader.applicationContext.getSystemService(Context.POWER_SERVICE);
-                proximityWakeLock = powerManager.newWakeLock(0x00000020, "telegram:proximity_lock");
+                proximityWakeLock = CatogramConfig.INSTANCE.getEnableProximity() ? powerManager.newWakeLock(0x00000020, "proximity") : null;
             } catch (Exception e) {
                 FileLog.e(e);
             }
@@ -1411,7 +1413,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
     }
 
     private boolean isNearToSensor(float value) {
-        return value < 5.0f && value != proximitySensor.getMaximumRange();
+        return CatogramConfig.INSTANCE.getEnableProximity() && value < 5.0f && value != proximitySensor.getMaximumRange();
     }
 
     public boolean isRecordingOrListeningByProximity() {
@@ -2180,7 +2182,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 return Integer.compare(mid2, mid1);
             } else {
                 if (group1 != 0 && group1 == group2) {
-                    return Integer.compare(mid2, mid1);
+                    return Integer.compare(mid1, mid2);
                 }
                 return Integer.compare(mid1, mid2);
             }
@@ -2393,8 +2395,8 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
     private void checkAudioFocus(MessageObject messageObject) {
         int neededAudioFocus;
-        if (messageObject.isVoice() || messageObject.isRoundVideo()) {
-            if (useFrontSpeaker) {
+        if (messageObject.isVoice() || messageObject.isVideo() || messageObject.isRoundVideo()) {
+            if (CatogramConfig.INSTANCE.getAudioFocus()) {
                 neededAudioFocus = 3;
             } else {
                 neededAudioFocus = 2;
@@ -2743,6 +2745,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 }
                 AndroidUtilities.runOnUIThread(() -> {
                     try {
+                        if (playingMessageObject != null && (playingMessageObject.isVoice() || playingMessageObject.isRoundVideo())) return;
                         int tag = ++emojiSoundPlayerNum;
                         if (emojiSoundPlayer != null) {
                             emojiSoundPlayer.releasePlayer(true);
@@ -3415,7 +3418,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
     public void requestAudioFocus(boolean request) {
         if (request) {
             if (!hasRecordAudioFocus && SharedConfig.pauseMusicOnRecord) {
-                int result = NotificationsController.audioManager.requestAudioFocus(audioRecordFocusChangedListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
+                int result = NotificationsController.audioManager.requestAudioFocus(audioRecordFocusChangedListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK);
                 if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
                     hasRecordAudioFocus = true;
                 }
@@ -3437,7 +3440,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         requestAudioFocus(true);
 
         try {
-            feedbackView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+            ua.itaysonlab.extras.CatogramExtras.performHapticFeedback(feedbackView, HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
         } catch (Exception ignore) {
 
         }
@@ -3465,7 +3468,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             recordingAudioFile = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), FileLoader.getAttachFileName(recordingAudio));
 
             try {
-                if (startRecord(recordingAudioFile.getAbsolutePath(), 16000) == 0) {
+                if (startRecord(recordingAudioFile.getAbsolutePath(), sampleRate, InstantVideoBridge.getInstantAudioChannelCount(), InstantVideoBridge.getVoiceBitrate()) == 0) {
                     AndroidUtilities.runOnUIThread(() -> {
                         recordStartRunnable = null;
                         NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.recordStartError, guid);
@@ -3473,7 +3476,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                     return;
                 }
 
-                audioRecorder = new AudioRecord(MediaRecorder.AudioSource.DEFAULT, sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, recordBufferSize);
+                audioRecorder = new AudioRecord(MediaRecorder.AudioSource.DEFAULT, sampleRate, InstantVideoBridge.getInstantAudioChannelType(), AudioFormat.ENCODING_PCM_16BIT, recordBufferSize);
                 recordStartTime = System.currentTimeMillis();
                 recordTimeCount = 0;
                 samplesCount = 0;
@@ -3483,6 +3486,8 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 recordReplyingTopMsg = replyToTopMsg;
                 fileBuffer.rewind();
 
+                InstantVideoBridge.initVoiceEnhancements(audioRecorder);
+
                 audioRecorder.startRecording();
             } catch (Exception e) {
                 FileLog.e(e);
@@ -3490,7 +3495,9 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 stopRecord();
                 recordingAudioFile.delete();
                 recordingAudioFile = null;
+
                 try {
+                    InstantVideoBridge.releaseVoiceEnhancements();
                     audioRecorder.release();
                     audioRecorder = null;
                 } catch (Exception e2) {
@@ -3583,6 +3590,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             requestAudioFocus(false);
         }
         try {
+            InstantVideoBridge.releaseVoiceEnhancements();
             if (audioRecorder != null) {
                 audioRecorder.release();
                 audioRecorder = null;
@@ -3623,7 +3631,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 stopRecordingInternal(0, false, 0);
             }
             try {
-                feedbackView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                ua.itaysonlab.extras.CatogramExtras.performHapticFeedback(feedbackView, HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
             } catch (Exception ignore) {
 
             }

@@ -14,6 +14,8 @@ import android.view.View;
 import android.widget.RemoteViews;
 import android.widget.RemoteViewsService;
 
+import androidx.core.content.FileProvider;
+
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 
@@ -22,7 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
-import androidx.core.content.FileProvider;
+import ua.itaysonlab.catogram.CGFeatureHooks;
 
 public class FeedWidgetService extends RemoteViewsService {
     @Override
@@ -113,6 +115,8 @@ class FeedRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactory, N
         Intent fillInIntent = new Intent();
         fillInIntent.putExtras(extras);
         rv.setOnClickFillInIntent(R.id.shortcut_widget_item, fillInIntent);
+
+        CGFeatureHooks.colorFeedWidgetItem(rv);
 
         return rv;
     }

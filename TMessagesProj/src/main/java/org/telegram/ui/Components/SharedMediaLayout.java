@@ -1246,11 +1246,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             @Override
             public void onTextChanged(EditText editText) {
                 String text = editText.getText().toString();
-                if (text.length() != 0) {
-                    searchWas = true;
-                } else {
-                    searchWas = false;
-                }
+                searchWas = text.length() != 0;
                 switchToCurrentSelectedMode(false);
                 if (mediaPages[0].selectedType == 1) {
                     if (documentsSearchAdapter == null) {
@@ -5714,10 +5710,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             int globalCount = globalSearch.size();
             if (i >= 0 && i < localCount) {
                 return false;
-            } else if (i > localCount && i <= globalCount + localCount) {
-                return true;
-            }
-            return false;
+            } else return i > localCount && i <= globalCount + localCount;
         }
 
         public MessageObject getItem(int i) {
@@ -5806,10 +5799,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
 
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
-            if (sharedMediaData[5].messages.size() == 0 && !sharedMediaData[5].loading) {
-                return false;
-            }
-            return true;
+            return sharedMediaData[5].messages.size() != 0 || sharedMediaData[5].loading;
         }
 
         @Override

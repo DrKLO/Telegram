@@ -17,6 +17,8 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
@@ -42,8 +44,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 
+
 import androidx.collection.LongSparseArray;
-import androidx.recyclerview.widget.RecyclerView;
 
 public class GroupVoipInviteAlert extends UsersAlertBase {
 
@@ -89,8 +91,8 @@ public class GroupVoipInviteAlert extends UsersAlertBase {
 
     @Override
     protected void updateColorKeys() {
-        keyScrollUp = Theme.key_voipgroup_scrollUp;
-        keyListSelector = Theme.key_voipgroup_listSelector;
+        /*keyScrollUp = Theme.key_voipgroup_scrollUp;
+        keyListSelector = Theme.key_listSelector;
         keySearchBackground = Theme.key_voipgroup_searchBackground;
         keyInviteMembersBackground = Theme.key_voipgroup_inviteMembersBackground;
         keyListViewBackground = Theme.key_voipgroup_listViewBackground;
@@ -101,7 +103,7 @@ public class GroupVoipInviteAlert extends UsersAlertBase {
         keySearchPlaceholder = Theme.key_voipgroup_searchPlaceholder;
         keySearchText = Theme.key_voipgroup_searchText;
         keySearchIcon = Theme.key_voipgroup_mutedIcon;
-        keySearchIconUnscrolled = Theme.key_voipgroup_mutedIconUnscrolled;
+        keySearchIconUnscrolled = Theme.key_voipgroup_mutedIconUnscrolled;*/
     }
 
     public GroupVoipInviteAlert(final Context context, int account, TLRPC.Chat chat, TLRPC.ChatFull chatFull, LongSparseArray<TLRPC.TL_groupCallParticipant> participants, HashSet<Long> invited) {
@@ -652,15 +654,15 @@ public class GroupVoipInviteAlert extends UsersAlertBase {
                 case 0:
                     ManageChatUserCell manageChatUserCell = new ManageChatUserCell(mContext, 2, 2, false);
                     manageChatUserCell.setCustomRightImage(R.drawable.msg_invited);
-                    manageChatUserCell.setNameColor(Theme.getColor(Theme.key_voipgroup_nameText));
-                    manageChatUserCell.setStatusColors(Theme.getColor(Theme.key_voipgroup_lastSeenTextUnscrolled), Theme.getColor(Theme.key_voipgroup_listeningText));
-                    manageChatUserCell.setDividerColor(Theme.key_voipgroup_listViewBackground);
+                    manageChatUserCell.setNameColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                    manageChatUserCell.setStatusColors(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText), Theme.getColor(Theme.key_windowBackgroundWhiteBlueText));
+                    manageChatUserCell.setDividerColor(Theme.key_divider);
                     view = manageChatUserCell;
                     break;
                 case 1:
                     GraySectionCell cell = new GraySectionCell(mContext);
-                    cell.setBackgroundColor(Theme.getColor(Theme.key_voipgroup_actionBarUnscrolled));
-                    cell.setTextColor(Theme.key_voipgroup_searchPlaceholder);
+                    cell.setBackgroundColor(Theme.getColor(Theme.key_actionBarDefault));
+                    cell.setTextColor(Theme.key_actionBarDefaultSearchPlaceholder);
                     view = cell;
                     break;
                 case 2:
@@ -726,7 +728,7 @@ public class GroupVoipInviteAlert extends UsersAlertBase {
                                         } else {
                                             index++;
                                         }
-                                        spannableStringBuilder.setSpan(new ForegroundColorSpan(Theme.getColor(Theme.key_voipgroup_listeningText)), index, index + len, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                                        spannableStringBuilder.setSpan(new ForegroundColorSpan(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText)), index, index + len, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                                     }
                                     username = spannableStringBuilder;
                                 } catch (Exception e) {
@@ -742,7 +744,7 @@ public class GroupVoipInviteAlert extends UsersAlertBase {
                         name = new SpannableStringBuilder(u);
                         int idx = AndroidUtilities.indexOfIgnoreCase(u, nameSearch);
                         if (idx != -1) {
-                            name.setSpan(new ForegroundColorSpan(Theme.getColor(Theme.key_voipgroup_listeningText)), idx, idx + nameSearch.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            name.setSpan(new ForegroundColorSpan(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText)), idx, idx + nameSearch.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                         }
                     }
 
@@ -818,21 +820,15 @@ public class GroupVoipInviteAlert extends UsersAlertBase {
                 case 0:
                     ManageChatUserCell manageChatUserCell = new ManageChatUserCell(mContext, 6, 2, false);
                     manageChatUserCell.setCustomRightImage(R.drawable.msg_invited);
-                    manageChatUserCell.setNameColor(Theme.getColor(Theme.key_voipgroup_nameText));
-                    manageChatUserCell.setStatusColors(Theme.getColor(Theme.key_voipgroup_lastSeenTextUnscrolled), Theme.getColor(Theme.key_voipgroup_listeningText));
-                    manageChatUserCell.setDividerColor(Theme.key_voipgroup_actionBar);
                     view = manageChatUserCell;
                     break;
                 case 1:
                     ManageChatTextCell manageChatTextCell = new ManageChatTextCell(mContext);
-                    manageChatTextCell.setColors(Theme.key_voipgroup_listeningText, Theme.key_voipgroup_listeningText);
-                    manageChatTextCell.setDividerColor(Theme.key_voipgroup_actionBar);
                     view = manageChatTextCell;
                     break;
                 case 2:
                     GraySectionCell cell = new GraySectionCell(mContext);
-                    cell.setBackgroundColor(Theme.getColor(Theme.key_voipgroup_actionBarUnscrolled));
-                    cell.setTextColor(Theme.key_voipgroup_searchPlaceholder);
+                    cell.setBackgroundColor(Theme.getColor(Theme.key_actionBarDefault));
                     view = cell;
                     break;
                 case 3:
@@ -843,7 +839,7 @@ public class GroupVoipInviteAlert extends UsersAlertBase {
                     FlickerLoadingView flickerLoadingView = new FlickerLoadingView(mContext);
                     flickerLoadingView.setViewType(FlickerLoadingView.USERS_TYPE);
                     flickerLoadingView.setIsSingleCell(true);
-                    flickerLoadingView.setColors(Theme.key_voipgroup_inviteMembersBackground, Theme.key_voipgroup_searchBackground, Theme.key_voipgroup_actionBarUnscrolled);
+                    flickerLoadingView.setColors(Theme.key_windowBackgroundWhiteBlueButton, Theme.key_dialogSearchBackground, Theme.key_actionBarDefault);
                     view = flickerLoadingView;
                     break;
                 case 4:

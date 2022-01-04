@@ -33,10 +33,13 @@ import java.io.File;
 import java.io.RandomAccessFile;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Locale;
+
+import ua.itaysonlab.catogram.CatogramConfig;
 
 public class SharedConfig {
 
@@ -119,7 +122,7 @@ public class SharedConfig {
     public static boolean allowBigEmoji;
     public static boolean useSystemEmoji;
     public static int fontSize = 16;
-    public static int bubbleRadius = 10;
+    public static int bubbleRadius = 17;
     public static int ivFontSize = 16;
     public static int messageSeenHintCount;
     public static int emojiInteractionsHintCount;
@@ -248,6 +251,14 @@ public class SharedConfig {
         return value;
     }
 
+    public static void toggleSystemEmoji() {
+        useSystemEmoji = !useSystemEmoji;
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean("useSystemEmoji", useSystemEmoji);
+        editor.commit();
+    }
+
     public static void loadConfig() {
         synchronized (sync) {
             if (configLoaded || ApplicationLoader.applicationContext == null) {
@@ -255,6 +266,7 @@ public class SharedConfig {
             }
 
             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("userconfing", Context.MODE_PRIVATE);
+
             saveIncomingPhotos = preferences.getBoolean("saveIncomingPhotos", false);
             passcodeHash = preferences.getString("passcodeHash1", "");
             appLocked = preferences.getBoolean("appLocked", false);
@@ -327,6 +339,7 @@ public class SharedConfig {
             }
 
             preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+
             saveToGallery = preferences.getBoolean("save_gallery", false);
             autoplayGifs = preferences.getBoolean("autoplay_gif", true);
             autoplayVideo = preferences.getBoolean("autoplay_video", true);
@@ -341,7 +354,7 @@ public class SharedConfig {
             roundCamera16to9 = true;//preferences.getBoolean("roundCamera16to9", false);
             repeatMode = preferences.getInt("repeatMode", 0);
             fontSize = preferences.getInt("fons_size", AndroidUtilities.isTablet() ? 18 : 16);
-            bubbleRadius = preferences.getInt("bubbleRadius", 10);
+            bubbleRadius = preferences.getInt("bubbleRadius", 17);
             ivFontSize = preferences.getInt("iv_font_size", fontSize);
             allowBigEmoji = preferences.getBoolean("allowBigEmoji", true);
             useSystemEmoji = preferences.getBoolean("useSystemEmoji", false);
@@ -363,7 +376,7 @@ public class SharedConfig {
             devicePerformanceClass = preferences.getInt("devicePerformanceClass", -1);
             loopStickers = preferences.getBoolean("loopStickers", true);
             keepMedia = preferences.getInt("keep_media", 2);
-            noStatusBar = preferences.getBoolean("noStatusBar", false);
+            noStatusBar = preferences.getBoolean("noStatusBar", true);
             lastKeepMediaCheckTime = preferences.getInt("lastKeepMediaCheckTime", 0);
             lastLogsCheckTime = preferences.getInt("lastLogsCheckTime", 0);
             searchMessagesAsListHintShows = preferences.getInt("searchMessagesAsListHintShows", 0);
@@ -494,7 +507,7 @@ public class SharedConfig {
                 try {
                     passcodeSalt = new byte[16];
                     Utilities.random.nextBytes(passcodeSalt);
-                    byte[] passcodeBytes = passcode.getBytes("UTF-8");
+                    byte[] passcodeBytes = passcode.getBytes(StandardCharsets.UTF_8);
                     byte[] bytes = new byte[32 + passcodeBytes.length];
                     System.arraycopy(passcodeSalt, 0, bytes, 0, 16);
                     System.arraycopy(passcodeBytes, 0, bytes, 16, passcodeBytes.length);
@@ -508,7 +521,7 @@ public class SharedConfig {
             return result;
         } else {
             try {
-                byte[] passcodeBytes = passcode.getBytes("UTF-8");
+                byte[] passcodeBytes = passcode.getBytes(StandardCharsets.UTF_8);
                 byte[] bytes = new byte[32 + passcodeBytes.length];
                 System.arraycopy(passcodeSalt, 0, bytes, 0, 16);
                 System.arraycopy(passcodeBytes, 0, bytes, 16, passcodeBytes.length);
@@ -675,6 +688,8 @@ public class SharedConfig {
                     days = 7;
                 } else if (keepMedia == 1) {
                     days = 30;
+                } else if (keepMedia == 1001) {
+                    days = 1;
                 } else {
                     days = 3;
                 }
@@ -1063,7 +1078,7 @@ public class SharedConfig {
     public static void checkSaveToGalleryFiles() {
         Utilities.globalQueue.postRunnable(() -> {
             try {
-                File telegramPath = new File(Environment.getExternalStorageDirectory(), "Telegram");
+                File telegramPath = new File(CatogramConfig.INSTANCE.getPrivateDir() ? ApplicationLoader.applicationContext.getExternalFilesDir(null) : Environment.getExternalStorageDirectory(), "Telegram");
                 File imagePath = new File(telegramPath, "Telegram Images");
                 imagePath.mkdir();
                 File videoPath = new File(telegramPath, "Telegram Video");

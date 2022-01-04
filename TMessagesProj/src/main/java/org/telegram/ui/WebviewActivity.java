@@ -336,9 +336,7 @@ public class WebviewActivity extends BaseFragment {
         String manufacturer = Build.MANUFACTURER;
         String model = Build.MODEL;
         if ("samsung".equals(manufacturer)) {
-            if ("GT-I9500".equals(model)) {
-                return false;
-            }
+            return !"GT-I9500".equals(model);
         }
         return true;
     }

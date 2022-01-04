@@ -670,10 +670,7 @@ public class InviteMembersBottomSheet extends UsersAlertBase implements Notifica
 
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
-            if (holder.getItemViewType() == 3 || holder.getItemViewType() == 1) {
-                return true;
-            }
-            return false;
+            return holder.getItemViewType() == 3 || holder.getItemViewType() == 1;
         }
 
         @Override
@@ -703,10 +700,7 @@ public class InviteMembersBottomSheet extends UsersAlertBase implements Notifica
 
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
-            if (holder.getItemViewType() == 1) {
-                return true;
-            }
-            return false;
+            return holder.getItemViewType() == 1;
         }
 
         @NonNull

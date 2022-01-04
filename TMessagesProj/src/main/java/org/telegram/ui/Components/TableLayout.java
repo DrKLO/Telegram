@@ -1629,9 +1629,7 @@ public class TableLayout extends View {
             LayoutParams that = (LayoutParams) o;
 
             if (!columnSpec.equals(that.columnSpec)) return false;
-            if (!rowSpec.equals(that.rowSpec)) return false;
-
-            return true;
+            return rowSpec.equals(that.rowSpec);
         }
 
         @Override
@@ -1819,11 +1817,7 @@ public class TableLayout extends View {
             if (max != interval.max) {
                 return false;
             }
-            if (min != interval.min) {
-                return false;
-            }
-
-            return true;
+            return min == interval.min;
         }
 
         @Override
@@ -1890,11 +1884,7 @@ public class TableLayout extends View {
             if (!alignment.equals(spec.alignment)) {
                 return false;
             }
-            if (!span.equals(spec.span)) {
-                return false;
-            }
-
-            return true;
+            return span.equals(spec.span);
         }
 
         @Override

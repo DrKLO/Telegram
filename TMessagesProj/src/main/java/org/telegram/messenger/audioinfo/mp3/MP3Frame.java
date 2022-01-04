@@ -279,11 +279,8 @@ public class MP3Frame {
 		if (bytes[xingOffset] == 'X' && bytes[xingOffset + 1] == 'i' && bytes[xingOffset + 2] == 'n' && bytes[xingOffset + 3] == 'g') {
 			return true;
 		}
-		if (bytes[xingOffset] == 'I' && bytes[xingOffset + 1] == 'n' && bytes[xingOffset + 2] == 'f' && bytes[xingOffset + 3] == 'o') {
-			return true;
-		}
-		return false;
-	}
+        return bytes[xingOffset] == 'I' && bytes[xingOffset + 1] == 'n' && bytes[xingOffset + 2] == 'f' && bytes[xingOffset + 3] == 'o';
+    }
 
 	boolean isVBRIFrame() {
 		int vbriOffset = header.getVBRIOffset();

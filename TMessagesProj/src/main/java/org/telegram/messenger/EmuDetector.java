@@ -7,11 +7,11 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.os.Build;
-import androidx.core.content.ContextCompat;
-
 import android.os.Environment;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
+
+import androidx.core.content.ContextCompat;
 
 import java.io.File;
 import java.io.FileInputStream;

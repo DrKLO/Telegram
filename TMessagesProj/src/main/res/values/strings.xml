@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AppName">Telegram</string>
-    <string name="AppNameBeta">Telegram Beta</string>
+    <string name="AppName">Catogram</string>
+    <string name="AppNameBeta">Catogram Beta</string>
     <string name="LanguageName">English</string>
     <string name="English">English</string>
     <string name="LanguageNameInEnglish">English</string>
@@ -2482,7 +2482,7 @@
     <string name="CreateNewFilter">Create New Folder</string>
     <string name="CreateNewFilterInfo">Create folders for different groups of chats and quickly switch between them.</string>
     <string name="FilterRecommended">Recommended Folders</string>
-    <string name="FilterAllChats">All Chats</string>
+    <string name="FilterAllChats">All</string>
     <string name="FilterAllChatsShort">All</string>
     <string name="FilterReorder">Reorder</string>
     <string name="FilterEdit">Edit folder</string>
@@ -3218,7 +3218,7 @@
     <string name="ActionBotDocumentRentalAgreement">Rental Agreement</string>
     <string name="ActionBotDocumentPhone">Phone Number</string>
     <string name="ActionBotDocumentEmail">Email Address</string>
-    <string name="UnsupportedMedia">This message is not supported on your version of Telegram. Update the app to view: https://telegram.org/update</string>
+    <string name="UnsupportedMedia">This message is not supported on your version of Telegram. Update the app to view: https://t.me/catogram</string>
     <string name="AttachPhoto">Photo</string>
     <string name="AttachVideo">Video</string>
     <string name="AttachDestructingPhoto">Self-Destructing Photo</string>
@@ -3467,7 +3467,7 @@
     <string name="ViewMessageStatistic">Message Statistic</string>
     <string name="ViewMessage">Open Message</string>
     <!--Intro view-->
-    <string name="Page1Title">Telegram</string>
+    <string name="Page1Title">Catogram</string>
     <string name="Page2Title">Fast</string>
     <string name="Page3Title">Free</string>
     <string name="Page4Title">Secure</string>
@@ -4739,6 +4739,7 @@
     <string name="RemindDayAt">\'Remind on\' MMM d \'at\' HH:mm</string>
     <string name="RemindDayYearAt">\'Remind on\' MMM d yyyy \'at\' HH:mm</string>
     <string name="BotsMenuTitle">Menu</string>
+    <string name="CG_ShowDC">Show DC in profile</string>
     <string name="SwipeToGoNextChannel">Pull up to go to the next unread channel</string>
     <string name="ReleaseToGoNextChannel">Release to go to the next unread channel</string>
     <string name="SwipeToGoNextFolder">Pull up to go to the next unread folder</string>

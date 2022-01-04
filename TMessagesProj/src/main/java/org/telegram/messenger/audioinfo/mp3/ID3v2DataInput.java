@@ -26,7 +26,7 @@ public class ID3v2DataInput {
 		this.input = in;
 	}
 
-	public final void readFully(byte b[], int off, int len) throws IOException {
+	public final void readFully(byte[] b, int off, int len) throws IOException {
 		int total = 0;
 		while (total < len) {
 			int current = input.read(b, off + total, len - total);

@@ -16,12 +16,13 @@
 package org.telegram.messenger.audioinfo.mp3;
 
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 public enum ID3v2Encoding {
-	ISO_8859_1(Charset.forName("ISO-8859-1"), 1),
-	UTF_16(Charset.forName("UTF-16"), 2),
-	UTF_16BE(Charset.forName("UTF-16BE"), 2),
-	UTF_8(Charset.forName("UTF-8"), 1);
+	ISO_8859_1(StandardCharsets.ISO_8859_1, 1),
+	UTF_16(StandardCharsets.UTF_16, 2),
+	UTF_16BE(StandardCharsets.UTF_16BE, 2),
+	UTF_8(StandardCharsets.UTF_8, 1);
 
 	private final Charset charset;
 	private final int zeroBytes;

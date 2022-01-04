@@ -340,11 +340,7 @@ public class PinchToZoomHelper {
     protected boolean zoomEnabled(View child, ImageReceiver receiver) {
         Drawable drawable = receiver.getDrawable();
         if (drawable instanceof AnimatedFileDrawable) {
-            if (((AnimatedFileDrawable)receiver.getDrawable()).isLoadingStream()) {
-                return false;
-            } else {
-                return true;
-            }
+            return !((AnimatedFileDrawable) receiver.getDrawable()).isLoadingStream();
         }
         return receiver.hasNotThumb();
     }

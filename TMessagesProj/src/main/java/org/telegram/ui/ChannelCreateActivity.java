@@ -59,10 +59,10 @@ import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.TextBlockCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Components.AvatarDrawable;
-import org.telegram.ui.Components.EditTextEmoji;
-import org.telegram.ui.Components.ImageUpdater;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.EditTextBoldCursor;
+import org.telegram.ui.Components.EditTextEmoji;
+import org.telegram.ui.Components.ImageUpdater;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkActionView;
 import org.telegram.ui.Components.RLottieDrawable;
@@ -258,7 +258,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                         if (nameTextView.length() == 0) {
                             Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
                             if (v != null) {
-                                v.vibrate(200);
+                                ua.itaysonlab.extras.CatogramExtras.vibrate(v, 200);
                             }
                             AndroidUtilities.shakeView(nameTextView, 2, 0);
                             return;
@@ -295,7 +295,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                                 if (!lastNameAvailable) {
                                     Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
                                     if (v != null) {
-                                        v.vibrate(200);
+                                        ua.itaysonlab.extras.CatogramExtras.vibrate(v, 200);
                                     }
                                     AndroidUtilities.shakeView(checkTextView, 2, 0);
                                     return;

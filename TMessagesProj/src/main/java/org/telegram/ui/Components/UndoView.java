@@ -54,7 +54,6 @@ import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.PaymentFormActivity;
 
 import java.util.ArrayList;
 
@@ -579,11 +578,6 @@ public class UndoView extends FrameLayout {
                         TLRPC.TL_payments_getPaymentReceipt req = new TLRPC.TL_payments_getPaymentReceipt();
                         req.msg_id = message.id;
                         req.peer = parentFragment.getMessagesController().getInputPeer(message.peer_id);
-                        parentFragment.getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                            if (response instanceof TLRPC.TL_payments_paymentReceipt) {
-                                parentFragment.presentFragment(new PaymentFormActivity((TLRPC.TL_payments_paymentReceipt) response));
-                            }
-                        }), ConnectionsManager.RequestFlagFailOnServerErrors);
                     });
                 }
             } else if (action == ACTION_VOIP_MUTED) {
@@ -1232,8 +1226,8 @@ public class UndoView extends FrameLayout {
 
             layoutParams.leftMargin = AndroidUtilities.dp(58);
             layoutParams.rightMargin = margin;
-            layoutParams.topMargin = AndroidUtilities.dp(6);
-            layoutParams.bottomMargin = AndroidUtilities.dp(7);
+            layoutParams.topMargin = 0;
+            layoutParams.bottomMargin = AndroidUtilities.dp(1);
             layoutParams.height = TableLayout.LayoutParams.MATCH_PARENT;
 
             subinfoTextView.setVisibility(GONE);

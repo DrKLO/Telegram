@@ -22,6 +22,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Outline;
@@ -126,6 +127,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+
+import ua.itaysonlab.catogram.EditTextAutoFill;
+import ua.itaysonlab.catogram.double_bottom.DoubleBottomBridge;
 
 @SuppressLint("HardwareIds")
 public class LoginActivity extends BaseFragment {
@@ -437,11 +441,7 @@ public class LoginActivity extends BaseFragment {
                 views[a].setVisibility(View.VISIBLE);
                 views[a].onShow();
                 currentDoneType = DONE_TYPE_FLOATING;
-                if (a == 1 || a == 2 || a == 3 || a == 4 || a == 8) {
-                    showDoneButton(false, false);
-                } else {
-                    showDoneButton(true, false);
-                }
+                showDoneButton(a != 1 && a != 2 && a != 3 && a != 4 && a != 8, false);
                 if (a == 1 || a == 2 || a == 3 || a == 4) {
                     currentDoneType = DONE_TYPE_ACTION;
                 }
@@ -648,7 +648,7 @@ public class LoginActivity extends BaseFragment {
         try {
             Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
             if (v != null) {
-                v.vibrate(200);
+                ua.itaysonlab.extras.CatogramExtras.vibrate(v, 200);
             }
         } catch (Throwable ignore) {
 
@@ -1061,6 +1061,7 @@ public class LoginActivity extends BaseFragment {
             if (newAccount) {
                 newAccount = false;
                 ((LaunchActivity) getParentActivity()).switchToAccount(currentAccount, false);
+                DoubleBottomBridge.INSTANCE.startTimer();
                 finishFragment();
             } else {
 
@@ -1155,6 +1156,7 @@ public class LoginActivity extends BaseFragment {
         private View view;
         private TextView textView;
         private TextView textView2;
+        private TextView proxyButton;
         private CheckBoxCell checkBoxCell;
         private CheckBoxCell testBackendCheckBox;
 
@@ -1647,12 +1649,10 @@ public class LoginActivity extends BaseFragment {
             boolean simcardAvailable = state != TelephonyManager.SIM_STATE_ABSENT && state != TelephonyManager.SIM_STATE_UNKNOWN && tm.getPhoneType() != TelephonyManager.PHONE_TYPE_NONE && !AndroidUtilities.isAirplaneModeOn();
             boolean allowCall = true;
             boolean allowCancelCall = true;
-            boolean allowReadCallLog = true;
             boolean allowReadPhoneNumbers = true;
             if (Build.VERSION.SDK_INT >= 23 && simcardAvailable) {
                 allowCall = getParentActivity().checkSelfPermission(Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED;
                 allowCancelCall = getParentActivity().checkSelfPermission(Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED;
-                allowReadCallLog = Build.VERSION.SDK_INT < 28 || getParentActivity().checkSelfPermission(Manifest.permission.READ_CALL_LOG) == PackageManager.PERMISSION_GRANTED;
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     allowReadPhoneNumbers = getParentActivity().checkSelfPermission(Manifest.permission.READ_PHONE_NUMBERS) == PackageManager.PERMISSION_GRANTED;
                 }
@@ -1664,31 +1664,22 @@ public class LoginActivity extends BaseFragment {
                     if (!allowCancelCall) {
                         permissionsItems.add(Manifest.permission.CALL_PHONE);
                     }
-                    if (!allowReadCallLog) {
-                        permissionsItems.add(Manifest.permission.READ_CALL_LOG);
-                    }
                     if (!allowReadPhoneNumbers) {
                         permissionsItems.add(Manifest.permission.READ_PHONE_NUMBERS);
                     }
                     boolean ok = true;
                     if (!permissionsItems.isEmpty()) {
                         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-                        if (preferences.getBoolean("firstlogin", true) || getParentActivity().shouldShowRequestPermissionRationale(Manifest.permission.READ_PHONE_STATE) || getParentActivity().shouldShowRequestPermissionRationale(Manifest.permission.READ_CALL_LOG)) {
+                        if (preferences.getBoolean("firstlogin", true) || getParentActivity().shouldShowRequestPermissionRationale(Manifest.permission.READ_PHONE_STATE)) {
                             preferences.edit().putBoolean("firstlogin", false).commit();
                             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
 
                             builder.setPositiveButton(LocaleController.getString("Contin", R.string.Continue), null);
                             int resId;
-                            if (!allowCall && (!allowCancelCall || !allowReadCallLog)) {
-                                builder.setMessage(LocaleController.getString("AllowReadCallAndLog", R.string.AllowReadCallAndLog));
-                                resId = R.raw.calls_log;
-                            } else if (!allowCancelCall || !allowReadCallLog) {
-                                builder.setMessage(LocaleController.getString("AllowReadCallLog", R.string.AllowReadCallLog));
-                                resId = R.raw.calls_log;
-                            } else {
-                                builder.setMessage(LocaleController.getString("AllowReadCall", R.string.AllowReadCall));
-                                resId = R.raw.incoming_calls;
-                            }
+                            
+                            builder.setMessage(LocaleController.getString("AllowReadCall", R.string.AllowReadCall));
+                            resId = R.raw.incoming_calls;
+                            
                             builder.setTopAnimation(resId, 46, false, Theme.getColor(Theme.key_dialogTopBackground));
                             permissionsDialog = showDialog(builder.create());
                         } else {
@@ -1757,7 +1748,7 @@ public class LoginActivity extends BaseFragment {
             req.api_id = BuildVars.APP_ID;
             req.phone_number = phone;
             req.settings = new TLRPC.TL_codeSettings();
-            req.settings.allow_flashcall = simcardAvailable && allowCall && allowCancelCall && allowReadCallLog;
+            req.settings.allow_flashcall = simcardAvailable && allowCall && allowCancelCall;
             req.settings.allow_missed_call = simcardAvailable && allowCall;
             req.settings.allow_app_hash = ApplicationLoader.hasPlayServices;
             ArrayList<TLRPC.TL_auth_loggedOut> tokens = MessagesController.getSavedLogOutTokens();
@@ -2164,7 +2155,7 @@ public class LoginActivity extends BaseFragment {
                 codeFieldContainer.setVisibility(GONE);
             }
 
-            timeText = new TextView(context) {
+            timeText = new androidx.appcompat.widget.AppCompatTextView(context) {
                 @Override
                 protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                     super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(100), MeasureSpec.AT_MOST));
@@ -2186,7 +2177,7 @@ public class LoginActivity extends BaseFragment {
                 addView(timeText, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL));
             }
 
-            problemText = new TextView(context) {
+            problemText = new androidx.appcompat.widget.AppCompatTextView(context) {
                 @Override
                 protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                     super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(100), MeasureSpec.AT_MOST));
@@ -2887,7 +2878,7 @@ public class LoginActivity extends BaseFragment {
             confirmTextView.setText(LocaleController.getString("LoginPasswordText", R.string.LoginPasswordText));
             addView(confirmTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT));
 
-            codeField = new EditTextBoldCursor(context);
+            codeField = new EditTextAutoFill(context);
             codeField.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             codeField.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             codeField.setCursorSize(AndroidUtilities.dp(20));
@@ -3481,7 +3472,7 @@ public class LoginActivity extends BaseFragment {
             }
             Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
             if (v != null) {
-                v.vibrate(200);
+                ua.itaysonlab.extras.CatogramExtras.vibrate(v, 200);
             }
             if (clear) {
                 codeField.setText("");

@@ -8,13 +8,17 @@
 
 package org.telegram.ui.Components.voip;
 
-import android.graphics.*;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.ColorFilter;
+import android.graphics.Paint;
+import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 
-import org.telegram.messenger.AndroidUtilities;
-
 import androidx.annotation.Keep;
+
+import org.telegram.messenger.AndroidUtilities;
 
 public class FabBackgroundDrawable extends Drawable {
 

@@ -8,7 +8,6 @@
 
 package org.telegram.ui.Components;
 
-import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 
 public abstract class StatusDrawable extends Drawable {

@@ -19,7 +19,6 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.os.Build;
-import androidx.annotation.Keep;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.TextureView;
@@ -31,6 +30,8 @@ import android.view.animation.DecelerateInterpolator;
 import android.webkit.WebView;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+
+import androidx.annotation.Keep;
 
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
 

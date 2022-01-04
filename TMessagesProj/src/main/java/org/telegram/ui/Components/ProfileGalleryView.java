@@ -39,6 +39,8 @@ import org.telegram.ui.ProfileActivity;
 
 import java.util.ArrayList;
 
+import ua.itaysonlab.extras.CatogramExtras;
+
 public class ProfileGalleryView extends CircularViewPager implements NotificationCenter.NotificationCenterDelegate {
 
     private final PointF downPoint = new PointF();
@@ -845,7 +847,7 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
                 forceResetPosition = false;
 
                 if (fromCache) {
-                    MessagesController.getInstance(currentAccount).loadDialogPhotos(did, 80, 0, false, parentClassGuid);
+                    MessagesController.getInstance(currentAccount).loadDialogPhotos(did, CatogramExtras.LOAD_AVATAR_COUNT_HEADER, 0, false, parentClassGuid);
                 }
                 if (callback != null) {
                     callback.onPhotosLoaded();
@@ -927,7 +929,7 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
 
         @Override
         public int getItemPosition(Object object) {
-            final int idx = objects.indexOf((Item) object);
+            final int idx = objects.indexOf(object);
             return idx == -1 ? POSITION_NONE : idx;
         }
 

@@ -104,6 +104,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Locale;
 
+import ua.itaysonlab.catogram.CGFeatureHooks;
+import ua.itaysonlab.catogram.CatogramConfig;
+
 public class ShareAlert extends BottomSheet implements NotificationCenter.NotificationCenterDelegate {
 
     private FrameLayout frameLayout;
@@ -300,6 +303,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
 
         private View searchBackground;
         private ImageView searchIconImageView;
+        private ImageView menuIconImageView;
         private ImageView clearSearchImageView;
         private CloseProgressDrawable2 progressDrawable;
         private EditTextBoldCursor searchEditText;
@@ -317,6 +321,15 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             searchIconImageView.setImageResource(R.drawable.smiles_inputsearch);
             searchIconImageView.setColorFilter(new PorterDuffColorFilter(getThemedColor(darkTheme ? Theme.key_voipgroup_mutedIcon : Theme.key_dialogSearchIcon), PorterDuff.Mode.MULTIPLY));
             addView(searchIconImageView, LayoutHelper.createFrame(36, 36, Gravity.LEFT | Gravity.TOP, 16, 11, 0, 0));
+
+            menuIconImageView = new ImageView(context);
+            menuIconImageView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_actionBarActionModeDefaultSelector), 1));
+            menuIconImageView.setScaleType(ImageView.ScaleType.CENTER);
+            menuIconImageView.setImageResource(R.drawable.ic_more_vertical_24);
+            menuIconImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogSearchIcon), PorterDuff.Mode.MULTIPLY));
+            menuIconImageView.setOnClickListener((v) -> CGFeatureHooks.showForwardMenu(ShareAlert.this, SearchField.this));
+
+            addView(menuIconImageView, LayoutHelper.createFrame(36, 36, Gravity.RIGHT | Gravity.TOP, 0, 11, 16, 0));
 
             clearSearchImageView = new ImageView(context);
             clearSearchImageView.setScaleType(ImageView.ScaleType.CENTER);
@@ -1529,7 +1542,11 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                 if (frameLayout2.getTag() != null && commentTextView.length() > 0) {
                     SendMessagesHelper.getInstance(currentAccount).sendMessage(commentTextView.getText().toString(), key, null, null, null, true, null, null, null, withSound, 0, null);
                 }
-                SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingMessageObjects, key, !showSendersName,false, withSound, 0);
+                if (CatogramConfig.INSTANCE.getForwardNoAuthorship() || CatogramConfig.INSTANCE.getForwardWithoutCaptions()) {
+                    SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingMessageObjects, key, true, CatogramConfig.INSTANCE.getForwardWithoutCaptions(), CatogramConfig.INSTANCE.getForwardNotify(), 0);
+                } else {
+                    SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingMessageObjects, key, !showSendersName, false, CatogramConfig.INSTANCE.getForwardNotify(), 0);
+                }
             }
             onSend(selectedDialogs, sendingMessageObjects.size());
         } else {
@@ -1875,10 +1892,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
 
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
-            if (holder.getItemViewType() == 1) {
-                return false;
-            }
-            return true;
+            return holder.getItemViewType() != 1;
         }
 
         @Override

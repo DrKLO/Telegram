@@ -8,10 +8,6 @@
 
 package org.telegram.ui.ActionBar;
 
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
-import android.animation.AnimatorSet;
-import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
@@ -33,12 +29,14 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.view.accessibility.AccessibilityEvent;
-import android.view.animation.DecelerateInterpolator;
 import android.widget.FrameLayout;
 
 import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.dynamicanimation.animation.FloatPropertyCompat;
+import androidx.dynamicanimation.animation.SpringAnimation;
+import androidx.dynamicanimation.animation.SpringForce;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
@@ -60,7 +58,7 @@ public class DrawerLayoutContainer extends FrameLayout {
     private int startedTrackingPointerId;
     private VelocityTracker velocityTracker;
     private boolean beginTrackingSent;
-    private AnimatorSet currentAnimation;
+    private SpringAnimation currentAnimation;
 
     private Rect rect = new Rect();
 
@@ -93,6 +91,19 @@ public class DrawerLayoutContainer extends FrameLayout {
     private float startY;
     private boolean keyboardVisibility;
     private int imeHeight;
+
+    private final FloatPropertyCompat<DrawerLayoutContainer> drawerPositionProperty
+            = new FloatPropertyCompat<DrawerLayoutContainer>("drawerPosition") {
+                @Override
+                public float getValue(DrawerLayoutContainer object) {
+                    return object.getDrawerPosition();
+                }
+
+                @Override
+                public void setValue(DrawerLayoutContainer object, float value) {
+                    object.setDrawerPosition(value);
+                }
+            };
 
     public DrawerLayoutContainer(Context context) {
         super(context);
@@ -136,7 +147,7 @@ public class DrawerLayoutContainer extends FrameLayout {
                     return insets.consumeSystemWindowInsets();
                 }
             });
-            setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+            setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
         }
 
         shadowLeft = getResources().getDrawable(R.drawable.menu_shadow);
@@ -230,6 +241,10 @@ public class DrawerLayoutContainer extends FrameLayout {
     }
 
     public void openDrawer(boolean fast) {
+        openDrawer(fast ? 3500f : 0f);
+    }
+
+    private void openDrawer(float velocity) {
         if (!allowOpenDrawer || drawerLayout == null) {
             return;
         }
@@ -237,46 +252,38 @@ public class DrawerLayoutContainer extends FrameLayout {
             AndroidUtilities.hideKeyboard(parentActionBarLayout.parentActivity.getCurrentFocus());
         }
         cancelCurrentAnimation();
-        AnimatorSet animatorSet = new AnimatorSet();
-        animatorSet.playTogether(ObjectAnimator.ofFloat(this, "drawerPosition", drawerLayout.getMeasuredWidth()));
-        animatorSet.setInterpolator(new DecelerateInterpolator());
-        if (fast) {
-            animatorSet.setDuration(Math.max((int) (200.0f / drawerLayout.getMeasuredWidth() * (drawerLayout.getMeasuredWidth() - drawerPosition)), 50));
-        } else {
-            animatorSet.setDuration(250);
-        }
-        animatorSet.addListener(new AnimatorListenerAdapter() {
-            @Override
-            public void onAnimationEnd(Animator animator) {
-                onDrawerAnimationEnd(true);
-            }
-        });
-        animatorSet.start();
-        currentAnimation = animatorSet;
+        final float maxValue = drawerLayout.getMeasuredWidth();
+        SpringAnimation spring = new SpringAnimation(this, drawerPositionProperty)
+                .setSpring(new SpringForce()
+                    .setStiffness(900f)
+                    .setDampingRatio(SpringForce.DAMPING_RATIO_NO_BOUNCY))
+                .setMinValue(0f)
+                .setMaxValue(maxValue)
+                .setStartVelocity(velocity)
+                .addEndListener((animation, canceled, value, vel) -> onDrawerAnimationEnd(true));
+        spring.animateToFinalPosition(maxValue);
+        currentAnimation = spring;
     }
 
     public void closeDrawer(boolean fast) {
+        closeDrawer(fast ? -3500f : 0f);
+    }
+
+    private void closeDrawer(float velocity) {
         if (drawerLayout == null) {
             return;
         }
         cancelCurrentAnimation();
-        AnimatorSet animatorSet = new AnimatorSet();
-        animatorSet.playTogether(
-                ObjectAnimator.ofFloat(this, "drawerPosition", 0)
-        );
-        animatorSet.setInterpolator(new DecelerateInterpolator());
-        if (fast) {
-            animatorSet.setDuration(Math.max((int) (200.0f / drawerLayout.getMeasuredWidth() * drawerPosition), 50));
-        } else {
-            animatorSet.setDuration(250);
-        }
-        animatorSet.addListener(new AnimatorListenerAdapter() {
-            @Override
-            public void onAnimationEnd(Animator animator) {
-                onDrawerAnimationEnd(false);
-            }
-        });
-        animatorSet.start();
+        final float maxValue = drawerLayout.getMeasuredWidth();
+        SpringAnimation spring = new SpringAnimation(this, drawerPositionProperty)
+                .setSpring(new SpringForce()
+                        .setStiffness(900f)
+                        .setDampingRatio(SpringForce.DAMPING_RATIO_NO_BOUNCY))
+                .setMinValue(0f)
+                .setMaxValue(maxValue)
+                .setStartVelocity(velocity)
+                .addEndListener((animation, canceled, value, vel) -> onDrawerAnimationEnd(false));
+        spring.animateToFinalPosition(0f);
     }
 
     private void onDrawerAnimationEnd(boolean opened) {
@@ -469,9 +476,9 @@ public class DrawerLayoutContainer extends FrameLayout {
                         float velY = velocityTracker.getYVelocity();
                         boolean backAnimation = drawerPosition < drawerLayout.getMeasuredWidth() / 2.0f && (velX < 3500 || Math.abs(velX) < Math.abs(velY)) || velX < 0 && Math.abs(velX) >= 3500;
                         if (!backAnimation) {
-                            openDrawer(!drawerOpened && Math.abs(velX) >= 3500);
+                            openDrawer(velX);
                         } else {
-                            closeDrawer(drawerOpened && Math.abs(velX) >= 3500);
+                            closeDrawer(velX);
                         }
                     }
                     startedTracking = false;

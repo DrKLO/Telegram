@@ -33,11 +33,11 @@ import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
-import org.telegram.ui.Cells.TooManyCommunitiesHintCell;
 import org.telegram.ui.Cells.EmptyCell;
 import org.telegram.ui.Cells.GroupCreateUserCell;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
+import org.telegram.ui.Cells.TooManyCommunitiesHintCell;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.EmptyTextProgressView;
 import org.telegram.ui.Components.LayoutHelper;
@@ -525,10 +525,7 @@ public class TooManyCommunitiesActivity extends BaseFragment {
 
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
-            if (holder.getAdapterPosition() >= inactiveChatsStartRow && holder.getAdapterPosition() < inactiveChatsEndRow) {
-                return true;
-            }
-            return false;
+            return holder.getAdapterPosition() >= inactiveChatsStartRow && holder.getAdapterPosition() < inactiveChatsEndRow;
         }
     }
 

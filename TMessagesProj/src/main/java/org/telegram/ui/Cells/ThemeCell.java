@@ -32,6 +32,7 @@ import org.telegram.ui.Components.LayoutHelper;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.nio.charset.StandardCharsets;
 
 public class ThemeCell extends FrameLayout {
 
@@ -146,7 +147,7 @@ public class ThemeCell extends FrameLayout {
                         if (bytes[a] == '\n') {
                             linesRead++;
                             int len = a - start + 1;
-                            String line = new String(bytes, start, len - 1, "UTF-8");
+                            String line = new String(bytes, start, len - 1, StandardCharsets.UTF_8);
                             if (line.startsWith("WPS")) {
                                 break;
                             } else {

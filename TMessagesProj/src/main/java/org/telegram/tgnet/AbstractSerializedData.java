@@ -38,6 +38,8 @@ public abstract class AbstractSerializedData {
 
     public abstract String readString(boolean exception);
 
+    public abstract byte[] readStringAsByteArray(boolean exception);
+
     public abstract byte[] readByteArray(boolean exception);
 
     public abstract NativeByteBuffer readByteBuffer(boolean exception);

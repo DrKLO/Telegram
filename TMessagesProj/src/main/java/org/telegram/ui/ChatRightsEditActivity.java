@@ -31,6 +31,10 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.recyclerview.widget.DefaultItemAnimator;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.FileLog;
@@ -63,10 +67,6 @@ import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
 import java.util.Calendar;
-
-import androidx.recyclerview.widget.DefaultItemAnimator;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 public class ChatRightsEditActivity extends BaseFragment {
 
@@ -897,7 +897,7 @@ public class ChatRightsEditActivity extends BaseFragment {
                 listView.smoothScrollToPosition(rankRow);
                 Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
                 if (v != null) {
-                    v.vibrate(200);
+                    ua.itaysonlab.extras.CatogramExtras.vibrate(v, 200);
                 }
                 RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(rankHeaderRow);
                 if (holder != null) {
@@ -910,13 +910,9 @@ public class ChatRightsEditActivity extends BaseFragment {
             } else {
                 adminRights.post_messages = adminRights.edit_messages = false;
             }
-            if (!adminRights.change_info && !adminRights.post_messages && !adminRights.edit_messages &&
+            adminRights.other = !adminRights.change_info && !adminRights.post_messages && !adminRights.edit_messages &&
                     !adminRights.delete_messages && !adminRights.ban_users && !adminRights.invite_users &&
-                    !adminRights.pin_messages && !adminRights.add_admins && !adminRights.anonymous && !adminRights.manage_call) {
-                adminRights.other = true;
-            } else {
-                adminRights.other = false;
-            }
+                    !adminRights.pin_messages && !adminRights.add_admins && !adminRights.anonymous && !adminRights.manage_call;
             MessagesController.getInstance(currentAccount).setUserAdminRole(chatId, currentUser, adminRights, currentRank, isChannel, getFragmentForAlert(1), isAddingNew);
             if (delegate != null) {
                 delegate.didSetRights(

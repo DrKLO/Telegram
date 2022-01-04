@@ -29,17 +29,21 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SRPHelper;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.Utilities;
+import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
@@ -60,8 +64,7 @@ import org.telegram.ui.Components.RecyclerListView;
 import java.util.ArrayList;
 import java.util.Locale;
 
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
+import ua.itaysonlab.catogram.EditTextAutoFill;
 
 public class TwoStepVerificationActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -204,7 +207,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         titleTextView.setPadding(AndroidUtilities.dp(40), 0, AndroidUtilities.dp(40), 0);
         linearLayout.addView(titleTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 38, 0, 0));
 
-        passwordEditText = new EditTextBoldCursor(context);
+        passwordEditText = new EditTextAutoFill(context);
         passwordEditText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         passwordEditText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         passwordEditText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
@@ -543,17 +546,12 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
 
     public static boolean canHandleCurrentPassword(TLRPC.TL_account_password password, boolean login) {
         if (login) {
-            if (password.current_algo instanceof TLRPC.TL_passwordKdfAlgoUnknown) {
-                return false;
-            }
+            return !(password.current_algo instanceof TLRPC.TL_passwordKdfAlgoUnknown);
         } else {
-            if (password.new_algo instanceof TLRPC.TL_passwordKdfAlgoUnknown ||
-                    password.current_algo instanceof TLRPC.TL_passwordKdfAlgoUnknown ||
-                    password.new_secure_algo instanceof TLRPC.TL_securePasswordKdfAlgoUnknown) {
-                return false;
-            }
+            return !(password.new_algo instanceof TLRPC.TL_passwordKdfAlgoUnknown) &&
+                    !(password.current_algo instanceof TLRPC.TL_passwordKdfAlgoUnknown) &&
+                    !(password.new_secure_algo instanceof TLRPC.TL_securePasswordKdfAlgoUnknown);
         }
-        return true;
     }
 
     public static void initPasswordNewAlgo(TLRPC.TL_account_password password) {
@@ -986,7 +984,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         }
         Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
         if (v != null) {
-            v.vibrate(200);
+            ua.itaysonlab.extras.CatogramExtras.vibrate(v, 200);
         }
         if (clear) {
             field.setText("");

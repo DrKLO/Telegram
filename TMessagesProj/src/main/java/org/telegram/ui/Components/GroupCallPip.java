@@ -1036,9 +1036,6 @@ public class GroupCallPip implements NotificationCenter.NotificationCenterDelega
     }
 
     public static boolean checkInlinePermissions() {
-        if (Build.VERSION.SDK_INT < 23 || ApplicationLoader.canDrawOverlays) {
-            return true;
-        }
-        return false;
+        return Build.VERSION.SDK_INT < 23 || ApplicationLoader.canDrawOverlays;
     }
 }

@@ -1738,11 +1738,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
                 controlsView.setDuration(0);
             }
         }
-        if (playbackState != ExoPlayer.STATE_ENDED && playbackState != ExoPlayer.STATE_IDLE && videoPlayer.isPlaying()) {
-            delegate.onPlayStateChanged(this, true);
-        } else {
-            delegate.onPlayStateChanged(this, false);
-        }
+        delegate.onPlayStateChanged(this, playbackState != ExoPlayer.STATE_ENDED && playbackState != ExoPlayer.STATE_IDLE && videoPlayer.isPlaying());
         if (videoPlayer.isPlaying() && playbackState != ExoPlayer.STATE_ENDED) {
             updatePlayButton();
         } else {

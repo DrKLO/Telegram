@@ -33,7 +33,7 @@ public class StackLinearChartView<T extends StackLinearViewData> extends BaseCha
 
     Path ovalPath = new Path();
     boolean[] skipPoints;
-    float startFromY[];
+    float[] startFromY;
 
     @Override
     protected void drawChart(Canvas canvas) {

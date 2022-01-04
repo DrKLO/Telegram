@@ -20,12 +20,12 @@ import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.view.View;
 
+import androidx.annotation.Keep;
+
 import org.telegram.messenger.AndroidUtilities;
 
 import java.util.ArrayList;
 import java.util.Locale;
-
-import androidx.annotation.Keep;
 
 public class NumberTextView extends View {
 

@@ -1145,7 +1145,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
         if (nameTextView.length() == 0) {
             Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
             if (v != null) {
-                v.vibrate(200);
+                ua.itaysonlab.extras.CatogramExtras.vibrate(v, 200);
             }
             AndroidUtilities.shakeView(nameTextView, 2, 0);
             return;
@@ -1313,7 +1313,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
         }
 
         if (logCell != null) {
-            logCell.setVisibility(!currentChat.megagroup || currentChat.gigagroup || info != null && info.participants_count > 200 ? View.VISIBLE : View.GONE);
+            logCell.setVisibility(!currentChat.megagroup || info != null ? View.VISIBLE : View.GONE);
         }
 
         if (linkedCell != null) {

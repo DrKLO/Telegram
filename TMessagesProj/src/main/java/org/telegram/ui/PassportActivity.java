@@ -27,8 +27,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Vibrator;
 import android.provider.MediaStore;
-import androidx.core.content.FileProvider;
-
 import android.telephony.PhoneNumberUtils;
 import android.telephony.TelephonyManager;
 import android.text.Editable;
@@ -62,6 +60,8 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.core.content.FileProvider;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -108,8 +108,8 @@ import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.AvatarDrawable;
-import org.telegram.ui.Components.ChatAttachAlert;
 import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.Components.ChatAttachAlert;
 import org.telegram.ui.Components.ContextProgressView;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.EmptyTextProgressView;
@@ -2229,7 +2229,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 if (value == null) {
                     Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
                     if (v != null) {
-                        v.vibrate(200);
+                        ua.itaysonlab.extras.CatogramExtras.vibrate(v, 200);
                     }
                     AndroidUtilities.shakeView(getViewByType(requiredType), 2, 0);
                     return;
@@ -2239,7 +2239,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 if (errors != null && !errors.isEmpty()) {
                     Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
                     if (v != null) {
-                        v.vibrate(200);
+                        ua.itaysonlab.extras.CatogramExtras.vibrate(v, 200);
                     }
                     AndroidUtilities.shakeView(getViewByType(requiredType), 2, 0);
                     return;
@@ -3575,7 +3575,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         }
         Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
         if (v != null) {
-            v.vibrate(200);
+            ua.itaysonlab.extras.CatogramExtras.vibrate(v, 200);
         }
         AndroidUtilities.shakeView(field, 2, 0);
         scrollToField(field);
@@ -6162,11 +6162,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             return false;
         }
 
-        if (id != null && Utilities.bytesToLong(Utilities.computeSHA256(secret)) != id) {
-            return false;
-        }
-
-        return true;
+        return id == null || Utilities.bytesToLong(Utilities.computeSHA256(secret)) == id;
     }
 
     private byte[] getRandomSecret() {
@@ -6254,7 +6250,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         }
         Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
         if (v != null) {
-            v.vibrate(200);
+            ua.itaysonlab.extras.CatogramExtras.vibrate(v, 200);
         }
         if (clear) {
             inputFields[FIELD_PASSWORD].setText("");

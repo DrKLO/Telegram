@@ -39,11 +39,14 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
@@ -65,10 +68,8 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.NumberPicker;
 import org.telegram.ui.Components.RecyclerListView;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 public class PasscodeActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -328,28 +329,32 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                     builder.setTitle(LocaleController.getString("AutoLock", R.string.AutoLock));
                     final NumberPicker numberPicker = new NumberPicker(getParentActivity());
                     numberPicker.setMinValue(0);
-                    numberPicker.setMaxValue(4);
+                    numberPicker.setMaxValue(5);
                     if (SharedConfig.autoLockIn == 0) {
                         numberPicker.setValue(0);
-                    } else if (SharedConfig.autoLockIn == 60) {
+                    } else if (SharedConfig.autoLockIn == 1) {
                         numberPicker.setValue(1);
-                    } else if (SharedConfig.autoLockIn == 60 * 5) {
+                    } else if (SharedConfig.autoLockIn == 60) {
                         numberPicker.setValue(2);
-                    } else if (SharedConfig.autoLockIn == 60 * 60) {
+                    } else if (SharedConfig.autoLockIn == 60 * 5) {
                         numberPicker.setValue(3);
-                    } else if (SharedConfig.autoLockIn == 60 * 60 * 5) {
+                    } else if (SharedConfig.autoLockIn == 60 * 60) {
                         numberPicker.setValue(4);
+                    } else if (SharedConfig.autoLockIn == 60 * 60 * 5) {
+                        numberPicker.setValue(5);
                     }
                     numberPicker.setFormatter(value -> {
                         if (value == 0) {
                             return LocaleController.getString("AutoLockDisabled", R.string.AutoLockDisabled);
                         } else if (value == 1) {
-                            return LocaleController.formatString("AutoLockInTime", R.string.AutoLockInTime, LocaleController.formatPluralString("Minutes", 1));
+                            return LocaleController.formatString("AutoLockInTime", R.string.AutoLockInTime, LocaleController.formatPluralString("Seconds", 1));
                         } else if (value == 2) {
-                            return LocaleController.formatString("AutoLockInTime", R.string.AutoLockInTime, LocaleController.formatPluralString("Minutes", 5));
+                            return LocaleController.formatString("AutoLockInTime", R.string.AutoLockInTime, LocaleController.formatPluralString("Minutes", 1));
                         } else if (value == 3) {
-                            return LocaleController.formatString("AutoLockInTime", R.string.AutoLockInTime, LocaleController.formatPluralString("Hours", 1));
+                            return LocaleController.formatString("AutoLockInTime", R.string.AutoLockInTime, LocaleController.formatPluralString("Minutes", 5));
                         } else if (value == 4) {
+                            return LocaleController.formatString("AutoLockInTime", R.string.AutoLockInTime, LocaleController.formatPluralString("Hours", 1));
+                        } else if (value == 5) {
                             return LocaleController.formatString("AutoLockInTime", R.string.AutoLockInTime, LocaleController.formatPluralString("Hours", 5));
                         }
                         return "";
@@ -360,12 +365,14 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                         if (which == 0) {
                             SharedConfig.autoLockIn = 0;
                         } else if (which == 1) {
-                            SharedConfig.autoLockIn = 60;
+                            SharedConfig.autoLockIn = 1;
                         } else if (which == 2) {
-                            SharedConfig.autoLockIn = 60 * 5;
+                            SharedConfig.autoLockIn = 60;
                         } else if (which == 3) {
-                            SharedConfig.autoLockIn = 60 * 60;
+                            SharedConfig.autoLockIn = 60 * 5;
                         } else if (which == 4) {
+                            SharedConfig.autoLockIn = 60 * 60;
+                        } else if (which == 5) {
                             SharedConfig.autoLockIn = 60 * 60 * 5;
                         }
                         listAdapter.notifyItemChanged(position);
@@ -531,7 +538,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
             try {
                 SharedConfig.passcodeSalt = new byte[16];
                 Utilities.random.nextBytes(SharedConfig.passcodeSalt);
-                byte[] passcodeBytes = firstPassword.getBytes("UTF-8");
+                byte[] passcodeBytes = firstPassword.getBytes(StandardCharsets.UTF_8);
                 byte[] bytes = new byte[32 + passcodeBytes.length];
                 System.arraycopy(SharedConfig.passcodeSalt, 0, bytes, 0, 16);
                 System.arraycopy(passcodeBytes, 0, bytes, 16, passcodeBytes.length);
@@ -577,7 +584,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
         }
         Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
         if (v != null) {
-            v.vibrate(200);
+            ua.itaysonlab.extras.CatogramExtras.vibrate(v, 200);
         }
         AndroidUtilities.shakeView(titleTextView, 2, 0);
     }
@@ -666,6 +673,8 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                         String val;
                         if (SharedConfig.autoLockIn == 0) {
                             val = LocaleController.formatString("AutoLockDisabled", R.string.AutoLockDisabled);
+                        } else if (SharedConfig.autoLockIn == 1) {
+                            val = LocaleController.formatString("AutoLockInTime", R.string.AutoLockInTime, LocaleController.formatPluralString("Seconds", SharedConfig.autoLockIn));
                         } else if (SharedConfig.autoLockIn < 60 * 60) {
                             val = LocaleController.formatString("AutoLockInTime", R.string.AutoLockInTime, LocaleController.formatPluralString("Minutes", SharedConfig.autoLockIn / 60));
                         } else if (SharedConfig.autoLockIn < 60 * 60 * 24) {

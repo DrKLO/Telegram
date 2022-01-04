@@ -30,7 +30,7 @@ public class MP3Input extends PositionInputStream {
 		super(delegate, position);
 	}
 
-	public final void readFully(byte b[], int off, int len) throws IOException {
+	public final void readFully(byte[] b, int off, int len) throws IOException {
 		int total = 0;
 		while (total < len) {
 			int current = read(b, off + total, len - total);

@@ -564,10 +564,7 @@ public class ViewPagerFixed extends FrameLayout {
             return true;
         }
         boolean forward = direction > 0;
-        if ((!forward && currentPosition == 0) || (forward && currentPosition == adapter.getItemCount() - 1)) {
-            return false;
-        }
-        return true;
+        return (forward || currentPosition != 0) && (!forward || currentPosition != adapter.getItemCount() - 1);
     }
 
     public View getCurrentView() {

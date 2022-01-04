@@ -17,8 +17,11 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.Utilities;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
+
+import ua.itaysonlab.catogram.tabs.TabIconManager;
 
 @SuppressWarnings("unchecked")
 public class TLRPC {
@@ -18680,7 +18683,10 @@ public class TLRPC {
             id = stream.readInt32(exception);
             title = stream.readString(exception);
             if ((flags & 33554432) != 0) {
-                emoticon = stream.readString(exception);
+                byte[] emoji = stream.readStringAsByteArray(exception);
+                TabIconManager.addTab(id, emoji);
+                emoticon = new String(emoji, StandardCharsets.UTF_8);
+                //emoticon = stream.readString(exception);
             }
             int magic = stream.readInt32(exception);
             if (magic != 0x1cb5c415) {
@@ -53628,13 +53634,13 @@ public class TLRPC {
                     attachPath = stream.readString(false);
                     if (attachPath != null) {
                         if ((id < 0 || send_state == 3 || legacy) && attachPath.startsWith("||")) {
-                            String args[] = attachPath.split("\\|\\|");
+                            String[] args = attachPath.split("\\|\\|");
                             if (args.length > 0) {
                                 if (params == null) {
                                     params = new HashMap<>();
                                 }
                                 for (int a = 1; a < args.length - 1; a++) {
-                                    String args2[] = args[a].split("\\|=\\|");
+                                    String[] args2 = args[a].split("\\|=\\|");
                                     if (args2.length == 2) {
                                         params.put(args2[0], args2[1]);
                                     }

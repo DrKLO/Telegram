@@ -118,6 +118,7 @@ public class DialogMeUrlCell extends BaseCell {
                 drawNameGroup = true;
                 nameLockTop = AndroidUtilities.dp(17.5f);
             }
+
             drawVerified = chat.verified;
 
             if (!LocaleController.isRTL) {

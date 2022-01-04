@@ -37,6 +37,8 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.core.widget.NestedScrollView;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ContactsController;
@@ -55,8 +57,6 @@ import org.telegram.ui.ChatActivity;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Locale;
-
-import androidx.core.widget.NestedScrollView;
 
 public class PhonebookShareAlert extends BottomSheet {
 

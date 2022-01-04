@@ -69,6 +69,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
+import ua.itaysonlab.catogram.CatogramConfig;
+
 public class MessagesController extends BaseController implements NotificationCenter.NotificationCenterDelegate {
 
     private ConcurrentHashMap<Long, TLRPC.Chat> chats = new ConcurrentHashMap<>(100, 1.0f, 2);
@@ -550,6 +552,7 @@ public class MessagesController extends BaseController implements NotificationCe
         public LongSparseIntArray pinnedDialogs = new LongSparseIntArray();
         public ArrayList<TLRPC.Dialog> dialogs = new ArrayList<>();
 
+        public String emoticon;
         private static int dialogFilterPointer = 10;
         public int localId = dialogFilterPointer++;
 
@@ -588,27 +591,19 @@ public class MessagesController extends BaseController implements NotificationCe
                                 return true;
                             }
                         } else {
-                            if ((flags & DIALOG_FILTER_FLAG_NON_CONTACTS) != 0) {
-                                return true;
-                            }
+                            return (flags & DIALOG_FILTER_FLAG_NON_CONTACTS) != 0;
                         }
                     } else {
-                        if ((flags & DIALOG_FILTER_FLAG_BOTS) != 0) {
-                            return true;
-                        }
+                        return (flags & DIALOG_FILTER_FLAG_BOTS) != 0;
                     }
                 }
             } else if (dialogId < 0) {
                 TLRPC.Chat chat = messagesController.getChat(-dialogId);
                 if (chat != null) {
                     if (ChatObject.isChannel(chat) && !chat.megagroup) {
-                        if ((flags & DIALOG_FILTER_FLAG_CHANNELS) != 0) {
-                            return true;
-                        }
+                        return (flags & DIALOG_FILTER_FLAG_CHANNELS) != 0;
                     } else {
-                        if ((flags & DIALOG_FILTER_FLAG_GROUPS) != 0) {
-                            return true;
-                        }
+                        return (flags & DIALOG_FILTER_FLAG_GROUPS) != 0;
                     }
                 }
             }
@@ -1422,6 +1417,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 TLRPC.TL_jsonObject object = (TLRPC.TL_jsonObject) response;
                 for (int a = 0, N = object.value.size(); a < N; a++) {
                     TLRPC.TL_jsonObjectValue value = object.value.get(a);
+                    // CG-TODO: Make AppConfig editor?!
                     switch (value.key) {
                         case "emojies_animated_zoom": {
                             if (value.value instanceof TLRPC.TL_jsonNumber) {
@@ -1495,6 +1491,8 @@ public class MessagesController extends BaseController implements NotificationCe
                         case "qr_login_camera": {
                             if (value.value instanceof TLRPC.TL_jsonBool) {
                                 TLRPC.TL_jsonBool bool = (TLRPC.TL_jsonBool) value.value;
+
+                                bool.value = true; // CG-TEST
                                 if (bool.value != qrLoginCamera) {
                                     qrLoginCamera = bool.value;
                                     editor.putBoolean("qrLoginCamera", qrLoginCamera);
@@ -2953,9 +2951,7 @@ public class MessagesController extends BaseController implements NotificationCe
                     getUserConfig().setCurrentUser(user);
                     getUserConfig().saveConfig(true);
                 }
-                if (oldUser != null && user.status != null && oldUser.status != null && user.status.expires != oldUser.status.expires) {
-                    return true;
-                }
+                return oldUser != null && user.status != null && oldUser.status != null && user.status.expires != oldUser.status.expires;
             } else if (oldUser == null) {
                 users.put(user.id, user);
             } else if (oldUser.min) {
@@ -5738,6 +5734,11 @@ public class MessagesController extends BaseController implements NotificationCe
                 noDialog = true;
             } else if (response instanceof TLRPC.TL_help_promoData) {
                 TLRPC.TL_help_promoData res = (TLRPC.TL_help_promoData) response;
+
+                if (CatogramConfig.INSTANCE.getHideProxySponsor()) {
+                    noDialog = true;
+                    return;
+                }
 
                 long did;
                 if (res.peer.user_id != 0) {
@@ -8804,6 +8805,8 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     private void completeReadTask(ReadTask task) {
+        if (CatogramConfig.INSTANCE.getGhostMode()) return;
+
         if (task.replyId != 0) {
             TLRPC.TL_messages_readDiscussion req = new TLRPC.TL_messages_readDiscussion();
             req.msg_id = (int) task.replyId;
@@ -8850,6 +8853,8 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     private void checkReadTasks() {
+        if (CatogramConfig.INSTANCE.getGhostMode()) return;
+
         long time = SystemClock.elapsedRealtime();
         for (int a = 0, size = readTasks.size(); a < size; a++) {
             ReadTask task = readTasks.get(a);
@@ -8876,6 +8881,8 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public void markDialogAsReadNow(long dialogId, int replyId) {
+
+            if (CatogramConfig.INSTANCE.getGhostMode()) return;
         Utilities.stageQueue.postRunnable(() -> {
             if (replyId != 0) {
                 String key = dialogId + "_" + replyId;
@@ -8899,6 +8906,7 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public void markMentionsAsRead(long dialogId) {
+        if (CatogramConfig.INSTANCE.getGhostMode()) return;
         if (DialogObject.isEncryptedDialog(dialogId)) {
             return;
         }
@@ -8910,7 +8918,9 @@ public class MessagesController extends BaseController implements NotificationCe
         });
     }
 
+
     public void markDialogAsRead(long dialogId, int maxPositiveId, int maxNegativeId, int maxDate, boolean popup, int threadId, int countDiff, boolean readNow, int scheduledCount) {
+            if (CatogramConfig.INSTANCE.getGhostMode()) return;
         boolean createReadTask;
 
         if (threadId != 0) {
@@ -10868,19 +10878,23 @@ public class MessagesController extends BaseController implements NotificationCe
                 } else {
                     newTaskId = taskId;
                 }
-
-                getConnectionsManager().sendRequest(req, (response, error) -> {
-                    if (newTaskId != 0) {
-                        getMessagesStorage().removePendingTask(newTaskId);
+                if (CatogramConfig.INSTANCE.getSyncPins()) {
+                    getConnectionsManager().sendRequest(req, (response, error) -> {
+                        if (newTaskId != 0) {
+                            getMessagesStorage().removePendingTask(newTaskId);
+                            }
+                        });
                     }
-                });
+                }
             }
-        }
         getMessagesStorage().setDialogPinned(dialogId, dialog.pinnedNum);
         return true;
     }
 
     public void loadPinnedDialogs(final int folderId, long newDialogId, ArrayList<Long> order) {
+        if (!CatogramConfig.INSTANCE.getSyncPins()) {
+            return;
+        }
         if (loadingPinnedDialogs.indexOfKey(folderId) >= 0 || getUserConfig().isPinnedDialogsLoaded(folderId)) {
             return;
         }
@@ -14339,9 +14353,7 @@ public class MessagesController extends BaseController implements NotificationCe
                     }
                 }
             }
-            if (changed) {
-                return true;
-            }
+            return changed;
         }
         return false;
     }
@@ -14731,7 +14743,7 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public static String getRestrictionReason(ArrayList<TLRPC.TL_restrictionReason> reasons) {
-        if (reasons.isEmpty()) {
+        if (reasons.isEmpty() || BuildVars.isStandaloneApp()) {
             return null;
         }
         /*for (int a = 0, N = reasons.size(); a < N; a++) {

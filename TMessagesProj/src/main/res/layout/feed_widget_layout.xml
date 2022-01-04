@@ -11,8 +11,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:dividerHeight="1px"
-        android:divider="#d9d9d9"
-        tools:listitem="@layout/collection_widget_list_item"/>
+        android:divider="#d9d9d9"/>
 
     <TextView
         android:id="@+id/empty_view"

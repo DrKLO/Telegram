@@ -145,7 +145,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+
+import ua.itaysonlab.CatogramLogger;
+import ua.itaysonlab.catogram.translate.impl.GoogleTranslateImpl;
+
 
 public class ChatActivityEnterView extends ChatBlurredFrameLayout implements NotificationCenter.NotificationCenterDelegate, SizeNotifierFrameLayout.SizeNotifierFrameLayoutDelegate, StickersAlert.StickersAlertDelegate {
 
@@ -1828,11 +1833,15 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
 
             private void send(InputContentInfoCompat inputContentInfo, boolean notify, int scheduleDate) {
                 ClipDescription description = inputContentInfo.getDescription();
+
+                CatogramLogger.d("CG_WebP", "MIME: "+description.getMimeType(0));
+
                 if (description.hasMimeType("image/gif")) {
                     SendMessagesHelper.prepareSendingDocument(accountInstance, null, null, inputContentInfo.getContentUri(), null, "image/gif", dialog_id, replyingMessageObject, getThreadMessage(), inputContentInfo, null, notify, 0);
                 } else {
                     SendMessagesHelper.prepareSendingPhoto(accountInstance, null, inputContentInfo.getContentUri(), dialog_id, replyingMessageObject, getThreadMessage(), null, null, null, inputContentInfo, 0, null, notify, 0);
                 }
+
                 if (delegate != null) {
                     delegate.onMessageSend(null, true, scheduleDate);
                 }
@@ -2081,8 +2090,8 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
         messageEditText.setHintTextColor(getThemedColor(Theme.key_chat_messagePanelHint));
         messageEditText.setCursorColor(getThemedColor(Theme.key_chat_messagePanelCursor));
         frameLayout.addView(messageEditText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 52, 0, isChat ? 50 : 2, 0));
+        AtomicBoolean shiftPressed = new AtomicBoolean();
         messageEditText.setOnKeyListener(new OnKeyListener() {
-
             boolean ctrlPressed = false;
 
             @Override
@@ -2110,11 +2119,14 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
                         }
                     }
                     return true;
-                } else if (i == KeyEvent.KEYCODE_ENTER && (ctrlPressed || sendByEnter) && keyEvent.getAction() == KeyEvent.ACTION_DOWN && editingMessageObject == null) {
+                } else if (i == KeyEvent.KEYCODE_ENTER && (ctrlPressed || (sendByEnter && !shiftPressed.get())) && keyEvent.getAction() == KeyEvent.ACTION_DOWN && editingMessageObject == null) {
                     sendMessage();
                     return true;
                 } else if (i == KeyEvent.KEYCODE_CTRL_LEFT || i == KeyEvent.KEYCODE_CTRL_RIGHT) {
                     ctrlPressed = keyEvent.getAction() == KeyEvent.ACTION_DOWN;
+                    return true;
+                } else if (i == KeyEvent.KEYCODE_SHIFT_LEFT || i == KeyEvent.KEYCODE_SHIFT_RIGHT) {
+                    shiftPressed.set(keyEvent.getAction() == KeyEvent.ACTION_DOWN);
                     return true;
                 }
                 return false;
@@ -2130,7 +2142,7 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
                     sendMessage();
                     return true;
                 } else if (keyEvent != null && i == EditorInfo.IME_NULL) {
-                    if ((ctrlPressed || sendByEnter) && keyEvent.getAction() == KeyEvent.ACTION_DOWN && editingMessageObject == null) {
+                    if ((ctrlPressed || (sendByEnter && !shiftPressed.get())) && keyEvent.getAction() == KeyEvent.ACTION_DOWN && editingMessageObject == null) {
                         sendMessage();
                         return true;
                     }
@@ -2170,7 +2182,7 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
                 if (innerTextChange == 1) {
                     return;
                 }
-                if (sendByEnter && !isPaste && editingMessageObject == null && count > before && charSequence.length() > 0 && charSequence.length() == start + count && charSequence.charAt(charSequence.length() - 1) == '\n') {
+                if ((sendByEnter && !shiftPressed.get()) && !isPaste && editingMessageObject == null && count > before && charSequence.length() > 0 && charSequence.length() == start + count && charSequence.charAt(charSequence.length() - 1) == '\n') {
                     nextChangeIsSend = true;
                 }
                 isPaste = false;
@@ -3229,7 +3241,7 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
                         AndroidUtilities.cancelRunOnUIThread(recordAudioVideoRunnable);
                         delegate.onSwitchRecordMode(videoSendButton.getTag() == null);
                         setRecordVideoButtonVisible(videoSendButton.getTag() == null, true);
-                        performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                        ua.itaysonlab.extras.CatogramExtras.performHapticFeedback(this, HapticFeedbackConstants.KEYBOARD_TAP);
                         sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_CLICKED);
                     } else if (!hasRecordVideo || calledRecordRunnable) {
                         startedDraggingX = -1;
@@ -3596,7 +3608,7 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
 
     private void startLockTransition() {
         AnimatorSet animatorSet = new AnimatorSet();
-        performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+        ua.itaysonlab.extras.CatogramExtras.performHapticFeedback(this, HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
 
         ObjectAnimator translate = ObjectAnimator.ofFloat(recordCircle, "lockAnimatedTranslation", recordCircle.startTranslation);
         translate.setStartDelay(100);
@@ -3725,7 +3737,7 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
                 sendPopupLayout.addView(scheduleButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
             }
             if (sendWithoutSoundButtonValue) {
-                ActionBarMenuSubItem sendWithoutSoundButton = new ActionBarMenuSubItem(getContext(), !scheduleButtonValue, true, resourcesProvider);
+                ActionBarMenuSubItem sendWithoutSoundButton = new ActionBarMenuSubItem(getContext(), !scheduleButtonValue, false, resourcesProvider);
                 sendWithoutSoundButton.setTextAndIcon(LocaleController.getString("SendWithoutSound", R.string.SendWithoutSound), R.drawable.input_notify_off);
                 sendWithoutSoundButton.setMinimumWidth(AndroidUtilities.dp(196));
                 sendWithoutSoundButton.setOnClickListener(v -> {
@@ -3745,6 +3757,13 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
                     sendButton.invalidate();
                 }
             };
+            ActionBarMenuSubItem translateButton = new ActionBarMenuSubItem(getContext(), (sendWithoutSoundButtonValue || scheduleButtonValue), false, resourcesProvider);
+            translateButton.setTextAndIcon(LocaleController.getString("CG_Translate", R.string.CG_Translate), R.drawable.round_translate_24);
+            translateButton.setMinimumWidth(AndroidUtilities.dp(196));
+            translateButton.setOnClickListener(v -> {
+                GoogleTranslateImpl.translateEditText(messageEditText.getText().toString(), messageEditText);
+            });
+            sendPopupLayout.addView(translateButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
             sendPopupWindow.setAnimationEnabled(false);
             sendPopupWindow.setAnimationStyle(R.style.PopupContextAnimation2);
             sendPopupWindow.setOutsideTouchable(true);
@@ -3771,9 +3790,7 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
         sendPopupWindow.showAtLocation(view, Gravity.LEFT | Gravity.TOP, location[0] + view.getMeasuredWidth() - sendPopupLayout.getMeasuredWidth() + AndroidUtilities.dp(8), y);
         sendPopupWindow.dimBehind();
         sendButton.invalidate();
-        try {
-            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
-        } catch (Exception ignore) {}
+        ua.itaysonlab.extras.CatogramExtras.performHapticFeedback(view, HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
 
         return false;
     }
@@ -8587,10 +8604,7 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
         if (recordingAudioVideo) {
             return false;
         }
-        if ((videoSendButton != null) && isInVideoMode() && recordedAudioPanel != null && recordedAudioPanel.getVisibility() == View.VISIBLE) {
-            return false;
-        }
-        return true;
+        return (videoSendButton == null) || !isInVideoMode() || recordedAudioPanel == null || recordedAudioPanel.getVisibility() != View.VISIBLE;
     }
 
     public int getHeightWithTopView() {

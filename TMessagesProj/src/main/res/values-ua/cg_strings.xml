@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- by iTaysonLab -->
+    <string name="AdvancedSettings">Налаштування Catogram</string>
+
+    <string name="AS_Header_Appearance">Зовнішній вигляд</string>
+    <string name="AS_HideUserPhone">Приховати номер телефону</string>
+    <string name="AS_HideUserPhoneSummary">в шторці і налаштуваннях</string>
+    <string name="AS_NoRounding">Відключити округлення чисел</string>
+    <string name="AS_NoRoundingSummary">1.2K -> 1234</string>
+    <string name="AS_Vibration">Відключити вібрацію</string>
+
+    <string name="AS_Header_Fun">Веселі речі</string>
+    <string name="AS_ForceNY">Форсувати стиль Нового року</string>
+    <string name="AS_ForceNYSummary">перезапустіть додаток для застосування</string>
+    <string name="AS_ForcePacman">Форсувати анімацію Pacman</string>
+    <string name="AS_ForcePacmanSummary">при архівації чату</string>
+    <string name="AS_ForceFireworks">Форсувати феєрверки в шторці</string>
+    <string name="AS_ForceFireworksSummary">відключить снігопад при включенні</string>
+    <string name="AS_SystemFonts">Використовувати системні шрифти</string>
+
+    <string name="AS_Header_Privacy">Приватність</string>
+    <string name="AS_NoProxyPromo">Не показувати спонсора проксі</string>
+    <string name="AS_NoTyping">Не надсилати статус написання</string>
+    <string name="AS_DisableFlagSecure">Увімкнути скріншоти в секретних чатах</string>
+
+    <string name="AS_Hidden">Приховано</string>
+    <string name="AS_UserID">ID користувача</string>
+    <string name="AS_GroupID">ID групи</string>
+    <string name="CatogramVersion">Catogram %1$s</string>
+    <string name="AV_ThemeBased">Динамічна</string>
+
+
+    <string name="AS_Header_Categories">Категорії</string>
+    <string name="AS_Header_About">Про Catogram</string>
+
+    <string name="CG_AboutDesc">Експериментальна модифікація офіційного додатку Telegram.</string>
+    <string name="CG_Donate">Підтримати розробку</string>
+    <string name="CG_DonatDesc">Допоможіть нам купити PS5</string>
+    <string name="CG_ToChannel">Відкрити офіційний канал</string>
+
+    <string name="DebugMenu">Меню налагодження</string>
+    <string name="AS_SysEmoji">Використовувати системні емодзі</string>
+    <string name="AS_SysEmojiDesc">може викликати баги, будьте обережніше</string>
+
+    <string name="AS_DrawerAvatar">Аватар користувача як шапка</string>
+    <string name="AS_DrawerBlur">Розмити шапку</string>
+    <string name="AS_DrawerDarken">Затемнити шапку</string>
+    <string name="AS_DrawerCategory">Шторка</string>
+    <string name="AS_FlatSB">Прозорий статусбар</string>
+    <string name="AS_FlatAB">Відключити тінь у тулбару</string>
+    <string name="AS_FlatSB_Desc">тільки для Android 6+</string>
+    <string name="AS_RedesignCategory">Редизайн</string>
+
+    <string name="CG_Filters_Header">Фільтр діалогів</string>
+    <string name="CG_Filters_PM">Особисті повідомлення</string>
+    <string name="CG_Filters_Secret">Секретні чати</string>
+    <string name="CG_Filters_Channels">Канали</string>
+    <string name="CG_Filters_Chats">Групи</string>
+    <string name="CG_Filters_Bots">Боти</string>
+    <string name="CG_Filters_All">Всі чати</string>
+
+    <string name="AS_Filters_THint">Показувати підказку меню</string>
+    <string name="AS_Filters_THintDesc">на субзаголовку тулбару</string>
+
+    <string name="AS_Filters_Header">Фільтри діалогів</string>
+    <string name="AS_Filters_Count">Показувати кількість чатів в діалозі</string>
+    <string name="AS_Filters_Count_Desc">замість кількості непрочитаних повідомлень</string>
+    <string name="CG_Filters_ToolbarHint">утримуйте для зміни фільтра</string>
+    <string name="CG_Filters_AlsoFABHint">Ви також можете змінити фільтр утримуючи плаваючу кнопку \"Написати\".</string>
+
+    <string name="CG_Filters_GenericHint">Це значення буде збережено.</string>
+
+    <string name="AS_Category_Security">Безпека</string>
+    <string name="AS_Header_Auth">Авторизація</string>
+    <string name="AS_Biometric">Використовувати BiometricPrompt</string>
+    <string name="AS_BiometricDesc">працює зі скануванням обличчя на пристроях подібним Pixel 4</string>
+
+    <string name="CG_Biometric_Subtitle">Вхід в додаток</string>
+    <string name="CG_Biometric_Negative">Ввести PIN</string>
+
+    <string name="AS_Header_Notification">Сповіщення</string>
+    <string name="AS_AccentNotify">Колір акценту как колір сповіщення</string>
+
+    <string name="CG_Never">НІКОЛИ</string>
+
+    <string name="AS_Filters_ReplaceFAB">Замінити поведінку плаваючої кнопки</string>
+    <string name="AS_Filters_ReplaceFABDesc">якщо увімкнено:\nнатискання - змінити фільтр\nдовге натискання - дія за замовчуванням (\"Написати\")</string>
+
+    <string name="CG_ChatMenu_RestorePin">Повернути закріплене повідомлення</string>
+    <string name="CG_ChatMenu_HidePin">Приховати закріплене повідомлення</string>
+    <string name="CG_ChatMenu_ToChannel">Прив\'язаний канал</string>
+    <string name="CG_ChannelMenu_ToChat">Прив\'язаний чат</string>
+
+    <string name="AS_Header_Chats">Діалоги</string>
+    <string name="CG_NewRepostUI">Увімкнути новий UI репостів всюди</string>
+    <string name="CG_NewRepostUI_Desc">працює як кнопка пересилання в чатах</string>
+    <string name="CG_ConfirmCalls">Запитувати перед дзвінком</string>
+    <string name="CG_ABSearch">Пошук в тулбарі</string>
+    <string name="CG_ABSearch_Desc">в вікні чатів</string>
+
+    <string name="CG_SmoothKbd">Плавна анімація клавіатури</string>
+    <string name="CG_SmoothKbd_Desc">використовує офіційну реалізацію Telegram</string>
+
+    <string name="CG_Header_Profile">Профілі</string>
+    <string name="CG_NewAvaHeader_NoEdgeTapping">Блокувати натискання по краях</string>
+    <string name="CG_NewAvaHeader_NoEdgeTapping_Desc">ви все ще можете перегортати аватари</string>
+    <string name="CG_NewAvaHeader_OpenOnTap">Відкривати на весь екран при натисканні</string>
+    <string name="CG_NewAvaHeader_OpenOnTap_Desc">це ЗАМІНИТЬ натискання на кути</string>
+    <string name="CG_NewAvaHeader_AlwaysExpand">Завжди розкривати</string>
+    <string name="CG_NewAvaHeader_AlwaysExpand_Desc">завжди розкривати аватар в заголовок при відкритті профілю</string>
+
+    <string name="CG_Slider_StickerAmplifier">Множник розміру стікерів</string>
+    <string name="CG_NewMsgAnim">Анімація нових повідомлень (бета)</string>
+    <string name="CG_HideKbdOnScroll">Ховати клавіатуру при прокручуванні</string>
+
+    <string name="CG_NewTabs_NoCounter">Приховати лічильники у вкладок</string>
+    <string name="CG_NewTabs_RemoveAllChats">Приховати вкладку \"Всі чати"\ [нужен перезапуск]</string>
+    <string name="CG_NewTabs_RemoveAllChats_Desc">натисніть на кнопку \"Назад\" на головній сторінці щоб її відкрити</string>
+
+    <string name="CG_NewTabs_Emoticons">Іконка вкладки замість імені [потрібен перезапуск]</string>
+    <string name="CG_NewTabs_Emoticons_Desc">це синхронізується через Telegram</string>
+
+    <string name="CG_NewTabs_EmoticonsAppend">Додати іконку чату до його імені [потрібен перезапуск]</string>
+    <string name="CG_NewTabs_EmoticonsAppend_Desc">коли опція \"замість\" відключена</string>
+
+    <string name="CG_MessageMenuOption">Стиль меню повідомлення</string>
+    <string name="CG_MessageMenuOption_TGX">В стилі Telegram X (слайд-меню)</string>
+    <string name="CG_MessageMenuOption_TGXS">В стилі Telegram X (класичний)</string>
+    <string name="CG_MessageMenuOption_A">Сучасний стиль</string>
+    <string name="CG_MessageMenuOption_Default">За замовчуванням</string>
+
+    <string name="CG_NewDrawer">Використовувати нову шторку</string>
+    <string name="CG_NewDrawer_Desc">несумісне з мультиаккаунтом</string>
+
+    <string name="CG_MessageButton_Override">Кнопка заміни дії повідомлення</string>
+    <string name="CG_MessageButton_Override_Desc">дозволяє це зробити у власних повідомленнях</string>
+
+    <string name="CG_MessageButton_Out">Вихідні повідомлення</string>
+    <string name="CG_MessageButton_In">Вхідні повідомлення</string>
+
+    <string name="CG_MessageButton_Option_Share">Поділитися [за замовчуванням]</string>
+    <string name="CG_MessageButton_Option_Edit">Редагувати [персонально]</string>
+    <string name="CG_MessageButton_Option_Saved">В хмару</string>
+
+    <string name="CG_ConfirmCalling_Header">Підтвердити дзвінок</string>
+    <string name="CG_ConfirmCalling_Question">Зателефонувати %s?</string>
+    <string name="CG_ConfirmCalling_Action">Підтвердити</string>
+    <string name="CG_ConfirmCalling_Action_Cancel">Скасувати</string>
+
+    <string name="AS_ForceIcons">Стиль іконок в шторці</string>
+    <string name="AS_ForceNY_Drawer">Новий Рік</string>
+    <string name="AS_ForceDefault_Drawer">За замовчуванням</string>
+
+    <string name="AS_KbdWebp">Відправляти фото з клавіатури як стікери</string>
+    <string name="AS_KbdWebp_Desc">для SKeyboard, GBoard і інших</string>
+
+    <string name="AS_ChangeIcon">Іконка додатку</string>
+    <string name="AS_ChangeIcon_Old">За замовчуванням</string>
+    <string name="AS_ChangeIcon_AltBlue">Синя нова (від @RKBDI)</string>
+    <string name="AS_ChangeIcon_AltOrange">Помаранчева нова (від @RKBDI)</string>
+
+    <string name="AS_ForwardNoAuthorship">Пересилання без автора [бета]</string>
+    <string name="AS_ForwardNoAuthorship_Desc">зараз працює тільки на старому стилі</string>
+
+    <string name="CG_ForwardMsgDate">Показувати дату пересланого повідомлення</string>
+    <string name="CG_Translate">Перекласти</string>
+    <string name="CG_Translate_Orig">Оригінал</string>
+    <string name="CG_Translate_Translated">Переклад</string>
+    <string name="CG_Translate_Language">Виявлена мова</string>
+    <string name="CG_Translate_PoweredBy">За допомогою</string>
+    <string name="CG_ToSaved">Зберегти повідомлення</string>
+
+    <string name="CG_FABLeft">\"Нове повідомлення\" зліва</string>
+    <string name="CG_IntroMessage">**Неофіційна** модифікация клієнту Telegram.\nМає **розширений функціонал** і **поліпшену кастомізацію**.</string>
+
+    <string name="CG_GooglePlay_Donate">Пожертвувати</string>
+    <string name="CG_GooglePlay_Info">Інформація</string>
+    <string name="CG_GooglePlay_InfoDesc">Всі платежі будуть оброблені через Google Play.</string>
+    <string name="CG_GooglePlay_ChooseAmount">Вибір суми</string>
+    <string name="CG_GooglePlay_Thanks">Дякую!</string>
+
+    <string name="CG_TabIconMode_Title">Тип іконки вкладок [потрібен перезапуск]</string>
+    <string name="CG_TabIconMode_Disabled">Відключити</string>
+    <string name="CG_TabIconMode_Append">Додати до назви вкладки</string>
+    <string name="CG_TabIconMode_Replace">Замінити назву вкладки</string>
+
+    <string name="CG_GooglePlay_OTADownloaded">Оновлення готово до встановлення.</string>
+    <string name="CG_GooglePlay_OTADownloaded_Restart">Перезапустити</string>
+
+    <string name="CG_FlatChannels">Плоска стрічка каналів</string>
+    <string name="CG_IgnoreBlacklist">Ігнорувати користувачів в ЧС</string>
+    <string name="CG_IgnoreBlacklist_Desc">їх повідомлення будуть приховані</string>
+
+    <string name="CG_HQVoice">HQ-запис голосових повідомлень</string>
+    <string name="CG_HQVoice_Desc">Може бути нестабільно. Також споживає більше даних.</string>
+    <string name="ActionBarTitle">Чати</string>
+    <string name="CG_ArchiveOnPull">Архів при розкритті</string>
+    <string name="CG_ArchiveOnPull_Desc">Автоматично відкривати архів при розкритті в головному меню</string>
+    <string name="CG_ToChat">Відкрити офіційний чат</string>
+
+    <string name="CG_IconReplacements">Заміна іконок</string>
+    <string name="CG_HideMsgIfUserBlocked">Приховувати повідомлення якщо користувач заблокований</string>
+    <string name="CG_OldNotification">Стандартна іконка повідомлень</string>
+
+    <string name="CG_MsgSlideAction">Дія при свайпі по повідомленні</string>
+    <string name="CG_MsgSlideAction_Reply">Відповісти</string>
+    <string name="CG_MsgSlideAction_Save">Зберегти повідомлення</string>
+    <string name="CG_MsgSlideAction_Share">Поділитись</string>
+    <string name="CG_SyncPins">Синхронізувати закріплені чати</string>
+    <string name="CG_SyncPins_Desc">Відключивши це ви зможете встановити необмежену кількість закріплених чатів</string>
+    <string name="CG_Proximity">Використовувати сенсор близькості</string>
+    <string name="CG_Proximity_Desc">Відключивши це ви позбудетеся від дратівливих дій сенсора близькості (особливо при прослуховуванні голосового повідомлення)</string>
+    <string name="CG_RearCam">Використовувати задню камеру</string>
+    <string name="CG_RearCam_Desc">Для запису відео повідомлень</string>
+    <string name="CG_EnableSwipePIP">Увімкнути "картинка-в-картинці" для відео</string>
+    <string name="CG_EnableSwipePIP_Desc">при свайпах в відеоплеєрі</string>
+	
+	<string name="CG_TelegramThemes">Офіційні теми</string>
+    <string name="CG_TelegramThemes_Desc">Показувати офіційні теми замість VKUi в налаштуванні чатів</string>
+</resources>

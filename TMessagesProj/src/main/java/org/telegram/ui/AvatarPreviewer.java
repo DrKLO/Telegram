@@ -142,12 +142,15 @@ public class AvatarPreviewer {
         void onMenuClick(MenuItem item);
     }
 
-    public static enum MenuItem {
+    public enum MenuItem {
         OPEN_PROFILE("OpenProfile", R.string.OpenProfile, R.drawable.msg_openprofile),
         OPEN_CHANNEL("OpenChannel2", R.string.OpenChannel2, R.drawable.msg_channel),
         OPEN_GROUP("OpenGroup2", R.string.OpenGroup2, R.drawable.msg_discussion),
         SEND_MESSAGE("SendMessage", R.string.SendMessage, R.drawable.msg_discussion),
-        MENTION("Mention", R.string.Mention, R.drawable.msg_mention);
+        MENTION("Mention", R.string.Mention, R.drawable.msg_mention),
+        CG_KICK("KickFromGroup", R.string.KickFromGroup, R.drawable.actions_remove_user),
+        CG_CHANGE_PERMS("ChangePermissions", R.string.ChangePermissions, R.drawable.actions_permissions),
+        CG_CHANGE_ADMIN_PERMS("EditAdminRights", R.string.EditAdminRights, R.drawable.actions_addadmin);
 
         private final String labelKey;
         private final int labelResId;

@@ -11,10 +11,10 @@ package org.telegram.ui.Components;
 import android.content.Context;
 import android.util.SparseIntArray;
 
-import org.telegram.messenger.AndroidUtilities;
-
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import org.telegram.messenger.AndroidUtilities;
 
 public class ExtendedGridLayoutManager extends GridLayoutManager {
 

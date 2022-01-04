@@ -8,14 +8,6 @@
 
 package org.telegram.messenger.video;
 
-import java.io.File;
-import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.FloatBuffer;
-import java.nio.channels.FileChannel;
-import java.util.ArrayList;
-
 import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -35,6 +27,9 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 
+import androidx.annotation.RequiresApi;
+import androidx.exifinterface.media.ExifInterface;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.Bitmaps;
@@ -47,10 +42,15 @@ import org.telegram.ui.Components.FilterShaders;
 import org.telegram.ui.Components.Paint.Views.EditTextOutline;
 import org.telegram.ui.Components.RLottieDrawable;
 
-import javax.microedition.khronos.opengles.GL10;
+import java.io.File;
+import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
+import java.nio.channels.FileChannel;
+import java.util.ArrayList;
 
-import androidx.annotation.RequiresApi;
-import androidx.exifinterface.media.ExifInterface;
+import javax.microedition.khronos.opengles.GL10;
 
 public class TextureRenderer {
 

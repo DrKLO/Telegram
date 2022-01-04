@@ -16,8 +16,7 @@
 
     <application
         android:allowBackup="false"
-        android:icon="@mipmap/ic_launcher"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:icon="@mipmap/cg_launcher_alt_blue"
         android:label="@string/catox_AppName"
         android:theme="@style/Theme.TMessages.Start"
         android:name=".ApplicationLoader"

@@ -20,6 +20,7 @@ import org.telegram.messenger.audioinfo.util.PositionInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 public class ID3v2TagHeader {
 	private int version = 0;
@@ -43,7 +44,7 @@ public class ID3v2TagHeader {
 		/*
 		 * Identifier: "ID3"
 		 */
-		String id = new String(data.readFully(3), "ISO-8859-1");
+		String id = new String(data.readFully(3), StandardCharsets.ISO_8859_1);
 		if (!"ID3".equals(id)) {
 			throw new ID3v2Exception("Invalid ID3 identifier: " + id);
 		}

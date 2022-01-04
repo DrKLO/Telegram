@@ -1524,7 +1524,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
             ValueAnimator animator = ValueAnimator.ofFloat(in ? 0f : 1f, in ? 1f : 0f);
             animator.addUpdateListener(animation -> {
                 float fullWidth = (chartView.chartWidth / (chartView.pickerDelegate.pickerEnd - chartView.pickerDelegate.pickerStart));
-                float offset = fullWidth * (chartView.pickerDelegate.pickerStart) - chartView.HORIZONTAL_PADDING;
+                float offset = fullWidth * (chartView.pickerDelegate.pickerStart) - BaseChartView.HORIZONTAL_PADDING;
 
                 params.pY = chartView.chartArea.top + (1f - pYPercentage) * chartView.chartArea.height();
                 params.pX = chartView.chartFullWidth * params.xPercentage - offset;
@@ -2035,10 +2035,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                 return true;
             } else if (oldItemPosition == actionsCell && newItemPosition == adapter.actionsCell) {
                 return true;
-            } else if (oldItemPosition == topDayOfWeeksCell && newItemPosition == adapter.topDayOfWeeksCell) {
-                return true;
-            }
-            return false;
+            } else return oldItemPosition == topDayOfWeeksCell && newItemPosition == adapter.topDayOfWeeksCell;
         }
 
         @Override

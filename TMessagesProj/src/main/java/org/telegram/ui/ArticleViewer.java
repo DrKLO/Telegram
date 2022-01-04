@@ -884,7 +884,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                     int dx = Math.max(0, (int) (event.getX() - startedTrackingX));
                     int dy = Math.abs((int) event.getY() - startedTrackingY);
                     tracker.addMovement(event);
-                    if (maybeStartTracking && !startedTracking && dx >= AndroidUtilities.getPixelsInCM(0.4f, true) && Math.abs(dx) / 3 > dy) {
+                    if (maybeStartTracking && !startedTracking && dx >= AndroidUtilities.getPixelsInCM(0.1f, true) && Math.abs(dx) / 3 > dy) {
                         prepareForMoving(event);
                     } else if (startedTracking) {
                         pressedLinkOwnerLayout = null;
@@ -1080,7 +1080,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             if (checkingForLongPress && windowView != null) {
                 checkingForLongPress = false;
                 if (pressedLink != null) {
-                    windowView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                    ua.itaysonlab.extras.CatogramExtras.performHapticFeedback(windowView, HapticFeedbackConstants.LONG_PRESS);
                     showCopyPopup(pressedLink.getUrl());
                     pressedLink = null;
                     pressedLinkOwnerLayout = null;
@@ -1094,10 +1094,10 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                         textSelectionHelper.trySelect(pressedLinkOwnerView);
                     }
                     if (textSelectionHelper.isSelectionMode()) {
-                        windowView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                        ua.itaysonlab.extras.CatogramExtras.performHapticFeedback(windowView, HapticFeedbackConstants.LONG_PRESS);
                     }
                 } else if (pressedLinkOwnerLayout != null && pressedLinkOwnerView != null) {
-                    windowView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                    ua.itaysonlab.extras.CatogramExtras.performHapticFeedback(windowView, HapticFeedbackConstants.LONG_PRESS);
 
                     int[] location = new int[2];
                     pressedLinkOwnerView.getLocationInWindow(location);
@@ -5540,10 +5540,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
             int type = holder.getItemViewType();
-            if (type == 23 || type == 24) {
-                return true;
-            }
-            return false;
+            return type == 23 || type == 24;
         }
 
         @Override
@@ -11397,29 +11394,21 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 }
             } else if (view instanceof BlockCollageCell) {
                 ImageReceiver imageReceiver = getImageReceiverFromListView(((BlockCollageCell) view).innerListView, pageBlock, coords);
-                if (imageReceiver != null) {
-                    return imageReceiver;
-                }
+                return imageReceiver;
             } else if (view instanceof BlockSlideshowCell) {
                 ImageReceiver imageReceiver = getImageReceiverFromListView(((BlockSlideshowCell) view).innerListView, pageBlock, coords);
-                if (imageReceiver != null) {
-                    return imageReceiver;
-                }
+                return imageReceiver;
             } else if (view instanceof BlockListItemCell) {
                 BlockListItemCell blockListItemCell = (BlockListItemCell) view;
                 if (blockListItemCell.blockLayout != null) {
                     ImageReceiver imageReceiver = getImageReceiverView(blockListItemCell.blockLayout.itemView, pageBlock, coords);
-                    if (imageReceiver != null) {
-                        return imageReceiver;
-                    }
+                    return imageReceiver;
                 }
             } else if (view instanceof BlockOrderedListItemCell) {
                 BlockOrderedListItemCell blockOrderedListItemCell = (BlockOrderedListItemCell) view;
                 if (blockOrderedListItemCell.blockLayout != null) {
                     ImageReceiver imageReceiver = getImageReceiverView(blockOrderedListItemCell.blockLayout.itemView, pageBlock, coords);
-                    if (imageReceiver != null) {
-                        return imageReceiver;
-                    }
+                    return imageReceiver;
                 }
             }
             return null;

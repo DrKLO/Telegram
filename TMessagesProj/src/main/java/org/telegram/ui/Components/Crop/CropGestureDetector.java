@@ -1,13 +1,13 @@
 package org.telegram.ui.Components.Crop;
 
 import android.content.Context;
-import androidx.core.view.MotionEventCompat;
-
 import android.os.SystemClock;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.VelocityTracker;
 import android.view.ViewConfiguration;
+
+import androidx.core.view.MotionEventCompat;
 
 import org.telegram.messenger.AndroidUtilities;
 

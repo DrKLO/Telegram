@@ -20,6 +20,7 @@ import org.telegram.messenger.audioinfo.AudioInfo;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 public class ID3v1Info extends AudioInfo {
     public static boolean isID3v1StartPosition(InputStream input) throws IOException {
@@ -76,7 +77,7 @@ public class ID3v1Info extends AudioInfo {
 
     String extractString(byte[] bytes, int offset, int length) {
         try {
-            String text = new String(bytes, offset, length, "ISO-8859-1");
+            String text = new String(bytes, offset, length, StandardCharsets.ISO_8859_1);
             int zeroIndex = text.indexOf(0);
             return zeroIndex < 0 ? text : text.substring(0, zeroIndex);
         } catch (Exception e) {

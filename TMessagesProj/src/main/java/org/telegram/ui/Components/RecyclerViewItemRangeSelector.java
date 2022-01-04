@@ -3,9 +3,9 @@ package org.telegram.ui.Components;
 import android.view.MotionEvent;
 import android.view.View;
 
-import org.telegram.messenger.AndroidUtilities;
-
 import androidx.recyclerview.widget.RecyclerView;
+
+import org.telegram.messenger.AndroidUtilities;
 
 public class RecyclerViewItemRangeSelector implements RecyclerView.OnItemTouchListener {
 

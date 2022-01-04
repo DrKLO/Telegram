@@ -15,18 +15,20 @@ import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.R;
-import org.telegram.messenger.UserObject;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
+import org.telegram.tgnet.TLObject;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.GraySectionCell;
 import org.telegram.ui.Cells.ProfileSearchCell;
@@ -40,8 +42,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import androidx.collection.LongSparseArray;
-import androidx.recyclerview.widget.RecyclerView;
-
 public class SearchAdapter extends RecyclerListView.SelectionAdapter {
 
     private Context mContext;
@@ -255,10 +255,7 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
             return false;
         } else if (i > localCount && i < localCount + phoneCount) {
             return false;
-        } else if (i > localCount + phoneCount && i <= globalCount + phoneCount + localCount) {
-            return true;
-        }
-        return false;
+        } else return i > localCount + phoneCount && i <= globalCount + phoneCount + localCount;
     }
 
     public Object getItem(int i) {

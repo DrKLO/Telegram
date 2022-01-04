@@ -310,11 +310,7 @@ public class EmbedBottomSheet extends BottomSheet {
             public boolean onTouchEvent(MotionEvent event) {
                 boolean result = super.onTouchEvent(event);
                 if (result) {
-                    if (event.getAction() == MotionEvent.ACTION_UP) {
-                        setDisableScroll(false);
-                    } else {
-                        setDisableScroll(true);
-                    }
+                    setDisableScroll(event.getAction() != MotionEvent.ACTION_UP);
                 }
                 return result;
             }

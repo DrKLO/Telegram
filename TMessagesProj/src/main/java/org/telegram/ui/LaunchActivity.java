@@ -14,11 +14,13 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.ObjectAnimator;
 import android.app.Activity;
 import android.app.ActivityManager;
+import android.app.assist.AssistContent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -63,6 +65,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.arch.core.util.Function;
 import androidx.core.content.pm.ShortcutInfoCompat;
 import androidx.core.content.pm.ShortcutManagerCompat;
@@ -163,7 +166,41 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class LaunchActivity extends Activity implements ActionBarLayout.ActionBarLayoutDelegate, NotificationCenter.NotificationCenterDelegate, DialogsActivity.DialogsActivityDelegate {
+import ua.itaysonlab.catogram.CatogramConfig;
+import ua.itaysonlab.catogram.OTA;
+import ua.itaysonlab.catogram.vkui.CGUIResources;
+import ua.itaysonlab.redesign.BottomSlideFragment;
+
+public class LaunchActivity extends AppCompatActivity implements  BottomSlideFragment.BottomSlideActivityInterface, ActionBarLayout.ActionBarLayoutDelegate, NotificationCenter.NotificationCenterDelegate, DialogsActivity.DialogsActivityDelegate {
+    private List<BottomSlideFragment> slideFragments = new ArrayList<>();
+
+    private CGUIResources res = null;
+    @Override
+    public Resources getResources() {
+        if (res == null) res = new CGUIResources(super.getResources());
+        return res;
+    }
+    public void reloadResources() {
+        res.reloadReplacements();
+    }
+
+    @Override
+    public void addBackPressedListener(BottomSlideFragment fragment) {
+        slideFragments.add(fragment);
+        slideFragments.add(fragment);
+    }
+
+    @Override
+    public void removeBackPressedListener(BottomSlideFragment fragment) {
+        slideFragments.remove(fragment);
+    }
+
+    @Override
+    public void setDisableLightStatusBar(boolean isLight) {
+        int color = Theme.getColor(Theme.key_actionBarDefault, null, true);
+        if (color != Color.WHITE) return;
+        AndroidUtilities.setLightStatusBar(getWindow(), !isLight);
+    }
 
     private static final String EXTRA_ACTION_TOKEN = "actions.fulfillment.extra.ACTION_TOKEN";
 
@@ -247,6 +284,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         ApplicationLoader.postInitApplication();
         AndroidUtilities.checkDisplaySize(this, getResources().getConfiguration());
         currentAccount = UserConfig.selectedAccount;
+
         if (!UserConfig.getInstance(currentAccount).isClientActivated()) {
             Intent intent = getIntent();
             boolean isProxy = false;
@@ -306,6 +344,10 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         }
 
         super.onCreate(savedInstanceState);
+
+        if (CatogramConfig.INSTANCE.getAutoOta())
+            OTA.download(this, false);
+
         if (Build.VERSION.SDK_INT >= 24) {
             AndroidUtilities.isInMultiwindow = isInMultiWindowMode();
         }
@@ -591,6 +633,11 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     Bundle args = new Bundle();
                     args.putLong("user_id", UserConfig.getInstance(currentAccount).getClientUserId());
                     presentFragment(new ChatActivity(args));
+                    drawerLayoutContainer.closeDrawer(false);
+                } else if (id == 1001) {
+                    Bundle args = new Bundle();
+                    args.putInt("folderId", 1);
+                    presentFragment(new DialogsActivity(args));
                     drawerLayoutContainer.closeDrawer(false);
                 } else if (id == 12) {
                     if (Build.VERSION.SDK_INT >= 23) {
@@ -909,11 +956,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && checkNavigationBar) {
                 final Window window = getWindow();
                 int color = Theme.getColor(Theme.key_windowBackgroundGray, null, true);
-                if (window.getNavigationBarColor() != color) {
-                    window.setNavigationBarColor(color);
-                    final float brightness = AndroidUtilities.computePerceivedBrightness(color);
-                    AndroidUtilities.setLightNavigationBar(getWindow(), brightness >= 0.721f);
-                }
+                window.setNavigationBarColor(Theme.getColor(Theme.key_chat_messagePanelBackground, null, true));
+                final float brightness = AndroidUtilities.computePerceivedBrightness(color);
+                AndroidUtilities.setLightNavigationBar(getWindow(), brightness >= 0.721f);
             }
         }
         if (SharedConfig.noStatusBar && Build.VERSION.SDK_INT >= 21 && checkStatusBar) {
@@ -5316,6 +5361,10 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             finish();
             return;
         }
+        if (!slideFragments.isEmpty()) {
+            slideFragments.get(slideFragments.size()-1).onBackPressed();
+            return;
+        }
         if (SecretMediaViewer.hasInstance() && SecretMediaViewer.getInstance().isVisible()) {
             SecretMediaViewer.getInstance().closePhoto(true, false);
         } else if (PhotoViewer.hasInstance() && PhotoViewer.getInstance().isVisible()) {
@@ -5428,7 +5477,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                         showVoiceChatTooltip(mute ? UndoView.ACTION_VOIP_SOUND_MUTED : UndoView.ACTION_VOIP_SOUND_UNMUTED);
                     }
                 }
-            } else if (!mainFragmentsStack.isEmpty() && (!PhotoViewer.hasInstance() || !PhotoViewer.getInstance().isVisible()) && event.getRepeatCount() == 0) {
+            } else if (CatogramConfig.INSTANCE.getPlayVideoOnVolume() && (!mainFragmentsStack.isEmpty() && (!PhotoViewer.hasInstance() || !PhotoViewer.getInstance().isVisible()) && event.getRepeatCount() == 0)) {
                 BaseFragment fragment = mainFragmentsStack.get(mainFragmentsStack.size() - 1);
                 if (fragment instanceof ChatActivity) {
                     if (((ChatActivity) fragment).maybePlayVisibleVideo()) {
@@ -5703,5 +5752,22 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             }
         }
         drawerLayoutAdapter.notifyDataSetChanged();
+    }
+
+    @Override
+    public void onProvideAssistContent(AssistContent outContent) {
+        if (passcodeView == null || passcodeView.getVisibility() != View.VISIBLE) {
+            BaseFragment topFragment = null;
+            if (!layerFragmentsStack.isEmpty()) {
+                topFragment = layerFragmentsStack.get(layerFragmentsStack.size() - 1);
+            } else if (!rightFragmentsStack.isEmpty()) {
+                topFragment = rightFragmentsStack.get(rightFragmentsStack.size() - 1);
+            } else if (!mainFragmentsStack.isEmpty()) {
+                topFragment = mainFragmentsStack.get(mainFragmentsStack.size() - 1);
+            }
+            if (topFragment != null) {
+                topFragment.onProvideAssistContent(outContent);
+            }
+        }
     }
 }

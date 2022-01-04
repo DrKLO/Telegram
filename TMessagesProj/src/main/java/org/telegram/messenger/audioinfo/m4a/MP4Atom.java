@@ -85,13 +85,13 @@ public class MP4Atom extends MP4Box<RangeInputStream> {
 	public BigDecimal readShortFixedPoint() throws IOException {
 		int integer = data.readByte();
 		int decimal = data.readUnsignedByte();
-		return new BigDecimal(String.valueOf(integer) + "" + String.valueOf(decimal));
+		return new BigDecimal(integer + "" + decimal);
 	}
 
 	public BigDecimal readIntegerFixedPoint() throws IOException {
 		int integer = data.readShort();
 		int decimal = data.readUnsignedShort();
-		return new BigDecimal(String.valueOf(integer) + "" + String.valueOf(decimal));
+		return new BigDecimal(integer + "" + decimal);
 	}
 
 	public String readString(int len, String enc) throws IOException {

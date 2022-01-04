@@ -35,6 +35,8 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 
 import java.util.ArrayList;
 
+import ua.itaysonlab.catogram.CatogramConfig;
+
 public class ChatPullingDownDrawable implements NotificationCenter.NotificationCenterDelegate {
 
     public int dialogFolderId;
@@ -142,11 +144,6 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
             circleRadius = AndroidUtilities.dp(56) / 2f;
             lastWidth = width;
 
-            String nameStr = nextChat != null ? nextChat.title : LocaleController.getString("SwipeToGoNextChannelEnd", R.string.SwipeToGoNextChannelEnd);
-            chatNameWidth = (int) textPaint.measureText(nameStr);
-            chatNameWidth = Math.min(chatNameWidth, lastWidth - AndroidUtilities.dp(60));
-            chatNameLayout = new StaticLayout(nameStr, textPaint, chatNameWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
-
             String str1 = null;
             String str2 = null;
 
@@ -160,6 +157,12 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
                 str1 = LocaleController.getString("SwipeToGoNextChannel", R.string.SwipeToGoNextChannel);
                 str2 = LocaleController.getString("ReleaseToGoNextChannel", R.string.ReleaseToGoNextChannel);
             }
+
+            String nameStr = nextChat != null ? nextChat.title : LocaleController.getString("SwipeToGoNextChannelEnd", R.string.SwipeToGoNextChannelEnd);
+            chatNameWidth = (int) textPaint.measureText(nameStr);
+            chatNameWidth = Math.min(chatNameWidth, lastWidth - AndroidUtilities.dp(60));
+            chatNameLayout = new StaticLayout(nameStr, textPaint, chatNameWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+
             layout1Width = (int) textPaint2.measureText(str1);
             layout1Width = Math.min(layout1Width, lastWidth - AndroidUtilities.dp(60));
             layout1 = new StaticLayout(str1, textPaint2, layout1Width, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
@@ -527,6 +530,9 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
         for (int i = 0; i < dialogs.size(); i++) {
             TLRPC.Dialog dialog = dialogs.get(i);
             TLRPC.Chat chat = messagesController.getChat(-dialog.id);
+            if (folderId != 0 && CatogramConfig.INSTANCE.getIgnoreArchivedChannels()) {
+                return null;
+            }
             if (chat != null && dialog.id != currentDialogId && dialog.unread_count > 0 && DialogObject.isChannel(dialog) && !chat.megagroup && !messagesController.isPromoDialog(dialog.id, false)) {
                 String reason = MessagesController.getRestrictionReason(chat.restriction_reason);
                 if (reason == null) {

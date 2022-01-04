@@ -24,6 +24,9 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.RemoteViews;
+
 import androidx.annotation.AnimRes;
 import androidx.annotation.ColorInt;
 import androidx.annotation.NonNull;
@@ -31,8 +34,6 @@ import androidx.annotation.Nullable;
 import androidx.core.app.ActivityOptionsCompat;
 import androidx.core.app.BundleCompat;
 import androidx.core.content.ContextCompat;
-import android.view.View;
-import android.widget.RemoteViews;
 
 import java.util.ArrayList;
 

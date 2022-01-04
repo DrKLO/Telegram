@@ -133,6 +133,9 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
+import ua.itaysonlab.catogram.CGFeatureHooks;
+import ua.itaysonlab.catogram.CatogramConfig;
+
 @SuppressLint("NewApi")
 public class VoIPService extends Service implements SensorEventListener, AudioManager.OnAudioFocusChangeListener, VoIPController.ConnectionStateListener, NotificationCenter.NotificationCenterDelegate {
 
@@ -258,6 +261,8 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 	private boolean isOutgoing;
 	public boolean videoCall;
 	private Runnable timeoutRunnable;
+
+	protected int currentStreamType;
 
 	private Boolean mHasEarpiece;
 	private boolean wasEstablished;
@@ -485,9 +490,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		if (call != null) {
 			long selfId = getSelfId();
 			TLRPC.TL_groupCallParticipant participant = call.participants.get(selfId);
-			if (participant != null && !participant.can_self_unmute && participant.muted && !ChatObject.canManageCalls(chat)) {
-				return true;
-			}
+            return participant != null && !participant.can_self_unmute && participant.muted && !ChatObject.canManageCalls(chat);
 		}
 		return false;
 	}
@@ -2817,8 +2820,8 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			builder.setContentTitle(ChatObject.isChannelOrGiga(chat) ? LocaleController.getString("VoipLiveStream", R.string.VoipLiveStream) : LocaleController.getString("VoipVoiceChat", R.string.VoipVoiceChat));
 			builder.setSmallIcon(isMicMute() ? R.drawable.voicechat_muted : R.drawable.voicechat_active);
 		} else {
+			builder.setSmallIcon(CGFeatureHooks.getProperNotificationIcon());
 			builder.setContentTitle(LocaleController.getString("VoipOutgoingCall", R.string.VoipOutgoingCall));
-			builder.setSmallIcon(R.drawable.notification);
 		}
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
 			Intent endIntent = new Intent(this, VoIPActionsReceiver.class);
@@ -3424,18 +3427,27 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			if (groupCall != null) {
 				bldr.setSmallIcon(isMicMute() ? R.drawable.voicechat_muted : R.drawable.voicechat_active);
 			} else {
-				bldr.setSmallIcon(R.drawable.notification);
+				bldr.setSmallIcon(CGFeatureHooks.getProperNotificationIcon());
 			}
 			startForeground(ID_ONGOING_CALL_NOTIFICATION, bldr.build());
 		}
 	}
 
 	private void loadResources() {
-		if (Build.VERSION.SDK_INT >= 21) {
-			WebRtcAudioTrack.setAudioTrackUsageAttribute(AudioAttributes.USAGE_VOICE_COMMUNICATION);
+		if (chat != null && CatogramConfig.INSTANCE.getUseMediaStream()) {
+			currentStreamType = AudioManager.STREAM_MUSIC;
+			if (Build.VERSION.SDK_INT >= 21) {
+				WebRtcAudioTrack.setAudioTrackUsageAttribute(AudioAttributes.USAGE_MEDIA);
+			}
+		} else {
+			currentStreamType = AudioManager.STREAM_VOICE_CALL;
+			if (Build.VERSION.SDK_INT >= 21) {
+				WebRtcAudioTrack.setAudioTrackUsageAttribute(AudioAttributes.USAGE_VOICE_COMMUNICATION);
+			}
 		}
+		WebRtcAudioTrack.setAudioStreamType(currentStreamType);
 		Utilities.globalQueue.postRunnable(() -> {
-			soundPool = new SoundPool(1, AudioManager.STREAM_VOICE_CALL, 0);
+			soundPool = new SoundPool(1, currentStreamType, 0);
 			spConnectingId = soundPool.load(this, R.raw.voip_connecting, 1);
 			spRingbackID = soundPool.load(this, R.raw.voip_ringback, 1);
 			spFailedID = soundPool.load(this, R.raw.voip_failed, 1);
@@ -3495,13 +3507,15 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
 		if (!USE_CONNECTION_SERVICE) {
 			Utilities.globalQueue.postRunnable(() -> {
-				try {
-					am.setMode(AudioManager.MODE_IN_COMMUNICATION);
-				} catch (Exception e) {
-					FileLog.e(e);
-				}
+						if (currentStreamType == AudioManager.STREAM_VOICE_CALL) {
+							try {
+								am.setMode(AudioManager.MODE_IN_COMMUNICATION);
+							} catch (Exception e) {
+								FileLog.e(e);
+							}
+						}
 				AndroidUtilities.runOnUIThread(() -> {
-					am.requestAudioFocus(VoIPService.this, AudioManager.STREAM_VOICE_CALL, AudioManager.AUDIOFOCUS_GAIN);
+					am.requestAudioFocus(VoIPService.this, currentStreamType, AudioManager.AUDIOFOCUS_GAIN);
 					if (isBluetoothHeadsetConnected() && hasEarpiece()) {
 						switch (audioRouteToSet) {
 							case AUDIO_ROUTE_BLUETOOTH:
@@ -3812,7 +3826,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		Notification.Builder builder = new Notification.Builder(this)
 				.setContentTitle(video ? LocaleController.getString("VoipInVideoCallBranding", R.string.VoipInVideoCallBranding) : LocaleController.getString("VoipInCallBranding", R.string.VoipInCallBranding))
 				.setContentText(name)
-				.setSmallIcon(R.drawable.notification)
+				.setSmallIcon(CGFeatureHooks.getProperNotificationIcon())
 				.setSubText(subText)
 				.setContentIntent(PendingIntent.getActivity(this, 0, intent, 0));
 		Uri soundProviderUri = Uri.parse("content://" + BuildConfig.APPLICATION_ID + ".call_sound_provider/start_ringing");

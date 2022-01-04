@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AppName">Telegram</string>
-    <string name="AppNameBeta">Telegram Beta</string>
+    <string name="AppName">Catogram</string>
+    <string name="AppNameBeta">Catogram Beta</string>
     <string name="LanguageName">Italiano</string>
     <string name="English">Inglese</string>
     <string name="LanguageNameInEnglish">Italian</string>
@@ -3118,7 +3118,7 @@
     <string name="ActionBotDocumentRentalAgreement">Contratto di locazione</string>
     <string name="ActionBotDocumentPhone">Numero di telefono</string>
     <string name="ActionBotDocumentEmail">Indirizzo email</string>
-    <string name="UnsupportedMedia">Questo messaggio non è supportato dalla tua versione di Telegram. Aggiorna l\'app per visualizzarlo: https://telegram.org/update</string>
+    <string name="UnsupportedMedia">Questo messaggio non è supportato dalla tua versione di Telegram. Aggiorna l\'app per visualizzarlo: https://t.me/catogram</string>
     <string name="AttachPhoto">Foto</string>
     <string name="AttachVideo">Video</string>
     <string name="AttachDestructingPhoto">Foto con autodistruzione</string>
@@ -3367,7 +3367,7 @@
     <string name="ViewMessageStatistic">Statistiche messaggio</string>
     <string name="ViewMessage">Apri messaggio</string>
     <!--Intro view-->
-    <string name="Page1Title">Telegram</string>
+    <string name="Page1Title">Catogram</string>
     <string name="Page2Title">Veloce</string>
     <string name="Page3Title">Gratis</string>
     <string name="Page4Title">Sicuro</string>

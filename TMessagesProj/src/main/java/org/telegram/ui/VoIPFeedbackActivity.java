@@ -1,12 +1,14 @@
 package org.telegram.ui;
 
-import android.app.Activity;
 import android.os.Bundle;
 import android.view.View;
 import android.view.WindowManager;
+
+import androidx.appcompat.app.AppCompatActivity;
+
 import org.telegram.ui.Components.voip.VoIPHelper;
 
-public class VoIPFeedbackActivity extends Activity {
+public class VoIPFeedbackActivity extends AppCompatActivity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);

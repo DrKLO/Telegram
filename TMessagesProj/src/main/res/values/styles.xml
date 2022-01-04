@@ -1,9 +1,13 @@
-<resources
-    xmlns:android="http://schemas.android.com/apk/res/android">
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!--THEMES-->
+    <style name="TransSheet" parent="Theme.Design.BottomSheetDialog">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+    </style>
 
-    <style name="Theme.TMessages.Start" parent="@android:style/Theme.Holo.Light">
+    <style name="Theme.TMessages.Start" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="android:actionBarStyle">@style/ActionBar.Transparent.TMessages.Start</item>
         <item name="android:colorBackground">@android:color/white</item>
         <item name="android:windowBackground">@android:color/white</item>
@@ -11,7 +15,7 @@
         <item name="android:textViewStyle">@style/MyTextViewStyle</item>
     </style>
 
-    <style name="Theme.TMessages" parent="@android:style/Theme.Holo.Light">
+    <style name="Theme.TMessages" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="android:windowActionBar">false</item>
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowActionBarOverlay">false</item>
@@ -75,16 +79,16 @@
 
     <!-- POPUP -->
 
-    <style name="PopupAnimation" parent="android:Animation" mce_bogus="1">
+    <style name="PopupAnimation" mce_bogus="1" parent="android:Animation">
         <item name="android:windowEnterAnimation">@anim/popup_in</item>
         <item name="android:windowExitAnimation">@anim/popup_out</item>
     </style>
 
-    <style name="PopupContextAnimation" parent="android:Animation" mce_bogus="1">
+    <style name="PopupContextAnimation" mce_bogus="1" parent="android:Animation">
         <item name="android:windowEnterAnimation">@anim/popup_context_in</item>
     </style>
 
-    <style name="PopupContextAnimation2" parent="android:Animation" mce_bogus="1">
+    <style name="PopupContextAnimation2" mce_bogus="1" parent="android:Animation">
         <item name="android:windowEnterAnimation">@anim/popup_context_in</item>
         <item name="android:windowExitAnimation">@anim/popup_out</item>
     </style>

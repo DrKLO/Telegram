@@ -29,6 +29,7 @@ import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.os.Build;
+
 import android.text.Editable;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
@@ -233,7 +234,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
     private int popupWidth;
     private int popupHeight;
     private int emojiSize;
-    private int location[] = new int[2];
+    private int[] location = new int[2];
     private int stickersTabOffset;
     private int recentTabBum = -2;
     private int favTabBum = -2;
@@ -1954,7 +1955,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                     backspacePressed = false;
                     if (!backspaceOnce) {
                         if (delegate != null && delegate.onBackspace()) {
-                            backspaceButton.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                            ua.itaysonlab.extras.CatogramExtras.performHapticFeedback(backspaceButton, HapticFeedbackConstants.KEYBOARD_TAP);
                         }
                     }
                 }
@@ -3159,7 +3160,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                 return;
             }
             if (delegate != null && delegate.onBackspace()) {
-                backspaceButton.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                ua.itaysonlab.extras.CatogramExtras.performHapticFeedback(backspaceButton, HapticFeedbackConstants.KEYBOARD_TAP);
             }
             backspaceOnce = true;
             postBackspaceRunnable(Math.max(50, time - 100));
@@ -4689,7 +4690,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                                         return;
                                     }
                                     loadingUrl[0] = true;
-                                    final AlertDialog progressDialog[] = new AlertDialog[]{new AlertDialog(getContext(), 3)};
+                                    final AlertDialog[] progressDialog = new AlertDialog[]{new AlertDialog(getContext(), 3)};
 
                                     TLRPC.TL_messages_getEmojiURL req = new TLRPC.TL_messages_getEmojiURL();
                                     req.lang_code = lastSearchAlias != null ? lastSearchAlias : lastSearchKeyboardLanguage[0];

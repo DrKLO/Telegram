@@ -387,10 +387,10 @@ public class PieChartView extends StackLinearChartView<PieChartViewData> {
 
             boolean v = false;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-                v = performHapticFeedback(HapticFeedbackConstants.TEXT_HANDLE_MOVE, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                v = ua.itaysonlab.extras.CatogramExtras.performHapticFeedback(this, HapticFeedbackConstants.TEXT_HANDLE_MOVE, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
             }
             if (!v) {
-                performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                ua.itaysonlab.extras.CatogramExtras.performHapticFeedback(this, HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
             }
 
         }

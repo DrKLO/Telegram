@@ -38,6 +38,10 @@ class ProxyCheckInfo;
 class ConnectionsManager {
 
 public:
+    bool isEmpty = false;
+
+    ConnectionsManager();
+
     ConnectionsManager(int32_t instance);
     ~ConnectionsManager();
 

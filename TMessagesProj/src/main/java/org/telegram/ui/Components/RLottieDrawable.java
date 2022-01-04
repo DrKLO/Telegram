@@ -1013,7 +1013,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable {
                 if (vibrationPattern != null && currentParentView != null) {
                     Integer force = vibrationPattern.get(currentFrame - 1);
                     if (force != null) {
-                        currentParentView.performHapticFeedback(force == 1 ? HapticFeedbackConstants.LONG_PRESS : HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                        ua.itaysonlab.extras.CatogramExtras.performHapticFeedback(currentParentView, force == 1 ? HapticFeedbackConstants.LONG_PRESS : HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
                     }
                 }
                 setCurrentFrame(now, timeDiff, timeCheck, false);

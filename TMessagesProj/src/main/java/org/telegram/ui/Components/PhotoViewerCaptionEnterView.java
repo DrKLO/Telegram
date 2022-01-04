@@ -44,10 +44,10 @@ import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
@@ -176,11 +176,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
             @Override
             protected void onSelectionChanged(int selStart, int selEnd) {
                 super.onSelectionChanged(selStart, selEnd);
-                if (selStart != selEnd) {
-                    fixHandleView(false);
-                } else {
-                    fixHandleView(true);
-                }
+                fixHandleView(selStart == selEnd);
             }
 
             @Override

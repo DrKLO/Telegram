@@ -152,6 +152,9 @@ import java.util.Locale;
 import java.util.Stack;
 import java.util.concurrent.atomic.AtomicReference;
 
+import ua.itaysonlab.catogram.CatogramConfig;
+import ua.itaysonlab.catogram.message_ctx_menu.TgxExtras;
+
 public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate, ImageReceiver.ImageReceiverDelegate, DownloadController.FileDownloadProgressListener, TextSelectionHelper.SelectableView, NotificationCenter.NotificationCenterDelegate {
 
     public boolean clipToGroupBounds;
@@ -482,6 +485,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private boolean attachedToWindow;
 
     private boolean isUpdating;
+    private boolean isUpdatingReply;
 
     private RadialProgress2 radialProgress;
     private RadialProgress2 videoRadialProgress;
@@ -1013,7 +1017,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             public float getProgress() {
                 if (currentMessageObject.isMusic()) {
                     return seekBar.getProgress();
-                } else if (currentMessageObject.isVoice()) {
+                } else if (currentMessageObject.isVoice() ||currentMessageObject.isRoundVideo()) {
                     if (useSeekBarWaweform) {
                         return seekBarWaveform.getProgress();
                     } else {
@@ -1028,7 +1032,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             public void setProgress(float progress) {
                 if (currentMessageObject.isMusic()) {
                     seekBar.setProgress(progress);
-                } else if (currentMessageObject.isVoice()) {
+                } else if (currentMessageObject.isVoice() ||currentMessageObject.isRoundVideo()) {
                     if (useSeekBarWaweform) {
                         seekBarWaveform.setProgress(progress);
                     } else {
@@ -2316,6 +2320,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        super.onTouchEvent(event);
+
         if (currentMessageObject == null || !delegate.canPerformActions() || animationRunning) {
             checkTextSelection(event);
             return super.onTouchEvent(event);
@@ -5128,7 +5134,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
                 int maxVote = 0;
                 if (!animatePollAnswer && pollVoteInProgress && vibrateOnPollVote) {
-                    performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                    ua.itaysonlab.extras.CatogramExtras.performHapticFeedback(this, HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
                 }
                 animatePollAnswerAlpha = animatePollAnswer = attachedToWindow && (pollVoteInProgress || pollUnvoteInProgress);
                 ArrayList<PollButton> previousPollButtons = null;
@@ -5215,11 +5221,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         votingFor = null;
                     }
 
-                    if (currentMessageObject.checkedVotes.contains(button.answer)) {
-                        pollCheckBox[a].setChecked(true, false);
-                    } else {
-                        pollCheckBox[a].setChecked(false, false);
-                    }
+                    pollCheckBox[a].setChecked(currentMessageObject.checkedVotes.contains(button.answer), false);
                 }
                 if (hasDifferent && restPercent != 0) {
                     Collections.sort(sortedPollButtons, (o1, o2) -> {
@@ -5636,6 +5638,18 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             photoHeight = (int) maxHeight;
                         }
                     }
+
+                    //ua.itaysonlab.CatogramLogger.d("Stickers:BeforeAmplifier", "photoWidth = "+photoWidth+", photoHeight = "+photoHeight+", max: W = "+maxWidth+" / H = "+maxHeight);
+
+                    float modifier = CatogramConfig.INSTANCE.getSlider_stickerAmplifier() / 100f;
+
+                    photoWidth = (int) (photoWidth * modifier);
+                    photoHeight = (int) (photoHeight * modifier);
+                    maxWidth = (int) (maxWidth * modifier);
+                    maxHeight = (int) (maxHeight * modifier);
+
+                    //ua.itaysonlab.CatogramLogger.d("Stickers:AfterAmplifier", "photoWidth = "+photoWidth+", photoHeight = "+photoHeight+", max: W = "+maxWidth+" / H = "+maxHeight+", amplifier = "+modifier+" [pref = "+CatogramConfig.INSTANCE.getSlider_stickerAmplifier()+"]");
+
                     Object parentObject = messageObject;
                     int w = (int) (photoWidth / AndroidUtilities.density);
                     int h = (int) (photoHeight / AndroidUtilities.density);
@@ -7341,8 +7355,17 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
     }
 
+    public void setIsUpdating(boolean update, boolean reply) {
+        isUpdating = update;
+        isUpdatingReply = reply;
+    }
+
     public void setIsUpdating(boolean value) {
-        isUpdating = true;
+        isUpdating = value;
+    }
+
+    public void setIsUpdatingReply(boolean value) {
+        isUpdatingReply = value;
     }
 
     public void setMessageObject(MessageObject messageObject, MessageObject.GroupedMessages groupedMessages, boolean bottomNear, boolean topNear) {
@@ -10029,6 +10052,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 }
             }
         }
+sendAccessibilityEventForVirtualView(-1,AccessibilityEvent.TYPE_ANNOUNCEMENT    ,(int) (progress*100)+"%");
+
     }
 
     @Override
@@ -10045,6 +10070,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             }
         }
         createLoadingProgressLayout(uploadedSize, totalSize);
+        sendAccessibilityEventForVirtualView(-1,AccessibilityEvent.TYPE_ANNOUNCEMENT,(int) (progress*100)+"%");
     }
 
     private void createLoadingProgressLayout(TLRPC.Document document) {
@@ -10536,7 +10562,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     currentForwardNameString = currentForwardName;
                 }
 
-                forwardedNameWidth = getMaxNameWidth();
+                currentForwardNameString = TgxExtras.createForwardTimeName(messageObject, currentForwardNameString);
+
+                 forwardedNameWidth = getMaxNameWidth();
                 String forwardedString = getForwardedMessageText(messageObject);
                 if (hasPsaHint) {
                     forwardedNameWidth -= AndroidUtilities.dp(36);
@@ -10725,6 +10753,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         } else {
                             currentForwardNameString = currentForwardName;
                         }
+                        currentForwardNameString = TgxExtras.createForwardTimeName(messageObject, currentForwardNameString);
                         name = getForwardedMessageText(messageObject);
                         String from = LocaleController.getString("From", R.string.From);
                         String fromFormattedString = LocaleController.getString("FromFormatted", R.string.FromFormatted);
@@ -14406,7 +14435,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
     @Override
     public boolean performAccessibilityAction(int action, Bundle arguments) {
-        if (action == AccessibilityNodeInfo.ACTION_CLICK) {
+        if(action==AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS) currentFocusedVirtualView=-1;
+        else if (action == AccessibilityNodeInfo.ACTION_CLICK) {
             int icon = getIconForCurrentState();
             if (icon != MediaActionDrawable.ICON_NONE && icon != MediaActionDrawable.ICON_FILE) {
                 didPressButton(true, false);
@@ -14427,7 +14457,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 }
             }
         }
-        if (currentMessageObject.isVoice() || currentMessageObject.isMusic() && MediaController.getInstance().isPlayingMessage(currentMessageObject)) {
+        if (currentMessageObject.isVoice() ||currentMessageObject.isRoundVideo() || currentMessageObject.isMusic() && MediaController.getInstance().isPlayingMessage(currentMessageObject)) {
             if (seekBarAccessibilityDelegate.performAccessibilityActionInternal(action, arguments)) {
                 return true;
             }
@@ -14448,7 +14478,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     }
 
     @Override
-    public boolean onHoverEvent(MotionEvent event) {
+    public boolean dispatchHoverEvent(MotionEvent event) {
         int x = (int) event.getX();
         int y = (int) event.getY();
         if (event.getAction() == MotionEvent.ACTION_HOVER_ENTER || event.getAction() == MotionEvent.ACTION_HOVER_MOVE) {
@@ -14464,9 +14494,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 }
             }
         } else if (event.getAction() == MotionEvent.ACTION_HOVER_EXIT) {
-            currentFocusedVirtualView = 0;
+            currentFocusedVirtualView = -1;
         }
-        return super.onHoverEvent(event);
+        return super.dispatchHoverEvent(event);
     }
 
     @Override
@@ -14479,18 +14509,21 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         return new MessageAccessibilityNodeProvider();
     }
 
-    private void sendAccessibilityEventForVirtualView(int viewId, int eventType) {
+    private void sendAccessibilityEventForVirtualView(int viewId, int eventType,CharSequence text) {
         AccessibilityManager am = (AccessibilityManager) getContext().getSystemService(Context.ACCESSIBILITY_SERVICE);
         if (am.isTouchExplorationEnabled()) {
             AccessibilityEvent event = AccessibilityEvent.obtain(eventType);
             event.setPackageName(getContext().getPackageName());
             event.setSource(ChatMessageCell.this, viewId);
+            if(text!=null) event.getText().add(text);
             if (getParent() != null) {
                 getParent().requestSendAccessibilityEvent(ChatMessageCell.this, event);
             }
         }
     }
-
+    private void sendAccessibilityEventForVirtualView(int viewId, int eventType) {
+sendAccessibilityEventForVirtualView(viewId,eventType,null);
+    }
     public static Point getMessageSize(int imageW, int imageH) {
         return getMessageSize(imageW, imageH, 0, 0);
     }
@@ -14882,8 +14915,12 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     info.addAction(AccessibilityNodeInfo.ACTION_LONG_CLICK);
                 }
 
-                if ((currentMessageObject.isVoice() || currentMessageObject.isMusic()) && MediaController.getInstance().isPlayingMessage(currentMessageObject)) {
+                if ((currentMessageObject.isVoice() ||currentMessageObject.isRoundVideo() || currentMessageObject.isMusic()) && MediaController.getInstance().isPlayingMessage(currentMessageObject)) {
                     seekBarAccessibilityDelegate.onInitializeAccessibilityNodeInfoInternal(info);
+                }
+                //smallest ids should be added at first,because talkback can focus on it not always in correct order
+                if (forwardedNameLayout[1] != null) {
+                    info.addChild(ChatMessageCell.this, FORWARD);
                 }
 
                 int i;
@@ -14931,9 +14968,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 }
                 if (replyNameLayout != null) {
                     info.addChild(ChatMessageCell.this, REPLY);
-                }
-                if (forwardedNameLayout[0] != null && forwardedNameLayout[1] != null) {
-                    info.addChild(ChatMessageCell.this, FORWARD);
                 }
                 if (drawSelectionBackground || getBackground() != null) {
                     info.setSelected(true);
@@ -15138,14 +15172,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     info.setClickable(true);
                 } else if (virtualViewId == FORWARD) {
                     info.setEnabled(true);
-                    StringBuilder sb = new StringBuilder();
-                    if (forwardedNameLayout[0] != null && forwardedNameLayout[1] != null) {
-                        for (int a = 0; a < 2; a++) {
-                            sb.append(forwardedNameLayout[a].getText());
-                            sb.append(a == 0 ? " " : "\n");
-                        }
-                    }
-                    info.setContentDescription(sb.toString());
+                    info.setContentDescription(currentForwardNameString);
                     info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
 
                     int x = (int) Math.min(forwardNameX - forwardNameOffsetX[0], forwardNameX - forwardNameOffsetX[1]);
@@ -15161,7 +15188,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     info.setClassName("android.widget.Button");
                     info.setEnabled(true);
                     if (commentLayout != null) {
-                        info.setText(commentLayout.getText());
+                        //commentLayout not give for us text information about number of comments,so we shouldn't use text of layout for viryual node.
+                        int commentCount=getRepliesCount();
+                        info.setText(isRepliesChat?LocaleController.getString("ViewInChat", R.string.ViewInChat):commentCount == 0 ? LocaleController.getString("LeaveAComment", R.string.LeaveAComment) : LocaleController.formatPluralString("CommentsCount", commentCount));
                     }
                     info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
                     rect.set(commentButtonRect);
@@ -15185,6 +15214,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 performAccessibilityAction(action, arguments);
             } else {
                 if (action == AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS) {
+                    currentFocusedVirtualView=virtualViewId;
                     sendAccessibilityEventForVirtualView(virtualViewId, AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUSED);
                 } else if (action == AccessibilityNodeInfo.ACTION_CLICK) {
                     if (virtualViewId >= LINK_CAPTION_IDS_START) {
@@ -15892,11 +15922,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     drawClock = false;
                     drawError = true;
                 } else if (currentMessageObject.isSent()) {
-                    if (!currentMessageObject.scheduled && !currentMessageObject.isUnread()) {
-                        drawCheck1 = true;
-                    } else {
-                        drawCheck1 = false;
-                    }
+                    drawCheck1 = !currentMessageObject.scheduled && !currentMessageObject.isUnread();
                     drawCheck2 = true;
                     drawClock = false;
                     drawError = false;

@@ -16,6 +16,7 @@
 package org.telegram.messenger.audioinfo.mp3;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 public class ID3v2FrameHeader {
 	private String frameId;
@@ -35,9 +36,9 @@ public class ID3v2FrameHeader {
 		 * Frame Id
 		 */
 		if (input.getTagHeader().getVersion() == 2) { // $xx xx xx (three characters)
-			frameId = new String(data.readFully(3), "ISO-8859-1");
+			frameId = new String(data.readFully(3), StandardCharsets.ISO_8859_1);
 		} else { // $xx xx xx xx (four characters)
-			frameId = new String(data.readFully(4), "ISO-8859-1");
+			frameId = new String(data.readFully(4), StandardCharsets.ISO_8859_1);
 		}
 		
 		/*

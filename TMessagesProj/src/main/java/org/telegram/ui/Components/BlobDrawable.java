@@ -1,12 +1,9 @@
 package org.telegram.ui.Components;
 
-import android.animation.ValueAnimator;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
-
-import org.telegram.messenger.AndroidUtilities;
 
 import java.util.Random;
 

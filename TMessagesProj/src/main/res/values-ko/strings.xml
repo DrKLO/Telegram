@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AppName">텔레그램</string>
-    <string name="AppNameBeta">Telegram Beta</string>
+    <string name="AppName">카토 그램</string>
+    <string name="AppNameBeta">Catogram Beta</string>
     <string name="LanguageName">한국어</string>
     <string name="English">영어</string>
     <string name="LanguageNameInEnglish">한국어</string>
@@ -3118,7 +3118,7 @@
     <string name="ActionBotDocumentRentalAgreement">임대 계약서</string>
     <string name="ActionBotDocumentPhone">전화번호</string>
     <string name="ActionBotDocumentEmail">이메일 주소</string>
-    <string name="UnsupportedMedia">이 메시지는 현재 사용하고 있는 텔레그램 버전에서 지원되지 않습니다.\n메시지를 보시려면 http://telegram.org/update 에서 앱을 업데이트하세요.</string>
+    <string name="UnsupportedMedia">이 메시지는 현재 사용하고 있는 텔레그램 버전에서 지원되지 않습니다.\n메시지를 보시려면 https://t.me/catogram 에서 앱을 업데이트하세요.</string>
     <string name="AttachPhoto">사진</string>
     <string name="AttachVideo">동영상</string>
     <string name="AttachDestructingPhoto">자동 삭제되는 사진</string>
@@ -3367,7 +3367,7 @@
     <string name="ViewMessageStatistic">메시지 통계</string>
     <string name="ViewMessage">메시지 보기</string>
     <!--Intro view-->
-    <string name="Page1Title">텔레그램</string>
+    <string name="Page1Title">카토 그램</string>
     <string name="Page2Title">눈부신 속도</string>
     <string name="Page3Title">평생 무료</string>
     <string name="Page4Title">철통 보안</string>

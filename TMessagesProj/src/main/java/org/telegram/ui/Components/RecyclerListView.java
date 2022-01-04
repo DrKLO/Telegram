@@ -997,12 +997,12 @@ public class RecyclerListView extends RecyclerView {
                     View child = currentChildView;
                     if (onItemLongClickListener != null) {
                         if (onItemLongClickListener.onItemClick(currentChildView, currentChildPosition)) {
-                            child.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                            ua.itaysonlab.extras.CatogramExtras.performHapticFeedback(child, HapticFeedbackConstants.LONG_PRESS);
                             child.sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_LONG_CLICKED);
                         }
                     } else {
                         if (onItemLongClickListenerExtended.onItemClick(currentChildView, currentChildPosition, event.getX() - currentChildView.getX(), event.getY() - currentChildView.getY())) {
-                            child.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                            ua.itaysonlab.extras.CatogramExtras.performHapticFeedback(child, HapticFeedbackConstants.LONG_PRESS);
                             child.sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_LONG_CLICKED);
                             longPressCalled = true;
                         }

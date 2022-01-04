@@ -46,7 +46,7 @@ public class GroupCallTextCell extends FrameLayout {
         super(context);
 
         dividerPaint = new Paint();
-        dividerPaint.setColor(Theme.getColor(Theme.key_voipgroup_actionBar));
+        dividerPaint.setColor(Theme.getColor(Theme.key_divider));
 
         leftPadding = left;
 
@@ -58,7 +58,7 @@ public class GroupCallTextCell extends FrameLayout {
         addView(textView);
 
         valueTextView = new SimpleTextView(context);
-        valueTextView.setTextColor(Theme.getColor(dialog ? Theme.key_dialogTextBlue2 : Theme.key_windowBackgroundWhiteValueText));
+        valueTextView.setTextColor(Theme.getColor(dialog ? Theme.key_dialogTextBlue2 : Theme.key_windowBackgroundWhiteBlueText));
         valueTextView.setTextSize(16);
         valueTextView.setGravity(LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT);
         valueTextView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);

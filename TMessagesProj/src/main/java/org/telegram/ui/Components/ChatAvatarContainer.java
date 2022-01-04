@@ -45,6 +45,8 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.ProfileActivity;
 
+import ua.itaysonlab.catogram.CatogramConfig;
+
 public class ChatAvatarContainer extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
     private BackupImageView avatarImageView;
@@ -109,6 +111,13 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         addView(avatarImageView);
         if (avatarClickable) {
             avatarImageView.setOnClickListener(v -> openProfile(true));
+            avatarImageView.setOnLongClickListener(v -> {
+                if (MessagesController.getNotificationsSettings(currentAccount).getInt("pin_" + parentFragment.getDialogId(), 0) != 0) {
+                    MessagesController.getNotificationsSettings(currentAccount).edit().remove("pin_" + parentFragment.getDialogId()).commit();
+                    parentFragment.updatePinnedMessageView(true);
+                }
+                return true;
+            });
         }
 
         titleTextView = new SimpleTextView(context);
@@ -154,7 +163,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
 
         if (parentFragment != null && parentFragment.getChatMode() == 0) {
             if (!parentFragment.isThreadChat() && !UserObject.isReplyUser(parentFragment.getCurrentUser())) {
-                setOnClickListener(v -> openProfile(false));
+                setOnClickListener(v -> openProfile(CatogramConfig.INSTANCE.getProfiles_alwaysExpand()));
             }
 
             TLRPC.Chat chat = parentFragment.getCurrentChat();

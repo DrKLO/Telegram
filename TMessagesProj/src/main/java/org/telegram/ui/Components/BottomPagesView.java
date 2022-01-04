@@ -7,10 +7,10 @@ import android.graphics.RectF;
 import android.view.View;
 import android.view.animation.DecelerateInterpolator;
 
+import androidx.viewpager.widget.ViewPager;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
-
-import androidx.viewpager.widget.ViewPager;
 
 public class BottomPagesView extends View {
 

@@ -75,6 +75,8 @@ import org.telegram.ui.Components.RLottieImageView;
 
 import java.util.ArrayList;
 
+import ua.itaysonlab.catogram.EditTextAutoFill;
+
 public class TwoStepVerificationSetupActivity extends BaseFragment {
 
     private RLottieImageView imageView;
@@ -887,7 +889,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
                 FrameLayout frameLayout = new FrameLayout(context);
                 scrollViewLinearLayout.addView(frameLayout, LayoutHelper.createLinear(220, 36, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 40, 32, 40, 0));
 
-                passwordEditText = new EditTextBoldCursor(context);
+                passwordEditText = new EditTextAutoFill(context);
                 passwordEditText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
                 passwordEditText.setPadding(0, AndroidUtilities.dp(2), 0, 0);
                 passwordEditText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));

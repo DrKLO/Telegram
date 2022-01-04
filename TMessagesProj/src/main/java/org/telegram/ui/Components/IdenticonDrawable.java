@@ -20,7 +20,7 @@ public class IdenticonDrawable extends Drawable {
 
     private byte[] data;
     private Paint paint = new Paint();
-    private int colors[] = {
+    private int[] colors = {
             0xffffffff,
             0xffd5e6f3,
             0xff2d5775,

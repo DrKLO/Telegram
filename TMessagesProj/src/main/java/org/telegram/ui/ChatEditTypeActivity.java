@@ -486,7 +486,7 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
             if (usernameTextView.length() != 0 && !lastNameAvailable) {
                 Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
                 if (v != null) {
-                    v.vibrate(200);
+                    ua.itaysonlab.extras.CatogramExtras.vibrate(v, 200);
                 }
                 AndroidUtilities.shakeView(checkTextView, 2, 0);
                 return false;

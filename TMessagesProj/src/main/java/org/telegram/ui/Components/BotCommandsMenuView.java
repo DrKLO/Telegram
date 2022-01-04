@@ -6,6 +6,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
@@ -14,6 +15,7 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -72,6 +74,18 @@ public class BotCommandsMenuView extends View {
     }
 
     int lastSize;
+
+    @Override
+    public CharSequence getAccessibilityClassName() {
+        return "android.Widget.Button";
+    }
+
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+super.onInitializeAccessibilityNodeInfo(info);
+if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.LOLLIPOP) info.addAction(isOpened()? AccessibilityNodeInfo.ACTION_COLLAPSE:AccessibilityNodeInfo.ACTION_EXPAND);
+info.setContentDescription(LocaleController.getString("AccDescrBotCommands",R.string.AccDescrBotCommands));
+    }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {

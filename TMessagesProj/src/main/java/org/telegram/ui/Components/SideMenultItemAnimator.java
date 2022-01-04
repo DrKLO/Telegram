@@ -7,11 +7,11 @@ import android.animation.ValueAnimator;
 import android.view.View;
 import android.view.ViewPropertyAnimator;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.SimpleItemAnimator;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class SideMenultItemAnimator extends SimpleItemAnimator {
 

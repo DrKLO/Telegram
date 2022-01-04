@@ -45,6 +45,8 @@ import org.telegram.ui.Cells.ChatMessageCell;
 
 import java.util.ArrayList;
 
+import ua.itaysonlab.catogram.CGFeatureHooks;
+
 public class ForwardingPreviewView extends FrameLayout {
 
     public interface ResourcesDelegate extends Theme.ResourcesProvider {
@@ -600,6 +602,7 @@ public class ForwardingPreviewView extends FrameLayout {
 
         showSendersNameView.setOnClickListener(view -> {
             if (params.hideForwardSendersName) {
+                CGFeatureHooks.switchNoAuthor(false);
                 returnSendersNames = false;
                 showSendersNameView.setChecked(true);
                 hideSendersNameView.setChecked(false);
@@ -616,6 +619,7 @@ public class ForwardingPreviewView extends FrameLayout {
 
         hideSendersNameView.setOnClickListener(view -> {
             if (!params.hideForwardSendersName) {
+                CGFeatureHooks.switchNoAuthor(true);
                 returnSendersNames = false;
                 showSendersNameView.setChecked(false);
                 hideSendersNameView.setChecked(true);

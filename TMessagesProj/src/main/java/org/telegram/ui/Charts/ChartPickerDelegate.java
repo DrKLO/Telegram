@@ -201,22 +201,22 @@ public class ChartPickerDelegate {
 
         boolean notifyPicker = false;
         if (capturedState == CAPTURE_LEFT) {
-            pickerStart = capturedStart - (capturedX - x) / (float) pickerWidth;
+            pickerStart = capturedStart - (capturedX - x) / pickerWidth;
             if (pickerStart < 0f) pickerStart = 0f;
             if (pickerEnd - pickerStart < minDistance) pickerStart = pickerEnd - minDistance;
             notifyPicker = true;
         }
 
         if (capturedState == CAPTURE_RIGHT) {
-            pickerEnd = capturedEnd - (capturedX - x) / (float) pickerWidth;
+            pickerEnd = capturedEnd - (capturedX - x) / pickerWidth;
             if (pickerEnd > 1f) pickerEnd = 1f;
             if (pickerEnd - pickerStart < minDistance) pickerEnd = pickerStart + minDistance;
             notifyPicker = true;
         }
 
         if (capturedState == CAPTURE_MIDDLE) {
-            pickerStart = capturedStart - (capturedX - x) / (float) pickerWidth;
-            pickerEnd = capturedEnd - (capturedX - x) / (float) pickerWidth;
+            pickerStart = capturedStart - (capturedX - x) / pickerWidth;
+            pickerEnd = capturedEnd - (capturedX - x) / pickerWidth;
             if (pickerStart < 0f) {
                 pickerStart = 0f;
                 pickerEnd = capturedEnd - capturedStart;

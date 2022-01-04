@@ -31,8 +31,7 @@ public class MrzRecognizer {
 		}
 		if (!tryDriverLicenseFirst) {
 			res = recognizeBarcode(bitmap);
-			if (res != null)
-				return res;
+            return res;
 		}
 		return null;
 	}

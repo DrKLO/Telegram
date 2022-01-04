@@ -16,6 +16,9 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
@@ -48,9 +51,6 @@ import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
 import java.util.Collections;
-
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 public class FilterCreateActivity extends BaseFragment {
 
@@ -695,10 +695,7 @@ public class FilterCreateActivity extends BaseFragment {
     }
 
     private boolean hasChanges() {
-        hasUserChanged = false;
-        if (filter.alwaysShow.size() != newAlwaysShow.size()) {
-            hasUserChanged = true;
-        }
+        hasUserChanged = filter.alwaysShow.size() != newAlwaysShow.size();
         if (filter.neverShow.size() != newNeverShow.size()) {
             hasUserChanged = true;
         }

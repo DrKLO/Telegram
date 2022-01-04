@@ -7,6 +7,7 @@ import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
 import android.os.SystemClock;
+
 import androidx.annotation.Keep;
 
 import org.telegram.messenger.AndroidUtilities;

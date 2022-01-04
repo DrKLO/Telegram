@@ -18,6 +18,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 
+import androidx.recyclerview.widget.DefaultItemAnimator;
+import androidx.recyclerview.widget.ItemTouchHelper;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.LinearSmoothScroller;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.SimpleItemAnimator;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.LocaleController;
@@ -42,13 +49,6 @@ import org.telegram.ui.ChatActivity;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-
-import androidx.recyclerview.widget.DefaultItemAnimator;
-import androidx.recyclerview.widget.ItemTouchHelper;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.LinearSmoothScroller;
-import androidx.recyclerview.widget.RecyclerView;
-import androidx.recyclerview.widget.SimpleItemAnimator;
 
 public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout {
 
@@ -579,11 +579,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
         if (count < 2 || quizPoll && checksCount < 1) {
             enabled = false;
         }
-        if (!TextUtils.isEmpty(solutionString) || !TextUtils.isEmpty(questionString) || hasAnswers) {
-            allowNesterScroll = false;
-        } else {
-            allowNesterScroll = true;
-        }
+        allowNesterScroll = TextUtils.isEmpty(solutionString) && TextUtils.isEmpty(questionString) && !hasAnswers;
         parentAlert.setAllowNestedScroll(allowNesterScroll);
         parentAlert.doneItem.setEnabled(quizPoll && checksCount == 0 || enabled);
         parentAlert.doneItem.setAlpha(enabled ? 1.0f : 0.5f);
@@ -1029,9 +1025,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
                             RecyclerView.ViewHolder holder = listView.findContainingViewHolder(this);
                             if (holder != null) {
                                 int position = holder.getAdapterPosition();
-                                if (answersCount == 10 && position == answerStartRow + answersCount - 1) {
-                                    return false;
-                                }
+                                return answersCount != 10 || position != answerStartRow + answersCount - 1;
                             }
                             return true;
                         }

@@ -258,10 +258,7 @@ public class RadialProgress2 {
     }
 
     public boolean swapIcon(int icon) {
-        if (mediaActionDrawable.setIcon(icon, false)) {
-            return true;
-        }
-        return false;
+        return mediaActionDrawable.setIcon(icon, false);
     }
 
     public void setPressed(boolean value, boolean mini) {

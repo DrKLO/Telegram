@@ -13,6 +13,8 @@ import android.content.pm.PackageManager;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.LocaleController;
@@ -20,19 +22,20 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.DrawerActionCell;
 import org.telegram.ui.Cells.DividerCell;
+import org.telegram.ui.Cells.DrawerActionCell;
 import org.telegram.ui.Cells.DrawerAddCell;
+import org.telegram.ui.Cells.DrawerProfileCell;
 import org.telegram.ui.Cells.DrawerUserCell;
 import org.telegram.ui.Cells.EmptyCell;
-import org.telegram.ui.Cells.DrawerProfileCell;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SideMenultItemAnimator;
 
 import java.util.ArrayList;
 import java.util.Collections;
 
-import androidx.recyclerview.widget.RecyclerView;
+import ua.itaysonlab.catogram.double_bottom.DoubleBottomBridge;
+import ua.itaysonlab.catogram.double_bottom.DoubleBottomStorageBridge;
 
 public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
 
@@ -218,7 +221,14 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
         accountNumbers.clear();
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
             if (UserConfig.getInstance(a).isClientActivated()) {
-                accountNumbers.add(a);
+                if (DoubleBottomStorageBridge.INSTANCE.getHideAccountsInSwitcher()
+                        && DoubleBottomBridge.INSTANCE.isDbActivatedForAccount(UserConfig.getInstance(a).getCurrentUser().id)
+                        && UserConfig.getInstance(a).getCurrentUser().id != UserConfig.getInstance(UserConfig.selectedAccount).getCurrentUser().id
+                ) {
+                    //
+                } else {
+                    accountNumbers.add(a);
+                }
             }
         }
         Collections.sort(accountNumbers, (o1, o2) -> {
@@ -237,6 +247,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
             return;
         }
         int eventType = Theme.getEventType();
+
         int newGroupIcon;
         int newSecretIcon;
         int newChannelIcon;
@@ -247,7 +258,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
         int inviteIcon;
         int helpIcon;
         int peopleNearbyIcon;
-        if (eventType == 0) {
+        if ( eventType == 0) {
             newGroupIcon = R.drawable.menu_groups_ny;
             //newSecretIcon = R.drawable.menu_secret_ny;
             //newChannelIcon = R.drawable.menu_channel_ny;
@@ -258,7 +269,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
             inviteIcon = R.drawable.menu_invite_ny;
             helpIcon = R.drawable.menu_help_ny;
             peopleNearbyIcon = R.drawable.menu_nearby_ny;
-        } else if (eventType == 1) {
+        } else if ( eventType == 1) {
             newGroupIcon = R.drawable.menu_groups_14;
             //newSecretIcon = R.drawable.menu_secret_14;
             //newChannelIcon = R.drawable.menu_broadcast_14;
@@ -269,7 +280,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
             inviteIcon = R.drawable.menu_secret_ny;
             helpIcon = R.drawable.menu_help;
             peopleNearbyIcon = R.drawable.menu_secret_14;
-        } else if (eventType == 2) {
+        } else if ( eventType == 2) {
             newGroupIcon = R.drawable.menu_groups_hw;
             //newSecretIcon = R.drawable.menu_secret_hw;
             //newChannelIcon = R.drawable.menu_broadcast_hw;
@@ -286,25 +297,23 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
             //newChannelIcon = R.drawable.menu_broadcast;
             contactsIcon = R.drawable.menu_contacts;
             callsIcon = R.drawable.menu_calls;
-            savedIcon = R.drawable.menu_saved;
+            savedIcon = R.drawable.menu_saved_cg;
             settingsIcon = R.drawable.menu_settings;
             inviteIcon = R.drawable.menu_invite;
             helpIcon = R.drawable.menu_help;
             peopleNearbyIcon = R.drawable.menu_nearby;
         }
-        items.add(new Item(2, LocaleController.getString("NewGroup", R.string.NewGroup), newGroupIcon));
+        // items.add(new Item(2, LocaleController.getString("NewGroup", R.string.NewGroup), newGroupIcon));
         //items.add(new Item(3, LocaleController.getString("NewSecretChat", R.string.NewSecretChat), newSecretIcon));
         //items.add(new Item(4, LocaleController.getString("NewChannel", R.string.NewChannel), newChannelIcon));
         items.add(new Item(6, LocaleController.getString("Contacts", R.string.Contacts), contactsIcon));
         items.add(new Item(10, LocaleController.getString("Calls", R.string.Calls), callsIcon));
-        if (hasGps) {
-            items.add(new Item(12, LocaleController.getString("PeopleNearby", R.string.PeopleNearby), peopleNearbyIcon));
-        }
+        // if (hasGps) {
+        //     items.add(new Item(12, LocaleController.getString("PeopleNearby", R.string.PeopleNearby), peopleNearbyIcon));
+        // }
         items.add(new Item(11, LocaleController.getString("SavedMessages", R.string.SavedMessages), savedIcon));
+        items.add(new Item(1001, LocaleController.getString("ArchivedChats", R.string.ArchivedChats), R.drawable.msg_archive));
         items.add(new Item(8, LocaleController.getString("Settings", R.string.Settings), settingsIcon));
-        items.add(null); // divider
-        items.add(new Item(7, LocaleController.getString("InviteFriends", R.string.InviteFriends), inviteIcon));
-        items.add(new Item(13, LocaleController.getString("TelegramFeatures", R.string.TelegramFeatures), helpIcon));
     }
 
     public int getId(int position) {

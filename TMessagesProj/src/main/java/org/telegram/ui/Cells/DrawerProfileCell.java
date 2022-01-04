@@ -33,22 +33,28 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import org.telegram.PhoneFormat.PhoneFormat;
+import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.UserObject;
-import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.UserObject;
+import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.SnowflakesEffect;
+
+import ua.itaysonlab.catogram.CatogramConfig;
+import ua.itaysonlab.extras.CatogramExtras;
 
 public class DrawerProfileCell extends FrameLayout {
 
@@ -249,6 +255,12 @@ public class DrawerProfileCell extends FrameLayout {
             sunDrawable.commitApplyLayerColors();
         }
         nameTextView.setTextColor(Theme.getColor(Theme.key_chats_menuName));
+
+        if (CatogramConfig.INSTANCE.getDrawerAvatar() && CatogramExtras.currentAccountBitmap != null) {
+            backgroundDrawable = CatogramExtras.currentAccountBitmap;
+            useImageBackground = true;
+        }
+
         if (useImageBackground) {
             phoneTextView.setTextColor(Theme.getColor(Theme.key_chats_menuPhone));
             if (shadowView.getVisibility() != VISIBLE) {
@@ -259,7 +271,9 @@ public class DrawerProfileCell extends FrameLayout {
                 backgroundDrawable.draw(canvas);
                 darkBackColor = Theme.getColor(Theme.key_listSelector);
             } else if (backgroundDrawable instanceof BitmapDrawable) {
-                Bitmap bitmap = ((BitmapDrawable) backgroundDrawable).getBitmap();
+                Bitmap bitmap = ((BitmapDrawable) backgroundDrawable).getBitmap().copy(Bitmap.Config.ARGB_8888, true);
+                if (CatogramConfig.INSTANCE.getDrawerBlur()) bitmap = Utilities.blurWallpaper(bitmap);
+                if (CatogramConfig.INSTANCE.getDrawerDarken()) CatogramExtras.darkenBitmap(bitmap);
                 float scaleX = (float) getMeasuredWidth() / (float) bitmap.getWidth();
                 float scaleY = (float) getMeasuredHeight() / (float) bitmap.getHeight();
                 float scale = Math.max(scaleX, scaleY);
@@ -330,12 +344,18 @@ public class DrawerProfileCell extends FrameLayout {
         accountsShown = accounts;
         setArrowState(false);
         nameTextView.setText(UserObject.getUserName(user));
-        phoneTextView.setText(PhoneFormat.getInstance().format("+" + user.phone));
+        if (CatogramConfig.INSTANCE.getHidePhoneNumber()) {
+            phoneTextView.setText(user.username != null ? "@" + user.username : String.valueOf(AccountInstance.getInstance(UserConfig.selectedAccount).getUserConfig().clientUserId));
+        } else {
+            phoneTextView.setText(PhoneFormat.getInstance().format("+" + user.phone));
+        }
         AvatarDrawable avatarDrawable = new AvatarDrawable(user);
         avatarDrawable.setColor(Theme.getColor(Theme.key_avatar_backgroundInProfileBlue));
         avatarImageView.setForUserOrChat(user, avatarDrawable);
 
         applyBackground(true);
+
+        CatogramExtras.setAccountBitmap(user);
     }
 
     public String applyBackground(boolean force) {
