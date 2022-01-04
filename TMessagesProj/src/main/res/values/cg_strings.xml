@@ -2,6 +2,7 @@
 <resources>
     <!-- by iTaysonLab -->
     <string name="AdvancedSettings">Catogram Preferences</string>
+    <string name="AdvancedSettingsX">Catogram X Preferences</string>
 
     <string name="AS_Header_Appearance">Appearance</string>
     <string name="AS_HideUserPhone">Hide phone number</string>
@@ -25,13 +26,16 @@
     <string name="AS_UserID">User ID</string>
     <string name="AS_GroupID">Group ID</string>
     <string name="CatogramVersion">Catogram %1$s</string>
+    <string name="CatogramVersionX">Catogram X %1$s</string>
     <string name="AV_ThemeBased">Dynamic</string>
 
 
     <string name="AS_Header_Categories">Categories</string>
     <string name="AS_Header_About">About Catogram</string>
+    <string name="AS_Header_AboutX">About Catogram X</string>
 
     <string name="CG_AboutDesc">An experimental Telegram app modification.</string>
+    <string name="CG_AboutDescX">Catogram fork</string>
     <string name="CG_Donate">Donate</string>
     <string name="CG_DonatDesc">Help us to buy PS5</string>
     <string name="CG_ToChannel">Open official channel</string>
@@ -60,7 +64,7 @@
     <string name="AS_Filters_Count">Show chat count in chooser</string>
     <string name="AS_Filters_Count_Desc">instead of unread messages count</string>
 
-    <string name="CG_AppName" translatable="false">Catogram</string>
+    <string name="CG_AppName" translatable="false">Catogram X</string>
     <string name="AS_Filters_THint">Show filter menu hint</string>
     <string name="AS_Filters_THintDesc">on toolbar subtitle</string>
 

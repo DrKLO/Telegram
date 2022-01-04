@@ -7128,7 +7128,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                 }
                                 break;
                         }
-                        cell.setText("Catogram v" + CatogramExtras.INSTANCE.getCG_VERSION() + " [" + BuildVars.BUILD_VERSION_STRING + "]");
+                        cell.setText("Catogram X v" + CatogramExtras.INSTANCE.getCG_VERSION() + " [" + BuildVars.BUILD_VERSION_STRING + "]");
                     } catch (Exception e) {
                         FileLog.e(e);
                     }
@@ -7383,7 +7383,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     } else if (position == languageRow) {
                         textCell.setTextAndIcon(LocaleController.getString("Language", R.string.Language), R.drawable.menu_language, false);
                     } else if (position == catogramRow) {
-                        textCell.setTextAndIcon(LocaleController.getString("AdvancedSettings", R.string.AdvancedSettings), R.drawable.menu_settings, true);
+                        textCell.setTextAndIcon(LocaleController.getString("AdvancedSettingsX", R.string.AdvancedSettingsX), R.drawable.menu_settings, true);
                     } else if (position == notificationRow) {
                         textCell.setTextAndIcon(LocaleController.getString("NotificationsAndSounds", R.string.NotificationsAndSounds), R.drawable.menu_notifications, true);
                     } else if (position == privacyRow) {

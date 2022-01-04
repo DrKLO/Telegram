@@ -40,7 +40,7 @@ object OTA : CoroutineScope by MainScope() {
         launch(handler) {
             try {
                 val request: Request =
-                        Request.Builder().url("https://api.github.com/repos/catogram/catogram/releases/latest").build()
+                        Request.Builder().url("https://api.github.com/repos/catogramx/catogramx/releases/latest").build()
                 withContext(Dispatchers.IO) {
                     val response = OkHttpClient().newCall(request).execute()
                     parseddString = response.body!!.string()
@@ -152,10 +152,10 @@ object OTA : CoroutineScope by MainScope() {
     fun downloadApk(context: Context) {
         val notificationManager = NotificationManagerCompat.from(context)
         notificationManager.cancel(1337)
-        val request = DownloadManager.Request(Uri.parse("https://github.com/catogram/catogram/releases/latest/download/app.apk"))
+        val request = DownloadManager.Request(Uri.parse("https://github.com/catogramx/catogramx/releases/latest/download/app.apk"))
 
         request.setAllowedNetworkTypes(DownloadManager.Request.NETWORK_MOBILE or DownloadManager.Request.NETWORK_WIFI)
-        request.setTitle("Catogram v$version")
+        request.setTitle("Catogram X v$version")
         request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
         request.setDestinationInExternalFilesDir(context, Environment.DIRECTORY_DOWNLOADS, "ota.apk")
 

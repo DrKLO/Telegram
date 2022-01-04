@@ -25,7 +25,7 @@ import java.lang.String
 
 
 class MainPreferencesEntry : BasePreferencesEntry {
-    override fun getPreferences(bf: BaseFragment) = tgKitScreen(LocaleController.getString("AdvancedSettings", R.string.AdvancedSettings)) {
+    override fun getPreferences(bf: BaseFragment) = tgKitScreen(LocaleController.getString("AdvancedSettingsX", R.string.AdvancedSettingsX)) {
         category(LocaleController.getString("AS_Header_Categories", R.string.AS_Header_Categories)) {
             textIcon {
                 title = LocaleController.getString("AS_Header_Appearance", R.string.AS_Header_Appearance)
@@ -67,55 +67,55 @@ class MainPreferencesEntry : BasePreferencesEntry {
                     it.presentFragment(CatogramPreferencesNavigator.createUpdates())
                 }
             }
-            textIcon {
+            /*textIcon {
                 title = LocaleController.getString("CG_Donate", R.string.CG_Donate)
                 icon = R.drawable.money_circle_outline_28
                 listener = TGKitTextIconRow.TGTIListener {
                     it.presentFragment(CatogramPreferencesNavigator.createDonate())
                 }
-            }
+            }*/
 
-            category(LocaleController.getString("AS_Header_About", R.string.AS_Header_About)) {
+            category(LocaleController.getString("AS_Header_AboutX", R.string.AS_Header_AboutX)) {
                 textDetail {
-                    title = "Catogram " + CatogramExtras.CG_VERSION + " [" + BuildVars.BUILD_VERSION_STRING + "]"
-                    detail = LocaleController.getString("CG_AboutDesc", R.string.CG_AboutDesc)
+                    title = "Catogram X " + CatogramExtras.CG_VERSION + " [" + BuildVars.BUILD_VERSION_STRING + "]"
+                    detail = LocaleController.getString("CG_AboutDescX", R.string.CG_AboutDescX)
                 }
 
                 textIcon {
                     title = LocaleController.getString("CG_ToChannel", R.string.CG_ToChannel)
-                    value = "@catogram"
+                    value = "@catoxnews"
                     listener = TGKitTextIconRow.TGTIListener {
                         goToChannel(it)
                     }
                 }
                 textIcon {
                     title = LocaleController.getString("CG_ToChat", R.string.CG_ToChat)
-                    value = "@catogram_en"
+                    value = "@catoxchat"
                     listener = TGKitTextIconRow.TGTIListener {
                         goToChat(it)
                     }
                 }
                 textIcon {
                     title = LocaleController.getString("CG_Source", R.string.CG_Source)
-                    value = "Github"
+                    value = "GitHub"
                     listener = TGKitTextIconRow.TGTIListener {
                         goToGithub(it)
                     }
                 }
-                textIcon {
+                /*textIcon {
                     title = LocaleController.getString("CG_Crowdin", R.string.CG_Crowdin)
                     value = "Crowdin"
                     listener = TGKitTextIconRow.TGTIListener {
                         goToCrowdin(it)
                     }
-                }
+                }*/
             }
         }
     }
 
     companion object {
         private fun goToChannel(bf: BaseFragment) {
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/catogram"))
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/catoxnews"))
             val componentName = ComponentName(bf.parentActivity.packageName, LaunchActivity::class.java.name)
             intent.component = componentName
             intent.putExtra(Browser.EXTRA_CREATE_NEW_TAB, true)
@@ -124,7 +124,7 @@ class MainPreferencesEntry : BasePreferencesEntry {
         }
 
         private fun goToChat(bf: BaseFragment) {
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/catogram_en"))
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/catoxchat"))
             val componentName = ComponentName(bf.parentActivity.packageName, LaunchActivity::class.java.name)
             intent.component = componentName
             intent.putExtra(Browser.EXTRA_CREATE_NEW_TAB, true)
@@ -140,14 +140,14 @@ class MainPreferencesEntry : BasePreferencesEntry {
 
         private fun goToGithub(bf: BaseFragment) {
             val openURL = Intent(android.content.Intent.ACTION_VIEW)
-            openURL.data = Uri.parse("https://github.com/Catogram/Catogram")
+            openURL.data = Uri.parse("https://github.com/CatogramX")
             bf.parentActivity.startActivity(openURL)
         }
         fun onProvideAssistContent(outContent: AssistContent) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 outContent.webUri = Uri.parse(
                     String.format(
-                        "https://t.me/catogram"
+                        "https://t.me/catoxnews"
                     )
                 )
             }
