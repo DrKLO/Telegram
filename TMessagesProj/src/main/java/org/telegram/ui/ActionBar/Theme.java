@@ -2201,6 +2201,7 @@ public class Theme {
                 isDark = LIGHT;
             }
             if (isDark == UNKNOWN) {
+                if (pathToFile == null) return false;
                 String[] wallpaperLink = new String[1];
                 HashMap<String, Integer> colors = getThemeFileValues(new File(pathToFile), null, wallpaperLink);
                 checkIsDark(colors, this);

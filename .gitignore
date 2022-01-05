@@ -1,4 +1,3 @@
-.idea/
 .gradle/
 .cxx/
 build/
@@ -13,4 +12,6 @@ TMessagesProj/jni/ffmpeg/build/
 TMessagesProj/jni/boringssl/build/
 TMessagesProj/jni/third_party/libvpx/source/libvpx/vpx_dsp/x86/libvpx_x86_64_yasm.a
 TMessagesProj/jni/third_party/libvpx/source/libvpx/vpx_dsp/x86/libvpx_x86_yasm.a
+.idea/
 TMessagesProj/jni/libvpx/
+TMessagesProj/google-services.json

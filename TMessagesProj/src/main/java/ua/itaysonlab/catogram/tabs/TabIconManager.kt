@@ -1,6 +1,7 @@
 package ua.itaysonlab.catogram.tabs
 
 import android.content.Context
+import com.google.android.exoplayer2.util.Log
 import org.telegram.messenger.ApplicationLoader
 import ua.itaysonlab.catogram.CatogramConfig
 import ua.itaysonlab.extras.CatogramExtras
@@ -10,8 +11,10 @@ import java.nio.charset.StandardCharsets
 object TabIconManager {
     private const val SEPARATOR = "::"
 
-    private val mappedEmojis = hashMapOf<Int, String>()
-    private val file = File(ApplicationLoader.applicationContext.getDir("cg_goodies", Context.MODE_PRIVATE), "CatogramFolderCache.cft")
+    private var mappedEmojis = hashMapOf<Int, String>()
+    private val mappedEmojisCache = hashMapOf<Int, String>()
+    private var offset = 0
+    private val file = File(ApplicationLoader.applicationContext.getDir("cg_goodies", Context.MODE_PRIVATE), "CatogramFolderCache.cfc")
 
     init {
         load()
@@ -40,19 +43,36 @@ object TabIconManager {
     }
 
     @JvmStatic
-    fun addTab(id: Int, emoji: ByteArray) {
+    fun addTab(id: Int, realid: Int, emoji: ByteArray) {
         val eb = String(emoji, StandardCharsets.UTF_8)
         /*Log.d("TabIconManager", "Emoji raw bytes: ${emoji.contentToString()}")
         Log.d("TabIconManager", "Emoji UTF-16+BOM bytes: ${eb.toByteArray(StandardCharsets.UTF_16).contentToString()}")
         Log.d("TabIconManager", "Emoji UTF-16 [BE] bytes: ${eb.toByteArray(StandardCharsets.UTF_16BE).contentToString()}")
         Log.d("TabIconManager", "Emoji UTF-16 [LE] bytes: ${eb.toByteArray(StandardCharsets.UTF_16LE).contentToString()}")
-        Log.d("TabIconManager", "Emoji printed here: $eb")*/
+        Log.d("TabIconManager", "Emoji printed here $id/$realid: $eb")*/
         if (emoji.isEmpty()) return
         mappedEmojis[id] = String(emoji, StandardCharsets.UTF_8)
+        mappedEmojisCache[realid] = String(emoji, StandardCharsets.UTF_8)
         save()
     }
 
+    @JvmStatic
+    fun addTabFiltered(id: Int, realid: Int, emoji: ByteArray) {
+        if (mappedEmojisCache.containsKey(realid)) {
+            offset += 1
+            var i = 0
+            val newMappedEmojis = hashMapOf<Int, String>()
+            for (item in mappedEmojis) {
+                if (i++ == 0) continue
+                newMappedEmojis[i-1] = item.value
+            }
+            mappedEmojis = newMappedEmojis
+        }
+        addTab(id - offset, realid, emoji)
+    }
+
     fun getIconForTab(id: Int): String {
+        //Log.d("TabIconManager","$id")
         return if (mappedEmojis.containsKey(id) && mappedEmojis[id] != null) mappedEmojis[id]!! else CatogramExtras.wrapEmoticon(null)
     }
 

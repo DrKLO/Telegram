@@ -448,7 +448,7 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
             info = new TextInfoPrivacyCell(context);
             info.setTopPadding(11);
             info.setBottomPadding(16);
-            info.setText(LocaleController.getString("TranslateMessagesInfo1", R.string.TranslateMessagesInfo1));
+            info.setText(LocaleController.getString("CX_TranslateMessagesInfo1", R.string.CX_TranslateMessagesInfo1));
             addView(info, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
             info2 = new TextInfoPrivacyCell(context);

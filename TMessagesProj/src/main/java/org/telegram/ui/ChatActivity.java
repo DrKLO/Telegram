@@ -21427,7 +21427,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
 
             String text = selectedObject.messageText.toString();
-            if (text != null && !TextUtils.isEmpty(text)) {
+            if (text != null && !TextUtils.isEmpty(text) && !MessagesController.getGlobalMainSettings().getBoolean("translate_button", false)) {
                 items.add(LocaleController.getString("CG_Translate", R.string.CG_Translate));
                 options.add(990);
                 icons.add(R.drawable.round_translate_24);

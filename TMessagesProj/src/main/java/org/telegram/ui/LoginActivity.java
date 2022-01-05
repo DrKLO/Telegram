@@ -1669,7 +1669,7 @@ public class LoginActivity extends BaseFragment {
                     }
                     boolean ok = true;
                     if (!permissionsItems.isEmpty()) {
-                        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+                        /*SharedPreferences preferences = MessagesController.getGlobalMainSettings();
                         if (preferences.getBoolean("firstlogin", true) || getParentActivity().shouldShowRequestPermissionRationale(Manifest.permission.READ_PHONE_STATE)) {
                             preferences.edit().putBoolean("firstlogin", false).commit();
                             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
@@ -1682,13 +1682,13 @@ public class LoginActivity extends BaseFragment {
                             
                             builder.setTopAnimation(resId, 46, false, Theme.getColor(Theme.key_dialogTopBackground));
                             permissionsDialog = showDialog(builder.create());
-                        } else {
+                        } else {*/
                             try {
                                 getParentActivity().requestPermissions(permissionsItems.toArray(new String[0]), 6);
                             } catch (Exception ignore) {
                                 ok = false;
                             }
-                        }
+                        //}
                         if (ok) {
                             return;
                         }
@@ -1712,7 +1712,7 @@ public class LoginActivity extends BaseFragment {
                 return;
             }
             String phone = PhoneFormat.stripExceptNumbers("" + codeField.getText() + phoneField.getText());
-            boolean isTestBakcend = BuildVars.DEBUG_PRIVATE_VERSION && getConnectionsManager().isTestBackend();
+            boolean isTestBakcend = /*BuildVars.DEBUG_PRIVATE_VERSION && */getConnectionsManager().isTestBackend();
             if (isTestBakcend != testBackend) {
                 getConnectionsManager().switchBackend(false);
                 isTestBakcend = testBackend;

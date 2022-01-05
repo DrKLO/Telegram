@@ -93,6 +93,8 @@ import org.telegram.ui.PhotoPickerSearchActivity;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import ua.itaysonlab.catogram.translate.impl.GoogleTranslateImpl;
+
 public class ChatAttachAlert extends BottomSheet implements NotificationCenter.NotificationCenterDelegate, BottomSheet.BottomSheetDelegateInterface {
 
     private final NumberTextView captionLimitView;
@@ -1627,9 +1629,9 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             });
             sendPopupLayout.setShownFromBotton(false);
 
-            itemCells = new ActionBarMenuSubItem[2];
+            itemCells = new ActionBarMenuSubItem[3];
             int i = 0;
-            for (int a = 0; a < 2; a++) {
+            for (int a = 0; a < 3; a++) {
                 if (a == 0) {
                     if (!chatActivity.canScheduleMessage() || !currentAttachLayout.canScheduleMessages()) {
                         continue;
@@ -1638,7 +1640,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                     continue;
                 }
                 int num = a;
-                itemCells[a] = new ActionBarMenuSubItem(getContext(), a == 0, a == 1, resourcesProvider);
+                itemCells[a] = new ActionBarMenuSubItem(getContext(), a == 0, a == 2, resourcesProvider);
                 if (num == 0) {
                     if (UserObject.isUserSelf(user)) {
                         itemCells[a].setTextAndIcon(LocaleController.getString("SetReminder", R.string.SetReminder), R.drawable.msg_schedule);
@@ -1647,6 +1649,8 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                     }
                 } else if (num == 1) {
                     itemCells[a].setTextAndIcon(LocaleController.getString("SendWithoutSound", R.string.SendWithoutSound), R.drawable.input_notify_off);
+                } else if (num == 2) {
+                    itemCells[a].setTextAndIcon(LocaleController.getString("CG_Translate",R.string.CG_Translate), R.drawable.round_translate_24);
                 }
                 itemCells[a].setMinimumWidth(AndroidUtilities.dp(196));
 
@@ -1671,6 +1675,8 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                             currentAttachLayout.sendSelectedItems(false, 0);
                             dismiss();
                         }
+                    } else if (num == 2) {
+                        GoogleTranslateImpl.translateComment(commentTextView.getText().toString(), commentTextView);
                     }
                 });
                 i++;

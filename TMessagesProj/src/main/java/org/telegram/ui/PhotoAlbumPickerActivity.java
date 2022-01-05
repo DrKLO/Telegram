@@ -74,6 +74,8 @@ import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import ua.itaysonlab.catogram.translate.impl.GoogleTranslateImpl;
+
 public class PhotoAlbumPickerActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
     public interface PhotoAlbumPickerActivityDelegate {
@@ -466,8 +468,8 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
                 });
                 sendPopupLayout.setShownFromBotton(false);
 
-                itemCells = new ActionBarMenuSubItem[2];
-                for (int a = 0; a < 2; a++) {
+                itemCells = new ActionBarMenuSubItem[3];
+                for (int a = 0; a < 3; a++) {
                     if (a == 0 && !chatActivity.canScheduleMessage() || a == 1 && UserObject.isUserSelf(user)) {
                         continue;
                     }
@@ -479,8 +481,10 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
                         } else {
                             itemCells[a].setTextAndIcon(LocaleController.getString("ScheduleMessage", R.string.ScheduleMessage), R.drawable.msg_schedule);
                         }
-                    } else {
+                    } else if (num == 1) {
                         itemCells[a].setTextAndIcon(LocaleController.getString("SendWithoutSound", R.string.SendWithoutSound), R.drawable.input_notify_off);
+                    } else {
+                        itemCells[a].setTextAndIcon(LocaleController.getString("CG_Translate",R.string.CG_Translate),R.drawable.round_translate_24);
                     }
                     itemCells[a].setMinimumWidth(AndroidUtilities.dp(196));
 
@@ -494,9 +498,11 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
                                 sendSelectedPhotos(selectedPhotos, selectedPhotosOrder, notify, scheduleDate);
                                 finishFragment();
                             });
-                        } else {
+                        } else if (num == 1) {
                             sendSelectedPhotos(selectedPhotos, selectedPhotosOrder, true, 0);
                             finishFragment();
+                        } else {
+                            GoogleTranslateImpl.translateComment(commentTextView.getEditText().toString(), commentTextView);
                         }
                     });
                 }
