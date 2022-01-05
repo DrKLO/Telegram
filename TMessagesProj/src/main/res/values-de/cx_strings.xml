@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="AdvancedSettingsX">Catogram X Einstellungen</string>
+    <string name="AS_Header_AboutX">Über Catogram X</string>
+    <string name="CG_AboutDescX">Catogram Fork</string>
+    <string name="CX_TranslateMessagesInfo1">Ersetzt Catogram\'s Übersetzer mit dem offiziellen</string>
+</resources>

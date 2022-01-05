@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AdvancedSettingsX">Catogram X Preferences</string>
     <string name="CatogramVersionX" translatable="false">Catogram X %1$s</string>
+
+    <string name="AdvancedSettingsX">Catogram X Preferences</string>
     <string name="AS_Header_AboutX">About Catogram X</string>
     <string name="CG_AboutDescX">Catogram fork</string>
     <string name="CX_TranslateMessagesInfo1">Use Telegram translation feature instead of Catogram\'s translator</string>

@@ -14,7 +14,7 @@ object TabIconManager {
     private var mappedEmojis = hashMapOf<Int, String>()
     private val mappedEmojisCache = hashMapOf<Int, String>()
     private var offset = 0
-    private val file = File(ApplicationLoader.applicationContext.getDir("cg_goodies", Context.MODE_PRIVATE), "CatogramFolderCache.cfc")
+    private val file = File(ApplicationLoader.applicationContext.getDir("cg_goodies", Context.MODE_PRIVATE), "CatogramFolderEmojiCache.cfe")
 
     init {
         load()
@@ -60,11 +60,10 @@ object TabIconManager {
     fun addTabFiltered(id: Int, realid: Int, emoji: ByteArray) {
         if (mappedEmojisCache.containsKey(realid)) {
             offset += 1
-            var i = 0
             val newMappedEmojis = hashMapOf<Int, String>()
             for (item in mappedEmojis) {
-                if (i++ == 0) continue
-                newMappedEmojis[i-1] = item.value
+                if (item.key == 0) continue
+                newMappedEmojis[item.key-1] = item.value
             }
             mappedEmojis = newMappedEmojis
         }
