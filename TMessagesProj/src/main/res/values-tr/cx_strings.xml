@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="AdvancedSettingsX">Catogram X Seçenekleri</string>
+    <string name="AS_Header_AboutX">Catogram X Hakkında</string>
+    <string name="CG_AboutDescX">Catogram fork\'u</string>
+    <string name="CX_TranslateMessagesInfo1">Catogram\'ınki yerine Telegram\'ın çeviri özelliğini kullan</string>
+</resources>
