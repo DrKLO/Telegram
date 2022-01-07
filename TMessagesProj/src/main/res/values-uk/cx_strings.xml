@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="AdvancedSettingsX">Налаштування Catogram X</string>
+    <string name="AS_Header_AboutX">Про Catogram X</string>
+    <string name="CG_AboutDescX">Форк Catogram</string>
+    <string name="CX_TranslateMessagesInfo1">Використовуйте функцію перекладу Telegram замість перекладача Catogram</string>
+</resources>
