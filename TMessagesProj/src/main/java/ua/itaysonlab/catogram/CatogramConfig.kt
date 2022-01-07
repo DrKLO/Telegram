@@ -41,7 +41,7 @@ object CatogramConfig {
     var redesign_messageOption by sharedPreferences.int("cg_messageOption", 3)
     var translateOptions by sharedPreferences.int("cg_trOptions", 0)
     var redesign_forceDrawerIconsOption by sharedPreferences.int("cg_drawerIconsOption", 0)
-    var redesign_iconOption by sharedPreferences.int("cg_iconoption", 0)
+    var redesign_iconOption by sharedPreferences.int("cg_iconoption", 1)
     var redesign_TelegramThemes by sharedPreferences.boolean("cg_redesign_telegramthemes", false)
 
     var slider_stickerAmplifier by sharedPreferences.int("cg_stickamplifier", 100)

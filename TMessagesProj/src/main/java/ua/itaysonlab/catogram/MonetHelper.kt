@@ -23,10 +23,29 @@ object MonetHelper {
     }
 
     @ColorInt
+    @JvmStatic
+    fun getAccentColorDark(ctx: Context): Int {
+        return reqAttrFromDeviceDark(ctx, org.telegram.messenger.R.attr.colorPrimaryDark)
+    }
+
+    @ColorInt
+    @JvmStatic
+    fun getBackgroundColorDark(ctx: Context): Int {
+        return reqAttrFromDeviceDark(ctx, org.telegram.messenger.R.attr.colorSecondary)
+    }
+
+    @ColorInt
     private fun reqAttrFromDevice(ctx: Context, @AttrRes attr: Int): Int {
         return MaterialColors.getColor(getCtx(ctx), attr, Color.MAGENTA)
     }
 
-    private fun getCtx(ctx: Context) = ContextThemeWrapper(ctx, R.style.Theme_DeviceDefault_DayNight)
+    @ColorInt
+    private fun reqAttrFromDeviceDark(ctx: Context, @AttrRes attr: Int): Int {
+        return MaterialColors.getColor(getCtxDark(ctx), attr, Color.MAGENTA)
+    }
+
+    private fun getCtx(ctx: Context) = ContextThemeWrapper(ctx, R.style.Theme_DeviceDefault_Light)
+
+    private fun getCtxDark(ctx: Context) = ContextThemeWrapper(ctx, org.telegram.messenger.R.style.Theme_Material3_DynamicColors_Dark)
 
 }

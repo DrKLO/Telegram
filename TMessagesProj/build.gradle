@@ -22,12 +22,12 @@ dependencies {
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2-native-mt'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.5.2-native-mt'
 
-    implementation 'androidx.core:core-ktx:1.7.0-beta02'
+    implementation 'androidx.core:core-ktx:1.8.0-alpha02'
     implementation 'androidx.palette:palette-ktx:1.0.0'
 
-    implementation 'androidx.appcompat:appcompat:1.3.1'
+    implementation 'androidx.appcompat:appcompat:1.4.0'
     implementation 'androidx.biometric:biometric:1.1.0'
-    implementation 'com.google.android.material:material:1.5.0-alpha04'
+    implementation 'com.google.android.material:material:1.6.0-alpha01'
     implementation 'androidx.exifinterface:exifinterface:1.3.3'
     implementation 'androidx.interpolator:interpolator:1.0.0'
     implementation 'androidx.viewpager:viewpager:1.0.0'
@@ -41,13 +41,13 @@ dependencies {
 
     compileOnly 'org.checkerframework:checker-qual:3.18.1'
     compileOnly 'org.checkerframework:checker-compat-qual:2.5.5'
-    implementation 'com.google.firebase:firebase-messaging:22.0.0'
+    implementation 'com.google.firebase:firebase-messaging:23.0.0'
     implementation 'com.google.firebase:firebase-config:21.0.1'
     implementation 'com.google.firebase:firebase-datatransport:18.1.1'
     implementation 'com.google.firebase:firebase-appindexing:20.0.0'
     implementation 'com.googlecode.mp4parser:isoparser:1.0.6'
     implementation 'com.stripe:stripe-android:2.0.2'
-    implementation 'com.google.mlkit:language-id:16.1.1'
+    implementation 'com.google.mlkit:language-id:17.0.2'
     implementation 'org.osmdroid:osmdroid-android:6.1.10'
     implementation 'com.facebook.rebound:rebound:0.3.8'
 
@@ -55,12 +55,13 @@ dependencies {
 }
 
 //return an api key from a properties file.
-def getAppId(){
+static def getAppId(){
     Properties properties = new Properties()
     properties.load(new FileInputStream("./API_KEYS"))
     return properties.get("APP_ID")
 }
-def getAppHash(){
+
+static def getAppHash(){
     Properties properties = new Properties()
     properties.load(new FileInputStream("./API_KEYS"))
     return "\"" + properties.get("APP_HASH") + "\""
