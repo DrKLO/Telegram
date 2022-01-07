@@ -15,6 +15,7 @@ import android.text.TextUtils;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 
 import java.nio.charset.StandardCharsets;
@@ -18656,7 +18657,7 @@ public class TLRPC {
         public ArrayList<InputPeer> pinned_peers = new ArrayList<>();
         public ArrayList<InputPeer> include_peers = new ArrayList<>();
         public ArrayList<InputPeer> exclude_peers = new ArrayList<>();
-        public static int hackid = 0;
+        public static int[] hackid = new int[] {0};
 
         public static TL_dialogFilter TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
             if (TL_dialogFilter.constructor != constructor) {
@@ -18687,9 +18688,9 @@ public class TLRPC {
                 byte[] emoji = stream.readStringAsByteArray(exception);
                 emoticon = new String(emoji, StandardCharsets.UTF_8);
                 //emoticon = stream.readString(exception);
-                TabIconManager.addTabFiltered(hackid, id, /*emoticon.getBytes(StandardCharsets.UTF_8)*/emoji);
+                TabIconManager.addTabFiltered(hackid[UserConfig.selectedAccount], id, /*emoticon.getBytes(StandardCharsets.UTF_8)*/emoji, UserConfig.selectedAccount);
             }
-            hackid++;
+            hackid[UserConfig.selectedAccount]++;
             int magic = stream.readInt32(exception);
             if (magic != 0x1cb5c415) {
                 if (exception) {
