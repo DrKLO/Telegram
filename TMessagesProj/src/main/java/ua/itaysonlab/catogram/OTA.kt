@@ -45,7 +45,7 @@ object OTA : CoroutineScope by MainScope() {
                     val response = OkHttpClient().newCall(request).execute()
                     parseddString = response.body!!.string()
                     val parsedString = JSONObject(parseddString)
-                    if (parsedString.getString("name") != CatogramExtras.CG_VERSION) {
+                    if (parsedString.getString("tag_name") != ("cx_" +CatogramExtras.CG_VERSION)) {
                         version = parsedString.getString("name")
                         changelog = parsedString.getString("body")
                         needDownload = true
