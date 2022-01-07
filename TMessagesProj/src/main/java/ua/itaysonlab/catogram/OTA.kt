@@ -155,7 +155,7 @@ object OTA : CoroutineScope by MainScope() {
         val request = DownloadManager.Request(Uri.parse("https://github.com/catogramx/catogramx/releases/latest/download/app.apk"))
 
         request.setAllowedNetworkTypes(DownloadManager.Request.NETWORK_MOBILE or DownloadManager.Request.NETWORK_WIFI)
-        request.setTitle("Catogram X v$version")
+        request.setTitle(version)
         request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
         request.setDestinationInExternalFilesDir(context, Environment.DIRECTORY_DOWNLOADS, "ota.apk")
 
