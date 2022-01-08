@@ -22806,7 +22806,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         path = FileLoader.getPathToMessage(selectedObject.messageOwner).toString();
                     }
                     MediaController.saveFile(path, getParentActivity(), 2, fileName, selectedObject.getDocument() != null ? selectedObject.getDocument().mime_type : "", () -> {
-                        if (getParentActivity() == null) {
+                        if (getParentActivity() == null || fragmentView == null) {
                             return;
                         }
                         final BulletinFactory.FileType fileType;

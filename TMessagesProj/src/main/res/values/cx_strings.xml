@@ -65,4 +65,10 @@
     <string name="CX_EnableMLKITDesc">disable to always show the translator</string>
     <string name="CX_EnableSAF_Warn">Please DISABLE "Manage all files" for this app to make "Force SAF" effective</string>
     <string name="CX_TabIconMode_AppTitle">Move text to app title</string>
+    <string name="SaveToDownloadCount_zero">Saving %1$d files to downloads</string>
+    <string name="SaveToDownloadCount_one">Saving %1$d file to downloads</string>
+    <string name="SaveToDownloadCount_two">Saving %1$d files to downloads</string>
+    <string name="SaveToDownloadCount_few">Saving %1$d files to downloads</string>
+    <string name="SaveToDownloadCount_many">Saving %1$d files to downloads</string>
+    <string name="SaveToDownloadCount_other">Saving %1$d files to downloads</string>
 </resources>

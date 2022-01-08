@@ -764,6 +764,27 @@
             android:exported="false"
             android:permission="android.permission.BIND_REMOTEVIEWS" />
 
+        <receiver android:name="org.nift4.catox.SaveToDownloadReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="${applicationId}.CANCEL_SAVE_TO_DOWNLOAD" />
+            </intent-filter>
+        </receiver>
+
+        <uses-library android:name="com.sec.android.app.multiwindow" android:required="false" />
+        <meta-data android:name="com.sec.android.support.multiwindow" android:value="true" />
+        <meta-data android:name="com.sec.android.multiwindow.DEFAULT_SIZE_W" android:value="632dp" />
+        <meta-data android:name="com.sec.android.multiwindow.DEFAULT_SIZE_H" android:value="598dp" />
+        <meta-data android:name="com.sec.android.multiwindow.MINIMUM_SIZE_W" android:value="632dp" />
+        <meta-data android:name="com.sec.android.multiwindow.MINIMUM_SIZE_H" android:value="598dp" />
+
+        <!--<meta-data android:name="com.google.android.gms.wallet.api.enabled" android:value="true" />-->
+
+        <!--<meta-data android:name="com.google.android.gms.car.notification.SmallIcon" android:resource="@drawable/ic_player" />-->
+        <!--<meta-data android:name="com.google.android.gms.car.application" android:resource="@xml/automotive_app_desc" />-->
+
+        <!--<meta-data android:name="com.google.android.gms.vision.DEPENDENCIES" android:value="face,barcode" />-->
+>>>>>>> f973694b4 (Refine save to download)
+
         <meta-data android:name="android.max_aspect" android:value="2.5" />
 
         <meta-data android:name="com.google.android.actions" android:resource="@xml/actions" />
