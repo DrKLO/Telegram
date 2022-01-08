@@ -1,6 +1,11 @@
 package ua.itaysonlab.tgkit;
 
+import static org.telegram.messenger.MediaController.getFileName;
+
+import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
 import android.util.SparseArray;
 import android.view.Gravity;
 import android.view.View;
@@ -11,6 +16,9 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.FileLog;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -24,11 +32,16 @@ import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextDetailSettingsCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
+import org.telegram.ui.Components.AlertsCreator;
+import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 
+import java.io.File;
+import java.io.InputStream;
 import java.util.ArrayList;
 
+import ua.itaysonlab.catogram.CatogramConfig;
 import ua.itaysonlab.catogram.preferences.BasePreferencesEntry;
 import ua.itaysonlab.catogram.prefviews.StickerSliderCell;
 import ua.itaysonlab.tgkit.preference.TGKitCategory;
@@ -317,4 +330,35 @@ public class TGKitSettingsFragment extends BaseFragment {
             return positions.get(position).getType().adapterType;
         }
     }
+
+    @Override
+    public void onActivityResultFragment(int requestCode, int resultCode, Intent data) {
+        if (resultCode != Activity.RESULT_OK) {
+            return;
+        }
+        if (requestCode == 36654) {
+            if (data != null) {
+                Uri uri = data.getData();
+                if (uri != null) {
+                    try {
+                        InputStream os = getParentActivity().getContentResolver().openInputStream(uri);
+                        String fileName = getFileName(uri);
+                        File dest = new File(ApplicationLoader.applicationContext.getExternalFilesDir(null), fileName == null ? "emoji.ttf" : fileName);
+                        AndroidUtilities.copyFile(os, dest);
+                        if (CatogramConfig.INSTANCE.setCustomEmojiFontPath(dest.toString())) {
+                            if (!CatogramConfig.INSTANCE.getCustomEmojiFont()) CatogramConfig.INSTANCE.setCustomEmojiFont(true);
+                        } else {
+                            BulletinFactory.of(this).createErrorBulletin(LocaleController.getString("InvalidCustomEmojiTypeface", R.string.CX_InvalidCustomEmojiTypeface)).show();
+                            //noinspection ResultOfMethodCallIgnored
+                            dest.delete();
+                        }
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                        AlertsCreator.showSimpleAlert(this, e.getLocalizedMessage());
+                    }
+                }
+            }
+        }
+    }
+
 }

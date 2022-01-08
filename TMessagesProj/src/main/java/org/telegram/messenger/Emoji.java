@@ -8,6 +8,13 @@
 
 package org.telegram.messenger;
 
+import java.io.File;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Locale;
+
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -16,7 +23,6 @@ import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
-import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.Spannable;
@@ -29,12 +35,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import java.io.File;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Locale;
+import ua.itaysonlab.catogram.CatogramConfig;
 
 public class Emoji {
 
@@ -148,7 +149,8 @@ public class Emoji {
             if (ch >= 0xD83C && ch <= 0xD83E) {
                 if (ch == 0xD83C && a < length - 1) {
                     ch = emoji.charAt(a + 1);
-                    if (ch == 0xDE2F || ch == 0xDC04 || ch == 0xDE1A || ch == 0xDD7F) {
+                    if (ch == 0xDE2F || ch == 0xDC04 || ch == 0xDE1A || ch == 0xDD7F ||
+                            ch == 0xDFF3 || ch == 0xDF2B || ch == 0xDC41 || ch == 0xDD75 || ch == 0xDFCC || ch == 0xDFCB) {
                         emoji = emoji.substring(0, a + 2) + "\uFE0F" + emoji.substring(a + 2);
                         length++;
                         a += 2;
@@ -160,7 +162,7 @@ public class Emoji {
                 }
             } else if (ch == 0x20E3) {
                 return emoji;
-            } else if (ch >= 0x203C && ch <= 0x3299) {
+            } else if (ch >= 0x0023 && ch <= 0x3299) {
                 if (EmojiData.emojiToFE0FMap.containsKey(ch)) {
                     emoji = emoji.substring(0, a + 1) + "\uFE0F" + emoji.substring(a + 1);
                     length++;
@@ -226,8 +228,8 @@ public class Emoji {
         private DrawableInfo info;
         private boolean fullSize = false;
         private static Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG);
-        private static Paint textPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
         private static Rect rect = new Rect();
+        private static TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
 
         public EmojiDrawable(DrawableInfo i) {
             info = i;
@@ -249,16 +251,27 @@ public class Emoji {
 
         @Override
         public void draw(Canvas canvas) {
+            /*if (MessagesController.getInstance().useSystemEmoji) {
+                //textPaint.setTextSize(getBounds().width());
+                canvas.drawText(EmojiData.data[info.page][info.emojiIndex], getBounds().left, getBounds().bottom, textPaint);
+                return;
+            }*/
+
             Rect b;
             if (fullSize) {
                 b = getDrawRect();
             } else {
                 b = getBounds();
             }
-            if (SharedConfig.useSystemEmoji) {
+
+            if (SharedConfig.useSystemEmoji || CatogramConfig.INSTANCE.getCustomEmojiFont()) {
                 String emoji = fixEmoji(EmojiData.data[info.page][info.emojiIndex]);
-                textPaint.setTypeface(Typeface.createFromFile("/system/fonts/NotoColorEmoji.ttf"));
                 textPaint.setTextSize(b.height() * 0.8f);
+                if (CatogramConfig.INSTANCE.getCustomEmojiFont()) {
+                    textPaint.setTypeface(CatogramConfig.INSTANCE.getCustomEmojiTypeface());
+                } else {
+                    textPaint.setTypeface(CatogramConfig.INSTANCE.getSystemEmojiTypeface());
+                };
                 canvas.drawText(emoji,  0, emoji.length(), b.left, b.bottom - b.height() * 0.225f, textPaint);
                 return;
             }
@@ -269,7 +282,9 @@ public class Emoji {
                 return;
             }
 
-            canvas.drawBitmap(emojiBmp[info.page][info.page2], null, b, paint);
+            if (!canvas.quickReject(b.left, b.top, b.right, b.bottom, Canvas.EdgeType.AA)) {
+                canvas.drawBitmap(emojiBmp[info.page][info.page2], null, b, paint);
+            }
         }
 
         @Override
@@ -324,19 +339,15 @@ public class Emoji {
     }
 
     public static CharSequence replaceEmoji(CharSequence cs, Paint.FontMetricsInt fontMetrics, int size, boolean createNew, int[] emojiOnly) {
-        if (cs == null || cs.length() == 0) return cs;
-
+        if (cs == null || cs.length() == 0) {
+            return cs;
+        }
         Spannable s;
         if (!createNew && cs instanceof Spannable) {
             s = (Spannable) cs;
         } else {
             s = Spannable.Factory.getInstance().newSpannable(cs.toString());
         }
-
-        //if (SharedConfig.useSystemEmoji) {
-        //    return s;
-        //}
-
         long buf = 0;
         int emojiCount = 0;
         char c;

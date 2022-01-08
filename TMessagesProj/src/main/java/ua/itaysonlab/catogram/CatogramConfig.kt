@@ -3,7 +3,10 @@ package ua.itaysonlab.catogram
 import android.app.Activity
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.graphics.Typeface
+import android.os.Build
 import org.telegram.messenger.ApplicationLoader
+import org.telegram.messenger.FileLog
 import org.telegram.messenger.MessagesController
 import ua.itaysonlab.catogram.preferences.ktx.boolean
 import ua.itaysonlab.catogram.preferences.ktx.int
@@ -12,7 +15,10 @@ import ua.itaysonlab.catogram.ui.CatogramToasts
 import ua.itaysonlab.catogram.vkui.icon_replaces.BaseIconReplace
 import ua.itaysonlab.catogram.vkui.icon_replaces.NoIconReplace
 import ua.itaysonlab.catogram.vkui.icon_replaces.VkIconReplace
-import kotlin.system.exitProcess
+import java.io.BufferedReader
+import java.io.FileReader
+import java.util.regex.Pattern
+
 
 object CatogramConfig {
 
@@ -99,7 +105,75 @@ object CatogramConfig {
     var oldTranslateUI by sharedPreferences.boolean("cx_old_translate_ui", true)
     var dnd by sharedPreferences.boolean("cx_dnd", false)
     var hideSendAsChannel by sharedPreferences.boolean("cx_hide_send_as_channel", false)
+    var customEmojiFont by sharedPreferences.boolean("cx_custom_emoji_font", false)
+    var customEmojiFontPat by sharedPreferences.string("cx_custom_emoji_font_path", "")
 
+    var loadSystemEmojiFailed = false
+    var sysEmojiTypeface: Typeface? = null
+    var custEmojiTypeface: Typeface? = null
+    private const val EMOJI_FONT_AOSP = "NotoColorEmoji.ttf"
+
+    fun getSystemEmojiTypeface(): Typeface? {
+        if (!loadSystemEmojiFailed && sysEmojiTypeface == null) {
+            try {
+                val p = Pattern.compile(">(.*emoji.*)</font>", Pattern.CASE_INSENSITIVE)
+                val br = BufferedReader(FileReader("/system/etc/fonts.xml"))
+                var line: CharSequence
+                while (br.readLine().also { line = it } != null) {
+                    val m = p.matcher(line)
+                    if (m.find()) {
+                        sysEmojiTypeface = Typeface.createFromFile("/system/fonts/" + m.group(1))
+                        FileLog.d("emoji font file fonts.xml = " + m.group(1))
+                        break
+                    }
+                }
+                br.close()
+            } catch (e: Exception) {
+                FileLog.e(e)
+            }
+            if (sysEmojiTypeface == null) {
+                try {
+                    sysEmojiTypeface = Typeface.createFromFile("/system/fonts/$EMOJI_FONT_AOSP")
+                    FileLog.d("emoji font file = $EMOJI_FONT_AOSP")
+                } catch (e: Exception) {
+                    FileLog.e(e)
+                    loadSystemEmojiFailed = true
+                }
+            }
+        }
+        return sysEmojiTypeface
+    }
+
+    fun setCustomEmojiFontPath(path: String): Boolean {
+        val typeface: Typeface?
+        typeface = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Typeface.Builder(path)
+                    .build()
+        } else {
+            Typeface.createFromFile(path)
+        }
+        if (typeface == null || typeface == Typeface.DEFAULT) {
+            return false
+        }
+        custEmojiTypeface = typeface
+        customEmojiFontPat = path
+        return true
+    }
+
+    fun getCustomEmojiTypeface(): Typeface? {
+        if (custEmojiTypeface == null) {
+            try {
+                custEmojiTypeface = Typeface.createFromFile(customEmojiFontPat)
+            } catch (e: Exception) {
+                FileLog.e(e)
+                custEmojiTypeface = null
+                if (customEmojiFont) customEmojiFont = false
+                setCustomEmojiFontPath("")
+            }
+        }
+        return custEmojiTypeface
+
+    }
 
     fun getIconReplacement(): BaseIconReplace {
         return when (iconReplacement) {

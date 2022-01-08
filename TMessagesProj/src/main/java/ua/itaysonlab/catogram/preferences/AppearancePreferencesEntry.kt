@@ -1,6 +1,8 @@
 package ua.itaysonlab.catogram.preferences
 
+import android.content.Intent
 import android.graphics.Color
+import androidx.core.app.ActivityCompat.startActivityForResult
 import org.telegram.messenger.LocaleController
 import org.telegram.messenger.R
 import org.telegram.messenger.SharedConfig
@@ -11,6 +13,8 @@ import ua.itaysonlab.catogram.CatogramConfig
 import ua.itaysonlab.catogram.preferences.ktx.*
 import ua.itaysonlab.extras.CatogramExtras
 import ua.itaysonlab.extras.IconExtras
+import ua.itaysonlab.tgkit.preference.types.TGKitTextIconRow
+
 
 class AppearancePreferencesEntry : BasePreferencesEntry {
     override fun getPreferences(bf: BaseFragment) = tgKitScreen(LocaleController.getString("AS_Header_Appearance", R.string.AS_Header_Appearance)) {
@@ -140,6 +144,27 @@ class AppearancePreferencesEntry : BasePreferencesEntry {
                     return@contract SharedConfig.useSystemEmoji
                 }) {
                     SharedConfig.toggleSystemEmoji()
+                }
+            }
+
+            switch {
+                title = LocaleController.getString("CX_CustomEmoji", R.string.CX_CustomEmoji)
+                summary = LocaleController.getString("CX_CustomEmojiDesc", R.string.CX_CustomEmojiDesc)
+
+                contract({
+                    return@contract CatogramConfig.customEmojiFont
+                }) {
+                    CatogramConfig.customEmojiFont = it
+                }
+            }
+
+            textIcon {
+                title = LocaleController.getString("CX_SetCustomEmojiFont", R.string.CX_SetCustomEmojiFont)
+                listener = TGKitTextIconRow.TGTIListener {
+                    val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
+                    intent.addCategory(Intent.CATEGORY_OPENABLE)
+                    intent.type = "*/*"
+                    startActivityForResult(bf.parentActivity, intent, 36654, null)
                 }
             }
 

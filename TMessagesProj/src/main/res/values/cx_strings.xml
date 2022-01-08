@@ -15,4 +15,8 @@
     <string name="CX_DnDDesc">Disable sound and vibration of notifications for contacts</string>
     <string name="CX_HideSendAsChannel">Hide send as channel button</string>
     <string name="CX_HideSendAsChannelDesc">Useful for small screens</string>
+    <string name="CX_CustomEmoji">Use custom emoji font</string>
+    <string name="CX_CustomEmojiDesc">Use custom emoji font instead of telegram emoji</string>
+    <string name="CX_SetCustomEmojiFont">Set custom emoji font</string>
+    <string name="CX_InvalidCustomEmojiTypeface">Invalid custom emoji typeface!</string>
 </resources>
