@@ -99,6 +99,7 @@ import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import ua.itaysonlab.catogram.translate.Translator;
 import ua.itaysonlab.catogram.translate.impl.GoogleTranslateImpl;
 
 public class PhotoPickerActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
@@ -1105,7 +1106,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                             } else if (num == 1) {
                                 sendSelectedPhotos(true, 0);
                             } else {
-                                GoogleTranslateImpl.translateComment(commentTextView.getEditText().toString(), commentTextView);
+                                Translator.translateComment(commentTextView.getEditText().toString(), commentTextView);
                             }
                         });
                     }

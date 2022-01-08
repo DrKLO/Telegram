@@ -74,6 +74,7 @@ import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import ua.itaysonlab.catogram.translate.Translator;
 import ua.itaysonlab.catogram.translate.impl.GoogleTranslateImpl;
 
 public class PhotoAlbumPickerActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
@@ -502,7 +503,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
                             sendSelectedPhotos(selectedPhotos, selectedPhotosOrder, true, 0);
                             finishFragment();
                         } else {
-                            GoogleTranslateImpl.translateComment(commentTextView.getEditText().toString(), commentTextView);
+                            Translator.translateComment(commentTextView.getEditText().toString(), commentTextView);
                         }
                     });
                 }

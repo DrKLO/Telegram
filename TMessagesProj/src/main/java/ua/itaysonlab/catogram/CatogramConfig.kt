@@ -95,6 +95,11 @@ object CatogramConfig {
 
     var disableAttachCamera by sharedPreferences.boolean("cg_disable_attach_camera", false)
 
+    /* CX 4.0.3 */
+    var oldTranslateUI by sharedPreferences.boolean("cx_old_translate_ui", true)
+    var dnd by sharedPreferences.boolean("cx_dnd", false)
+    var hideSendAsChannel by sharedPreferences.boolean("cx_hide_send_as_channel", false)
+
 
     fun getIconReplacement(): BaseIconReplace {
         return when (iconReplacement) {

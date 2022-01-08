@@ -19,7 +19,7 @@ import okhttp3.Request
 import org.json.JSONObject
 import org.telegram.messenger.LocaleController
 import org.telegram.messenger.R
-import ua.itaysonlab.catogram.translate.impl.GoogleTranslateImpl.translateText
+import ua.itaysonlab.catogram.translate.Translator.translateText
 import ua.itaysonlab.extras.CatogramExtras
 
 

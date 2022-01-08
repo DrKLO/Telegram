@@ -12,9 +12,8 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import org.telegram.messenger.*
 import org.telegram.messenger.databinding.V5TranslationMarkupBinding
 import org.telegram.ui.ActionBar.Theme
-import ua.itaysonlab.catogram.translate.impl.GoogleTranslateImpl
 
-class TranslationSheetFragment(val txt: String) : BottomSheetDialogFragment() {
+class TranslationSheetFragment(val txt: String, val noForwards: Boolean) : BottomSheetDialogFragment() {
     private lateinit var vview: V5TranslationMarkupBinding
 
     override fun getTheme(): Int {
@@ -48,18 +47,20 @@ class TranslationSheetFragment(val txt: String) : BottomSheetDialogFragment() {
             dismiss()
         }
 
-        vview.copyText.setOnClickListener {
-            AndroidUtilities.addToClipboard(vview.trsl.text.toString())
-            Toast.makeText(
-                    ApplicationLoader.applicationContext,
-                    LocaleController.getString("TextCopied", R.string.TextCopied),
-                    Toast.LENGTH_SHORT
-            ).show()
-            dismiss()
+        if (!noForwards) {
+            vview.copyText.setOnClickListener {
+                AndroidUtilities.addToClipboard(vview.trsl.text.toString())
+                Toast.makeText(
+                        ApplicationLoader.applicationContext,
+                        LocaleController.getString("TextCopied", R.string.TextCopied),
+                        Toast.LENGTH_SHORT
+                ).show()
+                dismiss()
+            }
         }
 
-        vview.close.imageTintList = blackColor
         vview.copyText.imageTintList = blackColor
+        vview.close.imageTintList = blackColor
 
         vview.copyText.visibility = View.GONE
         vview.mkCt.visibility = View.INVISIBLE
@@ -84,13 +85,14 @@ class TranslationSheetFragment(val txt: String) : BottomSheetDialogFragment() {
         vview.trsl.setTextColor(blackText)
         vview.orig.text = txt
 
-        GoogleTranslateImpl.translateText(txt, false) { text ->
+        Translator.translateTextWithLangInfo(txt, false) { text, fromLang, toLang ->
             vview.trsl.text = text
-            vview.trslTxtLang.text = " • ${LocaleController.getString("LanguageCode", R.string.LanguageCode)}"
+            vview.origTxtLang.text = " • $fromLang"
+            vview.trslTxtLang.text = " • $toLang"
 
             vview.mkCt.visibility = View.VISIBLE
             vview.mkLd.visibility = View.INVISIBLE
-            vview.copyText.visibility = View.VISIBLE
+            if (!noForwards) vview.copyText.visibility = View.VISIBLE
         }
     }
 }

@@ -64,6 +64,7 @@ import org.telegram.ui.ActionBar.Theme;
 
 import java.util.HashMap;
 
+import ua.itaysonlab.catogram.translate.Translator;
 import ua.itaysonlab.catogram.translate.impl.GoogleTranslateImpl;
 
 public class PhotoViewerCaptionEnterView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate, SizeNotifierFrameLayoutPhoto.SizeNotifierFrameLayoutPhotoDelegate {
@@ -395,7 +396,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
                         sendPopupWindow.dismiss();
                     }
                     if (num == 0) {
-                        GoogleTranslateImpl.translateEditText(messageEditText.getText().toString(), messageEditText);
+                        Translator.translateEditText(messageEditText.getText().toString(), messageEditText);
                     }
                 });
             }

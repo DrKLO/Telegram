@@ -142,6 +142,17 @@ class AppearancePreferencesEntry : BasePreferencesEntry {
                     SharedConfig.toggleSystemEmoji()
                 }
             }
+
+            switch {
+                title = LocaleController.getString("CX_HideSendAsChannel", R.string.CX_HideSendAsChannel)
+                summary = LocaleController.getString("CX_HideSendAsChannelDesc", R.string.CX_HideSendAsChannelDesc)
+
+                contract({
+                    return@contract CatogramConfig.hideSendAsChannel
+                }) {
+                    CatogramConfig.hideSendAsChannel = it
+                }
+            }
         }
 
         category(LocaleController.getString("AS_Header_Notification", R.string.AS_Header_Notification)) {

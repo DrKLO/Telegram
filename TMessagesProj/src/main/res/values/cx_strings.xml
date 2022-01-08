@@ -8,5 +8,11 @@
     <string name="CG_AboutDescX">Catogram fork</string>
     <string name="CX_TranslateMessagesInfo1">Use Telegram translation feature instead of Catogram\'s translator</string>
 
-    <!-- CX 4.0.1 -->
+    <!-- CX 4.0.3 -->
+    <string name="CX_OldTranslateUI">Use classic translation UI</string>
+    <string name="CX_OldTranslateUIDesc">When disabled, telegram translation UI but Catogram Translator will be used</string>
+    <string name="CX_DnD">Silent contacts</string>
+    <string name="CX_DnDDesc">Disable sound and vibration of notifications for contacts</string>
+    <string name="CX_HideSendAsChannel">Hide send as channel button</string>
+    <string name="CX_HideSendAsChannelDesc">Useful for small screens</string>
 </resources>

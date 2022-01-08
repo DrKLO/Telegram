@@ -22473,7 +22473,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
             // 990 - translate, 991 - saved
             case 990: {
-                TranslateAPI.callTranslationDialog(selectedObject, (AppCompatActivity) getParentActivity());
+                TranslateAPI.callTranslationDialog(selectedObject, (AppCompatActivity) getParentActivity(), this, currentChat != null && currentChat.noforwards, null);
                 break;
             }
             case 993: {

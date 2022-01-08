@@ -194,6 +194,18 @@ class ChatsPreferencesEntry : BasePreferencesEntry {
                     CatogramConfig.silenceNonContacts = it
                 }
             }
+
+            switch {
+                title = LocaleController.getString("CX_DnD", R.string.CX_DnD)
+                summary = LocaleController.getString("CX_DnDDesc", R.string.CX_DnDDesc)
+
+
+                contract({
+                    return@contract CatogramConfig.dnd
+                }) {
+                    CatogramConfig.dnd = it
+                }
+            }
         }
 
         category(LocaleController.getString("AS_Filters_Header", R.string.AS_Filters_Header)) {
@@ -471,6 +483,17 @@ class ChatsPreferencesEntry : BasePreferencesEntry {
                             CatogramConfig.trLang = "sr"
                         }
                     }
+                }
+            }
+
+            switch {
+                title = LocaleController.getString("CX_OldTranslateUI", R.string.CX_OldTranslateUI)
+                summary = LocaleController.getString("CCX_OldTranslateUIDesc", R.string.CX_OldTranslateUIDesc)
+
+                contract({
+                    return@contract CatogramConfig.oldTranslateUI
+                }) {
+                    CatogramConfig.oldTranslateUI = it
                 }
             }
         }

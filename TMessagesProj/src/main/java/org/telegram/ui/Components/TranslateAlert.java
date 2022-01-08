@@ -76,6 +76,8 @@ import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 
+import ua.itaysonlab.catogram.translate.Translator;
+
 public class TranslateAlert extends Dialog {
     private FrameLayout bulletinContainer;
     private FrameLayout contentView;
@@ -109,6 +111,9 @@ public class TranslateAlert extends Dialog {
     private float containerOpenAnimationT = 0f;
     private float openAnimationT = 0f;
     private float epsilon = 0.001f;
+
+    private boolean catoInject;
+
     private void openAnimation(float t) {
         t = Math.min(Math.max(t, 0f), 1f);
         if (containerOpenAnimationT == t) {
@@ -236,11 +241,12 @@ public class TranslateAlert extends Dialog {
     private boolean noforwards;
     private OnLinkPress onLinkPress = null;
     private Runnable onDismiss = null;
-    public TranslateAlert(BaseFragment fragment, Context context, String fromLanguage, String toLanguage, CharSequence text, boolean noforwards, OnLinkPress onLinkPress, Runnable onDismiss) {
-        this(fragment, context, -1, null, -1, fromLanguage, toLanguage, text, noforwards, onLinkPress, onDismiss);
+    public TranslateAlert(BaseFragment fragment, Context context, String fromLanguage, String toLanguage, CharSequence text, boolean noforwards, OnLinkPress onLinkPress, Runnable onDismiss, boolean cato) {
+        this(fragment, context, -1, null, -1, fromLanguage, toLanguage, text, noforwards, onLinkPress, onDismiss, cato);
     }
-    public TranslateAlert(BaseFragment fragment, Context context, int currentAccount, TLRPC.InputPeer peer, int msgId, String fromLanguage, String toLanguage, CharSequence text, boolean noforwards, OnLinkPress onLinkPress, Runnable onDismiss) {
+    public TranslateAlert(BaseFragment fragment, Context context, int currentAccount, TLRPC.InputPeer peer, int msgId, String fromLanguage, String toLanguage, CharSequence text, boolean noforwards, OnLinkPress onLinkPress, Runnable onDismiss, boolean cato) {
         super(context, R.style.TransparentDialog);
+        catoInject = cato;
 
         if (peer != null) {
             translateText(currentAccount, peer, msgId, fromLanguage != null && fromLanguage.equals("und") ? null : fromLanguage, toLanguage);
@@ -930,7 +936,7 @@ public class TranslateAlert extends Dialog {
         fetchTranslation(
             blockText,
             Math.min((blockIndex + 1) * 1000, 3500),
-            (String translatedText, String sourceLanguage) -> {
+            (String translatedText, String sourceLanguage, String targetLanguage) -> {
                 loaded = true;
                 Spannable spannable = new SpannableStringBuilder(translatedText);
                 try {
@@ -1017,8 +1023,14 @@ public class TranslateAlert extends Dialog {
                 }
 
                 if (sourceLanguage != null) {
-                    fromLanguage = sourceLanguage;
-                    updateSourceLanguage();
+                    if (!catoInject) {
+                        fromLanguage = sourceLanguage;
+                        updateSourceLanguage();
+                    } else {
+                        fromLanguage = sourceLanguage;
+                        subtitleFromView.toTextView.setText(fromLanguage);
+                        subtitleToView.setText(targetLanguage);
+                    }
                 }
 
                 blockIndex++;
@@ -1048,12 +1060,24 @@ public class TranslateAlert extends Dialog {
     }
 
     public interface OnTranslationSuccess {
-        public void run(String translated, String sourceLanguage);
+        public void run(String translated, String sourceLanguage, String targetLanguage /* by catox */);
     }
     public interface OnTranslationFail {
         public void run(boolean rateLimit);
     }
     private void fetchTranslation(CharSequence text, long minDuration, OnTranslationSuccess onSuccess, OnTranslationFail onFail) {
+        if (catoInject) {
+            Translator.translateTextWithLangInfo(text.toString(), false, (newText, fromLang, toLang) -> {
+                AndroidUtilities.runOnUIThread(() -> {
+                    if (toLang.equals("Error"))
+                        onFail.run(false);
+                    else
+                        onSuccess.run(newText, fromLang.toLowerCase(), toLang);
+                });
+                return null;
+            });
+            return;
+        }
         new Thread() {
             @Override
             public void run() {
@@ -1087,7 +1111,8 @@ public class TranslateAlert extends Dialog {
                     String sourceLanguage = null;
                     try {
                         sourceLanguage = array.getString(2);
-                    } catch (Exception e2) {}
+                    } catch (Exception e2) {
+                    }
                     if (sourceLanguage != null && sourceLanguage.contains("-")) {
                         sourceLanguage = sourceLanguage.substring(0, sourceLanguage.indexOf("-"));
                     }
@@ -1109,9 +1134,8 @@ public class TranslateAlert extends Dialog {
                         sleep(minDuration - elapsed);
                     }
                     AndroidUtilities.runOnUIThread(() -> {
-                        if (onSuccess != null) {
-                            onSuccess.run(finalResult, finalSourceLanguage);
-                        }
+                        if (onSuccess != null)
+                            onSuccess.run(finalResult, finalSourceLanguage, null /* by catox, not used in official impl */);
                     });
                 } catch (Exception e) {
                     try {
@@ -1161,7 +1185,7 @@ public class TranslateAlert extends Dialog {
     }
 
     public static TranslateAlert showAlert(Context context, BaseFragment fragment, int currentAccount, TLRPC.InputPeer peer, int msgId, String fromLanguage, String toLanguage, CharSequence text, boolean noforwards, OnLinkPress onLinkPress, Runnable onDismiss) {
-        TranslateAlert alert = new TranslateAlert(fragment, context, currentAccount, peer, msgId, fromLanguage, toLanguage, text, noforwards, onLinkPress, onDismiss);
+        TranslateAlert alert = new TranslateAlert(fragment, context, currentAccount, peer, msgId, fromLanguage, toLanguage, text, noforwards, onLinkPress, onDismiss,false);
         if (fragment != null) {
             if (fragment.getParentActivity() != null) {
                 fragment.showDialog(alert);
@@ -1172,7 +1196,19 @@ public class TranslateAlert extends Dialog {
         return alert;
     }
     public static TranslateAlert showAlert(Context context, BaseFragment fragment, String fromLanguage, String toLanguage, CharSequence text, boolean noforwards, OnLinkPress onLinkPress, Runnable onDismiss) {
-        TranslateAlert alert = new TranslateAlert(fragment, context, fromLanguage, toLanguage, text, noforwards, onLinkPress, onDismiss);
+        TranslateAlert alert = new TranslateAlert(fragment, context, fromLanguage, toLanguage, text, noforwards, onLinkPress, onDismiss, false);
+        if (fragment != null) {
+            if (fragment.getParentActivity() != null) {
+                fragment.showDialog(alert);
+            }
+        } else {
+            alert.show();
+        }
+        return alert;
+    }
+
+    public static TranslateAlert showAlertCato(Context context, BaseFragment fragment, String fromLanguage, String toLanguage, CharSequence text, boolean noforwards, OnLinkPress onLinkPress, Runnable onDismiss) {
+        TranslateAlert alert = new TranslateAlert(fragment, context, fromLanguage, toLanguage, text, noforwards, onLinkPress, onDismiss, true);
         if (fragment != null) {
             if (fragment.getParentActivity() != null) {
                 fragment.showDialog(alert);

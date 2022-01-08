@@ -8026,7 +8026,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             seekBarWaveform.setSize(backgroundWidth - AndroidUtilities.dp(92 + (hasLinkPreview ? 10 : 0)), AndroidUtilities.dp(30));
             seekBar.setSize(backgroundWidth - AndroidUtilities.dp(72 + (hasLinkPreview ? 10 : 0)), AndroidUtilities.dp(30));
         }
-        forceNotDrawTime = currentMessagesGroup != null;
+        forceNotDrawTime = currentMessagesGroup != null || (CatogramConfig.INSTANCE.getHideStickerTime() && currentMessageObject.isAnyKindOfSticker());
         photoImage.setPressed((isHighlightedAnimated || isHighlighted) && currentPosition != null ? 2 : 0);
         photoImage.setVisible(!PhotoViewer.isShowingImage(currentMessageObject) && !SecretMediaViewer.getInstance().isShowingImage(currentMessageObject), false);
         if (!photoImage.getVisible()) {
