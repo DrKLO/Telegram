@@ -77,7 +77,7 @@ class MainPreferencesEntry : BasePreferencesEntry {
 
             category(LocaleController.getString("AS_Header_AboutX", R.string.AS_Header_AboutX)) {
                 textDetail {
-                    title = "Catogram X " + CatogramExtras.CG_VERSION + " [" + BuildVars.BUILD_VERSION_STRING + "]"
+                    title = "Catogram X " + CatogramExtras.CG_VERSION + " [" + BuildVars.BUILD_VERSION_STRING + "]" + (if (CatogramExtras.isBeta) " Beta" else "")
                     detail = LocaleController.getString("CG_AboutDescX", R.string.CG_AboutDescX)
                 }
 
