@@ -22490,7 +22490,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     undoView.showWithAction(0, UndoView.ACTION_CACHE_WAS_CLEARED, null, null);
                 } catch (Exception exc) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                    builder.setTitle(LocaleController.getString("CG_AppName", R.string.CG_AppName));
+                    builder.setTitle(LocaleController.getString("catox_AppName", R.string.catox_AppName));
                     builder.setMessage(LocaleController.getString("CG_FailedToSaveSticker", R.string.CG_FailedToSaveSticker));
                     builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
                     showDialog(builder.create());

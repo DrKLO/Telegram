@@ -11,7 +11,7 @@ import org.telegram.messenger.R;
 public class CGBiometricPrompt {
     private static BiometricPrompt.PromptInfo createPromptInfo() {
         return new BiometricPrompt.PromptInfo.Builder()
-                .setTitle(LocaleController.getString("CG_AppName", R.string.CG_AppName))
+                .setTitle(LocaleController.getString("catox_AppName", R.string.catox_AppName))
                 .setSubtitle(LocaleController.getString("CG_Biometric_Subtitle", R.string.CG_Biometric_Subtitle))
                 .setConfirmationRequired(false)
                 .setNegativeButtonText(LocaleController.getString("CG_Biometric_Negative", R.string.CG_Biometric_Negative))

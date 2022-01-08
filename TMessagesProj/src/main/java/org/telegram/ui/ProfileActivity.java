@@ -2864,7 +2864,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                 }
                                 AlertDialog.Builder builder1 = new AlertDialog.Builder(getParentActivity());
                                 builder1.setMessage(LocaleController.getString("CG_SwitchBackend", R.string.CG_SwitchBackend));
-                                builder1.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                                builder1.setTitle(LocaleController.getString("catox_AppName", R.string.catox_AppName));
                                 builder1.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialogInterface, i) -> {
                                     SharedConfig.pushAuthKey = null;
                                     SharedConfig.pushAuthKeyId = null;

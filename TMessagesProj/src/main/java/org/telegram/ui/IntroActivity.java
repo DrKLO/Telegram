@@ -112,7 +112,7 @@ public class IntroActivity extends AppCompatActivity implements NotificationCent
         preferences.edit().putLong("intro_crashed_time", System.currentTimeMillis()).commit();
 
         titles = new String[]{
-                LocaleController.getString("CG_AppName", R.string.CG_AppName),
+                LocaleController.getString("catox_AppName", R.string.catox_AppName),
                 LocaleController.getString("Page2Title", R.string.Page2Title),
                 LocaleController.getString("Page3Title", R.string.Page3Title),
                 LocaleController.getString("Page5Title", R.string.Page5Title),
