@@ -580,6 +580,9 @@ public class SearchAdapterHelper {
     }
 
     public ArrayList<TLObject> getGlobalSearch() {
+        if (MessagesController.getGlobalMainSettings().getBoolean("disableGlobalSearch", false)) {
+            return new ArrayList<TLObject>();
+        }
         return globalSearch;
     }
 
