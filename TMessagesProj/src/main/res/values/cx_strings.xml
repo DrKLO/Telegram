@@ -8,7 +8,7 @@
     <string name="CG_AboutDescX">Catogram fork</string>
     <string name="CX_TranslateMessagesInfo1">Use Telegram translation feature instead of Catogram\'s translator</string>
 
-    <!-- CX 4.0.3 -->
+    <!-- CX 4.1.0 -->
     <string name="CX_OldTranslateUI">Use classic translation UI</string>
     <string name="CX_OldTranslateUIDesc">When disabled, telegram translation UI but Catogram Translator will be used</string>
     <string name="CX_DnD">Silent contacts</string>
@@ -21,4 +21,6 @@
     <string name="CX_InvalidCustomEmojiTypeface">Invalid custom emoji typeface!</string>
     <string name="CX_InvalidAccessToken">Invalid bot token</string>
     <string name="CX_BotLogin">Bot login</string>
+    <string name="CX_DisableReactionAnim">Disable reaction animation</string>
+    <string name="CX_DisableReactionAnimDesc">(when reacting to a message)</string>
 </resources>

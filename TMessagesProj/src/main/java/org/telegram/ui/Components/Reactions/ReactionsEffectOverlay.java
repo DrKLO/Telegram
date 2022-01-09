@@ -29,6 +29,8 @@ import org.telegram.ui.Components.ReactionsContainerLayout;
 import java.util.ArrayList;
 import java.util.Random;
 
+import ua.itaysonlab.catogram.CatogramConfig;
+
 public class ReactionsEffectOverlay {
 
     public final static int LONG_ANIMATION = 0;
@@ -580,6 +582,7 @@ public class ReactionsEffectOverlay {
     }
 
     public static void show(BaseFragment baseFragment, ReactionsContainerLayout reactionsLayout, ChatMessageCell cell, float x, float y, String reaction, int currentAccount, int animationType) {
+        if (CatogramConfig.INSTANCE.getDisableReactionAnim()) return;
         if (cell == null || reaction == null || baseFragment == null || baseFragment.getParentActivity() == null) {
             return;
         }
@@ -628,6 +631,7 @@ public class ReactionsEffectOverlay {
     }
 
     public static void startAnimation() {
+        if (CatogramConfig.INSTANCE.getDisableReactionAnim()) return;
         if (currentOverlay != null) {
             currentOverlay.started = true;
             if (currentOverlay.animationType == LONG_ANIMATION && System.currentTimeMillis() - lastHapticTime > 200) {

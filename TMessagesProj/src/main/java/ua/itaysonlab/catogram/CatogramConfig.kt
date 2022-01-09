@@ -105,6 +105,7 @@ object CatogramConfig {
     var hideSendAsChannel by sharedPreferences.boolean("cx_hide_send_as_channel", false)
     var customEmojiFont by sharedPreferences.boolean("cx_custom_emoji_font", false)
     var customEmojiFontPat by sharedPreferences.string("cx_custom_emoji_font_path", "")
+    var disableReactionAnim by sharedPreferences.boolean("cx_disable_reaction_anim", false)
 
     // Emojis
     var loadSystemEmojiFailed = false

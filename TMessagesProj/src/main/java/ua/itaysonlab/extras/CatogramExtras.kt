@@ -23,8 +23,8 @@ import java.lang.Exception
 
 object CatogramExtras {
 
-    var CG_VERSION = "4.1.0"
-    var isBeta = true
+    val CG_VERSION = "4.1.0"
+    val isBeta = false
 
     @JvmField
     var currentAccountBitmap: BitmapDrawable? = null

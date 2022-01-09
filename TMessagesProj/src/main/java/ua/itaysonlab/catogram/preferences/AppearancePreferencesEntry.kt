@@ -178,6 +178,17 @@ class AppearancePreferencesEntry : BasePreferencesEntry {
                     CatogramConfig.hideSendAsChannel = it
                 }
             }
+
+            switch {
+                title = LocaleController.getString("CX_DisableReactionAnim", R.string.CX_DisableReactionAnim)
+                summary = LocaleController.getString("CX_DisableReactionAnimDesc", R.string.CX_DisableReactionAnimDesc)
+
+                contract({
+                    return@contract CatogramConfig.disableReactionAnim
+                }) {
+                    CatogramConfig.disableReactionAnim = it
+                }
+            }
         }
 
         category(LocaleController.getString("AS_Header_Notification", R.string.AS_Header_Notification)) {

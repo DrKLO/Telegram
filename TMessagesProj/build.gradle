@@ -199,6 +199,17 @@ android {
             ndk.debugSymbolLevel = 'FULL'
         }
 
+        debuggableRelease {
+            debuggable true
+            jniDebuggable true
+            signingConfig signingConfigs.release
+            minifyEnabled false
+            shrinkResources false
+            multiDexEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            ndk.debugSymbolLevel = 'FULL'
+        }
+
         release {
             debuggable false
             jniDebuggable false
