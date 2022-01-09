@@ -4,4 +4,18 @@
     <string name="AS_Header_AboutX">О Catogram X</string>
     <string name="CG_AboutDescX">Форк Catogram</string>
     <string name="CX_TranslateMessagesInfo1">Используйте функцию перевода Telegram вместо переводчика Catogram</string>
+    <string name="CX_OldTranslateUI">Использовать классический интерфейс переводчика</string>
+    <string name="CX_OldTranslateUIDesc">Если отключено, в переводчике будет использоваться интерфейс от Telegram, хотя будет использоваться переводчик Cartogram</string>
+    <string name="CX_DnD">Заглушённый контакты</string>
+    <string name="CX_DnDDesc">Отключить звук и вибрацию уведомлений от контактов</string>
+    <string name="CX_HideSendAsChannel">Скрыть кнопку отправления от имени канала</string>
+    <string name="CX_HideSendAsChannelDesc">Полезно для маленьких экранов</string>
+    <string name="CX_CustomEmoji">Использовать кастомные эмодзи</string>
+    <string name="CX_CustomEmojiDesc">Используйте кастомные эмодзи вместо своих</string>
+    <string name="CX_SetCustomEmojiFont">Установите кастомные эмодзи</string>
+    <string name="CX_InvalidCustomEmojiTypeface">Неправильный пакет эмодзи!</string>
+    <string name="CX_InvalidAccessToken">Неправильный токен бота</string>
+    <string name="CX_BotLogin">Вход от имени бота</string>
+    <string name="CX_DisableReactionAnim">Отключить анимацию реакций</string>
+    <string name="CX_DisableReactionAnimDesc">(когда реагируйте на сообщение)</string>
 </resources>
