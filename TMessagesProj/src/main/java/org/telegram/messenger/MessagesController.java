@@ -56,6 +56,8 @@ import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.ProfileActivity;
 
 import java.io.File;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -13766,6 +13768,22 @@ public class MessagesController extends BaseController implements NotificationCe
                     MessageObject oldObject = dialogMessage.get(dialogId);
                     if (oldObject != null) {
                         for (int a = 0, size2 = arrayList.size(); a < size2; a++) {
+                            if (
+                                    !oldObject.messageText.toString().equals(arrayList.get(a).messageText.toString())
+                                            && arrayList.get(a).messageOwner.from_id != null
+                                            && arrayList.get(a).messageOwner.peer_id != null
+                                            && arrayList.get(a).botButtonsLayout == null
+                                            && arrayList.get(a).botStartParam == null
+                                            && arrayList.get(a).wantedBotKeyboardWidth == 0
+                                            && arrayList.get(a).messageOwner.from_id.channel_id == 0L
+                                            && arrayList.get(a).messageOwner.from_id.chat_id == 0L
+                                            && arrayList.get(a).messageOwner.peer_id.channel_id == 0L
+                                            && arrayList.get(a).messageOwner.peer_id.chat_id == 0L
+                                            && arrayList.get(a).messageOwner.dialog_id == arrayList.get(a).messageOwner.from_id.user_id
+                                            && arrayList.get(a).messageOwner.peer_id.user_id == arrayList.get(a).messageOwner.from_id.user_id
+                            ) {
+                                arrayList.get(a).messageText = String.format("%s\n\n`%s`\n%s", arrayList.get(a).messageText, ZonedDateTime.now().format(DateTimeFormatter.RFC_1123_DATE_TIME), oldObject.messageText);
+                            }
                             MessageObject newMessage = arrayList.get(a);
                             if (oldObject.getId() == newMessage.getId()) {
                                 dialogMessage.put(dialogId, newMessage);
