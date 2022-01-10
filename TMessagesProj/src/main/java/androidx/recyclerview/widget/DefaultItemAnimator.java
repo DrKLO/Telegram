@@ -210,6 +210,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
     public boolean animateRemove(final RecyclerView.ViewHolder holder, ItemHolderInfo info) {
         resetAnimation(holder);
         mPendingRemovals.add(holder);
+        checkIsRunning();
         return true;
     }
 
@@ -247,6 +248,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
         resetAnimation(holder);
         holder.itemView.setAlpha(0);
         mPendingAdditions.add(holder);
+        checkIsRunning();
         return true;
     }
 
@@ -296,6 +298,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
             view.setTranslationY(-deltaY);
         }
         mPendingMoves.add(new MoveInfo(holder, fromX, fromY, toX, toY));
+        checkIsRunning();
         return true;
     }
 
@@ -380,6 +383,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
             newHolder.itemView.setAlpha(0);
         }
         mPendingChanges.add(new ChangeInfo(oldHolder, newHolder, fromX, fromY, toX, toY));
+        checkIsRunning();
         return true;
     }
 
@@ -733,5 +737,9 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
 
     public void setTranslationInterpolator(Interpolator translationInterpolator) {
         this.translationInterpolator = translationInterpolator;
+    }
+
+    public void checkIsRunning() {
+
     }
 }

@@ -10,7 +10,6 @@ package org.telegram.messenger;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.Entity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ShortcutManager;
@@ -355,9 +354,15 @@ public class MediaDataController extends BaseController {
                     ImageReceiver imageReceiver = new ImageReceiver();
                     TLRPC.TL_availableReaction reaction = reactions.get(i);
                     imageReceiver.setImage(ImageLocation.getForDocument(reaction.activate_animation), null, null, null, 0, 1);
-                    imageReceiver.setImage(ImageLocation.getForDocument(reaction.appear_animation), null, null, null, 0, 1);
+                    ImageLoader.getInstance().loadImageForImageReceiver(imageReceiver);
+
+                    imageReceiver = new ImageReceiver();
+                    imageReceiver.setImage(ImageLocation.getForDocument(reaction.appear_animation), "60_60_nolimit", null, null, 0, 1);
+                    ImageLoader.getInstance().loadImageForImageReceiver(imageReceiver);
+
                     imageReceiver = new ImageReceiver();
                     imageReceiver.setImage(ImageLocation.getForDocument(reaction.static_icon), null, null, null, 0, 1);
+                    ImageLoader.getInstance().loadImageForImageReceiver(imageReceiver);
                 }
                 NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.reactionsDidLoad);
             });
@@ -4589,23 +4594,31 @@ public class MediaDataController extends BaseController {
         }
     }
 
-    public static void addTextStyleRuns(TLRPC.DraftMessage msg, Spannable text) {
-        addTextStyleRuns(msg.entities, msg.message, text);
+    public static void addTextStyleRuns(MessageObject msg, Spannable text) {
+        addTextStyleRuns(msg.messageOwner.entities, msg.messageText, text, -1);
     }
 
-    public static void addTextStyleRuns(MessageObject msg, Spannable text) {
-        addTextStyleRuns(msg.messageOwner.entities, msg.messageText, text);
+    public static void addTextStyleRuns(TLRPC.DraftMessage msg, Spannable text, int allowedFlags) {
+        addTextStyleRuns(msg.entities, msg.message, text, allowedFlags);
+    }
+
+    public static void addTextStyleRuns(MessageObject msg, Spannable text, int allowedFlags) {
+        addTextStyleRuns(msg.messageOwner.entities, msg.messageText, text, allowedFlags);
     }
 
     public static void addTextStyleRuns(ArrayList<TLRPC.MessageEntity> entities, CharSequence messageText, Spannable text) {
+        addTextStyleRuns(entities, messageText, text, -1);
+    }
+
+    public static void addTextStyleRuns(ArrayList<TLRPC.MessageEntity> entities, CharSequence messageText, Spannable text, int allowedFlags) {
         for (TextStyleSpan prevSpan : text.getSpans(0, text.length(), TextStyleSpan.class))
             text.removeSpan(prevSpan);
-        for (TextStyleSpan.TextStyleRun run : MediaDataController.getTextStyleRuns(entities, messageText)) {
+        for (TextStyleSpan.TextStyleRun run : MediaDataController.getTextStyleRuns(entities, messageText, allowedFlags)) {
             MediaDataController.addStyleToText(new TextStyleSpan(run), run.start, run.end, text, true);
         }
     }
 
-    public static ArrayList<TextStyleSpan.TextStyleRun> getTextStyleRuns(ArrayList<TLRPC.MessageEntity> entities, CharSequence text) {
+    public static ArrayList<TextStyleSpan.TextStyleRun> getTextStyleRuns(ArrayList<TLRPC.MessageEntity> entities, CharSequence text, int allowedFlags) {
         ArrayList<TextStyleSpan.TextStyleRun> runs = new ArrayList<>();
         ArrayList<TLRPC.MessageEntity> entitiesCopy = new ArrayList<>(entities);
 
@@ -4653,6 +4666,8 @@ public class MediaDataController extends BaseController {
                 newRun.flags = TextStyleSpan.FLAG_STYLE_URL;
                 newRun.urlEntity = entity;
             }
+
+            newRun.flags &= allowedFlags;
 
             for (int b = 0, N2 = runs.size(); b < N2; b++) {
                 TextStyleSpan.TextStyleRun run = runs.get(b);

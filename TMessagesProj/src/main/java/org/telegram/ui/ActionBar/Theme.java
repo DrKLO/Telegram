@@ -65,6 +65,8 @@ import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 import androidx.core.graphics.ColorUtils;
 
+import com.google.android.exoplayer2.util.Log;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
@@ -7525,7 +7527,9 @@ public class Theme {
         try {
             String[] wallpaperLink = new String[1];
             HashMap<String, Integer> colors = getThemeFileValues(new File(pathToFile), null, wallpaperLink);
-            checkIsDark(colors, accent.parentTheme);
+            if (accent != null) {
+                checkIsDark(colors, accent.parentTheme);
+            }
             Integer wallpaperFileOffset = colors.get("wallpaperFileOffset");
             Bitmap bitmap = Bitmaps.createBitmap(560, 678, Bitmap.Config.ARGB_8888);
             Canvas canvas = new Canvas(bitmap);

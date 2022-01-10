@@ -485,6 +485,14 @@ public class TLRPC {
             photo_big = new TL_fileLocationToBeDeprecated();
             photo_big.volume_id = -photo_id;
             photo_big.local_id = 'c';
+
+            if (stripped_thumb != null && Build.VERSION.SDK_INT >= 21) {
+                try {
+                    strippedBitmap = new BitmapDrawable(ImageLoader.getStrippedPhotoBitmap(stripped_thumb, "b"));
+                } catch (Throwable e) {
+                    FileLog.e(e);
+                }
+            }
         }
 
         public void serializeToStream(AbstractSerializedData stream) {
@@ -30395,6 +30403,14 @@ public class TLRPC {
             photo_big = new TL_fileLocationToBeDeprecated();
             photo_big.volume_id = -photo_id;
             photo_big.local_id = 'c';
+
+            if (stripped_thumb != null && Build.VERSION.SDK_INT >= 21) {
+                try {
+                    strippedBitmap = new BitmapDrawable(ImageLoader.getStrippedPhotoBitmap(stripped_thumb, "b"));
+                } catch (Throwable e) {
+                    FileLog.e(e);
+                }
+            }
         }
 
         public void serializeToStream(AbstractSerializedData stream) {
@@ -54106,6 +54122,7 @@ public class TLRPC {
             if ((flags & 33554432) != 0) {
                 stream.writeInt32(ttl_period);
             }
+            writeAttachPath(stream);
         }
     }
 

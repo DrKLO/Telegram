@@ -427,6 +427,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                     view.setTranslationX(-deltaX);
                 }
                 mPendingMoves.add(moveInfo);
+                checkIsRunning();
                 return true;
             }
 
@@ -655,6 +656,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
         }
 
         mPendingMoves.add(moveInfo);
+        checkIsRunning();
         return true;
     }
 
@@ -926,6 +928,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
             newHolder.itemView.setAlpha(0);
         }
         mPendingChanges.add(new ChangeInfo(oldHolder, newHolder, fromX, fromY, toX, toY));
+        checkIsRunning();
         return true;
     }
 

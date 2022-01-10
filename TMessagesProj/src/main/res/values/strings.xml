@@ -1022,7 +1022,6 @@
     <string name="DeleteReportSpam">Report spam</string>
     <string name="TranslateMessage">Translate</string>
     <string name="AutomaticTranslation">Automatic Translation</string>
-    <string name="TranslateMore">Translate more...</string>
     <string name="CloseTranslation">Close Translation</string>
     <string name="TranslationFailedAlert1">Translation failed. Try again later.</string>
     <string name="TranslationFailedAlert2">Translation failed.</string>

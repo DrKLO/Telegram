@@ -10,6 +10,7 @@ import android.widget.FrameLayout;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.MediaDataController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Cells.ChatMessageCell;
@@ -24,6 +25,7 @@ public class ReactionsEffectOverlay {
 
     private final AnimationView effectImageView;
     private final AnimationView emojiImageView;
+    private final AnimationView emojiStaticImageView;
     private final FrameLayout container;
     boolean animateIn;
     float animateInProgress;
@@ -53,6 +55,7 @@ public class ReactionsEffectOverlay {
         this.reaction = reaction;
         ReactionsLayoutInBubble.ReactionButton reactionButton = cell.getReactionButton(reaction);
         float fromX, fromY, fromHeight, fromWidth;
+        ChatActivity chatActivity = (fragment instanceof ChatActivity) ? (ChatActivity) fragment : null;
         if (reactionsLayout != null) {
             for (int i = 0; i < reactionsLayout.recyclerListView.getChildCount(); i++) {
                 if (((ReactionsContainerLayout.ReactionHolderView) reactionsLayout.recyclerListView.getChildAt(i)).currentReaction.reaction.equals(reaction)) {
@@ -141,6 +144,9 @@ public class ReactionsEffectOverlay {
                         toX += reactionButton.x + reactionButton.imageReceiver.getImageX();
                         toY += reactionButton.y + reactionButton.imageReceiver.getImageY();
                     }
+                    if (chatActivity != null) {
+                        toY += chatActivity.drawingChatLisViewYoffset;
+                    }
 
                     lastDrawnToX = toX;
                     lastDrawnToY = toY;
@@ -164,6 +170,7 @@ public class ReactionsEffectOverlay {
                 }
 
                 float animateInProgressX, animateInProgressY;
+                float animateOutProgress = CubicBezierInterpolator.DEFAULT.getInterpolation(ReactionsEffectOverlay.this.animateOutProgress);
                 if (fromHolder) {
                     animateInProgressX = CubicBezierInterpolator.EASE_OUT_QUINT.getInterpolation(animateInProgress);
                     animateInProgressY = CubicBezierInterpolator.DEFAULT.getInterpolation(animateInProgress);
@@ -187,6 +194,8 @@ public class ReactionsEffectOverlay {
                 effectImageView.setTranslationX(x);
                 effectImageView.setTranslationY(y);
                 effectImageView.setAlpha((1f - animateOutProgress));
+                effectImageView.setScaleX(scale);
+                effectImageView.setScaleY(scale);
 
                 if (animateOutProgress != 0) {
                     scale = scale * (1f - animateOutProgress) + toScale * animateOutProgress;
@@ -194,6 +203,9 @@ public class ReactionsEffectOverlay {
                     y = y * (1f - animateOutProgress) + toY * animateOutProgress;
                 }
 
+
+                emojiStaticImageView.setAlpha(animateOutProgress > 0.7f ? (animateOutProgress - 0.7f) / 0.3f : 0);
+                //emojiImageView.setAlpha(animateOutProgress < 0.5f ? 1f - (animateOutProgress / 0.5f) : 0f);
                 container.setTranslationX(x);
                 container.setTranslationY(y);
 
@@ -214,10 +226,10 @@ public class ReactionsEffectOverlay {
                 }
 
                 if (wasScrolled || (emojiImageView.wasPlaying && emojiImageView.getImageReceiver().getLottieAnimation() != null && !emojiImageView.getImageReceiver().getLottieAnimation().isRunning())) {
-                    if (animateOutProgress != 1f) {
-                        animateOutProgress += 16f / 220f;
-                        if (animateOutProgress > 1f) {
-                            animateOutProgress = 1f;
+                    if (ReactionsEffectOverlay.this.animateOutProgress != 1f) {
+                        ReactionsEffectOverlay.this.animateOutProgress += 16f / 220f;
+                        if (ReactionsEffectOverlay.this.animateOutProgress > 1f) {
+                            ReactionsEffectOverlay.this.animateOutProgress = 1f;
                             currentOverlay = null;
                             cell.invalidate();
                             if (cell.getCurrentMessagesGroup() != null && cell.getParent() != null) {
@@ -239,6 +251,7 @@ public class ReactionsEffectOverlay {
         };
         effectImageView = new AnimationView(context);
         emojiImageView = new AnimationView(context);
+        emojiStaticImageView = new AnimationView(context);
         TLRPC.TL_availableReaction availableReaction = MediaDataController.getInstance(currentAccount).getReactionsMap().get(reaction);
         if (availableReaction != null) {
             TLRPC.Document document = availableReaction.effect_animation;
@@ -274,6 +287,15 @@ public class ReactionsEffectOverlay {
             ((FrameLayout.LayoutParams) emojiImageView.getLayoutParams()).topMargin = topOffset;
             ((FrameLayout.LayoutParams) emojiImageView.getLayoutParams()).leftMargin = leftOffset;
 
+            emojiStaticImageView.getImageReceiver().setImage(ImageLocation.getForDocument(availableReaction.static_icon), "40_40", null, "webp", availableReaction, 1);
+
+            container.addView(emojiStaticImageView);
+            emojiStaticImageView.getLayoutParams().width = emojiSize;
+            emojiStaticImageView.getLayoutParams().height = emojiSize;
+            ((FrameLayout.LayoutParams) emojiStaticImageView.getLayoutParams()).topMargin = topOffset;
+            ((FrameLayout.LayoutParams) emojiStaticImageView.getLayoutParams()).leftMargin = leftOffset;
+
+
             windowView.addView(container);
             container.getLayoutParams().width = size;
             container.getLayoutParams().height = size;
@@ -296,6 +318,10 @@ public class ReactionsEffectOverlay {
 
     public static void show(BaseFragment baseFragment, ReactionsContainerLayout reactionsLayout, ChatMessageCell cell, float x, float y, String reaction, int currentAccount) {
         if (cell == null) {
+            return;
+        }
+        boolean animationEnabled = MessagesController.getGlobalMainSettings().getBoolean("view_animations", true);
+        if (!animationEnabled) {
             return;
         }
         ReactionsEffectOverlay reactionsEffectOverlay = new ReactionsEffectOverlay(baseFragment.getParentActivity(), baseFragment, reactionsLayout, cell, x, y, reaction, currentAccount);

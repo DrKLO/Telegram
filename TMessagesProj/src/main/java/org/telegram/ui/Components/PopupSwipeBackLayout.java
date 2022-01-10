@@ -194,18 +194,18 @@ public class PopupSwipeBackLayout extends FrameLayout {
         if (processTouchEvent(ev))
             return true;
 
+        int act = ev.getActionMasked();
+        if (act == MotionEvent.ACTION_DOWN && !mRect.contains(ev.getX(), ev.getY())) {
+            callOnClick();
+            return true;
+        }
+
         if (currentForegroundIndex < 0 || currentForegroundIndex >= getChildCount()) {
             return super.dispatchTouchEvent(ev);
         }
 
         View bv = getChildAt(0);
         View fv = getChildAt(currentForegroundIndex);
-        int act = ev.getActionMasked();
-        if (act == MotionEvent.ACTION_DOWN && (ev.getX() > (bv.getMeasuredWidth() + (fv.getMeasuredWidth() - bv.getMeasuredWidth()) * transitionProgress) ||
-                ev.getY() > (bv.getMeasuredHeight() + ((overrideForegroundHeight != 0 ? overrideForegroundHeight : fv.getMeasuredHeight()) - bv.getMeasuredHeight()) * transitionProgress))) {
-            callOnClick();
-            return true;
-        }
 
         boolean b = (transitionProgress > 0.5f ? fv : bv).dispatchTouchEvent(ev);
         if (!b && act == MotionEvent.ACTION_DOWN) {
@@ -344,7 +344,6 @@ public class PopupSwipeBackLayout extends FrameLayout {
                 h = fH + (tH - fH) * transitionProgress;
             }
         }
-
 
         int s = canvas.save();
         mPath.rewind();

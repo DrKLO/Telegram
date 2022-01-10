@@ -129,6 +129,9 @@ public class GridLayoutManagerFixed extends GridLayoutManager {
             int backupPosition = layoutState.mCurrentPosition;
             for (int a = layoutState.mCurrentPosition; a > startPosition; a--) {
                 View view = layoutState.next(recycler);
+                if (view == null) {
+                    continue;
+                }
                 additionalViews.add(view);
                 if (a != backupPosition) {
                     calculateItemDecorationsForChild(view, mDecorInsets);

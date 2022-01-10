@@ -2663,8 +2663,13 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             return;
         }
         TLRPC.TL_messages_sendReaction req = new TLRPC.TL_messages_sendReaction();
-        req.peer = getMessagesController().getInputPeer(messageObject.getDialogId());
-        req.msg_id = messageObject.getId();
+        if (messageObject.messageOwner.isThreadMessage) {
+            req.peer = getMessagesController().getInputPeer(messageObject.getFromChatId());
+            req.msg_id = messageObject.messageOwner.fwd_from.saved_from_msg_id;
+        } else {
+            req.peer = getMessagesController().getInputPeer(messageObject.getDialogId());
+            req.msg_id = messageObject.getId();
+        }
         if (reaction != null) {
             req.reaction = reaction.toString();
             req.flags |= 1;

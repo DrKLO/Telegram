@@ -22,6 +22,8 @@ import android.text.TextUtils;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
 
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.DispatchQueuePool;
@@ -164,6 +166,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable {
                     if (cacheGenerateTask == null) {
                         return;
                     }
+
                     createCache(nativePtr, width, height);
                     uiHandler.post(uiRunnableCacheFinished);
                 });
@@ -358,12 +361,14 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable {
         this(file, w, h, precache, limitFps, null, 0);
     }
 
+    File file;
     public RLottieDrawable(File file, int w, int h, boolean precache, boolean limitFps, int[] colorReplacement, int fitzModifier) {
         width = w;
         height = h;
         shouldLimitFps = limitFps;
         getPaint().setFlags(Paint.FILTER_BITMAP_FLAG);
 
+        this.file = file;
         nativePtr = create(file.getAbsolutePath(), null, w, h, metaData, precache, colorReplacement, shouldLimitFps, fitzModifier);
         if (precache && lottieCacheGenerateQueue == null) {
             lottieCacheGenerateQueue = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
@@ -809,7 +814,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable {
     }
 
     public void setCurrentFrame(int frame, boolean async, boolean resetFrame) {
-        if (frame < 0 || frame > metaData[0]) {
+        if (frame < 0 || frame > metaData[0] || currentFrame == frame) {
             return;
         }
         currentFrame = frame;

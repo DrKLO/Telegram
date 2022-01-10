@@ -27,14 +27,14 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.view.View;
 
+import androidx.annotation.Keep;
+
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.AnimatedFileDrawable;
 import org.telegram.ui.Components.LoadingStickerDrawable;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RecyclableDrawable;
-
-import androidx.annotation.Keep;
 
 import java.util.ArrayList;
 
@@ -263,6 +263,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
     private boolean centerRotation;
     private ImageReceiverDelegate delegate;
     private float currentAlpha;
+    private float previousAlpha = 1f;
     private long lastUpdateAlphaTime;
     private byte crossfadeAlpha = 1;
     private boolean manualAlphaAnimator;
@@ -360,7 +361,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         if (strippedBitmap != null) {
             setImage(ImageLocation.getForUserOrChat(object, ImageLocation.TYPE_SMALL), "50_50", strippedBitmap, null, parentObject, 0);
         } else if (hasStripped) {
-            setImage(ImageLocation.getForUserOrChat(object, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(object, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, parentObject, 0);
+            setImage(ImageLocation.getForUserOrChat(object, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(object, ImageLocation.TYPE_STRIPPED), "50_50_b", avatarDrawable, parentObject, 0);
         } else {
             setImage(ImageLocation.getForUserOrChat(object, ImageLocation.TYPE_SMALL), "50_50", avatarDrawable, null, parentObject, 0);
         }
@@ -578,6 +579,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             updateDrawableRadius(staticThumbDrawable);
         }
         currentAlpha = 1.0f;
+        previousAlpha = 1f;
 
         if (staticThumbDrawable instanceof SvgHelper.SvgDrawable) {
             ((SvgHelper.SvgDrawable) staticThumbDrawable).setParent(this);
@@ -746,6 +748,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         currentSize = 0;
         currentCacheType = 0;
         currentAlpha = 1;
+        previousAlpha = 1f;
 
         if (setImageBackup != null) {
             setImageBackup.clear();
@@ -1335,6 +1338,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                 currentAlpha += dt / (float) crossfadeDuration;
                 if (currentAlpha > 1) {
                     currentAlpha = 1;
+                    previousAlpha = 1f;
                     if (crossfadeImage != null) {
                         recycleBitmap(null, 2);
                         crossfadeShader = null;
@@ -1410,6 +1414,9 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             }
             if (drawable != null) {
                 if (crossfadeAlpha != 0) {
+                    if (previousAlpha != 1f && (drawable == currentImageDrawable || drawable == currentMediaDrawable) && staticThumbDrawable != null) {
+                        drawDrawable(canvas, staticThumbDrawable, (int) (overrideAlpha * 255), shaderToUse, orientation);
+                    }
                     if (crossfadeWithThumb && animationNotReady) {
                         drawDrawable(canvas, drawable, (int) (overrideAlpha * 255), shaderToUse, orientation);
                     } else {
@@ -1443,7 +1450,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                                 if (thumbDrawable instanceof SvgHelper.SvgDrawable || thumbDrawable instanceof Emoji.EmojiDrawable) {
                                     alpha = (int) (overrideAlpha * 255 * (1.0f - currentAlpha));
                                 } else {
-                                    alpha = (int) (overrideAlpha * 255);
+                                    alpha = (int) (overrideAlpha * previousAlpha * 255);
                                 }
                                 drawDrawable(canvas, thumbDrawable, alpha, thumbShaderToUse, thumbOrientation);
                                 if (alpha != 255 && thumbDrawable instanceof Emoji.EmojiDrawable) {
@@ -2077,7 +2084,8 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                 } else if (currentImageDrawable instanceof RLottieDrawable) {
                     allowCorssfade = staticThumbDrawable instanceof LoadingStickerDrawable || staticThumbDrawable instanceof SvgHelper.SvgDrawable || staticThumbDrawable instanceof Emoji.EmojiDrawable;
                 }
-                if (allowCorssfade && (currentThumbDrawable == null && staticThumbDrawable == null || currentAlpha == 1.0f || forceCrossfade)) {
+                if (allowCorssfade && (currentThumbDrawable != null || staticThumbDrawable != null || forceCrossfade)) {
+                    previousAlpha = currentAlpha;
                     currentAlpha = 0.0f;
                     lastUpdateAlphaTime = System.currentTimeMillis();
                     crossfadeWithThumb = crossfadeImage != null || currentThumbDrawable != null || staticThumbDrawable != null;
@@ -2101,6 +2109,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                 boolean allowCorssfade = true;
                 if (!memCache && !forcePreview || forceCrossfade) {
                     if (currentThumbDrawable == null && staticThumbDrawable == null || currentAlpha == 1.0f || forceCrossfade) {
+                        previousAlpha = currentAlpha;
                         currentAlpha = 0.0f;
                         lastUpdateAlphaTime = System.currentTimeMillis();
                         crossfadeWithThumb = crossfadeImage != null || currentThumbDrawable != null || staticThumbDrawable != null;
@@ -2139,7 +2148,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                 } else {
                     currentAlpha = 0.0f;
                     lastUpdateAlphaTime = System.currentTimeMillis();
-                    crossfadeWithThumb = staticThumbDrawable != null && currentImageKey == null && currentMediaKey == null;
+                    crossfadeWithThumb = staticThumbDrawable != null;
                 }
             } else {
                 currentAlpha = 1.0f;
