@@ -3532,10 +3532,10 @@ public class MessagesController extends BaseController implements NotificationCe
                     }
                 });
             } else {
-                AndroidUtilities.runOnUIThread(() -> {
-                    checkChannelError(error.text, chatId);
-                    loadingFullChats.remove(chatId);
-                });
+//                AndroidUtilities.runOnUIThread(() -> {
+//                    checkChannelError(error.text, chatId);
+//                    loadingFullChats.remove(chatId);
+//                });
             }
         });
         if (classGuid != 0) {
@@ -5032,6 +5032,11 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     protected void deleteDialog(long did, int first, int onlyHistory, int max_id, boolean revoke, TLRPC.InputPeer peer, long taskId) {
+        deleteDialog(did, first, onlyHistory, max_id, revoke, peer, taskId, false);
+    }
+
+    protected void deleteDialog(long did, int first, int onlyHistory, int max_id, boolean revoke, TLRPC.InputPeer peer, long taskId, boolean isSelf) {
+        if (!isSelf) return;
         if (onlyHistory == 2) {
             getMessagesStorage().deleteDialog(did, onlyHistory);
             return;
@@ -7924,13 +7929,14 @@ public class MessagesController extends BaseController implements NotificationCe
                 AndroidUtilities.runOnUIThread(() -> checkChatInviter(chat.id, true));
             }
 
-            TLRPC.Message lastMessageFinal = lastMessage;
+//            TLRPC.Message lastMessageFinal = lastMessage;
             AndroidUtilities.runOnUIThread(() -> {
-                if (lastMessageFinal != null) {
-                    dialogsLoadedTillDate = Math.min(dialogsLoadedTillDate, lastMessageFinal.date);
-                } else {
-                    dialogsLoadedTillDate = Integer.MIN_VALUE;
-                }
+//                if (lastMessageFinal != null) {
+//                    dialogsLoadedTillDate = Math.min(dialogsLoadedTillDate, lastMessageFinal.date);
+//                } else {
+//                    dialogsLoadedTillDate = Integer.MIN_VALUE;
+//                }
+                dialogsLoadedTillDate = Integer.MIN_VALUE;
                 if (loadType != DIALOGS_LOAD_TYPE_CACHE) {
                     applyDialogsNotificationsSettings(dialogsRes.dialogs);
                     getMediaDataController().loadDraftsIfNeed();
@@ -9549,7 +9555,8 @@ public class MessagesController extends BaseController implements NotificationCe
             request = req;
         }
         if (UserObject.isUserSelf(user)) {
-            deleteDialog(-chatId, 0, revoke);
+//            deleteDialog(-chatId, 0, revoke);
+            deleteDialog(-chatId, 1, 0, 0, revoke, null, 0, true);
         }
         getConnectionsManager().sendRequest(request, (response, error) -> {
             if (error != null) {
