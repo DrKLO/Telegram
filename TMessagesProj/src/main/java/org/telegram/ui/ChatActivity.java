@@ -17067,6 +17067,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         if (arrayList == null) {
             return;
         }
+        ArrayList<MessageObject> arrayList2 = new ArrayList<>();
         for (int i = 0; i < arrayList.size(); i++) {
             MessageObject messageObject = arrayList.get(i);
             messageObject.resetLayout();
@@ -17075,11 +17076,18 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             if (messageObject.sponsoredChannelPost != 0) {
                 messageId = messageObject.sponsoredChannelPost;
             }
-            getMessagesController().ensureMessagesLoaded(dialogId, messageId, null);
-
+            if (!messageObject.isSponsored()) {
+                getMessagesController().ensureMessagesLoaded(dialogId, messageId, null);
+                arrayList2.add(messageObject);
+            } else {
+                markSponsoredAsRead(messageObject);
+            }
+//            getMessagesController().ensureMessagesLoaded(dialogId, messageId, null);
         }
         sponsoredMessagesAdded = true;
-        processNewMessages(arrayList);
+        if (arrayList2.isEmpty()) return;
+//        processNewMessages(arrayList);
+        processNewMessages(arrayList2);
     }
 
     private void checkGroupCallJoin(boolean fromServer) {
@@ -18007,6 +18015,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     }
 
     private int getSponsoredMessagesCount() {
+        if (true) return 0;
         int sponsoredMessagesCount = 0;
         while (sponsoredMessagesCount < messages.size()) {
             if (!messages.get(sponsoredMessagesCount).isSponsored()) {
