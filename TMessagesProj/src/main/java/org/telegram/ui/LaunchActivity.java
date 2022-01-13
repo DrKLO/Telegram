@@ -3795,6 +3795,7 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
     }
 
     public void checkAppUpdate(boolean force) {
+        if (true) return;
         if (!force && BuildVars.DEBUG_VERSION || !force && !BuildVars.CHECK_UPDATES) {
             return;
         }
