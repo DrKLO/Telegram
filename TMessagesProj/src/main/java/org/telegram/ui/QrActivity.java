@@ -2,6 +2,8 @@ package org.telegram.ui;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.content.ActivityNotFoundException;
@@ -23,18 +25,21 @@ import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.text.Layout;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.view.animation.DecelerateInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -73,6 +78,7 @@ import org.telegram.ui.Cells.SettingsSearchCell;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.ChatThemeBottomSheet;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.Easings;
 import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.HideViewAfterAnimation;
@@ -239,10 +245,15 @@ public class QrActivity extends BaseFragment {
             protected void onDraw(Canvas canvas) {
                 if (prevMotionDrawable != null) {
                     prevMotionDrawable.setBounds(0, 0, getWidth(), getHeight());
-                    prevMotionDrawable.draw(canvas);
                 }
                 currMotionDrawable.setBounds(0, 0, getWidth(), getHeight());
-                currMotionDrawable.draw(canvas);
+
+                if (prevMotionDrawable != null)
+                    prevMotionDrawable.drawBackground(canvas);
+                currMotionDrawable.drawBackground(canvas);
+                if (prevMotionDrawable != null)
+                    prevMotionDrawable.drawPattern(canvas);
+                currMotionDrawable.drawPattern(canvas);
                 super.onDraw(canvas);
             }
         };
@@ -481,6 +492,34 @@ public class QrActivity extends BaseFragment {
         }
     }
 
+    @Override
+    protected AnimatorSet onCustomTransitionAnimation(boolean isOpen, Runnable callback) {
+        if (isOpen) {
+            fragmentView.setAlpha(0f);
+            fragmentView.setTranslationX(AndroidUtilities.dp(48));
+        }
+
+        AnimatorSet animator = new AnimatorSet();
+        animator.playTogether(
+            ObjectAnimator.ofFloat(fragmentView, View.TRANSLATION_X, isOpen ? 0 : AndroidUtilities.dp(48)),
+            ObjectAnimator.ofFloat(fragmentView, View.ALPHA, isOpen ? 1f : 0f)
+        );
+        if (!isOpen)
+            animator.setInterpolator(new DecelerateInterpolator(1.5f));
+        else
+            animator.setInterpolator(CubicBezierInterpolator.EASE_IN);
+        animator.setDuration(isOpen ? 200 : 150);
+        animator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animator) {
+                if (callback != null)
+                    callback.run();
+            }
+        });
+        animator.start();
+        return animator;
+    }
+
     private void onItemSelected(EmojiThemes newTheme, int position, boolean withAnimation) {
         selectedPosition = position;
         final EmojiThemes prevTheme = currentTheme;
@@ -488,8 +527,16 @@ public class QrActivity extends BaseFragment {
         currentTheme = newTheme;
         EmojiThemes.ThemeItem themeItem = currentTheme.getThemeItem(isDarkTheme ? 1 : 0);
 
+        float duration = 1f;
+        if (patternAlphaAnimator != null) {
+//            from = (float) patternAlphaAnimator.getAnimatedValue();
+            duration *= Math.max(.5f, 1f - (float) patternAlphaAnimator.getAnimatedValue());
+            patternAlphaAnimator.cancel();
+        }
+
         prevMotionDrawable = currMotionDrawable;
         prevMotionDrawable.setIndeterminateAnimation(false);
+        prevMotionDrawable.setAlpha(255);
 
         currMotionDrawable = new MotionBackgroundDrawable();
         currMotionDrawable.setCallback(backgroundView);
@@ -497,18 +544,21 @@ public class QrActivity extends BaseFragment {
         currMotionDrawable.setParentView(backgroundView);
         currMotionDrawable.setPatternAlpha(1f);
         currMotionDrawable.setIndeterminateAnimation(true);
-        currMotionDrawable.posAnimationProgress = prevMotionDrawable.posAnimationProgress;
+        if (prevMotionDrawable != null)
+            currMotionDrawable.posAnimationProgress = prevMotionDrawable.posAnimationProgress;
         qrView.setPosAnimationProgress(currMotionDrawable.posAnimationProgress);
 
         TLRPC.WallPaper wallPaper = currentTheme.getWallpaper(isDarkTheme ? 1 : 0);
         if (wallPaper != null) {
             currMotionDrawable.setPatternBitmap(wallPaper.settings.intensity);
+            final long startedLoading = SystemClock.elapsedRealtime();
             currentTheme.loadWallpaper(isDarkTheme ? 1 : 0, pair -> {
                 if (pair != null && currentTheme.getTlTheme(isDarkTheme ? 1 : 0) != null) {
                     final long themeId = pair.first;
                     final Bitmap bitmap = pair.second;
                     if (themeId == currentTheme.getTlTheme(isDarkTheme ? 1 : 0).id && bitmap != null) {
-                        onPatternLoaded(bitmap, currMotionDrawable.getIntensity(), withAnimation);
+                        long elapsed = SystemClock.elapsedRealtime() - startedLoading;
+                        onPatternLoaded(bitmap, currMotionDrawable.getIntensity(), elapsed > 150);
                     }
                 }
             });
@@ -517,22 +567,20 @@ public class QrActivity extends BaseFragment {
         }
         currMotionDrawable.setPatternColorFilter(currMotionDrawable.getPatternColor());
 
-        float from = 0;
-        if (patternAlphaAnimator != null) {
-            from = (float) patternAlphaAnimator.getAnimatedValue();
-            patternAlphaAnimator.cancel();
-        }
-
         int[] newQrColors = qrColorsMap.get(newTheme.emoji + (isDarkTheme ? "n" : "d"));
         if (withAnimation) {
-            currMotionDrawable.setAlpha(0);
-            patternAlphaAnimator = ValueAnimator.ofFloat(from, 1f);
+            currMotionDrawable.setAlpha(255);
+            currMotionDrawable.setBackgroundAlpha(0f);
+            patternAlphaAnimator = ValueAnimator.ofFloat(0f, 1f);
             patternAlphaAnimator.addUpdateListener(animation -> {
                 float progress = (float) animation.getAnimatedValue();
                 if (prevMotionDrawable != null) {
+                    prevMotionDrawable.setBackgroundAlpha(1f);
                     prevMotionDrawable.setPatternAlpha(1f - progress);
                 }
-                currMotionDrawable.setAlpha((int) (255f * progress));
+                currMotionDrawable.setBackgroundAlpha(progress);
+                currMotionDrawable.setPatternAlpha(progress);
+//                currMotionDrawable.setAlpha((int) (255f * progress));
                 if (newQrColors != null) {
                     int color1 = ColorUtils.blendARGB(prevQrColors[0], newQrColors[0], progress);
                     int color2 = ColorUtils.blendARGB(prevQrColors[1], newQrColors[1], progress);
@@ -551,9 +599,25 @@ public class QrActivity extends BaseFragment {
                     }
                     prevMotionDrawable = null;
                     patternAlphaAnimator = null;
+                    currMotionDrawable.setBackgroundAlpha(1f);
+                    currMotionDrawable.setPatternAlpha(1f);
+                }
+
+                @Override
+                public void onAnimationCancel(Animator animation) {
+                    super.onAnimationCancel(animation);
+                    float progress = (float) ((ValueAnimator) animation).getAnimatedValue();
+                    if (newQrColors != null) {
+                        int color1 = ColorUtils.blendARGB(prevQrColors[0], newQrColors[0], progress);
+                        int color2 = ColorUtils.blendARGB(prevQrColors[1], newQrColors[1], progress);
+                        int color3 = ColorUtils.blendARGB(prevQrColors[2], newQrColors[2], progress);
+                        int color4 = ColorUtils.blendARGB(prevQrColors[3], newQrColors[3], progress);
+                        int[] colors = new int[] { color1, color2, color3, color4 };
+                        System.arraycopy(colors, 0, prevQrColors, 0, 4);
+                    }
                 }
             });
-            patternAlphaAnimator.setDuration(250);
+            patternAlphaAnimator.setDuration((int) (250 * duration));
             patternAlphaAnimator.start();
         } else {
             if (newQrColors != null) {
@@ -569,7 +633,7 @@ public class QrActivity extends BaseFragment {
         animationSettings.applyTheme = false;
         animationSettings.onlyTopFragment = true;
         animationSettings.resourcesProvider = getResourceProvider();
-        animationSettings.duration = 250;
+        animationSettings.duration = (int) (250 * duration);
         if (withAnimation) {
             resourcesProvider.initColors(prevTheme, isCurrentThemeDark);
         } else {
@@ -991,8 +1055,9 @@ public class QrActivity extends BaseFragment {
                 }
                 setupLightDarkTheme(!forceDark);
             });
+            darkThemeView.setAlpha(0f);
             darkThemeView.setVisibility(View.INVISIBLE);
-            rootLayout.addView(darkThemeView, LayoutHelper.createFrame(44, 44, Gravity.TOP | Gravity.END, 0, 0, 7, 0));
+            rootLayout.addView(darkThemeView, LayoutHelper.createFrame(44, 44, Gravity.TOP | Gravity.END, 0, -2, 7, 0));
             forceDark = !Theme.getActiveTheme().isDark();
             setForceDark(Theme.getActiveTheme().isDark(), false);
 
@@ -1068,6 +1133,8 @@ public class QrActivity extends BaseFragment {
         }
 
         public void onDataLoaded() {
+            darkThemeView.setAlpha(0f);
+            darkThemeView.animate().alpha(1f).setDuration(150).start();
             darkThemeView.setVisibility(View.VISIBLE);
             progressView.animate().alpha(0f).setListener(new HideViewAfterAnimation(progressView)).setDuration(150).start();
             recyclerView.setAlpha(0f);

@@ -5,6 +5,8 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.graphics.drawable.ColorDrawable;
+import android.os.Build;
 import android.text.TextUtils;
 import android.util.LongSparseArray;
 import android.util.TypedValue;
@@ -24,6 +26,7 @@ import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.ConnectionsManager;
@@ -74,6 +77,9 @@ public class ReactedUsersListView extends FrameLayout {
         if (addPadding) {
             listView.setPadding(0, 0, 0, AndroidUtilities.dp(8));
             listView.setClipToPadding(false);
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            listView.setVerticalScrollbarThumbDrawable(new ColorDrawable(Theme.getColor(Theme.key_listSelector)));
         }
         listView.setAdapter(adapter = new RecyclerView.Adapter() {
             @NonNull
@@ -163,6 +169,7 @@ public class ReactedUsersListView extends FrameLayout {
                 TLRPC.TL_messages_messageReactionsList l = (TLRPC.TL_messages_messageReactionsList) response;
 
                 for (TLRPC.User u : l.users) {
+                    MessagesController.getInstance(currentAccount).putUser(u, false);
                     users.put(u.id, u);
                 }
 
@@ -172,10 +179,11 @@ public class ReactedUsersListView extends FrameLayout {
                 newReactions.addAll(userReactions);
                 newReactions.addAll(l.reactions);
 
-                if (onlySeenNow)
+                if (onlySeenNow) {
                     Collections.sort(newReactions, (o1, o2) -> Integer.compare(o1.reaction != null ? 1 : 0, o2.reaction != null ? 1 : 0));
+                }
 
-                AndroidUtilities.runOnUIThread(()->{
+                AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(currentAccount).doOnIdle(() -> {
                     userReactions = newReactions;
                     if (onlySeenNow) {
                         onlySeenNow = false;
@@ -206,7 +214,7 @@ public class ReactedUsersListView extends FrameLayout {
                     if (offset == null)
                         canLoadMore = false;
                     isLoading = false;
-                });
+                }));
             } else isLoading = false;
         }, ConnectionsManager.RequestFlagInvokeAfter);
     }
@@ -247,7 +255,7 @@ public class ReactedUsersListView extends FrameLayout {
             titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             titleView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem));
             titleView.setEllipsize(TextUtils.TruncateAt.END);
-            addView(titleView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 65, 0, 44, 0));
+            addView(titleView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 58, 0, 44, 0));
 
             reactView = new BackupImageView(context);
             addView(reactView, LayoutHelper.createFrameRelatively(24, 24, Gravity.END | Gravity.CENTER_VERTICAL, 0, 0, 12, 0));

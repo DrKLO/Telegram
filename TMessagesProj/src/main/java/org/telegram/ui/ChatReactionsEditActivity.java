@@ -106,23 +106,7 @@ public class ChatReactionsEditActivity extends BaseFragment implements Notificat
         enableReactionsCell.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         enableReactionsCell.setAnimatingToThumbInsteadOfTouch(true);
         enableReactionsCell.setOnClickListener(v -> {
-            boolean c = !enableReactionsCell.isChecked();
-            enableReactionsCell.setChecked(c);
-            int clr = Theme.getColor(c ? Theme.key_windowBackgroundChecked : Theme.key_windowBackgroundUnchecked);
-            if (c) {
-                enableReactionsCell.setBackgroundColorAnimated(c, clr);
-            } else {
-                enableReactionsCell.setBackgroundColorAnimatedReverse(clr);
-            }
-            if (c) {
-                for (TLRPC.TL_availableReaction a : availableReactions) {
-                    chatReactions.add(a.reaction);
-                }
-                listAdapter.notifyItemRangeInserted(1, 1 + availableReactions.size());
-            } else {
-                chatReactions.clear();
-                listAdapter.notifyItemRangeRemoved(1, 1 + availableReactions.size());
-            }
+            setCheckedEnableReactionCell(!enableReactionsCell.isChecked());
         });
         ll.addView(enableReactionsCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
@@ -185,8 +169,14 @@ public class ChatReactionsEditActivity extends BaseFragment implements Notificat
             AvailableReactionCell cell = (AvailableReactionCell) view;
             TLRPC.TL_availableReaction react = availableReactions.get(position - 2);
             boolean nc = !chatReactions.contains(react.reaction);
-            if (nc) chatReactions.add(react.reaction);
-            else chatReactions.remove(react.reaction);
+            if (nc) {
+                chatReactions.add(react.reaction);
+            } else {
+                chatReactions.remove(react.reaction);
+                if (chatReactions.isEmpty()) {
+                    setCheckedEnableReactionCell(false);
+                }
+            }
 
             cell.setChecked(nc, true);
         });
@@ -196,6 +186,28 @@ public class ChatReactionsEditActivity extends BaseFragment implements Notificat
         updateColors();
 
         return contentView;
+    }
+
+    private void setCheckedEnableReactionCell(boolean c) {
+        if (enableReactionsCell.isChecked() == c) {
+            return;
+        }
+        enableReactionsCell.setChecked(c);
+        int clr = Theme.getColor(c ? Theme.key_windowBackgroundChecked : Theme.key_windowBackgroundUnchecked);
+        if (c) {
+            enableReactionsCell.setBackgroundColorAnimated(c, clr);
+        } else {
+            enableReactionsCell.setBackgroundColorAnimatedReverse(clr);
+        }
+        if (c) {
+            for (TLRPC.TL_availableReaction a : availableReactions) {
+                chatReactions.add(a.reaction);
+            }
+            listAdapter.notifyItemRangeInserted(1, 1 + availableReactions.size());
+        } else {
+            chatReactions.clear();
+            listAdapter.notifyItemRangeRemoved(1, 1 + availableReactions.size());
+        }
     }
 
     @Override

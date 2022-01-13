@@ -132,7 +132,7 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
             }
             setupLightDarkTheme(!forceDark);
         });
-        rootLayout.addView(darkThemeView, LayoutHelper.createFrame(44, 44, Gravity.TOP | Gravity.END, 0, 0, 7, 0));
+        rootLayout.addView(darkThemeView, LayoutHelper.createFrame(44, 44, Gravity.TOP | Gravity.END, 0, -2, 7, 0));
         forceDark = !Theme.getActiveTheme().isDark();
         setForceDark(Theme.getActiveTheme().isDark(), false);
 

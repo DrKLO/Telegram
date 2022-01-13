@@ -414,10 +414,10 @@ public class LocaleController {
         }
         return languagesDict.get(key.toLowerCase().replace("-", "_"));
     }
-    public LocaleInfo getLanguageByPlural(String plural) {
+    public LocaleInfo getBuiltinLanguageByPlural(String plural) {
         Collection<LocaleInfo> values = languagesDict.values();
         for (LocaleInfo l : values)
-            if (l.pluralLangCode != null && l.pluralLangCode.equals(plural))
+            if (l.pathToFile != null && l.pathToFile.equals("remote") && l.pluralLangCode != null && l.pluralLangCode.equals(plural))
                 return l;
         return null;
     }

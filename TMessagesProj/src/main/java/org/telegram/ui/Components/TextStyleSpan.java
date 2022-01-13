@@ -100,6 +100,7 @@ public class TextStyleSpan extends MetricAffectingSpan {
     public final static int FLAG_STYLE_SPOILER = 256;
     public final static int FLAG_STYLE_SPOILER_REVEALED = 512;
 
+
     public TextStyleSpan(TextStyleRun run) {
         this(run, 0, 0);
     }
