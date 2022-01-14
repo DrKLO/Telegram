@@ -11,8 +11,8 @@ import ua.itaysonlab.catogram.preferences.ktx.long
 
 // Used for storing data
 object DoubleBottomStorageBridge {
-    //const val DB_TIMER_END = 2 * 60 * 1000 // 2 minutes
-    const val DB_TIMER_END = -1 // always for dev version
+    const val DB_TIMER_END = 2 * 60 * 1000 // 2 minutes
+    //const val DB_TIMER_END = -1 // always for dev version
 
     private val preferences: SharedPreferences = ApplicationLoader.applicationContext.getSharedPreferences("dbconfig", Activity.MODE_PRIVATE)
 
