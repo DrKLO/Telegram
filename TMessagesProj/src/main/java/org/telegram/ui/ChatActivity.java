@@ -49,9 +49,11 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.SystemClock;
 import android.os.Vibrator;
 import android.provider.MediaStore;
+import android.provider.Settings;
 import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableString;
@@ -14127,6 +14129,15 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             return;
         }
         BulletinFactory.of(this).createErrorBulletin(LocaleController.getString("UnsupportedAttachment", R.string.UnsupportedAttachment), themeDelegate).show();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !Environment.isExternalStorageManager()) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+            builder.setPositiveButton(LocaleController.getString("Contin", R.string.Continue), (a, b) -> {
+                getParentActivity().startActivity(new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION));
+            });
+            builder.setNegativeButton(LocaleController.getString("Dismiss", R.string.Dismiss), (dialog, val) -> dialog.dismiss());
+            builder.setMessage(LocaleController.getString("CX_AllowStorage", R.string.CX_AllowStorage));
+            showDialog(builder.create());
+        }
     }
 
     private void fillEditingMediaWithCaption(CharSequence caption, ArrayList<TLRPC.MessageEntity> entities) {

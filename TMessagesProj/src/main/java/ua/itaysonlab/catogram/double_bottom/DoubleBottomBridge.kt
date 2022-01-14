@@ -15,7 +15,7 @@ object DoubleBottomBridge {
     }
 
     fun isDbConfigAvailable(): Boolean {
-        return (System.currentTimeMillis() <= DoubleBottomStorageBridge.dbTimerExpireDate) && UserConfig.getActivatedAccountsCount() > 1 && SharedConfig.passcodeHash.isNotEmpty()
+        return (System.currentTimeMillis() <= DoubleBottomStorageBridge.dbTimerExpireDate || DoubleBottomStorageBridge.DB_TIMER_END == -1) && UserConfig.getActivatedAccountsCount() > 1 && SharedConfig.passcodeHash.isNotEmpty()
     }
 
     fun isDbSetupCompleted(): Boolean {
@@ -26,7 +26,6 @@ object DoubleBottomBridge {
         DoubleBottomStorageBridge.storageInstance.map.values.forEach {
             if (it.id == id) return true
         }
-
         return false
     }
 

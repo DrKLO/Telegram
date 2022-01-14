@@ -36,5 +36,8 @@ public class TGKitTextIconRow extends TGKitPreference {
 
     public interface TGTIListener {
         void onClick(BaseFragment bf);
+        default void onLongClick(BaseFragment bf) {
+            // for backwards compat, do nothing :D
+        };
     }
 }

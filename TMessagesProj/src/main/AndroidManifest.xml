@@ -83,6 +83,7 @@
     <uses-permission android:name="me.everything.badger.permission.BADGE_COUNT_WRITE" />
     <uses-permission android:name="com.android.vending.BILLING" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:node="replace" />
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" tools:ignore="ScopedStorage" />
     <uses-permission android:name="android.permission.READ_PHONE_NUMBERS" />
 
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
@@ -103,7 +104,7 @@
         <receiver
             android:name="ua.itaysonlab.catogram.NotificationActionService"
             android:enabled="true"
-            android:exported="true"></receiver>
+            android:exported="true" />
 
         <activity
             android:name="org.telegram.ui.LaunchActivity"

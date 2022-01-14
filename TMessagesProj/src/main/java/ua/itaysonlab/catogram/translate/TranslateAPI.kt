@@ -22,7 +22,7 @@ object TranslateAPI {
     }
 
     @JvmStatic
-    fun callTranslationDialog(msgobj: MessageObject, act: AppCompatActivity, chatActivity: BaseFragment, b: Boolean, onLinkPress: TranslateAlert.OnLinkPress) {
+    fun callTranslationDialog(msgobj: MessageObject, act: AppCompatActivity, chatActivity: BaseFragment, b: Boolean, onLinkPress: TranslateAlert.OnLinkPress?) {
         val msg = extractMessageText(msgobj)
         if (CatogramConfig.oldTranslateUI)
             TranslationSheetFragment(msg, b).show(act.supportFragmentManager, null)

@@ -6,6 +6,8 @@ import org.telegram.messenger.R
 import org.telegram.messenger.UserConfig
 import org.telegram.tgnet.TLRPC
 import org.telegram.ui.ActionBar.BaseFragment
+import org.telegram.ui.Components.BulletinFactory
+import ua.itaysonlab.catogram.double_bottom.DoubleBottomBridge
 import ua.itaysonlab.catogram.double_bottom.DoubleBottomPasscodeActivity
 import ua.itaysonlab.catogram.double_bottom.DoubleBottomStorageBridge
 import ua.itaysonlab.catogram.preferences.ktx.*
@@ -22,13 +24,18 @@ class DoubleBottomPreferencesEntry : BasePreferencesEntry {
                 textIcon {
                     title = getAccountFName(profile)
                     icon = R.drawable.user_circle_outline_28
-                    listener = TGKitTextIconRow.TGTIListener {
-                        setupBottomFor(bf, profile)
+                    listener = object : TGKitTextIconRow.TGTIListener {
+                        override fun onClick(bf: BaseFragment) {
+                            setupBottomFor(bf, profile)
+                        }
+                        override fun onLongClick(bf: BaseFragment) {
+                            unsetupBottomFor(bf, profile)
+                        }
                     }
                 }
             }
 
-            hint(LocaleController.getString("CG_DB_AccountsHint", R.string.CG_DB_AccountsHint))
+            hint(LocaleController.getString("CX_DB_AccountsHint", R.string.CX_DB_AccountsHint))
         }
 
         category(LocaleController.getString("CG_DB_Prefs", R.string.CG_DB_Prefs)) {
@@ -69,7 +76,9 @@ class DoubleBottomPreferencesEntry : BasePreferencesEntry {
     }
 
     private fun setupBottomFor(bf: BaseFragment, profile: TLRPC.User) {
-        bf.presentFragment(DoubleBottomPasscodeActivity(1) { hash, salt, type ->
+        val b = DoubleBottomBridge.isDbActivatedForAccount(profile.id)
+        bf.presentFragment(DoubleBottomPasscodeActivity((if (b) 3 else 1), bf, profile.id) { unset, dummy, hash, salt, type ->
+            assert(!unset)
             DoubleBottomStorageBridge.storageInstance = DoubleBottomStorageBridge.storageInstance.also {
                 it.map[profile.id.toString()] = DoubleBottomStorageBridge.DBAccountData(
                         id = profile.id,
@@ -77,6 +86,23 @@ class DoubleBottomPreferencesEntry : BasePreferencesEntry {
                         hash = hash,
                         salt = Base64.encodeToString(salt, Base64.DEFAULT)
                 )
+            }
+        })
+    }
+
+    private fun unsetupBottomFor(bf: BaseFragment, profile: TLRPC.User) {
+        if (!DoubleBottomBridge.isDbActivatedForAccount(profile.id)) {
+            BulletinFactory.of(bf).createErrorBulletin(LocaleController.getString("CX_DBNotEnabled", R.string.CX_DBNotEnabled), bf.resourceProvider).show()
+            return
+        }
+        bf.presentFragment(DoubleBottomPasscodeActivity(2, bf, profile.id) { unset, user, dummy1, dummy2, dummy3 ->
+            assert(unset)
+            if (profile.id.equals(user)) {
+                DoubleBottomStorageBridge.storageInstance = DoubleBottomStorageBridge.storageInstance.also {
+                    it.map.remove(profile.id.toString())
+                }
+            } else {
+                BulletinFactory.of(bf).createErrorBulletin(LocaleController.getString("PasscodeDoNotMatch", R.string.PasscodeDoNotMatch), bf.resourceProvider).show()
             }
         })
     }

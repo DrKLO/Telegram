@@ -137,6 +137,16 @@ public class TGKitSettingsFragment extends BaseFragment {
                 });
             }
         });
+        listView.setOnItemLongClickListener((view, position, x, y) -> {
+            TGKitPreference pref = positions.get(position);
+            if (pref instanceof TGKitTextIconRow) {
+                TGKitTextIconRow preference = ((TGKitTextIconRow) pref);
+                if (preference.listener != null) preference.listener.onLongClick(this);
+            } else {
+                return false;
+            }
+            return true;
+        });
 
         return fragmentView;
     }

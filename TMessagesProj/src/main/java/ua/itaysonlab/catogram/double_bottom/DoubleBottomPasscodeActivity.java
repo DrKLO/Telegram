@@ -51,18 +51,26 @@ public class DoubleBottomPasscodeActivity extends BaseFragment implements Notifi
     private final static int done_button = 1;
     private final static int pin_item = 2;
     private final static int password_item = 3;
-    private final int type;
+    private int type;
+    private final BaseFragment bf;
     private final DBPAListener listener;
+    private long id = -2;
     private TextView titleTextView;
     private EditTextBoldCursor passwordEditText;
     private int currentPasswordType = SharedConfig.passcodeType;
     private int passcodeSetStep = 0;
     private String firstPassword;
 
-    public DoubleBottomPasscodeActivity(int type, DBPAListener listener) {
+    public DoubleBottomPasscodeActivity(int type, BaseFragment bf, DBPAListener listener) {
         super();
         this.type = type;
         this.listener = listener;
+        this.bf = bf;
+    }
+
+    public DoubleBottomPasscodeActivity(int type, BaseFragment bf, long id, DBPAListener listener) {
+        this(type, bf, listener);
+        this.id = id;
     }
 
     public static String getHash(String passcode) {
@@ -98,9 +106,7 @@ public class DoubleBottomPasscodeActivity extends BaseFragment implements Notifi
 
     @Override
     public View createView(Context context) {
-        if (type != 3) {
-            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        }
+        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(false);
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -293,7 +299,29 @@ public class DoubleBottomPasscodeActivity extends BaseFragment implements Notifi
             onPasscodeError();
             return;
         }
-        if (type == 1) {
+        if (type == 2) {
+            long a = DoubleBottomBridge.checkPasscodeForAnyOfAccounts(passwordEditText.getText().toString());
+            if (a != id) {
+                onPasscodeError();
+                return;
+            }
+            listener.onPasscodeEntered(true, a, null, null, 0);
+            finishFragment();
+            passwordEditText.clearFocus();
+            AndroidUtilities.hideKeyboard(passwordEditText);
+        } else if (type == 3) {
+            if (DoubleBottomBridge.checkPasscodeForAnyOfAccounts(passwordEditText.getText().toString()) != id) {
+                onPasscodeError();
+                return;
+            }
+            passwordEditText.clearFocus();
+            AndroidUtilities.hideKeyboard(passwordEditText);
+            passwordEditText.getEditableText().clear();
+            type = 1;
+            passcodeSetStep = 0;
+            updateDropDownTextView();
+            titleTextView.setText(LocaleController.getString("EnterNewPasscode", R.string.EnterNewPasscode));
+        } else if (type == 1) {
             if (!firstPassword.equals(passwordEditText.getText().toString())) {
                 try {
                     Toast.makeText(getParentActivity(), LocaleController.getString("PasscodeDoNotMatch", R.string.PasscodeDoNotMatch), Toast.LENGTH_SHORT).show();
@@ -314,7 +342,7 @@ public class DoubleBottomPasscodeActivity extends BaseFragment implements Notifi
                 System.arraycopy(passcodeSalt, 0, bytes, passcodeBytes.length + 16, 16);
                 String passcodeHash = Utilities.bytesToHex(Utilities.computeSHA256(bytes, 0, bytes.length));
 
-                listener.onPasscodeEntered(passcodeHash, passcodeSalt, currentPasswordType);
+                listener.onPasscodeEntered(false, 0, passcodeHash, passcodeSalt, currentPasswordType);
             } catch (Exception e) {
                 FileLog.e(e);
             }
@@ -359,7 +387,7 @@ public class DoubleBottomPasscodeActivity extends BaseFragment implements Notifi
         return themeDescriptions;
     }
 
-    interface DBPAListener {
-        void onPasscodeEntered(String passcodeHash, byte[] passcodeSalt, int type);
+    public interface DBPAListener {
+        void onPasscodeEntered(boolean unset, long user, String passcodeHash, byte[] passcodeSalt, int type);
     }
 }

@@ -23,4 +23,9 @@
     <string name="CX_BotLogin">Bot login</string>
     <string name="CX_DisableReactionAnim">Disable reaction animation</string>
     <string name="CX_DisableReactionAnimDesc">(when reacting to a message)</string>
+
+    <!-- CX 4.1.1 -->
+    <string name="CX_AllowStorage">Due to changes introduced by Google in Android 11+, Catogram X needs your permission to see non-media files.</string>
+    <string name="CX_DBNotEnabled">Not enabled for this account</string>
+    <string name="CX_DB_AccountsHint">Double Bottom allows you to set a passcode for a different account.\n\nTrying to set a password to a configured account will replace the older one after you re-entered it.\nLong-press a entry to remove the passcode, by, again, entering it.</string>
 </resources>
