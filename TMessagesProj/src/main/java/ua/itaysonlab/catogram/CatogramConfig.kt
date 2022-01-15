@@ -107,6 +107,9 @@ object CatogramConfig {
     var customEmojiFontPat by sharedPreferences.string("cx_custom_emoji_font_path", "")
     var disableReactionAnim by sharedPreferences.boolean("cx_disable_reaction_anim", false)
 
+    /* CX 4.1.1 */
+    var titleIsChats by sharedPreferences.boolean("cx_title_is_chats", false)
+
     // Emojis
     var loadSystemEmojiFailed = false
     var sysEmojiTypeface: Typeface? = null

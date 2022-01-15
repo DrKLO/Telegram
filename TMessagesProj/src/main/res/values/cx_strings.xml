@@ -28,4 +28,7 @@
     <string name="CX_AllowStorage">Due to changes introduced by Google in Android 11+, Catogram X needs your permission to see non-media files.</string>
     <string name="CX_DBNotEnabled">Not enabled for this account</string>
     <string name="CX_DB_AccountsHint">Double Bottom allows you to set a passcode for a different account.\n\nTrying to set a password to a configured account will replace the older one after you re-entered it.\nLong-press a entry to remove the passcode, by, again, entering it.</string>
+    <string name="CX_TitleIsChats">Use "Chats" as title for the chat list, instead of the app name</string>
+    <string name="CX_TitleIsChatsDesc">As in original Catogram</string>
+    <string name="CX_DismissStorageDialog">To permanently dismiss the dialog, grant the permission or ungrant all storage permissions.</string>
 </resources>

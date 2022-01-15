@@ -42,9 +42,11 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Vibrator;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.provider.Settings;
 import android.util.Property;
 import android.util.StateSet;
 import android.util.TypedValue;
@@ -73,6 +75,7 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -1824,6 +1827,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             }
             databaseMigrationHint = null;
         }
+
         return true;
     }
 
@@ -2081,10 +2085,14 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             if (folderId != 0) {
                 actionBar.setTitle(LocaleController.getString("ArchivedChats", R.string.ArchivedChats));
             } else {
-                if (BuildVars.DEBUG_VERSION) {
-                    actionBar.setTitle(LocaleController.getString("catox_AppNameBeta", R.string.catox_AppNameBeta));
+                if (CatogramConfig.INSTANCE.getTitleIsChats()) {
+                    actionBar.setTitle(LocaleController.getString("WidgetChats", R.string.WidgetChats));
                 } else {
-                    actionBar.setTitle(LocaleController.getString("catox_AppName", R.string.catox_AppName));
+                    if (BuildVars.DEBUG_VERSION) {
+                        actionBar.setTitle(LocaleController.getString("catox_AppNameBeta", R.string.catox_AppNameBeta));
+                    } else {
+                        actionBar.setTitle(LocaleController.getString("catox_AppName", R.string.catox_AppName));
+                    }
                 }
             }
             if (folderId == 0) {
@@ -3616,6 +3624,25 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             FilesMigrationService.checkBottomSheet(this);
         }
         updateMenuButton(false);
+
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && (ContextCompat.checkSelfPermission(getParentActivity(),"android.permission.READ_EXTERNAL_STORAGE") == PackageManager.PERMISSION_GRANTED) && !Environment.isExternalStorageManager()) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+            builder.setPositiveButton(LocaleController.getString("Contin", R.string.Continue), (a, b) -> {
+                Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+                Uri uri = Uri.fromParts("package", getParentActivity().getPackageName(), null);
+                intent.setData(uri);
+                getParentActivity().startActivity(intent);
+            });
+            builder.setNegativeButton(LocaleController.getString("Dismiss", R.string.Dismiss), (dialog, val) -> {
+                dialog.dismiss();
+                BulletinFactory.of(this).createErrorBulletin(LocaleController.getString("CX_DismissStorageDialog", R.string.CX_DismissStorageDialog), getResourceProvider()).show();
+            });
+            builder.setMessage(LocaleController.getString("CX_AllowStorage", R.string.CX_AllowStorage));
+            showDialog(builder.create());
+        }
+
+
         return fragmentView;
     }
 
