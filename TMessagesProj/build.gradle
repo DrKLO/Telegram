@@ -317,6 +317,7 @@ android {
                 manifest.srcFile 'config/release/AndroidManifest_SDK23.xml'
             }
             minSdkVersion 23
+            buildConfigField 'String', 'APK_VARIANT', '"appArm64"'
             ext {
                 abiVersionCode = 7
             }
@@ -381,6 +382,7 @@ android {
         //obtain your own keys at https://core.telegram.org/api/obtaining_api_id
         buildConfigField 'int', 'APP_ID', getAppId()
         buildConfigField 'String', 'APP_HASH', getAppHash()
+        buildConfigField 'String', 'APK_VARIANT', '"app"'
 
         externalNativeBuild {
             cmake {

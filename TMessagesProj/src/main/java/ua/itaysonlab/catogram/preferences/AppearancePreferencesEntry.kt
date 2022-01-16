@@ -189,17 +189,6 @@ class AppearancePreferencesEntry : BasePreferencesEntry {
                     CatogramConfig.disableReactionAnim = it
                 }
             }
-
-            switch {
-                title = LocaleController.getString("CX_TitleIsChats", R.string.CX_TitleIsChats)
-                summary = LocaleController.getString("CX_TitleIsChatsDesc", R.string.CX_TitleIsChatsDesc)
-
-                contract({
-                    return@contract CatogramConfig.titleIsChats
-                }) {
-                    CatogramConfig.titleIsChats = it
-                }
-            }
         }
 
         category(LocaleController.getString("AS_Header_Notification", R.string.AS_Header_Notification)) {

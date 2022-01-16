@@ -60,6 +60,15 @@ class MainPreferencesEntry : BasePreferencesEntry {
                     it.presentFragment(CatogramPreferencesNavigator.createSecurity())
                 }
             }
+
+            /*textIcon {
+                title = LocaleController.getString("CX_Extra", R.string.CX_Extra)
+                icon = R.drawable.favorite_outline_28
+                listener = TGKitTextIconRow.TGTIListener {
+                    it.presentFragment(CatogramPreferencesNavigator.createExtra())
+                }
+            }*/
+
             textIcon {
                 title = LocaleController.getString("CG_Updates_Category", R.string.CG_Updates_Category)
                 icon = R.drawable.outline_send

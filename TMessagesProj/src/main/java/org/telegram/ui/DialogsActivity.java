@@ -2085,15 +2085,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             if (folderId != 0) {
                 actionBar.setTitle(LocaleController.getString("ArchivedChats", R.string.ArchivedChats));
             } else {
-                if (CatogramConfig.INSTANCE.getTitleIsChats()) {
-                    actionBar.setTitle(LocaleController.getString("WidgetChats", R.string.WidgetChats));
-                } else {
-                    if (BuildVars.DEBUG_VERSION) {
-                        actionBar.setTitle(LocaleController.getString("catox_AppNameBeta", R.string.catox_AppNameBeta));
-                    } else {
-                        actionBar.setTitle(LocaleController.getString("catox_AppName", R.string.catox_AppName));
-                    }
-                }
+                actionBar.setTitle(LocaleController.getString("WidgetChats", R.string.WidgetChats));
             }
             if (folderId == 0) {
                 actionBar.setSupportsHolidayImage(true);

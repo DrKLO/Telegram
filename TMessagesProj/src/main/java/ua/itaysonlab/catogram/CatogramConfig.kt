@@ -25,13 +25,11 @@ object CatogramConfig {
     var hideProxySponsor by sharedPreferences.boolean("advanced_hideproxysponsor", true)
     var hidePhoneNumber by sharedPreferences.boolean("advanced_hidephonenumber", true)
     var noRounding by sharedPreferences.boolean("advanced_norounding", false)
-    var systemFontsTT by sharedPreferences.boolean("advanced_systemfonts_tt", false)
     var noVibration by sharedPreferences.boolean("advanced_novibration", false)
     var drawerAvatar by sharedPreferences.boolean("cg_drawer_avatar", false)
     var flatActionbar by sharedPreferences.boolean("cg_flat_actionbar", false)
     var drawerBlur by sharedPreferences.boolean("cg_drawer_blur", false)
     var drawerDarken by sharedPreferences.boolean("cg_drawer_darken", false)
-    var controversiveNoSecureFlag by sharedPreferences.boolean("cg_ct_flag", false)
     var contactsNever by sharedPreferences.boolean("contactsNever", false)
     var searchInActionbar by sharedPreferences.boolean("cg_chats_searchbar", false)
     var confirmCalls by sharedPreferences.boolean("cg_confirmcalls", false)
@@ -71,9 +69,7 @@ object CatogramConfig {
 
     var voicesAgc by sharedPreferences.boolean("cg_hq_voices_agc", true)
     var overrideVoipEnhancements by sharedPreferences.boolean("cg_hq_voip_overrideservercfg", true)
-
     var silenceNonContacts by sharedPreferences.boolean("cg_silence_non_contacts", false)
-
     var autoOta by sharedPreferences.boolean("cg_auto_ota", true)
 
     var ghostMode = false
@@ -84,19 +80,12 @@ object CatogramConfig {
     var sleepOp by sharedPreferences.int("cg_op", 30)
 
     var playVideoOnVolume by sharedPreferences.boolean("cg_play_video_on_volume", false)
-
     var mentionByName by sharedPreferences.boolean("cg_mention_by_name", false)
-
     var useMediaStream by sharedPreferences.boolean("cg_media_stream", false)
-
     var hideStickerTime by sharedPreferences.boolean("cg_hide_stick_time", true)
-
     var showDc by sharedPreferences.boolean("cg_show_dc", false)
-
     var hqVoice by sharedPreferences.boolean("cg_hq_voice", true)
-
     var ignoreArchivedChannels by sharedPreferences.boolean("cg_ignore_archived_channels", false)
-
     var disableAttachCamera by sharedPreferences.boolean("cg_disable_attach_camera", false)
 
     /* CX 4.1.0 */
@@ -107,8 +96,7 @@ object CatogramConfig {
     var customEmojiFontPat by sharedPreferences.string("cx_custom_emoji_font_path", "")
     var disableReactionAnim by sharedPreferences.boolean("cx_disable_reaction_anim", false)
 
-    /* CX 4.1.1 */
-    var titleIsChats by sharedPreferences.boolean("cx_title_is_chats", false)
+    /* CX 4.1.2 */
 
     // Emojis
     var loadSystemEmojiFailed = false

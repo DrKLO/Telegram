@@ -31,4 +31,8 @@
     <string name="CX_TitleIsChats">Use "Chats" as title for the chat list, instead of the app name</string>
     <string name="CX_TitleIsChatsDesc">As in original Catogram</string>
     <string name="CX_DismissStorageDialog">To permanently dismiss the dialog, grant the permission or ungrant all storage permissions.</string>
+
+    <!-- CX 4.1.2 -->
+    <string name="CX_ThemePreviewDialogMessage3">Please test the new update!</string>
+    <string name="CX_Extra">Extras</string>
 </resources>

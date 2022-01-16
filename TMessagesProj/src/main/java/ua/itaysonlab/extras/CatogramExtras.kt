@@ -3,17 +3,14 @@ package ua.itaysonlab.extras
 import android.content.Context
 import android.content.res.Resources
 import android.graphics.*
-import ua.itaysonlab.catogram.CatogramConfig.controversiveNoSecureFlag
 import ua.itaysonlab.catogram.CatogramConfig.noVibration
 import ua.itaysonlab.catogram.CatogramConfig.drawerBlur
 import android.graphics.drawable.BitmapDrawable
-import android.view.WindowManager
 import android.os.Vibrator
 import androidx.annotation.ColorInt
 import org.telegram.messenger.SharedConfig
 import org.telegram.tgnet.TLRPC
 import android.view.View
-import android.view.Window
 import org.telegram.messenger.FileLoader
 import org.telegram.messenger.Utilities
 import java.io.DataInputStream
@@ -43,21 +40,6 @@ object CatogramExtras {
         return (pxValue / scale + 0.5f).toInt()
     }
 
-    fun setSecureFlag(window: Window) {
-        if (!controversiveNoSecureFlag) window.setFlags(
-            WindowManager.LayoutParams.FLAG_SECURE,
-            WindowManager.LayoutParams.FLAG_SECURE
-        )
-    }
-
-    fun setSecureFlag(window: WindowManager.LayoutParams) {
-        if (!controversiveNoSecureFlag) window.flags =
-            window.flags or WindowManager.LayoutParams.FLAG_SECURE
-    }
-
-    fun clearSecureFlag(window: Window) {
-        if (!controversiveNoSecureFlag) window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
-    }
     @JvmStatic
     fun vibrate(vibrator: Vibrator, ms: Int) {
         if (noVibration) return

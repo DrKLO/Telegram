@@ -1310,19 +1310,30 @@ public class AndroidUtilities {
 
     public static Typeface getTypeface(String assetPath) {
         synchronized (typefaceCache) {
-            switch (assetPath) {
-                case "fonts/rmediumitalic.ttf":
-                    return Typeface.create("sans-serif-medium", Typeface.BOLD_ITALIC);
-                case "fonts/ritalic.ttf":
-                    return Typeface.create("sans-serif-medium", Typeface.ITALIC);
-                case "fonts/rmono.ttf":
-                    return Typeface.MONOSPACE;
-                case "fonts/mw_bold.ttf":
-                    return Typeface.create("sans-serif", Typeface.BOLD);
-                default:
-                    return Typeface.create("sans-serif-medium", Typeface.NORMAL);
+            if (!typefaceCache.containsKey(assetPath)) {
+                try {
+                    Typeface t;
+                    if (Build.VERSION.SDK_INT >= 26) {
+                        Typeface.Builder builder = new Typeface.Builder(ApplicationLoader.applicationContext.getAssets(), assetPath);
+                        if (assetPath.contains("medium")) {
+                            builder.setWeight(700);
+                        }
+                        if (assetPath.contains("italic")) {
+                            builder.setItalic(true);
+                        }
+                        t = builder.build();
+                    } else {
+                        t = Typeface.createFromAsset(ApplicationLoader.applicationContext.getAssets(), assetPath);
+                    }
+                    typefaceCache.put(assetPath, t);
+                } catch (Exception e) {
+                    if (BuildVars.LOGS_ENABLED) {
+                        FileLog.e("Could not get typeface '" + assetPath + "' because " + e.getMessage());
+                    }
+                    return null;
+                }
             }
-
+            return typefaceCache.get(assetPath);
         }
     }
 

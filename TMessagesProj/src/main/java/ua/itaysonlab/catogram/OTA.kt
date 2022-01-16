@@ -17,6 +17,7 @@ import kotlinx.coroutines.*
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
+import org.telegram.messenger.BuildConfig
 import org.telegram.messenger.LocaleController
 import org.telegram.messenger.R
 import ua.itaysonlab.catogram.translate.Translator.translateText
@@ -64,7 +65,7 @@ object OTA : CoroutineScope by MainScope() {
             override fun onReceive(context: Context?, intent: Intent) {
                 when (intent.extras!!.getString("action_name")) {
                     "action_download" -> {
-                        downloadApk(context!!)
+                        downloadApk(context!!, getVariant())
                     }
 
                     "action_changelog" -> {
@@ -144,15 +145,19 @@ object OTA : CoroutineScope by MainScope() {
         builder.setTitle(LocaleController.getString("CG_Found", R.string.CG_Found) + " • " + version)
                 .setMessage(changelog)
                 .setPositiveButton(LocaleController.getString("CG_Download", R.string.CG_Download)) { _, _ ->
-                    downloadApk(context)
+                    downloadApk(context, getVariant())
                 }
         builder.show()
     }
 
-    fun downloadApk(context: Context) {
+    private fun getVariant(): String {
+        return BuildConfig.APK_VARIANT
+    }
+
+    fun downloadApk(context: Context, variant: String) {
         val notificationManager = NotificationManagerCompat.from(context)
         notificationManager.cancel(1337)
-        val request = DownloadManager.Request(Uri.parse("https://github.com/catogramx/catogramx/releases/latest/download/app.apk"))
+        val request = DownloadManager.Request(Uri.parse("https://github.com/catogramx/catogramx/releases/latest/download/$variant.apk"))
 
         request.setAllowedNetworkTypes(DownloadManager.Request.NETWORK_MOBILE or DownloadManager.Request.NETWORK_WIFI)
         request.setTitle(version)

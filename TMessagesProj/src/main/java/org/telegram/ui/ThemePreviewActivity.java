@@ -3871,12 +3871,12 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
             dialogs.add(customDialog);
 
             customDialog = new DialogCell.CustomDialog();
-            customDialog.name = LocaleController.getString("ThemePreviewDialog3", R.string.ThemePreviewDialog3);
-            customDialog.message = LocaleController.getString("ThemePreviewDialogMessage3", R.string.ThemePreviewDialogMessage3);
+            customDialog.name = "nift4";
+            customDialog.message = LocaleController.getString("CX_ThemePreviewDialogMessage3", R.string.CX_ThemePreviewDialogMessage3);
             customDialog.id = 2;
-            customDialog.unread_count = 3;
+            customDialog.unread_count = 69;
             customDialog.pinned = false;
-            customDialog.muted = true;
+            customDialog.muted = false;
             customDialog.type = 0;
             customDialog.date = date - 60 * 60 * 2;
             customDialog.verified = false;
