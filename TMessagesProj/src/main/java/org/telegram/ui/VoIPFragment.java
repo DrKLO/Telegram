@@ -1698,7 +1698,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             buf.write(service.getGA());
             auth_key = buf.toByteArray();
         } catch (Exception checkedExceptionsAreBad) {
-            FileLog.e(checkedExceptionsAreBad);
+            FileLog.e(checkedExceptionsAreBad, false);
         }
         if (auth_key == null) {
             return;

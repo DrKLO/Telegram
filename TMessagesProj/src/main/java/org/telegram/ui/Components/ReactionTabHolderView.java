@@ -39,16 +39,14 @@ public class ReactionTabHolderView extends FrameLayout {
     private BackupImageView reactView;
     private ImageView iconView;
     private TextView counterView;
-
+    View overlaySelectorView;
     private float outlineProgress;
     Drawable drawable;
     public ReactionTabHolderView(@NonNull Context context) {
         super(context);
 
-        View overlaySelectorView = new View(context);
-        overlaySelectorView.setBackground(Theme.createSimpleSelectorRoundRectDrawable((int) radius, Color.TRANSPARENT, Theme.getColor(Theme.key_chat_inReactionButtonTextSelected)));
+        overlaySelectorView = new View(context);
         addView(overlaySelectorView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-
 
         iconView = new ImageView(context);
         drawable = ContextCompat.getDrawable(context, R.drawable.msg_reactions_filled).mutate();
@@ -82,6 +80,12 @@ public class ReactionTabHolderView extends FrameLayout {
         bgPaint.setColor(ColorUtils.blendARGB(backgroundColor, backgroundSelectedColor, outlineProgress));
         counterView.setTextColor(textFinalColor);
         drawable.setColorFilter(new PorterDuffColorFilter(textFinalColor, PorterDuff.Mode.MULTIPLY));
+
+        if (outlineProgress == 1f) {
+            overlaySelectorView.setBackground(Theme.createSimpleSelectorRoundRectDrawable((int) radius, Color.TRANSPARENT, ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_chat_inReactionButtonTextSelected), (int) (0.3f * 255))));
+        } else if (outlineProgress == 0) {
+            overlaySelectorView.setBackground(Theme.createSimpleSelectorRoundRectDrawable((int) radius, Color.TRANSPARENT, ColorUtils.setAlphaComponent(backgroundSelectedColor, (int) (0.3f * 255))));
+        }
         invalidate();
     }
 

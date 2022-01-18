@@ -78,8 +78,10 @@ import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.browser.Browser;
+import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BackDrawable;
@@ -87,6 +89,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
+import org.telegram.ui.Components.Paint.Input;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -269,7 +272,14 @@ public class TranslateAlert extends Dialog {
     private boolean noforwards;
     private OnLinkPress onLinkPress = null;
     public TranslateAlert(BaseFragment fragment, Context context, String fromLanguage, String toLanguage, CharSequence text, boolean noforwards, OnLinkPress onLinkPress) {
+        this(fragment, context, -1, null, -1, fromLanguage, toLanguage, text, noforwards, onLinkPress);
+    }
+    public TranslateAlert(BaseFragment fragment, Context context, int currentAccount, TLRPC.InputPeer peer, int msgId, String fromLanguage, String toLanguage, CharSequence text, boolean noforwards, OnLinkPress onLinkPress) {
         super(context, R.style.TransparentDialog);
+
+        if (peer != null) {
+            translateText(currentAccount, peer, msgId, fromLanguage != null && fromLanguage.equals("und") ? null : fromLanguage, toLanguage);
+        }
 
         this.onLinkPress = onLinkPress;
         this.noforwards = noforwards;
@@ -1345,7 +1355,39 @@ public class TranslateAlert extends Dialog {
             }
         }.start();
     }
+    private static void translateText(int currentAccount, TLRPC.InputPeer peer, int msg_id, String from_lang, String to_lang) {
+        TLRPC.TL_messages_translateText req = new TLRPC.TL_messages_translateText();
 
+        req.peer = peer;
+        req.msg_id = msg_id;
+        req.flags |= 1;
+
+        if (from_lang != null) {
+            req.from_lang = from_lang;
+            req.flags |= 4;
+        }
+
+        req.to_lang = to_lang;
+
+        try {
+            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (error, res) -> {
+                // TODO
+            });
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    public static void showAlert(Context context, BaseFragment fragment, int currentAccount, TLRPC.InputPeer peer, int msgId, String fromLanguage, String toLanguage, CharSequence text, boolean noforwards, OnLinkPress onLinkPress) {
+        TranslateAlert alert = new TranslateAlert(fragment, context, currentAccount, peer, msgId, fromLanguage, toLanguage, text, noforwards, onLinkPress);
+        if (fragment != null) {
+            if (fragment.getParentActivity() != null) {
+                fragment.showDialog(alert);
+            }
+        } else {
+            alert.show();
+        }
+    }
     public static void showAlert(Context context, BaseFragment fragment, String fromLanguage, String toLanguage, CharSequence text, boolean noforwards, OnLinkPress onLinkPress) {
         TranslateAlert alert = new TranslateAlert(fragment, context, fromLanguage, toLanguage, text, noforwards, onLinkPress);
         if (fragment != null) {

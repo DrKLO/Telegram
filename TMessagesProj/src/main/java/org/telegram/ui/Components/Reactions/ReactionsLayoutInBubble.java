@@ -51,6 +51,7 @@ public class ReactionsLayoutInBubble {
     private boolean wasDrawn;
     private boolean animateMove;
     private boolean animateWidth;
+    private boolean animateHeight;
     public int positionOffsetY;
     int currentAccount;
     public int height;
@@ -72,8 +73,12 @@ public class ReactionsLayoutInBubble {
     int availableWidth;
     private int lastDrawnWidth;
     boolean attached;
+    private static int animationUniq;
 
     private final static ButtonsComparator comparator = new ButtonsComparator();
+    HashMap<String, ImageReceiver> animatedReactions = new HashMap<>();
+    private int lastDrawTotalHeight;
+    private int animateFromTotalHeight;
 
     public ReactionsLayoutInBubble(ChatMessageCell parentView) {
         this.parentView = parentView;
@@ -151,6 +156,7 @@ public class ReactionsLayoutInBubble {
         height = 0;
         width = 0;
         positionOffsetY = 0;
+        totalHeight = 0;
         if (isEmpty) {
             return;
         }
@@ -192,7 +198,6 @@ public class ReactionsLayoutInBubble {
         lastLineX = currentX;
         width = maxWidth;
         height = currentY + (reactionButtons.size() == 0 ? 0 : AndroidUtilities.dp(26));
-
         drawServiceShaderBackground = false;
     }
 
@@ -255,6 +260,7 @@ public class ReactionsLayoutInBubble {
         lastDrawnX = x;
         lastDrawnY = y;
         lastDrawnWidth = width;
+        lastDrawTotalHeight = totalHeight;
     }
 
     public boolean animateChange() {
@@ -325,6 +331,12 @@ public class ReactionsLayoutInBubble {
             changed = true;
         }
 
+        if (lastDrawTotalHeight != totalHeight) {
+            animateHeight = true;
+            animateFromTotalHeight = lastDrawTotalHeight;
+            changed = true;
+        }
+
         return changed;
     }
 
@@ -335,6 +347,7 @@ public class ReactionsLayoutInBubble {
         outButtons.clear();
         animateMove = false;
         animateWidth = false;
+        animateHeight = false;
         for (int i = 0; i < reactionButtons.size(); i++) {
             reactionButtons.get(i).animationType = 0;
         }
@@ -507,7 +520,28 @@ public class ReactionsLayoutInBubble {
 
         private void drawImage(Canvas canvas) {
             if (drawImage && ((realCount > 1 || !ReactionsEffectOverlay.isPlaying(messageObject.getId(), messageObject.getGroupId(), reaction)) || !isSelected)) {
-                imageReceiver.draw(canvas);
+                ImageReceiver imageReceiver2 = animatedReactions.get(reaction);
+                boolean drawStaticImage = true;
+                if (imageReceiver2 != null) {
+                    imageReceiver2.setAlpha(imageReceiver.getAlpha());
+                    imageReceiver2.setImageCoords(imageReceiver.getImageX() - imageReceiver.getImageWidth() / 2, imageReceiver.getImageY() - imageReceiver.getImageWidth() / 2, imageReceiver.getImageWidth() * 2, imageReceiver.getImageHeight() * 2);
+                    imageReceiver2.draw(canvas);
+                    if (imageReceiver2.getLottieAnimation() != null && imageReceiver2.getLottieAnimation().hasBitmap()) {
+                        drawStaticImage = false;
+                    }
+                    if (imageReceiver2.getLottieAnimation() != null && !imageReceiver2.getLottieAnimation().isRunning()) {
+                        float alpha = imageReceiver2.getAlpha() - 16f / 200;
+                        if (alpha < 0) {
+                            imageReceiver2.onDetachedFromWindow();
+                            animatedReactions.remove(reaction);
+                        } else {
+                            imageReceiver2.setAlpha(alpha);
+                        }
+                    }
+                }
+                if (drawStaticImage) {
+                    imageReceiver.draw(canvas);
+                }
                 lastImageDrawn = true;
             } else {
                 imageReceiver.setAlpha(0);
@@ -633,6 +667,13 @@ public class ReactionsLayoutInBubble {
         return width;
     }
 
+    public float getCurrentTotalHeight(float transitionProgress) {
+        if (animateHeight) {
+            return animateFromTotalHeight * (1f - transitionProgress) + totalHeight * transitionProgress;
+        }
+        return totalHeight;
+    }
+
     private static class ButtonsComparator implements Comparator<ReactionButton> {
 
         int currentAccount;
@@ -661,5 +702,29 @@ public class ReactionsLayoutInBubble {
         for (int i = 0; i < reactionButtons.size(); i++) {
             reactionButtons.get(i).detach();
         }
+        if (!animatedReactions.isEmpty()) {
+            for (ImageReceiver imageReceiver : animatedReactions.values()) {
+                imageReceiver.onDetachedFromWindow();
+            }
+        }
+        animatedReactions.clear();
     }
+
+    public void animateReaction(String reaction) {
+        if (animatedReactions.get(reaction) == null) {
+            ImageReceiver imageReceiver = new ImageReceiver();
+            imageReceiver.setParentView(parentView);
+            imageReceiver.setUniqKeyPrefix(Integer.toString(animationUniq++));
+            if (reaction != null) {
+                TLRPC.TL_availableReaction r = MediaDataController.getInstance(currentAccount).getReactionsMap().get(reaction);
+                if (r != null) {
+                    imageReceiver.setImage(ImageLocation.getForDocument(r.center_icon), "40_40_nolimit", null, "tgs", r, 1);
+                }
+            }
+            imageReceiver.setAutoRepeat(0);
+            imageReceiver.onAttachedToWindow();
+            animatedReactions.put(reaction, imageReceiver);
+        }
+    }
+
 }
