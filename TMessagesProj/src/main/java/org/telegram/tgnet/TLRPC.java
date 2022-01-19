@@ -64,7 +64,7 @@ public class TLRPC {
     public static final int MESSAGE_FLAG_HAS_BOT_ID         = 0x00000800;
     public static final int MESSAGE_FLAG_EDITED             = 0x00008000;
 
-    public static final int LAYER = 136;
+    public static final int LAYER = 137;
 
     public static class TL_stats_megagroupStats extends TLObject {
         public static int constructor = 0xef7ff916;
@@ -36623,7 +36623,7 @@ public class TLRPC {
     }
 
     public static class TL_availableReaction extends TLObject {
-        public static int constructor = 0x21d7c4b;
+        public static int constructor = 0xc077ec01;
 
         public int flags;
         public boolean inactive;
@@ -36634,6 +36634,8 @@ public class TLRPC {
         public Document select_animation;
         public Document activate_animation;
         public Document effect_animation;
+        public Document around_animation;
+        public Document center_icon;
         public int positionInList; //custom
 
         public static TL_availableReaction TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
@@ -36659,6 +36661,12 @@ public class TLRPC {
             select_animation = Document.TLdeserialize(stream, stream.readInt32(exception), exception);
             activate_animation = Document.TLdeserialize(stream, stream.readInt32(exception), exception);
             effect_animation = Document.TLdeserialize(stream, stream.readInt32(exception), exception);
+            if ((flags & 2) != 0) {
+                around_animation = Document.TLdeserialize(stream, stream.readInt32(exception), exception);
+            }
+            if ((flags & 2) != 0) {
+                center_icon = Document.TLdeserialize(stream, stream.readInt32(exception), exception);
+            }
         }
 
         public void serializeToStream(AbstractSerializedData stream) {
@@ -36672,6 +36680,12 @@ public class TLRPC {
             select_animation.serializeToStream(stream);
             activate_animation.serializeToStream(stream);
             effect_animation.serializeToStream(stream);
+            if ((flags & 2) != 0) {
+                around_animation.serializeToStream(stream);
+            }
+            if ((flags & 2) != 0) {
+                center_icon.serializeToStream(stream);
+            }
         }
     }
 
@@ -39858,6 +39872,52 @@ public class TLRPC {
 
         public void serializeToStream(AbstractSerializedData stream) {
             stream.writeInt32(constructor);
+        }
+    }
+
+    public static abstract class messages_TranslatedText extends TLObject {
+
+        public static messages_TranslatedText TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
+            messages_TranslatedText result = null;
+            switch (constructor) {
+                case 0x67ca4737:
+                    result = new TL_messages_translateNoResult();
+                    break;
+                case 0xa214f7d0:
+                    result = new TL_messages_translateResultText();
+                    break;
+            }
+            if (result == null && exception) {
+                throw new RuntimeException(String.format("can't parse magic %x in messages_TranslatedText", constructor));
+            }
+            if (result != null) {
+                result.readParams(stream, exception);
+            }
+            return result;
+        }
+    }
+
+    public static class TL_messages_translateNoResult extends messages_TranslatedText {
+        public static int constructor = 0x67ca4737;
+
+
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+        }
+    }
+
+    public static class TL_messages_translateResultText extends messages_TranslatedText {
+        public static int constructor = 0xa214f7d0;
+
+        public String text;
+
+        public void readParams(AbstractSerializedData stream, boolean exception) {
+            text = stream.readString(exception);
+        }
+
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeString(text);
         }
     }
 
@@ -49476,6 +49536,39 @@ public class TLRPC {
             if ((flags & 1) != 0) {
                 stream.writeString(reaction);
             }
+        }
+    }
+
+    public static class TL_messages_translateText extends TLObject {
+        public static int constructor = 0x24ce6dee;
+
+        public int flags;
+        public InputPeer peer;
+        public int msg_id;
+        public String text;
+        public String from_lang;
+        public String to_lang;
+
+        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+            return messages_TranslatedText.TLdeserialize(stream, constructor, exception);
+        }
+
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt32(flags);
+            if ((flags & 1) != 0) {
+                peer.serializeToStream(stream);
+            }
+            if ((flags & 1) != 0) {
+                stream.writeInt32(msg_id);
+            }
+            if ((flags & 2) != 0) {
+                stream.writeString(text);
+            }
+            if ((flags & 4) != 0) {
+                stream.writeString(from_lang);
+            }
+            stream.writeString(to_lang);
         }
     }
 

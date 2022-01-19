@@ -102,7 +102,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
         ValueAnimator valueAnimator = ValueAnimator.ofFloat(0, 1f);
         valueAnimator.addUpdateListener(animation -> {
             if (activity != null) {
-                activity.onListItemAniamtorTick();
+                activity.onListItemAnimatorTick();
             } else {
                 recyclerListView.invalidate();
             }

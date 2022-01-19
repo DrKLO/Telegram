@@ -14899,6 +14899,12 @@ public class MessagesController extends BaseController implements NotificationCe
                 processUpdates((TLRPC.Updates) response, false);
                 TLRPC.ChatFull full = getChatFull(chatId);
                 if (full != null) {
+                    if (full instanceof TLRPC.TL_chatFull) {
+                        full.flags |= 262144;
+                    }
+                    if (full instanceof TLRPC.TL_channelFull) {
+                        full.flags |= 1073741824;
+                    }
                     full.available_reactions = new ArrayList<>(reactions);
                     getMessagesStorage().updateChatInfo(full, false);
                 }

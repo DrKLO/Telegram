@@ -177,7 +177,7 @@ public class ThemePreviewMessagesCell extends LinearLayout {
                         requestLayout();
                         ReactionsEffectOverlay.removeCurrent(false);
                         if (added) {
-                            ReactionsEffectOverlay.show(fragment, null, cells[1], e.getX(), e.getY(), MediaDataController.getInstance(currentAccount).getDoubleTapReaction(), currentAccount);
+                            ReactionsEffectOverlay.show(fragment, null, cells[1], e.getX(), e.getY(), MediaDataController.getInstance(currentAccount).getDoubleTapReaction(), currentAccount, ReactionsEffectOverlay.LONG_ANIMATION);
                             ReactionsEffectOverlay.startAnimation();
                         }
                         getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {

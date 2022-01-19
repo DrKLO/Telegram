@@ -15,12 +15,14 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.RectF;
-import android.graphics.Region;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.util.Property;
 import android.view.Gravity;
+import android.view.HapticFeedbackConstants;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.animation.OvershootInterpolator;
 import android.widget.FrameLayout;
@@ -55,7 +57,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
     public final static Property<ReactionsContainerLayout, Float> TRANSITION_PROGRESS_VALUE = new Property<ReactionsContainerLayout, Float>(Float.class, "transitionProgress") {
         @Override
         public Float get(ReactionsContainerLayout reactionsContainerLayout) {
-            return reactionsContainerLayout.transitionProgress ;
+            return reactionsContainerLayout.transitionProgress;
         }
 
         @Override
@@ -86,6 +88,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
     private MessageObject messageObject;
     private int currentAccount;
     private long waitingLoadingChatId;
+    ValueAnimator cancelPressedAnimation;
 
     private List<TLRPC.TL_availableReaction> reactionsList = Collections.emptyList();
 
@@ -102,6 +105,13 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
 
     private List<String> triggeredReactions = new ArrayList<>();
     Theme.ResourcesProvider resourcesProvider;
+    private String pressedReaction;
+    private int pressedReactionPosition;
+    private float pressedProgress;
+    private float cancelPressedProgress;
+    private float pressedViewScale;
+    private float otherViewsScale;
+    private boolean clicked;
 
     public ReactionsContainerLayout(@NonNull Context context, int currentAccount, Theme.ResourcesProvider resourcesProvider) {
         super(context);
@@ -114,7 +124,15 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         shadowPad.left = shadowPad.top = shadowPad.right = shadowPad.bottom = AndroidUtilities.dp(7);
         shadow.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_messagePanelShadow), PorterDuff.Mode.MULTIPLY));
 
-        recyclerListView = new RecyclerListView(context);
+        recyclerListView = new RecyclerListView(context) {
+            @Override
+            public boolean drawChild(Canvas canvas, View child, long drawingTime) {
+                if (pressedReaction != null && ((ReactionHolderView) child).currentReaction.equals(pressedReaction)) {
+                    return true;
+                }
+                return super.drawChild(canvas, child, drawingTime);
+            }
+        };
         linearLayoutManager = new LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false);
         recyclerListView.addItemDecoration(new RecyclerView.ItemDecoration() {
             @Override
@@ -155,11 +173,6 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
                 return reactionsList.size();
             }
         });
-        recyclerListView.setOnItemClickListener((view, position) -> {
-            ReactionHolderView h = (ReactionHolderView) view;
-            if (delegate != null)
-                delegate.onReactionClicked(h, h.currentReaction);
-        });
         recyclerListView.addOnScrollListener(new LeftRightShadowsListener());
         recyclerListView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
@@ -177,8 +190,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
                     int dX1 = ch1X - rX;
                     float s1 = SIDE_SCALE + (1f - Math.min(1, -Math.min(dX1, 0f) / ch1.getWidth())) * sideDiff;
                     if (Float.isNaN(s1)) s1 = 1f;
-                    ch1.setScaleX(s1);
-                    ch1.setScaleY(s1);
+                    ((ReactionHolderView) ch1).sideScale = s1;
 
                     View ch2 = recyclerView.getChildAt(recyclerView.getChildCount() - 1);
                     ch2.getLocationInWindow(location);
@@ -187,14 +199,11 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
                     int dX2 = rX + recyclerView.getWidth() - (ch2X + ch2.getWidth());
                     float s2 = SIDE_SCALE + (1f - Math.min(1, -Math.min(dX2, 0f) / ch2.getWidth())) * sideDiff;
                     if (Float.isNaN(s2)) s2 = 1f;
-                    ch2.setScaleX(s2);
-                    ch2.setScaleY(s2);
+                    ((ReactionHolderView) ch2).sideScale = s2;
                 }
                 for (int i = 1; i < recyclerListView.getChildCount() - 1; i++) {
                     View ch = recyclerListView.getChildAt(i);
-                    float sc = 1f;
-                    ch.setScaleX(sc);
-                    ch.setScaleY(sc);
+                    ((ReactionHolderView) ch).sideScale = 1f;
                 }
                 invalidate();
             }
@@ -238,46 +247,24 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         lastVisibleViewsTmp.clear();
         lastVisibleViewsTmp.addAll(lastVisibleViews);
         lastVisibleViews.clear();
-        if (transitionProgress != 0) {
-            int delay = 0;
-            for (int i = 0; i < recyclerListView.getChildCount(); i++) {
-                ReactionHolderView view = (ReactionHolderView) recyclerListView.getChildAt(i);
-                if (view.backupImageView.getImageReceiver().getLottieAnimation() == null) {
-                    continue;
+
+        if (pressedReaction != null) {
+            if (pressedProgress != 1f) {
+                pressedProgress += 16f / 2000f;
+                if (pressedProgress >= 1f) {
+                    pressedProgress = 1f;
                 }
-                if (view.getX() + view.getMeasuredWidth() / 2f > 0 && view.getX() + view.getMeasuredWidth() / 2f < recyclerListView.getWidth()) {
-                    if (!lastVisibleViewsTmp.contains(view)) {
-                        view.play(delay);
-                        delay += 30;
-                    }
-                    lastVisibleViews.add(view);
-                } else if (!view.isEnter) {
-                    view.resetAnimation();
-                }
+                invalidate();
             }
         }
 
         float cPr = (Math.max(CLIP_PROGRESS, Math.min(transitionProgress, 1f)) - CLIP_PROGRESS) / (1f - CLIP_PROGRESS);
         float br = bigCircleRadius * cPr, sr = smallCircleRadius * cPr;
 
-        float cx = LocaleController.isRTL ? bigCircleOffset : getWidth() - bigCircleOffset, cy = getHeight() - getPaddingBottom();
-        int sPad = AndroidUtilities.dp(3);
-        shadow.setBounds((int) (cx - br - sPad * cPr), (int) (cy - br - sPad * cPr), (int) (cx + br + sPad * cPr), (int) (cy + br + sPad * cPr));
-        shadow.draw(canvas);
-        canvas.drawCircle(cx, cy, br, bgPaint);
-
-        cx = LocaleController.isRTL ? bigCircleOffset - bigCircleRadius : getWidth() - bigCircleOffset + bigCircleRadius;
-        cy = getHeight() - smallCircleRadius - sPad;
-        sPad = -AndroidUtilities.dp(1);
-        shadow.setBounds((int) (cx - br - sPad * cPr), (int) (cy - br - sPad * cPr), (int) (cx + br + sPad * cPr), (int) (cy + br + sPad * cPr));
-        shadow.draw(canvas);
-        canvas.drawCircle(cx, cy, sr, bgPaint);
+        pressedViewScale = 1 + 2 * pressedProgress;
+        otherViewsScale = 1 - 0.15f * pressedProgress;
 
         int s = canvas.save();
-        mPath.rewind();
-        mPath.addCircle(LocaleController.isRTL ? bigCircleOffset : getWidth() - bigCircleOffset, getHeight() - getPaddingBottom(), br, Path.Direction.CW);
-        canvas.clipPath(mPath, Region.Op.DIFFERENCE);
-
         float pivotX = LocaleController.isRTL ? getWidth() * 0.125f : getWidth() * 0.875f;
 
         if (transitionProgress <= SCALE_PROGRESS) {
@@ -291,7 +278,8 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         } else {
             lt = (1f - Math.max(CLIP_PROGRESS, transitionProgress));
         }
-        rect.set(getPaddingLeft() + (getWidth() - getPaddingRight()) * lt, getPaddingTop(), (getWidth() - getPaddingRight()) * rt, getHeight() - getPaddingBottom());
+        rect.set(getPaddingLeft() + (getWidth() - getPaddingRight()) * lt, getPaddingTop() + recyclerListView.getMeasuredHeight() * (1f - otherViewsScale), (getWidth() - getPaddingRight()) * rt, getHeight() - getPaddingBottom());
+        radius = rect.height() / 2f;
         shadow.setBounds((int) (getPaddingLeft() + (getWidth() - getPaddingRight() + shadowPad.right) * lt - shadowPad.left), getPaddingTop() - shadowPad.top, (int) ((getWidth() - getPaddingRight() + shadowPad.right) * rt), getHeight() - getPaddingBottom() + shadowPad.bottom);
         shadow.draw(canvas);
         canvas.restoreToCount(s);
@@ -312,18 +300,31 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
             float sc = transitionProgress / SCALE_PROGRESS;
             canvas.scale(sc, sc, pivotX, getHeight() / 2f);
         }
+
+        if (transitionProgress != 0) {
+            int delay = 0;
+            for (int i = 0; i < recyclerListView.getChildCount(); i++) {
+                ReactionHolderView view = (ReactionHolderView) recyclerListView.getChildAt(i);
+                checkPressedProgress(canvas, view);
+                if (view.backupImageView.getImageReceiver().getLottieAnimation() == null) {
+                    continue;
+                }
+                if (view.getX() + view.getMeasuredWidth() / 2f > 0 && view.getX() + view.getMeasuredWidth() / 2f < recyclerListView.getWidth()) {
+                    if (!lastVisibleViewsTmp.contains(view)) {
+                        view.play(delay);
+                        delay += 30;
+                    }
+                    lastVisibleViews.add(view);
+                } else if (!view.isEnter) {
+                    view.resetAnimation();
+                }
+            }
+        }
+
         canvas.clipPath(mPath);
         canvas.translate((LocaleController.isRTL ? -1 : 1) * getWidth() * (1f - transitionProgress), 0);
         super.dispatchDraw(canvas);
 
-        canvas.restoreToCount(s);
-        s = canvas.save();
-        if (LocaleController.isRTL) rt = Math.max(CLIP_PROGRESS, Math.min(1, transitionProgress));
-        else lt = 1f - Math.max(CLIP_PROGRESS, Math.min(1f, transitionProgress));
-        rect.set(getPaddingLeft() + (getWidth() - getPaddingRight()) * lt, getPaddingTop(), (getWidth() - getPaddingRight()) * rt, getHeight() - getPaddingBottom());
-        mPath.rewind();
-        mPath.addRoundRect(rect, radius, radius, Path.Direction.CW);
-        canvas.clipPath(mPath);
         if (leftShadowPaint != null) {
             leftShadowPaint.setAlpha((int) (leftAlpha * transitionProgress * 0xFF));
             canvas.drawRect(rect, leftShadowPaint);
@@ -334,6 +335,73 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         }
         canvas.restoreToCount(s);
 
+        canvas.save();
+        canvas.clipRect(0, rect.bottom, getMeasuredWidth(), getMeasuredHeight());
+        float cx = LocaleController.isRTL ? bigCircleOffset : getWidth() - bigCircleOffset, cy = getHeight() - getPaddingBottom();
+        int sPad = AndroidUtilities.dp(3);
+        shadow.setBounds((int) (cx - br - sPad * cPr), (int) (cy - br - sPad * cPr), (int) (cx + br + sPad * cPr), (int) (cy + br + sPad * cPr));
+        shadow.draw(canvas);
+        canvas.drawCircle(cx, cy, br, bgPaint);
+
+        cx = LocaleController.isRTL ? bigCircleOffset - bigCircleRadius : getWidth() - bigCircleOffset + bigCircleRadius;
+        cy = getHeight() - smallCircleRadius - sPad;
+        sPad = -AndroidUtilities.dp(1);
+        shadow.setBounds((int) (cx - br - sPad * cPr), (int) (cy - br - sPad * cPr), (int) (cx + br + sPad * cPr), (int) (cy + br + sPad * cPr));
+        shadow.draw(canvas);
+        canvas.drawCircle(cx, cy, sr, bgPaint);
+        canvas.restore();
+    }
+
+    private void checkPressedProgress(Canvas canvas, ReactionHolderView view) {
+        if (view.currentReaction.reaction.equals(pressedReaction)) {
+            view.setPivotX(view.getMeasuredWidth() >> 1);
+            view.setPivotY(view.backupImageView.getY() + view.backupImageView.getMeasuredHeight());
+            view.setScaleX(pressedViewScale);
+            view.setScaleY(pressedViewScale);
+
+            if (!clicked) {
+                if (cancelPressedAnimation == null) {
+                    view.pressedBackupImageView.setVisibility(View.VISIBLE);
+                    view.pressedBackupImageView.setAlpha(1f);
+                    if (view.pressedBackupImageView.getImageReceiver().hasBitmapImage()) {
+                        view.backupImageView.setAlpha(0f);
+                    }
+                } else {
+                    view.pressedBackupImageView.setAlpha(1f - cancelPressedProgress);
+                    view.backupImageView.setAlpha(cancelPressedProgress);
+                }
+                if (pressedProgress == 1f) {
+                    clicked = true;
+                    delegate.onReactionClicked(view, view.currentReaction, true);
+                }
+            }
+
+            canvas.save();
+            canvas.translate(recyclerListView.getX() + view.getX(), recyclerListView.getY() + view.getY());
+            canvas.scale(view.getScaleX(), view.getScaleY(), view.getPivotX(), view.getPivotY());
+            view.draw(canvas);
+            canvas.restore();
+        } else {
+            int position = recyclerListView.getChildAdapterPosition(view);
+            float translationX;
+            translationX = (view.getMeasuredWidth() * (pressedViewScale - 1f)) / 3f - view.getMeasuredWidth() * (1f - otherViewsScale) * (Math.abs(pressedReactionPosition - position) - 1);
+
+            if (position < pressedReactionPosition) {
+                view.setPivotX(0);
+                view.setTranslationX(-translationX);
+            } else {
+                view.setPivotX(view.getMeasuredWidth());
+                view.setTranslationX(translationX);
+            }
+            view.setPivotY(view.backupImageView.getY() + view.backupImageView.getMeasuredHeight());
+            view.setScaleX(otherViewsScale);
+            view.setScaleY(otherViewsScale);
+            view.backupImageView.setScaleX(view.sideScale);
+            view.backupImageView.setScaleY(view.sideScale);
+            view.pressedBackupImageView.setVisibility(View.INVISIBLE);
+
+            view.backupImageView.setAlpha(1f);
+        }
     }
 
     @Override
@@ -451,7 +519,9 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
 
     public final class ReactionHolderView extends FrameLayout {
         public BackupImageView backupImageView;
+        public BackupImageView pressedBackupImageView;
         public TLRPC.TL_availableReaction currentReaction;
+        public float sideScale;
         private boolean isEnter;
 
         Runnable playRunnable = new Runnable() {
@@ -460,6 +530,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
                 if (backupImageView.getImageReceiver().getLottieAnimation() != null && !backupImageView.getImageReceiver().getLottieAnimation().isRunning() && !backupImageView.getImageReceiver().getLottieAnimation().isGeneratingCache()) {
                     backupImageView.getImageReceiver().getLottieAnimation().start();
                 }
+
             }
         };
 
@@ -475,7 +546,16 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
             };
             backupImageView.getImageReceiver().setAutoRepeat(0);
             backupImageView.getImageReceiver().setAllowStartLottieAnimation(false);
+
+            pressedBackupImageView = new BackupImageView(context) {
+                @Override
+                public void invalidate() {
+                    super.invalidate();
+                    ReactionsContainerLayout.this.invalidate();
+                }
+            };
             addView(backupImageView, LayoutHelper.createFrame(34, 34, Gravity.CENTER));
+            addView(pressedBackupImageView, LayoutHelper.createFrame(34, 34, Gravity.CENTER));
         }
 
         private void setReaction(TLRPC.TL_availableReaction react) {
@@ -486,6 +566,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
             currentReaction = react;
             SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(currentReaction.activate_animation, Theme.key_windowBackgroundGray, 1.0f);
             backupImageView.getImageReceiver().setImage(ImageLocation.getForDocument(currentReaction.appear_animation), "60_60_nolimit", null, null, svgThumb, 0, "tgs", react, 0);
+            pressedBackupImageView.getImageReceiver().setImage(ImageLocation.getForDocument(currentReaction.select_animation), "60_60_nolimit", null, null, svgThumb, 0, "tgs", react, 0);
         }
 
         @Override
@@ -532,10 +613,80 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
             }
             isEnter = false;
         }
+
+        Runnable longPressRunnable = new Runnable() {
+            @Override
+            public void run() {
+                performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                pressedReactionPosition = reactionsList.indexOf(currentReaction);
+                pressedReaction = currentReaction.reaction;
+                ReactionsContainerLayout.this.invalidate();
+            }
+        };
+        float pressedX, pressedY;
+        boolean pressed;
+        @Override
+        public boolean onTouchEvent(MotionEvent event) {
+            if (cancelPressedAnimation != null) {
+                return false;
+            }
+            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                pressed = true;
+                pressedX = event.getX();
+                pressedY = event.getY();
+                if (sideScale == 1f) {
+                    AndroidUtilities.runOnUIThread(longPressRunnable, ViewConfiguration.getLongPressTimeout());
+                }
+            }
+            float touchSlop =  ViewConfiguration.get(getContext()).getScaledTouchSlop() * 2f;
+            boolean cancelByMove = event.getAction() == MotionEvent.ACTION_MOVE && (Math.abs(pressedX - event.getX()) > touchSlop || Math.abs(pressedY - event.getY()) > touchSlop);
+            if (cancelByMove || event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
+                if (event.getAction() == MotionEvent.ACTION_UP && pressed && (pressedReaction == null || pressedProgress > 0.8f) && delegate != null) {
+                    clicked = true;
+                    delegate.onReactionClicked(this, currentReaction,  pressedProgress > 0.8f);
+                }
+                if (!clicked) {
+                    cancelPressed();
+                }
+
+                AndroidUtilities.cancelRunOnUIThread(longPressRunnable);
+                pressed = false;
+            }
+            return true;
+        }
+    }
+
+    private void cancelPressed() {
+        if (pressedReaction != null) {
+            cancelPressedProgress = 0f;
+            float fromProgress = pressedProgress;
+            cancelPressedAnimation = ValueAnimator.ofFloat(0, 1f);
+            cancelPressedAnimation.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                @Override
+                public void onAnimationUpdate(ValueAnimator valueAnimator) {
+                    cancelPressedProgress = (float) valueAnimator.getAnimatedValue();
+                    pressedProgress = fromProgress * (1f - cancelPressedProgress);
+                    ReactionsContainerLayout.this.invalidate();
+                }
+            });
+            cancelPressedAnimation.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    super.onAnimationEnd(animation);
+                    cancelPressedAnimation = null;
+                    pressedProgress = 0;
+                    pressedReaction = null;
+                    ReactionsContainerLayout.this.invalidate();
+                }
+            });
+            cancelPressedAnimation.setDuration(150);
+            cancelPressedAnimation.setInterpolator(CubicBezierInterpolator.DEFAULT);
+            cancelPressedAnimation.start();
+        }
     }
 
     public interface ReactionsContainerDelegate {
-        void onReactionClicked(View v, TLRPC.TL_availableReaction reaction);
+        void onReactionClicked(View v, TLRPC.TL_availableReaction reaction, boolean longpress);
     }
 
     @Override

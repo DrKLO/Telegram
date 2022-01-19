@@ -4937,7 +4937,6 @@
     <string name="DoubleTapPreviewSenderName">Dino</string>
     <string name="DoubleTapSetting">Quick Reactions</string>
     <string name="DoubleTapPreviewRational">Double tap this message for a quck reaction.</string>
-    <string name="DebugDrawSnowInChat">Snow in chat</string>
     <string name="ActionReactionsChanged">un1 changed chat reactions \nfrom: %1$s \nto: %2$s</string>
     <string name="NobodyViewed">Nobody viewed</string>
     <string name="QrCode">QR Code</string>

@@ -147,7 +147,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class ChatActivityEnterView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate, SizeNotifierFrameLayout.SizeNotifierFrameLayoutDelegate, StickersAlert.StickersAlertDelegate {
+public class ChatActivityEnterView extends ChatBlurredFrameLayout implements NotificationCenter.NotificationCenterDelegate, SizeNotifierFrameLayout.SizeNotifierFrameLayoutDelegate, StickersAlert.StickersAlertDelegate {
 
     public interface ChatActivityEnterViewDelegate {
         void onMessageSend(CharSequence message, boolean notify, int scheduleDate);
@@ -1680,8 +1680,10 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
     @SuppressLint("ClickableViewAccessibility")
     public ChatActivityEnterView(Activity context, SizeNotifierFrameLayout parent, ChatActivity fragment, final boolean isChat, Theme.ResourcesProvider resourcesProvider) {
-        super(context);
+        super(context, fragment);
         this.resourcesProvider = resourcesProvider;
+        this.backgroundColor = getThemedColor(Theme.key_chat_messagePanelBackground);
+        this.drawBlur = false;
 
         smoothKeyboard = isChat && SharedConfig.smoothKeyboard && !AndroidUtilities.isInMultiwindow && (fragment == null || !fragment.isInBubbleMode());
         dotPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -2988,7 +2990,13 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         senderSelectView.setVisibility(GONE);
         frameLayout.addView(senderSelectView, LayoutHelper.createFrame(32, 32, Gravity.BOTTOM | Gravity.LEFT, 10, 8, 10, 8));
 
-        recordedAudioPanel = new FrameLayout(context);
+        recordedAudioPanel = new FrameLayout(context) {
+            @Override
+            public void setVisibility(int visibility) {
+                super.setVisibility(visibility);
+                updateSendAsButton();
+            }
+        };
         recordedAudioPanel.setVisibility(audioToSend == null ? GONE : VISIBLE);
         recordedAudioPanel.setFocusable(true);
         recordedAudioPanel.setFocusableInTouchMode(true);
@@ -3648,7 +3656,12 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         Theme.chat_composeShadowDrawable.setBounds(0, top, getMeasuredWidth(), bottom);
         Theme.chat_composeShadowDrawable.draw(canvas);
         backgroundPaint.setColor(getThemedColor(Theme.key_chat_messagePanelBackground));
-        canvas.drawRect(0, bottom, getWidth(), getHeight(), backgroundPaint);
+        if (SharedConfig.chatBlurEnabled() && chatActivity != null) {
+            AndroidUtilities.rectTmp2.set(0, bottom, getWidth(), getHeight());
+            chatActivity.contentView.drawBlur(canvas, getY(), AndroidUtilities.rectTmp2, backgroundPaint, false);
+        } else {
+            canvas.drawRect(0, bottom, getWidth(), getHeight(), backgroundPaint);
+        }
     }
 
     @Override
@@ -4670,7 +4683,6 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             recordPannelAnimation.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
-                    recordedAudioPanel.setVisibility(GONE);
                     recordedAudioSeekBar.setAlpha(1f);
                     recordedAudioSeekBar.setTranslationX(0);
                     recordedAudioPlayButton.setAlpha(1f);
@@ -4684,6 +4696,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     messageEditText.setAlpha(1f);
                     messageEditText.setTranslationX(0);
                     messageEditText.requestFocus();
+                    recordedAudioPanel.setVisibility(GONE);
 
                 }
             });
@@ -6826,7 +6839,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     }
 
     public void updateSendAsButton() {
-        if (parentFragment == null) {
+        if (parentFragment == null || delegate == null) {
             return;
         }
         TLRPC.ChatFull full = parentFragment.getMessagesController().getChatFull(-dialog_id);
@@ -6844,7 +6857,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             }
         }
         boolean wasVisible = senderSelectView.getVisibility() == View.VISIBLE;
-        boolean isVisible = delegate.getSendAsPeers() != null && defPeer != null && delegate.getSendAsPeers().peers.size() > 1 && !isEditingMessage() && !isRecordingAudioVideo();
+        boolean isVisible = delegate.getSendAsPeers() != null && defPeer != null && delegate.getSendAsPeers().peers.size() > 1 && !isEditingMessage() && !isRecordingAudioVideo() && recordedAudioPanel.getVisibility() != View.VISIBLE;
         int pad = AndroidUtilities.dp(2);
         MarginLayoutParams params = (MarginLayoutParams) senderSelectView.getLayoutParams();
         float sA = isVisible ? 0 : 1;
@@ -6861,6 +6874,8 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
             if (parentFragment.getOtherSameChatsDiff() == 0 && parentFragment.fragmentOpened) {
                 ValueAnimator anim = ValueAnimator.ofFloat(0, 1).setDuration(150);
+                senderSelectView.setTranslationX(sX);
+                messageEditText.setTranslationX(senderSelectView.getTranslationX());
                 anim.addUpdateListener(animation -> {
                     float val = (float) animation.getAnimatedValue();
 

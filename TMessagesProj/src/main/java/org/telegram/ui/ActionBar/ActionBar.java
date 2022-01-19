@@ -47,6 +47,7 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EllipsizeSpanAnimator;
 import org.telegram.ui.Components.FireworksEffect;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.SnowflakesEffect;
 
 import java.util.ArrayList;
@@ -1515,5 +1516,27 @@ public class ActionBar extends FrameLayout {
             color = parentFragment != null ? parentFragment.getThemedColor(key) : null;
         }
         return color != null ? color : Theme.getColor(key);
+    }
+
+    SizeNotifierFrameLayout contentView;
+    boolean blurredBackground;
+
+    public void setDrawBlurBackground(SizeNotifierFrameLayout contentView) {
+        blurredBackground = true;
+        this.contentView = contentView;
+        contentView.blurBehindViews.add(this);
+        setBackground(null);
+    }
+
+    Paint blurScrimPaint = new Paint();
+    Rect rectTmp = new Rect();
+    @Override
+    protected void dispatchDraw(Canvas canvas) {
+        if (blurredBackground) {
+            rectTmp.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
+            blurScrimPaint.setColor(actionBarColor);
+            contentView.drawBlur(canvas, 0, rectTmp, blurScrimPaint, true);
+        }
+        super.dispatchDraw(canvas);
     }
 }
