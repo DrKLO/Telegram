@@ -4,9 +4,7 @@ import android.app.Activity
 import android.content.SharedPreferences
 import android.graphics.Typeface
 import android.os.Build
-import org.telegram.messenger.ApplicationLoader
-import org.telegram.messenger.FileLog
-import org.telegram.messenger.MessagesController
+import org.telegram.messenger.*
 import ua.itaysonlab.catogram.preferences.ktx.boolean
 import ua.itaysonlab.catogram.preferences.ktx.int
 import ua.itaysonlab.catogram.preferences.ktx.string
@@ -97,6 +95,8 @@ object CatogramConfig {
     var disableReactionAnim by sharedPreferences.boolean("cx_disable_reaction_anim", false)
 
     /* CX 4.1.2 */
+    var customChatListTitle by sharedPreferences.string("cx_chat_list_title", LocaleController.getString("WidgetChats", R.string.WidgetChats))
+    var systemFonts by sharedPreferences.boolean("cx_system_fonts", false)
 
     // Emojis
     var loadSystemEmojiFailed = false

@@ -34,6 +34,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
+import android.graphics.Insets;
 import android.graphics.Matrix;
 import android.graphics.Outline;
 import android.graphics.Paint;
@@ -79,7 +80,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
 import android.view.ViewTreeObserver;
+import android.view.WindowInsets;
+import android.view.WindowInsetsAnimation;
 import android.view.WindowManager;
+import android.view.WindowMetrics;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.animation.DecelerateInterpolator;
@@ -93,12 +97,17 @@ import android.widget.Space;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.collection.LongSparseArray;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.core.graphics.ColorUtils;
 import androidx.exifinterface.media.ExifInterface;
+import androidx.core.view.WindowInsetsAnimationCompat;
+import androidx.core.view.WindowInsetsAnimationControllerCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.ChatListItemAnimator;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.GridLayoutManagerFixed;
@@ -109,6 +118,7 @@ import androidx.viewpager.widget.PagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
+import com.google.android.material.animation.AnimationUtils;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AccountInstance;
@@ -287,6 +297,7 @@ import ua.itaysonlab.catogram.CatogramConfig;
 import ua.itaysonlab.catogram.stickers.StickerDownloader;
 import ua.itaysonlab.catogram.translate.TranslateAPI;
 import ua.itaysonlab.catogram.ui.CatogramToasts;
+import ua.itaysonlab.extras.CatogramExtras;
 
 @SuppressWarnings("unchecked")
 public class ChatActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, DialogsActivity.DialogsActivityDelegate, LocationActivity.LocationActivityDelegate, ChatAttachAlertDocumentLayout.DocumentSelectActivityDelegate {
@@ -3770,7 +3781,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             child.measure(MeasureSpec.makeMeasureSpec(widthSize, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(child.getLayoutParams().height, MeasureSpec.EXACTLY));
                         }
                     } else if (child == mentionContainer) {
-                        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) mentionContainer.getLayoutParams();
+                        LayoutParams layoutParams = (LayoutParams) mentionContainer.getLayoutParams();
                         if (mentionsAdapter.isBannedInline()) {
                             child.measure(MeasureSpec.makeMeasureSpec(widthSize, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(heightSize, MeasureSpec.AT_MOST));
                         } else {
@@ -4047,6 +4058,70 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         if (inBubbleMode) {
             contentView.setOccupyStatusBar(false);
         }
+
+        /* CX
+	    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !SharedConfig.smoothKeyboard) {
+		    final SizeNotifierFrameLayout view = contentView;
+		    abstract class E extends WindowInsetsAnimation.Callback {
+			    @RequiresApi(api = Build.VERSION_CODES.R)
+			    public E(int dispatchMode) {
+				    super(dispatchMode);
+			    }
+			    public int finalImeHeight;
+		    }
+		    E c = new E(WindowInsetsAnimation.Callback.DISPATCH_MODE_STOP) {
+			    private int endBottom = 0;
+			    private int upperBound = 0;
+			    private int lowerBound = 0;
+
+			    @NonNull
+			    @Override
+			    public WindowInsetsAnimation.Bounds onStart(@NonNull WindowInsetsAnimation animation, @NonNull WindowInsetsAnimation.Bounds bounds) {
+			    	super.onStart(animation, bounds);
+			    	endBottom = finalImeHeight;
+				    lowerBound = bounds.getLowerBound().bottom;
+			    	upperBound = bounds.getUpperBound().bottom;
+				    return bounds;
+			    }
+
+			    @SuppressLint("RestrictedApi")
+			    @NonNull
+			    @Override
+			    public WindowInsets onProgress(@NonNull WindowInsets insets, @NonNull List<WindowInsetsAnimation> runningAnimations) {
+			    	int newBottom = insets.getInsets(WindowInsets.Type.ime()).bottom;
+			    	float offset;
+			    	/if (endBottom == upperBound) {
+					    offset = AnimationUtils.lerp(
+							    0f,
+							    (float) (-endBottom),
+							    AnimationUtils.LINEAR_OUT_SLOW_IN_INTERPOLATOR.getInterpolation(runningAnimations.get(0).getInterpolatedFraction())
+					    );
+				    } else {/
+			    		offset = AnimationUtils.lerp(
+							    (float) (-newBottom),
+							    0f,
+							    AnimationUtils.LINEAR_INTERPOLATOR.getInterpolation(runningAnimations.get(0).getFraction())
+					    );
+				    //}
+			    	view.setTranslationY(offset);
+			    	return insets;
+			    }
+
+			    private int calculateBottomInWindow(View v) {
+				    WindowMetrics windowMetrics = getParentActivity().getWindowManager().getCurrentWindowMetrics();
+				    Insets insets = windowMetrics.getWindowInsets().getInsetsIgnoringVisibility(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
+				    int screenHeight = windowMetrics.getBounds().height() - (insets.top + insets.bottom);
+				    int[] loc = new int[2];
+				    view.getLocationOnScreen(loc);
+				    return screenHeight - loc[1];
+			    }
+		    };
+		    contentView.setOnApplyWindowInsetsListener((v, insets) -> {
+			    c.finalImeHeight = insets.getInsets(WindowInsets.Type.ime() | WindowInsets.Type.navigationBars() | WindowInsets.Type.mandatorySystemGestures() | WindowInsets.Type.systemGestures()).top;
+			    return insets;
+		    });
+		    contentView.setWindowInsetsAnimationCallback(c);
+	    }*/
 
         contentView.setBackgroundImage(Theme.getCachedWallpaper(), Theme.isWallpaperMotion());
 
@@ -4369,7 +4444,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         if (Math.abs(dx) >= AndroidUtilities.dp(50)) {
                             if (!wasTrackingVibrate) {
                                 try {
-                                    ua.itaysonlab.extras.CatogramExtras.performHapticFeedback(this, HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                                    CatogramExtras.performHapticFeedback(this, HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
                                 } catch (Exception ignore) {
 
                                 }
@@ -6165,7 +6240,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 }
                 ignoreLayout = true;
                 if (reportSpamButton != null && reportSpamButton.getVisibility() == VISIBLE) {
-                    FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) reportSpamButton.getLayoutParams();
+                    LayoutParams layoutParams = (LayoutParams) reportSpamButton.getLayoutParams();
                     layoutParams.width = width;
                     if (addToContactsButton != null && addToContactsButton.getVisibility() == VISIBLE) {
                         reportSpamButton.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), 0);
@@ -6177,7 +6252,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     }
                 }
                 if (addToContactsButton != null && addToContactsButton.getVisibility() == VISIBLE) {
-                    FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) addToContactsButton.getLayoutParams();
+                    LayoutParams layoutParams = (LayoutParams) addToContactsButton.getLayoutParams();
                     layoutParams.width = width;
                     if (reportSpamButton != null && reportSpamButton.getVisibility() == VISIBLE) {
                         addToContactsButton.setPadding(AndroidUtilities.dp(11), 0, AndroidUtilities.dp(4), 0);
@@ -8173,7 +8248,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                 int allWidth = MeasureSpec.getSize(widthMeasureSpec);
-                FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) bottomOverlayChatText.getLayoutParams();
+                LayoutParams layoutParams = (LayoutParams) bottomOverlayChatText.getLayoutParams();
                 layoutParams.width = allWidth;
                 super.onMeasure(widthMeasureSpec, heightMeasureSpec);
             }

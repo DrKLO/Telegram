@@ -3879,28 +3879,28 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
             customDialog.muted = false;
             customDialog.type = 0;
             customDialog.date = date - 60 * 60 * 2;
-            customDialog.verified = false;
-            customDialog.isMedia = true;
-            customDialog.sent = false;
-            dialogs.add(customDialog);
-
-            customDialog = new DialogCell.CustomDialog();
-            customDialog.name = LocaleController.getString("ThemePreviewDialog4", R.string.ThemePreviewDialog4);
-            customDialog.message = LocaleController.getString("ThemePreviewDialogMessage4", R.string.ThemePreviewDialogMessage4);
-            customDialog.id = 3;
-            customDialog.unread_count = 0;
-            customDialog.pinned = false;
-            customDialog.muted = false;
-            customDialog.type = 2;
-            customDialog.date = date - 60 * 60 * 3;
-            customDialog.verified = false;
+            customDialog.verified = true;
             customDialog.isMedia = false;
             customDialog.sent = false;
             dialogs.add(customDialog);
 
             customDialog = new DialogCell.CustomDialog();
-            customDialog.name = LocaleController.getString("ThemePreviewDialog5", R.string.ThemePreviewDialog5);
-            customDialog.message = LocaleController.getString("ThemePreviewDialogMessage5", R.string.ThemePreviewDialogMessage5);
+            customDialog.name = "Qirkly";
+            customDialog.message = LocaleController.getString("CX_ThemePreviewDialogMessage4", R.string.CX_ThemePreviewDialogMessage4);
+            customDialog.id = 3;
+            customDialog.unread_count = 1;
+            customDialog.pinned = false;
+            customDialog.muted = false;
+            customDialog.type = 2;
+            customDialog.date = date - 60 * 60 * 3;
+            customDialog.verified = true;
+            customDialog.isMedia = false;
+            customDialog.sent = false;
+            dialogs.add(customDialog);
+
+            customDialog = new DialogCell.CustomDialog();
+            customDialog.name = "WindowZ414";
+            customDialog.message = LocaleController.getString("CX_ThemePreviewDialogMessage5", R.string.CX_ThemePreviewDialogMessage5);
             customDialog.id = 4;
             customDialog.unread_count = 0;
             customDialog.pinned = false;

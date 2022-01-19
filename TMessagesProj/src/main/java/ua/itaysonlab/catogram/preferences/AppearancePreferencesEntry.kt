@@ -189,7 +189,18 @@ class AppearancePreferencesEntry : BasePreferencesEntry {
                     CatogramConfig.disableReactionAnim = it
                 }
             }
-        }
+            
+	    /*switch {
+                title = LocaleController.getString("CX_SystemFonts", R.string.CX_SystemFonts)
+                summary = LocaleController.getString("CX_SystemFontsDesc", R.string.CX_SystemFontsDesc)
+
+                contract({
+                    return@contract CatogramConfig.systemFonts
+                }) {
+                    CatogramConfig.systemFonts = it
+                }
+            }
+        }*/
 
         category(LocaleController.getString("AS_Header_Notification", R.string.AS_Header_Notification)) {
 

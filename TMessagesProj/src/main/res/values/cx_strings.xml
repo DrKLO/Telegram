@@ -34,5 +34,9 @@
 
     <!-- CX 4.1.2 -->
     <string name="CX_ThemePreviewDialogMessage3">Please test the new update!</string>
+    <string name="CX_ThemePreviewDialogMessage4">Check out this new design :)</string>
+    <string name="CX_ThemePreviewDialogMessage5">thx</string>
     <string name="CX_Extra">Extras</string>
+    <string name="CX_SystemFonts">Use system font</string>
+    <string name="CX_SystemFontsDesc">Don\'t complain about bugs!</string>
 </resources>

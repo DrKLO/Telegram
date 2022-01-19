@@ -1309,10 +1309,11 @@ public class AndroidUtilities {
     }
 
     public static Typeface getTypeface(String assetPath) {
+	Typeface t;//= ua.itaysonlab.catogram.CGFeatureJavaHooks.getTypeface(assetPath);
+	//if (t != null) return t;
         synchronized (typefaceCache) {
             if (!typefaceCache.containsKey(assetPath)) {
                 try {
-                    Typeface t;
                     if (Build.VERSION.SDK_INT >= 26) {
                         Typeface.Builder builder = new Typeface.Builder(ApplicationLoader.applicationContext.getAssets(), assetPath);
                         if (assetPath.contains("medium")) {

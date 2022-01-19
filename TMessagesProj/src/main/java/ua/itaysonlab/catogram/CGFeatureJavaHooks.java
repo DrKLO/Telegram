@@ -4,6 +4,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Typeface;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -131,5 +132,21 @@ public class CGFeatureJavaHooks {
             this.icon = icon;
             this.onClick = onClick;
         }
+    }
+
+    public static Typeface getTypeface(String assetPath) {
+	    if (!CatogramConfig.INSTANCE.getSystemFonts()) return null;
+	    switch (assetPath) {
+                case "fonts/rmediumitalic.ttf":
+                    return Typeface.create("sans-serif-medium", Typeface.BOLD_ITALIC);
+                case "fonts/ritalic.ttf":
+                    return Typeface.create("sans-serif-medium", Typeface.ITALIC);
+                case "fonts/rmono.ttf":
+                    return Typeface.MONOSPACE;
+                case "fonts/mw_bold.ttf":
+                    return Typeface.create("sans-serif", Typeface.BOLD);
+                default:
+                    return Typeface.create("sans-serif-medium", Typeface.NORMAL);
+            }
     }
 }
