@@ -277,4 +277,8 @@
     <string name="CG_Mutual_Contact">mutual contact</string>
     <string name="CG_relaunch">needs restart of app</string>
     <string name="CG_hq_voice">HQ Voice messages</string>
+    <string name="CG_IgnoreArchivedChats_desc">beim hüpfen zum nächsten Kanal</string>
+    <string name="CG_DisableCam">Kamera im Medienmenü deaktivieren</string>
+    <string name="CG_IgnoreArchivedChats">Archivierte Kanäle ignorieren</string>
+    <string name="CG_DisableCam_Desc">(aktivieren, wenn es laggt)</string>
 </resources>
