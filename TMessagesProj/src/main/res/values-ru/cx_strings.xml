@@ -12,7 +12,7 @@
     <string name="CX_HideSendAsChannelDesc">Полезно для маленьких экранов</string>
     <string name="CX_CustomEmoji">Использовать кастомные эмодзи</string>
     <string name="CX_CustomEmojiDesc">Используйте кастомные эмодзи вместо стандартных</string>
-    <string name="CX_SetCustomEmojiFont">Установите кастомные эмодзи</string>
+    <string name="CX_SetCustomEmojiFont">Установить кастомные эмодзи</string>
     <string name="CX_InvalidCustomEmojiTypeface">Неправильный пакет эмодзи!</string>
     <string name="CX_InvalidAccessToken">Неправильный токен бота</string>
     <string name="CX_BotLogin">Вход от имени бота</string>
