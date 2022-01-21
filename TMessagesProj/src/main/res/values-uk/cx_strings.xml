@@ -5,4 +5,7 @@
     <string name="CG_AboutDescX">Форк Catogram</string>
     <string name="CX_TranslateMessagesInfo1">Використовуйте функцію перекладу Telegram замість перекладача Catogram</string>
     <string name="CX_DnD">Заглушити контакти</string>
+    <string name="CX_TitleIsChatsDesc">Як в оригінальному Catogram</string>
+    <string name="CX_HideSendAsChannelDesc">Корисно для маленьких екранів</string>
+    <string name="CX_DisableReactionAnim">Вимкнути анімацію реакції</string>
 </resources>
