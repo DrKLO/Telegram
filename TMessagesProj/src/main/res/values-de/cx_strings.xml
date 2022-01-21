@@ -4,4 +4,29 @@
     <string name="AS_Header_AboutX">Über Catogram X</string>
     <string name="CG_AboutDescX">Catogram Fork</string>
     <string name="CX_TranslateMessagesInfo1">Ersetzt Catogram\'s Übersetzer mit dem offiziellen</string>
+    <string name="CX_OldTranslateUI">Klassische Übersetzungs-UI nutzen</string>
+    <string name="CX_OldTranslateUIDesc">Wenn deaktiviert, sieht der Catogram-Übersetzer aus wie der offizielle</string>
+    <string name="CX_DnD">Stille Kontakte</string>
+    <string name="CX_DnDDesc">Deaktiviert Ton und Vibration von Benachrichtigungen von Kontakten</string>
+    <string name="CX_HideSendAsChannel">\"Als Kanal senden\"-Knopf verstecken</string>
+    <string name="CX_HideSendAsChannelDesc">Nützlich für kleine Bildschirme</string>
+    <string name="CX_CustomEmoji">Eigene Emoji-Schriftart nutzen</string>
+    <string name="CX_CustomEmojiDesc">Benutzt deine Emoji-Schriftart statt Twemoji</string>
+    <string name="CX_SetCustomEmojiFont">Eigene Emoji-Schriftart setzen</string>
+    <string name="CX_InvalidCustomEmojiTypeface">Ungültige Emoji-Schriftart!</string>
+    <string name="CX_InvalidAccessToken">Ungültiger Bot-Token</string>
+    <string name="CX_BotLogin">Als Bot anmelden</string>
+    <string name="CX_DisableReactionAnim">Reaktions-Animation deaktivieren</string>
+    <string name="CX_AllowStorage">Seit Android 11 braucht Catogram X deine Erlaubnis, Nicht-Medien zu sehen.</string>
+    <string name="CX_DBNotEnabled">Für dieses Konto nicht aktiviert</string>
+    <string name="CX_DismissStorageDialog">Um den Dialog dauerhaft zu verstecken, kannst du entweder die Berechtigung geben oder alle Speicherberechtigungen entfernen.</string>
+    <string name="CX_ThemePreviewDialogMessage3">Bitte teste das neue Update!</string>
+    <string name="CX_Extra">Extras</string>
+    <string name="CX_TitleIsChats">Nutze \"Chats\" als Titel für die Chatliste, statt dem App-Name</string>
+    <string name="CX_TitleIsChatsDesc">Wie im originalen Catogram</string>
+    <string name="CX_DisableReactionAnimDesc">(wenn du auf eine Nachricht reagierst)</string>
+    <string name="CX_DB_AccountsHint">Double Bottom erlaubt dir, andere Passcodes für unterschiedliche Accounts einzeln zu setzen.
+\n
+\nUm ein Passcode zu ändern, wähle einen Account, der schon ein Passwort hat.
+\nUm ein Passcode zu entfernen, halte den Eintrag des Accounts.</string>
 </resources>

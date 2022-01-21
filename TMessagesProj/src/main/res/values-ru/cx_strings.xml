@@ -5,17 +5,28 @@
     <string name="CG_AboutDescX">Форк Catogram</string>
     <string name="CX_TranslateMessagesInfo1">Используйте функцию перевода Telegram вместо переводчика Catogram</string>
     <string name="CX_OldTranslateUI">Использовать классический интерфейс переводчика</string>
-    <string name="CX_OldTranslateUIDesc">Если отключено, в переводчике будет использоваться интерфейс от Telegram, хотя будет использоваться переводчик Cartogram</string>
+    <string name="CX_OldTranslateUIDesc">Если отключено, в переводчике будет использоваться интерфейс от Telegram, хотя будет использоваться переводчик Catogram</string>
     <string name="CX_DnD">Заглушить контакты</string>
     <string name="CX_DnDDesc">Отключить звук и вибрацию уведомлений от контактов</string>
     <string name="CX_HideSendAsChannel">Скрыть кнопку отправления от имени канала</string>
     <string name="CX_HideSendAsChannelDesc">Полезно для маленьких экранов</string>
     <string name="CX_CustomEmoji">Использовать кастомные эмодзи</string>
-    <string name="CX_CustomEmojiDesc">Используйте кастомные эмодзи вместо своих</string>
+    <string name="CX_CustomEmojiDesc">Используйте кастомные эмодзи вместо стандартных</string>
     <string name="CX_SetCustomEmojiFont">Установите кастомные эмодзи</string>
     <string name="CX_InvalidCustomEmojiTypeface">Неправильный пакет эмодзи!</string>
     <string name="CX_InvalidAccessToken">Неправильный токен бота</string>
     <string name="CX_BotLogin">Вход от имени бота</string>
     <string name="CX_DisableReactionAnim">Отключить анимацию реакций</string>
-    <string name="CX_DisableReactionAnimDesc">(когда реагируйте на сообщение)</string>
+    <string name="CX_DisableReactionAnimDesc">(во время реакции на сообщение)</string>
+    <string name="CX_TitleIsChatsDesc">Как в оригинальном Catogram</string>
+    <string name="CX_ThemePreviewDialogMessage3">Пожалуйста, протестируйте новое обновление!</string>
+    <string name="CX_DBNotEnabled">Не включено для этого аккаунта</string>
+    <string name="CX_DismissStorageDialog">Чтобы навсегда закрыть диалоговое окно, предоставьте разрешение или снимите все разрешения на хранение данных.</string>
+    <string name="CX_AllowStorage">Из-за изменений, внесенных Google в Android 11+, Catogram X требует ваше разрешение для просмотра немедийных файлов.</string>
+    <string name="CX_TitleIsChats">Используйте \"Чаты\" в качестве названия списка чатов вместо названия приложения</string>
+    <string name="CX_DB_AccountsHint">Двойное Дно позволяет установить пароль для другой учетной записи.
+\n
+\nПри попытке установить пароль для настроенной учетной записи старый пароль будет заменен после повторного ввода.
+\nДлительное нажатие на запись позволяет удалить пароль, снова введя его.</string>
+    <string name="CX_Extra">Дополнительные</string>
 </resources>
