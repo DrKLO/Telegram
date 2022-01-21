@@ -257,5 +257,4 @@
     <string name="CG_RemovedS">Removed successfully</string>
     <string name="CG_CleanOld">Remove old cache (/sdcard/Telegram)</string>
     <string name="CG_Changelog">Changelog</string>
-    <string name="CG_Downloading">Downloading</string>
 </resources>
