@@ -20,6 +20,19 @@
         android:largeHeap="true"
         android:supportsRtl="false"
         android:requestLegacyExternalStorage="true"
-        tools:replace="android:supportsRtl"/>
+        tools:replace="android:supportsRtl">
+
+        <service
+            android:exported="true"
+            android:name=".GcmPushListenerService">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <meta-data android:name="firebase_analytics_collection_deactivated" android:value="true" />
+        <meta-data android:name="google_analytics_adid_collection_enabled" android:value="false" />
+
+    </application>
 
 </manifest>

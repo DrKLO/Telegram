@@ -15,14 +15,15 @@ object Translator {
 
     @JvmStatic
     fun translateText(txt: String?, e: Boolean, callback: (String) -> Unit) {
-        ensureImpl()
-        return impl.translateText(txt, e, callback)
+        return translateTextWithLangInfo(txt, e) { a: String, _: String, _: String ->
+            callback.invoke(a)
+        }
     }
 
     @JvmStatic
     fun translateTextWithLangInfo(txt: String?, e: Boolean, callback: (String /* Text */, String /* From Lang */, String /* To Lang */) -> Unit) {
         ensureImpl()
-        return impl.translateTextWithLangInfo(txt, e, callback)
+        return impl.translateText(txt, e, callback)
     }
 
     @JvmStatic

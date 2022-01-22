@@ -18,8 +18,8 @@ configurations.all {
 dependencies {
     implementation 'com.squareup.okhttp3:okhttp:5.0.0-alpha.2'
     implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.6.10'
-    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2'
-    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.5.2'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2-native-mt'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.5.2-native-mt'
 
     implementation 'androidx.core:core-ktx:1.8.0-alpha03'
     implementation 'androidx.palette:palette-ktx:1.0.0'
@@ -73,8 +73,8 @@ android {
         viewBinding true
     }
 
-    compileSdkVersion 31
-    buildToolsVersion '30.0.3'
+    compileSdkVersion 32
+    buildToolsVersion '32.0.0'
     ndkVersion "21.4.7075529"
 
     defaultConfig.applicationId = "org.nift4.catox"
@@ -94,11 +94,6 @@ android {
                 'src/main/res-launcher',
                 'src/main/res'
         ]
-    }
-
-    dexOptions {
-        jumboMode = true
-        javaMaxHeapSize "2g"
     }
 
     compileOptions {

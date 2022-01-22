@@ -26,6 +26,7 @@
         tools:replace="android:supportsRtl">
 
         <service
+            android:exported="true"
             android:name=".GcmPushListenerService">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
@@ -34,21 +35,6 @@
 
         <meta-data android:name="firebase_analytics_collection_deactivated" android:value="true" />
         <meta-data android:name="google_analytics_adid_collection_enabled" android:value="false" />
-
-        <receiver
-            tools:replace="android:enabled"
-            android:name="com.google.android.gms.measurement.AppMeasurementReceiver"
-            android:enabled="false">
-            <intent-filter>
-                <action android:name="com.google.android.gms.measurement.UPLOAD" />
-            </intent-filter>
-        </receiver>
-
-        <service
-            tools:replace="android:enabled"
-            android:name="com.google.android.gms.measurement.AppMeasurementService"
-            android:enabled="false"
-            android:exported="false" />
 
     </application>
 
