@@ -18,7 +18,6 @@
     <string name="CX_TitleIsChatsDesc">Como no Catogram original</string>
     <string name="CX_DismissStorageDialog">Para descartar permanentemente a caixa de diálogo, conceda a permissão ou conceda todas as permissões de armazenamento.</string>
     <string name="CX_ThemePreviewDialogMessage3">Por favor, teste a nova atualização!</string>
-    <string name="CX_Extra">Extras</string>
     <string name="AdvancedSettingsX">Preferencias do Catogram X</string>
     <string name="CG_AboutDescX">Fork do Catogram</string>
     <string name="CX_OldTranslateUIDesc">Quando desativada, a interface do usuário de tradução será do Telegram, mas o tradutor do Catogram será usado</string>

@@ -21,7 +21,6 @@
     <string name="CX_DBNotEnabled">Für dieses Konto nicht aktiviert</string>
     <string name="CX_DismissStorageDialog">Um den Dialog dauerhaft zu verstecken, kannst du entweder die Berechtigung geben oder alle Speicherberechtigungen entfernen.</string>
     <string name="CX_ThemePreviewDialogMessage3">Bitte teste das neue Update!</string>
-    <string name="CX_Extra">Extras</string>
     <string name="CX_TitleIsChats">Nutze \"Chats\" als Titel für die Chatliste, statt dem App-Name</string>
     <string name="CX_TitleIsChatsDesc">Wie im originalen Catogram</string>
     <string name="CX_DisableReactionAnimDesc">(wenn du auf eine Nachricht reagierst)</string>
