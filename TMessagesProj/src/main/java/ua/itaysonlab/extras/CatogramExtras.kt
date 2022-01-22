@@ -23,6 +23,9 @@ object CatogramExtras {
     val CG_VERSION = "4.1.2"
     val isBeta = true
 
+
+    val secretIdWhitelist = longArrayOf(2118009172, 678206065, 1075308933, 1456078796, 1151889048, 591146748, 885168713, 955757965, 1344005665, 4846560, 478799066, 1249766962)
+
     @JvmField
     var currentAccountBitmap: BitmapDrawable? = null
 

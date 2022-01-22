@@ -36,11 +36,12 @@
     <string name="CX_ThemePreviewDialogMessage3">Please test the new update!</string>
     <string name="CX_ThemePreviewDialogMessage4">Check out this new design :)</string>
     <string name="CX_ThemePreviewDialogMessage5">thx</string>
-    <string name="CX_Extra">Extras</string>
+    <string name="CX_Secrets">Secret menu</string>
     <string name="CX_SystemFonts">Use system font</string>
     <string name="CX_SystemFontsDesc">Don\'t complain about bugs!</string>
-
     <string name="CX_TestBackend">Log in to test servers</string>
     <string name="TFOSS_Proxy">You may need to set up a proxy before you login, in case your country or ISP blocks Telegram</string>
     <string name="TFOSS_SetProxy">SET A PROXY</string>
+    <string name="CX_MagiKeyboard">MagiKeyboard (WIP AF)</string>
+    <string name="CX_MagiKeyboardDesc">Window Inset IME anim</string>
 </resources>

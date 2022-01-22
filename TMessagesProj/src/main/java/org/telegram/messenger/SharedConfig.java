@@ -361,7 +361,6 @@ public class SharedConfig {
             streamMedia = preferences.getBoolean("streamMedia", true);
             saveStreamMedia = preferences.getBoolean("saveStreamMedia", true);
             smoothKeyboard = preferences.getBoolean("smoothKeyboard2", true);
-            if (CatogramConfig.INSTANCE.getMagiKeyboard() && smoothKeyboard) toggleSmoothKeyboard();
             pauseMusicOnRecord = preferences.getBoolean("pauseMusicOnRecord", false);
             chatBlur = preferences.getBoolean("chatBlur", true);
             streamAllVideo = preferences.getBoolean("streamAllVideo", BuildVars.DEBUG_VERSION);

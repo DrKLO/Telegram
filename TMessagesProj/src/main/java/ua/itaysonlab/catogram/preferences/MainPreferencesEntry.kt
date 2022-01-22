@@ -21,6 +21,7 @@ import android.os.Build
 
 import android.app.assist.AssistContent
 import org.telegram.messenger.R
+import org.telegram.messenger.UserConfig
 import java.lang.String
 
 
@@ -61,13 +62,15 @@ class MainPreferencesEntry : BasePreferencesEntry {
                 }
             }
 
-            /*textIcon {
-                title = LocaleController.getString("CX_Extra", R.string.CX_Extra)
-                icon = R.drawable.favorite_outline_28
-                listener = TGKitTextIconRow.TGTIListener {
-                    it.presentFragment(CatogramPreferencesNavigator.createExtra())
+            if (UserConfig.getInstance(UserConfig.selectedAccount).clientUserId in CatogramExtras.secretIdWhitelist) {
+                textIcon {
+                    title = LocaleController.getString("CX_Secrets", R.string.CX_Secrets)
+                    icon = R.drawable.favorite_outline_28
+                    listener = TGKitTextIconRow.TGTIListener {
+                        it.presentFragment(CatogramPreferencesNavigator.createExtra())
+                    }
                 }
-            }*/
+            }
 
             textIcon {
                 title = LocaleController.getString("CG_Updates_Category", R.string.CG_Updates_Category)
