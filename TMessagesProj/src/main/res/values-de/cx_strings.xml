@@ -28,4 +28,14 @@
 \n
 \nUm ein Passcode zu ändern, wähle einen Account, der schon ein Passwort hat.
 \nUm ein Passcode zu entfernen, halte den Eintrag des Accounts.</string>
+    <string name="CX_ThemePreviewDialogMessage4">Schau dir dieses neue Design an :)</string>
+    <string name="CX_SystemFonts">System-Schrift verwenden</string>
+    <string name="CX_SystemFontsDesc">Beschwere dich nicht über Bugs!</string>
+    <string name="CX_TestBackend">An Test-Servern anmelden</string>
+    <string name="TFOSS_Proxy">Eventuell musst du ein Proxy einrichten, bevor du dich anmeldest, in dem Fall dass dein ISP oder dein Land Telegram blockieren</string>
+    <string name="TFOSS_SetProxy">PROXY SETZEN</string>
+    <string name="CX_ThemePreviewDialogMessage5">danke</string>
+    <string name="CX_MagiKeyboardDesc">Window Inset IME-Animation</string>
+    <string name="CX_Secrets">Verstecktes Menü</string>
+    <string name="CX_MagiKeyboard">MagiKeyboard (ALPHA)</string>
 </resources>
