@@ -98,8 +98,9 @@ android {
 
     sourceSets.main {
         res.srcDirs = [
-                'src/main/res',
-                'src/main/res-vkui'
+                'src/main/res-vkui',
+                'src/main/res-launcher',
+                'src/main/res'
         ]
     }
 
