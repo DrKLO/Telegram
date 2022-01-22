@@ -33,4 +33,7 @@
     <string name="TFOSS_SetProxy">УСТАНОВИТЬ ПРОКСИ</string>
     <string name="CX_ThemePreviewDialogMessage5">спс</string>
     <string name="CX_Secrets">Секретное меню</string>
+    <string name="CX_ThemePreviewDialogMessage4">Посмотрите на этот новый дизайн :)</string>
+    <string name="CX_TestBackend">Войти в систему на тестовых серверах</string>
+    <string name="TFOSS_Proxy">Возможно, вам потребуется настроить прокси-сервер перед входом в аккаунт, если ваша страна или провайдер блокируют Telegram</string>
 </resources>
