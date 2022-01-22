@@ -338,4 +338,6 @@
     <string name="CG_IgnoreArchivedChats_desc">while jumping to next channel</string>
     <string name="CG_DisableCam">Disable cam in media attach menu</string>
     <string name="CG_DisableCam_Desc">enable if media attach menu lags</string>
+
+    <string name="CG_ShowDC">Show DC in profile</string>
 </resources>

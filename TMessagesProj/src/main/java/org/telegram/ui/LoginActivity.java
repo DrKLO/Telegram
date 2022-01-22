@@ -1530,14 +1530,14 @@ public class LoginActivity extends BaseFragment {
             addView(textView2, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 0, 28, 0, 10));
 
             TextView textViewProxy = new TextView(context);
-            textViewProxy.setText("You may need to set up a proxy before you login, in case your country or ISP blocks Telegram");
+            textViewProxy.setText(LocaleController.getString("TFOSS_Proxy", R.string.TFOSS_Proxy));
             textViewProxy.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6));
             textViewProxy.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             textViewProxy.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             textViewProxy.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             addView(textViewProxy, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 0, 28, 0, 10));
             TextView addProxyButton = new TextView(context);
-            addProxyButton.setText("SET A PROXY");
+            addProxyButton.setText(LocaleController.getString("TFOSS_SetProxy", R.string.TFOSS_SetProxy));
             addProxyButton.setGravity(Gravity.CENTER);
             addProxyButton.setTextColor(0xffffffff);
             addProxyButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
@@ -1581,7 +1581,7 @@ public class LoginActivity extends BaseFragment {
 
             if (true) {
                 testBackendCheckBox = new CheckBoxCell(context, 2);
-                testBackendCheckBox.setText("Test Backend", "", testBackend, false);
+                testBackendCheckBox.setText(LocaleController.getString("CX_TestBackend", R.string.CX_TestBackend), "", testBackend, false);
                 addView(testBackendCheckBox, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 0, 0, 0, 0));
                 testBackendCheckBox.setOnClickListener(v -> {
                     if (getParentActivity() == null) {

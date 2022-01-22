@@ -34,7 +34,6 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
-import android.graphics.Insets;
 import android.graphics.Matrix;
 import android.graphics.Outline;
 import android.graphics.Paint;
@@ -80,6 +79,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
 import android.view.ViewTreeObserver;
+import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowInsetsAnimation;
 import android.view.WindowManager;
@@ -105,6 +105,9 @@ import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.core.graphics.ColorUtils;
 import androidx.exifinterface.media.ExifInterface;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsAnimationCompat;
 import androidx.core.view.WindowInsetsAnimationControllerCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -118,8 +121,9 @@ import androidx.viewpager.widget.PagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
-import com.google.android.material.animation.AnimationUtils;
-
+import org.nift4.catox.smoothkb.ImeSizeHelper;
+import org.nift4.catox.smoothkb.RootViewDeferringInsetsCallback;
+import org.nift4.catox.smoothkb.TranslateDeferringInsetsAnimationCallback;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
@@ -285,6 +289,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -293,6 +298,7 @@ import java.util.regex.Pattern;
 
 import kotlin.Pair;
 import ua.itaysonlab.catogram.CGFeatureHooks;
+import ua.itaysonlab.catogram.CGFeatureJavaHooks;
 import ua.itaysonlab.catogram.CatogramConfig;
 import ua.itaysonlab.catogram.stickers.StickerDownloader;
 import ua.itaysonlab.catogram.translate.TranslateAPI;
@@ -913,7 +919,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private int blurredViewTopOffset;
     private int blurredViewBottomOffset;
 
-    public void deleteHistory(int dateSelectedStart, int dateSelectedEnd, boolean forAll) {
+
+	public boolean cxMagiKeyboard = false;
+
+	public void deleteHistory(int dateSelectedStart, int dateSelectedEnd, boolean forAll) {
         chatAdapter.frozenMessages.clear();
         for (int i = 0; i < messages.size(); i++) {
             MessageObject messageObject = messages.get(i);
@@ -3042,7 +3051,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     }
                     contentPanTranslation = y;
                     if (chatAttachAlert != null && chatAttachAlert.isShowing()) {
-                        setNonNoveTranslation(y);
+                    	setNonNoveTranslation(y);
                     } else {
                         actionBar.setTranslationY(y);
                         emptyViewContainer.setTranslationY(y / 2);
@@ -4058,70 +4067,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         if (inBubbleMode) {
             contentView.setOccupyStatusBar(false);
         }
-
-        /* CX
-	    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !SharedConfig.smoothKeyboard) {
-		    final SizeNotifierFrameLayout view = contentView;
-		    abstract class E extends WindowInsetsAnimation.Callback {
-			    @RequiresApi(api = Build.VERSION_CODES.R)
-			    public E(int dispatchMode) {
-				    super(dispatchMode);
-			    }
-			    public int finalImeHeight;
-		    }
-		    E c = new E(WindowInsetsAnimation.Callback.DISPATCH_MODE_STOP) {
-			    private int endBottom = 0;
-			    private int upperBound = 0;
-			    private int lowerBound = 0;
-
-			    @NonNull
-			    @Override
-			    public WindowInsetsAnimation.Bounds onStart(@NonNull WindowInsetsAnimation animation, @NonNull WindowInsetsAnimation.Bounds bounds) {
-			    	super.onStart(animation, bounds);
-			    	endBottom = finalImeHeight;
-				    lowerBound = bounds.getLowerBound().bottom;
-			    	upperBound = bounds.getUpperBound().bottom;
-				    return bounds;
-			    }
-
-			    @SuppressLint("RestrictedApi")
-			    @NonNull
-			    @Override
-			    public WindowInsets onProgress(@NonNull WindowInsets insets, @NonNull List<WindowInsetsAnimation> runningAnimations) {
-			    	int newBottom = insets.getInsets(WindowInsets.Type.ime()).bottom;
-			    	float offset;
-			    	/if (endBottom == upperBound) {
-					    offset = AnimationUtils.lerp(
-							    0f,
-							    (float) (-endBottom),
-							    AnimationUtils.LINEAR_OUT_SLOW_IN_INTERPOLATOR.getInterpolation(runningAnimations.get(0).getInterpolatedFraction())
-					    );
-				    } else {/
-			    		offset = AnimationUtils.lerp(
-							    (float) (-newBottom),
-							    0f,
-							    AnimationUtils.LINEAR_INTERPOLATOR.getInterpolation(runningAnimations.get(0).getFraction())
-					    );
-				    //}
-			    	view.setTranslationY(offset);
-			    	return insets;
-			    }
-
-			    private int calculateBottomInWindow(View v) {
-				    WindowMetrics windowMetrics = getParentActivity().getWindowManager().getCurrentWindowMetrics();
-				    Insets insets = windowMetrics.getWindowInsets().getInsetsIgnoringVisibility(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
-				    int screenHeight = windowMetrics.getBounds().height() - (insets.top + insets.bottom);
-				    int[] loc = new int[2];
-				    view.getLocationOnScreen(loc);
-				    return screenHeight - loc[1];
-			    }
-		    };
-		    contentView.setOnApplyWindowInsetsListener((v, insets) -> {
-			    c.finalImeHeight = insets.getInsets(WindowInsets.Type.ime() | WindowInsets.Type.navigationBars() | WindowInsets.Type.mandatorySystemGestures() | WindowInsets.Type.systemGestures()).top;
-			    return insets;
-		    });
-		    contentView.setWindowInsetsAnimationCallback(c);
-	    }*/
 
         contentView.setBackgroundImage(Theme.getCachedWallpaper(), Theme.isWallpaperMotion());
 
@@ -7498,6 +7443,35 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 }
             }
         };
+	    // CX START
+	    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && CatogramConfig.INSTANCE.getMagiKeyboard()) {
+	    	cxMagiKeyboard = true;
+	    	ImeSizeHelper i = new ImeSizeHelper();
+	    	i.v[0] = chatListView;
+	    	i.v[1] = i.ev = chatActivityEnterView;
+		    Window mRootWindow = getParentActivity().getWindow();
+		    View mRootView = mRootWindow.getDecorView().findViewById(android.R.id.content);
+		    mRootView.getViewTreeObserver().addOnGlobalLayoutListener(
+				    () -> {
+					    if (!i.animDone || i.ev.emojiViewVisible) return;
+					    WindowInsetsCompat in0 = ViewCompat.getRootWindowInsets(contentView);
+					    if (in0 == null) return;
+					    Insets in1 = in0.getInsets(WindowInsetsCompat.Type.ime());
+					    Insets in2 = in0.getInsets(WindowInsetsCompat.Type.systemBars());
+					    Insets in = Insets.max(Insets.NONE, Insets.subtract(in1, in2));
+					    for (View v : i.v) {
+					    	if (v != null)
+					    	    v.setTranslationY(in.top - in.bottom);
+					    }
+				    });
+		    final SizeNotifierFrameLayout view = contentView;
+		    final RootViewDeferringInsetsCallback l = new RootViewDeferringInsetsCallback(WindowInsetsCompat.Type.systemBars(), WindowInsetsCompat.Type.ime());
+		    ViewCompat.setOnApplyWindowInsetsListener(view, l);
+		    ViewCompat.setWindowInsetsAnimationCallback(view, l);
+		    ViewCompat.setWindowInsetsAnimationCallback(chatListView, new TranslateDeferringInsetsAnimationCallback(chatListView, WindowInsetsCompat.Type.systemBars(), WindowInsetsCompat.Type.ime(), WindowInsetsAnimationCompat.Callback.DISPATCH_MODE_CONTINUE_ON_SUBTREE, i));
+		    ViewCompat.setWindowInsetsAnimationCallback(chatActivityEnterView, new TranslateDeferringInsetsAnimationCallback(chatActivityEnterView, WindowInsetsCompat.Type.systemBars(), WindowInsetsCompat.Type.ime(), WindowInsetsAnimationCompat.Callback.DISPATCH_MODE_STOP, i));
+	    }
+	    // CX END
         chatActivityEnterView.setDelegate(new ChatActivityEnterView.ChatActivityEnterViewDelegate() {
 
             int lastSize;
@@ -20375,7 +20349,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     }
 
     public void checkAdjustResize() {
-        if (reportType >= 0) {
+        if (reportType >= 0 || cxMagiKeyboard) {
             AndroidUtilities.requestAdjustNothing(getParentActivity(), classGuid);
         } else {
             AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid);

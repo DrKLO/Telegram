@@ -155,6 +155,8 @@ import ua.itaysonlab.catogram.translate.Translator;
 
 public class ChatActivityEnterView extends ChatBlurredFrameLayout implements NotificationCenter.NotificationCenterDelegate, SizeNotifierFrameLayout.SizeNotifierFrameLayoutDelegate, StickersAlert.StickersAlertDelegate {
 
+    public boolean cxWaitKb;
+
     public interface ChatActivityEnterViewDelegate {
         void onMessageSend(CharSequence message, boolean notify, int scheduleDate);
 
@@ -371,7 +373,7 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
     private ImageView expandStickersButton;
     private EmojiView emojiView;
     private AnimatorSet panelAnimation;
-    private boolean emojiViewVisible;
+    public boolean emojiViewVisible;
     private boolean botKeyboardViewVisible;
     private TimerView recordTimerView;
     private FrameLayout audioVideoButtonContainer;
@@ -7716,7 +7718,7 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
             currentPopupContentType = -1;
             if (emojiView != null) {
                 if (show != 2 || AndroidUtilities.usingHardwareInput || AndroidUtilities.isInMultiwindow) {
-                    if (smoothKeyboard && !keyboardVisible && !stickersExpanded) {
+                    if (smoothKeyboard && !keyboardVisible && !stickersExpanded && !(cxWaitKb)) {
                         if (emojiViewVisible = true) {
                             animatingContentType = 0;
                         }
@@ -7992,6 +7994,7 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
     }
 
     private void openKeyboardInternal() {
+        cxWaitKb = false;//CatogramConfig.INSTANCE.getMagiKeyboard();
         showPopup(AndroidUtilities.usingHardwareInput || AndroidUtilities.isInMultiwindow || parentFragment != null && parentFragment.isInBubbleMode() || isPaused ? 0 : 2, 0);
         messageEditText.requestFocus();
         AndroidUtilities.showKeyboard(messageEditText);

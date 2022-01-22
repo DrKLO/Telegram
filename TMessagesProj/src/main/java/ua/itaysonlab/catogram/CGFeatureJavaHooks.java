@@ -5,6 +5,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Typeface;
+import android.os.Build;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,7 +13,11 @@ import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.ScrollView;
 
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
@@ -122,7 +127,11 @@ public class CGFeatureJavaHooks {
         }
     }
 
-    public static class PopupItem {
+    public static boolean isImeOpenMK(View v) {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && ViewCompat.getRootWindowInsets(v) != null && ViewCompat.getRootWindowInsets(v).isVisible(WindowInsetsCompat.Type.ime());
+    }
+
+	public static class PopupItem {
         public String text;
         public int icon;
         public View.OnClickListener onClick;

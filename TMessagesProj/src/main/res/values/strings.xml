@@ -4739,7 +4739,6 @@
     <string name="RemindDayAt">\'Remind on\' MMM d \'at\' HH:mm</string>
     <string name="RemindDayYearAt">\'Remind on\' MMM d yyyy \'at\' HH:mm</string>
     <string name="BotsMenuTitle">Menu</string>
-    <string name="CG_ShowDC">Show DC in profile</string>
     <string name="SwipeToGoNextChannel">Pull up to go to the next unread channel</string>
     <string name="ReleaseToGoNextChannel">Release to go to the next unread channel</string>
     <string name="SwipeToGoNextFolder">Pull up to go to the next unread folder</string>

@@ -52,6 +52,9 @@ dependencies {
     implementation 'com.facebook.rebound:rebound:0.3.8'
 
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
+
+
+    implementation 'androidx.dynamicanimation:dynamicanimation-ktx:1.0.0-alpha03'
 }
 
 //return an api key from a properties file.

@@ -97,6 +97,7 @@ object CatogramConfig {
     /* CX 4.1.2 */
     var customChatListTitle by sharedPreferences.string("cx_chat_list_title", LocaleController.getString("WidgetChats", R.string.WidgetChats))
     var systemFonts by sharedPreferences.boolean("cx_system_fonts", false)
+    var magiKeyboard by sharedPreferences.boolean("cx_magikeyboard", Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
 
     // Emojis
     var loadSystemEmojiFailed = false
