@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- by iTaysonLab -->
-    <string name="AdvancedSettings">Catogram Preferences</string>
-    <string name="AS_Header_Appearance">Appearance</string>
-    <string name="AS_HideUserPhone">Hide phone number</string>
-    <string name="AS_HideUserPhoneSummary">in drawer and settings</string>
-    <string name="AS_NoRounding">Disable number rounding</string>
+    <string name="AdvancedSettings">Preferências do Catogram</string>
+    <string name="AS_Header_Appearance">Aparência</string>
+    <string name="AS_HideUserPhone">Ocultar número de telefone</string>
+    <string name="AS_HideUserPhoneSummary">na barra lateral e configurações</string>
+    <string name="AS_NoRounding">Desabilitar o arredondamento de números</string>
     <string name="AS_NoRoundingSummary">1.2K -&gt; 1234</string>
-    <string name="AS_Vibration">Disable vibration</string>
-    <string name="AS_Header_Fun">Funny things</string>
-    <string name="AS_ForceNY">Force New Year appearance</string>
+    <string name="AS_Vibration">Desativar vibração</string>
+    <string name="AS_Header_Fun">Coisas engraçadas</string>
+    <string name="AS_ForceNY">Forçar aparência de Ano Novo</string>
     <string name="AS_ForceNYSummary">restart application to apply</string>
     <string name="AS_ForcePacman">Force Pacman animation</string>
     <string name="AS_ForcePacmanSummary">when archiving chat</string>
@@ -229,9 +229,10 @@
     <string name="CG_RecentStickers_desc">of recent stickers</string>
     <string name="CG_Without_Authorship">Without authorship</string>
     <string name="CG_Private">This channel is private</string>
-    <string name="CG_ForceClean">Force Clear Telegram Cache</string>
-    <string name="CG_ForceCleanInfo">Use this if you face long \"Calculating…\" when trying to clean cache.\nThis will delete EVERYTHING from your cache - be careful!</string>
-    <string name="CG_SwitchBackend">You\'re going to switch to the test server. Please don\'t press OK if you don\'t know what you\'re doing. You can switch to normal server by pressing \"Switch backend\" in debug menu again.</string>
+    <string name="CG_ForceClean">Forçar a limpeza do cache do Telegram</string>
+    <string name="CG_ForceCleanInfo">Use isso se você enfrentar um longo \"Calculando...\" ao tentar limpar o cache.
+\nIsso excluirá TUDO do seu cache - tenha cuidado!</string>
+    <string name="CG_SwitchBackend">Você vai mudar para o servidor de teste. Por favor, não pressione OK se você não sabe o que está fazendo. Você pode alternar para o servidor normal pressionando Alternar backend no menu de depuração novamente.</string>
     <string name="CG_SB">Switch backend</string>
     <string name="CG_TrLang">Destination language</string>
     <string name="CG_TrLang_English">English</string>
@@ -257,4 +258,28 @@
     <string name="CG_RemovedS">Removed successfully</string>
     <string name="CG_CleanOld">Remove old cache (/sdcard/Telegram)</string>
     <string name="CG_Changelog">Changelog</string>
+    <string name="CG_TrLang_Bosnian">Bosnian</string>
+    <string name="CG_TrLang_Croatian">Croatian</string>
+    <string name="CG_TrLang_Serbian">Serbian</string>
+    <string name="CG_Sleep">Despertador</string>
+    <string name="CG_Sleep_Time">Contagem regressiva do despertador (minutos)</string>
+    <string name="CG_MentionByName">Mencionar pelo nome</string>
+    <string name="CG_MentionByName_Desc">em vez de nome de usuário</string>
+    <string name="CG_StreamVoip">Transmitir VoIP como mídia</string>
+    <string name="CG_StreamVoip_Desc">se ativado, a chamada VoIP será reconhecida como mídia em vez de chamada</string>
+    <string name="CG_TimeOnStick">Ocultar o horário dos stickers na conversa</string>
+    <string name="CG_FwdMenu_NoNotify">Não notifique</string>
+    <string name="CG_FwdMenu_Notify">Notificar</string>
+    <string name="CG_FwdMenu_EnableCaptions">Ativar legendas</string>
+    <string name="CG_FwdMenu_DisableCaptions">Ocultar legendas</string>
+    <string name="CG_Mutual_Contact">contato mútuo</string>
+    <string name="CG_relaunch">é necessário reiniciar o aplicativo</string>
+    <string name="CG_hq_voice">Mensagens de voz em HQ</string>
+    <string name="CG_IgnoreArchivedChats">Ignorar canais arquivados</string>
+    <string name="CG_DisableCam">Desativar câmera no menu de anexação de mídia</string>
+    <string name="CG_DisableCam_Desc">ativar se o menu de anexação de mídia estiver com lag</string>
+    <string name="CG_PlayVideo">Reproduzir vídeo ao clicar no botão de volume</string>
+    <string name="CG_PlayVideo_Desc">Se ligado - quando você pressiona o botão de volume, o vídeo na tela da caixa de diálogo será ativado</string>
+    <string name="CG_NoInternet">Não consigo traduzir. Talvez você esteja offline\?</string>
+    <string name="CG_IgnoreArchivedChats_desc">enquanto pula para o próximo canal</string>
 </resources>
