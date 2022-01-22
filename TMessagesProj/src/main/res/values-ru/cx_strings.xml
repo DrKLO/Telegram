@@ -28,4 +28,9 @@
 \n
 \nПри попытке установить пароль для настроенной учетной записи старый пароль будет заменен после повторного ввода.
 \nДлительное нажатие на запись позволяет удалить пароль, снова введя его.</string>
+    <string name="CX_SystemFonts">Использовать системный шрифт</string>
+    <string name="CX_SystemFontsDesc">Не жалуйтесь на баги!</string>
+    <string name="TFOSS_SetProxy">УСТАНОВИТЬ ПРОКСИ</string>
+    <string name="CX_ThemePreviewDialogMessage5">спс</string>
+    <string name="CX_Secrets">Секретное меню</string>
 </resources>
