@@ -1,2 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources>
+    <string name="AS_Header_AboutX">Sobre o Catogram X</string>
+    <string name="CX_TranslateMessagesInfo1">Use o recurso de tradução do Telegram em vez do tradutor do Catogram</string>
+    <string name="CX_OldTranslateUI">Usar a UI de tradução clássica</string>
+    <string name="CX_DnD">Contatos silenciosos</string>
+    <string name="CX_DnDDesc">Desative o som e a vibração das notificações para contatos</string>
+    <string name="CX_HideSendAsChannel">Ocultar botão enviar como canal</string>
+    <string name="CX_HideSendAsChannelDesc">Útil para telas pequenas</string>
+    <string name="CX_CustomEmoji">Usar fonte de emoji personalizada</string>
+    <string name="CX_SetCustomEmojiFont">Definir fonte de emoji personalizada</string>
+    <string name="CX_InvalidCustomEmojiTypeface">Tipo de letra emoji personalizado inválido!</string>
+    <string name="CX_InvalidAccessToken">Token de bot inválido</string>
+    <string name="CX_BotLogin">Bot login</string>
+    <string name="CX_DisableReactionAnim">Desativar animação de reação</string>
+    <string name="CX_DBNotEnabled">Não ativado para esta conta</string>
+    <string name="CX_TitleIsChats">Use Conversas como título para a lista de conversa, em vez do nome do aplicativo</string>
+    <string name="CX_TitleIsChatsDesc">Como no Catogram original</string>
+    <string name="CX_DismissStorageDialog">Para descartar permanentemente a caixa de diálogo, conceda a permissão ou conceda todas as permissões de armazenamento.</string>
+    <string name="CX_ThemePreviewDialogMessage3">Por favor, teste a nova atualização!</string>
+    <string name="CX_Extra">Extras</string>
+    <string name="AdvancedSettingsX">Preferencias do Catogram X</string>
+    <string name="CG_AboutDescX">Fork do Catogram</string>
+    <string name="CX_OldTranslateUIDesc">Quando desativada, a interface do usuário de tradução será do Telegram, mas o tradutor do Catogram será usado</string>
+    <string name="CX_CustomEmojiDesc">Use fonte de emoji personalizada em vez do emoji do Telegram</string>
+    <string name="CX_DisableReactionAnimDesc">(ao reagir a uma mensagem)</string>
+    <string name="CX_AllowStorage">Devido às alterações introduzidas pelo Google no Android 11+, o Catogram X precisa de sua permissão para ver arquivos que não sejam de mídia.</string>
+    <string name="CX_DB_AccountsHint">O Double Bottom permite definir uma senha para uma conta diferente.
+\n
+\nTentar definir uma senha para uma conta configurada substituirá a mais antiga depois que você a inserir novamente.
+\nPressione e segure uma entrada para remover a senha, digitando-a novamente.</string>
+</resources>
