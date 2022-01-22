@@ -2,6 +2,8 @@
 
 # Catogram X
 Remember the legacy - reviving the best telegram client out there! :)
+## Download where?
+[Stable](https://github.com/CatogramX/CatogramX/releases) or [Beta](https://t.me/s/catoxbeta)?
 ## Community
 We are on Telegram: [News](https://t.me/s/catoxnews) and [Chat](https://t.me/catoxchat)
 ## Credits
