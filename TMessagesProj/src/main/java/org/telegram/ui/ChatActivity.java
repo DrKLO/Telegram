@@ -9916,7 +9916,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 totalPinnedMessagesCount = 0;
                 updatePinnedMessageView(true);
             }
-            getMessagesController().deleteDialog(dialog_id, 1, revoke);
+//            getMessagesController().deleteDialog(dialog_id, 1, revoke);
+            getMessagesController().deleteDialog(dialog_id, 1, revoke, true);
             clearingHistory = false;
             clearHistory(false, null);
             chatAdapter.notifyDataSetChanged();

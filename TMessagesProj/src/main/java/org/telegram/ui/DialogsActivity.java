@@ -6652,12 +6652,14 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             Runnable deleteRunnable = () -> {
                 if (chat != null) {
                     if (ChatObject.isNotInChat(chat)) {
-                        getMessagesController().deleteDialog(dialogId, 0, revoke);
+//                        getMessagesController().deleteDialog(dialogId, 0, revoke);
+                        getMessagesController().deleteDialog(dialogId, 0, revoke, true);
                     } else {
                         getMessagesController().deleteParticipantFromChat(-dialogId, getMessagesController().getUser(getUserConfig().getClientUserId()), null, null, revoke, revoke);
                     }
                 } else {
-                    getMessagesController().deleteDialog(dialogId, 0, revoke);
+//                    getMessagesController().deleteDialog(dialogId, 0, revoke);
+                    getMessagesController().deleteDialog(dialogId, 0, revoke, true);
                     if (user != null && user.bot) {
                         getMessagesController().blockPeer(user.id);
                     }

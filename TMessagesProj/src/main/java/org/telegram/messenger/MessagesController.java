@@ -5227,7 +5227,8 @@ public class MessagesController extends BaseController implements NotificationCe
                     if (error == null) {
                         TLRPC.TL_messages_affectedHistory res = (TLRPC.TL_messages_affectedHistory) response;
                         if (res.offset > 0) {
-                            deleteDialog(did, 0, onlyHistory, max_id_delete_final, revoke, peerFinal, 0);
+//                            deleteDialog(did, 0, onlyHistory, max_id_delete_final, revoke, peerFinal, 0);
+                            deleteDialog(did, 0, onlyHistory, max_id_delete_final, revoke, peerFinal, 0, true);
                         }
                         processNewDifferenceParams(-1, res.pts, -1, res.pts_count);
                         getMessagesStorage().onDeleteQueryComplete(did);
