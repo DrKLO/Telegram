@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<color name="launcher_icon">@android:color/system_accent1_100</color>
+	<color name="launcher_icon_background">@android:color/system_neutral1_800</color>
+</resources>

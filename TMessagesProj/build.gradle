@@ -93,13 +93,8 @@ android {
         }
     }
 
-    lintOptions {
-        disable 'MissingTranslation'
-        disable 'ExtraTranslation'
-        disable 'BlockedPrivateApi'
-    }
 
-    sourceSets.main {
+	sourceSets.main {
         res.srcDirs = [
                 'src/main/res-vkui',
                 'src/main/res-launcher',
@@ -134,12 +129,14 @@ android {
             keyPassword RELEASE_KEY_PASSWORD
         }
     }
+	packagingOptions {
+		resources {
+			excludes += ['DebugProbesKt.bin']
+		}
+	}
 
-    packagingOptions {
-        exclude "DebugProbesKt.bin"
-    }
 
-    buildTypes {
+	buildTypes {
         debug {
             debuggable true
             jniDebuggable true
@@ -376,8 +373,11 @@ android {
             setIgnore(true)
         }
     }
+	lint {
+		disable 'MissingTranslation', 'ExtraTranslation', 'BlockedPrivateApi'
+	}
 
-    defaultConfig {
+	defaultConfig {
         minSdkVersion 21
         targetSdkVersion 30
         versionName "8.5.4"

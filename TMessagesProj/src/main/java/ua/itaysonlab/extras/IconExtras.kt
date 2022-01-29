@@ -9,7 +9,18 @@ object IconExtras {
     enum class Icon(val mf: String) {
         OLD("CG_Icon_Old"),
         ALT_BLUE("CG_Icon_Alt_Blue"),
-        ALT_ORANGE("CG_Icon_Alt_Orange")
+        ALT_ORANGE("CG_Icon_Alt_Orange"),
+        CX_BLACK_REG("CX_Black_Reg"),
+        CX_BLUE_REG("CX_Blue_Reg"),
+        CX_CYAN_REG("CX_Cyan_Reg"),
+        CX_GREEN_REG("CX_Green_Reg"),
+        CX_ORANGE_REG("CX_Orange_Reg"),
+        CX_PINK_REG("CX_Pink_Reg"),
+        CX_PURPLE_REG("CX_Purple_Reg"),
+        CX_RED_REG("CX_Red_Reg"),
+        CX_TAFFY_REG("CX_Taffy_Reg"),
+        CX_YELLOW_REG("CX_Yellow_Reg"),
+        CX_MONET("CX_Monet")
     }
 
     fun setIcon(variant: Int) {

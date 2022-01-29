@@ -44,4 +44,15 @@
     <string name="TFOSS_SetProxy">SET A PROXY</string>
     <string name="CX_MagiKeyboard">MagiKeyboard (WIP AF)</string>
     <string name="CX_MagiKeyboardDesc">Window Inset IME anim</string>
+    <string name="CX_ChangeIcon_Black_Reg">CatoX Black (by Qirkl)</string>
+    <string name="CX_ChangeIcon_Blue_Reg">CatoX Blue (by Qirkl)</string>
+    <string name="CX_ChangeIcon_Cyan_Reg">CatoX Cyan (by Qirkl)</string>
+    <string name="CX_ChangeIcon_Green_Reg">CatoX Green (by Qirkl)</string>
+    <string name="CX_ChangeIcon_Orange_Reg">CatoX Orange (by Qirkl)</string>
+    <string name="CX_ChangeIcon_Pink_Reg">CatoX Pink (by Qirkl)</string>
+    <string name="CX_ChangeIcon_Purple_Reg">CatoX Purple (by Qirkl)</string>
+    <string name="CX_ChangeIcon_Red_Reg">CatoX Red (by Qirkl)</string>
+    <string name="CX_ChangeIcon_Taffy_Reg">CatoX Taffy (by Qirkl)</string>
+    <string name="CX_ChangeIcon_Yellow_Reg">CatoX Yellow (by Qirkl)</string>
+    <string name="CX_ChangeIcon_Monet">CatoX Monet</string>
 </resources>

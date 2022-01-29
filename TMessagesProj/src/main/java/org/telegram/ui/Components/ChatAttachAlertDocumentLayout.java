@@ -879,7 +879,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
                     return true;
                 }
             }
-            showErrorBox(LocaleController.getString("AccessError", R.string.AccessError));
+            showErrorBox(LocaleController.getString("AccessError", R.string.AccessError) + ": " + dir.getAbsolutePath());
             return false;
         }
         File[] files;

@@ -37,13 +37,36 @@ class AppearancePreferencesEntry : BasePreferencesEntry {
                     return@contractIcons listOf(
                             Triple(0, LocaleController.getString("AS_ChangeIcon_Old", R.string.AS_ChangeIcon_Old), R.mipmap.cg_launcher),
                             Triple(1, LocaleController.getString("AS_ChangeIcon_AltBlue", R.string.AS_ChangeIcon_AltBlue), R.mipmap.cg_launcher_alt_blue),
-                            Triple(2, LocaleController.getString("AS_ChangeIcon_AltOrange", R.string.AS_ChangeIcon_AltOrange), R.mipmap.cg_launcher_alt_orange)
+                            Triple(2, LocaleController.getString("AS_ChangeIcon_AltOrange", R.string.AS_ChangeIcon_AltOrange), R.mipmap.cg_launcher_alt_orange),
+                            Triple(3, LocaleController.getString("CX_ChangeIcon_Black_Reg", R.string.CX_ChangeIcon_Black_Reg), R.mipmap.cx_launcher_black_reg),
+                            Triple(4, LocaleController.getString("CX_ChangeIcon_Blue_Reg", R.string.CX_ChangeIcon_Blue_Reg), R.mipmap.cx_launcher_blue_reg),
+                            Triple(5, LocaleController.getString("CX_ChangeIcon_Cyan_Reg", R.string.CX_ChangeIcon_Cyan_Reg), R.mipmap.cx_launcher_cyan_reg),
+                            Triple(6, LocaleController.getString("CX_ChangeIcon_Green_Reg", R.string.CX_ChangeIcon_Green_Reg), R.mipmap.cx_launcher_green_reg),
+                            Triple(7, LocaleController.getString("CX_ChangeIcon_Orange_Reg", R.string.CX_ChangeIcon_Orange_Reg), R.mipmap.cx_launcher_orange_reg),
+                            Triple(8, LocaleController.getString("CX_ChangeIcon_Pink_Reg", R.string.CX_ChangeIcon_Pink_Reg), R.mipmap.cx_launcher_pink_reg),
+                            Triple(9, LocaleController.getString("CX_ChangeIcon_Purple_Reg", R.string.CX_ChangeIcon_Purple_Reg), R.mipmap.cx_launcher_purple_reg),
+                            Triple(10, LocaleController.getString("CX_ChangeIcon_Red_Reg", R.string.CX_ChangeIcon_Red_Reg), R.mipmap.cx_launcher_red_reg),
+                            Triple(11, LocaleController.getString("CX_ChangeIcon_Taffy_Reg", R.string.CX_ChangeIcon_Taffy_Reg), R.mipmap.cx_launcher_taffy_reg),
+                            Triple(12, LocaleController.getString("CX_ChangeIcon_Yellow_Reg", R.string.CX_ChangeIcon_Yellow_Reg), R.mipmap.cx_launcher_yellow_reg),
+                            Triple(13, LocaleController.getString("CX_ChangeIcon_Monet", R.string.CX_ChangeIcon_Monet), R.mipmap.cx_launcher_monet)
                     )
                 }, {
                     return@contractIcons when (CatogramConfig.redesign_iconOption) {
+                        0 -> LocaleController.getString("AS_ChangeIcon_Old", R.string.AS_ChangeIcon_Old)
                         1 -> LocaleController.getString("AS_ChangeIcon_AltBlue", R.string.AS_ChangeIcon_AltBlue)
                         2 -> LocaleController.getString("AS_ChangeIcon_AltOrange", R.string.AS_ChangeIcon_AltOrange)
-                        else -> LocaleController.getString("AS_ChangeIcon_Old", R.string.AS_ChangeIcon_Old)
+                        3 -> LocaleController.getString("CX_ChangeIcon_Black_Reg", R.string.CX_ChangeIcon_Black_Reg)
+                        4 -> LocaleController.getString("CX_ChangeIcon_Blue_Reg", R.string.CX_ChangeIcon_Blue_Reg)
+                        5 -> LocaleController.getString("CX_ChangeIcon_Cyan_Reg", R.string.CX_ChangeIcon_Cyan_Reg)
+                        6 -> LocaleController.getString("CX_ChangeIcon_Green_Reg", R.string.CX_ChangeIcon_Green_Reg)
+                        7 -> LocaleController.getString("CX_ChangeIcon_Orange_Reg", R.string.CX_ChangeIcon_Orange_Reg)
+                        8 -> LocaleController.getString("CX_ChangeIcon_Pink_Reg", R.string.CX_ChangeIcon_Pink_Reg)
+                        9 -> LocaleController.getString("CX_ChangeIcon_Purple_Reg", R.string.CX_ChangeIcon_Purple_Reg)
+                        10 -> LocaleController.getString("CX_ChangeIcon_Red_Reg", R.string.CX_ChangeIcon_Red_Reg)
+                        11 -> LocaleController.getString("CX_ChangeIcon_Taffy_Reg", R.string.CX_ChangeIcon_Taffy_Reg)
+                        12 -> LocaleController.getString("CX_ChangeIcon_Yellow_Reg", R.string.CX_ChangeIcon_Yellow_Reg)
+                        13 -> LocaleController.getString("CX_ChangeIcon_Monet", R.string.CX_ChangeIcon_Monet)
+                        else -> LocaleController.getString("CX_ChangeIcon_Black_Reg", R.string.CX_ChangeIcon_Black_Reg)
                     }
                 }) {
                     CatogramConfig.redesign_iconOption = it

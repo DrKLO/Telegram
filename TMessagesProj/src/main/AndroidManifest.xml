@@ -92,7 +92,7 @@
         android:name=".ApplicationLoader"
         android:allowBackup="false"
         android:hardwareAccelerated="@bool/useHardwareAcceleration"
-        android:icon="@mipmap/cg_launcher_alt_blue"
+        android:icon="@mipmap/cx_launcher_black_reg"
         android:largeHeap="true"
         android:theme="@style/Theme.TMessages.Start"
         android:manageSpaceActivity="org.telegram.ui.ExternalActionActivity"
@@ -215,7 +215,7 @@
                     android:scheme="https" />
             </intent-filter>
             <intent-filter
-                android:icon="@mipmap/cg_launcher_alt_blue"
+                android:icon="@mipmap/cx_launcher_black_reg"
                 android:priority="1">
                 <action android:name="android.intent.action.VIEW" />
 
@@ -226,7 +226,7 @@
             </intent-filter>
 
             <intent-filter
-                android:icon="@mipmap/cg_launcher_alt_blue"
+                android:icon="@mipmap/cx_launcher_black_reg"
                 android:priority="1">
                 <action android:name="android.intent.action.VIEW" />
 
@@ -277,7 +277,7 @@
         </activity-alias>
         <activity-alias
             android:name=".CG_Icon_Alt_Blue"
-            android:enabled="true"
+            android:enabled="false"
             android:icon="@mipmap/cg_launcher_alt_blue"
             android:targetActivity="org.telegram.ui.LaunchActivity">
             <intent-filter>
@@ -292,6 +292,149 @@
             android:enabled="false"
             android:icon="@mipmap/cg_launcher"
             android:targetActivity="org.telegram.ui.LaunchActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.MULTIWINDOW_LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".CX_Black_Reg"
+            android:enabled="true"
+            android:icon="@mipmap/cx_launcher_black_reg"
+            android:targetActivity="org.telegram.ui.LaunchActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.MULTIWINDOW_LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".CX_Blue_Reg"
+            android:enabled="false"
+            android:icon="@mipmap/cx_launcher_blue_reg"
+            android:targetActivity="org.telegram.ui.LaunchActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.MULTIWINDOW_LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".CX_Cyan_Reg"
+            android:enabled="false"
+            android:icon="@mipmap/cx_launcher_cyan_reg"
+            android:targetActivity="org.telegram.ui.LaunchActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.MULTIWINDOW_LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".CX_Green_Reg"
+            android:enabled="false"
+            android:icon="@mipmap/cx_launcher_green_reg"
+            android:targetActivity="org.telegram.ui.LaunchActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.MULTIWINDOW_LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".CX_Orange_Reg"
+            android:enabled="false"
+            android:icon="@mipmap/cx_launcher_orange_reg"
+            android:targetActivity="org.telegram.ui.LaunchActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.MULTIWINDOW_LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".CX_Pink_Reg"
+            android:enabled="false"
+            android:icon="@mipmap/cx_launcher_pink_reg"
+            android:targetActivity="org.telegram.ui.LaunchActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.MULTIWINDOW_LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".CX_Purple_Reg"
+            android:enabled="false"
+            android:icon="@mipmap/cx_launcher_purple_reg"
+            android:targetActivity="org.telegram.ui.LaunchActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.MULTIWINDOW_LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".CX_Red_Reg"
+            android:enabled="false"
+            android:icon="@mipmap/cx_launcher_red_reg"
+            android:targetActivity="org.telegram.ui.LaunchActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.MULTIWINDOW_LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".CX_Taffy_Reg"
+            android:enabled="false"
+            android:icon="@mipmap/cx_launcher_taffy_reg"
+            android:targetActivity="org.telegram.ui.LaunchActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.MULTIWINDOW_LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".CX_Yellow_Reg"
+            android:enabled="false"
+            android:icon="@mipmap/cx_launcher_yellow_reg"
+            android:targetActivity="org.telegram.ui.LaunchActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.MULTIWINDOW_LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".CX_Monet"
+            android:enabled="false"
+            android:icon="@mipmap/cx_launcher_monet"
+            android:targetActivity="org.telegram.ui.LaunchActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
