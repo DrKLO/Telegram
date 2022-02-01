@@ -28,4 +28,14 @@
 \n
 \nTentar definir uma senha para uma conta configurada substituirá a mais antiga depois que você a inserir novamente.
 \nPressione e segure uma entrada para remover a senha, digitando-a novamente.</string>
+    <string name="CX_ThemePreviewDialogMessage4">Confira este novo design :)</string>
+    <string name="CX_ThemePreviewDialogMessage5">Obrigado</string>
+    <string name="CX_SystemFonts">Usar fonte do sistema</string>
+    <string name="CX_SystemFontsDesc">Não reclame de bugs!</string>
+    <string name="CX_Secrets">Menu secreto</string>
+    <string name="CX_TestBackend">Faça login nos servidores de testes</string>
+    <string name="TFOSS_Proxy">Pode ser necessário configurar uma proxy antes de fazer login, caso seu país ou ISP bloqueie o Telegram</string>
+    <string name="TFOSS_SetProxy">DEFINIR UMA PROXY</string>
+    <string name="CX_MagiKeyboard">MagiKeyboard (WIP AF)</string>
+    <string name="CX_MagiKeyboardDesc">Window Inset IME anim</string>
 </resources>

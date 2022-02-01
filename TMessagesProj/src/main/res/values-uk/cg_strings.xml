@@ -88,7 +88,7 @@
     <string name="CG_NewMsgAnim">Анімація нових повідомлень (бета)</string>
     <string name="CG_HideKbdOnScroll">Ховати клавіатуру при прокручуванні</string>
     <string name="CG_NewTabs_NoCounter">Приховати лічильники у вкладок</string>
-    <string name="CG_NewTabs_RemoveAllChats">Приховати вкладку \"Всі чати\"\ [нужен перезапуск]</string>
+    <string name="CG_NewTabs_RemoveAllChats">Приховати вкладку \"Всі чати\"</string>
     <string name="CG_NewTabs_RemoveAllChats_Desc">натисніть на кнопку \"Назад\" на головній сторінці щоб її відкрити</string>
     <string name="CG_NewTabs_Emoticons">Іконка вкладки замість імені [потрібен перезапуск]</string>
     <string name="CG_NewTabs_Emoticons_Desc">це синхронізується через Telegram</string>
@@ -277,4 +277,9 @@
     <string name="CG_Mutual_Contact">взаємний контакт</string>
     <string name="CG_relaunch">needs restart of app</string>
     <string name="CG_hq_voice">HQ Voice messages</string>
+    <string name="CG_DisableCam">Вимкнути камеру в меню вибору фото</string>
+    <string name="CG_DisableCam_Desc">увімкніть якщо це меню гальмує</string>
+    <string name="CG_ShowDC">Показувати дата-центр у профілі</string>
+    <string name="CG_IgnoreArchivedChats">Ігнорувати архівовані канали</string>
+    <string name="CG_IgnoreArchivedChats_desc">при переході до наступного каналу свайпом</string>
 </resources>

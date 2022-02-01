@@ -8,4 +8,12 @@
     <string name="CX_TitleIsChatsDesc">Як в оригінальному Catogram</string>
     <string name="CX_HideSendAsChannelDesc">Корисно для маленьких екранів</string>
     <string name="CX_DisableReactionAnim">Вимкнути анімацію реакції</string>
+    <string name="CX_ChangeIcon_Pink_Reg">CatoX Рожева (від @Qirkl)</string>
+    <string name="CX_ChangeIcon_Purple_Reg">CatoX Фіолетова (вiд @Qirkl)</string>
+    <string name="CX_ChangeIcon_Red_Reg">CatoX Червона (від @Qirkl)</string>
+    <string name="CX_ChangeIcon_Monet">CatoX Тематична</string>
+    <string name="CX_ChangeIcon_Orange_Reg">CatoX Помаранчева (від @Qirkl)</string>
+    <string name="CX_ChangeIcon_Yellow_Reg">CatoX Жовта (від @Qirkl)</string>
+    <string name="CX_ThemePreviewDialogMessage5">дякую</string>
+    <string name="CX_Secrets">Секретне меню</string>
 </resources>

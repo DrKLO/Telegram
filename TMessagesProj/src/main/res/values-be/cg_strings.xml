@@ -1,2 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources>
+    <string name="AdvancedSettings">Наладкi Catogram</string>
+    <string name="AS_Header_Appearance">Знешні выгляд</string>
+    <string name="AS_HideUserPhone">Схаваць нумар тэлефона</string>
+    <string name="AS_HideUserPhoneSummary">У шторцы і наладах</string>
+    <string name="AS_NoRoundingSummary">1.2K -&gt; 1234</string>
+    <string name="AS_Vibration">Адключыць вібрацыю</string>
+    <string name="AS_NoProxyPromo">"Не паказваць  фундатара проксi"</string>
+    <string name="AS_Header_Privacy">Прыватнасць</string>
+    <string name="AS_UserID">ID карыстальніка</string>
+    <string name="AS_GroupID">ID групы</string>
+    <string name="CatogramVersion">Catogram %1$s</string>
+    <string name="AV_ThemeBased">Дынамічная</string>
+    <string name="AS_Header_Categories">Катэгорыі</string>
+    <string name="AS_Header_About">Аб Catogram</string>
+    <string name="CG_ToChannel">Адкрыць афіцыйны канал</string>
+</resources>

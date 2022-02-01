@@ -1,2 +1,52 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources>
+    <string name="CX_InvalidAccessToken">Token bot tidak valid</string>
+    <string name="AdvancedSettingsX">Preferensi Catogram X</string>
+    <string name="AS_Header_AboutX">Tentang Catogram X</string>
+    <string name="CG_AboutDescX">fork dari Catogram</string>
+    <string name="CX_OldTranslateUI">Gunakan UI terjemahan klasik</string>
+    <string name="CX_DnD">Senyapkan kontak</string>
+    <string name="CX_DnDDesc">Matikan suara dan getaran notifikasi untuk kontak</string>
+    <string name="CX_HideSendAsChannel">Sembunyikan tombol kirim sebagai channel</string>
+    <string name="CX_HideSendAsChannelDesc">Berguna untuk layar kecil</string>
+    <string name="CX_CustomEmoji">Gunakan font emoji khusus</string>
+    <string name="CX_CustomEmojiDesc">Gunakan font emoji khusus alih-alih emoji Telegram</string>
+    <string name="CX_SetCustomEmojiFont">Terapkan font emoji khusus</string>
+    <string name="CX_InvalidCustomEmojiTypeface">Jenis huruf emoji khusus tidak valid!</string>
+    <string name="CX_DisableReactionAnim">Matikan animasi reaksi</string>
+    <string name="CX_DisableReactionAnimDesc">(Ketika mengirim pesan reaksi)</string>
+    <string name="CX_AllowStorage">Karena perubahan yang dilakukan oleh Google di Android 11+, Catogram X memerlukan izin Anda untuk melihat file non-media.</string>
+    <string name="CX_DBNotEnabled">Tidak diaktifkan untuk akun berikut</string>
+    <string name="CX_DB_AccountsHint">Double Bottom memungkinkan Anda mengatur kode sandi untuk akun yang berbeda.
+\n
+\nMengatur kata sandi akun yang dikonfigurasi akan mengganti kata sandi yang lama setelah Anda memasukkannya kembali.
+\nTekan lama entri untuk menghapus kode sandi, dengan, sekali lagi, memasukkannya.</string>
+    <string name="CX_TitleIsChats">Gunakan Obrolan sebagai judul untuk daftar obrolan, alih-alih menggunakan nama aplikasi</string>
+    <string name="CX_TitleIsChatsDesc">Seperti di Catogram yang asli</string>
+    <string name="CX_DismissStorageDialog">Untuk mengabaikan dialog secara permanen, berikan izin atau batalkan semua izin penyimpanan.</string>
+    <string name="CX_ThemePreviewDialogMessage3">Silahkan mencoba update terbaru!</string>
+    <string name="CX_ThemePreviewDialogMessage4">Lihat desain baru berikut :)</string>
+    <string name="CX_ThemePreviewDialogMessage5">Trims</string>
+    <string name="CX_SystemFonts">Gunakan font sistem</string>
+    <string name="CX_SystemFontsDesc">Jangan komplain mengenai bug!</string>
+    <string name="CX_TestBackend">Masuk ke server pengetesan</string>
+    <string name="TFOSS_Proxy">Anda mungkin perlu untuk menyiapkan proxy sebelum login, jika negara atau ISP Anda memblokir Telegram</string>
+    <string name="TFOSS_SetProxy">ATUR PROXY</string>
+    <string name="CX_Secrets">Menu Rahasia</string>
+    <string name="CX_MagiKeyboard">MagiKeyboard (WIP AF)</string>
+    <string name="CX_MagiKeyboardDesc">Window Inset IME anim</string>
+    <string name="CX_ChangeIcon_Blue_Reg">CatoX Biru (oleh Qirkl)</string>
+    <string name="CX_ChangeIcon_Cyan_Reg">CatoX Cyan (oleh Qirkl)</string>
+    <string name="CX_ChangeIcon_Orange_Reg">CatoX Jingga (oleh Qirkl)</string>
+    <string name="CX_ChangeIcon_Pink_Reg">CatoX Merah Muda (oleh Qirkl)</string>
+    <string name="CX_ChangeIcon_Purple_Reg">CatoX Ungu (oleh Qirkl)</string>
+    <string name="CX_ChangeIcon_Red_Reg">CatoX Merah (oleh Qirkl)</string>
+    <string name="CX_ChangeIcon_Yellow_Reg">CatoX Kuning (oleh Qirkl)</string>
+    <string name="CX_ChangeIcon_Monet">CatoX Monet</string>
+    <string name="CX_TranslateMessagesInfo1">Gunakan fitur terjemahan Telegram alih-alih terjemahan Catogram</string>
+    <string name="CX_OldTranslateUIDesc">Ketika dinonaktifkan, menggunakan alat penerjemah dari Catogram tetapi dengan tampilan UI dari Telegram</string>
+    <string name="CX_BotLogin">Login dengan bot</string>
+    <string name="CX_ChangeIcon_Black_Reg">CatoX Hitam (oleh Qirkl)</string>
+    <string name="CX_ChangeIcon_Green_Reg">CatoX Hijau (oleh Qirkl)</string>
+    <string name="CX_ChangeIcon_Taffy_Reg">CatoX Taffy (oleh Qirkl)</string>
+</resources>

@@ -1,2 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources>
+    <string name="AS_Header_AboutX">Acerca de Catogram X</string>
+    <string name="CX_TranslateMessagesInfo1">Use la función de traducción de Telegram en lugar del traductor de Catogram</string>
+    <string name="CX_OldTranslateUI">Usar la interfaz de usuario de traducción clásica</string>
+    <string name="CX_DnD">Contactos silenciados</string>
+    <string name="CX_DnDDesc">Deshabilitar sonido y vibración de notificaciones para contactos</string>
+    <string name="CX_HideSendAsChannel">Ocultar el botón de enviar como un canal</string>
+    <string name="CX_HideSendAsChannelDesc">Útil para pantallas pequeñas</string>
+    <string name="CX_CustomEmoji">Usar fuente de emoji personalizada</string>
+    <string name="CX_CustomEmojiDesc">Usar fuente emoji personalizada en lugar de los emojis de Telegram</string>
+    <string name="CX_SetCustomEmojiFont">Establecer fuente de emoji personalizada</string>
+    <string name="CX_InvalidAccessToken">Token del bot no válido</string>
+    <string name="CX_BotLogin">Inicio de sesión de bot</string>
+    <string name="CX_DisableReactionAnim">Desactivar animación de reacción</string>
+    <string name="CX_DisableReactionAnimDesc">(al reaccionar a un mensaje)</string>
+    <string name="CX_OldTranslateUIDesc">Cuando está deshabilitado, se usará la interfaz de usuario de traducción de Telegram pero el traductor de Catogram</string>
+    <string name="CX_InvalidCustomEmojiTypeface">¡El tipo de letra emoji personalizado no es válido!</string>
+    <string name="CX_AllowStorage">Debido a los cambios introducidos por Google en Android 11+, Catogram X necesita su permiso para ver archivos que no son multimedia.</string>
+    <string name="AdvancedSettingsX">Preferencias de Catogram X</string>
+    <string name="CG_AboutDescX">Catogram fork</string>
+    <string name="CX_DBNotEnabled">No habilitado para esta cuenta</string>
+    <string name="CX_DB_AccountsHint">El doble fondo le permite establecer una contraseña para una cuenta diferente.
+\n
+\nAl intentar establecer una contraseña para una cuenta configurada, se sustituirá la anterior después de volver a introducirla.
+\nMantenga pulsada una entrada para eliminar el código de acceso, introduciéndolo de nuevo.</string>
+    <string name="CX_TitleIsChats">Utilizar Chats como título para la lista de chats, en lugar del nombre de la app</string>
+    <string name="CX_TitleIsChatsDesc">Como en el Catogram original</string>
+    <string name="CX_DismissStorageDialog">Para descartar permanentemente el cuadro de diálogo, conceda el permiso o anule la concesión de todos los permisos de almacenamiento.</string>
+    <string name="CX_ThemePreviewDialogMessage3">¡Por favor pruebe la nueva actualización!</string>
+    <string name="CX_ThemePreviewDialogMessage4">Revisa este nuevo diseño :)</string>
+    <string name="CX_ThemePreviewDialogMessage5">gracias</string>
+    <string name="CX_SystemFonts">Usar fuente del sistema</string>
+    <string name="CX_SystemFontsDesc">¡No te quejes de los errores!</string>
+    <string name="CX_TestBackend">Inicia sesión para probar los servidores</string>
+    <string name="TFOSS_Proxy">Es posible que tengas que configurar un proxy antes de iniciar sesión, en caso de que tu país o ISP bloquee Telegram</string>
+    <string name="TFOSS_SetProxy">ESTABLECER UN PROXY</string>
+    <string name="CX_Secrets">Menú secreto</string>
+    <string name="CX_MagiKeyboard">MagiKeyboard (WIP AF)</string>
+    <string name="CX_MagiKeyboardDesc">Window Inset IME anim</string>
+</resources>

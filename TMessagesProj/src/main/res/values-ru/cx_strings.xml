@@ -17,23 +17,36 @@
     <string name="CX_InvalidAccessToken">Неправильный токен бота</string>
     <string name="CX_BotLogin">Вход от имени бота</string>
     <string name="CX_DisableReactionAnim">Отключить анимацию реакций</string>
-    <string name="CX_DisableReactionAnimDesc">(во время реакции на сообщение)</string>
+    <string name="CX_DisableReactionAnimDesc">Во время реакции на сообщение</string>
     <string name="CX_TitleIsChatsDesc">Как в оригинальном Catogram</string>
     <string name="CX_ThemePreviewDialogMessage3">Пожалуйста, протестируйте новое обновление!</string>
     <string name="CX_DBNotEnabled">Не включено для этого аккаунта</string>
     <string name="CX_DismissStorageDialog">Чтобы навсегда закрыть диалоговое окно, предоставьте разрешение или снимите все разрешения на хранение данных.</string>
-    <string name="CX_AllowStorage">Из-за изменений, внесенных Google в Android 11+, Catogram X требует ваше разрешение для просмотра немедийных файлов.</string>
+    <string name="CX_AllowStorage">Из-за изменений, внесённых Google в Android 11+, Catogram X требует ваше разрешение для просмотра немедийных файлов.</string>
     <string name="CX_TitleIsChats">Используйте \"Чаты\" в качестве названия списка чатов вместо названия приложения</string>
-    <string name="CX_DB_AccountsHint">Двойное Дно позволяет установить пароль для другой учетной записи.
+    <string name="CX_DB_AccountsHint">Двойное Дно позволяет установить пароль для другой учётной записи.
 \n
-\nПри попытке установить пароль для настроенной учетной записи старый пароль будет заменен после повторного ввода.
+\nПри попытке установить пароль для настроенной учётной записи старый пароль будет заменён после повторного ввода.
 \nДлительное нажатие на запись позволяет удалить пароль, снова введя его.</string>
     <string name="CX_SystemFonts">Использовать системный шрифт</string>
     <string name="CX_SystemFontsDesc">Не жалуйтесь на баги!</string>
     <string name="TFOSS_SetProxy">УСТАНОВИТЬ ПРОКСИ</string>
     <string name="CX_ThemePreviewDialogMessage5">спс</string>
     <string name="CX_Secrets">Секретное меню</string>
-    <string name="CX_ThemePreviewDialogMessage4">Посмотрите на этот новый дизайн :)</string>
+    <string name="CX_ThemePreviewDialogMessage4">Посмотри на этот новый дизайн :)</string>
     <string name="CX_TestBackend">Войти в систему на тестовых серверах</string>
-    <string name="TFOSS_Proxy">Возможно, вам потребуется настроить прокси-сервер перед входом в аккаунт, если ваша страна или провайдер блокируют Telegram</string>
+    <string name="TFOSS_Proxy">Возможно, вам потребуется настроить прокси перед входом в аккаунт, если ваша страна или провайдер блокируют Telegram</string>
+    <string name="CX_MagiKeyboard">MagiKeyboard (Бета)</string>
+    <string name="CX_MagiKeyboardDesc">IME-Анимация при вставке окна</string>
+    <string name="CX_ChangeIcon_Pink_Reg">CatoX Розовая (от @Qirkl)</string>
+    <string name="CX_ChangeIcon_Purple_Reg">CatoX Фиолетовая (от @Qirkl)</string>
+    <string name="CX_ChangeIcon_Red_Reg">CatoX Красная (от @Qirkl)</string>
+    <string name="CX_ChangeIcon_Monet">CatoX Тематическая</string>
+    <string name="CX_ChangeIcon_Green_Reg">CatoX Зелёная (от @Qirkl)</string>
+    <string name="CX_ChangeIcon_Orange_Reg">CatoX Оранжевая (от @Qirkl)</string>
+    <string name="CX_ChangeIcon_Yellow_Reg">CatoX Жёлтая (от @Qirkl)</string>
+    <string name="CX_ChangeIcon_Black_Reg">CatoX Чёрная (от @Qirkl)</string>
+    <string name="CX_ChangeIcon_Blue_Reg">CatoX Голубая (от @Qirkl)</string>
+    <string name="CX_ChangeIcon_Cyan_Reg">CatoX Сине-зелёная (от @Qirkl)</string>
+    <string name="CX_ChangeIcon_Taffy_Reg">CatoX Ирисочная (от @Qirkl)</string>
 </resources>

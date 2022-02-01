@@ -4,4 +4,16 @@
     <string name="AS_Header_AboutX">аб Catogram X</string>
     <string name="CG_AboutDescX">Форк Catogram</string>
     <string name="CX_TranslateMessagesInfo1">Выкарыстоўвайце функцыю перакладу Telegram замест перакладчыка Catogram</string>
+    <string name="CX_HideSendAsChannelDesc">Карысна для маленькіх экранаў</string>
+    <string name="CX_TitleIsChatsDesc">Як у арыгінальным Catogram</string>
+    <string name="TFOSS_SetProxy">УСТАНАВІЦЬ ПРОКСI</string>
+    <string name="CX_ThemePreviewDialogMessage5">дзякуй</string>
+    <string name="CX_Secrets">Сакрэтнае меню</string>
+    <string name="CX_ChangeIcon_Yellow_Reg">CatoX Жоўтая (ад @Qirkl)</string>
+    <string name="CX_ChangeIcon_Green_Reg">CatoX Зялёная (ад @Qirkl)</string>
+    <string name="CX_ChangeIcon_Orange_Reg">CatoX Аранжавая (ад @Qirkl)</string>
+    <string name="CX_ChangeIcon_Purple_Reg">CatoX Фіялетавая (ад @Qirkl)</string>
+    <string name="CX_ChangeIcon_Red_Reg">CatoX Чырвоная (ад @Qirkl)</string>
+    <string name="CX_ChangeIcon_Monet">CatoX Тэматычная</string>
+    <string name="CX_ChangeIcon_Pink_Reg">CatoX Ружовая (ад @Qirkl)</string>
 </resources>

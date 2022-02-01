@@ -1,2 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources>
+    <string name="AdvancedSettingsX">Preferințe Catogram X</string>
+    <string name="AS_Header_AboutX">Despre Catogram X</string>
+    <string name="CX_TranslateMessagesInfo1">Utilizați traducerea Telegram în loc de traducerea Catogram</string>
+    <string name="CX_OldTranslateUI">Utilizați interfața clasică de traducere</string>
+    <string name="CX_DnD">Contacte Silențioase</string>
+    <string name="CX_DnDDesc">Dezactivați sunetul și vibrația notificărilor pentru contacte</string>
+    <string name="CX_HideSendAsChannel">Ascundeți butonul de trimitere ca canal</string>
+    <string name="CX_HideSendAsChannelDesc">Util pentru ecrane mici</string>
+    <string name="CX_CustomEmoji">Utilizați font de emoji personalizat</string>
+    <string name="CX_SetCustomEmojiFont">Setați font de emoji personalizat</string>
+    <string name="CX_InvalidCustomEmojiTypeface">tipografie invalidă de emoji-uri personalizate!</string>
+    <string name="CX_InvalidAccessToken">token robot invalid</string>
+    <string name="CX_BotLogin">autentificare robot</string>
+    <string name="CX_DisableReactionAnim">Dezactivați animația pentru reacții</string>
+    <string name="CX_DBNotEnabled">Nu este activat pentru acest cont</string>
+    <string name="CX_TitleIsChats">Utilizați Chat-uri ca titlu pentru lista de chat, în loc de numele aplicației</string>
+    <string name="CX_TitleIsChatsDesc">Ca în Catogram-ul original</string>
+    <string name="CX_DismissStorageDialog">Pentru a închide definitiv dialogul, acordați permisiunea sau anulați toate permisiunile de stocare.</string>
+    <string name="CX_ThemePreviewDialogMessage3">Te rog să testezi noul update!</string>
+    <string name="CX_ThemePreviewDialogMessage4">Aruncă o privire pe acest nou design :)</string>
+    <string name="CX_ThemePreviewDialogMessage5">mulțumesc</string>
+    <string name="CX_SystemFonts">Utilizați fontul de sistem</string>
+    <string name="CX_SystemFontsDesc">Nu te plânge de bug-uri!</string>
+    <string name="TFOSS_Proxy">Poate fi necesar să configurați un proxy înainte de a vă autentifica, în caz dacă țara sau ISP-ul dumneavoastră blochează Telegram</string>
+    <string name="CX_TestBackend">Autentificare la serverele de test</string>
+    <string name="TFOSS_SetProxy">SETAȚI UN PROXY</string>
+    <string name="CX_Secrets">Meniul Secret</string>
+    <string name="CX_OldTranslateUIDesc">Când este dezactivat, interfața de traducere Telegram dar Traducerea Catogram va fi utilizată</string>
+    <string name="CX_CustomEmojiDesc">Utilizați font de emoji personalizat în loc de emoji-urile telegram</string>
+    <string name="CX_DisableReactionAnimDesc">(când reacționați la un mesaj)</string>
+    <string name="CX_AllowStorage">Datorită modificărilor introduse de Google în Android 11+, Catogram X are nevoie de permisiunea dumneavoastră pentru a vedea fișierele non-media.</string>
+    <string name="CX_DB_AccountsHint">Double Bottom vă permite să setați o parolă pentru un alt cont.
+\n
+\nÎncercarea de a seta o parolă pentru un cont configurat îl va înlocui pe cel mai vechi după ce l-ați reintrodus.
+\nApăsați lung pe o intrare pentru a elimina parola, introducând-o din nou.</string>
+</resources>
