@@ -8,10 +8,10 @@
     <string name="AS_NoRounding">Отключить округление чисел</string>
     <string name="AS_NoRoundingSummary">1.2K -&gt; 1234</string>
     <string name="AS_Vibration">Отключить вибрацию</string>
-    <string name="AS_Header_Fun">Веселые вещи</string>
-    <string name="AS_ForceNY">Форсировать стиль Нового года</string>
+    <string name="AS_Header_Fun">Забавные штуки</string>
+    <string name="AS_ForceNY">Принудительный стиль Нового года</string>
     <string name="AS_ForceNYSummary">Перезапустите приложение для применения</string>
-    <string name="AS_ForcePacman">Форсировать анимацию Pacman</string>
+    <string name="AS_ForcePacman">Принудительная анимация Pacman</string>
     <string name="AS_ForcePacmanSummary">При архивации чата</string>
     <string name="AS_Header_Privacy">Приватность</string>
     <string name="AS_NoProxyPromo">Не показывать спонсора прокси</string>
@@ -50,7 +50,7 @@
     <string name="AS_Filters_Count">Показывать количество чатов в диалоге</string>
     <string name="AS_Filters_Count_Desc">Вместо количества непрочитанных сообщений</string>
     <string name="AS_Filters_THint">Показывать подсказку меню</string>
-    <string name="AS_Filters_THintDesc">На субзаголовке тулбара</string>
+    <string name="AS_Filters_THintDesc">На подзаголовке тулбара</string>
     <string name="CG_Filters_GenericHint">Это значение будет сохранено.</string>
     <string name="CG_Filters_ToolbarHint">Удерживайте для изменения фильтра</string>
     <string name="CG_Filters_AlsoFABHint">Вы также можете изменить фильтр удерживая по плавающей кнопке \"Написать\".</string>
