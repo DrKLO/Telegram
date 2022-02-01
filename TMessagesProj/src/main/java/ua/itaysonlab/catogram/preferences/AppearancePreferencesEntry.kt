@@ -222,8 +222,8 @@ class AppearancePreferencesEntry : BasePreferencesEntry {
                 }) {
                     CatogramConfig.systemFonts = it
                 }
-            }
-        }*/
+            }*/
+        }
 
         category(LocaleController.getString("AS_Header_Notification", R.string.AS_Header_Notification)) {
 
