@@ -395,12 +395,12 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
                         textureView.scaleType = SCALE_TYPE_FIT;
                     } else if (showingInFullscreen) {
                         textureView.scaleType = SCALE_TYPE_FIT;
-                    } else if (parentContainer.inFullscreenMode && !showingInFullscreen) {
+                    } else if (parentContainer.inFullscreenMode) {
                         textureView.scaleType = SCALE_TYPE_FILL;
-                    } else if (!parentContainer.inFullscreenMode) {
-                        textureView.scaleType = participant.presentation ? SCALE_TYPE_FIT : SCALE_TYPE_ADAPTIVE;
-                    } else {
+                    } else if (participant.presentation) {
                         textureView.scaleType = SCALE_TYPE_FIT;
+                    } else {
+                        textureView.scaleType = SCALE_TYPE_ADAPTIVE;
                     }
                     checkScale = false;
                 }
@@ -1004,11 +1004,11 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
 
             if (participant.participant.self && !participant.presentation && VoIPService.getSharedInstance() != null) {
                 textureView.renderer.setMirror(VoIPService.getSharedInstance().isFrontFaceCamera());
-                textureView.renderer.setRotateTextureWitchScreen(true);
+                textureView.renderer.setRotateTextureWithScreen(true);
                 textureView.renderer.setUseCameraRotation(true);
             } else {
                 textureView.renderer.setMirror(false);
-                textureView.renderer.setRotateTextureWitchScreen(true);
+                textureView.renderer.setRotateTextureWithScreen(true);
                 textureView.renderer.setUseCameraRotation(false);
             }
             textureView.updateRotation();

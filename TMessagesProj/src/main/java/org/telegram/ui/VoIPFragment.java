@@ -558,7 +558,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         callingUserTextureView = new VoIPTextureView(context, false, true, false, false);
         callingUserTextureView.renderer.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FIT);
         callingUserTextureView.renderer.setEnableHardwareScaler(true);
-        callingUserTextureView.scaleType = VoIPTextureView.SCALE_TYPE_NONE;
+        callingUserTextureView.scaleType = VoIPTextureView.SCALE_TYPE_FIT;
    //     callingUserTextureView.attachBackgroundRenderer();
 
         frameLayout.addView(callingUserPhotoView);

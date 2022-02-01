@@ -488,7 +488,36 @@ public class ActionBar extends FrameLayout {
         actionMode = new ActionBarMenu(getContext(), this) {
             @Override
             public void setBackgroundColor(int color) {
-                super.setBackgroundColor(actionModeColor = color);
+                actionModeColor = color;
+                if (!blurredBackground) {
+                    super.setBackgroundColor(actionModeColor);
+                }
+            }
+
+            @Override
+            protected void dispatchDraw(Canvas canvas) {
+                if (blurredBackground) {
+                    rectTmp.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
+                    blurScrimPaint.setColor(actionModeColor);
+                    contentView.drawBlur(canvas, 0, rectTmp, blurScrimPaint, true);
+                }
+                super.dispatchDraw(canvas);
+            }
+
+            @Override
+            protected void onAttachedToWindow() {
+                super.onAttachedToWindow();
+                if (contentView != null) {
+                    contentView.blurBehindViews.add(this);
+                }
+            }
+
+            @Override
+            protected void onDetachedFromWindow() {
+                super.onDetachedFromWindow();
+                if (contentView != null) {
+                    contentView.blurBehindViews.remove(this);
+                }
             }
         };
         actionMode.isActionMode = true;
@@ -504,17 +533,17 @@ public class ActionBar extends FrameLayout {
         actionMode.setLayoutParams(layoutParams);
         actionMode.setVisibility(INVISIBLE);
 
-        if (occupyStatusBar && needTop && actionModeTop == null) {
-            actionModeTop = new View(getContext());
-            actionModeTop.setBackgroundColor(getThemedColor(Theme.key_actionBarActionModeDefaultTop));
-            addView(actionModeTop);
-            layoutParams = (FrameLayout.LayoutParams) actionModeTop.getLayoutParams();
-            layoutParams.height = AndroidUtilities.statusBarHeight;
-            layoutParams.width = LayoutHelper.MATCH_PARENT;
-            layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
-            actionModeTop.setLayoutParams(layoutParams);
-            actionModeTop.setVisibility(INVISIBLE);
-        }
+//        if (occupyStatusBar && needTop && actionModeTop == null && !blurredBackground) {
+//            actionModeTop = new View(getContext());
+//            actionModeTop.setBackgroundColor(getThemedColor(Theme.key_actionBarActionModeDefaultTop));
+//            addView(actionModeTop);
+//            layoutParams = (FrameLayout.LayoutParams) actionModeTop.getLayoutParams();
+//            layoutParams.height = AndroidUtilities.statusBarHeight;
+//            layoutParams.width = LayoutHelper.MATCH_PARENT;
+//            layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
+//            actionModeTop.setLayoutParams(layoutParams);
+//            actionModeTop.setVisibility(INVISIBLE);
+//        }
 
         return actionMode;
     }

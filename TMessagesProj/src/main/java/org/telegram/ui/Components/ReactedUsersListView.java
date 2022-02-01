@@ -50,7 +50,7 @@ public class ReactedUsersListView extends FrameLayout {
 
     private FlickerLoadingView loadingView;
 
-    private List<TLRPC.TL_messageUserReaction> userReactions = new ArrayList<>();
+    private List<TLRPC.TL_messagePeerReaction> userReactions = new ArrayList<>();
     private LongSparseArray<TLRPC.User> users = new LongSparseArray<>();
     private String offset;
     private boolean isLoading, isLoaded, canLoadMore = true;
@@ -101,7 +101,7 @@ public class ReactedUsersListView extends FrameLayout {
         });
         listView.setOnItemClickListener((view, position) -> {
             if (onProfileSelectedListener != null)
-                onProfileSelectedListener.onProfileSelected(this, userReactions.get(position).user_id);
+                onProfileSelectedListener.onProfileSelected(this, MessageObject.getPeerId(userReactions.get(position).peer_id));
         });
         listView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
@@ -124,13 +124,14 @@ public class ReactedUsersListView extends FrameLayout {
 
     @SuppressLint("NotifyDataSetChanged")
     public ReactedUsersListView setSeenUsers(List<TLRPC.User> users) {
-        List<TLRPC.TL_messageUserReaction> nr = new ArrayList<>(users.size());
+        List<TLRPC.TL_messagePeerReaction> nr = new ArrayList<>(users.size());
         for (TLRPC.User u : users) {
             if (this.users.get(u.id) != null) continue;
             this.users.put(u.id, u);
-            TLRPC.TL_messageUserReaction r = new TLRPC.TL_messageUserReaction();
+            TLRPC.TL_messagePeerReaction r = new TLRPC.TL_messagePeerReaction();
             r.reaction = null;
-            r.user_id = u.id;
+            r.peer_id = new TLRPC.TL_peerUser();
+            r.peer_id.user_id = u.id;
             nr.add(r);
         }
         if (userReactions.isEmpty())
@@ -175,7 +176,7 @@ public class ReactedUsersListView extends FrameLayout {
 
                 // It's safer to create a new list to prevent inconsistency
                 int prev = userReactions.size();
-                List<TLRPC.TL_messageUserReaction> newReactions = new ArrayList<>(userReactions.size() + l.reactions.size());
+                List<TLRPC.TL_messagePeerReaction> newReactions = new ArrayList<>(userReactions.size() + l.reactions.size());
                 newReactions.addAll(userReactions);
                 newReactions.addAll(l.reactions);
 
@@ -265,8 +266,8 @@ public class ReactedUsersListView extends FrameLayout {
             addView(overlaySelectorView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         }
 
-        void setUserReaction(TLRPC.TL_messageUserReaction reaction) {
-            TLRPC.User u = users.get(reaction.user_id);
+        void setUserReaction(TLRPC.TL_messagePeerReaction reaction) {
+            TLRPC.User u = users.get(MessageObject.getPeerId(reaction.peer_id));
             avatarDrawable.setInfo(u);
             titleView.setText(UserObject.getUserName(u));
             avatarView.setImage(ImageLocation.getForUser(u, ImageLocation.TYPE_SMALL), "50_50", avatarDrawable, u);

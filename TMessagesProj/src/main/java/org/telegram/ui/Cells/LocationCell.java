@@ -8,12 +8,19 @@
 
 package org.telegram.ui.Cells;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.drawable.ShapeDrawable;
+import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.View;
+import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
@@ -22,6 +29,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.LayoutHelper;
 
 public class LocationCell extends FrameLayout {
@@ -62,6 +70,10 @@ public class LocationCell extends FrameLayout {
         addressTextView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText3));
         addressTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         addView(addressTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), (LocaleController.isRTL ? 16 : 73), 35, (LocaleController.isRTL ? 73 : 16), 0));
+
+        imageView.setAlpha(enterAlpha);
+        nameTextView.setAlpha(enterAlpha);
+        addressTextView.setAlpha(enterAlpha);
     }
 
     @Override
@@ -101,23 +113,80 @@ public class LocationCell extends FrameLayout {
         }
     }
 
+    private float enterAlpha = 0f;
+    private ValueAnimator enterAnimator;
     public void setLocation(TLRPC.TL_messageMediaVenue location, String icon, String label, int pos, boolean divider) {
         needDivider = divider;
         circleDrawable.getPaint().setColor(getColorForIndex(pos));
-        nameTextView.setText(location.title);
+        if (location != null)
+            nameTextView.setText(location.title);
         if (label != null) {
             addressTextView.setText(label);
-        } else {
+        } else if (location != null) {
             addressTextView.setText(location.address);
         }
-        imageView.setImage(icon, null, null);
-        setWillNotDraw(!divider);
+        if (icon != null)
+            imageView.setImage(icon, null, null);
+        setWillNotDraw(false);
+        setClickable(location == null);
+
+        if (enterAnimator != null)
+            enterAnimator.cancel();
+
+        boolean loading = location == null;
+        float fromEnterAlpha = enterAlpha,
+                toEnterAlpha = loading ? 0f : 1f;
+        long duration = (long) (Math.abs(fromEnterAlpha - toEnterAlpha) * 150);
+        enterAnimator = ValueAnimator.ofFloat(fromEnterAlpha, toEnterAlpha);
+        final long start = SystemClock.elapsedRealtime();
+        enterAnimator.addUpdateListener(a -> {
+            float t = Math.min(Math.max((float) (SystemClock.elapsedRealtime() - start) / duration, 0), 1);
+            if (duration <= 0)
+                t = 1f;
+            enterAlpha = AndroidUtilities.lerp(fromEnterAlpha, toEnterAlpha, t);
+            imageView.setAlpha(enterAlpha);
+            nameTextView.setAlpha(enterAlpha);
+            addressTextView.setAlpha(enterAlpha);
+            invalidate();
+        });
+        enterAnimator.setDuration(loading ? Long.MAX_VALUE : duration);
+        enterAnimator.start();
+
+        imageView.setAlpha(fromEnterAlpha);
+        nameTextView.setAlpha(fromEnterAlpha);
+        addressTextView.setAlpha(fromEnterAlpha);
+        invalidate();
     }
+
+    private static FlickerLoadingView globalGradientView;
 
     @Override
     protected void onDraw(Canvas canvas) {
+        if (globalGradientView == null) {
+            globalGradientView = new FlickerLoadingView(getContext());
+            globalGradientView.setIsSingleCell(true);
+        }
+
+        int index = getParent() instanceof ViewGroup ? ((ViewGroup) getParent()).indexOfChild(this) : 0;
+        globalGradientView.setParentSize(getMeasuredWidth(), getMeasuredHeight(), -index * AndroidUtilities.dp(56));
+        globalGradientView.setViewType(FlickerLoadingView.AUDIO_TYPE);
+        globalGradientView.updateColors();
+        globalGradientView.updateGradient();
+
+        canvas.saveLayerAlpha(0, 0, getWidth(), getHeight(), (int) ((1f - enterAlpha) * 255), Canvas.ALL_SAVE_FLAG);
+        canvas.translate(AndroidUtilities.dp(2), (getMeasuredHeight() - AndroidUtilities.dp(56)) / 2);
+        globalGradientView.draw(canvas);
+        canvas.restore();
+        super.onDraw(canvas);
+
         if (needDivider) {
-            canvas.drawLine(AndroidUtilities.dp(72), getHeight() - 1, getWidth(), getHeight() - 1, Theme.dividerPaint);
+            canvas.drawLine(
+                LocaleController.isRTL ? 0 : AndroidUtilities.dp(72),
+                getHeight() - 1,
+                LocaleController.isRTL ? getWidth() - AndroidUtilities.dp(72) : getWidth(),
+                getHeight() - 1,
+                Theme.dividerPaint
+            );
         }
     }
 

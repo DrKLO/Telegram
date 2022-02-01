@@ -1308,9 +1308,17 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 4);
     }
 
+    private Runnable onDismissListener;
+    public void setOnDismissListener(Runnable onDismissListener) {
+        this.onDismissListener = onDismissListener;
+    }
+
     @Override
     public void dismiss() {
         super.dismiss();
+        if (onDismissListener != null) {
+            onDismissListener.run();
+        }
         if (reqId != 0) {
             ConnectionsManager.getInstance(currentAccount).cancelRequest(reqId, true);
             reqId = 0;

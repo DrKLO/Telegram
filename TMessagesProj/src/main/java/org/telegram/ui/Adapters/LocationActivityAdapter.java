@@ -17,7 +17,9 @@ import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewPropertyAnimator;
+import android.widget.FrameLayout;
 
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.LocationController;
 import org.telegram.messenger.MessageObject;
@@ -35,6 +37,7 @@ import org.telegram.ui.Cells.SendLocationCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.SharingLiveLocationCell;
 import org.telegram.ui.Components.CombinedDrawable;
+import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.LocationActivity;
 
@@ -42,6 +45,8 @@ import java.util.ArrayList;
 import java.util.Locale;
 
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.gms.vision.Frame;
 
 public class LocationActivityAdapter extends BaseLocationAdapter implements LocationController.LocationFetchCallback {
 
@@ -65,6 +70,8 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
     private Runnable updateRunnable;
     private final Theme.ResourcesProvider resourcesProvider;
 
+    private FlickerLoadingView globalGradientView;
+
     public LocationActivityAdapter(Context context, int type, long did, boolean emptyView, Theme.ResourcesProvider resourcesProvider) {
         super();
         mContext = context;
@@ -72,10 +79,31 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
         dialogId = did;
         needEmptyView = emptyView;
         this.resourcesProvider = resourcesProvider;
+
+        globalGradientView = new FlickerLoadingView(context);
+        globalGradientView.setIsSingleCell(true);
+    }
+
+    private boolean myLocationDenied = false;
+    public void setMyLocationDenied(boolean myLocationDenied) {
+        if (this.myLocationDenied == myLocationDenied)
+            return;
+        this.myLocationDenied = myLocationDenied;
+        notifyDataSetChanged();
     }
 
     public void setOverScrollHeight(int value) {
         overScrollHeight = value;
+        if (emptyCell != null) {
+            RecyclerView.LayoutParams lp = (RecyclerView.LayoutParams) emptyCell.getLayoutParams();
+            if (lp == null) {
+                lp = new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, overScrollHeight);
+            } else {
+                lp.height = overScrollHeight;
+            }
+            emptyCell.setLayoutParams(lp);
+            emptyCell.forceLayout();
+        }
     }
 
     public void setUpdateRunnable(Runnable runnable) {
@@ -143,7 +171,7 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
     private void updateCell() {
         if (sendLocationCell != null) {
             if (locationType == LocationActivity.LOCATION_TYPE_GROUP || customLocation != null) {
-                String address;
+                String address = "";
                 if (!TextUtils.isEmpty(addressName)) {
                     address = addressName;
                 } else if (customLocation == null && gpsLocation == null || fetchingLocation) {
@@ -152,7 +180,7 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
                     address = String.format(Locale.US, "(%f,%f)", customLocation.getLatitude(), customLocation.getLongitude());
                 } else if (gpsLocation != null) {
                     address = String.format(Locale.US, "(%f,%f)", gpsLocation.getLatitude(), gpsLocation.getLongitude());
-                } else {
+                } else if (!myLocationDenied) {
                     address = LocaleController.getString("Loading", R.string.Loading);
                 }
                 if (locationType == LocationActivity.LOCATION_TYPE_GROUP) {
@@ -160,11 +188,14 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
                 } else {
                     sendLocationCell.setText(LocaleController.getString("SendSelectedLocation", R.string.SendSelectedLocation), address);
                 }
+                sendLocationCell.setHasLocation(true);
             } else {
                 if (gpsLocation != null) {
                     sendLocationCell.setText(LocaleController.getString("SendLocation", R.string.SendLocation), LocaleController.formatString("AccurateTo", R.string.AccurateTo, LocaleController.formatPluralString("Meters", (int) gpsLocation.getAccuracy())));
+                    sendLocationCell.setHasLocation(true);
                 } else {
-                    sendLocationCell.setText(LocaleController.getString("SendLocation", R.string.SendLocation), LocaleController.getString("Loading", R.string.Loading));
+                    sendLocationCell.setText(LocaleController.getString("SendLocation", R.string.SendLocation), myLocationDenied ? "" : LocaleController.getString("Loading", R.string.Loading));
+                    sendLocationCell.setHasLocation(!myLocationDenied);
                 }
             }
         }
@@ -231,36 +262,36 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
         } else if (locationType == 2) {
             return 2 + currentLiveLocations.size();
         } else {
-            if (searching || places.isEmpty()) {
-                return (locationType != 0 ? 6 : 5) + (needEmptyView ? 1 : 0);
+            if (searching || !searched || places.isEmpty()) {
+                return (locationType != LocationActivity.LOCATION_TYPE_SEND ? 6 : 5) + (!myLocationDenied && (searching || !searched) ? 2 : 0) + (needEmptyView ? 1 : 0) - (myLocationDenied ? 2 : 0);
             }
-            if (locationType == 1) {
-                return 6 + places.size() + (needEmptyView ? 1 : 0);
-            } else {
-                return 5 + places.size() + (needEmptyView ? 1 : 0);
-            }
+            return (locationType == LocationActivity.LOCATION_TYPE_SEND_WITH_LIVE ? 6 : 5) + places.size() + (needEmptyView ? 1 : 0);
         }
     }
+
+    private FrameLayout emptyCell;
 
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View view;
         switch (viewType) {
             case 0:
-                view = new EmptyCell(mContext) {
-                    @Override
-                    public ViewPropertyAnimator animate() {
-                        ViewPropertyAnimator animator = super.animate();
-                        if (Build.VERSION.SDK_INT >= 19) {
-                            animator.setUpdateListener(animation -> {
-                                if (updateRunnable != null) {
-                                    updateRunnable.run();
-                                }
-                            });
-                        }
-                        return animator;
-                    }
-                };
+//                view = emptyCell = new EmptyCell(mContext) {
+//                    @Override
+//                    public ViewPropertyAnimator animate() {
+//                        ViewPropertyAnimator animator = super.animate();
+//                        if (Build.VERSION.SDK_INT >= 19) {
+//                            animator.setUpdateListener(animation -> {
+//                                if (updateRunnable != null) {
+//                                    updateRunnable.run();
+//                                }
+//                            });
+//                        }
+//                        return animator;
+//                    }
+//                };
+                view = emptyCell = new FrameLayout(mContext);
+                emptyCell.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, overScrollHeight));
                 break;
             case 1:
                 view = new SendLocationCell(mContext, false, resourcesProvider);
@@ -269,7 +300,8 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
                 view = new HeaderCell(mContext, resourcesProvider);
                 break;
             case 3:
-                view = new LocationCell(mContext, false, resourcesProvider);
+                LocationCell locationCell = new LocationCell(mContext, false, resourcesProvider);
+                view = locationCell;
                 break;
             case 4:
                 view = new LocationLoadingCell(mContext, resourcesProvider);
@@ -313,7 +345,13 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
         switch (holder.getItemViewType()) {
             case 0:
-                ((EmptyCell) holder.itemView).setHeight(overScrollHeight);
+                RecyclerView.LayoutParams lp = (RecyclerView.LayoutParams) holder.itemView.getLayoutParams();
+                if (lp == null) {
+                    lp = new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, overScrollHeight);
+                } else {
+                    lp.height = overScrollHeight;
+                }
+                holder.itemView.setLayoutParams(lp);
                 break;
             case 1:
                 sendLocationCell = (SendLocationCell) holder.itemView;
@@ -335,7 +373,9 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
                 } else {
                     position -= 5;
                 }
-                cell.setLocation(places.get(position), iconUrls.get(position), position, true);
+                TLRPC.TL_messageMediaVenue place = position < 0 || position >= places.size() || !searched ? null : places.get(position);
+                String iconUrl = position < 0 || position >= iconUrls.size() || !searched ? null : iconUrls.get(position);
+                cell.setLocation(place, iconUrl, position, true);
                 break;
             }
             case 4:
@@ -347,14 +387,18 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
             case 7:
                 SharingLiveLocationCell locationCell = (SharingLiveLocationCell) holder.itemView;
                 if (locationType == LocationActivity.LOCATION_TYPE_LIVE_VIEW) {
-                    locationCell.setDialog(currentMessageObject, gpsLocation);
+                    locationCell.setDialog(currentMessageObject, gpsLocation, myLocationDenied);
                 } else if (chatLocation != null) {
                     locationCell.setDialog(dialogId, chatLocation);
                 } else if (currentMessageObject != null && position == 1) {
-                    locationCell.setDialog(currentMessageObject, gpsLocation);
+                    locationCell.setDialog(currentMessageObject, gpsLocation, myLocationDenied);
                 } else {
                     locationCell.setDialog(currentLiveLocations.get(position - (currentMessageObject != null ? 5 : 2)), gpsLocation);
                 }
+                break;
+            case 10:
+                View emptyView = holder.itemView;
+                emptyView.setBackgroundColor(Theme.getColor(myLocationDenied ? Theme.key_dialogBackgroundGray : Theme.key_dialogBackground));
                 break;
         }
     }
@@ -451,7 +495,9 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
                 return 9;
             } else if (position == 4) {
                 return 2;
-            } else if (searching || places.isEmpty()) {
+            } else if (searching || places.isEmpty() || !searched) {
+                if (position <= 4 + 3 && (searching || !searched) && !myLocationDenied)
+                    return 3;
                 return 4;
             } else if (position == places.size() + 5) {
                 return 5;
@@ -464,6 +510,8 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
             } else if (position == 3) {
                 return 2;
             } else if (searching || places.isEmpty()) {
+                if (position <= 3 + 3 && (searching || !searched) && !myLocationDenied)
+                    return 3;
                 return 4;
             } else if (position == places.size() + 4) {
                 return 5;

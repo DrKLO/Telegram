@@ -32,7 +32,6 @@ import android.text.Spanned;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -774,7 +773,7 @@ public class QrActivity extends BaseFragment {
             }
             if (contentBitmap != null) {
                 canvas.drawBitmap(contentBitmap, 0f, 0f, bitmapGradientPaint);
-                gradientDrawable.updateAnimation();
+                gradientDrawable.updateAnimation(true);
             }
         }
 

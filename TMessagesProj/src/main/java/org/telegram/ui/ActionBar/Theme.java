@@ -2694,6 +2694,7 @@ public class Theme {
     public static Drawable dialogs_verifiedCheckDrawable;
     public static Drawable dialogs_pinnedDrawable;
     public static Drawable dialogs_mentionDrawable;
+    public static Drawable dialogs_reactionsMentionDrawable;
     public static Drawable dialogs_holidayDrawable;
     public static RLottieDrawable dialogs_archiveAvatarDrawable;
     public static RLottieDrawable dialogs_archiveDrawable;
@@ -4445,7 +4446,7 @@ public class Theme {
         defaultColors.put(key_chat_outTextSelectionHighlight, 0x2E3F9923);
         defaultColors.put(key_chat_inTextSelectionHighlight, 0x5062A9E3);
         defaultColors.put(key_chat_TextSelectionCursor, 0xFF419FE8);
-        defaultColors.put(key_chat_BlurAlpha, 0xAF000000);
+        defaultColors.put(key_chat_BlurAlpha, 0xFF000000);
 
         defaultColors.put(key_statisticChartSignature, 0x7f252529);
         defaultColors.put(key_statisticChartSignatureAlpha, 0x7f252529);
@@ -5932,24 +5933,33 @@ public class Theme {
         private Path path = new Path();
         private RectF rect = new RectF();
         private float[] radii = new float[8];
-        private int topRad;
-        private int bottomRad;
 
-        public RippleRadMaskDrawable(int top, int bottom) {
-            topRad = top;
-            bottomRad = bottom;
+        public RippleRadMaskDrawable(float top, float bottom) {
+            radii[0] = radii[1] = radii[2] = radii[3] = AndroidUtilities.dp(top);
+            radii[4] = radii[5] = radii[6] = radii[7] = AndroidUtilities.dp(bottom);
+        }
+        public RippleRadMaskDrawable(float topLeft, float topRight, float bottomRight, float bottomLeft) {
+            radii[0] = radii[1] = AndroidUtilities.dp(topLeft);
+            radii[2] = radii[3] = AndroidUtilities.dp(topRight);
+            radii[4] = radii[5] = AndroidUtilities.dp(bottomRight);
+            radii[6] = radii[7] = AndroidUtilities.dp(bottomLeft);
         }
 
-        public void setRadius(int top, int bottom) {
-            topRad = top;
-            bottomRad = bottom;
+        public void setRadius(float top, float bottom) {
+            radii[0] = radii[1] = radii[2] = radii[3] = AndroidUtilities.dp(top);
+            radii[4] = radii[5] = radii[6] = radii[7] = AndroidUtilities.dp(bottom);
+            invalidateSelf();
+        }
+        public void setRadius(float topLeft, float topRight, float bottomRight, float bottomLeft) {
+            radii[0] = radii[1] = AndroidUtilities.dp(topLeft);
+            radii[2] = radii[3] = AndroidUtilities.dp(topRight);
+            radii[4] = radii[5] = AndroidUtilities.dp(bottomRight);
+            radii[6] = radii[7] = AndroidUtilities.dp(bottomLeft);
             invalidateSelf();
         }
 
         @Override
         public void draw(Canvas canvas) {
-            radii[0] = radii[1] = radii[2] = radii[3] = AndroidUtilities.dp(topRad);
-            radii[4] = radii[5] = radii[6] = radii[7] = AndroidUtilities.dp(bottomRad);
             rect.set(getBounds());
             path.addRoundRect(rect, radii, Path.Direction.CW);
             canvas.drawPath(path, maskPaint);
@@ -5989,10 +5999,26 @@ public class Theme {
     }
 
     public static Drawable createRadSelectorDrawable(int color, int topRad, int bottomRad) {
-        Drawable drawable;
         if (Build.VERSION.SDK_INT >= 21) {
             maskPaint.setColor(0xffffffff);
             Drawable maskDrawable = new RippleRadMaskDrawable(topRad, bottomRad);
+            ColorStateList colorStateList = new ColorStateList(
+                    new int[][]{StateSet.WILD_CARD},
+                    new int[]{color}
+            );
+            return new RippleDrawable(colorStateList, null, maskDrawable);
+        } else {
+            StateListDrawable stateListDrawable = new StateListDrawable();
+            stateListDrawable.addState(new int[]{android.R.attr.state_pressed}, new ColorDrawable(color));
+            stateListDrawable.addState(new int[]{android.R.attr.state_selected}, new ColorDrawable(color));
+            stateListDrawable.addState(StateSet.WILD_CARD, new ColorDrawable(0x00000000));
+            return stateListDrawable;
+        }
+    }
+    public static Drawable createRadSelectorDrawable(int color, int topLeftRad, int topRightRad, int bottomRightRad, int bottomLeftRad) {
+        if (Build.VERSION.SDK_INT >= 21) {
+            maskPaint.setColor(0xffffffff);
+            Drawable maskDrawable = new RippleRadMaskDrawable(topLeftRad, topRightRad, bottomRightRad, bottomLeftRad);
             ColorStateList colorStateList = new ColorStateList(
                     new int[][]{StateSet.WILD_CARD},
                     new int[]{color}
@@ -8094,6 +8120,7 @@ public class Theme {
             dialogs_fakeDrawable = new ScamDrawable(11, 1);
             dialogs_verifiedCheckDrawable = resources.getDrawable(R.drawable.verified_check).mutate();
             dialogs_mentionDrawable = resources.getDrawable(R.drawable.mentionchatslist);
+            dialogs_reactionsMentionDrawable = resources.getDrawable(R.drawable.reactionchatslist);
             dialogs_botDrawable = resources.getDrawable(R.drawable.list_bot);
             dialogs_pinnedDrawable = resources.getDrawable(R.drawable.list_pin);
             moveUpDrawable = resources.getDrawable(R.drawable.preview_open);
@@ -8169,6 +8196,7 @@ public class Theme {
         setDrawableColorByKey(dialogs_reorderDrawable, key_chats_pinnedIcon);
         setDrawableColorByKey(dialogs_muteDrawable, key_chats_muteIcon);
         setDrawableColorByKey(dialogs_mentionDrawable, key_chats_mentionIcon);
+        setDrawableColorByKey(dialogs_reactionsMentionDrawable, key_chats_mentionIcon);
         setDrawableColorByKey(dialogs_verifiedDrawable, key_chats_verifiedBackground);
         setDrawableColorByKey(dialogs_verifiedCheckDrawable, key_chats_verifiedCheck);
         setDrawableColorByKey(dialogs_holidayDrawable, key_actionBarDefaultTitle);

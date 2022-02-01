@@ -580,6 +580,7 @@ public class SharedLinkCell extends FrameLayout {
                                     try {
                                         urlPath.setCurrentLayout(layout, 0, 0);
                                         layout.getSelectionPath(0, layout.getText().length(), urlPath);
+                                        urlPath.onPathEnd();
                                     } catch (Exception e) {
                                         FileLog.e(e);
                                     }

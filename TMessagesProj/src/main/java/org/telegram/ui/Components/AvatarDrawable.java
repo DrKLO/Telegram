@@ -150,6 +150,8 @@ public class AvatarDrawable extends Drawable {
             setInfo((TLRPC.User) object);
         } else if (object instanceof TLRPC.Chat) {
             setInfo((TLRPC.Chat) object);
+        } else if (object instanceof TLRPC.ChatInvite) {
+            setInfo((TLRPC.ChatInvite) object);
         }
     }
 
@@ -200,6 +202,11 @@ public class AvatarDrawable extends Drawable {
     public void setInfo(TLRPC.Chat chat) {
         if (chat != null) {
             setInfo(chat.id, chat.title, null, null);
+        }
+    }
+    public void setInfo(TLRPC.ChatInvite chat) {
+        if (chat != null) {
+            setInfo(0, chat.title, null, null);
         }
     }
 

@@ -88,7 +88,7 @@ public class RendererCommon {
       this.visibleFractionMismatchOrientation = visibleFractionMismatchOrientation;
     }
 
-    public Point measure(boolean applayRotation, int widthSpec, int heightSpec, int frameWidth, int frameHeight) {
+    public Point measure(boolean applyRotation, int widthSpec, int heightSpec, int frameWidth, int frameHeight) {
       // Calculate max allowed layout size.
       final int maxWidth = View.getDefaultSize(Integer.MAX_VALUE, widthSpec);
       final int maxHeight = View.getDefaultSize(Integer.MAX_VALUE, heightSpec);
@@ -105,7 +105,7 @@ public class RendererCommon {
       final Point layoutSize = getDisplaySize(visibleFraction, frameAspect, maxWidth, maxHeight);
 
       // If the measure specification is forcing a specific size - yield.
-      if (!applayRotation) {
+      if (!applyRotation) {
         if (View.MeasureSpec.getMode(widthSpec) == View.MeasureSpec.EXACTLY) {
           layoutSize.x = maxWidth;
         }

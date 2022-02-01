@@ -91,7 +91,9 @@ public class MotionBackgroundDrawable extends Drawable {
 
     private boolean rotatingPreview;
 
-    private Runnable updateAnimationRunnable = this::updateAnimation;
+    private Runnable updateAnimationRunnable = () -> {
+        updateAnimation(true);
+    };
 
     private android.graphics.Rect patternBounds = new android.graphics.Rect();
 
@@ -341,7 +343,7 @@ public class MotionBackgroundDrawable extends Drawable {
         }
         if (postInvalidateParent) {
             NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.invalidateMotionBackground);
-            updateAnimation();
+            updateAnimation(false);
             AndroidUtilities.cancelRunOnUIThread(updateAnimationRunnable);
             AndroidUtilities.runOnUIThread(updateAnimationRunnable, 16);
         }
@@ -517,7 +519,7 @@ public class MotionBackgroundDrawable extends Drawable {
         }
         canvas.restore();
 
-        updateAnimation();
+        updateAnimation(true);
     }
     public void drawPattern(Canvas canvas) {
         android.graphics.Rect bounds = getBounds();
@@ -647,7 +649,7 @@ public class MotionBackgroundDrawable extends Drawable {
         }
         canvas.restore();
 
-        updateAnimation();
+        updateAnimation(true);
     }
 
     @Override
@@ -807,10 +809,10 @@ public class MotionBackgroundDrawable extends Drawable {
         }
         canvas.restore();
 
-        updateAnimation();
+        updateAnimation(true);
     }
 
-    public void updateAnimation() {
+    public void updateAnimation(boolean invalidate) {
         long newTime = SystemClock.elapsedRealtime();
         long dt = newTime - lastUpdateTime;
         if (dt > 20) {
@@ -931,7 +933,9 @@ public class MotionBackgroundDrawable extends Drawable {
                     }
                 }
             }
-            invalidateParent();
+            if (invalidate) {
+                invalidateParent();
+            }
         }
     }
 
