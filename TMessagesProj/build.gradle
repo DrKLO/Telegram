@@ -115,6 +115,13 @@ android {
             cmake {
                 version '3.10.2'
                 arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-16', "-j=16"
+                if (project.hasProperty("armeabi-v7a")) {
+                    abiFilters 'armeabi-v7a'
+                } else if (project.hasProperty("arm64-v8a")) {
+                    abiFilters 'arm64-v8a'
+                } else {
+                    abiFilters 'armeabi-v7a', 'arm64-v8a'
+                }
             }
         }
     }
