@@ -2795,8 +2795,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                 (SharedConfig.disableVoiceAudioEffects ? "Enable voip audio effects" : "Disable voip audio effects"),
                                 Build.VERSION.SDK_INT >= 21 ? (SharedConfig.noStatusBar ? "Show status bar background" : "Hide status bar background") : null,
                                 LocaleController.getString("CG_SB", R.string.CG_SB),
-                                BuildVars.DEBUG_PRIVATE_VERSION ? "Clean app update" : null,
-                                BuildVars.DEBUG_PRIVATE_VERSION ? "Reset suggestions" : null
                                 "Clean app update",
                                 "Reset suggestions"
                         };

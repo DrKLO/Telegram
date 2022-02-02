@@ -1207,8 +1207,8 @@ public class TranslateAlert extends Dialog {
         return alert;
     }
 
-    public static TranslateAlert showAlertCato(Context context, BaseFragment fragment, String fromLanguage, String toLanguage, CharSequence text, boolean noforwards, OnLinkPress onLinkPress, Runnable onDismiss) {
-        TranslateAlert alert = new TranslateAlert(fragment, context, fromLanguage, toLanguage, text, noforwards, onLinkPress, onDismiss, true);
+    public static TranslateAlert showAlertCato(Context context, BaseFragment fragment, String toLanguage, CharSequence text, boolean noforwards, OnLinkPress onLinkPress) {
+        TranslateAlert alert = new TranslateAlert(fragment, context, null, toLanguage, text, noforwards, onLinkPress, () -> {}, true);
         if (fragment != null) {
             if (fragment.getParentActivity() != null) {
                 fragment.showDialog(alert);
