@@ -10369,21 +10369,22 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     setItemVisible(sendItem, false, false);
                 }
                 if (isEmbedVideo || newMessageObject.messageOwner.ttl != 0 && newMessageObject.messageOwner.ttl < 60 * 60 || noforwards) {
-                    allowShare = false;
-                    menuItem.hideSubItem(gallery_menu_save);
+                    allowShare = true;
+                    menuItem.showSubItem(gallery_menu_save);
                     bottomButtonsLayout.setVisibility(View.GONE);
-                    menuItem.hideSubItem(gallery_menu_share);
+                    menuItem.showSubItem(gallery_menu_share);
                 } else {
                     allowShare = true;
                     menuItem.showSubItem(gallery_menu_save);
                     boolean canPaint = newMessageObject.getDocument() == null || newMessageObject.canPreviewDocument() || newMessageObject.getMimeType().startsWith("video/");
                     paintButton.setVisibility(canPaint && canSendMediaToParentChatActivity() ? View.VISIBLE : View.GONE);
                     bottomButtonsLayout.setVisibility(!videoPlayerControlVisible ? View.VISIBLE : View.GONE);
-                    if (bottomButtonsLayout.getVisibility() == View.VISIBLE) {
-                        menuItem.hideSubItem(gallery_menu_share);
-                    } else {
-                        menuItem.showSubItem(gallery_menu_share);
-                    }
+                    menuItem.showSubItem(gallery_menu_share);
+//                    if (bottomButtonsLayout.getVisibility() == View.VISIBLE) {
+//                        menuItem.hideSubItem(gallery_menu_share);
+//                    } else {
+//                        menuItem.showSubItem(gallery_menu_share);
+//                    }
                 }
             }
             groupedPhotosListView.fillList();
