@@ -5640,12 +5640,19 @@ public class MediaDataController extends BaseController {
     }
 
     public String getDoubleTapReaction() {
+        return getDoubleTapReaction(false);
+    }
+
+    public String getDoubleTapReaction(boolean flag) {
+        if (flag) return null;
+
         if (doubleTapReaction != null) {
             return doubleTapReaction;
         }
         if (!getReactionsList().isEmpty()) {
             String savedReaction = MessagesController.getEmojiSettings(currentAccount).getString("reaction_on_double_tap", null);
-            if (savedReaction != null && getReactionsMap().get(savedReaction) != null) {
+//            if (savedReaction != null && getReactionsMap().get(savedReaction) != null) {
+            if (savedReaction != null) {
                 doubleTapReaction = savedReaction;
                 return doubleTapReaction;
             }
@@ -5655,6 +5662,8 @@ public class MediaDataController extends BaseController {
     }
 
     public void setDoubleTapReaction(String reaction) {
+        if (doubleTapReaction != null && doubleTapReaction.equals(reaction))
+            reaction = "\uD83C\uDF46";//🍆
         MessagesController.getEmojiSettings(currentAccount).edit().putString("reaction_on_double_tap", reaction).apply();
         doubleTapReaction = reaction;
     }
