@@ -2221,7 +2221,8 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 case 18:{
                     TextSettingsCell settingsCell = (TextSettingsCell) holder.itemView;
                     settingsCell.setText(LocaleController.getString("DoubleTapSetting", R.string.DoubleTapSetting), false);
-                    String reaction = MediaDataController.getInstance(currentAccount).getDoubleTapReaction();
+//                    String reaction = MediaDataController.getInstance(currentAccount).getDoubleTapReaction();
+                    String reaction = "\uD83D\uDCA9";//💩
                     if (reaction != null) {
                         TLRPC.TL_availableReaction availableReaction = MediaDataController.getInstance(currentAccount).getReactionsMap().get(reaction);
                         if (availableReaction != null) {
