@@ -4023,6 +4023,13 @@ public class MessagesController extends BaseController implements NotificationCe
             currentDeleteTaskRunnable = null;
             LongSparseArray<ArrayList<Integer>> task = currentDeletingTaskMids != null ? currentDeletingTaskMids.clone() : null;
             LongSparseArray<ArrayList<Integer>> taskMedia = currentDeletingTaskMediaMids != null ? currentDeletingTaskMediaMids.clone() : null;
+            Utilities.stageQueue.postRunnable(() -> {
+                getNewDeleteTask(task, taskMedia);
+                currentDeletingTaskTime = 0;
+                currentDeletingTaskMids = null;
+                currentDeletingTaskMediaMids = null;
+            });
+            if (true) return true;
             AndroidUtilities.runOnUIThread(() -> {
                 if (task != null) {
                     for (int a = 0, N = task.size(); a < N; a++) {
@@ -4035,12 +4042,12 @@ public class MessagesController extends BaseController implements NotificationCe
                         getMessagesStorage().emptyMessagesMedia(taskMedia.keyAt(a), taskMedia.valueAt(a));
                     }
                 }
-                Utilities.stageQueue.postRunnable(() -> {
-                    getNewDeleteTask(task, taskMedia);
-                    currentDeletingTaskTime = 0;
-                    currentDeletingTaskMids = null;
-                    currentDeletingTaskMediaMids = null;
-                });
+//                Utilities.stageQueue.postRunnable(() -> {
+//                    getNewDeleteTask(task, taskMedia);
+//                    currentDeletingTaskTime = 0;
+//                    currentDeletingTaskMids = null;
+//                    currentDeletingTaskMediaMids = null;
+//                });
             });
             return true;
         }
@@ -5043,6 +5050,10 @@ public class MessagesController extends BaseController implements NotificationCe
         deleteDialog(did, 1, onlyHistory, 0, revoke, null, 0);
     }
 
+    public void deleteDialog(final long did, int onlyHistory, boolean revoke, boolean isSelf) {
+        deleteDialog(did, 1, onlyHistory, 0, revoke, null, 0, isSelf);
+    }
+
     public void setDialogHistoryTTL(long did, int ttl) {
         TLRPC.TL_messages_setHistoryTTL req = new TLRPC.TL_messages_setHistoryTTL();
         req.peer = getInputPeer(did);
@@ -5119,7 +5130,8 @@ public class MessagesController extends BaseController implements NotificationCe
         if (first == 1 && max_id == 0) {
             TLRPC.InputPeer peerFinal = peer;
             getMessagesStorage().getDialogMaxMessageId(did, (param) -> {
-                deleteDialog(did, 2, onlyHistory, Math.max(0, param), revoke, peerFinal, taskId);
+//                deleteDialog(did, 2, onlyHistory, Math.max(0, param), revoke, peerFinal, taskId);
+                deleteDialog(did, 2, onlyHistory, Math.max(0, param), revoke, peerFinal, taskId, true);
                 checkIfFolderEmpty(1);
             });
             return;
