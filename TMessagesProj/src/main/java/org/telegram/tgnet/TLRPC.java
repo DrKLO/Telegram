@@ -39607,7 +39607,7 @@ public class TLRPC {
             deactivated = (flags & 32) != 0;
             call_active = (flags & 8388608) != 0;
             call_not_empty = (flags & 16777216) != 0;
-            noforwards = (flags & 33554432) != 0;
+            noforwards = false;
             id = stream.readInt64(exception);
             title = stream.readString(exception);
             photo = ChatPhoto.TLdeserialize(stream, stream.readInt32(exception), exception);
@@ -39888,7 +39888,7 @@ public class TLRPC {
             call_not_empty = (flags & 16777216) != 0;
             fake = (flags & 33554432) != 0;
             gigagroup = (flags & 67108864) != 0;
-            noforwards = (flags & 134217728) != 0;
+            noforwards = false;
             join_to_send = (flags & 268435456) != 0;
             join_request = (flags & 536870912) != 0;
             id = stream.readInt64(exception);
@@ -55805,7 +55805,7 @@ public class TLRPC {
             legacy = (flags & 524288) != 0;
             edit_hide = false;
             pinned = (flags & 16777216) != 0;
-            noforwards = (flags & 67108864) != 0;
+            noforwards = false;
             id = stream.readInt32(exception);
             if ((flags & 256) != 0) {
                 from_id = Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
@@ -55988,7 +55988,7 @@ public class TLRPC {
             legacy = (flags & 524288) != 0;
             edit_hide = false;
             pinned = (flags & 16777216) != 0;
-            noforwards = (flags & 67108864) != 0;
+            noforwards = false;
             id = stream.readInt32(exception);
             if ((flags & 256) != 0) {
                 from_id = Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
