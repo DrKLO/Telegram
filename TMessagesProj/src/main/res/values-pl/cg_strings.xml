@@ -35,7 +35,6 @@
     <string name="AS_DrawerBlur">Rozmaż tło nagłówka</string>
     <string name="AS_DrawerDarken">Przyciemnij tło nagłówka</string>
     <string name="AS_DrawerCategory">Szuflada</string>
-    <string name="AS_FlatSB"></string>
     <string name="AS_FlatAB">Wyłącz cień paska narzędzi</string>
     <string name="AS_FlatSB_Desc">tylko Android 6+</string>
     <string name="AS_RedesignCategory">Redesign</string>
