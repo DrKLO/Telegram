@@ -54282,7 +54282,7 @@ public class TLRPC {
             post = (flags & 16384) != 0;
             from_scheduled = (flags & 262144) != 0;
             legacy = (flags & 524288) != 0;
-            edit_hide = (flags & 2097152) != 0;
+            edit_hide = false;
             pinned = (flags & 16777216) != 0;
             noforwards = (flags & 67108864) != 0;
             id = stream.readInt32(exception);
@@ -54465,7 +54465,7 @@ public class TLRPC {
             post = (flags & 16384) != 0;
             from_scheduled = (flags & 262144) != 0;
             legacy = (flags & 524288) != 0;
-            edit_hide = (flags & 2097152) != 0;
+            edit_hide = false;
             pinned = (flags & 16777216) != 0;
             noforwards = (flags & 67108864) != 0;
             id = stream.readInt32(exception);
@@ -54642,7 +54642,7 @@ public class TLRPC {
             post = (flags & 16384) != 0;
             from_scheduled = (flags & 262144) != 0;
             legacy = (flags & 524288) != 0;
-            edit_hide = (flags & 2097152) != 0;
+            edit_hide = false;
             pinned = (flags & 16777216) != 0;
             id = stream.readInt32(exception);
             if ((flags & 256) != 0) {
@@ -54817,7 +54817,7 @@ public class TLRPC {
             post = (flags & 16384) != 0;
             from_scheduled = (flags & 262144) != 0;
             legacy = (flags & 524288) != 0;
-            edit_hide = (flags & 2097152) != 0;
+            edit_hide = false;
             pinned = (flags & 16777216) != 0;
             id = stream.readInt32(exception);
             if ((flags & 256) != 0) {
@@ -54986,7 +54986,7 @@ public class TLRPC {
             post = (flags & 16384) != 0;
             from_scheduled = (flags & 262144) != 0;
             legacy = (flags & 524288) != 0;
-            edit_hide = (flags & 2097152) != 0;
+            edit_hide = false;
             id = stream.readInt32(exception);
             if ((flags & 256) != 0) {
                 from_id = new TLRPC.TL_peerUser();
@@ -55149,7 +55149,7 @@ public class TLRPC {
             post = (flags & 16384) != 0;
             from_scheduled = (flags & 262144) != 0;
             legacy = (flags & 524288) != 0;
-            edit_hide = (flags & 2097152) != 0;
+            edit_hide = false;
             id = stream.readInt32(exception);
             if ((flags & 256) != 0) {
                 from_id = new TLRPC.TL_peerUser();
@@ -55306,7 +55306,7 @@ public class TLRPC {
             post = (flags & 16384) != 0;
             from_scheduled = (flags & 262144) != 0;
             legacy = (flags & 524288) != 0;
-            edit_hide = (flags & 2097152) != 0;
+            edit_hide = false;
             id = stream.readInt32(exception);
             if ((flags & 256) != 0) {
                 from_id = new TLRPC.TL_peerUser();
@@ -55469,7 +55469,7 @@ public class TLRPC {
             post = (flags & 16384) != 0;
             from_scheduled = (flags & 262144) != 0;
             legacy = (flags & 524288) != 0;
-            edit_hide = (flags & 2097152) != 0;
+            edit_hide = false;
             id = stream.readInt32(exception);
             if ((flags & 256) != 0) {
                 from_id = new TLRPC.TL_peerUser();
