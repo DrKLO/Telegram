@@ -364,7 +364,19 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
 
         @Override
         public void onApplyCaption(CharSequence caption) {
-            parentAlert.commentTextView.setText(caption);
+            if (selectedPhotos.size() > 0 && selectedPhotosOrder.size() > 0) {
+                Object o = selectedPhotos.get(selectedPhotosOrder.get(0));
+                CharSequence firstPhotoCaption = null;
+                if (o instanceof MediaController.PhotoEntry) {
+                    MediaController.PhotoEntry photoEntry1 = (MediaController.PhotoEntry) o;
+                    firstPhotoCaption = photoEntry1.caption;
+                }
+                if (o instanceof MediaController.SearchImage) {
+                    MediaController.SearchImage photoEntry1 = (MediaController.SearchImage) o;
+                    firstPhotoCaption = photoEntry1.caption;
+                }
+                parentAlert.commentTextView.setText(firstPhotoCaption);
+            }
         }
 
         @Override
@@ -649,9 +661,22 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                     AndroidUtilities.hideKeyboard(parentAlert.baseFragment.getFragmentView().findFocus());
                     AndroidUtilities.hideKeyboard(parentAlert.getContainer().findFocus());
                 }
-                ((MediaController.PhotoEntry) arrayList.get(position)).caption = parentAlert.getCommentTextView().getText();
+                if (selectedPhotos.size() > 0 && selectedPhotosOrder.size() > 0) {
+                    Object o = selectedPhotos.get(selectedPhotosOrder.get(0));
+                    CharSequence firstPhotoCaption = null;
+                    if (o instanceof MediaController.PhotoEntry) {
+                        MediaController.PhotoEntry photoEntry1 = (MediaController.PhotoEntry) o;
+                        photoEntry1.caption = parentAlert.getCommentTextView().getText();
+                    }
+                    if (o instanceof MediaController.SearchImage) {
+                        MediaController.SearchImage photoEntry1 = (MediaController.SearchImage) o;
+                        photoEntry1.caption = parentAlert.getCommentTextView().getText();
+                    }
+                }
                 PhotoViewer.getInstance().openPhotoForSelect(arrayList, position, type, false, photoViewerProvider, chatActivity);
-                PhotoViewer.getInstance().setCaption(parentAlert.getCommentTextView().getText());
+                if (captionForAllMedia()) {
+                    PhotoViewer.getInstance().setCaption(parentAlert.getCommentTextView().getText());
+                }
             } else {
                 if (SharedConfig.inappCamera) {
                     openCamera(true);
@@ -2516,25 +2541,38 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
     @Override
     void applyCaption(CharSequence text) {
         for (int a = 0; a < selectedPhotosOrder.size(); a++) {
-            Object o = selectedPhotos.get(selectedPhotosOrder.get(a));
-            if (o instanceof MediaController.PhotoEntry) {
-                MediaController.PhotoEntry photoEntry1 = (MediaController.PhotoEntry) o;
-                if (a == 0) {
+            if (a == 0) {
+                Object o = selectedPhotos.get(selectedPhotosOrder.get(a));
+                if (o instanceof MediaController.PhotoEntry) {
+                    MediaController.PhotoEntry photoEntry1 = (MediaController.PhotoEntry) o;
                     photoEntry1.caption = text;
-                    photoEntry1.entities = MediaDataController.getInstance(UserConfig.selectedAccount).getEntities(new CharSequence[] {text}, false);
-                } else {
-                    photoEntry1.caption = null;
-                }
-            } else if (o instanceof MediaController.SearchImage) {
-                MediaController.SearchImage photoEntry1 = (MediaController.SearchImage) o;
-                if (a == 0) {
+                    photoEntry1.entities = MediaDataController.getInstance(UserConfig.selectedAccount).getEntities(new CharSequence[]{text}, false);
+                } else if (o instanceof MediaController.SearchImage) {
+                    MediaController.SearchImage photoEntry1 = (MediaController.SearchImage) o;
                     photoEntry1.caption = text;
-                    photoEntry1.entities = MediaDataController.getInstance(UserConfig.selectedAccount).getEntities(new CharSequence[] {text}, false);
-                } else {
-                    photoEntry1.caption = null;
+                    photoEntry1.entities = MediaDataController.getInstance(UserConfig.selectedAccount).getEntities(new CharSequence[]{text}, false);
                 }
             }
         }
+    }
+
+    private boolean captionForAllMedia() {
+        int captionCount = 0;
+        for (int a = 0; a < selectedPhotosOrder.size(); a++) {
+            Object o = selectedPhotos.get(selectedPhotosOrder.get(a));
+            CharSequence caption = null;
+            if (o instanceof MediaController.PhotoEntry) {
+                MediaController.PhotoEntry photoEntry1 = (MediaController.PhotoEntry) o;
+                caption = photoEntry1.caption;
+            } else if (o instanceof MediaController.SearchImage) {
+                MediaController.SearchImage photoEntry1 = (MediaController.SearchImage) o;
+                caption = photoEntry1.caption;
+            }
+            if (!TextUtils.isEmpty(caption)) {
+                captionCount++;
+            }
+        }
+        return captionCount <= 1;
     }
 
     @Override

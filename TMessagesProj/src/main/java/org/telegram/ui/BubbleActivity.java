@@ -313,6 +313,8 @@ public class BubbleActivity extends Activity implements ActionBarLayout.ActionBa
         } else if (requestCode == 2) {
             if (granted) {
                 NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.locationPermissionGranted);
+            } else {
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.locationPermissionDenied);
             }
         }
         if (actionBarLayout.fragmentsStack.size() != 0) {

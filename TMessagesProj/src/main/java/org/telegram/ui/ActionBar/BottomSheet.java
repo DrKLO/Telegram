@@ -1265,6 +1265,9 @@ public class BottomSheet extends Dialog {
                         onClickListener.onClick(BottomSheet.this, item);
                     }
                     AndroidUtilities.runOnUIThread(() -> {
+                        if (onHideListener != null) {
+                            onHideListener.onDismiss(BottomSheet.this);
+                        }
                         try {
                             BottomSheet.super.dismiss();
                         } catch (Exception e) {
@@ -1483,6 +1486,11 @@ public class BottomSheet extends Dialog {
         public BottomSheet setUseFullscreen(boolean value) {
             bottomSheet.isFullscreen = value;
             return bottomSheet;
+        }
+
+        public Builder setOnPreDismissListener(OnDismissListener onDismissListener) {
+            bottomSheet.setOnHideListener(onDismissListener);
+            return this;
         }
     }
 

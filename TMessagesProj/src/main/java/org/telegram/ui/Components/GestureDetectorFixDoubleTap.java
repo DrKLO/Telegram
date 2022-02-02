@@ -5,7 +5,6 @@ import android.os.Handler;
 import android.os.Message;
 import android.view.GestureDetector;
 import android.view.GestureDetector.OnDoubleTapListener;
-import android.view.GestureDetector.OnGestureListener;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.ViewConfiguration;
@@ -250,7 +249,7 @@ public class GestureDetectorFixDoubleTap {
                     break;
 
                 case MotionEvent.ACTION_DOWN:
-                    if (mDoubleTapListener != null) {
+                    if (mDoubleTapListener != null && mListener.hasDoubleTap()) {
                         boolean hadTapMessage = mHandler.hasMessages(TAP);
                         if (hadTapMessage) mHandler.removeMessages(TAP);
                         if ((mCurrentDownEvent != null) && (mPreviousUpEvent != null)
@@ -427,35 +426,6 @@ public class GestureDetectorFixDoubleTap {
         }
     }
 
-    static class GestureDetectorCompatImplJellybeanMr2 implements GestureDetectorCompatImpl {
-        private final GestureDetector mDetector;
-
-        GestureDetectorCompatImplJellybeanMr2(Context context, OnGestureListener listener,
-                                              Handler handler) {
-            mDetector = new GestureDetector(context, listener, handler);
-        }
-
-        @Override
-        public boolean isLongpressEnabled() {
-            return mDetector.isLongpressEnabled();
-        }
-
-        @Override
-        public boolean onTouchEvent(MotionEvent ev) {
-            return mDetector.onTouchEvent(ev);
-        }
-
-        @Override
-        public void setIsLongpressEnabled(boolean enabled) {
-            mDetector.setIsLongpressEnabled(enabled);
-        }
-
-        @Override
-        public void setOnDoubleTapListener(OnDoubleTapListener listener) {
-            mDetector.setOnDoubleTapListener(listener);
-        }
-    }
-
     private final GestureDetectorCompatImpl mImpl;
 
     /**
@@ -526,5 +496,11 @@ public class GestureDetectorFixDoubleTap {
      */
     public void setOnDoubleTapListener(OnDoubleTapListener listener) {
         mImpl.setOnDoubleTapListener(listener);
+    }
+
+    public static class OnGestureListener extends GestureDetector.SimpleOnGestureListener {
+        public boolean hasDoubleTap() {
+            return false;
+        }
     }
 }

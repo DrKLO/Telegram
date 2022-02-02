@@ -131,7 +131,7 @@ public abstract class PrivateVideoPreviewDialog extends FrameLayout implements V
         textureView.scaleType = VoIPTextureView.SCALE_TYPE_FIT;
         textureView.clipToTexture = true;
         textureView.renderer.setAlpha(0);
-        textureView.renderer.setRotateTextureWitchScreen(true);
+        textureView.renderer.setRotateTextureWithScreen(true);
         textureView.renderer.setUseCameraRotation(true);
         addView(textureView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 

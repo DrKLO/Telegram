@@ -676,7 +676,13 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
                     tabView.inited = true;
                     SvgHelper.SvgDrawable svgThumb = tabView.svgThumb;
                     BackupImageView imageView = tabView.imageView;
-                    if (object instanceof TLRPC.Document && MessageObject.isAnimatedStickerDocument(sticker, true)) {
+                    if (object instanceof TLRPC.Document && MessageObject.isVideoSticker(sticker)) {
+                        if (svgThumb != null) {
+                            imageView.setImage(ImageLocation.getForDocument(sticker), "40_40", svgThumb, 0, parentObject);
+                        } else {
+                            imageView.setImage(ImageLocation.getForDocument(sticker), "40_40", imageLocation, null, 0, parentObject);
+                        }
+                    } else if (object instanceof TLRPC.Document && MessageObject.isAnimatedStickerDocument(sticker, true)) {
                         if (svgThumb != null) {
                             imageView.setImage(ImageLocation.getForDocument(sticker), "40_40", svgThumb, 0, parentObject);
                         } else {

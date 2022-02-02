@@ -29,7 +29,7 @@
 #include "modules/video_coding/svc/scalable_video_controller.h"
 #include "modules/video_coding/utility/framerate_controller.h"
 #include "rtc_base/experiments/encoder_info_settings.h"
-#include "vpx/vp8cx.h"
+#include <libvpx/vp8cx.h>
 
 namespace webrtc {
 

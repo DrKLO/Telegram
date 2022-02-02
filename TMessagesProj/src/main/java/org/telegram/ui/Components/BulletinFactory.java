@@ -189,6 +189,9 @@ public final class BulletinFactory {
 
     @CheckResult
     public Bulletin createCopyBulletin(String message) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            return new Bulletin.EmptyBulletin();
+        }
         final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), null);
         layout.setAnimation(R.raw.copy, 36, 36, "NULL ROTATION", "Back", "Front");
         layout.textView.setText(message);

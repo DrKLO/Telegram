@@ -15,7 +15,7 @@ import org.telegram.ui.ChatActivity;
 public class ChatBlurredFrameLayout extends FrameLayout {
 
     ChatActivity chatActivity;
-    Paint backgroundPaint;
+    protected Paint backgroundPaint;
     public int backgroundColor;
     public int backgroundPaddingBottom;
     public int backgroundPaddingTop;
@@ -65,7 +65,7 @@ public class ChatBlurredFrameLayout extends FrameLayout {
 
     @Override
     protected void onDetachedFromWindow() {
-        if (SharedConfig.chatBlurEnabled() && chatActivity != null) {
+        if (chatActivity != null) {
             chatActivity.contentView.blurBehindViews.remove(this);
         }
         super.onDetachedFromWindow();

@@ -13,6 +13,7 @@ import android.os.Build;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -25,96 +26,169 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RLottieImageView;
 
 import java.util.ArrayList;
 
 @SuppressWarnings("FieldCanBeLocal")
-public class DialogsEmptyCell extends LinearLayout {
+public class DialogsEmptyCell extends FrameLayout {
 
-    private RLottieImageView imageView;
-    private TextView emptyTextView1;
-    private TextView emptyTextView2;
-    private int currentType;
+    private int currentType = -1;
 
     private int currentAccount = UserConfig.selectedAccount;
+    private DialogsEmptyCellContent currentContent = null;
+    private DialogsEmptyCellContent lastContent = null;
+
+    private static class DialogsEmptyCellContent extends LinearLayout {
+        private RLottieImageView imageView;
+        private TextView emptyTextView1;
+        private TextView emptyTextView2;
+        private int currentType = 0;
+
+        public DialogsEmptyCellContent(Context context) {
+            super(context);
+
+            setGravity(Gravity.CENTER);
+            setOrientation(VERTICAL);
+            setOnTouchListener((v, event) -> true);
+
+            imageView = new RLottieImageView(context);
+            imageView.setScaleType(ImageView.ScaleType.CENTER);
+            addView(imageView, LayoutHelper.createLinear(100, 100, Gravity.CENTER, 52, 4, 52, 0));
+            imageView.setOnClickListener(v -> {
+                if (!imageView.isPlaying()) {
+                    imageView.setProgress(0.0f);
+                    imageView.playAnimation();
+                }
+            });
+
+            emptyTextView1 = new TextView(context);
+            emptyTextView1.setTextColor(Theme.getColor(Theme.key_chats_nameMessage_threeLines));
+            emptyTextView1.setText(LocaleController.getString("NoChats", R.string.NoChats));
+            emptyTextView1.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
+            emptyTextView1.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            emptyTextView1.setGravity(Gravity.CENTER);
+            addView(emptyTextView1, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 52, 10, 52, 0));
+
+            emptyTextView2 = new TextView(context);
+            String help = LocaleController.getString("NoChatsHelp", R.string.NoChatsHelp);
+            if (AndroidUtilities.isTablet() && !AndroidUtilities.isSmallTablet()) {
+                help = help.replace('\n', ' ');
+            }
+            emptyTextView2.setText(help);
+            emptyTextView2.setTextColor(Theme.getColor(Theme.key_chats_message));
+            emptyTextView2.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            emptyTextView2.setGravity(Gravity.CENTER);
+            emptyTextView2.setLineSpacing(AndroidUtilities.dp(2), 1);
+            addView(emptyTextView2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 52, 7, 52, 0));
+        }
+
+        public void setType(int value) {
+            if (currentType == value) {
+                return;
+            }
+            currentType = value;
+            String help;
+            int icon;
+            int translationY = 0;
+            if (currentType == 0) {
+                icon = 0;
+                help = LocaleController.getString("NoChatsHelp", R.string.NoChatsHelp);
+                emptyTextView1.setText(LocaleController.getString("NoChats", R.string.NoChats));
+            } else if (currentType == 1) {
+                icon = 0;
+                help = LocaleController.getString("NoChatsContactsHelp", R.string.NoChatsContactsHelp);
+                emptyTextView1.setText(LocaleController.getString("NoChats", R.string.NoChats));
+            } else if (currentType == 2) {
+                imageView.setAutoRepeat(false);
+                icon = R.raw.filter_no_chats;
+                help = LocaleController.getString("FilterNoChatsToDisplayInfo", R.string.FilterNoChatsToDisplayInfo);
+                emptyTextView1.setText(LocaleController.getString("FilterNoChatsToDisplay", R.string.FilterNoChatsToDisplay));
+            } else {
+                imageView.setAutoRepeat(true);
+                icon = R.raw.filter_new;
+                help = LocaleController.getString("FilterAddingChatsInfo", R.string.FilterAddingChatsInfo);
+                emptyTextView1.setText(LocaleController.getString("FilterAddingChats", R.string.FilterAddingChats));
+                translationY = AndroidUtilities.dp(8);
+            }
+            setTranslationY(translationY);
+            if (icon != 0) {
+                imageView.setVisibility(VISIBLE);
+                imageView.setAnimation(icon, 100, 100);
+                imageView.playAnimation();
+            } else {
+                imageView.setVisibility(GONE);
+            }
+            if (AndroidUtilities.isTablet() && !AndroidUtilities.isSmallTablet()) {
+                help = help.replace('\n', ' ');
+            }
+            emptyTextView2.setText(help);
+        }
+
+        public void setOffset(int offset) {
+            if (currentType == 2 || currentType == 3) {
+                imageView.setTranslationY(offset);
+                emptyTextView1.setTranslationY(offset);
+                emptyTextView2.setTranslationY(offset);
+            }
+        }
+    }
 
     public DialogsEmptyCell(Context context) {
         super(context);
-
-        setGravity(Gravity.CENTER);
-        setOrientation(VERTICAL);
-        setOnTouchListener((v, event) -> true);
-
-        imageView = new RLottieImageView(context);
-        imageView.setScaleType(ImageView.ScaleType.CENTER);
-        addView(imageView, LayoutHelper.createFrame(100, 100, Gravity.CENTER, 52, 4, 52, 0));
-        imageView.setOnClickListener(v -> {
-            if (!imageView.isPlaying()) {
-                imageView.setProgress(0.0f);
-                imageView.playAnimation();
-            }
-        });
-
-        emptyTextView1 = new TextView(context);
-        emptyTextView1.setTextColor(Theme.getColor(Theme.key_chats_nameMessage_threeLines));
-        emptyTextView1.setText(LocaleController.getString("NoChats", R.string.NoChats));
-        emptyTextView1.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-        emptyTextView1.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        emptyTextView1.setGravity(Gravity.CENTER);
-        addView(emptyTextView1, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 52, 10, 52, 0));
-
-        emptyTextView2 = new TextView(context);
-        String help = LocaleController.getString("NoChatsHelp", R.string.NoChatsHelp);
-        if (AndroidUtilities.isTablet() && !AndroidUtilities.isSmallTablet()) {
-            help = help.replace('\n', ' ');
-        }
-        emptyTextView2.setText(help);
-        emptyTextView2.setTextColor(Theme.getColor(Theme.key_chats_message));
-        emptyTextView2.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        emptyTextView2.setGravity(Gravity.CENTER);
-        emptyTextView2.setLineSpacing(AndroidUtilities.dp(2), 1);
-        addView(emptyTextView2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 52, 7, 52, 0));
     }
 
     public void setType(int value) {
+        setType(value, true);
+    }
+    public void setType(int value, boolean animated) {
         if (currentType == value) {
             return;
         }
+//        if (currentContent == null)
+//            animated = false;
         currentType = value;
-        String help;
-        int icon;
-        if (currentType == 0) {
-            icon = 0;
-            help = LocaleController.getString("NoChatsHelp", R.string.NoChatsHelp);
-            emptyTextView1.setText(LocaleController.getString("NoChats", R.string.NoChats));
-        } else if (currentType == 1) {
-            icon = 0;
-            help = LocaleController.getString("NoChatsContactsHelp", R.string.NoChatsContactsHelp);
-            emptyTextView1.setText(LocaleController.getString("NoChats", R.string.NoChats));
-        } else if (currentType == 2) {
-            imageView.setAutoRepeat(false);
-            icon = R.raw.filter_no_chats;
-            help = LocaleController.getString("FilterNoChatsToDisplayInfo", R.string.FilterNoChatsToDisplayInfo);
-            emptyTextView1.setText(LocaleController.getString("FilterNoChatsToDisplay", R.string.FilterNoChatsToDisplay));
-        } else {
-            imageView.setAutoRepeat(true);
-            icon = R.raw.filter_new;
-            help = LocaleController.getString("FilterAddingChatsInfo", R.string.FilterAddingChatsInfo);
-            emptyTextView1.setText(LocaleController.getString("FilterAddingChats", R.string.FilterAddingChats));
+
+//        lastContent = currentContent;
+
+        if (currentContent == null) {
+            currentContent = new DialogsEmptyCellContent(getContext());
+            addView(currentContent, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
         }
-        if (icon != 0) {
-            imageView.setVisibility(VISIBLE);
-            imageView.setAnimation(icon, 100, 100);
-            imageView.playAnimation();
-        } else {
-            imageView.setVisibility(GONE);
-        }
-        if (AndroidUtilities.isTablet() && !AndroidUtilities.isSmallTablet()) {
-            help = help.replace('\n', ' ');
-        }
-        emptyTextView2.setText(help);
+        currentContent.setType(value);
+        currentContent.setOffset(offset);
+//        if (animated) {
+//            currentContent.setAlpha(0f);
+//            currentContent.animate().alpha(1f).setDuration(220).setInterpolator(CubicBezierInterpolator.EASE_BOTH).start();
+//        } else {
+//            currentContent.setAlpha(1f);
+//        }
+//
+//        if (lastContent != null) {
+//            if (animated) {
+//                float fromAlpha = lastContent.getAlpha();
+//                lastContent.clearAnimation();
+//                lastContent.animate()
+//                        .alpha(0f)
+//                        .withEndAction(() -> {
+//                            if (lastContent.getParent() != null) {
+//                                removeView(lastContent);
+//                            }
+//                            lastContent = null;
+//                        })
+//                        .setDuration((long) (150 * fromAlpha))
+//                        .setInterpolator(CubicBezierInterpolator.EASE_BOTH)
+//                        .start();
+//            } else {
+//                lastContent.setAlpha(0f);
+//                if (lastContent.getParent() != null) {
+//                    removeView(lastContent);
+//                }
+//                lastContent = null;
+//            }
+//        }
     }
 
     @Override
@@ -129,15 +203,17 @@ public class DialogsEmptyCell extends LinearLayout {
         updateLayout();
     }
 
-    public void updateLayout() {
-        if (getParent() instanceof View && (currentType == 2 || currentType == 3)) {
+    private int offset = 0;
+    private void updateLayout() {
+        if (getParent() instanceof View) {
             View view = (View) getParent();
             int paddingTop = view.getPaddingTop();
             if (paddingTop != 0) {
-                int offset = -(getTop() / 2);
-                imageView.setTranslationY(offset);
-                emptyTextView1.setTranslationY(offset);
-                emptyTextView2.setTranslationY(offset);
+                offset = -(getTop() / 2);
+                if (currentContent != null)
+                    currentContent.setOffset(offset);
+                if (lastContent != null)
+                    lastContent.setOffset(offset);
             }
         }
     }

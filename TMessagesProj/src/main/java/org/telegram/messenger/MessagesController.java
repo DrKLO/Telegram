@@ -27,8 +27,11 @@ import android.util.SparseIntArray;
 
 import androidx.collection.LongSparseArray;
 import androidx.core.app.NotificationManagerCompat;
+import androidx.core.util.Consumer;
 
 import org.telegram.SQLite.SQLiteCursor;
+import org.telegram.SQLite.SQLiteException;
+import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.messenger.support.LongSparseIntArray;
 import org.telegram.messenger.support.LongSparseLongArray;
 import org.telegram.messenger.voip.VoIPService;
@@ -94,7 +97,13 @@ public class MessagesController extends BaseController implements NotificationCe
     public int unreadUnmutedDialogs;
     public ConcurrentHashMap<Long, Integer> dialogs_read_inbox_max = new ConcurrentHashMap<>(100, 1.0f, 2);
     public ConcurrentHashMap<Long, Integer> dialogs_read_outbox_max = new ConcurrentHashMap<>(100, 1.0f, 2);
-    public LongSparseArray<TLRPC.Dialog> dialogs_dict = new LongSparseArray<>();
+    public LongSparseArray<TLRPC.Dialog> dialogs_dict = new LongSparseArray<TLRPC.Dialog>() {
+
+        @Override
+        public void put(long key, TLRPC.Dialog value) {
+            super.put(key, value);
+        }
+    };
     public LongSparseArray<MessageObject> dialogMessage = new LongSparseArray<>();
     public LongSparseArray<MessageObject> dialogMessagesByRandomIds = new LongSparseArray<>();
     public LongSparseIntArray deletedHistory = new LongSparseIntArray();
@@ -328,6 +337,46 @@ public class MessagesController extends BaseController implements NotificationCe
     private SharedPreferences emojiPreferences;
 
     public volatile boolean ignoreSetOnline;
+
+    public void getNextReactionMention(long dialogId, int count, Consumer<Integer> callback) {
+        final MessagesStorage messagesStorage = getMessagesStorage();
+        messagesStorage.getStorageQueue().postRunnable(() -> {
+            boolean needRequest = true;
+            try {
+                SQLiteCursor cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT message_id FROM reaction_mentions WHERE state = 1 AND dialog_id = %d LIMIT 1", dialogId));
+                int messageId = 0;
+                if (cursor.next()) {
+                    messageId = cursor.intValue(0);
+                    needRequest = false;
+                }
+                cursor.dispose();
+                if (messageId != 0) {
+                    getMessagesStorage().markMessageReactionsAsRead(dialogId, messageId, false);
+
+                    int finalMessageId = messageId;
+                    AndroidUtilities.runOnUIThread(() -> callback.accept(finalMessageId));
+                }
+
+            } catch (SQLiteException e) {
+                e.printStackTrace();
+            }
+            if (needRequest) {
+                TLRPC.TL_messages_getUnreadReactions req = new TLRPC.TL_messages_getUnreadReactions();
+                req.peer = getMessagesController().getInputPeer(dialogId);
+                req.limit = 1;
+                req.add_offset = count - 1;
+                getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                    TLRPC.messages_Messages res = (TLRPC.messages_Messages) response;
+                    int messageId = 0;
+                    if (error != null && !res.messages.isEmpty()) {
+                        messageId = res.messages.get(0).id;
+                    }
+                    int finalMessageId = messageId;
+                    AndroidUtilities.runOnUIThread(() -> callback.accept(finalMessageId));
+                }));
+            }
+        });
+    }
 
     private class SponsoredMessagesInfo {
         private ArrayList<MessageObject> messages;
@@ -2737,11 +2786,14 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public boolean isChatNoForwards(TLRPC.Chat chat) {
-        if (chat == null) return false;
+        if (chat == null) {
+            return false;
+        }
         if (chat.migrated_to != null) {
             TLRPC.Chat migratedTo = getChat(chat.migrated_to.channel_id);
-            if (migratedTo != null)
+            if (migratedTo != null) {
                 return migratedTo.noforwards;
+            }
         }
         return chat.noforwards;
     }
@@ -6600,6 +6652,7 @@ public class MessagesController extends BaseController implements NotificationCe
             message.dialog_id = dialogId;
             long checkFileTime = SystemClock.elapsedRealtime();
             MessageObject messageObject = new MessageObject(currentAccount, message, usersDict, chatsDict, true, true);
+            messageObject.createStrippedThumb();
             fileProcessTime += (SystemClock.elapsedRealtime() - checkFileTime);
             messageObject.scheduled = mode == 1;
             objects.add(messageObject);
@@ -8287,6 +8340,7 @@ public class MessagesController extends BaseController implements NotificationCe
                     newDialog.unread_count = dialog.unread_count;
                     newDialog.unread_mark = dialog.unread_mark;
                     newDialog.unread_mentions_count = dialog.unread_mentions_count;
+                    newDialog.unread_reactions_count = dialog.unread_reactions_count;
                     newDialog.read_inbox_max_id = dialog.read_inbox_max_id;
                     newDialog.read_outbox_max_id = dialog.read_outbox_max_id;
                     newDialog.pinned = dialog.pinned;
@@ -8452,6 +8506,10 @@ public class MessagesController extends BaseController implements NotificationCe
                                 getNotificationCenter().postNotificationName(NotificationCenter.updateMentionsCount, currentDialog.id, currentDialog.unread_mentions_count);
                             }
                         }
+                        if (currentDialog.unread_reactions_count != value.unread_reactions_count) {
+                            currentDialog.unread_reactions_count = value.unread_reactions_count;
+                            getNotificationCenter().postNotificationName(NotificationCenter.dialogsUnreadReactionsCounterChanged, currentDialog.id, currentDialog.unread_reactions_count, null);
+                        }
                         MessageObject oldMsg = dialogMessage.get(key);
                         if (BuildVars.LOGS_ENABLED) {
                             FileLog.d("processDialogsUpdate oldMsg " + oldMsg + " old top_message = " + currentDialog.top_message + " new top_message = " + value.top_message);
@@ -8556,6 +8614,11 @@ public class MessagesController extends BaseController implements NotificationCe
         getConnectionsManager().sendRequest(req, (response, error) -> {
             if (error == null) {
                 TLRPC.Updates updates = (TLRPC.Updates) response;
+                for (int i = 0; i < updates.updates.size(); i++) {
+                    if (updates.updates.get(i) instanceof TLRPC.TL_updateMessageReactions) {
+                        ((TLRPC.TL_updateMessageReactions) updates.updates.get(i)).updateUnreadState = false;
+                    }
+                }
                 processUpdates(updates, false);
             }
         });
@@ -12196,13 +12259,6 @@ public class MessagesController extends BaseController implements NotificationCe
                         AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.onEmojiInteractionsReceived, update.user_id, update.action));
                         continue;
                     }
-
-//                    if (update.action instanceof TLRPC.TL_sendMessageEmojiInteraction) {
-//                        if (emojiInteractions == null) {
-//                            emojiInteractions = new ArrayList<>();
-//                        }
-//                        emojiInteractions.add(update.action);
-//                    }
                 } else {
                     TLRPC.TL_updateChatUserTyping update = (TLRPC.TL_updateChatUserTyping) baseUpdate;
                     chatId = update.chat_id;
@@ -12220,13 +12276,6 @@ public class MessagesController extends BaseController implements NotificationCe
                         AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.onEmojiInteractionsReceived, -update.chat_id, update.action));
                         continue;
                     }
-
-//                    if (update.action instanceof TLRPC.TL_sendMessageEmojiInteraction) {
-//                        if (emojiInteractions == null) {
-//                            emojiInteractions = new ArrayList<>();
-//                        }
-//                        emojiInteractions.add(update.action);
-//                    }
                 }
                 long uid = -chatId;
                 if (uid == 0) {
@@ -12886,6 +12935,11 @@ public class MessagesController extends BaseController implements NotificationCe
                 TLRPC.TL_updateMessageReactions update = (TLRPC.TL_updateMessageReactions) baseUpdate;
                 long dialogId = MessageObject.getPeerId(update.peer);
                 getMessagesStorage().updateMessageReactions(dialogId, update.msg_id, update.reactions);
+                if (update.updateUnreadState) {
+                    SparseBooleanArray sparseBooleanArray = new SparseBooleanArray();
+                    sparseBooleanArray.put(update.msg_id, MessageObject.hasUnreadReactions(update.reactions));
+                    checkUnreadReactions(dialogId, sparseBooleanArray);
+                }
                 if (updatesOnMainThread == null) {
                     updatesOnMainThread = new ArrayList<>();
                 }
@@ -13526,14 +13580,7 @@ public class MessagesController extends BaseController implements NotificationCe
                         getNotificationCenter().postNotificationName(NotificationCenter.newPeopleNearbyAvailable, baseUpdate);
                     } else if (baseUpdate instanceof TLRPC.TL_updateMessageReactions) {
                         TLRPC.TL_updateMessageReactions update = (TLRPC.TL_updateMessageReactions) baseUpdate;
-                        long dialogId;
-                        if (update.peer.chat_id != 0) {
-                            dialogId = -update.peer.chat_id;
-                        } else if (update.peer.channel_id != 0) {
-                            dialogId = -update.peer.channel_id;
-                        } else {
-                            dialogId = update.peer.user_id;
-                        }
+                        long dialogId = MessageObject.getPeerId(update.peer);
                         getNotificationCenter().postNotificationName(NotificationCenter.didUpdateReactions, dialogId, update.msg_id, update.reactions);
                     } else if (baseUpdate instanceof TLRPC.TL_updateTheme) {
                         TLRPC.TL_updateTheme update = (TLRPC.TL_updateTheme) baseUpdate;
@@ -13702,7 +13749,20 @@ public class MessagesController extends BaseController implements NotificationCe
             if (editingMessagesFinal != null) {
                 for (int b = 0, size = editingMessagesFinal.size(); b < size; b++) {
                     long dialogId = editingMessagesFinal.keyAt(b);
+                    SparseBooleanArray unreadReactions = null;
                     ArrayList<MessageObject> arrayList = editingMessagesFinal.valueAt(b);
+                    for (int a = 0, size2 = arrayList.size(); a < size2; a++) {
+                        MessageObject messageObject = arrayList.get(a);
+                        if (dialogId > 0) {
+                            if (unreadReactions == null) {
+                                unreadReactions = new SparseBooleanArray();
+                            }
+                            unreadReactions.put(messageObject.getId(), MessageObject.hasUnreadReactions(messageObject.messageOwner));
+                        }
+                    }
+                    if (dialogId > 0) {
+                        checkUnreadReactions(dialogId, unreadReactions);
+                    }
                     MessageObject oldObject = dialogMessage.get(dialogId);
                     if (oldObject != null) {
                         for (int a = 0, size2 = arrayList.size(); a < size2; a++) {
@@ -13944,6 +14004,99 @@ public class MessagesController extends BaseController implements NotificationCe
         return true;
     }
 
+    private void checkUnreadReactions(long dialogId, SparseBooleanArray unreadReactions) {
+        getMessagesStorage().getStorageQueue().postRunnable(() -> {
+            boolean needReload = false;
+            boolean changed = false;
+            ArrayList<Integer> newUnreadMessages = new ArrayList<>();
+
+            StringBuilder stringBuilder = new StringBuilder();
+            for (int i = 0; i < unreadReactions.size(); i++) {
+                int messageId = unreadReactions.keyAt(i);
+                if (stringBuilder.length() > 0) {
+                    stringBuilder.append(", ");
+                }
+                stringBuilder.append(messageId);
+            }
+            SparseBooleanArray reactionsMentionsMessageIds = new SparseBooleanArray();
+            try {
+                SQLiteCursor cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT message_id, state FROM reaction_mentions WHERE message_id IN (%s) AND dialog_id = %d", stringBuilder.toString(), dialogId));
+                while (cursor.next()) {
+                    int messageId = cursor.intValue(0);
+                    boolean hasUnreadReactions = cursor.intValue(1) == 1;
+                    reactionsMentionsMessageIds.put(messageId, hasUnreadReactions);
+                }
+                cursor.dispose();
+            } catch (SQLiteException e) {
+                e.printStackTrace();
+            }
+            int newUnreadCount = 0;
+            for (int i = 0; i < unreadReactions.size(); i++) {
+                int messageId = unreadReactions.keyAt(i);
+                boolean hasUnreadReaction = unreadReactions.valueAt(i);
+                if (reactionsMentionsMessageIds.indexOfKey(messageId) >= 0) {
+                    if (reactionsMentionsMessageIds.get(messageId) != hasUnreadReaction) {
+                        newUnreadCount += hasUnreadReaction ? 1 : -1;
+                        changed = true;
+
+                    }
+                } else {
+                    needReload = true;
+                }
+                if (hasUnreadReaction) {
+                    newUnreadMessages.add(messageId);
+                }
+
+                SQLitePreparedStatement state = null;
+                try {
+                    state = getMessagesStorage().getDatabase().executeFast("REPLACE INTO reaction_mentions VALUES(?, ?, ?)");
+                    state.requery();
+                    state.bindInteger(1, messageId);
+                    state.bindInteger(2, hasUnreadReaction ? 1 : 0);
+                    state.bindLong(3, dialogId);
+                    state.step();
+                    state.dispose();
+                } catch (SQLiteException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (needReload) {
+                TLRPC.TL_messages_getUnreadReactions req = new TLRPC.TL_messages_getUnreadReactions();
+                req.limit = 1;
+                req.peer = getInputPeer(dialogId);
+                ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
+                    if (response != null) {
+                        TLRPC.messages_Messages messages = (TLRPC.messages_Messages) response;
+                        int count = Math.max(messages.count, messages.messages.size());
+                        AndroidUtilities.runOnUIThread(() -> {
+                            TLRPC.Dialog dialog = dialogs_dict.get(dialogId);
+                            if (dialog == null) {
+                                return;
+                            }
+                            dialog.unread_reactions_count = count;
+                            getMessagesStorage().updateUnreadReactionsCount(dialogId, count);
+                            getNotificationCenter().postNotificationName(NotificationCenter.dialogsUnreadReactionsCounterChanged, dialogId, count, newUnreadMessages);
+                        });
+                    }
+                });
+            } else if (changed) {
+                int finalNewUnreadCount = newUnreadCount;
+                AndroidUtilities.runOnUIThread(() -> {
+                    TLRPC.Dialog dialog = dialogs_dict.get(dialogId);
+                    if (dialog == null) {
+                        return;
+                    }
+                    dialog.unread_reactions_count += finalNewUnreadCount;
+                    if (dialog.unread_reactions_count < 0) {
+                        dialog.unread_reactions_count = 0;
+                    }
+                    getMessagesStorage().updateUnreadReactionsCount(dialogId, dialog.unread_reactions_count);
+                    getNotificationCenter().postNotificationName(NotificationCenter.dialogsUnreadReactionsCounterChanged, dialogId, dialog.unread_reactions_count, newUnreadMessages);
+                });
+            }
+        });
+    }
+
     public boolean isDialogMuted(long dialogId) {
         return isDialogMuted(dialogId, null);
     }
@@ -13968,6 +14121,19 @@ public class MessagesController extends BaseController implements NotificationCe
             }
         }
         return false;
+    }
+
+    public void markReactionsAsRead(long dialogId) {
+        TLRPC.Dialog dialog = dialogs_dict.get(dialogId);
+        if (dialog != null) {
+            dialog.unread_reactions_count = 0;
+        }
+        getMessagesStorage().updateUnreadReactionsCount(dialogId, 0);
+        TLRPC.TL_messages_readReactions req = new TLRPC.TL_messages_readReactions();
+        req.peer = getInputPeer(dialogId);
+        getConnectionsManager().sendRequest(req, (response, error) -> {
+
+        });
     }
 
     public ArrayList<MessageObject> getSponsoredMessages(long dialogId) {

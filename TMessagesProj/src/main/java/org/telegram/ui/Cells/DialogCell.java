@@ -27,6 +27,7 @@ import android.text.Spanned;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.text.style.ClickableSpan;
 import android.text.style.ReplacementSpan;
 import android.view.HapticFeedbackConstants;
 import android.view.accessibility.AccessibilityEvent;
@@ -148,6 +149,7 @@ public class DialogCell extends BaseCell {
     private int unreadCount;
     private boolean markUnread;
     private int mentionCount;
+    private int reactionMentionCount;
     private boolean lastUnreadState;
     private int lastSendState;
     private boolean dialogMuted;
@@ -266,14 +268,18 @@ public class DialogCell extends BaseCell {
     private int countLeftOld;
     private boolean countAnimationIncrement;
     private ValueAnimator countAnimator;
+    private ValueAnimator reactionsMentionsAnimator;
     private float countChangeProgress = 1f;
+    private float reactionsMentionsChangeProgress = 1f;
     private StaticLayout countLayout;
     private StaticLayout countOldLayout;
     private StaticLayout countAnimationStableLayout;
     private StaticLayout countAnimationInLayout;
 
     private boolean drawMention;
+    private boolean drawReactionMention;
     private int mentionLeft;
+    private int reactionMentionLeft;
     private int mentionWidth;
     private StaticLayout mentionLayout;
 
@@ -439,6 +445,7 @@ public class DialogCell extends BaseCell {
         markUnread = false;
         messageId = messageObject != null ? messageObject.getId() : 0;
         mentionCount = 0;
+        reactionMentionCount = 0;
         lastUnreadState = messageObject != null && messageObject.isUnread();
         if (message != null) {
             lastSendState = message.messageOwner.send_state;
@@ -1302,6 +1309,7 @@ public class DialogCell extends BaseCell {
                 drawClock = false;
                 drawCount = false;
                 drawMention = false;
+                drawReactionMention = false;
                 drawError = false;
             } else {
                 if (currentDialogFolderId != 0) {
@@ -1337,6 +1345,11 @@ public class DialogCell extends BaseCell {
                         mentionString = "@";
                     } else {
                         drawMention = false;
+                    }
+                    if (reactionMentionCount != 0) {
+                        drawReactionMention = true;
+                    } else {
+                        drawReactionMention = false;
                     }
                 }
 
@@ -1575,7 +1588,7 @@ public class DialogCell extends BaseCell {
                 messageLeft += w;
                 messageNameLeft += w;
             }
-        } else if (countString != null || mentionString != null) {
+        } else if (countString != null || mentionString != null || drawReactionMention) {
             if (countString != null) {
                 countWidth = Math.max(AndroidUtilities.dp(12), (int) Math.ceil(Theme.dialogs_countTextPaint.measureText(countString)));
                 countLayout = new StaticLayout(countString, Theme.dialogs_countTextPaint, countWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
@@ -1609,6 +1622,17 @@ public class DialogCell extends BaseCell {
                     messageNameLeft += w;
                 }
                 drawMention = true;
+            }
+            if (drawReactionMention) {
+                int w = AndroidUtilities.dp(24);
+                messageWidth -= w;
+                if (!LocaleController.isRTL) {
+                    reactionMentionLeft = getMeasuredWidth() - AndroidUtilities.dp(32) - (mentionWidth != 0 ? (mentionWidth + AndroidUtilities.dp(20)) : 0) - (countWidth != 0 ? countWidth + AndroidUtilities.dp(18) : 0);
+                } else {
+                    reactionMentionLeft = AndroidUtilities.dp(20) + (countWidth != 0 ? countWidth + AndroidUtilities.dp(18) : 0);
+                    messageLeft += w;
+                    messageNameLeft += w;
+                }
             }
         } else {
             if (drawPin) {
@@ -1679,6 +1703,14 @@ public class DialogCell extends BaseCell {
                 messageStringFinal = TextUtils.ellipsize(messageString, currentMessagePaint, messageWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
             } else {
                 messageStringFinal = messageString;
+            }
+            // Removing links to get rid of underlining
+            if (messageStringFinal instanceof Spannable) {
+                Spannable messageStringSpannable = (Spannable) messageStringFinal;
+                ClickableSpan[] spans = messageStringSpannable.getSpans(0, messageStringSpannable.length(), ClickableSpan.class);
+                for (ClickableSpan span : spans) {
+                    messageStringSpannable.removeSpan(span);
+                }
             }
 
             if (useForceThreeLines || SharedConfig.useThreeLinesLayout) {
@@ -2013,6 +2045,7 @@ public class DialogCell extends BaseCell {
             thumbImage.setImageBitmap((BitmapDrawable) null);
         } else {
             int oldUnreadCount = unreadCount;
+            boolean oldHasReactionsMentions = reactionMentionCount != 0;
             boolean oldMarkUnread = markUnread;
             if (isDialogCell) {
                 TLRPC.Dialog dialog = MessagesController.getInstance(currentAccount).dialogs_dict.get(currentDialogId);
@@ -2027,6 +2060,7 @@ public class DialogCell extends BaseCell {
                         } else {
                             unreadCount = dialog.unread_count;
                             mentionCount = dialog.unread_mentions_count;
+                            reactionMentionCount = dialog.unread_reactions_count;
                         }
                         markUnread = dialog.unread_mark;
                         currentEditDate = message != null ? message.messageOwner.edit_date : 0;
@@ -2258,6 +2292,34 @@ public class DialogCell extends BaseCell {
                 countAnimationIncrement = unreadCount > oldUnreadCount;
                 countAnimator.start();
             }
+
+            boolean newHasReactionsMentions = reactionMentionCount != 0;
+            if (animated && (newHasReactionsMentions != oldHasReactionsMentions)) {
+                if (reactionsMentionsAnimator != null) {
+                    reactionsMentionsAnimator.cancel();
+                }
+                reactionsMentionsChangeProgress = 0;
+                reactionsMentionsAnimator = ValueAnimator.ofFloat(0, 1f);
+                reactionsMentionsAnimator.addUpdateListener(valueAnimator -> {
+                    reactionsMentionsChangeProgress = (float) valueAnimator.getAnimatedValue();
+                    invalidate();
+                });
+                reactionsMentionsAnimator.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        reactionsMentionsChangeProgress = 1f;
+                        invalidate();
+                    }
+                });
+                if (newHasReactionsMentions) {
+                    reactionsMentionsAnimator.setDuration(220);
+                    reactionsMentionsAnimator.setInterpolator(new OvershootInterpolator());
+                } else {
+                    reactionsMentionsAnimator.setDuration(150);
+                    reactionsMentionsAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
+                }
+                reactionsMentionsAnimator.start();
+            }
         }
         if (getMeasuredWidth() != 0 || getMeasuredHeight() != 0) {
             buildLayout();
@@ -2267,6 +2329,9 @@ public class DialogCell extends BaseCell {
 
         if (!animated) {
             dialogMutedProgress = dialogMuted ? 1f : 0f;
+            if (countAnimator != null) {
+                countAnimator.cancel();
+            }
         }
 
         invalidate();
@@ -2730,7 +2795,7 @@ public class DialogCell extends BaseCell {
             canvas.drawRoundRect(rect, 11.5f * AndroidUtilities.density, 11.5f * AndroidUtilities.density, Theme.dialogs_errorPaint);
             setDrawableBounds(Theme.dialogs_errorDrawable, errorLeft + AndroidUtilities.dp(5.5f), errorTop + AndroidUtilities.dp(5));
             Theme.dialogs_errorDrawable.draw(canvas);
-        } else if (drawCount || drawMention || countChangeProgress != 1f) {
+        } else if (drawCount || drawMention || countChangeProgress != 1f || drawReactionMention || reactionsMentionsChangeProgress != 1f) {
             if (drawCount || countChangeProgress != 1f) {
                 final float progressFinal = (unreadCount == 0 && !markUnread) ? 1f - countChangeProgress : countChangeProgress;
                 if (countOldLayout == null || unreadCount == 0) {
@@ -2845,6 +2910,26 @@ public class DialogCell extends BaseCell {
                     setDrawableBounds(Theme.dialogs_mentionDrawable, mentionLeft - AndroidUtilities.dp(2), countTop + AndroidUtilities.dp(3.2f), AndroidUtilities.dp(16), AndroidUtilities.dp(16));
                     Theme.dialogs_mentionDrawable.draw(canvas);
                 }
+            }
+
+            if (drawReactionMention || reactionsMentionsChangeProgress != 1f) {
+
+                Theme.dialogs_countPaint.setAlpha((int) ((1.0f - reorderIconProgress) * 255));
+
+                int x = reactionMentionLeft - AndroidUtilities.dp(5.5f);
+                rect.set(x, countTop, x + AndroidUtilities.dp(23), countTop + AndroidUtilities.dp(23));
+                Paint paint = dialogMuted && folderId != 0 ? Theme.dialogs_countGrayPaint : Theme.dialogs_countPaint;
+
+                canvas.save();
+                if (reactionsMentionsChangeProgress != 1f) {
+                    float s = drawReactionMention ? reactionsMentionsChangeProgress : (1f - reactionsMentionsChangeProgress);
+                    canvas.scale(s, s, rect.centerX(),  rect.centerY());
+                }
+                canvas.drawRoundRect(rect, 11.5f * AndroidUtilities.density, 11.5f * AndroidUtilities.density, paint);
+                Theme.dialogs_reactionsMentionDrawable.setAlpha((int) ((1.0f - reorderIconProgress) * 255));
+                setDrawableBounds(Theme.dialogs_reactionsMentionDrawable, reactionMentionLeft - AndroidUtilities.dp(2), countTop + AndroidUtilities.dp(3.8f), AndroidUtilities.dp(16), AndroidUtilities.dp(16));
+                Theme.dialogs_reactionsMentionDrawable.draw(canvas);
+                canvas.restore();
             }
         } else if (drawPin) {
             Theme.dialogs_pinnedDrawable.setAlpha((int) ((1.0f - reorderIconProgress) * 255));

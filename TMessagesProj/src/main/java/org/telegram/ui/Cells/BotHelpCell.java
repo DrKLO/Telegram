@@ -151,6 +151,7 @@ public class BotHelpCell extends View {
                                     int start = buffer.getSpanStart(pressedLink);
                                     urlPath.setCurrentLayout(textLayout, start, 0);
                                     textLayout.getSelectionPath(start, buffer.getSpanEnd(pressedLink), urlPath);
+                                    urlPath.onPathEnd();
                                 } catch (Exception e) {
                                     FileLog.e(e);
                                 }

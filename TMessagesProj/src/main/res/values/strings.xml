@@ -1056,6 +1056,7 @@
     <string name="ReportChatChild">Child Abuse</string>
     <string name="ReportChatOther">Other</string>
     <string name="ReportChatDescription">Description</string>
+    <string name="DescriptionMore">more</string>
     <string name="PinnedMessage">Pinned Message</string>
     <string name="PreviousPinnedMessage">Previous Message</string>
     <string name="PinnedPoll">Pinned poll</string>
@@ -1399,6 +1400,8 @@
     <string name="InviteFriends">Invite Friends</string>
     <string name="SearchFriends">Search contacts</string>
     <string name="GlobalSearch">Global search</string>
+    <string name="ShowMore">Show more</string>
+    <string name="ShowLess">Show less</string>
     <string name="Lately">last seen recently</string>
     <string name="WithinAWeek">last seen within a week</string>
     <string name="WithinAMonth">last seen within a month</string>
@@ -4634,6 +4637,7 @@
     <string name="AccDescrPhotoViewer">Photo viewer</string>
     <string name="AccDescrPageDown">Go to bottom</string>
     <string name="AccDescrMentionDown">Go to next mention</string>
+    <string name="AccDescrReactionMentionDown">Go to next unread reactions</string>
     <string name="AccDescrMuteMic">Mute microphone</string>
     <string name="AccDescrIVTitle">Title</string>
     <string name="AccDescrIVHeading">Heading</string>
@@ -4852,6 +4856,7 @@
     <string name="UserAcceptedToGroupPushWithGroup">%2$s|%1$s was accepted into the group</string>
     <string name="ForwardsRestrictedInfoChannel">Сopying and forwarding is not allowed in this channel.</string>
     <string name="ForwardsRestrictedInfoGroup">Сopying and forwarding is not allowed in this group.</string>
+    <string name="ForwardsRestrictedInfoBot">Copying and forwarding is not allowed from this bot.</string>
     <string name="SendMessageAsTitle">Send message as...</string>
     <string name="OpenChannelPost">VIEW POST</string>
     <string name="SavingContentTitle">Saving content</string>
@@ -4973,4 +4978,5 @@
     <string name="PushChatReactGame">%1$s: %3$s to your game in %2$s</string>
     <string name="PushChatReactInvoice">%1$s: %3$s to your invoice in %2$s</string>
     <string name="PushChatReactGif">%1$s: %3$s to your GIF in %2$s</string>
+    <string name="BlurInChat">Blur in chat</string>
 </resources>

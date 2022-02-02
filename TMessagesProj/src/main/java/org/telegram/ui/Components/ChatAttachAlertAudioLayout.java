@@ -280,7 +280,7 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
         } else {
             visible = audioEntries.isEmpty();
         }
-        currentEmptyView.setVisibility(visible ? VISIBLE : GONE);
+        currentEmptyView.setVisibility(visible ? VISIBLE :  GONE);
         updateEmptyViewPosition();
     }
 
@@ -590,10 +590,7 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
 
         @Override
         public int getItemCount() {
-            if (audioEntries.isEmpty()) {
-                return 1;
-            }
-            return audioEntries.size() + (audioEntries.isEmpty() ? 0 : 2);
+            return 1 + audioEntries.size() + (audioEntries.isEmpty() ? 0 : 1);
         }
 
         @Override
@@ -767,10 +764,7 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
 
         @Override
         public int getItemCount() {
-            if (searchResult.isEmpty()) {
-                return 1;
-            }
-            return searchResult.size() + (searchResult.isEmpty() ? 0 : 2);
+            return 1 + searchResult.size() + (searchResult.isEmpty() ? 0 : 1);
         }
 
         @Override

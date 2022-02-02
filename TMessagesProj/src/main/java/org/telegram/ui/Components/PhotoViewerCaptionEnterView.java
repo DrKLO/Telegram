@@ -28,12 +28,14 @@ import android.text.TextWatcher;
 import android.text.style.ImageSpan;
 import android.util.TypedValue;
 import android.view.ActionMode;
+import android.view.DragEvent;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.ExtractedText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -196,8 +198,15 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
                 rectangle.bottom += AndroidUtilities.dp(1000);
                 return super.requestRectangleOnScreen(rectangle);
             }
-
         };
+        messageEditText.setOnFocusChangeListener((view, focused) -> {
+            if (focused) {
+                try {
+                    messageEditText.setSelection(messageEditText.length(), messageEditText.length());
+                } catch (Exception ignore) {}
+            }
+        });
+        messageEditText.setSelectAllOnFocus(false);
 
         messageEditText.setDelegate(() -> messageEditText.invalidateEffects());
         messageEditText.setWindowView(windowView);
@@ -720,22 +729,10 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
     }
 
     public void openKeyboard() {
-        int currentSelection;
-        try {
-            currentSelection = messageEditText.getSelectionStart();
-        } catch (Exception e) {
-            currentSelection = messageEditText.length();
-            FileLog.e(e);
-        }
-        MotionEvent event = MotionEvent.obtain(0, 0, MotionEvent.ACTION_DOWN, 0, 0, 0);
-        messageEditText.onTouchEvent(event);
-        event.recycle();
-        event = MotionEvent.obtain(0, 0, MotionEvent.ACTION_UP, 0, 0, 0);
-        messageEditText.onTouchEvent(event);
-        event.recycle();
+        messageEditText.requestFocus();
         AndroidUtilities.showKeyboard(messageEditText);
         try {
-            messageEditText.setSelection(currentSelection);
+            messageEditText.setSelection(messageEditText.length(), messageEditText.length());
         } catch (Exception e) {
             FileLog.e(e);
         }

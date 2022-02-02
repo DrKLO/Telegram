@@ -2730,7 +2730,7 @@ public class MediaDataController extends BaseController {
             }
             if (isVoice) {
                 return MEDIA_AUDIO;
-            } else if (isVideo && !isAnimated) {
+            } else if (isVideo && !isAnimated && !isSticker) {
                 return MEDIA_PHOTOVIDEO;
             } else if (isSticker) {
                 return -1;

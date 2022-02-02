@@ -564,7 +564,6 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
         } else {
             drawInternal(canvas);
             super.dispatchDraw(canvas);
-
         }
     }
 

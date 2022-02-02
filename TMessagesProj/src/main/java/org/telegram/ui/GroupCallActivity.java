@@ -7,6 +7,7 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -1149,15 +1150,26 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                     if (args.length >= 4) {
                         long justJoinedId = (Long) args[3];
                         if (justJoinedId != 0) {
-                            TLObject object;
+                            boolean hasInDialogs = false;
+                            try {
+                                ArrayList<TLRPC.Dialog> dialogs = accountInstance.getMessagesController().getAllDialogs();
+                                if (dialogs != null) {
+                                    for (TLRPC.Dialog dialog : dialogs) {
+                                        if (dialog.id == justJoinedId) {
+                                            hasInDialogs = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            } catch (Exception ignore) {}
                             if (DialogObject.isUserDialog(justJoinedId)) {
                                 TLRPC.User user = accountInstance.getMessagesController().getUser(justJoinedId);
-                                if (call.call.participants_count < 250 || UserObject.isContact(user)) {
+                                if (user != null && (call.call.participants_count < 250 || UserObject.isContact(user) || user.verified || hasInDialogs)) {
                                     getUndoView().showWithAction(0, UndoView.ACTION_VOIP_USER_JOINED, user, currentChat, null, null);
                                 }
                             } else {
                                 TLRPC.Chat chat = accountInstance.getMessagesController().getChat(-justJoinedId);
-                                if (call.call.participants_count < 250 || !ChatObject.isNotInChat(chat)) {
+                                if (chat != null && (call.call.participants_count < 250 || !ChatObject.isNotInChat(chat) || chat.verified || hasInDialogs)) {
                                     getUndoView().showWithAction(0, UndoView.ACTION_VOIP_USER_JOINED, chat, currentChat, null, null);
                                 }
                             }

@@ -28,8 +28,8 @@
 #include "rtc_base/experiments/cpu_speed_experiment.h"
 #include "rtc_base/experiments/encoder_info_settings.h"
 #include "rtc_base/experiments/rate_control_settings.h"
-#include "vpx/vp8cx.h"
-#include "vpx/vpx_encoder.h"
+#include <libvpx/vp8cx.h>
+#include <libvpx/vpx_encoder.h>
 
 namespace webrtc {
 
