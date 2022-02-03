@@ -368,7 +368,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                     TLRPC.messages_Messages res = (TLRPC.messages_Messages) response;
                     int messageId = 0;
-                    if (error != null && !res.messages.isEmpty()) {
+                    if (error != null && res != null && res.messages != null && !res.messages.isEmpty()) {
                         messageId = res.messages.get(0).id;
                     }
                     int finalMessageId = messageId;

@@ -17,6 +17,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.Paint;
@@ -932,6 +933,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
             muteDrawable.setCurrentFrame(muteDrawable.getCustomEndFrame() - 1, false, true);
             muteButton.invalidate();
             frameLayout.setBackground(null);
+            frameLayout.setBackgroundColor(Color.TRANSPARENT);
             importingImageView.setVisibility(GONE);
             importingImageView.stopAnimation();
             Theme.getFragmentContextViewWavesDrawable().addParent(this);

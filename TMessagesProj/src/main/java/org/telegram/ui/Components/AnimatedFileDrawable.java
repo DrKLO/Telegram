@@ -125,13 +125,15 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
     private View parentView;
     private ArrayList<View> secondParentViews = new ArrayList<>();
 
+    private ArrayList<View> parents = new ArrayList<>();
+
     private AnimatedFileDrawableStream stream;
 
     private boolean useSharedQueue;
     private boolean invalidatePath = true;
     private boolean invalidateTaskIsRunning;
 
-    private static ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(16, new ThreadPoolExecutor.DiscardPolicy());
+    private static ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(8, new ThreadPoolExecutor.DiscardPolicy());
 
     protected final Runnable mInvalidateTask = () -> {
         invalidateTaskIsRunning = false;
@@ -244,14 +246,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
                         destroyDecoder(nativePtr);
                         nativePtr = 0;
                     }
-                    if (renderingHeight > 0 && renderingWidth > 0 && metaData[0] > 0 && metaData[1] > 0) {
-                        scaleFactor = Math.max(renderingWidth / (float) metaData[0], renderingHeight / (float) metaData[1]);
-                        if (isWebmSticker || scaleFactor <= 0 || scaleFactor > 0.7) {
-                            scaleFactor = 1;
-                        }
-                    } else {
-                        scaleFactor = 1f;
-                    }
+                    updateScaleFactor();
                     decoderCreated = true;
                 }
                 try {
@@ -281,10 +276,12 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
                         }
                         if (backgroundBitmap != null) {
                             lastFrameDecodeTime = System.currentTimeMillis();
+
                             if (getVideoFrame(nativePtr, backgroundBitmap, metaData, backgroundBitmap.getRowBytes(), false, startTime, endTime) == 0) {
                                 AndroidUtilities.runOnUIThread(uiRunnableNoFrame);
                                 return;
                             }
+
                             if (seekWas) {
                                 lastTimeStamp = metaData[3];
                             }
@@ -301,6 +298,17 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
             AndroidUtilities.runOnUIThread(uiRunnable);
         }
     };
+
+    private void updateScaleFactor() {
+        if (!isWebmSticker && renderingHeight > 0 && renderingWidth > 0 && metaData[0] > 0 && metaData[1] > 0) {
+            scaleFactor = Math.max(renderingWidth / (float) metaData[0], renderingHeight / (float) metaData[1]);
+            if (scaleFactor <= 0 || scaleFactor > 0.7) {
+                scaleFactor = 1;
+            }
+        } else {
+            scaleFactor = 1f;
+        }
+    }
 
     private final Runnable mStartTask = () -> {
         if (!secondParentViews.isEmpty()) {
@@ -337,14 +345,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
                 destroyDecoder(nativePtr);
                 nativePtr = 0;
             }
-            if (renderingHeight > 0 && renderingWidth > 0 && metaData[0] > 0 && metaData[1] > 0) {
-                scaleFactor = Math.max(renderingWidth / (float) metaData[0], renderingHeight / (float) metaData[1]);
-                if (isWebmSticker || scaleFactor <= 0 || scaleFactor > 0.7) {
-                    scaleFactor = 1f;
-                }
-            } else {
-                scaleFactor = 1f;
-            }
+            updateScaleFactor();
             decoderCreated = true;
         }
         if (seekTo != 0) {
@@ -384,6 +385,19 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
             return;
         }
         parentView = view;
+    }
+
+    public void addParent(View view) {
+        if (!parents.contains(view)) {
+            parents.add(view);
+            if (isRunning) {
+                scheduleNextGetFrame();
+            }
+        }
+    }
+
+    public void removeParent(View view) {
+        parents.remove(view);
     }
 
     public void setInvalidateParentViewWithSecond(boolean value) {
@@ -550,7 +564,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
     }
 
     private void scheduleNextGetFrame() {
-        if (loadFrameTask != null || nativePtr == 0 && decoderCreated || destroyWhenDone || !isRunning && (!decodeSingleFrame || decodeSingleFrame && singleFrameDecoded)) {
+        if (loadFrameTask != null || nativePtr == 0 && decoderCreated || destroyWhenDone || !isRunning && (!decodeSingleFrame || decodeSingleFrame && singleFrameDecoded) || parents.size() == 0) {
             return;
         }
         long ms = 0;

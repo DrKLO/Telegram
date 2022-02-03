@@ -4993,12 +4993,16 @@ public class MessageObject {
         return FileLoader.getDocumentFileName(getDocument());
     }
 
-    public static boolean isVideoSticker(TLRPC.Document document) {
+    public static boolean isWebM(TLRPC.Document document) {
         return document != null && "video/webm".equals(document.mime_type);
     }
 
+    public static boolean isVideoSticker(TLRPC.Document document) {
+        return document != null && isVideoStickerDocument(document);
+    }
+
     public boolean isVideoSticker() {
-        return getDocument() != null && "video/webm".equals(getDocument().mime_type);
+        return getDocument() != null && isVideoStickerDocument(getDocument());
     }
 
     public static boolean isStickerDocument(TLRPC.Document document) {
@@ -5007,6 +5011,18 @@ public class MessageObject {
                 TLRPC.DocumentAttribute attribute = document.attributes.get(a);
                 if (attribute instanceof TLRPC.TL_documentAttributeSticker) {
                     return "image/webp".equals(document.mime_type) || "video/webm".equals(document.mime_type);
+                }
+            }
+        }
+        return false;
+    }
+
+    public static boolean isVideoStickerDocument(TLRPC.Document document) {
+        if (document != null) {
+            for (int a = 0; a < document.attributes.size(); a++) {
+                TLRPC.DocumentAttribute attribute = document.attributes.get(a);
+                if (attribute instanceof TLRPC.TL_documentAttributeSticker) {
+                    return "video/webm".equals(document.mime_type);
                 }
             }
         }
