@@ -2,4 +2,6 @@
 <resources>
     <string name="AS_Header_AboutX">معلومات حول Catogram X</string>
     <string name="AdvancedSettingsX">إعدادات Catogram X</string>
+    <string name="CX_TranslateMessagesInfo1">إستعمل خاصية Telegram للطرجمة بدل مطرجم Catogram</string>
+    <string name="CX_OldTranslateUI">اسعمال الواجهة الكلاسيكية (القديمة)</string>
 </resources>
