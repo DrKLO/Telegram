@@ -138,11 +138,11 @@
     <string name="CG_IntroMessage">Um cliente não oficial do telegram
 \n
 \nQue tem muitas \"features novas\" e um design/tema melhorado :)</string>
-    <string name="CG_GooglePlay_Donate">Donate</string>
-    <string name="CG_GooglePlay_Info">Information</string>
-    <string name="CG_GooglePlay_InfoDesc">All payments will be processed by Google Play.</string>
-    <string name="CG_GooglePlay_ChooseAmount">Choose an amount</string>
-    <string name="CG_GooglePlay_Thanks">Thanks!</string>
+    <string name="CG_GooglePlay_Donate">Doar</string>
+    <string name="CG_GooglePlay_Info">Informações</string>
+    <string name="CG_GooglePlay_InfoDesc">Todos pagamentos são processados pela Google play</string>
+    <string name="CG_GooglePlay_ChooseAmount">Escolha um valor</string>
+    <string name="CG_GooglePlay_Thanks">Obrigado!</string>
     <string name="CG_TabIconMode_Title">Tab icon type [restart needed]</string>
     <string name="CG_TabIconMode_Disabled">Disabled</string>
     <string name="CG_TabIconMode_Append">Append to tab title</string>
