@@ -133,8 +133,8 @@
     <string name="CG_Translate_Translated">Traduzido</string>
     <string name="CG_Translate_Language">Detectar idioma</string>
     <string name="CG_Translate_PoweredBy">Feito por</string>
-    <string name="CG_ToSaved">Save message</string>
-    <string name="CG_FABLeft">\"New chat\" on the left</string>
+    <string name="CG_ToSaved">Salvar mensagem</string>
+    <string name="CG_FABLeft">\"Nova conversa\" à esquerda</string>
     <string name="CG_IntroMessage">An **unofficial** Telegram client modification.\nIt has **additional features** and **improved customization**.</string>
     <string name="CG_GooglePlay_Donate">Donate</string>
     <string name="CG_GooglePlay_Info">Information</string>
