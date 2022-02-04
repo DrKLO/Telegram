@@ -220,7 +220,7 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
                 }
                 boolean search = listView.getAdapter() == searchListViewAdapter;
                 if (!search)
-                    position--;
+                    position -= 2;
                 LocaleController.LocaleInfo localeInfo;
                 if (search) {
                     localeInfo = searchResult.get(position);
