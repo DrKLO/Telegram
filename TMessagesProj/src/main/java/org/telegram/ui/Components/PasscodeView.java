@@ -73,6 +73,7 @@ import java.util.ArrayList;
 import java.util.Locale;
 
 import ua.itaysonlab.catogram.CatogramConfig;
+import ua.itaysonlab.catogram.CatogramPreferencesNavigator;
 import ua.itaysonlab.catogram.double_bottom.DoubleBottomBridge;
 import ua.itaysonlab.catogram.double_bottom.DoubleBottomStorageBridge;
 import ua.itaysonlab.catogram.security.CGBiometricPrompt;
@@ -790,6 +791,7 @@ public class PasscodeView extends FrameLayout {
     }
 
     private void processDone(boolean fingerprint) {
+        long accId = -1;
         if (!fingerprint) {
             if (SharedConfig.passcodeRetryInMs > 0) {
                 return;
@@ -805,9 +807,12 @@ public class PasscodeView extends FrameLayout {
                 return;
             }
 
-            int accId = (int) DoubleBottomBridge.checkPasscodeForAnyOfAccounts(password);
-            if (accId != -1 && getContext() instanceof LaunchActivity) {
+            accId = DoubleBottomBridge.checkPasscodeForAnyOfAccounts(password);
+            if (accId > 0 && getContext() instanceof LaunchActivity) {
                 ((LaunchActivity) getContext()).switchToAccount(DoubleBottomBridge.findLocalAccIdByTgId(accId), true);
+            } else if (accId == 0 && getContext() instanceof LaunchActivity) {
+                ((LaunchActivity) getContext()).presentFragment(CatogramPreferencesNavigator.createDB(), true, true);
+                ((LaunchActivity) getContext()).drawerLayoutContainer.setAllowOpenDrawerBySwipe(false);
             } else if (!SharedConfig.checkPasscode(password)) {
                 SharedConfig.increaseBadPasscodeTries();
                 if (SharedConfig.passcodeRetryInMs > 0) {
@@ -824,6 +829,7 @@ public class PasscodeView extends FrameLayout {
         } else {
             if (DoubleBottomStorageBridge.INSTANCE.getFingerprintAccount() != -1 && getContext() instanceof LaunchActivity) {
                 ((LaunchActivity) getContext()).switchToAccount(DoubleBottomBridge.findLocalAccIdByTgId(DoubleBottomStorageBridge.INSTANCE.getFingerprintAccount()), true);
+                accId = DoubleBottomStorageBridge.INSTANCE.getFingerprintAccount();
             }
         }
 
@@ -831,9 +837,9 @@ public class PasscodeView extends FrameLayout {
         passwordEditText.clearFocus();
         AndroidUtilities.hideKeyboard(passwordEditText);
 
-        SharedConfig.appLocked = false;
+        SharedConfig.appLocked = accId == 0;
         SharedConfig.saveConfig();
-        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didSetPasscode);
+        if (accId != 0) NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didSetPasscode);
         setOnTouchListener(null);
         if (delegate != null) {
             delegate.didAcceptedPassword();

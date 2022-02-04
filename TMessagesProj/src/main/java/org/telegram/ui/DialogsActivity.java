@@ -3618,7 +3618,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         updateMenuButton(false);
 
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && (ContextCompat.checkSelfPermission(getParentActivity(),"android.permission.READ_EXTERNAL_STORAGE") == PackageManager.PERMISSION_GRANTED) && !Environment.isExternalStorageManager()) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && BuildVars.NO_SCOPED_STORAGE && (ContextCompat.checkSelfPermission(getParentActivity(),"android.permission.READ_EXTERNAL_STORAGE") == PackageManager.PERMISSION_GRANTED) && !Environment.isExternalStorageManager()) {
             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
             builder.setPositiveButton(LocaleController.getString("Contin", R.string.Continue), (a, b) -> {
                 Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
@@ -3628,7 +3628,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             });
             builder.setNegativeButton(LocaleController.getString("Dismiss", R.string.Dismiss), (dialog, val) -> {
                 dialog.dismiss();
-                BulletinFactory.of(this).createErrorBulletin(LocaleController.getString("CX_DismissStorageDialog", R.string.CX_DismissStorageDialog), getResourceProvider()).show();
+                BulletinFactory.of(this).createErrorBulletin(LocaleController.getString("CX_DismissStorageDialog2", R.string.CX_DismissStorageDialog2), getResourceProvider()).show();
             });
             builder.setMessage(LocaleController.getString("CX_AllowStorage", R.string.CX_AllowStorage));
             showDialog(builder.create());

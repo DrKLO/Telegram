@@ -2,6 +2,7 @@ package ua.itaysonlab.catogram.double_bottom
 
 import android.app.Activity
 import android.content.SharedPreferences
+import com.google.android.exoplayer2.util.Log
 import org.json.JSONArray
 import org.json.JSONObject
 import org.telegram.messenger.ApplicationLoader
@@ -11,8 +12,8 @@ import ua.itaysonlab.catogram.preferences.ktx.long
 
 // Used for storing data
 object DoubleBottomStorageBridge {
-    const val DB_TIMER_END = 2 * 60 * 1000 // 2 minutes
-    //const val DB_TIMER_END = -1 // always for dev version
+    //const val DB_TIMER_END = 2 * 60 * 1000 // 2 minutes
+    const val DB_TIMER_END = -1 // always for dev version
 
     private val preferences: SharedPreferences = ApplicationLoader.applicationContext.getSharedPreferences("dbconfig", Activity.MODE_PRIVATE)
 
@@ -49,7 +50,7 @@ object DoubleBottomStorageBridge {
                 id = json.getLong("id"),
                 type = json.getInt("type"),
                 salt = json.getString("pwd_salt"),
-                hash = json.getString("pwd_hash"),
+                hash = json.getString("pwd_hash")
         )
 
         fun asJson(): JSONObject = JSONObject().also {

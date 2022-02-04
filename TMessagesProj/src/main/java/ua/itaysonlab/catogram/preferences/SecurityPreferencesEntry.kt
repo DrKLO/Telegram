@@ -42,6 +42,16 @@ class SecurityPreferencesEntry : BasePreferencesEntry {
                     Toast.makeText(bf.parentActivity, LocaleController.getString("CG_RemovedS", R.string.CG_RemovedS), Toast.LENGTH_SHORT).show()
                 }
             }
+            switch {
+                title = LocaleController.getString("CX_EnableSAF", R.string.CX_EnableSAF)
+                summary = LocaleController.getString("CX_EnableSAFDesc", R.string.CX_EnableSAFDesc)
+
+                contract({
+                    return@contract CatogramConfig.enableSaf
+                }) {
+                    CatogramConfig.enableSaf = it
+                }
+            }
         }
     }
 }

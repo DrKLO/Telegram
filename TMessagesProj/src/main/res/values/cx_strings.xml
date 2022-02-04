@@ -30,7 +30,7 @@
     <string name="CX_DB_AccountsHint">Double Bottom allows you to set a passcode for a different account.\n\nTrying to set a password to a configured account will replace the older one after you re-entered it.\nLong-press a entry to remove the passcode, by, again, entering it.</string>
     <string name="CX_TitleIsChats">Use "Chats" as title for the chat list, instead of the app name</string>
     <string name="CX_TitleIsChatsDesc">As in original Catogram</string>
-    <string name="CX_DismissStorageDialog">To permanently dismiss the dialog, grant the permission or ungrant all storage permissions.</string>
+    <string name="CX_DismissStorageDialog2">To permanently dismiss the dialog, grant the permission or enable SAF in CatoX settings.</string>
 
     <!-- CX 4.1.2 -->
     <string name="CX_ThemePreviewDialogMessage3">Please test the new update!</string>
@@ -55,4 +55,9 @@
     <string name="CX_ChangeIcon_Taffy_Reg">CatoX Taffy (by Qirkl)</string>
     <string name="CX_ChangeIcon_Yellow_Reg">CatoX Yellow (by Qirkl)</string>
     <string name="CX_ChangeIcon_Monet">CatoX Monet</string>
+    <string name="CX_DBNotEnabled2">Not enabled</string>
+    <string name="CX_DBSettingsPin">Settings PIN</string>
+    <string name="CX_EnableSAF">Force SAF</string>
+    <string name="CX_EnableSAFDesc">Match stock telegram behaviour on Android 11+ (stays the same on older versions)</string>
+    <string name="CX_Website">Visit our website</string>
 </resources>

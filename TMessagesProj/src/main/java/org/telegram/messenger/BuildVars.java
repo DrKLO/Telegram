@@ -12,6 +12,8 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
 
+import ua.itaysonlab.catogram.CatogramConfig;
+
 public class BuildVars {
 
     public static boolean DEBUG_VERSION = false;
@@ -19,7 +21,7 @@ public class BuildVars {
     public static boolean DEBUG_PRIVATE_VERSION = false;
     public static boolean USE_CLOUD_STRINGS = true;
     public static boolean CHECK_UPDATES = false;
-    public static boolean NO_SCOPED_STORAGE = isStandaloneApp() || Build.VERSION.SDK_INT <= 29;
+    public static boolean NO_SCOPED_STORAGE = (isStandaloneApp() && !CatogramConfig.INSTANCE.getEnableSaf()) || Build.VERSION.SDK_INT <= 29;
     public static int BUILD_VERSION = 2566;
     public static String BUILD_VERSION_STRING = "8.5.4";
     public static int APP_ID = BuildConfig.APP_ID; //obtain your own APP_ID at https://core.telegram.org/api/obtaining_api_id

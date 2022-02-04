@@ -108,19 +108,26 @@ class MainPreferencesEntry : BasePreferencesEntry {
                     }
                 }
                 textIcon {
+                    title = LocaleController.getString("CX_Website", R.string.CX_Website)
+                    value = "Website"
+                    listener = TGKitTextIconRow.TGTIListener {
+                        goToWebsite(it)
+                    }
+                }
+                textIcon {
                     title = LocaleController.getString("CG_Source", R.string.CG_Source)
                     value = "GitHub"
                     listener = TGKitTextIconRow.TGTIListener {
                         goToGithub(it)
                     }
                 }
-                /*textIcon {
+                textIcon {
                     title = LocaleController.getString("CG_Crowdin", R.string.CG_Crowdin)
-                    value = "Crowdin"
+                    value = "Weblate"
                     listener = TGKitTextIconRow.TGTIListener {
                         goToCrowdin(it)
                     }
-                }*/
+                }
             }
         }
     }
@@ -146,7 +153,7 @@ class MainPreferencesEntry : BasePreferencesEntry {
 
         private fun goToCrowdin(bf: BaseFragment) {
             val openURL = Intent(android.content.Intent.ACTION_VIEW)
-            openURL.data = Uri.parse("https://crowdin.com/project/catogram")
+            openURL.data = Uri.parse("https://translate.nift4.ml/projects/catogram-x/")
             bf.parentActivity.startActivity(openURL)
         }
 
@@ -155,6 +162,13 @@ class MainPreferencesEntry : BasePreferencesEntry {
             openURL.data = Uri.parse("https://github.com/CatogramX")
             bf.parentActivity.startActivity(openURL)
         }
+
+        private fun goToWebsite(bf: BaseFragment) {
+            val openURL = Intent(android.content.Intent.ACTION_VIEW)
+            openURL.data = Uri.parse("https://catox.eu.org")
+            bf.parentActivity.startActivity(openURL)
+        }
+
         fun onProvideAssistContent(outContent: AssistContent) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 outContent.webUri = Uri.parse(

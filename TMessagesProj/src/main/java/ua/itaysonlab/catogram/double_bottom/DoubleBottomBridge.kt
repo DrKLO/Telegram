@@ -1,5 +1,6 @@
 package ua.itaysonlab.catogram.double_bottom
 
+import com.google.android.exoplayer2.util.Log
 import org.telegram.messenger.SharedConfig
 import org.telegram.messenger.UserConfig
 
@@ -44,8 +45,10 @@ object DoubleBottomBridge {
 
     @JvmStatic
     fun findLocalAccIdByTgId(id: Long): Int {
+        Log.e("u", id.toString())
         for (i in 0 until UserConfig.MAX_ACCOUNT_COUNT) {
             val uc = UserConfig.getInstance(i)
+            if (uc.isClientActivated) Log.e("u", uc.currentUser.id.toString())
             if (uc.isClientActivated && uc.currentUser.id == id) return i
         }
 

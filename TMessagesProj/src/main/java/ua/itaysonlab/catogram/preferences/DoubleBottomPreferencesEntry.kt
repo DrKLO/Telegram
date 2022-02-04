@@ -1,6 +1,7 @@
 package ua.itaysonlab.catogram.preferences
 
 import android.util.Base64
+import com.google.android.exoplayer2.util.Log
 import org.telegram.messenger.LocaleController
 import org.telegram.messenger.R
 import org.telegram.messenger.UserConfig
@@ -20,6 +21,18 @@ class DoubleBottomPreferencesEntry : BasePreferencesEntry {
 
     override fun getPreferences(bf: BaseFragment) = tgKitScreen(LocaleController.getString("AS_Header_DoubleBottom", R.string.AS_Header_DoubleBottom)) {
         category(LocaleController.getString("CG_DB_Accounts", R.string.CG_DB_Accounts)) {
+            textIcon {
+                title = LocaleController.getString("CX_DBSettingsPin", R.string.CX_DBSettingsPin)
+                icon = R.drawable.settings_outline_28
+                listener = object : TGKitTextIconRow.TGTIListener {
+                    override fun onClick(bf: BaseFragment) {
+                        setupBottomPin(bf)
+                    }
+                    override fun onLongClick(bf: BaseFragment) {
+                        unsetupBottomPin(bf)
+                    }
+                }
+            }
             getProfiles().forEach { profile ->
                 textIcon {
                     title = getAccountFName(profile)
@@ -77,7 +90,7 @@ class DoubleBottomPreferencesEntry : BasePreferencesEntry {
 
     private fun setupBottomFor(bf: BaseFragment, profile: TLRPC.User) {
         val b = DoubleBottomBridge.isDbActivatedForAccount(profile.id)
-        bf.presentFragment(DoubleBottomPasscodeActivity((if (b) 3 else 1), bf, profile.id) { unset, dummy, hash, salt, type ->
+        bf.presentFragment(DoubleBottomPasscodeActivity((if (b) 3 else 1), bf, profile.id) { unset, _, hash, salt, type ->
             assert(!unset)
             DoubleBottomStorageBridge.storageInstance = DoubleBottomStorageBridge.storageInstance.also {
                 it.map[profile.id.toString()] = DoubleBottomStorageBridge.DBAccountData(
@@ -90,14 +103,46 @@ class DoubleBottomPreferencesEntry : BasePreferencesEntry {
         })
     }
 
+    private fun setupBottomPin(bf: BaseFragment) {
+        val b = DoubleBottomBridge.isDbActivatedForAccount(0L)
+        bf.presentFragment(DoubleBottomPasscodeActivity((if (b) 3 else 1), bf, 0L) { unset, _, hash, salt, type ->
+            assert(!unset)
+            DoubleBottomStorageBridge.storageInstance = DoubleBottomStorageBridge.storageInstance.also {
+                it.map[0L.toString()] = DoubleBottomStorageBridge.DBAccountData(
+                        id = 0L,
+                        type = type,
+                        hash = hash,
+                        salt = Base64.encodeToString(salt, Base64.DEFAULT)
+                )
+            }
+        })
+    }
+
+    private fun unsetupBottomPin(bf: BaseFragment) {
+        if (!DoubleBottomBridge.isDbActivatedForAccount(0)) {
+            BulletinFactory.of(bf).createErrorBulletin(LocaleController.getString("CX_DBNotEnabled2", R.string.CX_DBNotEnabled2), bf.resourceProvider).show()
+            return
+        }
+        bf.presentFragment(DoubleBottomPasscodeActivity(2, bf, 0) { unset, user, _, _, _ ->
+            assert(unset)
+            if (0L == user) {
+                DoubleBottomStorageBridge.storageInstance = DoubleBottomStorageBridge.storageInstance.also {
+                    it.map.remove(0L.toString())
+                }
+            } else {
+                BulletinFactory.of(bf).createErrorBulletin(LocaleController.getString("PasscodeDoNotMatch", R.string.PasscodeDoNotMatch), bf.resourceProvider).show()
+            }
+        })
+    }
+
     private fun unsetupBottomFor(bf: BaseFragment, profile: TLRPC.User) {
         if (!DoubleBottomBridge.isDbActivatedForAccount(profile.id)) {
             BulletinFactory.of(bf).createErrorBulletin(LocaleController.getString("CX_DBNotEnabled", R.string.CX_DBNotEnabled), bf.resourceProvider).show()
             return
         }
-        bf.presentFragment(DoubleBottomPasscodeActivity(2, bf, profile.id) { unset, user, dummy1, dummy2, dummy3 ->
+        bf.presentFragment(DoubleBottomPasscodeActivity(2, bf, profile.id) { unset, user, _, _, _ ->
             assert(unset)
-            if (profile.id.equals(user)) {
+            if (profile.id == user) {
                 DoubleBottomStorageBridge.storageInstance = DoubleBottomStorageBridge.storageInstance.also {
                     it.map.remove(profile.id.toString())
                 }
