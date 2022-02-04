@@ -209,6 +209,7 @@ android {
             multiDexEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             ndk.debugSymbolLevel = 'FULL'
+	    zipAlignEnabled true
         }
 
         release {
@@ -219,6 +220,7 @@ android {
             shrinkResources true
             multiDexEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+	    zipAlignEnabled true
         }
     }
 
