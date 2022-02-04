@@ -24,6 +24,7 @@ public class BuildVars {
     public static String BUILD_VERSION_STRING = "8.8.5";
     public static int APP_ID = 4;
     public static String APP_HASH = "014b35b6184100b085b0d0572f9b5103";
+    public static String APPCENTER_HASH = "a5b5c4f5-51da-dedc-9918-d9766a22ca7c";
 
     public static String SMS_HASH = isStandaloneApp() ? "w0lkcmTZkKh" : (DEBUG_VERSION ? "O2P2z+/jBpJ" : "oLeq9AcOZkT");
     public static String PLAYSTORE_APP_URL = "https://github.com/nikitasius/Telegraher/releases";
