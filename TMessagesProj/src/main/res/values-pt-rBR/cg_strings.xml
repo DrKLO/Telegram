@@ -135,7 +135,9 @@
     <string name="CG_Translate_PoweredBy">Feito por</string>
     <string name="CG_ToSaved">Salvar mensagem</string>
     <string name="CG_FABLeft">\"Nova conversa\" à esquerda</string>
-    <string name="CG_IntroMessage">An **unofficial** Telegram client modification.\nIt has **additional features** and **improved customization**.</string>
+    <string name="CG_IntroMessage">Um cliente não oficial do telegram
+\n
+\nQue tem muitas \"features novas\" e um design/tema melhorado :)</string>
     <string name="CG_GooglePlay_Donate">Donate</string>
     <string name="CG_GooglePlay_Info">Information</string>
     <string name="CG_GooglePlay_InfoDesc">All payments will be processed by Google Play.</string>
