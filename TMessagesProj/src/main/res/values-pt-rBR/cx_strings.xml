@@ -11,7 +11,7 @@
     <string name="CX_SetCustomEmojiFont">Definir fonte de emoji personalizada</string>
     <string name="CX_InvalidCustomEmojiTypeface">Tipo de letra emoji personalizado inválido!</string>
     <string name="CX_InvalidAccessToken">Token de bot inválido</string>
-    <string name="CX_BotLogin">Bot login</string>
+    <string name="CX_BotLogin">Login Bot</string>
     <string name="CX_DisableReactionAnim">Desativar animação de reação</string>
     <string name="CX_DBNotEnabled">Não ativado para esta conta</string>
     <string name="CX_TitleIsChats">Use Conversas como título para a lista de conversa, em vez do nome do aplicativo</string>
@@ -38,4 +38,15 @@
     <string name="TFOSS_SetProxy">DEFINIR UMA PROXY</string>
     <string name="CX_MagiKeyboard">MagiKeyboard (WIP AF)</string>
     <string name="CX_MagiKeyboardDesc">Window Inset IME anim</string>
+    <string name="CX_ChangeIcon_Blue_Reg">CatoX Blue (Por Qirkl)</string>
+    <string name="CX_ChangeIcon_Cyan_Reg">CatoX Cyan (Por Qirkl)</string>
+    <string name="CX_ChangeIcon_Green_Reg">CatoX Green (Por Qirkl)</string>
+    <string name="CX_ChangeIcon_Orange_Reg">CatoX Orange (Por Qirkl)</string>
+    <string name="CX_ChangeIcon_Pink_Reg">CatoX Pink (Por Qirkl)</string>
+    <string name="CX_ChangeIcon_Red_Reg">CatoX Red (Por Qirkl)</string>
+    <string name="CX_ChangeIcon_Taffy_Reg">CatoX Taffy (Por Qirkl)</string>
+    <string name="CX_ChangeIcon_Yellow_Reg">CatoX Yellow (Por Qirkl)</string>
+    <string name="CX_ChangeIcon_Monet">Cato X Monet</string>
+    <string name="CX_ChangeIcon_Black_Reg">CatoX Black (Por Qirkl)</string>
+    <string name="CX_ChangeIcon_Purple_Reg">CatoX Purple (Por Qirkl)</string>
 </resources>
