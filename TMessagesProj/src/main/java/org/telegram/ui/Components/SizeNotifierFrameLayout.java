@@ -440,7 +440,7 @@ public class SizeNotifierFrameLayout extends FrameLayout {
         }
         int blurAlpha = Color.alpha(Theme.getColor(Theme.key_chat_BlurAlpha));
         if (blurAlpha == 0) {
-            return;
+            blurAlpha = 0x77;
         }
         invalidateBlur = false;
         blurGeneratingTuskIsRunning = true;

@@ -35,16 +35,15 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.multidex.MultiDex;
 
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GooglePlayServicesUtil;
-import com.google.firebase.messaging.FirebaseMessaging;
-
+import org.nift4.catox.GcmHelper;
 import org.telegram.messenger.voip.VideoCapturerDevice;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.ForegroundDetector;
 
 import java.io.File;
+
+import ua.itaysonlab.catogram.CatogramConfig;
 
 public class ApplicationLoader extends Application {
     private static PendingIntent pendingIntent;
@@ -233,7 +232,7 @@ public class ApplicationLoader extends Application {
         if (preferences.contains("pushService")) {
             enabled = preferences.getBoolean("pushService", true);
         } else {
-            enabled = MessagesController.getMainSettings(UserConfig.selectedAccount).getBoolean("keepAliveService", false);
+            enabled = MessagesController.getMainSettings(UserConfig.selectedAccount).getBoolean("keepAliveService", BuildVars.isFossApp());
         }
         if (enabled) {
             Log.d("TFOSS", "Trying to start push service every minute");
@@ -279,59 +278,7 @@ public class ApplicationLoader extends Application {
     }
 
     private void initPlayServices() {
-        AndroidUtilities.runOnUIThread(() -> {
-            if (hasPlayServices = checkPlayServices()) {
-                final String currentPushString = SharedConfig.pushString;
-                if (!TextUtils.isEmpty(currentPushString)) {
-                    if (BuildVars.DEBUG_PRIVATE_VERSION && BuildVars.LOGS_ENABLED) {
-                        FileLog.d("GCM regId = " + currentPushString);
-                    }
-                } else {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("GCM Registration not found.");
-                    }
-                }
-                Utilities.globalQueue.postRunnable(() -> {
-                    try {
-                        SharedConfig.pushStringGetTimeStart = SystemClock.elapsedRealtime();
-                        FirebaseMessaging.getInstance().getToken()
-                                .addOnCompleteListener(task -> {
-                                    SharedConfig.pushStringGetTimeEnd = SystemClock.elapsedRealtime();
-                                    if (!task.isSuccessful()) {
-                                        if (BuildVars.LOGS_ENABLED) {
-                                            FileLog.d("Failed to get regid");
-                                        }
-                                        SharedConfig.pushStringStatus = "__FIREBASE_FAILED__";
-                                        GcmPushListenerService.sendRegistrationToServer(null);
-                                        return;
-                                    }
-                                    String token = task.getResult();
-                                    if (!TextUtils.isEmpty(token)) {
-                                        GcmPushListenerService.sendRegistrationToServer(token);
-                                    }
-                                });
-                    } catch (Throwable e) {
-                        FileLog.e(e);
-                    }
-                });
-            } else {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("No valid Google Play Services APK found.");
-                }
-                SharedConfig.pushStringStatus = "__NO_GOOGLE_PLAY_SERVICES__";
-                GcmPushListenerService.sendRegistrationToServer(null);
-            }
-        }, 1000);
-    }
-
-    private boolean checkPlayServices() {
-        try {
-            int resultCode = GooglePlayServicesUtil.isGooglePlayServicesAvailable(this);
-            return resultCode == ConnectionResult.SUCCESS;
-        } catch (Exception e) {
-            FileLog.e(e);
-        }
-        return true;
+        GcmHelper.initPlayServices(this);
     }
 
     private static void ensureCurrentNetworkGet(boolean force) {

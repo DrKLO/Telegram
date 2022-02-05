@@ -2,6 +2,9 @@ package ua.itaysonlab.catogram.preferences
 
 import android.os.Environment
 import android.widget.Toast
+import org.nift4.catox.EarlyConfig
+import org.telegram.messenger.BuildConfig
+import org.telegram.messenger.BuildVars
 import org.telegram.messenger.LocaleController
 import org.telegram.messenger.R
 import org.telegram.ui.ActionBar.BaseFragment
@@ -42,14 +45,26 @@ class SecurityPreferencesEntry : BasePreferencesEntry {
                     Toast.makeText(bf.parentActivity, LocaleController.getString("CG_RemovedS", R.string.CG_RemovedS), Toast.LENGTH_SHORT).show()
                 }
             }
+            if (BuildVars.isStandaloneApp()) {
+                switch {
+                    title = LocaleController.getString("CX_EnableSAF", R.string.CX_EnableSAF)
+                    summary = LocaleController.getString("CX_EnableSAFDesc", R.string.CX_EnableSAFDesc)
+
+                    contract({
+                        return@contract EarlyConfig.enableSaf
+                    }) {
+                        EarlyConfig.enableSaf = it
+                    }
+                }
+            }
             switch {
-                title = LocaleController.getString("CX_EnableSAF", R.string.CX_EnableSAF)
-                summary = LocaleController.getString("CX_EnableSAFDesc", R.string.CX_EnableSAFDesc)
+                title = LocaleController.getString("CX_EnableMLKIT", R.string.CX_EnableMLKIT)
+                summary = LocaleController.getString("CX_EnableMLKITDesc", R.string.CX_EnableMLKITDesc)
 
                 contract({
-                    return@contract CatogramConfig.enableSaf
+                    return@contract CatogramConfig.enableMlkit
                 }) {
-                    CatogramConfig.enableSaf = it
+                    CatogramConfig.enableMlkit = it
                 }
             }
         }

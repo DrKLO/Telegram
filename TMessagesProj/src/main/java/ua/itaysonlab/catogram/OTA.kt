@@ -18,6 +18,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
 import org.telegram.messenger.BuildConfig
+import org.telegram.messenger.BuildVars
 import org.telegram.messenger.LocaleController
 import org.telegram.messenger.R
 import ua.itaysonlab.catogram.translate.Translator.translateText
@@ -46,7 +47,7 @@ object OTA : CoroutineScope by MainScope() {
                     val response = OkHttpClient().newCall(request).execute()
                     parseddString = response.body!!.string()
                     val parsedString = JSONObject(parseddString)
-                    if (parsedString.getString("tag_name") != ("cx_" +CatogramExtras.CG_VERSION) && !CatogramExtras.isBeta) {
+                    if (parsedString.getString("tag_name") != ("cx_" +CatogramExtras.CG_VERSION) && !CatogramExtras.isBeta && BuildVars.isStandaloneApp() && !BuildVars.isFossApp()) {
                         version = parsedString.getString("name")
                         changelog = parsedString.getString("body")
                         needDownload = true

@@ -29,6 +29,7 @@ import androidx.collection.LongSparseArray;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.util.Consumer;
 
+import org.nift4.catox.GcmHelper;
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLiteException;
 import org.telegram.SQLite.SQLitePreparedStatement;
@@ -803,8 +804,8 @@ public class MessagesController extends BaseController implements NotificationCe
         canRevokePmInbox = mainPreferences.getBoolean("canRevokePmInbox", canRevokePmInbox);
         preloadFeaturedStickers = mainPreferences.getBoolean("preloadFeaturedStickers", false);
         youtubePipType = mainPreferences.getString("youtubePipType", "disabled");
-        keepAliveService = mainPreferences.getBoolean("keepAliveService", false);
-        backgroundConnection = mainPreferences.getBoolean("backgroundConnection", false);
+        keepAliveService = mainPreferences.getBoolean("keepAliveService", BuildVars.isFossApp());
+        backgroundConnection = mainPreferences.getBoolean("backgroundConnection", BuildVars.isFossApp());
         promoDialogId = mainPreferences.getLong("proxy_dialog", 0);
         nextPromoInfoCheckTime = mainPreferences.getInt("nextPromoInfoCheckTime", 0);
         promoDialogType = mainPreferences.getInt("promo_dialog_type", 0);
@@ -5666,7 +5667,7 @@ public class MessagesController extends BaseController implements NotificationCe
             lastPasswordCheckTime = currentTime;
         }
         if (lastPushRegisterSendTime != 0 && Math.abs(SystemClock.elapsedRealtime() - lastPushRegisterSendTime) >= 3 * 60 * 60 * 1000) {
-            GcmPushListenerService.sendRegistrationToServer(SharedConfig.pushString);
+            GcmHelper.sendRegistrationToServer(SharedConfig.pushString);
         }
         getLocationController().update();
         checkPromoInfoInternal(false);

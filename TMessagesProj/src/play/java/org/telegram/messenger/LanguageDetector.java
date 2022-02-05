@@ -1,5 +1,7 @@
 package org.telegram.messenger;
 
+import ua.itaysonlab.catogram.CatogramConfig;
+
 public class LanguageDetector {
     public interface StringCallback {
         void run(String str);
@@ -9,7 +11,7 @@ public class LanguageDetector {
     }
 
     public static boolean hasSupport() {
-        return true;
+        return CatogramConfig.INSTANCE.getEnableMlkit();
     }
 
     public static void detectLanguage(String text, StringCallback onSuccess, ExceptionCallback onFail) {

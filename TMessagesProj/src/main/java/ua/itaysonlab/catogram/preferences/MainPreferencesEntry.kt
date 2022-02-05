@@ -62,7 +62,7 @@ class MainPreferencesEntry : BasePreferencesEntry {
                 }
             }
 
-            if (UserConfig.getInstance(UserConfig.selectedAccount).clientUserId in CatogramExtras.secretIdWhitelist) {
+            if (UserConfig.getInstance(UserConfig.selectedAccount).clientUserId in CatogramExtras.secretIdWhitelist && BuildVars.isStandaloneApp()) {
                 textIcon {
                     title = LocaleController.getString("CX_Secrets", R.string.CX_Secrets)
                     icon = R.drawable.favorite_outline_28

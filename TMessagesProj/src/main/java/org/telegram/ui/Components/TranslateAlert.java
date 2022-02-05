@@ -51,6 +51,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.widget.NestedScrollView;
 
 import org.json.JSONArray;
@@ -61,6 +62,7 @@ import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
@@ -76,6 +78,7 @@ import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 
+import ua.itaysonlab.catogram.translate.TranslateAPI;
 import ua.itaysonlab.catogram.translate.Translator;
 
 public class TranslateAlert extends Dialog {
@@ -246,6 +249,7 @@ public class TranslateAlert extends Dialog {
     }
     public TranslateAlert(BaseFragment fragment, Context context, int currentAccount, TLRPC.InputPeer peer, int msgId, String fromLanguage, String toLanguage, CharSequence text, boolean noforwards, OnLinkPress onLinkPress, Runnable onDismiss, boolean cato) {
         super(context, R.style.TransparentDialog);
+        if (fragment == null) return;
         catoInject = cato;
 
         if (peer != null) {
@@ -576,6 +580,7 @@ public class TranslateAlert extends Dialog {
         contentView.addView(bulletinContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL, 0, 0, 0, 81));
     }
     public void showDim(boolean enable) {
+        if (fragment == null) return;
         contentView.setBackground(enable ? backDrawable : null);
     }
 
@@ -1185,6 +1190,11 @@ public class TranslateAlert extends Dialog {
     }
 
     public static TranslateAlert showAlert(Context context, BaseFragment fragment, int currentAccount, TLRPC.InputPeer peer, int msgId, String fromLanguage, String toLanguage, CharSequence text, boolean noforwards, OnLinkPress onLinkPress, Runnable onDismiss) {
+        if (!MessagesController.getGlobalMainSettings().getBoolean("translate_button", false)) {
+            onDismiss.run();
+            TranslateAPI.callTranslationDialog(text.toString(), (AppCompatActivity) context, fragment, noforwards, onLinkPress);
+            return new TranslateAlert(null, context, -2, null, -2, null, null, null, false, null, null, false);
+        }
         TranslateAlert alert = new TranslateAlert(fragment, context, currentAccount, peer, msgId, fromLanguage, toLanguage, text, noforwards, onLinkPress, onDismiss,false);
         if (fragment != null) {
             if (fragment.getParentActivity() != null) {
@@ -1196,6 +1206,11 @@ public class TranslateAlert extends Dialog {
         return alert;
     }
     public static TranslateAlert showAlert(Context context, BaseFragment fragment, String fromLanguage, String toLanguage, CharSequence text, boolean noforwards, OnLinkPress onLinkPress, Runnable onDismiss) {
+        if (!MessagesController.getGlobalMainSettings().getBoolean("translate_button", false)) {
+            onDismiss.run();
+            TranslateAPI.callTranslationDialog(text.toString(), (AppCompatActivity) context, fragment, noforwards, onLinkPress);
+            return new TranslateAlert(null, context, -2, null, -2, null, null, null, false, null, null, false);
+        }
         TranslateAlert alert = new TranslateAlert(fragment, context, fromLanguage, toLanguage, text, noforwards, onLinkPress, onDismiss, false);
         if (fragment != null) {
             if (fragment.getParentActivity() != null) {

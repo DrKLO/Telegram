@@ -95,10 +95,10 @@ object CatogramConfig {
     var disableReactionAnim by sharedPreferences.boolean("cx_disable_reaction_anim", false)
 
     /* CX 4.1.2 */
-    var customChatListTitle by sharedPreferences.string("cx_chat_list_title", "Chats")
+    var customChatListTitle by sharedPreferences.string("cx_chat_list_title", LocaleController.getString("WidgetChats", R.string.WidgetChats))
     var systemFonts by sharedPreferences.boolean("cx_system_fonts", false)
     var magiKeyboard by sharedPreferences.boolean("cx_magikeyboard", false)//Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
-    var enableSaf by sharedPreferences.boolean("cx_enable_saf", false)
+    var enableMlkit by sharedPreferences.boolean("cx_mlkit", false)
 
 
     // Emojis

@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="CatogramVersionX" translatable="false">Catogram X %1$s</string>
+    <string name="catox_AppName" translatable="false">Catogram X</string>
+    <string name="catox_AppNameBeta" translatable="false">CatoX Beta</string>
 
     <!-- CX 4.0.0 -->
     <string name="AdvancedSettingsX">Catogram X Preferences</string>
@@ -60,4 +62,6 @@
     <string name="CX_EnableSAF">Force SAF</string>
     <string name="CX_EnableSAFDesc">Match stock telegram behaviour on Android 11+ (stays the same on older versions)</string>
     <string name="CX_Website">Visit our website</string>
+    <string name="CX_EnableMLKIT">Enable on-device AI lanaguage detection</string>
+    <string name="CX_EnableMLKITDesc">disable to always show the translator</string>
 </resources>

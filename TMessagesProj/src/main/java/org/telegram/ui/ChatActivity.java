@@ -21075,10 +21075,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             options.add(OPTION_PIN);
                             icons.add(R.drawable.msg_pin);
                         }
-                        if (selectedObject != null && selectedObject.contentType == 0 && (messageText != null && messageText.length() > 0 && !selectedObject.isAnimatedEmoji() && !selectedObject.isDice()) && MessagesController.getGlobalMainSettings().getBoolean("translate_button", false)) {
+                        if (selectedObject != null && selectedObject.contentType == 0 && (messageText != null && messageText.length() > 0 && !selectedObject.isAnimatedEmoji() && !selectedObject.isDice())) {
                             items.add(LocaleController.getString("TranslateMessage", R.string.TranslateMessage));
                             options.add(29);
-                            icons.add(R.drawable.msg_translate);
+                            icons.add(R.drawable.round_translate_24);
                         }
                         if (message.canEditMessage(currentChat)) {
                             items.add(LocaleController.getString("Edit", R.string.Edit));
@@ -21351,10 +21351,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             options.add(13);
                             icons.add(R.drawable.msg_pin);
                         }
-                        if (selectedObject != null && selectedObject.contentType == 0 && (messageText != null && messageText.length() > 0 && !selectedObject.isAnimatedEmoji() && !selectedObject.isDice()) && MessagesController.getGlobalMainSettings().getBoolean("translate_button", false)) {
+                        if (selectedObject != null && selectedObject.contentType == 0 && (messageText != null && messageText.length() > 0 && !selectedObject.isAnimatedEmoji() && !selectedObject.isDice())) {
                             items.add(LocaleController.getString("TranslateMessage", R.string.TranslateMessage));
                             options.add(29);
-                            icons.add(R.drawable.msg_translate);
+                            icons.add(R.drawable.round_translate_24);
                         }
                         if (allowEdit) {
                             items.add(LocaleController.getString("Edit", R.string.Edit));
@@ -21475,13 +21475,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
             if (options.isEmpty()) {
                 return;
-            }
-
-            String text = selectedObject.messageText.toString();
-            if (text != null && !TextUtils.isEmpty(text) && !MessagesController.getGlobalMainSettings().getBoolean("translate_button", false)) {
-                items.add(LocaleController.getString("CG_Translate", R.string.CG_Translate));
-                options.add(990);
-                icons.add(R.drawable.round_translate_24);
             }
 
             if (scrimPopupWindow != null) {
@@ -22520,11 +22513,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
             case 2: {
                 createCGShareAlertSelected();
-                break;
-            }
-            // 990 - translate, 991 - saved
-            case 990: {
-                TranslateAPI.callTranslationDialog(selectedObject, (AppCompatActivity) getParentActivity(), this, currentChat != null && currentChat.noforwards, null);
                 break;
             }
             case 993: {
