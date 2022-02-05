@@ -249,7 +249,7 @@ public class TranslateAlert extends Dialog {
     }
     public TranslateAlert(BaseFragment fragment, Context context, int currentAccount, TLRPC.InputPeer peer, int msgId, String fromLanguage, String toLanguage, CharSequence text, boolean noforwards, OnLinkPress onLinkPress, Runnable onDismiss, boolean cato) {
         super(context, R.style.TransparentDialog);
-        if (fragment == null) return;
+        if (fragment == null && !cato) return;
         catoInject = cato;
 
         if (peer != null) {
