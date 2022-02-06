@@ -865,21 +865,22 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
     private boolean listFiles(File dir) {
         hasFiles = false;
         if (!dir.canRead()) {
-            if (dir.getAbsolutePath().startsWith(Environment.getExternalStorageDirectory().toString())
+            String state = "_undefined_";
+            if (true || dir.getAbsolutePath().startsWith(Environment.getExternalStorageDirectory().toString())
                     || dir.getAbsolutePath().startsWith("/sdcard")
                     || dir.getAbsolutePath().startsWith("/mnt/sdcard")) {
+                state = Environment.getExternalStorageState();
                 if (!Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)
                         && !Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED_READ_ONLY)) {
                     currentDir = dir;
                     items.clear();
-                    String state = Environment.getExternalStorageState();
                     AndroidUtilities.clearDrawableAnimation(listView);
                     scrolling = true;
                     listAdapter.notifyDataSetChanged();
                     return true;
                 }
             }
-            showErrorBox(LocaleController.getString("AccessError", R.string.AccessError) + ": " + dir.getAbsolutePath());
+            showErrorBox(LocaleController.getString("AccessError", R.string.AccessError) + ": " + dir.getAbsolutePath() + " state "  + state);
             return false;
         }
         File[] files;
