@@ -24519,13 +24519,15 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
                     private void appendMention(TLRPC.User user) {
                         if (chatActivityEnterView != null) {
-                            final SpannableStringBuilder sb = new SpannableStringBuilder();
+                            final SpannableStringBuilder sb;
                             final CharSequence text = chatActivityEnterView.getFieldText();
                             if (text != null) {
-                                sb.append(text);
-                            }
-                            if (sb.length() > 0 && sb.charAt(sb.length() - 1) != ' ') {
-                                sb.append(' ');
+                                sb = new SpannableStringBuilder(text);
+                                if (text.charAt(text.length() - 1) != ' ') {
+                                    sb.append(" ");
+                                }
+                            } else {
+                                sb = new SpannableStringBuilder();
                             }
                             if (user.username != null) {
                                 sb.append("@").append(user.username).append(" ");
