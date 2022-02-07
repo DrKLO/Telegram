@@ -126,7 +126,7 @@ public class MessageSeenView extends FrameLayout {
                 } else {
                     if (ChatObject.isChannel(chat)) {
                         TLRPC.TL_channels_getParticipants usersReq = new TLRPC.TL_channels_getParticipants();
-                        usersReq.limit = 50;
+                        usersReq.limit = MessagesController.getInstance(currentAccount).chatReadMarkSizeThreshold;
                         usersReq.offset = 0;
                         usersReq.filter = new TLRPC.TL_channelParticipantsRecent();
                         usersReq.channel = MessagesController.getInstance(currentAccount).getInputChannel(chat.id);
