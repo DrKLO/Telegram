@@ -30,7 +30,7 @@
 #include "modules/video_coding/utility/framerate_controller_deprecated.h"
 #include "rtc_base/containers/flat_map.h"
 #include "rtc_base/experiments/encoder_info_settings.h"
-#include <libvpx/vp8cx.h>
+#include <vpx/vp8cx.h>
 
 namespace webrtc {
 

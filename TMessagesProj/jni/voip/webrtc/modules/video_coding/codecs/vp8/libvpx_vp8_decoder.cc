@@ -31,9 +31,9 @@
 #include "system_wrappers/include/field_trial.h"
 #include "system_wrappers/include/metrics.h"
 #include "third_party/libyuv/include/libyuv/convert.h"
-#include <libvpx/vp8.h>
-#include <libvpx/vp8dx.h>
-#include <libvpx/vpx_decoder.h>
+#include <vpx/vp8.h>
+#include <vpx/vp8dx.h>
+#include <vpx/vpx_decoder.h>
 
 namespace webrtc {
 namespace {
