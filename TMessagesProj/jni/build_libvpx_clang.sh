@@ -27,6 +27,10 @@ function build_one {
 	export CXXFLAGS="${CFLAGS} -std=c++11"
 	export ASFLAGS="-D__ANDROID__"
 	export LDFLAGS="-L${PLATFORM}/usr/lib"
+	
+	if [ "x86" = ${ARCH} ]; then
+		sed -i '20s/^/#define rand() ((int)lrand48())\n/' vpx_dsp/add_noise.c
+	fi
 
 	echo "Cleaning..."
 	make clean || true
@@ -60,6 +64,10 @@ function build_one {
 	--disable-webm-io
 
 	make -j$COMPILATION_PROC_COUNT install
+	
+	if [ "x86" = ${ARCH} ]; then
+		sed -i '20d' vpx_dsp/add_noise.c
+	fi
 }
 
 function setCurrentPlatform {

@@ -713,6 +713,7 @@ target_include_directories(${NATIVE_LIB} PUBLIC
         third_party/libyuv/include
         boringssl/include
         ffmpeg/build/${ANDROID_ABI}/include
+        libvpx/build/${ANDROID_ABI}/include
         emoji
         exoplayer/include
         exoplayer/libFLAC/include
