@@ -11,10 +11,6 @@ import android.text.TextUtils;
 import android.util.Base64;
 import android.util.SparseArray;
 
-import com.google.android.gms.vision.Frame;
-import com.google.android.gms.vision.barcode.Barcode;
-import com.google.android.gms.vision.barcode.BarcodeDetector;
-
 import java.util.Calendar;
 import java.util.HashMap;
 
@@ -42,7 +38,8 @@ public class MrzRecognizer {
 	}
 
 	private static Result recognizeBarcode(Bitmap bitmap) {
-		BarcodeDetector detector = new BarcodeDetector.Builder(ApplicationLoader.applicationContext)/*.setBarcodeFormats(Barcode.PDF417)*/.build();
+		/*
+		BarcodeDetector detector = new BarcodeDetector.Builder(ApplicationLoader.applicationContext)/*.setBarcodeFormats(Barcode.PDF417).build();
 		if (bitmap.getWidth() > 1500 || bitmap.getHeight() > 1500) {
 			float scale = 1500f / Math.max(bitmap.getWidth(), bitmap.getHeight());
 			bitmap = Bitmap.createScaledBitmap(bitmap, Math.round(bitmap.getWidth() * scale), Math.round(bitmap.getHeight() * scale), true);
@@ -127,7 +124,7 @@ public class MrzRecognizer {
 					}
 				}
 			}
-		}
+		}*/
 		return null;
 	}
 

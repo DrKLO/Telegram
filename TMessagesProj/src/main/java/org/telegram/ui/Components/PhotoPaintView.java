@@ -24,10 +24,6 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.google.android.gms.vision.Frame;
-import com.google.android.gms.vision.face.Face;
-import com.google.android.gms.vision.face.FaceDetector;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Bitmaps;
 import org.telegram.messenger.BuildVars;
@@ -46,7 +42,6 @@ import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.BubbleActivity;
-import org.telegram.ui.Components.Paint.PhotoFace;
 import org.telegram.ui.Components.Paint.Views.EntitiesContainerView;
 import org.telegram.ui.Components.Paint.Views.EntityView;
 import org.telegram.ui.Components.Paint.Views.StickerView;
@@ -118,7 +113,7 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
     private Animator colorPickerAnimator;
 
     private DispatchQueue queue;
-    private ArrayList<PhotoFace> faces;
+    //private ArrayList<PhotoFace> faces;
 
     private boolean ignoreLayout;
 
@@ -439,7 +434,7 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
         entitiesView.setVisibility(VISIBLE);
         renderView.setVisibility(View.VISIBLE);
         if (facesBitmap != null) {
-            detectFaces();
+            //detectFaces();
         }
     }
 
@@ -1473,6 +1468,7 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
         popupWindow.startAnimation();
     }
 
+    /*
     private int getFrameRotation() {
         switch (originalBitmapRotation) {
             case 90: {
@@ -1540,6 +1536,7 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
             }
         });
     }
+    */
 
     private StickerPosition calculateStickerPosition(TLRPC.Document document) {
         TLRPC.TL_maskCoords maskCoords = null;
@@ -1562,15 +1559,16 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
             baseScale = 0.75f;
         }
         StickerPosition defaultPosition = new StickerPosition(centerPositionForEntity(), baseScale, rotation);
+		/*
         if (maskCoords == null || faces == null || faces.size() == 0) {
             return defaultPosition;
         } else {
             int anchor = maskCoords.n;
 
             PhotoFace face = getRandomFaceWithVacantAnchor(anchor, document.id, maskCoords);
-            if (face == null) {
+            if (face == null) {*/
                 return defaultPosition;
-            }
+            }/*
 
             Point referencePoint = face.getPointForAnchor(anchor);
             float referenceWidth = face.getWidthForAnchor(anchor);
@@ -1641,6 +1639,7 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
 
         return false;
     }
+    */
 
     private int getThemedColor(String key) {
         Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;

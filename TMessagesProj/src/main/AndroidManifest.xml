@@ -464,8 +464,6 @@
         <meta-data android:name="com.google.android.gms.car.notification.SmallIcon" android:resource="@drawable/ic_player" />
         <meta-data android:name="com.google.android.gms.car.application" android:resource="@xml/automotive_app_desc" />
 
-        <meta-data android:name="com.google.android.gms.vision.DEPENDENCIES" android:value="face,barcode" />
-
         <meta-data android:name="android.max_aspect" android:value="2.5" />
 
         <meta-data android:name="com.google.android.actions" android:resource="@xml/actions" />
