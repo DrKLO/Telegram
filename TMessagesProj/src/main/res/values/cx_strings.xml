@@ -44,8 +44,6 @@
     <string name="CX_TestBackend">Log in to test servers</string>
     <string name="TFOSS_Proxy">You may need to set up a proxy before you login, in case your country or ISP blocks Telegram</string>
     <string name="TFOSS_SetProxy">SET A PROXY</string>
-    <string name="CX_MagiKeyboard">MagiKeyboard (WIP AF)</string>
-    <string name="CX_MagiKeyboardDesc">Window Inset IME anim</string>
     <string name="CX_ChangeIcon_Black_Reg">CatoX Black (by Qirkl)</string>
     <string name="CX_ChangeIcon_Blue_Reg">CatoX Blue (by Qirkl)</string>
     <string name="CX_ChangeIcon_Cyan_Reg">CatoX Cyan (by Qirkl)</string>

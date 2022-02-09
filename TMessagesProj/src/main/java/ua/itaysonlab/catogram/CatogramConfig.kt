@@ -99,6 +99,7 @@ object CatogramConfig {
     var systemFonts by sharedPreferences.boolean("cx_system_fonts", false)
     var magiKeyboard by sharedPreferences.boolean("cx_magikeyboard", false)//Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
     var enableMlkit by sharedPreferences.boolean("cx_mlkit", false)
+    var alwaysShowSecretMsgsInThemePreview by sharedPreferences.boolean("cx_secret_theme_preview_force", false)
 
 
     // Emojis

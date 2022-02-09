@@ -121,6 +121,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import ua.itaysonlab.catogram.CatogramConfig;
+
 public class ThemePreviewActivity extends BaseFragment implements DownloadController.FileDownloadProgressListener, NotificationCenter.NotificationCenterDelegate {
 
     public static final int SCREEN_TYPE_PREVIEW = 0;
@@ -766,8 +768,8 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
         }
 
         if (messagesAdapter.showSecretMessages) {
-            actionBar2.setTitle("Telegram Beta Chat");
-            actionBar2.setSubtitle(LocaleController.formatPluralString("Members", 505));
+            actionBar2.setTitle("Catogram X Discussion");
+            actionBar2.setSubtitle(LocaleController.formatPluralString("Members", 69));
         } else {
             if (screenType == SCREEN_TYPE_CHANGE_BACKGROUND) {
                 actionBar2.setTitle(LocaleController.getString("BackgroundPreview", R.string.BackgroundPreview));
@@ -4000,7 +4002,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
         private Context mContext;
 
         private ArrayList<MessageObject> messages;
-        private boolean showSecretMessages = screenType == SCREEN_TYPE_PREVIEW && Utilities.random.nextInt(100) <= 1;
+        private boolean showSecretMessages = screenType == SCREEN_TYPE_PREVIEW && CatogramConfig.INSTANCE.getAlwaysShowSecretMsgsInThemePreview() || Utilities.random.nextInt(100) <= 1;
 
         public MessagesAdapter(Context context) {
             mContext = context;
@@ -4181,11 +4183,11 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                 if (showSecretMessages) {
                     TLRPC.TL_user user1 = new TLRPC.TL_user();
                     user1.id = Integer.MAX_VALUE;
-                    user1.first_name = "Me";
+                    user1.first_name = "Pronoy";
 
                     TLRPC.TL_user user2 = new TLRPC.TL_user();
                     user2.id = Integer.MAX_VALUE - 1;
-                    user2.first_name = "Serj";
+                    user2.first_name = "Nick (they/them)";
 
                     ArrayList<TLRPC.User> users = new ArrayList<>();
                     users.add(user1);
@@ -4193,7 +4195,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                     MessagesController.getInstance(currentAccount).putUsers(users, true);
 
                     message = new TLRPC.TL_message();
-                    message.message = "Guess why Half-Life 3 was never released.";
+                    message.message = "And do you really think I have time for maintaing CatoX Android AND iOS?";
                     message.date = date + 960;
                     message.dialog_id = -1;
                     message.flags = 259;
@@ -4223,8 +4225,21 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                     messages.add(new MessageObject(currentAccount, message, true, false));
 
                     message = new TLRPC.TL_message();
-                    message.message = "Is source code for Android coming anytime soon?";
+                    message.message = "CatoX for iOS #suggestion";
                     message.date = date + 600;
+                    message.dialog_id = -1;
+                    message.flags = 259;
+                    message.id = 1;
+                    message.media = new TLRPC.TL_messageMediaEmpty();
+                    message.out = false;
+                    message.peer_id = new TLRPC.TL_peerChat();
+                    message.peer_id.chat_id = 1;
+                    message.from_id = new TLRPC.TL_peerUser();
+                    message.from_id.user_id = user1.id;
+                    messages.add(new MessageObject(currentAccount, message, true, false));
+                    message = new TLRPC.TL_message();
+                    message.message = "when play store? @admin";
+                    message.date = date + 500;
                     message.dialog_id = -1;
                     message.flags = 259;
                     message.id = 1;

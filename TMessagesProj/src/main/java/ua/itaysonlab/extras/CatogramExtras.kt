@@ -26,6 +26,9 @@ object CatogramExtras {
 
     val secretIdWhitelist = longArrayOf(2118009172, 678206065, 1075308933, 1456078796, 1151889048, 591146748, 885168713, 955757965, 1344005665, 4846560, 685129182, 671745749)
 
+    fun isWhitelisted(id: Long): Boolean {
+        return id in secretIdWhitelist
+    }
     @JvmField
     var currentAccountBitmap: BitmapDrawable? = null
 

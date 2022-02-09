@@ -13,13 +13,23 @@ class ExtraPreferencesEntry : BasePreferencesEntry {
 		override fun getPreferences(bf: BaseFragment) = tgKitScreen(LocaleController.getString("CX_Secrets", R.string.CX_Secrets)) {
 			category(LocaleController.getString("AS_Header_Appearance", R.string.AS_Header_Appearance)) {
 				switch {
-					title = LocaleController.getString("CX_MagiKeyboard", R.string.CX_MagiKeyboard)
-					summary = LocaleController.getString("CX_MagiKeyboardDesc", R.string.CX_MagiKeyboardDesc)
+					title = "MagiKeyboard"
+					summary = "is broken btw"
 
 					contract({
 						return@contract CatogramConfig.magiKeyboard
 					}) {
 						CatogramConfig.magiKeyboard = it
+					}
+				}
+				switch {
+					title = "Always show secret messages"
+					summary = "in theme preview"
+
+					contract({
+						return@contract CatogramConfig.alwaysShowSecretMsgsInThemePreview
+					}) {
+						CatogramConfig.alwaysShowSecretMsgsInThemePreview = it
 					}
 				}
 			}
