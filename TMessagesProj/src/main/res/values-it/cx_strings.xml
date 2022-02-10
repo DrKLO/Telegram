@@ -1,2 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources>
+    <string name="CX_DB_AccountsHint">Double Bottom ti consente di impostare un passcode per un account diverso.
+\n
+\n Il tentativo di impostare una password su un account configurato sostituirà quella precedente dopo averla reinserita.
+\n Premere a lungo una voce per rimuovere il passcode, inserendolo nuovamente.</string>
+    <string name="AdvancedSettingsX">Preferenze catogramX</string>
+    <string name="AS_Header_AboutX">Informazioni catogramX</string>
+    <string name="CG_AboutDescX">Versione catogramX</string>
+    <string name="CX_TranslateMessagesInfo1">Usa la funzione di traduzione di Telegram invece del traduttore di Catogram</string>
+    <string name="CX_OldTranslateUI">Usa l\'interfaccia classica di traduzione</string>
+    <string name="CX_OldTranslateUIDesc">Se disabilitato, non verrà utilizzata l\'interfaccia utente di traduzione di telegram ma verrà utilizzato il traduttore di catogramX</string>
+    <string name="CX_DnD">Contatti silenziati</string>
+    <string name="CX_DnDDesc">Disabilita suono e vibrazione per le notifiche di un contatto</string>
+    <string name="CX_HideSendAsChannel">Nascondi tasto invio come canale</string>
+    <string name="CX_HideSendAsChannelDesc">Adatto per schermi di ridotta dimensione</string>
+    <string name="CX_CustomEmoji">Utilizza emoji personalizzate</string>
+    <string name="CX_CustomEmojiDesc">Utilizza le emoji personalizzate anziché le emoji di android</string>
+    <string name="CX_SetCustomEmojiFont">Selezione emoji personalizzate</string>
+    <string name="CX_InvalidCustomEmojiTypeface">Carattere emoji personalizzata non valido</string>
+    <string name="CX_InvalidAccessToken">"Bot  token non valido"</string>
+    <string name="CX_BotLogin">Accesso con bot</string>
+    <string name="CX_DisableReactionAnim">Disabilita animazione delle reazioni</string>
+    <string name="CX_DisableReactionAnimDesc">Quando reagisci ad un messaggio</string>
+    <string name="CX_AllowStorage">A causa delle modifiche introdotte da Google in Android 11+, Catogram X ha bisogno della tua autorizzazione per visualizzare i file non multimediali.</string>
+    <string name="CX_DBNotEnabled">Non disponibile per questo account</string>
+    <string name="CX_TitleIsChats">Utilizza la voce chat sopra la lista anziché il nome dell\'app</string>
+    <string name="CX_TitleIsChatsDesc">Come in catogram originale</string>
+</resources>

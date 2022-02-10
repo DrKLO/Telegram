@@ -17,7 +17,6 @@
     <string name="CX_DBNotEnabled">Nu este activat pentru acest cont</string>
     <string name="CX_TitleIsChats">Utilizați Chat-uri ca titlu pentru lista de chat, în loc de numele aplicației</string>
     <string name="CX_TitleIsChatsDesc">Ca în Catogram-ul original</string>
-    <string name="CX_DismissStorageDialog">Pentru a închide definitiv dialogul, acordați permisiunea sau anulați toate permisiunile de stocare.</string>
     <string name="CX_ThemePreviewDialogMessage3">Te rog să testezi noul update!</string>
     <string name="CX_ThemePreviewDialogMessage4">Aruncă o privire pe acest nou design :)</string>
     <string name="CX_ThemePreviewDialogMessage5">mulțumesc</string>

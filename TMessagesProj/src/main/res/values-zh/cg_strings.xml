@@ -88,7 +88,7 @@
     <string name="CG_NewMsgAnim">新消息动画 (beta)</string>
     <string name="CG_HideKbdOnScroll">在浏览页面时隐藏键盘</string>
     <string name="CG_NewTabs_NoCounter">隐藏聊天会话数量</string>
-    <string name="CG_NewTabs_RemoveAllChats">隐藏 \"所有会话\" 栏［需要重启应用］</string>
+    <string name="CG_NewTabs_RemoveAllChats">隐藏 \"所有会话\" 栏</string>
     <string name="CG_NewTabs_RemoveAllChats_Desc">按 \"返回键\" 在主页就能重新开启</string>
     <string name="CG_NewTabs_Emoticons">显示标签图标而不是其标题［需要重启应用］</string>
     <string name="CG_NewTabs_Emoticons_Desc">这将由 Telegram 进行云同步</string>
@@ -120,8 +120,8 @@
     <string name="AS_KbdWebp_Desc">例如 SKeyboard, GBoard 以及其他受支持的输入法</string>
     <string name="AS_ChangeIcon">应用图标</string>
     <string name="AS_ChangeIcon_Old">默认</string>
-    <string name="AS_ChangeIcon_AltBlue">New Blue (by @RKBDI)</string>
-    <string name="AS_ChangeIcon_AltOrange">New Orange (by @RKBDI)</string>
+    <string name="AS_ChangeIcon_AltBlue">Cato天蓝图标 (@RKBDI绘制)</string>
+    <string name="AS_ChangeIcon_AltOrange">Cato橙黄图标 (@RKBDI绘制)</string>
     <string name="AS_ForwardNoAuthorship">无来源转发 [beta]</string>
     <string name="AS_ForwardNoAuthorship_Desc">这会让您所进行的所有转发均不显示原作者</string>
     <string name="CG_ForwardMsgDate">显示被转发原消息所发送的时间</string>
@@ -246,9 +246,9 @@
     <string name="CG_TrLang_Hindi">印地语</string>
     <string name="CG_TrLang_German">德语</string>
     <string name="CG_TrLang_Indonesian">印尼语</string>
-    <string name="CG_TrLang_Bosnian">Bosnian</string>
-    <string name="CG_TrLang_Croatian">Croatian</string>
-    <string name="CG_TrLang_Serbian">Serbian</string>
+    <string name="CG_TrLang_Bosnian">波斯语</string>
+    <string name="CG_TrLang_Croatian">克罗地亚语</string>
+    <string name="CG_TrLang_Serbian">塞尔维亚语</string>
     <string name="CG_Tr">翻译</string>
     <string name="CG_Updates_Category">更新中心</string>
     <string name="CG_Auto_Ota">自动检查应用更新</string>
@@ -272,11 +272,16 @@
     <string name="CG_StreamVoip_Desc">如果启用此选项，语音 VoIP 聊天将会被视为 将视为媒体流式传输</string>
     <string name="CG_TimeOnStick">在聊天中为贴纸隐藏发送时间</string>
     <string name="CG_NoInternet">无法完成翻译，请检查您的网络连接</string>
-    <string name="CG_FwdMenu_NoNotify">Don\'t notify</string>
-    <string name="CG_FwdMenu_Notify">Notify</string>
-    <string name="CG_FwdMenu_EnableCaptions">Enable captions</string>
-    <string name="CG_FwdMenu_DisableCaptions">Hide captions</string>
-    <string name="CG_Mutual_Contact">mutual contact</string>
-    <string name="CG_relaunch">needs restart of app</string>
-    <string name="CG_hq_voice">HQ Voice messages</string>
+    <string name="CG_FwdMenu_NoNotify">静音发送</string>
+    <string name="CG_FwdMenu_Notify">有声发送</string>
+    <string name="CG_FwdMenu_EnableCaptions">显示标题</string>
+    <string name="CG_FwdMenu_DisableCaptions">隐藏标题</string>
+    <string name="CG_Mutual_Contact">双向联系人</string>
+    <string name="CG_relaunch">需要重启应用</string>
+    <string name="CG_hq_voice">高清语音消息</string>
+    <string name="CG_IgnoreArchivedChats">忽略已归档对话</string>
+    <string name="CG_IgnoreArchivedChats_desc">在快捷切换到下一个频道时忽略它</string>
+    <string name="CG_DisableCam">禁用媒体发送菜单内的相机</string>
+    <string name="CG_DisableCam_Desc">打开媒体发送菜单卡慢则建议启用</string>
+    <string name="CG_ShowDC">个人资料显示DC</string>
 </resources>

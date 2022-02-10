@@ -37,7 +37,7 @@
     <string name="AS_DrawerCategory">Шторка</string>
     <string name="AS_FlatSB">Прозрачный статусбар</string>
     <string name="AS_FlatAB">Отключить тень у тулбара</string>
-    <string name="AS_FlatSB_Desc">только для Android 6+</string>
+    <string name="AS_FlatSB_Desc">Только для Android 6+</string>
     <string name="AS_RedesignCategory">Редизайн</string>
     <string name="CG_Filters_Header">Фильтр диалогов</string>
     <string name="CG_Filters_PM">Личные сообщения</string>
@@ -250,7 +250,7 @@
     <string name="CG_TrLang_Croatian">Хорватский</string>
     <string name="CG_TrLang_Serbian">Сербский</string>
     <string name="CG_Tr">Переводчик</string>
-    <string name="CG_Updates_Category">OTA Обновления</string>
+    <string name="CG_Updates_Category">Обновления</string>
     <string name="CG_Auto_Ota">Автоматически проверять обновления</string>
     <string name="CG_Auto_Ota_summary">При запуске приложения</string>
     <string name="CG_Ota">Поиск обновлений</string>

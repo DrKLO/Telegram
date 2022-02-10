@@ -23,7 +23,6 @@
 \nTekan lama entri untuk menghapus kode sandi, dengan, sekali lagi, memasukkannya.</string>
     <string name="CX_TitleIsChats">Gunakan Obrolan sebagai judul untuk daftar obrolan, alih-alih menggunakan nama aplikasi</string>
     <string name="CX_TitleIsChatsDesc">Seperti di Catogram yang asli</string>
-    <string name="CX_DismissStorageDialog">Untuk mengabaikan dialog secara permanen, berikan izin atau batalkan semua izin penyimpanan.</string>
     <string name="CX_ThemePreviewDialogMessage3">Silahkan mencoba update terbaru!</string>
     <string name="CX_ThemePreviewDialogMessage4">Lihat desain baru berikut :)</string>
     <string name="CX_ThemePreviewDialogMessage5">Trims</string>
@@ -33,8 +32,6 @@
     <string name="TFOSS_Proxy">Anda mungkin perlu untuk menyiapkan proxy sebelum login, jika negara atau ISP Anda memblokir Telegram</string>
     <string name="TFOSS_SetProxy">ATUR PROXY</string>
     <string name="CX_Secrets">Menu Rahasia</string>
-    <string name="CX_MagiKeyboard">MagiKeyboard (WIP AF)</string>
-    <string name="CX_MagiKeyboardDesc">Window Inset IME anim</string>
     <string name="CX_ChangeIcon_Blue_Reg">CatoX Biru (oleh Qirkl)</string>
     <string name="CX_ChangeIcon_Cyan_Reg">CatoX Cyan (oleh Qirkl)</string>
     <string name="CX_ChangeIcon_Orange_Reg">CatoX Jingga (oleh Qirkl)</string>

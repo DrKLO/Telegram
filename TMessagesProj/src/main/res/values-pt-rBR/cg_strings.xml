@@ -145,11 +145,11 @@
     <string name="CG_GooglePlay_Thanks">Obrigado!</string>
     <string name="CG_TabIconMode_Title">Tab icon type [restart needed]</string>
     <string name="CG_TabIconMode_Disabled">Disabled</string>
-    <string name="CG_TabIconMode_Append">Append to tab title</string>
-    <string name="CG_TabIconMode_Replace">Replace tab title</string>
-    <string name="CG_GooglePlay_OTADownloaded">An update is ready to be installed.</string>
-    <string name="CG_GooglePlay_OTADownloaded_Restart">Restart</string>
-    <string name="CG_FlatChannels">Flat channel feed</string>
+    <string name="CG_TabIconMode_Append">Fixar no título da aba</string>
+    <string name="CG_TabIconMode_Replace">Substituir o título da aba</string>
+    <string name="CG_GooglePlay_OTADownloaded">Uma atualização está pronta para ser instalada</string>
+    <string name="CG_GooglePlay_OTADownloaded_Restart">Reniciar</string>
+    <string name="CG_FlatChannels">Feed do canal</string>
     <string name="CG_IgnoreBlacklist">Ignore blacklisted users</string>
     <string name="CG_IgnoreBlacklist_Desc">messages from them will be hidden</string>
     <string name="CG_KangSticker">Add to stickerpack</string>

@@ -26,7 +26,6 @@
 \nMantenga pulsada una entrada para eliminar el código de acceso, introduciéndolo de nuevo.</string>
     <string name="CX_TitleIsChats">Utilizar Chats como título para la lista de chats, en lugar del nombre de la app</string>
     <string name="CX_TitleIsChatsDesc">Como en el Catogram original</string>
-    <string name="CX_DismissStorageDialog">Para descartar permanentemente el cuadro de diálogo, conceda el permiso o anule la concesión de todos los permisos de almacenamiento.</string>
     <string name="CX_ThemePreviewDialogMessage3">¡Por favor pruebe la nueva actualización!</string>
     <string name="CX_ThemePreviewDialogMessage4">Revisa este nuevo diseño :)</string>
     <string name="CX_ThemePreviewDialogMessage5">gracias</string>
@@ -36,6 +35,4 @@
     <string name="TFOSS_Proxy">Es posible que tengas que configurar un proxy antes de iniciar sesión, en caso de que tu país o ISP bloquee Telegram</string>
     <string name="TFOSS_SetProxy">ESTABLECER UN PROXY</string>
     <string name="CX_Secrets">Menú secreto</string>
-    <string name="CX_MagiKeyboard">MagiKeyboard (WIP AF)</string>
-    <string name="CX_MagiKeyboardDesc">Window Inset IME anim</string>
 </resources>

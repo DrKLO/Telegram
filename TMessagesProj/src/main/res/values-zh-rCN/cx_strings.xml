@@ -1,2 +1,57 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources>
+    <string name="CX_ThemePreviewDialogMessage3">立即更新至新版本</string>
+    <string name="AdvancedSettingsX">CatoX 设置</string>
+    <string name="AS_Header_AboutX">关于Catogram X</string>
+    <string name="CX_TranslateMessagesInfo1">使用Telegram翻译功能</string>
+    <string name="CX_OldTranslateUI">使用原版翻译UI</string>
+    <string name="CX_OldTranslateUIDesc">禁用时，兼并使用Telegram翻译外观与Catogram翻译引擎</string>
+    <string name="CX_HideSendAsChannel">隐藏切换发言身份的按钮</string>
+    <string name="CX_HideSendAsChannelDesc">适用于小屏设备</string>
+    <string name="CX_SetCustomEmojiFont">选择自定义表情字体</string>
+    <string name="CX_InvalidAccessToken">机器人登录令牌无效</string>
+    <string name="CX_BotLogin">以机器人身份登录</string>
+    <string name="CX_DisableReactionAnim">禁用表情回应动画</string>
+    <string name="CX_AllowStorage">由于Google更改了Android 11+的文件读取机制，Catogram X 需要您的授权才能查看非媒体文件。</string>
+    <string name="CX_DBNotEnabled">此账号未启用</string>
+    <string name="CX_TitleIsChats">主标题显示为“对话”</string>
+    <string name="CX_InvalidCustomEmojiTypeface">错误的Emoji文件类型</string>
+    <string name="CG_AboutDescX">Catogram复刻版</string>
+    <string name="CX_DnD">关闭联系人通知</string>
+    <string name="CX_DnDDesc">关闭联系人新消息通知</string>
+    <string name="CX_CustomEmoji">自定义Emoji字体</string>
+    <string name="CX_TitleIsChatsDesc">还原Catogram初始设置</string>
+    <string name="CX_ThemePreviewDialogMessage5">欢迎使用</string>
+    <string name="CX_TestBackend">使用测试服务器登录</string>
+    <string name="TFOSS_SetProxy">设置代理</string>
+    <string name="CX_ThemePreviewDialogMessage4">欣赏这个新设计 :)</string>
+    <string name="CX_SystemFonts">使用系统默认字体</string>
+    <string name="CX_Secrets">隐私菜单</string>
+    <string name="CX_ChangeIcon_Black_Reg">CatoX暗黑图标 (Qirkl绘制)</string>
+    <string name="CX_ChangeIcon_Blue_Reg">CatoX天蓝图标 (Qirkl绘制)</string>
+    <string name="CX_ChangeIcon_Cyan_Reg">CatoX青蓝图标 (Qirkl绘制)</string>
+    <string name="CX_ChangeIcon_Green_Reg">CatoX草绿图标 (Qirkl绘制)</string>
+    <string name="CX_ChangeIcon_Orange_Reg">CatoX橙黄图标 (Qirkl绘制)</string>
+    <string name="CX_ChangeIcon_Pink_Reg">CatoX桃粉图标 (Qirkl绘制)</string>
+    <string name="CX_ChangeIcon_Red_Reg">CatoX喜红图标 (Qirkl绘制)</string>
+    <string name="CX_ChangeIcon_Taffy_Reg">CatoX糖心图标 (Qirkl绘制)</string>
+    <string name="CX_ChangeIcon_Purple_Reg">CatoX紫米图标 (Qirkl绘制)</string>
+    <string name="CX_ChangeIcon_Yellow_Reg">CatoX金黄图标 (Qirkl绘制)</string>
+    <string name="CX_ChangeIcon_Monet">CatoX跟随系统主题色</string>
+    <string name="CX_DisableReactionAnimDesc">在点击回应时的动画效果</string>
+    <string name="CX_DB_AccountsHint">双层按钮允许您为不同的账号设置不同的密码。
+\n
+\n尝试为已配置的帐户设置密码将会把密码替换成新的的密码。
+\n长按一个条目以删除密码，然后再次输入它。</string>
+    <string name="CX_DismissStorageDialog2">为了永久关闭对话框，请授予权限或在 CatoX 设置中启用 SAF。</string>
+    <string name="CX_SystemFontsDesc">易引发Bug，不建议启用</string>
+    <string name="TFOSS_Proxy">如果当地的ISP屏蔽了对Telegram的访问，可能需要设置代理才能正常登录</string>
+    <string name="CX_DBNotEnabled2">未启用</string>
+    <string name="CX_DBSettingsPin">设置PIN密码</string>
+    <string name="CX_EnableSAF">强制启用SAF</string>
+    <string name="CX_EnableSAFDesc">在 Android 11+ 匹配Telegram存储行为（在旧版本上保持不变）</string>
+    <string name="CX_Website">访问官方网站</string>
+    <string name="CX_CustomEmojiDesc">自定义表情字体替代原版表情</string>
+    <string name="CX_EnableMLKIT">启用系统级语言检测</string>
+    <string name="CX_EnableMLKITDesc">禁用时，总是显示翻译引擎</string>
+</resources>

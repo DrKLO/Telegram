@@ -5,7 +5,7 @@
     <string name="CG_AboutDescX">Форк Catogram</string>
     <string name="CX_TranslateMessagesInfo1">Используйте функцию перевода Telegram вместо переводчика Catogram</string>
     <string name="CX_OldTranslateUI">Использовать классический интерфейс переводчика</string>
-    <string name="CX_OldTranslateUIDesc">Если отключено, будет использоваться интерфейс Telegram, но с переводчком Catogram</string>
+    <string name="CX_OldTranslateUIDesc">Если отключено, будет использоваться интерфейс Telegram, но с переводчиком Catogram</string>
     <string name="CX_DnD">Заглушить контакты</string>
     <string name="CX_DnDDesc">Отключить звук и вибрацию уведомлений от контактов</string>
     <string name="CX_HideSendAsChannel">Скрыть кнопку отправления от имени канала</string>
@@ -21,7 +21,6 @@
     <string name="CX_TitleIsChatsDesc">Как в оригинальном Catogram</string>
     <string name="CX_ThemePreviewDialogMessage3">Пожалуйста, протестируйте новое обновление!</string>
     <string name="CX_DBNotEnabled">Не включено для этого аккаунта</string>
-    <string name="CX_DismissStorageDialog">Чтобы навсегда закрыть диалоговое окно, предоставьте разрешение или снимите все разрешения на хранение данных.</string>
     <string name="CX_AllowStorage">Из-за изменений, внесённых Google в Android 11+, Catogram X требует ваше разрешение для просмотра немедийных файлов.</string>
     <string name="CX_TitleIsChats">Используйте \"Чаты\" в качестве названия списка чатов вместо названия приложения</string>
     <string name="CX_DB_AccountsHint">Двойное Дно позволяет установить пароль для другой учётной записи.
@@ -36,8 +35,6 @@
     <string name="CX_ThemePreviewDialogMessage4">Посмотри на этот новый дизайн :)</string>
     <string name="CX_TestBackend">Войти в систему на тестовых серверах</string>
     <string name="TFOSS_Proxy">Возможно, вам потребуется настроить прокси перед входом в аккаунт, если ваша страна или провайдер блокируют Telegram</string>
-    <string name="CX_MagiKeyboard">MagiKeyboard (Бета)</string>
-    <string name="CX_MagiKeyboardDesc">IME-Анимация при вставке окна</string>
     <string name="CX_ChangeIcon_Pink_Reg">CatoX Розовая (от @Qirkl)</string>
     <string name="CX_ChangeIcon_Purple_Reg">CatoX Фиолетовая (от @Qirkl)</string>
     <string name="CX_ChangeIcon_Red_Reg">CatoX Красная (от @Qirkl)</string>
@@ -47,6 +44,14 @@
     <string name="CX_ChangeIcon_Yellow_Reg">CatoX Жёлтая (от @Qirkl)</string>
     <string name="CX_ChangeIcon_Black_Reg">CatoX Чёрная (от @Qirkl)</string>
     <string name="CX_ChangeIcon_Blue_Reg">CatoX Голубая (от @Qirkl)</string>
-    <string name="CX_ChangeIcon_Cyan_Reg">CatoX Сине-зелёная (от @Qirkl)</string>
-    <string name="CX_ChangeIcon_Taffy_Reg">CatoX Ирисочная (от @Qirkl)</string>
+    <string name="CX_ChangeIcon_Cyan_Reg">CatoX Сине-Зелёная (от @Qirkl)</string>
+    <string name="CX_ChangeIcon_Taffy_Reg">CatoX Таффи-Розовая (от @Qirkl)</string>
+    <string name="CX_Website">Открыть наш сайт</string>
+    <string name="CX_DBNotEnabled2">Не включено</string>
+    <string name="CX_DBSettingsPin">Настройки PIN</string>
+    <string name="CX_EnableSAFDesc">Соответствует поведению стокового Telegram на Android 11+ (на старых версиях остаётся прежним)</string>
+    <string name="CX_EnableSAF">Принудительный доступ к хранилищу</string>
+    <string name="CX_DismissStorageDialog2">Чтобы окончательно закрыть диалоговое окно, предоставьте разрешение или включите SAF (Доступ к хранилищу) в настройках CatoX.</string>
+    <string name="CX_EnableMLKITDesc">Отключите, чтобы всегда показывать переводчик</string>
+    <string name="CX_EnableMLKIT">Включить обнаружение локальной сети ИИ на устройстве</string>
 </resources>

@@ -16,7 +16,6 @@
     <string name="CX_DBNotEnabled">Não ativado para esta conta</string>
     <string name="CX_TitleIsChats">Use Conversas como título para a lista de conversa, em vez do nome do aplicativo</string>
     <string name="CX_TitleIsChatsDesc">Como no Catogram original</string>
-    <string name="CX_DismissStorageDialog">Para descartar permanentemente a caixa de diálogo, conceda a permissão ou conceda todas as permissões de armazenamento.</string>
     <string name="CX_ThemePreviewDialogMessage3">Por favor, teste a nova atualização!</string>
     <string name="AdvancedSettingsX">Preferencias do Catogram X</string>
     <string name="CG_AboutDescX">Fork do Catogram</string>
@@ -36,8 +35,6 @@
     <string name="CX_TestBackend">Faça login nos servidores de testes</string>
     <string name="TFOSS_Proxy">Pode ser necessário configurar uma proxy antes de fazer login, caso seu país ou ISP bloqueie o Telegram</string>
     <string name="TFOSS_SetProxy">DEFINIR UMA PROXY</string>
-    <string name="CX_MagiKeyboard">MagiKeyboard (WIP AF)</string>
-    <string name="CX_MagiKeyboardDesc">Window Inset IME anim</string>
     <string name="CX_ChangeIcon_Blue_Reg">CatoX Blue (Por Qirkl)</string>
     <string name="CX_ChangeIcon_Cyan_Reg">CatoX Cyan (Por Qirkl)</string>
     <string name="CX_ChangeIcon_Green_Reg">CatoX Green (Por Qirkl)</string>

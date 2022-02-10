@@ -19,7 +19,6 @@
     <string name="CX_DisableReactionAnim">Reaktions-Animation deaktivieren</string>
     <string name="CX_AllowStorage">Seit Android 11 braucht Catogram X deine Erlaubnis, Nicht-Medien zu sehen.</string>
     <string name="CX_DBNotEnabled">Für dieses Konto nicht aktiviert</string>
-    <string name="CX_DismissStorageDialog">Um den Dialog dauerhaft zu verstecken, kannst du entweder die Berechtigung geben oder alle Speicherberechtigungen entfernen.</string>
     <string name="CX_ThemePreviewDialogMessage3">Bitte teste das neue Update!</string>
     <string name="CX_TitleIsChats">Nutze \"Chats\" als Titel für die Chatliste, statt dem App-Name</string>
     <string name="CX_TitleIsChatsDesc">Wie im originalen Catogram</string>
@@ -35,7 +34,5 @@
     <string name="TFOSS_Proxy">Eventuell musst du ein Proxy einrichten, bevor du dich anmeldest, in dem Fall dass dein ISP oder dein Land Telegram blockieren</string>
     <string name="TFOSS_SetProxy">PROXY SETZEN</string>
     <string name="CX_ThemePreviewDialogMessage5">danke</string>
-    <string name="CX_MagiKeyboardDesc">Window Inset IME-Animation</string>
     <string name="CX_Secrets">Verstecktes Menü</string>
-    <string name="CX_MagiKeyboard">MagiKeyboard (ALPHA)</string>
 </resources>
