@@ -812,6 +812,7 @@ public class PasscodeView extends FrameLayout {
                 ((LaunchActivity) getContext()).switchToAccount(DoubleBottomBridge.findLocalAccIdByTgId(accId), true);
             } else if (accId == 0 && getContext() instanceof LaunchActivity) {
                 ((LaunchActivity) getContext()).presentFragment(CatogramPreferencesNavigator.createDB(), true, true);
+                ((LaunchActivity) getContext()).dbSpin = true;
                 ((LaunchActivity) getContext()).drawerLayoutContainer.setAllowOpenDrawerBySwipe(false);
             } else if (!SharedConfig.checkPasscode(password)) {
                 SharedConfig.increaseBadPasscodeTries();

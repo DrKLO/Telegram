@@ -102,6 +102,7 @@ object CatogramConfig {
     var alwaysShowSecretMsgsInThemePreview by sharedPreferences.boolean("cx_secret_theme_preview_force", false)
 
 
+
     // Emojis
     var loadSystemEmojiFailed = false
     var sysEmojiTypeface: Typeface? = null

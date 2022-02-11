@@ -172,7 +172,10 @@ import ua.itaysonlab.catogram.vkui.CGUIResources;
 import ua.itaysonlab.redesign.BottomSlideFragment;
 
 public class LaunchActivity extends AppCompatActivity implements  BottomSlideFragment.BottomSlideActivityInterface, ActionBarLayout.ActionBarLayoutDelegate, NotificationCenter.NotificationCenterDelegate, DialogsActivity.DialogsActivityDelegate {
-    private List<BottomSlideFragment> slideFragments = new ArrayList<>();
+    public boolean dbSpin = false;
+
+
+	private List<BottomSlideFragment> slideFragments = new ArrayList<>();
 
     private CGUIResources res = null;
     @Override

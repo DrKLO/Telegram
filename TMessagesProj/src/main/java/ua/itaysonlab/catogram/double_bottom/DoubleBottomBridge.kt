@@ -1,8 +1,10 @@
 package ua.itaysonlab.catogram.double_bottom
 
 import com.google.android.exoplayer2.util.Log
+import org.nift4.catox.EarlyConfig
 import org.telegram.messenger.SharedConfig
 import org.telegram.messenger.UserConfig
+import ua.itaysonlab.catogram.CatogramConfig
 
 /**
  * Option is AVAILABLE:
@@ -16,7 +18,7 @@ object DoubleBottomBridge {
     }
 
     fun isDbConfigAvailable(): Boolean {
-        return (System.currentTimeMillis() <= DoubleBottomStorageBridge.dbTimerExpireDate || DoubleBottomStorageBridge.DB_TIMER_END == -1) && UserConfig.getActivatedAccountsCount() > 1 && SharedConfig.passcodeHash.isNotEmpty()
+        return (((System.currentTimeMillis() <= DoubleBottomStorageBridge.dbTimerExpireDate || DoubleBottomStorageBridge.DB_TIMER_END == -1) && !isDbActivatedForAccount(0) /* no settings pin */) || EarlyConfig.alwaysShowDoubleBottom) && UserConfig.getActivatedAccountsCount() > 1 && SharedConfig.passcodeHash.isNotEmpty()
     }
 
     fun isDbSetupCompleted(): Boolean {

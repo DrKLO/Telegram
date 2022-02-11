@@ -6,6 +6,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 import android.util.SparseArray;
 import android.view.Gravity;
 import android.view.View;
@@ -36,6 +37,7 @@ import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.LaunchActivity;
 
 import java.io.File;
 import java.io.InputStream;
@@ -89,6 +91,22 @@ public class TGKitSettingsFragment extends BaseFragment {
     }
 
     @Override
+    public boolean onBackPressed() {
+        final Context context = getParentActivity();
+        if (context instanceof LaunchActivity && ((LaunchActivity) context).dbSpin) { // double bottom settings pin
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                ((LaunchActivity) context).finishAndRemoveTask();
+            } else {
+                ((LaunchActivity) context).finishAffinity();
+            }
+            System.exit(0);
+        } else {
+            return super.onBackPressed();
+        }
+        return true;
+    }
+
+    @Override
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setTitle(settings.name);
@@ -100,7 +118,16 @@ public class TGKitSettingsFragment extends BaseFragment {
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
-                    finishFragment();
+                    if (context instanceof LaunchActivity && ((LaunchActivity) context).dbSpin) { // double bottom settings pin
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                            ((LaunchActivity) context).finishAndRemoveTask();
+                        } else {
+                            ((LaunchActivity) context).finishAffinity();
+                        }
+                        System.exit(0);
+                    } else {
+                        finishFragment();
+                    }
                 }
             }
         });
