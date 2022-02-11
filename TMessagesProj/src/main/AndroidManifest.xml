@@ -5,6 +5,8 @@
     android:testOnly="false"
     android:installLocation="auto">
 
+    <uses-sdk tools:overrideLibrary="com.google.mlkit.nl.languageid.bundled, com.google.mlkit.common, com.google.firebase.messaging" />
+
     <supports-screens
         android:anyDensity="true"
         android:largeScreens="true"
@@ -140,7 +142,7 @@
                 <category android:name="android.intent.category.DEFAULT"/>
                 <data android:mimeType="*/*"/>
             </intent-filter>
-            <intent-filter>
+            <intent-filter tools:ignore="AppLinkUrlError">
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <data android:mimeType="vnd.android.cursor.item/vnd.org.nift4.catox.android.profile"/>
@@ -180,12 +182,12 @@
 
                 <data android:mimeType="*/*" />
             </intent-filter>
-            <intent-filter>
+            <intent-filter tools:ignore="AppLinkUrlError">
                 <action android:name="android.intent.action.VIEW" />
 
                 <category android:name="android.intent.category.DEFAULT" />
 
-                <data android:mimeType="vnd.android.cursor.item/vnd.org.telegram.messenger.android.profile" />
+                <data android:mimeType="vnd.android.cursor.item/vnd.org.nift4.catox.android.profile" />
             </intent-filter>
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
@@ -509,11 +511,11 @@
         <activity
             android:name="org.telegram.ui.IntroActivity"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
-            android:launchMode="singleTask"></activity>
+            android:launchMode="singleTask" />
         <activity
             android:name=".OpenChatReceiver"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
-            android:exported="true"></activity>
+            android:exported="true" />
         <activity
             android:name="org.telegram.ui.PopupNotificationActivity"
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenLayout|uiMode|screenSize|smallestScreenSize"
@@ -769,9 +771,6 @@
         <meta-data
             android:name="com.sec.android.multiwindow.MINIMUM_SIZE_H"
             android:value="598dp" />
-        <meta-data
-            android:name="com.google.android.actions"
-            android:resource="@xml/actions" />
     </application>
 
 </manifest>

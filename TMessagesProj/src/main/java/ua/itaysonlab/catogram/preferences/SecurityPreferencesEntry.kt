@@ -1,5 +1,6 @@
 package ua.itaysonlab.catogram.preferences
 
+import android.os.Build
 import android.os.Environment
 import android.widget.Toast
 import org.nift4.catox.EarlyConfig
@@ -45,10 +46,10 @@ class SecurityPreferencesEntry : BasePreferencesEntry {
                     Toast.makeText(bf.parentActivity, LocaleController.getString("CG_RemovedS", R.string.CG_RemovedS), Toast.LENGTH_SHORT).show()
                 }
             }
-            if (BuildVars.isStandaloneApp()) {
+            if (BuildVars.isStandaloneApp() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 switch {
                     title = LocaleController.getString("CX_EnableSAF", R.string.CX_EnableSAF)
-                    summary = LocaleController.getString("CX_EnableSAFDesc", R.string.CX_EnableSAFDesc)
+                    summary = LocaleController.getString("CX_EnableSAFDesc", R.string.CX_EnableSAF_Desc)
 
                     contract({
                         return@contract EarlyConfig.enableSaf
@@ -57,14 +58,16 @@ class SecurityPreferencesEntry : BasePreferencesEntry {
                     }
                 }
             }
-            switch {
-                title = LocaleController.getString("CX_EnableMLKIT", R.string.CX_EnableMLKIT)
-                summary = LocaleController.getString("CX_EnableMLKITDesc", R.string.CX_EnableMLKITDesc)
+            if (!BuildVars.isFossApp() && Build.VERSION.SDK_INT >= 19) {
+                switch {
+                    title = LocaleController.getString("CX_EnableMLKIT", R.string.CX_EnableMLKIT)
+                    summary = LocaleController.getString("CX_EnableMLKITDesc", R.string.CX_EnableMLKITDesc)
 
-                contract({
-                    return@contract CatogramConfig.enableMlkit
-                }) {
-                    CatogramConfig.enableMlkit = it
+                    contract({
+                        return@contract CatogramConfig.enableMlkit
+                    }) {
+                        CatogramConfig.enableMlkit = it
+                    }
                 }
             }
         }

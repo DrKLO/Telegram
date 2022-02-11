@@ -12,7 +12,7 @@ import ua.itaysonlab.tgkit.preference.types.TGKitTextIconRow
 
 class DonatePreferenceEntry : BasePreferencesEntry {
     override fun getPreferences(bf: BaseFragment) = tgKitScreen(LocaleController.getString("CG_Donate", R.string.CG_Donate)) {
-        category(LocaleController.getString("CG_Donate_Method", R.string.CG_Donate_Method)) {
+        /*category(LocaleController.getString("CG_Donate_Method", R.string.CG_Donate_Method)) {
             textIcon {
                 title = "PayPal"
                 divider = true
@@ -89,6 +89,7 @@ class DonatePreferenceEntry : BasePreferencesEntry {
                     Toast.makeText(bf.parentActivity, LocaleController.getString("CardNumberCopied", R.string.CardNumberCopied), Toast.LENGTH_SHORT).show()
                 }
             }
-        }
+        }*/
+        category("WHY ARE YOU HERE") {}
     }
 }

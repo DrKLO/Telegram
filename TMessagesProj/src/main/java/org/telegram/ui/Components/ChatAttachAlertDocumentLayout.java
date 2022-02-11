@@ -861,15 +861,17 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
     public void setDelegate(DocumentSelectActivityDelegate documentSelectActivityDelegate) {
         delegate = documentSelectActivityDelegate;
     }
-
     private boolean listFiles(File dir) {
+        return listFiles(dir, false);
+    }
+
+    private boolean listFiles(File dir, boolean p) {
         hasFiles = false;
         if (!dir.canRead()) {
-            String state = "_undefined_";
-            if (true || dir.getAbsolutePath().startsWith(Environment.getExternalStorageDirectory().toString())
+            String state = Environment.getExternalStorageState();
+            if (dir.getAbsolutePath().startsWith(Environment.getExternalStorageDirectory().toString())
                     || dir.getAbsolutePath().startsWith("/sdcard")
                     || dir.getAbsolutePath().startsWith("/mnt/sdcard")) {
-                state = Environment.getExternalStorageState();
                 if (!Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)
                         && !Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED_READ_ONLY)) {
                     currentDir = dir;

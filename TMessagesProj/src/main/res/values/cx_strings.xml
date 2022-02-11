@@ -58,10 +58,10 @@
     <string name="CX_DBNotEnabled2">Not enabled</string>
     <string name="CX_DBSettingsPin">Settings PIN</string>
     <string name="CX_DoubleTapReact">Disable quick reactions</string>
-    <string name="CX_DoubleTapReact_Desc">Disabling this option will allow you not to send reaction to messages by accidental double tap</string>
     <string name="CX_EnableSAF">Force SAF</string>
-    <string name="CX_EnableSAFDesc">Match stock telegram behaviour on Android 11+ (stays the same on older versions)</string>
+    <string name="CX_EnableSAF_Desc">Android 11+ only. Allows you to access external storage at the cost of using Google File Manager. ONLY WORKS WITH DISABLED "MANAGE ALL FILES" FOR THIS APP</string>
     <string name="CX_Website">Visit our website</string>
     <string name="CX_EnableMLKIT">Enable on-device AI lanaguage detection</string>
     <string name="CX_EnableMLKITDesc">disable to always show the translator</string>
+    <string name="CX_EnableSAF_Warn">Please DISABLE "Manage all files" for this app to make "Force SAF" effective</string>
 </resources>

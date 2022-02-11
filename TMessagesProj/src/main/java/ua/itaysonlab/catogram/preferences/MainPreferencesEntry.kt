@@ -79,6 +79,7 @@ class MainPreferencesEntry : BasePreferencesEntry {
                     it.presentFragment(CatogramPreferencesNavigator.createUpdates())
                 }
             }
+
             /*textIcon {
                 title = LocaleController.getString("CG_Donate", R.string.CG_Donate)
                 icon = R.drawable.money_circle_outline_28

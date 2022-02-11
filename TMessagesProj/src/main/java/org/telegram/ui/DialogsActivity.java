@@ -3634,6 +3634,13 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             showDialog(builder.create());
         }
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !BuildVars.NO_SCOPED_STORAGE && (ContextCompat.checkSelfPermission(getParentActivity(),"android.permission.READ_EXTERNAL_STORAGE") == PackageManager.PERMISSION_GRANTED) && Environment.isExternalStorageManager()) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+            builder.setNegativeButton(LocaleController.getString("Dismiss", R.string.Dismiss), (dialog, val) -> dialog.dismiss());
+            builder.setMessage(LocaleController.getString("CX_EnableSAF_Warn", R.string.CX_EnableSAF_Warn));
+            showDialog(builder.create());
+        }
+
 
         return fragmentView;
     }
