@@ -1,7 +1,10 @@
 package ua.itaysonlab.catogram.translate
 
+import org.telegram.messenger.LocaleController
+import org.telegram.messenger.R
 import org.telegram.ui.Components.EditTextCaption
 import org.telegram.ui.Components.EditTextEmoji
+import ua.itaysonlab.catogram.CatogramConfig
 import ua.itaysonlab.catogram.translate.impl.GoogleTranslateImpl
 import ua.itaysonlab.catogram.translate.impl.ITranslateImpl
 
@@ -21,9 +24,23 @@ object Translator {
     }
 
     @JvmStatic
-    fun translateTextWithLangInfo(txt: String?, e: Boolean, callback: (String /* Text */, String /* From Lang */, String /* To Lang */) -> Unit) {
+    fun translateTextWithLangInfo(txt: String?, isOutgoing: Boolean, callback: (String /* Text */, String /* From Lang */, String /* To Lang */) -> Unit) {
         ensureImpl()
-        return impl.translateText(txt, e, callback)
+        val tl = when {
+            isOutgoing -> CatogramConfig.trLang
+            else -> when (LocaleController.getString(
+                    "LanguageCode",
+                    R.string.LanguageCode
+            )) {
+                "zh_hans", "zh_hant" -> "zh"
+                "pt_BR" -> "pt"
+                else -> LocaleController.getString("LanguageCode", R.string.LanguageCode)
+            }
+        }
+        return impl.translateText(txt, tl) { a, b, c ->
+            if (!isOutgoing || b != "Error")
+                callback.invoke(if (a == "Error") LocaleController.getString("CG_NoInternet", R.string.CG_NoInternet) else a, b, c)
+        }
     }
 
     @JvmStatic

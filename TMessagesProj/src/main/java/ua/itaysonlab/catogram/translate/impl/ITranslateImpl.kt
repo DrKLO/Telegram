@@ -4,5 +4,5 @@ import org.telegram.ui.Components.EditTextCaption
 import org.telegram.ui.Components.EditTextEmoji
 
 interface ITranslateImpl {
-    fun translateText(txt: String?, e: Boolean, callback: (String /* Text */, String /* From Lang */, String /* To Lang */) -> Unit)
+    fun translateText(txt: String?, tl: String, callback: (String /* Text */, String /* From Lang */, String /* To Lang */) -> Unit)
 }
