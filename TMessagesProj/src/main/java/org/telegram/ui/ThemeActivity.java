@@ -45,6 +45,8 @@ import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildConfig;
@@ -1568,6 +1570,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         public void notifyDataSetChanged() {
             currentTheme = currentType == THEME_TYPE_NIGHT ? Theme.getCurrentNightTheme() : Theme.getCurrentTheme();
             themeAccents = new ArrayList<>(currentTheme.themeAccents);
+            themeAccents.add(currentTheme.themeAccentsMap.get(999));
             super.notifyDataSetChanged();
         }
 

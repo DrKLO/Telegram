@@ -136,6 +136,8 @@ import ua.itaysonlab.catogram.MonetHelper;
 import androidx.annotation.UiThread;
 import androidx.core.graphics.ColorUtils;
 
+import com.google.android.exoplayer2.util.Log;
+
 public class Theme {
 
     public static final String DEFAULT_BACKGROUND_SLUG = "d";
@@ -2274,8 +2276,9 @@ public class Theme {
             accentsByThemeId = new LongSparseArray<>();
 
             for (int a = 0; a < accent.length; a++) {
+                boolean isMonet = a >= accent.length - 2;
                 ThemeAccent themeAccent = new ThemeAccent();
-                themeAccent.id = ids != null ? ids[a] : a;
+                themeAccent.id = isMonet ? (999) : (ids != null ? ids[a] : a);
                 if (isHome(themeAccent)) {
                     themeAccent.isDefault = true;
                 }
@@ -2322,7 +2325,7 @@ public class Theme {
                     themeAccent.patternSlug = patternSlugs[a];
                 }
                 themeAccentsMap.put(themeAccent.id, themeAccent);
-                themeAccents.add(themeAccent);
+                if (!isMonet) themeAccents.add(themeAccent);
             }
             accentBaseColor = themeAccentsMap.get(0).accentColor;
         }

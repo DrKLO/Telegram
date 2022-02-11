@@ -26,12 +26,14 @@ object MonetHelper {
     @ColorInt
     @JvmStatic
     fun getAccentColorDark(ctx: Context): Int {
+        if (Build.VERSION.SDK_INT < 31) return getAccentColor(ctx)
         return reqAttrFromDeviceDark(ctx, org.telegram.messenger.R.attr.colorPrimaryDark, default, 29)
     }
 
     @ColorInt
     @JvmStatic
     fun getBackgroundColorDark(ctx: Context): Int {
+        if (Build.VERSION.SDK_INT < 31) return getBackgroundColor(ctx)
         return reqAttrFromDeviceDark(ctx, org.telegram.messenger.R.attr.colorSecondary, -1, 31)
     }
 
