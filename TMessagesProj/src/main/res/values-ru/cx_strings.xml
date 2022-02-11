@@ -54,4 +54,6 @@
     <string name="CX_DismissStorageDialog2">Чтобы окончательно закрыть диалоговое окно, предоставьте разрешение или включите SAF (Доступ к хранилищу) в настройках CatoX.</string>
     <string name="CX_EnableMLKITDesc">Отключите, чтобы всегда показывать переводчик</string>
     <string name="CX_EnableMLKIT">Включить обнаружение локальной сети ИИ на устройстве</string>
+    <string name="CX_DoubleTapReact">Отключить быстрые реакции</string>
+    <string name="CX_DoubleTapReact_Desc">Отключение этой опции позволит не отправлять реакцию на сообщения при случайном двойном нажатии</string>
 </resources>
