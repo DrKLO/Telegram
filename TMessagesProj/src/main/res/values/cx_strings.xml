@@ -57,6 +57,8 @@
     <string name="CX_ChangeIcon_Monet">CatoX Monet</string>
     <string name="CX_DBNotEnabled2">Not enabled</string>
     <string name="CX_DBSettingsPin">Settings PIN</string>
+    <string name="CX_DoubleTapReact">Disable quick reactions</string>
+    <string name="CX_DoubleTapReact_Desc">Disabling this option will allow you not to send reaction to messages by accidental double tap</string>
     <string name="CX_EnableSAF">Force SAF</string>
     <string name="CX_EnableSAFDesc">Match stock telegram behaviour on Android 11+ (stays the same on older versions)</string>
     <string name="CX_Website">Visit our website</string>

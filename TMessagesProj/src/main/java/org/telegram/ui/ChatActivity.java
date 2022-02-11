@@ -1465,7 +1465,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         @Override
         public boolean hasDoubleTap(View view, int position) {
             TLRPC.TL_availableReaction reaction = getMediaDataController().getReactionsMap().get(getMediaDataController().getDoubleTapReaction());
-            if (reaction == null) {
+            if (reaction == null || CatogramConfig.INSTANCE.getDisableDoubleTabReact()) {
                 return false;
             }
             boolean available = dialog_id >= 0;

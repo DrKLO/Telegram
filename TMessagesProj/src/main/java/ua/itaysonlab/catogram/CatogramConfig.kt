@@ -37,7 +37,6 @@ object CatogramConfig {
     var hideKeyboardOnScroll by sharedPreferences.boolean("cg_hidekbd", false)
     var newTabs_noUnread by sharedPreferences.boolean("cg_notabnum", false)
     var newTabs_hideAllChats by sharedPreferences.boolean("cg_ntallchats", false)
-
     var redesign_messageOption by sharedPreferences.int("cg_messageOption", 3)
     var translateOptions by sharedPreferences.int("cg_trOptions", 0)
     var redesign_forceDrawerIconsOption by sharedPreferences.int("cg_drawerIconsOption", 0)
@@ -96,6 +95,7 @@ object CatogramConfig {
 
     /* CX 4.1.2 */
     var customChatListTitle by sharedPreferences.string("cx_chat_list_title", LocaleController.getString("WidgetChats", R.string.WidgetChats))
+    var disableDoubleTabReact by sharedPreferences.boolean("cx_disable_double_tab_react", false)
     var systemFonts by sharedPreferences.boolean("cx_system_fonts", false)
     var magiKeyboard by sharedPreferences.boolean("cx_magikeyboard", false)//Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
     var enableMlkit by sharedPreferences.boolean("cx_mlkit", false)
