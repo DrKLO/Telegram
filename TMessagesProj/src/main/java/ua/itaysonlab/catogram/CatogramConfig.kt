@@ -67,7 +67,7 @@ object CatogramConfig {
     var voicesAgc by sharedPreferences.boolean("cg_hq_voices_agc", true)
     var overrideVoipEnhancements by sharedPreferences.boolean("cg_hq_voip_overrideservercfg", true)
     var silenceNonContacts by sharedPreferences.boolean("cg_silence_non_contacts", false)
-    var autoOta by sharedPreferences.boolean("cg_auto_ota", true)
+    var autoOta by sharedPreferences.boolean("cg_auto_ota", BuildVars.isStandaloneApp() && !BuildVars.isFossApp())
 
     var ghostMode = false
 
