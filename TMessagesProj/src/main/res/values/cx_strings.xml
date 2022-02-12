@@ -64,4 +64,5 @@
     <string name="CX_EnableMLKIT">Enable on-device AI lanaguage detection</string>
     <string name="CX_EnableMLKITDesc">disable to always show the translator</string>
     <string name="CX_EnableSAF_Warn">Please DISABLE "Manage all files" for this app to make "Force SAF" effective</string>
+    <string name="CX_TabIconMode_AppTitle">Move text to app title</string>
 </resources>

@@ -56,7 +56,7 @@ object CatogramConfig {
     var msgForwardDate by sharedPreferences.boolean("cg_msg_fwd_date", false)
     var noAuthorship by sharedPreferences.boolean("cg_no_authorship", false)
 
-    var newTabs_iconsV2_mode by sharedPreferences.int("cg_tabs_v2", 0)
+    var newTabs_iconsV2_mode by sharedPreferences.int("cg_icon_tabs", 0)
 
     var iconReplacement by sharedPreferences.int("cg_iconpack", 0)
     var oldNotificationIcon by sharedPreferences.boolean("cg_old_notification", false)

@@ -70,17 +70,19 @@ public class FilterTabsView extends FrameLayout {
         void onDeletePressed(int id);
         void onPageReorder(int fromId, int toId);
         boolean canPerformActions();
+        void setAppTitle(String t);
     }
 
     public class Tab {
         public int id;
-        public String title;
+        public String title, rtitle;
         public int titleWidth;
         public int counter;
 
         public Tab(int i, String t, int tgId) {
             id = i;
             title = TabIconManager.injectTabTitle(tgId, t);
+            rtitle = t;
         }
 
         public int getWidth(boolean store) {
@@ -601,7 +603,7 @@ public class FilterTabsView extends FrameLayout {
     private Paint deletePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     private Paint counterPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
-    private ArrayList<Tab> tabs = new ArrayList<>();
+    public ArrayList<Tab> tabs = new ArrayList<>();
 
     private boolean isEditing;
     private long lastEditingAnimationTime;
@@ -974,6 +976,7 @@ public class FilterTabsView extends FrameLayout {
 
         if (delegate != null) {
             delegate.onPageSelected(id, scrollingForward);
+            delegate.setAppTitle(TabIconManager.injectAppTitle(id, tabs.get(position).rtitle));
         }
         scrollToChild(position);
     }

@@ -219,26 +219,28 @@ class ChatsPreferencesEntry : BasePreferencesEntry {
                 }
             }
 
-            list {
+            /*list {
                 title = LocaleController.getString("CG_TabIconMode_Title", R.string.CG_TabIconMode_Title)
 
                 contract({
                     return@contract listOf(
                             Pair(0, LocaleController.getString("CG_TabIconMode_Disabled", R.string.CG_TabIconMode_Disabled)),
                             Pair(1, LocaleController.getString("CG_TabIconMode_Append", R.string.CG_TabIconMode_Append)),
-                            Pair(2, LocaleController.getString("CG_TabIconMode_Replace", R.string.CG_TabIconMode_Replace))
+                            Pair(2, LocaleController.getString("CG_TabIconMode_Replace", R.string.CG_TabIconMode_Replace)),
+                            Pair(3, LocaleController.getString("CX_TabIconMode_AppTitle", R.string.CX_TabIconMode_AppTitle))
                     )
                 }, {
                     return@contract when (CatogramConfig.newTabs_iconsV2_mode) {
                         1 -> LocaleController.getString("CG_TabIconMode_Append", R.string.CG_TabIconMode_Append)
                         2 -> LocaleController.getString("CG_TabIconMode_Replace", R.string.CG_TabIconMode_Replace)
+                        3 -> LocaleController.getString("CX_TabIconMode_AppTitle", R.string.CX_TabIconMode_AppTitle)
                         else -> LocaleController.getString("CG_TabIconMode_Disabled", R.string.CG_TabIconMode_Disabled)
                     }
                 }) {
                     CatogramConfig.newTabs_iconsV2_mode = it
                     bf.messagesController.loadRemoteFilters(true)
                 }
-            }
+            }*/
 
             switch {
                 title = LocaleController.getString("CG_NewTabs_RemoveAllChats", R.string.CG_NewTabs_RemoveAllChats)
