@@ -54,4 +54,6 @@
     <string name="CX_CustomEmojiDesc">自定义表情字体替代原版表情</string>
     <string name="CX_EnableMLKIT">启用系统级语言检测</string>
     <string name="CX_EnableMLKITDesc">禁用时，总是显示翻译引擎</string>
+    <string name="CX_DoubleTapReact">禁用快捷回应</string>
+    <string name="CX_DoubleTapReact_Desc">防止因误双击消息而发送表情回应</string>
 </resources>
