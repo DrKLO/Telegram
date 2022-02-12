@@ -18657,7 +18657,6 @@ public class TLRPC {
         public ArrayList<InputPeer> pinned_peers = new ArrayList<>();
         public ArrayList<InputPeer> include_peers = new ArrayList<>();
         public ArrayList<InputPeer> exclude_peers = new ArrayList<>();
-        public static final HashMap<Integer, Integer> hackid = new HashMap<>();
 
         public static TL_dialogFilter TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
             if (TL_dialogFilter.constructor != constructor) {
@@ -18686,12 +18685,8 @@ public class TLRPC {
             id = stream.readInt32(exception); //reliable values but wrong order
             title = stream.readString(exception);
             if ((flags & 33554432) != 0) {
-                byte[] emoji = stream.readStringAsByteArray(exception);
-                emoticon = new String(emoji, StandardCharsets.UTF_8);
-                //emoticon = stream.readString(exception);
-                TabIconManager.addTabFiltered(hackid.getOrDefault(ac, 0), id, /*emoticon.getBytes(StandardCharsets.UTF_8)*/emoji, ac);
+                emoticon = stream.readString(exception);
             }
-            hackid.put(ac, hackid.getOrDefault(ac,0)+1);
             int magic = stream.readInt32(exception);
             if (magic != 0x1cb5c415) {
                 if (exception) {

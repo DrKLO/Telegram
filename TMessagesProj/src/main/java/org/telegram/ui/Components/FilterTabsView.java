@@ -81,7 +81,7 @@ public class FilterTabsView extends FrameLayout {
 
         public Tab(int i, String t, int tgId) {
             id = i;
-            title = TabIconManager.injectTabTitle(tgId, t);
+            title = t;
             rtitle = t;
         }
 
