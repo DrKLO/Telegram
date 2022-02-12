@@ -40,7 +40,6 @@ function build_one {
 
 
 	./configure \
-	--extra-cflags="-isystem ${LLVM_PREFIX}/sysroot/usr/include/${ARCH_NAME}-linux-${BIN_MIDDLE} -isystem ${LLVM_PREFIX}/sysroot/usr/include" \
 	--libc="${LLVM_PREFIX}/sysroot" \
 	--prefix=${PREFIX} \
 	--target=${TARGET} \
@@ -117,7 +116,6 @@ cd libvpx
 LLVM_PREFIX="${NDK}/toolchains/llvm/prebuilt/linux-x86_64"
 LLVM_BIN="${LLVM_PREFIX}/bin"
 VERSION="4.9"
-ANDROID_API=21
 
 function build {
 	for arg in "$@"; do
@@ -132,7 +130,8 @@ function build {
 				OPTIMIZE_CFLAGS="-O3 -march=x86-64 -mtune=intel -msse4.2 -mpopcnt -m64 -fPIC"
 				TARGET="x86_64-android-gcc"
 				PREFIX=./build/$CPU
-                CPU_DETECT="--enable-runtime-cpu-detect"
+				CPU_DETECT="--enable-runtime-cpu-detect"
+				ANDROID_API=21
 				build_one
 			;;
 			x86)
@@ -146,6 +145,7 @@ function build {
 				TARGET="x86-android-gcc"
 				PREFIX=./build/$ARCH
 				CPU_DETECT="--enable-runtime-cpu-detect"
+				ANDROID_API=16
 				build_one
 			;;
 			arm64)
@@ -159,6 +159,7 @@ function build {
 				TARGET="arm64-android-gcc"
 				PREFIX=./build/$CPU
 				CPU_DETECT="--disable-runtime-cpu-detect"
+				ANDROID_API=21
 				build_one
 			;;
 			arm)
@@ -172,6 +173,7 @@ function build {
 				TARGET="armv7-android-gcc --enable-neon --disable-neon-asm"
 				PREFIX=./build/$CPU
 				CPU_DETECT="--disable-runtime-cpu-detect"
+				ANDROID_API=16
 				build_one
 			;;
 			*)
