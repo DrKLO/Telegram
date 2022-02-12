@@ -8,22 +8,22 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        type: [debug, release, beta]
+        type: [debug, release, foss]
         include:
           - type: debug
             arch: Afat
             flavour: Debug
             flavdir: debug
             name: "Debug"
-          - type: beta
+          - type: foss
             arch: Afat
-            flavour: HA
-            flavdir: HA
-            name: "Beta"
+            flavour: Foss
+            flavdir: foss
+            name: "FOSS"
           - type: release
             arch: Afat
-            flavour: Release
-            flavdir: release
+            flavour: Standalone
+            flavdir: standalone
             name: "Release"
     steps:
       - uses: actions/checkout@v2
