@@ -51,7 +51,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Random;
 
 public class ReactionsContainerLayout extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
     public final static Property<ReactionsContainerLayout, Float> TRANSITION_PROGRESS_VALUE = new Property<ReactionsContainerLayout, Float>(Float.class, "transitionProgress") {
@@ -65,8 +64,6 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
             object.setTransitionProgress(value);
         }
     };
-
-    private final static Random RANDOM = new Random();
 
     private final static int ALPHA_DURATION = 150;
     private final static float SIDE_SCALE = 0.6f;
@@ -127,7 +124,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         recyclerListView = new RecyclerListView(context) {
             @Override
             public boolean drawChild(Canvas canvas, View child, long drawingTime) {
-                if (pressedReaction != null && ((ReactionHolderView) child).currentReaction.equals(pressedReaction)) {
+                if (pressedReaction != null && ((ReactionHolderView) child).currentReaction.reaction.equals(pressedReaction)) {
                     return true;
                 }
                 return super.drawChild(canvas, child, drawingTime);
@@ -377,7 +374,17 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
             }
 
             canvas.save();
-            canvas.translate(recyclerListView.getX() + view.getX(), recyclerListView.getY() + view.getY());
+            float x = recyclerListView.getX() + view.getX();
+            float additionalWidth = (view.getMeasuredWidth() * view.getScaleX() - view.getMeasuredWidth()) / 2f;
+            if (x - additionalWidth < 0) {
+                view.setTranslationX(-(x - additionalWidth));
+            } else if (x + view.getMeasuredWidth() + additionalWidth > getMeasuredWidth()) {
+                view.setTranslationX(getMeasuredWidth() - x - view.getMeasuredWidth() - additionalWidth);
+            } else {
+                view.setTranslationX(0);
+            }
+            x = recyclerListView.getX() + view.getX();
+            canvas.translate(x, recyclerListView.getY() + view.getY());
             canvas.scale(view.getScaleX(), view.getScaleY(), view.getPivotX(), view.getPivotY());
             view.draw(canvas);
             canvas.restore();

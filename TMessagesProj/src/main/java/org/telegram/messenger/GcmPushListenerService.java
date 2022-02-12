@@ -1074,6 +1074,7 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                     messageOwner.from_scheduled = scheduled;
 
                                     MessageObject messageObject = new MessageObject(currentAccount, messageOwner, messageText, name, userName, localMessage, channel, supergroup, edited);
+                                    messageObject.isReactionPush = loc_key.startsWith("REACT_") || loc_key.startsWith("CHAT_REACT_");
                                     ArrayList<MessageObject> arrayList = new ArrayList<>();
                                     arrayList.add(messageObject);
                                     canRelease = false;

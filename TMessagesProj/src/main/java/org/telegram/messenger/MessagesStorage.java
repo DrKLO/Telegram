@@ -134,16 +134,36 @@ public class MessagesStorage extends BaseController {
                     state.dispose();
                     data.reuse();
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    FileLog.e(e);
                 }
-
             }
-
-            getMessagesStorage().getDatabase().executeFast("UPDATE reaction_mentions SET state = 0 WHERE uid = %d AND ");
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            FileLog.e(e);
         }
 
+    }
+
+    public void updateDialogUnreadReactions(long dialogId, int newUnreadCount, boolean increment) {
+        storageQueue.postRunnable(() -> {
+            try {
+                int oldUnreadRactions = 0;
+                if (increment) {
+                    SQLiteCursor cursor = database.queryFinalized("SELECT unread_reactions FROM dialogs WHERE did = " + dialogId);
+                    if (cursor.next()) {
+                        oldUnreadRactions = Math.max(0, cursor.intValue(0));
+                    }
+                    cursor.dispose();
+                }
+                oldUnreadRactions += newUnreadCount;
+                SQLitePreparedStatement state = getMessagesStorage().getDatabase().executeFast("UPDATE dialogs SET unread_reactions = ? WHERE did = ?");
+                state.bindInteger(1, oldUnreadRactions);
+                state.bindLong(2, dialogId);
+                state.step();
+                state.dispose();
+            } catch (SQLiteException e) {
+                e.printStackTrace();
+            }
+        });
     }
 
     public interface IntCallback {
@@ -194,7 +214,7 @@ public class MessagesStorage extends BaseController {
     private CountDownLatch openSync = new CountDownLatch(1);
 
     private static volatile MessagesStorage[] Instance = new MessagesStorage[UserConfig.MAX_ACCOUNT_COUNT];
-    private final static int LAST_DB_VERSION = 89;
+    private final static int LAST_DB_VERSION = 90;
     private boolean databaseMigrationInProgress;
 
     public static MessagesStorage getInstance(int num) {
@@ -438,7 +458,7 @@ public class MessagesStorage extends BaseController {
                 database.executeFast("INSERT INTO params VALUES(1, 0, 0, 0, 0, 0, 0, NULL)").stepThis().dispose();
 
                 database.executeFast("CREATE TABLE media_v4(mid INTEGER, uid INTEGER, date INTEGER, type INTEGER, data BLOB, PRIMARY KEY(mid, uid, type))").stepThis().dispose();
-                database.executeFast("CREATE INDEX IF NOT EXISTS uid_mid_type_date_idx_media_v3 ON media_v4(uid, mid, type, date);").stepThis().dispose();
+                database.executeFast("CREATE INDEX IF NOT EXISTS uid_mid_type_date_idx_media_v4 ON media_v4(uid, mid, type, date);").stepThis().dispose();
 
                 database.executeFast("CREATE TABLE bot_keyboard(uid INTEGER PRIMARY KEY, mid INTEGER, info BLOB)").stepThis().dispose();
                 database.executeFast("CREATE INDEX IF NOT EXISTS bot_keyboard_idx_mid_v2 ON bot_keyboard(mid, uid);").stepThis().dispose();
@@ -500,7 +520,9 @@ public class MessagesStorage extends BaseController {
                 database.executeFast("CREATE INDEX IF NOT EXISTS polls_id_v2 ON polls_v2(id);").stepThis().dispose();
 
                 database.executeFast("CREATE TABLE reactions(data BLOB, hash INTEGER, date INTEGER);").stepThis().dispose();
-                database.executeFast("CREATE TABLE reaction_mentions(message_id INTEGER PRIMARY KEY, state INTEGER, dialog_id INTEGER);").stepThis().dispose();
+                database.executeFast("CREATE TABLE reaction_mentions(message_id INTEGER, state INTEGER, dialog_id INTEGER, PRIMARY KEY(message_id, dialog_id))").stepThis().dispose();
+                database.executeFast("CREATE INDEX IF NOT EXISTS reaction_mentions_did ON reaction_mentions(dialog_id);").stepThis().dispose();
+
                 //version
                 database.executeFast("PRAGMA user_version = " + LAST_DB_VERSION).stepThis().dispose();
             } else {
@@ -1641,11 +1663,18 @@ public class MessagesStorage extends BaseController {
             version = 88;
         }
 
-        if (version == 88) {
+        if (version == 88 || version == 89) {
+            long time = System.currentTimeMillis();
             database.executeFast("DROP TABLE IF EXISTS reaction_mentions;").stepThis().dispose();
-            database.executeFast("CREATE TABLE reaction_mentions(message_id INTEGER PRIMARY KEY, state INTEGER, dialog_id INTEGER);").stepThis().dispose();
-            database.executeFast("PRAGMA user_version = 89").stepThis().dispose();
-            version = 89;
+            database.executeFast("CREATE TABLE IF NOT EXISTS reaction_mentions(message_id INTEGER, state INTEGER, dialog_id INTEGER, PRIMARY KEY(dialog_id, message_id));").stepThis().dispose();
+            database.executeFast("CREATE INDEX IF NOT EXISTS reaction_mentions_did ON reaction_mentions(dialog_id);").stepThis().dispose();
+
+            database.executeFast("DROP INDEX IF EXISTS uid_mid_type_date_idx_media_v3").stepThis().dispose();
+            database.executeFast("CREATE INDEX IF NOT EXISTS uid_mid_type_date_idx_media_v4 ON media_v4(uid, mid, type, date);").stepThis().dispose();
+
+            database.executeFast("PRAGMA user_version = 90").stepThis().dispose();
+
+            version = 90;
         }
 
         FileLog.d("MessagesStorage db migration finished");
@@ -10279,6 +10308,7 @@ public class MessagesStorage extends BaseController {
                             state.dispose();
                         }
                     }
+                    long time = System.currentTimeMillis();
                     database.executeFast(String.format(Locale.US, "DELETE FROM media_v4 WHERE mid IN(%s) AND uid = %d", ids, did)).stepThis().dispose();
                 }
                 database.executeFast(String.format(Locale.US, "DELETE FROM messages_seq WHERE mid IN(%s)", ids)).stepThis().dispose();

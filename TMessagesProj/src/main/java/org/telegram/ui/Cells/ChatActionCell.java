@@ -179,10 +179,10 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         } else {
             newText = LocaleController.formatDateChat(date);
         }
+        customDate = date;
         if (customText != null && TextUtils.equals(newText, customText)) {
             return;
         }
-        customDate = date;
         customText = newText;
         updateTextInternal(inLayout);
     }

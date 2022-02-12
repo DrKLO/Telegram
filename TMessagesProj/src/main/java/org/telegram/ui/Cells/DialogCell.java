@@ -27,8 +27,10 @@ import android.text.Spanned;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.text.style.CharacterStyle;
 import android.text.style.ClickableSpan;
 import android.text.style.ReplacementSpan;
+import android.text.style.StyleSpan;
 import android.view.HapticFeedbackConstants;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
@@ -1327,6 +1329,7 @@ public class DialogCell extends BaseCell {
                         drawCount = false;
                         drawMention = false;
                     }
+                    drawReactionMention = false;
                 } else {
                     if (clearingDialog) {
                         drawCount = false;
@@ -1627,7 +1630,7 @@ public class DialogCell extends BaseCell {
                 int w = AndroidUtilities.dp(24);
                 messageWidth -= w;
                 if (!LocaleController.isRTL) {
-                    reactionMentionLeft = getMeasuredWidth() - AndroidUtilities.dp(32) - (mentionWidth != 0 ? (mentionWidth + AndroidUtilities.dp(20)) : 0) - (countWidth != 0 ? countWidth + AndroidUtilities.dp(18) : 0);
+                    reactionMentionLeft = getMeasuredWidth() - AndroidUtilities.dp(32) - (mentionWidth != 0 ? (mentionWidth + AndroidUtilities.dp(18)) : 0) - (countWidth != 0 ? countWidth + AndroidUtilities.dp(18) : 0);
                 } else {
                     reactionMentionLeft = AndroidUtilities.dp(20) + (countWidth != 0 ? countWidth + AndroidUtilities.dp(18) : 0);
                     messageLeft += w;
@@ -1704,12 +1707,13 @@ public class DialogCell extends BaseCell {
             } else {
                 messageStringFinal = messageString;
             }
-            // Removing links to get rid of underlining
+            // Removing links and bold spans to get rid of underlining and boldness
             if (messageStringFinal instanceof Spannable) {
                 Spannable messageStringSpannable = (Spannable) messageStringFinal;
-                ClickableSpan[] spans = messageStringSpannable.getSpans(0, messageStringSpannable.length(), ClickableSpan.class);
-                for (ClickableSpan span : spans) {
-                    messageStringSpannable.removeSpan(span);
+                for (CharacterStyle span : messageStringSpannable.getSpans(0, messageStringSpannable.length(), CharacterStyle.class)) {
+                    if (span instanceof ClickableSpan || (span instanceof StyleSpan && ((StyleSpan) span).getStyle() == android.graphics.Typeface.BOLD)) {
+                        messageStringSpannable.removeSpan(span);
+                    }
                 }
             }
 
@@ -2057,6 +2061,7 @@ public class DialogCell extends BaseCell {
                         if (dialog instanceof TLRPC.TL_dialogFolder) {
                             unreadCount = MessagesStorage.getInstance(currentAccount).getArchiveUnreadCount();
                             mentionCount = 0;
+                            reactionMentionCount = 0;
                         } else {
                             unreadCount = dialog.unread_count;
                             mentionCount = dialog.unread_mentions_count;
@@ -2078,6 +2083,7 @@ public class DialogCell extends BaseCell {
                 } else {
                     unreadCount = 0;
                     mentionCount = 0;
+                    reactionMentionCount = 0;
                     currentEditDate = 0;
                     lastMessageDate = 0;
                     clearingDialog = false;
@@ -2140,20 +2146,23 @@ public class DialogCell extends BaseCell {
                         TLRPC.Dialog dialog = MessagesController.getInstance(currentAccount).dialogs_dict.get(currentDialogId);
                         int newCount;
                         int newMentionCount;
+                        int newReactionCout = 0;
                         if (dialog instanceof TLRPC.TL_dialogFolder) {
                             newCount = MessagesStorage.getInstance(currentAccount).getArchiveUnreadCount();
                             newMentionCount = 0;
                         } else if (dialog != null) {
                             newCount = dialog.unread_count;
                             newMentionCount = dialog.unread_mentions_count;
+                            newReactionCout = dialog.unread_reactions_count;
                         } else {
                             newCount = 0;
                             newMentionCount = 0;
                         }
-                        if (dialog != null && (unreadCount != newCount || markUnread != dialog.unread_mark || mentionCount != newMentionCount)) {
+                        if (dialog != null && (unreadCount != newCount || markUnread != dialog.unread_mark || mentionCount != newMentionCount || reactionMentionCount != newReactionCout)) {
                             unreadCount = newCount;
                             mentionCount = newMentionCount;
                             markUnread = dialog.unread_mark;
+                            reactionMentionCount = newReactionCout;
                             continueUpdate = true;
                         }
                     }
@@ -2914,11 +2923,11 @@ public class DialogCell extends BaseCell {
 
             if (drawReactionMention || reactionsMentionsChangeProgress != 1f) {
 
-                Theme.dialogs_countPaint.setAlpha((int) ((1.0f - reorderIconProgress) * 255));
+                Theme.dialogs_reactionsCountPaint.setAlpha((int) ((1.0f - reorderIconProgress) * 255));
 
                 int x = reactionMentionLeft - AndroidUtilities.dp(5.5f);
                 rect.set(x, countTop, x + AndroidUtilities.dp(23), countTop + AndroidUtilities.dp(23));
-                Paint paint = dialogMuted && folderId != 0 ? Theme.dialogs_countGrayPaint : Theme.dialogs_countPaint;
+                Paint paint = Theme.dialogs_reactionsCountPaint;
 
                 canvas.save();
                 if (reactionsMentionsChangeProgress != 1f) {

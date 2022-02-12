@@ -14,8 +14,6 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.R;
-import org.telegram.ui.Components.CheckBox;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.LayoutHelper;
 
@@ -128,6 +126,7 @@ public class ActionBarMenuSubItem extends FrameLayout {
         textView.setLines(2);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         textView.setSingleLine(false);
+        textView.setGravity(Gravity.CENTER_VERTICAL);
     }
 
     public void setTextAndIcon(CharSequence text, int icon, Drawable iconDrawable) {

@@ -126,7 +126,7 @@ public class MessageSeenView extends FrameLayout {
                 } else {
                     if (ChatObject.isChannel(chat)) {
                         TLRPC.TL_channels_getParticipants usersReq = new TLRPC.TL_channels_getParticipants();
-                        usersReq.limit = 50;
+                        usersReq.limit = MessagesController.getInstance(currentAccount).chatReadMarkSizeThreshold;
                         usersReq.offset = 0;
                         usersReq.filter = new TLRPC.TL_channelParticipantsRecent();
                         usersReq.channel = MessagesController.getInstance(currentAccount).getInputChannel(chat.id);
@@ -185,6 +185,10 @@ public class MessageSeenView extends FrameLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        View parent = (View) getParent();
+        if (parent != null && parent.getWidth() > 0) {
+            widthMeasureSpec = MeasureSpec.makeMeasureSpec(parent.getWidth(), MeasureSpec.EXACTLY);
+        }
         if (flickerLoadingView.getVisibility() == View.VISIBLE) {
             ignoreLayout = true;
             flickerLoadingView.setVisibility(View.GONE);

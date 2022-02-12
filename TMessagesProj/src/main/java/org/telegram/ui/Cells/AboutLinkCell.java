@@ -353,11 +353,15 @@ public class AboutLinkCell extends FrameLayout {
         }
         checkTextLayout(lastMaxWidth, true);
         updateHeight();
+        int wasValueVisibility = valueTextView.getVisibility();
         if (TextUtils.isEmpty(value)) {
             valueTextView.setVisibility(GONE);
         } else {
             valueTextView.setText(value);
             valueTextView.setVisibility(VISIBLE);
+        }
+        if (wasValueVisibility != valueTextView.getVisibility()) {
+            checkTextLayout(lastMaxWidth, true);
         }
         requestLayout();
     }
@@ -419,7 +423,6 @@ public class AboutLinkCell extends FrameLayout {
                         urlPathOffset.set(textX, textY);
                         urlPath.setCurrentLayout(textLayout, start, 0);
                         textLayout.getSelectionPath(start, buffer.getSpanEnd(pressedLink), urlPath);
-                        urlPath.onPathEnd();
                     } catch (Exception e) {
                         FileLog.e(e);
                     }
@@ -559,9 +562,12 @@ public class AboutLinkCell extends FrameLayout {
         }
     }
 
+    private int fromHeight() {
+        return Math.min(COLLAPSED_HEIGHT + (valueTextView.getVisibility() == View.VISIBLE ? AndroidUtilities.dp(20) : 0), textHeight());
+    }
     private int updateHeight() {
         int textHeight = textHeight();
-        float fromHeight = Math.min(COLLAPSED_HEIGHT, textHeight);
+        float fromHeight = fromHeight();
         int height = shouldExpand ? (int) AndroidUtilities.lerp(fromHeight, textHeight, expandT) : textHeight;
         setHeight(height);
         return height;
@@ -618,7 +624,7 @@ public class AboutLinkCell extends FrameLayout {
     private void checkTextLayout(int maxWidth, boolean force) {
         if (stringBuilder != null && (maxWidth != lastMaxWidth || force)) {
             textLayout = makeTextLayout(stringBuilder, maxWidth);
-            shouldExpand = textLayout.getLineCount() >= 4 && valueTextView.getVisibility() != View.VISIBLE;
+            shouldExpand = textLayout.getLineCount() >= 4; // && valueTextView.getVisibility() != View.VISIBLE;
 
             if (textLayout.getLineCount() >= 3 && shouldExpand) {
                 int end = Math.max(textLayout.getLineStart(2), textLayout.getLineEnd(2));
@@ -658,8 +664,15 @@ public class AboutLinkCell extends FrameLayout {
 
             container.setMinimumHeight(textHeight());
 
-            if (shouldExpand) {
-                setShowMoreMarginBottom(textHeight() - AndroidUtilities.dp(8) - textLayout.getLineBottom(textLayout.getLineCount() - 1) - showMoreTextBackgroundView.getPaddingBottom());
+            if (shouldExpand && firstThreeLinesLayout != null) {
+                setShowMoreMarginBottom(
+                    fromHeight()
+                    -AndroidUtilities.dp(8)
+                    -firstThreeLinesLayout.getLineBottom(firstThreeLinesLayout.getLineCount() - 1)
+                    -showMoreTextBackgroundView.getPaddingBottom()
+                    -showMoreTextView.getPaddingBottom()
+                    -(showMoreTextView.getLayout() == null ? 0 : showMoreTextView.getLayout().getHeight() - showMoreTextView.getLayout().getLineBottom(showMoreTextView.getLineCount() - 1))
+                );
             }
         }
         showMoreTextView.setVisibility(shouldExpand ? View.VISIBLE : View.GONE);

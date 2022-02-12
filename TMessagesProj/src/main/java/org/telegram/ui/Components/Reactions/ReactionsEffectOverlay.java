@@ -12,15 +12,22 @@ import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageLocation;
+import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.MediaDataController;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.ChatActivity;
+import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.ReactionsContainerLayout;
+
+import java.util.ArrayList;
+import java.util.Random;
 
 public class ReactionsEffectOverlay {
 
@@ -31,6 +38,7 @@ public class ReactionsEffectOverlay {
     private final int animationType;
     @SuppressLint("StaticFieldLeak")
     public static ReactionsEffectOverlay currentOverlay;
+    @SuppressLint("StaticFieldLeak")
     public static ReactionsEffectOverlay currentShortOverlay;
 
     private final AnimationView effectImageView;
@@ -63,6 +71,9 @@ public class ReactionsEffectOverlay {
     private boolean finished;
     private boolean useWindow;
     private ViewGroup decorView;
+    private static long lastHapticTime;
+    ArrayList<AvatarParticle> avatars = new ArrayList<>();
+
 
     private ReactionsEffectOverlay(Context context, BaseFragment fragment, ReactionsContainerLayout reactionsLayout, ChatMessageCell cell, float x, float y, String reaction, int currentAccount, int animationType) {
         this.fragment = fragment;
@@ -83,6 +94,82 @@ public class ReactionsEffectOverlay {
                 }
             }
         }
+
+        if (animationType == SHORT_ANIMATION) {
+            Random random = new Random();
+            ArrayList<TLRPC.TL_messagePeerReaction> recentReactions = null;
+            if (cell.getMessageObject().messageOwner.reactions != null) {
+                recentReactions = cell.getMessageObject().messageOwner.reactions.recent_reactions;
+            }
+            if (recentReactions != null) {
+                for (int i = 0; i < recentReactions.size(); i++) {
+                    if (reaction.equals(recentReactions.get(i).reaction) && recentReactions.get(i).unread) {
+                        TLRPC.User user;
+                        TLRPC.Chat chat;
+
+                        AvatarDrawable avatarDrawable = new AvatarDrawable();
+                        ImageReceiver imageReceiver = new ImageReceiver();
+                        long peerId = MessageObject.getPeerId(recentReactions.get(i).peer_id);
+                        if (peerId < 0) {
+                            chat = MessagesController.getInstance(currentAccount).getChat(-peerId);
+                            if (chat == null) {
+                                continue;
+                            }
+                            avatarDrawable.setInfo(chat);
+                            imageReceiver.setForUserOrChat(chat, avatarDrawable);
+                        } else {
+                            user = MessagesController.getInstance(currentAccount).getUser(peerId);
+                            if (user == null) {
+                                continue;
+                            }
+                            avatarDrawable.setInfo(user);
+                            imageReceiver.setForUserOrChat(user, avatarDrawable);
+                        }
+
+                        AvatarParticle avatarParticle = new AvatarParticle();
+                        avatarParticle.imageReceiver = imageReceiver;
+                        avatarParticle.fromX = 0.5f;// + Math.abs(random.nextInt() % 100) / 100f * 0.2f;
+                        avatarParticle.fromY = 0.5f;// + Math.abs(random.nextInt() % 100) / 100f * 0.2f;
+                        avatarParticle.jumpY = 0.3f + Math.abs(random.nextInt() % 100) / 100f * 0.1f;
+                        avatarParticle.randomScale = 0.8f + Math.abs(random.nextInt() % 100) / 100f * 0.4f;
+                        avatarParticle.randomRotation = 60 * Math.abs(random.nextInt() % 100) / 100f;
+                        avatarParticle.leftTime = (int) (400 + Math.abs(random.nextInt() % 100) / 100f * 200);
+
+                        if (avatars.isEmpty()) {
+                            avatarParticle.toX = 0.2f + 0.6f * Math.abs(random.nextInt() % 100) / 100f;
+                            avatarParticle.toY = 0.4f * Math.abs(random.nextInt() % 100) / 100f;
+                        } else {
+                            float bestDistance = 0;
+                            float bestX = 0;
+                            float bestY = 0;
+                            for (int k = 0; k < 10; k++) {
+                                float randX = 0.2f + 0.6f * Math.abs(random.nextInt() % 100) / 100f;
+                                float randY = 0.2f + 0.4f * Math.abs(random.nextInt() % 100) / 100f;
+                                float minDistance = Integer.MAX_VALUE;
+                                for (int j = 0; j < avatars.size(); j++) {
+                                    float rx = avatars.get(j).toX - randX;
+                                    float ry = avatars.get(j).toY - randY;
+                                    float distance = rx * rx + ry * ry;
+                                    if (distance < minDistance) {
+                                        minDistance = distance;
+                                    }
+                                }
+                                if (minDistance > bestDistance) {
+                                    bestDistance = minDistance;
+                                    bestX = randX;
+                                    bestY = randY;
+                                }
+                            }
+                            avatarParticle.toX = bestX;
+                            avatarParticle.toY = bestY;
+                        }
+
+                        avatars.add(avatarParticle);
+                    }
+                }
+            }
+        }
+
         boolean fromHolder = holderView != null || (x != 0 && y != 0);
         if (holderView != null) {
             holderView.getLocationOnScreen(loc);
@@ -306,7 +393,89 @@ public class ReactionsEffectOverlay {
                     }
                 }
 
+
+                if (!avatars.isEmpty() && effectImageView.wasPlaying) {
+                    RLottieDrawable animation = effectImageView.getImageReceiver().getLottieAnimation();
+
+                    for (int i = 0; i < avatars.size(); i++) {
+                        AvatarParticle particle = avatars.get(i);
+                        float progress = particle.progress;
+                        boolean isLeft;
+                        if (animation != null && animation.isRunning()) {
+                            long duration = effectImageView.getImageReceiver().getLottieAnimation().getDuration();
+                            int totalFramesCount = effectImageView.getImageReceiver().getLottieAnimation().getFramesCount();
+                            int currentFrame = effectImageView.getImageReceiver().getLottieAnimation().getCurrentFrame();
+                            int timeLeft = (int) (duration - duration * (currentFrame / (float) totalFramesCount));
+                            isLeft = timeLeft < particle.leftTime;
+                        } else {
+                            isLeft = true;
+                        }
+
+                        if (isLeft && particle.outProgress != 1f) {
+                            particle.outProgress += 16f / 150f;
+                            if (particle.outProgress > 1f) {
+                                particle.outProgress = 1f;
+                            }
+                        }
+                        float jumpProgress = progress < 0.5f ? (progress / 0.5f) : (1f - ((progress - 0.5f) / 0.5f));
+                        float avatarX = particle.fromX * (1f - progress) + particle.toX * progress;
+                        float avatarY = particle.fromY * (1f - progress) + particle.toY * progress - particle.jumpY * jumpProgress;
+
+                        float s = progress * particle.randomScale * (1f - particle.outProgress);
+                        float cx = effectImageView.getX() + (effectImageView.getWidth() * effectImageView.getScaleX()) * avatarX;
+                        float cy = effectImageView.getY() + (effectImageView.getHeight() * effectImageView.getScaleY()) * avatarY;
+                        int size = AndroidUtilities.dp(16);
+                        avatars.get(i).imageReceiver.setImageCoords(cx - size / 2f, cy - size / 2f, size, size);
+                        avatars.get(i).imageReceiver.setRoundRadius(size >> 1);
+                        canvas.save();
+                        canvas.translate(0, particle.globalTranslationY);
+                        canvas.scale(s, s, cx, cy);
+                        canvas.rotate(particle.currentRotation, cx, cy);
+
+                        avatars.get(i).imageReceiver.draw(canvas);
+                        canvas.restore();
+
+                        if (particle.progress < 1f) {
+                            particle.progress += 16f / 350f;
+                            if (particle.progress > 1f) {
+                                particle.progress = 1f;
+                            }
+                        }
+                        if (progress >= 1f) {
+                            particle.globalTranslationY += AndroidUtilities.dp(20) * 16f / 500f;
+                        }
+
+                        if (particle.incrementRotation) {
+                            particle.currentRotation += particle.randomRotation / 250f;
+                            if (particle.currentRotation > particle.randomRotation) {
+                                particle.incrementRotation = false;
+                            }
+                        } else {
+                            particle.currentRotation -= particle.randomRotation / 250f;
+                            if (particle.currentRotation < -particle.randomRotation) {
+                                particle.incrementRotation = true;
+                            }
+                        }
+                    }
+                }
+
                 invalidate();
+            }
+
+            @Override
+            protected void onAttachedToWindow() {
+                super.onAttachedToWindow();
+                for (int i = 0; i < avatars.size(); i++) {
+                    avatars.get(i).imageReceiver.onAttachedToWindow();
+                }
+            }
+
+            @Override
+            protected void onDetachedFromWindow() {
+                super.onDetachedFromWindow();
+                for (int i = 0; i < avatars.size(); i++) {
+                    avatars.get(i).imageReceiver.onDetachedFromWindow();
+                }
             }
         };
         effectImageView = new AnimationView(context);
@@ -461,6 +630,10 @@ public class ReactionsEffectOverlay {
     public static void startAnimation() {
         if (currentOverlay != null) {
             currentOverlay.started = true;
+            if (currentOverlay.animationType == LONG_ANIMATION && System.currentTimeMillis() - lastHapticTime > 200) {
+                lastHapticTime = System.currentTimeMillis();
+                currentOverlay.cell.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+            }
         } else {
             startShortAnimation();
             if (currentShortOverlay != null) {
@@ -472,7 +645,8 @@ public class ReactionsEffectOverlay {
     public static void startShortAnimation() {
         if (currentShortOverlay != null && !currentShortOverlay.started) {
             currentShortOverlay.started = true;
-            if (currentShortOverlay.animationType == SHORT_ANIMATION) {
+            if (currentShortOverlay.animationType == SHORT_ANIMATION && System.currentTimeMillis() - lastHapticTime > 200) {
+                lastHapticTime = System.currentTimeMillis();
                 currentShortOverlay.cell.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
             }
         }
@@ -533,5 +707,24 @@ public class ReactionsEffectOverlay {
                 currentOverlay.wasScrolled = true;
             }
         }
+    }
+
+    private class AvatarParticle {
+        ImageReceiver imageReceiver;
+
+        public int leftTime;
+        float progress;
+        float outProgress;
+        float jumpY;
+        float fromX;
+        float fromY;
+        float toX;
+        float toY;
+        float randomScale;
+        float randomRotation;
+        float currentRotation;
+        boolean incrementRotation;
+        float globalTranslationY;
+
     }
 }

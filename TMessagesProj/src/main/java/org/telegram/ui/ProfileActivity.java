@@ -140,6 +140,7 @@ import org.telegram.ui.Components.AnimatedFileDrawable;
 import org.telegram.ui.Components.AnimationProperties;
 import org.telegram.ui.Components.AudioPlayerAlert;
 import org.telegram.ui.Components.AvatarDrawable;
+import org.telegram.ui.Components.BackButtonMenu;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.ChatAvatarContainer;
@@ -1502,126 +1503,17 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         actionBar.setOccupyStatusBar(Build.VERSION.SDK_INT >= 21 && !AndroidUtilities.isTablet() && !inBubbleMode);
         ImageView backButton = actionBar.getBackButton();
         backButton.setOnLongClickListener(e -> {
-            ArrayList<ChatActivity.PulledDialog> dialogs = ChatActivity.getStackedHistoryDialogs(currentAccount, getParentLayout().fragmentsStack, dialogId);
-            if (dialogs.size() <= 0) {
+            ActionBarPopupWindow menu = BackButtonMenu.show(this, backButton, getDialogId());
+            if (menu != null) {
+                menu.setOnDismissListener(() -> dimBehindView(false));
+                dimBehindView(backButton, 0.3f);
+                if (undoView != null) {
+                    undoView.hide(true, 1);
+                }
+                return true;
+            } else {
                 return false;
             }
-
-            ActionBarPopupWindow.ActionBarPopupWindowLayout layout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(context);
-            Rect backgroundPaddings = new Rect();
-            Drawable shadowDrawable = getParentActivity().getResources().getDrawable(R.drawable.popup_fixed_alert).mutate();
-            shadowDrawable.getPadding(backgroundPaddings);
-            layout.setBackgroundColor(getThemedColor(Theme.key_actionBarDefaultSubmenuBackground));
-
-            for (int i = 0; i < dialogs.size(); ++i) {
-                final ChatActivity.PulledDialog pDialog = dialogs.get(i);
-                final TLRPC.Chat chat = pDialog.chat;
-                final TLRPC.User user = pDialog.user;
-                FrameLayout cell = new FrameLayout(context);
-                cell.setMinimumWidth(AndroidUtilities.dp(200));
-
-                BackupImageView imageView = new BackupImageView(context);
-                imageView.setRoundRadius(AndroidUtilities.dp(32));
-                cell.addView(imageView, LayoutHelper.createFrameRelatively(32, 32, Gravity.START | Gravity.CENTER_VERTICAL, 13, 0, 0, 0));
-
-                TextView titleView = new TextView(context);
-                titleView.setLines(1);
-                titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-                titleView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem));
-                titleView.setEllipsize(TextUtils.TruncateAt.END);
-                cell.addView(titleView, LayoutHelper.createFrameRelatively(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 59, 0, 12, 0));
-
-                AvatarDrawable avatarDrawable = new AvatarDrawable();
-                if (chat != null) {
-                    avatarDrawable.setInfo(chat);
-                    imageView.setImage(ImageLocation.getForChat(chat, ImageLocation.TYPE_SMALL), "50_50", avatarDrawable, chat);
-                    titleView.setText(chat.title);
-                } else if (user != null) {
-                    avatarDrawable.setInfo(user);
-                    imageView.setImage(ImageLocation.getForUser(user, ImageLocation.TYPE_SMALL), "50_50", avatarDrawable, user);
-                    titleView.setText(UserObject.getUserName(user));
-                }
-
-                boolean isFirst = i == 0, isLast = i == dialogs.size() - 1;
-                cell.setBackground(Theme.getSelectorDrawable(Theme.getColor(Theme.key_listSelector), false));
-                cell.setOnClickListener(e2 -> {
-                    if (scrimPopupWindow != null) {
-                        scrimPopupWindow.dismiss();
-                    }
-                    if (pDialog.stackIndex >= 0) {
-                        final ActionBarLayout parentLayout = getParentLayout();
-                        BaseFragment fragment;
-                        if (parentLayout == null || parentLayout.fragmentsStack == null || pDialog.stackIndex >= parentLayout.fragmentsStack.size()) {
-                            fragment = null;
-                        } else {
-                            fragment = parentLayout.fragmentsStack.get(pDialog.stackIndex);
-                        }
-                        if (fragment instanceof ChatActivity && ((ChatActivity) fragment).getDialogId() != pDialog.dialogId) {
-                            for (int j = parentLayout.fragmentsStack.size() - 2; j > pDialog.stackIndex; --j) {
-                                parentLayout.removeFragmentFromStack(j);
-                            }
-                        } else {
-                            if (parentLayout != null && parentLayout.fragmentsStack != null) {
-                                for (int j = parentLayout.fragmentsStack.size() - 2; j > pDialog.stackIndex; --j) {
-                                    if (j >= 0 && j < parentLayout.fragmentsStack.size()) {
-                                        parentLayout.removeFragmentFromStack(j);
-                                    }
-                                }
-                                if (pDialog.stackIndex < parentLayout.fragmentsStack.size()) {
-                                    parentLayout.showFragment(pDialog.stackIndex);
-                                    parentLayout.closeLastFragment(true);
-                                    return;
-                                }
-                            }
-                        }
-                    }
-                    ChatActivity.goTo(this, chat != null ? chat : user, pDialog.dialogId, pDialog.folderId, pDialog.filterId);
-                });
-//                layout.addView(cell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 44 + (isFirst ? 4 : 0) + (isLast ? 4 : 0)));
-                layout.addView(cell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 44, 0, isFirst ? 4 : 0, 0, isLast ? 4 : 0));
-            }
-
-            scrimPopupWindow = new ActionBarPopupWindow(layout, LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT) {
-                @Override
-                public void dismiss() {
-                    super.dismiss();
-                    if (scrimPopupWindow != this) {
-                        return;
-                    }
-                    scrimPopupWindow = null;
-                    dimBehindView(false);
-                }
-            };
-            scrimPopupWindow.setPauseNotifications(true);
-            scrimPopupWindow.setDismissAnimationDuration(220);
-            scrimPopupWindow.setOutsideTouchable(true);
-            scrimPopupWindow.setClippingEnabled(true);
-            scrimPopupWindow.setAnimationStyle(R.style.PopupContextAnimation);
-            scrimPopupWindow.setFocusable(true);
-            layout.measure(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), View.MeasureSpec.AT_MOST));
-            scrimPopupWindow.setInputMethodMode(ActionBarPopupWindow.INPUT_METHOD_NOT_NEEDED);
-            scrimPopupWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED);
-            scrimPopupWindow.getContentView().setFocusableInTouchMode(true);
-            layout.setFitItems(true);
-
-            int popupX = AndroidUtilities.dp(8) - backgroundPaddings.left;
-            if (AndroidUtilities.isTablet()) {
-                int[] location = new int[2];
-                fragmentView.getLocationInWindow(location);
-                popupX += location[0];
-            }
-            int popupY = (int) (backButton.getBottom() - backgroundPaddings.top - AndroidUtilities.dp(8));
-            final int finalPopupX = popupX;
-            final int finalPopupY = popupY;
-            scrimPopupWindow.showAtLocation(fragmentView, Gravity.LEFT | Gravity.TOP, finalPopupX, finalPopupY);
-            try {
-                actionBar.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
-            } catch (Exception ignore) {}
-            dimBehindView(backButton, 0.3f);
-            if (undoView != null) {
-                undoView.hide(true, 1);
-            }
-            return true;
         });
         return actionBar;
     }
@@ -3579,6 +3471,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
     public TLRPC.Chat getCurrentChat() {
         return currentChat;
+    }
+    public TLRPC.UserFull getUserInfo() {
+        return userInfo;
     }
 
     @Override

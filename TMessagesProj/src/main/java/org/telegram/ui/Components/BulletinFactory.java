@@ -44,7 +44,8 @@ public final class BulletinFactory {
         PHOTO_TO_DOWNLOADS("PhotoSavedToDownloadsHint", R.string.PhotoSavedToDownloadsHint, Icon.SAVED_TO_DOWNLOADS),
         VIDEO_TO_DOWNLOADS("VideoSavedToDownloadsHint", R.string.VideoSavedToDownloadsHint, Icon.SAVED_TO_DOWNLOADS),
 
-        GIF("GifSavedToDownloadsHint", Icon.SAVED_TO_DOWNLOADS),
+        GIF("GifSavedHint", R.string.GifSavedHint, Icon.SAVED_TO_GIFS),
+        GIF_TO_DOWNLOADS("GifSavedToDownloadsHint", R.string.GifSavedToDownloadsHint, Icon.SAVED_TO_DOWNLOADS),
 
         AUDIO("AudioSavedHint", R.string.AudioSavedHint, Icon.SAVED_TO_MUSIC),
         AUDIOS("AudiosSavedHint", Icon.SAVED_TO_MUSIC),
@@ -87,7 +88,8 @@ public final class BulletinFactory {
 
             SAVED_TO_DOWNLOADS(R.raw.ic_download, 2, "Box", "Arrow"),
             SAVED_TO_GALLERY(R.raw.ic_save_to_gallery, 0, "Box", "Arrow", "Mask", "Arrow 2", "Splash"),
-            SAVED_TO_MUSIC(R.raw.ic_save_to_music, 2, "Box", "Arrow");
+            SAVED_TO_MUSIC(R.raw.ic_save_to_music, 2, "Box", "Arrow"),
+            SAVED_TO_GIFS(R.raw.ic_save_to_gifs, 0, "gif");
 
             private final int resId;
             private final String[] layers;

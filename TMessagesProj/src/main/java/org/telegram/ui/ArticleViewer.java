@@ -401,7 +401,6 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                         searchPath.setCurrentLayout(textLayout, result.index, 0);
                         searchPath.setBaselineShift(0);
                         textLayout.getSelectionPath(result.index, result.index + searchText.length(), searchPath);
-                        searchPath.onPathEnd();
                         searchPath.setAllowReset(true);
                     }
                 } else {
@@ -1147,13 +1146,16 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         float lightness = (0.2126f * Color.red(color2) + 0.7152f * Color.green(color2) + 0.0722f * Color.blue(color2)) / 255.0f;
         webpageSearchPaint.setColor(lightness <= 0.705f ? 0xffd1982e : 0xffffe669);
         webpageUrlPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkSelection) & 0x33ffffff);
+        webpageUrlPaint.setPathEffect(LinkPath.roundedEffect);
         urlPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkSelection) & 0x33ffffff);
+        urlPaint.setPathEffect(LinkPath.roundedEffect);
         tableHalfLinePaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteInputField));
         tableLinePaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteInputField));
 
         photoBackgroundPaint.setColor(0x0f000000);
         dividerPaint.setColor(Theme.getColor(Theme.key_divider));
         webpageMarkPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkSelection) & 0x33ffffff);
+        webpageMarkPaint.setPathEffect(LinkPath.roundedEffect);
 
         int color = Theme.getColor(Theme.key_switchTrack);
         int r = Color.red(color);
@@ -2537,7 +2539,6 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                         int shift = innerSpans[a].getTextPaint() != null ? innerSpans[a].getTextPaint().baselineShift : 0;
                         textPath.setBaselineShift(shift != 0 ? shift + AndroidUtilities.dp(shift > 0 ? 5 : -2) : 0);
                         result.getSelectionPath(start, end, textPath);
-                        textPath.onPathEnd();
                     }
                     textPath.setAllowReset(true);
                 }
@@ -2556,7 +2557,6 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                         int shift = innerSpans[a].getTextPaint() != null ? innerSpans[a].getTextPaint().baselineShift : 0;
                         markPath.setBaselineShift(shift != 0 ? shift + AndroidUtilities.dp(shift > 0 ? 5 : -2) : 0);
                         result.getSelectionPath(start, end, markPath);
-                        markPath.onPathEnd();
                     }
                     markPath.setAllowReset(true);
                 }
@@ -2645,7 +2645,6 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                                         int shift = pressedLink.getTextPaint() != null ? pressedLink.getTextPaint().baselineShift : 0;
                                         urlPath.setBaselineShift(shift != 0 ? shift + AndroidUtilities.dp(shift > 0 ? 5 : -2) : 0);
                                         layout.getSelectionPath(pressedStart, pressedEnd, urlPath);
-                                        urlPath.onPathEnd();
                                         parentView.invalidate();
                                     } catch (Exception e) {
                                         FileLog.e(e);

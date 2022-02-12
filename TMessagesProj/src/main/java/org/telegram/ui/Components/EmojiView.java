@@ -2305,8 +2305,25 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
     @Override
     public void setTranslationY(float translationY) {
         super.setTranslationY(translationY);
-        updateBottomTabContainerPosition();
         updateStickerTabsPosition();
+        updateBottomTabContainerPosition();
+    }
+    private void updateBottomTabContainerPosition() {
+        if (bottomTabContainer.getTag() == null && (delegate == null || !delegate.isSearchOpened()) && (pager == null || pager.getCurrentItem() != 0)) {
+            View parent = (View) getParent();
+            if (parent != null) {
+                float y = getY() - parent.getHeight();
+                if (getLayoutParams().height > 0) {
+                    y += getLayoutParams().height;
+                } else {
+                    y += getMeasuredHeight();
+                }
+                if (bottomTabContainer.getTop() - y < 0) {
+                    y = bottomTabContainer.getTop();
+                }
+                bottomTabContainer.setTranslationY(-y);
+            }
+        }
     }
 
     Rect rect = new Rect();
@@ -2339,24 +2356,6 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         } else {
             expandStickersByDragg = false;
             stickersTab.expandStickers(lastStickersX, false);
-        }
-    }
-
-    private void updateBottomTabContainerPosition() {
-        if (bottomTabContainer.getTag() == null && (delegate == null || !delegate.isSearchOpened())) {
-            View parent = (View) getParent();
-            if (parent != null) {
-                float y = getY() - parent.getHeight();
-                if (getLayoutParams().height > 0) {
-                    y += getLayoutParams().height;
-                } else {
-                    y += getMeasuredHeight();
-                }
-                if (bottomTabContainer.getTop() - y < 0) {
-                    y = bottomTabContainer.getTop();
-                }
-                bottomTabContainer.setTranslationY(-y);
-            }
         }
     }
 
@@ -3619,11 +3618,11 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                         if (newHeight <= lastNotifyHeight) {
                             bottomTabContainer.setTranslationY(0);
                         } else {
-                            float y = getY() + getMeasuredHeight() - parent.getHeight();
-                            if (bottomTabContainer.getTop() - y < 0) {
-                                y = bottomTabContainer.getTop();
-                            }
-                            bottomTabContainer.setTranslationY(-y);
+//                            float y = getY() + getMeasuredHeight() - parent.getHeight() - bottomTabContainer.getTop();
+//                            if (bottomTabContainer.getTop() - y < 0) {
+//                                y = bottomTabContainer.getTop();
+//                            }
+//                            bottomTabContainer.setTranslationY(-y);
                         }
                     }
                 }

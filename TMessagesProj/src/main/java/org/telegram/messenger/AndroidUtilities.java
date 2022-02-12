@@ -740,7 +740,7 @@ public class AndroidUtilities {
             writer.flush();
             writer.close();
         } catch (Throwable e) {
-            FileLog.e(e);
+            FileLog.e(e, false);
         }
     }
 

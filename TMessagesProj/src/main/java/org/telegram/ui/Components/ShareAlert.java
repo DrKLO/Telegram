@@ -912,8 +912,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                 return y >= AndroidUtilities.dp(darkTheme && linkToCopy[1] != null ? 111 : 58) + (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0);
             }
         };
-        gridView.setSelectorRadius(AndroidUtilities.dp(8));
-        gridView.setSelectorDrawableColor(Theme.getColor(Theme.key_listSelector));
+        gridView.setSelectorDrawableColor(0);
         gridView.setPadding(0, 0, 0, AndroidUtilities.dp(48));
         gridView.setClipToPadding(false);
         gridView.setLayoutManager(layoutManager = new GridLayoutManager(getContext(), 4));
@@ -973,6 +972,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                 return y >= AndroidUtilities.dp(darkTheme && linkToCopy[1] != null ? 111 : 58) + (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0);
             }
         };
+        searchGridView.setSelectorDrawableColor(0);
         searchGridView.setPadding(0, 0, 0, AndroidUtilities.dp(48));
         searchGridView.setClipToPadding(false);
         searchGridView.setLayoutManager(searchLayoutManager = new FillLastGridLayoutManager(getContext(), 4, 0, searchGridView));

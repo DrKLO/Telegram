@@ -10,6 +10,7 @@ import android.graphics.PorterDuffXfermode;
 import android.graphics.drawable.Drawable;
 import android.os.SystemClock;
 import android.view.View;
+import android.view.animation.Interpolator;
 
 import androidx.core.graphics.ColorUtils;
 
@@ -57,6 +58,8 @@ public class AvatarsDarawable {
     View parent;
     private int overrideSize;
     private float overrideAlpha = 1f;
+    public long transitionDuration = 220;
+    public Interpolator transitionInterpolator = CubicBezierInterpolator.DEFAULT;
 
     public void commitTransition(boolean animated) {
         if (!wasDraw || !animated) {
@@ -133,7 +136,7 @@ public class AvatarsDarawable {
                 transitionProgressAnimator = null;
             }
         });
-        transitionProgressAnimator.setDuration(220);
+        transitionProgressAnimator.setDuration(transitionDuration);
         transitionProgressAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
         transitionProgressAnimator.start();
         invalidate();

@@ -390,7 +390,6 @@ public class CameraScanActivity extends BaseFragment implements Camera.PreviewCa
                             int shift = getText() != null ? getPaint().baselineShift : 0;
                             textPath.setBaselineShift(shift != 0 ? shift + AndroidUtilities.dp(shift > 0 ? 5 : -2) : 0);
                             getLayout().getSelectionPath(start, end, textPath);
-                            textPath.onPathEnd();
                         }
                         textPath.setAllowReset(true);
                     }

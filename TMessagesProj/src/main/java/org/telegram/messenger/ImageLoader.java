@@ -51,6 +51,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.InterruptedIOException;
 import java.io.RandomAccessFile;
 import java.net.HttpURLConnection;
 import java.net.SocketException;
@@ -534,7 +535,7 @@ public class ImageLoader {
                     } else if (e instanceof FileNotFoundException) {
                         canRetry = false;
                         sentLogs = false;
-                    } else if (e instanceof InterruptedException) {
+                    } else if (e instanceof InterruptedIOException) {
                         sentLogs = false;
                     }
                     FileLog.e(e, sentLogs);

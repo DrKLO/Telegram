@@ -8,11 +8,11 @@
 
 package org.telegram.ui.Components;
 
+import android.graphics.CornerPathEffect;
 import android.graphics.Path;
 import android.graphics.RectF;
 import android.os.Build;
 import android.text.Layout;
-import android.text.StaticLayout;
 
 import org.telegram.messenger.AndroidUtilities;
 
@@ -28,10 +28,10 @@ public class LinkPath extends Path {
     private boolean allowReset = true;
     private int baselineShift;
     private int lineHeight;
-    private ArrayList<RectF> rects = new ArrayList<>();
 
-    private final int radius = AndroidUtilities.dp(4);
-    private final int halfRadius = radius >> 1;
+    private static final int radius = AndroidUtilities.dp(4);
+    private static final int halfRadius = radius >> 1;
+    public static final CornerPathEffect roundedEffect = new CornerPathEffect(radius);
 
     public LinkPath() {
         super();
@@ -108,9 +108,7 @@ public class LinkPath extends Path {
             y += baselineShift;
         }
         if (useRoundRect) {
-            RectF rect = new RectF();
-            rect.set(left - halfRadius, y, right + halfRadius, y2);
-            rects.add(rect);
+            super.addRect(left - halfRadius, y, right + halfRadius, y2, dir);
         } else {
             super.addRect(left, y, right, y2, dir);
         }
@@ -122,34 +120,5 @@ public class LinkPath extends Path {
             return;
         }
         super.reset();
-        rects.clear();
-    }
-
-    private boolean containsPoint(float x, float y) {
-        for (RectF rect : rects) {
-            if (rect.contains(x, y)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public void onPathEnd() {
-        if (useRoundRect) {
-            super.reset();
-            final int count = rects.size();
-            for (int i = 0; i < count; ++i) {
-                float[] radii = new float[8];
-
-                RectF rect = rects.get(i);
-
-                radii[0] = radii[1] = containsPoint(rect.left, rect.top - radius) ? 0 : radius; // top left
-                radii[2] = radii[3] = containsPoint(rect.right, rect.top - radius) ? 0 : radius; // top right
-                radii[4] = radii[5] = containsPoint(rect.right, rect.bottom + radius) ? 0 : radius; // bottom right
-                radii[6] = radii[7] = containsPoint(rect.left, rect.bottom + radius) ? 0 : radius; // bottom left
-
-                super.addRoundRect(rect, radii, Direction.CW);
-            }
-        }
     }
 }

@@ -177,7 +177,7 @@ public class SearchAdapterHelper {
             if (query.length() > 0) {
                 TLRPC.TL_contacts_search req = new TLRPC.TL_contacts_search();
                 req.q = query;
-                req.limit = 10;
+                req.limit = 20;
                 requests.add(new Pair<>(req, (response, error) -> {
                     if (delegate.canApplySearchResults(searchId)) {
                         if (error == null) {

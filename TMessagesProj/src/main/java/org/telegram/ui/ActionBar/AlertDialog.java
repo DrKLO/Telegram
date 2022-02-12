@@ -868,6 +868,9 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
             if (dimEnabled) {
                 params.dimAmount = 0.6f;
                 params.flags |= WindowManager.LayoutParams.FLAG_DIM_BEHIND;
+            } else {
+                params.dimAmount = 0f;
+                params.flags ^= WindowManager.LayoutParams.FLAG_DIM_BEHIND;
             }
 
             lastScreenWidth = AndroidUtilities.displaySize.x;

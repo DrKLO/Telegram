@@ -137,7 +137,7 @@ public class StickerEmojiCell extends FrameLayout {
             sticker = document;
             parentObject = parent;
             boolean isVideoSticker = MessageObject.isVideoSticker(document);
-            TLRPC.PhotoSize thumb = isVideoSticker ? null : FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90);
+            TLRPC.PhotoSize thumb = (isVideoSticker && MessageObject.canAutoplayAnimatedSticker(document)) ? null : FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90);
             SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(document, fromEmojiPanel ? Theme.key_emptyListPlaceholder : Theme.key_windowBackgroundGray, fromEmojiPanel ? 0.2f : 1.0f);
             if (MessageObject.canAutoplayAnimatedSticker(document)) {
                 if (svgThumb != null) {

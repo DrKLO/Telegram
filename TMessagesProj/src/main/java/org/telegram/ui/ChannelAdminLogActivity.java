@@ -2164,7 +2164,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                                 Toast.makeText(getParentActivity(), LocaleController.getString("TextCopied", R.string.TextCopied), Toast.LENGTH_SHORT).show();
                             }
                         } else if (url instanceof URLSpanUserMention) {
-                            long peerId = Utilities.parseInt(((URLSpanUserMention) url).getURL());
+                            long peerId = Utilities.parseLong(((URLSpanUserMention) url).getURL());
                             if (peerId > 0) {
                                 TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(peerId);
                                 if (user != null) {

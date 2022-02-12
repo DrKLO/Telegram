@@ -121,6 +121,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
     private int renderingWidth;
     private float scaleFactor = 1f;
     public final boolean isWebmSticker;
+    private final TLRPC.Document document;
 
     private View parentView;
     private ArrayList<View> secondParentViews = new ArrayList<>();
@@ -171,6 +172,9 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
             }
             loadFrameTask = null;
             scheduleNextGetFrame();
+            for (int i = 0; i < parents.size(); i++) {
+                parents.get(i).invalidate();
+            }
         }
     };
 
@@ -229,8 +233,8 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
                     secondParentViews.get(a).invalidate();
                 }
             }
-            if ((secondParentViews.isEmpty() || invalidateParentViewWithSecond) && parentView != null) {
-                parentView.invalidate();
+            for (int i = 0; i < parents.size(); i++) {
+                parents.get(i).invalidate();
             }
             scheduleNextGetFrame();
         }
@@ -331,7 +335,8 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
         currentAccount = account;
         renderingHeight = h;
         renderingWidth = w;
-        isWebmSticker = MessageObject.isVideoSticker(document);
+        this.document = document;
+        isWebmSticker = MessageObject.isWebM(document) || MessageObject.isVideoSticker(document);
         if (isWebmSticker) {
             useSharedQueue = true;
         }
@@ -388,7 +393,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
     }
 
     public void addParent(View view) {
-        if (!parents.contains(view)) {
+        if (view != null && !parents.contains(view)) {
             parents.add(view);
             if (isRunning) {
                 scheduleNextGetFrame();
@@ -482,6 +487,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
                 decodeQueue.recycle();
                 decodeQueue = null;
             }
+            getPaint().setShader(null);
         } else {
             destroyWhenDone = true;
         }
@@ -534,7 +540,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
 
     @Override
     public void start() {
-        if (isRunning) {
+        if (isRunning || parents.size() == 0) {
             return;
         }
         isRunning = true;
@@ -622,8 +628,6 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
         super.onBoundsChange(bounds);
         applyTransformation = true;
     }
-
-    Paint paint;
 
     @Override
     public void draw(Canvas canvas) {
@@ -714,12 +718,6 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
                 canvas.scale(scaleX, scaleY);
                 canvas.drawBitmap(renderingBitmap, 0, 0, getPaint());
             }
-            if (isRunning && !invalidateTaskIsRunning) {
-                invalidateTaskIsRunning = true;
-                long timeToNextFrame = Math.max(1, invalidateAfter - (now - lastFrameTime) - 17);
-                uiHandler.removeCallbacks(mInvalidateTask);
-                uiHandler.postDelayed(mInvalidateTask, Math.min(timeToNextFrame, invalidateAfter));
-            }
         }
     }
 
@@ -808,7 +806,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
         if (stream != null) {
             drawable = new AnimatedFileDrawable(path, false, streamFileSize, stream.getDocument(), stream.getLocation(), stream.getParentObject(), pendingSeekToUI, currentAccount, stream != null && stream.isPreview());
         } else {
-            drawable = new AnimatedFileDrawable(path, false, streamFileSize, null, null, null, pendingSeekToUI, currentAccount, stream != null && stream.isPreview());
+            drawable = new AnimatedFileDrawable(path, false, streamFileSize, document, null, null, pendingSeekToUI, currentAccount, stream != null && stream.isPreview());
         }
         drawable.metaData[0] = metaData[0];
         drawable.metaData[1] = metaData[1];
