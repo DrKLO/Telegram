@@ -57,4 +57,9 @@
     <string name="SaveToDownloadCount_zero">Сохранение %1$d файлов для загрузки</string>
     <string name="CX_TabIconMode_AppTitle">Переместите текст в название приложения</string>
     <string name="CX_EnableSAF_Desc">Только для Android 11+. Позволяет получить доступ к внешнему хранилищу за счёт использования файлового менеджера Google. РАБОТАЕТ ТОЛЬКО С ОТКЛЮЧЁННЫМ УПРАВЛЕНИЕМ ВСЕМИ ФАЙЛАМИ ДЛЯ ЭТОГО ПРИЛОЖЕНИЯ</string>
+    <string name="SaveToDownloadCount_one">Сохранение файла %1$d для загрузки</string>
+    <string name="SaveToDownloadCount_few">Сохранение %1$d файлов для загрузки</string>
+    <string name="SaveToDownloadCount_many">Сохранение %1$d файлов для загрузки</string>
+    <string name="SaveToDownloadCount_two">Сохранение %1$d файлов для загрузки</string>
+    <string name="SaveToDownloadCount_other">Сохранение %1$d файлов для загрузки</string>
 </resources>
