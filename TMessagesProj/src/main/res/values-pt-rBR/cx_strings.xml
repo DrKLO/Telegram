@@ -46,4 +46,22 @@
     <string name="CX_ChangeIcon_Monet">Cato X Monet</string>
     <string name="CX_ChangeIcon_Black_Reg">CatoX Black (Por Qirkl)</string>
     <string name="CX_ChangeIcon_Purple_Reg">CatoX Purple (Por Qirkl)</string>
+    <string name="CX_DoubleTapReact">Desativar reações rápidas</string>
+    <string name="CX_TabIconMode_AppTitle">Mover o texto para o título do aplicativo</string>
+    <string name="SaveToDownloadCount_zero">Salvando %1$d arquivos para downloads</string>
+    <string name="SaveToDownloadCount_one">Salvando %1$d arquivo para downloads</string>
+    <string name="CX_ShowSeconds">Mostrar segundos em marcadores de data/hora</string>
+    <string name="CX_EnableSAF_Warn">Desative o gerenciamento de todos os arquivos deste aplicativo para tornar o Força SAF efetivo</string>
+    <string name="SaveToDownloadCount_two">Salvando %1$d arquivo para downloads</string>
+    <string name="SaveToDownloadCount_many">Salvando %1$d arquivos para downloads</string>
+    <string name="SaveToDownloadCount_other">Salvando %1$d arquivos para downloads</string>
+    <string name="SaveToDownloadCount_few">Salvando %1$d arquivos para downloads</string>
+    <string name="CX_EnableSAF_Desc">Apenas Android 11+. Permita acesso ao armazenamento externo para usar o Google File Manager. SÓ FUNCIONA COM DESABILITADO GERENCIE TODOS OS ARQUIVOS PARA ESTE APLICATIVO</string>
+    <string name="CX_DismissStorageDialog2">Para descartar permanentemente a caixa de diálogo, conceda a permissão ou ative o SAF nas configurações do CatoX.</string>
+    <string name="CX_DBNotEnabled2">Não habilitado</string>
+    <string name="CX_DBSettingsPin">PIN de configurações</string>
+    <string name="CX_EnableSAF">Forçar SAF</string>
+    <string name="CX_Website">Visite o nosso site</string>
+    <string name="CX_EnableMLKIT">Ative a detecção de idioma de IA no dispositivo</string>
+    <string name="CX_EnableMLKITDesc">desabilite para sempre mostrar o tradutor</string>
 </resources>
