@@ -72,7 +72,7 @@
     <string name="CG_ChatMenu_ToChannel">Привязанный канал</string>
     <string name="CG_ChannelMenu_ToChat">Привязанный чат</string>
     <string name="AS_Header_Chats">Диалоги</string>
-    <string name="CG_NewRepostUI">Включить новый UI репостов везде</string>
+    <string name="CG_NewRepostUI">Включить новый пользоательский интерфейс репостов везде</string>
     <string name="CG_NewRepostUI_Desc">Работает как кнопка пересылки в чатах</string>
     <string name="CG_ConfirmCalls">Спрашивать перед звонком</string>
     <string name="CG_ABSearch">Поиск в тулбаре</string>
@@ -83,7 +83,7 @@
     <string name="CG_NewAvaHeader_NoEdgeTapping">Блокировать нажатия по краям</string>
     <string name="CG_NewAvaHeader_NoEdgeTapping_Desc">Вы всё ещё можете пролистывать аватары</string>
     <string name="CG_NewAvaHeader_OpenOnTap">Открывать на весь экран при нажатии</string>
-    <string name="CG_NewAvaHeader_OpenOnTap_Desc">Это ЗАМЕНИТ нажатие на углы</string>
+    <string name="CG_NewAvaHeader_OpenOnTap_Desc">Это заменит нажатие на углы</string>
     <string name="CG_NewAvaHeader_AlwaysExpand">Всегда раскрывать</string>
     <string name="CG_NewAvaHeader_AlwaysExpand_Desc">Всегда раскрывать аватар в заголовок при открытии профиля</string>
     <string name="CG_Slider_StickerAmplifier">Множитель размера стикеров</string>
@@ -152,7 +152,10 @@
     <string name="CG_IgnoreBlacklist_Desc">Их сообщения будут скрыты</string>
     <string name="CG_KangSticker">Добавить в стикерпак</string>
     <string name="CG_KangSticker_Err_NoPack_Title">Создать стикерпак?</string>
-    <string name="CG_KangSticker_Err_NoPack_Desc">Чтобы добавить стикеры, нужен активный стикерпак, но у вас его нет.\n\nВы хотите создать его?\nЭто автоматический процесс, и после нужный стикер будет добавлен.</string>
+    <string name="CG_KangSticker_Err_NoPack_Desc">Чтобы добавить стикеры, нужен активный стикерпак, но у Вас его нет.
+\n
+\nВы хотите создать его\?
+\nЭто автоматический процесс, и после нужный стикер будет добавлен.</string>
     <string name="CG_KangSticker_Err_NoPack_Action">Создать</string>
     <string name="CG_Kangs_Manager">Менеджер стикерпаков</string>
     <string name="CG_Kangs_CreatePack">Создать стикерпак</string>
@@ -196,7 +199,7 @@
     <string name="CG_HqRoundVideos">Высокое качество круглых видео</string>
     <string name="CG_HqRoundVideosAudio">Высокое качество звука круглых видео</string>
     <string name="CG_StereoVoices">Записывать аудиосообщения в стерео</string>
-    <string name="CG_StereoVoices_Desc">Может не поддерживаться вашим устройством!</string>
+    <string name="CG_StereoVoices_Desc">Может не поддерживаться Вашим устройством!</string>
     <string name="CG_VoiceEnhancements">Улучшения звука</string>
     <string name="CG_VoiceEnhancements_Desc">Включает нормализацию голоса и подавление шума</string>
     <string name="CG_Voip_ForceEnhancements">Форсировать улучшения звука при VoIP</string>
