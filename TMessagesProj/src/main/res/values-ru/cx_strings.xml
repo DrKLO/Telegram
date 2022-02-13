@@ -62,4 +62,5 @@
     <string name="SaveToDownloadCount_many">Сохранение %1$d файлов для загрузки</string>
     <string name="SaveToDownloadCount_two">Сохранение %1$d файлов для загрузки</string>
     <string name="SaveToDownloadCount_other">Сохранение %1$d файлов для загрузки</string>
+    <string name="CX_ShowSeconds">Показывать секунды в метках времени</string>
 </resources>
