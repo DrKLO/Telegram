@@ -16,4 +16,21 @@
     <string name="CX_ChangeIcon_Yellow_Reg">CatoX Жовта (від @Qirkl)</string>
     <string name="CX_ThemePreviewDialogMessage5">дякую</string>
     <string name="CX_Secrets">Секретне меню</string>
+    <string name="CX_OldTranslateUI">Використовувати класичний інтерфейс перекладача</string>
+    <string name="CX_BotLogin">Вхід від імені бота</string>
+    <string name="CX_HideSendAsChannel">Сховати кнопку \"відправити від імені каналу\"</string>
+    <string name="CX_SetCustomEmojiFont">Встановити користувацькі емодзі</string>
+    <string name="CX_AllowStorage">Через зміни внесені в Android 11+, Кішкограм потребує дозволу на перегляд немедійних файлів.</string>
+    <string name="CX_DB_AccountsHint">Подвійне дно дозволяє встановити пароль на інший акаунт.
+\n
+\nПри спробі встановити пароль для налаштованого акаунту - старий пароль буде замінено після повторного введення
+\nУтримуйте запис, щоб видалити пароль, знову ввівши його.</string>
+    <string name="CX_OldTranslateUIDesc">Якщо вимкнено, то буде використовуватися інтерфейс Телеграму, але переклад від Кішкограм</string>
+    <string name="CX_DnDDesc">Вимкнути звук та вібрацію сповіщень від контактів</string>
+    <string name="CX_CustomEmoji">Використовувати користувацькі емодзі</string>
+    <string name="CX_CustomEmojiDesc">Використовувати користувацькі емодзі, замість стандартних</string>
+    <string name="CX_InvalidCustomEmojiTypeface">Неправильний пакет емодзі!</string>
+    <string name="CX_InvalidAccessToken">Неправильний токен бота</string>
+    <string name="CX_DisableReactionAnimDesc">(Під час реакції на повідомлення)</string>
+    <string name="CX_DBNotEnabled">Не увімкнено для цього акаунту</string>
 </resources>
