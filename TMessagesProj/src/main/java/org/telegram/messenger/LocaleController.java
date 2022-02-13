@@ -1654,6 +1654,9 @@ public class LocaleController {
             format = defaultFormat;
         }
         FastDateFormat formatter;
+        if (CatogramConfig.INSTANCE.getShowSeconds()) {
+            format = format.replace(":mm", ":mm:ss");
+        }
         try {
             formatter = FastDateFormat.getInstance(format, locale);
         } catch (Exception e) {

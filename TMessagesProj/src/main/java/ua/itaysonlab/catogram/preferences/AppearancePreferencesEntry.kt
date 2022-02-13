@@ -2,6 +2,7 @@ package ua.itaysonlab.catogram.preferences
 
 import android.content.Intent
 import android.graphics.Color
+import android.os.Build
 import androidx.core.app.ActivityCompat.startActivityForResult
 import org.telegram.messenger.LocaleController
 import org.telegram.messenger.R
@@ -135,7 +136,9 @@ class AppearancePreferencesEntry : BasePreferencesEntry {
                     return@contract SharedConfig.noStatusBar
                 }) {
                     SharedConfig.toggleNoStatusBar()
-                    bf.parentActivity.window.statusBarColor = if (Theme.getColor(Theme.key_actionBarDefault, null, true) == Color.WHITE) CatogramExtras.lightStatusbarColor else CatogramExtras.darkStatusbarColor
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        bf.parentActivity.window.statusBarColor = if (Theme.getColor(Theme.key_actionBarDefault, null, true) == Color.WHITE) CatogramExtras.lightStatusbarColor else CatogramExtras.darkStatusbarColor
+                    }
                 }
             }
 
@@ -210,6 +213,16 @@ class AppearancePreferencesEntry : BasePreferencesEntry {
                     return@contract CatogramConfig.disableReactionAnim
                 }) {
                     CatogramConfig.disableReactionAnim = it
+                }
+            }
+
+            switch {
+                title = LocaleController.getString("CX_ShowSeconds", R.string.CX_ShowSeconds)
+
+                contract({
+                    return@contract CatogramConfig.showSeconds
+                }) {
+                    CatogramConfig.showSeconds = it
                 }
             }
             

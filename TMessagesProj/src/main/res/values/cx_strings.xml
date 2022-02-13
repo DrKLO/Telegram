@@ -71,4 +71,5 @@
     <string name="SaveToDownloadCount_few">Saving %1$d files to downloads</string>
     <string name="SaveToDownloadCount_many">Saving %1$d files to downloads</string>
     <string name="SaveToDownloadCount_other">Saving %1$d files to downloads</string>
+	<string name="CX_ShowSeconds">Show seconds in timestamps</string>
 </resources>
