@@ -51,7 +51,17 @@
     <string name="CX_EnableSAF">强制启用SAF</string>
     <string name="CX_Website">访问官方网站</string>
     <string name="CX_CustomEmojiDesc">自定义表情字体替代原版表情</string>
-    <string name="CX_EnableMLKIT">启用系统级语言检测</string>
-    <string name="CX_EnableMLKITDesc">禁用时，总是显示翻译引擎</string>
+    <string name="CX_EnableMLKIT">启用系统级语言AI检测</string>
+    <string name="CX_EnableMLKITDesc">禁用时，总是显示翻译按钮</string>
     <string name="CX_DoubleTapReact">禁用快捷回应</string>
+    <string name="CX_EnableSAF_Desc">仅用于Android 11+ 。可利用 Google 文件管理器访问外部存储。仅禁用本应用访问所有文件的权限时可用</string>
+    <string name="CX_ShowSeconds">时间精确到秒</string>
+    <string name="CX_EnableSAF_Warn">请禁用本应用的完全文件访问权限，以使强制调用SAF功能生效</string>
+    <string name="SaveToDownloadCount_zero">已将%1$d个文件保存到下载</string>
+    <string name="SaveToDownloadCount_one">已将%1$d个文件保存到下载</string>
+    <string name="CX_TabIconMode_AppTitle">应用主标题显示当前文件夹名称</string>
+    <string name="SaveToDownloadCount_many">%1$d个文件已保存到下载</string>
+    <string name="SaveToDownloadCount_other">%1$d个文件已保存到下载</string>
+    <string name="SaveToDownloadCount_two">%1$d个文件已保存到下载</string>
+    <string name="SaveToDownloadCount_few">%1$d个文件已保存到下载</string>
 </resources>
