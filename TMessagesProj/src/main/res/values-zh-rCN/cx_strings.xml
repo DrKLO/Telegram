@@ -49,11 +49,9 @@
     <string name="CX_DBNotEnabled2">未启用</string>
     <string name="CX_DBSettingsPin">设置PIN密码</string>
     <string name="CX_EnableSAF">强制启用SAF</string>
-    <string name="CX_EnableSAFDesc">在 Android 11+ 匹配Telegram存储行为（在旧版本上保持不变）</string>
     <string name="CX_Website">访问官方网站</string>
     <string name="CX_CustomEmojiDesc">自定义表情字体替代原版表情</string>
     <string name="CX_EnableMLKIT">启用系统级语言检测</string>
     <string name="CX_EnableMLKITDesc">禁用时，总是显示翻译引擎</string>
     <string name="CX_DoubleTapReact">禁用快捷回应</string>
-    <string name="CX_DoubleTapReact_Desc">防止因误双击消息而发送表情回应</string>
 </resources>

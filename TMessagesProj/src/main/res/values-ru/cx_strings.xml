@@ -49,11 +49,9 @@
     <string name="CX_Website">Открыть наш сайт</string>
     <string name="CX_DBNotEnabled2">Не включено</string>
     <string name="CX_DBSettingsPin">Настройки PIN</string>
-    <string name="CX_EnableSAFDesc">Соответствует поведению стокового Telegram на Android 11+ (на старых версиях остаётся прежним)</string>
     <string name="CX_EnableSAF">Принудительный доступ к хранилищу</string>
     <string name="CX_DismissStorageDialog2">Чтобы окончательно закрыть диалоговое окно, предоставьте разрешение или включите SAF (Доступ к хранилищу) в настройках CatoX.</string>
     <string name="CX_EnableMLKITDesc">Отключите, чтобы всегда показывать переводчик</string>
     <string name="CX_EnableMLKIT">Включить обнаружение локальной сети ИИ на устройстве</string>
     <string name="CX_DoubleTapReact">Отключить быстрые реакции</string>
-    <string name="CX_DoubleTapReact_Desc">Отключение этой опции позволит не отправлять реакцию на сообщения при случайном двойном нажатии</string>
 </resources>
