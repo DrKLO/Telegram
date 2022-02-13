@@ -2825,6 +2825,7 @@
     <string name="VideoSavedHint">Video saved to gallery</string>
     <string name="PhotoSavedToDownloadsHint">Photo saved to downloads</string>
     <string name="VideoSavedToDownloadsHint">Video saved to downloads</string>
+    <string name="GifSavedHint">Added to saved GIFs</string>
     <string name="GifSavedToDownloadsHint">GIF saved to downloads</string>
     <string name="AudioSavedHint">File saved to music</string>
     <string name="FileSavedHint">File saved to downloads</string>
@@ -4979,4 +4980,6 @@
     <string name="PushChatReactInvoice">%1$s: %3$s to your invoice in %2$s</string>
     <string name="PushChatReactGif">%1$s: %3$s to your GIF in %2$s</string>
     <string name="BlurInChat">Blur in chat</string>
+    <string name="ReadAllReactions">Read all reactions</string>
+    <string name="ReadAllMentions">Read all mentions</string>
 </resources>

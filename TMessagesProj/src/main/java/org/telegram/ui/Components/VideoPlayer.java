@@ -163,7 +163,7 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
         }
     }
 
-    private void ensurePleyaerCreated() {
+    private void ensurePlayerCreated() {
         DefaultLoadControl loadControl = new DefaultLoadControl(
                 new DefaultAllocator(true, C.DEFAULT_BUFFER_SEGMENT_SIZE),
                 DefaultLoadControl.DEFAULT_MIN_BUFFER_MS,
@@ -266,7 +266,7 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
         mixedAudio = true;
         audioPlayerReady = false;
         videoPlayerReady = false;
-        ensurePleyaerCreated();
+        ensurePlayerCreated();
         MediaSource mediaSource1 = null, mediaSource2 = null;
         for (int a = 0; a < 2; a++) {
             MediaSource mediaSource;
@@ -316,7 +316,7 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
         currentUri = uri;
         String scheme = uri.getScheme();
         isStreaming = scheme != null && !scheme.startsWith("file");
-        ensurePleyaerCreated();
+        ensurePlayerCreated();
         MediaSource mediaSource;
         switch (type) {
             case "dash":

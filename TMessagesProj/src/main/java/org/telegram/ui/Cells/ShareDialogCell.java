@@ -90,6 +90,8 @@ public class ShareDialogCell extends FrameLayout {
             invalidate();
         });
         addView(checkBox, LayoutHelper.createFrame(24, 24, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 19, currentType == TYPE_CREATE ? -40 : 42, 0, 0));
+
+        setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector), AndroidUtilities.dp(2), AndroidUtilities.dp(2)));
     }
 
     @Override
@@ -196,6 +198,7 @@ public class ShareDialogCell extends FrameLayout {
         Theme.checkboxSquare_checkPaint.setColor(getThemedColor(Theme.key_dialogRoundCheckBox));
         Theme.checkboxSquare_checkPaint.setAlpha((int) (checkBox.getProgress() * 255));
         canvas.drawCircle(cx, cy, AndroidUtilities.dp(currentType == TYPE_CREATE ? 24 : 28), Theme.checkboxSquare_checkPaint);
+        super.onDraw(canvas);
     }
 
     private int getThemedColor(String key) {

@@ -9,8 +9,7 @@ import android.view.MotionEvent;
 import android.view.ViewConfiguration;
 
 import androidx.core.graphics.ColorUtils;
-
-import com.google.android.exoplayer2.util.Log;
+import androidx.recyclerview.widget.ChatListItemAnimator;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -560,6 +559,8 @@ public class ReactionsLayoutInBubble {
             if (users != null) {
                 if (avatarsDarawable == null) {
                     avatarsDarawable = new AvatarsDarawable(parentView, false);
+                    avatarsDarawable.transitionDuration = ChatListItemAnimator.DEFAULT_DURATION;
+                    avatarsDarawable.transitionInterpolator = ChatListItemAnimator.DEFAULT_INTERPOLATOR;
                     avatarsDarawable.setSize(AndroidUtilities.dp(20));
                     avatarsDarawable.width = AndroidUtilities.dp(100);
                     avatarsDarawable.height = height;

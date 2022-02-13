@@ -87,7 +87,6 @@ public class SizeNotifierFrameLayout extends FrameLayout {
             @Override
             protected void onDraw(Canvas canvas) {
                 if (backgroundDrawable == null || skipBackgroundDrawing) {
-                    super.onDraw(canvas);
                     return;
                 }
                 Drawable newDrawable = getNewDrawable();

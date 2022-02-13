@@ -172,6 +172,7 @@ public class StaticLayoutEx {
                                 .setAlignment(align)
                                 .setLineSpacing(spacingAdd, spacingMult)
                                 .setIncludePad(includePad)
+                                .setEllipsize(ellipsize)
                                 .setEllipsizedWidth(ellipsisWidth)
                                 .setMaxLines(maxLines)
                                 .setBreakStrategy(canContainUrl ? StaticLayout.BREAK_STRATEGY_HIGH_QUALITY : StaticLayout.BREAK_STRATEGY_SIMPLE)

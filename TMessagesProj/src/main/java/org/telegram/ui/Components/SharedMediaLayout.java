@@ -2220,6 +2220,9 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
     }
 
     private void updateForwardItem() {
+        if (forwardItem == null) {
+            return;
+        }
         boolean noforwards = profileActivity.getMessagesController().isChatNoForwards(-dialog_id) || hasNoforwardsMessage();
         forwardItem.setAlpha(noforwards ? 0.5f : 1f);
         if (noforwards && forwardItem.getBackground() != null) {

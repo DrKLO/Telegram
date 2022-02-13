@@ -77,7 +77,7 @@ public class AnimatedFileDrawableStream implements FileLoadOperationStream {
                 }
                 lastOffset = offset + availableLength;
             } catch (Exception e) {
-                FileLog.e(e);
+                FileLog.e(e, false);
             }
             return availableLength;
         }

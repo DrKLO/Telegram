@@ -790,11 +790,12 @@ int readCallback(void *opaque, uint8_t *buf, int buf_size) {
                 if (attached) {
                     javaVm->DetachCurrentThread();
                 }
-                return (int) read(info->fd, buf, (size_t) buf_size);
+                int ret = (int) read(info->fd, buf, (size_t) buf_size);
+                return ret ? ret : AVERROR_EOF;
             }
         }
     }
-    return 0;
+    return AVERROR_EOF;
 }
 
 int64_t seekCallback(void *opaque, int64_t offset, int whence) {
@@ -1150,6 +1151,11 @@ extern "C" JNIEXPORT void JNICALL Java_org_telegram_ui_Components_AnimatedFileDr
     }
 }
 
+uint32_t premultiply_channel_value(const uint32_t pixel, const uint8_t offset, const float normalizedAlpha) {
+    auto multipliedValue = ((pixel >> offset) & 0xFF) * normalizedAlpha;
+    return ((uint32_t)std::min(multipliedValue, 255.0f)) << offset;
+}
+
 static inline void writeFrameToBitmap(JNIEnv *env, VideoInfo *info, jintArray data, jobject bitmap, jint stride) {
     jint *dataArr = env->GetIntArrayElements(data, 0);
     int32_t wantedWidth;
@@ -1173,15 +1179,15 @@ static inline void writeFrameToBitmap(JNIEnv *env, VideoInfo *info, jintArray da
         void *pixels;
         if (AndroidBitmap_lockPixels(env, bitmap, &pixels) >= 0) {
             if (info->sws_ctx == nullptr) {
-                if (info->frame->format > AV_PIX_FMT_NONE && info->frame->format < AV_PIX_FMT_NB) {
+                if (info->frame->format > AV_PIX_FMT_NONE && info->frame->format < AV_PIX_FMT_NB && info->frame->format != AV_PIX_FMT_YUVA420P) {
                     info->sws_ctx = sws_getContext(info->frame->width, info->frame->height, (AVPixelFormat) info->frame->format, bitmapWidth, bitmapHeight, AV_PIX_FMT_RGBA, SWS_BILINEAR, NULL, NULL, NULL);
-                } else if (info->video_dec_ctx->pix_fmt > AV_PIX_FMT_NONE && info->video_dec_ctx->pix_fmt < AV_PIX_FMT_NB) {
+                } else if (info->video_dec_ctx->pix_fmt > AV_PIX_FMT_NONE && info->video_dec_ctx->pix_fmt < AV_PIX_FMT_NB && info->frame->format != AV_PIX_FMT_YUVA420P) {
                     info->sws_ctx = sws_getContext(info->video_dec_ctx->width, info->video_dec_ctx->height, info->video_dec_ctx->pix_fmt, bitmapWidth, bitmapHeight, AV_PIX_FMT_RGBA, SWS_BILINEAR, NULL, NULL, NULL);
                 }
             }
             if (info->sws_ctx == nullptr || ((intptr_t) pixels) % 16 != 0) {
                 if (info->frame->format == AV_PIX_FMT_YUVA420P) {
-                    libyuv::I420AlphaToARGBMatrix(info->frame->data[0], info->frame->linesize[0], info->frame->data[2], info->frame->linesize[2], info->frame->data[1], info->frame->linesize[1], info->frame->data[3], info->frame->linesize[3], (uint8_t *) pixels, bitmapWidth * 4, &libyuv::kYvuI601Constants, bitmapWidth, bitmapHeight, 50);
+                    libyuv::I420AlphaToARGBMatrix(info->frame->data[0], info->frame->linesize[0], info->frame->data[2], info->frame->linesize[2], info->frame->data[1], info->frame->linesize[1], info->frame->data[3], info->frame->linesize[3], (uint8_t *) pixels, bitmapWidth * 4, &libyuv::kYvuI601Constants, bitmapWidth, bitmapHeight, 1);
                 } else if (info->frame->format == AV_PIX_FMT_YUV444P) {
                     libyuv::H444ToARGB(info->frame->data[0], info->frame->linesize[0], info->frame->data[2], info->frame->linesize[2], info->frame->data[1], info->frame->linesize[1], (uint8_t *) pixels, bitmapWidth * 4, bitmapWidth, bitmapHeight);
                 } else if (info->frame->format == AV_PIX_FMT_YUV420P || info->frame->format == AV_PIX_FMT_YUVJ420P) {
@@ -1197,19 +1203,7 @@ static inline void writeFrameToBitmap(JNIEnv *env, VideoInfo *info, jintArray da
                 uint8_t __attribute__ ((aligned (16))) *dst_data[1];
                 dst_data[0] = (uint8_t *) pixels;
                 info->dst_linesize[0] = stride;
-                sws_scale(info->sws_ctx, info->frame->data, info->frame->linesize, 0,
-                          info->frame->height, dst_data, info->dst_linesize);
-                if (info->frame->format == AV_PIX_FMT_YUVA420P) {
-                    auto pixelArr = ((uint32_t *) pixels);
-                    for (int i = 0; i < bitmapWidth; i++) {
-                        for (int j = 0; j < bitmapHeight; j++) {
-                            int a = RGB8888_A(pixelArr[j * bitmapWidth + i]);
-                            if (a < 125) {
-                                pixelArr[j * bitmapWidth + i] = 0;
-                            }
-                        }
-                    }
-                }
+                sws_scale(info->sws_ctx, info->frame->data, info->frame->linesize, 0, info->frame->height, dst_data, info->dst_linesize);
             }
         }
         AndroidBitmap_unlockPixels(env, bitmap);

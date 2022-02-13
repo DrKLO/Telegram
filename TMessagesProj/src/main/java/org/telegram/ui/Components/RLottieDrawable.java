@@ -22,8 +22,6 @@ import android.text.TextUtils;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
 
-import com.google.android.exoplayer2.util.Log;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.DispatchQueuePool;
@@ -211,12 +209,18 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable {
     }
 
     protected void recycleResources() {
-        if (renderingBitmap != null) {
-            renderingBitmap.recycle();
+        try {
+            if (renderingBitmap != null) {
+                renderingBitmap.recycle();
+                renderingBitmap = null;
+            }
+            if (backgroundBitmap != null) {
+                backgroundBitmap.recycle();
+                backgroundBitmap = null;
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
             renderingBitmap = null;
-        }
-        if (backgroundBitmap != null) {
-            backgroundBitmap.recycle();
             backgroundBitmap = null;
         }
     }

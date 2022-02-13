@@ -4,7 +4,7 @@
 # used
 # ffmpeg 4.3.3
 # lib vpx 1.10.9
-# NDK build_ffmpeg for compile libvpx. Last sussecfull build with 21.1.6352462
+# NDK for compile libvpx. Last successful build with 21.1.6352462
 # NDK r10e for compile ffmpeg
 #
 # 1) download ffmpeg
@@ -18,7 +18,7 @@
 NDK="/opt/android/ndk/android-ndk-r21e"
 NDK_r10e="/opt/android/ndk/android-ndk-r10e"
 
-
+#build vpx
 cd ./vpx-android
 export ANDROID_NDK=$NDK
 sh build-vpx.sh
@@ -86,6 +86,7 @@ LIBS=" -L${PREFIX}/lib"
 --enable-decoder=mjpeg \
 --enable-decoder=gif \
 --enable-decoder=alac \
+--enable-decoder=opus \
 --enable-demuxer=mov \
 --enable-demuxer=gif \
 --enable-demuxer=ogg \

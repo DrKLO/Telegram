@@ -3694,6 +3694,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                             }
                             if (sourceFile.exists()) {
                                 saveFileInternal(isMusic ? 3 : 2, sourceFile, name);
+                                copiedFiles++;
                             }
                         }
                     } else {
@@ -3744,6 +3745,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                             }
                             if (sourceFile.exists()) {
                                 copyFile(sourceFile, destFile, message.getMimeType());
+                                copiedFiles++;
                             }
                         }
                     }
@@ -3863,7 +3865,6 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                             FileLog.e(e);
                         }
                     });
-                    copiedFiles++;
                     return true;
                 }
             } catch (Exception e) {

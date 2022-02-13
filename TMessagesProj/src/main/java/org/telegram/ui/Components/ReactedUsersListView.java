@@ -277,7 +277,11 @@ public class ReactedUsersListView extends FrameLayout {
                 if (r != null) {
                     SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(r.static_icon.thumbs, Theme.key_windowBackgroundGray, 1.0f);
                     reactView.setImage(ImageLocation.getForDocument(r.static_icon), "50_50", "webp", svgThumb, r);
+                } else {
+                    reactView.setImageDrawable(null);
                 }
+            } else {
+                reactView.setImageDrawable(null);
             }
         }
 

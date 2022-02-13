@@ -712,6 +712,7 @@ public class SpoilerEffect extends Drawable {
     public static void renderWithRipple(View v, boolean invalidateSpoilersParent, int spoilersColor, int verticalOffset, AtomicReference<Layout> patchedLayoutRef, Layout textLayout, List<SpoilerEffect> spoilers, Canvas canvas) {
         if (spoilers.isEmpty()) {
             textLayout.draw(canvas);
+            return;
         }
         Layout pl = patchedLayoutRef.get();
 
@@ -748,8 +749,9 @@ public class SpoilerEffect extends Drawable {
                         .setAlignment(Layout.Alignment.ALIGN_NORMAL)
                         .setLineSpacing(textLayout.getSpacingAdd(), textLayout.getSpacingMultiplier())
                         .build();
-            } else
+            } else {
                 layout = new StaticLayout(sb, textLayout.getPaint(), textLayout.getWidth(), textLayout.getAlignment(), textLayout.getSpacingMultiplier(), textLayout.getSpacingAdd(), false);
+            }
             patchedLayoutRef.set(pl = layout);
         }
 

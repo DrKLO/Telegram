@@ -864,18 +864,22 @@ public class TranslateAlert extends Dialog {
     }
 
     public String languageName(String locale) {
+        // sorry, no more vodka
         if (locale == null || locale.equals("und") || locale.equals("auto")) {
             return null;
         }
-        LocaleController.LocaleInfo localeInfo = LocaleController.getInstance().getBuiltinLanguageByPlural(locale);
-        if (localeInfo == null) {
+        LocaleController.LocaleInfo thisLanguageInfo = LocaleController.getInstance().getBuiltinLanguageByPlural(locale),
+                                    currentLanguageInfo = LocaleController.getInstance().getCurrentLocaleInfo();
+        if (thisLanguageInfo == null) {
             return null;
         }
-        boolean isCurrentLanguageEnglish = false;
-        try {
-            isCurrentLanguageEnglish = LocaleController.getInstance().getCurrentLocaleInfo().pluralLangCode.equals("en");
-        } catch (Exception e) {}
-        return isCurrentLanguageEnglish ? localeInfo.nameEnglish : localeInfo.name;
+        boolean isCurrentLanguageEnglish = currentLanguageInfo != null && "en".equals(currentLanguageInfo.pluralLangCode);
+        if (isCurrentLanguageEnglish) {
+            // trying to show this language in a language of the interface, but there are only names in english and its own
+            return thisLanguageInfo.nameEnglish;
+        } else {
+            return thisLanguageInfo.name;
+        }
     }
 
     public void updateSourceLanguage() {

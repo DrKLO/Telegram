@@ -842,12 +842,7 @@ public final class FloatingToolbar {
                 if (menuItemButton instanceof LinearLayout) {
                     ((LinearLayout) menuItemButton).setGravity(Gravity.CENTER);
                 }
-                if (isFirstItem) {
-                    menuItemButton.setPaddingRelative((int) (1.5 * menuItemButton.getPaddingStart()), menuItemButton.getPaddingTop(), menuItemButton.getPaddingEnd(), menuItemButton.getPaddingBottom());
-                }
-                if (isLastItem) {
-                    menuItemButton.setPaddingRelative(menuItemButton.getPaddingStart(), menuItemButton.getPaddingTop(), (int) (1.5 * menuItemButton.getPaddingEnd()), menuItemButton.getPaddingBottom());
-                }
+                menuItemButton.setPaddingRelative((int) ((isFirstItem ? 1.5 : 1) * menuItemButton.getPaddingStart()), menuItemButton.getPaddingTop(), (int) ((isLastItem ? 1.5 : 1) * menuItemButton.getPaddingEnd()), menuItemButton.getPaddingBottom());
                 menuItemButton.measure(MeasureSpec.UNSPECIFIED, MeasureSpec.UNSPECIFIED);
                 final int menuItemButtonWidth = Math.min(menuItemButton.getMeasuredWidth(), toolbarWidth);
                 final boolean canFitWithOverflow = menuItemButtonWidth <= availableWidth - mOverflowButtonSize.getWidth();
@@ -871,6 +866,10 @@ public final class FloatingToolbar {
             }
             mMainPanelSize = measure(mMainPanel);
             return remainingMenuItems;
+        }
+
+        private void updateMainPanelItemsSelectors() {
+
         }
 
         @SuppressWarnings("unchecked")
@@ -1216,8 +1215,8 @@ public final class FloatingToolbar {
         } else if (currentStyle == STYLE_THEME) {
             textView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
         }
-        if (first) {
-            menuItemButton.setBackgroundDrawable(Theme.createRadSelectorDrawable(selectorColor, first ? 6 : 0, 0, 0, first ? 6 : 0));
+        if (first || last) {
+            menuItemButton.setBackgroundDrawable(Theme.createRadSelectorDrawable(selectorColor, first ? 6 : 0, last ? 6 : 0, last ? 6 : 0, first ? 6 : 0));
         } else {
             menuItemButton.setBackgroundDrawable(Theme.getSelectorDrawable(selectorColor, false));
         }
