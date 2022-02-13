@@ -54,4 +54,6 @@
     <string name="CX_EnableMLKITDesc">Отключите, чтобы всегда показывать переводчик</string>
     <string name="CX_EnableMLKIT">Включить обнаружение локальной сети ИИ на устройстве</string>
     <string name="CX_DoubleTapReact">Отключить быстрые реакции</string>
+    <string name="SaveToDownloadCount_zero">Сохранение %1$d файлов для загрузки</string>
+    <string name="CX_TabIconMode_AppTitle">Переместите текст в название приложения</string>
 </resources>
