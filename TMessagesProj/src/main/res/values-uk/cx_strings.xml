@@ -20,7 +20,7 @@
     <string name="CX_BotLogin">Вхід від імені бота</string>
     <string name="CX_HideSendAsChannel">Сховати кнопку \"відправити від імені каналу\"</string>
     <string name="CX_SetCustomEmojiFont">Встановити користувацькі емодзі</string>
-    <string name="CX_AllowStorage">Через зміни внесені в Android 11+, Кішкограм потребує дозволу на перегляд немедійних файлів.</string>
+    <string name="CX_AllowStorage">Через зміни внесені в Android 11+, Кішкограм X потребує дозволу на перегляд немедійних файлів.</string>
     <string name="CX_DB_AccountsHint">Подвійне дно дозволяє встановити пароль на інший акаунт.
 \n
 \nПри спробі встановити пароль для налаштованого акаунту - старий пароль буде замінено після повторного введення
