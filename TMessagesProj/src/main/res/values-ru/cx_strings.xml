@@ -21,7 +21,7 @@
     <string name="CX_TitleIsChatsDesc">Как в оригинальном Catogram</string>
     <string name="CX_ThemePreviewDialogMessage3">Пожалуйста, протестируйте новое обновление!</string>
     <string name="CX_DBNotEnabled">Не включено для этого аккаунта</string>
-    <string name="CX_AllowStorage">Из-за изменений, внесённых Google в Android 11+, Catogram X требует ваше разрешение для просмотра немедийных файлов.</string>
+    <string name="CX_AllowStorage">Из-за изменений, внесённых Google в Android 11+, Catogram X требует Ваше разрешение для просмотра немедийных файлов.</string>
     <string name="CX_TitleIsChats">Используйте \"Чаты\" в качестве названия списка чатов вместо названия приложения</string>
     <string name="CX_DB_AccountsHint">Двойное Дно позволяет установить пароль для другой учётной записи.
 \n
@@ -34,7 +34,7 @@
     <string name="CX_Secrets">Секретное меню</string>
     <string name="CX_ThemePreviewDialogMessage4">Посмотри на этот новый дизайн :)</string>
     <string name="CX_TestBackend">Войти в систему на тестовых серверах</string>
-    <string name="TFOSS_Proxy">Возможно, вам потребуется настроить прокси перед входом в аккаунт, если ваша страна или провайдер блокируют Telegram</string>
+    <string name="TFOSS_Proxy">Возможно, Вам потребуется настроить прокси перед входом в аккаунт, если Ваша страна или провайдер блокируют Telegram</string>
     <string name="CX_ChangeIcon_Pink_Reg">CatoX Розовая (от @Qirkl)</string>
     <string name="CX_ChangeIcon_Purple_Reg">CatoX Фиолетовая (от @Qirkl)</string>
     <string name="CX_ChangeIcon_Red_Reg">CatoX Красная (от @Qirkl)</string>
@@ -48,7 +48,7 @@
     <string name="CX_ChangeIcon_Taffy_Reg">CatoX Таффи-Розовая (от @Qirkl)</string>
     <string name="CX_Website">Открыть наш сайт</string>
     <string name="CX_DBNotEnabled2">Не включено</string>
-    <string name="CX_DBSettingsPin">Настройки PIN</string>
+    <string name="CX_DBSettingsPin">Настройки ПИН-кода</string>
     <string name="CX_EnableSAF">Принудительный доступ к хранилищу</string>
     <string name="CX_DismissStorageDialog2">Чтобы окончательно закрыть диалоговое окно, предоставьте разрешение или включите SAF (Доступ к хранилищу) в настройках CatoX.</string>
     <string name="CX_EnableMLKITDesc">Отключите, чтобы всегда показывать переводчик</string>
