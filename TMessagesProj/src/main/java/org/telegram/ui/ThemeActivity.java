@@ -1570,7 +1570,6 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         public void notifyDataSetChanged() {
             currentTheme = currentType == THEME_TYPE_NIGHT ? Theme.getCurrentNightTheme() : Theme.getCurrentTheme();
             themeAccents = new ArrayList<>(currentTheme.themeAccents);
-            themeAccents.add(currentTheme.themeAccentsMap.get(999));
             super.notifyDataSetChanged();
         }
 
