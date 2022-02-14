@@ -33,4 +33,14 @@
     <string name="CX_InvalidAccessToken">Неправильний токен бота</string>
     <string name="CX_DisableReactionAnimDesc">(Під час реакції на повідомлення)</string>
     <string name="CX_DBNotEnabled">Не увімкнено для цього акаунту</string>
+    <string name="CX_DoubleTapReact">Вимкнути швидкі реакції</string>
+    <string name="CX_ShowSeconds">Показувати секунди в мітках часу</string>
+    <string name="CX_SystemFontsDesc">Не скаржіться на баги!</string>
+    <string name="CX_SystemFonts">Використовувати системний шрифт</string>
+    <string name="CX_ThemePreviewDialogMessage4">Подивись на сей новий дизайн :)</string>
+    <string name="CX_ChangeIcon_Black_Reg">CatoX Чорна (від @Qirkl)</string>
+    <string name="CX_Website">Відкрити наш веб-сайт</string>
+    <string name="CX_TitleIsChats">Використовувати «Чати» як назву списку чатів замість назви програми</string>
+    <string name="CX_ThemePreviewDialogMessage3">Будь ласка, протестуйте нове оновлення!</string>
+    <string name="CX_EnableMLKITDesc">Вимкніть щоб завжди показувати перекладач</string>
 </resources>
