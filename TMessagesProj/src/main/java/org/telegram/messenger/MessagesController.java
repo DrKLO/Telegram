@@ -68,6 +68,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
@@ -4617,7 +4618,8 @@ public class MessagesController extends BaseController implements NotificationCe
         if ((messages == null || messages.isEmpty()) && taskId == 0) {
             return;
         }
-        ArrayList<Integer> toSend = null;
+//        ArrayList<Integer> toSend = null;
+        List<Integer> toSend = null;
         long channelId;
         if (taskId == 0) {
             if (dialogId != 0 && DialogObject.isChatDialog(dialogId)) {
@@ -4667,102 +4669,223 @@ public class MessagesController extends BaseController implements NotificationCe
         long newTaskId;
         if (scheduled) {
             TLRPC.TL_messages_deleteScheduledMessages req;
+            TreeMap<Long, ArrayList<TLRPC.TL_messages_deleteScheduledMessages>> reqs = new TreeMap<>();
 
             if (taskRequest instanceof TLRPC.TL_messages_deleteScheduledMessages) {
-                req = (TLRPC.TL_messages_deleteScheduledMessages) taskRequest;
-                newTaskId = taskId;
+//                req = (TLRPC.TL_messages_deleteScheduledMessages) taskRequest;
+//                newTaskId = taskId;
+                if (!reqs.containsKey(taskId)) reqs.put(taskId, new ArrayList<>());
+                reqs.get(taskId).add((TLRPC.TL_messages_deleteScheduledMessages) taskRequest);
             } else {
-                req = new TLRPC.TL_messages_deleteScheduledMessages();
-                req.id = toSend;
-                req.peer = getInputPeer(dialogId);
+                List<List<Integer>> subIds = sliceThatBitch(toSend, 100);
+                for (List<Integer> ids : subIds) {
+                    req = new TLRPC.TL_messages_deleteScheduledMessages();
+                    req.id = ids;
+                    req.peer = getInputPeer(dialogId);
 
-                NativeByteBuffer data = null;
-                try {
-                    data = new NativeByteBuffer(12 + req.getObjectSize());
-                    data.writeInt32(24);
-                    data.writeInt64(dialogId);
-                    req.serializeToStream(data);
-                } catch (Exception e) {
-                    FileLog.e(e);
+                    NativeByteBuffer data = null;
+                    try {
+                        data = new NativeByteBuffer(12 + req.getObjectSize());
+                        data.writeInt32(24);
+                        data.writeInt64(dialogId);
+                        req.serializeToStream(data);
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                    newTaskId = getMessagesStorage().createPendingTask(data);
+                    if (!reqs.containsKey(newTaskId)) reqs.put(newTaskId, new ArrayList<>());
+                    reqs.get(newTaskId).add(req);
                 }
-                newTaskId = getMessagesStorage().createPendingTask(data);
+//                req = new TLRPC.TL_messages_deleteScheduledMessages();
+//                req.id = toSend;
+//                req.peer = getInputPeer(dialogId);
+//
+//                NativeByteBuffer data = null;
+//                try {
+//                    data = new NativeByteBuffer(12 + req.getObjectSize());
+//                    data.writeInt32(24);
+//                    data.writeInt64(dialogId);
+//                    req.serializeToStream(data);
+//                } catch (Exception e) {
+//                    FileLog.e(e);
+//                }
+//                newTaskId = getMessagesStorage().createPendingTask(data);
             }
 
-            getConnectionsManager().sendRequest(req, (response, error) -> {
-                if (error == null) {
-                    TLRPC.Updates updates = (TLRPC.Updates) response;
-                    processUpdates(updates, false);
+            for (Map.Entry<Long, ArrayList<TLRPC.TL_messages_deleteScheduledMessages>> m : reqs.entrySet()) {
+                for (TLRPC.TL_messages_deleteScheduledMessages d : m.getValue()) {
+                    getConnectionsManager().sendRequest(d, (response, error) -> {
+                        if (error == null) {
+                            TLRPC.Updates updates = (TLRPC.Updates) response;
+                            processUpdates(updates, false);
+                        }
+                        if (m.getKey() != 0) {
+                            getMessagesStorage().removePendingTask(m.getKey());
+                        }
+                    });
                 }
-                if (newTaskId != 0) {
-                    getMessagesStorage().removePendingTask(newTaskId);
-                }
-            });
+            }
+
+//            getConnectionsManager().sendRequest(req, (response, error) -> {
+//                if (error == null) {
+//                    TLRPC.Updates updates = (TLRPC.Updates) response;
+//                    processUpdates(updates, false);
+//                }
+//                if (newTaskId != 0) {
+//                    getMessagesStorage().removePendingTask(newTaskId);
+//                }
+//            });
         } else if (channelId != 0) {
             TLRPC.TL_channels_deleteMessages req;
+            TreeMap<Long, ArrayList<TLRPC.TL_channels_deleteMessages>> reqs = new TreeMap<>();
             if (taskRequest != null) {
-                req = (TLRPC.TL_channels_deleteMessages) taskRequest;
-                newTaskId = taskId;
+//                req = (TLRPC.TL_channels_deleteMessages) taskRequest;
+//                newTaskId = taskId;
+                if (!reqs.containsKey(taskId)) reqs.put(taskId, new ArrayList<>());
+                reqs.get(taskId).add((TLRPC.TL_channels_deleteMessages) taskRequest);
             } else {
-                req = new TLRPC.TL_channels_deleteMessages();
-                req.id = toSend;
-                req.channel = getInputChannel(channelId);
+                List<List<Integer>> subIds = sliceThatBitch(toSend, 100);
+                for (List<Integer> ids : subIds) {
+                    req = new TLRPC.TL_channels_deleteMessages();
+                    req.id = ids;
+                    req.channel = getInputChannel(channelId);
 
-                NativeByteBuffer data = null;
-                try {
-                    data = new NativeByteBuffer(12 + req.getObjectSize());
-                    data.writeInt32(24);
-                    data.writeInt64(dialogId);
-                    req.serializeToStream(data);
-                } catch (Exception e) {
-                    FileLog.e(e);
+                    NativeByteBuffer data = null;
+                    try {
+                        data = new NativeByteBuffer(12 + req.getObjectSize());
+                        data.writeInt32(24);
+                        data.writeInt64(dialogId);
+                        req.serializeToStream(data);
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                    newTaskId = getMessagesStorage().createPendingTask(data);
+                    if (!reqs.containsKey(newTaskId)) reqs.put(newTaskId, new ArrayList<>());
+                    reqs.get(newTaskId).add(req);
                 }
-                newTaskId = getMessagesStorage().createPendingTask(data);
+
+//                req = new TLRPC.TL_channels_deleteMessages();
+//                req.id = toSend;
+//                req.channel = getInputChannel(channelId);
+//
+//                NativeByteBuffer data = null;
+//                try {
+//                    data = new NativeByteBuffer(12 + req.getObjectSize());
+//                    data.writeInt32(24);
+//                    data.writeInt64(dialogId);
+//                    req.serializeToStream(data);
+//                } catch (Exception e) {
+//                    FileLog.e(e);
+//                }
+//                newTaskId = getMessagesStorage().createPendingTask(data);
             }
 
-            getConnectionsManager().sendRequest(req, (response, error) -> {
-                if (error == null) {
-                    TLRPC.TL_messages_affectedMessages res = (TLRPC.TL_messages_affectedMessages) response;
-                    processNewChannelDifferenceParams(res.pts, res.pts_count, channelId);
+            for (Map.Entry<Long, ArrayList<TLRPC.TL_channels_deleteMessages>> m : reqs.entrySet()) {
+                for (TLRPC.TL_channels_deleteMessages d : m.getValue()) {
+                    getConnectionsManager().sendRequest(d, (response, error) -> {
+                        if (error == null) {
+                            TLRPC.TL_messages_affectedMessages res = (TLRPC.TL_messages_affectedMessages) response;
+                            processNewChannelDifferenceParams(res.pts, res.pts_count, channelId);
+                        }
+                        if (m.getKey() != 0) {
+                            getMessagesStorage().removePendingTask(m.getKey());
+                        }
+                    });
                 }
-                if (newTaskId != 0) {
-                    getMessagesStorage().removePendingTask(newTaskId);
-                }
-            });
+            }
+
+//            getConnectionsManager().sendRequest(req, (response, error) -> {
+//                if (error == null) {
+//                    TLRPC.TL_messages_affectedMessages res = (TLRPC.TL_messages_affectedMessages) response;
+//                    processNewChannelDifferenceParams(res.pts, res.pts_count, channelId);
+//                }
+//                if (newTaskId != 0) {
+//                    getMessagesStorage().removePendingTask(newTaskId);
+//                }
+//            });
         } else {
             if (randoms != null && encryptedChat != null && !randoms.isEmpty()) {
                 getSecretChatHelper().sendMessagesDeleteMessage(encryptedChat, randoms, null);
             }
             TLRPC.TL_messages_deleteMessages req;
+            TreeMap<Long, ArrayList<TLRPC.TL_messages_deleteMessages>> reqs = new TreeMap<>();
             if (taskRequest instanceof TLRPC.TL_messages_deleteMessages) {
-                req = (TLRPC.TL_messages_deleteMessages) taskRequest;
-                newTaskId = taskId;
+//                req = (TLRPC.TL_messages_deleteMessages) taskRequest;
+//                newTaskId = taskId;
+                if (!reqs.containsKey(taskId)) reqs.put(taskId, new ArrayList<>());
+                reqs.get(taskId).add((TLRPC.TL_messages_deleteMessages) taskRequest);
             } else {
-                req = new TLRPC.TL_messages_deleteMessages();
-                req.id = toSend;
-                req.revoke = forAll;
-
-                NativeByteBuffer data = null;
-                try {
-                    data = new NativeByteBuffer(12 + req.getObjectSize());
-                    data.writeInt32(24);
-                    data.writeInt64(dialogId);
-                    req.serializeToStream(data);
-                } catch (Exception e) {
-                    FileLog.e(e);
+                List<List<Integer>> subIds = sliceThatBitch(toSend, 100);
+                for (List<Integer> ids : subIds) {
+                    req = new TLRPC.TL_messages_deleteMessages();
+                    req.id = ids;
+                    req.revoke = forAll;
+                    NativeByteBuffer data = null;
+                    try {
+                        data = new NativeByteBuffer(12 + req.getObjectSize());
+                        data.writeInt32(24);
+                        data.writeInt64(dialogId);
+                        req.serializeToStream(data);
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                    newTaskId = getMessagesStorage().createPendingTask(data);
+                    if (!reqs.containsKey(newTaskId)) reqs.put(newTaskId, new ArrayList<>());
+                    reqs.get(newTaskId).add(req);
                 }
-                newTaskId = getMessagesStorage().createPendingTask(data);
+//                req = new TLRPC.TL_messages_deleteMessages();
+//                req.id = toSend;
+//                req.revoke = forAll;
+//
+//                NativeByteBuffer data = null;
+//                try {
+//                    data = new NativeByteBuffer(12 + req.getObjectSize());
+//                    data.writeInt32(24);
+//                    data.writeInt64(dialogId);
+//                    req.serializeToStream(data);
+//                } catch (Exception e) {
+//                    FileLog.e(e);
+//                }
+//                newTaskId = getMessagesStorage().createPendingTask(data);
             }
 
-            getConnectionsManager().sendRequest(req, (response, error) -> {
-                if (error == null) {
-                    TLRPC.TL_messages_affectedMessages res = (TLRPC.TL_messages_affectedMessages) response;
-                    processNewDifferenceParams(-1, res.pts, -1, res.pts_count);
+            for (Map.Entry<Long, ArrayList<TLRPC.TL_messages_deleteMessages>> m : reqs.entrySet()) {
+                for (TLRPC.TL_messages_deleteMessages d : m.getValue()) {
+                    getConnectionsManager().sendRequest(d, (response, error) -> {
+                        if (error == null) {
+                            TLRPC.TL_messages_affectedMessages res = (TLRPC.TL_messages_affectedMessages) response;
+                            processNewDifferenceParams(-1, res.pts, -1, res.pts_count);
+                        }
+                        if (m.getKey() != 0) {
+                            getMessagesStorage().removePendingTask(m.getKey());
+                        }
+                    });
                 }
-                if (newTaskId != 0) {
-                    getMessagesStorage().removePendingTask(newTaskId);
-                }
-            });
+            }
+
+//            getConnectionsManager().sendRequest(req, (response, error) -> {
+//                if (error == null) {
+//                    TLRPC.TL_messages_affectedMessages res = (TLRPC.TL_messages_affectedMessages) response;
+//                    processNewDifferenceParams(-1, res.pts, -1, res.pts_count);
+//                }
+//                if (newTaskId != 0) {
+//                    getMessagesStorage().removePendingTask(newTaskId);
+//                }
+//            });
         }
+    }
+
+    private List<List<Integer>> sliceThatBitch(List<Integer> ids, int slice) {
+        if (ids == null || ids.isEmpty()) return new ArrayList<>();
+        List<List<Integer>> sliced = new ArrayList<>(ids.size() / slice + 1);
+        int i = 0;
+        for (i = 0; i < ids.size() / slice; i++) {
+            sliced.add(ids.subList(i * slice, (i + 1) * slice));
+        }
+        if (ids.size() % slice > 0) {
+            sliced.add(ids.subList(i * slice, i * slice + ids.size() % slice));
+        }
+        return sliced;
     }
 
     public void unpinAllMessages(TLRPC.Chat chat, TLRPC.User user) {
