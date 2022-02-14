@@ -1061,6 +1061,7 @@
     <string name="PreviousPinnedMessage">Previous Message</string>
     <string name="PinnedPoll">Pinned poll</string>
     <string name="EditedMessage">edited</string>
+    <string name="DeletedMessage">deleted</string>
     <string name="EditMessage">Edit Message</string>
     <string name="EditCaption">Edit Caption</string>
     <string name="EditMessageMedia">Tap to edit media</string>

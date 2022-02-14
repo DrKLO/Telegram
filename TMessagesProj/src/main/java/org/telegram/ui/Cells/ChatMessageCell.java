@@ -902,6 +902,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
     private final TransitionParams transitionParams = new TransitionParams();
     private boolean edited;
+    private boolean deleted;
     private boolean imageDrawn;
 
     private Runnable unregisterFlagSecure;
@@ -10176,12 +10177,14 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             edited = false;
         } else if (currentPosition == null || currentMessagesGroup == null || currentMessagesGroup.messages.isEmpty()) {
             edited = (messageObject.messageOwner.flags & TLRPC.MESSAGE_FLAG_EDITED) != 0 || messageObject.isEditing();
+            deleted = messageObject.messageOwner.isDeleted;
         } else {
             edited = false;
             hasReplies = currentMessagesGroup.messages.get(0).hasReplies();
             if (!currentMessagesGroup.messages.get(0).messageOwner.edit_hide) {
                 for (int a = 0, size = currentMessagesGroup.messages.size(); a < size; a++) {
                     MessageObject object = currentMessagesGroup.messages.get(a);
+                    deleted = object.messageOwner.isDeleted;
                     if ((object.messageOwner.flags & TLRPC.MESSAGE_FLAG_EDITED) != 0 || object.isEditing()) {
                         edited = true;
                         break;
@@ -10193,8 +10196,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             timeString = LocaleController.getString("SponsoredMessage", R.string.SponsoredMessage);
         } else if (currentMessageObject.scheduled && currentMessageObject.messageOwner.date == 0x7FFFFFFE) {
             timeString = "";
-        } else if (edited) {
-            timeString = LocaleController.getString("EditedMessage", R.string.EditedMessage) + " " + LocaleController.getInstance().formatterDay.format((long) (messageObject.messageOwner.date) * 1000);
+//        } else if (edited) {
+        } else if (edited || deleted) {
+//            timeString = LocaleController.getString("EditedMessage", R.string.EditedMessage) + " " + LocaleController.getInstance().formatterDay.format((long) (messageObject.messageOwner.date) * 1000);
+            timeString = (deleted ? LocaleController.getString("DeletedMessage", R.string.DeletedMessage) : LocaleController.getString("EditedMessage", R.string.EditedMessage)) + " " + LocaleController.getInstance().formatterDay.format((long) (messageObject.messageOwner.date) * 1000);
         } else {
             timeString = LocaleController.getInstance().formatterDay.format((long) (messageObject.messageOwner.date) * 1000);
         }
@@ -15615,8 +15620,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     changed = true;
                 }
             }
-            if (edited && !lastDrawingEdited && timeLayout != null) {
-                String editedStr = LocaleController.getString("EditedMessage", R.string.EditedMessage);
+//            if (edited && !lastDrawingEdited && timeLayout != null) {
+            if ((edited || deleted) && !lastDrawingEdited && timeLayout != null) {
+                String editedStr = deleted ? LocaleController.getString("DeletedMessage", R.string.DeletedMessage) : LocaleController.getString("EditedMessage", R.string.EditedMessage);
                 String text = timeLayout.getText().toString();
                 int i = text.indexOf(editedStr);
                 if (i >= 0) {

@@ -53491,6 +53491,7 @@ public class TLRPC {
         public int realId; //custom
         public int stickerVerified = 1; //custom
         public boolean isThreadMessage; //custom
+        public boolean isDeleted = false;
 
         public static Message TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
             Message result = null;
