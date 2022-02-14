@@ -20,6 +20,7 @@ import org.telegram.messenger.Utilities;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 @SuppressWarnings("unchecked")
 public class TLRPC {
@@ -46893,7 +46894,8 @@ public class TLRPC {
 
         public int flags;
         public boolean revoke;
-        public ArrayList<Integer> id = new ArrayList<>();
+//        public ArrayList<Integer> id = new ArrayList<>();
+        public List<Integer> id = new ArrayList<>();
 
         public static TL_messages_deleteMessages TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
             if (TL_messages_deleteMessages.constructor != constructor) {
@@ -50357,7 +50359,8 @@ public class TLRPC {
         public static int constructor = 0x59ae2b16;
 
         public InputPeer peer;
-        public ArrayList<Integer> id = new ArrayList<>();
+//        public ArrayList<Integer> id = new ArrayList<>();
+        public List<Integer> id = new ArrayList<>();
 
         public static TL_messages_deleteScheduledMessages TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
             if (TL_messages_deleteScheduledMessages.constructor != constructor) {
@@ -51592,7 +51595,8 @@ public class TLRPC {
         public static int constructor = 0x84c1fd4e;
 
         public InputChannel channel;
-        public ArrayList<Integer> id = new ArrayList<>();
+//        public ArrayList<Integer> id = new ArrayList<>();
+        public List<Integer> id = new ArrayList<>();
 
         public static TL_channels_deleteMessages TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
             if (TL_channels_deleteMessages.constructor != constructor) {
