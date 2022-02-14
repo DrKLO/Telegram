@@ -3601,8 +3601,10 @@ public class AndroidUtilities {
         return flagSecureFragment != null;
     }
 
+    @Deprecated
     public static void setFlagSecure(BaseFragment parentFragment, boolean set) {
-        if (parentFragment == null || parentFragment.getParentActivity() == null) {
+//        if (parentFragment == null || parentFragment.getParentActivity() == null) {
+        if (true || parentFragment == null || parentFragment.getParentActivity() == null) {
             return;
         }
         if (set) {
@@ -3648,7 +3650,8 @@ public class AndroidUtilities {
             }
             final boolean value = flagSecureReasons.containsKey(window) && flagSecureReasons.get(window).size() > 0;
             try {
-                if (value) {
+//                if (value) {
+                if (false) {
                     window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
                 } else {
                     window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
