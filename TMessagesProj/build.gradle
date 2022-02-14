@@ -47,7 +47,7 @@ android {
     buildToolsVersion '31.0.0'
     ndkVersion "21.4.7075529"
 
-    defaultConfig.applicationId = "org.telegram.messenger"
+    defaultConfig.applicationId = "com.evildayz.code.telegraher"
 
     sourceSets.main.jniLibs.srcDirs = ['./jni/']
 
