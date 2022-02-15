@@ -1,2 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources>
+    <string name="CX_DoubleTapReact">غیرفعال کردن ری‌اکشن سریع</string>
+    <string name="CX_ShowSeconds">نشان دادن ثانیه در برچسب زمانی پیام ها</string>
+    <string name="CG_AboutDescX">مخزن Catogram</string>
+    <string name="AS_Header_AboutX">درباره Catogram X</string>
+    <string name="AdvancedSettingsX">تنظیمات Catogram X</string>
+    <string name="CX_DnD">مخاطبین بی‌صدا</string>
+    <string name="CX_TranslateMessagesInfo1">استفاده از مترجم تلگرام به جای مترجم Catogram</string>
+    <string name="CX_OldTranslateUI">استفاده از رابطه کاربری ترجمه قدیمی</string>
+    <string name="CX_DBNotEnabled">غیرفعال برای این حساب</string>
+    <string name="CX_DisableReactionAnim">غیرفعال کردن انیمیشن ری‌اکشن</string>
+    <string name="CX_InvalidAccessToken">توکن ربات نامعتبر</string>
+    <string name="CX_BotLogin">ورود به عنوان ربات</string>
+    <string name="CX_CustomEmojiDesc">به جای ایموجی تلگرام از ایموجی سفارشی استفاده کنید</string>
+    <string name="CX_SetCustomEmojiFont">استفاده از اموجی سفارشی</string>
+    <string name="CX_ThemePreviewDialogMessage3">لطفا نسخه جدید را اطلاع رسانی کن!</string>
+    <string name="CX_TitleIsChatsDesc">مانند Catogram اصلی</string>
+    <string name="CX_InvalidCustomEmojiTypeface">ایموجی سفارشی نامعتبر است!</string>
+    <string name="CX_DisableReactionAnimDesc">(هنگام ری‌اکشن به یک پیام)</string>
+    <string name="SaveToDownloadCount_many">ذخیره فایل‌ها در دانلودها</string>
+    <string name="CX_SystemFonts">استفاده از فونت سیستم</string>
+    <string name="CX_SystemFontsDesc">درباره اشکالات ایراد نگیرید!</string>
+    <string name="CX_TestBackend">وارد شدن به سرورهای آزمایشی</string>
+    <string name="TFOSS_Proxy">ممکن است برای ورود لازم باشد یک پروکسی استفاده کنید، در صورتی که کشور یا شرکت خدمات اینترنتی شما تلگرام را مسدود کرده باشند</string>
+    <string name="TFOSS_SetProxy">یک پروکسی فعال کنید</string>
+    <string name="CX_ThemePreviewDialogMessage4">طراحی جدید را بررسی کن :)</string>
+    <string name="CX_ThemePreviewDialogMessage5">تشکر</string>
+    <string name="SaveToDownloadCount_one">ذخیره فایل‌ها در دانلودها</string>
+    <string name="CX_Secrets">منوی مخفی</string>
+    <string name="CX_DBNotEnabled2">غیرفعال</string>
+    <string name="CX_Website">بازدید از وبسایت ما</string>
+    <string name="CX_DnDDesc">غیرفعال کردن صدا و لرزش برای مخاطبین</string>
+    <string name="CX_HideSendAsChannelDesc">کاربردی برای صفحه نمایش های کوچک</string>
+    <string name="CX_CustomEmoji">استفاده از اموجی فونت سفارشی</string>
+    <string name="CX_OldTranslateUIDesc">در صورت غیرفعال شدن رابط کاربری ترجمه تلگرام از مترجم Catogram استفاده می شود</string>
+</resources>
