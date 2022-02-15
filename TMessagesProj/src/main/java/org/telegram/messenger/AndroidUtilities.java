@@ -31,6 +31,7 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.ColorMatrix;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Point;
@@ -695,6 +696,17 @@ public class AndroidUtilities {
                 break;
         }
         return new int[]{(int) (r * 255), (int) (g * 255), (int) (b * 255)};
+    }
+
+    public static void lightColorMatrix(ColorMatrix colorMatrix, float addLightness) {
+        if (colorMatrix == null) {
+            return;
+        }
+        float[] matrix = colorMatrix.getArray();
+        matrix[4] += addLightness;
+        matrix[9] += addLightness;
+        matrix[14] += addLightness;
+        colorMatrix.set(matrix);
     }
 
     public static void requestAdjustResize(Activity activity, int classGuid) {
@@ -2278,7 +2290,7 @@ public class AndroidUtilities {
     }
 
     public static void appCenterLog(Throwable e) {
-
+       
     }
 
     public static void addToClipboard(CharSequence str) {

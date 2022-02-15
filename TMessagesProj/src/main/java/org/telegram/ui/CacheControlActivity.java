@@ -557,6 +557,9 @@ public class CacheControlActivity extends BaseFragment {
                     SQLiteDatabase database = MessagesStorage.getInstance(currentAccount).getDatabase();
                     ArrayList<Long> dialogsToCleanup = new ArrayList<>();
 
+                    database.executeFast("DELETE FROM reaction_mentions").stepThis().dispose();
+                    database.executeFast("DELETE FROM reaction_mentions").stepThis().dispose();
+
                     SQLiteCursor cursor = database.queryFinalized("SELECT did FROM dialogs WHERE 1");
                     StringBuilder ids = new StringBuilder();
                     while (cursor.next()) {

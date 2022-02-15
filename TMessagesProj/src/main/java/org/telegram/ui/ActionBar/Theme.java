@@ -55,6 +55,7 @@ import android.os.SystemClock;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.util.Base64;
+import android.util.Log;
 import android.util.LongSparseArray;
 import android.util.SparseArray;
 import android.util.StateSet;
@@ -1520,56 +1521,57 @@ public class Theme {
             }
 
             if (!isDarkTheme) {
-                int outBubble;
-                if (isDarkTheme) {
-                    outBubble = averageColor(currentColors, key_chat_outBubbleGradient1, key_chat_outBubbleGradient2, key_chat_outBubbleGradient3);
-                } else if (currentColors.containsKey(key_chat_outBubble)) {
-                    outBubble = currentColors.get(key_chat_outBubble);
-                } else {
-                    outBubble = getColor(key_chat_outBubble);
-                }
-                int inBubbleSelected;
-                if (currentColors.containsKey(key_chat_inBubbleSelected)) {
-                    inBubbleSelected = currentColors.get(key_chat_inBubbleSelected);
-                } else {
-                    inBubbleSelected = getColor(key_chat_inBubbleSelected);
-                }
-                int gradientAverageColor = 0;
-                if (isDarkTheme) {
-                    gradientAverageColor = outBubble;
-                }
-                if (gradientAverageColor == 0) {
-                    gradientAverageColor = averageColor(currentColors, key_chat_wallpaper_gradient_to1, key_chat_wallpaper_gradient_to2, key_chat_wallpaper_gradient_to3);
-                }
-                if (gradientAverageColor == 0) {
-                    gradientAverageColor = averageColor(currentColors, key_chat_wallpaper);
-                }
-                int selectedBackground = currentColors.containsKey(key_chat_selectedBackground) ? currentColors.get(key_chat_selectedBackground) : getColor(key_chat_selectedBackground);
-                selectedBackground = applyHue(selectedBackground, gradientAverageColor);
-                selectedBackground = darkenColor(selectedBackground, .1f);
-                selectedBackground = Color.argb((int) (Color.alpha(selectedBackground) * 0.8f), Color.red(selectedBackground), Color.green(selectedBackground), Color.blue(selectedBackground));
-                currentColors.put(key_chat_selectedBackground, selectedBackground);
-                int outBubbleOverlay = bubbleSelectedOverlay(outBubble);
-                currentColors.put(key_chat_outBubbleGradientSelectedOverlay, outBubbleOverlay);
-
-                inBubbleSelected = applyHue(inBubbleSelected, gradientAverageColor);
-                inBubbleSelected = shiftHSV(inBubbleSelected, 0, .04f, 0);
-                currentColors.put(key_chat_inBubbleSelected, inBubbleSelected);
-
-                final String[] inTextSelectedKeys = new String[] {
-                    key_chat_inTimeSelectedText, key_chat_inAdminSelectedText, key_chat_inAudioDurationSelectedText,
-                    key_chat_inAudioPerformerSelectedText, key_chat_inFileInfoSelectedText, key_chat_inContactPhoneSelectedText,
-                    key_chat_inPreviewInstantSelectedText, key_chat_inVenueInfoSelectedText, key_chat_inReplyMediaMessageSelectedText
-                };
-                for (String inTextSelectedKey : inTextSelectedKeys) {
-                    int color = currentColors.containsKey(inTextSelectedKey) ? currentColors.get(inTextSelectedKey) : getColor(inTextSelectedKey);
-                    currentColors.put(inTextSelectedKey, applyHue(color, gradientAverageColor));
-                }
-
-                int outTimeSelected = currentColors.containsKey(key_chat_outTimeSelectedText) ? currentColors.get(key_chat_outTimeSelectedText) : getColor(key_chat_outTimeSelectedText);
-                double contrast = ColorUtils.calculateContrast(outTimeSelected, mix(outBubble, outBubbleOverlay));
-                currentColors.put(key_chat_outTimeSelectedText, shiftHSV(outTimeSelected, .02f, .01f,  contrast < 1.9d ? -.1f : 0f));
-//                currentColors.put(key_chat_outTimeSelectedText, applyHue(outTimeSelected, gradientAverageColor));
+                currentColors.remove(key_chat_selectedBackground);
+//                int outBubble;
+//                if (isDarkTheme) {
+//                    outBubble = averageColor(currentColors, key_chat_outBubbleGradient1, key_chat_outBubbleGradient2, key_chat_outBubbleGradient3);
+//                } else if (currentColors.containsKey(key_chat_outBubble)) {
+//                    outBubble = currentColors.get(key_chat_outBubble);
+//                } else {
+//                    outBubble = getColor(key_chat_outBubble);
+//                }
+//                int inBubbleSelected;
+//                if (currentColors.containsKey(key_chat_inBubbleSelected)) {
+//                    inBubbleSelected = currentColors.get(key_chat_inBubbleSelected);
+//                } else {
+//                    inBubbleSelected = getColor(key_chat_inBubbleSelected);
+//                }
+//                int gradientAverageColor = 0;
+//                if (isDarkTheme) {
+//                    gradientAverageColor = outBubble;
+//                }
+//                if (gradientAverageColor == 0) {
+//                    gradientAverageColor = averageColor(currentColors, key_chat_wallpaper_gradient_to1, key_chat_wallpaper_gradient_to2, key_chat_wallpaper_gradient_to3);
+//                }
+//                if (gradientAverageColor == 0) {
+//                    gradientAverageColor = averageColor(currentColors, key_chat_wallpaper);
+//                }
+//                int selectedBackground = currentColors.containsKey(key_chat_selectedBackground) ? currentColors.get(key_chat_selectedBackground) : getColor(key_chat_selectedBackground);
+//                selectedBackground = applyHue(selectedBackground, gradientAverageColor);
+//                selectedBackground = darkenColor(selectedBackground, .1f);
+//                selectedBackground = Color.argb((int) (Color.alpha(selectedBackground) * 0.8f), Color.red(selectedBackground), Color.green(selectedBackground), Color.blue(selectedBackground));
+//                currentColors.put(key_chat_selectedBackground, selectedBackground);
+//                int outBubbleOverlay = bubbleSelectedOverlay(outBubble);
+//                currentColors.put(key_chat_outBubbleGradientSelectedOverlay, outBubbleOverlay);
+//
+//                inBubbleSelected = applyHue(inBubbleSelected, gradientAverageColor);
+//                inBubbleSelected = shiftHSV(inBubbleSelected, 0, .04f, 0);
+//                currentColors.put(key_chat_inBubbleSelected, inBubbleSelected);
+//
+//                final String[] inTextSelectedKeys = new String[] {
+//                    key_chat_inTimeSelectedText, key_chat_inAdminSelectedText, key_chat_inAudioDurationSelectedText,
+//                    key_chat_inAudioPerformerSelectedText, key_chat_inFileInfoSelectedText, key_chat_inContactPhoneSelectedText,
+//                    key_chat_inPreviewInstantSelectedText, key_chat_inVenueInfoSelectedText, key_chat_inReplyMediaMessageSelectedText
+//                };
+//                for (String inTextSelectedKey : inTextSelectedKeys) {
+//                    int color = currentColors.containsKey(inTextSelectedKey) ? currentColors.get(inTextSelectedKey) : getColor(inTextSelectedKey);
+//                    currentColors.put(inTextSelectedKey, applyHue(color, gradientAverageColor));
+//                }
+//
+//                int outTimeSelected = currentColors.containsKey(key_chat_outTimeSelectedText) ? currentColors.get(key_chat_outTimeSelectedText) : getColor(key_chat_outTimeSelectedText);
+//                double contrast = ColorUtils.calculateContrast(outTimeSelected, mix(outBubble, outBubbleOverlay));
+//                currentColors.put(key_chat_outTimeSelectedText, shiftHSV(outTimeSelected, .02f, .01f,  contrast < 1.9d ? -.1f : 0f));
+////                currentColors.put(key_chat_outTimeSelectedText, applyHue(outTimeSelected, gradientAverageColor));
             }
 
             return !isMyMessagesGradientColorsNear;
@@ -3864,6 +3866,7 @@ public class Theme {
 
     public static final String key_paint_chatActionBackground = "paintChatActionBackground";
     public static final String key_paint_chatActionBackgroundSelected = "paintChatActionBackgroundSelected";
+    public static final String key_paint_chatMessageBackgroundSelected = "paintChatMessageBackgroundSelected";
     public static final String key_paint_chatActionText = "paintChatActionText";
     public static final String key_paint_chatBotButton = "paintChatBotButton";
     public static final String key_paint_chatComposeBackground = "paintChatComposeBackground";
@@ -9136,12 +9139,12 @@ public class Theme {
 
         if (serviceBitmapShader != null && (currentColors.get(key_chat_serviceBackground) == null || drawable instanceof MotionBackgroundDrawable)) {
             chat_actionBackgroundPaint.setShader(serviceBitmapShader);
-            chat_actionBackgroundSelectedPaint.setShader(serviceBitmapShader);
             ColorMatrix colorMatrix = new ColorMatrix();
             colorMatrix.setSaturation(((MotionBackgroundDrawable) drawable).getIntensity() >= 0 ? 1.8f : 0.5f);
             chat_actionBackgroundPaint.setColorFilter(new ColorMatrixColorFilter(colorMatrix));
             chat_actionBackgroundPaint.setAlpha(127);
 
+            chat_actionBackgroundSelectedPaint.setShader(serviceBitmapShader);
             chat_actionBackgroundSelectedPaint.setColorFilter(new ColorMatrixColorFilter(colorMatrix));
             chat_actionBackgroundSelectedPaint.setAlpha(200);
         } else {

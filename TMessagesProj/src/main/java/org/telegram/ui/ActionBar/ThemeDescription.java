@@ -271,6 +271,7 @@ public class ThemeDescription {
                     Drawable background = viewToInvalidate.getBackground();
                     if (background instanceof MessageBackgroundDrawable) {
                         ((MessageBackgroundDrawable) background).setColor(color);
+                        ((MessageBackgroundDrawable) background).setCustomPaint(null);
                     } else {
                         viewToInvalidate.setBackgroundColor(color);
                     }
@@ -589,6 +590,7 @@ public class ThemeDescription {
                                     Drawable background = view.getBackground();
                                     if (background instanceof MessageBackgroundDrawable) {
                                         ((MessageBackgroundDrawable) background).setColor(color);
+                                        ((MessageBackgroundDrawable) background).setCustomPaint(null);
                                     } else {
                                         view.setBackgroundColor(color);
                                     }

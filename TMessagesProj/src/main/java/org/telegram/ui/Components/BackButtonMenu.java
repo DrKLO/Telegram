@@ -41,22 +41,25 @@ public class BackButtonMenu {
         int folderId;
         int filterId;
     }
-    private static HashMap<Integer, ArrayList<PulledDialog>> pulledDialogs;
 
-    public static ActionBarPopupWindow show(BaseFragment fragment, View backButton, long currentDialogId) {
-        if (fragment == null) {
+    public static ActionBarPopupWindow show(BaseFragment thisFragment, View backButton, long currentDialogId) {
+        if (thisFragment == null) {
             return null;
         }
-        final ActionBarLayout parentLayout = fragment.getParentLayout();
-        ArrayList<PulledDialog> dialogs = getStackedHistoryDialogs(fragment.getCurrentAccount(), parentLayout == null ? null : parentLayout.fragmentsStack, currentDialogId);
+        final ActionBarLayout parentLayout = thisFragment.getParentLayout();
+        final Context context = thisFragment.getParentActivity();
+        final View fragmentView = thisFragment.getFragmentView();
+        if (parentLayout == null || context == null || fragmentView == null) {
+            return null;
+        }
+        ArrayList<PulledDialog> dialogs = getStackedHistoryDialogs(thisFragment, currentDialogId);
         if (dialogs.size() <= 0) {
             return null;
         }
 
-        Context context = fragment.getParentActivity();
         ActionBarPopupWindow.ActionBarPopupWindowLayout layout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(context);
         android.graphics.Rect backgroundPaddings = new Rect();
-        Drawable shadowDrawable = fragment.getParentActivity().getResources().getDrawable(R.drawable.popup_fixed_alert).mutate();
+        Drawable shadowDrawable = thisFragment.getParentActivity().getResources().getDrawable(R.drawable.popup_fixed_alert).mutate();
         shadowDrawable.getPadding(backgroundPaddings);
         layout.setBackgroundColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground));
 
@@ -144,7 +147,7 @@ public class BackButtonMenu {
                         }
                     }
                 }
-                goToPulledDialog(fragment, pDialog);
+                goToPulledDialog(thisFragment, pDialog);
             });
             layout.addView(cell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
         }
@@ -163,21 +166,18 @@ public class BackButtonMenu {
         scrimPopupWindow.getContentView().setFocusableInTouchMode(true);
         layout.setFitItems(true);
 
-        View fragmentView = fragment.getFragmentView();
-        if (fragmentView != null) {
-            int popupX = AndroidUtilities.dp(8) - backgroundPaddings.left;
-            if (AndroidUtilities.isTablet()) {
-                int[] location = new int[2];
-                fragmentView.getLocationInWindow(location);
-                popupX += location[0];
-            }
-            int popupY = (int) (backButton.getBottom() - backgroundPaddings.top - AndroidUtilities.dp(8));
-            scrimPopupWindow.showAtLocation(fragmentView, Gravity.LEFT | Gravity.TOP, popupX, popupY);
-
-            try {
-                fragmentView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
-            } catch (Exception ignore) {}
+        int popupX = AndroidUtilities.dp(8) - backgroundPaddings.left;
+        if (AndroidUtilities.isTablet()) {
+            int[] location = new int[2];
+            fragmentView.getLocationInWindow(location);
+            popupX += location[0];
         }
+        int popupY = (int) (backButton.getBottom() - backgroundPaddings.top - AndroidUtilities.dp(8));
+        scrimPopupWindow.showAtLocation(fragmentView, Gravity.LEFT | Gravity.TOP, popupX, popupY);
+
+        try {
+            fragmentView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+        } catch (Exception ignore) {}
 
         return scrimPopupWindow;
     }
@@ -203,8 +203,15 @@ public class BackButtonMenu {
         }
     }
 
-    public static ArrayList<PulledDialog> getStackedHistoryDialogs(int account, ArrayList<BaseFragment> fragmentsStack, long ignoreDialogId) {
+    public static ArrayList<PulledDialog> getStackedHistoryDialogs(BaseFragment thisFragment, long ignoreDialogId) {
         ArrayList<PulledDialog> dialogs = new ArrayList<>();
+        if (thisFragment == null)
+            return dialogs;
+        final ActionBarLayout parentLayout = thisFragment.getParentLayout();
+        if (parentLayout == null)
+            return dialogs;
+        ArrayList<BaseFragment> fragmentsStack = parentLayout.fragmentsStack;
+        ArrayList<PulledDialog> pulledDialogs = parentLayout.pulledDialogs;
         if (fragmentsStack != null) {
             final int count = fragmentsStack.size();
             for (int i = 0; i < count; ++i) {
@@ -263,22 +270,19 @@ public class BackButtonMenu {
             }
         }
         if (pulledDialogs != null) {
-            ArrayList<PulledDialog> pulledDialogsAccount = pulledDialogs.get(account);
-            if (pulledDialogsAccount != null) {
-                for (PulledDialog pulledDialog : pulledDialogsAccount) {
-                    if (pulledDialog.dialogId == ignoreDialogId) {
-                        continue;
+            for (PulledDialog pulledDialog : pulledDialogs) {
+                if (pulledDialog.dialogId == ignoreDialogId) {
+                    continue;
+                }
+                boolean alreadyAddedDialog = false;
+                for (int d = 0; d < dialogs.size(); ++d) {
+                    if (dialogs.get(d).dialogId == pulledDialog.dialogId) {
+                        alreadyAddedDialog = true;
+                        break;
                     }
-                    boolean alreadyAddedDialog = false;
-                    for (int d = 0; d < dialogs.size(); ++d) {
-                        if (dialogs.get(d).dialogId == pulledDialog.dialogId) {
-                            alreadyAddedDialog = true;
-                            break;
-                        }
-                    }
-                    if (!alreadyAddedDialog) {
-                        dialogs.add(pulledDialog);
-                    }
+                }
+                if (!alreadyAddedDialog) {
+                    dialogs.add(pulledDialog);
                 }
             }
         }
@@ -286,23 +290,22 @@ public class BackButtonMenu {
         return dialogs;
     }
 
-    public static void addToPulledDialogs(int account, int stackIndex, TLRPC.Chat chat, TLRPC.User user, long dialogId, int folderId, int filterId) {
+    public static void addToPulledDialogs(BaseFragment thisFragment, int stackIndex, TLRPC.Chat chat, TLRPC.User user, long dialogId, int folderId, int filterId) {
         if (chat == null && user == null) {
             return;
         }
-        if (pulledDialogs == null) {
-            pulledDialogs = new HashMap<>();
+        if (thisFragment == null) {
+            return;
         }
-        ArrayList<PulledDialog> dialogs = null;
-        if (pulledDialogs.containsKey(account)) {
-            dialogs = pulledDialogs.get(account);
+        final ActionBarLayout parentLayout = thisFragment.getParentLayout();
+        if (parentLayout == null) {
+            return;
         }
-        if (dialogs == null) {
-            pulledDialogs.put(account, dialogs = new ArrayList<>());
+        if (parentLayout.pulledDialogs == null) {
+            parentLayout.pulledDialogs = new ArrayList<>();
         }
-
         boolean alreadyAdded = false;
-        for (PulledDialog d : dialogs) {
+        for (PulledDialog d : parentLayout.pulledDialogs) {
             if (d.dialogId == dialogId) {
                 alreadyAdded = true;
                 break;
@@ -318,18 +321,22 @@ public class BackButtonMenu {
             d.folderId = folderId;
             d.chat = chat;
             d.user = user;
-            dialogs.add(d);
+            parentLayout.pulledDialogs.add(d);
         }
     }
-    public static void clearPulledDialogs(int account, int fromIndex) {
-        if (pulledDialogs != null && pulledDialogs.containsKey(account)) {
-            ArrayList<PulledDialog> dialogs = pulledDialogs.get(account);
-            if (dialogs != null) {
-                for (int i = 0; i < dialogs.size(); ++i) {
-                    if (dialogs.get(i).stackIndex > fromIndex) {
-                        dialogs.remove(i);
-                        i--;
-                    }
+    public static void clearPulledDialogs(BaseFragment thisFragment, int fromIndex) {
+        if (thisFragment == null) {
+            return;
+        }
+        final ActionBarLayout parentLayout = thisFragment.getParentLayout();
+        if (parentLayout == null) {
+            return;
+        }
+        if (parentLayout.pulledDialogs != null) {
+            for (int i = 0; i < parentLayout.pulledDialogs.size(); ++i) {
+                if (parentLayout.pulledDialogs.get(i).stackIndex > fromIndex) {
+                    parentLayout.pulledDialogs.remove(i);
+                    i--;
                 }
             }
         }

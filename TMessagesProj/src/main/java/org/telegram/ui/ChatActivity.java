@@ -27,6 +27,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -61,6 +62,7 @@ import android.text.TextUtils;
 import android.text.style.CharacterStyle;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.URLSpan;
+import android.util.Log;
 import android.util.Property;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
@@ -257,7 +259,9 @@ import org.telegram.ui.Delegates.ChatActivityMemberRequestsDelegate;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
+import java.io.InputStream;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -2070,8 +2074,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             pinchToZoomHelper.clear();
         }
         chatThemeBottomSheet = null;
+
+        ActionBarLayout parentLayout = getParentLayout();
         if (parentLayout != null && parentLayout.fragmentsStack != null) {
-            BackButtonMenu.clearPulledDialogs(currentAccount, parentLayout.fragmentsStack.indexOf(this) - (replacingChatActivity ? 0 : 1));
+            BackButtonMenu.clearPulledDialogs(this, parentLayout.fragmentsStack.indexOf(this) - (replacingChatActivity ? 0 : 1));
         }
         replacingChatActivity = false;
     }
@@ -4504,75 +4510,93 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     } else if (child instanceof ChatMessageCell) {
                         ChatMessageCell cell = (ChatMessageCell) child;
                         MessageObject.GroupedMessages group = cell.getCurrentMessagesGroup();
+                        if (group == null || group != lastDrawnGroup) {
+                            lastDrawnGroup = group;
+                            MessageObject.GroupedMessagePosition position = cell.getCurrentPosition();
+                            MessageBackgroundDrawable backgroundDrawable = cell.getBackgroundDrawable();
+                            if ((backgroundDrawable.isAnimationInProgress() || cell.isDrawingSelectionBackground()) && (position == null || (position.flags & MessageObject.POSITION_FLAG_RIGHT) != 0)) {
+                                if (cell.isHighlighted() || cell.isHighlightedAnimated()) {
+                                    if (position == null) {
+                                        Paint backgroundPaint = getThemedPaint(Theme.key_paint_chatMessageBackgroundSelected);
+                                        if (themeDelegate.isDark || backgroundPaint == null) {
+                                            backgroundPaint = Theme.chat_replyLinePaint;
+                                            backgroundPaint.setColor(getThemedColor(Theme.key_chat_selectedBackground));
+                                        }
+                                        canvas.save();
+                                        canvas.translate(0, cell.getTranslationY());
+                                        int wasAlpha = backgroundPaint.getAlpha();
+                                        backgroundPaint.setAlpha((int) (wasAlpha * cell.getHightlightAlpha() * cell.getAlpha()));
+                                        if (themeDelegate != null) {
+                                            themeDelegate.applyServiceShaderMatrix(getMeasuredWidth(), cell.getHeight(), 0, cell.getTop());
+                                        } else {
+                                            Theme.applyServiceShaderMatrix(getMeasuredWidth(), cell.getHeight(), 0, cell.getTop());
+                                        }
+                                        canvas.drawRect(0, cell.getTop(), getMeasuredWidth(), cell.getBottom(), backgroundPaint);
+                                        backgroundPaint.setAlpha(wasAlpha);
+                                        canvas.restore();
+                                    }
+                                } else {
+                                    int y = (int) cell.getY();
+                                    int height;
+                                    canvas.save();
+                                    if (position == null) {
+                                        height = cell.getMeasuredHeight();
+                                    } else {
+                                        height = y + cell.getMeasuredHeight();
+                                        long time = 0;
+                                        float touchX = 0;
+                                        float touchY = 0;
+                                        for (int i = 0; i < count; i++) {
+                                            View inner = getChildAt(i);
+                                            if (inner instanceof ChatMessageCell) {
+                                                ChatMessageCell innerCell = (ChatMessageCell) inner;
+                                                MessageObject.GroupedMessages innerGroup = innerCell.getCurrentMessagesGroup();
+                                                if (innerGroup == group) {
+                                                    MessageBackgroundDrawable drawable = innerCell.getBackgroundDrawable();
+                                                    y = Math.min(y, (int) innerCell.getY());
+                                                    height = Math.max(height, (int) innerCell.getY() + innerCell.getMeasuredHeight());
+                                                    long touchTime = drawable.getLastTouchTime();
+                                                    if (touchTime > time) {
+                                                        touchX = drawable.getTouchX() + innerCell.getX();
+                                                        touchY = drawable.getTouchY() + innerCell.getY();
+                                                        time = touchTime;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        backgroundDrawable.setTouchCoordsOverride(touchX, touchY - y);
+                                        height -= y;
+                                    }
+                                    canvas.clipRect(0, y, getMeasuredWidth(), y + height);
+                                    Paint selectedBackgroundPaint = getThemedPaint(Theme.key_paint_chatMessageBackgroundSelected);
+                                    if (!themeDelegate.isDark && selectedBackgroundPaint != null) {
+                                        backgroundDrawable.setCustomPaint(selectedBackgroundPaint);
+                                        if (themeDelegate != null) {
+                                            themeDelegate.applyServiceShaderMatrix(getMeasuredWidth(), height, 0, 0);
+                                        } else {
+                                            Theme.applyServiceShaderMatrix(getMeasuredWidth(), height, 0, 0);
+                                        }
+                                    } else {
+                                        backgroundDrawable.setCustomPaint(null);
+                                        backgroundDrawable.setColor(getThemedColor(Theme.key_chat_selectedBackground));
+                                    }
+                                    backgroundDrawable.setBounds(0, y, getMeasuredWidth(), y + height);
+                                    backgroundDrawable.draw(canvas);
+                                    canvas.restore();
+                                }
+                            }
+                        }
                         if (scrimView != cell && group == null && cell.drawBackgroundInParent()) {
                             canvas.save();
                             canvas.translate(cell.getX(), cell.getY());
                             if (cell.getScaleX() != 1f) {
                                 canvas.scale(
-                                        cell.getScaleX(), cell.getScaleY(),
-                                        cell.getPivotX(), (cell.getHeight() >> 1)
+                                    cell.getScaleX(), cell.getScaleY(),
+                                    cell.getPivotX(), (cell.getHeight() >> 1)
                                 );
                             }
                             cell.drawBackgroundInternal(canvas, true);
                             canvas.restore();
-                        }
-                        if (group != null && group == lastDrawnGroup) {
-                            continue;
-                        }
-                        lastDrawnGroup = group;
-                        MessageObject.GroupedMessagePosition position = cell.getCurrentPosition();
-                        MessageBackgroundDrawable backgroundDrawable = cell.getBackgroundDrawable();
-                        if ((backgroundDrawable.isAnimationInProgress() || cell.isDrawingSelectionBackground()) && (position == null || (position.flags & MessageObject.POSITION_FLAG_RIGHT) != 0)) {
-                            if (cell.isHighlighted() || cell.isHighlightedAnimated()) {
-                                if (position == null) {
-                                    int color = getThemedColor(Theme.key_chat_selectedBackground);
-                                    int alpha = Color.alpha(color);
-                                    canvas.save();
-                                    canvas.translate(0, cell.getTranslationY());
-                                    Theme.chat_replyLinePaint.setColor(getThemedColor(Theme.key_chat_selectedBackground));
-                                    Theme.chat_replyLinePaint.setAlpha((int) (alpha * cell.getHightlightAlpha() * cell.getAlpha()));
-                                    canvas.drawRect(0, cell.getTop(), getMeasuredWidth(), cell.getBottom(), Theme.chat_replyLinePaint);
-                                    canvas.restore();
-                                }
-                            } else {
-                                backgroundDrawable.setColor(getThemedColor(Theme.key_chat_selectedBackground));
-                                int y = (int) cell.getY();
-                                int height;
-                                canvas.save();
-                                if (position == null) {
-                                    height = cell.getMeasuredHeight();
-                                } else {
-                                    height = y + cell.getMeasuredHeight();
-                                    long time = 0;
-                                    float touchX = 0;
-                                    float touchY = 0;
-                                    for (int i = 0; i < count; i++) {
-                                        View inner = getChildAt(i);
-                                        if (inner instanceof ChatMessageCell) {
-                                            ChatMessageCell innerCell = (ChatMessageCell) inner;
-                                            MessageObject.GroupedMessages innerGroup = innerCell.getCurrentMessagesGroup();
-                                            if (innerGroup == group) {
-                                                MessageBackgroundDrawable drawable = innerCell.getBackgroundDrawable();
-                                                y = Math.min(y, (int) innerCell.getY());
-                                                height = Math.max(height, (int) innerCell.getY() + innerCell.getMeasuredHeight());
-                                                long touchTime = drawable.getLastTouchTime();
-                                                if (touchTime > time) {
-                                                    touchX = drawable.getTouchX() + innerCell.getX();
-                                                    touchY = drawable.getTouchY() + innerCell.getY();
-                                                    time = touchTime;
-                                                }
-                                            }
-                                        }
-                                    }
-                                    backgroundDrawable.setTouchCoordsOverride(touchX, touchY - y);
-                                    height -= y;
-                                }
-                                canvas.clipRect(0, y, getMeasuredWidth(), y + height);
-                                canvas.translate(0, y);
-                                backgroundDrawable.setBounds(0, 0, getMeasuredWidth(), height);
-                                backgroundDrawable.draw(canvas);
-                                canvas.restore();
-                            }
                         }
                     } else if (child instanceof ChatActionCell) {
                         ChatActionCell cell = (ChatActionCell) child;
@@ -8679,12 +8703,18 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     }
 
     private void addToPulledDialogsMyself() {
+        if (getParentLayout() == null) {
+            return;
+        }
         int stackIndex = getParentLayout().fragmentsStack.indexOf(this);
-        BackButtonMenu.addToPulledDialogs(currentAccount, stackIndex, currentChat, currentUser, dialog_id, dialogFilterId, dialogFolderId);
+        BackButtonMenu.addToPulledDialogs(this, stackIndex, currentChat, currentUser, dialog_id, dialogFilterId, dialogFolderId);
     }
     private void addToPulledDialogs(TLRPC.Chat chat, long dialogId, int folderId, int filterId) {
+        if (getParentLayout() == null) {
+            return;
+        }
         int stackIndex = getParentLayout().fragmentsStack.indexOf(this);
-        BackButtonMenu.addToPulledDialogs(currentAccount, stackIndex, chat, null, dialogId, folderId, filterId);
+        BackButtonMenu.addToPulledDialogs(this, stackIndex, chat, null, dialogId, folderId, filterId);
     }
 
     private void setPullingDownTransition(boolean fromPullingDownTransition) {
@@ -13647,7 +13677,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             MediaController.PhotoEntry entry = new MediaController.PhotoEntry(0, 0, 0, videoPath, 0, true, 0, 0, 0);
             entry.caption = caption;
             cameraPhoto.add(entry);
-            PhotoViewer.getInstance().openPhotoForSelect(cameraPhoto, 0, 2, false, new PhotoViewer.EmptyPhotoViewerProvider() {
+            PhotoViewer.getInstance().openPhotoForSelect(cameraPhoto, 0, 0, false, new PhotoViewer.EmptyPhotoViewerProvider() {
                 @Override
                 public ImageReceiver.BitmapHolder getThumbForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
                     return new ImageReceiver.BitmapHolder(thumb, null, 0);
@@ -13679,6 +13709,23 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 path = photoInfo.path;
             } else if (photoInfo.uri != null) {
                 path = AndroidUtilities.getPath(photoInfo.uri);
+                if (path == null) {
+                    try {
+                        BitmapFactory.Options bmOptions = new BitmapFactory.Options();
+                        InputStream inputStream = ApplicationLoader.applicationContext.getContentResolver().openInputStream(photoInfo.uri);
+                        Bitmap b = BitmapFactory.decodeStream(inputStream, null, bmOptions);
+                        String fileName = Integer.MIN_VALUE + "_" + SharedConfig.getLastLocalId() + ".webp";
+                        File fileDir = FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE);
+                        final File cacheFile = new File(fileDir, fileName);
+                        FileOutputStream stream = new FileOutputStream(cacheFile);
+                        b.compress(Bitmap.CompressFormat.WEBP, 100, stream);
+                        SharedConfig.saveConfig();
+                        path = cacheFile.getPath();
+//                    path = Uri.fromFile(cacheFile);
+                    } catch (Exception e) {
+                        continue;
+                    }
+                }
             } else {
                 continue;
             }
@@ -13700,57 +13747,56 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             } catch (Exception e) {
                 FileLog.e(e);
             }
-            MediaController.PhotoEntry entry = new MediaController.PhotoEntry(0, 0, 0, path, orientation, false, 0, 0, 0);
+            MediaController.PhotoEntry entry = new MediaController.PhotoEntry(0, 0, 0, path, orientation, photoInfo.isVideo, 0, 0, 0);
             if (a == photoPathes.size() - 1 && caption != null) {
                 entry.caption = caption;
             }
             entries.add(entry);
         }
-        if (!entries.isEmpty()) {
-            if (getParentActivity() != null) {
-                final boolean[] checked = new boolean[entries.size()];
-                Arrays.fill(checked, true);
-                PhotoViewer.getInstance().setParentActivity(getParentActivity(), themeDelegate);
-                PhotoViewer.getInstance().openPhotoForSelect(new ArrayList<>(entries), entries.size() - 1, 0, false, new PhotoViewer.EmptyPhotoViewerProvider() {
-                    @Override
-                    public ImageReceiver.BitmapHolder getThumbForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
-                        return null;
-                    }
-
-                    @Override
-                    public void sendButtonPressed(int index, VideoEditedInfo videoEditedInfo, boolean notify, int scheduleDate, boolean forceDocument) {
-                        for (int i = entries.size() - 1; i >= 0; --i) {
-                            if (!checked[i]) {
-                                entries.remove(i);
-                            }
-                        }
-                        sendPhotosGroup(entries, notify, scheduleDate, forceDocument);
-                    }
-
-                    @Override
-                    public int setPhotoChecked(int index, VideoEditedInfo videoEditedInfo) {
-                        return index;
-                    }
-
-                    @Override
-                    public boolean isPhotoChecked(int index) {
-                        return checked[index];
-                    }
-
-                    @Override
-                    public boolean canScrollAway() {
-                        return false;
-                    }
-                }, this);
-            } else {
-                fillEditingMediaWithCaption(caption, null);
-                sendPhotosGroup(entries, false, 0, false);
-                afterMessageSend();
-            }
-            return true;
-        } else {
+        if (entries.isEmpty()) {
             return false;
         }
+        if (getParentActivity() != null) {
+            final boolean[] checked = new boolean[entries.size()];
+            Arrays.fill(checked, true);
+            PhotoViewer.getInstance().setParentActivity(getParentActivity(), themeDelegate);
+            PhotoViewer.getInstance().openPhotoForSelect(new ArrayList<>(entries), entries.size() - 1, 2, false, new PhotoViewer.EmptyPhotoViewerProvider() {
+                @Override
+                public ImageReceiver.BitmapHolder getThumbForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
+                    return null;
+                }
+
+                @Override
+                public void sendButtonPressed(int index, VideoEditedInfo videoEditedInfo, boolean notify, int scheduleDate, boolean forceDocument) {
+                    for (int i = entries.size() - 1; i >= 0; --i) {
+                        if (!checked[i]) {
+                            entries.remove(i);
+                        }
+                    }
+                    sendPhotosGroup(entries, notify, scheduleDate, forceDocument);
+                }
+
+                @Override
+                public int setPhotoChecked(int index, VideoEditedInfo videoEditedInfo) {
+                    return index;
+                }
+
+                @Override
+                public boolean isPhotoChecked(int index) {
+                    return checked[index];
+                }
+
+                @Override
+                public boolean canScrollAway() {
+                    return false;
+                }
+            }, this);
+        } else {
+            fillEditingMediaWithCaption(caption, null);
+            sendPhotosGroup(entries, false, 0, false);
+            afterMessageSend();
+        }
+        return true;
     }
     private void sendPhotosGroup(ArrayList<MediaController.PhotoEntry> entries, boolean notify, int scheduleDate, boolean forceDocument) {
         if (!entries.isEmpty()) {
@@ -20545,7 +20591,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         AlertsCreator.createDeleteMessagesAlert(this, currentUser, currentChat, currentEncryptedChat, chatInfo, mergeDialogId, finalSelectedObject, selectedMessagesIds, finalSelectedGroup, chatMode == MODE_SCHEDULED, loadParticipant, () -> {
             hideActionMode();
             updatePinnedMessageView(true);
-        }, () -> dimBehindView(false), themeDelegate);
+        }, null, themeDelegate);
     }
 
     private void hideActionMode() {
@@ -27142,6 +27188,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 startServiceBitmap = ((MotionBackgroundDrawable) backgroundDrawable).getBitmap();
             }
             startServiceColor = currentServiceColor;
+            startSelectedBackgroundColor = currentSelectedBackgroundColor;
             startServiceTextColor = drawServiceGradient ? 0xffffffff : getCurrentColorOrDefault(Theme.key_chat_serviceText, true);
             startServiceLinkColor = drawServiceGradient ? 0xffffffff : getCurrentColorOrDefault(Theme.key_chat_serviceLink, true);
             startServiceButtonColor = drawServiceGradient ? 0xffffffff : getCurrentColorOrDefault(Theme.key_chat_serviceLink, true);
@@ -27374,9 +27421,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         int startServiceButtonColor;
         int startServiceIconColor;
         int startServiceColor;
+        int startSelectedBackgroundColor;
         Bitmap startServiceBitmap;
 
         int currentServiceColor;
+        int currentSelectedBackgroundColor;
         boolean drawServiceGradient;
 
         private void initServiceMessageColors(Drawable backgroundDrawable) {
@@ -27384,11 +27433,16 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             int currentServiceMessageColor = result[0];
 
             Integer serviceColor = getCurrentColor(Theme.key_chat_serviceBackground);
+            Integer selectedBackgroundColor = getCurrentColor(Theme.key_chat_selectedBackground);
             Integer serviceColor2 = serviceColor;
             if (serviceColor == null) {
                 serviceColor = currentServiceMessageColor;
             }
+            if (selectedBackgroundColor == null) {
+                selectedBackgroundColor = currentServiceMessageColor;
+            }
             currentServiceColor = serviceColor;
+            currentSelectedBackgroundColor = selectedBackgroundColor;
 
             drawServiceGradient = backgroundDrawable instanceof MotionBackgroundDrawable && SharedConfig.getDevicePerformanceClass() != SharedConfig.PERFORMANCE_CLASS_LOW;
 
@@ -27407,22 +27461,40 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
             Paint actionBackgroundPaint = getPaint(Theme.key_paint_chatActionBackground);
             Paint actionBackgroundSelectedPaint = getPaint(Theme.key_paint_chatActionBackgroundSelected);
+            Paint msgBackgroundSelectedPaint = getPaint(Theme.key_paint_chatMessageBackgroundSelected);
 
             if (actionBackgroundPaint != null) {
                 if (drawServiceGradient) {
                     ColorMatrix colorMatrix = new ColorMatrix();
                     colorMatrix.setSaturation(((MotionBackgroundDrawable) backgroundDrawable).getIntensity() >= 0 ? 1.8f : 0.5f);
+
                     actionBackgroundPaint.setAlpha(127);
                     actionBackgroundPaint.setColorFilter(new ColorMatrixColorFilter(colorMatrix));
                     actionBackgroundPaint.setShader(serviceShaderSource);
+
                     actionBackgroundSelectedPaint.setAlpha(127);
                     actionBackgroundSelectedPaint.setColorFilter(new ColorMatrixColorFilter(colorMatrix));
                     actionBackgroundSelectedPaint.setShader(serviceShaderSource);
+
+                    if (msgBackgroundSelectedPaint == null) {
+                        msgBackgroundSelectedPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                        currentPaints.put(Theme.key_paint_chatMessageBackgroundSelected, msgBackgroundSelectedPaint);
+                    }
+                    ColorMatrix colorMatrix2 = new ColorMatrix();
+                    colorMatrix2.setSaturation(0.98f);
+                    AndroidUtilities.lightColorMatrix(colorMatrix2, -60);
+                    msgBackgroundSelectedPaint.setAlpha(90);
+                    msgBackgroundSelectedPaint.setColorFilter(new ColorMatrixColorFilter(colorMatrix2));
+                    msgBackgroundSelectedPaint.setShader(serviceShaderSource);
                 } else {
                     actionBackgroundPaint.setColorFilter(null);
                     actionBackgroundPaint.setShader(null);
                     actionBackgroundSelectedPaint.setColorFilter(null);
                     actionBackgroundSelectedPaint.setShader(null);
+                    if (msgBackgroundSelectedPaint != null) {
+                        msgBackgroundSelectedPaint.setColorFilter(null);
+                        msgBackgroundSelectedPaint.setShader(null);
+                    }
                 }
             }
         }
@@ -27433,6 +27505,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
             Paint actionBackgroundPaint = getPaint(Theme.key_paint_chatActionBackground);
             Paint actionBackgroundSelectedPaint = getPaint(Theme.key_paint_chatActionBackgroundSelected);
+            Paint msgBackgroundSelectedPaint = getPaint(Theme.key_paint_chatMessageBackgroundSelected);
 
             int serviceColor = currentServiceColor;
             int serviceTextColor = drawServiceGradient ? 0xffffffff : getCurrentColorOrDefault(Theme.key_chat_serviceText, true);
@@ -27484,6 +27557,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         actionBackgroundPaint.setShader(serviceShader);
                         actionBackgroundSelectedPaint.setShader(serviceShader);
                     }
+                    if (msgBackgroundSelectedPaint != null) {
+                        msgBackgroundSelectedPaint.setShader(serviceShader);
+                    }
                 } else {
                     useSourceShader = true;
                     serviceCanvas.drawBitmap(serviceBitmapSource, 0, 0, null);
@@ -27491,7 +27567,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         actionBackgroundPaint.setShader(serviceShaderSource);
                         actionBackgroundSelectedPaint.setShader(serviceShaderSource);
                     }
-
+                    if (msgBackgroundSelectedPaint != null) {
+                        msgBackgroundSelectedPaint.setShader(serviceShaderSource);
+                    }
                 }
             }
         }
