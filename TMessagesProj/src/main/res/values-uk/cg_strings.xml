@@ -159,7 +159,7 @@
     <string name="CG_Kangs_Delete_Desc">Буде видалено КОЖНУ додану наклейку!</string>
     <string name="CG_VoiceRecognise">Упізнати</string>
     <string name="CG_VoiceRecognise_Started">Розпочато розшифрування звукового повідомлення!</string>
-    <string name="CG_VoiceRecognise_Error">Помилка розшифрування звукового повідомлення!</string>
+    <string name="CG_VoiceRecognise_Error">Помилка розшифрування звукового повідомлення! [%s]</string>
     <string name="ActionBarTitle">Чати</string>
     <string name="CG_ArchiveOnPull">Архів при розкритті</string>
     <string name="CG_ArchiveOnPull_Desc">Автоматично відкривати архів при розкритті в головному меню</string>
@@ -275,8 +275,8 @@
     <string name="CG_FwdMenu_EnableCaptions">Увімкнути субтитри</string>
     <string name="CG_FwdMenu_DisableCaptions">Приховати субтитри</string>
     <string name="CG_Mutual_Contact">взаємний контакт</string>
-    <string name="CG_relaunch">needs restart of app</string>
-    <string name="CG_hq_voice">HQ Voice messages</string>
+    <string name="CG_relaunch">Потрібно перезавантажити додаток</string>
+    <string name="CG_hq_voice">Вища якість голосових повідомлень</string>
     <string name="CG_DisableCam">Вимкнути камеру в меню вибору фото</string>
     <string name="CG_DisableCam_Desc">увімкніть якщо це меню гальмує</string>
     <string name="CG_ShowDC">Показувати дата-центр у профілі</string>
