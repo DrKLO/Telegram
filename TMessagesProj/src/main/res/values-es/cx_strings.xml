@@ -18,7 +18,7 @@
     <string name="CX_InvalidCustomEmojiTypeface">¡El tipo de letra emoji personalizado no es válido!</string>
     <string name="CX_AllowStorage">Debido a los cambios introducidos por Google en Android 11+, Catogram X necesita su permiso para ver archivos que no son multimedia.</string>
     <string name="AdvancedSettingsX">Preferencias de Catogram X</string>
-    <string name="CG_AboutDescX">Catogram fork</string>
+    <string name="CG_AboutDescX">Bifurcación de Catogram</string>
     <string name="CX_DBNotEnabled">No habilitado para esta cuenta</string>
     <string name="CX_DB_AccountsHint">El doble fondo le permite establecer una contraseña para una cuenta diferente.
 \n
@@ -35,4 +35,16 @@
     <string name="TFOSS_Proxy">Es posible que tengas que configurar un proxy antes de iniciar sesión, en caso de que tu país o ISP bloquee Telegram</string>
     <string name="TFOSS_SetProxy">ESTABLECER UN PROXY</string>
     <string name="CX_Secrets">Menú secreto</string>
+    <string name="CX_DoubleTapReact">Deshabilitar las reacciones rápidas</string>
+    <string name="SaveToDownloadCount_zero">Guardando %1$d archivos en descargas</string>
+    <string name="SaveToDownloadCount_one">Guardando %1$d archivo en descargas</string>
+    <string name="SaveToDownloadCount_two">Guardando %1$d archivos en descargas</string>
+    <string name="SaveToDownloadCount_few">Guardando %1$d archivos en descargas</string>
+    <string name="SaveToDownloadCount_many">Guardando %1$d archivos en descargas</string>
+    <string name="SaveToDownloadCount_other">Guardando %1$d archivos en descargas</string>
+    <string name="CX_ShowSeconds">Mostrar los segundos en las etiquetas de tiempo</string>
+    <string name="CX_EnableSAF_Desc">Exclusivo para Android 11+. Te permite acceder al almacenamiento externo a cambio de usar Google File Manager. SOLO FUNCIONA UNA VEZ DESHABILITADO EL MANEJO DE TODOS LOS ARCHIVOS POR ESTA APLICACIÓN</string>
+    <string name="CX_DBNotEnabled2">No habilitado</string>
+    <string name="CX_Website">Visita nuestra página</string>
+    <string name="CX_EnableMLKITDesc">deshabilita mostrar el traductor todo el tiempo</string>
 </resources>
