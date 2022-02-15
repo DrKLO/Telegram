@@ -43,4 +43,25 @@
     <string name="CX_TitleIsChats">Використовувати «Чати» як назву списку чатів замість назви програми</string>
     <string name="CX_ThemePreviewDialogMessage3">Будь ласка, протестуйте нове оновлення!</string>
     <string name="CX_EnableMLKITDesc">Вимкніть щоб завжди показувати перекладач</string>
+    <string name="CX_EnableSAF_Desc">Тільки для Android 11+. Дозволяє отримати доступ до зовнішнього сховища за допомогою файлового менеджера Google. Працює тільки з вимкненим керуванням усіма файлами для цієї програми</string>
+    <string name="CX_EnableSAF_Warn">Будь ласка, відключіть Керування всіма файлами для цієї програми, щоб зробити примусовий доступ до сховища ефективним</string>
+    <string name="SaveToDownloadCount_one">Збереження файла %1$d до завантажень</string>
+    <string name="SaveToDownloadCount_two">Зберегаємо %1$d файли до завантажень</string>
+    <string name="SaveToDownloadCount_few">Зберегаємо %1$d файлів до завантажень</string>
+    <string name="SaveToDownloadCount_other">Зберегаємо %1$d файлів до завантажень</string>
+    <string name="CX_TestBackend">Увійти в систему на тестових серверах</string>
+    <string name="TFOSS_Proxy">Можливо, вам потрібно буде настроїти проксі перед входом до облікового запису, якщо ваша держава або провайдер блокують Telegram</string>
+    <string name="TFOSS_SetProxy">ВСТАНОВИТИ ПРОКСІ</string>
+    <string name="CX_TabIconMode_AppTitle">Перемістити текст до заголовка додатка</string>
+    <string name="SaveToDownloadCount_zero">Зберегаємо %1$d файлів в завантаження</string>
+    <string name="SaveToDownloadCount_many">Зберегаємо %1$d файлів до завантажень</string>
+    <string name="CX_ChangeIcon_Blue_Reg">CatoX Блакитна (від @Qirkl)</string>
+    <string name="CX_ChangeIcon_Cyan_Reg">CatoX Cиньо-зелена (від Qirkl)</string>
+    <string name="CX_ChangeIcon_Green_Reg">CatoX Зелена (від Qirkl)</string>
+    <string name="CX_ChangeIcon_Taffy_Reg">CatoX Іриска-Рожева (від Qirkl)</string>
+    <string name="CX_DismissStorageDialog2">Щоб остаточно закрити діалогове вікно, надайте дозвіл або увімкніть SAF (Доступ до сховища) в налаштуваннях CatoX.</string>
+    <string name="CX_DBNotEnabled2">Не ввімкнено</string>
+    <string name="CX_DBSettingsPin">Налаштування ПІН-коду</string>
+    <string name="CX_EnableSAF">Примусовий доступ до сховища</string>
+    <string name="CX_EnableMLKIT">Увімкнути виявлення мови ШІ на пристрої</string>
 </resources>
