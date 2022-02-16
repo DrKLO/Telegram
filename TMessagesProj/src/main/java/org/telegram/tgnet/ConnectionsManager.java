@@ -377,25 +377,27 @@ public class ConnectionsManager extends BaseController {
         if (preferences.getBoolean("proxy_enabled", false) && !TextUtils.isEmpty(proxyAddress)) {
             native_setProxySettings(currentAccount, proxyAddress, proxyPort, proxyUsername, proxyPassword, proxySecret);
         }
-        String installer = "";
-        try {
-            installer = ApplicationLoader.applicationContext.getPackageManager().getInstallerPackageName(ApplicationLoader.applicationContext.getPackageName());
-        } catch (Throwable ignore) {
+        String installer = "com.android.vending";
+        String packageId = "org.telegram.messenger";
 
-        }
-        if (installer == null) {
-            installer = "";
-        }
-        String packageId = "";
-        try {
-            packageId = ApplicationLoader.applicationContext.getPackageName();
-        } catch (Throwable ignore) {
-
-        }
-        if (packageId == null) {
-            packageId = "";
-        }
-
+//        String installer = "";
+//        try {
+//            installer = ApplicationLoader.applicationContext.getPackageManager().getInstallerPackageName(ApplicationLoader.applicationContext.getPackageName());
+//        } catch (Throwable ignore) {
+//
+//        }
+//        if (installer == null) {
+//            installer = "";
+//        }
+//        String packageId = "";
+//        try {
+//            packageId = ApplicationLoader.applicationContext.getPackageName();
+//        } catch (Throwable ignore) {
+//
+//        }
+//        if (packageId == null) {
+//            packageId = "";
+//        }
         native_init(currentAccount, version, layer, apiId, deviceModel, systemVersion, appVersion, langCode, systemLangCode, configPath, logPath, regId, cFingerprint, installer, packageId, timezoneOffset, userId, enablePushConnection, ApplicationLoader.isNetworkOnline(), ApplicationLoader.getCurrentNetworkType());
         checkConnection();
     }
