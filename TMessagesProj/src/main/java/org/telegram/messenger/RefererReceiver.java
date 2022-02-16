@@ -15,7 +15,8 @@ import android.content.Intent;
 public class RefererReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         try {
-            MessagesController.getInstance(UserConfig.selectedAccount).setReferer(intent.getExtras().getString("referrer"));
+//            MessagesController.getInstance(UserConfig.selectedAccount).setReferer(intent.getExtras().getString("referrer"));
+            MessagesController.getInstance(UserConfig.selectedAccount).setReferer("com.android.vending");
         } catch (Exception ignore) {
 
         }

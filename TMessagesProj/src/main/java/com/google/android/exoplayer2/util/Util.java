@@ -1288,8 +1288,10 @@ public final class Util {
   public static String getUserAgent(Context context, String applicationName) {
     String versionName;
     try {
-      String packageName = context.getPackageName();
-      PackageInfo info = context.getPackageManager().getPackageInfo(packageName, 0);
+//      String packageName = context.getPackageName();
+      String packageName = "org.telegram.messenger";
+//      PackageInfo info = context.getPackageManager().getPackageInfo(packageName, 0);
+      PackageInfo info = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
       versionName = info.versionName;
     } catch (NameNotFoundException e) {
       versionName = "?";
