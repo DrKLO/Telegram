@@ -48,7 +48,7 @@
     <string name="CX_ChangeIcon_Taffy_Reg">CatoX Таффи-Розовая (от @Qirkl)</string>
     <string name="CX_Website">Открыть наш сайт</string>
     <string name="CX_DBNotEnabled2">Не включено</string>
-    <string name="CX_DBSettingsPin">Настройки ПИН-кода</string>
+    <string name="CX_DBSettingsPin">Настройки PIN-кода</string>
     <string name="CX_EnableSAF">Принудительный доступ к хранилищу</string>
     <string name="CX_DismissStorageDialog2">Чтобы окончательно закрыть диалоговое окно, предоставьте разрешение или включите SAF (Доступ к хранилищу) в настройках CatoX.</string>
     <string name="CX_EnableMLKITDesc">Отключите, чтобы всегда показывать переводчик</string>
