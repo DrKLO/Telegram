@@ -166,17 +166,17 @@ It's very simple
 * **sdk23** mean for android 6+, the other are working from 4.1+
     * so if you have android 6 or higher, you should download **sdk23** version
 * arm64-v8a (new devices)
-    * `0a21c3f3f2decf94cb5dbe21864bfa96c73caec4ed3984bc79e41866dc2048af`  [Telegraher.8.5.2r1.arm64-v8a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.2_release1/Telegraher.8.5.2r1.arm64-v8a.apk)
-    * `a4f780ca46d5ba5687f3a6869216c9bf163190aafb2b7cce892350dbc3ddcca5`  [Telegraher.8.5.2r1.arm64-v8a-sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.2_release1/Telegraher.8.5.2r1.arm64-v8a-sdk23.apk)
+    * `fa7cb14931ed7550f8b439184060727326ebd96d898be4f74b8de6837a5a7011`  [Telegraher.8.5.4r1.arm64_v8a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_release1/Telegraher.8.5.4r1.arm64_v8a.apk)
+    * `91bc0556392ef6e2781afe37b35a1b758bd728bd02287114c8db7033834d0750`  [Telegraher.8.5.4r1.arm64_v8a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_release1/Telegraher.8.5.4r1.arm64_v8a_sdk23.apk  )
 * armeabi-v7a (old devices)
-    * `8b2c41b4caa088d2bcde1c13c27657451d324de4bc8345e849baab40f17c2fa4`  [Telegraher.8.5.2r1.armeabi-v7a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.2_release1/Telegraher.8.5.2r1.armeabi-v7a.apk)
-    * `4965a33300da91edc14b0e22bf2d75ecbd25a1efc6fc159c28de83cd052dfd93`  [Telegraher.8.5.2r1.armeabi-v7a-sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.2_release1/Telegraher.8.5.2r1.armeabi-v7a-sdk23.apk)
+    * `69f69bf61a1f1c78139d10da0079f27917bd886cd078c650f7028a7578b370af`  [Telegraher.8.5.4r1.armeabi_v7a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_release1/Telegraher.8.5.4r1.armeabi_v7a.apk)
+    * `72720d3078d4a46f9a6192c32557a94024ca9b5bbddfa0f97a08ef17554f0d52`  [Telegraher.8.5.4r1.armeabi_v7a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_release1/Telegraher.8.5.4r1.armeabi_v7a_sdk23.apk)
 * PC x86, 32 bits (for an emulator for example)
-    * `9460592c07caa32de3aa938f0db0687211129867fcad34f17f33cfa994fc11c1`  [Telegraher.8.5.2r1.x86.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.2_release1/Telegraher.8.5.2r1.x86.apk)
-    * `80786d8c4a703e73a2cf4b5134fa2d2d0969fd7028282b51427089654119aa1c`  [Telegraher.8.5.2r1.x86-sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.2_release1/Telegraher.8.5.2r1.x86-sdk23.apk)
+    * `9bc8f9fc2580da967d8e1f72df9e852e4fe126e6004fd64b7900a28ffdb1771e`  [Telegraher.8.5.4r1.x86.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_release1/Telegraher.8.5.4r1.x86.apk)
+    * `afd622cd39c65f29ea8771ce09a075b56331d844346eda96c10d1ca2734451bb`  [Telegraher.8.5.4r1.x86_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_release1/Telegraher.8.5.4r1.x86_sdk23.apk)
 * PC x86, 64 bits (for 64 bits CPU)
-    * `e5e69927146143f6b8e2ba52e57aa29b60651e0f446125d04b18cada9d73508c`  [Telegraher.8.5.2r1.x86-64.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.2_release1/Telegraher.8.5.2r1.x86-64.apk)
-    * `6c39d5110ea51cf256e0b303b44b08bb19e23501df0c9c639e4a9f967e33a493`  [Telegraher.8.5.2r1.x86-64-sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.2_release1/Telegraher.8.5.2r1.x86-64-sdk23.apk)
+    * `e6c549a621ae465ff140fcda34ceab483a521072dc16a6d5b2a52e6f78e94b8b`  [Telegraher.8.5.4r1.x86_64.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_release1/Telegraher.8.5.4r1.x86_64.apk)
+    * `721c2012971656fa27ccdd0645d3e2f7c4a93b77974ad4b576d1a8e713e44fbd`  [Telegraher.8.5.4r1.x86_64_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_release1/Telegraher.8.5.4r1.x86_64_sdk23.apk)
 
 ### Issues/Wishlist
 
