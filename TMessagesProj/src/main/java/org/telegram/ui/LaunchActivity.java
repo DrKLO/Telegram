@@ -2520,7 +2520,27 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             args.putString("selectAlertString", LocaleController.getString("SendMessagesToText", R.string.SendMessagesToText));
             args.putString("selectAlertStringGroup", LocaleController.getString("SendMessagesToGroupText", R.string.SendMessagesToGroupText));
         }
-        DialogsActivity fragment = new DialogsActivity(args);
+        DialogsActivity fragment = new DialogsActivity(args) {
+            @Override
+            public boolean shouldShowNextButton(DialogsActivity dialogsFragment, ArrayList<Long> dids, CharSequence message, boolean param) {
+                if (exportingChatUri != null) {
+                    return false;
+                } else {
+                    if (contactsToSend != null && contactsToSend.size() == 1 && !mainFragmentsStack.isEmpty()) {
+                        return true;
+                    } else {
+                        if (dids.size() <= 1) {
+                            if (videoPath != null) {
+                                return true;
+                            } else if (photoPathsArray != null && photoPathsArray.size() > 0) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+                return false;
+            }
+        };
         fragment.setDelegate(this);
         boolean removeLast;
         if (AndroidUtilities.isTablet()) {
@@ -3836,6 +3856,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
 
             }
         } else {
+            boolean notify = dialogsFragment == null || dialogsFragment.notify;
             final ChatActivity fragment;
             if (dids.size() <= 1) {
                 final long did = dids.get(0);
@@ -3889,12 +3910,12 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
 
             if (contactsToSend != null && contactsToSend.size() == 1 && !mainFragmentsStack.isEmpty()) {
                 PhonebookShareAlert alert = new PhonebookShareAlert(mainFragmentsStack.get(mainFragmentsStack.size() - 1), null, null, contactsToSendUri, null, null, null);
-                alert.setDelegate((user, notify, scheduleDate) -> {
+                alert.setDelegate((user, notify2, scheduleDate) -> {
                     if (fragment != null) {
                         actionBarLayout.presentFragment(fragment, true, false, true, false);
                     }
                     for (int i = 0; i < dids.size(); i++) {
-                        SendMessagesHelper.getInstance(account).sendMessage(user, dids.get(i), null, null, null, null, notify, scheduleDate);
+                        SendMessagesHelper.getInstance(account).sendMessage(user, dids.get(i), null, null, null, null, notify2, scheduleDate);
                     }
                 });
                 mainFragmentsStack.get(mainFragmentsStack.size() - 1).showDialog(alert);
@@ -3906,7 +3927,8 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     AccountInstance accountInstance = AccountInstance.getInstance(UserConfig.selectedAccount);
                     boolean photosEditorOpened = false;
                     if (fragment != null) {
-                        actionBarLayout.presentFragment(fragment, dialogsFragment != null, dialogsFragment == null, true, false);
+                        boolean withoutAnimation = dialogsFragment == null || (videoPath != null || (photoPathsArray != null && photoPathsArray.size() > 0));
+                        actionBarLayout.presentFragment(fragment, dialogsFragment != null, withoutAnimation, true, false);
                         if (videoPath != null) {
                             fragment.openVideoEditor(videoPath, sendingText);
                             sendingText = null;
@@ -3924,7 +3946,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                             }
                             ArrayList<String> arrayList = new ArrayList<>();
                             arrayList.add(videoPath);
-                            SendMessagesHelper.prepareSendingDocuments(accountInstance, arrayList, arrayList, null, captionToSend, null, did, null, null, null, null, true, 0);
+                            SendMessagesHelper.prepareSendingDocuments(accountInstance, arrayList, arrayList, null, captionToSend, null, did, null, null, null, null, notify, 0);
                         }
                     }
                     if (photoPathsArray != null && !photosEditorOpened) {
@@ -3932,14 +3954,14 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                             photoPathsArray.get(0).caption = sendingText;
                             sendingText = null;
                         }
-                        SendMessagesHelper.prepareSendingMedia(accountInstance, photoPathsArray, did, null, null, null, false, false, null, true, 0);
+                        SendMessagesHelper.prepareSendingMedia(accountInstance, photoPathsArray, did, null, null, null, false, false, null, notify, 0);
                     }
                     if (documentsPathsArray != null || documentsUrisArray != null) {
                         if (sendingText != null && sendingText.length() <= 1024 && ((documentsPathsArray != null ? documentsPathsArray.size() : 0) + (documentsUrisArray != null ? documentsUrisArray.size() : 0)) == 1) {
                             captionToSend = sendingText;
                             sendingText = null;
                         }
-                        SendMessagesHelper.prepareSendingDocuments(accountInstance, documentsPathsArray, documentsOriginalPathsArray, documentsUrisArray, captionToSend, documentsMimeType, did, null, null, null, null, true, 0);
+                        SendMessagesHelper.prepareSendingDocuments(accountInstance, documentsPathsArray, documentsOriginalPathsArray, documentsUrisArray, captionToSend, documentsMimeType, did, null, null, null, null, notify, 0);
                     }
                     if (sendingText != null) {
                         SendMessagesHelper.prepareSendingText(accountInstance, sendingText, did, true, 0);
@@ -3947,11 +3969,11 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     if (contactsToSend != null && !contactsToSend.isEmpty()) {
                         for (int a = 0; a < contactsToSend.size(); a++) {
                             TLRPC.User user = contactsToSend.get(a);
-                            SendMessagesHelper.getInstance(account).sendMessage(user, did, null, null, null, null, true, 0);
+                            SendMessagesHelper.getInstance(account).sendMessage(user, did, null, null, null, null, notify, 0);
                         }
                     }
                     if (!TextUtils.isEmpty(message)) {
-                        SendMessagesHelper.prepareSendingText(accountInstance, message.toString(), did, true, 0);
+                        SendMessagesHelper.prepareSendingText(accountInstance, message.toString(), did, notify, 0);
                     }
                 }
             }
