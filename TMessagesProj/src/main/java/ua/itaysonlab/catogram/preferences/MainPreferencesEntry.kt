@@ -156,7 +156,7 @@ class MainPreferencesEntry : BasePreferencesEntry {
 
         private fun goToCrowdin(bf: BaseFragment) {
             val openURL = Intent(android.content.Intent.ACTION_VIEW)
-            openURL.data = Uri.parse("https://translate.nift4.ml/projects/catogram-x/")
+            openURL.data = Uri.parse("https://translate.nift4.org/projects/catogram-x/")
             bf.parentActivity.startActivity(openURL)
         }
 
