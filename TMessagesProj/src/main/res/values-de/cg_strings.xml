@@ -88,7 +88,7 @@
     <string name="CG_NewMsgAnim">Neue Nachrichten Animation (beta)</string>
     <string name="CG_HideKbdOnScroll">Verstecke die Tastatur beim scrollen</string>
     <string name="CG_NewTabs_NoCounter">Verstecke den Zähler neben Tabs</string>
-    <string name="CG_NewTabs_RemoveAllChats">Verstecke den \"Alle Chats\" Tab [Neustart benötigt]</string>
+    <string name="CG_NewTabs_RemoveAllChats">Verstecke den \"Alle Chats\" Tab</string>
     <string name="CG_NewTabs_RemoveAllChats_Desc">drücke \"zurück\" auf der Startseite um es zu öffnen</string>
     <string name="CG_NewTabs_Emoticons">Benutze Emoticons in Tabs anstelle von Titeln [Neustart benötigt]</string>
     <string name="CG_NewTabs_Emoticons_Desc">dies ist von Telegram Cloud-Synchronisiert</string>
