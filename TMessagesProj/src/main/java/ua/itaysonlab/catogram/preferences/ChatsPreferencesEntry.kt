@@ -340,6 +340,16 @@ class ChatsPreferencesEntry : BasePreferencesEntry {
                 }
             }
 
+            switch {
+                title = LocaleController.getString("CX_DisableParseEntities", R.string.CX_DisableParseEntities)
+                summary = LocaleController.getString("CX_DisableParseEntities_Desc", R.string.CX_DisableParseEntities_Desc)
+                contract({
+                    return@contract CatogramConfig.disableParseEntities
+                }) {
+                    CatogramConfig.disableParseEntities = it
+                }
+            }
+
             list {
                 title = LocaleController.getString("CG_MsgSlideAction", R.string.CG_MsgSlideAction)
 

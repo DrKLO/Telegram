@@ -74,6 +74,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import ua.itaysonlab.catogram.CatogramConfig;
+
+
 @SuppressWarnings("unchecked")
 public class MediaDataController extends BaseController {
     private static Pattern BOLD_PATTERN = Pattern.compile("\\*\\*(.+?)\\*\\*"),
@@ -4769,7 +4772,7 @@ public class MediaDataController extends BaseController {
     }
 
     public ArrayList<TLRPC.MessageEntity> getEntities(CharSequence[] message, boolean allowStrike) {
-        if (message == null || message[0] == null) {
+        if (CatogramConfig.INSTANCE.getDisableParseEntities() || message == null || message[0] == null) {
             return null;
         }
         ArrayList<TLRPC.MessageEntity> entities = null;
