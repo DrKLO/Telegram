@@ -29,6 +29,7 @@ object CatogramExtras {
     fun isWhitelisted(id: Long): Boolean {
         return id in secretIdWhitelist
     }
+
     @JvmField
     var currentAccountBitmap: BitmapDrawable? = null
 
