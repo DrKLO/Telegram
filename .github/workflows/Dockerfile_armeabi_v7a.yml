@@ -1,10 +1,9 @@
 name: Docker Image CI armeabi_v7a
 
 on:
-  push:
-    branches: [ master ]
   pull_request:
     branches: [ master ]
+    types: [opened, closed]
 
 jobs:
   build_release:
@@ -20,6 +19,7 @@ jobs:
       - name: build app
         run: docker run --rm -v "$PWD":/home/source telegraher-${{ env.AARCH }}
       - name: release
+        if: github.event.pull_request.merged
         uses: actions/create-release@v1
         id: create_release
         with:
@@ -30,6 +30,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - name: upload apk basic
+        if: github.event.pull_request.merged
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -39,6 +40,7 @@ jobs:
           asset_name: ${{ env.ANAME }}${{ env.AARCH }}.apk
           asset_content_type: application/gzip
       - name: upload apk basic sdk23
+        if: github.event.pull_request.merged
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ github.token }}
