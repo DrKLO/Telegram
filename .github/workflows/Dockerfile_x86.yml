@@ -1,0 +1,54 @@
+name: Docker Image CI x86
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build_release:
+    name: build_release
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: build docker
+        run: docker build -t telegraher-${{ env.AARCH }} -f Dockerfile_${{ env.AARCH }} .
+      - name: build app
+        run: docker run --rm -v "$PWD":/home/source telegraher-${{ env.AARCH }}
+      - name: release
+        uses: actions/create-release@v1
+        id: create_release
+        with:
+          draft: false
+          prerelease: false
+          release_name: ${{ env.RNAME }}
+          tag_name: ${{ env.TNAME }}${{ env.AARCH }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: upload apk basic
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./TMessagesProj/build/outputs/apk/${{ env.AARCH }}/release/app.apk
+          asset_name: ${{ env.ANAME }}${{ env.AARCH }}.apk
+          asset_content_type: application/gzip
+      - name: upload apk basic sdk23
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./TMessagesProj/build/outputs/apk/${{ env.AARCH }}_sdk23/release/app.apk
+          asset_name: ${{ env.ANAME }}${{ env.AARCH }}_sdk23.apk
+          asset_content_type: application/gzip
+    env:
+      RNAME: Telegraher 8.5.4 release 1 ({{ env.AARCH }})
+      TNAME: noshit_8.5.4_r1_
+      ANAME: Telegraher.8.5.4r1.
+      AARCH: x86

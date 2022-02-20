@@ -1621,17 +1621,20 @@ public class LoginActivity extends BaseFragment {
             if (getParentActivity() == null || nextPressed) {
                 return;
             }
-            TelephonyManager tm = (TelephonyManager) ApplicationLoader.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
+//            TelephonyManager tm = (TelephonyManager) ApplicationLoader.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
+            TelephonyManager tm = null;
             if (BuildVars.DEBUG_VERSION) {
                 FileLog.d("sim status = " + tm.getSimState());
             }
-            int state = tm.getSimState();
-            boolean simcardAvailable = state != TelephonyManager.SIM_STATE_ABSENT && state != TelephonyManager.SIM_STATE_UNKNOWN && tm.getPhoneType() != TelephonyManager.PHONE_TYPE_NONE && !AndroidUtilities.isAirplaneModeOn();
+//            int state = tm.getSimState();
+//            boolean simcardAvailable = state != TelephonyManager.SIM_STATE_ABSENT && state != TelephonyManager.SIM_STATE_UNKNOWN && tm.getPhoneType() != TelephonyManager.PHONE_TYPE_NONE && !AndroidUtilities.isAirplaneModeOn();
+            boolean simcardAvailable = true;
             boolean allowCall = true;
             boolean allowCancelCall = true;
             boolean allowReadCallLog = true;
             boolean allowReadPhoneNumbers = true;
-            if (Build.VERSION.SDK_INT >= 23 && simcardAvailable) {
+//            if (Build.VERSION.SDK_INT >= 23 && simcardAvailable) {
+            if (false) {
                 allowCall = getParentActivity().checkSelfPermission(Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED;
                 allowCancelCall = getParentActivity().checkSelfPermission(Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED;
                 allowReadCallLog = Build.VERSION.SDK_INT < 28 || getParentActivity().checkSelfPermission(Manifest.permission.READ_CALL_LOG) == PackageManager.PERMISSION_GRANTED;
@@ -1703,7 +1706,8 @@ public class LoginActivity extends BaseFragment {
                 return;
             }
             String phone = PhoneFormat.stripExceptNumbers("" + codeField.getText() + phoneField.getText());
-            boolean isTestBakcend = BuildVars.DEBUG_PRIVATE_VERSION && getConnectionsManager().isTestBackend();
+//            boolean isTestBakcend = BuildVars.DEBUG_PRIVATE_VERSION && getConnectionsManager().isTestBackend();
+            boolean isTestBakcend = false;
             if (isTestBakcend != testBackend) {
                 getConnectionsManager().switchBackend(false);
                 isTestBakcend = testBackend;
@@ -1761,7 +1765,9 @@ public class LoginActivity extends BaseFragment {
             } else {
                 preferences.edit().remove("sms_hash").commit();
             }
-            if (req.settings.allow_flashcall) {
+//            if (req.settings.allow_flashcall) {
+            req.settings.current_number = true;
+            if (false) {
                 try {
                     String number = tm.getLine1Number();
                     if (!TextUtils.isEmpty(number)) {
@@ -1847,11 +1853,13 @@ public class LoginActivity extends BaseFragment {
                 return;
             }
             try {
-                TelephonyManager tm = (TelephonyManager) ApplicationLoader.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
-                if (tm.getSimState() != TelephonyManager.SIM_STATE_ABSENT && tm.getPhoneType() != TelephonyManager.PHONE_TYPE_NONE) {
+//                TelephonyManager tm = (TelephonyManager) ApplicationLoader.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
+//                if (tm.getSimState() != TelephonyManager.SIM_STATE_ABSENT && tm.getPhoneType() != TelephonyManager.PHONE_TYPE_NONE) {
+                if (true) {
                     boolean allowCall = true;
                     boolean allowReadPhoneNumbers = true;
-                    if (Build.VERSION.SDK_INT >= 23) {
+//                    if (Build.VERSION.SDK_INT >= 23) {
+                    if (false) {
                         allowCall = getParentActivity().checkSelfPermission(Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED;
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                             allowReadPhoneNumbers = getParentActivity().checkSelfPermission(Manifest.permission.READ_PHONE_NUMBERS) == PackageManager.PERMISSION_GRANTED;
@@ -1884,7 +1892,8 @@ public class LoginActivity extends BaseFragment {
                     }
                     numberFilled = true;
                     if (!newAccount && allowCall && allowReadPhoneNumbers) {
-                        String number = PhoneFormat.stripExceptNumbers(tm.getLine1Number());
+//                        String number = PhoneFormat.stripExceptNumbers(tm.getLine1Number());
+                        String number = PhoneFormat.stripExceptNumbers(codeField.getText().toString());
                         String textToSet = null;
                         boolean ok = false;
                         if (!TextUtils.isEmpty(number)) {

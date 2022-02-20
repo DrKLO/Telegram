@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AppName">Telegram</string>
-    <string name="AppNameBeta">Telegram Beta</string>
+    <string name="AppName">Telegraher</string>
+    <string name="AppNameBeta">Telegraher DEBUG</string>>
     <string name="LanguageName">English</string>
     <string name="English">English</string>
     <string name="LanguageNameInEnglish">English</string>
@@ -1061,6 +1061,7 @@
     <string name="PreviousPinnedMessage">Previous Message</string>
     <string name="PinnedPoll">Pinned poll</string>
     <string name="EditedMessage">edited</string>
+    <string name="DeletedMessage">deleted</string>
     <string name="EditMessage">Edit Message</string>
     <string name="EditCaption">Edit Caption</string>
     <string name="EditMessageMedia">Tap to edit media</string>
@@ -4944,6 +4945,7 @@
     <string name="DoubleTapSetting">Quick Reactions</string>
     <string name="DoubleTapPreviewRational">Double tap this message for a quck reaction.</string>
     <string name="ActionReactionsChanged">un1 changed chat reactions \nfrom: %1$s \nto: %2$s</string>
+    <string name="DebugDrawSnowInChat">Snow in chat</string>
     <string name="NobodyViewed">Nobody viewed</string>
     <string name="QrCode">QR Code</string>
 

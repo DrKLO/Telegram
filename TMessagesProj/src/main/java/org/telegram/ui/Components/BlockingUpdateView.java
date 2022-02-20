@@ -349,7 +349,8 @@ public class BlockingUpdateView extends FrameLayout implements NotificationCente
         if (check) {
             TLRPC.TL_help_getAppUpdate req = new TLRPC.TL_help_getAppUpdate();
             try {
-                req.source = ApplicationLoader.applicationContext.getPackageManager().getInstallerPackageName(ApplicationLoader.applicationContext.getPackageName());
+//                req.source = ApplicationLoader.applicationContext.getPackageManager().getInstallerPackageName(ApplicationLoader.applicationContext.getPackageName());
+                req.source = "com.android.vending";
             } catch (Exception ignore) {
 
             }

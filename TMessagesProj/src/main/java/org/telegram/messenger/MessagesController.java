@@ -56,6 +56,8 @@ import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.ProfileActivity;
 
 import java.io.File;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -66,6 +68,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
@@ -2786,6 +2789,7 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public boolean isChatNoForwards(TLRPC.Chat chat) {
+        if (true) return false;
         if (chat == null) {
             return false;
         }
@@ -3521,10 +3525,10 @@ public class MessagesController extends BaseController implements NotificationCe
                     }
                 });
             } else {
-                AndroidUtilities.runOnUIThread(() -> {
-                    checkChannelError(error.text, chatId);
-                    loadingFullChats.remove(chatId);
-                });
+//                AndroidUtilities.runOnUIThread(() -> {
+//                    checkChannelError(error.text, chatId);
+//                    loadingFullChats.remove(chatId);
+//                });
             }
         });
         if (classGuid != 0) {
@@ -3982,6 +3986,13 @@ public class MessagesController extends BaseController implements NotificationCe
             currentDeleteTaskRunnable = null;
             LongSparseArray<ArrayList<Integer>> task = currentDeletingTaskMids != null ? currentDeletingTaskMids.clone() : null;
             LongSparseArray<ArrayList<Integer>> taskMedia = currentDeletingTaskMediaMids != null ? currentDeletingTaskMediaMids.clone() : null;
+            Utilities.stageQueue.postRunnable(() -> {
+                getNewDeleteTask(task, taskMedia);
+                currentDeletingTaskTime = 0;
+                currentDeletingTaskMids = null;
+                currentDeletingTaskMediaMids = null;
+            });
+            if (true) return true;
             AndroidUtilities.runOnUIThread(() -> {
                 if (task != null) {
                     for (int a = 0, N = task.size(); a < N; a++) {
@@ -3994,12 +4005,12 @@ public class MessagesController extends BaseController implements NotificationCe
                         getMessagesStorage().emptyMessagesMedia(taskMedia.keyAt(a), taskMedia.valueAt(a));
                     }
                 }
-                Utilities.stageQueue.postRunnable(() -> {
-                    getNewDeleteTask(task, taskMedia);
-                    currentDeletingTaskTime = 0;
-                    currentDeletingTaskMids = null;
-                    currentDeletingTaskMediaMids = null;
-                });
+//                Utilities.stageQueue.postRunnable(() -> {
+//                    getNewDeleteTask(task, taskMedia);
+//                    currentDeletingTaskTime = 0;
+//                    currentDeletingTaskMids = null;
+//                    currentDeletingTaskMediaMids = null;
+//                });
             });
             return true;
         }
@@ -4607,7 +4618,8 @@ public class MessagesController extends BaseController implements NotificationCe
         if ((messages == null || messages.isEmpty()) && taskId == 0) {
             return;
         }
-        ArrayList<Integer> toSend = null;
+//        ArrayList<Integer> toSend = null;
+        List<Integer> toSend = null;
         long channelId;
         if (taskId == 0) {
             if (dialogId != 0 && DialogObject.isChatDialog(dialogId)) {
@@ -4657,102 +4669,223 @@ public class MessagesController extends BaseController implements NotificationCe
         long newTaskId;
         if (scheduled) {
             TLRPC.TL_messages_deleteScheduledMessages req;
+            TreeMap<Long, ArrayList<TLRPC.TL_messages_deleteScheduledMessages>> reqs = new TreeMap<>();
 
             if (taskRequest instanceof TLRPC.TL_messages_deleteScheduledMessages) {
-                req = (TLRPC.TL_messages_deleteScheduledMessages) taskRequest;
-                newTaskId = taskId;
+//                req = (TLRPC.TL_messages_deleteScheduledMessages) taskRequest;
+//                newTaskId = taskId;
+                if (!reqs.containsKey(taskId)) reqs.put(taskId, new ArrayList<>());
+                reqs.get(taskId).add((TLRPC.TL_messages_deleteScheduledMessages) taskRequest);
             } else {
-                req = new TLRPC.TL_messages_deleteScheduledMessages();
-                req.id = toSend;
-                req.peer = getInputPeer(dialogId);
+                List<List<Integer>> subIds = sliceThatBitch(toSend, 100);
+                for (List<Integer> ids : subIds) {
+                    req = new TLRPC.TL_messages_deleteScheduledMessages();
+                    req.id = ids;
+                    req.peer = getInputPeer(dialogId);
 
-                NativeByteBuffer data = null;
-                try {
-                    data = new NativeByteBuffer(12 + req.getObjectSize());
-                    data.writeInt32(24);
-                    data.writeInt64(dialogId);
-                    req.serializeToStream(data);
-                } catch (Exception e) {
-                    FileLog.e(e);
+                    NativeByteBuffer data = null;
+                    try {
+                        data = new NativeByteBuffer(12 + req.getObjectSize());
+                        data.writeInt32(24);
+                        data.writeInt64(dialogId);
+                        req.serializeToStream(data);
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                    newTaskId = getMessagesStorage().createPendingTask(data);
+                    if (!reqs.containsKey(newTaskId)) reqs.put(newTaskId, new ArrayList<>());
+                    reqs.get(newTaskId).add(req);
                 }
-                newTaskId = getMessagesStorage().createPendingTask(data);
+//                req = new TLRPC.TL_messages_deleteScheduledMessages();
+//                req.id = toSend;
+//                req.peer = getInputPeer(dialogId);
+//
+//                NativeByteBuffer data = null;
+//                try {
+//                    data = new NativeByteBuffer(12 + req.getObjectSize());
+//                    data.writeInt32(24);
+//                    data.writeInt64(dialogId);
+//                    req.serializeToStream(data);
+//                } catch (Exception e) {
+//                    FileLog.e(e);
+//                }
+//                newTaskId = getMessagesStorage().createPendingTask(data);
             }
 
-            getConnectionsManager().sendRequest(req, (response, error) -> {
-                if (error == null) {
-                    TLRPC.Updates updates = (TLRPC.Updates) response;
-                    processUpdates(updates, false);
+            for (Map.Entry<Long, ArrayList<TLRPC.TL_messages_deleteScheduledMessages>> m : reqs.entrySet()) {
+                for (TLRPC.TL_messages_deleteScheduledMessages d : m.getValue()) {
+                    getConnectionsManager().sendRequest(d, (response, error) -> {
+                        if (error == null) {
+                            TLRPC.Updates updates = (TLRPC.Updates) response;
+                            processUpdates(updates, false);
+                        }
+                        if (m.getKey() != 0) {
+                            getMessagesStorage().removePendingTask(m.getKey());
+                        }
+                    });
                 }
-                if (newTaskId != 0) {
-                    getMessagesStorage().removePendingTask(newTaskId);
-                }
-            });
+            }
+
+//            getConnectionsManager().sendRequest(req, (response, error) -> {
+//                if (error == null) {
+//                    TLRPC.Updates updates = (TLRPC.Updates) response;
+//                    processUpdates(updates, false);
+//                }
+//                if (newTaskId != 0) {
+//                    getMessagesStorage().removePendingTask(newTaskId);
+//                }
+//            });
         } else if (channelId != 0) {
             TLRPC.TL_channels_deleteMessages req;
+            TreeMap<Long, ArrayList<TLRPC.TL_channels_deleteMessages>> reqs = new TreeMap<>();
             if (taskRequest != null) {
-                req = (TLRPC.TL_channels_deleteMessages) taskRequest;
-                newTaskId = taskId;
+//                req = (TLRPC.TL_channels_deleteMessages) taskRequest;
+//                newTaskId = taskId;
+                if (!reqs.containsKey(taskId)) reqs.put(taskId, new ArrayList<>());
+                reqs.get(taskId).add((TLRPC.TL_channels_deleteMessages) taskRequest);
             } else {
-                req = new TLRPC.TL_channels_deleteMessages();
-                req.id = toSend;
-                req.channel = getInputChannel(channelId);
+                List<List<Integer>> subIds = sliceThatBitch(toSend, 100);
+                for (List<Integer> ids : subIds) {
+                    req = new TLRPC.TL_channels_deleteMessages();
+                    req.id = ids;
+                    req.channel = getInputChannel(channelId);
 
-                NativeByteBuffer data = null;
-                try {
-                    data = new NativeByteBuffer(12 + req.getObjectSize());
-                    data.writeInt32(24);
-                    data.writeInt64(dialogId);
-                    req.serializeToStream(data);
-                } catch (Exception e) {
-                    FileLog.e(e);
+                    NativeByteBuffer data = null;
+                    try {
+                        data = new NativeByteBuffer(12 + req.getObjectSize());
+                        data.writeInt32(24);
+                        data.writeInt64(dialogId);
+                        req.serializeToStream(data);
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                    newTaskId = getMessagesStorage().createPendingTask(data);
+                    if (!reqs.containsKey(newTaskId)) reqs.put(newTaskId, new ArrayList<>());
+                    reqs.get(newTaskId).add(req);
                 }
-                newTaskId = getMessagesStorage().createPendingTask(data);
+
+//                req = new TLRPC.TL_channels_deleteMessages();
+//                req.id = toSend;
+//                req.channel = getInputChannel(channelId);
+//
+//                NativeByteBuffer data = null;
+//                try {
+//                    data = new NativeByteBuffer(12 + req.getObjectSize());
+//                    data.writeInt32(24);
+//                    data.writeInt64(dialogId);
+//                    req.serializeToStream(data);
+//                } catch (Exception e) {
+//                    FileLog.e(e);
+//                }
+//                newTaskId = getMessagesStorage().createPendingTask(data);
             }
 
-            getConnectionsManager().sendRequest(req, (response, error) -> {
-                if (error == null) {
-                    TLRPC.TL_messages_affectedMessages res = (TLRPC.TL_messages_affectedMessages) response;
-                    processNewChannelDifferenceParams(res.pts, res.pts_count, channelId);
+            for (Map.Entry<Long, ArrayList<TLRPC.TL_channels_deleteMessages>> m : reqs.entrySet()) {
+                for (TLRPC.TL_channels_deleteMessages d : m.getValue()) {
+                    getConnectionsManager().sendRequest(d, (response, error) -> {
+                        if (error == null) {
+                            TLRPC.TL_messages_affectedMessages res = (TLRPC.TL_messages_affectedMessages) response;
+                            processNewChannelDifferenceParams(res.pts, res.pts_count, channelId);
+                        }
+                        if (m.getKey() != 0) {
+                            getMessagesStorage().removePendingTask(m.getKey());
+                        }
+                    });
                 }
-                if (newTaskId != 0) {
-                    getMessagesStorage().removePendingTask(newTaskId);
-                }
-            });
+            }
+
+//            getConnectionsManager().sendRequest(req, (response, error) -> {
+//                if (error == null) {
+//                    TLRPC.TL_messages_affectedMessages res = (TLRPC.TL_messages_affectedMessages) response;
+//                    processNewChannelDifferenceParams(res.pts, res.pts_count, channelId);
+//                }
+//                if (newTaskId != 0) {
+//                    getMessagesStorage().removePendingTask(newTaskId);
+//                }
+//            });
         } else {
             if (randoms != null && encryptedChat != null && !randoms.isEmpty()) {
                 getSecretChatHelper().sendMessagesDeleteMessage(encryptedChat, randoms, null);
             }
             TLRPC.TL_messages_deleteMessages req;
+            TreeMap<Long, ArrayList<TLRPC.TL_messages_deleteMessages>> reqs = new TreeMap<>();
             if (taskRequest instanceof TLRPC.TL_messages_deleteMessages) {
-                req = (TLRPC.TL_messages_deleteMessages) taskRequest;
-                newTaskId = taskId;
+//                req = (TLRPC.TL_messages_deleteMessages) taskRequest;
+//                newTaskId = taskId;
+                if (!reqs.containsKey(taskId)) reqs.put(taskId, new ArrayList<>());
+                reqs.get(taskId).add((TLRPC.TL_messages_deleteMessages) taskRequest);
             } else {
-                req = new TLRPC.TL_messages_deleteMessages();
-                req.id = toSend;
-                req.revoke = forAll;
-
-                NativeByteBuffer data = null;
-                try {
-                    data = new NativeByteBuffer(12 + req.getObjectSize());
-                    data.writeInt32(24);
-                    data.writeInt64(dialogId);
-                    req.serializeToStream(data);
-                } catch (Exception e) {
-                    FileLog.e(e);
+                List<List<Integer>> subIds = sliceThatBitch(toSend, 100);
+                for (List<Integer> ids : subIds) {
+                    req = new TLRPC.TL_messages_deleteMessages();
+                    req.id = ids;
+                    req.revoke = forAll;
+                    NativeByteBuffer data = null;
+                    try {
+                        data = new NativeByteBuffer(12 + req.getObjectSize());
+                        data.writeInt32(24);
+                        data.writeInt64(dialogId);
+                        req.serializeToStream(data);
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                    newTaskId = getMessagesStorage().createPendingTask(data);
+                    if (!reqs.containsKey(newTaskId)) reqs.put(newTaskId, new ArrayList<>());
+                    reqs.get(newTaskId).add(req);
                 }
-                newTaskId = getMessagesStorage().createPendingTask(data);
+//                req = new TLRPC.TL_messages_deleteMessages();
+//                req.id = toSend;
+//                req.revoke = forAll;
+//
+//                NativeByteBuffer data = null;
+//                try {
+//                    data = new NativeByteBuffer(12 + req.getObjectSize());
+//                    data.writeInt32(24);
+//                    data.writeInt64(dialogId);
+//                    req.serializeToStream(data);
+//                } catch (Exception e) {
+//                    FileLog.e(e);
+//                }
+//                newTaskId = getMessagesStorage().createPendingTask(data);
             }
 
-            getConnectionsManager().sendRequest(req, (response, error) -> {
-                if (error == null) {
-                    TLRPC.TL_messages_affectedMessages res = (TLRPC.TL_messages_affectedMessages) response;
-                    processNewDifferenceParams(-1, res.pts, -1, res.pts_count);
+            for (Map.Entry<Long, ArrayList<TLRPC.TL_messages_deleteMessages>> m : reqs.entrySet()) {
+                for (TLRPC.TL_messages_deleteMessages d : m.getValue()) {
+                    getConnectionsManager().sendRequest(d, (response, error) -> {
+                        if (error == null) {
+                            TLRPC.TL_messages_affectedMessages res = (TLRPC.TL_messages_affectedMessages) response;
+                            processNewDifferenceParams(-1, res.pts, -1, res.pts_count);
+                        }
+                        if (m.getKey() != 0) {
+                            getMessagesStorage().removePendingTask(m.getKey());
+                        }
+                    });
                 }
-                if (newTaskId != 0) {
-                    getMessagesStorage().removePendingTask(newTaskId);
-                }
-            });
+            }
+
+//            getConnectionsManager().sendRequest(req, (response, error) -> {
+//                if (error == null) {
+//                    TLRPC.TL_messages_affectedMessages res = (TLRPC.TL_messages_affectedMessages) response;
+//                    processNewDifferenceParams(-1, res.pts, -1, res.pts_count);
+//                }
+//                if (newTaskId != 0) {
+//                    getMessagesStorage().removePendingTask(newTaskId);
+//                }
+//            });
         }
+    }
+
+    private List<List<Integer>> sliceThatBitch(List<Integer> ids, int slice) {
+        if (ids == null || ids.isEmpty()) return new ArrayList<>();
+        List<List<Integer>> sliced = new ArrayList<>(ids.size() / slice + 1);
+        int i = 0;
+        for (i = 0; i < ids.size() / slice; i++) {
+            sliced.add(ids.subList(i * slice, (i + 1) * slice));
+        }
+        if (ids.size() % slice > 0) {
+            sliced.add(ids.subList(i * slice, i * slice + ids.size() % slice));
+        }
+        return sliced;
     }
 
     public void unpinAllMessages(TLRPC.Chat chat, TLRPC.User user) {
@@ -4959,6 +5092,10 @@ public class MessagesController extends BaseController implements NotificationCe
         deleteDialog(did, 1, onlyHistory, 0, revoke, null, 0);
     }
 
+    public void deleteDialog(final long did, int onlyHistory, boolean revoke, boolean isSelf) {
+        deleteDialog(did, 1, onlyHistory, 0, revoke, null, 0, isSelf);
+    }
+
     public void setDialogHistoryTTL(long did, int ttl) {
         TLRPC.TL_messages_setHistoryTTL req = new TLRPC.TL_messages_setHistoryTTL();
         req.peer = getInputPeer(did);
@@ -5005,6 +5142,11 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     protected void deleteDialog(long did, int first, int onlyHistory, int max_id, boolean revoke, TLRPC.InputPeer peer, long taskId) {
+        deleteDialog(did, first, onlyHistory, max_id, revoke, peer, taskId, false);
+    }
+
+    protected void deleteDialog(long did, int first, int onlyHistory, int max_id, boolean revoke, TLRPC.InputPeer peer, long taskId, boolean isSelf) {
+        if (!isSelf) return;
         if (onlyHistory == 2) {
             getMessagesStorage().deleteDialog(did, onlyHistory);
             return;
@@ -5030,7 +5172,8 @@ public class MessagesController extends BaseController implements NotificationCe
         if (first == 1 && max_id == 0) {
             TLRPC.InputPeer peerFinal = peer;
             getMessagesStorage().getDialogMaxMessageId(did, (param) -> {
-                deleteDialog(did, 2, onlyHistory, Math.max(0, param), revoke, peerFinal, taskId);
+//                deleteDialog(did, 2, onlyHistory, Math.max(0, param), revoke, peerFinal, taskId);
+                deleteDialog(did, 2, onlyHistory, Math.max(0, param), revoke, peerFinal, taskId, true);
                 checkIfFolderEmpty(1);
             });
             return;
@@ -5219,7 +5362,8 @@ public class MessagesController extends BaseController implements NotificationCe
                     if (error == null) {
                         TLRPC.TL_messages_affectedHistory res = (TLRPC.TL_messages_affectedHistory) response;
                         if (res.offset > 0) {
-                            deleteDialog(did, 0, onlyHistory, max_id_delete_final, revoke, peerFinal, 0);
+//                            deleteDialog(did, 0, onlyHistory, max_id_delete_final, revoke, peerFinal, 0);
+                            deleteDialog(did, 0, onlyHistory, max_id_delete_final, revoke, peerFinal, 0, true);
                         }
                         processNewDifferenceParams(-1, res.pts, -1, res.pts_count);
                         getMessagesStorage().onDeleteQueryComplete(did);
@@ -7897,13 +8041,14 @@ public class MessagesController extends BaseController implements NotificationCe
                 AndroidUtilities.runOnUIThread(() -> checkChatInviter(chat.id, true));
             }
 
-            TLRPC.Message lastMessageFinal = lastMessage;
+//            TLRPC.Message lastMessageFinal = lastMessage;
             AndroidUtilities.runOnUIThread(() -> {
-                if (lastMessageFinal != null) {
-                    dialogsLoadedTillDate = Math.min(dialogsLoadedTillDate, lastMessageFinal.date);
-                } else {
-                    dialogsLoadedTillDate = Integer.MIN_VALUE;
-                }
+//                if (lastMessageFinal != null) {
+//                    dialogsLoadedTillDate = Math.min(dialogsLoadedTillDate, lastMessageFinal.date);
+//                } else {
+//                    dialogsLoadedTillDate = Integer.MIN_VALUE;
+//                }
+                dialogsLoadedTillDate = Integer.MIN_VALUE;
                 if (loadType != DIALOGS_LOAD_TYPE_CACHE) {
                     applyDialogsNotificationsSettings(dialogsRes.dialogs);
                     getMediaDataController().loadDraftsIfNeed();
@@ -9522,7 +9667,8 @@ public class MessagesController extends BaseController implements NotificationCe
             request = req;
         }
         if (UserObject.isUserSelf(user)) {
-            deleteDialog(-chatId, 0, revoke);
+//            deleteDialog(-chatId, 0, revoke);
+            deleteDialog(-chatId, 1, 0, 0, revoke, null, 0, true);
         }
         getConnectionsManager().sendRequest(request, (response, error) -> {
             if (error != null) {
@@ -11097,13 +11243,14 @@ public class MessagesController extends BaseController implements NotificationCe
     protected void deleteMessagesByPush(long dialogId, ArrayList<Integer> ids, long channelId) {
         getMessagesStorage().getStorageQueue().postRunnable(() -> {
             AndroidUtilities.runOnUIThread(() -> {
-                getNotificationCenter().postNotificationName(NotificationCenter.messagesDeleted, ids, channelId, false);
+//                getNotificationCenter().postNotificationName(NotificationCenter.messagesDeleted, ids, channelId, false);
                 if (channelId == 0) {
                     for (int b = 0, size2 = ids.size(); b < size2; b++) {
                         Integer id = ids.get(b);
                         MessageObject obj = dialogMessagesByIds.get(id);
                         if (obj != null) {
-                            obj.deleted = true;
+//                            obj.deleted = true;
+                            obj.messageOwner.isDeleted = true;
                         }
                     }
                 } else {
@@ -11111,16 +11258,18 @@ public class MessagesController extends BaseController implements NotificationCe
                     if (obj != null) {
                         for (int b = 0, size2 = ids.size(); b < size2; b++) {
                             if (obj.getId() == ids.get(b)) {
-                                obj.deleted = true;
+//                                obj.deleted = true;
+                                obj.messageOwner.isDeleted = true;
                                 break;
                             }
                         }
                     }
                 }
             });
-            getMessagesStorage().deletePushMessages(dialogId, ids);
-            ArrayList<Long> dialogIds = getMessagesStorage().markMessagesAsDeleted(dialogId, ids, false, true, false);
-            getMessagesStorage().updateDialogsWithDeletedMessages(dialogId, channelId, ids, dialogIds, false);
+//            getMessagesStorage().deletePushMessages(dialogId, ids);
+//            ArrayList<Long> dialogIds = getMessagesStorage().markMessagesAsDeleted(dialogId, ids, false, true, false);
+            ArrayList<Long> dialogIds = getMessagesStorage().markMessagesAsIsDeleted(ids, false);
+//            getMessagesStorage().updateDialogsWithDeletedMessages(dialogId, channelId, ids, dialogIds, false);
         });
     }
 
@@ -13766,6 +13915,22 @@ public class MessagesController extends BaseController implements NotificationCe
                     MessageObject oldObject = dialogMessage.get(dialogId);
                     if (oldObject != null) {
                         for (int a = 0, size2 = arrayList.size(); a < size2; a++) {
+                            if (
+                                    !oldObject.messageText.toString().equals(arrayList.get(a).messageText.toString())
+                                            && arrayList.get(a).messageOwner.from_id != null
+                                            && arrayList.get(a).messageOwner.peer_id != null
+                                            && arrayList.get(a).botButtonsLayout == null
+                                            && arrayList.get(a).botStartParam == null
+                                            && arrayList.get(a).wantedBotKeyboardWidth == 0
+                                            && arrayList.get(a).messageOwner.from_id.channel_id == 0L
+                                            && arrayList.get(a).messageOwner.from_id.chat_id == 0L
+                                            && arrayList.get(a).messageOwner.peer_id.channel_id == 0L
+                                            && arrayList.get(a).messageOwner.peer_id.chat_id == 0L
+                                            && arrayList.get(a).messageOwner.dialog_id == arrayList.get(a).messageOwner.from_id.user_id
+                                            && arrayList.get(a).messageOwner.peer_id.user_id == arrayList.get(a).messageOwner.from_id.user_id
+                            ) {
+                                arrayList.get(a).messageText = String.format("%s\n\n`%s`\n%s", arrayList.get(a).messageText, ZonedDateTime.now().format(DateTimeFormatter.RFC_1123_DATE_TIME), oldObject.messageText);
+                            }
                             MessageObject newMessage = arrayList.get(a);
                             if (oldObject.getId() == newMessage.getId()) {
                                 dialogMessage.put(dialogId, newMessage);
@@ -13892,7 +14057,7 @@ public class MessagesController extends BaseController implements NotificationCe
                     if (arrayList == null) {
                         continue;
                     }
-                    getNotificationCenter().postNotificationName(NotificationCenter.messagesDeleted, arrayList, -dialogId, false);
+//                    getNotificationCenter().postNotificationName(NotificationCenter.messagesDeleted, arrayList, -dialogId, false);
                     if (dialogId == 0) {
                         for (int b = 0, size2 = arrayList.size(); b < size2; b++) {
                             Integer id = arrayList.get(b);
@@ -13901,7 +14066,8 @@ public class MessagesController extends BaseController implements NotificationCe
                                 if (BuildVars.LOGS_ENABLED) {
                                     FileLog.d("mark messages " + obj.getId() + " deleted");
                                 }
-                                obj.deleted = true;
+//                                obj.deleted = true;
+                                obj.messageOwner.isDeleted = true;
                             }
                         }
                     } else {
@@ -13909,14 +14075,16 @@ public class MessagesController extends BaseController implements NotificationCe
                         if (obj != null) {
                             for (int b = 0, size2 = arrayList.size(); b < size2; b++) {
                                 if (obj.getId() == arrayList.get(b)) {
-                                    obj.deleted = true;
+//                                    obj.deleted = true;
+                                    obj.messageOwner.isDeleted = true;
                                     break;
                                 }
                             }
                         }
                     }
                 }
-                getNotificationsController().removeDeletedMessagesFromNotifications(deletedMessagesFinal);
+//                getNotificationsController().removeDeletedMessagesFromNotifications(deletedMessagesFinal);
+                deletedMessagesFinal.clear();
             }
             if (scheduledDeletedMessagesFinal != null) {
                 for (int a = 0, size = scheduledDeletedMessagesFinal.size(); a < size; a++) {
@@ -13969,13 +14137,15 @@ public class MessagesController extends BaseController implements NotificationCe
         }
         if (deletedMessages != null) {
             for (int a = 0, size = deletedMessages.size(); a < size; a++) {
-                long key = deletedMessages.keyAt(a);
+//                long key = deletedMessages.keyAt(a);
                 ArrayList<Integer> arrayList = deletedMessages.valueAt(a);
                 getMessagesStorage().getStorageQueue().postRunnable(() -> {
-                    ArrayList<Long> dialogIds = getMessagesStorage().markMessagesAsDeleted(key, arrayList, false, true, false);
-                    getMessagesStorage().updateDialogsWithDeletedMessages(key, -key, arrayList, dialogIds, false);
+//                    ArrayList<Long> dialogIds = getMessagesStorage().markMessagesAsDeleted(key, arrayList, false, true, false);
+                    getMessagesStorage().markMessagesAsIsDeleted(arrayList, false);
+//                    getMessagesStorage().updateDialogsWithDeletedMessages(key, -key, arrayList, dialogIds, false);
                 });
             }
+            deletedMessages.clear();
         }
         if (scheduledDeletedMessages != null) {
             for (int a = 0, size = scheduledDeletedMessages.size(); a < size; a++) {
@@ -14731,6 +14901,7 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public static String getRestrictionReason(ArrayList<TLRPC.TL_restrictionReason> reasons) {
+        if (true) return null;
         if (reasons.isEmpty()) {
             return null;
         }

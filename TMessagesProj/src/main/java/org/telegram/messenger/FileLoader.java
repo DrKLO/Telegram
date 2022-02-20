@@ -932,7 +932,8 @@ public class FileLoader extends BaseController {
                 if (sizes.size() > 0) {
                     TLRPC.PhotoSize sizeFull = getClosestPhotoSizeWithSize(sizes, AndroidUtilities.getPhotoSize(), false, null, true);
                     if (sizeFull != null) {
-                        return getPathToAttach(sizeFull, message.media.ttl_seconds != 0);
+//                        return getPathToAttach(sizeFull, message.media.ttl_seconds != 0);
+                        return getPathToAttach(sizeFull, false);
                     }
                 }
             } else if (message.media instanceof TLRPC.TL_messageMediaWebPage) {

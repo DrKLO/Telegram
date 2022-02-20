@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AppName">تيليجرام</string>
-    <string name="AppNameBeta">Telegram Beta</string>
+    <string name="AppName">Telegraher</string>
+    <string name="AppNameBeta">Telegraher DEBUG</string>
     <string name="LanguageName">العربية</string>
     <string name="English">الإنجليزية</string>
     <string name="LanguageNameInEnglish">Arabic</string>
@@ -1030,6 +1030,7 @@
     <string name="PreviousPinnedMessage">الرسالة السابقة</string>
     <string name="PinnedPoll">استفتاء مثبت</string>
     <string name="EditedMessage">معدلة</string>
+    <string name="DeletedMessage">تم الحذف</string>
     <string name="EditMessage">تعديل الرسالة</string>
     <string name="EditCaption">تعديل الوصف</string>
     <string name="EditMessageMedia">انقر لتعديل الوسائط</string>

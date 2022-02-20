@@ -47,7 +47,7 @@ android {
     buildToolsVersion '31.0.0'
     ndkVersion "21.4.7075529"
 
-    defaultConfig.applicationId = "org.telegram.messenger"
+    defaultConfig.applicationId = "com.evildayz.code.telegraher"
 
     sourceSets.main.jniLibs.srcDirs = ['./jni/']
 
@@ -189,7 +189,7 @@ android {
     flavorDimensions "minApi"
 
     productFlavors {
-        armv7 {
+        armeabi_v7a {
             ndk {
                 abiFilters "armeabi-v7a"
             }
@@ -205,7 +205,7 @@ android {
                 abiVersionCode = 2
             }
         }
-        armv7_SDK23 {
+        armeabi_v7a_sdk23 {
             ndk {
                 abiFilters "armeabi-v7a"
             }
@@ -220,7 +220,7 @@ android {
                 abiVersionCode = 3
             }
         }
-        x86_SDK23 {
+        x86_sdk23 {
             ndk {
                 abiFilters "x86"
             }
@@ -235,7 +235,7 @@ android {
                 abiVersionCode = 4
             }
         }
-        arm64 {
+        arm64_v8a {
             ndk {
                 abiFilters "arm64-v8a"
             }
@@ -243,7 +243,7 @@ android {
                 abiVersionCode = 5
             }
         }
-        x64 {
+        x86_64 {
             ndk {
                 abiFilters "x86_64"
             }
@@ -251,7 +251,7 @@ android {
                 abiVersionCode = 6
             }
         }
-        arm64_SDK23 {
+        arm64_v8a_sdk23 {
             ndk {
                 abiFilters "arm64-v8a"
             }
@@ -266,7 +266,7 @@ android {
                 abiVersionCode = 7
             }
         }
-        x64_SDK23 {
+        x86_64_sdk23 {
             ndk {
                 abiFilters "x86_64"
             }
