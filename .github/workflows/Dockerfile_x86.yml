@@ -1,4 +1,4 @@
-name: Docker Image CI armeabi_v7a
+name: Docker Image CI x86
 
 on:
   push:
@@ -51,4 +51,4 @@ jobs:
       RNAME: Telegraher 8.5.4 release 1 ({{ env.AARCH }})
       TNAME: noshit_8.5.4_r1_
       ANAME: Telegraher.8.5.4r1.
-      AARCH: armeabi_v7a
+      AARCH: x86
