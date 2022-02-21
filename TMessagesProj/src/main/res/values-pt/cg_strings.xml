@@ -4,13 +4,13 @@
     <string name="AdvancedSettings">Catogram Preferences</string>
     <string name="AS_Header_Appearance">Appearance</string>
     <string name="AS_HideUserPhone">Hide phone number</string>
-    <string name="AS_HideUserPhoneSummary">in drawer and settings</string>
+    <string name="AS_HideUserPhoneSummary">In drawer and settings</string>
     <string name="AS_NoRounding">Disable number rounding</string>
     <string name="AS_NoRoundingSummary">1.2K -&gt; 1234</string>
     <string name="AS_Vibration">Disable vibration</string>
     <string name="AS_Header_Fun">Funny things</string>
     <string name="AS_ForceNY">Force New Year appearance</string>
-    <string name="AS_ForceNYSummary">restart application to apply</string>
+    <string name="AS_ForceNYSummary">Restart application to apply</string>
     <string name="AS_ForcePacman">Force Pacman animation</string>
     <string name="AS_ForcePacmanSummary">when archiving chat</string>
     <string name="AS_Header_Privacy">Privacy</string>

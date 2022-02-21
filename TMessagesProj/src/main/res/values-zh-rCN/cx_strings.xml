@@ -41,8 +41,8 @@
     <string name="CX_DisableReactionAnimDesc">在点击回应时的动画效果</string>
     <string name="CX_DB_AccountsHint">双层按钮允许您为不同的账号设置不同的密码。
 \n
-\n尝试为已配置的帐户设置密码将会把密码替换成新的的密码。
-\n长按一个条目以删除密码，然后再次输入它。</string>
+\n尝试为已加密的帐户设置密码将会把旧密码替换成新的密码。
+\n长按输入框以删除旧密码，然后重新输入以设置新密码。</string>
     <string name="CX_DismissStorageDialog2">为了永久关闭对话框，请授予权限或在 CatoX 设置中启用 SAF。</string>
     <string name="CX_SystemFontsDesc">易引发Bug，不建议启用</string>
     <string name="TFOSS_Proxy">如果当地的ISP屏蔽了对Telegram的访问，可能需要设置代理才能正常登录</string>
@@ -57,8 +57,8 @@
     <string name="CX_EnableSAF_Desc">仅用于Android 11+ 。可利用 Google 文件管理器访问外部存储。仅禁用本应用访问所有文件的权限时可用</string>
     <string name="CX_ShowSeconds">时间精确到秒</string>
     <string name="CX_EnableSAF_Warn">请禁用本应用的完全文件访问权限，以使强制调用SAF功能生效</string>
-    <string name="SaveToDownloadCount_zero">已将%1$d个文件保存到下载</string>
-    <string name="SaveToDownloadCount_one">已将%1$d个文件保存到下载</string>
+    <string name="SaveToDownloadCount_zero">%1$d个文件已保存到下载</string>
+    <string name="SaveToDownloadCount_one">%1$d个文件已保存到下载</string>
     <string name="CX_TabIconMode_AppTitle">应用主标题显示当前文件夹名称</string>
     <string name="SaveToDownloadCount_many">%1$d个文件已保存到下载</string>
     <string name="SaveToDownloadCount_other">%1$d个文件已保存到下载</string>

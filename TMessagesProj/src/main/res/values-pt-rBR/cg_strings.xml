@@ -10,9 +10,9 @@
     <string name="AS_Vibration">Desativar vibração</string>
     <string name="AS_Header_Fun">Coisas engraçadas</string>
     <string name="AS_ForceNY">Forçar aparência de Ano Novo</string>
-    <string name="AS_ForceNYSummary">restart application to apply</string>
+    <string name="AS_ForceNYSummary">Reinicie o aplicativo para aplicar</string>
     <string name="AS_ForcePacman">Force Pacman animation</string>
-    <string name="AS_ForcePacmanSummary">when archiving chat</string>
+    <string name="AS_ForcePacmanSummary">ao arquivar as conversas</string>
     <string name="AS_Header_Privacy">Privacy</string>
     <string name="AS_NoProxyPromo">Don\'t show proxy sponsor</string>
     <string name="AS_NoTyping">Don\'t send typing status</string>
@@ -30,14 +30,14 @@
     <string name="CG_ToChannel">Open official channel</string>
     <string name="CG_ToChat">Open official chat</string>
     <string name="AS_SysEmoji">Use system emoji</string>
-    <string name="AS_SysEmojiDesc">can cause bugs, be careful</string>
+    <string name="AS_SysEmojiDesc">Pode causar bugs, tenha cuidado</string>
     <string name="AS_DrawerAvatar">Avatar as header background</string>
     <string name="AS_DrawerBlur">Blur header background</string>
     <string name="AS_DrawerDarken">Darken header background</string>
     <string name="AS_DrawerCategory">Drawer</string>
     <string name="AS_FlatSB">Flat statusbar</string>
     <string name="AS_FlatAB">Disable toolbar shadow</string>
-    <string name="AS_FlatSB_Desc">only for Android 6+</string>
+    <string name="AS_FlatSB_Desc">Apenas para Android 6+</string>
     <string name="AS_RedesignCategory">Redesign</string>
     <string name="CG_Filters_Header">Dialog filter</string>
     <string name="CG_Filters_PM">Private Messages</string>
@@ -48,7 +48,7 @@
     <string name="CG_Filters_All">All chats</string>
     <string name="AS_Filters_Header">Chat filters</string>
     <string name="AS_Filters_Count">Show chat count in chooser</string>
-    <string name="AS_Filters_Count_Desc">instead of unread messages count</string>
+    <string name="AS_Filters_Count_Desc">Em vez da contagem de mensagens não lidas</string>
     <string name="AS_Filters_THint">Show filter menu hint</string>
     <string name="AS_Filters_THintDesc">on toolbar subtitle</string>
     <string name="CG_Filters_GenericHint">Please note that this option will be saved across restarts.</string>

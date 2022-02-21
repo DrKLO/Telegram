@@ -17,7 +17,7 @@
     <string name="AS_NoProxyPromo">Не показывать спонсора прокси</string>
     <string name="AS_NoTyping">Не отправлять статус написания</string>
     <string name="AS_DisableFlagSecure">Включить скриншоты в секретных чатах</string>
-    <string name="AS_Hidden">Скрыто</string>
+    <string name="AS_Hidden">Скрыт</string>
     <string name="AS_UserID">ID пользователя</string>
     <string name="AS_GroupID">ID группы</string>
     <string name="CatogramVersion">Catogram %1$s</string>
@@ -119,12 +119,12 @@
     <string name="AS_ForceSV_Drawer">Св. Валентин</string>
     <string name="AS_ForceDefault_Drawer">По умолчанию</string>
     <string name="AS_KbdWebp">Отправлять фото из клавиатуры как стикеры</string>
-    <string name="AS_KbdWebp_Desc">для SKeyboard, GBoard и других</string>
+    <string name="AS_KbdWebp_Desc">Для SKeyboard, GBoard и других</string>
     <string name="AS_ChangeIcon">Иконка приложения</string>
     <string name="AS_ChangeIcon_Old">По умолчанию</string>
-    <string name="AS_ChangeIcon_AltBlue">Синяя новая (от @RKBDI)</string>
-    <string name="AS_ChangeIcon_AltOrange">Оранжевая новая (от @RKBDI)</string>
-    <string name="AS_ForwardNoAuthorship">Пересылка без автора (бета)</string>
+    <string name="AS_ChangeIcon_AltBlue">Синяя Новая (от RKBDI)</string>
+    <string name="AS_ChangeIcon_AltOrange">Оранжевая новая (от RKBDI)</string>
+    <string name="AS_ForwardNoAuthorship">Пересылка без автора</string>
     <string name="AS_ForwardNoAuthorship_Desc">Сейчас работает только на старом стиле</string>
     <string name="CG_ForwardMsgDate">Показывать дату пересланного сообщения</string>
     <string name="CG_Translate">Перевести</string>
@@ -261,7 +261,7 @@
     <string name="CG_Found">Найдено обновление</string>
     <string name="CG_Download">Скачать</string>
     <string name="CG_PrivateDir">Приватное хранилище кэша</string>
-    <string name="CG_PrivateDir_desc">Кэш будет сохранен в приватном хранилище приложения. Вы или кто-либо другой не сможете получить к нему доступ без root прав</string>
+    <string name="CG_PrivateDir_desc">Кэш будет сохранен в приватном хранилище приложения. Вы или кто-либо другой не сможете получить к нему доступ без root-прав</string>
     <string name="CG_RemovedS">Успешно удалено</string>
     <string name="CG_CleanOld">Очистить старый кэш (/sdcard/Telegram)</string>
     <string name="CG_Changelog">Список изменений</string>
