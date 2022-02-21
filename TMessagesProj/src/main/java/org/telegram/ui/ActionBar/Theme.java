@@ -136,8 +136,6 @@ import ua.itaysonlab.catogram.MonetHelper;
 import androidx.annotation.UiThread;
 import androidx.core.graphics.ColorUtils;
 
-import com.google.android.exoplayer2.util.Log;
-
 public class Theme {
 
     public static final String DEFAULT_BACKGROUND_SLUG = "d";
