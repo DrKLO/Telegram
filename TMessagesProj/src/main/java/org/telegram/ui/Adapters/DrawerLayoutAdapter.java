@@ -250,7 +250,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
         if (eventType == 0) {
             newGroupIcon = R.drawable.menu_groups_ny;
             //newSecretIcon = R.drawable.menu_secret_ny;
-            //newChannelIcon = R.drawable.menu_channel_ny;
+            newChannelIcon = R.drawable.menu_channel_ny;
             contactsIcon = R.drawable.menu_contacts_ny;
             callsIcon = R.drawable.menu_calls_ny;
             savedIcon = R.drawable.menu_bookmarks_ny;
@@ -261,7 +261,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
         } else if (eventType == 1) {
             newGroupIcon = R.drawable.menu_groups_14;
             //newSecretIcon = R.drawable.menu_secret_14;
-            //newChannelIcon = R.drawable.menu_broadcast_14;
+            newChannelIcon = R.drawable.menu_broadcast_14;
             contactsIcon = R.drawable.menu_contacts_14;
             callsIcon = R.drawable.menu_calls_14;
             savedIcon = R.drawable.menu_bookmarks_14;
@@ -272,7 +272,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
         } else if (eventType == 2) {
             newGroupIcon = R.drawable.menu_groups_hw;
             //newSecretIcon = R.drawable.menu_secret_hw;
-            //newChannelIcon = R.drawable.menu_broadcast_hw;
+            newChannelIcon = R.drawable.menu_broadcast_hw;
             contactsIcon = R.drawable.menu_contacts_hw;
             callsIcon = R.drawable.menu_calls_hw;
             savedIcon = R.drawable.menu_bookmarks_hw;
@@ -283,7 +283,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
         } else {
             newGroupIcon = R.drawable.menu_groups;
             //newSecretIcon = R.drawable.menu_secret;
-            //newChannelIcon = R.drawable.menu_broadcast;
+            newChannelIcon = R.drawable.menu_broadcast;
             contactsIcon = R.drawable.menu_contacts;
             callsIcon = R.drawable.menu_calls;
             savedIcon = R.drawable.menu_saved;
@@ -294,7 +294,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
         }
         items.add(new Item(2, LocaleController.getString("NewGroup", R.string.NewGroup), newGroupIcon));
         //items.add(new Item(3, LocaleController.getString("NewSecretChat", R.string.NewSecretChat), newSecretIcon));
-        //items.add(new Item(4, LocaleController.getString("NewChannel", R.string.NewChannel), newChannelIcon));
+        items.add(new Item(4, LocaleController.getString("NewChannel", R.string.NewChannel), newChannelIcon));
         items.add(new Item(6, LocaleController.getString("Contacts", R.string.Contacts), contactsIcon));
         items.add(new Item(10, LocaleController.getString("Calls", R.string.Calls), callsIcon));
         if (hasGps) {
