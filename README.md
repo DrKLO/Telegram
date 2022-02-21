@@ -166,17 +166,17 @@ It's very simple
 * **sdk23** mean for android 6+, the other are working from 4.1+
     * so if you have android 6 or higher, you should download **sdk23** version
 * arm64-v8a (new devices)
-    * `fa7cb14931ed7550f8b439184060727326ebd96d898be4f74b8de6837a5a7011`  [Telegraher.8.5.4r1.arm64_v8a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_release1/Telegraher.8.5.4r1.arm64_v8a.apk)
-    * `91bc0556392ef6e2781afe37b35a1b758bd728bd02287114c8db7033834d0750`  [Telegraher.8.5.4r1.arm64_v8a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_release1/Telegraher.8.5.4r1.arm64_v8a_sdk23.apk  )
+    * `x`  [Telegraher.8.5.4r2.arm64_v8a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r2_arm64_v8a/Telegraher.8.5.4r2.arm64_v8a.apk)
+    * `x`  [Telegraher.8.5.4r2.arm64_v8a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r2_arm64_v8a/Telegraher.8.5.4r2.arm64_v8a_sdk23.apk)
 * armeabi-v7a (old devices)
-    * `69f69bf61a1f1c78139d10da0079f27917bd886cd078c650f7028a7578b370af`  [Telegraher.8.5.4r1.armeabi_v7a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_release1/Telegraher.8.5.4r1.armeabi_v7a.apk)
-    * `72720d3078d4a46f9a6192c32557a94024ca9b5bbddfa0f97a08ef17554f0d52`  [Telegraher.8.5.4r1.armeabi_v7a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_release1/Telegraher.8.5.4r1.armeabi_v7a_sdk23.apk)
+    * `x`  [Telegraher.8.5.4r2.armeabi_v7a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r2_armeabi_v7a/Telegraher.8.5.4r2.armeabi_v7a.apk)
+    * `x`  [Telegraher.8.5.4r2.armeabi_v7a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r2_armeabi_v7a/Telegraher.8.5.4r2.armeabi_v7a_sdk23.apk)
 * PC x86, 32 bits (for an emulator for example)
-    * `9bc8f9fc2580da967d8e1f72df9e852e4fe126e6004fd64b7900a28ffdb1771e`  [Telegraher.8.5.4r1.x86.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_release1/Telegraher.8.5.4r1.x86.apk)
-    * `afd622cd39c65f29ea8771ce09a075b56331d844346eda96c10d1ca2734451bb`  [Telegraher.8.5.4r1.x86_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_release1/Telegraher.8.5.4r1.x86_sdk23.apk)
+    * `x`  [Telegraher.8.5.4r2.x86.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r2_x86/Telegraher.8.5.4r2.x86.apk)
+    * `x`  [Telegraher.8.5.4r2.x86_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r2_x86/Telegraher.8.5.4r2.x86_sdk23.apk)
 * PC x86, 64 bits (for 64 bits CPU)
-    * `e6c549a621ae465ff140fcda34ceab483a521072dc16a6d5b2a52e6f78e94b8b`  [Telegraher.8.5.4r1.x86_64.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_release1/Telegraher.8.5.4r1.x86_64.apk)
-    * `721c2012971656fa27ccdd0645d3e2f7c4a93b77974ad4b576d1a8e713e44fbd`  [Telegraher.8.5.4r1.x86_64_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_release1/Telegraher.8.5.4r1.x86_64_sdk23.apk)
+    * `x`  [Telegraher.8.5.4r2.x86_64.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r2_x86_64/Telegraher.8.5.4r2.x86_64.apk)
+    * `x`  [Telegraher.8.5.4r2.x86_64_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r2_x86_64/Telegraher.8.5.4r2.x86_64_sdk23.apk)
 
 ### Issues/Wishlist
 
@@ -184,6 +184,17 @@ Feel free to use the "issues section". I'm not an Android programmer, i'm a Java
 Probably it's a good thing 😃
 
 ### Changes
+
+* noshit_8.5.4_release2
+    * this and all next build are build using CI/CD from github
+        * it mean that github automatically build the app and not me :)
+    * bring back "New Channel" into main menu
+    * left slide menu doesn't display phone number under the account anymore
+        * it display the username (if exists) or empty text
+        * phone number now displayed for each account in spoiler menu and can be hidden
+            * handy if you taking screenshots/filming your screen
+    * every profile tab now display the ID (users/groups/channels/bots etc)
+        * you can copy ID on click
 
 * noshit_8.5.4_release1
     * tg official bugfixes
