@@ -21483,7 +21483,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 			            }
 		            }
 	            }
-				if (CatogramConfig.INSTANCE.getShowProfileOption() && messageCell.isAvatarVisible) {
+				if (CatogramConfig.INSTANCE.getShowProfileOption() && messageCell != null && messageCell.isAvatarVisible) {
 					items.add(LocaleController.getString("CX_ShowProfile", R.string.CX_ShowProfile));
 					options.add(997);
 					icons.add(R.drawable.user_circle_outline_28);
