@@ -122,8 +122,8 @@
     <string name="AS_KbdWebp_Desc">Für SKeyboard, Gboard, und weitere</string>
     <string name="AS_ChangeIcon">App-Symbol</string>
     <string name="AS_ChangeIcon_Old">Standard</string>
-    <string name="AS_ChangeIcon_AltBlue">Neues Blaues Symbol (Von @RKBDI)</string>
-    <string name="AS_ChangeIcon_AltOrange">Neues Orangenes Symbol (Von @RKBDI)</string>
+    <string name="AS_ChangeIcon_AltBlue">Neues Blaues Symbol (Von RKBDI)</string>
+    <string name="AS_ChangeIcon_AltOrange">Neues Orangenes Symbol (Von RKBDI)</string>
     <string name="AS_ForwardNoAuthorship">Kein-Autor weiterleiten</string>
     <string name="AS_ForwardNoAuthorship_Desc">Zurzeit nur beim klassischem weiterleitungs Menü</string>
     <string name="CG_ForwardMsgDate">Zeige Datum von weitergeleiteten Nachrichten</string>
