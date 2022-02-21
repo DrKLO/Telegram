@@ -25,7 +25,7 @@ jobs:
         with:
           draft: false
           prerelease: false
-          release_name: ${{ env.RNAME }}
+          release_name: ${{ env.RNAME }} (${{ env.AARCH }})
           tag_name: ${{ env.TNAME }}${{ env.AARCH }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -50,7 +50,7 @@ jobs:
           asset_name: ${{ env.ANAME }}${{ env.AARCH }}_sdk23.apk
           asset_content_type: application/gzip
     env:
-      RNAME: Telegraher 8.5.4 release 1 ({{ env.AARCH }})
+      RNAME: Telegraher 8.5.4 release 1
       TNAME: noshit_8.5.4_r1_
       ANAME: Telegraher.8.5.4r1.
       AARCH: arm64_v8a
