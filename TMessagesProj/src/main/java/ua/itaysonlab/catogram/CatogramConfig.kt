@@ -104,6 +104,8 @@ object CatogramConfig {
 
     /* CX 4.1.3 */
     var disableParseEntities by sharedPreferences.boolean("cx_disable_parse_entities", false)
+    var showProfileOption by sharedPreferences.boolean("cx_show_profile_option", false)
+
 
 
     // Emojis

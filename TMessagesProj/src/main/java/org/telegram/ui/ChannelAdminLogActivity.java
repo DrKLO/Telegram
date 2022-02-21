@@ -2118,7 +2118,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                         return false;
                     }
 
-                    private void openProfile(TLRPC.User user) {
+                    public void openProfile(TLRPC.User user) {
                         Bundle args = new Bundle();
                         args.putLong("user_id", user.id);
                         addCanBanUser(args, user.id);

@@ -75,5 +75,10 @@
 
     <!-- CX 4.1.3 -->
     <string name="CX_DisableParseEntities">Disable Parse Entities</string>
+    <string name="CX_SendParseEntities">Send without Entities</string>
+    <string name="CX_SendDisableParseEntities">Send with Entities</string>
     <string name="CX_DisableParseEntities_Desc">Disables markdown when using a specific text pattern styling (including Bold, Italic, strike-through and etc.)</string>
+	<string name="CX_ShowProfile">Show profile</string>
+    <string name="CX_Accessibility">Accessibility</string>
+    <string name="CX_ShowProfileBtn">Show profile button in context menu</string>
 </resources>

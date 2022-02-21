@@ -21471,6 +21471,23 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         icons.add(selectedObject.messageOwner.ttl_period != 0 ? R.drawable.msg_delete_auto : R.drawable.msg_delete);
                     }
                 }
+	            ChatMessageCell messageCell = null;
+	            int count = chatListView.getChildCount();
+	            for (int a = 0; a < count; a++) {
+		            View child = chatListView.getChildAt(a);
+		            if (child instanceof ChatMessageCell) {
+			            ChatMessageCell cell = (ChatMessageCell) child;
+			            if (cell.getMessageObject() == selectedObject) {
+				            messageCell = cell;
+				            break;
+			            }
+		            }
+	            }
+				if (CatogramConfig.INSTANCE.getShowProfileOption() && messageCell.isAvatarVisible) {
+					items.add(LocaleController.getString("CX_ShowProfile", R.string.CX_ShowProfile));
+					options.add(997);
+					icons.add(R.drawable.user_circle_outline_28);
+				}
             }
 
             if (options.isEmpty()) {
@@ -22586,6 +22603,26 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 }
                 break;
             }
+	        case 997: {
+		        ChatMessageCell messageCell = null;
+		        int count = chatListView.getChildCount();
+		        for (int a = 0; a < count; a++) {
+			        View child = chatListView.getChildAt(a);
+			        if (child instanceof ChatMessageCell) {
+				        ChatMessageCell cell = (ChatMessageCell) child;
+				        if (cell.getMessageObject() == selectedObject) {
+					        messageCell = cell;
+					        break;
+				        }
+			        }
+		        }
+				if (messageCell.getCurrentUser() != null) {
+					messageCell.getDelegate().openProfile(messageCell.getCurrentUser());
+				} else if (messageCell.getCurrentChat() != null) {
+					messageCell.getDelegate().openChat(messageCell, messageCell.getCurrentChat(), 0);
+				}
+				break;
+	        }
             case 3: {
                 if (selectedObject.isDice()) {
                     AndroidUtilities.addToClipboard(selectedObject.getDiceEmoji());
@@ -24868,7 +24905,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         return false;
                     }
 
-                    private void openProfile(TLRPC.User user) {
+                    public void openProfile(TLRPC.User user) {
                         if (user != null && user.id != getUserConfig().getClientUserId()) {
                             Bundle args = new Bundle();
                             args.putLong("user_id", user.id);
@@ -24879,7 +24916,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         }
                     }
 
-                    private void openProfile(TLRPC.Chat chat) {
+                    public void openProfile(TLRPC.Chat chat) {
                         if (chat != null) {
                             Bundle args = new Bundle();
                             args.putLong("chat_id", chat.id);
@@ -24897,7 +24934,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         }
                     }
 
-                    private void openChat(ChatMessageCell cell, TLRPC.Chat chat, int postId) {
+                    public void openChat(ChatMessageCell cell, TLRPC.Chat chat, int postId) {
                         if (currentChat != null && chat.id == currentChat.id) {
                             scrollToMessageId(postId, cell.getMessageObject().getId(), true, 0, true, 0);
                         } else if (currentChat == null || chat.id != currentChat.id || isThreadChat()) {

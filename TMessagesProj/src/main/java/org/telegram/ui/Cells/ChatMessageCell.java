@@ -275,6 +275,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         currentMessageObject.markReactionsAsRead();
     }
 
+    public TLRPC.Chat getCurrentChat() {
+        return currentChat;
+    }
+
     public interface ChatMessageCellDelegate {
         default void didPressUserAvatar(ChatMessageCell cell, TLRPC.User user, float touchX, float touchY) {
         }
@@ -403,6 +407,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         default boolean canDrawOutboundsContent() {
             return true;
         }
+
+        // catox
+        default void openProfile(TLRPC.Chat chat) {}
+        default void openProfile(TLRPC.User user) {}
+        default void openChat(ChatMessageCell cell, TLRPC.Chat chat, int postId) {}
     }
 
     private final static int DOCUMENT_ATTACH_TYPE_NONE = 0;
@@ -760,7 +769,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private boolean isMedia;
     private boolean isCheckPressed = true;
     private boolean wasLayout;
-    private boolean isAvatarVisible;
+    public boolean isAvatarVisible;
     private boolean isThreadPost;
     private boolean drawBackground = true;
     private int substractBackgroundHeight;

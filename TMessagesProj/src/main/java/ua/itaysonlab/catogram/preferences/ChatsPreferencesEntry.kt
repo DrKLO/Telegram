@@ -519,5 +519,17 @@ class ChatsPreferencesEntry : BasePreferencesEntry {
                 }
             }
         }
+
+        category(LocaleController.getString("CX_Accessibility", R.string.CX_Accessibility)) {
+            switch {
+                title = LocaleController.getString("CX_ShowProfileBtn", R.string.CX_ShowProfileBtn)
+
+                contract({
+                    return@contract CatogramConfig.showProfileOption
+                }) {
+                    CatogramConfig.showProfileOption = it
+                }
+            }
+        }
     }
 }
