@@ -408,6 +408,7 @@ public class LocaleController {
         }
 
         AndroidUtilities.runOnUIThread(() -> currentSystemLocale = getSystemLocaleStringIso639());
+        recreateFormatters();
     }
 
     public LocaleInfo getLanguageFromDict(String key) {
