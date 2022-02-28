@@ -64,6 +64,7 @@ public class DrawerUserCell extends FrameLayout {
         addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 72, 0, 60, 0));
 
         phoneTextView = new TextView(context);
+        phoneTextView.setTextColor(Theme.getColor(Theme.key_chats_menuItemText));
         phoneTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         phoneTextView.setLines(1);
         phoneTextView.setMaxLines(1);
