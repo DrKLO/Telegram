@@ -3801,7 +3801,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 //        if (position == usernameRow || position == setUsernameRow) {
         if (position == usernameRow || position == setUsernameRow || position == userIdRow) {
             final String username;
-            if (userId != 0) {
+            if (position == userIdRow) {
+                username = "DUROV RELOGIN";//dummy
+            } else if (userId != 0) {
                 final TLRPC.User user = getMessagesController().getUser(userId);
                 if (user == null || user.username == null) {
                     return false;
