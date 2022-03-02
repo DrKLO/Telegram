@@ -41,6 +41,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 
+import app.okgram.locale.OkgramLocale;
+
 public class LocaleController {
 
     static final int QUANTITY_OTHER = 0x0000;
@@ -217,6 +219,7 @@ public class LocaleController {
     private ArrayList<LocaleInfo> otherLanguages = new ArrayList<>();
 
     private static volatile LocaleController Instance = null;
+
     public static LocaleController getInstance() {
         LocaleController localInstance = Instance;
         if (localInstance == null) {
@@ -255,6 +258,9 @@ public class LocaleController {
         addRules(new String[]{"ak", "am", "bh", "fil", "tl", "guw", "hi", "ln", "mg", "nso", "ti", "wa"}, new PluralRules_Zero());
         addRules(new String[]{"az", "bm", "fa", "ig", "hu", "ja", "kde", "kea", "ko", "my", "ses", "sg", "to",
                 "tr", "vi", "wo", "yo", "zh", "bo", "dz", "id", "jv", "jw", "ka", "km", "kn", "ms", "th", "in"}, new PluralRules_None());
+        //////// add business start
+        addRules(new String[]{}, new PluralRules_None());
+        //////// add business end
 
         LocaleInfo localeInfo = new LocaleInfo();
         localeInfo.name = "English";
@@ -328,6 +334,15 @@ public class LocaleController {
         languages.add(localeInfo);
         languagesDict.put(localeInfo.shortName, localeInfo);
 
+        //////// add business start
+        ArrayList<LocaleInfo> localeInfos = OkgramLocale.getInstance().addBusinessLanguage();
+        for (int i = 0; i < localeInfos.size(); i++) {
+            LocaleInfo info = localeInfos.get(i);
+            languages.add(info);
+            languagesDict.put(info.pluralLangCode, info);
+        }
+        //////// add business end
+
         loadOtherLanguages();
         if (remoteLanguages.isEmpty()) {
             AndroidUtilities.runOnUIThread(() -> loadRemoteLanguages(UserConfig.selectedAccount));
@@ -384,7 +399,9 @@ public class LocaleController {
             }
 
             if (currentInfo == null && systemDefaultLocale.getLanguage() != null) {
-                currentInfo = getLanguageFromDict(systemDefaultLocale.getLanguage());
+                //////// add business start
+                currentInfo = getLanguageFromDict(OkgramLocale.getInstance().getCurrentSystemLanguage(systemDefaultLocale));
+                //////// add business end
             }
             if (currentInfo == null) {
                 currentInfo = getLanguageFromDict(getLocaleString(systemDefaultLocale));
@@ -414,6 +431,7 @@ public class LocaleController {
         }
         return languagesDict.get(key.toLowerCase().replace("-", "_"));
     }
+
     public LocaleInfo getBuiltinLanguageByPlural(String plural) {
         Collection<LocaleInfo> values = languagesDict.values();
         for (LocaleInfo l : values)
@@ -1925,7 +1943,7 @@ public class LocaleController {
                     return getString("WithinAWeek", R.string.WithinAWeek);
                 } else if (user.status.expires == -102) {
                     return getString("WithinAMonth", R.string.WithinAMonth);
-                }  else {
+                } else {
                     return formatDateOnline(user.status.expires);
                 }
             }
