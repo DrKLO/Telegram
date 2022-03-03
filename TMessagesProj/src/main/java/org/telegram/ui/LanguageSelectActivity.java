@@ -278,7 +278,9 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
         if (id == NotificationCenter.suggestedLangpack) {
             if (listAdapter != null) {
                 fillLanguages();
-                AndroidUtilities.runOnUIThread(() -> { listAdapter.notifyDataSetChanged(); });
+                AndroidUtilities.runOnUIThread(() -> {
+                    listAdapter.notifyDataSetChanged();
+                });
             }
         }
     }
@@ -351,7 +353,7 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
 //                } catch (Exception e) {
 //                    FileLog.e(e);
 //                }
-                processSearch(query);
+            processSearch(query);
 //                }
 //            }, 100, 300);
         }
@@ -393,21 +395,20 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
         });
     }
 
+    //////// add business start
     private class TranslateSettings extends LinearLayout {
+        private ShadowSectionCell shadowSectionCell;
         private SharedPreferences preferences;
 
         private HeaderCell header;
-        private TextCheckCell showButtonCheck;
-        private TextSettingsCell doNotTranslateCell;
-        private TextInfoPrivacyCell info;
-        private TextInfoPrivacyCell info2;
-        private ValueAnimator doNotTranslateCellAnimation = null;
-//        private HeaderCell header2;
 
         private SharedPreferences.OnSharedPreferenceChangeListener listener;
 
-//        private float HEIGHT_OPEN = 243;
-//        private float HEIGHT_CLOSED = HEIGHT_OPEN - 50;
+
+        private TextCheckCell chatTranslationButtonCheck;
+        private TextCheckCell singleChatAutoTranslationBottonCheck;
+        private TextCheckCell sendMessageTranslationBottonCheck;
+
 
         public TranslateSettings(Context context) {
             super(context);
@@ -421,56 +422,63 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
             header.setText(LocaleController.getString("TranslateMessages", R.string.TranslateMessages));
             addView(header, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-            boolean value = getValue();
-            showButtonCheck = new TextCheckCell(context);
-            showButtonCheck.setBackground(Theme.createSelectorWithBackgroundDrawable(Theme.getColor(Theme.key_windowBackgroundWhite), Theme.getColor(Theme.key_listSelector)));
-            showButtonCheck.setTextAndCheck(
-                LocaleController.getString("ShowTranslateButton", R.string.ShowTranslateButton),
-                value,
-                value
-            );
-            showButtonCheck.setOnClickListener(e -> {
-                preferences.edit().putBoolean("translate_button", !getValue()).apply();
+            boolean chatTranslationValue = getChatTranslationValue();
+            chatTranslationButtonCheck = new TextCheckCell(context);
+            chatTranslationButtonCheck.setBackground(Theme.createSelectorWithBackgroundDrawable(
+                    Theme.getColor(Theme.key_windowBackgroundWhite), Theme.getColor(Theme.key_listSelector)));
+            chatTranslationButtonCheck.setTextAndCheck(LocaleController.getString("ChatTranslation", R.string.ChatTranslation),
+                    chatTranslationValue, true);
+            chatTranslationButtonCheck.setOnClickListener(view -> {
+                preferences.edit().putBoolean("chat_translation_button", !getChatTranslationValue()).apply();
             });
-            addView(showButtonCheck, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            addView(chatTranslationButtonCheck, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-            doNotTranslateCell = new TextSettingsCell(context);
-            doNotTranslateCell.setBackground(Theme.createSelectorWithBackgroundDrawable(Theme.getColor(Theme.key_windowBackgroundWhite), Theme.getColor(Theme.key_listSelector)));
-            doNotTranslateCell.setOnClickListener(e -> {
-                presentFragment(new RestrictedLanguagesSelectActivity());
-                update();
+            boolean singleChatAutoTranslationValue = getSingleChatAutoTranslationValue();
+            singleChatAutoTranslationBottonCheck = new TextCheckCell(context);
+            singleChatAutoTranslationBottonCheck.setBackground(Theme.createSelectorWithBackgroundDrawable(
+                    Theme.getColor(Theme.key_windowBackgroundWhite), Theme.getColor(Theme.key_listSelector)));
+            singleChatAutoTranslationBottonCheck.setTextAndCheck(LocaleController.getString("SingleChatAutoTranslation", R.string.SingleChatAutoTranslation),
+                    singleChatAutoTranslationValue, true);
+            singleChatAutoTranslationBottonCheck.setOnClickListener(view -> {
+                preferences.edit().putBoolean("single_chat_auto_translation_button", !getSingleChatAutoTranslationValue()).apply();
             });
-            doNotTranslateCell.setClickable(value && LanguageDetector.hasSupport());
-            doNotTranslateCell.setAlpha(value && LanguageDetector.hasSupport() ? 1f : 0f);
-            addView(doNotTranslateCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            addView(singleChatAutoTranslationBottonCheck, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-            info = new TextInfoPrivacyCell(context);
-            info.setTopPadding(11);
-            info.setBottomPadding(16);
-            info.setText(LocaleController.getString("TranslateMessagesInfo1", R.string.TranslateMessagesInfo1));
-            addView(info, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-            info2 = new TextInfoPrivacyCell(context);
-            info2.setTopPadding(0);
-            info2.setBottomPadding(16);
-            info2.setText(LocaleController.getString("TranslateMessagesInfo2", R.string.TranslateMessagesInfo2));
-            info2.setAlpha(value ? 0f : 1f);
-            addView(info2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            boolean sendMessageTranslationValue = getSendMessageTranslationValue();
+            sendMessageTranslationBottonCheck = new TextCheckCell(context);
+            sendMessageTranslationBottonCheck.setBackground(Theme.createSelectorWithBackgroundDrawable(
+                    Theme.getColor(Theme.key_windowBackgroundWhite), Theme.getColor(Theme.key_listSelector)));
+            sendMessageTranslationBottonCheck.setTextAndCheck(LocaleController.getString("SendMessageTranslation", R.string.SendMessageTranslation),
+                    sendMessageTranslationValue, false);
+            sendMessageTranslationBottonCheck.setOnClickListener(view -> {
+                preferences.edit().putBoolean("send_message_translation_button", !getSendMessageTranslationValue()).apply();
+            });
+            addView(sendMessageTranslationBottonCheck, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-//            header2 = new HeaderCell(context);
-//            header2.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-//            header2.setText(LocaleController.getString("Language", R.string.Language));
-//            header2.setTranslationY(-Math.max(doNotTranslateCell.getHeight(), info2.getHeight()));
-//            addView(header2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM));
+            shadowSectionCell = new ShadowSectionCell(context);
+            addView(shadowSectionCell);
 
-//            setLayoutParams(new RecyclerView.LayoutParams(LayoutHelper.MATCH_PARENT, height()));
             updateHeight();
             update();
+        }
+
+        private boolean getSendMessageTranslationValue() {
+            return preferences.getBoolean("send_message_translation_button", false);
+        }
+
+        private boolean getSingleChatAutoTranslationValue() {
+            return preferences.getBoolean("single_chat_auto_translation_button", false);
+        }
+
+        private boolean getChatTranslationValue() {
+            return preferences.getBoolean("chat_translation_button", false);
         }
 
         private boolean getValue() {
             return preferences.getBoolean("translate_button", false);
         }
+
         private ArrayList<String> getRestrictedLanguages() {
             String currentLang = LocaleController.getInstance().getCurrentLocaleInfo().pluralLangCode;
             ArrayList<String> langCodes = new ArrayList<>(RestrictedLanguagesSelectActivity.getRestrictedLanguages());
@@ -480,50 +488,10 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
         }
 
         public void update() {
-            boolean value = getValue() && LanguageDetector.hasSupport();
-
-            showButtonCheck.setChecked(getValue());
-
-            if (doNotTranslateCellAnimation != null) {
-                doNotTranslateCellAnimation.cancel();
-            }
-
-            showButtonCheck.setDivider(value);
-            ArrayList<String> langCodes = getRestrictedLanguages();
-            String doNotTranslateCellValue = null;
-            if (langCodes.size() == 1) {
-                try {
-                    doNotTranslateCellValue = LocaleController.getInstance().getLanguageFromDict(langCodes.get(0)).name;
-                } catch (Exception e) {}
-            }
-            if (doNotTranslateCellValue == null)
-                doNotTranslateCellValue = String.format(LocaleController.getPluralString("Languages", getRestrictedLanguages().size()), getRestrictedLanguages().size());
-            doNotTranslateCell.setTextAndValue(LocaleController.getString("DoNotTranslate", R.string.DoNotTranslate), doNotTranslateCellValue, false);
-            doNotTranslateCell.setClickable(value);
-
-            doNotTranslateCellAnimation = ValueAnimator.ofFloat(doNotTranslateCell.getAlpha(), value ? 1f : 0f);
-            doNotTranslateCellAnimation.setInterpolator(CubicBezierInterpolator.DEFAULT);
-            doNotTranslateCellAnimation.addUpdateListener(a -> {
-                float t = (float) a.getAnimatedValue();
-                doNotTranslateCell.setAlpha(t);
-                doNotTranslateCell.setTranslationY(-AndroidUtilities.dp(8) * (1f - t));
-                info.setTranslationY(-doNotTranslateCell.getHeight() * (1f - t));
-                info2.setAlpha(1f - t);
-                info2.setTranslationY(-doNotTranslateCell.getHeight() * (1f - t));
-//                header2.setTranslationY(-Math.max(doNotTranslateCell.getHeight(), info2.getHeight()));
-
-//                updateHeight();
-//                header2.setTranslationY(-doNotTranslateCell.getHeight());
-//                header2.setTranslationY(-doNotTranslateCell.getHeight() * (1f - t));
-
-//                ViewGroup.LayoutParams layoutParams = getLayoutParams();
-//                layoutParams.height = AndroidUtilities.dp(HEIGHT_CLOSED + (HEIGHT_OPEN - HEIGHT_CLOSED) * t);
-//                setLayoutParams(layoutParams);
-            });
-            doNotTranslateCellAnimation.setDuration((long) (Math.abs(doNotTranslateCell.getAlpha() - (value ? 1f : 0f)) * 200));
-            doNotTranslateCellAnimation.start();
-
-//            updateHeight();
+            boolean hasSupport = LanguageDetector.hasSupport();
+            chatTranslationButtonCheck.setChecked(getChatTranslationValue() && hasSupport);
+            singleChatAutoTranslationBottonCheck.setChecked(getSingleChatAutoTranslationValue() && hasSupport);
+            sendMessageTranslationBottonCheck.setChecked(getSendMessageTranslationValue() && hasSupport);
         }
 
         @Override
@@ -540,10 +508,9 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
 
         void updateHeight() {
             header.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.x, MeasureSpec.EXACTLY), MeasureSpec.UNSPECIFIED);
-            showButtonCheck.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.x, MeasureSpec.EXACTLY), MeasureSpec.UNSPECIFIED);
-            doNotTranslateCell.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.x, MeasureSpec.EXACTLY), MeasureSpec.UNSPECIFIED);
-            info.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.x, MeasureSpec.EXACTLY), MeasureSpec.UNSPECIFIED);
-            info2.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.x, MeasureSpec.EXACTLY), MeasureSpec.UNSPECIFIED);
+            chatTranslationButtonCheck.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.x, MeasureSpec.EXACTLY), MeasureSpec.UNSPECIFIED);
+            singleChatAutoTranslationBottonCheck.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.x, MeasureSpec.EXACTLY), MeasureSpec.UNSPECIFIED);
+            sendMessageTranslationBottonCheck.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.x, MeasureSpec.EXACTLY), MeasureSpec.UNSPECIFIED);
 
             int newHeight = searching ? 0 : height();
             if (getLayoutParams() == null) {
@@ -554,11 +521,13 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
                 setLayoutParams(lp);
             }
         }
+
         int height() {
             return Math.max(AndroidUtilities.dp(40), header.getMeasuredHeight()) +
-                   Math.max(AndroidUtilities.dp(50), showButtonCheck.getMeasuredHeight()) +
-                   Math.max(Math.max(AndroidUtilities.dp(50), doNotTranslateCell.getMeasuredHeight()), (info2.getMeasuredHeight() <= 0 ? AndroidUtilities.dp(51) : info2.getMeasuredHeight())) +
-                   (info.getMeasuredHeight() <= 0 ? AndroidUtilities.dp(62) : info.getMeasuredHeight());/* + header2.getHeight()*/
+                    Math.max(AndroidUtilities.dp(50), chatTranslationButtonCheck.getMeasuredHeight()) +
+                    Math.max(AndroidUtilities.dp(50), singleChatAutoTranslationBottonCheck.getMeasuredHeight()) +
+                    Math.max(AndroidUtilities.dp(50), sendMessageTranslationBottonCheck.getMeasuredHeight())+
+                    shadowSectionCell.getMeasuredHeight();
         }
 
         @Override
