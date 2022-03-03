@@ -4982,4 +4982,10 @@
     <string name="BlurInChat">Blur in chat</string>
     <string name="ReadAllReactions">Read all reactions</string>
     <string name="ReadAllMentions">Read all mentions</string>
+
+    <!--add res-->
+    <string name="ChatTranslation">Manual translation for message</string>
+    <string name="SingleChatAutoTranslation">Auto translate for chat</string>
+    <string name="SendMessageTranslation">Show translation when messaging</string>
+    <!--add res-->
 </resources>
