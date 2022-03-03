@@ -12104,6 +12104,9 @@ public class MessagesController extends BaseController implements NotificationCe
                     message = ((TLRPC.TL_updateNewScheduledMessage) baseUpdate).message;
                 } else {
                     message = ((TLRPC.TL_updateNewChannelMessage) baseUpdate).message;
+
+                    if (SharedConfig.isShadowBanned(message)) continue;
+
                     if (BuildVars.LOGS_ENABLED) {
                         FileLog.d(baseUpdate + " channelId = " + message.peer_id.channel_id);
                     }
