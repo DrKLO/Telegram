@@ -39,7 +39,7 @@ It gives us `telegram` -> `master` -> `master_8.3.1` -> `noshit_8.3.1`
 So **all the code changes** are in `noshit_8.3.1` (when this project started, actual version is
 different)
 
-### Detailed summary / noshit_8.5.2
+### Detailed summary / noshit_8.5.4
 
 * DISABLED ADS
     * YES!!1
@@ -166,17 +166,17 @@ It's very simple
 * **sdk23** mean for android 6+, the other are working from 4.1+
     * so if you have android 6 or higher, you should download **sdk23** version
 * arm64-v8a (new devices)
-    * `x`  [Telegraher.8.5.4r2.arm64_v8a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r2_arm64_v8a/Telegraher.8.5.4r2.arm64_v8a.apk)
-    * `x`  [Telegraher.8.5.4r2.arm64_v8a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r2_arm64_v8a/Telegraher.8.5.4r2.arm64_v8a_sdk23.apk)
+    * `x`  [Telegraher.8.5.4r3.arm64_v8a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r3_arm64_v8a/Telegraher.8.5.4r3.arm64_v8a.apk)
+    * `x`  [Telegraher.8.5.4r3.arm64_v8a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r3_arm64_v8a/Telegraher.8.5.4r3.arm64_v8a_sdk23.apk)
 * armeabi-v7a (old devices)
-    * `x`  [Telegraher.8.5.4r2.armeabi_v7a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r2_armeabi_v7a/Telegraher.8.5.4r2.armeabi_v7a.apk)
-    * `x`  [Telegraher.8.5.4r2.armeabi_v7a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r2_armeabi_v7a/Telegraher.8.5.4r2.armeabi_v7a_sdk23.apk)
+    * `x`  [Telegraher.8.5.4r3.armeabi_v7a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r3_armeabi_v7a/Telegraher.8.5.4r3.armeabi_v7a.apk)
+    * `x`  [Telegraher.8.5.4r3.armeabi_v7a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r3_armeabi_v7a/Telegraher.8.5.4r3.armeabi_v7a_sdk23.apk)
 * PC x86, 32 bits (for an emulator for example)
-    * `x`  [Telegraher.8.5.4r2.x86.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r2_x86/Telegraher.8.5.4r2.x86.apk)
-    * `x`  [Telegraher.8.5.4r2.x86_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r2_x86/Telegraher.8.5.4r2.x86_sdk23.apk)
+    * `x`  [Telegraher.8.5.4r3.x86.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r3_x86/Telegraher.8.5.4r3.x86.apk)
+    * `x`  [Telegraher.8.5.4r3.x86_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r3_x86/Telegraher.8.5.4r3.x86_sdk23.apk)
 * PC x86, 64 bits (for 64 bits CPU)
-    * `x`  [Telegraher.8.5.4r2.x86_64.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r2_x86_64/Telegraher.8.5.4r2.x86_64.apk)
-    * `x`  [Telegraher.8.5.4r2.x86_64_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r2_x86_64/Telegraher.8.5.4r2.x86_64_sdk23.apk)
+    * `x`  [Telegraher.8.5.4r3.x86_64.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r3_x86_64/Telegraher.8.5.4r3.x86_64.apk)
+    * `x`  [Telegraher.8.5.4r3.x86_64_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r3_x86_64/Telegraher.8.5.4r3.x86_64_sdk23.apk)
 
 ### Issues/Wishlist
 
@@ -184,6 +184,20 @@ Feel free to use the "issues section". I'm not an Android programmer, i'm a Java
 Probably it's a good thing 😃
 
 ### Changes
+
+* noshit_8.5.4_release3
+* added Kaboom in Settings/Data, it will wipe app's data (including accs!) and it require a
+  confirmation
+* fixed copy ID issue #10
+* fixed theme issue for left side menu #11
+* added GSON dependency (we use gson here for JSON)
+* shadowban features
+    * shadowban settings works for messages in group chats
+        * if you shadowban (SB) an user you will not see his messages
+        * if you SB a group you will not see anonymous admin messages
+        * if you SB a channel, you will not see messages in chat made by the users who user channels
+          to hide their IDs nor messages in these channels (but you will see automatic reposts in
+          channel linked with the group, this moment i will fix later for better SB:) )
 
 * noshit_8.5.4_release2
     * this and all next build are build using CI/CD from github
