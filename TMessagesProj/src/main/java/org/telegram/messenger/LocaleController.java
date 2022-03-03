@@ -42,6 +42,7 @@ import java.util.Map;
 import java.util.TimeZone;
 
 import app.okgram.locale.OkgramLocale;
+import app.okgram.utils.Logger;
 
 public class LocaleController {
 
@@ -258,9 +259,7 @@ public class LocaleController {
         addRules(new String[]{"ak", "am", "bh", "fil", "tl", "guw", "hi", "ln", "mg", "nso", "ti", "wa"}, new PluralRules_Zero());
         addRules(new String[]{"az", "bm", "fa", "ig", "hu", "ja", "kde", "kea", "ko", "my", "ses", "sg", "to",
                 "tr", "vi", "wo", "yo", "zh", "bo", "dz", "id", "jv", "jw", "ka", "km", "kn", "ms", "th", "in"}, new PluralRules_None());
-        //////// add business start
-        addRules(new String[]{}, new PluralRules_None());
-        //////// add business end
+
 
         LocaleInfo localeInfo = new LocaleInfo();
         localeInfo.name = "English";
@@ -339,7 +338,7 @@ public class LocaleController {
         for (int i = 0; i < localeInfos.size(); i++) {
             LocaleInfo info = localeInfos.get(i);
             languages.add(info);
-            languagesDict.put(info.pluralLangCode, info);
+            languagesDict.put(info.shortName, info);
         }
         //////// add business end
 
@@ -401,6 +400,7 @@ public class LocaleController {
             if (currentInfo == null && systemDefaultLocale.getLanguage() != null) {
                 //////// add business start
                 currentInfo = getLanguageFromDict(OkgramLocale.getInstance().getCurrentSystemLanguage(systemDefaultLocale));
+                Logger.e(currentInfo);
                 //////// add business end
             }
             if (currentInfo == null) {
@@ -842,6 +842,7 @@ public class LocaleController {
     }
 
     public void applyLanguage(LocaleInfo localeInfo, boolean override, boolean init, final int currentAccount) {
+        Logger.e("变更语言设置，初始化" + init + localeInfo.shortName);
         applyLanguage(localeInfo, override, init, false, false, currentAccount);
     }
 

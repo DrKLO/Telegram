@@ -36,7 +36,7 @@ public class OkgramLocale {
         localeInfo.name = "简体中文";
         localeInfo.nameEnglish = "Chinese (Simplified)";
         localeInfo.shortName = "zh_hans_raw";
-        localeInfo.pluralLangCode = "zhcn";
+        localeInfo.pluralLangCode = "zh";
         localeInfo.pathToFile = "unofficial";
         localeInfo.builtIn = false;
         localeInfos.add(localeInfo);
@@ -54,15 +54,17 @@ public class OkgramLocale {
         return localeInfos;
     }
 
-    public String getCurrentSystemLanguage(Locale systemDefaultLocale){
-        if (systemDefaultLocale == null){
+    public String getCurrentSystemLanguage(Locale systemDefaultLocale) {
+        if (systemDefaultLocale == null) {
             return null;
         }
         String language = systemDefaultLocale.getLanguage();
         if (language.contains("zh")) {
             String country = systemDefaultLocale.getCountry();
             if (country.contains("CN")) {
-                language = "zhcn";
+                language = "zh_hans_raw";
+            } else {
+                language = "zh_hant_raw";
             }
         }
         return language;
