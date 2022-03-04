@@ -1020,7 +1020,7 @@
     <string name="UnpinMessageAlert">您确定要取消置顶此消息吗？</string>
     <string name="DeleteBanUser">封禁用户</string>
     <string name="DeleteReportSpam">举报垃圾信息</string>
-    <string name="TranslateMessage">Translate</string>
+    <string name="TranslateMessage">翻译</string>
     <string name="AutomaticTranslation">Automatic Translation</string>
     <string name="CloseTranslation">Close Translation</string>
     <string name="TranslationFailedAlert1">翻译失败，请稍后再试。</string>
