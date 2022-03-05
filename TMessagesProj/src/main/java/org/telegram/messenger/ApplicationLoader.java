@@ -38,6 +38,7 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.firebase.messaging.FirebaseMessaging;
 
+import org.litepal.LitePalApplication;
 import org.telegram.messenger.voip.VideoCapturerDevice;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
@@ -45,7 +46,7 @@ import org.telegram.ui.Components.ForegroundDetector;
 
 import java.io.File;
 
-public class ApplicationLoader extends Application {
+public class ApplicationLoader extends LitePalApplication {
 
     @SuppressLint("StaticFieldLeak")
     public static volatile Context applicationContext;
