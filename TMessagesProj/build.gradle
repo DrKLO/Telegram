@@ -61,6 +61,7 @@ android {
         disable 'MissingTranslation'
         disable 'ExtraTranslation'
         disable 'BlockedPrivateApi'
+        checkDependencies true
     }
 
     dexOptions {
@@ -68,13 +69,19 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
 
         coreLibraryDesugaringEnabled true
     }
 
     signingConfigs {
+
+        config {
+            enableV3Signing true
+            enableV4Signing true
+        }
+
         debug {
             storeFile file("config/release.keystore")
             storePassword RELEASE_STORE_PASSWORD
@@ -88,6 +95,12 @@ android {
             keyAlias RELEASE_KEY_ALIAS
             keyPassword RELEASE_KEY_PASSWORD
         }
+    }
+
+    // Disables dependency metadata when building APKs and Bundles
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
     }
 
     buildTypes {
