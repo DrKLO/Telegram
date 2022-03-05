@@ -8,11 +8,6 @@
 
 package org.telegram.ui;
 
-import static android.content.Context.ACTIVITY_SERVICE;
-
-import static org.webrtc.ContextUtils.getApplicationContext;
-
-import android.app.ActivityManager;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -74,7 +69,6 @@ public class DataSettingsActivity extends BaseFragment {
     private int wifiRow;
     private int storageNumRow;
     private int resetDownloadRow;
-    private int kaboomButton;
     private int mediaDownloadSection2Row;
     private int usageSectionRow;
     private int storageUsageRow;
@@ -124,7 +118,6 @@ public class DataSettingsActivity extends BaseFragment {
         wifiRow = rowCount++;
         roamingRow = rowCount++;
         resetDownloadRow = rowCount++;
-        kaboomButton = rowCount++;
         mediaDownloadSection2Row = rowCount++;
         autoplayHeaderRow = rowCount++;
         autoplayGifsRow = rowCount++;
@@ -285,28 +278,6 @@ public class DataSettingsActivity extends BaseFragment {
                         DownloadController.getInstance(currentAccount).savePresetToServer(a);
                     }
                     listAdapter.notifyItemRangeChanged(mobileRow, 4);
-                });
-                builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                AlertDialog dialog = builder.create();
-                showDialog(dialog);
-                TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
-                if (button != null) {
-                    button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
-                }
-            } else if (position == kaboomButton) {
-                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                builder.setTitle("Kaboom");
-                builder.setMessage("Kaboom??");
-                builder.setPositiveButton("Kaboom!", (dialogInterface, i) -> {
-                    try {
-                        if (Build.VERSION_CODES.KITKAT <= Build.VERSION.SDK_INT) {
-                            ((ActivityManager) context.getSystemService(ACTIVITY_SERVICE)).clearApplicationUserData();
-                        } else {
-                            Runtime.getRuntime().exec("pm clear " + getApplicationContext().getPackageName());
-                        }
-                    } catch (Exception durovrelogin) {
-                        durovrelogin.printStackTrace();
-                    }
                 });
                 builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                 AlertDialog dialog = builder.create();
@@ -534,10 +505,6 @@ public class DataSettingsActivity extends BaseFragment {
                         textCell.setCanDisable(true);
                         textCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText));
                         textCell.setText(LocaleController.getString("ResetAutomaticMediaDownload", R.string.ResetAutomaticMediaDownload), false);
-                    } else if (position == kaboomButton) {
-                        textCell.setCanDisable(false);
-                        textCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText));
-                        textCell.setText("Kaboom", false);
                     } else if (position == quickRepliesRow){
                         textCell.setText(LocaleController.getString("VoipQuickReplies", R.string.VoipQuickReplies), false);
                     } else if (position == clearDraftsRow) {
