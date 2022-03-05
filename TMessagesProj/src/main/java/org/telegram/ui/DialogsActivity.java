@@ -6385,7 +6385,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             hideFloatingButton(selectedDialogs.isEmpty());
         }
 
-        isNextButton = shouldShowNextButton(this, selectedDialogs, commentView.getFieldText(), false);
+        isNextButton = shouldShowNextButton(this, selectedDialogs, commentView != null ? commentView.getFieldText() : "", false);
         AndroidUtilities.updateViewVisibilityAnimated(writeButton[0], !isNextButton, 0.5f, true);
         AndroidUtilities.updateViewVisibilityAnimated(writeButton[1], isNextButton, 0.5f, true);
     }
