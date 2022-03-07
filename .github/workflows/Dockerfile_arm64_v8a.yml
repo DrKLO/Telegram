@@ -15,17 +15,13 @@ jobs:
         with:
           fetch-depth: 0
       - name: build docker
-        if: github.event.pull_request.merged
         run: docker build -t telegraher-${{ env.AARCH }} -f Dockerfile_${{ env.AARCH }} .
       - name: build app
-        if: github.event.pull_request.merged
         run: docker run --rm -v "$PWD":/home/source telegraher-${{ env.AARCH }}
       - name: sha256 basic apk
-        if: github.event.pull_request.merged
         run: echo "::set-output name=SHA256BASIC::$(sha256sum ./TMessagesProj/build/outputs/apk/${{ env.AARCH }}/release/app.apk|head -c 64)"
         id: sha256_basic
       - name: sha256 sdk32 apk
-        if: github.event.pull_request.merged
         run: echo "::set-output name=SHA256SDK23::$(sha256sum ./TMessagesProj/build/outputs/apk/${{ env.AARCH }}_sdk23/release/app.apk|head -c 64)"
         id: sha256_sdk23
       - name: release
