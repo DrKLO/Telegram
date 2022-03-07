@@ -3,7 +3,7 @@ name: Docker Image CI x86
 on:
   pull_request:
     branches: [ master ]
-    types: [opened, closed]
+    types: [closed]
 
 jobs:
   build_release:
@@ -59,7 +59,7 @@ jobs:
           asset_name: ${{ env.ANAME }}${{ env.AARCH }}_sdk23.apk
           asset_content_type: application/gzip
     env:
-      RNAME: Telegraher 8.5.4 release 3
-      TNAME: noshit_8.5.4_r3_
-      ANAME: Telegraher.8.5.4r3.
+      RNAME: Telegraher 8.5.4 release 4
+      TNAME: noshit_8.5.4_r4_
+      ANAME: Telegraher.8.5.4r4.
       AARCH: x86
