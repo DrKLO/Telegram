@@ -1810,12 +1810,13 @@ public class AndroidUtilities {
 
     public static int getMinTabletSide() {
         if (!isSmallTablet()) {
-            int smallSide = Math.min(displaySize.x, displaySize.y);
-            int leftSide = smallSide * 35 / 100;
+//            int smallSide = Math.min(displaySize.x, displaySize.y);
+            int theSide = displaySize.x;
+            int leftSide = theSide * 35 / 100;
             if (leftSide < dp(320)) {
                 leftSide = dp(320);
             }
-            return smallSide - leftSide;
+            return theSide - leftSide;
         } else {
             int smallSide = Math.min(displaySize.x, displaySize.y);
             int maxSide = Math.max(displaySize.x, displaySize.y);
