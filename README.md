@@ -205,6 +205,9 @@ Probably it's a good thing 😃
     * bring back app install permission
         * cause folks had issues to install the APKs from UI on Android10 and/or MIUI
     * fixed space waste for large screen tablets in landscape mode
+    * chat font now between 6 and 72
+    * removed "splash" on startup
+    * fixed bug in UI with double "save to gallery" in a menu
 * noshit_8.5.4_release3
     * added Kaboom in Settings/Data, it will wipe app's data (including accs!) and it require a
       confirmation
