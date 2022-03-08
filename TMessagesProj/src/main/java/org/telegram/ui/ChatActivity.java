@@ -21275,7 +21275,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 }
             }
 
-            if (!(options.contains(4) && options.contains(7))
+            if (!(options.contains(4) || options.contains(7))
                     && (selectedObject.isSecretMedia() || selectedObject.isGif() || selectedObject.isNewGif() || selectedObject.isPhoto() || selectedObject.isRoundVideo() || selectedObject.isVideo())) {
                 items.add(LocaleController.getString("SaveToGallery", R.string.SaveToGallery));
                 options.add(4);

@@ -4208,7 +4208,9 @@ public class AlertsCreator {
                     actionUser = MessagesController.getInstance(currentAccount).getUser(from_id);
                 }
             }
-            if ((actionUser != null && actionUser.id != UserConfig.getInstance(currentAccount).getClientUserId()) || (actionChat != null && !ChatObject.hasAdminRights(actionChat))) {
+//            if ((actionUser != null && actionUser.id != UserConfig.getInstance(currentAccount).getClientUserId()) || (actionChat != null && !ChatObject.hasAdminRights(actionChat))) {
+            if (actionUser != null || (actionChat != null && !ChatObject.hasAdminRights(actionChat))) {
+                long banFromId=UserConfig.getInstance(currentAccount).getClientUserId();
                 if (loadParticipant == 1 && !chat.creator && actionUser != null) {
                     final AlertDialog[] progressDialog = new AlertDialog[]{new AlertDialog(activity, 3)};
 
@@ -4249,28 +4251,33 @@ public class AlertsCreator {
                     if ((loadParticipant == 2 || !canBan) && a == 0) {
                         continue;
                     }
-                    CheckBoxCell cell = new CheckBoxCell(activity, 1, resourcesProvider);
-                    cell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
-                    cell.setTag(a);
+                    String cellText = null;
                     if (a == 0) {
-                        cell.setText(LocaleController.getString("DeleteBanUser", R.string.DeleteBanUser), "", false, false);
-                    } else if (a == 1) {
-                        cell.setText(LocaleController.getString("DeleteReportSpam", R.string.DeleteReportSpam), "", false, false);
-                    } else {
-                        cell.setText(LocaleController.formatString("DeleteAllFrom", R.string.DeleteAllFrom, name), "", false, false);
+                        cellText = LocaleController.getString("DeleteBanUser", R.string.DeleteBanUser);
+                    } else if (a == 1 && actionUser.id != banFromId) {
+                        cellText = LocaleController.getString("DeleteReportSpam", R.string.DeleteReportSpam);
+                    } else if (a == 2) {
+                        cellText = LocaleController.formatString("DeleteAllFrom", R.string.DeleteAllFrom, name);
                     }
-                    cell.setPadding(LocaleController.isRTL ? AndroidUtilities.dp(16) : AndroidUtilities.dp(8), 0, LocaleController.isRTL ? AndroidUtilities.dp(8) : AndroidUtilities.dp(16), 0);
-                    frameLayout.addView(cell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.TOP | Gravity.LEFT, 0, 48 * num, 0, 0));
-                    cell.setOnClickListener(v -> {
-                        if (!v.isEnabled()) {
-                            return;
-                        }
-                        CheckBoxCell cell13 = (CheckBoxCell) v;
-                        Integer num1 = (Integer) cell13.getTag();
-                        checks[num1] = !checks[num1];
-                        cell13.setChecked(checks[num1], true);
-                    });
-                    num++;
+
+                    if (cellText != null) {
+                        CheckBoxCell cell = new CheckBoxCell(activity, 1, resourcesProvider);
+                        cell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
+                        cell.setTag(a);
+                        cell.setText(cellText, "", false, false);
+                        cell.setPadding(LocaleController.isRTL ? AndroidUtilities.dp(16) : AndroidUtilities.dp(8), 0, LocaleController.isRTL ? AndroidUtilities.dp(8) : AndroidUtilities.dp(16), 0);
+                        frameLayout.addView(cell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.TOP | Gravity.LEFT, 0, 48 * num, 0, 0));
+                        cell.setOnClickListener(v -> {
+                            if (!v.isEnabled()) {
+                                return;
+                            }
+                            CheckBoxCell cell13 = (CheckBoxCell) v;
+                            Integer num1 = (Integer) cell13.getTag();
+                            checks[num1] = !checks[num1];
+                            cell13.setChecked(checks[num1], true);
+                        });
+                        num++;
+                    }
                 }
                 builder.setView(frameLayout);
             } else if (!hasNotOut && myMessagesCount > 0 && hasNonDiceMessages) {

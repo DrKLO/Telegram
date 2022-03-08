@@ -111,6 +111,12 @@ different)
     * ~~they are added back into debug menu (when you press version 2 times)~~
     * since 8.5.0 doesn't work cause TG devs are fuckedup this part (rendering)
         * if you had enable snow/blur please disable them temporary in menu to avoid and CPU usage
+* SHADOWBAN feature! block anyone just for you! Shadowban settings works for messages in group chats
+    * if you shadowban (SB) an user you will not see his messages
+    * if you SB a group you will not see anonymous admin messages
+    * if you SB a channel, you will not see messages in chat made by the users who user channels to
+      hide their IDs nor messages in these channels (but you will see automatic reposts in channel
+      linked with the group, this moment i will fix later for better SB:) )
 * You can DISABLE doubletap (=quick) reactions
     * open quick reactions
     * select already selected reaction one more time
@@ -133,10 +139,17 @@ different)
     * of you want to run using old name just rollback those commits and build the app
 * APPs api & hash are changed for legit TG client
     * actually they are all on `4`/`014b35b6184100b085b0d0572f9b5103`
-* APP do not manage APKs anymore
-    * before it have a code and required install pkg permissions
-        * thats why w/o permission TG displayed an error that there are no tool in system to install
-          APKs
+* Left-side menu changed, not it's display the username (if exists) and the list of accounts have
+  phonenumber added here
+* KABOOM, new features in Storage management, which allow you to wipe the app's data (include the
+  accs, confirmation is required) from the Srttings/Data/Storage or from Android's app menu/Storage
+  management
+* Admins now can delete all own messages in a group chat
+* Bring it back and there are no vanilla links. ~~APP do not manage APKs anymore~~
+    * because some folks have issues to install APKs from TG fork on Android10 and/or MIUI
+        * ~~before it have a code and required install pkg permissions~~
+            * ~~thats why w/o permission TG displayed an error that there are no tool in system to
+              install APKs~~
 
 ### Build
 
@@ -166,17 +179,17 @@ It's very simple
 * **sdk23** mean for android 6+, the other are working from 4.1+
     * so if you have android 6 or higher, you should download **sdk23** version
 * arm64-v8a (new devices)
-    * `x`  [Telegraher.8.5.4r3.arm64_v8a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r3_arm64_v8a/Telegraher.8.5.4r3.arm64_v8a.apk)
-    * `x`  [Telegraher.8.5.4r3.arm64_v8a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r3_arm64_v8a/Telegraher.8.5.4r3.arm64_v8a_sdk23.apk)
+    * `x`  [Telegraher.8.5.4r4.arm64_v8a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r4_arm64_v8a/Telegraher.8.5.4r4.arm64_v8a.apk)
+    * `x`  [Telegraher.8.5.4r4.arm64_v8a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r4_arm64_v8a/Telegraher.8.5.4r4.arm64_v8a_sdk23.apk)
 * armeabi-v7a (old devices)
-    * `x`  [Telegraher.8.5.4r3.armeabi_v7a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r3_armeabi_v7a/Telegraher.8.5.4r3.armeabi_v7a.apk)
-    * `x`  [Telegraher.8.5.4r3.armeabi_v7a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r3_armeabi_v7a/Telegraher.8.5.4r3.armeabi_v7a_sdk23.apk)
+    * `x`  [Telegraher.8.5.4r4.armeabi_v7a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r4_armeabi_v7a/Telegraher.8.5.4r4.armeabi_v7a.apk)
+    * `x`  [Telegraher.8.5.4r4.armeabi_v7a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r4_armeabi_v7a/Telegraher.8.5.4r4.armeabi_v7a_sdk23.apk)
 * PC x86, 32 bits (for an emulator for example)
-    * `x`  [Telegraher.8.5.4r3.x86.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r3_x86/Telegraher.8.5.4r3.x86.apk)
-    * `x`  [Telegraher.8.5.4r3.x86_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r3_x86/Telegraher.8.5.4r3.x86_sdk23.apk)
+    * `x`  [Telegraher.8.5.4r4.x86.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r4_x86/Telegraher.8.5.4r4.x86.apk)
+    * `x`  [Telegraher.8.5.4r4.x86_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r4_x86/Telegraher.8.5.4r4.x86_sdk23.apk)
 * PC x86, 64 bits (for 64 bits CPU)
-    * `x`  [Telegraher.8.5.4r3.x86_64.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r3_x86_64/Telegraher.8.5.4r3.x86_64.apk)
-    * `x`  [Telegraher.8.5.4r3.x86_64_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r3_x86_64/Telegraher.8.5.4r3.x86_64_sdk23.apk)
+    * `x`  [Telegraher.8.5.4r4.x86_64.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r4_x86_64/Telegraher.8.5.4r4.x86_64.apk)
+    * `x`  [Telegraher.8.5.4r4.x86_64_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.5.4_r4_x86_64/Telegraher.8.5.4r4.x86_64_sdk23.apk)
 
 ### Issues/Wishlist
 
@@ -185,19 +198,30 @@ Probably it's a good thing 😃
 
 ### Changes
 
+* noshit_8.5.4_release4
+    * admins now can delete all own messages in group chat
+    * KABOOM moved on Storage tab to be accessed from Android app menu w/o being logged in a client
+    * replaced vanilla TG links with github fork links
+    * bring back app install permission
+        * cause folks had issues to install the APKs from UI on Android10 and/or MIUI
+    * fixed space waste for large screen tablets in landscape mode
+    * chat font now between 6 and 72
+    * removed "splash" on startup
+    * fixed bug in UI with double "save to gallery" in a menu
 * noshit_8.5.4_release3
-* added Kaboom in Settings/Data, it will wipe app's data (including accs!) and it require a
-  confirmation
-* fixed copy ID issue #10
-* fixed theme issue for left side menu #11
-* added GSON dependency (we use gson here for JSON)
-* shadowban features
-    * shadowban settings works for messages in group chats
-        * if you shadowban (SB) an user you will not see his messages
-        * if you SB a group you will not see anonymous admin messages
-        * if you SB a channel, you will not see messages in chat made by the users who user channels
-          to hide their IDs nor messages in these channels (but you will see automatic reposts in
-          channel linked with the group, this moment i will fix later for better SB:) )
+    * added Kaboom in Settings/Data, it will wipe app's data (including accs!) and it require a
+      confirmation
+    * fixed copy ID issue #10
+    * fixed theme issue for left side menu #11
+    * added GSON dependency (we use gson here for JSON)
+    * shadowban features
+        * shadowban settings works for messages in group chats
+            * if you shadowban (SB) an user you will not see his messages
+            * if you SB a group you will not see anonymous admin messages
+            * if you SB a channel, you will not see messages in chat made by the users who user
+              channels to hide their IDs nor messages in these channels (but you will see automatic
+              reposts in channel linked with the group, this moment i will fix later for better
+              SB:) )
 
 * noshit_8.5.4_release2
     * this and all next build are build using CI/CD from github
