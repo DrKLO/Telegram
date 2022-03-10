@@ -2019,6 +2019,7 @@
     <string name="SmartNotificationsAlert">소리 알림 간격</string>
     <string name="SmartNotificationsDetail">"%2$s 이내 %1$s "</string>
     <string name="SecretWebPage">링크 미리보기</string>
+    <string name="NonSecretWebPage">링크 미리보기</string>
     <string name="SecretWebPageInfo">링크 미리보기는 텔레그램 서버에 생성됩니다. 회원님이 보내시는 링크에 관한 데이터는 보관되지 않습니다.</string>
     <string name="SecretChat">비밀 대화</string>
     <string name="ChromeCustomTabs">앱 안 브라우저</string>
