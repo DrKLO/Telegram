@@ -250,6 +250,7 @@ public class MessagesController extends BaseController implements NotificationCe
     private int nextTosCheckTime;
 
     public int secretWebpagePreview;
+    public int nonsecretWebpagePreview;
     public boolean suggestContacts = true;
 
     private volatile static long lastThemeCheckTime;
@@ -787,6 +788,7 @@ public class MessagesController extends BaseController implements NotificationCe
         enableJoined = notificationsPreferences.getBoolean("EnableContactJoined", true);
         remoteConfigLoaded = mainPreferences.getBoolean("remoteConfigLoaded", false);
         secretWebpagePreview = mainPreferences.getInt("secretWebpage2", 2);
+        nonsecretWebpagePreview = mainPreferences.getInt("nonsecretWebpage2", 2);
         maxGroupCount = mainPreferences.getInt("maxGroupCount", 200);
         maxMegagroupCount = mainPreferences.getInt("maxMegagroupCount", 10000);
         maxRecentGifsCount = mainPreferences.getInt("maxRecentGifsCount", 200);

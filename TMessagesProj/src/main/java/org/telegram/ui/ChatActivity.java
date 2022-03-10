@@ -11088,7 +11088,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     }
 
     private void searchLinks(final CharSequence charSequence, final boolean force) {
-        if (currentEncryptedChat != null && getMessagesController().secretWebpagePreview == 0 || editingMessageObject != null && !editingMessageObject.isWebpage()) {
+        if (currentEncryptedChat != null && getMessagesController().secretWebpagePreview == 0
+                || currentEncryptedChat == null && getMessagesController().nonsecretWebpagePreview == 0
+                || editingMessageObject != null && !editingMessageObject.isWebpage()) {
+            chatActivityEnterView.setWebPage(null, false);
             return;
         }
         if (force && foundWebPage != null) {
@@ -11199,6 +11202,26 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
                     messagesController.secretWebpagePreview = 0;
                     MessagesController.getGlobalMainSettings().edit().putInt("secretWebpage2", messagesController.secretWebpagePreview).commit();
+                });
+                return;
+            }
+
+            if (currentEncryptedChat == null && messagesController.nonsecretWebpagePreview == 2) {
+                AndroidUtilities.runOnUIThread(() -> {
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity(), themeDelegate);
+                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialog, which) -> {
+                        messagesController.nonsecretWebpagePreview = 1;
+                        MessagesController.getGlobalMainSettings().edit().putInt("nonsecretWebpage2", getMessagesController().nonsecretWebpagePreview).commit();
+                        foundUrls = null;
+                        searchLinks(charSequence, force);
+                    });
+                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                    builder.setMessage(LocaleController.getString("NonSecretLinkPreviewAlert", R.string.NonSecretLinkPreviewAlert));
+                    showDialog(builder.create());
+
+                    messagesController.nonsecretWebpagePreview = 0;
+                    MessagesController.getGlobalMainSettings().edit().putInt("nonsecretWebpage2", messagesController.nonsecretWebpagePreview).commit();
                 });
                 return;
             }
@@ -23888,7 +23911,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         try {
             Uri uri = Uri.parse(url);
             String host = uri.getHost() != null ? uri.getHost().toLowerCase() : "";
-            if ((currentEncryptedChat == null || getMessagesController().secretWebpagePreview == 1) && getMessagesController().authDomains.contains(host)) {
+//            if ((currentEncryptedChat == null || getMessagesController().secretWebpagePreview == 1) && getMessagesController().authDomains.contains(host)) {
+            if ((currentEncryptedChat == null && getMessagesController().nonsecretWebpagePreview == 1 || currentEncryptedChat != null && getMessagesController().secretWebpagePreview == 1) && getMessagesController().authDomains.contains(host)) {
                 getSendMessagesHelper().requestUrlAuth(url, this, type == 0 || type == 2);
                 return;
             }

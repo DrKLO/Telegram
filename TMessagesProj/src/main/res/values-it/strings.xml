@@ -2019,8 +2019,10 @@
     <string name="SmartNotificationsAlert">Frequenza avviso sonoro</string>
     <string name="SmartNotificationsDetail">%1$s ogni %2$s</string>
     <string name="SecretWebPage">Anteprime link</string>
+    <string name="NonSecretWebPage">Anteprime link</string>
     <string name="SecretWebPageInfo">Le anteprime dei link saranno generate dai server di Telegram. Non archiviamo dati sui link che invii.</string>
     <string name="SecretChat">Chat segrete</string>
+    <string name="NonSecretChat">Chat non segrete</string>
     <string name="ChromeCustomTabs">Browser in-app</string>
     <string name="ChromeCustomTabsInfo">Apri i link esterni all\'interno dell\'app</string>
     <string name="DirectShare">Condivisione diretta</string>
@@ -3245,6 +3247,7 @@
     <string name="NoUsernameFound">Non esiste alcun account Telegram con questo username.</string>
     <string name="BotCantJoinGroups">Questo bot non può unirsi ai gruppi.</string>
     <string name="SecretLinkPreviewAlert">Attivare le anteprime estese per i link nelle Chat segrete? Ricorda che le anteprime dei link sono generate sui server di Telegram.</string>
+    <string name="NonSecretLinkPreviewAlert">Attivare le anteprime estese per i link nelle Chat non segrete? Ricorda che le anteprime dei link sono generate sui server di Telegram.</string>
     <string name="SecretChatContextBotAlert">Per favore nota che i bot inline sono forniti da sviluppatori di terze parti. Per far funzionare il bot, i caratteri che digiti dopo l\'username del bot sono inviati al suo sviluppatore.</string>
     <string name="EditMessageError">Spiacenti, non puoi modificare questo messaggio.</string>
     <string name="AllowReadCall">Per favore consenti a Telegram di ricevere chiamate così potremo inserire in automatico il codice per te.</string>
