@@ -2119,8 +2119,10 @@
     <string name="SmartNotificationsAlert">Sound Alert Frequency</string>
     <string name="SmartNotificationsDetail">%1$s within %2$s</string>
     <string name="SecretWebPage">Link Previews</string>
+    <string name="NonSecretWebPage">Link Previews</string>
     <string name="SecretWebPageInfo">Link previews will be generated on Telegram servers. We do not store data about the links you send.</string>
     <string name="SecretChat">Secret chats</string>
+    <string name="NonSecretChat">Non Secret chats</string>
     <string name="ChromeCustomTabs">In-App Browser</string>
     <string name="ChromeCustomTabsInfo">Open external links within the app</string>
     <string name="DirectShare">Direct Share</string>
@@ -3436,6 +3438,7 @@
     <string name="NoUsernameFound">There is no Telegram account with this username.</string>
     <string name="BotCantJoinGroups">This bot can\'t join groups.</string>
     <string name="SecretLinkPreviewAlert">Would you like to enable extended link previews in Secret Chats? Note that link previews are generated on Telegram servers.</string>
+    <string name="NonSecretLinkPreviewAlert">Would you like to enable extended link previews in Non Secret Chats? Note that link previews are generated on Telegram servers.</string>
     <string name="SecretChatContextBotAlert">Please note that inline bots are provided by third-party developers. For the bot to work, the symbols you type after the bot\'s username are sent to the respective developer.</string>
     <string name="EditMessageError">Sorry, you can\'t edit this message.</string>
     <string name="AllowReadCall">Please allow Telegram to receive calls so that we can automatically enter your code for you.</string>

@@ -2019,8 +2019,10 @@
     <string name="SmartNotificationsAlert">Frecuencia de alertas</string>
     <string name="SmartNotificationsDetail">%1$s dentro de %2$s</string>
     <string name="SecretWebPage">Vistas previas de enlaces</string>
+    <string name="NonSecretWebPage">Vistas previas de enlaces</string>
     <string name="SecretWebPageInfo">Las vistas previas serán generadas en los servidores de Telegram. No almacenamos datos sobre los enlaces que envías.</string>
     <string name="SecretChat">Chats secretos</string>
+    <string name="NonSecretChat">Chats no secretos</string>
     <string name="ChromeCustomTabs">Navegador en la app</string>
     <string name="ChromeCustomTabsInfo">Abre enlaces externos en la app</string>
     <string name="DirectShare">Direct Share</string>
@@ -3245,6 +3247,7 @@
     <string name="NoUsernameFound">No hay ninguna cuenta de Telegram con este nombre de usuario.</string>
     <string name="BotCantJoinGroups">Este bot no puede unirse a grupos.</string>
     <string name="SecretLinkPreviewAlert">¿Quieres activar las vistas previas de enlaces ampliadas en los chats secretos? Ten en cuenta que son generadas en los servidores de Telegram.</string>
+    <string name="NonSecretLinkPreviewAlert">¿Quieres activar las vistas previas de enlaces ampliadas en los chats que no son secretos? Ten en cuenta que son generadas en los servidores de Telegram.</string>
     <string name="SecretChatContextBotAlert">Ten en cuenta que los bots integrados son hechos por terceros. Para que el bot funcione, los símbolos escritos después del nombre de usuario del bot son enviados a su respectivo desarrollador.</string>
     <string name="EditMessageError">Lo sentimos, no puedes editar este mensaje.</string>
     <string name="AllowReadCall">Por favor, permite a Telegram recibir llamadas para que podamos ingresar automáticamente el código por ti.</string>

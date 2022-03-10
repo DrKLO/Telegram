@@ -2019,6 +2019,7 @@
     <string name="SmartNotificationsAlert">تكرار صوت التنبيه</string>
     <string name="SmartNotificationsDetail">%1$s خلال %2$s</string>
     <string name="SecretWebPage">معاينة الروابط</string>
+    <string name="NonSecretWebPage">معاينة الروابط</string>
     <string name="SecretWebPageInfo">يتم توليد معاينات الروابط على خوادم تيليجرام. لا نقوم بتخزين المعلومات حول الروابط التي ترسلها.</string>
     <string name="SecretChat">المحادثات السرية</string>
     <string name="ChromeCustomTabs">المتصفح الداخلي</string>
