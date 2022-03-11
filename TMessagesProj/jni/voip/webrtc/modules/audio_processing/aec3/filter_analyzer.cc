@@ -170,11 +170,16 @@ void FilterAnalyzer::PreProcessFilters(
 
     std::fill(h_highpass_[ch].begin() + region_.start_sample_,
               h_highpass_[ch].begin() + region_.end_sample_ + 1, 0.f);
+    float* h_highpass_ch = h_highpass_[ch].data();
+    const float* filters_time_domain_ch = filters_time_domain[ch].data();
+    const size_t region_end = region_.end_sample_;
     for (size_t k = std::max(h.size() - 1, region_.start_sample_);
-         k <= region_.end_sample_; ++k) {
+         k <= region_end; ++k) {
+      float tmp = h_highpass_ch[k];
       for (size_t j = 0; j < h.size(); ++j) {
-        h_highpass_[ch][k] += filters_time_domain[ch][k - j] * h[j];
+        tmp += filters_time_domain_ch[k - j] * h[j];
       }
+      h_highpass_ch[k] = tmp;
     }
   }
 }
@@ -230,19 +235,23 @@ bool FilterAnalyzer::ConsistentFilterDetector::Detect(
         peak_index > filter_to_analyze.size() - 129 ? 0 : peak_index + 128;
   }
 
+  float filter_floor_accum = filter_floor_accum_;
+  float filter_secondary_peak = filter_secondary_peak_;
   for (size_t k = region.start_sample_;
        k < std::min(region.end_sample_ + 1, filter_floor_low_limit_); ++k) {
     float abs_h = fabsf(filter_to_analyze[k]);
-    filter_floor_accum_ += abs_h;
-    filter_secondary_peak_ = std::max(filter_secondary_peak_, abs_h);
+    filter_floor_accum += abs_h;
+    filter_secondary_peak = std::max(filter_secondary_peak, abs_h);
   }
 
   for (size_t k = std::max(filter_floor_high_limit_, region.start_sample_);
        k <= region.end_sample_; ++k) {
     float abs_h = fabsf(filter_to_analyze[k]);
-    filter_floor_accum_ += abs_h;
-    filter_secondary_peak_ = std::max(filter_secondary_peak_, abs_h);
+    filter_floor_accum += abs_h;
+    filter_secondary_peak = std::max(filter_secondary_peak, abs_h);
   }
+  filter_floor_accum_ = filter_floor_accum;
+  filter_secondary_peak_ = filter_secondary_peak;
 
   if (region.end_sample_ == filter_to_analyze.size() - 1) {
     float filter_floor = filter_floor_accum_ /

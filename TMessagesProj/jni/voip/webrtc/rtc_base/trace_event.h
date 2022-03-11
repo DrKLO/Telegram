@@ -136,10 +136,10 @@
 //     TRACE_EVENT_INSTANT0("SUBSYSTEM", str);  // BAD!
 //     free(str);                   // Trace system now has dangling pointer
 //
-// To avoid this issue with the |name| and |arg_name| parameters, use the
+// To avoid this issue with the `name` and `arg_name` parameters, use the
 // TRACE_EVENT_COPY_XXX overloads of the macros at additional runtime overhead.
 // Notes: The category must always be in a long-lived char* (i.e. static const).
-//        The |arg_values|, when used, are always deep copied with the _COPY
+//        The `arg_values`, when used, are always deep copied with the _COPY
 //        macros.
 //
 // When are string argument values copied:
@@ -303,7 +303,7 @@
 // must be representable as a 32 bit integer.
 // - category and name strings must have application lifetime (statics or
 //   literals). They may not include " chars.
-// - |id| is used to disambiguate counters with the same name. It must either
+// - `id` is used to disambiguate counters with the same name. It must either
 //   be a pointer or an integer value up to 64 bits. If it's a pointer, the bits
 //   will be xored with a hash of the process ID so that the same pointer on
 //   two different processes will not collide.
@@ -321,7 +321,7 @@
 // values as a stacked-bar chart.
 // - category and name strings must have application lifetime (statics or
 //   literals). They may not include " chars.
-// - |id| is used to disambiguate counters with the same name. It must either
+// - `id` is used to disambiguate counters with the same name. It must either
 //   be a pointer or an integer value up to 64 bits. If it's a pointer, the bits
 //   will be xored with a hash of the process ID so that the same pointer on
 //   two different processes will not collide.
@@ -344,9 +344,9 @@
 // does nothing.
 // - category and name strings must have application lifetime (statics or
 //   literals). They may not include " chars.
-// - |id| is used to match the ASYNC_BEGIN event with the ASYNC_END event. ASYNC
+// - `id` is used to match the ASYNC_BEGIN event with the ASYNC_END event. ASYNC
 //   events are considered to match if their category, name and id values all
-//   match. |id| must either be a pointer or an integer value up to 64 bits. If
+//   match. `id` must either be a pointer or an integer value up to 64 bits. If
 //   it's a pointer, the bits will be xored with a hash of the process ID so
 //   that the same pointer on two different processes will not collide.
 // An asynchronous operation can consist of multiple phases. The first phase is
@@ -354,7 +354,7 @@
 // ASYNC_STEP macros. When the operation completes, call ASYNC_END.
 // An ASYNC trace typically occur on a single thread (if not, they will only be
 // drawn on the thread defined in the ASYNC_BEGIN event), but all events in that
-// operation must use the same |name| and |id|. Each event can have its own
+// operation must use the same `name` and `id`. Each event can have its own
 // args.
 #define TRACE_EVENT_ASYNC_BEGIN0(category, name, id) \
     INTERNAL_TRACE_EVENT_ADD_WITH_ID(TRACE_EVENT_PHASE_ASYNC_BEGIN, \
@@ -380,9 +380,9 @@
         category, name, id, TRACE_EVENT_FLAG_COPY, \
         arg1_name, arg1_val, arg2_name, arg2_val)
 
-// Records a single ASYNC_STEP event for |step| immediately. If the category
-// is not enabled, then this does nothing. The |name| and |id| must match the
-// ASYNC_BEGIN event above. The |step| param identifies this step within the
+// Records a single ASYNC_STEP event for `step` immediately. If the category
+// is not enabled, then this does nothing. The `name` and `id` must match the
+// ASYNC_BEGIN event above. The `step` param identifies this step within the
 // async event. This should be called at the beginning of the next phase of an
 // asynchronous operation.
 #define TRACE_EVENT_ASYNC_STEP0(category, name, id, step) \
@@ -434,9 +434,9 @@
 // does nothing.
 // - category and name strings must have application lifetime (statics or
 //   literals). They may not include " chars.
-// - |id| is used to match the FLOW_BEGIN event with the FLOW_END event. FLOW
+// - `id` is used to match the FLOW_BEGIN event with the FLOW_END event. FLOW
 //   events are considered to match if their category, name and id values all
-//   match. |id| must either be a pointer or an integer value up to 64 bits. If
+//   match. `id` must either be a pointer or an integer value up to 64 bits. If
 //   it's a pointer, the bits will be xored with a hash of the process ID so
 //   that the same pointer on two different processes will not collide.
 // FLOW events are different from ASYNC events in how they are drawn by the
@@ -447,7 +447,7 @@
 // by the FLOW_BEGIN calls. Additional phases can be defined using the FLOW_STEP
 // macros. When the operation completes, call FLOW_END. An async operation can
 // span threads and processes, but all events in that operation must use the
-// same |name| and |id|. Each event can have its own args.
+// same `name` and `id`. Each event can have its own args.
 #define TRACE_EVENT_FLOW_BEGIN0(category, name, id) \
     INTERNAL_TRACE_EVENT_ADD_WITH_ID(TRACE_EVENT_PHASE_FLOW_BEGIN, \
         category, name, id, TRACE_EVENT_FLAG_NONE)
@@ -472,9 +472,9 @@
         category, name, id, TRACE_EVENT_FLAG_COPY, \
         arg1_name, arg1_val, arg2_name, arg2_val)
 
-// Records a single FLOW_STEP event for |step| immediately. If the category
-// is not enabled, then this does nothing. The |name| and |id| must match the
-// FLOW_BEGIN event above. The |step| param identifies this step within the
+// Records a single FLOW_STEP event for `step` immediately. If the category
+// is not enabled, then this does nothing. The `name` and `id` must match the
+// FLOW_BEGIN event above. The `step` param identifies this step within the
 // async event. This should be called at the beginning of the next phase of an
 // asynchronous operation.
 #define TRACE_EVENT_FLOW_STEP0(category, name, id, step) \

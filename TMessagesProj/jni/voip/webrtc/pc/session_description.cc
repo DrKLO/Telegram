@@ -10,11 +10,10 @@
 
 #include "pc/session_description.h"
 
-#include <utility>
-
 #include "absl/algorithm/container.h"
 #include "absl/memory/memory.h"
 #include "rtc_base/checks.h"
+#include "rtc_base/strings/string_builder.h"
 
 namespace cricket {
 namespace {
@@ -83,6 +82,18 @@ bool ContentGroup::RemoveContentName(const std::string& content_name) {
   }
   content_names_.erase(iter);
   return true;
+}
+
+std::string ContentGroup::ToString() const {
+  rtc::StringBuilder acc;
+  acc << semantics_ << "(";
+  if (!content_names_.empty()) {
+    for (const auto& name : content_names_) {
+      acc << name << " ";
+    }
+  }
+  acc << ")";
+  return acc.Release();
 }
 
 SessionDescription::SessionDescription() = default;

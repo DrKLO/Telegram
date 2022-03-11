@@ -38,7 +38,7 @@ class VadImpl final : public Vad {
       case 1:
         return kActive;
       default:
-        RTC_NOTREACHED() << "WebRtcVad_Process returned an error.";
+        RTC_DCHECK_NOTREACHED() << "WebRtcVad_Process returned an error.";
         return kError;
     }
   }

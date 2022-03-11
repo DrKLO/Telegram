@@ -10,6 +10,9 @@
     <!--signin view-->
     <string name="YourPhone">Your Phone</string>
     <string name="StartText">Please confirm your country code and enter your phone number.</string>
+    <string name="Country">Country</string>
+    <string name="YourNumber">Your phone number</string>
+    <string name="PhoneNumber">Phone number</string>
     <string name="ChooseCountry">Choose a country</string>
     <string name="WrongCountry">Invalid country code</string>
     <string name="AccountAlreadyLoggedIn">This account is already logged in from this app.</string>
@@ -20,10 +23,18 @@
     <string name="SyncContactsInfoOn">Contacts from this device will be added to your account.</string>
     <string name="SyncContactsInfoOff">Turn on to continuously sync contacts from this device with your account.</string>
     <string name="SyncContactsAdded">Contacts from this device were added to your account.</string>
+    <string name="ConfirmCorrectNumber">Is this the correct number?</string>
+    <string name="WrongNumberFormat">Wrong format</string>
+    <string name="ShortNumberInfo">The number you provided is too short for **%1$s**:\n\n**%2$s**\n\nPlease enter the correct number including your country code.</string>
+    <string name="EditNumber">Edit number</string>
+    <string name="DidNotGetTheCodeInfo">If you didn\'t get the code by SMS or call, please check your **cellular data settings** and phone number:\n\n**%1$s**\n\nYour remaining options are to try another number or to contact Telegram Support. Tap **Help** to send us the technical details so that we can identify the problem.</string>
+    <string name="DidNotGetTheCodeHelpButton">Help</string>
+    <string name="DidNotGetTheCodeEditNumberButton">Edit number</string>
     <!--code enter view-->
     <string name="YourCode">Phone verification</string>
     <string name="SentSmsCode">We’ve sent an SMS with an activation code to your phone **%1$s**.</string>
     <string name="SentAppCode">We\'ve sent the code to the **Telegram** app on your other device.</string>
+    <string name="SentAppCodeWithPhone">We\'ve sent the code to the **Telegram** app for %1$s on your other device.</string>
     <string name="SentAppCodeTitle">Check your Telegram messages</string>
     <string name="SentSmsCodeTitle">Enter code</string>
     <string name="SentCallCode">We\'re calling your phone **%1$s**.\n\nDon\'t accept the call, Telegram will process everything automatically.</string>
@@ -34,6 +45,7 @@
     <string name="SendingSms">Sending SMS...</string>
     <string name="Code">Code</string>
     <string name="WrongNumber">Wrong number?</string>
+    <string name="WrongCode">You entered the wrong code. Please try again.</string>
     <string name="DidNotGetTheCode">Didn\'t get the code?</string>
     <string name="DidNotGetTheCodeSms">Send the code as an SMS</string>
     <string name="CancelAccountReset">Cancel account reset</string>
@@ -44,14 +56,24 @@
     <string name="ResetAccountCancelledAlert">Your recent attempts to reset this account have been cancelled by its active user. Please try again in 7 days.</string>
     <string name="ResetAccountButton">RESET ACCOUNT</string>
     <string name="CancelLinkExpired">Link is invalid or expired.</string>
+    <string name="CancelLinkSuccessTitle">Success</string>
     <string name="CancelLinkSuccess">The deletion process was cancelled for your account %1$s. You may close this window now.</string>
     <string name="OtherLoginCode">Your login code is **%1$s**. Enter it in the Telegram app where you are trying to log in.\n\nDo not give this code to anyone.</string>
+    <string name="SmsAvailableIn">You can request an SMS in %1$d:%2$02d</string>
+    <string name="RequestSmsButton">Get the code via SMS</string>
+    <string name="CallAvailableIn">You can request a voice call in %1$d:%2$02d</string>
+    <string name="RequestCallButton">Call me to dictate the code</string>
+    <string name="RequestMissedCall">Get the code via phone call</string>
+    <string name="LoginAccessibilityCountryCode">Country code</string>
     <!--signup view-->
     <string name="YourName">Your name</string>
     <string name="RegisterText2">Enter your name and add a profile picture.</string>
     <string name="FirstName">First name (required)</string>
+    <string name="FirstNameSmall">First name</string>
     <string name="LastName">Last name (optional)</string>
+    <string name="LastNameSmall">Last name</string>
     <string name="CancelRegistration">Cancel registration</string>
+    <string name="RegistrationProfileInfo">Profile info</string>
     <!--payments view-->
     <string name="PaymentSuccessfullyPaid">You have just successfully transferred %1$s to %2$s for %3$s</string>
     <string name="PaymentSuccessfullyPaidNoItem">You have just successfully transferred %1$s to %2$s</string>
@@ -244,6 +266,7 @@
     <string name="ContactsPermissionAlertNotNow">NOT NOW</string>
     <string name="ContactsPermissionAlertContinue">CONTINUE</string>
     <string name="YourContacts">Your contacts on Telegram</string>
+    <string name="ConnectingYourContacts">Connecting your contacts...</string>
     <string name="ArchiveHintHeader1">This is your Archive</string>
     <string name="ArchiveHintText1">Chats with enabled notifications get unarchived when new messages arrive.</string>
     <string name="ArchiveHintHeader2">Muted chats</string>
@@ -1118,6 +1141,11 @@
     <string name="GlobalAttachStickersRestricted">Stickers aren\'t allowed in this group.</string>
     <string name="GlobalAttachGifRestricted">GIFs aren\'t allowed in this group.</string>
     <string name="GlobalSendMessageRestricted">Writing messages isn\'t allowed in this group.</string>
+    <string name="AttachMediaPreview">Message preview</string>
+    <string name="AttachMediaPreviewButton">Preview message</string>
+    <string name="AttachMediaPhotoDeselected">Photo deselected.</string>
+    <string name="AttachMediaVideoDeselected">Video deselected.</string>
+    <string name="AttachMediaDragHint">Drag media to reorder</string>
     <string name="ChatAdmin">admin</string>
     <string name="ApkRestricted">APK installation is restricted for this app. You can enable this in system settings.</string>
     <string name="UnreadMessages">Unread Messages</string>
@@ -2101,6 +2129,8 @@
     <string name="DebugMenuResetContacts">Reset Imported Contacts</string>
     <string name="DebugMenuClearMediaCache">Clear sent media cache</string>
     <string name="DebugMenuCallSettings">Call settings</string>
+    <string name="DebugMenuEnableForceRtmpStreamFlag">Enable forced RTMP Stream Flag</string>
+    <string name="DebugMenuDisableForceRtmpStreamFlag">Disable forced RTMP Stream Flag</string>
     <string name="ChangeLanguageLater">You can change your language later in Settings.</string>
     <string name="ChooseYourLanguage">Choose your language</string>
     <string name="ChooseYourLanguageOther">Other</string>
@@ -2194,7 +2224,7 @@
     <string name="AuthAnotherClientInfo2">Run Telegram Desktop to get the QR code.</string>
     <string name="AuthAnotherClientInfo3">Scan the QR code to connect your account.</string>
     <string name="AuthAnotherClientUrl">This code can be used to allow someone to log in to your Telegram account.\n\nTo confirm Telegram login, please go to Settings &gt; Devices &gt; Scan QR and scan the code.</string>
-    <string name="QRCodePermissionNoCamera">Telegram needs access to your camera so that you can scan QR codes.</string>
+    <string name="QRCodePermissionNoCameraWithHint">**Telegram** needs camera access so that you can scan QR codes. Tap Settings -> Permissions, and turn **Camera** on.</string>
     <string name="SetProfilePhoto">Set Profile Photo</string>
     <string name="AppUpdate">Update Telegram</string>
     <string name="AppUpdateVersionAndSize">Version %1$s • %2$s</string>
@@ -2563,6 +2593,21 @@
     <string name="Passcode">Passcode Lock</string>
     <string name="ChangePasscode">Change Passcode</string>
     <string name="ChangePasscodeInfo">When you set up an additional passcode, a lock icon will appear on the chats page. Tap it to lock and unlock your Telegram app.\n\nNote: if you forget the passcode, you\'ll need to delete and reinstall the app. All secret chats will be lost.</string>
+    <string name="ChangePasscodeInfoShort">When you set up a passcode, a lock icon will apear on the chats page. Tap it to lock and unlock the app.</string>
+    <string name="EnablePasscode">Enable passcode</string>
+    <string name="ConfirmCreatePasscode">Re-enter your passcode</string>
+    <string name="PasscodeFinish">Set Passcode</string>
+    <string name="PasscodeSwitchToPassword">Switch to password</string>
+    <string name="PasscodeSwitchToPIN">Switch to PIN</string>
+    <string name="PasscodesDoNotMatchTryAgain">Passcodes don\'t match. Please try again.</string>
+    <string name="EnterYourPasscode">Enter your passcode</string>
+    <string name="EnterYourPasscodeInfo">Please enter your current Telegram passcode to manage this option.</string>
+    <string name="ForgotPasscode">Forgot passcode?</string>
+    <string name="ForgotPasscodeInfo">If you forgot your passcode, you\'ll need to delete and reinstall the app.\n\nAll secret chats will be lost.</string>
+    <string name="PasscodeScreenHint">Tap a lock icon on the chats page to lock and unlock the app.</string>
+    <string name="DisablePasscode">Turn Passcode Off</string>
+    <string name="DisablePasscodeConfirmMessage">Are you sure you want to turn off passcode?</string>
+    <string name="DisablePasscodeTurnOff">Turn Off</string>
     <string name="PasscodePIN">PIN</string>
     <string name="PasscodePassword">Password</string>
     <string name="EnterCurrentPasscode">Enter your current passcode</string>
@@ -2580,6 +2625,8 @@
     <string name="FingerprintHelp">Touch sensor</string>
     <string name="FingerprintNotRecognized">Fingerprint not recognized. Try again.</string>
     <string name="ScreenCapture">Show App Content in Task Switcher</string>
+    <string name="ScreenCaptureHeader">App Content in Task Switcher</string>
+    <string name="ScreenCaptureShowContent">Show Content</string>
     <string name="ScreenCaptureInfo">If disabled, you won\'t be able to take screenshots in the app but chat content will be hidden in the task switcher.</string>
     <string name="ScreenCaptureAlert">This will hide the contents of your chats or chat list from the task switcher, but you will not be able to take screenshots on Telegram.\n\nYou may need to restart the app for this to take effect.</string>
     <string name="TooManyTries">Too many tries.\nPlease try again in %1$s.</string>
@@ -2877,6 +2924,7 @@
     <string name="YourPasswordRememberNo">Not sure</string>
     <string name="PasswordOn">On</string>
     <string name="PasswordOff">Off</string>
+    <string name="EnterPassword">Enter password</string>
     <string name="PleaseEnterCurrentPassword">Enter your password</string>
     <string name="CheckPassword">Check Password</string>
     <string name="CheckPasswordInfo">Do you still remember your password?</string>
@@ -2924,10 +2972,12 @@
     <string name="CancelEmailQuestionTitle">Abort setup</string>
     <string name="TurnPasswordOffPassport">Warning! All data saved in your Telegram Passport will be lost!</string>
     <string name="PasswordHint">Password Hint</string>
+    <string name="PasswordHintDescription">You can create an optional hint for your password.</string>
     <string name="PasswordHintPlaceholder">Hint</string>
     <string name="PasswordHintText">Create a hint for your password</string>
     <string name="PasswordHintTextLogin">Create a hint for your password.</string>
     <string name="PasswordDoNotMatch">Passwords do not match</string>
+    <string name="ReEnterPassword">Re-enter password</string>
     <string name="AbortPassword">Abort two-step verification setup</string>
     <string name="AbortPasswordMenu">Abort setup</string>
     <string name="AbortEmail">Abort recovery email setup</string>
@@ -2953,6 +3003,7 @@
     <string name="RestoreEmailTroubleNoEmail">Having trouble accessing your email?</string>
     <string name="RestoreEmailTroubleText">If you can\'t restore access to your email, your remaining options are either to remember your password or to reset your account.</string>
     <string name="RestoreEmailTroubleText2">If you don’t have access to your recovery email, your remaining options are either to remember your password or wait 7 days until your password is reset.</string>
+    <string name="RestoreEmailNoAccess">Unable to access %1$s?</string>
     <string name="ResetPasswordWait">You recently requested a password reset that was canceled. Please wait %1$s before making a new request.</string>
     <string name="ResetMyAccount">RESET MY ACCOUNT</string>
     <string name="ResetMyAccountText">You will lose all your chats and messages, along with any media and files you shared, if you proceed with resetting your account.</string>
@@ -2961,6 +3012,7 @@
     <string name="ResetMyAccountWarningReset">Reset account</string>
     <string name="LoginPassword">Password</string>
     <string name="LoginPasswordText">You have Two-Step Verification enabled, so your account is protected with an additional password.</string>
+    <string name="LoginPasswordTextShort">Two-Step Verification enabled. Your account is protected with an additional password.</string>
     <string name="ForgotPassword">Forgot password?</string>
     <string name="PasswordRecovery">Password Recovery</string>
     <string name="PasswordCode">Code</string>
@@ -3259,6 +3311,7 @@
     <string name="PleaseLoginPassport">Please log in to your Telegram account to use Telegram Passport.</string>
     <string name="BannedPhoneNumber">This phone number is banned.</string>
     <string name="CodeExpired">Code expired, please retry login.</string>
+    <string name="WrongCodeTitle">Wrong code</string>
     <string name="FloodWait">Too many attempts, please try again later</string>
     <string name="FloodWaitTime">Too many attempts, please try again in %1$s</string>
     <string name="InvalidCode">Invalid code</string>
@@ -3371,12 +3424,18 @@
     <string name="TosDeclineDeleteAccount">Warning, this will irreversibly delete your Telegram account along with all the data you store in the Telegram cloud.\n\nImportant: You can Cancel now and export your data before deleting your account instead of losing it all. (To do this, open the latest version of Telegram Desktop and go to Settings &gt; Export Telegram Data.)</string>
     <!--permissions-->
     <string name="PermissionContacts">To let you connect with friends across all your devices, your contacts will be continuously synced with Telegram\'s heavily encrypted cloud servers.</string>
-    <string name="PermissionStorage">Telegram needs storage access so you can send and save photos, videos, music and other media.</string>
-    <string name="PermissionNoAudio">Telegram needs access to your microphone so that you can send voice messages.</string>
-    <string name="PermissionNoAudioVideo">Telegram needs access to your microphone so that you can record videos.</string>
-    <string name="PermissionNoCamera">Telegram needs camera access so that you can take photos and videos. Please enable it in Settings.</string>
+    <string name="PermissionStorageWithHint">**Telegram** needs storage access so you can send and save photos, videos, music and other media. Tap Settings -> Permissions, and turn **Files and media** on.</string>
+    <string name="PermissionNoAudioWithHint">**Telegram** needs microphone access so that you can send voice messages. Tap Settings -> Permissions, and turn **Microphone** on.</string>
+    <string name="PermissionNoAudioVideoWithHint">**Telegram** needs microphone access so that you can send voice messages. Tap Settings -> Permissions, and turn **Microphone** on. </string>
+    <string name="PermissionNoCameraWithHint">**Telegram** needs camera access so that you can take photos and videos. Tap Settings -> Permissions, and turn **Camera** on.</string>
+    <string name="PermissionNoCameraMicVideo">**Telegram** needs camera and microphone access so that you can send video messages. Tap Settings -> Permissions, and turn **Microphone** and **Camera** on.</string>
     <string name="PermissionNoLocation">Telegram needs access to your location so that you can share it with your friends.</string>
     <string name="PermissionNoLocationPosition">Telegram needs access to your location.</string>
+    <string name="PermissionNoLocationFriends">**Telegram** needs access to location so that you can share it with your friends. Tap Settings -> Permissions, and turn **Location** on.</string>
+    <string name="PermissionNoLocationPeopleNearby">**Telegram** needs access to location so that you can find people nearby. Tap Settings -> Permissions, and turn **Location** on.</string>
+    <string name="PermissionNoLocationNavigation">**Telegram** needs access to location so that you can get directions. Tap Settings -> Permissions, and turn **Location** on.</string>
+    <string name="PermissionNoContactsSharing">**Telegram** needs access to contacts so that you can share them with your friends. Tap Settings -> Permissions, and turn **Contacts** on.</string>
+    <string name="PermissionNoStorageAvatar">**Telegram** needs storage access so you can upload profile picture. Tap Settings -> Permissions, and turn **Files and media** on.</string>
     <string name="PermissionDrawAboveOtherApps">Telegram needs access to draw above other apps to play videos in Picture-in-Picture mode.</string>
     <string name="PermissionDrawAboveOtherAppsGroupCall">Overlay mode lets you use push-to-talk and see who is talking even when you are outside of Telegram.</string>
     <string name="PermissionOpenSettings">SETTINGS</string>
@@ -3550,8 +3609,8 @@
     <string name="VoipPeerVideoOutdated">Sorry, **%1$s** is using an old version of Telegram that doesn\'t support video calls.</string>
     <string name="VoipPeerVideoOutdatedMakeVoice">Make a voice call</string>
     <string name="VoipRateCallAlert">Please rate the quality of your Telegram call</string>
-    <string name="VoipNeedMicPermission">Telegram needs access to your microphone so that you can make calls.</string>
-    <string name="VoipNeedMicCameraPermission">Telegram needs access to your microphone and camera so that you can make video calls.</string>
+    <string name="VoipNeedMicPermissionWithHint">**Telegram** needs microphone access so that you can make calls. Tap Settings -> Permissions, and turn **Microphone** on.</string>
+    <string name="VoipNeedMicCameraPermissionWithHint">**Telegram** needs camera and microphone access so that you can make video calls. Tap Settings -> Permissions, and turn **Microphone** and **Camera** on.</string>
     <string name="VoipNeedCameraPermission">Telegram needs access to your camera so that you can make video calls.</string>
     <string name="VoipFeedbackCommentHint">Add an optional comment</string>
     <string name="CallBack">Call Back</string>
@@ -3642,6 +3701,8 @@
     <string name="Listening">listening</string>
     <string name="WantsToSpeak">wants to speak</string>
     <string name="Invited">invited</string>
+    <string name="VoipGroupExpandStream">Expand</string>
+    <string name="VoipGroupMinimizeStream">Minimize</string>
     <string name="VoipGroupLeave">Leave</string>
     <string name="VoipGroupEnd">End</string>
     <string name="VoipGroupMuteMemberAlertTitle">Mute microphone</string>
@@ -3708,6 +3769,7 @@
     <string name="VoipGroupMutedForMe">Muted for me</string>
     <string name="VoipGroupUnmuteForMe">Unmute for me</string>
     <string name="MembersTalkingNobody">Nobody talking</string>
+    <string name="ViewersWatchingNobody">Nobody watching</string>
     <string name="VoipGroupRecordCall">Start recording</string>
     <string name="VoipGroupStopRecordCall">Stop recording</string>
     <string name="VoipGroupJoinAs">Join Voice Chat as...</string>
@@ -3828,6 +3890,8 @@
     <string name="VoipChannelRecordVoiceChat">Record live stream</string>
     <string name="VoipRecordVoiceChatInfo">Choose how to record this chat</string>
     <string name="VoipRecordStart">Start Recording</string>
+    <string name="NoRtmpStreamFromAppOwner">**Oops!** Telegram doesn\'t see any stream coming from your streaming app.\n\nPlease make sure you entered the right Server URL and Stream Key in your app.</string>
+    <string name="NoRtmpStreamFromAppViewer">%1$s is currently not broadcasting live stream data to Telegram.</string>
     <!--invite links-->
     <string name="ManageInviteLinks">Manage Invite Links</string>
     <string name="ManageLinksInfoHelp">You can create additional invite links that have a limited time or number of uses</string>
@@ -3884,6 +3948,19 @@
     <string name="ContactShortcutVoiceCall">Voice call %1$s</string>
     <string name="ContactShortcutVideoCall">Video call %1$s</string>
     <!--plural-->
+    <string name="RemoveDocumentsMessage_zero">Do you want remove these **%d documents** from Downloads?</string>
+    <string name="RemoveDocumentsMessage_one">Do you want remove this document from Downloads?</string>
+    <string name="RemoveDocumentsMessage_two">Do you want remove these **%d documents** from Downloads?</string>
+    <string name="RemoveDocumentsMessage_few">Do you want remove these **%d documents** from Downloads?</string>
+    <string name="RemoveDocumentsMessage_many">Do you want remove these **%d documents** from Downloads?</string>
+    <string name="RemoveDocumentsMessage_other">Do you want remove these **%d documents** from Downloads?</string>
+
+    <string name="RemoveDocumentsTitle_zero">Remove %d documents</string>
+    <string name="RemoveDocumentsTitle_one">Remove %d document</string>
+    <string name="RemoveDocumentsTitle_two">Remove %d documents</string>
+    <string name="RemoveDocumentsTitle_few">Remove %d documents</string>
+    <string name="RemoveDocumentsTitle_many">Remove %d documents</string>
+    <string name="RemoveDocumentsTitle_other">Remove %d documents</string>
 
     <string name="ForceSetPasswordAlertMessage_zero">Proceed without a password? If you do not set a password, you will only be able to log into your account via SMS once every %1$s days.</string>
     <string name="ForceSetPasswordAlertMessage_one">Proceed without a password? If you do not set a password, you will only be able to log into your account via SMS once every %1$s day.</string>
@@ -4020,6 +4097,12 @@
     <string name="Participants_few">%1$d participants</string>
     <string name="Participants_many">%1$d participants</string>
     <string name="Participants_other">%1$d participants</string>
+    <string name="ViewersWatching_zero">%1$d watching</string>
+    <string name="ViewersWatching_one">%1$d watching</string>
+    <string name="ViewersWatching_two">%1$d watching</string>
+    <string name="ViewersWatching_few">%1$d watching</string>
+    <string name="ViewersWatching_many">%1$d watching</string>
+    <string name="ViewersWatching_other">%1$d watching</string>
     <string name="AndMoreTyping_zero">and %1$d more are typing</string>
     <string name="AndMoreTyping_one">and %1$d more are typing</string>
     <string name="AndMoreTyping_two">and %1$d more are typing</string>
@@ -4980,6 +5063,40 @@
     <string name="PushChatReactInvoice">%1$s: %3$s to your invoice in %2$s</string>
     <string name="PushChatReactGif">%1$s: %3$s to your GIF in %2$s</string>
     <string name="BlurInChat">Blur in chat</string>
+
+    <string name="AllowBackgroundActivity">Allow background activity</string>
+    <string name="AllowBackgroundActivityInfo">This will improve reliability for incoming notifications and Telegram calls.</string>
+    <string name="SetNewPassword">Set a new password</string>
     <string name="ReadAllReactions">Read all reactions</string>
     <string name="ReadAllMentions">Read all mentions</string>
+
+    <string name="SuggestClearDatabaseTitle">Clear Database</string>
+    <string name="SuggestClearDatabaseMessage">Your local database size %s. It\'s may affect to speed of application work.</string>
+    <string name="DownloadsTabs">Downloads</string>
+    <string name="Downloading">Downloading</string>
+    <string name="RecentlyDownloaded">Recently downloaded</string>
+    <string name="Clear">Clear</string>
+    <string name="PauseAll">Pause all</string>
+    <string name="ResumeAll">Resume all</string>
+    <string name="DownloadedFiles">Downloaded files</string>
+    <string name="ManageDeviceStorage">Manage Device Storage</string>
+    <string name="RemoveDocumentsMessage">They will be deleted from your disk, but will remain accessible in the cloud.</string>
+
+
+    <string name="DownloadedFilesMessage">Telegram lets you store all documents you send and receive in the cloud and save storage space on your device.</string>
+    <string name="ClearDownloadsList">Clear Download List</string>
+    <string name="SearchEmptyViewDownloads">No recent downloads</string>
+    <string name="ForceSetPasswordAlertMessageShort_zero">If you do not set a password, you will only be able to log into your account via SMS once every %1$s days. Do you want to proceed without a password?</string>
+    <string name="ForceSetPasswordAlertMessageShort_one">If you do not set a password, you will only be able to log into your account via SMS once every %1$s day. Do you want to proceed without a password?</string>
+    <string name="ForceSetPasswordAlertMessageShort_two">If you do not set a password, you will only be able to log into your account via SMS once every %1$s days. Do you want to proceed without a password?</string>
+    <string name="ForceSetPasswordAlertMessageShort_few">If you do not set a password, you will only be able to log into your account via SMS once every %1$s days. Do you want to proceed without a password?</string>
+    <string name="ForceSetPasswordAlertMessageShort_many">If you do not set a password, you will only be able to log into your account via SMS once every %1$s days. Do you want to proceed without a password?</string>
+    <string name="ForceSetPasswordAlertMessageShort_other">If you do not set a password, you will only be able to log into your account via SMS once every %1$s days. Do you want to proceed without a password?</string>
+    <string name="YourPasswordReset">Your password was successfully deactivated</string>
+    <string name="CreatePassword">Create a Password</string>
+    <string name="CreatePasscode">Create a passcode</string>
+    <string name="CreatePasscodeInfoPIN">Please enter any 4 digits that you will use to unlock Telegram.</string>
+    <string name="CreatePasscodeInfoPassword">Please enter the password you will use to unlock Telegram.</string>
+    <string name="PasscodeReinstallNotice">If you forget your passcode, you\'ll need to **reinstall** the app. All secret chats will be lost.</string>
+    <string name="EditNumberInfo">Do you want to edit your number?\n\n**%1$s**\n\nIf the number above is correct, please wait for the verification code.</string>
 </resources>

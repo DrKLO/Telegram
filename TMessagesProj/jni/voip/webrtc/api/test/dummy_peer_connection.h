@@ -45,9 +45,7 @@ class DummyPeerConnection : public PeerConnectionInterface {
     return RTCError(RTCErrorType::UNSUPPORTED_OPERATION, "Not implemented");
   }
 
-  bool RemoveTrack(RtpSenderInterface* sender) override { return false; }
-
-  RTCError RemoveTrackNew(
+  RTCError RemoveTrackOrError(
       rtc::scoped_refptr<RtpSenderInterface> sender) override {
     return RTCError(RTCErrorType::UNSUPPORTED_OPERATION, "Not implemented");
   }
@@ -114,10 +112,10 @@ class DummyPeerConnection : public PeerConnectionInterface {
   }
   void ClearStatsCache() override {}
 
-  rtc::scoped_refptr<DataChannelInterface> CreateDataChannel(
+  RTCErrorOr<rtc::scoped_refptr<DataChannelInterface>> CreateDataChannelOrError(
       const std::string& label,
       const DataChannelInit* config) override {
-    return nullptr;
+    return RTCError(RTCErrorType::INTERNAL_ERROR, "Dummy function called");
   }
 
   const SessionDescriptionInterface* local_description() const override {

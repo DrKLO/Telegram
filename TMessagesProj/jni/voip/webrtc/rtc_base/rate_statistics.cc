@@ -58,7 +58,7 @@ void RateStatistics::Update(int64_t count, int64_t now_ms) {
   RTC_DCHECK_GE(count, 0);
 
   EraseOld(now_ms);
-  if (first_timestamp_ == -1) {
+  if (first_timestamp_ == -1 || num_samples_ == 0) {
     first_timestamp_ = now_ms;
   }
 

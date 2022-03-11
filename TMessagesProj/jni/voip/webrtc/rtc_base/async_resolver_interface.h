@@ -23,12 +23,12 @@ class RTC_EXPORT AsyncResolverInterface {
   AsyncResolverInterface();
   virtual ~AsyncResolverInterface();
 
-  // Start address resolution of the hostname in |addr|.
+  // Start address resolution of the hostname in `addr`.
   virtual void Start(const SocketAddress& addr) = 0;
-  // Returns true iff the address from |Start| was successfully resolved.
-  // If the address was successfully resolved, sets |addr| to a copy of the
-  // address from |Start| with the IP address set to the top most resolved
-  // address of |family| (|addr| will have both hostname and the resolved ip).
+  // Returns true iff the address from `Start` was successfully resolved.
+  // If the address was successfully resolved, sets `addr` to a copy of the
+  // address from `Start` with the IP address set to the top most resolved
+  // address of `family` (`addr` will have both hostname and the resolved ip).
   virtual bool GetResolvedAddress(int family, SocketAddress* addr) const = 0;
   // Returns error from resolver.
   virtual int GetError() const = 0;

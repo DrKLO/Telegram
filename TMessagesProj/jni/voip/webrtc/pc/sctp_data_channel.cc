@@ -15,13 +15,14 @@
 #include <string>
 #include <utility>
 
-#include "api/proxy.h"
 #include "media/sctp/sctp_transport_internal.h"
+#include "pc/proxy.h"
 #include "pc/sctp_utils.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/location.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/ref_counted_object.h"
+#include "rtc_base/system/unused.h"
 #include "rtc_base/task_utils/to_queued_task.h"
 #include "rtc_base/thread.h"
 
@@ -30,7 +31,6 @@ namespace webrtc {
 namespace {
 
 static size_t kMaxQueuedReceivedDataBytes = 16 * 1024 * 1024;
-static size_t kMaxQueuedSendDataBytes = 16 * 1024 * 1024;
 
 static std::atomic<int> g_unique_id{0};
 
@@ -65,7 +65,7 @@ PROXY_CONSTMETHOD0(uint64_t, buffered_amount)
 PROXY_METHOD0(void, Close)
 // TODO(bugs.webrtc.org/11547): Change to run on the network thread.
 PROXY_METHOD1(bool, Send, const DataBuffer&)
-END_PROXY_MAP()
+END_PROXY_MAP(DataChannel)
 
 }  // namespace
 
@@ -178,6 +178,7 @@ SctpDataChannel::SctpDataChannel(const InternalDataChannelInit& config,
       observer_(nullptr),
       provider_(provider) {
   RTC_DCHECK_RUN_ON(signaling_thread_);
+  RTC_UNUSED(network_thread_);
 }
 
 bool SctpDataChannel::Init() {
@@ -252,7 +253,7 @@ bool SctpDataChannel::reliable() const {
 
 uint64_t SctpDataChannel::buffered_amount() const {
   RTC_DCHECK_RUN_ON(signaling_thread_);
-  return buffered_amount_;
+  return queued_send_data_.byte_count();
 }
 
 void SctpDataChannel::Close() {
@@ -304,18 +305,12 @@ bool SctpDataChannel::Send(const DataBuffer& buffer) {
     return false;
   }
 
-  buffered_amount_ += buffer.size();
-
   // If the queue is non-empty, we're waiting for SignalReadyToSend,
   // so just add to the end of the queue and keep waiting.
   if (!queued_send_data_.Empty()) {
     if (!QueueSendDataMessage(buffer)) {
-      RTC_LOG(LS_ERROR) << "Closing the DataChannel due to a failure to queue "
-                           "additional data.";
-      // https://w3c.github.io/webrtc-pc/#dom-rtcdatachannel-send step 5
-      // Note that the spec doesn't explicitly say to close in this situation.
-      CloseAbruptlyWithError(RTCError(RTCErrorType::RESOURCE_EXHAUSTED,
-                                      "Unable to queue data for sending"));
+      // Queue is full
+      return false;
     }
     return true;
   }
@@ -381,13 +376,11 @@ void SctpDataChannel::OnTransportChannelCreated() {
   }
 }
 
-void SctpDataChannel::OnTransportChannelClosed() {
-  // The SctpTransport is unusable (for example, because the SCTP m= section
-  // was rejected, or because the DTLS transport closed), so we need to close
-  // abruptly.
-  RTCError error = RTCError(RTCErrorType::OPERATION_ERROR_WITH_DATA,
-                            "Transport channel closed");
-  error.set_error_detail(RTCErrorDetailType::SCTP_FAILURE);
+void SctpDataChannel::OnTransportChannelClosed(RTCError error) {
+  // The SctpTransport is unusable, which could come from multiplie reasons:
+  // - the SCTP m= section was rejected
+  // - the DTLS transport is closed
+  // - the SCTP transport is closed
   CloseAbruptlyWithError(std::move(error));
 }
 
@@ -487,8 +480,6 @@ void SctpDataChannel::CloseAbruptlyWithError(RTCError error) {
   }
 
   // Closing abruptly means any queued data gets thrown away.
-  buffered_amount_ = 0;
-
   queued_send_data_.Clear();
   queued_control_data_.Clear();
 
@@ -644,8 +635,6 @@ bool SctpDataChannel::SendDataMessage(const DataBuffer& buffer,
     ++messages_sent_;
     bytes_sent_ += buffer.size();
 
-    RTC_DCHECK(buffered_amount_ >= buffer.size());
-    buffered_amount_ -= buffer.size();
     if (observer_ && buffer.size() > 0) {
       observer_->OnBufferedAmountChange(buffer.size());
     }
@@ -671,7 +660,8 @@ bool SctpDataChannel::SendDataMessage(const DataBuffer& buffer,
 bool SctpDataChannel::QueueSendDataMessage(const DataBuffer& buffer) {
   RTC_DCHECK_RUN_ON(signaling_thread_);
   size_t start_buffered_amount = queued_send_data_.byte_count();
-  if (start_buffered_amount + buffer.size() > kMaxQueuedSendDataBytes) {
+  if (start_buffered_amount + buffer.size() >
+      DataChannelInterface::MaxSendQueueSize()) {
     RTC_LOG(LS_ERROR) << "Can't buffer any more data for the data channel.";
     return false;
   }

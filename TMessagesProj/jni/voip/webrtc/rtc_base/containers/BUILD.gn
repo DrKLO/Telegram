@@ -1,0 +1,59 @@
+# Copyright (c) 2021 The WebRTC project authors. All Rights Reserved.
+#
+# Use of this source code is governed by a BSD-style license
+# that can be found in the LICENSE file in the root of the source
+# tree. An additional intellectual property rights grant can be found
+# in the file PATENTS.  All contributing project authors may
+# be found in the AUTHORS file in the root of the source tree.
+
+import("../../webrtc.gni")
+
+rtc_library("flat_containers_internal") {
+  sources = [
+    "as_const.h",
+    "flat_tree.cc",
+    "flat_tree.h",
+    "identity.h",
+    "invoke.h",
+    "move_only_int.h",
+    "not_fn.h",
+    "void_t.h",
+  ]
+  deps = [
+    "..:checks",
+    "../system:no_unique_address",
+  ]
+  absl_deps = [ "//third_party/abseil-cpp/absl/algorithm:container" ]
+  visibility = [ ":*" ]
+}
+
+rtc_source_set("flat_set") {
+  sources = [ "flat_set.h" ]
+  deps = [ ":flat_containers_internal" ]
+}
+
+rtc_source_set("flat_map") {
+  sources = [ "flat_map.h" ]
+  deps = [
+    ":flat_containers_internal",
+    "..:checks",
+  ]
+}
+
+rtc_library("unittests") {
+  testonly = true
+  sources = [
+    "flat_map_unittest.cc",
+    "flat_set_unittest.cc",
+    "flat_tree_unittest.cc",
+  ]
+  deps = [
+    ":flat_containers_internal",
+    ":flat_map",
+    ":flat_set",
+    "../../test:test_support",
+    "//testing/gmock:gmock",
+    "//testing/gtest:gtest",
+  ]
+  absl_deps = [ "//third_party/abseil-cpp/absl/algorithm:container" ]
+}

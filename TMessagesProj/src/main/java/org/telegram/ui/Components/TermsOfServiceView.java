@@ -101,7 +101,7 @@ public class TermsOfServiceView extends FrameLayout {
                 builder12.setTitle(LocaleController.getString("AppName", R.string.AppName));
                 builder12.setPositiveButton(LocaleController.getString("Deactivate", R.string.Deactivate), (dialogInterface, i) -> {
                     final AlertDialog progressDialog = new AlertDialog(getContext(), 3);
-                    progressDialog.setCanCacnel(false);
+                    progressDialog.setCanCancel(false);
 
                     TLRPC.TL_account_deleteAccount req = new TLRPC.TL_account_deleteAccount();
                     req.reason = "Decline ToS update";

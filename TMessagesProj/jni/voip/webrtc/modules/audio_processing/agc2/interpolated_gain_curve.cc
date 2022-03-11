@@ -115,7 +115,7 @@ void InterpolatedGainCurve::RegionLogger::LogRegionStats(
       break;
     }
     default: {
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
     }
   }
 }
@@ -151,11 +151,11 @@ void InterpolatedGainCurve::UpdateStats(float input_level) const {
 }
 
 // Looks up a gain to apply given a non-negative input level.
-// The cost of this operation depends on the region in which |input_level|
+// The cost of this operation depends on the region in which `input_level`
 // falls.
 // For the identity and the saturation regions the cost is O(1).
 // For the other regions, namely knee and limiter, the cost is
-// O(2 + log2(|LightkInterpolatedGainCurveTotalPoints|), plus O(1) for the
+// O(2 + log2(`LightkInterpolatedGainCurveTotalPoints`), plus O(1) for the
 // linear interpolation (one product and one sum).
 float InterpolatedGainCurve::LookUpGainToApply(float input_level) const {
   UpdateStats(input_level);

@@ -19,7 +19,6 @@
 #include <string>
 
 #include "rtc_base/buffer.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/ssl_certificate.h"
 #include "rtc_base/ssl_identity.h"
 
@@ -43,6 +42,9 @@ class BoringSSLCertificate final : public SSLCertificate {
 
   ~BoringSSLCertificate() override;
 
+  BoringSSLCertificate(const BoringSSLCertificate&) = delete;
+  BoringSSLCertificate& operator=(const BoringSSLCertificate&) = delete;
+
   std::unique_ptr<SSLCertificate> Clone() const override;
 
   CRYPTO_BUFFER* cert_buffer() const { return cert_buffer_.get(); }
@@ -52,7 +54,7 @@ class BoringSSLCertificate final : public SSLCertificate {
   bool operator==(const BoringSSLCertificate& other) const;
   bool operator!=(const BoringSSLCertificate& other) const;
 
-  // Compute the digest of the certificate given |algorithm|.
+  // Compute the digest of the certificate given `algorithm`.
   bool ComputeDigest(const std::string& algorithm,
                      unsigned char* digest,
                      size_t size,
@@ -72,7 +74,6 @@ class BoringSSLCertificate final : public SSLCertificate {
  private:
   // A handle to the DER encoded certificate data.
   bssl::UniquePtr<CRYPTO_BUFFER> cert_buffer_;
-  RTC_DISALLOW_COPY_AND_ASSIGN(BoringSSLCertificate);
 };
 
 }  // namespace rtc

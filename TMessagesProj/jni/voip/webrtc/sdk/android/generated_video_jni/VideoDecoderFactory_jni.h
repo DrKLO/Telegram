@@ -87,7 +87,4 @@ static base::android::ScopedJavaLocalRef<jobjectArray>
 }  // namespace jni
 }  // namespace  webrtc
 
-// Step 4: Generated test functions (optional).
-
-
 #endif  // org_webrtc_VideoDecoderFactory_JNI

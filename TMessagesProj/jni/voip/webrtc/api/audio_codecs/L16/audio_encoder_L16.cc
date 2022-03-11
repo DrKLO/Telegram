@@ -24,6 +24,7 @@ namespace webrtc {
 absl::optional<AudioEncoderL16::Config> AudioEncoderL16::SdpToConfig(
     const SdpAudioFormat& format) {
   if (!rtc::IsValueInRangeForNumericType<int>(format.num_channels)) {
+    RTC_DCHECK_NOTREACHED();
     return absl::nullopt;
   }
   Config config;
@@ -36,9 +37,10 @@ absl::optional<AudioEncoderL16::Config> AudioEncoderL16::SdpToConfig(
       config.frame_size_ms = rtc::SafeClamp(10 * (*ptime / 10), 10, 60);
     }
   }
-  return absl::EqualsIgnoreCase(format.name, "L16") && config.IsOk()
-             ? absl::optional<Config>(config)
-             : absl::nullopt;
+  if (absl::EqualsIgnoreCase(format.name, "L16") && config.IsOk()) {
+    return config;
+  }
+  return absl::nullopt;
 }
 
 void AudioEncoderL16::AppendSupportedEncoders(
@@ -58,12 +60,15 @@ std::unique_ptr<AudioEncoder> AudioEncoderL16::MakeAudioEncoder(
     const AudioEncoderL16::Config& config,
     int payload_type,
     absl::optional<AudioCodecPairId> /*codec_pair_id*/) {
-  RTC_DCHECK(config.IsOk());
   AudioEncoderPcm16B::Config c;
   c.sample_rate_hz = config.sample_rate_hz;
   c.num_channels = config.num_channels;
   c.frame_size_ms = config.frame_size_ms;
   c.payload_type = payload_type;
+  if (!config.IsOk()) {
+    RTC_DCHECK_NOTREACHED();
+    return nullptr;
+  }
   return std::make_unique<AudioEncoderPcm16B>(c);
 }
 

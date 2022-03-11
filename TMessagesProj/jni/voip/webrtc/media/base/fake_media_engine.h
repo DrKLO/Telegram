@@ -275,7 +275,7 @@ class RtpHelper : public Base {
   }
   void OnPacketSent(const rtc::SentPacket& sent_packet) override {}
   void OnReadyToSend(bool ready) override { ready_to_send_ = ready; }
-  void OnNetworkRouteChanged(const std::string& transport_name,
+  void OnNetworkRouteChanged(absl::string_view transport_name,
                              const rtc::NetworkRoute& network_route) override {
     last_network_route_ = network_route;
     ++num_network_route_changes_;

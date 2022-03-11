@@ -75,12 +75,19 @@ bool VideoSourceSinkController::HasSource() const {
   return source_ != nullptr;
 }
 
+void VideoSourceSinkController::RequestRefreshFrame() {
+  RTC_DCHECK_RUN_ON(&sequence_checker_);
+  if (source_)
+    source_->RequestRefreshFrame();
+}
+
 void VideoSourceSinkController::PushSourceSinkSettings() {
   RTC_DCHECK_RUN_ON(&sequence_checker_);
   if (!source_)
     return;
   rtc::VideoSinkWants wants = CurrentSettingsToSinkWants();
-  RTC_LOG(INFO) << "Pushing SourceSink restrictions: " << WantsToString(wants);
+  RTC_LOG(LS_INFO) << "Pushing SourceSink restrictions: "
+                   << WantsToString(wants);
   source_->AddOrUpdateSink(sink_, wants);
 }
 
@@ -157,7 +164,7 @@ rtc::VideoSinkWants VideoSourceSinkController::CurrentSettingsToSinkWants()
     const {
   rtc::VideoSinkWants wants;
   wants.rotation_applied = rotation_applied_;
-  // |wants.black_frames| is not used, it always has its default value false.
+  // `wants.black_frames` is not used, it always has its default value false.
   wants.max_pixel_count =
       rtc::dchecked_cast<int>(restrictions_.max_pixels_per_frame().value_or(
           std::numeric_limits<int>::max()));

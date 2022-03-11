@@ -42,6 +42,7 @@ import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 
+import androidx.annotation.IntDef;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -53,12 +54,27 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashSet;
 
 public class RecyclerListView extends RecyclerView {
+    public final static int SECTIONS_TYPE_SIMPLE = 0,
+            SECTIONS_TYPE_STICKY_HEADERS = 1,
+            SECTIONS_TYPE_DATE = 2,
+            SECTIONS_TYPE_FAST_SCROLL_ONLY = 3;
+
+    @Retention(RetentionPolicy.SOURCE)
+    @IntDef({
+            SECTIONS_TYPE_SIMPLE,
+            SECTIONS_TYPE_STICKY_HEADERS,
+            SECTIONS_TYPE_DATE,
+            SECTIONS_TYPE_FAST_SCROLL_ONLY
+    })
+    public @interface SectionsType {}
 
     private OnItemClickListener onItemClickListener;
     private OnItemClickListenerExtended onItemClickListenerExtended;
@@ -91,8 +107,10 @@ public class RecyclerListView extends RecyclerView {
     private int currentVisible = -1;
     private int startSection;
     private int sectionsCount;
-    private int sectionsType;
     private int sectionOffset;
+
+    @SectionsType
+    private int sectionsType;
 
     private boolean hideIfEmpty = true;
 
@@ -654,7 +672,7 @@ public class RecyclerListView extends RecyclerView {
 
         @Override
         protected void onDraw(Canvas canvas) {
-            int y = (int) Math.ceil((getMeasuredHeight() - AndroidUtilities.dp(24 + 30)) * progress);
+            int y = getPaddingTop() + (int) Math.ceil((getMeasuredHeight() - getPaddingTop() - AndroidUtilities.dp(24 + 30)) * progress);
             rect.set(scrollX, AndroidUtilities.dp(12) + y, scrollX + AndroidUtilities.dp(5), AndroidUtilities.dp(12 + 30) + y);
             if (type == LETTER_TYPE) {
                 paint.setColor(ColorUtils.blendARGB(inactiveColor, activeColor, bubbleProgress));
@@ -1413,14 +1431,14 @@ public class RecyclerListView extends RecyclerView {
     }
 
     public void checkSection(boolean force) {
-        if ((scrollingByUser || force) && fastScroll != null || sectionsType != 0 && sectionsAdapter != null) {
+        if ((scrollingByUser || force) && fastScroll != null || sectionsType != SECTIONS_TYPE_SIMPLE && sectionsAdapter != null) {
             LayoutManager layoutManager = getLayoutManager();
             if (layoutManager instanceof LinearLayoutManager) {
                 LinearLayoutManager linearLayoutManager = (LinearLayoutManager) layoutManager;
                 if (linearLayoutManager.getOrientation() == LinearLayoutManager.VERTICAL) {
                     if (sectionsAdapter != null) {
                         int paddingTop = getPaddingTop();
-                        if (sectionsType == 1) {
+                        if (sectionsType == SECTIONS_TYPE_STICKY_HEADERS || sectionsType == SECTIONS_TYPE_FAST_SCROLL_ONLY) {
                             int childCount = getChildCount();
                             int maxBottom = 0;
                             int minBottom = Integer.MAX_VALUE;
@@ -1482,44 +1500,46 @@ public class RecyclerListView extends RecyclerView {
                                 }
                             }
 
-                            int itemNum = firstVisibleItem;
-                            for (int a = startSection; a < startSection + sectionsCount; a++) {
-                                View header = null;
-                                if (!headersCache.isEmpty()) {
-                                    header = headersCache.get(0);
-                                    headersCache.remove(0);
-                                }
-                                header = getSectionHeaderView(a, header);
-                                headers.add(header);
-                                int count = sectionsAdapter.getCountForSection(a);
-                                if (a == startSection) {
-                                    int pos = sectionsAdapter.getPositionInSectionForPosition(itemNum);
-                                    if (pos == count - 1) {
-                                        header.setTag(-header.getHeight() + paddingTop);
-                                    } else if (pos == count - 2) {
-                                        View child = getChildAt(itemNum - firstVisibleItem);
-                                        int headerTop;
-                                        if (child != null) {
-                                            headerTop = child.getTop() + paddingTop;
+                            if (sectionsType != SECTIONS_TYPE_FAST_SCROLL_ONLY) {
+                                int itemNum = firstVisibleItem;
+                                for (int a = startSection; a < startSection + sectionsCount; a++) {
+                                    View header = null;
+                                    if (!headersCache.isEmpty()) {
+                                        header = headersCache.get(0);
+                                        headersCache.remove(0);
+                                    }
+                                    header = getSectionHeaderView(a, header);
+                                    headers.add(header);
+                                    int count = sectionsAdapter.getCountForSection(a);
+                                    if (a == startSection) {
+                                        int pos = sectionsAdapter.getPositionInSectionForPosition(itemNum);
+                                        if (pos == count - 1) {
+                                            header.setTag(-header.getHeight() + paddingTop);
+                                        } else if (pos == count - 2) {
+                                            View child = getChildAt(itemNum - firstVisibleItem);
+                                            int headerTop;
+                                            if (child != null) {
+                                                headerTop = child.getTop() + paddingTop;
+                                            } else {
+                                                headerTop = -AndroidUtilities.dp(100);
+                                            }
+                                            header.setTag(Math.min(headerTop, 0));
                                         } else {
-                                            headerTop = -AndroidUtilities.dp(100);
+                                            header.setTag(0);
                                         }
-                                        header.setTag(Math.min(headerTop, 0));
+                                        itemNum += count - sectionsAdapter.getPositionInSectionForPosition(firstVisibleItem);
                                     } else {
-                                        header.setTag(0);
+                                        View child = getChildAt(itemNum - firstVisibleItem);
+                                        if (child != null) {
+                                            header.setTag(child.getTop() + paddingTop);
+                                        } else {
+                                            header.setTag(-AndroidUtilities.dp(100));
+                                        }
+                                        itemNum += count;
                                     }
-                                    itemNum += count - sectionsAdapter.getPositionInSectionForPosition(firstVisibleItem);
-                                } else {
-                                    View child = getChildAt(itemNum - firstVisibleItem);
-                                    if (child != null) {
-                                        header.setTag(child.getTop() + paddingTop);
-                                    } else {
-                                        header.setTag(-AndroidUtilities.dp(100));
-                                    }
-                                    itemNum += count;
                                 }
                             }
-                        } else if (sectionsType == 2) {
+                        } else if (sectionsType == SECTIONS_TYPE_DATE) {
                             pinnedHeaderShadowTargetAlpha = 0.0f;
                             if (sectionsAdapter.getItemCount() == 0) {
                                 return;
@@ -1767,6 +1787,10 @@ public class RecyclerListView extends RecyclerView {
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
+        FastScroll fastScroll = getFastScroll();
+        if (fastScroll != null && fastScroll.isVisible && fastScroll.isMoving && (ev.getActionMasked() != MotionEvent.ACTION_UP && ev.getActionMasked() != MotionEvent.ACTION_CANCEL)) {
+            return true;
+        }
         if (sectionsAdapter != null && pinnedHeader != null && pinnedHeader.getAlpha() != 0 && pinnedHeader.dispatchTouchEvent(ev)) {
             return true;
         }
@@ -1909,11 +1933,12 @@ public class RecyclerListView extends RecyclerView {
             return;
         }
         fastScroll.setVisibility(value ? VISIBLE : GONE);
+        fastScroll.isVisible = value;
     }
 
-    public void setSectionsType(int type) {
+    public void setSectionsType(@SectionsType int type) {
         sectionsType = type;
-        if (sectionsType == 1) {
+        if (sectionsType == SECTIONS_TYPE_STICKY_HEADERS || sectionsType == SECTIONS_TYPE_FAST_SCROLL_ONLY) {
             headers = new ArrayList<>();
             headersCache = new ArrayList<>();
         }
@@ -2126,7 +2151,7 @@ public class RecyclerListView extends RecyclerView {
             return;
         }
         if (header.isLayoutRequested() || forceLayout) {
-            if (sectionsType == 1) {
+            if (sectionsType == SECTIONS_TYPE_STICKY_HEADERS) {
                 ViewGroup.LayoutParams layoutParams = header.getLayoutParams();
                 int heightSpec = MeasureSpec.makeMeasureSpec(layoutParams.height, MeasureSpec.EXACTLY);
                 int widthSpec = MeasureSpec.makeMeasureSpec(layoutParams.width, MeasureSpec.EXACTLY);
@@ -2135,7 +2160,7 @@ public class RecyclerListView extends RecyclerView {
                 } catch (Exception e) {
                     FileLog.e(e);
                 }
-            } else if (sectionsType == 2) {
+            } else if (sectionsType == SECTIONS_TYPE_DATE) {
                 int widthSpec = MeasureSpec.makeMeasureSpec(getMeasuredWidth(), MeasureSpec.EXACTLY);
                 int heightSpec = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
                 try {
@@ -2154,7 +2179,7 @@ public class RecyclerListView extends RecyclerView {
         if (overlayContainer != null) {
             overlayContainer.requestLayout();
         }
-        if (sectionsType == 1) {
+        if (sectionsType == SECTIONS_TYPE_STICKY_HEADERS) {
             if (sectionsAdapter == null || headers.isEmpty()) {
                 return;
             }
@@ -2162,7 +2187,7 @@ public class RecyclerListView extends RecyclerView {
                 View header = headers.get(a);
                 ensurePinnedHeaderLayout(header, true);
             }
-        } else if (sectionsType == 2) {
+        } else if (sectionsType == SECTIONS_TYPE_DATE) {
             if (sectionsAdapter == null || pinnedHeader == null) {
                 return;
             }
@@ -2188,7 +2213,7 @@ public class RecyclerListView extends RecyclerView {
         if (overlayContainer != null) {
             overlayContainer.draw(canvas);
         }
-        if (sectionsType == 1) {
+        if (sectionsType == SECTIONS_TYPE_STICKY_HEADERS) {
             if (sectionsAdapter != null && !headers.isEmpty()) {
                 for (int a = 0; a < headers.size(); a++) {
                     View header = headers.get(a);
@@ -2200,7 +2225,7 @@ public class RecyclerListView extends RecyclerView {
                     canvas.restoreToCount(saveCount);
                 }
             }
-        } else if (sectionsType == 2) {
+        } else if (sectionsType == SECTIONS_TYPE_DATE) {
             if (sectionsAdapter != null && pinnedHeader != null && pinnedHeader.getAlpha() != 0) {
                 int saveCount = canvas.save();
                 int top = (Integer) pinnedHeader.getTag();

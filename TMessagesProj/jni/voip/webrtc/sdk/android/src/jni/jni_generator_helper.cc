@@ -15,7 +15,7 @@
 
 namespace webrtc {
 
-// If |atomic_class_id| set, it'll return immediately. Otherwise, it will look
+// If `atomic_class_id` set, it'll return immediately. Otherwise, it will look
 // up the class and store it. If there's a race, we take care to only store one
 // global reference (and the duplicated effort will happen only once).
 jclass LazyGetClass(JNIEnv* env,
@@ -29,18 +29,18 @@ jclass LazyGetClass(JNIEnv* env,
   jclass cas_result = nullptr;
   if (std::atomic_compare_exchange_strong(atomic_class_id, &cas_result,
                                           clazz.obj())) {
-    // We sucessfully stored |clazz| in |atomic_class_id|, so we are
+    // We sucessfully stored `clazz` in `atomic_class_id`, so we are
     // intentionally leaking the global ref since it's now stored there.
     return clazz.Release();
   } else {
     // Some other thread came before us and stored a global pointer in
-    // |atomic_class_id|. Relase our global ref and return the ref from the
+    // `atomic_class_id`. Relase our global ref and return the ref from the
     // other thread.
     return cas_result;
   }
 }
 
-// If |atomic_method_id| set, it'll return immediately. Otherwise, it will look
+// If `atomic_method_id` set, it'll return immediately. Otherwise, it will look
 // up the method id and store it. If there's a race, it's ok since the values
 // are the same (and the duplicated effort will happen only once).
 template <MethodID::Type type>

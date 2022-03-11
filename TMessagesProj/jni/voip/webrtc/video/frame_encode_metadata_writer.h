@@ -28,7 +28,7 @@ class FrameEncodeMetadataWriter {
   explicit FrameEncodeMetadataWriter(EncodedImageCallback* frame_drop_callback);
   ~FrameEncodeMetadataWriter();
 
-  void OnEncoderInit(const VideoCodec& codec, bool internal_source);
+  void OnEncoderInit(const VideoCodec& codec);
   void OnSetRates(const VideoBitrateAllocation& bitrate_allocation,
                   uint32_t framerate_fps);
 
@@ -42,8 +42,6 @@ class FrameEncodeMetadataWriter {
   void Reset();
 
  private:
-  size_t NumSpatialLayers() const RTC_EXCLUSIVE_LOCKS_REQUIRED(lock_);
-
   // For non-internal-source encoders, returns encode started time and fixes
   // capture timestamp for the frame, if corrupted by the encoder.
   absl::optional<int64_t> ExtractEncodeStartTimeAndFillMetadata(
@@ -69,9 +67,9 @@ class FrameEncodeMetadataWriter {
   Mutex lock_;
   EncodedImageCallback* const frame_drop_callback_;
   VideoCodec codec_settings_ RTC_GUARDED_BY(&lock_);
-  bool internal_source_ RTC_GUARDED_BY(&lock_);
   uint32_t framerate_fps_ RTC_GUARDED_BY(&lock_);
 
+  size_t num_spatial_layers_ RTC_GUARDED_BY(&lock_);
   // Separate instance for each simulcast stream or spatial layer.
   std::vector<TimingFramesLayerInfo> timing_frames_info_ RTC_GUARDED_BY(&lock_);
   int64_t last_timing_frame_time_ms_ RTC_GUARDED_BY(&lock_);

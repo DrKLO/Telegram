@@ -137,7 +137,7 @@ bool CUnescapeInternal(absl::string_view source, bool leave_nulls_escaped,
             // Copy the escape sequence for the null character
             const ptrdiff_t octal_size = p + 1 - octal_start;
             *d++ = '\\';
-            memcpy(d, octal_start, octal_size);
+            memmove(d, octal_start, octal_size);
             d += octal_size;
             break;
           }
@@ -170,7 +170,7 @@ bool CUnescapeInternal(absl::string_view source, bool leave_nulls_escaped,
             // Copy the escape sequence for the null character
             const ptrdiff_t hex_size = p + 1 - hex_start;
             *d++ = '\\';
-            memcpy(d, hex_start, hex_size);
+            memmove(d, hex_start, hex_size);
             d += hex_size;
             break;
           }
@@ -203,7 +203,7 @@ bool CUnescapeInternal(absl::string_view source, bool leave_nulls_escaped,
           if ((rune == 0) && leave_nulls_escaped) {
             // Copy the escape sequence for the null character
             *d++ = '\\';
-            memcpy(d, hex_start, 5);  // u0000
+            memmove(d, hex_start, 5);  // u0000
             d += 5;
             break;
           }
@@ -251,7 +251,7 @@ bool CUnescapeInternal(absl::string_view source, bool leave_nulls_escaped,
           if ((rune == 0) && leave_nulls_escaped) {
             // Copy the escape sequence for the null character
             *d++ = '\\';
-            memcpy(d, hex_start, 9);  // U00000000
+            memmove(d, hex_start, 9);  // U00000000
             d += 9;
             break;
           }

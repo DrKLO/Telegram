@@ -15,10 +15,12 @@
 
 #include <utility>
 
+#include "absl/base/attributes.h"
 #include "absl/types/optional.h"
 #include "api/array_view.h"
 #include "api/ref_counted_base.h"
 #include "api/scoped_refptr.h"
+#include "api/units/timestamp.h"
 #include "api/video/video_timing.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
 #include "modules/rtp_rtcp/source/rtp_header_extensions.h"
@@ -44,9 +46,15 @@ class RtpPacketToSend : public RtpPacket {
   ~RtpPacketToSend();
 
   // Time in local time base as close as it can to frame capture time.
-  int64_t capture_time_ms() const { return capture_time_ms_; }
+  webrtc::Timestamp capture_time() const { return capture_time_; }
+  void set_capture_time(webrtc::Timestamp time) { capture_time_ = time; }
 
-  void set_capture_time_ms(int64_t time) { capture_time_ms_ = time; }
+  ABSL_DEPRECATED("Use capture_time() instead")
+  int64_t capture_time_ms() const { return capture_time_.ms_or(-1); }
+  ABSL_DEPRECATED("Use set_capture_time() instead")
+  void set_capture_time_ms(int64_t time) {
+    capture_time_ = webrtc::Timestamp::Millis(time);
+  }
 
   void set_packet_type(RtpPacketMediaType type) { packet_type_ = type; }
   absl::optional<RtpPacketMediaType> packet_type() const {
@@ -59,14 +67,14 @@ class RtpPacketToSend : public RtpPacket {
   void set_retransmitted_sequence_number(uint16_t sequence_number) {
     retransmitted_sequence_number_ = sequence_number;
   }
-  absl::optional<uint16_t> retransmitted_sequence_number() {
+  absl::optional<uint16_t> retransmitted_sequence_number() const {
     return retransmitted_sequence_number_;
   }
 
   void set_allow_retransmission(bool allow_retransmission) {
     allow_retransmission_ = allow_retransmission;
   }
-  bool allow_retransmission() { return allow_retransmission_; }
+  bool allow_retransmission() const { return allow_retransmission_; }
 
   // An application can attach arbitrary data to an RTP packet using
   // `additional_data`. The additional data does not affect WebRTC processing.
@@ -77,27 +85,55 @@ class RtpPacketToSend : public RtpPacket {
     additional_data_ = std::move(data);
   }
 
-  void set_packetization_finish_time_ms(int64_t time) {
+  void set_packetization_finish_time(webrtc::Timestamp time) {
     SetExtension<VideoTimingExtension>(
-        VideoSendTiming::GetDeltaCappedMs(capture_time_ms_, time),
+        VideoSendTiming::GetDeltaCappedMs(time - capture_time_),
         VideoTimingExtension::kPacketizationFinishDeltaOffset);
   }
 
-  void set_pacer_exit_time_ms(int64_t time) {
+  void set_pacer_exit_time(webrtc::Timestamp time) {
     SetExtension<VideoTimingExtension>(
-        VideoSendTiming::GetDeltaCappedMs(capture_time_ms_, time),
+        VideoSendTiming::GetDeltaCappedMs(time - capture_time_),
         VideoTimingExtension::kPacerExitDeltaOffset);
   }
 
-  void set_network_time_ms(int64_t time) {
+  void set_network_time(webrtc::Timestamp time) {
     SetExtension<VideoTimingExtension>(
-        VideoSendTiming::GetDeltaCappedMs(capture_time_ms_, time),
+        VideoSendTiming::GetDeltaCappedMs(time - capture_time_),
         VideoTimingExtension::kNetworkTimestampDeltaOffset);
   }
 
+  void set_network2_time(webrtc::Timestamp time) {
+    SetExtension<VideoTimingExtension>(
+        VideoSendTiming::GetDeltaCappedMs(time - capture_time_),
+        VideoTimingExtension::kNetwork2TimestampDeltaOffset);
+  }
+
+  ABSL_DEPRECATED("Use set_packetization_finish_time() instead")
+  void set_packetization_finish_time_ms(int64_t time) {
+    SetExtension<VideoTimingExtension>(
+        VideoSendTiming::GetDeltaCappedMs(capture_time_.ms_or(0), time),
+        VideoTimingExtension::kPacketizationFinishDeltaOffset);
+  }
+
+  ABSL_DEPRECATED("Use set_pacer_exit_time() instead")
+  void set_pacer_exit_time_ms(int64_t time) {
+    SetExtension<VideoTimingExtension>(
+        VideoSendTiming::GetDeltaCappedMs(capture_time_.ms_or(0), time),
+        VideoTimingExtension::kPacerExitDeltaOffset);
+  }
+
+  ABSL_DEPRECATED("Use set_network_time() instead")
+  void set_network_time_ms(int64_t time) {
+    SetExtension<VideoTimingExtension>(
+        VideoSendTiming::GetDeltaCappedMs(capture_time_.ms_or(0), time),
+        VideoTimingExtension::kNetworkTimestampDeltaOffset);
+  }
+
+  ABSL_DEPRECATED("Use set_network2_time() instead")
   void set_network2_time_ms(int64_t time) {
     SetExtension<VideoTimingExtension>(
-        VideoSendTiming::GetDeltaCappedMs(capture_time_ms_, time),
+        VideoSendTiming::GetDeltaCappedMs(capture_time_.ms_or(0), time),
         VideoTimingExtension::kNetwork2TimestampDeltaOffset);
   }
 
@@ -121,7 +157,7 @@ class RtpPacketToSend : public RtpPacket {
   bool is_red() const { return is_red_; }
 
  private:
-  int64_t capture_time_ms_ = 0;
+  webrtc::Timestamp capture_time_ = webrtc::Timestamp::Zero();
   absl::optional<RtpPacketMediaType> packet_type_;
   bool allow_retransmission_ = false;
   absl::optional<uint16_t> retransmitted_sequence_number_;

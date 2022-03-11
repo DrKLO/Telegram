@@ -123,7 +123,7 @@ void AudioState::RemoveSendingStream(webrtc::AudioSendStream* stream) {
 }
 
 void AudioState::SetPlayout(bool enabled) {
-  RTC_LOG(INFO) << "SetPlayout(" << enabled << ")";
+  RTC_LOG(LS_INFO) << "SetPlayout(" << enabled << ")";
   RTC_DCHECK(thread_checker_.IsCurrent());
   if (playout_enabled_ != enabled) {
     playout_enabled_ = enabled;
@@ -140,7 +140,7 @@ void AudioState::SetPlayout(bool enabled) {
 }
 
 void AudioState::SetRecording(bool enabled) {
-  RTC_LOG(INFO) << "SetRecording(" << enabled << ")";
+  RTC_LOG(LS_INFO) << "SetRecording(" << enabled << ")";
   RTC_DCHECK(thread_checker_.IsCurrent());
   if (recording_enabled_ != enabled) {
     recording_enabled_ = enabled;

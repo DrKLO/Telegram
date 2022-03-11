@@ -113,7 +113,8 @@ public class ReportAlert extends BottomSheet {
         editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
         editText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
         editText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-        editText.setBackgroundDrawable(Theme.createEditTextDrawable(context, false));
+        editText.setBackgroundDrawable(null);
+        editText.setLineColors(getThemedColor(Theme.key_windowBackgroundWhiteInputField), getThemedColor(Theme.key_windowBackgroundWhiteInputFieldActivated), getThemedColor(Theme.key_windowBackgroundWhiteRedText3));
         editText.setMaxLines(1);
         editText.setLines(1);
         editText.setPadding(0, 0, 0, 0);

@@ -166,7 +166,9 @@ void MatchedFilterCore_SSE2(size_t x_start_index,
 
     // Initialize values for the accumulation.
     __m128 s_128 = _mm_set1_ps(0);
+    __m128 s_128_4 = _mm_set1_ps(0);
     __m128 x2_sum_128 = _mm_set1_ps(0);
+    __m128 x2_sum_128_4 = _mm_set1_ps(0);
     float x2_sum = 0.f;
     float s = 0;
 
@@ -179,20 +181,26 @@ void MatchedFilterCore_SSE2(size_t x_start_index,
     const int chunk2 = h_size - chunk1;
     for (int limit : {chunk1, chunk2}) {
       // Perform 128 bit vector operations.
-      const int limit_by_4 = limit >> 2;
-      for (int k = limit_by_4; k > 0; --k, h_p += 4, x_p += 4) {
+      const int limit_by_8 = limit >> 3;
+      for (int k = limit_by_8; k > 0; --k, h_p += 8, x_p += 8) {
         // Load the data into 128 bit vectors.
         const __m128 x_k = _mm_loadu_ps(x_p);
         const __m128 h_k = _mm_loadu_ps(h_p);
+        const __m128 x_k_4 = _mm_loadu_ps(x_p + 4);
+        const __m128 h_k_4 = _mm_loadu_ps(h_p + 4);
         const __m128 xx = _mm_mul_ps(x_k, x_k);
+        const __m128 xx_4 = _mm_mul_ps(x_k_4, x_k_4);
         // Compute and accumulate x * x and h * x.
         x2_sum_128 = _mm_add_ps(x2_sum_128, xx);
+        x2_sum_128_4 = _mm_add_ps(x2_sum_128_4, xx_4);
         const __m128 hx = _mm_mul_ps(h_k, x_k);
+        const __m128 hx_4 = _mm_mul_ps(h_k_4, x_k_4);
         s_128 = _mm_add_ps(s_128, hx);
+        s_128_4 = _mm_add_ps(s_128_4, hx_4);
       }
 
       // Perform non-vector operations for any remaining items.
-      for (int k = limit - limit_by_4 * 4; k > 0; --k, ++h_p, ++x_p) {
+      for (int k = limit - limit_by_8 * 8; k > 0; --k, ++h_p, ++x_p) {
         const float x_k = *x_p;
         x2_sum += x_k * x_k;
         s += *h_p * x_k;
@@ -202,8 +210,10 @@ void MatchedFilterCore_SSE2(size_t x_start_index,
     }
 
     // Combine the accumulated vector and scalar values.
+    x2_sum_128 = _mm_add_ps(x2_sum_128, x2_sum_128_4);
     float* v = reinterpret_cast<float*>(&x2_sum_128);
     x2_sum += v[0] + v[1] + v[2] + v[3];
+    s_128 = _mm_add_ps(s_128, s_128_4);
     v = reinterpret_cast<float*>(&s_128);
     s += v[0] + v[1] + v[2] + v[3];
 
@@ -298,6 +308,41 @@ void MatchedFilterCore(size_t x_start_index,
   }
 }
 
+size_t MaxSquarePeakIndex(rtc::ArrayView<const float> h) {
+  if (h.size() < 2) {
+    return 0;
+  }
+  float max_element1 = h[0] * h[0];
+  float max_element2 = h[1] * h[1];
+  size_t lag_estimate1 = 0;
+  size_t lag_estimate2 = 1;
+  const size_t last_index = h.size() - 1;
+  // Keeping track of even & odd max elements separately typically allows the
+  // compiler to produce more efficient code.
+  for (size_t k = 2; k < last_index; k += 2) {
+    float element1 = h[k] * h[k];
+    float element2 = h[k + 1] * h[k + 1];
+    if (element1 > max_element1) {
+      max_element1 = element1;
+      lag_estimate1 = k;
+    }
+    if (element2 > max_element2) {
+      max_element2 = element2;
+      lag_estimate2 = k + 1;
+    }
+  }
+  if (max_element2 > max_element1) {
+    max_element1 = max_element2;
+    lag_estimate1 = lag_estimate2;
+  }
+  // In case of odd h size, we have not yet checked the last element.
+  float last_element = h[last_index] * h[last_index];
+  if (last_element > max_element1) {
+    return last_index;
+  }
+  return lag_estimate1;
+}
+
 }  // namespace aec3
 
 MatchedFilter::MatchedFilter(ApmDataDumper* data_dumper,
@@ -385,17 +430,15 @@ void MatchedFilter::Update(const DownsampledRenderBuffer& render_buffer,
     }
 
     // Compute anchor for the matched filter error.
-    const float error_sum_anchor =
-        std::inner_product(y.begin(), y.end(), y.begin(), 0.f);
+    float error_sum_anchor = 0.0f;
+    for (size_t k = 0; k < y.size(); ++k) {
+      error_sum_anchor += y[k] * y[k];
+    }
 
     // Estimate the lag in the matched filter as the distance to the portion in
     // the filter that contributes the most to the matched filter output. This
     // is detected as the peak of the matched filter.
-    const size_t lag_estimate = std::distance(
-        filters_[n].begin(),
-        std::max_element(
-            filters_[n].begin(), filters_[n].end(),
-            [](float a, float b) -> bool { return a * a < b * b; }));
+    const size_t lag_estimate = aec3::MaxSquarePeakIndex(filters_[n]);
 
     // Update the lag estimates for the matched filter.
     lag_estimates_[n] = LagEstimate(
@@ -437,7 +480,7 @@ void MatchedFilter::Update(const DownsampledRenderBuffer& render_buffer,
         data_dumper_->DumpRaw("aec3_correlator_9_h", filters_[9]);
         break;
       default:
-        RTC_NOTREACHED();
+        RTC_DCHECK_NOTREACHED();
     }
 
     alignment_shift += filter_intra_lag_shift_;

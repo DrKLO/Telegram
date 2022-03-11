@@ -56,7 +56,7 @@ template <int FixedSize>
 class BoundedByteWriter {
  public:
   explicit BoundedByteWriter(rtc::ArrayView<uint8_t> data) : data_(data) {
-    RTC_DCHECK(data.size() >= FixedSize);
+    RTC_CHECK(data.size() >= FixedSize);
   }
 
   template <size_t offset>
@@ -81,7 +81,7 @@ class BoundedByteWriter {
 
   template <size_t SubSize>
   BoundedByteWriter<SubSize> sub_writer(size_t variable_offset) {
-    RTC_DCHECK(FixedSize + variable_offset + SubSize <= data_.size());
+    RTC_CHECK(FixedSize + variable_offset + SubSize <= data_.size());
 
     return BoundedByteWriter<SubSize>(
         data_.subview(FixedSize + variable_offset, SubSize));

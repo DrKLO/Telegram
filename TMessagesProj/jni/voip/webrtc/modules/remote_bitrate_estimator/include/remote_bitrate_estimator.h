@@ -38,33 +38,27 @@ class RemoteBitrateObserver {
   virtual ~RemoteBitrateObserver() {}
 };
 
-// TODO(holmer): Remove when all implementations have been updated.
-struct ReceiveBandwidthEstimatorStats {};
-
 class RemoteBitrateEstimator : public CallStatsObserver, public Module {
  public:
   ~RemoteBitrateEstimator() override {}
 
   // Called for each incoming packet. Updates the incoming payload bitrate
   // estimate and the over-use detector. If an over-use is detected the
-  // remote bitrate estimate will be updated. Note that |payload_size| is the
+  // remote bitrate estimate will be updated. Note that `payload_size` is the
   // packet size excluding headers.
-  // Note that |arrival_time_ms| can be of an arbitrary time base.
+  // Note that `arrival_time_ms` can be of an arbitrary time base.
   virtual void IncomingPacket(int64_t arrival_time_ms,
                               size_t payload_size,
                               const RTPHeader& header) = 0;
 
-  // Removes all data for |ssrc|.
+  // Removes all data for `ssrc`.
   virtual void RemoveStream(uint32_t ssrc) = 0;
 
-  // Returns true if a valid estimate exists and sets |bitrate_bps| to the
-  // estimated payload bitrate in bits per second. |ssrcs| is the list of ssrcs
+  // Returns true if a valid estimate exists and sets `bitrate_bps` to the
+  // estimated payload bitrate in bits per second. `ssrcs` is the list of ssrcs
   // currently being received and of which the bitrate estimate is based upon.
   virtual bool LatestEstimate(std::vector<uint32_t>* ssrcs,
                               uint32_t* bitrate_bps) const = 0;
-
-  // TODO(holmer): Remove when all implementations have been updated.
-  virtual bool GetStats(ReceiveBandwidthEstimatorStats* output) const;
 
   virtual void SetMinBitrate(int min_bitrate_bps) = 0;
 
@@ -72,11 +66,6 @@ class RemoteBitrateEstimator : public CallStatsObserver, public Module {
   static const int64_t kProcessIntervalMs = 500;
   static const int64_t kStreamTimeOutMs = 2000;
 };
-
-inline bool RemoteBitrateEstimator::GetStats(
-    ReceiveBandwidthEstimatorStats* output) const {
-  return false;
-}
 
 }  // namespace webrtc
 

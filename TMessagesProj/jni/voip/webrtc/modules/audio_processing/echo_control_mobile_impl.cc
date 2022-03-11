@@ -18,7 +18,6 @@
 #include "modules/audio_processing/audio_buffer.h"
 #include "modules/audio_processing/include/audio_processing.h"
 #include "rtc_base/checks.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -36,7 +35,7 @@ int16_t MapSetting(EchoControlMobileImpl::RoutingMode mode) {
     case EchoControlMobileImpl::kLoudSpeakerphone:
       return 4;
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return -1;
 }
 
@@ -85,6 +84,9 @@ class EchoControlMobileImpl::Canceller {
     WebRtcAecm_Free(state_);
   }
 
+  Canceller(const Canceller&) = delete;
+  Canceller& operator=(const Canceller&) = delete;
+
   void* state() {
     RTC_DCHECK(state_);
     return state_;
@@ -98,7 +100,6 @@ class EchoControlMobileImpl::Canceller {
 
  private:
   void* state_;
-  RTC_DISALLOW_COPY_AND_ASSIGN(Canceller);
 };
 
 EchoControlMobileImpl::EchoControlMobileImpl()

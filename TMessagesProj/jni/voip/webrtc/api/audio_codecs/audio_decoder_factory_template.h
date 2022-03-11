@@ -89,8 +89,8 @@ class AudioDecoderFactoryT : public AudioDecoderFactory {
 // Each decoder type is given as a template argument to the function; it should
 // be a struct with the following static member functions:
 //
-//   // Converts |audio_format| to a ConfigType instance. Returns an empty
-//   // optional if |audio_format| doesn't correctly specify a decoder of our
+//   // Converts `audio_format` to a ConfigType instance. Returns an empty
+//   // optional if `audio_format` doesn't correctly specify a decoder of our
 //   // type.
 //   absl::optional<ConfigType> SdpToConfig(const SdpAudioFormat& audio_format);
 //

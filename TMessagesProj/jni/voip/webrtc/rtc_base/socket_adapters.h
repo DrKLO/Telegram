@@ -15,7 +15,6 @@
 
 #include "api/array_view.h"
 #include "rtc_base/async_socket.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/crypt_string.h"
 
 namespace rtc {
@@ -31,8 +30,11 @@ class ByteBufferWriter;
 // protocol before commencing normal socket behavior.
 class BufferedReadAdapter : public AsyncSocketAdapter {
  public:
-  BufferedReadAdapter(AsyncSocket* socket, size_t buffer_size);
+  BufferedReadAdapter(Socket* socket, size_t buffer_size);
   ~BufferedReadAdapter() override;
+
+  BufferedReadAdapter(const BufferedReadAdapter&) = delete;
+  BufferedReadAdapter& operator=(const BufferedReadAdapter&) = delete;
 
   int Send(const void* pv, size_t cb) override;
   int Recv(void* pv, size_t cb, int64_t* timestamp) override;
@@ -45,13 +47,12 @@ class BufferedReadAdapter : public AsyncSocketAdapter {
   void BufferInput(bool on = true);
   virtual void ProcessInput(char* data, size_t* len) = 0;
 
-  void OnReadEvent(AsyncSocket* socket) override;
+  void OnReadEvent(Socket* socket) override;
 
  private:
   char* buffer_;
   size_t buffer_size_, data_len_;
   bool buffering_;
-  RTC_DISALLOW_COPY_AND_ASSIGN(BufferedReadAdapter);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -63,14 +64,16 @@ class AsyncSSLSocket : public BufferedReadAdapter {
   static ArrayView<const uint8_t> SslClientHello();
   static ArrayView<const uint8_t> SslServerHello();
 
-  explicit AsyncSSLSocket(AsyncSocket* socket);
+  explicit AsyncSSLSocket(Socket* socket);
+
+  AsyncSSLSocket(const AsyncSSLSocket&) = delete;
+  AsyncSSLSocket& operator=(const AsyncSSLSocket&) = delete;
 
   int Connect(const SocketAddress& addr) override;
 
  protected:
-  void OnConnectEvent(AsyncSocket* socket) override;
+  void OnConnectEvent(Socket* socket) override;
   void ProcessInput(char* data, size_t* len) override;
-  RTC_DISALLOW_COPY_AND_ASSIGN(AsyncSSLSocket);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -78,12 +81,15 @@ class AsyncSSLSocket : public BufferedReadAdapter {
 // Implements a socket adapter that speaks the HTTP/S proxy protocol.
 class AsyncHttpsProxySocket : public BufferedReadAdapter {
  public:
-  AsyncHttpsProxySocket(AsyncSocket* socket,
+  AsyncHttpsProxySocket(Socket* socket,
                         const std::string& user_agent,
                         const SocketAddress& proxy,
                         const std::string& username,
                         const CryptString& password);
   ~AsyncHttpsProxySocket() override;
+
+  AsyncHttpsProxySocket(const AsyncHttpsProxySocket&) = delete;
+  AsyncHttpsProxySocket& operator=(const AsyncHttpsProxySocket&) = delete;
 
   // If connect is forced, the adapter will always issue an HTTP CONNECT to the
   // target address.  Otherwise, it will connect only if the destination port
@@ -96,8 +102,8 @@ class AsyncHttpsProxySocket : public BufferedReadAdapter {
   ConnState GetState() const override;
 
  protected:
-  void OnConnectEvent(AsyncSocket* socket) override;
-  void OnCloseEvent(AsyncSocket* socket, int err) override;
+  void OnConnectEvent(Socket* socket) override;
+  void OnCloseEvent(Socket* socket, int err) override;
   void ProcessInput(char* data, size_t* len) override;
 
   bool ShouldIssueConnect() const;
@@ -128,7 +134,6 @@ class AsyncHttpsProxySocket : public BufferedReadAdapter {
   } state_;
   HttpAuthContext* context_;
   std::string unknown_mechanisms_;
-  RTC_DISALLOW_COPY_AND_ASSIGN(AsyncHttpsProxySocket);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -136,11 +141,14 @@ class AsyncHttpsProxySocket : public BufferedReadAdapter {
 // Implements a socket adapter that speaks the SOCKS proxy protocol.
 class AsyncSocksProxySocket : public BufferedReadAdapter {
  public:
-  AsyncSocksProxySocket(AsyncSocket* socket,
+  AsyncSocksProxySocket(Socket* socket,
                         const SocketAddress& proxy,
                         const std::string& username,
                         const CryptString& password);
   ~AsyncSocksProxySocket() override;
+
+  AsyncSocksProxySocket(const AsyncSocksProxySocket&) = delete;
+  AsyncSocksProxySocket& operator=(const AsyncSocksProxySocket&) = delete;
 
   int Connect(const SocketAddress& addr) override;
   SocketAddress GetRemoteAddress() const override;
@@ -148,7 +156,7 @@ class AsyncSocksProxySocket : public BufferedReadAdapter {
   ConnState GetState() const override;
 
  protected:
-  void OnConnectEvent(AsyncSocket* socket) override;
+  void OnConnectEvent(Socket* socket) override;
   void ProcessInput(char* data, size_t* len) override;
 
   void SendHello();
@@ -162,7 +170,6 @@ class AsyncSocksProxySocket : public BufferedReadAdapter {
   SocketAddress proxy_, dest_;
   std::string user_;
   CryptString pass_;
-  RTC_DISALLOW_COPY_AND_ASSIGN(AsyncSocksProxySocket);
 };
 
 }  // namespace rtc

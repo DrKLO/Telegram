@@ -218,8 +218,8 @@ TEST_P(OpusFecTest, RandomPacketLossTest) {
 
       time_now_ms += block_duration_ms_;
 
-      // |data_pointer_| is incremented and wrapped across
-      // |loop_length_samples_|.
+      // `data_pointer_` is incremented and wrapped across
+      // `loop_length_samples_`.
       data_pointer_ = (data_pointer_ + block_length_sample_ * channels_) %
                       loop_length_samples_;
     }

@@ -45,6 +45,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.CheckBoxCell;
 import org.telegram.ui.Cells.TextCheckCell;
+import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.BetterRatingView;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.JoinCallAlert;
@@ -342,22 +343,24 @@ public class VoIPHelper {
 
 	@TargetApi(Build.VERSION_CODES.M)
 	public static void permissionDenied(final Activity activity, final Runnable onFinish, int code) {
-		if (!activity.shouldShowRequestPermissionRationale(Manifest.permission.RECORD_AUDIO) || code == 102 && !activity.shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
-			AlertDialog dlg = new AlertDialog.Builder(activity)
-					.setTitle(LocaleController.getString("AppName", R.string.AppName))
-					.setMessage(code == 102 ? LocaleController.getString("VoipNeedMicCameraPermission", R.string.VoipNeedMicCameraPermission) : LocaleController.getString("VoipNeedMicPermission", R.string.VoipNeedMicPermission))
-					.setPositiveButton(LocaleController.getString("OK", R.string.OK), null)
-					.setNegativeButton(LocaleController.getString("Settings", R.string.Settings), (dialog, which) -> {
+		boolean mergedRequest = code == 102;
+		if (!activity.shouldShowRequestPermissionRationale(Manifest.permission.RECORD_AUDIO) || mergedRequest && !activity.shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
+			AlertDialog.Builder dlg = new AlertDialog.Builder(activity)
+					.setMessage(AndroidUtilities.replaceTags(mergedRequest ? LocaleController.getString("VoipNeedMicCameraPermissionWithHint", R.string.VoipNeedMicCameraPermissionWithHint) : LocaleController.getString("VoipNeedMicPermissionWithHint", R.string.VoipNeedMicPermissionWithHint)))
+					.setPositiveButton(LocaleController.getString("Settings", R.string.Settings), (dialog, which) -> {
 						Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
 						Uri uri = Uri.fromParts("package", activity.getPackageName(), null);
 						intent.setData(uri);
 						activity.startActivity(intent);
 					})
-					.show();
-			dlg.setOnDismissListener(dialog -> {
-				if (onFinish != null)
-					onFinish.run();
-			});
+					.setNegativeButton(LocaleController.getString("ContactsPermissionAlertNotNow", R.string.ContactsPermissionAlertNotNow), null)
+					.setOnDismissListener(dialog -> {
+						if (onFinish != null)
+							onFinish.run();
+					})
+					.setTopAnimation(mergedRequest ? R.raw.permission_request_camera : R.raw.permission_request_microphone, AlertsCreator.PERMISSIONS_REQUEST_TOP_ICON_SIZE, false, Theme.getColor(Theme.key_dialogTopBackground));
+
+			dlg.show();
 		}
 	}
 
@@ -482,7 +485,8 @@ public class VoIPHelper {
 		commentBox.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
 		commentBox.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
 		commentBox.setHintTextColor(Theme.getColor(Theme.key_dialogTextHint));
-		commentBox.setBackgroundDrawable(Theme.createEditTextDrawable(context, true));
+		commentBox.setBackground(null);
+		commentBox.setLineColors(Theme.getColor(Theme.key_dialogInputField), Theme.getColor(Theme.key_dialogInputFieldActivated), Theme.getColor(Theme.key_dialogTextRed2));
 		commentBox.setPadding(0, AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4));
 		commentBox.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
 		commentBox.setVisibility(View.GONE);

@@ -49,7 +49,7 @@ class RTC_LOCKABLE TaskQueueForTest : public rtc::TaskQueue {
   // a task executes on the task queue.
   // This variant is specifically for posting custom QueuedTask derived
   // implementations that tests do not want to pass ownership of over to the
-  // task queue (i.e. the Run() method always returns |false|.).
+  // task queue (i.e. the Run() method always returns `false`.).
   template <class Closure>
   void SendTask(Closure* task) {
     RTC_CHECK(!IsCurrent());

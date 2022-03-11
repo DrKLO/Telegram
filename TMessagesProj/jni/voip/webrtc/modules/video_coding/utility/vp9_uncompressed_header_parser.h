@@ -13,7 +13,14 @@
 
 #include <stddef.h>
 #include <stdint.h>
+
+#include <array>
+#include <bitset>
+#include <string>
+
 #include "absl/types/optional.h"
+#include "api/array_view.h"
+#include "modules/video_coding/utility/vp9_constants.h"
 
 namespace webrtc {
 
@@ -23,14 +30,16 @@ namespace vp9 {
 // Returns true on success, false otherwise.
 bool GetQp(const uint8_t* buf, size_t length, int* qp);
 
+}  // namespace vp9
+
 // Bit depth per channel. Support varies by profile.
-enum class BitDept : uint8_t {
+enum class Vp9BitDept : uint8_t {
   k8Bit = 8,
   k10Bit = 10,
   k12Bit = 12,
 };
 
-enum class ColorSpace : uint8_t {
+enum class Vp9ColorSpace : uint8_t {
   CS_UNKNOWN = 0,    // Unknown (in this case the color space must be signaled
                      // outside the VP9 bitstream).
   CS_BT_601 = 1,     // CS_BT_601 Rec. ITU-R BT.601-7
@@ -42,7 +51,7 @@ enum class ColorSpace : uint8_t {
   CS_RGB = 7,        // sRGB (IEC 61966-2-1)
 };
 
-enum class ColorRange {
+enum class Vp9ColorRange {
   kStudio,  // Studio swing:
             // For BitDepth equals 8:
             //     Y is between 16 and 235 inclusive.
@@ -56,36 +65,90 @@ enum class ColorRange {
   kFull     // Full swing; no restriction on Y, U, V values.
 };
 
-enum class YuvSubsampling {
+enum class Vp9YuvSubsampling {
   k444,
   k440,
   k422,
   k420,
 };
 
-struct FrameInfo {
-  int profile = 0;  // Profile 0-3 are valid.
+enum Vp9ReferenceFrame : int {
+  kNone = -1,
+  kIntra = 0,
+  kLast = 1,
+  kGolden = 2,
+  kAltref = 3,
+};
+
+enum class Vp9InterpolationFilter : uint8_t {
+  kEightTap = 0,
+  kEightTapSmooth = 1,
+  kEightTapSharp = 2,
+  kBilinear = 3,
+  kSwitchable = 4
+};
+
+struct Vp9UncompressedHeader {
+  int profile = 0;  // Profiles 0-3 are valid.
   absl::optional<uint8_t> show_existing_frame;
   bool is_keyframe = false;
   bool show_frame = false;
   bool error_resilient = false;
-  BitDept bit_detph = BitDept::k8Bit;
-  ColorSpace color_space = ColorSpace::CS_UNKNOWN;
-  ColorRange color_range;
-  YuvSubsampling sub_sampling;
+  Vp9BitDept bit_detph = Vp9BitDept::k8Bit;
+  absl::optional<Vp9ColorSpace> color_space;
+  absl::optional<Vp9ColorRange> color_range;
+  absl::optional<Vp9YuvSubsampling> sub_sampling;
   int frame_width = 0;
   int frame_height = 0;
   int render_width = 0;
   int render_height = 0;
+  // Width/height of the tiles used (in units of 8x8 blocks).
+  size_t tile_cols_log2 = 0;  // tile_cols = 1 << tile_cols_log2
+  size_t tile_rows_log2 = 0;  // tile_rows = 1 << tile_rows_log2
+  absl::optional<size_t> render_size_offset_bits;
+  Vp9InterpolationFilter interpolation_filter =
+      Vp9InterpolationFilter::kEightTap;
+  bool allow_high_precision_mv = false;
   int base_qp = 0;
+  bool is_lossless = false;
+  uint8_t frame_context_idx = 0;
+
+  bool segmentation_enabled = false;
+  absl::optional<std::array<uint8_t, 7>> segmentation_tree_probs;
+  absl::optional<std::array<uint8_t, 3>> segmentation_pred_prob;
+  bool segmentation_is_delta = false;
+  std::array<std::array<absl::optional<int>, kVp9SegLvlMax>, kVp9MaxSegments>
+      segmentation_features;
+
+  // Which of the 8 reference buffers may be used as references for this frame.
+  // -1 indicates not used (e.g. {-1, -1, -1} for intra-only frames).
+  std::array<int, kVp9RefsPerFrame> reference_buffers = {-1, -1, -1};
+  // Sign bias corresponding to reference buffers, where the index is a
+  // ReferenceFrame.
+  // false/0 indidate backwards reference, true/1 indicate forwards reference).
+  std::bitset<kVp9MaxRefFrames> reference_buffers_sign_bias = 0;
+
+  // Indicates which reference buffer [0,7] to infer the frame size from.
+  absl::optional<int> infer_size_from_reference;
+  // Which of the 8 reference buffers are updated by this frame.
+  std::bitset<kVp9NumRefFrames> updated_buffers = 0;
+
+  // Header sizes, in bytes.
+  uint32_t uncompressed_header_size = 0;
+  uint32_t compressed_header_size = 0;
+
+  bool is_intra_only() const {
+    return reference_buffers[0] == -1 && reference_buffers[1] == -1 &&
+           reference_buffers[2] == -1;
+  }
+
+  std::string ToString() const;
 };
 
-// Parses frame information for a VP9 key-frame or all-intra frame from a
-// bitstream. Returns nullopt on failure or if not a key-frame.
-absl::optional<FrameInfo> ParseIntraFrameInfo(const uint8_t* buf,
-                                              size_t length);
-
-}  // namespace vp9
+// Parses the uncompressed header and populates (most) values in a
+// UncompressedHeader struct. Returns nullopt on failure.
+absl::optional<Vp9UncompressedHeader> ParseUncompressedVp9Header(
+    rtc::ArrayView<const uint8_t> buf);
 
 }  // namespace webrtc
 

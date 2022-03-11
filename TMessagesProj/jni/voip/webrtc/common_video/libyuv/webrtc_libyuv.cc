@@ -45,7 +45,7 @@ size_t CalcBufferSize(VideoType type, int width, int height) {
       buffer_size = width * height * 4;
       break;
     default:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
       break;
   }
   return buffer_size;
@@ -106,7 +106,7 @@ int ConvertVideoType(VideoType video_type) {
     case VideoType::kBGRA:
       return libyuv::FOURCC_BGRA;
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return libyuv::FOURCC_ANY;
 }
 

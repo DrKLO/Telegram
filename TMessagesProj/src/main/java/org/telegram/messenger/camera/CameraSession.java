@@ -51,6 +51,7 @@ public class CameraSession {
     private boolean useTorch;
     private boolean isRound;
     private boolean destroyed;
+    public boolean previewStarted = false;
 
     Camera.CameraInfo info = new Camera.CameraInfo();
 

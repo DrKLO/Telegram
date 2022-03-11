@@ -55,7 +55,4 @@ JNI_GENERATOR_EXPORT jboolean Java_org_webrtc_H264Utils_nativeIsSameH264Profile(
 }  // namespace jni
 }  // namespace  webrtc
 
-// Step 4: Generated test functions (optional).
-
-
 #endif  // org_webrtc_H264Utils_JNI

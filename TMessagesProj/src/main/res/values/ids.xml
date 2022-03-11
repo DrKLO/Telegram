@@ -13,10 +13,13 @@
     <item name="index_tag" type="id"/>
     <item name="svg_tag" type="id"/>
     <item name="width_tag" type="id"/>
+    <item name="color_key_tag" type="id"/>
     <item name="current_animation" type="id"/>
     <item name="acc_action_small_button" type="id"/>
     <item name="acc_action_msg_options" type="id"/>
     <item name="acc_action_open_photo" type="id"/>
+
+    <item name="timeout_callback" type="id"/>
 
     <!-- there are required for focusing order customization on the passcode screen -->
     <item name="passcode_btn_1" type="id"/>

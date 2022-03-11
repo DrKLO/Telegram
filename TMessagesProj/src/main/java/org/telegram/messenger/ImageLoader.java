@@ -16,6 +16,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
@@ -81,6 +82,7 @@ import java.util.zip.GZIPInputStream;
  * isc - ignore cache for small images
  * b - need blur image
  * g - autoplay
+ * firstframe - return firstframe for Lottie anjimation
  */
 public class ImageLoader {
 
@@ -841,6 +843,7 @@ public class ImageLoader {
                 int h = Math.min(512, AndroidUtilities.dp(170.6f));
                 boolean precache = false;
                 boolean limitFps = false;
+                boolean firstFrameBitmap = false;
                 int autoRepeat = 1;
                 int[] colors = null;
                 String diceEmoji = null;
@@ -861,6 +864,10 @@ public class ImageLoader {
                             precache = true;
                         } else {
                             precache = !cacheImage.filter.contains("nolimit") && SharedConfig.getDevicePerformanceClass() != SharedConfig.PERFORMANCE_CLASS_HIGH;
+                        }
+
+                        if (cacheImage.filter.contains("firstframe")) {
+                            firstFrameBitmap = true;
                         }
                     }
 
@@ -887,6 +894,8 @@ public class ImageLoader {
                             fitzModifier = 6;
                         }
                     }
+
+
                 }
                 RLottieDrawable lottieDrawable;
                 if (diceEmoji != null) {
@@ -928,8 +937,25 @@ public class ImageLoader {
                         lottieDrawable = new RLottieDrawable(cacheImage.finalFilePath, w, h, precache, limitFps, null, fitzModifier);
                     }
                 }
-                lottieDrawable.setAutoRepeat(autoRepeat);
-                onPostExecute(lottieDrawable);
+                if (firstFrameBitmap) {
+                    Bitmap bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+                    Canvas canvas = new Canvas(bitmap);
+                    canvas.scale(2f, 2f, w / 2f, h / 2f);
+
+                    BitmapDrawable bitmapDrawable = null;
+                    lottieDrawable.setCurrentFrame(0, false, true);
+                    if (lottieDrawable.hasBitmap()) {
+                        lottieDrawable.draw(canvas);
+                        bitmapDrawable = new BitmapDrawable(bitmap);
+                    }
+                    AndroidUtilities.runOnUIThread(() -> {
+                        lottieDrawable.recycle();
+                    });
+                    onPostExecute(bitmapDrawable);
+                } else {
+                    lottieDrawable.setAutoRepeat(autoRepeat);
+                    onPostExecute(lottieDrawable);
+                }
             } else if (cacheImage.imageType == FileLoader.IMAGE_TYPE_ANIMATION) {
                 AnimatedFileDrawable fileDrawable;
                 long seekTo;
@@ -2805,10 +2831,11 @@ public class ImageLoader {
         String imageKey = imageReceiver.getImageKey();
         if (!imageSet && imageKey != null) {
             ImageLocation imageLocation = imageReceiver.getImageLocation();
-            Drawable drawable;
+            Drawable drawable = null;
             if (useLottieMemChache(imageLocation)) {
                 drawable = getFromLottieCahce(imageKey);
-            } else {
+            }
+            if (drawable == null) {
                 drawable = memCache.get(imageKey);
                 if (drawable != null) {
                     memCache.moveToFront(imageKey);

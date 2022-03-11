@@ -15,6 +15,7 @@
 #include <vector>
 
 #include "common_video/h265/h265_common.h"
+#include "common_video/h265/legacy_bit_buffer.h"
 #include "rtc_base/bit_buffer.h"
 #include "rtc_base/logging.h"
 
@@ -51,7 +52,7 @@ H265BitstreamParser::Result H265BitstreamParser::ParseNonParameterSetNalu(
       H265::ParseRbsp(source, source_length);
   if (slice_rbsp.size() < H265::kNaluTypeSize)
     return kInvalidStream;
-
+//
   rtc::BitBuffer slice_reader(slice_rbsp.data() + H265::kNaluTypeSize,
                               slice_rbsp.size() - H265::kNaluTypeSize);
   // Check to see if this is an IDR slice, which has an extra field to parse
@@ -63,19 +64,19 @@ H265BitstreamParser::Result H265BitstreamParser::ParseNonParameterSetNalu(
 
   // first_slice_segment_in_pic_flag: u(1)
   uint32_t first_slice_segment_in_pic_flag = 0;
-  RETURN_INV_ON_FAIL(slice_reader.ReadBits(1, first_slice_segment_in_pic_flag));
+  RETURN_INV_ON_FAIL(slice_reader.ReadBits(&first_slice_segment_in_pic_flag, 1));
   if (H265::NaluType::kBlaWLp <= nalu_type &&
       nalu_type <= H265::NaluType::kRsvIrapVcl23) {
     // no_output_of_prior_pics_flag: u(1)
-    RETURN_INV_ON_FAIL(slice_reader.ReadBits(1, bits_tmp));
+    RETURN_INV_ON_FAIL(slice_reader.ReadBits(&bits_tmp, 1));
   }
   // slice_pic_parameter_set_id: ue(v)
-  RETURN_INV_ON_FAIL(slice_reader.ReadExponentialGolomb(golomb_tmp));
+  RETURN_INV_ON_FAIL(slice_reader.ReadExponentialGolomb(&golomb_tmp));
   uint32_t dependent_slice_segment_flag = 0;
   if (first_slice_segment_in_pic_flag == 0) {
     if (pps_->dependent_slice_segments_enabled_flag) {
       // dependent_slice_segment_flag: u(1)
-      RETURN_INV_ON_FAIL(slice_reader.ReadBits(1, dependent_slice_segment_flag));
+      RETURN_INV_ON_FAIL(slice_reader.ReadBits(&dependent_slice_segment_flag, 1));
     }
 
     // slice_segment_address: u(v)
@@ -90,24 +91,24 @@ H265BitstreamParser::Result H265BitstreamParser::ParseNonParameterSetNalu(
       pic_height_in_ctbs_y++;
 
     uint32_t slice_segment_address_bits = H265::Log2(pic_height_in_ctbs_y * pic_width_in_ctbs_y);
-    RETURN_INV_ON_FAIL(slice_reader.ReadBits(slice_segment_address_bits, bits_tmp));
+    RETURN_INV_ON_FAIL(slice_reader.ReadBits(&bits_tmp, slice_segment_address_bits));
   }
 
   if (dependent_slice_segment_flag == 0) {
     for (uint32_t i = 0; i < pps_->num_extra_slice_header_bits; i++) {
       // slice_reserved_flag: u(1)
-      RETURN_INV_ON_FAIL(slice_reader.ReadBits(1, bits_tmp));
+      RETURN_INV_ON_FAIL(slice_reader.ReadBits(&bits_tmp, 1));
     }
     // slice_type: ue(v)
     uint32_t slice_type = 0;
-    RETURN_INV_ON_FAIL(slice_reader.ReadExponentialGolomb(slice_type));
+    RETURN_INV_ON_FAIL(slice_reader.ReadExponentialGolomb(&slice_type));
     if (pps_->output_flag_present_flag) {
       // pic_output_flag: u(1)
-      RETURN_INV_ON_FAIL(slice_reader.ReadBits(1, bits_tmp));
+      RETURN_INV_ON_FAIL(slice_reader.ReadBits(&bits_tmp, 1));
     }
     if (sps_->separate_colour_plane_flag) {
       // colour_plane_id: u(2)
-      RETURN_INV_ON_FAIL(slice_reader.ReadBits(2, bits_tmp));
+      RETURN_INV_ON_FAIL(slice_reader.ReadBits(&bits_tmp, 2));
     }
     uint32_t num_long_term_sps = 0;
     uint32_t num_long_term_pics = 0;
@@ -120,9 +121,9 @@ H265BitstreamParser::Result H265BitstreamParser::ParseNonParameterSetNalu(
     if (nalu_type != H265::NaluType::kIdrWRadl && nalu_type != H265::NaluType::kIdrNLp) {
       // slice_pic_order_cnt_lsb: u(v)
       uint32_t slice_pic_order_cnt_lsb_bits = sps_->log2_max_pic_order_cnt_lsb_minus4 + 4;
-      RETURN_INV_ON_FAIL(slice_reader.ReadBits(slice_pic_order_cnt_lsb_bits, bits_tmp));
+      RETURN_INV_ON_FAIL(slice_reader.ReadBits(&bits_tmp, slice_pic_order_cnt_lsb_bits));
       // short_term_ref_pic_set_sps_flag: u(1)
-      RETURN_INV_ON_FAIL(slice_reader.ReadBits(1, short_term_ref_pic_set_sps_flag));
+      RETURN_INV_ON_FAIL(slice_reader.ReadBits(&short_term_ref_pic_set_sps_flag, 1));
       if (!short_term_ref_pic_set_sps_flag) {
         absl::optional<H265SpsParser::ShortTermRefPicSet> ref_pic_set
           = H265SpsParser::ParseShortTermRefPicSet(sps_->num_short_term_ref_pic_sets,
@@ -139,16 +140,16 @@ H265BitstreamParser::Result H265BitstreamParser::ParseNonParameterSetNalu(
           short_term_ref_pic_set_idx_bits++;
         }
         if (short_term_ref_pic_set_idx_bits > 0) {
-          RETURN_INV_ON_FAIL(slice_reader.ReadBits(short_term_ref_pic_set_idx_bits, short_term_ref_pic_set_idx));
+          RETURN_INV_ON_FAIL(slice_reader.ReadBits(&short_term_ref_pic_set_idx, short_term_ref_pic_set_idx_bits));
         }
       }
       if (sps_->long_term_ref_pics_present_flag) {
         if (sps_->num_long_term_ref_pics_sps > 0) {
           // num_long_term_sps: ue(v)
-          RETURN_INV_ON_FAIL(slice_reader.ReadExponentialGolomb(num_long_term_sps));
+          RETURN_INV_ON_FAIL(slice_reader.ReadExponentialGolomb(&num_long_term_sps));
         }
         // num_long_term_sps: ue(v)
-        RETURN_INV_ON_FAIL(slice_reader.ReadExponentialGolomb(num_long_term_pics));
+        RETURN_INV_ON_FAIL(slice_reader.ReadExponentialGolomb(&num_long_term_pics));
         lt_idx_sps.resize(num_long_term_sps + num_long_term_pics, 0);
         used_by_curr_pic_lt_flag.resize(num_long_term_sps + num_long_term_pics, 0);
         for (uint32_t i = 0; i < num_long_term_sps + num_long_term_pics; i++) {
@@ -156,52 +157,52 @@ H265BitstreamParser::Result H265BitstreamParser::ParseNonParameterSetNalu(
             if (sps_->num_long_term_ref_pics_sps > 1) {
               // lt_idx_sps: u(v)
               uint32_t lt_idx_sps_bits = H265::Log2(sps_->num_long_term_ref_pics_sps);
-              RETURN_INV_ON_FAIL(slice_reader.ReadBits(lt_idx_sps_bits, lt_idx_sps[i]));
+              RETURN_INV_ON_FAIL(slice_reader.ReadBits(&lt_idx_sps[i], lt_idx_sps_bits));
             }
           } else {
             // poc_lsb_lt: u(v)
             uint32_t poc_lsb_lt_bits = sps_->log2_max_pic_order_cnt_lsb_minus4 + 4;
-            RETURN_INV_ON_FAIL(slice_reader.ReadBits(poc_lsb_lt_bits, bits_tmp));
+            RETURN_INV_ON_FAIL(slice_reader.ReadBits(&bits_tmp, poc_lsb_lt_bits));
             // used_by_curr_pic_lt_flag: u(1)
-            RETURN_INV_ON_FAIL(slice_reader.ReadBits(1, used_by_curr_pic_lt_flag[i]));
+            RETURN_INV_ON_FAIL(slice_reader.ReadBits(&used_by_curr_pic_lt_flag[i], 1));
           }
           // delta_poc_msb_present_flag: u(1)
           uint32_t delta_poc_msb_present_flag = 0;
-          RETURN_INV_ON_FAIL(slice_reader.ReadBits(1, delta_poc_msb_present_flag));
+          RETURN_INV_ON_FAIL(slice_reader.ReadBits(&delta_poc_msb_present_flag, 1));
           if (delta_poc_msb_present_flag) {
             // delta_poc_msb_cycle_lt: ue(v)
-            RETURN_INV_ON_FAIL(slice_reader.ReadExponentialGolomb(golomb_tmp));
+            RETURN_INV_ON_FAIL(slice_reader.ReadExponentialGolomb(&golomb_tmp));
           }
         }
       }
       if (sps_->sps_temporal_mvp_enabled_flag) {
         // slice_temporal_mvp_enabled_flag: u(1)
-        RETURN_INV_ON_FAIL(slice_reader.ReadBits(1, slice_temporal_mvp_enabled_flag));
+        RETURN_INV_ON_FAIL(slice_reader.ReadBits(&slice_temporal_mvp_enabled_flag, 1));
       }
     }
 
     if (sps_->sample_adaptive_offset_enabled_flag) {
       // slice_sao_luma_flag: u(1)
-      RETURN_INV_ON_FAIL(slice_reader.ReadBits(1, bits_tmp));
+      RETURN_INV_ON_FAIL(slice_reader.ReadBits(&bits_tmp, 1));
       uint32_t chroma_array_type = sps_->separate_colour_plane_flag == 0 ? sps_->chroma_format_idc : 0;
       if (chroma_array_type != 0) {
         // slice_sao_chroma_flag: u(1)
-        RETURN_INV_ON_FAIL(slice_reader.ReadBits(1, bits_tmp));
+        RETURN_INV_ON_FAIL(slice_reader.ReadBits(&bits_tmp, 1));
       }
     }
 
     if (slice_type == H265::SliceType::kP || slice_type == H265::SliceType::kB) {
       // num_ref_idx_active_override_flag: u(1)
       uint32_t num_ref_idx_active_override_flag = 0;
-      RETURN_INV_ON_FAIL(slice_reader.ReadBits(1, num_ref_idx_active_override_flag));
+      RETURN_INV_ON_FAIL(slice_reader.ReadBits(&num_ref_idx_active_override_flag, 1));
       uint32_t num_ref_idx_l0_active_minus1 = pps_->num_ref_idx_l0_default_active_minus1;
       uint32_t num_ref_idx_l1_active_minus1 = pps_->num_ref_idx_l1_default_active_minus1;
       if (num_ref_idx_active_override_flag) {
         // num_ref_idx_l0_active_minus1: ue(v)
-        RETURN_INV_ON_FAIL(slice_reader.ReadExponentialGolomb(num_ref_idx_l0_active_minus1));
+        RETURN_INV_ON_FAIL(slice_reader.ReadExponentialGolomb(&num_ref_idx_l0_active_minus1));
         if (slice_type == H265::SliceType::kB) {
           // num_ref_idx_l1_active_minus1: ue(v)
-          RETURN_INV_ON_FAIL(slice_reader.ReadExponentialGolomb(num_ref_idx_l1_active_minus1));
+          RETURN_INV_ON_FAIL(slice_reader.ReadExponentialGolomb(&num_ref_idx_l1_active_minus1));
         }
       }
       uint32_t num_pic_total_curr = CalcNumPocTotalCurr(
@@ -216,43 +217,43 @@ H265BitstreamParser::Result H265BitstreamParser::ParseNonParameterSetNalu(
         }
         // ref_pic_list_modification_flag_l0: u(1)
         uint32_t ref_pic_list_modification_flag_l0 = 0;
-        RETURN_INV_ON_FAIL(slice_reader.ReadBits(1, ref_pic_list_modification_flag_l0));
+        RETURN_INV_ON_FAIL(slice_reader.ReadBits(&ref_pic_list_modification_flag_l0, 1));
         if (ref_pic_list_modification_flag_l0) {
           for (uint32_t i = 0; i < num_ref_idx_l0_active_minus1; i++) {
             // list_entry_l0: u(v)
-            RETURN_INV_ON_FAIL(slice_reader.ReadBits(list_entry_bits, bits_tmp));
+            RETURN_INV_ON_FAIL(slice_reader.ReadBits(&bits_tmp, list_entry_bits));
           }
         }
         if (slice_type == H265::SliceType::kB) {
           // ref_pic_list_modification_flag_l1: u(1)
           uint32_t ref_pic_list_modification_flag_l1 = 0;
-          RETURN_INV_ON_FAIL(slice_reader.ReadBits(1, ref_pic_list_modification_flag_l1));
+          RETURN_INV_ON_FAIL(slice_reader.ReadBits(&ref_pic_list_modification_flag_l1, 1));
           if (ref_pic_list_modification_flag_l1) {
             for (uint32_t i = 0; i < num_ref_idx_l1_active_minus1; i++) {
               // list_entry_l1: u(v)
-              RETURN_INV_ON_FAIL(slice_reader.ReadBits(list_entry_bits, bits_tmp));
+              RETURN_INV_ON_FAIL(slice_reader.ReadBits(&bits_tmp, list_entry_bits));
             }
           }
         }
       }
       if (slice_type == H265::SliceType::kB) {
         // mvd_l1_zero_flag: u(1)
-        RETURN_INV_ON_FAIL(slice_reader.ReadBits(1, bits_tmp));
+        RETURN_INV_ON_FAIL(slice_reader.ReadBits(&bits_tmp, 1));
       }
       if (pps_->cabac_init_present_flag) {
         // cabac_init_flag: u(1)
-        RETURN_INV_ON_FAIL(slice_reader.ReadBits(1, bits_tmp));
+        RETURN_INV_ON_FAIL(slice_reader.ReadBits(&bits_tmp, 1));
       }
       if (slice_temporal_mvp_enabled_flag) {
         uint32_t collocated_from_l0_flag = 0;
         if (slice_type == H265::SliceType::kB) {
           // collocated_from_l0_flag: u(1)
-          RETURN_INV_ON_FAIL(slice_reader.ReadBits(1, collocated_from_l0_flag));
+          RETURN_INV_ON_FAIL(slice_reader.ReadBits(&collocated_from_l0_flag, 1));
         }
         if ((collocated_from_l0_flag && num_ref_idx_l0_active_minus1 > 0)
           || (!collocated_from_l0_flag && num_ref_idx_l1_active_minus1 > 0)) {
           // collocated_ref_idx: ue(v)
-          RETURN_INV_ON_FAIL(slice_reader.ReadExponentialGolomb(golomb_tmp));
+          RETURN_INV_ON_FAIL(slice_reader.ReadExponentialGolomb(&golomb_tmp));
         }
       }
       if ((pps_->weighted_pred_flag && slice_type == H265::SliceType::kP)
@@ -263,7 +264,7 @@ H265BitstreamParser::Result H265BitstreamParser::ParseNonParameterSetNalu(
         return kUnsupportedStream;
       }
       // five_minus_max_num_merge_cand: ue(v)
-      RETURN_INV_ON_FAIL(slice_reader.ReadExponentialGolomb(golomb_tmp));
+      RETURN_INV_ON_FAIL(slice_reader.ReadExponentialGolomb(&golomb_tmp));
       // TODO(piasy): motion_vector_resolution_control_idc?
     }
   }
@@ -271,7 +272,7 @@ H265BitstreamParser::Result H265BitstreamParser::ParseNonParameterSetNalu(
   // slice_qp_delta: se(v)
   int32_t last_slice_qp_delta;
   RETURN_INV_ON_FAIL(
-      slice_reader.ReadSignedExponentialGolomb(last_slice_qp_delta));
+      slice_reader.ReadSignedExponentialGolomb(&last_slice_qp_delta));
   if (abs(last_slice_qp_delta) > kMaxAbsQpDeltaValue) {
     // Something has gone wrong, and the parsed value is invalid.
     RTC_LOG(LS_WARNING) << "Parsed QP value out of range.";

@@ -538,7 +538,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
         AlertDialog progressDialog = null;
         if (getParentActivity() != null) {
             progressDialog = new AlertDialog(getParentActivity(), 3);
-            progressDialog.setCanCacnel(false);
+            progressDialog.setCanCancel(false);
             progressDialog.show();
         }
         final AlertDialog progressDialogFinal = progressDialog;

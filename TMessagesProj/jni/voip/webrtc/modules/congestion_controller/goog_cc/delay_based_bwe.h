@@ -127,7 +127,6 @@ class DelayBasedBwe {
   DataRate prev_bitrate_;
   bool has_once_detected_overuse_;
   BandwidthUsage prev_state_;
-  const bool use_new_inter_arrival_delta_;
   bool alr_limited_backoff_enabled_;
 };
 

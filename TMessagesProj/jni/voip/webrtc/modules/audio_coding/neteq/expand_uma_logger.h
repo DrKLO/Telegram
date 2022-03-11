@@ -17,7 +17,6 @@
 
 #include "absl/types/optional.h"
 #include "api/neteq/tick_timer.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -36,6 +35,9 @@ class ExpandUmaLogger {
 
   ~ExpandUmaLogger();
 
+  ExpandUmaLogger(const ExpandUmaLogger&) = delete;
+  ExpandUmaLogger& operator=(const ExpandUmaLogger&) = delete;
+
   // In this call, value should be an incremental sample counter. The sample
   // rate must be strictly positive.
   void UpdateSampleCounter(uint64_t value, int sample_rate_hz);
@@ -48,8 +50,6 @@ class ExpandUmaLogger {
   absl::optional<uint64_t> last_logged_value_;
   uint64_t last_value_ = 0;
   int sample_rate_hz_ = 0;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(ExpandUmaLogger);
 };
 
 }  // namespace webrtc

@@ -15,7 +15,6 @@
 #define COMMON_AUDIO_RESAMPLER_SINUSOIDAL_LINEAR_CHIRP_SOURCE_H_
 
 #include "common_audio/resampler/sinc_resampler.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -24,7 +23,7 @@ namespace webrtc {
 // resampler for the specific sample rate conversion being used.
 class SinusoidalLinearChirpSource : public SincResamplerCallback {
  public:
-  // |delay_samples| can be used to insert a fractional sample delay into the
+  // `delay_samples` can be used to insert a fractional sample delay into the
   // source.  It will produce zeros until non-negative time is reached.
   SinusoidalLinearChirpSource(int sample_rate,
                               size_t samples,
@@ -32,6 +31,10 @@ class SinusoidalLinearChirpSource : public SincResamplerCallback {
                               double delay_samples);
 
   ~SinusoidalLinearChirpSource() override {}
+
+  SinusoidalLinearChirpSource(const SinusoidalLinearChirpSource&) = delete;
+  SinusoidalLinearChirpSource& operator=(const SinusoidalLinearChirpSource&) =
+      delete;
 
   void Run(size_t frames, float* destination) override;
 
@@ -46,8 +49,6 @@ class SinusoidalLinearChirpSource : public SincResamplerCallback {
   double k_;
   size_t current_index_;
   double delay_samples_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(SinusoidalLinearChirpSource);
 };
 
 }  // namespace webrtc

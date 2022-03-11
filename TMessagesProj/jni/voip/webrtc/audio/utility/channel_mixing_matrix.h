@@ -29,7 +29,7 @@ class ChannelMixingMatrix {
   // Create the transformation matrix of input channels to output channels.
   // Updates the empty matrix with the transformation, and returns true
   // if the transformation is just a remapping of channels (no mixing).
-  // The size of |matrix| is |output_channels| x |input_channels|, i.e., the
+  // The size of `matrix` is `output_channels` x `input_channels`, i.e., the
   // number of rows equals the number of output channels and the number of
   // columns corresponds to the number of input channels.
   // This file is derived from Chromium's media/base/channel_mixing_matrix.h.
@@ -55,14 +55,14 @@ class ChannelMixingMatrix {
   void AccountFor(Channels ch);
   bool IsUnaccounted(Channels ch) const;
 
-  // Helper methods for checking if |ch| exists in either |input_layout_| or
-  // |output_layout_| respectively.
+  // Helper methods for checking if `ch` exists in either `input_layout_` or
+  // `output_layout_` respectively.
   bool HasInputChannel(Channels ch) const;
   bool HasOutputChannel(Channels ch) const;
 
-  // Helper methods for updating |matrix_| with the proper value for
-  // mixing |input_ch| into |output_ch|.  MixWithoutAccounting() does not
-  // remove the channel from |unaccounted_inputs_|.
+  // Helper methods for updating `matrix_` with the proper value for
+  // mixing `input_ch` into `output_ch`.  MixWithoutAccounting() does not
+  // remove the channel from `unaccounted_inputs_`.
   void Mix(Channels input_ch, Channels output_ch, float scale);
   void MixWithoutAccounting(Channels input_ch, Channels output_ch, float scale);
 

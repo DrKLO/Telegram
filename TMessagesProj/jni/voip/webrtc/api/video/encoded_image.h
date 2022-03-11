@@ -98,7 +98,7 @@ class RTC_EXPORT EncodedImage {
   }
 
   // These methods can be used to set/get size of subframe with spatial index
-  // |spatial_index| on encoded frames that consist of multiple spatial layers.
+  // `spatial_index` on encoded frames that consist of multiple spatial layers.
   absl::optional<size_t> SpatialLayerFrameSize(int spatial_index) const;
   void SetSpatialLayerFrameSize(int spatial_index, size_t size_bytes);
 
@@ -154,6 +154,16 @@ class RTC_EXPORT EncodedImage {
     return encoded_data_ ? encoded_data_->data() : nullptr;
   }
 
+  // Returns whether the encoded image can be considered to be of target
+  // quality.
+  bool IsAtTargetQuality() const { return at_target_quality_; }
+
+  // Sets that the encoded image can be considered to be of target quality to
+  // true or false.
+  void SetAtTargetQuality(bool at_target_quality) {
+    at_target_quality_ = at_target_quality;
+  }
+
   uint32_t _encodedWidth = 0;
   uint32_t _encodedHeight = 0;
   // NTP time of the capture time in local timebase in milliseconds.
@@ -195,11 +205,13 @@ class RTC_EXPORT EncodedImage {
   // carries the webrtc::VideoFrame id field from the sender to the receiver.
   absl::optional<uint16_t> video_frame_tracking_id_;
   // Information about packets used to assemble this video frame. This is needed
-  // by |SourceTracker| when the frame is delivered to the RTCRtpReceiver's
+  // by `SourceTracker` when the frame is delivered to the RTCRtpReceiver's
   // MediaStreamTrack, in order to implement getContributingSources(). See:
   // https://w3c.github.io/webrtc-pc/#dom-rtcrtpreceiver-getcontributingsources
   RtpPacketInfos packet_infos_;
   bool retransmission_allowed_ = true;
+  // True if the encoded image can be considered to be of target quality.
+  bool at_target_quality_ = false;
 };
 
 }  // namespace webrtc

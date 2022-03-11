@@ -17,7 +17,6 @@
 
 #include "api/sequence_checker.h"
 #include "rtc_base/byte_buffer.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/ip_address.h"
 #include "rtc_base/network.h"
 #include "rtc_base/socket_address.h"
@@ -70,9 +69,9 @@ class RTC_EXPORT StunProber : public sigslot::has_slots<> {
     Stats();
     ~Stats();
 
-    // |raw_num_request_sent| is the total number of requests
-    // sent. |num_request_sent| is the count of requests against a server where
-    // we see at least one response. |num_request_sent| is designed to protect
+    // `raw_num_request_sent` is the total number of requests
+    // sent. `num_request_sent` is the count of requests against a server where
+    // we see at least one response. `num_request_sent` is designed to protect
     // against DNS resolution failure or the STUN server is not responsive
     // which could skew the result.
     int raw_num_request_sent = 0;
@@ -101,16 +100,19 @@ class RTC_EXPORT StunProber : public sigslot::has_slots<> {
              const rtc::NetworkManager::NetworkList& networks);
   ~StunProber() override;
 
-  // Begin performing the probe test against the |servers|. If
-  // |shared_socket_mode| is false, each request will be done with a new socket.
+  StunProber(const StunProber&) = delete;
+  StunProber& operator=(const StunProber&) = delete;
+
+  // Begin performing the probe test against the `servers`. If
+  // `shared_socket_mode` is false, each request will be done with a new socket.
   // Otherwise, a unique socket will be used for a single round of requests
   // against all resolved IPs. No single socket will be used against a given IP
   // more than once.  The interval of requests will be as close to the requested
-  // inter-probe interval |stun_ta_interval_ms| as possible. After sending out
-  // the last scheduled request, the probe will wait |timeout_ms| for request
-  // responses and then call |finish_callback|.  |requests_per_ip| indicates how
+  // inter-probe interval `stun_ta_interval_ms` as possible. After sending out
+  // the last scheduled request, the probe will wait `timeout_ms` for request
+  // responses and then call `finish_callback`.  `requests_per_ip` indicates how
   // many requests should be tried for each resolved IP address. In shared mode,
-  // (the number of sockets to be created) equals to |requests_per_ip|. In
+  // (the number of sockets to be created) equals to `requests_per_ip`. In
   // non-shared mode, (the number of sockets) equals to requests_per_ip * (the
   // number of resolved IP addresses). TODO(guoweis): Remove this once
   // everything moved to Prepare() and Run().
@@ -119,7 +121,7 @@ class RTC_EXPORT StunProber : public sigslot::has_slots<> {
              int stun_ta_interval_ms,
              int requests_per_ip,
              int timeout_ms,
-             const AsyncCallback finish_callback);
+             AsyncCallback finish_callback);
 
   // TODO(guoweis): The combination of Prepare() and Run() are equivalent to the
   // Start() above. Remove Start() once everything is migrated.
@@ -133,7 +135,7 @@ class RTC_EXPORT StunProber : public sigslot::has_slots<> {
   // Start to send out the STUN probes.
   bool Start(StunProber::Observer* observer);
 
-  // Method to retrieve the Stats once |finish_callback| is invoked. Returning
+  // Method to retrieve the Stats once `finish_callback` is invoked. Returning
   // false when the result is inconclusive, for example, whether it's behind a
   // NAT or not.
   bool GetStats(Stats* stats) const;
@@ -186,7 +188,7 @@ class RTC_EXPORT StunProber : public sigslot::has_slots<> {
   bool SendNextRequest();
 
   // Will be invoked in 1ms intervals and schedule the next request from the
-  // |current_requester_| if the time has passed for another request.
+  // `current_requester_` if the time has passed for another request.
   void MaybeScheduleStunRequests();
 
   void ReportOnPrepared(StunProber::Status status);
@@ -241,8 +243,6 @@ class RTC_EXPORT StunProber : public sigslot::has_slots<> {
   rtc::NetworkManager::NetworkList networks_;
 
   webrtc::ScopedTaskSafety task_safety_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(StunProber);
 };
 
 }  // namespace stunprober

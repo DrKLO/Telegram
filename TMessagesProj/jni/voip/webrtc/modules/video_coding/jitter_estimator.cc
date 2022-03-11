@@ -10,7 +10,6 @@
 
 #include "modules/video_coding/jitter_estimator.h"
 
-#include <assert.h>
 #include <math.h>
 #include <string.h>
 
@@ -247,7 +246,7 @@ void VCMJitterEstimator::KalmanEstimateChannel(int64_t frameDelayMS,
   hMh_sigma = deltaFSBytes * Mh[0] + Mh[1] + sigma;
   if ((hMh_sigma < 1e-9 && hMh_sigma >= 0) ||
       (hMh_sigma > -1e-9 && hMh_sigma <= 0)) {
-    assert(false);
+    RTC_DCHECK_NOTREACHED();
     return;
   }
   kalmanGain[0] = Mh[0] / hMh_sigma;
@@ -276,11 +275,11 @@ void VCMJitterEstimator::KalmanEstimateChannel(int64_t frameDelayMS,
                     kalmanGain[1] * deltaFSBytes * t01;
 
   // Covariance matrix, must be positive semi-definite.
-  assert(_thetaCov[0][0] + _thetaCov[1][1] >= 0 &&
-         _thetaCov[0][0] * _thetaCov[1][1] -
-                 _thetaCov[0][1] * _thetaCov[1][0] >=
-             0 &&
-         _thetaCov[0][0] >= 0);
+  RTC_DCHECK(_thetaCov[0][0] + _thetaCov[1][1] >= 0 &&
+             _thetaCov[0][0] * _thetaCov[1][1] -
+                     _thetaCov[0][1] * _thetaCov[1][0] >=
+                 0 &&
+             _thetaCov[0][0] >= 0);
 }
 
 // Calculate difference in delay between a sample and the expected delay
@@ -302,7 +301,7 @@ void VCMJitterEstimator::EstimateRandomJitter(double d_dT,
   _lastUpdateT = now;
 
   if (_alphaCount == 0) {
-    assert(false);
+    RTC_DCHECK_NOTREACHED();
     return;
   }
   double alpha =
@@ -428,7 +427,7 @@ double VCMJitterEstimator::GetFrameRate() const {
 
   double fps = 1000000.0 / fps_counter_.ComputeMean();
   // Sanity check.
-  assert(fps >= 0.0);
+  RTC_DCHECK_GE(fps, 0.0);
   if (fps > kMaxFramerateEstimate) {
     fps = kMaxFramerateEstimate;
   }

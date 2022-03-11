@@ -64,7 +64,12 @@ public class MessageSeenView extends FrameLayout {
         flickerLoadingView.setIsSingleCell(false);
         addView(flickerLoadingView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT));
 
-        titleView = new TextView(context);
+        titleView = new TextView(context) {
+            @Override
+            public void setText(CharSequence text, BufferType type) {
+                super.setText(text, type);
+            }
+        };
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         titleView.setLines(1);
         titleView.setEllipsize(TextUtils.TruncateAt.END);
@@ -217,6 +222,13 @@ public class MessageSeenView extends FrameLayout {
             avatarsImageView.setTranslationX(AndroidUtilities.dp(12));
         } else {
             avatarsImageView.setTranslationX(0);
+        }
+
+        int newRightMargin = AndroidUtilities.dp(users.size() == 0 ? 8 : 62);
+        MarginLayoutParams titleViewMargins = (MarginLayoutParams) titleView.getLayoutParams();
+        if (titleViewMargins.rightMargin != newRightMargin) {
+            titleViewMargins.rightMargin = newRightMargin;
+            titleView.setLayoutParams(titleViewMargins);
         }
 
         avatarsImageView.commitTransition(false);

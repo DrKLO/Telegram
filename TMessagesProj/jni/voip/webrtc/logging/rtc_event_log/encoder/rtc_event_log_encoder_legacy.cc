@@ -78,9 +78,9 @@ rtclog::DelayBasedBweUpdate::DetectorState ConvertDetectorState(
     case BandwidthUsage::kBwOverusing:
       return rtclog::DelayBasedBweUpdate::BWE_OVERUSING;
     case BandwidthUsage::kLast:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return rtclog::DelayBasedBweUpdate::BWE_NORMAL;
 }
 
@@ -94,9 +94,9 @@ rtclog::BweProbeResult::ResultType ConvertProbeResultType(
     case ProbeFailureReason::kTimeout:
       return rtclog::BweProbeResult::TIMEOUT;
     case ProbeFailureReason::kLast:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return rtclog::BweProbeResult::SUCCESS;
 }
 
@@ -107,9 +107,9 @@ rtclog::VideoReceiveConfig_RtcpMode ConvertRtcpMode(RtcpMode rtcp_mode) {
     case RtcpMode::kReducedSize:
       return rtclog::VideoReceiveConfig::RTCP_REDUCEDSIZE;
     case RtcpMode::kOff:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return rtclog::VideoReceiveConfig::RTCP_COMPOUND;
 }
 
@@ -125,9 +125,9 @@ ConvertIceCandidatePairConfigType(IceCandidatePairConfigType type) {
     case IceCandidatePairConfigType::kSelected:
       return rtclog::IceCandidatePairConfig::SELECTED;
     case IceCandidatePairConfigType::kNumValues:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return rtclog::IceCandidatePairConfig::ADDED;
 }
 
@@ -145,9 +145,9 @@ rtclog::IceCandidatePairConfig::IceCandidateType ConvertIceCandidateType(
     case IceCandidateType::kRelay:
       return rtclog::IceCandidatePairConfig::RELAY;
     case IceCandidateType::kNumValues:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return rtclog::IceCandidatePairConfig::UNKNOWN_CANDIDATE_TYPE;
 }
 
@@ -165,9 +165,9 @@ rtclog::IceCandidatePairConfig::Protocol ConvertIceCandidatePairProtocol(
     case IceCandidatePairProtocol::kTls:
       return rtclog::IceCandidatePairConfig::TLS;
     case IceCandidatePairProtocol::kNumValues:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return rtclog::IceCandidatePairConfig::UNKNOWN_PROTOCOL;
 }
 
@@ -182,9 +182,9 @@ ConvertIceCandidatePairAddressFamily(
     case IceCandidatePairAddressFamily::kIpv6:
       return rtclog::IceCandidatePairConfig::IPV6;
     case IceCandidatePairAddressFamily::kNumValues:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return rtclog::IceCandidatePairConfig::UNKNOWN_ADDRESS_FAMILY;
 }
 
@@ -204,9 +204,9 @@ rtclog::IceCandidatePairConfig::NetworkType ConvertIceCandidateNetworkType(
     case IceCandidateNetworkType::kCellular:
       return rtclog::IceCandidatePairConfig::CELLULAR;
     case IceCandidateNetworkType::kNumValues:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return rtclog::IceCandidatePairConfig::UNKNOWN_NETWORK_TYPE;
 }
 
@@ -222,9 +222,9 @@ ConvertIceCandidatePairEventType(IceCandidatePairEventType type) {
     case IceCandidatePairEventType::kCheckResponseReceived:
       return rtclog::IceCandidatePairEvent::CHECK_RESPONSE_RECEIVED;
     case IceCandidatePairEventType::kNumValues:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return rtclog::IceCandidatePairEvent::CHECK_SENT;
 }
 
@@ -363,6 +363,12 @@ std::string RtcEventLogEncoderLegacy::Encode(const RtcEvent& event) {
           static_cast<const RtcEventVideoSendStreamConfig&>(event);
       return EncodeVideoSendStreamConfig(rtc_event);
     }
+    case RtcEvent::Type::BeginV3Log:
+    case RtcEvent::Type::EndV3Log:
+      // These special events are written as part of starting
+      // and stopping the log, and only as part of version 3 of the format.
+      RTC_DCHECK_NOTREACHED();
+      break;
     case RtcEvent::Type::RouteChangeEvent:
     case RtcEvent::Type::RemoteEstimateEvent:
     case RtcEvent::Type::GenericPacketReceived:
@@ -374,7 +380,7 @@ std::string RtcEventLogEncoderLegacy::Encode(const RtcEvent& event) {
   }
 
   int event_type = static_cast<int>(event.GetType());
-  RTC_NOTREACHED() << "Unknown event type (" << event_type << ")";
+  RTC_DCHECK_NOTREACHED() << "Unknown event type (" << event_type << ")";
   return "";
 }
 
@@ -674,7 +680,7 @@ std::string RtcEventLogEncoderLegacy::EncodeVideoSendStreamConfig(
     encoder->set_payload_type(codec.payload_type);
 
     if (event.config().codecs.size() > 1) {
-      RTC_LOG(WARNING)
+      RTC_LOG(LS_WARNING)
           << "LogVideoSendStreamConfig currently only supports one "
              "codec. Logging codec :"
           << codec.payload_name;

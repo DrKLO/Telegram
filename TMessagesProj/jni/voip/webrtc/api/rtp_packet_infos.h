@@ -18,6 +18,7 @@
 #include "api/ref_counted_base.h"
 #include "api/rtp_packet_info.h"
 #include "api/scoped_refptr.h"
+#include "rtc_base/ref_counted_object.h"
 #include "rtc_base/system/rtc_export.h"
 
 namespace webrtc {
@@ -26,8 +27,8 @@ namespace webrtc {
 // an audio or video frame. Uses internal reference counting to make it very
 // cheap to copy.
 //
-// We should ideally just use |std::vector<RtpPacketInfo>| and have it
-// |std::move()|-ed as the per-packet information is transferred from one object
+// We should ideally just use `std::vector<RtpPacketInfo>` and have it
+// `std::move()`-ed as the per-packet information is transferred from one object
 // to another. But moving the info, instead of copying it, is not easily done
 // for the current video code.
 class RTC_EXPORT RtpPacketInfos {
@@ -79,7 +80,7 @@ class RTC_EXPORT RtpPacketInfos {
   size_type size() const { return entries().size(); }
 
  private:
-  class Data : public rtc::RefCountedBase {
+  class Data final : public rtc::RefCountedNonVirtual<Data> {
    public:
     static rtc::scoped_refptr<Data> Create(const vector_type& entries) {
       // Performance optimization for the empty case.
@@ -87,7 +88,7 @@ class RTC_EXPORT RtpPacketInfos {
         return nullptr;
       }
 
-      return new Data(entries);
+      return rtc::make_ref_counted<Data>(entries);
     }
 
     static rtc::scoped_refptr<Data> Create(vector_type&& entries) {
@@ -96,16 +97,16 @@ class RTC_EXPORT RtpPacketInfos {
         return nullptr;
       }
 
-      return new Data(std::move(entries));
+      return rtc::make_ref_counted<Data>(std::move(entries));
     }
 
     const vector_type& entries() const { return entries_; }
 
-   private:
     explicit Data(const vector_type& entries) : entries_(entries) {}
     explicit Data(vector_type&& entries) : entries_(std::move(entries)) {}
-    ~Data() override {}
+    ~Data() = default;
 
+   private:
     const vector_type entries_;
   };
 

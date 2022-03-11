@@ -51,8 +51,9 @@ class raw_hash_map : public raw_hash_set<Policy, Hash, Eq, Alloc> {
   using key_arg = typename KeyArgImpl::template type<K, key_type>;
 
   static_assert(!std::is_reference<key_type>::value, "");
-  // TODO(alkis): remove this assertion and verify that reference mapped_type is
-  // supported.
+
+  // TODO(b/187807849): Evaluate whether to support reference mapped_type and
+  // remove this assertion if/when it is supported.
   static_assert(!std::is_reference<mapped_type>::value, "");
 
   using iterator = typename raw_hash_map::raw_hash_set::iterator;

@@ -35,7 +35,7 @@
 #ifndef ABSL_META_TYPE_TRAITS_H_
 #define ABSL_META_TYPE_TRAITS_H_
 
-#include <stddef.h>
+#include <cstddef>
 #include <functional>
 #include <type_traits>
 
@@ -46,6 +46,14 @@
 #if defined(_MSC_VER) && !defined(__clang__) && !defined(__GNUC__)
 #define ABSL_META_INTERNAL_STD_CONSTRUCTION_TRAITS_DONT_CHECK_DESTRUCTION 1
 #endif
+
+// Defines the default alignment. `__STDCPP_DEFAULT_NEW_ALIGNMENT__` is a C++17
+// feature.
+#if defined(__STDCPP_DEFAULT_NEW_ALIGNMENT__)
+#define ABSL_INTERNAL_DEFAULT_NEW_ALIGNMENT __STDCPP_DEFAULT_NEW_ALIGNMENT__
+#else  // defined(__STDCPP_DEFAULT_NEW_ALIGNMENT__)
+#define ABSL_INTERNAL_DEFAULT_NEW_ALIGNMENT alignof(std::max_align_t)
+#endif  // defined(__STDCPP_DEFAULT_NEW_ALIGNMENT__)
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
@@ -219,7 +227,7 @@ using void_t = typename type_traits_internal::VoidTImpl<Ts...>::type;
 // This metafunction is designed to be a drop-in replacement for the C++17
 // `std::conjunction` metafunction.
 template <typename... Ts>
-struct conjunction;
+struct conjunction : std::true_type {};
 
 template <typename T, typename... Ts>
 struct conjunction<T, Ts...>
@@ -227,9 +235,6 @@ struct conjunction<T, Ts...>
 
 template <typename T>
 struct conjunction<T> : T {};
-
-template <>
-struct conjunction<> : std::true_type {};
 
 // disjunction
 //
@@ -241,7 +246,7 @@ struct conjunction<> : std::true_type {};
 // This metafunction is designed to be a drop-in replacement for the C++17
 // `std::disjunction` metafunction.
 template <typename... Ts>
-struct disjunction;
+struct disjunction : std::false_type {};
 
 template <typename T, typename... Ts>
 struct disjunction<T, Ts...> :
@@ -249,9 +254,6 @@ struct disjunction<T, Ts...> :
 
 template <typename T>
 struct disjunction<T> : T {};
-
-template <>
-struct disjunction<> : std::false_type {};
 
 // negation
 //
@@ -505,6 +507,27 @@ struct is_trivially_copy_assignable
 #endif  // ABSL_HAVE_STD_IS_TRIVIALLY_ASSIGNABLE
 };
 
+#if defined(__cpp_lib_remove_cvref) && __cpp_lib_remove_cvref >= 201711L
+template <typename T>
+using remove_cvref = std::remove_cvref<T>;
+
+template <typename T>
+using remove_cvref_t = typename std::remove_cvref<T>::type;
+#else
+// remove_cvref()
+//
+// C++11 compatible implementation of std::remove_cvref which was added in
+// C++20.
+template <typename T>
+struct remove_cvref {
+  using type =
+      typename std::remove_cv<typename std::remove_reference<T>::type>::type;
+};
+
+template <typename T>
+using remove_cvref_t = typename remove_cvref<T>::type;
+#endif
+
 namespace type_traits_internal {
 // is_trivially_copyable()
 //
@@ -616,8 +639,23 @@ using common_type_t = typename std::common_type<T...>::type;
 template <typename T>
 using underlying_type_t = typename std::underlying_type<T>::type;
 
-template <typename T>
-using result_of_t = typename std::result_of<T>::type;
+
+namespace type_traits_internal {
+
+#if (defined(__cpp_lib_is_invocable) && __cpp_lib_is_invocable >= 201703L) || \
+    (defined(_MSVC_LANG) && _MSVC_LANG >= 201703L)
+// std::result_of is deprecated (C++17) or removed (C++20)
+template<typename> struct result_of;
+template<typename F, typename... Args>
+struct result_of<F(Args...)> : std::invoke_result<F, Args...> {};
+#else
+template<typename F> using result_of = std::result_of<F>;
+#endif
+
+}  // namespace type_traits_internal
+
+template<typename F>
+using result_of_t = typename type_traits_internal::result_of<F>::type;
 
 namespace type_traits_internal {
 // In MSVC we can't probe std::hash or stdext::hash because it triggers a

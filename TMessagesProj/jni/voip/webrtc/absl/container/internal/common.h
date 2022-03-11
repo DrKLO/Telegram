@@ -146,8 +146,11 @@ class node_handle<Policy, PolicyTraits, Alloc,
 
   constexpr node_handle() {}
 
-  auto key() const -> decltype(PolicyTraits::key(std::declval<slot_type*>())) {
-    return PolicyTraits::key(this->slot());
+  // When C++17 is available, we can use std::launder to provide mutable
+  // access to the key. Otherwise, we provide const access.
+  auto key() const
+      -> decltype(PolicyTraits::mutable_key(std::declval<slot_type*>())) {
+    return PolicyTraits::mutable_key(this->slot());
   }
 
   mapped_type& mapped() const {

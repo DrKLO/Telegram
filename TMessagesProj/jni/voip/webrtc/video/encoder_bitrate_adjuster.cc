@@ -163,7 +163,7 @@ VideoBitrateAllocation EncoderBitrateAdjuster::AdjustRateAllocation(
             weight * ti_media_utilization_factor.value();
       }
     } else {
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
     }
 
     if (layer_info.link_utilization_factor < 1.0) {

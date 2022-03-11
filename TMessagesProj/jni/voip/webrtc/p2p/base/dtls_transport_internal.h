@@ -25,30 +25,11 @@
 #include "p2p/base/ice_transport_internal.h"
 #include "p2p/base/packet_transport_internal.h"
 #include "rtc_base/callback_list.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/ssl_certificate.h"
 #include "rtc_base/ssl_fingerprint.h"
 #include "rtc_base/ssl_stream_adapter.h"
 
 namespace cricket {
-
-enum DtlsTransportState {
-  // Haven't started negotiating.
-  DTLS_TRANSPORT_NEW = static_cast<int>(webrtc::DtlsTransportState::kNew),
-  // Have started negotiating.
-  DTLS_TRANSPORT_CONNECTING =
-      static_cast<int>(webrtc::DtlsTransportState::kConnecting),
-  // Negotiated, and has a secure connection.
-  DTLS_TRANSPORT_CONNECTED =
-      static_cast<int>(webrtc::DtlsTransportState::kConnected),
-  // Transport is closed.
-  DTLS_TRANSPORT_CLOSED = static_cast<int>(webrtc::DtlsTransportState::kClosed),
-  // Failed due to some error in the handshake process.
-  DTLS_TRANSPORT_FAILED = static_cast<int>(webrtc::DtlsTransportState::kFailed),
-};
-
-webrtc::DtlsTransportState ConvertDtlsTransportState(
-    cricket::DtlsTransportState cricket_state);
 
 enum PacketFlags {
   PF_NORMAL = 0x00,       // A normal packet.
@@ -66,7 +47,10 @@ class DtlsTransportInternal : public rtc::PacketTransportInternal {
  public:
   ~DtlsTransportInternal() override;
 
-  virtual DtlsTransportState dtls_state() const = 0;
+  DtlsTransportInternal(const DtlsTransportInternal&) = delete;
+  DtlsTransportInternal& operator=(const DtlsTransportInternal&) = delete;
+
+  virtual webrtc::DtlsTransportState dtls_state() const = 0;
 
   virtual int component() const = 0;
 
@@ -117,24 +101,25 @@ class DtlsTransportInternal : public rtc::PacketTransportInternal {
   // Expose the underneath IceTransport.
   virtual IceTransportInternal* ice_transport() = 0;
 
-  // F: void(DtlsTransportInternal*, const DtlsTransportState)
+  // F: void(DtlsTransportInternal*, const webrtc::DtlsTransportState)
   template <typename F>
-  void SubscribeDtlsState(F&& callback) {
-    dtls_state_callback_list_.AddReceiver(std::forward<F>(callback));
+  void SubscribeDtlsTransportState(F&& callback) {
+    dtls_transport_state_callback_list_.AddReceiver(std::forward<F>(callback));
   }
 
   template <typename F>
-  void SubscribeDtlsState(const void* id, F&& callback) {
-    dtls_state_callback_list_.AddReceiver(id, std::forward<F>(callback));
+  void SubscribeDtlsTransportState(const void* id, F&& callback) {
+    dtls_transport_state_callback_list_.AddReceiver(id,
+                                                    std::forward<F>(callback));
   }
   // Unsubscribe the subscription with given id.
-  void UnsubscribeDtlsState(const void* id) {
-    dtls_state_callback_list_.RemoveReceivers(id);
+  void UnsubscribeDtlsTransportState(const void* id) {
+    dtls_transport_state_callback_list_.RemoveReceivers(id);
   }
 
   void SendDtlsState(DtlsTransportInternal* transport,
-                     DtlsTransportState state) {
-    dtls_state_callback_list_.Send(transport, state);
+                     webrtc::DtlsTransportState state) {
+    dtls_transport_state_callback_list_.Send(transport, state);
   }
 
   // Emitted whenever the Dtls handshake failed on some transport channel.
@@ -152,11 +137,10 @@ class DtlsTransportInternal : public rtc::PacketTransportInternal {
   DtlsTransportInternal();
 
  private:
-  RTC_DISALLOW_COPY_AND_ASSIGN(DtlsTransportInternal);
   webrtc::CallbackList<const rtc::SSLHandshakeError>
       dtls_handshake_error_callback_list_;
-  webrtc::CallbackList<DtlsTransportInternal*, const DtlsTransportState>
-      dtls_state_callback_list_;
+  webrtc::CallbackList<DtlsTransportInternal*, const webrtc::DtlsTransportState>
+      dtls_transport_state_callback_list_;
 };
 
 }  // namespace cricket

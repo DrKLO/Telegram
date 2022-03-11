@@ -11,7 +11,6 @@
 
 #include <algorithm>
 
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/thread_annotations.h"
 
@@ -34,6 +33,9 @@ class RtcHistogram {
       : min_(min), max_(max), info_(name, min, max, bucket_count) {
     RTC_DCHECK_GT(bucket_count, 0);
   }
+
+  RtcHistogram(const RtcHistogram&) = delete;
+  RtcHistogram& operator=(const RtcHistogram&) = delete;
 
   void Add(int sample) {
     sample = std::min(sample, max_);
@@ -99,14 +101,15 @@ class RtcHistogram {
   const int min_;
   const int max_;
   SampleInfo info_ RTC_GUARDED_BY(mutex_);
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(RtcHistogram);
 };
 
 class RtcHistogramMap {
  public:
   RtcHistogramMap() {}
   ~RtcHistogramMap() {}
+
+  RtcHistogramMap(const RtcHistogramMap&) = delete;
+  RtcHistogramMap& operator=(const RtcHistogramMap&) = delete;
 
   Histogram* GetCountsHistogram(const std::string& name,
                                 int min,
@@ -178,8 +181,6 @@ class RtcHistogramMap {
   mutable Mutex mutex_;
   std::map<std::string, std::unique_ptr<RtcHistogram>> map_
       RTC_GUARDED_BY(mutex_);
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(RtcHistogramMap);
 };
 
 // RtcHistogramMap is allocated upon call to Enable().
@@ -265,7 +266,7 @@ Histogram* SparseHistogramFactoryGetEnumeration(const std::string& name,
   return HistogramFactoryGetEnumeration(name, boundary);
 }
 
-// Fast path. Adds |sample| to cached |histogram_pointer|.
+// Fast path. Adds `sample` to cached `histogram_pointer`.
 void HistogramAdd(Histogram* histogram_pointer, int sample) {
   RtcHistogram* ptr = reinterpret_cast<RtcHistogram*>(histogram_pointer);
   ptr->Add(sample);

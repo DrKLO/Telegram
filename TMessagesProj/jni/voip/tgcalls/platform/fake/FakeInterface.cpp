@@ -2,11 +2,11 @@
 
 #include "api/video_codecs/builtin_video_encoder_factory.h"
 #include "api/video_codecs/builtin_video_decoder_factory.h"
-#include "api/video_track_source_proxy.h"
+//#include "api/video_track_source_proxy.h"
 
 namespace tgcalls {
 
-std::unique_ptr<webrtc::VideoEncoderFactory> FakeInterface::makeVideoEncoderFactory() {
+std::unique_ptr<webrtc::VideoEncoderFactory> FakeInterface::makeVideoEncoderFactory(bool preferHardwareEncoding, bool isScreencast) {
   return webrtc::CreateBuiltinVideoEncoderFactory();
 }
 

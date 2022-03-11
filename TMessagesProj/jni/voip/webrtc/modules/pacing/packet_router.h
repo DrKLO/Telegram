@@ -22,11 +22,9 @@
 
 #include "api/transport/network_types.h"
 #include "modules/pacing/pacing_controller.h"
-#include "modules/remote_bitrate_estimator/include/remote_bitrate_estimator.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
 #include "modules/rtp_rtcp/source/rtcp_packet.h"
 #include "modules/rtp_rtcp/source/rtp_packet_to_send.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/thread_annotations.h"
 
@@ -44,6 +42,9 @@ class PacketRouter : public PacingController::PacketSender {
   PacketRouter();
   explicit PacketRouter(uint16_t start_transport_seq);
   ~PacketRouter() override;
+
+  PacketRouter(const PacketRouter&) = delete;
+  PacketRouter& operator=(const PacketRouter&) = delete;
 
   void AddSendRtpModule(RtpRtcpInterface* rtp_module, bool remb_candidate);
   void RemoveSendRtpModule(RtpRtcpInterface* rtp_module);
@@ -63,7 +64,7 @@ class PacketRouter : public PacingController::PacketSender {
   // Send REMB feedback.
   void SendRemb(int64_t bitrate_bps, std::vector<uint32_t> ssrcs);
 
-  // Sends |packets| in one or more IP packets.
+  // Sends `packets` in one or more IP packets.
   void SendCombinedRtcpPacket(
       std::vector<std::unique_ptr<rtcp::RtcpPacket>> packets);
 
@@ -108,8 +109,6 @@ class PacketRouter : public PacingController::PacketSender {
   // process thread is gone.
   std::vector<std::unique_ptr<RtpPacketToSend>> pending_fec_packets_
       RTC_GUARDED_BY(modules_mutex_);
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(PacketRouter);
 };
 }  // namespace webrtc
 #endif  // MODULES_PACING_PACKET_ROUTER_H_

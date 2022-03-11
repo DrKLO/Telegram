@@ -23,31 +23,38 @@
 namespace webrtc {
 namespace {
 
+using AdaptiveDigitalConfig =
+    AudioProcessing::Config::GainController2::AdaptiveDigital;
+
 constexpr int kHeadroomHistogramMin = 0;
 constexpr int kHeadroomHistogramMax = 50;
+constexpr int kGainDbHistogramMax = 30;
 
-// This function maps input level to desired applied gain. We want to
-// boost the signal so that peaks are at -kHeadroomDbfs. We can't
-// apply more than kMaxGainDb gain.
-float ComputeGainDb(float input_level_dbfs) {
-  // If the level is very low, boost it as much as we can.
-  if (input_level_dbfs < -(kHeadroomDbfs + kMaxGainDb)) {
-    return kMaxGainDb;
+// Computes the gain for `input_level_dbfs` to reach `-config.headroom_db`.
+// Clamps the gain in [0, `config.max_gain_db`]. `config.headroom_db` is a
+// safety margin to allow transient peaks to exceed the target peak level
+// without clipping.
+float ComputeGainDb(float input_level_dbfs,
+                    const AdaptiveDigitalConfig& config) {
+  // If the level is very low, apply the maximum gain.
+  if (input_level_dbfs < -(config.headroom_db + config.max_gain_db)) {
+    return config.max_gain_db;
   }
   // We expect to end up here most of the time: the level is below
   // -headroom, but we can boost it to -headroom.
-  if (input_level_dbfs < -kHeadroomDbfs) {
-    return -kHeadroomDbfs - input_level_dbfs;
+  if (input_level_dbfs < -config.headroom_db) {
+    return -config.headroom_db - input_level_dbfs;
   }
-  // Otherwise, the level is too high and we can't boost.
-  RTC_DCHECK_GE(input_level_dbfs, -kHeadroomDbfs);
-  return 0.f;
+  // The level is too high and we can't boost.
+  RTC_DCHECK_GE(input_level_dbfs, -config.headroom_db);
+  return 0.0f;
 }
 
-// Returns `target_gain` if the output noise level is below
-// `max_output_noise_level_dbfs`; otherwise returns a capped gain so that the
-// output noise level equals `max_output_noise_level_dbfs`.
-float LimitGainByNoise(float target_gain,
+// Returns `target_gain_db` if applying such a gain to `input_noise_level_dbfs`
+// does not exceed `max_output_noise_level_dbfs`. Otherwise lowers and returns
+// `target_gain_db` so that the output noise level equals
+// `max_output_noise_level_dbfs`.
+float LimitGainByNoise(float target_gain_db,
                        float input_noise_level_dbfs,
                        float max_output_noise_level_dbfs,
                        ApmDataDumper& apm_data_dumper) {
@@ -55,24 +62,25 @@ float LimitGainByNoise(float target_gain,
       max_output_noise_level_dbfs - input_noise_level_dbfs;
   apm_data_dumper.DumpRaw("agc2_adaptive_gain_applier_max_allowed_gain_db",
                           max_allowed_gain_db);
-  return std::min(target_gain, std::max(max_allowed_gain_db, 0.f));
+  return std::min(target_gain_db, std::max(max_allowed_gain_db, 0.0f));
 }
 
-float LimitGainByLowConfidence(float target_gain,
-                               float last_gain,
+float LimitGainByLowConfidence(float target_gain_db,
+                               float last_gain_db,
                                float limiter_audio_level_dbfs,
                                bool estimate_is_confident) {
   if (estimate_is_confident ||
       limiter_audio_level_dbfs <= kLimiterThresholdForAgcGainDbfs) {
-    return target_gain;
+    return target_gain_db;
   }
-  const float limiter_level_before_gain = limiter_audio_level_dbfs - last_gain;
+  const float limiter_level_dbfs_before_gain =
+      limiter_audio_level_dbfs - last_gain_db;
 
-  // Compute a new gain so that `limiter_level_before_gain` + `new_target_gain`
-  // is not great than `kLimiterThresholdForAgcGainDbfs`.
-  const float new_target_gain = std::max(
-      kLimiterThresholdForAgcGainDbfs - limiter_level_before_gain, 0.f);
-  return std::min(new_target_gain, target_gain);
+  // Compute a new gain so that `limiter_level_dbfs_before_gain` +
+  // `new_target_gain_db` is not great than `kLimiterThresholdForAgcGainDbfs`.
+  const float new_target_gain_db = std::max(
+      kLimiterThresholdForAgcGainDbfs - limiter_level_dbfs_before_gain, 0.0f);
+  return std::min(new_target_gain_db, target_gain_db);
 }
 
 // Computes how the gain should change during this frame.
@@ -86,7 +94,7 @@ float ComputeGainChangeThisFrameDb(float target_gain_db,
   RTC_DCHECK_GT(max_gain_increase_db, 0);
   float target_gain_difference_db = target_gain_db - last_gain_db;
   if (!gain_increase_allowed) {
-    target_gain_difference_db = std::min(target_gain_difference_db, 0.f);
+    target_gain_difference_db = std::min(target_gain_difference_db, 0.0f);
   }
   return rtc::SafeClamp(target_gain_difference_db, -max_gain_decrease_db,
                         max_gain_increase_db);
@@ -98,7 +106,7 @@ void CopyAudio(AudioFrameView<const float> src,
   RTC_DCHECK_GT(src.num_channels(), 0);
   RTC_DCHECK_GT(src.samples_per_channel(), 0);
   RTC_DCHECK_EQ(dst.size(), src.num_channels());
-  for (size_t c = 0; c < src.num_channels(); ++c) {
+  for (int c = 0; c < src.num_channels(); ++c) {
     rtc::ArrayView<const float> channel_view = src.channel(c);
     RTC_DCHECK_EQ(channel_view.size(), src.samples_per_channel());
     RTC_DCHECK_EQ(dst[c].size(), src.samples_per_channel());
@@ -110,32 +118,30 @@ void CopyAudio(AudioFrameView<const float> src,
 
 AdaptiveDigitalGainApplier::AdaptiveDigitalGainApplier(
     ApmDataDumper* apm_data_dumper,
-    int adjacent_speech_frames_threshold,
-    float max_gain_change_db_per_second,
-    float max_output_noise_level_dbfs,
-    bool dry_run)
+    const AudioProcessing::Config::GainController2::AdaptiveDigital& config,
+    int sample_rate_hz,
+    int num_channels)
     : apm_data_dumper_(apm_data_dumper),
       gain_applier_(
           /*hard_clip_samples=*/false,
-          /*initial_gain_factor=*/DbToRatio(kInitialAdaptiveDigitalGainDb)),
-      adjacent_speech_frames_threshold_(adjacent_speech_frames_threshold),
-      max_gain_change_db_per_10ms_(max_gain_change_db_per_second *
-                                   kFrameDurationMs / 1000.f),
-      max_output_noise_level_dbfs_(max_output_noise_level_dbfs),
-      dry_run_(dry_run),
+          /*initial_gain_factor=*/DbToRatio(config.initial_gain_db)),
+      config_(config),
+      max_gain_change_db_per_10ms_(config_.max_gain_change_db_per_second *
+                                   kFrameDurationMs / 1000.0f),
       calls_since_last_gain_log_(0),
-      frames_to_gain_increase_allowed_(adjacent_speech_frames_threshold_),
-      last_gain_db_(kInitialAdaptiveDigitalGainDb) {
-  RTC_DCHECK_GT(max_gain_change_db_per_second, 0.0f);
+      frames_to_gain_increase_allowed_(
+          config_.adjacent_speech_frames_threshold),
+      last_gain_db_(config_.initial_gain_db) {
+  RTC_DCHECK_GT(max_gain_change_db_per_10ms_, 0.0f);
   RTC_DCHECK_GE(frames_to_gain_increase_allowed_, 1);
-  RTC_DCHECK_GE(max_output_noise_level_dbfs_, -90.0f);
-  RTC_DCHECK_LE(max_output_noise_level_dbfs_, 0.0f);
-  Initialize(/*sample_rate_hz=*/48000, /*num_channels=*/1);
+  RTC_DCHECK_GE(config_.max_output_noise_level_dbfs, -90.0f);
+  RTC_DCHECK_LE(config_.max_output_noise_level_dbfs, 0.0f);
+  Initialize(sample_rate_hz, num_channels);
 }
 
 void AdaptiveDigitalGainApplier::Initialize(int sample_rate_hz,
                                             int num_channels) {
-  if (!dry_run_) {
+  if (!config_.dry_run) {
     return;
   }
   RTC_DCHECK_GT(sample_rate_hz, 0);
@@ -159,7 +165,7 @@ void AdaptiveDigitalGainApplier::Initialize(int sample_rate_hz,
 
 void AdaptiveDigitalGainApplier::Process(const FrameInfo& info,
                                          AudioFrameView<float> frame) {
-  RTC_DCHECK_GE(info.speech_level_dbfs, -150.f);
+  RTC_DCHECK_GE(info.speech_level_dbfs, -150.0f);
   RTC_DCHECK_GE(frame.num_channels(), 1);
   RTC_DCHECK(
       frame.samples_per_channel() == 80 || frame.samples_per_channel() == 160 ||
@@ -172,15 +178,16 @@ void AdaptiveDigitalGainApplier::Process(const FrameInfo& info,
   const float input_level_dbfs = info.speech_level_dbfs + info.headroom_db;
 
   const float target_gain_db = LimitGainByLowConfidence(
-      LimitGainByNoise(ComputeGainDb(input_level_dbfs), info.noise_rms_dbfs,
-                       max_output_noise_level_dbfs_, *apm_data_dumper_),
+      LimitGainByNoise(ComputeGainDb(input_level_dbfs, config_),
+                       info.noise_rms_dbfs, config_.max_output_noise_level_dbfs,
+                       *apm_data_dumper_),
       last_gain_db_, info.limiter_envelope_dbfs, info.speech_level_reliable);
 
   // Forbid increasing the gain until enough adjacent speech frames are
   // observed.
   bool first_confident_speech_frame = false;
   if (info.speech_probability < kVadConfidenceThreshold) {
-    frames_to_gain_increase_allowed_ = adjacent_speech_frames_threshold_;
+    frames_to_gain_increase_allowed_ = config_.adjacent_speech_frames_threshold;
   } else if (frames_to_gain_increase_allowed_ > 0) {
     frames_to_gain_increase_allowed_--;
     first_confident_speech_frame = frames_to_gain_increase_allowed_ == 0;
@@ -196,7 +203,7 @@ void AdaptiveDigitalGainApplier::Process(const FrameInfo& info,
     // No gain increase happened while waiting for a long enough speech
     // sequence. Therefore, temporarily allow a faster gain increase.
     RTC_DCHECK(gain_increase_allowed);
-    max_gain_increase_db *= adjacent_speech_frames_threshold_;
+    max_gain_increase_db *= config_.adjacent_speech_frames_threshold;
   }
 
   const float gain_change_this_frame_db = ComputeGainChangeThisFrameDb(
@@ -217,7 +224,7 @@ void AdaptiveDigitalGainApplier::Process(const FrameInfo& info,
   }
 
   // Modify `frame` only if not running in "dry run" mode.
-  if (!dry_run_) {
+  if (!config_.dry_run) {
     gain_applier_.ApplyGain(frame);
   } else {
     // Copy `frame` so that `ApplyGain()` is called (on a copy).
@@ -247,7 +254,8 @@ void AdaptiveDigitalGainApplier::Process(const FrameInfo& info,
         kHeadroomHistogramMax,
         kHeadroomHistogramMax - kHeadroomHistogramMin + 1);
     RTC_HISTOGRAM_COUNTS_LINEAR("WebRTC.Audio.Agc2.DigitalGainApplied",
-                                last_gain_db_, 0, kMaxGainDb, kMaxGainDb + 1);
+                                last_gain_db_, 0, kGainDbHistogramMax,
+                                kGainDbHistogramMax + 1);
     RTC_LOG(LS_INFO) << "AGC2 adaptive digital"
                      << " | speech_dbfs: " << info.speech_level_dbfs
                      << " | noise_dbfs: " << info.noise_rms_dbfs

@@ -65,7 +65,7 @@ RtpVp8RefFinder::FrameDecision RtpVp8RefFinder::ManageFrameInternal(
     last_picture_id_ = old_picture_id;
   }
   // Find if there has been a gap in fully received frames and save the picture
-  // id of those frames in |not_yet_received_frames_|.
+  // id of those frames in `not_yet_received_frames_`.
   if (AheadOf<uint16_t, kFrameIdLength>(frame->Id(), last_picture_id_)) {
     do {
       last_picture_id_ = Add<kFrameIdLength>(last_picture_id_, 1);
@@ -218,7 +218,7 @@ void RtpVp8RefFinder::RetryStashedFrames(
         case kHandOff:
           complete_frame = true;
           res.push_back(std::move(*frame_it));
-          ABSL_FALLTHROUGH_INTENDED;
+          [[fallthrough]];
         case kDrop:
           frame_it = stashed_frames_.erase(frame_it);
       }

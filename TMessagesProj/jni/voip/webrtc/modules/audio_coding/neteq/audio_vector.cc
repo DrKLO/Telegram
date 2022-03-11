@@ -10,7 +10,6 @@
 
 #include "modules/audio_coding/neteq/audio_vector.h"
 
-#include <assert.h>
 
 #include <algorithm>
 #include <memory>
@@ -246,14 +245,14 @@ void AudioVector::OverwriteAt(const int16_t* insert_this,
 
 void AudioVector::CrossFade(const AudioVector& append_this,
                             size_t fade_length) {
-  // Fade length cannot be longer than the current vector or |append_this|.
-  assert(fade_length <= Size());
-  assert(fade_length <= append_this.Size());
+  // Fade length cannot be longer than the current vector or `append_this`.
+  RTC_DCHECK_LE(fade_length, Size());
+  RTC_DCHECK_LE(fade_length, append_this.Size());
   fade_length = std::min(fade_length, Size());
   fade_length = std::min(fade_length, append_this.Size());
   size_t position = Size() - fade_length + begin_index_;
   // Cross fade the overlapping regions.
-  // |alpha| is the mixing factor in Q14.
+  // `alpha` is the mixing factor in Q14.
   // TODO(hlundin): Consider skipping +1 in the denominator to produce a
   // smoother cross-fade, in particular at the end of the fade.
   int alpha_step = 16384 / (static_cast<int>(fade_length) + 1);
@@ -265,8 +264,8 @@ void AudioVector::CrossFade(const AudioVector& append_this,
          (16384 - alpha) * append_this[i] + 8192) >>
         14;
   }
-  assert(alpha >= 0);  // Verify that the slope was correct.
-  // Append what is left of |append_this|.
+  RTC_DCHECK_GE(alpha, 0);  // Verify that the slope was correct.
+  // Append what is left of `append_this`.
   size_t samples_to_push_back = append_this.Size() - fade_length;
   if (samples_to_push_back > 0)
     PushBack(append_this, samples_to_push_back, fade_length);
@@ -287,8 +286,8 @@ void AudioVector::Reserve(size_t n) {
     return;
   const size_t length = Size();
   // Reserve one more sample to remove the ambiguity between empty vector and
-  // full vector. Therefore |begin_index_| == |end_index_| indicates empty
-  // vector, and |begin_index_| == (|end_index_| + 1) % capacity indicates
+  // full vector. Therefore `begin_index_` == `end_index_` indicates empty
+  // vector, and `begin_index_` == (`end_index_` + 1) % capacity indicates
   // full vector.
   std::unique_ptr<int16_t[]> temp_array(new int16_t[n + 1]);
   CopyTo(length, 0, temp_array.get());

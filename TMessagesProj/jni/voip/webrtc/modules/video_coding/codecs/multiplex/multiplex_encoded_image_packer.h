@@ -25,11 +25,11 @@ namespace webrtc {
 // bitstream data.
 struct MultiplexImageHeader {
   // The number of frame components making up the complete picture data.
-  // For example, |frame_count| = 2 for the case of YUV frame with Alpha frame.
+  // For example, `frame_count` = 2 for the case of YUV frame with Alpha frame.
   uint8_t component_count;
 
   // The increasing image ID given by the encoder. For different components
-  // of a single picture, they have the same |picture_index|.
+  // of a single picture, they have the same `picture_index`.
   uint16_t image_index;
 
   // The location of the first MultiplexImageComponentHeader in the bitstream,
@@ -111,7 +111,7 @@ class MultiplexEncodedImagePacker {
   // Note: It is caller responsibility to release the buffer of the result.
   static EncodedImage PackAndRelease(const MultiplexImage& image);
 
-  // Note: The image components just share the memory with |combined_image|.
+  // Note: The image components just share the memory with `combined_image`.
   static MultiplexImage Unpack(const EncodedImage& combined_image);
 };
 

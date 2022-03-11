@@ -49,7 +49,7 @@ class AlignmentMixer {
   int selected_channel_ = 0;
   size_t block_counter_ = 0;
 
-  void Downmix(const rtc::ArrayView<const std::vector<float>> x,
+  void Downmix(rtc::ArrayView<const std::vector<float>> x,
                rtc::ArrayView<float, kBlockSize> y) const;
   int SelectChannel(rtc::ArrayView<const std::vector<float>> x);
 };

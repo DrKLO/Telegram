@@ -88,7 +88,7 @@ RtpToNtpEstimator::RtcpMeasurement::RtcpMeasurement(uint32_t ntp_secs,
 bool RtpToNtpEstimator::RtcpMeasurement::IsEqual(
     const RtcpMeasurement& other) const {
   // Use || since two equal timestamps will result in zero frequency and in
-  // RtpToNtpMs, |rtp_timestamp_ms| is estimated by dividing by the frequency.
+  // RtpToNtpMs, `rtp_timestamp_ms` is estimated by dividing by the frequency.
   return (ntp_time == other.ntp_time) ||
          (unwrapped_rtp_timestamp == other.unwrapped_rtp_timestamp);
 }

@@ -31,14 +31,14 @@ static ScopedJavaLocalRef<jobject> JNI_Metrics_GetAndReset(JNIEnv* jni) {
   std::map<std::string, std::unique_ptr<metrics::SampleInfo>> histograms;
   metrics::GetAndReset(&histograms);
   for (const auto& kv : histograms) {
-    // Create and add samples to |HistogramInfo|.
+    // Create and add samples to `HistogramInfo`.
     ScopedJavaLocalRef<jobject> j_info = Java_HistogramInfo_Constructor(
         jni, kv.second->min, kv.second->max,
         static_cast<int>(kv.second->bucket_count));
     for (const auto& sample : kv.second->samples) {
       Java_HistogramInfo_addSample(jni, j_info, sample.first, sample.second);
     }
-    // Add |HistogramInfo| to |Metrics|.
+    // Add `HistogramInfo` to `Metrics`.
     ScopedJavaLocalRef<jstring> j_name = NativeToJavaString(jni, kv.first);
     Java_Metrics_add(jni, j_metrics, j_name, j_info);
   }

@@ -12,7 +12,7 @@
 
 #include <cstdint>
 #include <set>
-#include <string>
+#include <type_traits>
 #include <utility>
 
 #include "api/media_types.h"
@@ -56,7 +56,7 @@ void GetAudioAndVideoTrackBySsrc(
     if (!track) {
       continue;
     }
-    // TODO(deadbeef): |ssrc| should be removed in favor of |GetParameters|.
+    // TODO(deadbeef): `ssrc` should be removed in favor of `GetParameters`.
     uint32_t ssrc = rtp_sender->ssrc();
     if (ssrc != 0) {
       if (media_type == cricket::MEDIA_TYPE_AUDIO) {

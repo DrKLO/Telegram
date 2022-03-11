@@ -31,7 +31,7 @@ class VoipCodec {
   // Set encoder type here along with its payload type to use.
   // Returns following VoipResult;
   //  kOk - sending codec is set as provided.
-  //  kInvalidArgument - |channel_id| is invalid.
+  //  kInvalidArgument - `channel_id` is invalid.
   virtual VoipResult SetSendCodec(ChannelId channel_id,
                                   int payload_type,
                                   const SdpAudioFormat& encoder_spec) = 0;
@@ -42,7 +42,7 @@ class VoipCodec {
   // direction.
   // Returns following VoipResult;
   //  kOk - receiving codecs are set as provided.
-  //  kInvalidArgument - |channel_id| is invalid.
+  //  kInvalidArgument - `channel_id` is invalid.
   virtual VoipResult SetReceiveCodecs(
       ChannelId channel_id,
       const std::map<int, SdpAudioFormat>& decoder_specs) = 0;

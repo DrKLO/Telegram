@@ -10,6 +10,7 @@
 
 #include "media/engine/webrtc_media_engine.h"
 
+#include <map>
 #include <memory>
 #include <utility>
 
@@ -27,7 +28,7 @@ namespace cricket {
 
 std::unique_ptr<MediaEngineInterface> CreateMediaEngine(
     MediaEngineDependencies dependencies) {
-  // TODO(sprang): Make populating |dependencies.trials| mandatory and remove
+  // TODO(sprang): Make populating `dependencies.trials` mandatory and remove
   // these fallbacks.
   std::unique_ptr<webrtc::WebRtcKeyValueConfig> fallback_trials(
       dependencies.trials ? nullptr : new webrtc::FieldTrialBasedConfig());
@@ -74,7 +75,8 @@ void DiscardRedundantExtensions(
 }  // namespace
 
 bool ValidateRtpExtensions(
-    const std::vector<webrtc::RtpExtension>& extensions) {
+    rtc::ArrayView<const webrtc::RtpExtension> extensions,
+    rtc::ArrayView<const webrtc::RtpExtension> old_extensions) {
   bool id_used[1 + webrtc::RtpExtension::kMaxId] = {false};
   for (const auto& extension : extensions) {
     if (extension.id < webrtc::RtpExtension::kMinId ||
@@ -89,6 +91,45 @@ bool ValidateRtpExtensions(
     }
     id_used[extension.id] = true;
   }
+  // Validate the extension list against the already negotiated extensions.
+  // Re-registering is OK, re-mapping (either same URL at new ID or same
+  // ID used with new URL) is an illegal remap.
+
+  // This is required in order to avoid a crash when registering an
+  // extension. A better structure would use the registered extensions
+  // in the RTPSender. This requires spinning through:
+  //
+  // WebRtcVoiceMediaChannel::::WebRtcAudioSendStream::stream_ (pointer)
+  // AudioSendStream::rtp_rtcp_module_ (pointer)
+  // ModuleRtpRtcpImpl2::rtp_sender_ (pointer)
+  // RtpSenderContext::packet_generator (struct member)
+  // RTPSender::rtp_header_extension_map_ (class member)
+  //
+  // Getting at this seems like a hard slog.
+  if (!old_extensions.empty()) {
+    absl::string_view urimap[1 + webrtc::RtpExtension::kMaxId];
+    std::map<absl::string_view, int> idmap;
+    for (const auto& old_extension : old_extensions) {
+      urimap[old_extension.id] = old_extension.uri;
+      idmap[old_extension.uri] = old_extension.id;
+    }
+    for (const auto& extension : extensions) {
+      if (!urimap[extension.id].empty() &&
+          urimap[extension.id] != extension.uri) {
+        RTC_LOG(LS_ERROR) << "Extension negotiation failure: " << extension.id
+                          << " was mapped to " << urimap[extension.id]
+                          << " but is proposed changed to " << extension.uri;
+        return false;
+      }
+      const auto& it = idmap.find(extension.uri);
+      if (it != idmap.end() && it->second != extension.id) {
+        RTC_LOG(LS_ERROR) << "Extension negotation failure: " << extension.uri
+                          << " was identified by " << it->second
+                          << " but is proposed changed to " << extension.id;
+        return false;
+      }
+    }
+  }
   return true;
 }
 
@@ -97,7 +138,8 @@ std::vector<webrtc::RtpExtension> FilterRtpExtensions(
     bool (*supported)(absl::string_view),
     bool filter_redundant_extensions,
     const webrtc::WebRtcKeyValueConfig& trials) {
-  RTC_DCHECK(ValidateRtpExtensions(extensions));
+  // Don't check against old parameters; this should have been done earlier.
+  RTC_DCHECK(ValidateRtpExtensions(extensions, {}));
   RTC_DCHECK(supported);
   std::vector<webrtc::RtpExtension> result;
 

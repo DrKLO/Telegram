@@ -51,7 +51,10 @@ absl::optional<AudioDecoderOpus::Config> AudioDecoderOpus::SdpToConfig(
       num_channels) {
     Config config;
     config.num_channels = *num_channels;
-    RTC_DCHECK(config.IsOk());
+    if (!config.IsOk()) {
+      RTC_DCHECK_NOTREACHED();
+      return absl::nullopt;
+    }
     return config;
   } else {
     return absl::nullopt;
@@ -71,7 +74,10 @@ void AudioDecoderOpus::AppendSupportedDecoders(
 std::unique_ptr<AudioDecoder> AudioDecoderOpus::MakeAudioDecoder(
     Config config,
     absl::optional<AudioCodecPairId> /*codec_pair_id*/) {
-  RTC_DCHECK(config.IsOk());
+  if (!config.IsOk()) {
+    RTC_DCHECK_NOTREACHED();
+    return nullptr;
+  }
   return std::make_unique<AudioDecoderOpusImpl>(config.num_channels,
                                                 config.sample_rate_hz);
 }

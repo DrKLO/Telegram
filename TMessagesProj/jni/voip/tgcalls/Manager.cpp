@@ -62,7 +62,7 @@ void dumpStatsLog(const FilePath &path, const CallStats &stats) {
 
 } // namespace
 
-bool Manager::ResolvedNetworkStatus::operator==(const ResolvedNetworkStatus &rhs) {
+bool Manager::ResolvedNetworkStatus::operator==(const ResolvedNetworkStatus &rhs) const {
     if (rhs.isLowCost != isLowCost) {
         return false;
     }
@@ -72,7 +72,7 @@ bool Manager::ResolvedNetworkStatus::operator==(const ResolvedNetworkStatus &rhs
     return true;
 }
 
-bool Manager::ResolvedNetworkStatus::operator!=(const ResolvedNetworkStatus &rhs) {
+bool Manager::ResolvedNetworkStatus::operator!=(const ResolvedNetworkStatus &rhs) const {
     return !(*this == rhs);
 }
 
@@ -139,9 +139,9 @@ void Manager::sendSignalingAsync(int delayMs, int cause) {
 		}
 	};
 	if (delayMs) {
-		_thread->PostDelayedTask(RTC_FROM_HERE, std::move(task), delayMs);
+		_thread->PostDelayedTask(std::move(task), delayMs);
 	} else {
-		_thread->PostTask(RTC_FROM_HERE, std::move(task));
+		_thread->PostTask(std::move(task));
 	}
 }
 
@@ -149,7 +149,7 @@ void Manager::start() {
 	const auto weak = std::weak_ptr<Manager>(shared_from_this());
 	const auto thread = _thread;
 	const auto sendSignalingMessage = [=](Message &&message) {
-		thread->PostTask(RTC_FROM_HERE, [=, message = std::move(message)]() mutable {
+		thread->PostTask([=, message = std::move(message)]() mutable {
 			const auto strong = weak.lock();
 			if (!strong) {
 				return;
@@ -167,7 +167,7 @@ void Manager::start() {
 			rtcServers,
 			std::move(proxy),
 			[=](const NetworkManager::State &state) {
-				thread->PostTask(RTC_FROM_HERE, [=] {
+				thread->PostTask([=] {
 					const auto strong = weak.lock();
 					if (!strong) {
 						return;
@@ -200,7 +200,7 @@ void Manager::start() {
 				});
 			},
 			[=](DecryptedMessage &&message) {
-				thread->PostTask(RTC_FROM_HERE, [=, message = std::move(message)]() mutable {
+				thread->PostTask([=, message = std::move(message)]() mutable {
 					if (const auto strong = weak.lock()) {
 						strong->receiveMessage(std::move(message));
 					}
@@ -216,9 +216,9 @@ void Manager::start() {
 					}
 				};
 				if (delayMs) {
-					thread->PostDelayedTask(RTC_FROM_HERE, task, delayMs);
+					thread->PostDelayedTask(task, delayMs);
 				} else {
-					thread->PostTask(RTC_FROM_HERE, task);
+					thread->PostTask(task);
 				}
 			});
 	}));
@@ -232,7 +232,7 @@ void Manager::start() {
 			videoCapture,
 			sendSignalingMessage,
 			[=](Message &&message) {
-				thread->PostTask(RTC_FROM_HERE, [=, message = std::move(message)]() mutable {
+				thread->PostTask([=, message = std::move(message)]() mutable {
 					const auto strong = weak.lock();
 					if (!strong) {
 						return;
@@ -334,7 +334,7 @@ void Manager::setMuteOutgoingAudio(bool mute) {
 	});
 }
 
-void Manager::setIncomingVideoOutput(std::shared_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink) {
+void Manager::setIncomingVideoOutput(std::weak_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink) {
 	_mediaManager->perform(RTC_FROM_HERE, [sink](MediaManager *mediaManager) {
 		mediaManager->setIncomingVideoOutput(sink);
 	});
@@ -362,7 +362,7 @@ void Manager::getNetworkStats(std::function<void (TrafficStats, CallStats)> comp
         CallStats callStats;
         networkManager->fillCallStats(callStats);
 
-        thread->PostTask(RTC_FROM_HERE, [weak, networkStats, completion = std::move(completion), callStats = std::move(callStats), statsLogPath = statsLogPath] {
+        thread->PostTask([weak, networkStats, completion = std::move(completion), callStats = std::move(callStats), statsLogPath = statsLogPath] {
             const auto strong = weak.lock();
             if (!strong) {
                 return;

@@ -21,7 +21,6 @@
 namespace webrtc {
 
 constexpr RTPExtensionType RtpVideoLayersAllocationExtension::kId;
-constexpr const char RtpVideoLayersAllocationExtension::kUri[];
 
 namespace {
 
@@ -289,7 +288,7 @@ bool RtpVideoLayersAllocationExtension::Parse(
   if (data.size() == 1 && *read_at == 0) {
     allocation->rtp_stream_index = 0;
     allocation->resolution_and_frame_rate_is_valid = true;
-    return true;
+    return AllocationIsValid(*allocation);
   }
 
   // Header byte.
@@ -354,16 +353,19 @@ bool RtpVideoLayersAllocationExtension::Parse(
   // Target bitrates.
   for (auto& layer : allocation->active_spatial_layers) {
     for (DataRate& rate : layer.target_bitrate_per_temporal_layer) {
-      rate = DataRate::KilobitsPerSec(ReadLeb128(read_at, end));
-      if (read_at == nullptr) {
+      uint64_t bitrate_kbps = ReadLeb128(read_at, end);
+      // bitrate_kbps might represent larger values than DataRate type,
+      // discard unreasonably large values.
+      if (read_at == nullptr || bitrate_kbps > 1'000'000) {
         return false;
       }
+      rate = DataRate::KilobitsPerSec(bitrate_kbps);
     }
   }
 
   if (read_at == end) {
     allocation->resolution_and_frame_rate_is_valid = false;
-    return true;
+    return AllocationIsValid(*allocation);
   }
 
   if (read_at + 5 * allocation->active_spatial_layers.size() != end) {
@@ -380,7 +382,8 @@ bool RtpVideoLayersAllocationExtension::Parse(
     layer.frame_rate_fps = *read_at;
     ++read_at;
   }
-  return true;
+
+  return AllocationIsValid(*allocation);
 }
 
 size_t RtpVideoLayersAllocationExtension::ValueSize(

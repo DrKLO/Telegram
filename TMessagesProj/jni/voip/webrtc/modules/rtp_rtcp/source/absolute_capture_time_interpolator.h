@@ -22,7 +22,7 @@
 namespace webrtc {
 
 //
-// Helper class for interpolating the |AbsoluteCaptureTime| header extension.
+// Helper class for interpolating the `AbsoluteCaptureTime` header extension.
 //
 // Supports the "timestamp interpolation" optimization:
 //   A receiver SHOULD memorize the capture system (i.e. CSRC/SSRC), capture
@@ -45,7 +45,7 @@ class AbsoluteCaptureTimeInterpolator {
                             rtc::ArrayView<const uint32_t> csrcs);
 
   // Returns a received header extension, an interpolated header extension, or
-  // |absl::nullopt| if it's not possible to interpolate a header extension.
+  // `absl::nullopt` if it's not possible to interpolate a header extension.
   absl::optional<AbsoluteCaptureTime> OnReceivePacket(
       uint32_t source,
       uint32_t rtp_timestamp,

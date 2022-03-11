@@ -31,8 +31,8 @@
 #include <utility>
 
 #include "absl/base/attributes.h"
-#include "absl/base/internal/bits.h"
 #include "absl/base/internal/raw_logging.h"
+#include "absl/numeric/bits.h"
 #include "absl/strings/ascii.h"
 #include "absl/strings/charconv.h"
 #include "absl/strings/escaping.h"
@@ -46,8 +46,13 @@ ABSL_NAMESPACE_BEGIN
 bool SimpleAtof(absl::string_view str, float* out) {
   *out = 0.0;
   str = StripAsciiWhitespace(str);
+  // std::from_chars doesn't accept an initial +, but SimpleAtof does, so if one
+  // is present, skip it, while avoiding accepting "+-0" as valid.
   if (!str.empty() && str[0] == '+') {
     str.remove_prefix(1);
+    if (!str.empty() && str[0] == '-') {
+      return false;
+    }
   }
   auto result = absl::from_chars(str.data(), str.data() + str.size(), *out);
   if (result.ec == std::errc::invalid_argument) {
@@ -72,8 +77,13 @@ bool SimpleAtof(absl::string_view str, float* out) {
 bool SimpleAtod(absl::string_view str, double* out) {
   *out = 0.0;
   str = StripAsciiWhitespace(str);
+  // std::from_chars doesn't accept an initial +, but SimpleAtod does, so if one
+  // is present, skip it, while avoiding accepting "+-0" as valid.
   if (!str.empty() && str[0] == '+') {
     str.remove_prefix(1);
+    if (!str.empty() && str[0] == '-') {
+      return false;
+    }
   }
   auto result = absl::from_chars(str.data(), str.data() + str.size(), *out);
   if (result.ec == std::errc::invalid_argument) {
@@ -303,7 +313,7 @@ static std::pair<uint64_t, uint64_t> Mul32(std::pair<uint64_t, uint64_t> num,
   uint64_t bits128_up = (bits96_127 >> 32) + (bits64_127 < bits64_95);
   if (bits128_up == 0) return {bits64_127, bits0_63};
 
-  int shift = 64 - base_internal::CountLeadingZeros64(bits128_up);
+  auto shift = static_cast<unsigned>(bit_width(bits128_up));
   uint64_t lo = (bits0_63 >> shift) + (bits64_127 << (64 - shift));
   uint64_t hi = (bits64_127 >> shift) + (bits128_up << (64 - shift));
   return {hi, lo};
@@ -334,7 +344,7 @@ static std::pair<uint64_t, uint64_t> PowFive(uint64_t num, int expfive) {
       5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5,
       5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5};
   result = Mul32(result, powers_of_five[expfive & 15]);
-  int shift = base_internal::CountLeadingZeros64(result.first);
+  int shift = countl_zero(result.first);
   if (shift != 0) {
     result.first = (result.first << shift) + (result.second >> (64 - shift));
     result.second = (result.second << shift);
@@ -495,7 +505,7 @@ size_t numbers_internal::SixDigitsToBuffer(double d, char* const buffer) {
     *out++ = '-';
     d = -d;
   }
-  if (std::isinf(d)) {
+  if (d > std::numeric_limits<double>::max()) {
     strcpy(out, "inf");  // NOLINT(runtime/printf)
     return out + 3 - buffer;
   }
@@ -736,9 +746,18 @@ struct LookupTables {
         X / 35, X / 36,                                                   \
   }
 
+// This kVmaxOverBase is generated with
+//  for (int base = 2; base < 37; ++base) {
+//    absl::uint128 max = std::numeric_limits<absl::uint128>::max();
+//    auto result = max / base;
+//    std::cout << "    MakeUint128(" << absl::Uint128High64(result) << "u, "
+//              << absl::Uint128Low64(result) << "u),\n";
+//  }
+// See https://godbolt.org/z/aneYsb
+//
 // uint128& operator/=(uint128) is not constexpr, so hardcode the resulting
 // array to avoid a static initializer.
-template <>
+template<>
 const uint128 LookupTables<uint128>::kVmaxOverBase[] = {
     0,
     0,
@@ -777,6 +796,111 @@ const uint128 LookupTables<uint128>::kVmaxOverBase[] = {
     MakeUint128(542551296285575047u, 9765923333140350855u),
     MakeUint128(527049830677415760u, 8432797290838652167u),
     MakeUint128(512409557603043100u, 8198552921648689607u),
+};
+
+// This kVmaxOverBase generated with
+//   for (int base = 2; base < 37; ++base) {
+//    absl::int128 max = std::numeric_limits<absl::int128>::max();
+//    auto result = max / base;
+//    std::cout << "\tMakeInt128(" << absl::Int128High64(result) << ", "
+//              << absl::Int128Low64(result) << "u),\n";
+//  }
+// See https://godbolt.org/z/7djYWz
+//
+// int128& operator/=(int128) is not constexpr, so hardcode the resulting array
+// to avoid a static initializer.
+template<>
+const int128 LookupTables<int128>::kVmaxOverBase[] = {
+    0,
+    0,
+    MakeInt128(4611686018427387903, 18446744073709551615u),
+    MakeInt128(3074457345618258602, 12297829382473034410u),
+    MakeInt128(2305843009213693951, 18446744073709551615u),
+    MakeInt128(1844674407370955161, 11068046444225730969u),
+    MakeInt128(1537228672809129301, 6148914691236517205u),
+    MakeInt128(1317624576693539401, 2635249153387078802u),
+    MakeInt128(1152921504606846975, 18446744073709551615u),
+    MakeInt128(1024819115206086200, 16397105843297379214u),
+    MakeInt128(922337203685477580, 14757395258967641292u),
+    MakeInt128(838488366986797800, 13415813871788764811u),
+    MakeInt128(768614336404564650, 12297829382473034410u),
+    MakeInt128(709490156681136600, 11351842506898185609u),
+    MakeInt128(658812288346769700, 10540996613548315209u),
+    MakeInt128(614891469123651720, 9838263505978427528u),
+    MakeInt128(576460752303423487, 18446744073709551615u),
+    MakeInt128(542551296285575047, 9765923333140350855u),
+    MakeInt128(512409557603043100, 8198552921648689607u),
+    MakeInt128(485440633518672410, 17475862806672206794u),
+    MakeInt128(461168601842738790, 7378697629483820646u),
+    MakeInt128(439208192231179800, 7027331075698876806u),
+    MakeInt128(419244183493398900, 6707906935894382405u),
+    MakeInt128(401016175515425035, 2406097053092550210u),
+    MakeInt128(384307168202282325, 6148914691236517205u),
+    MakeInt128(368934881474191032, 5902958103587056517u),
+    MakeInt128(354745078340568300, 5675921253449092804u),
+    MakeInt128(341606371735362066, 17763531330238827482u),
+    MakeInt128(329406144173384850, 5270498306774157604u),
+    MakeInt128(318047311615681924, 7633135478776366185u),
+    MakeInt128(307445734561825860, 4919131752989213764u),
+    MakeInt128(297528130221121800, 4760450083537948804u),
+    MakeInt128(288230376151711743, 18446744073709551615u),
+    MakeInt128(279496122328932600, 4471937957262921603u),
+    MakeInt128(271275648142787523, 14106333703424951235u),
+    MakeInt128(263524915338707880, 4216398645419326083u),
+    MakeInt128(256204778801521550, 4099276460824344803u),
+};
+
+// This kVminOverBase generated with
+//  for (int base = 2; base < 37; ++base) {
+//    absl::int128 min = std::numeric_limits<absl::int128>::min();
+//    auto result = min / base;
+//    std::cout << "\tMakeInt128(" << absl::Int128High64(result) << ", "
+//              << absl::Int128Low64(result) << "u),\n";
+//  }
+//
+// See https://godbolt.org/z/7djYWz
+//
+// int128& operator/=(int128) is not constexpr, so hardcode the resulting array
+// to avoid a static initializer.
+template<>
+const int128 LookupTables<int128>::kVminOverBase[] = {
+    0,
+    0,
+    MakeInt128(-4611686018427387904, 0u),
+    MakeInt128(-3074457345618258603, 6148914691236517206u),
+    MakeInt128(-2305843009213693952, 0u),
+    MakeInt128(-1844674407370955162, 7378697629483820647u),
+    MakeInt128(-1537228672809129302, 12297829382473034411u),
+    MakeInt128(-1317624576693539402, 15811494920322472814u),
+    MakeInt128(-1152921504606846976, 0u),
+    MakeInt128(-1024819115206086201, 2049638230412172402u),
+    MakeInt128(-922337203685477581, 3689348814741910324u),
+    MakeInt128(-838488366986797801, 5030930201920786805u),
+    MakeInt128(-768614336404564651, 6148914691236517206u),
+    MakeInt128(-709490156681136601, 7094901566811366007u),
+    MakeInt128(-658812288346769701, 7905747460161236407u),
+    MakeInt128(-614891469123651721, 8608480567731124088u),
+    MakeInt128(-576460752303423488, 0u),
+    MakeInt128(-542551296285575048, 8680820740569200761u),
+    MakeInt128(-512409557603043101, 10248191152060862009u),
+    MakeInt128(-485440633518672411, 970881267037344822u),
+    MakeInt128(-461168601842738791, 11068046444225730970u),
+    MakeInt128(-439208192231179801, 11419412998010674810u),
+    MakeInt128(-419244183493398901, 11738837137815169211u),
+    MakeInt128(-401016175515425036, 16040647020617001406u),
+    MakeInt128(-384307168202282326, 12297829382473034411u),
+    MakeInt128(-368934881474191033, 12543785970122495099u),
+    MakeInt128(-354745078340568301, 12770822820260458812u),
+    MakeInt128(-341606371735362067, 683212743470724134u),
+    MakeInt128(-329406144173384851, 13176245766935394012u),
+    MakeInt128(-318047311615681925, 10813608594933185431u),
+    MakeInt128(-307445734561825861, 13527612320720337852u),
+    MakeInt128(-297528130221121801, 13686293990171602812u),
+    MakeInt128(-288230376151711744, 0u),
+    MakeInt128(-279496122328932601, 13974806116446630013u),
+    MakeInt128(-271275648142787524, 4340410370284600381u),
+    MakeInt128(-263524915338707881, 14230345428290225533u),
+    MakeInt128(-256204778801521551, 14347467612885206813u),
 };
 
 template <typename IntType>
@@ -946,6 +1070,10 @@ bool safe_strto32_base(absl::string_view text, int32_t* value, int base) {
 
 bool safe_strto64_base(absl::string_view text, int64_t* value, int base) {
   return safe_int_internal<int64_t>(text, value, base);
+}
+
+bool safe_strto128_base(absl::string_view text, int128* value, int base) {
+  return safe_int_internal<absl::int128>(text, value, base);
 }
 
 bool safe_strtou32_base(absl::string_view text, uint32_t* value, int base) {

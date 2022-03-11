@@ -21,7 +21,6 @@
 #include "modules/audio_processing/aec3/delay_estimate.h"
 #include "modules/audio_processing/aec3/matched_filter.h"
 #include "modules/audio_processing/aec3/matched_filter_lag_aggregator.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -36,6 +35,9 @@ class EchoPathDelayEstimator {
                          const EchoCanceller3Config& config,
                          size_t num_capture_channels);
   ~EchoPathDelayEstimator();
+
+  EchoPathDelayEstimator(const EchoPathDelayEstimator&) = delete;
+  EchoPathDelayEstimator& operator=(const EchoPathDelayEstimator&) = delete;
 
   // Resets the estimation. If the delay confidence is reset, the reset behavior
   // is as if the call is restarted.
@@ -71,8 +73,6 @@ class EchoPathDelayEstimator {
 
   // Internal reset method with more granularity.
   void Reset(bool reset_lag_aggregator, bool reset_delay_confidence);
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(EchoPathDelayEstimator);
 };
 }  // namespace webrtc
 

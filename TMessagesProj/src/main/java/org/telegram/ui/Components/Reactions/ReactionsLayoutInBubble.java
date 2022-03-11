@@ -82,6 +82,8 @@ public class ReactionsLayoutInBubble {
     private int animateFromTotalHeight;
     public boolean hasUnreadReactions;
 
+    private final static Comparator<TLRPC.User> usersComparator = (user1, user2) -> (int) (user1.id - user2.id);
+
     public ReactionsLayoutInBubble(ChatMessageCell parentView) {
         this.parentView = parentView;
         currentAccount = UserConfig.selectedAccount;
@@ -282,7 +284,7 @@ public class ReactionsLayoutInBubble {
             ReactionButton button = reactionButtons.get(i);
             ReactionButton lastButton = lastDrawingReactionButtonsTmp.remove(button.key);
             if (lastButton != null) {
-                if (button.x != lastButton.x || button.y != lastButton.y || button.width != lastButton.width || button.count != lastButton.count || button.backgroundColor != lastButton.backgroundColor) {
+                if (button.x != lastButton.x || button.y != lastButton.y || button.width != lastButton.width || button.count != lastButton.count || button.backgroundColor != lastButton.backgroundColor || button.avatarsDarawable != null || lastButton.avatarsDarawable != null) {
                     button.animateFromX = lastButton.x;
                     button.animateFromY = lastButton.y;
                     button.animateFromWidth = lastButton.width;
@@ -431,12 +433,12 @@ public class ReactionsLayoutInBubble {
                 serviceBackgroundColor = Color.TRANSPARENT;
             }
 
-
             if (reaction != null) {
                 TLRPC.TL_availableReaction r = MediaDataController.getInstance(currentAccount).getReactionsMap().get(reaction);
                 if (r != null) {
                     SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(r.static_icon, Theme.key_windowBackgroundGray, 1.0f);
-                    imageReceiver.setImage(ImageLocation.getForDocument(r.static_icon), "40_40", svgThumb, "webp", r, 1);
+                    imageReceiver.setImage(ImageLocation.getForDocument(r.center_icon), "40_40_firstframe", svgThumb, "webp", r, 1);
+                    imageReceiver.setImage(ImageLocation.getForDocument(r.center_icon), "40_40_firstframe", svgThumb, "webp", r, 1);
                 }
             }
 
@@ -452,7 +454,7 @@ public class ReactionsLayoutInBubble {
             if (isSmall) {
                 imageReceiver.setAlpha(alpha);
                 imageReceiver.setImageCoords(0, 0, AndroidUtilities.dp(14), AndroidUtilities.dp(14));
-                drawImage(canvas);
+                drawImage(canvas, alpha);
                 return;
             }
             updateColors(progress);
@@ -494,7 +496,7 @@ public class ReactionsLayoutInBubble {
             canvas.drawRoundRect(AndroidUtilities.rectTmp, rad, rad, paint);
 
             imageReceiver.setImageCoords(AndroidUtilities.dp(8), (height - AndroidUtilities.dp(20)) / 2f, AndroidUtilities.dp(20), AndroidUtilities.dp(20));
-            drawImage(canvas);
+            drawImage(canvas, alpha);
 
             if (count != 0 || counterDrawable.countChangeProgress != 1f) {
                 canvas.save();
@@ -522,26 +524,35 @@ public class ReactionsLayoutInBubble {
             }
         }
 
-        private void drawImage(Canvas canvas) {
+        private void drawImage(Canvas canvas, float alpha) {
             if (drawImage && ((realCount > 1 || !ReactionsEffectOverlay.isPlaying(messageObject.getId(), messageObject.getGroupId(), reaction)) || !isSelected)) {
                 ImageReceiver imageReceiver2 = animatedReactions.get(reaction);
                 boolean drawStaticImage = true;
                 if (imageReceiver2 != null) {
-                    imageReceiver2.setAlpha(imageReceiver.getAlpha());
-                    imageReceiver2.setImageCoords(imageReceiver.getImageX() - imageReceiver.getImageWidth() / 2, imageReceiver.getImageY() - imageReceiver.getImageWidth() / 2, imageReceiver.getImageWidth() * 2, imageReceiver.getImageHeight() * 2);
-                    imageReceiver2.draw(canvas);
                     if (imageReceiver2.getLottieAnimation() != null && imageReceiver2.getLottieAnimation().hasBitmap()) {
                         drawStaticImage = false;
                     }
-                    if (imageReceiver2.getLottieAnimation() != null && !imageReceiver2.getLottieAnimation().isRunning()) {
-                        float alpha = imageReceiver2.getAlpha() - 16f / 200;
-                        if (alpha < 0) {
+                    if (alpha != 1f) {
+                        imageReceiver2.setAlpha(alpha);
+                        if (alpha <= 0) {
                             imageReceiver2.onDetachedFromWindow();
                             animatedReactions.remove(reaction);
-                        } else {
-                            imageReceiver2.setAlpha(alpha);
+                        }
+                    } else {
+                        if (imageReceiver2.getLottieAnimation() != null && !imageReceiver2.getLottieAnimation().isRunning()) {
+                            drawStaticImage = true;
+                            float alpha1 = imageReceiver2.getAlpha() - 16f / 200;
+                            if (alpha1 <= 0) {
+                                imageReceiver2.onDetachedFromWindow();
+                                animatedReactions.remove(reaction);
+                            } else {
+                                imageReceiver2.setAlpha(alpha1);
+                            }
+                            parentView.invalidate();
                         }
                     }
+                    imageReceiver2.setImageCoords(imageReceiver.getImageX() - imageReceiver.getImageWidth() / 2, imageReceiver.getImageY() - imageReceiver.getImageWidth() / 2, imageReceiver.getImageWidth() * 2, imageReceiver.getImageHeight() * 2);
+                    imageReceiver2.draw(canvas);
                 }
                 if (drawStaticImage) {
                     imageReceiver.draw(canvas);
@@ -557,6 +568,7 @@ public class ReactionsLayoutInBubble {
         public void setUsers(ArrayList<TLRPC.User> users) {
             this.users = users;
             if (users != null) {
+                Collections.sort(users, usersComparator);
                 if (avatarsDarawable == null) {
                     avatarsDarawable = new AvatarsDarawable(parentView, false);
                     avatarsDarawable.transitionDuration = ChatListItemAnimator.DEFAULT_DURATION;

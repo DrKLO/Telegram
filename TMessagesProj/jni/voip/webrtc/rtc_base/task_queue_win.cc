@@ -34,7 +34,6 @@
 #include "api/task_queue/task_queue_base.h"
 #include "rtc_base/arraysize.h"
 #include "rtc_base/checks.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/event.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/numerics/safe_conversions.h"
@@ -102,13 +101,13 @@ class DelayedTaskInfo {
  private:
   int64_t due_time_ = 0;  // Absolute timestamp in milliseconds.
 
-  // |task| needs to be mutable because std::priority_queue::top() returns
+  // `task` needs to be mutable because std::priority_queue::top() returns
   // a const reference and a key in an ordered queue must not be changed.
   // There are two basic workarounds, one using const_cast, which would also
-  // make the key (|due_time|), non-const and the other is to make the non-key
-  // (|task|), mutable.
-  // Because of this, the |task| variable is made private and can only be
-  // mutated by calling the |Run()| method.
+  // make the key (`due_time`), non-const and the other is to make the non-key
+  // (`task`), mutable.
+  // Because of this, the `task` variable is made private and can only be
+  // mutated by calling the `Run()` method.
   mutable std::unique_ptr<QueuedTask> task_;
 };
 
@@ -121,6 +120,9 @@ class MultimediaTimer {
     Cancel();
     ::CloseHandle(event_);
   }
+
+  MultimediaTimer(const MultimediaTimer&) = delete;
+  MultimediaTimer& operator=(const MultimediaTimer&) = delete;
 
   bool StartOneShotTimer(UINT delay_ms) {
     RTC_DCHECK_EQ(0, timer_id_);
@@ -148,8 +150,6 @@ class MultimediaTimer {
  private:
   HANDLE event_ = nullptr;
   MMRESULT timer_id_ = 0;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(MultimediaTimer);
 };
 
 class TaskQueueWin : public TaskQueueBase {
@@ -335,7 +335,7 @@ bool TaskQueueWin::ProcessQueuedMessages() {
           break;
         }
         default:
-          RTC_NOTREACHED();
+          RTC_DCHECK_NOTREACHED();
           break;
       }
     } else {

@@ -161,7 +161,7 @@ int DecoderDatabase::RegisterPayload(int rtp_payload_type,
       rtp_payload_type,
       DecoderInfo(audio_format, codec_pair_id_, decoder_factory_.get())));
   if (ret.second == false) {
-    // Database already contains a decoder with type |rtp_payload_type|.
+    // Database already contains a decoder with type `rtp_payload_type`.
     return kDecoderExists;
   }
   return kOK;
@@ -169,7 +169,7 @@ int DecoderDatabase::RegisterPayload(int rtp_payload_type,
 
 int DecoderDatabase::Remove(uint8_t rtp_payload_type) {
   if (decoders_.erase(rtp_payload_type) == 0) {
-    // No decoder with that |rtp_payload_type|.
+    // No decoder with that `rtp_payload_type`.
     return kDecoderNotFound;
   }
   if (active_decoder_type_ == rtp_payload_type) {
@@ -199,7 +199,7 @@ const DecoderDatabase::DecoderInfo* DecoderDatabase::GetDecoderInfo(
 
 int DecoderDatabase::SetActiveDecoder(uint8_t rtp_payload_type,
                                       bool* new_decoder) {
-  // Check that |rtp_payload_type| exists in the database.
+  // Check that `rtp_payload_type` exists in the database.
   const DecoderInfo* info = GetDecoderInfo(rtp_payload_type);
   if (!info) {
     // Decoder not found.
@@ -231,7 +231,7 @@ AudioDecoder* DecoderDatabase::GetActiveDecoder() const {
 }
 
 int DecoderDatabase::SetActiveCngDecoder(uint8_t rtp_payload_type) {
-  // Check that |rtp_payload_type| exists in the database.
+  // Check that `rtp_payload_type` exists in the database.
   const DecoderInfo* info = GetDecoderInfo(rtp_payload_type);
   if (!info) {
     // Decoder not found.

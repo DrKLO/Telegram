@@ -16,7 +16,6 @@
 #include <vector>
 
 #include "modules/rtp_rtcp/source/rtcp_packet.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 namespace rtcp {
@@ -25,6 +24,9 @@ class CompoundPacket : public RtcpPacket {
  public:
   CompoundPacket();
   ~CompoundPacket() override;
+
+  CompoundPacket(const CompoundPacket&) = delete;
+  CompoundPacket& operator=(const CompoundPacket&) = delete;
 
   void Append(std::unique_ptr<RtcpPacket> packet);
 
@@ -38,9 +40,6 @@ class CompoundPacket : public RtcpPacket {
 
  protected:
   std::vector<std::unique_ptr<RtcpPacket>> appended_packets_;
-
- private:
-  RTC_DISALLOW_COPY_AND_ASSIGN(CompoundPacket);
 };
 
 }  // namespace rtcp

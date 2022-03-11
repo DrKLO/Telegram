@@ -33,6 +33,8 @@ class VoiceActivityDetector {
   ~VoiceActivityDetector();
 
   // Processes each audio chunk and estimates the voice probability.
+  // TODO(bugs.webrtc.org/7494): Switch to rtc::ArrayView and remove
+  // `sample_rate_hz`.
   void ProcessChunk(const int16_t* audio, size_t length, int sample_rate_hz);
 
   // Returns a vector of voice probabilities for each chunk. It can be empty for

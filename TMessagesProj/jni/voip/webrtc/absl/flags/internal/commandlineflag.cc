@@ -21,10 +21,6 @@ namespace flags_internal {
 
 FlagStateInterface::~FlagStateInterface() {}
 
-bool CommandLineFlag::IsRetired() const { return false; }
-bool CommandLineFlag::IsAbseilFlag() const { return true; }
-
 }  // namespace flags_internal
 ABSL_NAMESPACE_END
 }  // namespace absl
-

@@ -247,7 +247,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
 
         if (pressedReaction != null) {
             if (pressedProgress != 1f) {
-                pressedProgress += 16f / 2000f;
+                pressedProgress += 16f / 1500f;
                 if (pressedProgress >= 1f) {
                     pressedProgress = 1f;
                 }

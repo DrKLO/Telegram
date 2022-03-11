@@ -11,7 +11,6 @@
 #ifndef PC_RTP_PARAMETERS_CONVERSION_H_
 #define PC_RTP_PARAMETERS_CONVERSION_H_
 
-#include <iosfwd>
 #include <vector>
 
 #include "absl/types/optional.h"
@@ -75,7 +74,7 @@ RTCErrorOr<cricket::StreamParamsVec> ToCricketStreamParamsVec(
 // functionality is not yet implemented.
 //*****************************************************************************
 
-// Returns empty value if |cricket_feedback| is a feedback type not
+// Returns empty value if `cricket_feedback` is a feedback type not
 // supported/recognized.
 absl::optional<RtcpFeedback> ToRtcpFeedback(
     const cricket::FeedbackParam& cricket_feedback);

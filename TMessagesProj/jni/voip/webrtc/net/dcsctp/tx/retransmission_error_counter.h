@@ -33,7 +33,7 @@ class RetransmissionErrorCounter {
   // Increments the retransmission timer. If the maximum error count has been
   // reached, `false` will be returned.
   bool Increment(absl::string_view reason);
-  bool IsExhausted() const { return counter_ > limit_; }
+  bool IsExhausted() const { return limit_.has_value() && counter_ > *limit_; }
 
   // Clears the retransmission errors.
   void Clear();
@@ -43,7 +43,7 @@ class RetransmissionErrorCounter {
 
  private:
   const std::string log_prefix_;
-  const int limit_;
+  const absl::optional<int> limit_;
   int counter_ = 0;
 };
 }  // namespace dcsctp

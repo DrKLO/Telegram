@@ -14,7 +14,6 @@
 
 #include "api/network_state_predictor.h"
 #include "api/transport/webrtc_key_value_config.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -26,11 +25,14 @@ class OveruseDetector {
   explicit OveruseDetector(const WebRtcKeyValueConfig* key_value_config);
   virtual ~OveruseDetector();
 
+  OveruseDetector(const OveruseDetector&) = delete;
+  OveruseDetector& operator=(const OveruseDetector&) = delete;
+
   // Update the detection state based on the estimated inter-arrival time delta
-  // offset. |timestamp_delta| is the delta between the last timestamp which the
+  // offset. `timestamp_delta` is the delta between the last timestamp which the
   // estimated offset is based on and the last timestamp on which the last
   // offset was based on, representing the time between detector updates.
-  // |num_of_deltas| is the number of deltas the offset estimate is based on.
+  // `num_of_deltas` is the number of deltas the offset estimate is based on.
   // Returns the state after the detection update.
   BandwidthUsage Detect(double offset,
                         double timestamp_delta,
@@ -54,8 +56,6 @@ class OveruseDetector {
   double time_over_using_;
   int overuse_counter_;
   BandwidthUsage hypothesis_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(OveruseDetector);
 };
 }  // namespace webrtc
 

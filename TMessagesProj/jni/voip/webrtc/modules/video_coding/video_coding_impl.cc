@@ -56,11 +56,10 @@ class VideoCodingModuleImpl : public VideoCodingModule {
 
   void Process() override { receiver_.Process(); }
 
-  int32_t RegisterReceiveCodec(uint8_t payload_type,
-                               const VideoCodec* receiveCodec,
-                               int32_t numberOfCores) override {
-    return receiver_.RegisterReceiveCodec(payload_type, receiveCodec,
-                                          numberOfCores);
+  void RegisterReceiveCodec(
+      uint8_t payload_type,
+      const VideoDecoder::Settings& decoder_settings) override {
+    receiver_.RegisterReceiveCodec(payload_type, decoder_settings);
   }
 
   void RegisterExternalDecoder(VideoDecoder* externalDecoder,

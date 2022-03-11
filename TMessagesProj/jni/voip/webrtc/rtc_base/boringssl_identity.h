@@ -18,7 +18,6 @@
 #include <string>
 
 #include "rtc_base/boringssl_certificate.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/openssl_key_pair.h"
 #include "rtc_base/ssl_certificate.h"
 #include "rtc_base/ssl_identity.h"
@@ -44,6 +43,9 @@ class BoringSSLIdentity final : public SSLIdentity {
       const std::string& certificate_chain);
   ~BoringSSLIdentity() override;
 
+  BoringSSLIdentity(const BoringSSLIdentity&) = delete;
+  BoringSSLIdentity& operator=(const BoringSSLIdentity&) = delete;
+
   const BoringSSLCertificate& certificate() const override;
   const SSLCertChain& cert_chain() const override;
 
@@ -67,8 +69,6 @@ class BoringSSLIdentity final : public SSLIdentity {
 
   std::unique_ptr<OpenSSLKeyPair> key_pair_;
   std::unique_ptr<SSLCertChain> cert_chain_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(BoringSSLIdentity);
 };
 
 }  // namespace rtc

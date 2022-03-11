@@ -44,6 +44,7 @@
 #include <vector>
 
 #include "absl/base/internal/raw_logging.h"
+#include "absl/base/macros.h"
 #include "absl/strings/internal/str_split_internal.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
@@ -368,6 +369,12 @@ struct SkipWhitespace {
   }
 };
 
+template <typename T>
+using EnableSplitIfString =
+    typename std::enable_if<std::is_same<T, std::string>::value ||
+                            std::is_same<T, const std::string>::value,
+                            int>::type;
+
 //------------------------------------------------------------------------------
 //                                  StrSplit()
 //------------------------------------------------------------------------------
@@ -454,8 +461,7 @@ struct SkipWhitespace {
 // first two split strings become the `std::pair` `.first` and `.second`
 // members, respectively. The remaining split substrings are discarded. If there
 // are less than two split substrings, the empty string is used for the
-// corresponding
-// `std::pair` member.
+// corresponding `std::pair` member.
 //
 // Example:
 //
@@ -488,22 +494,50 @@ struct SkipWhitespace {
 // Try not to depend on this distinction because the bug may one day be fixed.
 template <typename Delimiter>
 strings_internal::Splitter<
-    typename strings_internal::SelectDelimiter<Delimiter>::type, AllowEmpty>
+    typename strings_internal::SelectDelimiter<Delimiter>::type, AllowEmpty,
+    absl::string_view>
 StrSplit(strings_internal::ConvertibleToStringView text, Delimiter d) {
   using DelimiterType =
       typename strings_internal::SelectDelimiter<Delimiter>::type;
-  return strings_internal::Splitter<DelimiterType, AllowEmpty>(
+  return strings_internal::Splitter<DelimiterType, AllowEmpty,
+                                    absl::string_view>(
+      text.value(), DelimiterType(d), AllowEmpty());
+}
+
+template <typename Delimiter, typename StringType,
+          EnableSplitIfString<StringType> = 0>
+strings_internal::Splitter<
+    typename strings_internal::SelectDelimiter<Delimiter>::type, AllowEmpty,
+    std::string>
+StrSplit(StringType&& text, Delimiter d) {
+  using DelimiterType =
+      typename strings_internal::SelectDelimiter<Delimiter>::type;
+  return strings_internal::Splitter<DelimiterType, AllowEmpty, std::string>(
       std::move(text), DelimiterType(d), AllowEmpty());
 }
 
 template <typename Delimiter, typename Predicate>
 strings_internal::Splitter<
-    typename strings_internal::SelectDelimiter<Delimiter>::type, Predicate>
+    typename strings_internal::SelectDelimiter<Delimiter>::type, Predicate,
+    absl::string_view>
 StrSplit(strings_internal::ConvertibleToStringView text, Delimiter d,
          Predicate p) {
   using DelimiterType =
       typename strings_internal::SelectDelimiter<Delimiter>::type;
-  return strings_internal::Splitter<DelimiterType, Predicate>(
+  return strings_internal::Splitter<DelimiterType, Predicate,
+                                    absl::string_view>(
+      text.value(), DelimiterType(d), std::move(p));
+}
+
+template <typename Delimiter, typename Predicate, typename StringType,
+          EnableSplitIfString<StringType> = 0>
+strings_internal::Splitter<
+    typename strings_internal::SelectDelimiter<Delimiter>::type, Predicate,
+    std::string>
+StrSplit(StringType&& text, Delimiter d, Predicate p) {
+  using DelimiterType =
+      typename strings_internal::SelectDelimiter<Delimiter>::type;
+  return strings_internal::Splitter<DelimiterType, Predicate, std::string>(
       std::move(text), DelimiterType(d), std::move(p));
 }
 

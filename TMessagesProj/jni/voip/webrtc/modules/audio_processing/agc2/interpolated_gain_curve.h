@@ -15,7 +15,6 @@
 #include <string>
 
 #include "modules/audio_processing/agc2/agc2_common.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/gtest_prod_util.h"
 #include "system_wrappers/include/metrics.h"
 
@@ -63,6 +62,9 @@ class InterpolatedGainCurve {
   InterpolatedGainCurve(ApmDataDumper* apm_data_dumper,
                         const std::string& histogram_name_prefix);
   ~InterpolatedGainCurve();
+
+  InterpolatedGainCurve(const InterpolatedGainCurve&) = delete;
+  InterpolatedGainCurve& operator=(const InterpolatedGainCurve&) = delete;
 
   Stats get_stats() const { return stats_; }
 
@@ -143,8 +145,6 @@ class InterpolatedGainCurve {
 
   // Stats.
   mutable Stats stats_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(InterpolatedGainCurve);
 };
 
 }  // namespace webrtc

@@ -58,7 +58,4 @@ JNI_GENERATOR_EXPORT jboolean Java_org_webrtc_LibvpxVp9Encoder_nativeIsSupported
 }  // namespace jni
 }  // namespace  webrtc
 
-// Step 4: Generated test functions (optional).
-
-
 #endif  // org_webrtc_LibvpxVp9Encoder_JNI

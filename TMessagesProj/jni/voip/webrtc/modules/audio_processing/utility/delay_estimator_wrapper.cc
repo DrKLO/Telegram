@@ -19,8 +19,8 @@
 
 namespace webrtc {
 
-// Only bit |kBandFirst| through bit |kBandLast| are processed and
-// |kBandFirst| - |kBandLast| must be < 32.
+// Only bit `kBandFirst` through bit `kBandLast` are processed and
+// `kBandFirst` - `kBandLast` must be < 32.
 enum { kBandFirst = 12 };
 enum { kBandLast = 43 };
 
@@ -48,8 +48,8 @@ static void MeanEstimatorFloat(float new_value,
   *mean_value += (new_value - *mean_value) * scale;
 }
 
-// Computes the binary spectrum by comparing the input |spectrum| with a
-// |threshold_spectrum|. Float and fixed point versions.
+// Computes the binary spectrum by comparing the input `spectrum` with a
+// `threshold_spectrum`. Float and fixed point versions.
 //
 // Inputs:
 //      - spectrum            : Spectrum of which the binary spectrum should be
@@ -69,11 +69,11 @@ static uint32_t BinarySpectrumFix(const uint16_t* spectrum,
   RTC_DCHECK_LT(q_domain, 16);
 
   if (!(*threshold_initialized)) {
-    // Set the |threshold_spectrum| to half the input |spectrum| as starting
+    // Set the `threshold_spectrum` to half the input `spectrum` as starting
     // value. This speeds up the convergence.
     for (i = kBandFirst; i <= kBandLast; i++) {
       if (spectrum[i] > 0) {
-        // Convert input spectrum from Q(|q_domain|) to Q15.
+        // Convert input spectrum from Q(`q_domain`) to Q15.
         int32_t spectrum_q15 = ((int32_t)spectrum[i]) << (15 - q_domain);
         threshold_spectrum[i].int32_ = (spectrum_q15 >> 1);
         *threshold_initialized = 1;
@@ -81,11 +81,11 @@ static uint32_t BinarySpectrumFix(const uint16_t* spectrum,
     }
   }
   for (i = kBandFirst; i <= kBandLast; i++) {
-    // Convert input spectrum from Q(|q_domain|) to Q15.
+    // Convert input spectrum from Q(`q_domain`) to Q15.
     int32_t spectrum_q15 = ((int32_t)spectrum[i]) << (15 - q_domain);
-    // Update the |threshold_spectrum|.
+    // Update the `threshold_spectrum`.
     WebRtc_MeanEstimatorFix(spectrum_q15, 6, &(threshold_spectrum[i].int32_));
-    // Convert |spectrum| at current frequency bin to a binary value.
+    // Convert `spectrum` at current frequency bin to a binary value.
     if (spectrum_q15 > threshold_spectrum[i].int32_) {
       out = SetBit(out, i - kBandFirst);
     }
@@ -102,7 +102,7 @@ static uint32_t BinarySpectrumFloat(const float* spectrum,
   const float kScale = 1 / 64.0;
 
   if (!(*threshold_initialized)) {
-    // Set the |threshold_spectrum| to half the input |spectrum| as starting
+    // Set the `threshold_spectrum` to half the input `spectrum` as starting
     // value. This speeds up the convergence.
     for (i = kBandFirst; i <= kBandLast; i++) {
       if (spectrum[i] > 0.0f) {
@@ -113,9 +113,9 @@ static uint32_t BinarySpectrumFloat(const float* spectrum,
   }
 
   for (i = kBandFirst; i <= kBandLast; i++) {
-    // Update the |threshold_spectrum|.
+    // Update the `threshold_spectrum`.
     MeanEstimatorFloat(spectrum[i], kScale, &(threshold_spectrum[i].float_));
-    // Convert |spectrum| at current frequency bin to a binary value.
+    // Convert `spectrum` at current frequency bin to a binary value.
     if (spectrum[i] > threshold_spectrum[i].float_) {
       out = SetBit(out, i - kBandFirst);
     }
@@ -219,7 +219,7 @@ int WebRtc_AddFarSpectrumFix(void* handle,
     return -1;
   }
   if (far_q > 15) {
-    // If |far_q| is larger than 15 we cannot guarantee no wrap around.
+    // If `far_q` is larger than 15 we cannot guarantee no wrap around.
     return -1;
   }
 
@@ -433,7 +433,7 @@ int WebRtc_DelayEstimatorProcessFix(void* handle,
     return -1;
   }
   if (near_q > 15) {
-    // If |near_q| is larger than 15 we cannot guarantee no wrap around.
+    // If `near_q` is larger than 15 we cannot guarantee no wrap around.
     return -1;
   }
 

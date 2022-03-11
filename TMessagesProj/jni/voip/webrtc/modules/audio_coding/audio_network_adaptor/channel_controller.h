@@ -16,7 +16,6 @@
 #include "absl/types/optional.h"
 #include "modules/audio_coding/audio_network_adaptor/controller.h"
 #include "modules/audio_coding/audio_network_adaptor/include/audio_network_adaptor_config.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -41,6 +40,9 @@ class ChannelController final : public Controller {
 
   ~ChannelController() override;
 
+  ChannelController(const ChannelController&) = delete;
+  ChannelController& operator=(const ChannelController&) = delete;
+
   void UpdateNetworkMetrics(const NetworkMetrics& network_metrics) override;
 
   void MakeDecision(AudioEncoderRuntimeConfig* config) override;
@@ -49,7 +51,6 @@ class ChannelController final : public Controller {
   const Config config_;
   size_t channels_to_encode_;
   absl::optional<int> uplink_bandwidth_bps_;
-  RTC_DISALLOW_COPY_AND_ASSIGN(ChannelController);
 };
 
 }  // namespace webrtc

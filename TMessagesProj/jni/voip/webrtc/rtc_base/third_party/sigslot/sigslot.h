@@ -290,9 +290,13 @@ class _opaque_connection {
 
   emit_t pemit;
   has_slots_interface* pdest;
-  // Pointers to member functions may be up to 16 bytes for virtual classes,
-  // so make sure we have enough space to store it.
+  // Pointers to member functions may be up to 16 bytes (24 bytes for MSVC)
+  // for virtual classes, so make sure we have enough space to store it.
+#if defined(_MSC_VER) && !defined(__clang__)
+  unsigned char pmethod[24];
+#else
   unsigned char pmethod[16];
+#endif
 
  public:
   template <typename DestT, typename... Args>
@@ -332,6 +336,8 @@ class _opaque_connection {
   static void emitter(const _opaque_connection* self, Args... args) {
     typedef void (DestT::*pm_t)(Args...);
     pm_t pm;
+    static_assert(sizeof(pm_t) <= sizeof(pmethod),
+                  "Size of slot function pointer too large.");
     std::memcpy(&pm, self->pmethod, sizeof(pm_t));
     (static_cast<DestT*>(self->pdest)->*(pm))(args...);
   }

@@ -15,8 +15,6 @@
 
 #include <string>
 
-#include "rtc_base/constructor_magic.h"
-
 typedef void* HANDLE;
 
 namespace rtc {
@@ -45,6 +43,8 @@ enum Version {
   VERSION_WIN10_RS4 = 12,   // Redstone 4: Version 1803, Build 17134.
   VERSION_WIN10_RS5 = 13,   // Redstone 5: Version 1809, Build 17763.
   VERSION_WIN10_19H1 = 14,  // 19H1: Version 1903, Build 18362.
+  VERSION_WIN10_19H2 = 15,  // 19H2: Version 1909, Build 18363.
+  VERSION_WIN10_20H1 = 16,  // 20H1 (Vibranium): Version 2004, Build 19041.
   // On edit, update tools\metrics\histograms\enums.xml "WindowsVersion" and
   // "GpuBlacklistFeatureTestResultsWindows2".
   VERSION_WIN_LAST,  // Indicates error condition.
@@ -103,6 +103,9 @@ class OSInfo {
     WOW64_UNKNOWN,
   };
 
+  OSInfo(const OSInfo&) = delete;
+  OSInfo& operator=(const OSInfo&) = delete;
+
   static OSInfo* GetInstance();
 
   Version version() const { return version_; }
@@ -138,8 +141,6 @@ class OSInfo {
   size_t allocation_granularity_;
   WOW64Status wow64_status_;
   std::string processor_model_name_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(OSInfo);
 };
 
 // Because this is by far the most commonly-requested value from the above

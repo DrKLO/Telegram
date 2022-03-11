@@ -47,7 +47,7 @@ class RmsLevel {
   void Analyze(rtc::ArrayView<const int16_t> data);
   void Analyze(rtc::ArrayView<const float> data);
 
-  // If all samples with the given |length| have a magnitude of zero, this is
+  // If all samples with the given `length` have a magnitude of zero, this is
   // a shortcut to avoid some computation.
   void AnalyzeMuted(size_t length);
 
@@ -62,7 +62,7 @@ class RmsLevel {
   Levels AverageAndPeak();
 
  private:
-  // Compares |block_size| with |block_size_|. If they are different, calls
+  // Compares `block_size` with `block_size_`. If they are different, calls
   // Reset() and stores the new size.
   void CheckBlockSize(size_t block_size);
 

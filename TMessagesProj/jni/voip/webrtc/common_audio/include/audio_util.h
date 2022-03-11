@@ -91,9 +91,9 @@ inline float FloatS16ToDbfs(float v) {
   return 20.0f * std::log10(v) + kMinDbfs;
 }
 
-// Copy audio from |src| channels to |dest| channels unless |src| and |dest|
-// point to the same address. |src| and |dest| must have the same number of
-// channels, and there must be sufficient space allocated in |dest|.
+// Copy audio from `src` channels to `dest` channels unless `src` and `dest`
+// point to the same address. `src` and `dest` must have the same number of
+// channels, and there must be sufficient space allocated in `dest`.
 template <typename T>
 void CopyAudioIfNeeded(const T* const* src,
                        int num_frames,
@@ -106,9 +106,9 @@ void CopyAudioIfNeeded(const T* const* src,
   }
 }
 
-// Deinterleave audio from |interleaved| to the channel buffers pointed to
-// by |deinterleaved|. There must be sufficient space allocated in the
-// |deinterleaved| buffers (|num_channel| buffers with |samples_per_channel|
+// Deinterleave audio from `interleaved` to the channel buffers pointed to
+// by `deinterleaved`. There must be sufficient space allocated in the
+// `deinterleaved` buffers (`num_channel` buffers with `samples_per_channel`
 // per buffer).
 template <typename T>
 void Deinterleave(const T* interleaved,
@@ -125,9 +125,9 @@ void Deinterleave(const T* interleaved,
   }
 }
 
-// Interleave audio from the channel buffers pointed to by |deinterleaved| to
-// |interleaved|. There must be sufficient space allocated in |interleaved|
-// (|samples_per_channel| * |num_channels|).
+// Interleave audio from the channel buffers pointed to by `deinterleaved` to
+// `interleaved`. There must be sufficient space allocated in `interleaved`
+// (`samples_per_channel` * `num_channels`).
 template <typename T>
 void Interleave(const T* const* deinterleaved,
                 size_t samples_per_channel,
@@ -143,9 +143,9 @@ void Interleave(const T* const* deinterleaved,
   }
 }
 
-// Copies audio from a single channel buffer pointed to by |mono| to each
-// channel of |interleaved|. There must be sufficient space allocated in
-// |interleaved| (|samples_per_channel| * |num_channels|).
+// Copies audio from a single channel buffer pointed to by `mono` to each
+// channel of `interleaved`. There must be sufficient space allocated in
+// `interleaved` (`samples_per_channel` * `num_channels`).
 template <typename T>
 void UpmixMonoToInterleaved(const T* mono,
                             int num_frames,

@@ -8,12 +8,22 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
-#include <memory>
+#include <stdint.h>
 
+#include <memory>
+#include <string>
+
+#include "absl/types/optional.h"
+#include "api/adaptation/resource.h"
 #include "api/audio_codecs/builtin_audio_decoder_factory.h"
 #include "api/audio_codecs/builtin_audio_encoder_factory.h"
+#include "api/media_stream_interface.h"
+#include "api/peer_connection_interface.h"
+#include "api/rtc_error.h"
 #include "api/rtp_parameters.h"
+#include "api/rtp_sender_interface.h"
 #include "api/scoped_refptr.h"
+#include "api/video/video_source_interface.h"
 #include "call/adaptation/test/fake_resource.h"
 #include "pc/test/fake_periodic_video_source.h"
 #include "pc/test/fake_periodic_video_track_source.h"
@@ -22,6 +32,7 @@
 #include "rtc_base/gunit.h"
 #include "rtc_base/ref_counted_object.h"
 #include "rtc_base/thread.h"
+#include "rtc_base/time_utils.h"
 #include "rtc_base/virtual_socket_server.h"
 #include "test/gtest.h"
 

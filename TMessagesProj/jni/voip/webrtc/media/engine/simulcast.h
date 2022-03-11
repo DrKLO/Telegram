@@ -21,12 +21,12 @@
 
 namespace cricket {
 
-// Gets the total maximum bitrate for the |streams|.
+// Gets the total maximum bitrate for the `streams`.
 webrtc::DataRate GetTotalMaxBitrate(
     const std::vector<webrtc::VideoStream>& streams);
 
-// Adds any bitrate of |max_bitrate| that is above the total maximum bitrate for
-// the |layers| to the highest quality layer.
+// Adds any bitrate of `max_bitrate` that is above the total maximum bitrate for
+// the `layers` to the highest quality layer.
 void BoostMaxSimulcastLayer(webrtc::DataRate max_bitrate,
                             std::vector<webrtc::VideoStream>* layers);
 

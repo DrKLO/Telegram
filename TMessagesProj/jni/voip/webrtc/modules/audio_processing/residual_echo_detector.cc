@@ -14,7 +14,6 @@
 #include <numeric>
 
 #include "absl/types/optional.h"
-#include "modules/audio_processing/audio_buffer.h"
 #include "modules/audio_processing/logging/apm_data_dumper.h"
 #include "rtc_base/atomic_ops.h"
 #include "rtc_base/checks.h"
@@ -197,13 +196,6 @@ void ResidualEchoDetector::Initialize(int /*capture_sample_rate_hz*/,
   echo_likelihood_ = 0.f;
   next_insertion_index_ = 0;
   reliability_ = 0.f;
-}
-
-void EchoDetector::PackRenderAudioBuffer(AudioBuffer* audio,
-                                         std::vector<float>* packed_buffer) {
-  packed_buffer->clear();
-  packed_buffer->insert(packed_buffer->end(), audio->channels()[0],
-                        audio->channels()[0] + audio->num_frames());
 }
 
 EchoDetector::Metrics ResidualEchoDetector::GetMetrics() const {

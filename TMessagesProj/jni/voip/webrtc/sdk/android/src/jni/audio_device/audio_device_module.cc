@@ -70,26 +70,26 @@ class AndroidAudioDeviceModule : public AudioDeviceModule {
         initialized_(false) {
     RTC_CHECK(input_);
     RTC_CHECK(output_);
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     thread_checker_.Detach();
   }
 
-  ~AndroidAudioDeviceModule() override { RTC_DLOG(INFO) << __FUNCTION__; }
+  ~AndroidAudioDeviceModule() override { RTC_DLOG(LS_INFO) << __FUNCTION__; }
 
   int32_t ActiveAudioLayer(
       AudioDeviceModule::AudioLayer* audioLayer) const override {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     *audioLayer = audio_layer_;
     return 0;
   }
 
   int32_t RegisterAudioCallback(AudioTransport* audioCallback) override {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     return audio_device_buffer_->RegisterAudioCallback(audioCallback);
   }
 
   int32_t Init() override {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     RTC_DCHECK(thread_checker_.IsCurrent());
     audio_device_buffer_ =
         std::make_unique<AudioDeviceBuffer>(task_queue_factory_.get());
@@ -118,7 +118,7 @@ class AndroidAudioDeviceModule : public AudioDeviceModule {
   }
 
   int32_t Terminate() override {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     if (!initialized_)
       return 0;
     RTC_DCHECK(thread_checker_.IsCurrent());
@@ -132,19 +132,19 @@ class AndroidAudioDeviceModule : public AudioDeviceModule {
   }
 
   bool Initialized() const override {
-    RTC_DLOG(INFO) << __FUNCTION__ << ":" << initialized_;
+    RTC_DLOG(LS_INFO) << __FUNCTION__ << ":" << initialized_;
     return initialized_;
   }
 
   int16_t PlayoutDevices() override {
-    RTC_DLOG(INFO) << __FUNCTION__;
-    RTC_LOG(INFO) << "output: " << 1;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
+    RTC_LOG(LS_INFO) << "output: " << 1;
     return 1;
   }
 
   int16_t RecordingDevices() override {
-    RTC_DLOG(INFO) << __FUNCTION__;
-    RTC_DLOG(INFO) << "output: " << 1;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << "output: " << 1;
     return 1;
   }
 
@@ -163,7 +163,7 @@ class AndroidAudioDeviceModule : public AudioDeviceModule {
   int32_t SetPlayoutDevice(uint16_t index) override {
     // OK to use but it has no effect currently since device selection is
     // done using Andoid APIs instead.
-    RTC_DLOG(INFO) << __FUNCTION__ << "(" << index << ")";
+    RTC_DLOG(LS_INFO) << __FUNCTION__ << "(" << index << ")";
     return 0;
   }
 
@@ -175,7 +175,7 @@ class AndroidAudioDeviceModule : public AudioDeviceModule {
   int32_t SetRecordingDevice(uint16_t index) override {
     // OK to use but it has no effect currently since device selection is
     // done using Andoid APIs instead.
-    RTC_DLOG(INFO) << __FUNCTION__ << "(" << index << ")";
+    RTC_DLOG(LS_INFO) << __FUNCTION__ << "(" << index << ")";
     return 0;
   }
 
@@ -185,66 +185,66 @@ class AndroidAudioDeviceModule : public AudioDeviceModule {
   }
 
   int32_t PlayoutIsAvailable(bool* available) override {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     *available = true;
-    RTC_DLOG(INFO) << "output: " << *available;
+    RTC_DLOG(LS_INFO) << "output: " << *available;
     return 0;
   }
 
   int32_t InitPlayout() override {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     if (!initialized_)
       return -1;
     if (PlayoutIsInitialized()) {
       return 0;
     }
     int32_t result = output_->InitPlayout();
-    RTC_DLOG(INFO) << "output: " << result;
+    RTC_DLOG(LS_INFO) << "output: " << result;
     RTC_HISTOGRAM_BOOLEAN("WebRTC.Audio.InitPlayoutSuccess",
                           static_cast<int>(result == 0));
     return result;
   }
 
   bool PlayoutIsInitialized() const override {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     return output_->PlayoutIsInitialized();
   }
 
   int32_t RecordingIsAvailable(bool* available) override {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     *available = true;
-    RTC_DLOG(INFO) << "output: " << *available;
+    RTC_DLOG(LS_INFO) << "output: " << *available;
     return 0;
   }
 
   int32_t InitRecording() override {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     if (!initialized_)
       return -1;
     if (RecordingIsInitialized()) {
       return 0;
     }
     int32_t result = input_->InitRecording();
-    RTC_DLOG(INFO) << "output: " << result;
+    RTC_DLOG(LS_INFO) << "output: " << result;
     RTC_HISTOGRAM_BOOLEAN("WebRTC.Audio.InitRecordingSuccess",
                           static_cast<int>(result == 0));
     return result;
   }
 
   bool RecordingIsInitialized() const override {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     return input_->RecordingIsInitialized();
   }
 
   int32_t StartPlayout() override {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     if (!initialized_)
       return -1;
     if (Playing()) {
       return 0;
     }
     int32_t result = output_->StartPlayout();
-    RTC_DLOG(INFO) << "output: " << result;
+    RTC_DLOG(LS_INFO) << "output: " << result;
     RTC_HISTOGRAM_BOOLEAN("WebRTC.Audio.StartPlayoutSuccess",
                           static_cast<int>(result == 0));
     if (result == 0) {
@@ -256,34 +256,34 @@ class AndroidAudioDeviceModule : public AudioDeviceModule {
   }
 
   int32_t StopPlayout() override {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     if (!initialized_)
       return -1;
     if (!Playing())
       return 0;
-    RTC_LOG(INFO) << __FUNCTION__;
+    RTC_LOG(LS_INFO) << __FUNCTION__;
     audio_device_buffer_->StopPlayout();
     int32_t result = output_->StopPlayout();
-    RTC_DLOG(INFO) << "output: " << result;
+    RTC_DLOG(LS_INFO) << "output: " << result;
     RTC_HISTOGRAM_BOOLEAN("WebRTC.Audio.StopPlayoutSuccess",
                           static_cast<int>(result == 0));
     return result;
   }
 
   bool Playing() const override {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     return output_->Playing();
   }
 
   int32_t StartRecording() override {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     if (!initialized_)
       return -1;
     if (Recording()) {
       return 0;
     }
     int32_t result = input_->StartRecording();
-    RTC_DLOG(INFO) << "output: " << result;
+    RTC_DLOG(LS_INFO) << "output: " << result;
     RTC_HISTOGRAM_BOOLEAN("WebRTC.Audio.StartRecordingSuccess",
                           static_cast<int>(result == 0));
     if (result == 0) {
@@ -295,74 +295,74 @@ class AndroidAudioDeviceModule : public AudioDeviceModule {
   }
 
   int32_t StopRecording() override {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     if (!initialized_)
       return -1;
     if (!Recording())
       return 0;
     audio_device_buffer_->StopRecording();
     int32_t result = input_->StopRecording();
-    RTC_DLOG(INFO) << "output: " << result;
+    RTC_DLOG(LS_INFO) << "output: " << result;
     RTC_HISTOGRAM_BOOLEAN("WebRTC.Audio.StopRecordingSuccess",
                           static_cast<int>(result == 0));
     return result;
   }
 
   bool Recording() const override {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     return input_->Recording();
   }
 
   int32_t InitSpeaker() override {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     return initialized_ ? 0 : -1;
   }
 
   bool SpeakerIsInitialized() const override {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     return initialized_;
   }
 
   int32_t InitMicrophone() override {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     return initialized_ ? 0 : -1;
   }
 
   bool MicrophoneIsInitialized() const override {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     return initialized_;
   }
 
   int32_t SpeakerVolumeIsAvailable(bool* available) override {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     if (!initialized_)
       return -1;
     *available = output_->SpeakerVolumeIsAvailable();
-    RTC_DLOG(INFO) << "output: " << *available;
+    RTC_DLOG(LS_INFO) << "output: " << *available;
     return 0;
   }
 
   int32_t SetSpeakerVolume(uint32_t volume) override {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     if (!initialized_)
       return -1;
     return output_->SetSpeakerVolume(volume);
   }
 
   int32_t SpeakerVolume(uint32_t* output_volume) const override {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     if (!initialized_)
       return -1;
     absl::optional<uint32_t> volume = output_->SpeakerVolume();
     if (!volume)
       return -1;
     *output_volume = *volume;
-    RTC_DLOG(INFO) << "output: " << *volume;
+    RTC_DLOG(LS_INFO) << "output: " << *volume;
     return 0;
   }
 
   int32_t MaxSpeakerVolume(uint32_t* output_max_volume) const override {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     if (!initialized_)
       return -1;
     absl::optional<uint32_t> max_volume = output_->MaxSpeakerVolume();
@@ -373,7 +373,7 @@ class AndroidAudioDeviceModule : public AudioDeviceModule {
   }
 
   int32_t MinSpeakerVolume(uint32_t* output_min_volume) const override {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     if (!initialized_)
       return -1;
     absl::optional<uint32_t> min_volume = output_->MinSpeakerVolume();
@@ -384,113 +384,113 @@ class AndroidAudioDeviceModule : public AudioDeviceModule {
   }
 
   int32_t MicrophoneVolumeIsAvailable(bool* available) override {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     *available = false;
-    RTC_DLOG(INFO) << "output: " << *available;
+    RTC_DLOG(LS_INFO) << "output: " << *available;
     return -1;
   }
 
   int32_t SetMicrophoneVolume(uint32_t volume) override {
-    RTC_DLOG(INFO) << __FUNCTION__ << "(" << volume << ")";
+    RTC_DLOG(LS_INFO) << __FUNCTION__ << "(" << volume << ")";
     RTC_CHECK_NOTREACHED();
   }
 
   int32_t MicrophoneVolume(uint32_t* volume) const override {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     RTC_CHECK_NOTREACHED();
   }
 
   int32_t MaxMicrophoneVolume(uint32_t* maxVolume) const override {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     RTC_CHECK_NOTREACHED();
   }
 
   int32_t MinMicrophoneVolume(uint32_t* minVolume) const override {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     RTC_CHECK_NOTREACHED();
   }
 
   int32_t SpeakerMuteIsAvailable(bool* available) override {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     RTC_CHECK_NOTREACHED();
   }
 
   int32_t SetSpeakerMute(bool enable) override {
-    RTC_DLOG(INFO) << __FUNCTION__ << "(" << enable << ")";
+    RTC_DLOG(LS_INFO) << __FUNCTION__ << "(" << enable << ")";
     RTC_CHECK_NOTREACHED();
   }
 
   int32_t SpeakerMute(bool* enabled) const override {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     RTC_CHECK_NOTREACHED();
   }
 
   int32_t MicrophoneMuteIsAvailable(bool* available) override {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     RTC_CHECK_NOTREACHED();
   }
 
   int32_t SetMicrophoneMute(bool enable) override {
-    RTC_DLOG(INFO) << __FUNCTION__ << "(" << enable << ")";
+    RTC_DLOG(LS_INFO) << __FUNCTION__ << "(" << enable << ")";
     RTC_CHECK_NOTREACHED();
   }
 
   int32_t MicrophoneMute(bool* enabled) const override {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     RTC_CHECK_NOTREACHED();
   }
 
   int32_t StereoPlayoutIsAvailable(bool* available) const override {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     *available = is_stereo_playout_supported_;
-    RTC_DLOG(INFO) << "output: " << *available;
+    RTC_DLOG(LS_INFO) << "output: " << *available;
     return 0;
   }
 
   int32_t SetStereoPlayout(bool enable) override {
-    RTC_DLOG(INFO) << __FUNCTION__ << "(" << enable << ")";
+    RTC_DLOG(LS_INFO) << __FUNCTION__ << "(" << enable << ")";
     // Android does not support changes between mono and stero on the fly. The
     // use of stereo or mono is determined by the audio layer. It is allowed
     // to call this method if that same state is not modified.
     bool available = is_stereo_playout_supported_;
     if (enable != available) {
-      RTC_LOG(WARNING) << "changing stereo playout not supported";
+      RTC_LOG(LS_WARNING) << "changing stereo playout not supported";
       return -1;
     }
     return 0;
   }
 
   int32_t StereoPlayout(bool* enabled) const override {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     *enabled = is_stereo_playout_supported_;
-    RTC_DLOG(INFO) << "output: " << *enabled;
+    RTC_DLOG(LS_INFO) << "output: " << *enabled;
     return 0;
   }
 
   int32_t StereoRecordingIsAvailable(bool* available) const override {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     *available = is_stereo_record_supported_;
-    RTC_DLOG(INFO) << "output: " << *available;
+    RTC_DLOG(LS_INFO) << "output: " << *available;
     return 0;
   }
 
   int32_t SetStereoRecording(bool enable) override {
-    RTC_DLOG(INFO) << __FUNCTION__ << "(" << enable << ")";
+    RTC_DLOG(LS_INFO) << __FUNCTION__ << "(" << enable << ")";
     // Android does not support changes between mono and stero on the fly. The
     // use of stereo or mono is determined by the audio layer. It is allowed
     // to call this method if that same state is not modified.
     bool available = is_stereo_record_supported_;
     if (enable != available) {
-      RTC_LOG(WARNING) << "changing stereo recording not supported";
+      RTC_LOG(LS_WARNING) << "changing stereo recording not supported";
       return -1;
     }
     return 0;
   }
 
   int32_t StereoRecording(bool* enabled) const override {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     *enabled = is_stereo_record_supported_;
-    RTC_DLOG(INFO) << "output: " << *enabled;
+    RTC_DLOG(LS_INFO) << "output: " << *enabled;
     return 0;
   }
 
@@ -514,18 +514,18 @@ class AndroidAudioDeviceModule : public AudioDeviceModule {
   // a "Not Implemented" log will be filed. This non-perfect state will remain
   // until I have added full support for audio effects based on OpenSL ES APIs.
   bool BuiltInAECIsAvailable() const override {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     if (!initialized_)
       return false;
     bool isAvailable = input_->IsAcousticEchoCancelerSupported();
-    RTC_DLOG(INFO) << "output: " << isAvailable;
+    RTC_DLOG(LS_INFO) << "output: " << isAvailable;
     return isAvailable;
   }
 
   // Not implemented for any input device on Android.
   bool BuiltInAGCIsAvailable() const override {
-    RTC_DLOG(INFO) << __FUNCTION__;
-    RTC_DLOG(INFO) << "output: " << false;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << "output: " << false;
     return false;
   }
 
@@ -534,38 +534,38 @@ class AndroidAudioDeviceModule : public AudioDeviceModule {
   // TODO(henrika): add implementation for OpenSL ES based audio as well.
   // In addition, see comments for BuiltInAECIsAvailable().
   bool BuiltInNSIsAvailable() const override {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     if (!initialized_)
       return false;
     bool isAvailable = input_->IsNoiseSuppressorSupported();
-    RTC_DLOG(INFO) << "output: " << isAvailable;
+    RTC_DLOG(LS_INFO) << "output: " << isAvailable;
     return isAvailable;
   }
 
   // TODO(henrika): add implementation for OpenSL ES based audio as well.
   int32_t EnableBuiltInAEC(bool enable) override {
-    RTC_DLOG(INFO) << __FUNCTION__ << "(" << enable << ")";
+    RTC_DLOG(LS_INFO) << __FUNCTION__ << "(" << enable << ")";
     if (!initialized_)
       return -1;
     RTC_CHECK(BuiltInAECIsAvailable()) << "HW AEC is not available";
     int32_t result = input_->EnableBuiltInAEC(enable);
-    RTC_DLOG(INFO) << "output: " << result;
+    RTC_DLOG(LS_INFO) << "output: " << result;
     return result;
   }
 
   int32_t EnableBuiltInAGC(bool enable) override {
-    RTC_DLOG(INFO) << __FUNCTION__ << "(" << enable << ")";
+    RTC_DLOG(LS_INFO) << __FUNCTION__ << "(" << enable << ")";
     RTC_CHECK_NOTREACHED();
   }
 
   // TODO(henrika): add implementation for OpenSL ES based audio as well.
   int32_t EnableBuiltInNS(bool enable) override {
-    RTC_DLOG(INFO) << __FUNCTION__ << "(" << enable << ")";
+    RTC_DLOG(LS_INFO) << __FUNCTION__ << "(" << enable << ")";
     if (!initialized_)
       return -1;
     RTC_CHECK(BuiltInNSIsAvailable()) << "HW NS is not available";
     int32_t result = input_->EnableBuiltInNS(enable);
-    RTC_DLOG(INFO) << "output: " << result;
+    RTC_DLOG(LS_INFO) << "output: " << result;
     return result;
   }
 
@@ -576,7 +576,7 @@ class AndroidAudioDeviceModule : public AudioDeviceModule {
   }
 
   int32_t AttachAudioBuffer() {
-    RTC_DLOG(INFO) << __FUNCTION__;
+    RTC_DLOG(LS_INFO) << __FUNCTION__;
     output_->AttachAudioBuffer(audio_device_buffer_.get());
     input_->AttachAudioBuffer(audio_device_buffer_.get());
     return 0;
@@ -640,7 +640,7 @@ rtc::scoped_refptr<AudioDeviceModule> CreateAudioDeviceModuleFromInputAndOutput(
     uint16_t playout_delay_ms,
     std::unique_ptr<AudioInput> audio_input,
     std::unique_ptr<AudioOutput> audio_output) {
-  RTC_DLOG(INFO) << __FUNCTION__;
+  RTC_DLOG(LS_INFO) << __FUNCTION__;
   return rtc::make_ref_counted<AndroidAudioDeviceModule>(
       audio_layer, is_stereo_playout_supported, is_stereo_record_supported,
       playout_delay_ms, std::move(audio_input), std::move(audio_output));

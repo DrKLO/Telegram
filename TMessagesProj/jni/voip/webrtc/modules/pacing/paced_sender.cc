@@ -124,7 +124,7 @@ void PacedSender::EnqueuePackets(
                    packet->SequenceNumber(), "rtp_timestamp",
                    packet->Timestamp());
 
-      RTC_DCHECK_GE(packet->capture_time_ms(), 0);
+      RTC_DCHECK_GE(packet->capture_time(), Timestamp::Zero());
       pacing_controller_.EnqueuePacket(std::move(packet));
     }
   }
@@ -163,7 +163,15 @@ absl::optional<Timestamp> PacedSender::FirstSentPacketTime() const {
 
 TimeDelta PacedSender::OldestPacketWaitTime() const {
   MutexLock lock(&mutex_);
-  return pacing_controller_.OldestPacketWaitTime();
+  Timestamp oldest_packet = pacing_controller_.OldestPacketEnqueueTime();
+  if (oldest_packet.IsInfinite())
+    return TimeDelta::Zero();
+
+  // (webrtc:9716): The clock is not always monotonic.
+  Timestamp current = clock_->CurrentTime();
+  if (current < oldest_packet)
+    return TimeDelta::Zero();
+  return current - oldest_packet;
 }
 
 int64_t PacedSender::TimeUntilNextProcess() {

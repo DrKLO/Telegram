@@ -28,7 +28,6 @@
 #include "modules/video_coding/svc/scalable_video_controller_no_layering.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "sdk/android/src/jni/jni_helpers.h"
-#include "sdk/android/src/jni/video_frame.h"
 
 namespace webrtc {
 namespace jni {
@@ -50,7 +49,7 @@ class VideoEncoderWrapper : public VideoEncoder {
   int32_t Encode(const VideoFrame& frame,
                  const std::vector<VideoFrameType>* frame_types) override;
 
-  void SetRates(const RateControlParameters& parameters) override;
+  void SetRates(const RateControlParameters& rc_parameters) override;
 
   EncoderInfo GetEncoderInfo() const override;
 
@@ -74,16 +73,24 @@ class VideoEncoderWrapper : public VideoEncoder {
                            const char* method_name);
 
   int ParseQp(rtc::ArrayView<const uint8_t> buffer);
+
   CodecSpecificInfo ParseCodecSpecificInfo(const EncodedImage& frame);
+
   ScopedJavaLocalRef<jobject> ToJavaBitrateAllocation(
       JNIEnv* jni,
       const VideoBitrateAllocation& allocation);
-  std::string GetImplementationName(JNIEnv* jni) const;
+
+  ScopedJavaLocalRef<jobject> ToJavaRateControlParameters(
+      JNIEnv* jni,
+      const VideoEncoder::RateControlParameters& rc_parameters);
+
+  void UpdateEncoderInfo(JNIEnv* jni);
 
   ScalingSettings GetScalingSettingsInternal(JNIEnv* jni) const;
-
   std::vector<ResolutionBitrateLimits> GetResolutionBitrateLimits(
       JNIEnv* jni) const;
+
+  VideoEncoder::EncoderInfo GetEncoderInfoInternal(JNIEnv* jni) const;
 
   const ScopedJavaGlobalRef<jobject> encoder_;
   const ScopedJavaGlobalRef<jclass> int_array_class_;

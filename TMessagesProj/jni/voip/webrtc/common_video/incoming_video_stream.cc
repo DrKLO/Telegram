@@ -57,7 +57,8 @@ void IncomingVideoStream::Dequeue() {
 
   if (render_buffers_.HasPendingFrames()) {
     uint32_t wait_time = render_buffers_.TimeToNextFrameRelease();
-    incoming_render_queue_.PostDelayedTask([this]() { Dequeue(); }, wait_time);
+    incoming_render_queue_.PostDelayedHighPrecisionTask([this]() { Dequeue(); },
+                                                        wait_time);
   }
 }
 

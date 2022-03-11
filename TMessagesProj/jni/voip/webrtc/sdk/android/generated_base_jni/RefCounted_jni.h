@@ -80,7 +80,4 @@ static void Java_RefCounted_release(JNIEnv* env, const base::android::JavaRef<jo
 }  // namespace jni
 }  // namespace  webrtc
 
-// Step 4: Generated test functions (optional).
-
-
 #endif  // org_webrtc_RefCounted_JNI

@@ -88,8 +88,8 @@ class AudioTrackJni {
 
  private:
   // Called from Java side so we can cache the address of the Java-manged
-  // |byte_buffer| in |direct_buffer_address_|. The size of the buffer
-  // is also stored in |direct_buffer_capacity_in_bytes_|.
+  // `byte_buffer` in `direct_buffer_address_`. The size of the buffer
+  // is also stored in `direct_buffer_capacity_in_bytes_`.
   // Called on the same thread as the creating thread.
   static void JNICALL CacheDirectBufferAddress(JNIEnv* env,
                                                jobject obj,
@@ -98,8 +98,8 @@ class AudioTrackJni {
   void OnCacheDirectBufferAddress(JNIEnv* env, jobject byte_buffer);
 
   // Called periodically by the Java based WebRtcAudioTrack object when
-  // playout has started. Each call indicates that |length| new bytes should
-  // be written to the memory area |direct_buffer_address_| for playout.
+  // playout has started. Each call indicates that `length` new bytes should
+  // be written to the memory area `direct_buffer_address_` for playout.
   // This method is called on a high-priority thread from Java. The name of
   // the thread is 'AudioTrackThread'.
   static void JNICALL GetPlayoutData(JNIEnv* env,
@@ -133,10 +133,10 @@ class AudioTrackJni {
   // AudioManager.
   const AudioParameters audio_parameters_;
 
-  // Cached copy of address to direct audio buffer owned by |j_audio_track_|.
+  // Cached copy of address to direct audio buffer owned by `j_audio_track_`.
   void* direct_buffer_address_;
 
-  // Number of bytes in the direct audio buffer owned by |j_audio_track_|.
+  // Number of bytes in the direct audio buffer owned by `j_audio_track_`.
   size_t direct_buffer_capacity_in_bytes_;
 
   // Number of audio frames per audio buffer. Each audio frame corresponds to

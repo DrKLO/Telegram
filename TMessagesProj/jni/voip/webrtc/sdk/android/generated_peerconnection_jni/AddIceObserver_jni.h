@@ -82,7 +82,4 @@ static void Java_AddIceObserver_onAddFailure(JNIEnv* env, const base::android::J
 }  // namespace jni
 }  // namespace  webrtc
 
-// Step 4: Generated test functions (optional).
-
-
 #endif  // org_webrtc_AddIceObserver_JNI

@@ -79,10 +79,9 @@ int32_t WebRtcAgc_CalculateGainTable(int32_t* gainTable,       // Q16
   uint16_t constMaxGain;
   uint16_t tmpU16, intPart, fracPart;
   const int16_t kCompRatio = 3;
-  const int16_t kSoftLimiterLeft = 1;
   int16_t limiterOffset = 0;  // Limiter offset
   int16_t limiterIdx, limiterLvlX;
-  int16_t constLinApprox, zeroGainLvl, maxGain, diffGain;
+  int16_t constLinApprox, maxGain, diffGain;
   int16_t i, tmp16, tmp16no1;
   int zeros, zerosScale;
 
@@ -98,17 +97,11 @@ int32_t WebRtcAgc_CalculateGainTable(int32_t* gainTable,       // Q16
       WebRtcSpl_DivW32W16ResW16(tmp32no1 + (kCompRatio >> 1), kCompRatio);
   maxGain = WEBRTC_SPL_MAX(tmp16no1, (analogTarget - targetLevelDbfs));
   tmp32no1 = maxGain * kCompRatio;
-  zeroGainLvl = digCompGaindB;
-  zeroGainLvl -= WebRtcSpl_DivW32W16ResW16(tmp32no1 + ((kCompRatio - 1) >> 1),
-                                           kCompRatio - 1);
   if ((digCompGaindB <= analogTarget) && (limiterEnable)) {
-    zeroGainLvl += (analogTarget - digCompGaindB + kSoftLimiterLeft);
     limiterOffset = 0;
   }
 
-  // Calculate the difference between maximum gain and gain at 0dB0v:
-  //  diffGain = maxGain + (compRatio-1)*zeroGainLvl/compRatio
-  //           = (compRatio-1)*digCompGaindB/compRatio
+  // Calculate the difference between maximum gain and gain at 0dB0v
   tmp32no1 = digCompGaindB * (kCompRatio - 1);
   diffGain =
       WebRtcSpl_DivW32W16ResW16(tmp32no1 + (kCompRatio >> 1), kCompRatio);
@@ -191,9 +184,9 @@ int32_t WebRtcAgc_CalculateGainTable(int32_t* gainTable,       // Q16
     numFIX -= (int32_t)logApprox * diffGain;       // Q14
 
     // Calculate ratio
-    // Shift |numFIX| as much as possible.
-    // Ensure we avoid wrap-around in |den| as well.
-    if (numFIX > (den >> 8) || -numFIX > (den >> 8)) {  // |den| is Q8.
+    // Shift `numFIX` as much as possible.
+    // Ensure we avoid wrap-around in `den` as well.
+    if (numFIX > (den >> 8) || -numFIX > (den >> 8)) {  // `den` is Q8.
       zeros = WebRtcSpl_NormW32(numFIX);
     } else {
       zeros = WebRtcSpl_NormW32(den) + 8;
@@ -294,15 +287,12 @@ int32_t WebRtcAgc_ComputeDigitalGains(DigitalAgc* stt,
   int16_t gate, gain_adj;
   int16_t k;
   size_t n, L;
-  int16_t L2;  // samples/subframe
 
   // determine number of samples per ms
   if (FS == 8000) {
     L = 8;
-    L2 = 3;
   } else if (FS == 16000 || FS == 32000 || FS == 48000) {
     L = 16;
-    L2 = 4;
   } else {
     return -1;
   }

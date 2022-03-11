@@ -16,19 +16,12 @@
 #include <type_traits>
 #include <utility>
 
+#include "absl/strings/string_view.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/numerics/safe_conversions.h"
 
 namespace webrtc {
-namespace {
-
-int FindOrEnd(std::string str, size_t start, char delimiter) {
-  size_t pos = str.find(delimiter, start);
-  pos = (pos == std::string::npos) ? str.length() : pos;
-  return static_cast<int>(pos);
-}
-}  // namespace
 
 FieldTrialParameterInterface::FieldTrialParameterInterface(std::string key)
     : key_(key) {}
@@ -39,8 +32,8 @@ FieldTrialParameterInterface::~FieldTrialParameterInterface() {
 
 void ParseFieldTrial(
     std::initializer_list<FieldTrialParameterInterface*> fields,
-    std::string trial_string) {
-  std::map<std::string, FieldTrialParameterInterface*> field_map;
+    absl::string_view trial_string) {
+  std::map<absl::string_view, FieldTrialParameterInterface*> field_map;
   FieldTrialParameterInterface* keyless_field = nullptr;
   for (FieldTrialParameterInterface* field : fields) {
     field->MarkAsUsed();
@@ -60,18 +53,29 @@ void ParseFieldTrial(
       field_map[field->key_] = field;
     }
   }
+  bool logged_unknown_key = false;
 
-  size_t i = 0;
-  while (i < trial_string.length()) {
-    int val_end = FindOrEnd(trial_string, i, ',');
-    int colon_pos = FindOrEnd(trial_string, i, ':');
-    int key_end = std::min(val_end, colon_pos);
-    int val_begin = key_end + 1;
-    std::string key = trial_string.substr(i, key_end - i);
+  absl::string_view tail = trial_string;
+  while (!tail.empty()) {
+    size_t key_end = tail.find_first_of(",:");
+    absl::string_view key = tail.substr(0, key_end);
     absl::optional<std::string> opt_value;
-    if (val_end >= val_begin)
-      opt_value = trial_string.substr(val_begin, val_end - val_begin);
-    i = val_end + 1;
+    if (key_end == absl::string_view::npos) {
+      tail = "";
+    } else if (tail[key_end] == ':') {
+      tail = tail.substr(key_end + 1);
+      size_t value_end = tail.find(',');
+      opt_value.emplace(tail.substr(0, value_end));
+      if (value_end == absl::string_view::npos) {
+        tail = "";
+      } else {
+        tail = tail.substr(value_end + 1);
+      }
+    } else {
+      RTC_DCHECK_EQ(tail[key_end], ',');
+      tail = tail.substr(key_end + 1);
+    }
+
     auto field = field_map.find(key);
     if (field != field_map.end()) {
       if (!field->second->Parse(std::move(opt_value))) {
@@ -79,7 +83,7 @@ void ParseFieldTrial(
                             << "' in trial: \"" << trial_string << "\"";
       }
     } else if (!opt_value && keyless_field && !key.empty()) {
-      if (!keyless_field->Parse(key)) {
+      if (!keyless_field->Parse(std::string(key))) {
         RTC_LOG(LS_WARNING) << "Failed to read empty key field with value '"
                             << key << "' in trial: \"" << trial_string << "\"";
       }
@@ -87,14 +91,17 @@ void ParseFieldTrial(
       // "_" is be used to prefix keys that are part of the string for
       // debugging purposes but not neccessarily used.
       // e.g. WebRTC-Experiment/param: value, _DebuggingString
-      RTC_LOG(LS_INFO) << "No field with key: '" << key
-                       << "' (found in trial: \"" << trial_string << "\")";
-      std::string valid_keys;
-      for (const auto& f : field_map) {
-        valid_keys += f.first;
-        valid_keys += ", ";
+      if (!logged_unknown_key) {
+        RTC_LOG(LS_INFO) << "No field with key: '" << key
+                         << "' (found in trial: \"" << trial_string << "\")";
+        std::string valid_keys;
+        for (const auto& f : field_map) {
+          valid_keys.append(f.first.data(), f.first.size());
+          valid_keys += ", ";
+        }
+        RTC_LOG(LS_INFO) << "Valid keys are: " << valid_keys;
+        logged_unknown_key = true;
       }
-      RTC_LOG(LS_INFO) << "Valid keys are: " << valid_keys;
     }
   }
 

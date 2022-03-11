@@ -41,6 +41,7 @@
 #include <type_traits>
 
 #include "absl/algorithm/algorithm.h"
+#include "absl/base/config.h"
 #include "absl/base/dynamic_annotations.h"
 #include "absl/base/internal/throw_delegate.h"
 #include "absl/base/macros.h"
@@ -72,11 +73,6 @@ constexpr static auto kFixedArrayUseDefault = static_cast<size_t>(-1);
 // uninitialized (e.g. int, int[4], double), and others default-constructed.
 // This matches the behavior of c-style arrays and `std::array`, but not
 // `std::vector`.
-//
-// Note that `FixedArray` does not provide a public allocator; if it requires a
-// heap allocation, it will do so with global `::operator new[]()` and
-// `::operator delete[]()`, even if T provides class-scope overrides for these
-// operators.
 template <typename T, size_t N = kFixedArrayUseDefault,
           typename A = std::allocator<T>>
 class FixedArray {
@@ -106,13 +102,13 @@ class FixedArray {
 
  public:
   using allocator_type = typename AllocatorTraits::allocator_type;
-  using value_type = typename allocator_type::value_type;
-  using pointer = typename allocator_type::pointer;
-  using const_pointer = typename allocator_type::const_pointer;
-  using reference = typename allocator_type::reference;
-  using const_reference = typename allocator_type::const_reference;
-  using size_type = typename allocator_type::size_type;
-  using difference_type = typename allocator_type::difference_type;
+  using value_type = typename AllocatorTraits::value_type;
+  using pointer = typename AllocatorTraits::pointer;
+  using const_pointer = typename AllocatorTraits::const_pointer;
+  using reference = value_type&;
+  using const_reference = const value_type&;
+  using size_type = typename AllocatorTraits::size_type;
+  using difference_type = typename AllocatorTraits::difference_type;
   using iterator = pointer;
   using const_iterator = const_pointer;
   using reverse_iterator = std::reverse_iterator<iterator>;
@@ -231,8 +227,8 @@ class FixedArray {
 
   // FixedArray::at
   //
-  // Bounds-checked access.  Returns a reference to the ith element of the
-  // fiexed array, or throws std::out_of_range
+  // Bounds-checked access.  Returns a reference to the ith element of the fixed
+  // array, or throws std::out_of_range
   reference at(size_type i) {
     if (ABSL_PREDICT_FALSE(i >= size())) {
       base_internal::ThrowStdOutOfRange("FixedArray::at failed bounds check");
@@ -422,10 +418,10 @@ class FixedArray {
     void AnnotateConstruct(size_type n);
     void AnnotateDestruct(size_type n);
 
-#ifdef ADDRESS_SANITIZER
+#ifdef ABSL_HAVE_ADDRESS_SANITIZER
     void* RedzoneBegin() { return &redzone_begin_; }
     void* RedzoneEnd() { return &redzone_end_ + 1; }
-#endif  // ADDRESS_SANITIZER
+#endif  // ABSL_HAVE_ADDRESS_SANITIZER
 
    private:
     ABSL_ADDRESS_SANITIZER_REDZONE(redzone_begin_);
@@ -503,22 +499,26 @@ constexpr typename FixedArray<T, N, A>::size_type
 template <typename T, size_t N, typename A>
 void FixedArray<T, N, A>::NonEmptyInlinedStorage::AnnotateConstruct(
     typename FixedArray<T, N, A>::size_type n) {
-#ifdef ADDRESS_SANITIZER
+#ifdef ABSL_HAVE_ADDRESS_SANITIZER
   if (!n) return;
-  ABSL_ANNOTATE_CONTIGUOUS_CONTAINER(data(), RedzoneEnd(), RedzoneEnd(), data() + n);
-  ABSL_ANNOTATE_CONTIGUOUS_CONTAINER(RedzoneBegin(), data(), data(), RedzoneBegin());
-#endif                   // ADDRESS_SANITIZER
+  ABSL_ANNOTATE_CONTIGUOUS_CONTAINER(data(), RedzoneEnd(), RedzoneEnd(),
+                                     data() + n);
+  ABSL_ANNOTATE_CONTIGUOUS_CONTAINER(RedzoneBegin(), data(), data(),
+                                     RedzoneBegin());
+#endif  // ABSL_HAVE_ADDRESS_SANITIZER
   static_cast<void>(n);  // Mark used when not in asan mode
 }
 
 template <typename T, size_t N, typename A>
 void FixedArray<T, N, A>::NonEmptyInlinedStorage::AnnotateDestruct(
     typename FixedArray<T, N, A>::size_type n) {
-#ifdef ADDRESS_SANITIZER
+#ifdef ABSL_HAVE_ADDRESS_SANITIZER
   if (!n) return;
-  ABSL_ANNOTATE_CONTIGUOUS_CONTAINER(data(), RedzoneEnd(), data() + n, RedzoneEnd());
-  ABSL_ANNOTATE_CONTIGUOUS_CONTAINER(RedzoneBegin(), data(), RedzoneBegin(), data());
-#endif                   // ADDRESS_SANITIZER
+  ABSL_ANNOTATE_CONTIGUOUS_CONTAINER(data(), RedzoneEnd(), data() + n,
+                                     RedzoneEnd());
+  ABSL_ANNOTATE_CONTIGUOUS_CONTAINER(RedzoneBegin(), data(), RedzoneBegin(),
+                                     data());
+#endif  // ABSL_HAVE_ADDRESS_SANITIZER
   static_cast<void>(n);  // Mark used when not in asan mode
 }
 ABSL_NAMESPACE_END

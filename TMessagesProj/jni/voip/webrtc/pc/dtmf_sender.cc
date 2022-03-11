@@ -13,8 +13,6 @@
 #include <ctype.h>
 #include <string.h>
 
-#include <string>
-
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/ref_counted_object.h"
@@ -167,7 +165,7 @@ int DtmfSender::comma_delay() const {
 
 void DtmfSender::QueueInsertDtmf(const rtc::Location& posted_from,
                                  uint32_t delay_ms) {
-  signaling_thread_->PostDelayedTask(
+  signaling_thread_->PostDelayedHighPrecisionTask(
       ToQueuedTask(safety_flag_,
                    [this] {
                      RTC_DCHECK_RUN_ON(signaling_thread_);
@@ -192,9 +190,9 @@ void DtmfSender::DoInsertDtmf() {
   } else {
     char tone = tones_[first_tone_pos];
     if (!GetDtmfCode(tone, &code)) {
-      // The find_first_of(kDtmfValidTones) should have guarantee |tone| is
+      // The find_first_of(kDtmfValidTones) should have guarantee `tone` is
       // a valid DTMF tone.
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
     }
   }
 
@@ -216,7 +214,7 @@ void DtmfSender::DoInsertDtmf() {
       RTC_LOG(LS_ERROR) << "The DtmfProvider can no longer send DTMF.";
       return;
     }
-    // Wait for the number of milliseconds specified by |duration_|.
+    // Wait for the number of milliseconds specified by `duration_`.
     tone_gap += duration_;
   }
 

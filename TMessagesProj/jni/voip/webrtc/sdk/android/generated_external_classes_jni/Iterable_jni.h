@@ -39,8 +39,8 @@ namespace JNI_Iterable {
 
 
 static std::atomic<jmethodID> g_java_lang_Iterable_iterator(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_Iterable_iterator(JNIEnv* env, const
-    base::android::JavaRef<jobject>& obj) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject> Java_Iterable_iterator(JNIEnv*
+    env, const base::android::JavaRef<jobject>& obj);
 static base::android::ScopedJavaLocalRef<jobject> Java_Iterable_iterator(JNIEnv* env, const
     base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_lang_Iterable_clazz(env);
@@ -63,8 +63,8 @@ static base::android::ScopedJavaLocalRef<jobject> Java_Iterable_iterator(JNIEnv*
 }
 
 static std::atomic<jmethodID> g_java_lang_Iterable_forEach(nullptr);
-static void Java_Iterable_forEach(JNIEnv* env, const base::android::JavaRef<jobject>& obj, const
-    base::android::JavaRef<jobject>& p0) __attribute__ ((unused));
+[[maybe_unused]] static void Java_Iterable_forEach(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobject>& p0);
 static void Java_Iterable_forEach(JNIEnv* env, const base::android::JavaRef<jobject>& obj, const
     base::android::JavaRef<jobject>& p0) {
   jclass clazz = java_lang_Iterable_clazz(env);
@@ -85,8 +85,8 @@ static void Java_Iterable_forEach(JNIEnv* env, const base::android::JavaRef<jobj
 }
 
 static std::atomic<jmethodID> g_java_lang_Iterable_spliterator(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_Iterable_spliterator(JNIEnv* env, const
-    base::android::JavaRef<jobject>& obj) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject> Java_Iterable_spliterator(JNIEnv*
+    env, const base::android::JavaRef<jobject>& obj);
 static base::android::ScopedJavaLocalRef<jobject> Java_Iterable_spliterator(JNIEnv* env, const
     base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_lang_Iterable_clazz(env);
@@ -109,8 +109,5 @@ static base::android::ScopedJavaLocalRef<jobject> Java_Iterable_spliterator(JNIE
 }
 
 }  // namespace JNI_Iterable
-
-// Step 4: Generated test functions (optional).
-
 
 #endif  // java_lang_Iterable_JNI

@@ -48,9 +48,9 @@ namespace JNI_Integer {
 
 
 static std::atomic<jmethodID> g_java_lang_Integer_toStringJLS_I_I(nullptr);
-static base::android::ScopedJavaLocalRef<jstring> Java_Integer_toStringJLS_I_I(JNIEnv* env,
-    JniIntWrapper p0,
-    JniIntWrapper p1) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jstring>
+    Java_Integer_toStringJLS_I_I(JNIEnv* env, JniIntWrapper p0,
+    JniIntWrapper p1);
 static base::android::ScopedJavaLocalRef<jstring> Java_Integer_toStringJLS_I_I(JNIEnv* env,
     JniIntWrapper p0,
     JniIntWrapper p1) {
@@ -74,9 +74,9 @@ static base::android::ScopedJavaLocalRef<jstring> Java_Integer_toStringJLS_I_I(J
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_toUnsignedStringJLS_I_I(nullptr);
-static base::android::ScopedJavaLocalRef<jstring> Java_Integer_toUnsignedStringJLS_I_I(JNIEnv* env,
-    JniIntWrapper p0,
-    JniIntWrapper p1) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jstring>
+    Java_Integer_toUnsignedStringJLS_I_I(JNIEnv* env, JniIntWrapper p0,
+    JniIntWrapper p1);
 static base::android::ScopedJavaLocalRef<jstring> Java_Integer_toUnsignedStringJLS_I_I(JNIEnv* env,
     JniIntWrapper p0,
     JniIntWrapper p1) {
@@ -100,8 +100,8 @@ static base::android::ScopedJavaLocalRef<jstring> Java_Integer_toUnsignedStringJ
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_toHexString(nullptr);
-static base::android::ScopedJavaLocalRef<jstring> Java_Integer_toHexString(JNIEnv* env,
-    JniIntWrapper p0) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jstring> Java_Integer_toHexString(JNIEnv*
+    env, JniIntWrapper p0);
 static base::android::ScopedJavaLocalRef<jstring> Java_Integer_toHexString(JNIEnv* env,
     JniIntWrapper p0) {
   jclass clazz = java_lang_Integer_clazz(env);
@@ -124,8 +124,8 @@ static base::android::ScopedJavaLocalRef<jstring> Java_Integer_toHexString(JNIEn
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_toOctalString(nullptr);
-static base::android::ScopedJavaLocalRef<jstring> Java_Integer_toOctalString(JNIEnv* env,
-    JniIntWrapper p0) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jstring>
+    Java_Integer_toOctalString(JNIEnv* env, JniIntWrapper p0);
 static base::android::ScopedJavaLocalRef<jstring> Java_Integer_toOctalString(JNIEnv* env,
     JniIntWrapper p0) {
   jclass clazz = java_lang_Integer_clazz(env);
@@ -148,8 +148,8 @@ static base::android::ScopedJavaLocalRef<jstring> Java_Integer_toOctalString(JNI
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_toBinaryString(nullptr);
-static base::android::ScopedJavaLocalRef<jstring> Java_Integer_toBinaryString(JNIEnv* env,
-    JniIntWrapper p0) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jstring>
+    Java_Integer_toBinaryString(JNIEnv* env, JniIntWrapper p0);
 static base::android::ScopedJavaLocalRef<jstring> Java_Integer_toBinaryString(JNIEnv* env,
     JniIntWrapper p0) {
   jclass clazz = java_lang_Integer_clazz(env);
@@ -172,8 +172,8 @@ static base::android::ScopedJavaLocalRef<jstring> Java_Integer_toBinaryString(JN
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_toStringJLS_I(nullptr);
-static base::android::ScopedJavaLocalRef<jstring> Java_Integer_toStringJLS_I(JNIEnv* env,
-    JniIntWrapper p0) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jstring>
+    Java_Integer_toStringJLS_I(JNIEnv* env, JniIntWrapper p0);
 static base::android::ScopedJavaLocalRef<jstring> Java_Integer_toStringJLS_I(JNIEnv* env,
     JniIntWrapper p0) {
   jclass clazz = java_lang_Integer_clazz(env);
@@ -196,8 +196,8 @@ static base::android::ScopedJavaLocalRef<jstring> Java_Integer_toStringJLS_I(JNI
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_toUnsignedStringJLS_I(nullptr);
-static base::android::ScopedJavaLocalRef<jstring> Java_Integer_toUnsignedStringJLS_I(JNIEnv* env,
-    JniIntWrapper p0) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jstring>
+    Java_Integer_toUnsignedStringJLS_I(JNIEnv* env, JniIntWrapper p0);
 static base::android::ScopedJavaLocalRef<jstring> Java_Integer_toUnsignedStringJLS_I(JNIEnv* env,
     JniIntWrapper p0) {
   jclass clazz = java_lang_Integer_clazz(env);
@@ -220,8 +220,9 @@ static base::android::ScopedJavaLocalRef<jstring> Java_Integer_toUnsignedStringJ
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_parseIntI_JLS_I(nullptr);
-static jint Java_Integer_parseIntI_JLS_I(JNIEnv* env, const base::android::JavaRef<jstring>& p0,
-    JniIntWrapper p1) __attribute__ ((unused));
+[[maybe_unused]] static jint Java_Integer_parseIntI_JLS_I(JNIEnv* env, const
+    base::android::JavaRef<jstring>& p0,
+    JniIntWrapper p1);
 static jint Java_Integer_parseIntI_JLS_I(JNIEnv* env, const base::android::JavaRef<jstring>& p0,
     JniIntWrapper p1) {
   jclass clazz = java_lang_Integer_clazz(env);
@@ -244,8 +245,8 @@ static jint Java_Integer_parseIntI_JLS_I(JNIEnv* env, const base::android::JavaR
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_parseIntI_JLS(nullptr);
-static jint Java_Integer_parseIntI_JLS(JNIEnv* env, const base::android::JavaRef<jstring>& p0)
-    __attribute__ ((unused));
+[[maybe_unused]] static jint Java_Integer_parseIntI_JLS(JNIEnv* env, const
+    base::android::JavaRef<jstring>& p0);
 static jint Java_Integer_parseIntI_JLS(JNIEnv* env, const base::android::JavaRef<jstring>& p0) {
   jclass clazz = java_lang_Integer_clazz(env);
   CHECK_CLAZZ(env, clazz,
@@ -267,9 +268,9 @@ static jint Java_Integer_parseIntI_JLS(JNIEnv* env, const base::android::JavaRef
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_parseUnsignedIntI_JLS_I(nullptr);
-static jint Java_Integer_parseUnsignedIntI_JLS_I(JNIEnv* env, const base::android::JavaRef<jstring>&
-    p0,
-    JniIntWrapper p1) __attribute__ ((unused));
+[[maybe_unused]] static jint Java_Integer_parseUnsignedIntI_JLS_I(JNIEnv* env, const
+    base::android::JavaRef<jstring>& p0,
+    JniIntWrapper p1);
 static jint Java_Integer_parseUnsignedIntI_JLS_I(JNIEnv* env, const base::android::JavaRef<jstring>&
     p0,
     JniIntWrapper p1) {
@@ -293,8 +294,8 @@ static jint Java_Integer_parseUnsignedIntI_JLS_I(JNIEnv* env, const base::androi
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_parseUnsignedIntI_JLS(nullptr);
-static jint Java_Integer_parseUnsignedIntI_JLS(JNIEnv* env, const base::android::JavaRef<jstring>&
-    p0) __attribute__ ((unused));
+[[maybe_unused]] static jint Java_Integer_parseUnsignedIntI_JLS(JNIEnv* env, const
+    base::android::JavaRef<jstring>& p0);
 static jint Java_Integer_parseUnsignedIntI_JLS(JNIEnv* env, const base::android::JavaRef<jstring>&
     p0) {
   jclass clazz = java_lang_Integer_clazz(env);
@@ -317,9 +318,9 @@ static jint Java_Integer_parseUnsignedIntI_JLS(JNIEnv* env, const base::android:
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_valueOfJLI_JLS_I(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_Integer_valueOfJLI_JLS_I(JNIEnv* env, const
-    base::android::JavaRef<jstring>& p0,
-    JniIntWrapper p1) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject>
+    Java_Integer_valueOfJLI_JLS_I(JNIEnv* env, const base::android::JavaRef<jstring>& p0,
+    JniIntWrapper p1);
 static base::android::ScopedJavaLocalRef<jobject> Java_Integer_valueOfJLI_JLS_I(JNIEnv* env, const
     base::android::JavaRef<jstring>& p0,
     JniIntWrapper p1) {
@@ -343,8 +344,8 @@ static base::android::ScopedJavaLocalRef<jobject> Java_Integer_valueOfJLI_JLS_I(
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_valueOfJLI_JLS(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_Integer_valueOfJLI_JLS(JNIEnv* env, const
-    base::android::JavaRef<jstring>& p0) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject>
+    Java_Integer_valueOfJLI_JLS(JNIEnv* env, const base::android::JavaRef<jstring>& p0);
 static base::android::ScopedJavaLocalRef<jobject> Java_Integer_valueOfJLI_JLS(JNIEnv* env, const
     base::android::JavaRef<jstring>& p0) {
   jclass clazz = java_lang_Integer_clazz(env);
@@ -367,8 +368,8 @@ static base::android::ScopedJavaLocalRef<jobject> Java_Integer_valueOfJLI_JLS(JN
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_valueOfJLI_I(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_Integer_valueOfJLI_I(JNIEnv* env,
-    JniIntWrapper p0) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject> Java_Integer_valueOfJLI_I(JNIEnv*
+    env, JniIntWrapper p0);
 static base::android::ScopedJavaLocalRef<jobject> Java_Integer_valueOfJLI_I(JNIEnv* env,
     JniIntWrapper p0) {
   jclass clazz = java_lang_Integer_clazz(env);
@@ -391,8 +392,8 @@ static base::android::ScopedJavaLocalRef<jobject> Java_Integer_valueOfJLI_I(JNIE
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_byteValue(nullptr);
-static jbyte Java_Integer_byteValue(JNIEnv* env, const base::android::JavaRef<jobject>& obj)
-    __attribute__ ((unused));
+[[maybe_unused]] static jbyte Java_Integer_byteValue(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj);
 static jbyte Java_Integer_byteValue(JNIEnv* env, const base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_lang_Integer_clazz(env);
   CHECK_CLAZZ(env, obj.obj(),
@@ -414,8 +415,8 @@ static jbyte Java_Integer_byteValue(JNIEnv* env, const base::android::JavaRef<jo
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_shortValue(nullptr);
-static jshort Java_Integer_shortValue(JNIEnv* env, const base::android::JavaRef<jobject>& obj)
-    __attribute__ ((unused));
+[[maybe_unused]] static jshort Java_Integer_shortValue(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj);
 static jshort Java_Integer_shortValue(JNIEnv* env, const base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_lang_Integer_clazz(env);
   CHECK_CLAZZ(env, obj.obj(),
@@ -437,8 +438,8 @@ static jshort Java_Integer_shortValue(JNIEnv* env, const base::android::JavaRef<
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_intValue(nullptr);
-static jint Java_Integer_intValue(JNIEnv* env, const base::android::JavaRef<jobject>& obj)
-    __attribute__ ((unused));
+[[maybe_unused]] static jint Java_Integer_intValue(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj);
 static jint Java_Integer_intValue(JNIEnv* env, const base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_lang_Integer_clazz(env);
   CHECK_CLAZZ(env, obj.obj(),
@@ -460,8 +461,8 @@ static jint Java_Integer_intValue(JNIEnv* env, const base::android::JavaRef<jobj
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_longValue(nullptr);
-static jlong Java_Integer_longValue(JNIEnv* env, const base::android::JavaRef<jobject>& obj)
-    __attribute__ ((unused));
+[[maybe_unused]] static jlong Java_Integer_longValue(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj);
 static jlong Java_Integer_longValue(JNIEnv* env, const base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_lang_Integer_clazz(env);
   CHECK_CLAZZ(env, obj.obj(),
@@ -483,8 +484,8 @@ static jlong Java_Integer_longValue(JNIEnv* env, const base::android::JavaRef<jo
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_floatValue(nullptr);
-static jfloat Java_Integer_floatValue(JNIEnv* env, const base::android::JavaRef<jobject>& obj)
-    __attribute__ ((unused));
+[[maybe_unused]] static jfloat Java_Integer_floatValue(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj);
 static jfloat Java_Integer_floatValue(JNIEnv* env, const base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_lang_Integer_clazz(env);
   CHECK_CLAZZ(env, obj.obj(),
@@ -506,8 +507,8 @@ static jfloat Java_Integer_floatValue(JNIEnv* env, const base::android::JavaRef<
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_doubleValue(nullptr);
-static jdouble Java_Integer_doubleValue(JNIEnv* env, const base::android::JavaRef<jobject>& obj)
-    __attribute__ ((unused));
+[[maybe_unused]] static jdouble Java_Integer_doubleValue(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj);
 static jdouble Java_Integer_doubleValue(JNIEnv* env, const base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_lang_Integer_clazz(env);
   CHECK_CLAZZ(env, obj.obj(),
@@ -529,8 +530,8 @@ static jdouble Java_Integer_doubleValue(JNIEnv* env, const base::android::JavaRe
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_toStringJLS(nullptr);
-static base::android::ScopedJavaLocalRef<jstring> Java_Integer_toStringJLS(JNIEnv* env, const
-    base::android::JavaRef<jobject>& obj) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jstring> Java_Integer_toStringJLS(JNIEnv*
+    env, const base::android::JavaRef<jobject>& obj);
 static base::android::ScopedJavaLocalRef<jstring> Java_Integer_toStringJLS(JNIEnv* env, const
     base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_lang_Integer_clazz(env);
@@ -553,8 +554,8 @@ static base::android::ScopedJavaLocalRef<jstring> Java_Integer_toStringJLS(JNIEn
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_hashCodeI(nullptr);
-static jint Java_Integer_hashCodeI(JNIEnv* env, const base::android::JavaRef<jobject>& obj)
-    __attribute__ ((unused));
+[[maybe_unused]] static jint Java_Integer_hashCodeI(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj);
 static jint Java_Integer_hashCodeI(JNIEnv* env, const base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_lang_Integer_clazz(env);
   CHECK_CLAZZ(env, obj.obj(),
@@ -576,7 +577,7 @@ static jint Java_Integer_hashCodeI(JNIEnv* env, const base::android::JavaRef<job
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_hashCodeI_I(nullptr);
-static jint Java_Integer_hashCodeI_I(JNIEnv* env, JniIntWrapper p0) __attribute__ ((unused));
+[[maybe_unused]] static jint Java_Integer_hashCodeI_I(JNIEnv* env, JniIntWrapper p0);
 static jint Java_Integer_hashCodeI_I(JNIEnv* env, JniIntWrapper p0) {
   jclass clazz = java_lang_Integer_clazz(env);
   CHECK_CLAZZ(env, clazz,
@@ -598,8 +599,8 @@ static jint Java_Integer_hashCodeI_I(JNIEnv* env, JniIntWrapper p0) {
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_equals(nullptr);
-static jboolean Java_Integer_equals(JNIEnv* env, const base::android::JavaRef<jobject>& obj, const
-    base::android::JavaRef<jobject>& p0) __attribute__ ((unused));
+[[maybe_unused]] static jboolean Java_Integer_equals(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobject>& p0);
 static jboolean Java_Integer_equals(JNIEnv* env, const base::android::JavaRef<jobject>& obj, const
     base::android::JavaRef<jobject>& p0) {
   jclass clazz = java_lang_Integer_clazz(env);
@@ -622,8 +623,8 @@ static jboolean Java_Integer_equals(JNIEnv* env, const base::android::JavaRef<jo
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_getIntegerJLI_JLS(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_Integer_getIntegerJLI_JLS(JNIEnv* env, const
-    base::android::JavaRef<jstring>& p0) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject>
+    Java_Integer_getIntegerJLI_JLS(JNIEnv* env, const base::android::JavaRef<jstring>& p0);
 static base::android::ScopedJavaLocalRef<jobject> Java_Integer_getIntegerJLI_JLS(JNIEnv* env, const
     base::android::JavaRef<jstring>& p0) {
   jclass clazz = java_lang_Integer_clazz(env);
@@ -646,9 +647,9 @@ static base::android::ScopedJavaLocalRef<jobject> Java_Integer_getIntegerJLI_JLS
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_getIntegerJLI_JLS_I(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_Integer_getIntegerJLI_JLS_I(JNIEnv* env,
-    const base::android::JavaRef<jstring>& p0,
-    JniIntWrapper p1) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject>
+    Java_Integer_getIntegerJLI_JLS_I(JNIEnv* env, const base::android::JavaRef<jstring>& p0,
+    JniIntWrapper p1);
 static base::android::ScopedJavaLocalRef<jobject> Java_Integer_getIntegerJLI_JLS_I(JNIEnv* env,
     const base::android::JavaRef<jstring>& p0,
     JniIntWrapper p1) {
@@ -672,9 +673,9 @@ static base::android::ScopedJavaLocalRef<jobject> Java_Integer_getIntegerJLI_JLS
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_getIntegerJLI_JLS_JLI(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_Integer_getIntegerJLI_JLS_JLI(JNIEnv* env,
-    const base::android::JavaRef<jstring>& p0,
-    const base::android::JavaRef<jobject>& p1) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject>
+    Java_Integer_getIntegerJLI_JLS_JLI(JNIEnv* env, const base::android::JavaRef<jstring>& p0,
+    const base::android::JavaRef<jobject>& p1);
 static base::android::ScopedJavaLocalRef<jobject> Java_Integer_getIntegerJLI_JLS_JLI(JNIEnv* env,
     const base::android::JavaRef<jstring>& p0,
     const base::android::JavaRef<jobject>& p1) {
@@ -698,8 +699,8 @@ static base::android::ScopedJavaLocalRef<jobject> Java_Integer_getIntegerJLI_JLS
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_decode(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_Integer_decode(JNIEnv* env, const
-    base::android::JavaRef<jstring>& p0) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject> Java_Integer_decode(JNIEnv* env,
+    const base::android::JavaRef<jstring>& p0);
 static base::android::ScopedJavaLocalRef<jobject> Java_Integer_decode(JNIEnv* env, const
     base::android::JavaRef<jstring>& p0) {
   jclass clazz = java_lang_Integer_clazz(env);
@@ -722,8 +723,8 @@ static base::android::ScopedJavaLocalRef<jobject> Java_Integer_decode(JNIEnv* en
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_compareToI_JLI(nullptr);
-static jint Java_Integer_compareToI_JLI(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
-    const base::android::JavaRef<jobject>& p0) __attribute__ ((unused));
+[[maybe_unused]] static jint Java_Integer_compareToI_JLI(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobject>& p0);
 static jint Java_Integer_compareToI_JLI(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
     const base::android::JavaRef<jobject>& p0) {
   jclass clazz = java_lang_Integer_clazz(env);
@@ -746,8 +747,8 @@ static jint Java_Integer_compareToI_JLI(JNIEnv* env, const base::android::JavaRe
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_compare(nullptr);
-static jint Java_Integer_compare(JNIEnv* env, JniIntWrapper p0,
-    JniIntWrapper p1) __attribute__ ((unused));
+[[maybe_unused]] static jint Java_Integer_compare(JNIEnv* env, JniIntWrapper p0,
+    JniIntWrapper p1);
 static jint Java_Integer_compare(JNIEnv* env, JniIntWrapper p0,
     JniIntWrapper p1) {
   jclass clazz = java_lang_Integer_clazz(env);
@@ -770,8 +771,8 @@ static jint Java_Integer_compare(JNIEnv* env, JniIntWrapper p0,
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_compareUnsigned(nullptr);
-static jint Java_Integer_compareUnsigned(JNIEnv* env, JniIntWrapper p0,
-    JniIntWrapper p1) __attribute__ ((unused));
+[[maybe_unused]] static jint Java_Integer_compareUnsigned(JNIEnv* env, JniIntWrapper p0,
+    JniIntWrapper p1);
 static jint Java_Integer_compareUnsigned(JNIEnv* env, JniIntWrapper p0,
     JniIntWrapper p1) {
   jclass clazz = java_lang_Integer_clazz(env);
@@ -794,7 +795,7 @@ static jint Java_Integer_compareUnsigned(JNIEnv* env, JniIntWrapper p0,
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_toUnsignedLong(nullptr);
-static jlong Java_Integer_toUnsignedLong(JNIEnv* env, JniIntWrapper p0) __attribute__ ((unused));
+[[maybe_unused]] static jlong Java_Integer_toUnsignedLong(JNIEnv* env, JniIntWrapper p0);
 static jlong Java_Integer_toUnsignedLong(JNIEnv* env, JniIntWrapper p0) {
   jclass clazz = java_lang_Integer_clazz(env);
   CHECK_CLAZZ(env, clazz,
@@ -816,8 +817,8 @@ static jlong Java_Integer_toUnsignedLong(JNIEnv* env, JniIntWrapper p0) {
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_divideUnsigned(nullptr);
-static jint Java_Integer_divideUnsigned(JNIEnv* env, JniIntWrapper p0,
-    JniIntWrapper p1) __attribute__ ((unused));
+[[maybe_unused]] static jint Java_Integer_divideUnsigned(JNIEnv* env, JniIntWrapper p0,
+    JniIntWrapper p1);
 static jint Java_Integer_divideUnsigned(JNIEnv* env, JniIntWrapper p0,
     JniIntWrapper p1) {
   jclass clazz = java_lang_Integer_clazz(env);
@@ -840,8 +841,8 @@ static jint Java_Integer_divideUnsigned(JNIEnv* env, JniIntWrapper p0,
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_remainderUnsigned(nullptr);
-static jint Java_Integer_remainderUnsigned(JNIEnv* env, JniIntWrapper p0,
-    JniIntWrapper p1) __attribute__ ((unused));
+[[maybe_unused]] static jint Java_Integer_remainderUnsigned(JNIEnv* env, JniIntWrapper p0,
+    JniIntWrapper p1);
 static jint Java_Integer_remainderUnsigned(JNIEnv* env, JniIntWrapper p0,
     JniIntWrapper p1) {
   jclass clazz = java_lang_Integer_clazz(env);
@@ -864,7 +865,7 @@ static jint Java_Integer_remainderUnsigned(JNIEnv* env, JniIntWrapper p0,
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_highestOneBit(nullptr);
-static jint Java_Integer_highestOneBit(JNIEnv* env, JniIntWrapper p0) __attribute__ ((unused));
+[[maybe_unused]] static jint Java_Integer_highestOneBit(JNIEnv* env, JniIntWrapper p0);
 static jint Java_Integer_highestOneBit(JNIEnv* env, JniIntWrapper p0) {
   jclass clazz = java_lang_Integer_clazz(env);
   CHECK_CLAZZ(env, clazz,
@@ -886,7 +887,7 @@ static jint Java_Integer_highestOneBit(JNIEnv* env, JniIntWrapper p0) {
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_lowestOneBit(nullptr);
-static jint Java_Integer_lowestOneBit(JNIEnv* env, JniIntWrapper p0) __attribute__ ((unused));
+[[maybe_unused]] static jint Java_Integer_lowestOneBit(JNIEnv* env, JniIntWrapper p0);
 static jint Java_Integer_lowestOneBit(JNIEnv* env, JniIntWrapper p0) {
   jclass clazz = java_lang_Integer_clazz(env);
   CHECK_CLAZZ(env, clazz,
@@ -908,8 +909,7 @@ static jint Java_Integer_lowestOneBit(JNIEnv* env, JniIntWrapper p0) {
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_numberOfLeadingZeros(nullptr);
-static jint Java_Integer_numberOfLeadingZeros(JNIEnv* env, JniIntWrapper p0) __attribute__
-    ((unused));
+[[maybe_unused]] static jint Java_Integer_numberOfLeadingZeros(JNIEnv* env, JniIntWrapper p0);
 static jint Java_Integer_numberOfLeadingZeros(JNIEnv* env, JniIntWrapper p0) {
   jclass clazz = java_lang_Integer_clazz(env);
   CHECK_CLAZZ(env, clazz,
@@ -931,8 +931,7 @@ static jint Java_Integer_numberOfLeadingZeros(JNIEnv* env, JniIntWrapper p0) {
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_numberOfTrailingZeros(nullptr);
-static jint Java_Integer_numberOfTrailingZeros(JNIEnv* env, JniIntWrapper p0) __attribute__
-    ((unused));
+[[maybe_unused]] static jint Java_Integer_numberOfTrailingZeros(JNIEnv* env, JniIntWrapper p0);
 static jint Java_Integer_numberOfTrailingZeros(JNIEnv* env, JniIntWrapper p0) {
   jclass clazz = java_lang_Integer_clazz(env);
   CHECK_CLAZZ(env, clazz,
@@ -954,7 +953,7 @@ static jint Java_Integer_numberOfTrailingZeros(JNIEnv* env, JniIntWrapper p0) {
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_bitCount(nullptr);
-static jint Java_Integer_bitCount(JNIEnv* env, JniIntWrapper p0) __attribute__ ((unused));
+[[maybe_unused]] static jint Java_Integer_bitCount(JNIEnv* env, JniIntWrapper p0);
 static jint Java_Integer_bitCount(JNIEnv* env, JniIntWrapper p0) {
   jclass clazz = java_lang_Integer_clazz(env);
   CHECK_CLAZZ(env, clazz,
@@ -976,8 +975,8 @@ static jint Java_Integer_bitCount(JNIEnv* env, JniIntWrapper p0) {
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_rotateLeft(nullptr);
-static jint Java_Integer_rotateLeft(JNIEnv* env, JniIntWrapper p0,
-    JniIntWrapper p1) __attribute__ ((unused));
+[[maybe_unused]] static jint Java_Integer_rotateLeft(JNIEnv* env, JniIntWrapper p0,
+    JniIntWrapper p1);
 static jint Java_Integer_rotateLeft(JNIEnv* env, JniIntWrapper p0,
     JniIntWrapper p1) {
   jclass clazz = java_lang_Integer_clazz(env);
@@ -1000,8 +999,8 @@ static jint Java_Integer_rotateLeft(JNIEnv* env, JniIntWrapper p0,
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_rotateRight(nullptr);
-static jint Java_Integer_rotateRight(JNIEnv* env, JniIntWrapper p0,
-    JniIntWrapper p1) __attribute__ ((unused));
+[[maybe_unused]] static jint Java_Integer_rotateRight(JNIEnv* env, JniIntWrapper p0,
+    JniIntWrapper p1);
 static jint Java_Integer_rotateRight(JNIEnv* env, JniIntWrapper p0,
     JniIntWrapper p1) {
   jclass clazz = java_lang_Integer_clazz(env);
@@ -1024,7 +1023,7 @@ static jint Java_Integer_rotateRight(JNIEnv* env, JniIntWrapper p0,
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_reverse(nullptr);
-static jint Java_Integer_reverse(JNIEnv* env, JniIntWrapper p0) __attribute__ ((unused));
+[[maybe_unused]] static jint Java_Integer_reverse(JNIEnv* env, JniIntWrapper p0);
 static jint Java_Integer_reverse(JNIEnv* env, JniIntWrapper p0) {
   jclass clazz = java_lang_Integer_clazz(env);
   CHECK_CLAZZ(env, clazz,
@@ -1046,7 +1045,7 @@ static jint Java_Integer_reverse(JNIEnv* env, JniIntWrapper p0) {
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_signum(nullptr);
-static jint Java_Integer_signum(JNIEnv* env, JniIntWrapper p0) __attribute__ ((unused));
+[[maybe_unused]] static jint Java_Integer_signum(JNIEnv* env, JniIntWrapper p0);
 static jint Java_Integer_signum(JNIEnv* env, JniIntWrapper p0) {
   jclass clazz = java_lang_Integer_clazz(env);
   CHECK_CLAZZ(env, clazz,
@@ -1068,7 +1067,7 @@ static jint Java_Integer_signum(JNIEnv* env, JniIntWrapper p0) {
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_reverseBytes(nullptr);
-static jint Java_Integer_reverseBytes(JNIEnv* env, JniIntWrapper p0) __attribute__ ((unused));
+[[maybe_unused]] static jint Java_Integer_reverseBytes(JNIEnv* env, JniIntWrapper p0);
 static jint Java_Integer_reverseBytes(JNIEnv* env, JniIntWrapper p0) {
   jclass clazz = java_lang_Integer_clazz(env);
   CHECK_CLAZZ(env, clazz,
@@ -1090,8 +1089,8 @@ static jint Java_Integer_reverseBytes(JNIEnv* env, JniIntWrapper p0) {
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_sum(nullptr);
-static jint Java_Integer_sum(JNIEnv* env, JniIntWrapper p0,
-    JniIntWrapper p1) __attribute__ ((unused));
+[[maybe_unused]] static jint Java_Integer_sum(JNIEnv* env, JniIntWrapper p0,
+    JniIntWrapper p1);
 static jint Java_Integer_sum(JNIEnv* env, JniIntWrapper p0,
     JniIntWrapper p1) {
   jclass clazz = java_lang_Integer_clazz(env);
@@ -1114,8 +1113,8 @@ static jint Java_Integer_sum(JNIEnv* env, JniIntWrapper p0,
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_max(nullptr);
-static jint Java_Integer_max(JNIEnv* env, JniIntWrapper p0,
-    JniIntWrapper p1) __attribute__ ((unused));
+[[maybe_unused]] static jint Java_Integer_max(JNIEnv* env, JniIntWrapper p0,
+    JniIntWrapper p1);
 static jint Java_Integer_max(JNIEnv* env, JniIntWrapper p0,
     JniIntWrapper p1) {
   jclass clazz = java_lang_Integer_clazz(env);
@@ -1138,8 +1137,8 @@ static jint Java_Integer_max(JNIEnv* env, JniIntWrapper p0,
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_min(nullptr);
-static jint Java_Integer_min(JNIEnv* env, JniIntWrapper p0,
-    JniIntWrapper p1) __attribute__ ((unused));
+[[maybe_unused]] static jint Java_Integer_min(JNIEnv* env, JniIntWrapper p0,
+    JniIntWrapper p1);
 static jint Java_Integer_min(JNIEnv* env, JniIntWrapper p0,
     JniIntWrapper p1) {
   jclass clazz = java_lang_Integer_clazz(env);
@@ -1162,8 +1161,8 @@ static jint Java_Integer_min(JNIEnv* env, JniIntWrapper p0,
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_compareToI_JLO(nullptr);
-static jint Java_Integer_compareToI_JLO(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
-    const base::android::JavaRef<jobject>& p0) __attribute__ ((unused));
+[[maybe_unused]] static jint Java_Integer_compareToI_JLO(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobject>& p0);
 static jint Java_Integer_compareToI_JLO(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
     const base::android::JavaRef<jobject>& p0) {
   jclass clazz = java_lang_Integer_clazz(env);
@@ -1186,8 +1185,8 @@ static jint Java_Integer_compareToI_JLO(JNIEnv* env, const base::android::JavaRe
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_ConstructorJLI_I(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_Integer_ConstructorJLI_I(JNIEnv* env,
-    JniIntWrapper p0) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject>
+    Java_Integer_ConstructorJLI_I(JNIEnv* env, JniIntWrapper p0);
 static base::android::ScopedJavaLocalRef<jobject> Java_Integer_ConstructorJLI_I(JNIEnv* env,
     JniIntWrapper p0) {
   jclass clazz = java_lang_Integer_clazz(env);
@@ -1210,8 +1209,8 @@ static base::android::ScopedJavaLocalRef<jobject> Java_Integer_ConstructorJLI_I(
 }
 
 static std::atomic<jmethodID> g_java_lang_Integer_ConstructorJLI_JLS(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_Integer_ConstructorJLI_JLS(JNIEnv* env, const
-    base::android::JavaRef<jstring>& p0) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject>
+    Java_Integer_ConstructorJLI_JLS(JNIEnv* env, const base::android::JavaRef<jstring>& p0);
 static base::android::ScopedJavaLocalRef<jobject> Java_Integer_ConstructorJLI_JLS(JNIEnv* env, const
     base::android::JavaRef<jstring>& p0) {
   jclass clazz = java_lang_Integer_clazz(env);
@@ -1234,8 +1233,5 @@ static base::android::ScopedJavaLocalRef<jobject> Java_Integer_ConstructorJLI_JL
 }
 
 }  // namespace JNI_Integer
-
-// Step 4: Generated test functions (optional).
-
 
 #endif  // java_lang_Integer_JNI

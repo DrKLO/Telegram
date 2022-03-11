@@ -21,7 +21,6 @@
 #include "rtc_base/async_packet_socket.h"
 #include "rtc_base/async_resolver_interface.h"
 #include "rtc_base/checks.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/helpers.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/task_utils/to_queued_task.h"
@@ -61,13 +60,16 @@ class StunProber::Requester : public sigslot::has_slots<> {
     void ProcessResponse(const char* buf, size_t buf_len);
   };
 
-  // StunProber provides |server_ips| for Requester to probe. For shared
+  // StunProber provides `server_ips` for Requester to probe. For shared
   // socket mode, it'll be all the resolved IP addresses. For non-shared mode,
   // it'll just be a single address.
   Requester(StunProber* prober,
             rtc::AsyncPacketSocket* socket,
             const std::vector<rtc::SocketAddress>& server_ips);
   ~Requester() override;
+
+  Requester(const Requester&) = delete;
+  Requester& operator=(const Requester&) = delete;
 
   // There is no callback for SendStunRequest as the underneath socket send is
   // expected to be completed immediately. Otherwise, it'll skip this request
@@ -105,8 +107,6 @@ class StunProber::Requester : public sigslot::has_slots<> {
   int16_t num_response_received_ = 0;
 
   webrtc::SequenceChecker& thread_checker_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(Requester);
 };
 
 StunProber::Requester::Requester(

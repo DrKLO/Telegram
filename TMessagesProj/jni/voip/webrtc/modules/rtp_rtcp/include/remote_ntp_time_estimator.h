@@ -14,7 +14,6 @@
 #include <stdint.h>
 
 #include "absl/types/optional.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/numerics/moving_median_filter.h"
 #include "system_wrappers/include/rtp_to_ntp_estimator.h"
 
@@ -25,21 +24,24 @@ class Clock;
 // RemoteNtpTimeEstimator can be used to estimate a given RTP timestamp's NTP
 // time in local timebase.
 // Note that it needs to be trained with at least 2 RTCP SR (by calling
-// |UpdateRtcpTimestamp|) before it can be used.
+// `UpdateRtcpTimestamp`) before it can be used.
 class RemoteNtpTimeEstimator {
  public:
   explicit RemoteNtpTimeEstimator(Clock* clock);
 
   ~RemoteNtpTimeEstimator();
 
-  // Updates the estimator with round trip time |rtt|, NTP seconds |ntp_secs|,
-  // NTP fraction |ntp_frac| and RTP timestamp |rtp_timestamp|.
+  RemoteNtpTimeEstimator(const RemoteNtpTimeEstimator&) = delete;
+  RemoteNtpTimeEstimator& operator=(const RemoteNtpTimeEstimator&) = delete;
+
+  // Updates the estimator with round trip time `rtt`, NTP seconds `ntp_secs`,
+  // NTP fraction `ntp_frac` and RTP timestamp `rtp_timestamp`.
   bool UpdateRtcpTimestamp(int64_t rtt,
                            uint32_t ntp_secs,
                            uint32_t ntp_frac,
                            uint32_t rtp_timestamp);
 
-  // Estimates the NTP timestamp in local timebase from |rtp_timestamp|.
+  // Estimates the NTP timestamp in local timebase from `rtp_timestamp`.
   // Returns the NTP timestamp in ms when success. -1 if failed.
   int64_t Estimate(uint32_t rtp_timestamp);
 
@@ -52,7 +54,6 @@ class RemoteNtpTimeEstimator {
   MovingMedianFilter<int64_t> ntp_clocks_offset_estimator_;
   RtpToNtpEstimator rtp_to_ntp_;
   int64_t last_timing_log_ms_;
-  RTC_DISALLOW_COPY_AND_ASSIGN(RemoteNtpTimeEstimator);
 };
 
 }  // namespace webrtc

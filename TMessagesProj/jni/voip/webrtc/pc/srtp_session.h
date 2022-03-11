@@ -11,11 +11,13 @@
 #ifndef PC_SRTP_SESSION_H_
 #define PC_SRTP_SESSION_H_
 
+#include <stddef.h>
+#include <stdint.h>
+
 #include <vector>
 
 #include "api/scoped_refptr.h"
 #include "api/sequence_checker.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/synchronization/mutex.h"
 
 // Forward declaration to avoid pulling in libsrtp headers here
@@ -34,6 +36,9 @@ class SrtpSession {
  public:
   SrtpSession();
   ~SrtpSession();
+
+  SrtpSession(const SrtpSession&) = delete;
+  SrtpSession& operator=(const SrtpSession&) = delete;
 
   // Configures the session for sending data using the specified
   // cipher-suite and key. Receiving must be done by a separate session.
@@ -129,7 +134,7 @@ class SrtpSession {
 
   // Overhead of the SRTP auth tag for RTP and RTCP in bytes.
   // Depends on the cipher suite used and is usually the same with the exception
-  // of the CS_AES_CM_128_HMAC_SHA1_32 cipher suite. The additional four bytes
+  // of the kCsAesCm128HmacSha1_32 cipher suite. The additional four bytes
   // required for RTCP protection are not included.
   int rtp_auth_tag_len_ = 0;
   int rtcp_auth_tag_len_ = 0;
@@ -141,7 +146,6 @@ class SrtpSession {
   bool external_auth_enabled_ = false;
   int decryption_failure_count_ = 0;
   bool dump_plain_rtp_ = false;
-  RTC_DISALLOW_COPY_AND_ASSIGN(SrtpSession);
 };
 
 }  // namespace cricket

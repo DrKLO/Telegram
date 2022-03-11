@@ -25,7 +25,7 @@ namespace {
 constexpr size_t kMaxMediaPackets = 48;
 
 // Maximum number of media packets tracked by FEC decoder.
-// Maintain a sufficiently larger tracking window than |kMaxMediaPackets|
+// Maintain a sufficiently larger tracking window than `kMaxMediaPackets`
 // to account for packet reordering in pacer/ network.
 constexpr size_t kMaxTrackedMediaPackets = 4 * kMaxMediaPackets;
 

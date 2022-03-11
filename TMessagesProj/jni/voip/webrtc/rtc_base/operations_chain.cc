@@ -30,17 +30,18 @@ void OperationsChain::CallbackHandle::OnOperationComplete() {
   has_run_ = true;
 #endif  // RTC_DCHECK_IS_ON
   operations_chain_->OnOperationComplete();
-  // We have no reason to keep the |operations_chain_| alive through reference
+  // We have no reason to keep the `operations_chain_` alive through reference
   // counting anymore.
   operations_chain_ = nullptr;
 }
 
 // static
 scoped_refptr<OperationsChain> OperationsChain::Create() {
-  return new OperationsChain();
+  // Explicit new, to access private constructor.
+  return rtc::scoped_refptr<OperationsChain>(new OperationsChain());
 }
 
-OperationsChain::OperationsChain() : RefCountedObject() {
+OperationsChain::OperationsChain() {
   RTC_DCHECK_RUN_ON(&sequence_checker_);
 }
 
@@ -63,8 +64,10 @@ bool OperationsChain::IsEmpty() const {
 }
 
 std::function<void()> OperationsChain::CreateOperationsChainCallback() {
-  return [handle = rtc::scoped_refptr<CallbackHandle>(
-              new CallbackHandle(this))]() { handle->OnOperationComplete(); };
+  return [handle = rtc::make_ref_counted<CallbackHandle>(
+              rtc::scoped_refptr<OperationsChain>(this))]() {
+    handle->OnOperationComplete();
+  };
 }
 
 void OperationsChain::OnOperationComplete() {

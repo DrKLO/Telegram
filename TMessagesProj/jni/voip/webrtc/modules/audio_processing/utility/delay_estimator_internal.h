@@ -25,7 +25,7 @@ typedef union {
 typedef struct {
   // Pointers to mean values of spectrum.
   SpectrumType* mean_far_spectrum;
-  // |mean_far_spectrum| initialization indicator.
+  // `mean_far_spectrum` initialization indicator.
   int far_spectrum_initialized;
 
   int spectrum_size;
@@ -37,7 +37,7 @@ typedef struct {
 typedef struct {
   // Pointers to mean values of spectrum.
   SpectrumType* mean_near_spectrum;
-  // |mean_near_spectrum| initialization indicator.
+  // `mean_near_spectrum` initialization indicator.
   int near_spectrum_initialized;
 
   int spectrum_size;

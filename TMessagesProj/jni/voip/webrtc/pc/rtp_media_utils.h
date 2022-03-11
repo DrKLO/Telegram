@@ -11,6 +11,8 @@
 #ifndef PC_RTP_MEDIA_UTILS_H_
 #define PC_RTP_MEDIA_UTILS_H_
 
+#include <ostream>  // no-presubmit-check TODO(webrtc:8982)
+
 #include "api/rtp_transceiver_direction.h"
 #include "api/rtp_transceiver_interface.h"
 
@@ -32,12 +34,12 @@ bool RtpTransceiverDirectionHasRecv(RtpTransceiverDirection direction);
 RtpTransceiverDirection RtpTransceiverDirectionReversed(
     RtpTransceiverDirection direction);
 
-// Returns the RtpTransceiverDirection with its send component set to |send|.
+// Returns the RtpTransceiverDirection with its send component set to `send`.
 RtpTransceiverDirection RtpTransceiverDirectionWithSendSet(
     RtpTransceiverDirection direction,
     bool send = true);
 
-// Returns the RtpTransceiverDirection with its recv component set to |recv|.
+// Returns the RtpTransceiverDirection with its recv component set to `recv`.
 RtpTransceiverDirection RtpTransceiverDirectionWithRecvSet(
     RtpTransceiverDirection direction,
     bool recv = true);

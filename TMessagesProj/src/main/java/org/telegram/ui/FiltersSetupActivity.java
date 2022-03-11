@@ -565,7 +565,7 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
                                     AlertDialog progressDialog = null;
                                     if (getParentActivity() != null) {
                                         progressDialog = new AlertDialog(getParentActivity(), 3);
-                                        progressDialog.setCanCacnel(false);
+                                        progressDialog.setCanCancel(false);
                                         progressDialog.show();
                                     }
                                     final AlertDialog progressDialogFinal = progressDialog;

@@ -19,11 +19,11 @@ typedef unsigned char uint8_t;
 bool MbHasSkinColor(const uint8_t* y_src,
                     const uint8_t* u_src,
                     const uint8_t* v_src,
-                    const int stride_y,
-                    const int stride_u,
-                    const int stride_v,
-                    const int mb_row,
-                    const int mb_col);
+                    int stride_y,
+                    int stride_u,
+                    int stride_v,
+                    int mb_row,
+                    int mb_col);
 
 }  // namespace webrtc
 

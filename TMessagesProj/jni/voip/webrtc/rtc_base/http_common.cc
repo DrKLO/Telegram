@@ -373,7 +373,7 @@ HttpAuthResult HttpAuthenticate(const char* challenge,
     if (DsMakeSpn("HTTP", server.HostAsURIString().c_str(), nullptr,
                   server.port(),
                   0, &len, spn) != ERROR_SUCCESS) {
-      RTC_LOG_F(WARNING) << "(Negotiate) - DsMakeSpn failed";
+      RTC_LOG_F(LS_WARNING) << "(Negotiate) - DsMakeSpn failed";
       return HAR_IGNORE;
     }
 #else
@@ -413,8 +413,8 @@ HttpAuthResult HttpAuthenticate(const char* challenge,
     if (neg) {
       const size_t max_steps = 10;
       if (++neg->steps >= max_steps) {
-        RTC_LOG(WARNING) << "AsyncHttpsProxySocket::Authenticate(Negotiate) "
-                            "too many retries";
+        RTC_LOG(LS_WARNING) << "AsyncHttpsProxySocket::Authenticate(Negotiate) "
+                               "too many retries";
         return HAR_ERROR;
       }
       steps = neg->steps;

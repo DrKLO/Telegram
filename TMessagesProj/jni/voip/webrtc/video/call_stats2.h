@@ -17,7 +17,6 @@
 #include "api/units/timestamp.h"
 #include "modules/include/module_common_types.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/task_queue.h"
 #include "rtc_base/task_utils/pending_task_safety_flag.h"
 #include "rtc_base/task_utils/repeating_task.h"
@@ -35,6 +34,9 @@ class CallStats {
   CallStats(Clock* clock, TaskQueueBase* task_queue);
   ~CallStats();
 
+  CallStats(const CallStats&) = delete;
+  CallStats& operator=(const CallStats&) = delete;
+
   // Ensure that necessary repeating tasks are started.
   void EnsureStarted();
 
@@ -50,7 +52,7 @@ class CallStats {
   void RegisterStatsObserver(CallStatsObserver* observer);
   void DeregisterStatsObserver(CallStatsObserver* observer);
 
-  // Expose |LastProcessedRtt()| from RtcpRttStats to the public interface, as
+  // Expose `LastProcessedRtt()` from RtcpRttStats to the public interface, as
   // it is the part of the API that is needed by direct users of CallStats.
   int64_t LastProcessedRtt() const;
 
@@ -93,7 +95,7 @@ class CallStats {
       // propagating the rtt from the RtpRtcp module, which does not call
       // LastProcessedRtt(). Down the line we should consider removing
       // LastProcessedRtt() and use the interface for event notifications only.
-      RTC_NOTREACHED() << "Legacy call path";
+      RTC_DCHECK_NOTREACHED() << "Legacy call path";
       return 0;
     }
 
@@ -125,8 +127,6 @@ class CallStats {
 
   // Used to signal destruction to potentially pending tasks.
   ScopedTaskSafety task_safety_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(CallStats);
 };
 
 }  // namespace internal

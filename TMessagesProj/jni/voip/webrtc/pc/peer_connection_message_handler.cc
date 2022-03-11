@@ -10,6 +10,7 @@
 
 #include "pc/peer_connection_message_handler.h"
 
+#include <list>
 #include <utility>
 
 #include "api/jsep.h"
@@ -129,7 +130,7 @@ void PeerConnectionMessageHandler::OnMessage(rtc::Message* msg) {
       break;
     }
     default:
-      RTC_NOTREACHED() << "Not implemented";
+      RTC_DCHECK_NOTREACHED() << "Not implemented";
       break;
   }
 }

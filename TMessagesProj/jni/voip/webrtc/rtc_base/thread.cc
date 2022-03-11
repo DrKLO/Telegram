@@ -75,6 +75,9 @@ class MessageHandlerWithTask final : public MessageHandler {
  public:
   MessageHandlerWithTask() {}
 
+  MessageHandlerWithTask(const MessageHandlerWithTask&) = delete;
+  MessageHandlerWithTask& operator=(const MessageHandlerWithTask&) = delete;
+
   void OnMessage(Message* msg) override {
     static_cast<rtc_thread_internal::MessageLikeTask*>(msg->pdata)->Run();
     delete msg->pdata;
@@ -82,8 +85,6 @@ class MessageHandlerWithTask final : public MessageHandler {
 
  private:
   ~MessageHandlerWithTask() override {}
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(MessageHandlerWithTask);
 };
 
 class RTC_SCOPED_LOCKABLE MarkProcessingCritScope {
@@ -100,11 +101,12 @@ class RTC_SCOPED_LOCKABLE MarkProcessingCritScope {
     cs_->Leave();
   }
 
+  MarkProcessingCritScope(const MarkProcessingCritScope&) = delete;
+  MarkProcessingCritScope& operator=(const MarkProcessingCritScope&) = delete;
+
  private:
   const RecursiveCriticalSection* const cs_;
   size_t* processing_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(MarkProcessingCritScope);
 };
 
 }  // namespace
@@ -116,7 +118,7 @@ ThreadManager* ThreadManager::Instance() {
 
 ThreadManager::~ThreadManager() {
   // By above RTC_DEFINE_STATIC_LOCAL.
-  RTC_NOTREACHED() << "ThreadManager should never be destructed.";
+  RTC_DCHECK_NOTREACHED() << "ThreadManager should never be destructed.";
 }
 
 // static
@@ -253,19 +255,11 @@ Thread* Thread::Current() {
   ThreadManager* manager = ThreadManager::Instance();
   Thread* thread = manager->CurrentThread();
 
-#ifndef NO_MAIN_THREAD_WRAPPING
-  // Only autowrap the thread which instantiated the ThreadManager.
-  if (!thread && manager->IsMainThread()) {
-    thread = new Thread(CreateDefaultSocketServer());
-    thread->WrapCurrentWithThreadManager(manager, true);
-  }
-#endif
-
   return thread;
 }
 
 #if defined(WEBRTC_POSIX)
-ThreadManager::ThreadManager() : main_thread_ref_(CurrentThreadRef()) {
+ThreadManager::ThreadManager() {
 #if defined(WEBRTC_MAC)
   InitCocoaMultiThreading();
 #endif
@@ -282,8 +276,7 @@ void ThreadManager::SetCurrentThreadInternal(Thread* thread) {
 #endif
 
 #if defined(WEBRTC_WIN)
-ThreadManager::ThreadManager()
-    : key_(TlsAlloc()), main_thread_ref_(CurrentThreadRef()) {}
+ThreadManager::ThreadManager() : key_(TlsAlloc()) {}
 
 Thread* ThreadManager::CurrentThread() {
   return static_cast<Thread*>(TlsGetValue(key_));
@@ -337,10 +330,6 @@ void ThreadManager::UnwrapCurrentThread() {
     t->UnwrapCurrent();
     delete t;
   }
-}
-
-bool ThreadManager::IsMainThread() {
-  return IsThreadRefEqual(CurrentThreadRef(), main_thread_ref_);
 }
 
 Thread::ScopedDisallowBlockingCalls::ScopedDisallowBlockingCalls()
@@ -929,6 +918,7 @@ void Thread::Send(const Location& posted_from,
   msg.pdata = pdata;
   if (IsCurrent()) {
 #if RTC_DCHECK_IS_ON
+    RTC_DCHECK(this->IsInvokeToThreadAllowed(this));
     RTC_DCHECK_RUN_ON(this);
     could_be_blocking_call_count_++;
 #endif
@@ -1031,7 +1021,7 @@ void Thread::ClearCurrentTaskQueue() {
 void Thread::QueuedTaskHandler::OnMessage(Message* msg) {
   RTC_DCHECK(msg);
   auto* data = static_cast<ScopedMessageData<webrtc::QueuedTask>*>(msg->pdata);
-  std::unique_ptr<webrtc::QueuedTask> task = std::move(data->data());
+  std::unique_ptr<webrtc::QueuedTask> task(data->Release());
   // Thread expects handler to own Message::pdata when OnMessage is called
   // Since MessageData is no longer needed, delete it.
   delete data;
@@ -1043,7 +1033,7 @@ void Thread::QueuedTaskHandler::OnMessage(Message* msg) {
 }
 
 void Thread::AllowInvokesToThread(Thread* thread) {
-#if (!defined(NDEBUG) || defined(DCHECK_ALWAYS_ON))
+#if (!defined(NDEBUG) || RTC_DCHECK_IS_ON)
   if (!IsCurrent()) {
     PostTask(webrtc::ToQueuedTask(
         [thread, this]() { AllowInvokesToThread(thread); }));
@@ -1056,7 +1046,7 @@ void Thread::AllowInvokesToThread(Thread* thread) {
 }
 
 void Thread::DisallowAllInvokes() {
-#if (!defined(NDEBUG) || defined(DCHECK_ALWAYS_ON))
+#if (!defined(NDEBUG) || RTC_DCHECK_IS_ON)
   if (!IsCurrent()) {
     PostTask(webrtc::ToQueuedTask([this]() { DisallowAllInvokes(); }));
     return;
@@ -1079,9 +1069,9 @@ uint32_t Thread::GetCouldBeBlockingCallCount() const {
 #endif
 
 // Returns true if no policies added or if there is at least one policy
-// that permits invocation to |target| thread.
+// that permits invocation to `target` thread.
 bool Thread::IsInvokeToThreadAllowed(rtc::Thread* target) {
-#if (!defined(NDEBUG) || defined(DCHECK_ALWAYS_ON))
+#if (!defined(NDEBUG) || RTC_DCHECK_IS_ON)
   RTC_DCHECK_RUN_ON(this);
   if (!invoke_policy_enabled_) {
     return true;
@@ -1106,10 +1096,16 @@ void Thread::PostTask(std::unique_ptr<webrtc::QueuedTask> task) {
 
 void Thread::PostDelayedTask(std::unique_ptr<webrtc::QueuedTask> task,
                              uint32_t milliseconds) {
+  // This implementation does not support low precision yet.
+  PostDelayedHighPrecisionTask(std::move(task), milliseconds);
+}
+
+void Thread::PostDelayedHighPrecisionTask(
+    std::unique_ptr<webrtc::QueuedTask> task,
+    uint32_t milliseconds) {
   // Though PostDelayed takes MessageData by raw pointer (last parameter),
   // it still takes it with ownership.
-  PostDelayed(RTC_FROM_HERE, milliseconds, &queued_task_handler_,
-              /*id=*/0,
+  PostDelayed(RTC_FROM_HERE, milliseconds, &queued_task_handler_, /*id=*/0,
               new ScopedMessageData<webrtc::QueuedTask>(std::move(task)));
 }
 
@@ -1227,11 +1223,6 @@ AutoSocketServerThread::AutoSocketServerThread(SocketServer* ss)
 
 AutoSocketServerThread::~AutoSocketServerThread() {
   RTC_DCHECK(ThreadManager::Instance()->CurrentThread() == this);
-  // Some tests post destroy messages to this thread. To avoid memory
-  // leaks, we have to process those messages. In particular
-  // P2PTransportChannelPingTest, relying on the message posted in
-  // cricket::Connection::Destroy.
-  ProcessMessages(0);
   // Stop and destroy the thread before clearing it as the current thread.
   // Sometimes there are messages left in the Thread that will be
   // destroyed by DoDestroy, and sometimes the destructors of the message and/or

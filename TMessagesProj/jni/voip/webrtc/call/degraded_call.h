@@ -16,6 +16,8 @@
 
 #include <map>
 #include <memory>
+#include <string>
+#include <vector>
 
 #include "absl/types/optional.h"
 #include "api/call/transport.h"
@@ -34,20 +36,23 @@
 #include "call/simulated_network.h"
 #include "call/video_receive_stream.h"
 #include "call/video_send_stream.h"
-#include "modules/utility/include/process_thread.h"
 #include "rtc_base/copy_on_write_buffer.h"
 #include "rtc_base/network/sent_packet.h"
 #include "rtc_base/task_queue.h"
+#include "rtc_base/task_utils/pending_task_safety_flag.h"
 #include "system_wrappers/include/clock.h"
 
 namespace webrtc {
 class DegradedCall : public Call, private PacketReceiver {
  public:
+  struct TimeScopedNetworkConfig : public BuiltInNetworkBehaviorConfig {
+    TimeDelta duration = TimeDelta::PlusInfinity();
+  };
+
   explicit DegradedCall(
       std::unique_ptr<Call> call,
-      absl::optional<BuiltInNetworkBehaviorConfig> send_config,
-      absl::optional<BuiltInNetworkBehaviorConfig> receive_config,
-      TaskQueueFactory* task_queue_factory);
+      const std::vector<TimeScopedNetworkConfig>& send_configs,
+      const std::vector<TimeScopedNetworkConfig>& receive_configs);
   ~DegradedCall() override;
 
   // Implements Call.
@@ -93,6 +98,10 @@ class DegradedCall : public Call, private PacketReceiver {
   void SignalChannelNetworkState(MediaType media, NetworkState state) override;
   void OnAudioTransportOverheadChanged(
       int transport_overhead_per_packet) override;
+  void OnLocalSsrcUpdated(AudioReceiveStream& stream,
+                          uint32_t local_ssrc) override;
+  void OnUpdateSyncGroup(AudioReceiveStream& stream,
+                         const std::string& sync_group) override;
   void OnSentPacket(const rtc::SentPacket& sent_packet) override;
 
  protected:
@@ -105,7 +114,8 @@ class DegradedCall : public Call, private PacketReceiver {
   class FakeNetworkPipeOnTaskQueue {
    public:
     FakeNetworkPipeOnTaskQueue(
-        TaskQueueFactory* task_queue_factory,
+        TaskQueueBase* task_queue,
+        const ScopedTaskSafety& task_safety,
         Clock* clock,
         std::unique_ptr<NetworkBehaviorInterface> network_behavior);
 
@@ -124,7 +134,8 @@ class DegradedCall : public Call, private PacketReceiver {
     bool Process();
 
     Clock* const clock_;
-    rtc::TaskQueue task_queue_;
+    TaskQueueBase* const task_queue_;
+    const ScopedTaskSafety& task_safety_;
     FakeNetworkPipe pipe_;
     absl::optional<int64_t> next_process_ms_ RTC_GUARDED_BY(&task_queue_);
   };
@@ -153,14 +164,16 @@ class DegradedCall : public Call, private PacketReceiver {
     Transport* const real_transport_;
   };
 
-  Clock* const clock_;
-  const std::unique_ptr<Call> call_;
-  TaskQueueFactory* const task_queue_factory_;
-
   void SetClientBitratePreferences(
       const webrtc::BitrateSettings& preferences) override {}
+  void UpdateSendNetworkConfig();
+  void UpdateReceiveNetworkConfig();
 
-  const absl::optional<BuiltInNetworkBehaviorConfig> send_config_;
+  Clock* const clock_;
+  const std::unique_ptr<Call> call_;
+  ScopedTaskSafety task_safety_;
+  size_t send_config_index_;
+  const std::vector<TimeScopedNetworkConfig> send_configs_;
   SimulatedNetwork* send_simulated_network_;
   std::unique_ptr<FakeNetworkPipeOnTaskQueue> send_pipe_;
   std::map<AudioSendStream*, std::unique_ptr<FakeNetworkPipeTransportAdapter>>
@@ -168,7 +181,8 @@ class DegradedCall : public Call, private PacketReceiver {
   std::map<VideoSendStream*, std::unique_ptr<FakeNetworkPipeTransportAdapter>>
       video_send_transport_adapters_;
 
-  const absl::optional<BuiltInNetworkBehaviorConfig> receive_config_;
+  size_t receive_config_index_;
+  const std::vector<TimeScopedNetworkConfig> receive_configs_;
   SimulatedNetwork* receive_simulated_network_;
   std::unique_ptr<FakeNetworkPipe> receive_pipe_;
 };

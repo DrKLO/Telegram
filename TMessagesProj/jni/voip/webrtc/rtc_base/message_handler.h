@@ -14,7 +14,6 @@
 #include <utility>
 
 #include "api/function_view.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/system/rtc_export.h"
 
 namespace rtc {
@@ -37,11 +36,12 @@ class RTC_EXPORT MessageHandlerAutoCleanup : public MessageHandler {
  public:
   ~MessageHandlerAutoCleanup() override;
 
+  MessageHandlerAutoCleanup(const MessageHandlerAutoCleanup&) = delete;
+  MessageHandlerAutoCleanup& operator=(const MessageHandlerAutoCleanup&) =
+      delete;
+
  protected:
   MessageHandlerAutoCleanup();
-
- private:
-  RTC_DISALLOW_COPY_AND_ASSIGN(MessageHandlerAutoCleanup);
 };
 
 }  // namespace rtc

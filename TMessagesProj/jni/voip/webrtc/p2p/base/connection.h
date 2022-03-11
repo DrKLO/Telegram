@@ -70,9 +70,7 @@ class ConnectionRequest : public StunRequest {
 
 // Represents a communication link between a port on the local client and a
 // port on the remote client.
-class Connection : public CandidatePairInterface,
-                   public rtc::MessageHandlerAutoCleanup,
-                   public sigslot::has_slots<> {
+class Connection : public CandidatePairInterface, public sigslot::has_slots<> {
  public:
   struct SentPing {
     SentPing(const std::string id, int64_t sent_time, uint32_t nomination)
@@ -87,6 +85,8 @@ class Connection : public CandidatePairInterface,
 
   // A unique ID assigned when the connection is created.
   uint32_t id() const { return id_; }
+
+  webrtc::TaskQueueBase* network_thread() const;
 
   // Implementation of virtual methods in CandidatePairInterface.
   // Returns the description of the local port
@@ -109,36 +109,30 @@ class Connection : public CandidatePairInterface,
     STATE_WRITE_TIMEOUT = 3,     // we have had a large number of ping failures
   };
 
-  WriteState write_state() const { return write_state_; }
-  bool writable() const { return write_state_ == STATE_WRITABLE; }
-  bool receiving() const { return receiving_; }
+  WriteState write_state() const;
+  bool writable() const;
+  bool receiving() const;
 
   // Determines whether the connection has finished connecting.  This can only
   // be false for TCP connections.
-  bool connected() const { return connected_; }
-  bool weak() const { return !(writable() && receiving() && connected()); }
-  bool active() const { return write_state_ != STATE_WRITE_TIMEOUT; }
+  bool connected() const;
+  bool weak() const;
+  bool active() const;
 
   // A connection is dead if it can be safely deleted.
   bool dead(int64_t now) const;
 
   // Estimate of the round-trip time over this connection.
-  int rtt() const { return rtt_; }
+  int rtt() const;
 
   int unwritable_timeout() const;
-  void set_unwritable_timeout(const absl::optional<int>& value_ms) {
-    unwritable_timeout_ = value_ms;
-  }
+  void set_unwritable_timeout(const absl::optional<int>& value_ms);
   int unwritable_min_checks() const;
-  void set_unwritable_min_checks(const absl::optional<int>& value) {
-    unwritable_min_checks_ = value;
-  }
+  void set_unwritable_min_checks(const absl::optional<int>& value);
   int inactive_timeout() const;
-  void set_inactive_timeout(const absl::optional<int>& value) {
-    inactive_timeout_ = value;
-  }
+  void set_inactive_timeout(const absl::optional<int>& value);
 
-  // Gets the |ConnectionInfo| stats, where |best_connection| has not been
+  // Gets the `ConnectionInfo` stats, where `best_connection` has not been
   // populated (default value false).
   ConnectionInfo stats();
 
@@ -172,29 +166,26 @@ class Connection : public CandidatePairInterface,
   // still keep it around in case the other side wants to use it.  But we can
   // safely stop pinging on it and we can allow it to time out if the other
   // side stops using it as well.
-  bool pruned() const { return pruned_; }
+  bool pruned() const;
   void Prune();
 
-  bool use_candidate_attr() const { return use_candidate_attr_; }
+  bool use_candidate_attr() const;
   void set_use_candidate_attr(bool enable);
 
-  void set_nomination(uint32_t value) { nomination_ = value; }
+  void set_nomination(uint32_t value);
 
-  uint32_t remote_nomination() const { return remote_nomination_; }
+  uint32_t remote_nomination() const;
   // One or several pairs may be nominated based on if Regular or Aggressive
   // Nomination is used. https://tools.ietf.org/html/rfc5245#section-8
-  // |nominated| is defined both for the controlling or controlled agent based
+  // `nominated` is defined both for the controlling or controlled agent based
   // on if a nomination has been pinged or acknowledged. The controlled agent
-  // gets its |remote_nomination_| set when pinged by the controlling agent with
-  // a nomination value. The controlling agent gets its |acked_nomination_| set
+  // gets its `remote_nomination_` set when pinged by the controlling agent with
+  // a nomination value. The controlling agent gets its `acked_nomination_` set
   // when receiving a response to a nominating ping.
-  bool nominated() const { return acked_nomination_ || remote_nomination_; }
-  void set_remote_ice_mode(IceMode mode) { remote_ice_mode_ = mode; }
+  bool nominated() const;
 
   int receiving_timeout() const;
-  void set_receiving_timeout(absl::optional<int> receiving_timeout_ms) {
-    receiving_timeout_ = receiving_timeout_ms;
-  }
+  void set_receiving_timeout(absl::optional<int> receiving_timeout_ms);
 
   // Makes the connection go away.
   void Destroy();
@@ -211,24 +202,23 @@ class Connection : public CandidatePairInterface,
   void UpdateState(int64_t now);
 
   // Called when this connection should try checking writability again.
-  int64_t last_ping_sent() const { return last_ping_sent_; }
+  int64_t last_ping_sent() const;
   void Ping(int64_t now);
   void ReceivedPingResponse(
       int rtt,
       const std::string& request_id,
       const absl::optional<uint32_t>& nomination = absl::nullopt);
-  int64_t last_ping_response_received() const {
-    return last_ping_response_received_;
-  }
-  const absl::optional<std::string>& last_ping_id_received() const {
-    return last_ping_id_received_;
-  }
+
+  int64_t last_ping_response_received() const;
+  const absl::optional<std::string>& last_ping_id_received() const;
+
   // Used to check if any STUN ping response has been received.
-  int rtt_samples() const { return rtt_samples_; }
+  int rtt_samples() const;
 
   // Called whenever a valid ping is received on this connection.  This is
   // public because the connection intercepts the first ping for us.
-  int64_t last_ping_received() const { return last_ping_received_; }
+  int64_t last_ping_received() const;
+
   void ReceivedPing(
       const absl::optional<std::string>& request_id = absl::nullopt);
   // Handles the binding request; sends a response if this is a valid request.
@@ -238,8 +228,8 @@ class Connection : public CandidatePairInterface,
   // connectivity check from the peer.
   void HandlePiggybackCheckAcknowledgementIfAny(StunMessage* msg);
   // Timestamp when data was last sent (or attempted to be sent).
-  int64_t last_send_data() const { return last_send_data_; }
-  int64_t last_data_received() const { return last_data_received_; }
+  int64_t last_send_data() const;
+  int64_t last_data_received() const;
 
   // Debugging description of this connection
   std::string ToDebugId() const;
@@ -247,19 +237,19 @@ class Connection : public CandidatePairInterface,
   std::string ToSensitiveString() const;
   // Structured description of this candidate pair.
   const webrtc::IceCandidatePairDescription& ToLogDescription();
-  void set_ice_event_log(webrtc::IceEventLog* ice_event_log) {
-    ice_event_log_ = ice_event_log;
-  }
+  void set_ice_event_log(webrtc::IceEventLog* ice_event_log);
+
   // Prints pings_since_last_response_ into a string.
   void PrintPingsSinceLastResponse(std::string* pings, size_t max);
 
-  bool reported() const { return reported_; }
-  void set_reported(bool reported) { reported_ = reported; }
-  // The following two methods are only used for logging in ToString above, and
-  // this flag is set true by P2PTransportChannel for its selected candidate
-  // pair.
-  bool selected() const { return selected_; }
-  void set_selected(bool selected) { selected_ = selected; }
+  bool reported() const;
+  void set_reported(bool reported);
+
+  // `set_selected` is only used for logging in ToString above.  The flag is
+  // set true by P2PTransportChannel for its selected candidate pair.
+  // TODO(tommi): Remove `selected()` once not referenced downstream.
+  bool selected() const;
+  void set_selected(bool selected);
 
   // This signal will be fired if this connection is nominated by the
   // controlling side.
@@ -268,36 +258,32 @@ class Connection : public CandidatePairInterface,
   // Invoked when Connection receives STUN error response with 487 code.
   void HandleRoleConflictFromPeer();
 
-  IceCandidatePairState state() const { return state_; }
+  IceCandidatePairState state() const;
 
-  int num_pings_sent() const { return num_pings_sent_; }
-
-  IceMode remote_ice_mode() const { return remote_ice_mode_; }
+  int num_pings_sent() const;
 
   uint32_t ComputeNetworkCost() const;
 
   // Update the ICE password and/or generation of the remote candidate if the
-  // ufrag in |params| matches the candidate's ufrag, and the
+  // ufrag in `params` matches the candidate's ufrag, and the
   // candidate's password and/or ufrag has not been set.
   void MaybeSetRemoteIceParametersAndGeneration(const IceParameters& params,
                                                 int generation);
 
-  // If |remote_candidate_| is peer reflexive and is equivalent to
-  // |new_candidate| except the type, update |remote_candidate_| to
-  // |new_candidate|.
+  // If `remote_candidate_` is peer reflexive and is equivalent to
+  // `new_candidate` except the type, update `remote_candidate_` to
+  // `new_candidate`.
   void MaybeUpdatePeerReflexiveCandidate(const Candidate& new_candidate);
 
   // Returns the last received time of any data, stun request, or stun
   // response in milliseconds
   int64_t last_received() const;
   // Returns the last time when the connection changed its receiving state.
-  int64_t receiving_unchanged_since() const {
-    return receiving_unchanged_since_;
-  }
+  int64_t receiving_unchanged_since() const;
 
   bool stable(int64_t now) const;
 
-  // Check if we sent |val| pings without receving a response.
+  // Check if we sent `val` pings without receving a response.
   bool TooManyOutstandingPings(const absl::optional<int>& val) const;
 
   void SetIceFieldTrials(const IceFieldTrials* field_trials);
@@ -328,16 +314,10 @@ class Connection : public CandidatePairInterface,
   const Port* PortForTest() const { return port_; }
 
   // Public for unit tests.
-  uint32_t acked_nomination() const { return acked_nomination_; }
-
-  // Public for unit tests.
-  void set_remote_nomination(uint32_t remote_nomination) {
-    remote_nomination_ = remote_nomination;
-  }
+  uint32_t acked_nomination() const;
+  void set_remote_nomination(uint32_t remote_nomination);
 
  protected:
-  enum { MSG_DELETE = 0, MSG_FIRST_AVAILABLE };
-
   // Constructs a new connection to the given remote port.
   Connection(Port* port, size_t index, const Candidate& candidate);
 
@@ -348,9 +328,12 @@ class Connection : public CandidatePairInterface,
   virtual void OnConnectionRequestResponse(ConnectionRequest* req,
                                            StunMessage* response);
   void OnConnectionRequestErrorResponse(ConnectionRequest* req,
-                                        StunMessage* response);
-  void OnConnectionRequestTimeout(ConnectionRequest* req);
-  void OnConnectionRequestSent(ConnectionRequest* req);
+                                        StunMessage* response)
+      RTC_RUN_ON(network_thread_);
+  void OnConnectionRequestTimeout(ConnectionRequest* req)
+      RTC_RUN_ON(network_thread_);
+  void OnConnectionRequestSent(ConnectionRequest* req)
+      RTC_RUN_ON(network_thread_);
 
   bool rtt_converged() const;
 
@@ -364,103 +347,120 @@ class Connection : public CandidatePairInterface,
   void set_state(IceCandidatePairState state);
   void set_connected(bool value);
 
-  uint32_t nomination() const { return nomination_; }
-
-  void OnMessage(rtc::Message* pmsg) override;
-
   // The local port where this connection sends and receives packets.
   Port* port() { return port_; }
   const Port* port() const { return port_; }
 
-  uint32_t id_;
-  Port* port_;
-  size_t local_candidate_index_;
+  // NOTE: A pointer to the network thread is held by `port_` so in theory we
+  // shouldn't need to hold on to this pointer here, but rather defer to
+  // port_->thread(). However, some tests delete the classes in the wrong order
+  // so `port_` may be deleted before an instance of this class is deleted.
+  // TODO(tommi): This ^^^ should be fixed.
+  webrtc::TaskQueueBase* const network_thread_;
+  const uint32_t id_;
+  Port* const port_;
+  size_t local_candidate_index_ RTC_GUARDED_BY(network_thread_);
   Candidate remote_candidate_;
 
   ConnectionInfo stats_;
   rtc::RateTracker recv_rate_tracker_;
   rtc::RateTracker send_rate_tracker_;
   int64_t last_send_data_ = 0;
+  // Set to true when deletion has been scheduled and must not be done again.
+  // See `Destroy()` for more details.
+  bool pending_delete_ RTC_GUARDED_BY(network_thread_) = false;
 
  private:
   // Update the local candidate based on the mapped address attribute.
   // If the local candidate changed, fires SignalStateChange.
   void MaybeUpdateLocalCandidate(ConnectionRequest* request,
-                                 StunMessage* response);
+                                 StunMessage* response)
+      RTC_RUN_ON(network_thread_);
 
-  void LogCandidatePairConfig(webrtc::IceCandidatePairConfigType type);
+  void LogCandidatePairConfig(webrtc::IceCandidatePairConfigType type)
+      RTC_RUN_ON(network_thread_);
   void LogCandidatePairEvent(webrtc::IceCandidatePairEventType type,
-                             uint32_t transaction_id);
+                             uint32_t transaction_id)
+      RTC_RUN_ON(network_thread_);
 
   // Check if this IceMessage is identical
   // to last message ack:ed STUN_BINDING_REQUEST.
-  bool ShouldSendGoogPing(const StunMessage* message);
+  bool ShouldSendGoogPing(const StunMessage* message)
+      RTC_RUN_ON(network_thread_);
 
-  WriteState write_state_;
-  bool receiving_;
-  bool connected_;
-  bool pruned_;
-  bool selected_ = false;
-  // By default |use_candidate_attr_| flag will be true,
+  WriteState write_state_ RTC_GUARDED_BY(network_thread_);
+  bool receiving_ RTC_GUARDED_BY(network_thread_);
+  bool connected_ RTC_GUARDED_BY(network_thread_);
+  bool pruned_ RTC_GUARDED_BY(network_thread_);
+  bool selected_ RTC_GUARDED_BY(network_thread_) = false;
+  // By default `use_candidate_attr_` flag will be true,
   // as we will be using aggressive nomination.
   // But when peer is ice-lite, this flag "must" be initialized to false and
   // turn on when connection becomes "best connection".
-  bool use_candidate_attr_;
+  bool use_candidate_attr_ RTC_GUARDED_BY(network_thread_);
   // Used by the controlling side to indicate that this connection will be
   // selected for transmission if the peer supports ICE-renomination when this
   // value is positive. A larger-value indicates that a connection is nominated
   // later and should be selected by the controlled side with higher precedence.
   // A zero-value indicates not nominating this connection.
-  uint32_t nomination_ = 0;
+  uint32_t nomination_ RTC_GUARDED_BY(network_thread_) = 0;
   // The last nomination that has been acknowledged.
-  uint32_t acked_nomination_ = 0;
+  uint32_t acked_nomination_ RTC_GUARDED_BY(network_thread_) = 0;
   // Used by the controlled side to remember the nomination value received from
   // the controlling side. When the peer does not support ICE re-nomination, its
   // value will be 1 if the connection has been nominated.
-  uint32_t remote_nomination_ = 0;
+  uint32_t remote_nomination_ RTC_GUARDED_BY(network_thread_) = 0;
 
-  IceMode remote_ice_mode_;
-  StunRequestManager requests_;
-  int rtt_;
-  int rtt_samples_ = 0;
+  StunRequestManager requests_ RTC_GUARDED_BY(network_thread_);
+  int rtt_ RTC_GUARDED_BY(network_thread_);
+  int rtt_samples_ RTC_GUARDED_BY(network_thread_) = 0;
   // https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatepairstats-totalroundtriptime
-  uint64_t total_round_trip_time_ms_ = 0;
+  uint64_t total_round_trip_time_ms_ RTC_GUARDED_BY(network_thread_) = 0;
   // https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatepairstats-currentroundtriptime
-  absl::optional<uint32_t> current_round_trip_time_ms_;
-  int64_t last_ping_sent_;      // last time we sent a ping to the other side
-  int64_t last_ping_received_;  // last time we received a ping from the other
-                                // side
-  int64_t last_data_received_;
-  int64_t last_ping_response_received_;
-  int64_t receiving_unchanged_since_ = 0;
-  std::vector<SentPing> pings_since_last_response_;
+  absl::optional<uint32_t> current_round_trip_time_ms_
+      RTC_GUARDED_BY(network_thread_);
+  int64_t last_ping_sent_ RTC_GUARDED_BY(
+      network_thread_);  // last time we sent a ping to the other side
+  int64_t last_ping_received_
+      RTC_GUARDED_BY(network_thread_);  // last time we received a ping from the
+                                        // other side
+  int64_t last_data_received_ RTC_GUARDED_BY(network_thread_);
+  int64_t last_ping_response_received_ RTC_GUARDED_BY(network_thread_);
+  int64_t receiving_unchanged_since_ RTC_GUARDED_BY(network_thread_) = 0;
+  std::vector<SentPing> pings_since_last_response_
+      RTC_GUARDED_BY(network_thread_);
   // Transaction ID of the last connectivity check received. Null if having not
   // received a ping yet.
-  absl::optional<std::string> last_ping_id_received_;
+  absl::optional<std::string> last_ping_id_received_
+      RTC_GUARDED_BY(network_thread_);
 
-  absl::optional<int> unwritable_timeout_;
-  absl::optional<int> unwritable_min_checks_;
-  absl::optional<int> inactive_timeout_;
+  absl::optional<int> unwritable_timeout_ RTC_GUARDED_BY(network_thread_);
+  absl::optional<int> unwritable_min_checks_ RTC_GUARDED_BY(network_thread_);
+  absl::optional<int> inactive_timeout_ RTC_GUARDED_BY(network_thread_);
 
-  bool reported_;
-  IceCandidatePairState state_;
+  bool reported_ RTC_GUARDED_BY(network_thread_);
+  IceCandidatePairState state_ RTC_GUARDED_BY(network_thread_);
   // Time duration to switch from receiving to not receiving.
-  absl::optional<int> receiving_timeout_;
-  int64_t time_created_ms_;
-  int num_pings_sent_ = 0;
+  absl::optional<int> receiving_timeout_ RTC_GUARDED_BY(network_thread_);
+  int64_t time_created_ms_ RTC_GUARDED_BY(network_thread_);
+  int num_pings_sent_ RTC_GUARDED_BY(network_thread_) = 0;
 
-  absl::optional<webrtc::IceCandidatePairDescription> log_description_;
-  webrtc::IceEventLog* ice_event_log_ = nullptr;
+  absl::optional<webrtc::IceCandidatePairDescription> log_description_
+      RTC_GUARDED_BY(network_thread_);
+  webrtc::IceEventLog* ice_event_log_ RTC_GUARDED_BY(network_thread_) = nullptr;
 
   // GOOG_PING_REQUEST is sent in place of STUN_BINDING_REQUEST
   // if configured via field trial, the remote peer supports it (signaled
   // in STUN_BINDING) and if the last STUN BINDING is identical to the one
   // that is about to be sent.
-  absl::optional<bool> remote_support_goog_ping_;
-  std::unique_ptr<StunMessage> cached_stun_binding_;
+  absl::optional<bool> remote_support_goog_ping_
+      RTC_GUARDED_BY(network_thread_);
+  std::unique_ptr<StunMessage> cached_stun_binding_
+      RTC_GUARDED_BY(network_thread_);
 
   const IceFieldTrials* field_trials_;
-  rtc::EventBasedExponentialMovingAverage rtt_estimate_;
+  rtc::EventBasedExponentialMovingAverage rtt_estimate_
+      RTC_GUARDED_BY(network_thread_);
 
   friend class Port;
   friend class ConnectionRequest;

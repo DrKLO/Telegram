@@ -81,8 +81,8 @@ class AAudioPlayer final : public AudioOutput,
  protected:
   // AAudioObserverInterface implementation.
 
-  // For an output stream, this function should render and write |num_frames|
-  // of data in the streams current data format to the |audio_data| buffer.
+  // For an output stream, this function should render and write `num_frames`
+  // of data in the streams current data format to the `audio_data` buffer.
   // Called on a real-time thread owned by AAudio.
   aaudio_data_callback_result_t OnDataCallback(void* audio_data,
                                                int32_t num_frames) override;

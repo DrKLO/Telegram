@@ -98,9 +98,9 @@ double I420SSIM(const I420BufferInterface& ref_buffer,
                 const I420BufferInterface& test_buffer);
 
 // Helper function for scaling NV12 to NV12.
-// If the |src_width| and |src_height| matches the |dst_width| and |dst_height|,
-// then |tmp_buffer| is not used. In other cases, the minimum size of
-// |tmp_buffer| should be:
+// If the `src_width` and `src_height` matches the `dst_width` and `dst_height`,
+// then `tmp_buffer` is not used. In other cases, the minimum size of
+// `tmp_buffer` should be:
 //   (src_width/2) * (src_height/2) * 2 + (dst_width/2) * (dst_height/2) * 2
 void NV12Scale(uint8_t* tmp_buffer,
                const uint8_t* src_y,

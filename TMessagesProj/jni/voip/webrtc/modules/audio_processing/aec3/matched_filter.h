@@ -74,6 +74,9 @@ void MatchedFilterCore(size_t x_start_index,
                        bool* filters_updated,
                        float* error_sum);
 
+// Find largest peak of squared values in array.
+size_t MaxSquarePeakIndex(rtc::ArrayView<const float> h);
+
 }  // namespace aec3
 
 // Produces recursively updated cross-correlation estimates for several signal

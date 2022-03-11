@@ -101,10 +101,10 @@ void Aec3Fft::ZeroPaddedFft(rtc::ArrayView<const float> x,
                      [](float a, float b) { return a * b; });
       break;
     case Window::kSqrtHanning:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
       break;
     default:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
   }
 
   Fft(&fft, X);
@@ -125,7 +125,7 @@ void Aec3Fft::PaddedFft(rtc::ArrayView<const float> x,
       std::copy(x.begin(), x.end(), fft.begin() + x_old.size());
       break;
     case Window::kHanning:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
       break;
     case Window::kSqrtHanning:
       std::transform(x_old.begin(), x_old.end(), std::begin(kSqrtHanning128),
@@ -135,7 +135,7 @@ void Aec3Fft::PaddedFft(rtc::ArrayView<const float> x,
                      fft.begin() + x_old.size(), std::multiplies<float>());
       break;
     default:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
   }
 
   Fft(&fft, X);

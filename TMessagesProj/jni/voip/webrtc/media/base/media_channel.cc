@@ -26,14 +26,8 @@ VideoOptions::VideoOptions()
     : content_hint(VideoTrackInterface::ContentHint::kNone) {}
 VideoOptions::~VideoOptions() = default;
 
-MediaChannel::MediaChannel(const MediaConfig& config,
-                           TaskQueueBase* network_thread)
-    : enable_dscp_(config.enable_dscp),
-      network_safety_(PendingTaskSafetyFlag::CreateDetachedInactive()),
-      network_thread_(network_thread) {}
-
-MediaChannel::MediaChannel(TaskQueueBase* network_thread)
-    : enable_dscp_(false),
+MediaChannel::MediaChannel(TaskQueueBase* network_thread, bool enable_dscp)
+    : enable_dscp_(enable_dscp),
       network_safety_(PendingTaskSafetyFlag::CreateDetachedInactive()),
       network_thread_(network_thread) {}
 
@@ -95,6 +89,11 @@ bool MediaChannel::ExtmapAllowMixed() const {
   return extmap_allow_mixed_;
 }
 
+bool MediaChannel::HasNetworkInterface() const {
+  RTC_DCHECK_RUN_ON(network_thread_);
+  return network_interface_ != nullptr;
+}
+
 void MediaChannel::SetEncoderToPacketizerFrameTransformer(
     uint32_t ssrc,
     rtc::scoped_refptr<FrameTransformerInterface> frame_transformer) {}
@@ -116,7 +115,7 @@ bool MediaChannel::DscpEnabled() const {
 }
 
 // This is the DSCP value used for both RTP and RTCP channels if DSCP is
-// enabled. It can be changed at any time via |SetPreferredDscp|.
+// enabled. It can be changed at any time via `SetPreferredDscp`.
 rtc::DiffServCodePoint MediaChannel::PreferredDscp() const {
   RTC_DCHECK_RUN_ON(network_thread_);
   return preferred_dscp_;

@@ -14,7 +14,6 @@
 //
 // This files is a forwarding header for other headers containing various
 // portability macros and functions.
-// This file is used for both C and C++!
 
 #ifndef ABSL_BASE_PORT_H_
 #define ABSL_BASE_PORT_H_

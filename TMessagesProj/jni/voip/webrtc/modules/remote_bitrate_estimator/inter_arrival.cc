@@ -10,8 +10,6 @@
 
 #include "modules/remote_bitrate_estimator/inter_arrival.h"
 
-#include <cassert>
-
 #include "modules/include/module_common_types_public.h"
 #include "rtc_base/logging.h"
 
@@ -37,9 +35,9 @@ bool InterArrival::ComputeDeltas(uint32_t timestamp,
                                  uint32_t* timestamp_delta,
                                  int64_t* arrival_time_delta_ms,
                                  int* packet_size_delta) {
-  assert(timestamp_delta != NULL);
-  assert(arrival_time_delta_ms != NULL);
-  assert(packet_size_delta != NULL);
+  RTC_DCHECK(timestamp_delta);
+  RTC_DCHECK(arrival_time_delta_ms);
+  RTC_DCHECK(packet_size_delta);
   bool calculated_deltas = false;
   if (current_timestamp_group_.IsFirstPacket()) {
     // We don't have enough data to update the filter, so we store it until we
@@ -85,7 +83,7 @@ bool InterArrival::ComputeDeltas(uint32_t timestamp,
       } else {
         num_consecutive_reordered_packets_ = 0;
       }
-      assert(*arrival_time_delta_ms >= 0);
+      RTC_DCHECK_GE(*arrival_time_delta_ms, 0);
       *packet_size_delta = static_cast<int>(current_timestamp_group_.size) -
                            static_cast<int>(prev_timestamp_group_.size);
       calculated_deltas = true;
@@ -121,8 +119,8 @@ bool InterArrival::PacketInOrder(uint32_t timestamp) {
   }
 }
 
-// Assumes that |timestamp| is not reordered compared to
-// |current_timestamp_group_|.
+// Assumes that `timestamp` is not reordered compared to
+// `current_timestamp_group_`.
 bool InterArrival::NewTimestampGroup(int64_t arrival_time_ms,
                                      uint32_t timestamp) const {
   if (current_timestamp_group_.IsFirstPacket()) {
@@ -141,7 +139,7 @@ bool InterArrival::BelongsToBurst(int64_t arrival_time_ms,
   if (!burst_grouping_) {
     return false;
   }
-  assert(current_timestamp_group_.complete_time_ms >= 0);
+  RTC_DCHECK_GE(current_timestamp_group_.complete_time_ms, 0);
   int64_t arrival_time_delta_ms =
       arrival_time_ms - current_timestamp_group_.complete_time_ms;
   uint32_t timestamp_diff = timestamp - current_timestamp_group_.timestamp;

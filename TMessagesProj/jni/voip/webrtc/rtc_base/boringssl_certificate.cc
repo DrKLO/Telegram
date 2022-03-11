@@ -106,7 +106,7 @@ bool AddSHA256SignatureAlgorithm(CBB* cbb, KeyType key_type) {
       }
       break;
     default:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
       return false;
   }
   if (!CBB_flush(cbb)) {
@@ -115,7 +115,7 @@ bool AddSHA256SignatureAlgorithm(CBB* cbb, KeyType key_type) {
   return true;
 }
 
-// Adds an X.509 Common Name to |cbb|.
+// Adds an X.509 Common Name to `cbb`.
 bool AddCommonName(CBB* cbb, const std::string& common_name) {
   // See RFC 4519.
   static const uint8_t kCommonName[] = {0x55, 0x04, 0x03};

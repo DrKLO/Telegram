@@ -38,12 +38,12 @@ class InterArrivalDelta {
 
   // This function returns true if a delta was computed, or false if the current
   // group is still incomplete or if only one group has been completed.
-  // |send_time| is the send time.
-  // |arrival_time| is the time at which the packet arrived.
-  // |packet_size| is the size of the packet.
-  // |timestamp_delta| (output) is the computed send time delta.
-  // |arrival_time_delta_ms| (output) is the computed arrival-time delta.
-  // |packet_size_delta| (output) is the computed size delta.
+  // `send_time` is the send time.
+  // `arrival_time` is the time at which the packet arrived.
+  // `packet_size` is the size of the packet.
+  // `timestamp_delta` (output) is the computed send time delta.
+  // `arrival_time_delta_ms` (output) is the computed arrival-time delta.
+  // `packet_size_delta` (output) is the computed size delta.
   bool ComputeDeltas(Timestamp send_time,
                      Timestamp arrival_time,
                      Timestamp system_time,
@@ -73,7 +73,7 @@ class InterArrivalDelta {
   };
 
   // Returns true if the last packet was the end of the current batch and the
-  // packet with |send_time| is the first of a new batch.
+  // packet with `send_time` is the first of a new batch.
   bool NewTimestampGroup(Timestamp arrival_time, Timestamp send_time) const;
 
   bool BelongsToBurst(Timestamp arrival_time, Timestamp send_time) const;

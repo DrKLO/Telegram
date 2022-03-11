@@ -39,11 +39,7 @@ namespace webrtc {
 class Clock;
 class RtcEventLog;
 
-// TODO(bugs.webrtc.org/10937): Remove the inheritance from Module after
-// updating dependencies.
-class PacedSender : public Module,
-                    public RtpPacketPacer,
-                    public RtpPacketSender {
+class PacedSender : public RtpPacketPacer, public RtpPacketSender {
  public:
   // Expected max pacer delay in ms. If ExpectedQueueTime() is higher than
   // this value, the packet producers should wait (eg drop frames rather than
@@ -57,7 +53,7 @@ class PacedSender : public Module,
   // overshoots from the encoder.
   static const float kDefaultPaceMultiplier;
 
-  // TODO(bugs.webrtc.org/10937): Make the |process_thread| argument be non
+  // TODO(bugs.webrtc.org/10937): Make the `process_thread` argument be non
   // optional once all callers have been updated.
   PacedSender(Clock* clock,
               PacketRouter* packet_router,
@@ -117,24 +113,13 @@ class PacedSender : public Module,
   // to module processing thread specifics or methods exposed for test.
 
  private:
-  // Methods implementing Module.
-  // TODO(bugs.webrtc.org/10937): Remove the inheritance from Module once all
-  // use of it has been cleared up.
-
   // Returns the number of milliseconds until the module want a worker thread
   // to call Process.
-  int64_t TimeUntilNextProcess() override;
-
-  // TODO(bugs.webrtc.org/10937): Make this private (and non virtual) once
-  // dependencies have been updated to not call this via the PacedSender
-  // interface.
- public:
-  // Process any pending packets in the queue(s).
-  void Process() override;
-
- private:
+  int64_t TimeUntilNextProcess();
   // Called when the prober is associated with a process thread.
-  void ProcessThreadAttached(ProcessThread* process_thread) override;
+  void ProcessThreadAttached(ProcessThread* process_thread);
+  // Process any pending packets in the queue(s).
+  void Process();
 
   // In dynamic process mode, refreshes the next process time.
   void MaybeWakupProcessThread();

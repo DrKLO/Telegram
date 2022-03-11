@@ -55,16 +55,11 @@ void AudioOptions::SetAll(const AudioOptions& change) {
   SetFrom(&audio_jitter_buffer_enable_rtx_handling,
           change.audio_jitter_buffer_enable_rtx_handling);
   SetFrom(&typing_detection, change.typing_detection);
-  SetFrom(&experimental_agc, change.experimental_agc);
-  SetFrom(&experimental_ns, change.experimental_ns);
   SetFrom(&residual_echo_detector, change.residual_echo_detector);
-  SetFrom(&tx_agc_target_dbov, change.tx_agc_target_dbov);
-  SetFrom(&tx_agc_digital_compression_gain,
-          change.tx_agc_digital_compression_gain);
-  SetFrom(&tx_agc_limiter, change.tx_agc_limiter);
   SetFrom(&combined_audio_video_bwe, change.combined_audio_video_bwe);
   SetFrom(&audio_network_adaptor, change.audio_network_adaptor);
   SetFrom(&audio_network_adaptor_config, change.audio_network_adaptor_config);
+  SetFrom(&init_recording_on_send, change.init_recording_on_send);
 }
 
 bool AudioOptions::operator==(const AudioOptions& o) const {
@@ -84,15 +79,11 @@ bool AudioOptions::operator==(const AudioOptions& o) const {
          audio_jitter_buffer_enable_rtx_handling ==
              o.audio_jitter_buffer_enable_rtx_handling &&
          typing_detection == o.typing_detection &&
-         experimental_agc == o.experimental_agc &&
-         experimental_ns == o.experimental_ns &&
          residual_echo_detector == o.residual_echo_detector &&
-         tx_agc_target_dbov == o.tx_agc_target_dbov &&
-         tx_agc_digital_compression_gain == o.tx_agc_digital_compression_gain &&
-         tx_agc_limiter == o.tx_agc_limiter &&
          combined_audio_video_bwe == o.combined_audio_video_bwe &&
          audio_network_adaptor == o.audio_network_adaptor &&
-         audio_network_adaptor_config == o.audio_network_adaptor_config;
+         audio_network_adaptor_config == o.audio_network_adaptor_config &&
+         init_recording_on_send == o.init_recording_on_send;
 }
 
 std::string AudioOptions::ToString() const {
@@ -117,15 +108,10 @@ std::string AudioOptions::ToString() const {
   ToStringIfSet(&result, "audio_jitter_buffer_enable_rtx_handling",
                 audio_jitter_buffer_enable_rtx_handling);
   ToStringIfSet(&result, "typing", typing_detection);
-  ToStringIfSet(&result, "experimental_agc", experimental_agc);
-  ToStringIfSet(&result, "experimental_ns", experimental_ns);
   ToStringIfSet(&result, "residual_echo_detector", residual_echo_detector);
-  ToStringIfSet(&result, "tx_agc_target_dbov", tx_agc_target_dbov);
-  ToStringIfSet(&result, "tx_agc_digital_compression_gain",
-                tx_agc_digital_compression_gain);
-  ToStringIfSet(&result, "tx_agc_limiter", tx_agc_limiter);
   ToStringIfSet(&result, "combined_audio_video_bwe", combined_audio_video_bwe);
   ToStringIfSet(&result, "audio_network_adaptor", audio_network_adaptor);
+  ToStringIfSet(&result, "init_recording_on_send", init_recording_on_send);
   result << "}";
   return result.str();
 }

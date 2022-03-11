@@ -14,16 +14,35 @@
 #include <utility>
 
 #include "api/scoped_refptr.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/ref_count.h"
 #include "rtc_base/ref_counter.h"
 
 namespace rtc {
 
+namespace webrtc_make_ref_counted_internal {
+// Determines if the given class has AddRef and Release methods.
+template <typename T>
+class HasAddRefAndRelease {
+ private:
+  template <typename C,
+            decltype(std::declval<C>().AddRef())* = nullptr,
+            decltype(std::declval<C>().Release())* = nullptr>
+  static int Test(int);
+  template <typename>
+  static char Test(...);
+
+ public:
+  static constexpr bool value = std::is_same_v<decltype(Test<T>(0)), int>;
+};
+}  // namespace webrtc_make_ref_counted_internal
+
 template <class T>
 class RefCountedObject : public T {
  public:
   RefCountedObject() {}
+
+  RefCountedObject(const RefCountedObject&) = delete;
+  RefCountedObject& operator=(const RefCountedObject&) = delete;
 
   template <class P0>
   explicit RefCountedObject(P0&& p0) : T(std::forward<P0>(p0)) {}
@@ -56,27 +75,26 @@ class RefCountedObject : public T {
   ~RefCountedObject() override {}
 
   mutable webrtc::webrtc_impl::RefCounter ref_count_{0};
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(RefCountedObject);
 };
 
 template <class T>
 class FinalRefCountedObject final : public T {
  public:
   using T::T;
-  // Until c++17 compilers are allowed not to inherit the default constructors.
-  // Thus the default constructors are forwarded explicitly.
-  FinalRefCountedObject() = default;
-  explicit FinalRefCountedObject(const T& other) : T(other) {}
+  // Above using declaration propagates a default move constructor
+  // FinalRefCountedObject(FinalRefCountedObject&& other), but we also need
+  // move construction from T.
   explicit FinalRefCountedObject(T&& other) : T(std::move(other)) {}
   FinalRefCountedObject(const FinalRefCountedObject&) = delete;
   FinalRefCountedObject& operator=(const FinalRefCountedObject&) = delete;
 
   void AddRef() const { ref_count_.IncRef(); }
-  void Release() const {
-    if (ref_count_.DecRef() == RefCountReleaseStatus::kDroppedLastRef) {
+  RefCountReleaseStatus Release() const {
+    const auto status = ref_count_.DecRef();
+    if (status == RefCountReleaseStatus::kDroppedLastRef) {
       delete this;
     }
+    return status;
   }
   bool HasOneRef() const { return ref_count_.HasOneRef(); }
 
@@ -104,8 +122,13 @@ class FinalRefCountedObject final : public T {
 //
 //   auto p = scoped_refptr<Foo>(new RefCountedObject<Foo>("bar", 123));
 //
-// If the class does not inherit from RefCountInterface, the example is
-// equivalent to:
+// If the class does not inherit from RefCountInterface, but does have
+// AddRef/Release methods (so a T* is convertible to rtc::scoped_refptr), this
+// is equivalent to just
+//
+//   auto p = scoped_refptr<Foo>(new Foo("bar", 123));
+//
+// Otherwise, the example is equivalent to:
 //
 //   auto p = scoped_refptr<FinalRefCountedObject<Foo>>(
 //       new FinalRefCountedObject<Foo>("bar", 123));
@@ -120,24 +143,40 @@ class FinalRefCountedObject final : public T {
 // needed.
 
 // `make_ref_counted` for classes that are convertible to RefCountInterface.
-template <
-    typename T,
-    typename... Args,
-    typename std::enable_if<std::is_convertible<T*, RefCountInterface*>::value,
-                            T>::type* = nullptr>
+template <typename T,
+          typename... Args,
+          typename std::enable_if<std::is_convertible_v<T*, RefCountInterface*>,
+                                  T>::type* = nullptr>
 scoped_refptr<T> make_ref_counted(Args&&... args) {
-  return new RefCountedObject<T>(std::forward<Args>(args)...);
+  return scoped_refptr<T>(new RefCountedObject<T>(std::forward<Args>(args)...));
 }
 
 // `make_ref_counted` for complete classes that are not convertible to
-// RefCountInterface.
+// RefCountInterface and already carry a ref count.
 template <
     typename T,
     typename... Args,
-    typename std::enable_if<!std::is_convertible<T*, RefCountInterface*>::value,
-                            T>::type* = nullptr>
+    typename std::enable_if<
+        !std::is_convertible_v<T*, RefCountInterface*> &&
+            webrtc_make_ref_counted_internal::HasAddRefAndRelease<T>::value,
+        T>::type* = nullptr>
+scoped_refptr<T> make_ref_counted(Args&&... args) {
+  return scoped_refptr<T>(new T(std::forward<Args>(args)...));
+}
+
+// `make_ref_counted` for complete classes that are not convertible to
+// RefCountInterface and have no ref count of their own.
+template <
+    typename T,
+    typename... Args,
+    typename std::enable_if<
+        !std::is_convertible_v<T*, RefCountInterface*> &&
+            !webrtc_make_ref_counted_internal::HasAddRefAndRelease<T>::value,
+
+        T>::type* = nullptr>
 scoped_refptr<FinalRefCountedObject<T>> make_ref_counted(Args&&... args) {
-  return new FinalRefCountedObject<T>(std::forward<Args>(args)...);
+  return scoped_refptr<FinalRefCountedObject<T>>(
+      new FinalRefCountedObject<T>(std::forward<Args>(args)...));
 }
 
 // `Ref<>`, `Ref<>::Type` and `Ref<>::Ptr`:
@@ -186,7 +225,7 @@ scoped_refptr<FinalRefCountedObject<T>> make_ref_counted(Args&&... args) {
 template <typename T>
 struct Ref {
   typedef typename std::conditional<
-      std::is_convertible<T*, RefCountInterface*>::value,
+      webrtc_make_ref_counted_internal::HasAddRefAndRelease<T>::value,
       T,
       FinalRefCountedObject<T>>::type Type;
 

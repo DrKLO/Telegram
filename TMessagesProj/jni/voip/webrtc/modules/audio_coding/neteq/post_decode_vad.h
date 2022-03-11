@@ -16,7 +16,6 @@
 
 #include "api/audio_codecs/audio_decoder.h"
 #include "common_audio/vad/include/webrtc_vad.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -31,6 +30,9 @@ class PostDecodeVad {
 
   virtual ~PostDecodeVad();
 
+  PostDecodeVad(const PostDecodeVad&) = delete;
+  PostDecodeVad& operator=(const PostDecodeVad&) = delete;
+
   // Enables post-decode VAD.
   void Enable();
 
@@ -40,8 +42,8 @@ class PostDecodeVad {
   // Initializes post-decode VAD.
   void Init();
 
-  // Updates post-decode VAD with the audio data in |signal| having |length|
-  // samples. The data is of type |speech_type|, at the sample rate |fs_hz|.
+  // Updates post-decode VAD with the audio data in `signal` having `length`
+  // samples. The data is of type `speech_type`, at the sample rate `fs_hz`.
   void Update(int16_t* signal,
               size_t length,
               AudioDecoder::SpeechType speech_type,
@@ -63,8 +65,6 @@ class PostDecodeVad {
   bool active_speech_;
   int sid_interval_counter_;
   ::VadInst* vad_instance_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(PostDecodeVad);
 };
 
 }  // namespace webrtc

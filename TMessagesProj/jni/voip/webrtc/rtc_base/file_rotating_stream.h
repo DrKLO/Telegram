@@ -17,7 +17,6 @@
 #include <string>
 #include <vector>
 
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/system/file_wrapper.h"
 
 namespace rtc {
@@ -36,6 +35,9 @@ class FileRotatingStream {
                      size_t num_files);
 
   virtual ~FileRotatingStream();
+
+  FileRotatingStream(const FileRotatingStream&) = delete;
+  FileRotatingStream& operator=(const FileRotatingStream&) = delete;
 
   bool IsOpen() const;
 
@@ -100,8 +102,6 @@ class FileRotatingStream {
   // buffering the file size read from disk might not be accurate.
   size_t current_bytes_written_;
   bool disable_buffering_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(FileRotatingStream);
 };
 
 // CallSessionFileRotatingStream is meant to be used in situations where we will
@@ -112,7 +112,7 @@ class FileRotatingStream {
 // logs are most useful for call diagnostics.
 //
 // This implementation simply writes to a single file until
-// |max_total_log_size| / 2 bytes are written to it, and subsequently writes to
+// `max_total_log_size` / 2 bytes are written to it, and subsequently writes to
 // a set of rotating files. We do this by inheriting FileRotatingStream and
 // setting the appropriate internal variables so that we don't delete the last
 // (earliest) file on rotate, and that that file's size is bigger.
@@ -124,11 +124,15 @@ class FileRotatingStream {
 class CallSessionFileRotatingStream : public FileRotatingStream {
  public:
   // Use this constructor for writing to a directory. Files in the directory
-  // matching what's used by the stream will be deleted. |max_total_log_size|
+  // matching what's used by the stream will be deleted. `max_total_log_size`
   // must be at least 4.
   CallSessionFileRotatingStream(const std::string& dir_path,
                                 size_t max_total_log_size);
   ~CallSessionFileRotatingStream() override {}
+
+  CallSessionFileRotatingStream(const CallSessionFileRotatingStream&) = delete;
+  CallSessionFileRotatingStream& operator=(
+      const CallSessionFileRotatingStream&) = delete;
 
  protected:
   void OnRotation() override;
@@ -140,8 +144,6 @@ class CallSessionFileRotatingStream : public FileRotatingStream {
 
   const size_t max_total_log_size_;
   size_t num_rotations_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(CallSessionFileRotatingStream);
 };
 
 // This is a convenience class, to read all files produced by a

@@ -17,7 +17,6 @@
 #include <memory>
 #include <string>
 
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/openssl_certificate.h"
 #include "rtc_base/openssl_key_pair.h"
 #include "rtc_base/ssl_certificate.h"
@@ -43,6 +42,9 @@ class OpenSSLIdentity final : public SSLIdentity {
       const std::string& certificate_chain);
   ~OpenSSLIdentity() override;
 
+  OpenSSLIdentity(const OpenSSLIdentity&) = delete;
+  OpenSSLIdentity& operator=(const OpenSSLIdentity&) = delete;
+
   const OpenSSLCertificate& certificate() const override;
   const SSLCertChain& cert_chain() const override;
 
@@ -66,8 +68,6 @@ class OpenSSLIdentity final : public SSLIdentity {
 
   std::unique_ptr<OpenSSLKeyPair> key_pair_;
   std::unique_ptr<SSLCertChain> cert_chain_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(OpenSSLIdentity);
 };
 
 }  // namespace rtc

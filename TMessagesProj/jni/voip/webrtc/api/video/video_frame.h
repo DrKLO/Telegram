@@ -272,7 +272,7 @@ class RTC_EXPORT VideoFrame {
   // update_rect() will return a rectangle corresponding to the entire frame.
   absl::optional<UpdateRect> update_rect_;
   // Information about packets used to assemble this video frame. This is needed
-  // by |SourceTracker| when the frame is delivered to the RTCRtpReceiver's
+  // by `SourceTracker` when the frame is delivered to the RTCRtpReceiver's
   // MediaStreamTrack, in order to implement getContributingSources(). See:
   // https://w3c.github.io/webrtc-pc/#dom-rtcrtpreceiver-getcontributingsources
   RtpPacketInfos packet_infos_;

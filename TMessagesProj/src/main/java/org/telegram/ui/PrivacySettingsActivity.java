@@ -18,13 +18,16 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.tgnet.ConnectionsManager;
@@ -46,9 +49,6 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
-
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 public class PrivacySettingsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -264,7 +264,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                             value = 365;
                         }
                         final AlertDialog progressDialog = new AlertDialog(getParentActivity(), 3);
-                        progressDialog.setCanCacnel(false);
+                        progressDialog.setCanCancel(false);
                         progressDialog.show();
 
                         final TLRPC.TL_account_setAccountTTL req = new TLRPC.TL_account_setAccountTTL();
@@ -318,11 +318,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                     presentFragment(new TwoStepVerificationSetupActivity(type, currentPassword));
                 }
             } else if (position == passcodeRow) {
-                if (SharedConfig.passcodeHash.length() > 0) {
-                    presentFragment(new PasscodeActivity(2));
-                } else {
-                    presentFragment(new PasscodeActivity(0));
-                }
+                presentFragment(PasscodeActivity.determineOpenFragment());
             } else if (position == secretWebpageRow) {
                 if (getMessagesController().secretWebpagePreview == 1) {
                     getMessagesController().secretWebpagePreview = 0;
@@ -344,7 +340,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                 builder.setPositiveButton(LocaleController.getString("Delete", R.string.Delete), (dialogInterface, i) -> {
                     AlertDialog.Builder builder12 = new AlertDialog.Builder(getParentActivity(), 3, null);
                     progressDialog = builder12.show();
-                    progressDialog.setCanCacnel(false);
+                    progressDialog.setCanCancel(false);
 
                     if (currentSync != newSync) {
                         currentSync = getUserConfig().syncContacts = newSync;

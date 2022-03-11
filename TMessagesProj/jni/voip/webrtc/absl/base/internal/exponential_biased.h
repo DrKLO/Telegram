@@ -66,7 +66,7 @@ namespace base_internal {
 // Adjusting with rounding bias is relatively trivial:
 //
 //    double value = bias_ + exponential_distribution(mean)();
-//    double rounded_value = std::round(value);
+//    double rounded_value = std::rint(value);
 //    bias_ = value - rounded_value;
 //    return rounded_value;
 //

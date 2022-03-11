@@ -10,6 +10,7 @@
 
 #include "modules/audio_coding/codecs/tools/audio_codec_speed_test.h"
 
+#include "rtc_base/checks.h"
 #include "rtc_base/format_macros.h"
 #include "test/gtest.h"
 #include "test/testsupport/file_utils.h"
@@ -43,7 +44,7 @@ void AudioCodecSpeedTest::SetUp() {
   save_out_data_ = get<4>(GetParam());
 
   FILE* fp = fopen(in_filename_.c_str(), "rb");
-  assert(fp != NULL);
+  RTC_DCHECK(fp);
 
   // Obtain file size.
   fseek(fp, 0, SEEK_END);
@@ -83,7 +84,7 @@ void AudioCodecSpeedTest::SetUp() {
     out_filename = test::OutputPath() + out_filename + ".pcm";
 
     out_file_ = fopen(out_filename.c_str(), "wb");
-    assert(out_file_ != NULL);
+    RTC_DCHECK(out_file_);
 
     printf("Output to be saved in %s.\n", out_filename.c_str());
   }

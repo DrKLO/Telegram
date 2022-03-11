@@ -137,7 +137,7 @@ public class TextSettingsCell extends FrameLayout {
         valueTextView.setTextColor(color);
     }
 
-    public void setText(String text, boolean divider) {
+    public void setText(CharSequence text, boolean divider) {
         textView.setText(text);
         valueTextView.setVisibility(INVISIBLE);
         valueImageView.setVisibility(INVISIBLE);
@@ -145,7 +145,7 @@ public class TextSettingsCell extends FrameLayout {
         setWillNotDraw(!divider);
     }
 
-    public void setTextAndValue(String text, String value, boolean divider) {
+    public void setTextAndValue(CharSequence text, CharSequence value, boolean divider) {
         textView.setText(text);
         valueImageView.setVisibility(INVISIBLE);
         if (value != null) {
@@ -159,7 +159,7 @@ public class TextSettingsCell extends FrameLayout {
         requestLayout();
     }
 
-    public void setTextAndIcon(String text, int resId, boolean divider) {
+    public void setTextAndIcon(CharSequence text, int resId, boolean divider) {
         textView.setText(text);
         valueTextView.setVisibility(INVISIBLE);
         if (resId != 0) {

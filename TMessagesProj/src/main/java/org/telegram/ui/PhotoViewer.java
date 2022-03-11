@@ -14728,11 +14728,12 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     }
 
     private boolean enableSwipeToPiP() {
-        if (!BuildVars.DEBUG_PRIVATE_VERSION) {
-            return false;
-        }
-        boolean permissionsEnabled = Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(parentActivity);
-        return pipAvailable && textureUploaded && videoPlayer != null && videoPlayer.getRepeatCount() == 0 && permissionsEnabled && !(changingTextureView || switchingInlineMode || isInline);
+        return false;
+//        if (!BuildVars.DEBUG_PRIVATE_VERSION) {
+//            return false;
+//        }
+//        boolean permissionsEnabled = Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(parentActivity);
+//        return pipAvailable && textureUploaded && videoPlayer != null && videoPlayer.getRepeatCount() == 0 && permissionsEnabled && !(changingTextureView || switchingInlineMode || isInline);
     }
 
     @Override

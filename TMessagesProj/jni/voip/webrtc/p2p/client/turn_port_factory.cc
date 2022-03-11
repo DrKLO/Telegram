@@ -26,8 +26,7 @@ std::unique_ptr<Port> TurnPortFactory::Create(
   auto port = TurnPort::CreateUnique(
       args.network_thread, args.socket_factory, args.network, udp_socket,
       args.username, args.password, *args.server_address,
-      args.config->credentials, args.config->priority, args.origin,
-      args.turn_customizer);
+      args.config->credentials, args.config->priority, args.turn_customizer);
   if (!port)
     return nullptr;
   port->SetTlsCertPolicy(args.config->tls_cert_policy);
@@ -41,7 +40,7 @@ std::unique_ptr<Port> TurnPortFactory::Create(const CreateRelayPortArgs& args,
   auto port = TurnPort::CreateUnique(
       args.network_thread, args.socket_factory, args.network, min_port,
       max_port, args.username, args.password, *args.server_address,
-      args.config->credentials, args.config->priority, args.origin,
+      args.config->credentials, args.config->priority,
       args.config->tls_alpn_protocols, args.config->tls_elliptic_curves,
       args.turn_customizer, args.config->tls_cert_verifier);
   if (!port)

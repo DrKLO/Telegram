@@ -42,30 +42,8 @@ void DEPRECATED_AsyncInvoker::OnMessage(Message* msg) {
   ScopedMessageData<AsyncClosure>* data =
       static_cast<ScopedMessageData<AsyncClosure>*>(msg->pdata);
   // Execute the closure and trigger the return message if needed.
-  data->inner_data().Execute();
+  data->data().Execute();
   delete data;
-}
-
-void DEPRECATED_AsyncInvoker::Flush(Thread* thread,
-                                    uint32_t id /*= MQID_ANY*/) {
-  // If the destructor is waiting for invocations to finish, don't start
-  // running even more tasks.
-  if (destroying_.load(std::memory_order_relaxed))
-    return;
-
-  // Run this on |thread| to reduce the number of context switches.
-  if (Thread::Current() != thread) {
-    thread->Invoke<void>(RTC_FROM_HERE,
-                         [this, thread, id] { Flush(thread, id); });
-    return;
-  }
-
-  MessageList removed;
-  thread->Clear(this, id, &removed);
-  for (MessageList::iterator it = removed.begin(); it != removed.end(); ++it) {
-    // This message was pending on this thread, so run it now.
-    thread->Send(it->posted_from, it->phandler, it->message_id, it->pdata);
-  }
 }
 
 void DEPRECATED_AsyncInvoker::Clear() {
@@ -113,8 +91,8 @@ AsyncClosure::~AsyncClosure() {
   // destructor.
   invoker_->pending_invocations_.fetch_sub(1, std::memory_order_release);
 
-  // After |pending_invocations_| is decremented, we may need to signal
-  // |invocation_complete_| in case the AsyncInvoker is being destroyed and
+  // After `pending_invocations_` is decremented, we may need to signal
+  // `invocation_complete_` in case the AsyncInvoker is being destroyed and
   // waiting for pending tasks to complete.
   //
   // It's also possible that the destructor finishes before "Set()" is called,

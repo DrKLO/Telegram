@@ -12,7 +12,7 @@
 
 #include <stddef.h>
 
-#include <vector>
+#include <utility>
 
 #include "rtc_base/checks.h"
 #include "rtc_base/ref_counted_object.h"
@@ -37,11 +37,13 @@ rtc::scoped_refptr<MediaStream> MediaStream::Create(const std::string& id) {
 MediaStream::MediaStream(const std::string& id) : id_(id) {}
 
 bool MediaStream::AddTrack(AudioTrackInterface* track) {
-  return AddTrack<AudioTrackVector, AudioTrackInterface>(&audio_tracks_, track);
+  return AddTrack<AudioTrackVector, AudioTrackInterface>(
+      &audio_tracks_, rtc::scoped_refptr<AudioTrackInterface>(track));
 }
 
 bool MediaStream::AddTrack(VideoTrackInterface* track) {
-  return AddTrack<VideoTrackVector, VideoTrackInterface>(&video_tracks_, track);
+  return AddTrack<VideoTrackVector, VideoTrackInterface>(
+      &video_tracks_, rtc::scoped_refptr<VideoTrackInterface>(track));
 }
 
 bool MediaStream::RemoveTrack(AudioTrackInterface* track) {
@@ -56,7 +58,7 @@ rtc::scoped_refptr<AudioTrackInterface> MediaStream::FindAudioTrack(
     const std::string& track_id) {
   AudioTrackVector::iterator it = FindTrack(&audio_tracks_, track_id);
   if (it == audio_tracks_.end())
-    return NULL;
+    return nullptr;
   return *it;
 }
 
@@ -64,16 +66,17 @@ rtc::scoped_refptr<VideoTrackInterface> MediaStream::FindVideoTrack(
     const std::string& track_id) {
   VideoTrackVector::iterator it = FindTrack(&video_tracks_, track_id);
   if (it == video_tracks_.end())
-    return NULL;
+    return nullptr;
   return *it;
 }
 
 template <typename TrackVector, typename Track>
-bool MediaStream::AddTrack(TrackVector* tracks, Track* track) {
+bool MediaStream::AddTrack(TrackVector* tracks,
+                           rtc::scoped_refptr<Track> track) {
   typename TrackVector::iterator it = FindTrack(tracks, track->id());
   if (it != tracks->end())
     return false;
-  tracks->push_back(track);
+  tracks->emplace_back(std::move((track)));
   FireOnChanged();
   return true;
 }

@@ -27,7 +27,7 @@
 #include "modules/video_coding/codecs/vp9/include/vp9.h"
 #include "modules/video_coding/codecs/vp9/vp9_frame_buffer_pool.h"
 #include "modules/video_coding/svc/scalable_video_controller.h"
-#include "modules/video_coding/utility/framerate_controller.h"
+#include "modules/video_coding/utility/framerate_controller_deprecated.h"
 #include "rtc_base/experiments/encoder_info_settings.h"
 #include <libvpx/vp8cx.h>
 
@@ -67,20 +67,24 @@ class LibvpxVp9Encoder : public VP9Encoder {
 
   bool PopulateCodecSpecific(CodecSpecificInfo* codec_specific,
                              absl::optional<int>* spatial_idx,
-                             const vpx_codec_cx_pkt& pkt,
-                             uint32_t timestamp);
+                             const vpx_codec_cx_pkt& pkt);
   void FillReferenceIndices(const vpx_codec_cx_pkt& pkt,
-                            const size_t pic_num,
-                            const bool inter_layer_predicted,
+                            size_t pic_num,
+                            bool inter_layer_predicted,
                             CodecSpecificInfoVP9* vp9_info);
-  void UpdateReferenceBuffers(const vpx_codec_cx_pkt& pkt,
-                              const size_t pic_num);
+  void UpdateReferenceBuffers(const vpx_codec_cx_pkt& pkt, size_t pic_num);
   vpx_svc_ref_frame_config_t SetReferences(
       bool is_key_pic,
       size_t first_active_spatial_layer_id);
 
   bool ExplicitlyConfiguredSpatialLayers() const;
   bool SetSvcRates(const VideoBitrateAllocation& bitrate_allocation);
+
+  // Configures which spatial layers libvpx should encode according to
+  // configuration provided by svc_controller_.
+  void EnableSpatialLayer(int sid);
+  void DisableSpatialLayer(int sid);
+  void SetActiveSpatialLayers();
 
   void GetEncodedLayerFrame(const vpx_codec_cx_pkt* pkt);
 
@@ -102,9 +106,9 @@ class LibvpxVp9Encoder : public VP9Encoder {
 
   size_t SteadyStateSize(int sid, int tid);
 
-  void MaybeRewrapRawWithFormat(const vpx_img_fmt fmt);
-  // Prepares |raw_| to reference image data of |buffer|, or of mapped or scaled
-  // versions of |buffer|. Returns the buffer that got referenced as a result,
+  void MaybeRewrapRawWithFormat(vpx_img_fmt fmt);
+  // Prepares `raw_` to reference image data of `buffer`, or of mapped or scaled
+  // versions of `buffer`. Returns the buffer that got referenced as a result,
   // allowing the caller to keep a reference to it until after encoding has
   // finished. On failure to convert the buffer, null is returned.
   rtc::scoped_refptr<VideoFrameBuffer> PrepareBufferForProfile0(
@@ -144,10 +148,9 @@ class LibvpxVp9Encoder : public VP9Encoder {
   VideoBitrateAllocation current_bitrate_allocation_;
   bool ss_info_needed_;
   bool force_all_active_layers_;
-  const bool use_svc_controller_;
 
   std::unique_ptr<ScalableVideoController> svc_controller_;
-  std::vector<FramerateController> framerate_controller_;
+  std::vector<FramerateControllerDeprecated> framerate_controller_;
 
   // Used for flexible mode.
   bool is_flexible_mode_;
@@ -188,7 +191,7 @@ class LibvpxVp9Encoder : public VP9Encoder {
   } variable_framerate_experiment_;
   static VariableFramerateExperiment ParseVariableFramerateConfig(
       const WebRtcKeyValueConfig& trials);
-  FramerateController variable_framerate_controller_;
+  FramerateControllerDeprecated variable_framerate_controller_;
 
   const struct QualityScalerExperiment {
     int low_qp;
@@ -202,9 +205,9 @@ class LibvpxVp9Encoder : public VP9Encoder {
   // Flags that can affect speed vs quality tradeoff, and are configureable per
   // resolution ranges.
   struct PerformanceFlags {
-    // If false, a lookup will be made in |settings_by_resolution| base on the
+    // If false, a lookup will be made in `settings_by_resolution` base on the
     // highest currently active resolution, and the overall speed then set to
-    // to the |base_layer_speed| matching that entry.
+    // to the `base_layer_speed` matching that entry.
     // If true, each active resolution will have it's speed and deblock_mode set
     // based on it resolution, and the high layer speed configured for non
     // base temporal layer frames.
@@ -223,10 +226,10 @@ class LibvpxVp9Encoder : public VP9Encoder {
     // setting B at wvga and above, you'd use map {{0, A}, {230400, B}}.
     std::map<int, ParameterSet> settings_by_resolution;
   };
-  // Performance flags, ordered by |min_pixel_count|.
+  // Performance flags, ordered by `min_pixel_count`.
   const PerformanceFlags performance_flags_;
-  // Caching of of |speed_configs_|, where index i maps to the resolution as
-  // specified in |codec_.spatialLayer[i]|.
+  // Caching of of `speed_configs_`, where index i maps to the resolution as
+  // specified in `codec_.spatialLayer[i]`.
   std::vector<PerformanceFlags::ParameterSet>
       performance_flags_by_spatial_index_;
   void UpdatePerformanceFlags();

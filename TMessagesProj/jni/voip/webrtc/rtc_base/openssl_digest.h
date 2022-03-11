@@ -23,14 +23,14 @@ namespace rtc {
 // An implementation of the digest class that uses OpenSSL.
 class OpenSSLDigest final : public MessageDigest {
  public:
-  // Creates an OpenSSLDigest with |algorithm| as the hash algorithm.
+  // Creates an OpenSSLDigest with `algorithm` as the hash algorithm.
   explicit OpenSSLDigest(const std::string& algorithm);
   ~OpenSSLDigest() override;
   // Returns the digest output size (e.g. 16 bytes for MD5).
   size_t Size() const override;
-  // Updates the digest with |len| bytes from |buf|.
+  // Updates the digest with `len` bytes from `buf`.
   void Update(const void* buf, size_t len) override;
-  // Outputs the digest value to |buf| with length |len|.
+  // Outputs the digest value to `buf` with length `len`.
   size_t Finish(void* buf, size_t len) override;
 
   // Helper function to look up a digest's EVP by name.

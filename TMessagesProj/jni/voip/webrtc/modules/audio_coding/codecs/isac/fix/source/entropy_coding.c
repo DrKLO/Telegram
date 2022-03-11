@@ -831,15 +831,15 @@ It first shifts input data of one matrix, determines the right indexes for the
 two matrixes, multiply them, and write the results into an output buffer.
 
 Note that two factors (or, multipliers) determine the initialization values of
-the variable |matrix1_index| in the code. The relationship is
-|matrix1_index| = |matrix1_index_factor1| * |matrix1_index_factor2|, where
-|matrix1_index_factor1| is given by the argument while |matrix1_index_factor2|
-is determined by the value of argument |matrix1_index_init_case|;
-|matrix1_index_factor2| is the value of the outmost loop counter j (when
-|matrix1_index_init_case| is 0), or the value of the middle loop counter k (when
-|matrix1_index_init_case| is non-zero).
+the variable `matrix1_index` in the code. The relationship is
+`matrix1_index` = `matrix1_index_factor1` * `matrix1_index_factor2`, where
+`matrix1_index_factor1` is given by the argument while `matrix1_index_factor2`
+is determined by the value of argument `matrix1_index_init_case`;
+`matrix1_index_factor2` is the value of the outmost loop counter j (when
+`matrix1_index_init_case` is 0), or the value of the middle loop counter k (when
+`matrix1_index_init_case` is non-zero).
 
-|matrix0_index| is determined the same way.
+`matrix0_index` is determined the same way.
 
 Arguments:
   matrix0[]:                 matrix0 data in Q15 domain.

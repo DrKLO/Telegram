@@ -21,7 +21,7 @@ message EncoderRuntimeConfig {
   optional bool enable_fec = 4;
   optional bool enable_dtx = 5;
   // Some encoders can encode fewer channels than the actual input to make
-  // better use of the bandwidth. |num_channels| sets the number of channels
+  // better use of the bandwidth. `num_channels` sets the number of channels
   // to encode.
   optional uint32 num_channels = 6;
 }

@@ -73,7 +73,4 @@ static jlong Java_TurnCustomizer_getNativeTurnCustomizer(JNIEnv* env, const
 }  // namespace jni
 }  // namespace  webrtc
 
-// Step 4: Generated test functions (optional).
-
-
 #endif  // org_webrtc_TurnCustomizer_JNI

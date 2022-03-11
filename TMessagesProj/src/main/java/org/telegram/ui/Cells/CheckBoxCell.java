@@ -55,8 +55,6 @@ public class CheckBoxCell extends FrameLayout {
         currentType = type;
 
         textView = new TextView(context);
-        textView.setTextColor(getThemedColor(type == 1 || type == 5 ? Theme.key_dialogTextBlack : Theme.key_windowBackgroundWhiteBlackText));
-        textView.setLinkTextColor(getThemedColor(type == 1 || type == 5 ? Theme.key_dialogTextLink : Theme.key_windowBackgroundWhiteLinkText));
         textView.setTag(getThemedColor(type == 1 || type == 5 ? Theme.key_dialogTextBlack : Theme.key_windowBackgroundWhiteBlackText));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setLines(1);
@@ -78,7 +76,6 @@ public class CheckBoxCell extends FrameLayout {
         }
 
         valueTextView = new TextView(context);
-        valueTextView.setTextColor(getThemedColor(type == 1 || type == 5 ? Theme.key_dialogTextBlue : Theme.key_windowBackgroundWhiteValueText));
         valueTextView.setTag(type == 1 || type == 5 ? Theme.key_dialogTextBlue : Theme.key_windowBackgroundWhiteValueText);
         valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         valueTextView.setLines(1);
@@ -108,6 +105,13 @@ public class CheckBoxCell extends FrameLayout {
                 addView(checkBox, LayoutHelper.createFrame(checkBoxSize, checkBoxSize, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 0 : padding), 16, (LocaleController.isRTL ? padding : 0), 0));
             }
         }
+        updateTextColor();
+    }
+
+    public void updateTextColor() {
+        textView.setTextColor(getThemedColor(currentType == 1 || currentType == 5 ? Theme.key_dialogTextBlack : Theme.key_windowBackgroundWhiteBlackText));
+        textView.setLinkTextColor(getThemedColor(currentType == 1 || currentType == 5 ? Theme.key_dialogTextLink : Theme.key_windowBackgroundWhiteLinkText));
+        valueTextView.setTextColor(getThemedColor(currentType == 1 || currentType == 5 ? Theme.key_dialogTextBlue : Theme.key_windowBackgroundWhiteValueText));
     }
 
     @Override
@@ -224,6 +228,13 @@ public class CheckBoxCell extends FrameLayout {
             checkBoxRound.setColor(background,background,check);
         }
     }
+
+    public void setSquareCheckBoxColor(String uncheckedColor, String checkedColor, String checkColor) {
+        if (checkBoxSquare != null) {
+            checkBoxSquare.setColors(uncheckedColor, checkedColor, checkColor);
+        }
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         if (needDivider) {

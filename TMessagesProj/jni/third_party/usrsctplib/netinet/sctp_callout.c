@@ -34,12 +34,12 @@
 
 #if defined(__Userspace__)
 #include <sys/types.h>
-#if !defined (__Userspace_os_Windows)
+#if !defined(_WIN32)
 #include <sys/wait.h>
 #include <unistd.h>
 #include <pthread.h>
 #endif
-#if defined(__Userspace_os_NaCl)
+#if defined(__native_client__)
 #include <sys/select.h>
 #endif
 #include <stdlib.h>
@@ -54,6 +54,7 @@
 #include <netinet/sctp_callout.h>
 #include <netinet/sctp_pcb.h>
 #endif
+#include <netinet/sctputil.h>
 
 /*
  * Callout/Timer routines for OS that doesn't have them
@@ -86,17 +87,20 @@ sctp_os_timer_init(sctp_os_timer_t *c)
 	memset(c, 0, sizeof(*c));
 }
 
-void
+int
 sctp_os_timer_start(sctp_os_timer_t *c, uint32_t to_ticks, void (*ftn) (void *),
                     void *arg)
 {
+	int ret = 0;
+
 	/* paranoia */
 	if ((c == NULL) || (ftn == NULL))
-	    return;
+		return (ret);
 
 	SCTP_TIMERQ_LOCK();
 	/* check to see if we're rescheduling a timer */
 	if (c->c_flags & SCTP_CALLOUT_PENDING) {
+		ret = 1;
 		if (c == sctp_os_timer_next) {
 			sctp_os_timer_next = TAILQ_NEXT(c, tqe);
 		}
@@ -122,6 +126,7 @@ sctp_os_timer_start(sctp_os_timer_t *c, uint32_t to_ticks, void (*ftn) (void *),
 	c->c_time = ticks + to_ticks;
 	TAILQ_INSERT_TAIL(&SCTP_BASE_INFO(callqueue), c, tqe);
 	SCTP_TIMERQ_UNLOCK();
+	return (ret);
 }
 
 int
@@ -175,7 +180,7 @@ sctp_handle_tick(uint32_t elapsed_ticks)
 	SCTP_TIMERQ_UNLOCK();
 }
 
-#if defined(__APPLE__)
+#if defined(__APPLE__) && !defined(__Userspace__)
 void
 sctp_timeout(void *arg SCTP_UNUSED)
 {
@@ -192,7 +197,7 @@ user_sctp_timer_iterate(void *arg)
 {
 	sctp_userspace_set_threadname("SCTP timer");
 	for (;;) {
-#if defined (__Userspace_os_Windows)
+#if defined(_WIN32)
 		Sleep(TIMEOUT_INTERVAL);
 #else
 		struct timespec amount, remaining;
@@ -206,13 +211,13 @@ user_sctp_timer_iterate(void *arg)
 		if (atomic_cmpset_int(&SCTP_BASE_VAR(timer_thread_should_exit), 1, 1)) {
 			break;
 		}
-		sctp_handle_tick(MSEC_TO_TICKS(TIMEOUT_INTERVAL));
+		sctp_handle_tick(sctp_msecs_to_ticks(TIMEOUT_INTERVAL));
 	}
 	return (NULL);
 }
 
 void
-sctp_start_timer(void)
+sctp_start_timer_thread(void)
 {
 	/*
 	 * No need to do SCTP_TIMERQ_LOCK_INIT();
@@ -223,7 +228,22 @@ sctp_start_timer(void)
 	rc = sctp_userspace_thread_create(&SCTP_BASE_VAR(timer_thread), user_sctp_timer_iterate);
 	if (rc) {
 		SCTP_PRINTF("ERROR; return code from sctp_thread_create() is %d\n", rc);
+	} else {
+		SCTP_BASE_VAR(timer_thread_started) = 1;
 	}
 }
 
+void
+sctp_stop_timer_thread(void)
+{
+	atomic_cmpset_int(&SCTP_BASE_VAR(timer_thread_should_exit), 0, 1);
+	if (SCTP_BASE_VAR(timer_thread_started)) {
+#if defined(_WIN32)
+		WaitForSingleObject(SCTP_BASE_VAR(timer_thread), INFINITE);
+		CloseHandle(SCTP_BASE_VAR(timer_thread));
+#else
+		pthread_join(SCTP_BASE_VAR(timer_thread), NULL);
+#endif
+	}
+}
 #endif

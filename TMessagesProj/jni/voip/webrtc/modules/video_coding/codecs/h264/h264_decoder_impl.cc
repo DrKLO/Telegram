@@ -41,8 +41,10 @@ namespace webrtc {
 
 namespace {
 
-const AVPixelFormat kPixelFormatDefault = AV_PIX_FMT_YUV420P;
-const AVPixelFormat kPixelFormatFullRange = AV_PIX_FMT_YUVJ420P;
+constexpr std::array<AVPixelFormat, 2> kPixelFormatsDefault = {
+    AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV444P};
+constexpr std::array<AVPixelFormat, 2> kPixelFormatsFullRange = {
+    AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ444P};
 const size_t kYPlaneIndex = 0;
 const size_t kUPlaneIndex = 1;
 const size_t kVPlaneIndex = 2;
@@ -54,33 +56,51 @@ enum H264DecoderImplEvent {
   kH264DecoderEventMax = 16,
 };
 
+struct ScopedPtrAVFreePacket {
+  void operator()(AVPacket* packet) { av_packet_free(&packet); }
+};
+typedef std::unique_ptr<AVPacket, ScopedPtrAVFreePacket> ScopedAVPacket;
+
+ScopedAVPacket MakeScopedAVPacket() {
+  ScopedAVPacket packet(av_packet_alloc());
+  return packet;
+}
+
 }  // namespace
 
 int H264DecoderImpl::AVGetBuffer2(AVCodecContext* context,
                                   AVFrame* av_frame,
                                   int flags) {
-  // Set in |InitDecode|.
+  // Set in `Configure`.
   H264DecoderImpl* decoder = static_cast<H264DecoderImpl*>(context->opaque);
-  // DCHECK values set in |InitDecode|.
+  // DCHECK values set in `Configure`.
   RTC_DCHECK(decoder);
   // Necessary capability to be allowed to provide our own buffers.
   RTC_DCHECK(context->codec->capabilities | AV_CODEC_CAP_DR1);
 
-  // Limited or full range YUV420 is expected.
-  RTC_CHECK(context->pix_fmt == kPixelFormatDefault ||
-            context->pix_fmt == kPixelFormatFullRange);
+  // Limited or full range YUV420 or YUV444 is expected.
+  auto pixelFormatDefault = std::find_if(
+      kPixelFormatsDefault.begin(), kPixelFormatsDefault.end(),
+      [context](AVPixelFormat format) { return context->pix_fmt == format; });
+  auto pixelFormatFullRange = std::find_if(
+      kPixelFormatsFullRange.begin(), kPixelFormatsFullRange.end(),
+      [context](AVPixelFormat format) { return context->pix_fmt == format; });
 
-  // |av_frame->width| and |av_frame->height| are set by FFmpeg. These are the
-  // actual image's dimensions and may be different from |context->width| and
-  // |context->coded_width| due to reordering.
+  // Limited or full range YUV420 is expected.
+  RTC_CHECK(pixelFormatDefault != kPixelFormatsDefault.end() ||
+            pixelFormatFullRange != kPixelFormatsFullRange.end());
+
+  // `av_frame->width` and `av_frame->height` are set by FFmpeg. These are the
+  // actual image's dimensions and may be different from `context->width` and
+  // `context->coded_width` due to reordering.
   int width = av_frame->width;
   int height = av_frame->height;
-  // See |lowres|, if used the decoder scales the image by 1/2^(lowres). This
+  // See `lowres`, if used the decoder scales the image by 1/2^(lowres). This
   // has implications on which resolutions are valid, but we don't use it.
   RTC_CHECK_EQ(context->lowres, 0);
-  // Adjust the |width| and |height| to values acceptable by the decoder.
-  // Without this, FFmpeg may overflow the buffer. If modified, |width| and/or
-  // |height| are larger than the actual image and the image has to be cropped
+  // Adjust the `width` and `height` to values acceptable by the decoder.
+  // Without this, FFmpeg may overflow the buffer. If modified, `width` and/or
+  // `height` are larger than the actual image and the image has to be cropped
   // (top-left corner) after decoding to avoid visible borders to the right and
   // bottom of the actual image.
   avcodec_align_dimensions(context, &width, &height);
@@ -95,15 +115,50 @@ int H264DecoderImpl::AVGetBuffer2(AVCodecContext* context,
     return ret;
   }
 
-  // The video frame is stored in |frame_buffer|. |av_frame| is FFmpeg's version
-  // of a video frame and will be set up to reference |frame_buffer|'s data.
+  // The video frame is stored in `frame_buffer`. `av_frame` is FFmpeg's version
+  // of a video frame and will be set up to reference `frame_buffer`'s data.
 
   // FFmpeg expects the initial allocation to be zero-initialized according to
   // http://crbug.com/390941. Our pool is set up to zero-initialize new buffers.
   // TODO(nisse): Delete that feature from the video pool, instead add
   // an explicit call to InitializeData here.
-  rtc::scoped_refptr<I420Buffer> frame_buffer =
-      decoder->ffmpeg_buffer_pool_.CreateI420Buffer(width, height);
+  rtc::scoped_refptr<PlanarYuv8Buffer> frame_buffer;
+  rtc::scoped_refptr<I444Buffer> i444_buffer;
+  rtc::scoped_refptr<I420Buffer> i420_buffer;
+  switch (context->pix_fmt) {
+    case AV_PIX_FMT_YUV420P:
+    case AV_PIX_FMT_YUVJ420P:
+      i420_buffer =
+          decoder->ffmpeg_buffer_pool_.CreateI420Buffer(width, height);
+      // Set `av_frame` members as required by FFmpeg.
+      av_frame->data[kYPlaneIndex] = i420_buffer->MutableDataY();
+      av_frame->linesize[kYPlaneIndex] = i420_buffer->StrideY();
+      av_frame->data[kUPlaneIndex] = i420_buffer->MutableDataU();
+      av_frame->linesize[kUPlaneIndex] = i420_buffer->StrideU();
+      av_frame->data[kVPlaneIndex] = i420_buffer->MutableDataV();
+      av_frame->linesize[kVPlaneIndex] = i420_buffer->StrideV();
+      RTC_DCHECK_EQ(av_frame->extended_data, av_frame->data);
+      frame_buffer = i420_buffer;
+      break;
+    case AV_PIX_FMT_YUV444P:
+    case AV_PIX_FMT_YUVJ444P:
+      i444_buffer =
+          decoder->ffmpeg_buffer_pool_.CreateI444Buffer(width, height);
+      // Set `av_frame` members as required by FFmpeg.
+      av_frame->data[kYPlaneIndex] = i444_buffer->MutableDataY();
+      av_frame->linesize[kYPlaneIndex] = i444_buffer->StrideY();
+      av_frame->data[kUPlaneIndex] = i444_buffer->MutableDataU();
+      av_frame->linesize[kUPlaneIndex] = i444_buffer->StrideU();
+      av_frame->data[kVPlaneIndex] = i444_buffer->MutableDataV();
+      av_frame->linesize[kVPlaneIndex] = i444_buffer->StrideV();
+      frame_buffer = i444_buffer;
+      break;
+    default:
+      RTC_LOG(LS_ERROR) << "Unsupported buffer type " << context->pix_fmt
+                        << ". Check supported supported pixel formats!";
+      decoder->ReportError();
+      return -1;
+  }
 
   int y_size = width * height;
   int uv_size = frame_buffer->ChromaWidth() * frame_buffer->ChromaHeight();
@@ -114,15 +169,6 @@ int H264DecoderImpl::AVGetBuffer2(AVCodecContext* context,
 
   av_frame->format = context->pix_fmt;
   av_frame->reordered_opaque = context->reordered_opaque;
-
-  // Set |av_frame| members as required by FFmpeg.
-  av_frame->data[kYPlaneIndex] = frame_buffer->MutableDataY();
-  av_frame->linesize[kYPlaneIndex] = frame_buffer->StrideY();
-  av_frame->data[kUPlaneIndex] = frame_buffer->MutableDataU();
-  av_frame->linesize[kUPlaneIndex] = frame_buffer->StrideU();
-  av_frame->data[kVPlaneIndex] = frame_buffer->MutableDataV();
-  av_frame->linesize[kVPlaneIndex] = frame_buffer->StrideV();
-  RTC_DCHECK_EQ(av_frame->extended_data, av_frame->data);
 
   // Create a VideoFrame object, to keep a reference to the buffer.
   // TODO(nisse): The VideoFrame's timestamp and rotation info is not used.
@@ -142,8 +188,8 @@ int H264DecoderImpl::AVGetBuffer2(AVCodecContext* context,
 }
 
 void H264DecoderImpl::AVFreeBuffer2(void* opaque, uint8_t* data) {
-  // The buffer pool recycles the buffer used by |video_frame| when there are no
-  // more references to it. |video_frame| is a thin buffer holder and is not
+  // The buffer pool recycles the buffer used by `video_frame` when there are no
+  // more references to it. `video_frame` is a thin buffer holder and is not
   // recycled.
   VideoFrame* video_frame = static_cast<VideoFrame*>(opaque);
   delete video_frame;
@@ -162,19 +208,18 @@ H264DecoderImpl::~H264DecoderImpl() {
   Release();
 }
 
-int32_t H264DecoderImpl::InitDecode(const VideoCodec* codec_settings,
-                                    int32_t number_of_cores) {
+bool H264DecoderImpl::Configure(const Settings& settings) {
   ReportInit();
-  if (codec_settings && codec_settings->codecType != kVideoCodecH264) {
+  if (settings.codec_type() != kVideoCodecH264) {
     ReportError();
-    return WEBRTC_VIDEO_CODEC_ERR_PARAMETER;
+    return false;
   }
 
   // Release necessary in case of re-initializing.
   int32_t ret = Release();
   if (ret != WEBRTC_VIDEO_CODEC_OK) {
     ReportError();
-    return ret;
+    return false;
   }
   RTC_DCHECK(!av_context_);
 
@@ -183,51 +228,51 @@ int32_t H264DecoderImpl::InitDecode(const VideoCodec* codec_settings,
 
   av_context_->codec_type = AVMEDIA_TYPE_VIDEO;
   av_context_->codec_id = AV_CODEC_ID_H264;
-  if (codec_settings) {
-    av_context_->coded_width = codec_settings->width;
-    av_context_->coded_height = codec_settings->height;
+  const RenderResolution& resolution = settings.max_render_resolution();
+  if (resolution.Valid()) {
+    av_context_->coded_width = resolution.Width();
+    av_context_->coded_height = resolution.Height();
   }
-  av_context_->pix_fmt = kPixelFormatDefault;
   av_context_->extradata = nullptr;
   av_context_->extradata_size = 0;
 
-  // If this is ever increased, look at |av_context_->thread_safe_callbacks| and
+  // If this is ever increased, look at `av_context_->thread_safe_callbacks` and
   // make it possible to disable the thread checker in the frame buffer pool.
   av_context_->thread_count = 1;
   av_context_->thread_type = FF_THREAD_SLICE;
 
   // Function used by FFmpeg to get buffers to store decoded frames in.
   av_context_->get_buffer2 = AVGetBuffer2;
-  // |get_buffer2| is called with the context, there |opaque| can be used to get
-  // a pointer |this|.
+  // `get_buffer2` is called with the context, there `opaque` can be used to get
+  // a pointer `this`.
   av_context_->opaque = this;
 
-  AVCodec* codec = avcodec_find_decoder(av_context_->codec_id);
+  const AVCodec* codec = avcodec_find_decoder(av_context_->codec_id);
   if (!codec) {
     // This is an indication that FFmpeg has not been initialized or it has not
     // been compiled/initialized with the correct set of codecs.
     RTC_LOG(LS_ERROR) << "FFmpeg H.264 decoder not found.";
     Release();
     ReportError();
-    return WEBRTC_VIDEO_CODEC_ERROR;
+    return false;
   }
   int res = avcodec_open2(av_context_.get(), codec, nullptr);
   if (res < 0) {
     RTC_LOG(LS_ERROR) << "avcodec_open2 error: " << res;
     Release();
     ReportError();
-    return WEBRTC_VIDEO_CODEC_ERROR;
+    return false;
   }
 
   av_frame_.reset(av_frame_alloc());
 
-  if (codec_settings && codec_settings->buffer_pool_size) {
-    if (!ffmpeg_buffer_pool_.Resize(*codec_settings->buffer_pool_size) ||
-        !output_buffer_pool_.Resize(*codec_settings->buffer_pool_size)) {
-      return WEBRTC_VIDEO_CODEC_UNINITIALIZED;
+  if (absl::optional<int> buffer_pool_size = settings.buffer_pool_size()) {
+    if (!ffmpeg_buffer_pool_.Resize(*buffer_pool_size) ||
+        !output_buffer_pool_.Resize(*buffer_pool_size)) {
+      return false;
     }
   }
-  return WEBRTC_VIDEO_CODEC_OK;
+  return true;
 }
 
 int32_t H264DecoderImpl::Release() {
@@ -251,7 +296,7 @@ int32_t H264DecoderImpl::Decode(const EncodedImage& input_image,
   }
   if (!decoded_image_callback_) {
     RTC_LOG(LS_WARNING)
-        << "InitDecode() has been called, but a callback function "
+        << "Configure() has been called, but a callback function "
            "has not been set with RegisterDecodeCompleteCallback()";
     ReportError();
     return WEBRTC_VIDEO_CODEC_UNINITIALIZED;
@@ -261,21 +306,25 @@ int32_t H264DecoderImpl::Decode(const EncodedImage& input_image,
     return WEBRTC_VIDEO_CODEC_ERR_PARAMETER;
   }
 
-  AVPacket packet;
-  av_init_packet(&packet);
+  ScopedAVPacket packet = MakeScopedAVPacket();
+  if (!packet) {
+    ReportError();
+    return WEBRTC_VIDEO_CODEC_ERROR;
+  }
   // packet.data has a non-const type, but isn't modified by
   // avcodec_send_packet.
-  packet.data = const_cast<uint8_t*>(input_image.data());
+  packet->data = const_cast<uint8_t*>(input_image.data());
   if (input_image.size() >
       static_cast<size_t>(std::numeric_limits<int>::max())) {
     ReportError();
     return WEBRTC_VIDEO_CODEC_ERROR;
   }
-  packet.size = static_cast<int>(input_image.size());
+  packet->size = static_cast<int>(input_image.size());
   int64_t frame_timestamp_us = input_image.ntp_time_ms_ * 1000;  // ms -> μs
   av_context_->reordered_opaque = frame_timestamp_us;
 
-  int result = avcodec_send_packet(av_context_.get(), &packet);
+  int result = avcodec_send_packet(av_context_.get(), packet.get());
+
   if (result < 0) {
     RTC_LOG(LS_ERROR) << "avcodec_send_packet error: " << result;
     ReportError();
@@ -289,7 +338,7 @@ int32_t H264DecoderImpl::Decode(const EncodedImage& input_image,
     return WEBRTC_VIDEO_CODEC_ERROR;
   }
 
-  // We don't expect reordering. Decoded frame tamestamp should match
+  // We don't expect reordering. Decoded frame timestamp should match
   // the input one.
   RTC_DCHECK_EQ(av_frame_->reordered_opaque, frame_timestamp_us);
 
@@ -297,53 +346,109 @@ int32_t H264DecoderImpl::Decode(const EncodedImage& input_image,
   h264_bitstream_parser_.ParseBitstream(input_image);
   absl::optional<int> qp = h264_bitstream_parser_.GetLastSliceQp();
 
-  // Obtain the |video_frame| containing the decoded image.
+  // Obtain the `video_frame` containing the decoded image.
   VideoFrame* input_frame =
       static_cast<VideoFrame*>(av_buffer_get_opaque(av_frame_->buf[0]));
   RTC_DCHECK(input_frame);
   rtc::scoped_refptr<VideoFrameBuffer> frame_buffer =
       input_frame->video_frame_buffer();
-  const webrtc::I420BufferInterface* i420_buffer = frame_buffer->GetI420();
+
+  // Instantiate Planar YUV8 buffer according to video frame buffer type
+  const webrtc::PlanarYuv8Buffer* planar_yuv8_buffer = nullptr;
+  VideoFrameBuffer::Type video_frame_buffer_type = frame_buffer->type();
+  switch (video_frame_buffer_type) {
+    case VideoFrameBuffer::Type::kI420:
+      planar_yuv8_buffer = frame_buffer->GetI420();
+      break;
+    case VideoFrameBuffer::Type::kI444:
+      planar_yuv8_buffer = frame_buffer->GetI444();
+      break;
+    default:
+      // If this code is changed to allow other video frame buffer type,
+      // make sure that the code below which wraps I420/I444 buffer and
+      // code which converts to NV12 is changed
+      // to work with new video frame buffer type
+
+      RTC_LOG(LS_ERROR) << "frame_buffer type: "
+                        << static_cast<int32_t>(video_frame_buffer_type)
+                        << " is not supported!";
+      ReportError();
+      return WEBRTC_VIDEO_CODEC_ERROR;
+  }
 
   // When needed, FFmpeg applies cropping by moving plane pointers and adjusting
   // frame width/height. Ensure that cropped buffers lie within the allocated
   // memory.
-  RTC_DCHECK_LE(av_frame_->width, i420_buffer->width());
-  RTC_DCHECK_LE(av_frame_->height, i420_buffer->height());
-  RTC_DCHECK_GE(av_frame_->data[kYPlaneIndex], i420_buffer->DataY());
-  RTC_DCHECK_LE(
-      av_frame_->data[kYPlaneIndex] +
-          av_frame_->linesize[kYPlaneIndex] * av_frame_->height,
-      i420_buffer->DataY() + i420_buffer->StrideY() * i420_buffer->height());
-  RTC_DCHECK_GE(av_frame_->data[kUPlaneIndex], i420_buffer->DataU());
+  RTC_DCHECK_LE(av_frame_->width, planar_yuv8_buffer->width());
+  RTC_DCHECK_LE(av_frame_->height, planar_yuv8_buffer->height());
+  RTC_DCHECK_GE(av_frame_->data[kYPlaneIndex], planar_yuv8_buffer->DataY());
+  RTC_DCHECK_LE(av_frame_->data[kYPlaneIndex] +
+                    av_frame_->linesize[kYPlaneIndex] * av_frame_->height,
+                planar_yuv8_buffer->DataY() + planar_yuv8_buffer->StrideY() *
+                                                  planar_yuv8_buffer->height());
+  RTC_DCHECK_GE(av_frame_->data[kUPlaneIndex], planar_yuv8_buffer->DataU());
   RTC_DCHECK_LE(av_frame_->data[kUPlaneIndex] +
                     av_frame_->linesize[kUPlaneIndex] * av_frame_->height / 2,
-                i420_buffer->DataU() +
-                    i420_buffer->StrideU() * i420_buffer->height() / 2);
-  RTC_DCHECK_GE(av_frame_->data[kVPlaneIndex], i420_buffer->DataV());
+                planar_yuv8_buffer->DataU() + planar_yuv8_buffer->StrideU() *
+                                                  planar_yuv8_buffer->height() /
+                                                  2);
+  RTC_DCHECK_GE(av_frame_->data[kVPlaneIndex], planar_yuv8_buffer->DataV());
   RTC_DCHECK_LE(av_frame_->data[kVPlaneIndex] +
                     av_frame_->linesize[kVPlaneIndex] * av_frame_->height / 2,
-                i420_buffer->DataV() +
-                    i420_buffer->StrideV() * i420_buffer->height() / 2);
+                planar_yuv8_buffer->DataV() + planar_yuv8_buffer->StrideV() *
+                                                  planar_yuv8_buffer->height() /
+                                                  2);
 
-  rtc::scoped_refptr<webrtc::VideoFrameBuffer> cropped_buffer = WrapI420Buffer(
-      av_frame_->width, av_frame_->height, av_frame_->data[kYPlaneIndex],
-      av_frame_->linesize[kYPlaneIndex], av_frame_->data[kUPlaneIndex],
-      av_frame_->linesize[kUPlaneIndex], av_frame_->data[kVPlaneIndex],
-      av_frame_->linesize[kVPlaneIndex],
-      // To keep reference alive.
-      [frame_buffer] {});
+  rtc::scoped_refptr<webrtc::VideoFrameBuffer> cropped_buffer;
+  if (video_frame_buffer_type == VideoFrameBuffer::Type::kI420) {
+    cropped_buffer = WrapI420Buffer(
+        av_frame_->width, av_frame_->height, av_frame_->data[kYPlaneIndex],
+        av_frame_->linesize[kYPlaneIndex], av_frame_->data[kUPlaneIndex],
+        av_frame_->linesize[kUPlaneIndex], av_frame_->data[kVPlaneIndex],
+        av_frame_->linesize[kVPlaneIndex],
+        // To keep reference alive.
+        [frame_buffer] {});
+  } else {
+    cropped_buffer = WrapI444Buffer(
+        av_frame_->width, av_frame_->height, av_frame_->data[kYPlaneIndex],
+        av_frame_->linesize[kYPlaneIndex], av_frame_->data[kUPlaneIndex],
+        av_frame_->linesize[kUPlaneIndex], av_frame_->data[kVPlaneIndex],
+        av_frame_->linesize[kVPlaneIndex],
+        // To keep reference alive.
+        [frame_buffer] {});
+  }
 
   if (preferred_output_format_ == VideoFrameBuffer::Type::kNV12) {
-    const I420BufferInterface* cropped_i420 = cropped_buffer->GetI420();
     auto nv12_buffer = output_buffer_pool_.CreateNV12Buffer(
-        cropped_i420->width(), cropped_i420->height());
-    libyuv::I420ToNV12(cropped_i420->DataY(), cropped_i420->StrideY(),
-                       cropped_i420->DataU(), cropped_i420->StrideU(),
-                       cropped_i420->DataV(), cropped_i420->StrideV(),
-                       nv12_buffer->MutableDataY(), nv12_buffer->StrideY(),
-                       nv12_buffer->MutableDataUV(), nv12_buffer->StrideUV(),
-                       i420_buffer->width(), i420_buffer->height());
+        cropped_buffer->width(), cropped_buffer->height());
+
+    const PlanarYuv8Buffer* cropped_planar_yuv8_buffer = nullptr;
+    if (video_frame_buffer_type == VideoFrameBuffer::Type::kI420) {
+      cropped_planar_yuv8_buffer = cropped_buffer->GetI420();
+      libyuv::I420ToNV12(cropped_planar_yuv8_buffer->DataY(),
+                         cropped_planar_yuv8_buffer->StrideY(),
+                         cropped_planar_yuv8_buffer->DataU(),
+                         cropped_planar_yuv8_buffer->StrideU(),
+                         cropped_planar_yuv8_buffer->DataV(),
+                         cropped_planar_yuv8_buffer->StrideV(),
+                         nv12_buffer->MutableDataY(), nv12_buffer->StrideY(),
+                         nv12_buffer->MutableDataUV(), nv12_buffer->StrideUV(),
+                         planar_yuv8_buffer->width(),
+                         planar_yuv8_buffer->height());
+    } else {
+      cropped_planar_yuv8_buffer = cropped_buffer->GetI444();
+      libyuv::I444ToNV12(cropped_planar_yuv8_buffer->DataY(),
+                         cropped_planar_yuv8_buffer->StrideY(),
+                         cropped_planar_yuv8_buffer->DataU(),
+                         cropped_planar_yuv8_buffer->StrideU(),
+                         cropped_planar_yuv8_buffer->DataV(),
+                         cropped_planar_yuv8_buffer->StrideV(),
+                         nv12_buffer->MutableDataY(), nv12_buffer->StrideY(),
+                         nv12_buffer->MutableDataUV(), nv12_buffer->StrideUV(),
+                         planar_yuv8_buffer->width(),
+                         planar_yuv8_buffer->height());
+    }
+
     cropped_buffer = nv12_buffer;
   }
 
@@ -363,7 +468,7 @@ int32_t H264DecoderImpl::Decode(const EncodedImage& input_image,
   // interface to pass a VideoFrameBuffer instead of a VideoFrame?
   decoded_image_callback_->Decoded(decoded_frame, absl::nullopt, qp);
 
-  // Stop referencing it, possibly freeing |input_frame|.
+  // Stop referencing it, possibly freeing `input_frame`.
   av_frame_unref(av_frame_.get());
   input_frame = nullptr;
 

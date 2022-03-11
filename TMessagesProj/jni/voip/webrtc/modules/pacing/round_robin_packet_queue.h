@@ -128,8 +128,8 @@ class RoundRobinPacketQueue {
 
     PriorityPacketQueue packet_queue;
 
-    // Whenever a packet is inserted for this stream we check if |priority_it|
-    // points to an element in |stream_priorities_|, and if it does it means
+    // Whenever a packet is inserted for this stream we check if `priority_it`
+    // points to an element in `stream_priorities_`, and if it does it means
     // this stream has already been scheduled, and if the scheduled priority is
     // lower than the priority of the incoming packet we reschedule this stream
     // with the higher priority.

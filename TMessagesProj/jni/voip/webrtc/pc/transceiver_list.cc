@@ -10,6 +10,8 @@
 
 #include "pc/transceiver_list.h"
 
+#include <string>
+
 #include "rtc_base/checks.h"
 
 namespace webrtc {

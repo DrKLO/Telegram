@@ -44,7 +44,7 @@ class MediaStream : public Notifier<MediaStreamInterface> {
 
  private:
   template <typename TrackVector, typename Track>
-  bool AddTrack(TrackVector* Tracks, Track* track);
+  bool AddTrack(TrackVector* Tracks, rtc::scoped_refptr<Track> track);
   template <typename TrackVector>
   bool RemoveTrack(TrackVector* Tracks, MediaStreamTrackInterface* track);
 

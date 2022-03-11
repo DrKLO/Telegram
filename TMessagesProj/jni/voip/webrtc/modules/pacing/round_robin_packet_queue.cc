@@ -174,8 +174,8 @@ std::unique_ptr<RtpPacketToSend> RoundRobinPacketQueue::Pop() {
   stream_priorities_.erase(stream->priority_it);
 
   // Calculate the total amount of time spent by this packet in the queue
-  // while in a non-paused state. Note that the |pause_time_sum_ms_| was
-  // subtracted from |packet.enqueue_time_ms| when the packet was pushed, and
+  // while in a non-paused state. Note that the `pause_time_sum_ms_` was
+  // subtracted from `packet.enqueue_time_ms` when the packet was pushed, and
   // by subtracting it now we effectively remove the time spent in in the
   // queue while in a paused state.
   TimeDelta time_in_non_paused_state =
@@ -185,11 +185,11 @@ std::unique_ptr<RtpPacketToSend> RoundRobinPacketQueue::Pop() {
   RTC_CHECK(queued_packet.EnqueueTimeIterator() != enqueue_times_.end());
   enqueue_times_.erase(queued_packet.EnqueueTimeIterator());
 
-  // Update |bytes| of this stream. The general idea is that the stream that
+  // Update `bytes` of this stream. The general idea is that the stream that
   // has sent the least amount of bytes should have the highest priority.
   // The problem with that is if streams send with different rates, in which
   // case a "budget" will be built up for the stream sending at the lower
-  // rate. To avoid building a too large budget we limit |bytes| to be within
+  // rate. To avoid building a too large budget we limit `bytes` to be within
   // kMaxLeading bytes of the stream that has sent the most amount of bytes.
   DataSize packet_size = PacketSize(queued_packet);
   stream->size =
@@ -331,13 +331,13 @@ void RoundRobinPacketQueue::Push(QueuedPacket packet) {
   Stream* stream = &stream_info_it->second;
 
   if (stream->priority_it == stream_priorities_.end()) {
-    // If the SSRC is not currently scheduled, add it to |stream_priorities_|.
+    // If the SSRC is not currently scheduled, add it to `stream_priorities_`.
     RTC_CHECK(!IsSsrcScheduled(stream->ssrc));
     stream->priority_it = stream_priorities_.emplace(
         StreamPrioKey(packet.Priority(), stream->size), packet.Ssrc());
   } else if (packet.Priority() < stream->priority_it->first.priority) {
     // If the priority of this SSRC increased, remove the outdated StreamPrioKey
-    // and insert a new one with the new priority. Note that |priority_| uses
+    // and insert a new one with the new priority. Note that `priority_` uses
     // lower ordinal for higher priority.
     stream_priorities_.erase(stream->priority_it);
     stream->priority_it = stream_priorities_.emplace(

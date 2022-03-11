@@ -25,14 +25,14 @@ enum class UsageEvent : int {
   DATA_ADDED = 0x04,
   AUDIO_ADDED = 0x08,
   VIDEO_ADDED = 0x10,
-  // |SetLocalDescription| returns successfully.
+  // `SetLocalDescription` returns successfully.
   SET_LOCAL_DESCRIPTION_SUCCEEDED = 0x20,
-  // |SetRemoteDescription| returns successfully.
+  // `SetRemoteDescription` returns successfully.
   SET_REMOTE_DESCRIPTION_SUCCEEDED = 0x40,
   // A local candidate (with type host, server-reflexive, or relay) is
   // collected.
   CANDIDATE_COLLECTED = 0x80,
-  // A remote candidate is successfully added via |AddIceCandidate|.
+  // A remote candidate is successfully added via `AddIceCandidate`.
   ADD_ICE_CANDIDATE_SUCCEEDED = 0x100,
   ICE_STATE_CONNECTED = 0x200,
   CLOSE_CALLED = 0x400,

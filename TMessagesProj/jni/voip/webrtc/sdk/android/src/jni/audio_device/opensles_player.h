@@ -95,7 +95,7 @@ class OpenSLESPlayer : public AudioOutput {
   // Reads audio data in PCM format using the AudioDeviceBuffer.
   // Can be called both on the main thread (during Start()) and from the
   // internal audio thread while output streaming is active.
-  // If the |silence| flag is set, the audio is filled with zeros instead of
+  // If the `silence` flag is set, the audio is filled with zeros instead of
   // asking the WebRTC layer for real audio data. This procedure is also known
   // as audio priming.
   void EnqueuePlayoutData(bool silence);
@@ -106,7 +106,7 @@ class OpenSLESPlayer : public AudioOutput {
 
   // Obtaines the SL Engine Interface from the existing global Engine object.
   // The interface exposes creation methods of all the OpenSL ES object types.
-  // This method defines the |engine_| member variable.
+  // This method defines the `engine_` member variable.
   bool ObtainEngineInterface();
 
   // Creates/destroys the output mix object.

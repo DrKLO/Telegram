@@ -24,6 +24,8 @@ namespace webrtc {
 // duration of time spent in each reason. See qualityLimitationReason[1],
 // qualityLimitationDurations[2], and qualityLimitationResolutionChanges[3] in
 // the webrtc-stats spec.
+// Note that the specification defines the durations in seconds while the
+// internal data structures defines it in milliseconds.
 // [1]
 // https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-qualitylimitationreason
 // [2]
@@ -32,7 +34,7 @@ namespace webrtc {
 // https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-qualitylimitationresolutionchanges
 class QualityLimitationReasonTracker {
  public:
-  // The caller is responsible for making sure |clock| outlives the tracker.
+  // The caller is responsible for making sure `clock` outlives the tracker.
   explicit QualityLimitationReasonTracker(Clock* clock);
 
   // The current reason defaults to QualityLimitationReason::kNone.
@@ -45,9 +47,9 @@ class QualityLimitationReasonTracker {
   QualityLimitationReason current_reason_;
   int64_t current_reason_updated_timestamp_ms_;
   // The total amount of time spent in each reason at time
-  // |current_reason_updated_timestamp_ms_|. To get the total amount duration
-  // so-far, including the time spent in |current_reason_| elapsed since the
-  // last time |current_reason_| was updated, see DurationsMs().
+  // `current_reason_updated_timestamp_ms_`. To get the total amount duration
+  // so-far, including the time spent in `current_reason_` elapsed since the
+  // last time `current_reason_` was updated, see DurationsMs().
   std::map<QualityLimitationReason, int64_t> durations_ms_;
 };
 

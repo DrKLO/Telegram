@@ -15,22 +15,24 @@
 #include <map>
 #include <set>
 #include <string>
-#include <utility>  // pair
 #include <vector>
 
 #include "absl/base/attributes.h"
 #include "api/rtc_event_log/rtc_event_log.h"
 #include "call/video_receive_stream.h"
 #include "call/video_send_stream.h"
+#include "logging/rtc_event_log/events/logged_rtp_rtcp.h"
 #include "logging/rtc_event_log/events/rtc_event_alr_state.h"
 #include "logging/rtc_event_log/events/rtc_event_audio_network_adaptation.h"
 #include "logging/rtc_event_log/events/rtc_event_audio_playout.h"
 #include "logging/rtc_event_log/events/rtc_event_audio_receive_stream_config.h"
 #include "logging/rtc_event_log/events/rtc_event_audio_send_stream_config.h"
+#include "logging/rtc_event_log/events/rtc_event_begin_log.h"
 #include "logging/rtc_event_log/events/rtc_event_bwe_update_delay_based.h"
 #include "logging/rtc_event_log/events/rtc_event_bwe_update_loss_based.h"
 #include "logging/rtc_event_log/events/rtc_event_dtls_transport_state.h"
 #include "logging/rtc_event_log/events/rtc_event_dtls_writable_state.h"
+#include "logging/rtc_event_log/events/rtc_event_end_log.h"
 #include "logging/rtc_event_log/events/rtc_event_frame_decoded.h"
 #include "logging/rtc_event_log/events/rtc_event_generic_ack_received.h"
 #include "logging/rtc_event_log/events/rtc_event_generic_packet_received.h"
@@ -42,9 +44,12 @@
 #include "logging/rtc_event_log/events/rtc_event_probe_result_success.h"
 #include "logging/rtc_event_log/events/rtc_event_remote_estimate.h"
 #include "logging/rtc_event_log/events/rtc_event_route_change.h"
+#include "logging/rtc_event_log/events/rtc_event_rtcp_packet_incoming.h"
+#include "logging/rtc_event_log/events/rtc_event_rtcp_packet_outgoing.h"
+#include "logging/rtc_event_log/events/rtc_event_rtp_packet_incoming.h"
+#include "logging/rtc_event_log/events/rtc_event_rtp_packet_outgoing.h"
 #include "logging/rtc_event_log/events/rtc_event_video_receive_stream_config.h"
 #include "logging/rtc_event_log/events/rtc_event_video_send_stream_config.h"
-#include "logging/rtc_event_log/logged_events.h"
 #include "modules/rtp_rtcp/include/rtp_header_extension_map.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/common_header.h"
 #include "rtc_base/ignore_wundef.h"
@@ -64,144 +69,182 @@ namespace webrtc {
 
 enum PacketDirection { kIncomingPacket = 0, kOutgoingPacket };
 
-template <typename T>
-class PacketView;
+enum class LoggedMediaType : uint8_t { kUnknown, kAudio, kVideo };
 
-template <typename T>
-class PacketIterator {
-  friend class PacketView<T>;
-
- public:
-  // Standard iterator traits.
-  using difference_type = std::ptrdiff_t;
-  using value_type = T;
-  using pointer = T*;
-  using reference = T&;
-  using iterator_category = std::bidirectional_iterator_tag;
-
-  // The default-contructed iterator is meaningless, but is required by the
-  // ForwardIterator concept.
-  PacketIterator() : ptr_(nullptr), element_size_(0) {}
-  PacketIterator(const PacketIterator& other)
-      : ptr_(other.ptr_), element_size_(other.element_size_) {}
-  PacketIterator(const PacketIterator&& other)
-      : ptr_(other.ptr_), element_size_(other.element_size_) {}
-  ~PacketIterator() = default;
-
-  PacketIterator& operator=(const PacketIterator& other) {
-    ptr_ = other.ptr_;
-    element_size_ = other.element_size_;
-    return *this;
-  }
-  PacketIterator& operator=(const PacketIterator&& other) {
-    ptr_ = other.ptr_;
-    element_size_ = other.element_size_;
-    return *this;
-  }
-
-  bool operator==(const PacketIterator<T>& other) const {
-    RTC_DCHECK_EQ(element_size_, other.element_size_);
-    return ptr_ == other.ptr_;
-  }
-  bool operator!=(const PacketIterator<T>& other) const {
-    RTC_DCHECK_EQ(element_size_, other.element_size_);
-    return ptr_ != other.ptr_;
-  }
-
-  PacketIterator& operator++() {
-    ptr_ += element_size_;
-    return *this;
-  }
-  PacketIterator& operator--() {
-    ptr_ -= element_size_;
-    return *this;
-  }
-  PacketIterator operator++(int) {
-    PacketIterator iter_copy(ptr_, element_size_);
-    ptr_ += element_size_;
-    return iter_copy;
-  }
-  PacketIterator operator--(int) {
-    PacketIterator iter_copy(ptr_, element_size_);
-    ptr_ -= element_size_;
-    return iter_copy;
-  }
-
-  T& operator*() { return *reinterpret_cast<T*>(ptr_); }
-  const T& operator*() const { return *reinterpret_cast<const T*>(ptr_); }
-
-  T* operator->() { return reinterpret_cast<T*>(ptr_); }
-  const T* operator->() const { return reinterpret_cast<const T*>(ptr_); }
-
- private:
-  PacketIterator(typename std::conditional<std::is_const<T>::value,
-                                           const void*,
-                                           void*>::type p,
-                 size_t s)
-      : ptr_(reinterpret_cast<decltype(ptr_)>(p)), element_size_(s) {}
-
-  typename std::conditional<std::is_const<T>::value, const char*, char*>::type
-      ptr_;
-  size_t element_size_;
+struct LoggedPacketInfo {
+  LoggedPacketInfo(const LoggedRtpPacket& rtp,
+                   LoggedMediaType media_type,
+                   bool rtx,
+                   Timestamp capture_time);
+  LoggedPacketInfo(const LoggedPacketInfo&);
+  ~LoggedPacketInfo();
+  int64_t log_time_ms() const { return log_packet_time.ms(); }
+  int64_t log_time_us() const { return log_packet_time.us(); }
+  uint32_t ssrc;
+  uint16_t stream_seq_no;
+  uint16_t size;
+  uint16_t payload_size;
+  uint16_t padding_size;
+  uint16_t overhead = 0;
+  uint8_t payload_type;
+  LoggedMediaType media_type = LoggedMediaType::kUnknown;
+  bool rtx = false;
+  bool marker_bit = false;
+  bool has_transport_seq_no = false;
+  bool last_in_feedback = false;
+  uint16_t transport_seq_no = 0;
+  // The RTP header timestamp unwrapped and converted from tick count to seconds
+  // based timestamp.
+  Timestamp capture_time;
+  // The time the packet was logged. This is the receive time for incoming
+  // packets and send time for outgoing.
+  Timestamp log_packet_time;
+  // Send time as reported by abs-send-time extension, For outgoing packets this
+  // corresponds to log_packet_time, but might be measured using another clock.
+  Timestamp reported_send_time;
+  // The receive time that was reported in feedback. For incoming packets this
+  // corresponds to log_packet_time, but might be measured using another clock.
+  // PlusInfinity indicates that the packet was lost.
+  Timestamp reported_recv_time = Timestamp::MinusInfinity();
+  // The time feedback message was logged. This is the feedback send time for
+  // incoming packets and feedback receive time for outgoing.
+  // PlusInfinity indicates that feedback was expected but not received.
+  Timestamp log_feedback_time = Timestamp::MinusInfinity();
+  // The delay betweeen receiving an RTP packet and sending feedback for
+  // incoming packets. For outgoing packets we don't know the feedback send
+  // time, and this is instead calculated as the difference in reported receive
+  // time between this packet and the last packet in the same feedback message.
+  TimeDelta feedback_hold_duration = TimeDelta::MinusInfinity();
 };
 
-// Suppose that we have a struct S where we are only interested in a specific
-// member M. Given an array of S, PacketView can be used to treat the array
-// as an array of M, without exposing the type S to surrounding code and without
-// accessing the member through a virtual function. In this case, we want to
-// have a common view for incoming and outgoing RtpPackets, hence the PacketView
-// name.
-// Note that constructing a PacketView bypasses the typesystem, so the caller
-// has to take extra care when constructing these objects. The implementation
-// also requires that the containing struct is standard-layout (e.g. POD).
-//
-// Usage example:
-// struct A {...};
-// struct B { A a; ...};
-// struct C { A a; ...};
-// size_t len = 10;
-// B* array1 = new B[len];
-// C* array2 = new C[len];
-//
-// PacketView<A> view1 = PacketView<A>::Create<B>(array1, len, offsetof(B, a));
-// PacketView<A> view2 = PacketView<A>::Create<C>(array2, len, offsetof(C, a));
-//
-// The following code works with either view1 or view2.
-// void f(PacketView<A> view)
-// for (A& a : view) {
-//   DoSomething(a);
-// }
+struct InferredRouteChangeEvent {
+  int64_t log_time_ms() const { return log_time.ms(); }
+  int64_t log_time_us() const { return log_time.us(); }
+  uint32_t route_id;
+  Timestamp log_time = Timestamp::MinusInfinity();
+  uint16_t send_overhead;
+  uint16_t return_overhead;
+};
+
+enum class LoggedIceEventType {
+  kAdded,
+  kUpdated,
+  kDestroyed,
+  kSelected,
+  kCheckSent,
+  kCheckReceived,
+  kCheckResponseSent,
+  kCheckResponseReceived,
+};
+
+struct LoggedIceEvent {
+  uint32_t candidate_pair_id;
+  Timestamp log_time;
+  LoggedIceEventType event_type;
+};
+
+// This class is used to process lists of LoggedRtpPacketIncoming
+// and LoggedRtpPacketOutgoing without duplicating the code.
+// TODO(terelius): Remove this class. Instead use e.g. a vector of pointers
+// to LoggedRtpPacket or templatize the surrounding code.
 template <typename T>
-class PacketView {
+class DereferencingVector {
  public:
-  template <typename U>
-  static PacketView Create(U* ptr, size_t num_elements, size_t offset) {
-    static_assert(std::is_standard_layout<U>::value,
-                  "PacketView can only be created for standard layout types.");
-    static_assert(std::is_standard_layout<T>::value,
-                  "PacketView can only be created for standard layout types.");
-    return PacketView(ptr, num_elements, offset, sizeof(U));
-  }
+  template <bool IsConst>
+  class DereferencingIterator {
+   public:
+    // Standard iterator traits.
+    using difference_type = std::ptrdiff_t;
+    using value_type = T;
+    using pointer = typename std::conditional_t<IsConst, const T*, T*>;
+    using reference = typename std::conditional_t<IsConst, const T&, T&>;
+    using iterator_category = std::bidirectional_iterator_tag;
+
+    using representation =
+        typename std::conditional_t<IsConst, const T* const*, T**>;
+
+    explicit DereferencingIterator(representation ptr) : ptr_(ptr) {}
+
+    DereferencingIterator(const DereferencingIterator& other)
+        : ptr_(other.ptr_) {}
+    DereferencingIterator(const DereferencingIterator&& other)
+        : ptr_(other.ptr_) {}
+    ~DereferencingIterator() = default;
+
+    DereferencingIterator& operator=(const DereferencingIterator& other) {
+      ptr_ = other.ptr_;
+      return *this;
+    }
+    DereferencingIterator& operator=(const DereferencingIterator&& other) {
+      ptr_ = other.ptr_;
+      return *this;
+    }
+
+    bool operator==(const DereferencingIterator& other) const {
+      return ptr_ == other.ptr_;
+    }
+    bool operator!=(const DereferencingIterator& other) const {
+      return ptr_ != other.ptr_;
+    }
+
+    DereferencingIterator& operator++() {
+      ++ptr_;
+      return *this;
+    }
+    DereferencingIterator& operator--() {
+      --ptr_;
+      return *this;
+    }
+    DereferencingIterator operator++(int) {
+      DereferencingIterator iter_copy(ptr_);
+      ++ptr_;
+      return iter_copy;
+    }
+    DereferencingIterator operator--(int) {
+      DereferencingIterator iter_copy(ptr_);
+      --ptr_;
+      return iter_copy;
+    }
+
+    template <bool _IsConst = IsConst>
+    std::enable_if_t<!_IsConst, reference> operator*() {
+      return **ptr_;
+    }
+
+    template <bool _IsConst = IsConst>
+    std::enable_if_t<_IsConst, reference> operator*() const {
+      return **ptr_;
+    }
+
+    template <bool _IsConst = IsConst>
+    std::enable_if_t<!_IsConst, pointer> operator->() {
+      return *ptr_;
+    }
+
+    template <bool _IsConst = IsConst>
+    std::enable_if_t<_IsConst, pointer> operator->() const {
+      return *ptr_;
+    }
+
+   private:
+    representation ptr_;
+  };
 
   using value_type = T;
   using reference = value_type&;
   using const_reference = const value_type&;
 
-  using iterator = PacketIterator<T>;
-  using const_iterator = PacketIterator<const T>;
+  using iterator = DereferencingIterator<false>;
+  using const_iterator = DereferencingIterator<true>;
   using reverse_iterator = std::reverse_iterator<iterator>;
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
-  iterator begin() { return iterator(data_, element_size_); }
-  iterator end() {
-    auto end_ptr = data_ + num_elements_ * element_size_;
-    return iterator(end_ptr, element_size_);
-  }
+  iterator begin() { return iterator(elems_.data()); }
+  iterator end() { return iterator(elems_.data() + elems_.size()); }
 
-  const_iterator begin() const { return const_iterator(data_, element_size_); }
+  const_iterator begin() const { return const_iterator(elems_.data()); }
   const_iterator end() const {
-    auto end_ptr = data_ + num_elements_ * element_size_;
-    return const_iterator(end_ptr, element_size_);
+    return const_iterator(elems_.data() + elems_.size());
   }
 
   reverse_iterator rbegin() { return reverse_iterator(end()); }
@@ -214,35 +257,27 @@ class PacketView {
     return const_reverse_iterator(begin());
   }
 
-  size_t size() const { return num_elements_; }
+  size_t size() const { return elems_.size(); }
 
-  bool empty() const { return num_elements_ == 0; }
+  bool empty() const { return elems_.empty(); }
 
   T& operator[](size_t i) {
-    auto elem_ptr = data_ + i * element_size_;
-    return *reinterpret_cast<T*>(elem_ptr);
+    RTC_DCHECK_LT(i, elems_.size());
+    return *elems_[i];
   }
 
   const T& operator[](size_t i) const {
-    auto elem_ptr = data_ + i * element_size_;
-    return *reinterpret_cast<const T*>(elem_ptr);
+    RTC_DCHECK_LT(i, elems_.size());
+    return *elems_[i];
+  }
+
+  void push_back(T* elem) {
+    RTC_DCHECK(elem != nullptr);
+    elems_.push_back(elem);
   }
 
  private:
-  PacketView(typename std::conditional<std::is_const<T>::value,
-                                       const void*,
-                                       void*>::type data,
-             size_t num_elements,
-             size_t offset,
-             size_t element_size)
-      : data_(reinterpret_cast<decltype(data_)>(data) + offset),
-        num_elements_(num_elements),
-        element_size_(element_size) {}
-
-  typename std::conditional<std::is_const<T>::value, const char*, char*>::type
-      data_;
-  size_t num_elements_;
-  size_t element_size_;
+  std::vector<T*> elems_;
 };
 
 // Conversion functions for version 2 of the wire format.
@@ -284,48 +319,11 @@ class ParsedRtcEventLog {
     kDontParse,
     kAttemptWebrtcDefaultConfig
   };
-  class ParseStatus {
-   public:
-    static ParseStatus Success() { return ParseStatus(); }
-    static ParseStatus Error(std::string error, std::string file, int line) {
-      return ParseStatus(error, file, line);
-    }
 
-    bool ok() const { return error_.empty() && file_.empty() && line_ == 0; }
-    std::string message() const {
-      return error_ + " failed at " + file_ + " line " + std::to_string(line_);
-    }
-
-    ABSL_DEPRECATED("Use ok() instead") operator bool() const { return ok(); }
-
-   private:
-    ParseStatus() : error_(), file_(), line_(0) {}
-    ParseStatus(std::string error, std::string file, int line)
-        : error_(error), file_(file), line_(line) {}
-    std::string error_;
-    std::string file_;
-    int line_;
-  };
+  using ParseStatus = RtcEventLogParseStatus;
 
   template <typename T>
-  class ParseStatusOr {
-   public:
-    ParseStatusOr(const ParseStatus& error)  // NOLINT
-        : status_(error), value_() {}
-    ParseStatusOr(const T& value)  // NOLINT
-        : status_(ParseStatus::Success()), value_(value) {}
-    bool ok() const { return status_.ok(); }
-    const T& value() const& {
-      RTC_DCHECK(status_.ok());
-      return value_;
-    }
-    std::string message() const { return status_.message(); }
-    const ParseStatus& status() const { return status_; }
-
-   private:
-    ParseStatus status_;
-    T value_;
-  };
+  using ParseStatusOr = RtcEventLogParseStatusOr<T>;
 
   struct LoggedRtpStreamIncoming {
     LoggedRtpStreamIncoming();
@@ -345,14 +343,12 @@ class ParsedRtcEventLog {
 
   struct LoggedRtpStreamView {
     LoggedRtpStreamView(uint32_t ssrc,
-                        const LoggedRtpPacketIncoming* ptr,
-                        size_t num_elements);
+                        const std::vector<LoggedRtpPacketIncoming>& packets);
     LoggedRtpStreamView(uint32_t ssrc,
-                        const LoggedRtpPacketOutgoing* ptr,
-                        size_t num_elements);
+                        const std::vector<LoggedRtpPacketOutgoing>& packets);
     LoggedRtpStreamView(const LoggedRtpStreamView&);
     uint32_t ssrc;
-    PacketView<const LoggedRtpPacket> packet_view;
+    DereferencingVector<const LoggedRtpPacket> packet_view;
   };
 
   class LogSegment {
@@ -647,8 +643,8 @@ class ParsedRtcEventLog {
     return decoded_frames_;
   }
 
-  int64_t first_timestamp() const { return first_timestamp_; }
-  int64_t last_timestamp() const { return last_timestamp_; }
+  Timestamp first_timestamp() const { return first_timestamp_; }
+  Timestamp last_timestamp() const { return last_timestamp_; }
 
   const LogSegment& first_log_segment() const { return first_log_segment_; }
 
@@ -666,6 +662,7 @@ class ParsedRtcEventLog {
 
  private:
   ABSL_MUST_USE_RESULT ParseStatus ParseStreamInternal(absl::string_view s);
+  ABSL_MUST_USE_RESULT ParseStatus ParseStreamInternalV3(absl::string_view s);
 
   ABSL_MUST_USE_RESULT ParseStatus
   StoreParsedLegacyEvent(const rtclog::Event& event);
@@ -673,27 +670,14 @@ class ParsedRtcEventLog {
   template <typename T>
   void StoreFirstAndLastTimestamp(const std::vector<T>& v);
 
-  // Reads the header, direction, header length and packet length from the RTP
-  // event at |index|, and stores the values in the corresponding output
-  // parameters. Each output parameter can be set to nullptr if that value
-  // isn't needed.
-  // NB: The header must have space for at least IP_PACKET_SIZE bytes.
-  ParseStatus GetRtpHeader(const rtclog::Event& event,
-                           PacketDirection* incoming,
-                           uint8_t* header,
-                           size_t* header_length,
-                           size_t* total_length,
-                           int* probe_cluster_id) const;
-
   // Returns: a pointer to a header extensions map acquired from parsing
   // corresponding Audio/Video Sender/Receiver config events.
   // Warning: if the same SSRC is reused by both video and audio streams during
   // call, extensions maps may be incorrect (the last one would be returned).
-  const RtpHeaderExtensionMap* GetRtpHeaderExtensionMap(
-      PacketDirection direction,
-      uint32_t ssrc);
+  const RtpHeaderExtensionMap* GetRtpHeaderExtensionMap(bool incoming,
+                                                        uint32_t ssrc);
 
-  // Reads packet, direction and packet length from the RTCP event at |index|,
+  // Reads packet, direction and packet length from the RTCP event at `index`,
   // and stores the values in the corresponding output parameters.
   // Each output parameter can be set to nullptr if that value isn't needed.
   // NB: The packet must have space for at least IP_PACKET_SIZE bytes.
@@ -905,8 +889,8 @@ class ParsedRtcEventLog {
 
   std::vector<uint8_t> last_incoming_rtcp_packet_;
 
-  int64_t first_timestamp_;
-  int64_t last_timestamp_;
+  Timestamp first_timestamp_ = Timestamp::PlusInfinity();
+  Timestamp last_timestamp_ = Timestamp::MinusInfinity();
 
   LogSegment first_log_segment_ =
       LogSegment(0, std::numeric_limits<int64_t>::max());

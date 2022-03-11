@@ -30,7 +30,8 @@ struct AudioDecoderMultiChannelOpusConfig {
   std::vector<unsigned char> channel_mapping;
 
   bool IsOk() const {
-    if (num_channels < 0 || num_streams < 0 || coupled_streams < 0) {
+    if (num_channels < 1 || num_channels > AudioDecoder::kMaxNumberOfChannels ||
+        num_streams < 0 || coupled_streams < 0) {
       return false;
     }
     if (num_streams < coupled_streams) {

@@ -22,13 +22,15 @@
 #ifndef ABSL_BASE_OPTIMIZATION_H_
 #define ABSL_BASE_OPTIMIZATION_H_
 
+#include <assert.h>
+
 #include "absl/base/config.h"
 
 // ABSL_BLOCK_TAIL_CALL_OPTIMIZATION
 //
-// Instructs the compiler to avoid optimizing tail-call recursion. Use of this
-// macro is useful when you wish to preserve the existing function order within
-// a stack trace for logging, debugging, or profiling purposes.
+// Instructs the compiler to avoid optimizing tail-call recursion. This macro is
+// useful when you wish to preserve the existing function order within a stack
+// trace for logging, debugging, or profiling purposes.
 //
 // Example:
 //
@@ -104,9 +106,10 @@
 // Cacheline aligning objects properly allows constructive memory sharing and
 // prevents destructive (or "false") memory sharing.
 //
-// NOTE: this macro should be replaced with usage of `alignas()` using
+// NOTE: callers should replace uses of this macro with `alignas()` using
 // `std::hardware_constructive_interference_size` and/or
-// `std::hardware_destructive_interference_size` when available within C++17.
+// `std::hardware_destructive_interference_size` when C++17 becomes available to
+// them.
 //
 // See http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0154r1.html
 // for more information.
@@ -171,11 +174,71 @@
 // to yield performance improvements.
 #if ABSL_HAVE_BUILTIN(__builtin_expect) || \
     (defined(__GNUC__) && !defined(__clang__))
-#define ABSL_PREDICT_FALSE(x) (__builtin_expect(x, 0))
+#define ABSL_PREDICT_FALSE(x) (__builtin_expect(false || (x), false))
 #define ABSL_PREDICT_TRUE(x) (__builtin_expect(false || (x), true))
 #else
 #define ABSL_PREDICT_FALSE(x) (x)
 #define ABSL_PREDICT_TRUE(x) (x)
+#endif
+
+// ABSL_INTERNAL_ASSUME(cond)
+// Informs the compiler that a condition is always true and that it can assume
+// it to be true for optimization purposes. The call has undefined behavior if
+// the condition is false.
+// In !NDEBUG mode, the condition is checked with an assert().
+// NOTE: The expression must not have side effects, as it will only be evaluated
+// in some compilation modes and not others.
+//
+// Example:
+//
+//   int x = ...;
+//   ABSL_INTERNAL_ASSUME(x >= 0);
+//   // The compiler can optimize the division to a simple right shift using the
+//   // assumption specified above.
+//   int y = x / 16;
+//
+#if !defined(NDEBUG)
+#define ABSL_INTERNAL_ASSUME(cond) assert(cond)
+#elif ABSL_HAVE_BUILTIN(__builtin_assume)
+#define ABSL_INTERNAL_ASSUME(cond) __builtin_assume(cond)
+#elif defined(__GNUC__) || ABSL_HAVE_BUILTIN(__builtin_unreachable)
+#define ABSL_INTERNAL_ASSUME(cond)        \
+  do {                                    \
+    if (!(cond)) __builtin_unreachable(); \
+  } while (0)
+#elif defined(_MSC_VER)
+#define ABSL_INTERNAL_ASSUME(cond) __assume(cond)
+#else
+#define ABSL_INTERNAL_ASSUME(cond)      \
+  do {                                  \
+    static_cast<void>(false && (cond)); \
+  } while (0)
+#endif
+
+// ABSL_INTERNAL_UNIQUE_SMALL_NAME(cond)
+// This macro forces small unique name on a static file level symbols like
+// static local variables or static functions. This is intended to be used in
+// macro definitions to optimize the cost of generated code. Do NOT use it on
+// symbols exported from translation unit since it may cause a link time
+// conflict.
+//
+// Example:
+//
+// #define MY_MACRO(txt)
+// namespace {
+//  char VeryVeryLongVarName[] ABSL_INTERNAL_UNIQUE_SMALL_NAME() = txt;
+//  const char* VeryVeryLongFuncName() ABSL_INTERNAL_UNIQUE_SMALL_NAME();
+//  const char* VeryVeryLongFuncName() { return txt; }
+// }
+//
+
+#if defined(__GNUC__)
+#define ABSL_INTERNAL_UNIQUE_SMALL_NAME2(x) #x
+#define ABSL_INTERNAL_UNIQUE_SMALL_NAME1(x) ABSL_INTERNAL_UNIQUE_SMALL_NAME2(x)
+#define ABSL_INTERNAL_UNIQUE_SMALL_NAME() \
+  asm(ABSL_INTERNAL_UNIQUE_SMALL_NAME1(.absl.__COUNTER__))
+#else
+#define ABSL_INTERNAL_UNIQUE_SMALL_NAME()
 #endif
 
 #endif  // ABSL_BASE_OPTIMIZATION_H_

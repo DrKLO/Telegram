@@ -10,7 +10,7 @@
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 4. Neither the name of the University nor the names of its contributors
+ * 3. Neither the name of the University nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
  *
@@ -33,7 +33,7 @@
 #ifndef _USER_SOCKETVAR_H_
 #define _USER_SOCKETVAR_H_
 
-#if defined(__Userspace_os_Darwin)
+#if defined(__APPLE__)
 #include <sys/types.h>
 #include <unistd.h>
 #endif
@@ -42,7 +42,7 @@
 /* #include <sys/_lock.h>  was 0 byte file */
 /* #include <sys/_mutex.h> was 0 byte file */
 /* #include <sys/_sx.h> */ /*__Userspace__ alternative?*/
-#if !defined(__Userspace_os_DragonFly) && !defined(__Userspace_os_FreeBSD) && !defined(__Userspace_os_NetBSD) && !defined(__Userspace_os_Windows) && !defined(__Userspace_os_NaCl)
+#if !defined(__DragonFly__) && !defined(__FreeBSD__) && !defined(__NetBSD__) && !defined(_WIN32) && !defined(__native_client__)
 #include <sys/uio.h>
 #endif
 #define SOCK_MAXADDRLEN 255
@@ -54,16 +54,16 @@
 #define SS_CANTRCVMORE 0x020
 #define SS_CANTSENDMORE 0x010
 
-#if defined(__Userspace_os_Darwin) || defined(__Userspace_os_DragonFly) || defined(__Userspace_os_FreeBSD) || defined(__Userspace_os_OpenBSD) || defined (__Userspace_os_Windows) || defined(__Userspace_os_NaCl)
+#if defined(__APPLE__) || defined(__DragonFly__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(_WIN32) || defined(__native_client__)
 #define UIO_MAXIOV 1024
 #define ERESTART (-1)
 #endif
 
-#if !defined(__Userspace_os_Darwin) && !defined(__Userspace_os_NetBSD) && !defined(__Userspace_os_OpenBSD)
+#if !defined(__APPLE__) && !defined(__NetBSD__) && !defined(__OpenBSD__)
 enum	uio_rw { UIO_READ, UIO_WRITE };
 #endif
 
-#if !defined(__Userspace_os_NetBSD) && !defined(__Userspace_os_OpenBSD)
+#if !defined(__NetBSD__) && !defined(__OpenBSD__)
 /* Segment flag values. */
 enum uio_seg {
 	UIO_USERSPACE,		/* from user data space */
@@ -100,7 +100,7 @@ struct uio {
  * handle on protocol and pointer to protocol
  * private data and error information.
  */
-#if defined (__Userspace_os_Windows)
+#if defined(_WIN32)
 #define AF_ROUTE  17
 #if !defined(__MINGW32__)
 typedef __int32 pid_t;
@@ -237,7 +237,7 @@ struct socket {
  * avoid defining a lock order between listen and accept sockets
  * until such time as it proves to be a good idea.
  */
-#if defined(__Userspace_os_Windows)
+#if defined(_WIN32)
 extern userland_mutex_t accept_mtx;
 extern userland_cond_t accept_cond;
 #define ACCEPT_LOCK_ASSERT()
@@ -272,7 +272,7 @@ extern userland_cond_t accept_cond;
  * buffer.
  */
 #define	SOCKBUF_MTX(_sb) (&(_sb)->sb_mtx)
-#if defined (__Userspace_os_Windows)
+#if defined(_WIN32)
 #define SOCKBUF_LOCK_INIT(_sb, _name) \
 	InitializeCriticalSection(SOCKBUF_MTX(_sb))
 #define SOCKBUF_LOCK_DESTROY(_sb) DeleteCriticalSection(SOCKBUF_MTX(_sb))
@@ -373,340 +373,6 @@ extern userland_cond_t accept_cond;
 #define SCTP_EVENT_WRITE	0x0002	/* socket is writeable */
 #define SCTP_EVENT_ERROR	0x0004	/* socket has an error state */
 
-/*
- * Externalized form of struct socket used by the sysctl(3) interface.
- */
-struct xsocket {
-	size_t	xso_len;	/* length of this structure */
-	struct	socket *xso_so;	/* makes a convenient handle sometimes */
-	short	so_type;
-	short	so_options;
-	short	so_linger;
-	short	so_state;
-	caddr_t	so_pcb;		/* another convenient handle */
-	int	xso_protocol;
-	int	xso_family;
-	u_short	so_qlen;
-	u_short	so_incqlen;
-	u_short	so_qlimit;
-	short	so_timeo;
-	u_short	so_error;
-	pid_t	so_pgid;
-	u_long	so_oobmark;
-	struct xsockbuf {
-		u_int	sb_cc;
-		u_int	sb_hiwat;
-		u_int	sb_mbcnt;
-		u_int	sb_mbmax;
-		int	sb_lowat;
-		int	sb_timeo;
-		short	sb_flags;
-	} so_rcv, so_snd;
-	uid_t	so_uid;		/* XXX */
-};
-
-#if defined(_KERNEL)
-
-
-/*
- * Macros for sockets and socket buffering.
- */
-
-/*
- * Do we need to notify the other side when I/O is possible?
- */
-#define	sb_notify(sb)	(((sb)->sb_flags & (SB_WAIT | SB_SEL | SB_ASYNC | \
-    SB_UPCALL | SB_AIO | SB_KNOTE)) != 0)
-
-/*
- * How much space is there in a socket buffer (so->so_snd or so->so_rcv)?
- * This is problematical if the fields are unsigned, as the space might
- * still be negative (cc > hiwat or mbcnt > mbmax).  Should detect
- * overflow and return 0.  Should use "lmin" but it doesn't exist now.
- */
-#define	sbspace(sb) \
-    ((long) imin((int)((sb)->sb_hiwat - (sb)->sb_cc), \
-	 (int)((sb)->sb_mbmax - (sb)->sb_mbcnt)))
-
-/* do we have to send all at once on a socket? */
-#define	sosendallatonce(so) \
-    ((so)->so_proto->pr_flags & PR_ATOMIC)
-
-/* can we read something from so? */
-#define	soreadable(so) \
-    ((so)->so_rcv.sb_cc >= (so)->so_rcv.sb_lowat || \
-	((so)->so_rcv.sb_state & SBS_CANTRCVMORE) || \
-	!TAILQ_EMPTY(&(so)->so_comp) || (so)->so_error)
-
-/* can we write something to so? */
-#define	sowriteable(so) \
-    ((sbspace(&(so)->so_snd) >= (so)->so_snd.sb_lowat && \
-	(((so)->so_state&SS_ISCONNECTED) || \
-	  ((so)->so_proto->pr_flags&PR_CONNREQUIRED)==0)) || \
-     ((so)->so_snd.sb_state & SBS_CANTSENDMORE) || \
-     (so)->so_error)
-
-/* adjust counters in sb reflecting allocation of m */
-#define	sballoc(sb, m) { \
-	(sb)->sb_cc += (m)->m_len; \
-	if ((m)->m_type != MT_DATA && (m)->m_type != MT_OOBDATA) \
-		(sb)->sb_ctl += (m)->m_len; \
-	(sb)->sb_mbcnt += MSIZE; \
-	if ((m)->m_flags & M_EXT) \
-		(sb)->sb_mbcnt += (m)->m_ext.ext_size; \
-}
-
-/* adjust counters in sb reflecting freeing of m */
-#define	sbfree(sb, m) { \
-	(sb)->sb_cc -= (m)->m_len; \
-	if ((m)->m_type != MT_DATA && (m)->m_type != MT_OOBDATA) \
-		(sb)->sb_ctl -= (m)->m_len; \
-	(sb)->sb_mbcnt -= MSIZE; \
-	if ((m)->m_flags & M_EXT) \
-		(sb)->sb_mbcnt -= (m)->m_ext.ext_size; \
-	if ((sb)->sb_sndptr == (m)) { \
-		(sb)->sb_sndptr = NULL; \
-		(sb)->sb_sndptroff = 0; \
-	} \
-	if ((sb)->sb_sndptroff != 0) \
-		(sb)->sb_sndptroff -= (m)->m_len; \
-}
-
-/*
- * soref()/sorele() ref-count the socket structure.  Note that you must
- * still explicitly close the socket, but the last ref count will free
- * the structure.
- */
-#define	soref(so) do {							\
-	SOCK_LOCK_ASSERT(so);						\
-	++(so)->so_count;						\
-} while (0)
-
-#define	sorele(so) do {							\
-	ACCEPT_LOCK_ASSERT();						\
-	SOCK_LOCK_ASSERT(so);						\
-	KASSERT((so)->so_count > 0, ("sorele"));			\
-	if (--(so)->so_count == 0)					\
-		sofree(so);						\
-	else {								\
-		SOCK_UNLOCK(so);					\
-		ACCEPT_UNLOCK();					\
-	}								\
-} while (0)
-
-#define	sotryfree(so) do {						\
-	ACCEPT_LOCK_ASSERT();						\
-	SOCK_LOCK_ASSERT(so);						\
-	if ((so)->so_count == 0)					\
-		sofree(so);						\
-	else {								\
-		SOCK_UNLOCK(so);					\
-		ACCEPT_UNLOCK();					\
-	}								\
-} while(0)
-
-/*
- * In sorwakeup() and sowwakeup(), acquire the socket buffer lock to
- * avoid a non-atomic test-and-wakeup.  However, sowakeup is
- * responsible for releasing the lock if it is called.  We unlock only
- * if we don't call into sowakeup.  If any code is introduced that
- * directly invokes the underlying sowakeup() primitives, it must
- * maintain the same semantics.
- */
-#define	sorwakeup_locked(so) do {					\
-	SOCKBUF_LOCK_ASSERT(&(so)->so_rcv);				\
-	if (sb_notify(&(so)->so_rcv))					\
-		sowakeup((so), &(so)->so_rcv);	 			\
-	else								\
-		SOCKBUF_UNLOCK(&(so)->so_rcv);				\
-} while (0)
-
-#define	sorwakeup(so) do {						\
-	SOCKBUF_LOCK(&(so)->so_rcv);					\
-	sorwakeup_locked(so);						\
-} while (0)
-
-#define	sowwakeup_locked(so) do {					\
-	SOCKBUF_LOCK_ASSERT(&(so)->so_snd);				\
-	if (sb_notify(&(so)->so_snd))					\
-		sowakeup((so), &(so)->so_snd); 				\
-	else								\
-		SOCKBUF_UNLOCK(&(so)->so_snd);				\
-} while (0)
-
-#define	sowwakeup(so) do {						\
-	SOCKBUF_LOCK(&(so)->so_snd);					\
-	sowwakeup_locked(so);						\
-} while (0)
-
-/*
- * Argument structure for sosetopt et seq.  This is in the KERNEL
- * section because it will never be visible to user code.
- */
-enum sopt_dir { SOPT_GET, SOPT_SET };
-struct sockopt {
-	enum	sopt_dir sopt_dir; /* is this a get or a set? */
-	int	sopt_level;	/* second arg of [gs]etsockopt */
-	int	sopt_name;	/* third arg of [gs]etsockopt */
-	void   *sopt_val;	/* fourth arg of [gs]etsockopt */
-	size_t	sopt_valsize;	/* (almost) fifth arg of [gs]etsockopt */
-	struct	thread *sopt_td; /* calling thread or null if kernel */
-};
-
-struct accept_filter {
-	char	accf_name[16];
-	void	(*accf_callback)
-		(struct socket *so, void *arg, int waitflag);
-	void *	(*accf_create)
-		(struct socket *so, char *arg);
-	void	(*accf_destroy)
-		(struct socket *so);
-	SLIST_ENTRY(accept_filter) accf_next;
-};
-
-extern int	maxsockets;
-extern u_long	sb_max;
-extern struct uma_zone *socket_zone;
-extern so_gen_t so_gencnt;
-
-struct mbuf;
-struct sockaddr;
-struct ucred;
-struct uio;
-
-/*
- * From uipc_socket and friends
- */
-int	do_getopt_accept_filter(struct socket *so, struct sockopt *sopt);
-int	do_setopt_accept_filter(struct socket *so, struct sockopt *sopt);
-int	so_setsockopt(struct socket *so, int level, int optname,
-	    void *optval, size_t optlen);
-int	sockargs(struct mbuf **mp, caddr_t buf, int buflen, int type);
-int	getsockaddr(struct sockaddr **namp, caddr_t uaddr, size_t len);
-void	sbappend(struct sockbuf *sb, struct mbuf *m);
-void	sbappend_locked(struct sockbuf *sb, struct mbuf *m);
-void	sbappendstream(struct sockbuf *sb, struct mbuf *m);
-void	sbappendstream_locked(struct sockbuf *sb, struct mbuf *m);
-int	sbappendaddr(struct sockbuf *sb, const struct sockaddr *asa,
-	    struct mbuf *m0, struct mbuf *control);
-int	sbappendaddr_locked(struct sockbuf *sb, const struct sockaddr *asa,
-	    struct mbuf *m0, struct mbuf *control);
-int	sbappendcontrol(struct sockbuf *sb, struct mbuf *m0,
-	    struct mbuf *control);
-int	sbappendcontrol_locked(struct sockbuf *sb, struct mbuf *m0,
-	    struct mbuf *control);
-void	sbappendrecord(struct sockbuf *sb, struct mbuf *m0);
-void	sbappendrecord_locked(struct sockbuf *sb, struct mbuf *m0);
-void	sbcheck(struct sockbuf *sb);
-void	sbcompress(struct sockbuf *sb, struct mbuf *m, struct mbuf *n);
-struct mbuf *
-	sbcreatecontrol(caddr_t p, int size, int type, int level);
-void	sbdestroy(struct sockbuf *sb, struct socket *so);
-void	sbdrop(struct sockbuf *sb, int len);
-void	sbdrop_locked(struct sockbuf *sb, int len);
-void	sbdroprecord(struct sockbuf *sb);
-void	sbdroprecord_locked(struct sockbuf *sb);
-void	sbflush(struct sockbuf *sb);
-void	sbflush_locked(struct sockbuf *sb);
-void	sbrelease(struct sockbuf *sb, struct socket *so);
-void	sbrelease_locked(struct sockbuf *sb, struct socket *so);
-int	sbreserve(struct sockbuf *sb, u_long cc, struct socket *so,
-	    struct thread *td);
-int	sbreserve_locked(struct sockbuf *sb, u_long cc, struct socket *so,
-	    struct thread *td);
-struct mbuf *
-	sbsndptr(struct sockbuf *sb, u_int off, u_int len, u_int *moff);
-void	sbtoxsockbuf(struct sockbuf *sb, struct xsockbuf *xsb);
-int	sbwait(struct sockbuf *sb);
-int	sblock(struct sockbuf *sb, int flags);
-void	sbunlock(struct sockbuf *sb);
-void	soabort(struct socket *so);
-int	soaccept(struct socket *so, struct sockaddr **nam);
-int	socheckuid(struct socket *so, uid_t uid);
-int	sobind(struct socket *so, struct sockaddr *nam, struct thread *td);
-void	socantrcvmore(struct socket *so);
-void	socantrcvmore_locked(struct socket *so);
-void	socantsendmore(struct socket *so);
-void	socantsendmore_locked(struct socket *so);
-int	soclose(struct socket *so);
-int	soconnect(struct socket *so, struct sockaddr *nam, struct thread *td);
-int	soconnect2(struct socket *so1, struct socket *so2);
-int	socow_setup(struct mbuf *m0, struct uio *uio);
-int	socreate(int dom, struct socket **aso, int type, int proto,
-	    struct ucred *cred, struct thread *td);
-int	sodisconnect(struct socket *so);
-struct	sockaddr *sodupsockaddr(const struct sockaddr *sa, int mflags);
-void	sofree(struct socket *so);
-int	sogetopt(struct socket *so, struct sockopt *sopt);
-void	sohasoutofband(struct socket *so);
-void	soisconnected(struct socket *so);
-void	soisconnecting(struct socket *so);
-void	soisdisconnected(struct socket *so);
-void	soisdisconnecting(struct socket *so);
-int	solisten(struct socket *so, int backlog, struct thread *td);
-void	solisten_proto(struct socket *so, int backlog);
-int	solisten_proto_check(struct socket *so);
-struct socket *
-	sonewconn(struct socket *head, int connstatus);
-int	sooptcopyin(struct sockopt *sopt, void *buf, size_t len, size_t minlen);
-int	sooptcopyout(struct sockopt *sopt, const void *buf, size_t len);
-
-/* XXX; prepare mbuf for (__FreeBSD__ < 3) routines. */
-int	soopt_getm(struct sockopt *sopt, struct mbuf **mp);
-int	soopt_mcopyin(struct sockopt *sopt, struct mbuf *m);
-int	soopt_mcopyout(struct sockopt *sopt, struct mbuf *m);
-
-int	sopoll(struct socket *so, int events, struct ucred *active_cred,
-	    struct thread *td);
-int	sopoll_generic(struct socket *so, int events,
-	    struct ucred *active_cred, struct thread *td);
-int	soreceive(struct socket *so, struct sockaddr **paddr, struct uio *uio,
-	    struct mbuf **mp0, struct mbuf **controlp, int *flagsp);
-int	soreceive_generic(struct socket *so, struct sockaddr **paddr,
-	    struct uio *uio, struct mbuf **mp0, struct mbuf **controlp,
-	    int *flagsp);
-int	soreserve(struct socket *so, u_long sndcc, u_long rcvcc);
-void	sorflush(struct socket *so);
-int	sosend(struct socket *so, struct sockaddr *addr, struct uio *uio,
-	    struct mbuf *top, struct mbuf *control, int flags,
-	    struct thread *td);
-int	sosend_dgram(struct socket *so, struct sockaddr *addr,
-	    struct uio *uio, struct mbuf *top, struct mbuf *control,
-	    int flags, struct thread *td);
-int	sosend_generic(struct socket *so, struct sockaddr *addr,
-	    struct uio *uio, struct mbuf *top, struct mbuf *control,
-	    int flags, struct thread *td);
-int	sosetopt(struct socket *so, struct sockopt *sopt);
-int	soshutdown(struct socket *so, int how);
-void	sotoxsocket(struct socket *so, struct xsocket *xso);
-void	sowakeup(struct socket *so, struct sockbuf *sb);
-
-#ifdef SOCKBUF_DEBUG
-void	sblastrecordchk(struct sockbuf *, const char *, int);
-#define	SBLASTRECORDCHK(sb)	sblastrecordchk((sb), __FILE__, __LINE__)
-
-void	sblastmbufchk(struct sockbuf *, const char *, int);
-#define	SBLASTMBUFCHK(sb)	sblastmbufchk((sb), __FILE__, __LINE__)
-#else
-#define	SBLASTRECORDCHK(sb)      /* nothing */
-#define	SBLASTMBUFCHK(sb)        /* nothing */
-#endif /* SOCKBUF_DEBUG */
-
-/*
- * Accept filter functions (duh).
- */
-int	accept_filt_add(struct accept_filter *filt);
-int	accept_filt_del(char *name);
-struct	accept_filter *accept_filt_get(char *name);
-#ifdef ACCEPT_FILTER_MOD
-#ifdef SYSCTL_DECL
-SYSCTL_DECL(_net_inet_accf);
-#endif
-int	accept_filt_generic_mod_event(module_t mod, int event, void *data);
-#endif
-
-#endif /* _KERNEL */
-
 
 /*-------------------------------------------------------------*/
 /*-------------------------------------------------------------*/
@@ -717,7 +383,6 @@ int	accept_filt_generic_mod_event(module_t mod, int event, void *data);
  *  above into, avoiding having to port the entire thing at once...
  *  For function prototypes, the full bodies are in user_socket.c .
  */
-#if defined(__Userspace__)
 
 /* ---------------------------------------------------------- */
 /* --- function prototypes (implemented in user_socket.c) --- */
@@ -792,9 +457,7 @@ extern int sctp_listen(struct socket *so, int backlog, struct proc *p);
 extern void socantrcvmore_locked(struct socket *so);
 extern int sctp_bind(struct socket *so, struct sockaddr *addr);
 extern int sctp6_bind(struct socket *so, struct sockaddr *addr, void *proc);
-#if defined(__Userspace__)
 extern int sctpconn_bind(struct socket *so, struct sockaddr *addr);
-#endif
 extern int sctp_accept(struct socket *so, struct sockaddr **addr);
 extern int sctp_attach(struct socket *so, int proto, uint32_t vrf_id);
 extern int sctp6_attach(struct socket *so, int proto, uint32_t vrf_id);
@@ -813,9 +476,7 @@ extern int soconnect(struct socket *so, struct sockaddr *nam);
 extern int sctp_disconnect(struct socket *so);
 extern int sctp_connect(struct socket *so, struct sockaddr *addr);
 extern int sctp6_connect(struct socket *so, struct sockaddr *addr);
-#if defined(__Userspace__)
 extern int sctpconn_connect(struct socket *so, struct sockaddr *addr);
-#endif
 extern void sctp_finish(void);
 
 /* ------------------------------------------------ */
@@ -862,9 +523,5 @@ extern void sctp_finish(void);
 	SOCKBUF_LOCK(&(so)->so_snd);					\
 	sowwakeup_locked(so);						\
 } while (0)
-
-
-
-#endif /* __Userspace__ */
 
 #endif /* !_SYS_SOCKETVAR_H_ */

@@ -31,9 +31,9 @@ class AudioCodecSpeedTest : public ::testing::TestWithParam<coding_param> {
   virtual void TearDown();
 
   // EncodeABlock(...) does the following:
-  // 1. encodes a block of audio, saved in |in_data|,
-  // 2. save the bit stream to |bit_stream| of |max_bytes| bytes in size,
-  // 3. assign |encoded_bytes| with the length of the bit stream (in bytes),
+  // 1. encodes a block of audio, saved in `in_data`,
+  // 2. save the bit stream to `bit_stream` of `max_bytes` bytes in size,
+  // 3. assign `encoded_bytes` with the length of the bit stream (in bytes),
   // 4. return the cost of time (in millisecond) spent on actual encoding.
   virtual float EncodeABlock(int16_t* in_data,
                              uint8_t* bit_stream,
@@ -41,15 +41,15 @@ class AudioCodecSpeedTest : public ::testing::TestWithParam<coding_param> {
                              size_t* encoded_bytes) = 0;
 
   // DecodeABlock(...) does the following:
-  // 1. decodes the bit stream in |bit_stream| with a length of |encoded_bytes|
+  // 1. decodes the bit stream in `bit_stream` with a length of `encoded_bytes`
   // (in bytes),
-  // 2. save the decoded audio in |out_data|,
+  // 2. save the decoded audio in `out_data`,
   // 3. return the cost of time (in millisecond) spent on actual decoding.
   virtual float DecodeABlock(const uint8_t* bit_stream,
                              size_t encoded_bytes,
                              int16_t* out_data) = 0;
 
-  // Encoding and decode an audio of |audio_duration| (in seconds) and
+  // Encoding and decode an audio of `audio_duration` (in seconds) and
   // record the runtime for encoding and decoding separately.
   void EncodeDecode(size_t audio_duration);
 

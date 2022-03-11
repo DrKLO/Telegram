@@ -33,8 +33,6 @@ import androidx.annotation.RestrictTo;
 import androidx.core.os.TraceCompat;
 import androidx.core.view.ViewCompat;
 
-import org.telegram.messenger.BuildVars;
-
 import java.util.List;
 
 /**
@@ -94,6 +92,11 @@ public class LinearLayoutManager extends RecyclerView.LayoutManager implements
      * @see #mShouldReverseLayout
      */
     private boolean mReverseLayout = false;
+
+    /**
+     * Defines if scroll should be disabled
+     */
+    private boolean mDisableScroll = false;
 
     /**
      * This keeps the final value for how LayoutManager should start laying out views.
@@ -282,7 +285,7 @@ public class LinearLayoutManager extends RecyclerView.LayoutManager implements
      */
     @Override
     public boolean canScrollHorizontally() {
-        return mOrientation == HORIZONTAL;
+        return !mDisableScroll && mOrientation == HORIZONTAL;
     }
 
     /**
@@ -290,7 +293,14 @@ public class LinearLayoutManager extends RecyclerView.LayoutManager implements
      */
     @Override
     public boolean canScrollVertically() {
-        return mOrientation == VERTICAL;
+        return !mDisableScroll && mOrientation == VERTICAL;
+    }
+
+    /**
+     * Sets scroll disabled flag
+     */
+    public void setScrollDisabled(boolean disableScroll) {
+        this.mDisableScroll = disableScroll;
     }
 
     /**

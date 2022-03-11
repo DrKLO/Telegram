@@ -19,7 +19,6 @@
 
 #include "absl/types/optional.h"
 #include "api/video/video_bitrate_allocation.h"
-#include "modules/include/module.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
 #include "modules/rtp_rtcp/source/rtp_packet_to_send.h"
 #include "modules/rtp_rtcp/source/rtp_rtcp_interface.h"
@@ -34,6 +33,7 @@ class MockRtpRtcpInterface : public RtpRtcpInterface {
               (const uint8_t* incoming_packet, size_t packet_length),
               (override));
   MOCK_METHOD(void, SetRemoteSSRC, (uint32_t ssrc), (override));
+  MOCK_METHOD(void, SetLocalSsrc, (uint32_t ssrc), (override));
   MOCK_METHOD(void, SetMaxRtpPacketSize, (size_t size), (override));
   MOCK_METHOD(size_t, MaxRtpPacketSize, (), (const, override));
   MOCK_METHOD(void,
@@ -49,10 +49,6 @@ class MockRtpRtcpInterface : public RtpRtcpInterface {
               RegisterRtpHeaderExtension,
               (absl::string_view uri, int id),
               (override));
-  MOCK_METHOD(int32_t,
-              DeregisterSendRtpHeaderExtension,
-              (RTPExtensionType type),
-              (override));
   MOCK_METHOD(void,
               DeregisterSendRtpHeaderExtension,
               (absl::string_view uri),
@@ -65,6 +61,7 @@ class MockRtpRtcpInterface : public RtpRtcpInterface {
   MOCK_METHOD(void, SetSequenceNumber, (uint16_t seq), (override));
   MOCK_METHOD(void, SetRtpState, (const RtpState& rtp_state), (override));
   MOCK_METHOD(void, SetRtxState, (const RtpState& rtp_state), (override));
+  MOCK_METHOD(void, SetNonSenderRttMeasurement, (bool enabled), (override));
   MOCK_METHOD(RtpState, GetRtpState, (), (const, override));
   MOCK_METHOD(RtpState, GetRtxState, (), (const, override));
   MOCK_METHOD(uint32_t, SSRC, (), (const, override));
@@ -113,6 +110,7 @@ class MockRtpRtcpInterface : public RtpRtcpInterface {
               (rtc::ArrayView<const uint16_t> sequence_numbers),
               (const, override));
   MOCK_METHOD(size_t, ExpectedPerPacketOverhead, (), (const, override));
+  MOCK_METHOD(void, OnPacketSendingThreadSwitched, (), (override));
   MOCK_METHOD(RtcpMode, RTCP, (), (const, override));
   MOCK_METHOD(void, SetRTCPStatus, (RtcpMode method), (override));
   MOCK_METHOD(int32_t,
@@ -147,6 +145,10 @@ class MockRtpRtcpInterface : public RtpRtcpInterface {
               (const, override));
   MOCK_METHOD(absl::optional<SenderReportStats>,
               GetSenderReportStats,
+              (),
+              (const, override));
+  MOCK_METHOD(absl::optional<NonSenderRttStats>,
+              GetNonSenderRttStats,
               (),
               (const, override));
   MOCK_METHOD(void,

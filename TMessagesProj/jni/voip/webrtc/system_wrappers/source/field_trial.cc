@@ -85,7 +85,7 @@ void InsertOrReplaceFieldTrialStringsInMap(
       (*fieldtrial_map)[tokens[idx]] = tokens[idx + 1];
     }
   } else {
-    RTC_DCHECK(false) << "Invalid field trials string:" << trials_string;
+    RTC_DCHECK_NOTREACHED() << "Invalid field trials string:" << trials_string;
   }
 }
 

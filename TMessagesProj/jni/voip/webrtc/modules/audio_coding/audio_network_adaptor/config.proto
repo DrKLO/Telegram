@@ -5,6 +5,7 @@ package webrtc.audio_network_adaptor.config;
 option optimize_for = LITE_RUNTIME;
 option java_package = "org.webrtc.AudioNetworkAdaptor";
 option java_outer_classname = "Config";
+option objc_class_prefix = "WANA";
 
 message FecController {
   message Threshold {
@@ -23,8 +24,8 @@ message FecController {
     optional float high_bandwidth_packet_loss = 4;
   }
 
-  // |fec_enabling_threshold| defines a curve, above which FEC should be
-  // enabled. |fec_disabling_threshold| defines a curve, under which FEC
+  // `fec_enabling_threshold` defines a curve, above which FEC should be
+  // enabled. `fec_disabling_threshold` defines a curve, under which FEC
   // should be disabled. See below
   //
   // packet-loss ^   |  |
@@ -36,7 +37,7 @@ message FecController {
   optional Threshold fec_enabling_threshold = 1;
   optional Threshold fec_disabling_threshold = 2;
 
-  // |time_constant_ms| is the time constant for an exponential filter, which
+  // `time_constant_ms` is the time constant for an exponential filter, which
   // is used for smoothing the packet loss fraction.
   optional int32 time_constant_ms = 3;
 }
@@ -62,8 +63,8 @@ message FecControllerRplrBased {
     optional float high_bandwidth_recoverable_packet_loss = 4;
   }
 
-  // |fec_enabling_threshold| defines a curve, above which FEC should be
-  // enabled. |fec_disabling_threshold| defines a curve, under which FEC
+  // `fec_enabling_threshold` defines a curve, above which FEC should be
+  // enabled. `fec_disabling_threshold` defines a curve, under which FEC
   // should be disabled. See below
   //
   // packet-loss ^   |  |
@@ -122,7 +123,7 @@ message FrameLengthControllerV2 {
   // FrameLengthControllerV2 chooses the frame length by taking the target
   // bitrate and subtracting the overhead bitrate to obtain the remaining
   // bitrate for the payload. The chosen frame length is the shortest possible
-  // where the payload bitrate is more than |min_payload_bitrate_bps|.
+  // where the payload bitrate is more than `min_payload_bitrate_bps`.
   optional int32 min_payload_bitrate_bps = 1;
 
   // If true, uses the stable target bitrate to decide the frame length. This
@@ -158,18 +159,18 @@ message BitrateController {
 
 message Controller {
   message ScoringPoint {
-    // |ScoringPoint| is a subspace of network condition. It is used for
+    // `ScoringPoint` is a subspace of network condition. It is used for
     // comparing the significance of controllers.
     optional int32 uplink_bandwidth_bps = 1;
     optional float uplink_packet_loss_fraction = 2;
   }
 
-  // The distance from |scoring_point| to a given network condition defines
+  // The distance from `scoring_point` to a given network condition defines
   // the significance of this controller with respect that network condition.
   // Shorter distance means higher significance. The significances of
   // controllers determine their order in the processing pipeline. Controllers
-  // without |scoring_point| follow their default order in
-  // |ControllerManager::controllers|.
+  // without `scoring_point` follow their default order in
+  // `ControllerManager::controllers`.
   optional ScoringPoint scoring_point = 1;
 
   oneof controller {

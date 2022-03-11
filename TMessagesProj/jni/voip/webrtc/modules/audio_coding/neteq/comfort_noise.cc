@@ -10,7 +10,6 @@
 
 #include "modules/audio_coding/neteq/comfort_noise.h"
 
-#include <assert.h>
 
 #include <cstdint>
 #include <memory>
@@ -45,8 +44,8 @@ int ComfortNoise::UpdateParameters(const Packet& packet) {
 
 int ComfortNoise::Generate(size_t requested_length, AudioMultiVector* output) {
   // TODO(hlundin): Change to an enumerator and skip assert.
-  assert(fs_hz_ == 8000 || fs_hz_ == 16000 || fs_hz_ == 32000 ||
-         fs_hz_ == 48000);
+  RTC_DCHECK(fs_hz_ == 8000 || fs_hz_ == 16000 || fs_hz_ == 32000 ||
+             fs_hz_ == 48000);
   // Not adapted for multi-channel yet.
   if (output->Channels() != 1) {
     RTC_LOG(LS_ERROR) << "No multi-channel support";
@@ -120,8 +119,8 @@ int ComfortNoise::Generate(size_t requested_length, AudioMultiVector* output) {
       muting_window += muting_window_increment;
       unmuting_window += unmuting_window_increment;
     }
-    // Remove |overlap_length_| samples from the front of |output| since they
-    // were mixed into |sync_buffer_| above.
+    // Remove `overlap_length_` samples from the front of `output` since they
+    // were mixed into `sync_buffer_` above.
     output->PopFront(overlap_length_);
   }
   first_call_ = false;

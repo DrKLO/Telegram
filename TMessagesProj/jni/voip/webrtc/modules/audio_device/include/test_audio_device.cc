@@ -48,10 +48,10 @@ class TestAudioDeviceModuleImpl
     : public webrtc_impl::AudioDeviceModuleDefault<TestAudioDeviceModule> {
  public:
   // Creates a new TestAudioDeviceModule. When capturing or playing, 10 ms audio
-  // frames will be processed every 10ms / |speed|.
-  // |capturer| is an object that produces audio data. Can be nullptr if this
+  // frames will be processed every 10ms / `speed`.
+  // `capturer` is an object that produces audio data. Can be nullptr if this
   // device is never used for recording.
-  // |renderer| is an object that receives audio data that would have been
+  // `renderer` is an object that receives audio data that would have been
   // played out. Can be nullptr if this device is never used for playing.
   // Use one of the Create... functions to get these instances.
   TestAudioDeviceModuleImpl(TaskQueueFactory* task_queue_factory,
@@ -142,13 +142,13 @@ class TestAudioDeviceModuleImpl
   }
 
   // Blocks until the Renderer refuses to receive data.
-  // Returns false if |timeout_ms| passes before that happens.
+  // Returns false if `timeout_ms` passes before that happens.
   bool WaitForPlayoutEnd(int timeout_ms = rtc::Event::kForever) override {
     return done_rendering_.Wait(timeout_ms);
   }
 
   // Blocks until the Recorder stops producing data.
-  // Returns false if |timeout_ms| passes before that happens.
+  // Returns false if `timeout_ms` passes before that happens.
   bool WaitForRecordingEnd(int timeout_ms = rtc::Event::kForever) override {
     return done_capturing_.Wait(timeout_ms);
   }

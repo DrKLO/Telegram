@@ -63,6 +63,27 @@ namespace  webrtc {
 namespace jni {
 
 
+static std::atomic<jmethodID> g_org_webrtc_VideoFrame_00024Buffer_getBufferType(nullptr);
+static jint Java_Buffer_getBufferType(JNIEnv* env, const base::android::JavaRef<jobject>& obj) {
+  jclass clazz = org_webrtc_VideoFrame_00024Buffer_clazz(env);
+  CHECK_CLAZZ(env, obj.obj(),
+      org_webrtc_VideoFrame_00024Buffer_clazz(env), 0);
+
+  jni_generator::JniJavaCallContextChecked call_context;
+  call_context.Init<
+      base::android::MethodID::TYPE_INSTANCE>(
+          env,
+          clazz,
+          "getBufferType",
+          "()I",
+          &g_org_webrtc_VideoFrame_00024Buffer_getBufferType);
+
+  jint ret =
+      env->CallIntMethod(obj.obj(),
+          call_context.base.method_id);
+  return ret;
+}
+
 static std::atomic<jmethodID> g_org_webrtc_VideoFrame_00024Buffer_getWidth(nullptr);
 static jint Java_Buffer_getWidth(JNIEnv* env, const base::android::JavaRef<jobject>& obj) {
   jclass clazz = org_webrtc_VideoFrame_00024Buffer_clazz(env);
@@ -432,8 +453,5 @@ static void Java_VideoFrame_release(JNIEnv* env, const base::android::JavaRef<jo
 
 }  // namespace jni
 }  // namespace  webrtc
-
-// Step 4: Generated test functions (optional).
-
 
 #endif  // org_webrtc_VideoFrame_JNI

@@ -79,7 +79,7 @@ class BasicIceController : public IceControllerInterface {
   }
 
   const Connection* FindOldestConnectionNeedingTriggeredCheck(int64_t now);
-  // Between |conn1| and |conn2|, this function returns the one which should
+  // Between `conn1` and `conn2`, this function returns the one which should
   // be pinged first.
   const Connection* MorePingable(const Connection* conn1,
                                  const Connection* conn2);
@@ -112,13 +112,13 @@ class BasicIceController : public IceControllerInterface {
       const Connection* b,
       absl::optional<rtc::AdapterType> network_preference) const;
 
-  // The methods below return a positive value if |a| is preferable to |b|,
-  // a negative value if |b| is preferable, and 0 if they're equally preferable.
-  // If |receiving_unchanged_threshold| is set, then when |b| is receiving and
-  // |a| is not, returns a negative value only if |b| has been in receiving
-  // state and |a| has been in not receiving state since
-  // |receiving_unchanged_threshold| and sets
-  // |missed_receiving_unchanged_threshold| to true otherwise.
+  // The methods below return a positive value if `a` is preferable to `b`,
+  // a negative value if `b` is preferable, and 0 if they're equally preferable.
+  // If `receiving_unchanged_threshold` is set, then when `b` is receiving and
+  // `a` is not, returns a negative value only if `b` has been in receiving
+  // state and `a` has been in not receiving state since
+  // `receiving_unchanged_threshold` and sets
+  // `missed_receiving_unchanged_threshold` to true otherwise.
   int CompareConnectionStates(
       const Connection* a,
       const Connection* b,
@@ -130,7 +130,7 @@ class BasicIceController : public IceControllerInterface {
   // (writable/receiving/connected), nomination states, last data received time,
   // and static preferences. Does not include latency. Used by both sorting
   // and ShouldSwitchSelectedConnection().
-  // Returns a positive value if |a| is better than |b|.
+  // Returns a positive value if `a` is better than `b`.
   int CompareConnections(const Connection* a,
                          const Connection* b,
                          absl::optional<int64_t> receiving_unchanged_threshold,
@@ -146,10 +146,10 @@ class BasicIceController : public IceControllerInterface {
   IceConfig config_;
   const IceFieldTrials* field_trials_;
 
-  // |connections_| is a sorted list with the first one always be the
-  // |selected_connection_| when it's not nullptr. The combination of
-  // |pinged_connections_| and |unpinged_connections_| has the same
-  // connections as |connections_|. These 2 sets maintain whether a
+  // `connections_` is a sorted list with the first one always be the
+  // `selected_connection_` when it's not nullptr. The combination of
+  // `pinged_connections_` and `unpinged_connections_` has the same
+  // connections as `connections_`. These 2 sets maintain whether a
   // connection should be pinged next or not.
   const Connection* selected_connection_ = nullptr;
   std::vector<const Connection*> connections_;

@@ -12,8 +12,6 @@
 
 #include <stdint.h>
 
-#include <memory>
-#include <string>
 #include <utility>
 #include <vector>
 
@@ -168,8 +166,7 @@ bool PeerConnectionWrapper::SetRemoteDescription(
 bool PeerConnectionWrapper::SetRemoteDescription(
     std::unique_ptr<SessionDescriptionInterface> desc,
     RTCError* error_out) {
-  rtc::scoped_refptr<FakeSetRemoteDescriptionObserver> observer =
-      new FakeSetRemoteDescriptionObserver();
+  auto observer = rtc::make_ref_counted<FakeSetRemoteDescriptionObserver>();
   pc()->SetRemoteDescription(std::move(desc), observer);
   EXPECT_EQ_WAIT(true, observer->called(), kDefaultTimeout);
   bool ok = observer->error().ok();
@@ -306,7 +303,14 @@ rtc::scoped_refptr<RtpSenderInterface> PeerConnectionWrapper::AddVideoTrack(
 
 rtc::scoped_refptr<DataChannelInterface>
 PeerConnectionWrapper::CreateDataChannel(const std::string& label) {
-  return pc()->CreateDataChannel(label, nullptr);
+  auto result = pc()->CreateDataChannelOrError(label, nullptr);
+  if (!result.ok()) {
+    RTC_LOG(LS_ERROR) << "CreateDataChannel failed: "
+                      << ToString(result.error().type()) << " "
+                      << result.error().message();
+    return nullptr;
+  }
+  return result.MoveValue();
 }
 
 PeerConnectionInterface::SignalingState

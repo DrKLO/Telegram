@@ -16,9 +16,11 @@
 #include "api/dtls_transport_interface.h"
 #include "api/scoped_refptr.h"
 #include "api/sctp_transport_interface.h"
+#include "api/sequence_checker.h"
 #include "media/sctp/sctp_transport_internal.h"
 #include "p2p/base/dtls_transport_internal.h"
 #include "pc/dtls_transport.h"
+#include "rtc_base/checks.h"
 #include "rtc_base/third_party/sigslot/sigslot.h"
 #include "rtc_base/thread.h"
 #include "rtc_base/thread_annotations.h"
@@ -71,9 +73,9 @@ class SctpTransport : public SctpTransportInterface,
   void OnInternalClosingProcedureStartedRemotely(int sid);
   void OnInternalClosingProcedureComplete(int sid);
   void OnDtlsStateChange(cricket::DtlsTransportInternal* transport,
-                         cricket::DtlsTransportState state);
+                         DtlsTransportState state);
 
-  // NOTE: |owner_thread_| is the thread that the SctpTransport object is
+  // NOTE: `owner_thread_` is the thread that the SctpTransport object is
   // constructed on. In the context of PeerConnection, it's the network thread.
   rtc::Thread* const owner_thread_;
   SctpTransportInformation info_ RTC_GUARDED_BY(owner_thread_);

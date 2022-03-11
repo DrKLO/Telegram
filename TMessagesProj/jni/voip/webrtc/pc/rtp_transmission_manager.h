@@ -29,7 +29,9 @@
 #include "media/base/media_channel.h"
 #include "pc/channel_manager.h"
 #include "pc/rtp_receiver.h"
+#include "pc/rtp_receiver_proxy.h"
 #include "pc/rtp_sender.h"
+#include "pc/rtp_sender_proxy.h"
 #include "pc/rtp_transceiver.h"
 #include "pc/stats_collector_interface.h"
 #include "pc/transceiver_list.h"
@@ -50,7 +52,7 @@ namespace webrtc {
 struct RtpSenderInfo {
   RtpSenderInfo() : first_ssrc(0) {}
   RtpSenderInfo(const std::string& stream_id,
-                const std::string sender_id,
+                const std::string& sender_id,
                 uint32_t ssrc)
       : stream_id(stream_id), sender_id(sender_id), first_ssrc(ssrc) {}
   bool operator==(const RtpSenderInfo& other) {
@@ -156,7 +158,7 @@ class RtpTransmissionManager : public RtpSenderBase::SetStreamsObserver {
                            cricket::MediaType media_type);
 
   // Triggered when a remote sender has been removed from a remote session
-  // description. It removes the remote sender with id |sender_id| from a remote
+  // description. It removes the remote sender with id `sender_id` from a remote
   // MediaStream and triggers DestroyAudioReceiver or DestroyVideoReceiver.
   void OnRemoteSenderRemoved(const RtpSenderInfo& sender_info,
                              MediaStreamInterface* stream,
@@ -166,7 +168,7 @@ class RtpTransmissionManager : public RtpSenderBase::SetStreamsObserver {
   // session description.
   // This method triggers CreateAudioSender or CreateVideoSender if the rtp
   // streams in the local SessionDescription can be mapped to a MediaStreamTrack
-  // in a MediaStream in |local_streams_|
+  // in a MediaStream in `local_streams_`
   void OnLocalSenderAdded(const RtpSenderInfo& sender_info,
                           cricket::MediaType media_type);
 
@@ -174,7 +176,7 @@ class RtpTransmissionManager : public RtpSenderBase::SetStreamsObserver {
   // description.
   // This method triggers DestroyAudioSender or DestroyVideoSender if a stream
   // has been removed from the local SessionDescription and the stream can be
-  // mapped to a MediaStreamTrack in a MediaStream in |local_streams_|.
+  // mapped to a MediaStreamTrack in a MediaStream in `local_streams_`.
   void OnLocalSenderRemoved(const RtpSenderInfo& sender_info,
                             cricket::MediaType media_type);
 
@@ -184,7 +186,7 @@ class RtpTransmissionManager : public RtpSenderBase::SetStreamsObserver {
       cricket::MediaType media_type);
   const RtpSenderInfo* FindSenderInfo(const std::vector<RtpSenderInfo>& infos,
                                       const std::string& stream_id,
-                                      const std::string sender_id) const;
+                                      const std::string& sender_id) const;
 
   // Return the RtpSender with the given track attached.
   rtc::scoped_refptr<RtpSenderProxyWithInternal<RtpSenderInternal>>

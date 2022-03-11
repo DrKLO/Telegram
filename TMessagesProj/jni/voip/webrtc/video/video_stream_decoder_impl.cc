@@ -102,9 +102,9 @@ VideoDecoder* VideoStreamDecoderImpl::GetDecoder(int payload_type) {
     return nullptr;
   }
 
-  int num_cores = decoder_settings_it->second.second;
-  int32_t init_result = decoder->InitDecode(nullptr, num_cores);
-  if (init_result != WEBRTC_VIDEO_CODEC_OK) {
+  VideoDecoder::Settings settings;
+  settings.set_number_of_cores(decoder_settings_it->second.second);
+  if (!decoder->Configure(settings)) {
     RTC_LOG(LS_WARNING) << "Failed to initialize decoder for payload type "
                         << payload_type << ".";
     return nullptr;
@@ -135,69 +135,58 @@ void VideoStreamDecoderImpl::SaveFrameInfo(const EncodedFrame& frame) {
 void VideoStreamDecoderImpl::StartNextDecode() {
   int64_t max_wait_time = keyframe_required_ ? 200 : 3000;
 
-  frame_buffer_.NextFrame(
-      max_wait_time, keyframe_required_, &bookkeeping_queue_,
-      [this](std::unique_ptr<EncodedFrame> frame,
-             video_coding::FrameBuffer::ReturnReason res) mutable {
-        RTC_DCHECK_RUN_ON(&bookkeeping_queue_);
-        OnNextFrameCallback(std::move(frame), res);
-      });
+  frame_buffer_.NextFrame(max_wait_time, keyframe_required_,
+                          &bookkeeping_queue_,
+                          [this](std::unique_ptr<EncodedFrame> frame) {
+                            RTC_DCHECK_RUN_ON(&bookkeeping_queue_);
+                            OnNextFrameCallback(std::move(frame));
+                          });
 }
 
 void VideoStreamDecoderImpl::OnNextFrameCallback(
-    std::unique_ptr<EncodedFrame> frame,
-    video_coding::FrameBuffer::ReturnReason result) {
-  switch (result) {
-    case video_coding::FrameBuffer::kFrameFound: {
-      RTC_DCHECK(frame);
-      SaveFrameInfo(*frame);
+    std::unique_ptr<EncodedFrame> frame) {
+  if (frame) {
+    RTC_DCHECK(frame);
+    SaveFrameInfo(*frame);
 
-      MutexLock lock(&shut_down_mutex_);
-      if (shut_down_) {
-        return;
-      }
-
-      decode_queue_.PostTask([this, frame = std::move(frame)]() mutable {
-        RTC_DCHECK_RUN_ON(&decode_queue_);
-        DecodeResult decode_result = DecodeFrame(std::move(frame));
-        bookkeeping_queue_.PostTask([this, decode_result]() {
-          RTC_DCHECK_RUN_ON(&bookkeeping_queue_);
-          switch (decode_result) {
-            case kOk: {
-              keyframe_required_ = false;
-              break;
-            }
-            case kOkRequestKeyframe: {
-              callbacks_->OnNonDecodableState();
-              keyframe_required_ = false;
-              break;
-            }
-            case kDecodeFailure: {
-              callbacks_->OnNonDecodableState();
-              keyframe_required_ = true;
-              break;
-            }
-          }
-          StartNextDecode();
-        });
-      });
-      break;
+    MutexLock lock(&shut_down_mutex_);
+    if (shut_down_) {
+      return;
     }
-    case video_coding::FrameBuffer::kTimeout: {
-      callbacks_->OnNonDecodableState();
-      // The |frame_buffer_| requires the frame callback function to complete
-      // before NextFrame is called again. For this reason we call
-      // StartNextDecode in a later task to allow this task to complete first.
-      bookkeeping_queue_.PostTask([this]() {
+
+    decode_queue_.PostTask([this, frame = std::move(frame)]() mutable {
+      RTC_DCHECK_RUN_ON(&decode_queue_);
+      DecodeResult decode_result = DecodeFrame(std::move(frame));
+      bookkeeping_queue_.PostTask([this, decode_result]() {
         RTC_DCHECK_RUN_ON(&bookkeeping_queue_);
+        switch (decode_result) {
+          case kOk: {
+            keyframe_required_ = false;
+            break;
+          }
+          case kOkRequestKeyframe: {
+            callbacks_->OnNonDecodableState();
+            keyframe_required_ = false;
+            break;
+          }
+          case kDecodeFailure: {
+            callbacks_->OnNonDecodableState();
+            keyframe_required_ = true;
+            break;
+          }
+        }
         StartNextDecode();
       });
-      break;
-    }
-    case video_coding::FrameBuffer::kStopped: {
-      // We are shutting down, do nothing.
-      break;
-    }
+    });
+  } else {
+    callbacks_->OnNonDecodableState();
+    // The `frame_buffer_` requires the frame callback function to complete
+    // before NextFrame is called again. For this reason we call
+    // StartNextDecode in a later task to allow this task to complete first.
+    bookkeeping_queue_.PostTask([this]() {
+      RTC_DCHECK_RUN_ON(&bookkeeping_queue_);
+      StartNextDecode();
+    });
   }
 }
 

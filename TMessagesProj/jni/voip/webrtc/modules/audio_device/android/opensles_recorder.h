@@ -83,7 +83,7 @@ class OpenSLESRecorder {
  private:
   // Obtaines the SL Engine Interface from the existing global Engine object.
   // The interface exposes creation methods of all the OpenSL ES object types.
-  // This method defines the |engine_| member variable.
+  // This method defines the `engine_` member variable.
   bool ObtainEngineInterface();
 
   // Creates/destroys the audio recorder and the simple-buffer queue object.
@@ -104,7 +104,7 @@ class OpenSLESRecorder {
   // Wraps calls to SLAndroidSimpleBufferQueueState::Enqueue() and it can be
   // called both on the main thread (but before recording has started) and from
   // the internal audio thread while input streaming is active. It uses
-  // |simple_buffer_queue_| but no lock is needed since the initial calls from
+  // `simple_buffer_queue_` but no lock is needed since the initial calls from
   // the main thread and the native callback thread are mutually exclusive.
   bool EnqueueAudioBuffer();
 

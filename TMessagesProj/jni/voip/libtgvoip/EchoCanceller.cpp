@@ -27,9 +27,7 @@ EchoCanceller::EchoCanceller(bool enableAEC, bool enableNS, bool enableAGC){
 	this->enableNS=enableNS;
 	isOn=true;
 
-	webrtc::Config extraConfig;
-
-	apm=webrtc::AudioProcessingBuilder().Create(extraConfig);
+	apm=webrtc::AudioProcessingBuilder().Create();
 
 	webrtc::AudioProcessing::Config config;
 	config.echo_canceller.enabled = enableAEC;
@@ -70,7 +68,6 @@ EchoCanceller::EchoCanceller(bool enableAEC, bool enableNS, bool enableAGC){
         config.gain_controller1.enable_limiter = ServerConfig::GetSharedInstance()->GetBoolean("webrtc_agc_enable_limiter", true);
         config.gain_controller1.compression_gain_db = ServerConfig::GetSharedInstance()->GetInt("webrtc_agc_compression_gain", 20);
     }
-    config.voice_detection.enabled = true;
 
     apm->ApplyConfig(config);
 
@@ -126,10 +123,8 @@ void EchoCanceller::RunBufferFarendThread() {
     frame.sample_rate_hz_ = 48000;
     frame.samples_per_channel_ = 480;
 
-    webrtc::StreamConfig input_config(frame.sample_rate_hz_, frame.num_channels_,
-            /*has_keyboard=*/false);
-    webrtc::StreamConfig output_config(frame.sample_rate_hz_, frame.num_channels_,
-            /*has_keyboard=*/false);
+    webrtc::StreamConfig input_config(frame.sample_rate_hz_, frame.num_channels_);
+    webrtc::StreamConfig output_config(frame.sample_rate_hz_, frame.num_channels_);
 
     while (running) {
         int16_t *samplesIn = farendQueue->GetBlocking();
@@ -159,10 +154,8 @@ void EchoCanceller::ProcessInput(int16_t* inOut, size_t numSamples, bool& hasVoi
     int delay = audio::AudioInput::GetEstimatedDelay() + audio::AudioOutput::GetEstimatedDelay();
     assert(numSamples == 960);
 
-    webrtc::StreamConfig input_config(audioFrame->sample_rate_hz_, audioFrame->num_channels_,
-            /*has_keyboard=*/false);
-    webrtc::StreamConfig output_config(audioFrame->sample_rate_hz_, audioFrame->num_channels_,
-            /*has_keyboard=*/false);
+    webrtc::StreamConfig input_config(audioFrame->sample_rate_hz_, audioFrame->num_channels_);
+    webrtc::StreamConfig output_config(audioFrame->sample_rate_hz_, audioFrame->num_channels_);
 
     memcpy(audioFrame->mutable_data(), inOut, 480 * 2);
     if (enableAEC)
@@ -201,7 +194,7 @@ void EchoCanceller::SetVoiceDetectionEnabled(bool enabled) {
     enableVAD = enabled;
 #ifndef TGVOIP_NO_DSP
     auto config = apm->GetConfig();
-    config.voice_detection.enabled = enabled;
+   // config.voice_detection.enabled = enabled;
     apm->ApplyConfig(config);
 #endif
 }

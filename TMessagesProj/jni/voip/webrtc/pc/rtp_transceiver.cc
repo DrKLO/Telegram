@@ -10,6 +10,7 @@
 
 #include "pc/rtp_transceiver.h"
 
+#include <algorithm>
 #include <iterator>
 #include <string>
 #include <utility>
@@ -24,6 +25,7 @@
 #include "pc/rtp_media_utils.h"
 #include "pc/session_description.h"
 #include "rtc_base/checks.h"
+#include "rtc_base/location.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/task_utils/to_queued_task.h"
 #include "rtc_base/thread.h"
@@ -154,16 +156,21 @@ RtpTransceiver::~RtpTransceiver() {
     RTC_DCHECK_RUN_ON(thread_);
     StopInternal();
   }
+
+  RTC_CHECK(!channel_) << "Missing call to SetChannel(nullptr)?";
 }
 
-void RtpTransceiver::SetChannel(cricket::ChannelInterface* channel) {
+void RtpTransceiver::SetChannel(
+    cricket::ChannelInterface* channel,
+    std::function<RtpTransportInternal*(const std::string&)> transport_lookup) {
   RTC_DCHECK_RUN_ON(thread_);
   // Cannot set a non-null channel on a stopped transceiver.
-  if (stopped_ && channel) {
+  if ((stopped_ && channel) || channel == channel_) {
     return;
   }
 
   RTC_DCHECK(channel || channel_);
+  RTC_DCHECK(!channel || transport_lookup) << "lookup function not supplied";
 
   RTC_LOG_THREAD_BLOCK_COUNT();
 
@@ -177,6 +184,8 @@ void RtpTransceiver::SetChannel(cricket::ChannelInterface* channel) {
     signaling_thread_safety_ = PendingTaskSafetyFlag::Create();
   }
 
+  cricket::ChannelInterface* channel_to_delete = nullptr;
+
   // An alternative to this, could be to require SetChannel to be called
   // on the network thread. The channel object operates for the most part
   // on the network thread, as part of its initialization being on the network
@@ -189,11 +198,14 @@ void RtpTransceiver::SetChannel(cricket::ChannelInterface* channel) {
   channel_manager_->network_thread()->Invoke<void>(RTC_FROM_HERE, [&]() {
     if (channel_) {
       channel_->SetFirstPacketReceivedCallback(nullptr);
+      channel_->SetRtpTransport(nullptr);
+      channel_to_delete = channel_;
     }
 
     channel_ = channel;
 
     if (channel_) {
+      channel_->SetRtpTransport(transport_lookup(channel_->mid()));
       channel_->SetFirstPacketReceivedCallback(
           [thread = thread_, flag = signaling_thread_safety_, this]() mutable {
             thread->PostTask(ToQueuedTask(
@@ -202,20 +214,34 @@ void RtpTransceiver::SetChannel(cricket::ChannelInterface* channel) {
     }
   });
 
-  for (const auto& sender : senders_) {
-    sender->internal()->SetMediaChannel(channel_ ? channel_->media_channel()
-                                                 : nullptr);
-  }
-
   RTC_DCHECK_BLOCK_COUNT_NO_MORE_THAN(1);
 
-  for (const auto& receiver : receivers_) {
-    if (!channel_) {
-      receiver->internal()->Stop();
-    } else {
-      receiver->internal()->SetMediaChannel(channel_->media_channel());
-    }
+  if (!channel_) {
+    for (const auto& receiver : receivers_)
+      receiver->internal()->SetSourceEnded();
+    RTC_DCHECK_BLOCK_COUNT_NO_MORE_THAN(1);  // There should not be an invoke.
   }
+
+  if (channel_to_delete || !senders_.empty() || !receivers_.empty()) {
+    channel_manager_->worker_thread()->Invoke<void>(RTC_FROM_HERE, [&]() {
+      auto* media_channel = channel_ ? channel_->media_channel() : nullptr;
+      for (const auto& sender : senders_) {
+        sender->internal()->SetMediaChannel(media_channel);
+      }
+
+      for (const auto& receiver : receivers_) {
+        receiver->internal()->SetMediaChannel(media_channel);
+      }
+
+      // Destroy the channel, if we had one, now _after_ updating the receivers
+      // who might have had references to the previous channel.
+      if (channel_to_delete) {
+        channel_manager_->DestroyChannel(channel_to_delete);
+      }
+    });
+  }
+
+  RTC_DCHECK_BLOCK_COUNT_NO_MORE_THAN(2);
 }
 
 void RtpTransceiver::AddSender(
@@ -256,6 +282,7 @@ void RtpTransceiver::AddReceiver(
 }
 
 bool RtpTransceiver::RemoveReceiver(RtpReceiverInterface* receiver) {
+  RTC_DCHECK_RUN_ON(thread_);
   RTC_DCHECK(!unified_plan_);
   if (receiver) {
     RTC_DCHECK_EQ(media_type(), receiver->media_type());
@@ -264,8 +291,13 @@ bool RtpTransceiver::RemoveReceiver(RtpReceiverInterface* receiver) {
   if (it == receivers_.end()) {
     return false;
   }
-  // `Stop()` will clear the internally cached pointer to the media channel.
+
   (*it)->internal()->Stop();
+  channel_manager_->worker_thread()->Invoke<void>(RTC_FROM_HERE, [&]() {
+    // `Stop()` will clear the receiver's pointer to the media channel.
+    (*it)->internal()->SetMediaChannel(nullptr);
+  });
+
   receivers_.erase(it);
   return true;
 }
@@ -273,14 +305,14 @@ bool RtpTransceiver::RemoveReceiver(RtpReceiverInterface* receiver) {
 rtc::scoped_refptr<RtpSenderInternal> RtpTransceiver::sender_internal() const {
   RTC_DCHECK(unified_plan_);
   RTC_CHECK_EQ(1u, senders_.size());
-  return senders_[0]->internal();
+  return rtc::scoped_refptr<RtpSenderInternal>(senders_[0]->internal());
 }
 
 rtc::scoped_refptr<RtpReceiverInternal> RtpTransceiver::receiver_internal()
     const {
   RTC_DCHECK(unified_plan_);
   RTC_CHECK_EQ(1u, receivers_.size());
-  return receivers_[0]->internal();
+  return rtc::scoped_refptr<RtpReceiverInternal>(receivers_[0]->internal());
 }
 
 cricket::MediaType RtpTransceiver::media_type() const {
@@ -383,15 +415,22 @@ void RtpTransceiver::StopSendingAndReceiving() {
   //
   // 3. Stop sending media with sender.
   //
+  RTC_DCHECK_RUN_ON(thread_);
+
   // 4. Send an RTCP BYE for each RTP stream that was being sent by sender, as
   // specified in [RFC3550].
-  RTC_DCHECK_RUN_ON(thread_);
   for (const auto& sender : senders_)
     sender->internal()->Stop();
 
-  // 5. Stop receiving media with receiver.
+  // Signal to receiver sources that we're stopping.
   for (const auto& receiver : receivers_)
-    receiver->internal()->StopAndEndTrack();
+    receiver->internal()->Stop();
+
+  channel_manager_->worker_thread()->Invoke<void>(RTC_FROM_HERE, [&]() {
+    // 5 Stop receiving media with receiver.
+    for (const auto& receiver : receivers_)
+      receiver->internal()->SetMediaChannel(nullptr);
+  });
 
   stopping_ = true;
   direction_ = webrtc::RtpTransceiverDirection::kInactive;

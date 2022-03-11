@@ -10,11 +10,11 @@
 
 #include "sdk/android/src/jni/android_video_track_source.h"
 
-#include "sdk/android/generated_video_jni/NativeAndroidVideoTrackSource_jni.h"
-
 #include <utility>
 
 #include "rtc_base/logging.h"
+#include "sdk/android/generated_video_jni/NativeAndroidVideoTrackSource_jni.h"
+#include "sdk/android/src/jni/video_frame.h"
 
 namespace webrtc {
 namespace jni {
@@ -67,7 +67,7 @@ void AndroidVideoTrackSource::SetState(JNIEnv* env,
     } else {
       // TODO(sakal): Is this even necessary, does FireOnChanged have to be
       // called from signaling thread?
-      signaling_thread_->PostTask(RTC_FROM_HERE, [this] { FireOnChanged(); });
+      signaling_thread_->PostTask([this] { FireOnChanged(); });
     }
   }
 }
@@ -132,7 +132,7 @@ void AndroidVideoTrackSource::OnFrameCaptured(
     jlong j_timestamp_ns,
     const JavaRef<jobject>& j_video_frame_buffer) {
   rtc::scoped_refptr<VideoFrameBuffer> buffer =
-      AndroidVideoBuffer::Create(env, j_video_frame_buffer);
+      JavaToNativeFrameBuffer(env, j_video_frame_buffer);
   const VideoRotation rotation = jintToVideoRotation(j_rotation);
 
   // AdaptedVideoTrackSource handles applying rotation for I420 frames.

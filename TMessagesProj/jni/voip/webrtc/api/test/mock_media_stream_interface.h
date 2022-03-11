@@ -22,7 +22,7 @@ class MockAudioSource final
     : public rtc::RefCountedObject<AudioSourceInterface> {
  public:
   static rtc::scoped_refptr<MockAudioSource> Create() {
-    return new MockAudioSource();
+    return rtc::scoped_refptr<MockAudioSource>(new MockAudioSource());
   }
 
   MOCK_METHOD(void,
@@ -55,7 +55,7 @@ class MockAudioSource final
 class MockAudioTrack final : public rtc::RefCountedObject<AudioTrackInterface> {
  public:
   static rtc::scoped_refptr<MockAudioTrack> Create() {
-    return new MockAudioTrack();
+    return rtc::scoped_refptr<MockAudioTrack>(new MockAudioTrack());
   }
 
   MOCK_METHOD(void,
@@ -67,7 +67,7 @@ class MockAudioTrack final : public rtc::RefCountedObject<AudioTrackInterface> {
               (ObserverInterface * observer),
               (override));
   MOCK_METHOD(std::string, kind, (), (const, override));
-  MOCK_METHOD(std::string, id, (), (const override));
+  MOCK_METHOD(std::string, id, (), (const, override));
   MOCK_METHOD(bool, enabled, (), (const, override));
   MOCK_METHOD(bool, set_enabled, (bool enable), (override));
   MOCK_METHOD(TrackState, state, (), (const, override));

@@ -19,7 +19,6 @@
 
 #include "absl/types/optional.h"
 #include "rtc_base/checks.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace rtc {
 
@@ -27,13 +26,17 @@ namespace rtc {
 // fixed moving window.
 //
 // Window size is configured at constructor.
-// Samples can be added with |Add()| and max over current window is returned by
-// |MovingMax|. |current_time_ms| in successive calls to Add and MovingMax
+// Samples can be added with `Add()` and max over current window is returned by
+// `MovingMax`. `current_time_ms` in successive calls to Add and MovingMax
 // should never decrease as if it's a wallclock time.
 template <class T>
 class MovingMaxCounter {
  public:
   explicit MovingMaxCounter(int64_t window_length_ms);
+
+  MovingMaxCounter(const MovingMaxCounter&) = delete;
+  MovingMaxCounter& operator=(const MovingMaxCounter&) = delete;
+
   // Advances the current time, and adds a new sample. The new current time must
   // be at least as large as the old current time.
   void Add(const T& sample, int64_t current_time_ms);
@@ -57,7 +60,6 @@ class MovingMaxCounter {
 #if RTC_DCHECK_IS_ON
   int64_t last_call_time_ms_ = std::numeric_limits<int64_t>::min();
 #endif
-  RTC_DISALLOW_COPY_AND_ASSIGN(MovingMaxCounter);
 };
 
 template <class T>

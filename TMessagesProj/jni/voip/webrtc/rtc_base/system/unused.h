@@ -13,12 +13,16 @@
 
 // Prevent the compiler from warning about an unused variable. For example:
 //   int result = DoSomething();
-//   assert(result == 17);
+//   RTC_DCHECK(result == 17);
 //   RTC_UNUSED(result);
 // Note: In most cases it is better to remove the unused variable rather than
 // suppressing the compiler warning.
 #ifndef RTC_UNUSED
+#ifdef __cplusplus
 #define RTC_UNUSED(x) static_cast<void>(x)
+#else
+#define RTC_UNUSED(x) (void)(x)
+#endif
 #endif  // RTC_UNUSED
 
 #endif  // RTC_BASE_SYSTEM_UNUSED_H_

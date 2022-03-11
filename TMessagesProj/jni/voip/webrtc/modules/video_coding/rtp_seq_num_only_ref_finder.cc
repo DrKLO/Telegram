@@ -116,7 +116,7 @@ void RtpSeqNumOnlyRefFinder::RetryStashedFrames(
         case kHandOff:
           complete_frame = true;
           res.push_back(std::move(*frame_it));
-          ABSL_FALLTHROUGH_INTENDED;
+          [[fallthrough]];
         case kDrop:
           frame_it = stashed_frames_.erase(frame_it);
       }

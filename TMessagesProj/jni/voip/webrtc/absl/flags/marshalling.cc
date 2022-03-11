@@ -74,15 +74,16 @@ static int NumericBase(absl::string_view text) {
 }
 
 template <typename IntType>
-inline bool ParseFlagImpl(absl::string_view text, IntType* dst) {
+inline bool ParseFlagImpl(absl::string_view text, IntType& dst) {
   text = absl::StripAsciiWhitespace(text);
 
-  return absl::numbers_internal::safe_strtoi_base(text, dst, NumericBase(text));
+  return absl::numbers_internal::safe_strtoi_base(text, &dst,
+                                                  NumericBase(text));
 }
 
 bool AbslParseFlag(absl::string_view text, short* dst, std::string*) {
   int val;
-  if (!ParseFlagImpl(text, &val)) return false;
+  if (!ParseFlagImpl(text, val)) return false;
   if (static_cast<short>(val) != val)  // worked, but number out of range
     return false;
   *dst = static_cast<short>(val);
@@ -91,7 +92,7 @@ bool AbslParseFlag(absl::string_view text, short* dst, std::string*) {
 
 bool AbslParseFlag(absl::string_view text, unsigned short* dst, std::string*) {
   unsigned int val;
-  if (!ParseFlagImpl(text, &val)) return false;
+  if (!ParseFlagImpl(text, val)) return false;
   if (static_cast<unsigned short>(val) !=
       val)  // worked, but number out of range
     return false;
@@ -100,28 +101,28 @@ bool AbslParseFlag(absl::string_view text, unsigned short* dst, std::string*) {
 }
 
 bool AbslParseFlag(absl::string_view text, int* dst, std::string*) {
-  return ParseFlagImpl(text, dst);
+  return ParseFlagImpl(text, *dst);
 }
 
 bool AbslParseFlag(absl::string_view text, unsigned int* dst, std::string*) {
-  return ParseFlagImpl(text, dst);
+  return ParseFlagImpl(text, *dst);
 }
 
 bool AbslParseFlag(absl::string_view text, long* dst, std::string*) {
-  return ParseFlagImpl(text, dst);
+  return ParseFlagImpl(text, *dst);
 }
 
 bool AbslParseFlag(absl::string_view text, unsigned long* dst, std::string*) {
-  return ParseFlagImpl(text, dst);
+  return ParseFlagImpl(text, *dst);
 }
 
 bool AbslParseFlag(absl::string_view text, long long* dst, std::string*) {
-  return ParseFlagImpl(text, dst);
+  return ParseFlagImpl(text, *dst);
 }
 
 bool AbslParseFlag(absl::string_view text, unsigned long long* dst,
                    std::string*) {
-  return ParseFlagImpl(text, dst);
+  return ParseFlagImpl(text, *dst);
 }
 
 // --------------------------------------------------------------------

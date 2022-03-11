@@ -18,11 +18,13 @@
 #include "system_wrappers/include/field_trial.h"
 #include "api/video/builtin_video_bitrate_allocator_factory.h"
 #include "call/call.h"
-#include "modules/rtp_rtcp/source/rtp_utility.h"
+#include "modules/rtp_rtcp/source/rtp_util.h"
 #include "api/call/audio_sink.h"
 #include "modules/audio_processing/audio_buffer.h"
 #include "modules/audio_device/include/audio_device_factory.h"
-
+#ifdef WEBRTC_IOS
+#include "platform/darwin/iOS/tgcalls_audio_device_module_ios.h"
+#endif
 namespace tgcalls {
 namespace {
 
@@ -163,30 +165,30 @@ public:
     }
 
     virtual void OnFrame(const webrtc::VideoFrame& frame) override {
-        if (_impl) {
+        if (const auto strong = _impl.lock()) {
             if (_rewriteRotation) {
                 webrtc::VideoFrame updatedFrame = frame;
                 //updatedFrame.set_rotation(webrtc::VideoRotation::kVideoRotation_90);
-                _impl->OnFrame(updatedFrame);
+                strong->OnFrame(updatedFrame);
             } else {
-                _impl->OnFrame(frame);
+                strong->OnFrame(frame);
             }
         }
     }
 
     virtual void OnDiscardedFrame() override {
-        if (_impl) {
-            _impl->OnDiscardedFrame();
+        if (const auto strong = _impl.lock()) {
+            strong->OnDiscardedFrame();
         }
     }
 
-    void setSink(std::shared_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> impl) {
+    void setSink(std::weak_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> impl) {
         _impl = impl;
     }
 
 private:
     bool _rewriteRotation = false;
-    std::shared_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> _impl;
+    std::weak_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> _impl;
 
 };
 
@@ -312,7 +314,7 @@ _platformContext(platformContext) {
 
     webrtc::AudioProcessingBuilder builder;
     std::unique_ptr<AudioCapturePostProcessor> audioProcessor = std::make_unique<AudioCapturePostProcessor>([this](float level) {
-        this->_thread->PostTask(RTC_FROM_HERE, [this, level](){
+        this->_thread->PostTask([this, level](){
             auto strong = this;
             strong->_currentMyAudioLevel = level;
         });
@@ -405,9 +407,13 @@ _platformContext(platformContext) {
 
 rtc::scoped_refptr<webrtc::AudioDeviceModule> MediaManager::createAudioDeviceModule() {
 	const auto create = [&](webrtc::AudioDeviceModule::AudioLayer layer) {
+#ifdef WEBRTC_IOS
+        return rtc::make_ref_counted<webrtc::tgcalls_ios_adm::AudioDeviceModuleIOS>(false, false);
+#else
 		return webrtc::AudioDeviceModule::Create(
 			layer,
             _taskQueueFactory.get());
+#endif
 	};
 	const auto check = [&](const rtc::scoped_refptr<webrtc::AudioDeviceModule> &result) {
         return (result && result->Init() == 0) ? result : nullptr;
@@ -430,7 +436,7 @@ void MediaManager::start() {
     // Here we hope that thread outlives the sink
     rtc::Thread *thread = _thread;
     std::unique_ptr<AudioTrackSinkInterfaceImpl> incomingSink(new AudioTrackSinkInterfaceImpl([weak, thread](float level) {
-        thread->PostTask(RTC_FROM_HERE, [weak, level] {
+        thread->PostTask([weak, level] {
             if (const auto strong = weak.lock()) {
                 strong->_currentAudioLevel = level;
             }
@@ -539,7 +545,7 @@ void MediaManager::sendOutgoingMediaStateMessage() {
 
 void MediaManager::beginStatsTimer(int timeoutMs) {
     const auto weak = std::weak_ptr<MediaManager>(shared_from_this());
-    _thread->PostDelayedTask(RTC_FROM_HERE, [weak]() {
+    _thread->PostDelayedTask([weak]() {
         auto strong = weak.lock();
         if (!strong) {
             return;
@@ -550,7 +556,7 @@ void MediaManager::beginStatsTimer(int timeoutMs) {
 
 void MediaManager::beginLevelsTimer(int timeoutMs) {
     const auto weak = std::weak_ptr<MediaManager>(shared_from_this());
-    _thread->PostDelayedTask(RTC_FROM_HERE, [weak]() {
+    _thread->PostDelayedTask([weak]() {
         auto strong = weak.lock();
         if (!strong) {
             return;
@@ -647,7 +653,7 @@ void MediaManager::setSendVideo(std::shared_ptr<VideoCaptureInterface> videoCapt
         const auto object = GetVideoCaptureAssumingSameThread(_videoCapture.get());
         _isScreenCapture = object->isScreenCapture();
 		object->setStateUpdated([=](VideoState state) {
-			thread->PostTask(RTC_FROM_HERE, [=] {
+			thread->PostTask([=] {
 				if (const auto strong = weak.lock()) {
 					strong->setOutgoingVideoState(state);
 				}
@@ -908,13 +914,8 @@ void MediaManager::setOutgoingVideoState(VideoState state) {
 	sendOutgoingMediaStateMessage();
 }
 
-void MediaManager::setIncomingVideoOutput(std::shared_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink) {
+void MediaManager::setIncomingVideoOutput(std::weak_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink) {
     _incomingVideoSinkProxy->setSink(sink);
-}
-
-static bool IsRtcp(const uint8_t* packet, size_t length) {
-    webrtc::RtpUtility::RtpHeaderParser rtp_parser(packet, length);
-    return rtp_parser.RTCP();
 }
 
 void MediaManager::receiveMessage(DecryptedMessage &&message) {
@@ -922,14 +923,22 @@ void MediaManager::receiveMessage(DecryptedMessage &&message) {
 	if (const auto formats = absl::get_if<VideoFormatsMessage>(data)) {
 		setPeerVideoFormats(std::move(*formats));
 	} else if (const auto audio = absl::get_if<AudioDataMessage>(data)) {
-        if (IsRtcp(audio->data.data(), audio->data.size())) {
+        if (webrtc::IsRtcpPacket(audio->data)) {
             RTC_LOG(LS_VERBOSE) << "Deliver audio RTCP";
         }
-        _call->Receiver()->DeliverPacket(webrtc::MediaType::AUDIO, audio->data, -1);
+        if (webrtc::IsRtcpPacket(audio->data)) {
+            _call->Receiver()->DeliverPacket(webrtc::MediaType::ANY, audio->data, -1);
+        } else {
+            _call->Receiver()->DeliverPacket(webrtc::MediaType::AUDIO, audio->data, -1);
+        }
 	} else if (const auto video = absl::get_if<VideoDataMessage>(data)) {
 		if (_videoChannel) {
 			if (_readyToReceiveVideo) {
-                _call->Receiver()->DeliverPacket(webrtc::MediaType::VIDEO, video->data, -1);
+                if (webrtc::IsRtcpPacket(video->data)) {
+                    _call->Receiver()->DeliverPacket(webrtc::MediaType::ANY, video->data, -1);
+                } else {
+                    _call->Receiver()->DeliverPacket(webrtc::MediaType::VIDEO, video->data, -1);
+                }
 			} else {
 				// maybe we need to queue packets for some time?
 			}

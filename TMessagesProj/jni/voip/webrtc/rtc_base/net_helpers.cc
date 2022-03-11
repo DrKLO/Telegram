@@ -16,7 +16,7 @@
 #include <ws2spi.h>
 #include <ws2tcpip.h>
 
-#include "rtc_base/win32.h"
+#include "rtc_base/win/windows_version.h"
 #endif
 #if defined(WEBRTC_POSIX) && !defined(__native_client__)
 #include <arpa/inet.h>
@@ -70,10 +70,10 @@ bool HasIPv6Enabled() {
   // WinUWP always has IPv6 capability.
   return true;
 #elif defined(WEBRTC_WIN)
-  if (IsWindowsVistaOrLater()) {
+  if (rtc::rtc_win::GetVersion() >= rtc::rtc_win::Version::VERSION_VISTA) {
     return true;
   }
-  if (!IsWindowsXpOrLater()) {
+  if (rtc::rtc_win::GetVersion() < rtc::rtc_win::Version::VERSION_XP) {
     return false;
   }
   DWORD protbuff_size = 4096;

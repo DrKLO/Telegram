@@ -64,7 +64,4 @@ static jint Java_VideoCodecStatus_getNumber(JNIEnv* env, const base::android::Ja
 }  // namespace jni
 }  // namespace  webrtc
 
-// Step 4: Generated test functions (optional).
-
-
 #endif  // org_webrtc_VideoCodecStatus_JNI

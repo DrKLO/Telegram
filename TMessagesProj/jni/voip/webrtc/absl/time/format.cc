@@ -13,9 +13,12 @@
 // limitations under the License.
 
 #include <string.h>
+
 #include <cctype>
 #include <cstdint>
 
+#include "absl/strings/match.h"
+#include "absl/strings/string_view.h"
 #include "absl/time/internal/cctz/include/cctz/time_zone.h"
 #include "absl/time/time.h"
 
@@ -24,14 +27,11 @@ namespace cctz = absl::time_internal::cctz;
 namespace absl {
 ABSL_NAMESPACE_BEGIN
 
-ABSL_DLL extern const char RFC3339_full[] =
-    "%Y-%m-%dT%H:%M:%E*S%Ez";
-ABSL_DLL extern const char RFC3339_sec[] = "%Y-%m-%dT%H:%M:%S%Ez";
+ABSL_DLL extern const char RFC3339_full[] = "%Y-%m-%d%ET%H:%M:%E*S%Ez";
+ABSL_DLL extern const char RFC3339_sec[] = "%Y-%m-%d%ET%H:%M:%S%Ez";
 
-ABSL_DLL extern const char RFC1123_full[] =
-    "%a, %d %b %E4Y %H:%M:%S %z";
-ABSL_DLL extern const char RFC1123_no_wday[] =
-    "%d %b %E4Y %H:%M:%S %z";
+ABSL_DLL extern const char RFC1123_full[] = "%a, %d %b %E4Y %H:%M:%S %z";
+ABSL_DLL extern const char RFC1123_no_wday[] = "%d %b %E4Y %H:%M:%S %z";
 
 namespace {
 
@@ -71,12 +71,12 @@ absl::Time Join(const cctz_parts& parts) {
 
 }  // namespace
 
-std::string FormatTime(const std::string& format, absl::Time t,
+std::string FormatTime(absl::string_view format, absl::Time t,
                        absl::TimeZone tz) {
-  if (t == absl::InfiniteFuture()) return kInfiniteFutureStr;
-  if (t == absl::InfinitePast()) return kInfinitePastStr;
+  if (t == absl::InfiniteFuture()) return std::string(kInfiniteFutureStr);
+  if (t == absl::InfinitePast()) return std::string(kInfinitePastStr);
   const auto parts = Split(t);
-  return cctz::detail::format(format, parts.sec, parts.fem,
+  return cctz::detail::format(std::string(format), parts.sec, parts.fem,
                               cctz::time_zone(tz));
 }
 
@@ -88,42 +88,50 @@ std::string FormatTime(absl::Time t) {
   return absl::FormatTime(RFC3339_full, t, absl::LocalTimeZone());
 }
 
-bool ParseTime(const std::string& format, const std::string& input,
+bool ParseTime(absl::string_view format, absl::string_view input,
                absl::Time* time, std::string* err) {
   return absl::ParseTime(format, input, absl::UTCTimeZone(), time, err);
 }
 
 // If the input string does not contain an explicit UTC offset, interpret
 // the fields with respect to the given TimeZone.
-bool ParseTime(const std::string& format, const std::string& input,
+bool ParseTime(absl::string_view format, absl::string_view input,
                absl::TimeZone tz, absl::Time* time, std::string* err) {
-  const char* data = input.c_str();
-  while (std::isspace(*data)) ++data;
-
-  size_t inf_size = strlen(kInfiniteFutureStr);
-  if (strncmp(data, kInfiniteFutureStr, inf_size) == 0) {
-    const char* new_data = data + inf_size;
-    while (std::isspace(*new_data)) ++new_data;
-    if (*new_data == '\0') {
-      *time = InfiniteFuture();
-      return true;
+  auto strip_leading_space = [](absl::string_view* sv) {
+    while (!sv->empty()) {
+      if (!std::isspace(sv->front())) return;
+      sv->remove_prefix(1);
     }
-  }
+  };
 
-  inf_size = strlen(kInfinitePastStr);
-  if (strncmp(data, kInfinitePastStr, inf_size) == 0) {
-    const char* new_data = data + inf_size;
-    while (std::isspace(*new_data)) ++new_data;
-    if (*new_data == '\0') {
-      *time = InfinitePast();
-      return true;
+  // Portable toolchains means we don't get nice constexpr here.
+  struct Literal {
+    const char* name;
+    size_t size;
+    absl::Time value;
+  };
+  static Literal literals[] = {
+      {kInfiniteFutureStr, strlen(kInfiniteFutureStr), InfiniteFuture()},
+      {kInfinitePastStr, strlen(kInfinitePastStr), InfinitePast()},
+  };
+  strip_leading_space(&input);
+  for (const auto& lit : literals) {
+    if (absl::StartsWith(input, absl::string_view(lit.name, lit.size))) {
+      absl::string_view tail = input;
+      tail.remove_prefix(lit.size);
+      strip_leading_space(&tail);
+      if (tail.empty()) {
+        *time = lit.value;
+        return true;
+      }
     }
   }
 
   std::string error;
   cctz_parts parts;
-  const bool b = cctz::detail::parse(format, input, cctz::time_zone(tz),
-                                     &parts.sec, &parts.fem, &error);
+  const bool b =
+      cctz::detail::parse(std::string(format), std::string(input),
+                          cctz::time_zone(tz), &parts.sec, &parts.fem, &error);
   if (b) {
     *time = Join(parts);
   } else if (err != nullptr) {
@@ -134,8 +142,7 @@ bool ParseTime(const std::string& format, const std::string& input,
 
 // Functions required to support absl::Time flags.
 bool AbslParseFlag(absl::string_view text, absl::Time* t, std::string* error) {
-  return absl::ParseTime(RFC3339_full, std::string(text), absl::UTCTimeZone(),
-                         t, error);
+  return absl::ParseTime(RFC3339_full, text, absl::UTCTimeZone(), t, error);
 }
 
 std::string AbslUnparseFlag(absl::Time t) {

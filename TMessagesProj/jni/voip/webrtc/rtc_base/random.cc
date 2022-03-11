@@ -49,14 +49,14 @@ int32_t Random::Rand(int32_t low, int32_t high) {
 template <>
 float Random::Rand<float>() {
   double result = NextOutput() - 1;
-  result = result / 0xFFFFFFFFFFFFFFFEull;
+  result = result / static_cast<double>(0xFFFFFFFFFFFFFFFFull);
   return static_cast<float>(result);
 }
 
 template <>
 double Random::Rand<double>() {
   double result = NextOutput() - 1;
-  result = result / 0xFFFFFFFFFFFFFFFEull;
+  result = result / static_cast<double>(0xFFFFFFFFFFFFFFFFull);
   return result;
 }
 
@@ -72,8 +72,10 @@ double Random::Gaussian(double mean, double standard_deviation) {
   // in the range [1, 2^64-1]. Normally this behavior is a bit frustrating,
   // but here it is exactly what we need.
   const double kPi = 3.14159265358979323846;
-  double u1 = static_cast<double>(NextOutput()) / 0xFFFFFFFFFFFFFFFFull;
-  double u2 = static_cast<double>(NextOutput()) / 0xFFFFFFFFFFFFFFFFull;
+  double u1 = static_cast<double>(NextOutput()) /
+              static_cast<double>(0xFFFFFFFFFFFFFFFFull);
+  double u2 = static_cast<double>(NextOutput()) /
+              static_cast<double>(0xFFFFFFFFFFFFFFFFull);
   return mean + standard_deviation * sqrt(-2 * log(u1)) * cos(2 * kPi * u2);
 }
 

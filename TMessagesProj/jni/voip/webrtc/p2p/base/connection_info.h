@@ -41,12 +41,15 @@ struct ConnectionInfo {
   bool timeout;              // Has this connection timed out?
   bool new_connection;       // Is this a newly created connection?
   size_t rtt;                // The STUN RTT for this connection.
-  size_t sent_total_bytes;   // Total bytes sent on this connection.
+  size_t sent_discarded_bytes;  // Number of outgoing bytes discarded due to
+                                // socket errors.
+  size_t sent_total_bytes;      // Total bytes sent on this connection. Does not
+                                // include discarded bytes.
   size_t sent_bytes_second;  // Bps over the last measurement interval.
   size_t sent_discarded_packets;  // Number of outgoing packets discarded due to
                                   // socket errors.
   size_t sent_total_packets;  // Number of total outgoing packets attempted for
-                              // sending.
+                              // sending, including discarded packets.
   size_t sent_ping_requests_total;  // Number of STUN ping request sent.
   size_t sent_ping_requests_before_first_response;  // Number of STUN ping
   // sent before receiving the first response.

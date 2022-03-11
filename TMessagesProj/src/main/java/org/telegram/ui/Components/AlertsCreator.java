@@ -59,6 +59,8 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.RequiresApi;
+
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -116,9 +118,68 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 
-import androidx.annotation.RequiresApi;
-
 public class AlertsCreator {
+    public final static int PERMISSIONS_REQUEST_TOP_ICON_SIZE = 72;
+
+    public static Dialog createForgotPasscodeDialog(Context ctx) {
+        return new AlertDialog.Builder(ctx)
+                .setTitle(LocaleController.getString(R.string.ForgotPasscode))
+                .setMessage(LocaleController.getString(R.string.ForgotPasscodeInfo))
+                .setPositiveButton(LocaleController.getString(R.string.Close), null)
+                .create();
+    }
+
+    public static Dialog createLocationRequiredDialog(Context ctx, boolean friends) {
+        return new AlertDialog.Builder(ctx)
+                .setMessage(AndroidUtilities.replaceTags(friends ? LocaleController.getString("PermissionNoLocationFriends", R.string.PermissionNoLocationFriends) :
+                        LocaleController.getString("PermissionNoLocationPeopleNearby", R.string.PermissionNoLocationPeopleNearby)))
+                .setTopAnimation(R.raw.permission_request_location, PERMISSIONS_REQUEST_TOP_ICON_SIZE, false, Theme.getColor(Theme.key_dialogTopBackground))
+                .setPositiveButton(LocaleController.getString("PermissionOpenSettings", R.string.PermissionOpenSettings), (dialogInterface, i) -> {
+                    try {
+                        Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                        intent.setData(Uri.parse("package:" + ApplicationLoader.applicationContext.getPackageName()));
+                        ctx.startActivity(intent);
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                })
+                .setNegativeButton(LocaleController.getString("ContactsPermissionAlertNotNow", R.string.ContactsPermissionAlertNotNow), null)
+                .create();
+    }
+
+    public static Dialog createBackgroundActivityDialog(Context ctx) {
+        return new AlertDialog.Builder(ctx)
+                .setTitle(LocaleController.getString("AllowBackgroundActivity", R.string.AllowBackgroundActivity))
+                .setMessage(LocaleController.getString("AllowBackgroundActivityInfo", R.string.AllowBackgroundActivityInfo))
+                .setTopAnimation(R.raw.permission_request_apk, PERMISSIONS_REQUEST_TOP_ICON_SIZE, false, Theme.getColor(Theme.key_dialogTopBackground))
+                .setPositiveButton(LocaleController.getString("PermissionOpenSettings", R.string.PermissionOpenSettings), (dialogInterface, i) -> {
+                    try {
+                        Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                        intent.setData(Uri.parse("package:" + ApplicationLoader.applicationContext.getPackageName()));
+                        ctx.startActivity(intent);
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                })
+                .setNegativeButton(LocaleController.getString("ContactsPermissionAlertNotNow", R.string.ContactsPermissionAlertNotNow), null)
+                .create();
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    public static Dialog createApkRestrictedDialog(Context ctx, Theme.ResourcesProvider resourcesProvider) {
+        return new AlertDialog.Builder(ctx, resourcesProvider)
+                .setMessage(LocaleController.getString("ApkRestricted", R.string.ApkRestricted))
+                .setTopAnimation(R.raw.permission_request_apk, PERMISSIONS_REQUEST_TOP_ICON_SIZE, false, Theme.getColor(Theme.key_dialogTopBackground))
+                .setPositiveButton(LocaleController.getString("PermissionOpenSettings", R.string.PermissionOpenSettings), (dialogInterface, i) -> {
+                    try {
+                        ctx.startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + ctx.getPackageName())));
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                })
+                .setNegativeButton(LocaleController.getString("ContactsPermissionAlertNotNow", R.string.ContactsPermissionAlertNotNow), null)
+                .create();
+    }
 
     public static Dialog processError(int currentAccount, TLRPC.TL_error error, BaseFragment fragment, TLObject request, Object... args) {
         if (error.code == 406 || error.text == null) {
@@ -1087,7 +1148,7 @@ public class AlertsCreator {
         }
         if (supportUser == null) {
             final AlertDialog progressDialog = new AlertDialog(fragment.getParentActivity(), 3);
-            progressDialog.setCanCacnel(false);
+            progressDialog.setCanCancel(false);
             progressDialog.show();
             TLRPC.TL_help_getSupport req = new TLRPC.TL_help_getSupport();
             ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
@@ -3546,8 +3607,8 @@ public class AlertsCreator {
         builder.setTopView(frameLayout);
         float aspectRatio = 354f / 936f;
         builder.setTopViewAspectRatio(aspectRatio);
-        builder.setMessage(AndroidUtilities.replaceTags(LocaleController.getString("PermissionBackgroundLocation", R.string.PermissionBackgroundLocation)));
-        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialog, which) -> {
+        builder.setMessage(AndroidUtilities.replaceTags(LocaleController.getString(R.string.PermissionBackgroundLocation)));
+        builder.setPositiveButton(LocaleController.getString(R.string.Continue), (dialog, which) -> {
             if (activity.checkSelfPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 activity.requestPermissions(new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION}, 30);
             }
@@ -3683,7 +3744,7 @@ public class AlertsCreator {
 
     public static AlertDialog.Builder createContactsPermissionDialog(Activity parentActivity, MessagesStorage.IntCallback callback) {
         AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
-        builder.setTopImage(R.drawable.permissions_contacts, Theme.getColor(Theme.key_dialogTopBackground));
+        builder.setTopAnimation(R.raw.permission_request_contacts, PERMISSIONS_REQUEST_TOP_ICON_SIZE, false, Theme.getColor(Theme.key_dialogTopBackground));
         builder.setMessage(AndroidUtilities.replaceTags(LocaleController.getString("ContactsPermissionAlert", R.string.ContactsPermissionAlert)));
         builder.setPositiveButton(LocaleController.getString("ContactsPermissionAlertContinue", R.string.ContactsPermissionAlertContinue), (dialog, which) -> callback.run(1));
         builder.setNegativeButton(LocaleController.getString("ContactsPermissionAlertNotNow", R.string.ContactsPermissionAlertNotNow), (dialog, which) -> callback.run(0));
@@ -4490,7 +4551,8 @@ public class AlertsCreator {
         }
         Context context = fragment.getParentActivity();
         final EditTextBoldCursor editText = new EditTextBoldCursor(context);
-        editText.setBackgroundDrawable(Theme.createEditTextDrawable(context, true));
+        editText.setBackground(null);
+        editText.setLineColors(Theme.getColor(Theme.key_dialogInputField), Theme.getColor(Theme.key_dialogInputFieldActivated), Theme.getColor(Theme.key_dialogTextRed2));
 
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         builder.setTitle(LocaleController.getString("NewTheme", R.string.NewTheme));

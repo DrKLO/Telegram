@@ -61,6 +61,10 @@ extern "C" void* __mmap2(void*, size_t, int, int, int, size_t);
 #endif
 #endif  // __BIONIC__
 
+#if defined(__NR_mmap2) && !defined(SYS_mmap2)
+#define SYS_mmap2 __NR_mmap2
+#endif
+
 namespace absl {
 ABSL_NAMESPACE_BEGIN
 namespace base_internal {
@@ -70,9 +74,13 @@ namespace base_internal {
 inline void* DirectMmap(void* start, size_t length, int prot, int flags, int fd,
                         off64_t offset) noexcept {
 #if defined(__i386__) || defined(__ARM_ARCH_3__) || defined(__ARM_EABI__) || \
+    defined(__m68k__) || defined(__sh__) ||                                  \
+    (defined(__hppa__) && !defined(__LP64__)) ||                             \
     (defined(__mips__) && _MIPS_SIM == _MIPS_SIM_ABI32) ||                   \
     (defined(__PPC__) && !defined(__PPC64__)) ||                             \
-    (defined(__s390__) && !defined(__s390x__))
+    (defined(__riscv) && __riscv_xlen == 32) ||                              \
+    (defined(__s390__) && !defined(__s390x__)) ||                            \
+    (defined(__sparc__) && !defined(__arch64__))
   // On these architectures, implement mmap with mmap2.
   static int pagesize = 0;
   if (pagesize == 0) {

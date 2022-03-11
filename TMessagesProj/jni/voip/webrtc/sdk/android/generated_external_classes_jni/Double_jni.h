@@ -48,8 +48,8 @@ namespace JNI_Double {
 
 
 static std::atomic<jmethodID> g_java_lang_Double_toStringJLS_D(nullptr);
-static base::android::ScopedJavaLocalRef<jstring> Java_Double_toStringJLS_D(JNIEnv* env, jdouble p0)
-    __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jstring> Java_Double_toStringJLS_D(JNIEnv*
+    env, jdouble p0);
 static base::android::ScopedJavaLocalRef<jstring> Java_Double_toStringJLS_D(JNIEnv* env, jdouble p0)
     {
   jclass clazz = java_lang_Double_clazz(env);
@@ -72,8 +72,8 @@ static base::android::ScopedJavaLocalRef<jstring> Java_Double_toStringJLS_D(JNIE
 }
 
 static std::atomic<jmethodID> g_java_lang_Double_toHexString(nullptr);
-static base::android::ScopedJavaLocalRef<jstring> Java_Double_toHexString(JNIEnv* env, jdouble p0)
-    __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jstring> Java_Double_toHexString(JNIEnv*
+    env, jdouble p0);
 static base::android::ScopedJavaLocalRef<jstring> Java_Double_toHexString(JNIEnv* env, jdouble p0) {
   jclass clazz = java_lang_Double_clazz(env);
   CHECK_CLAZZ(env, clazz,
@@ -95,8 +95,8 @@ static base::android::ScopedJavaLocalRef<jstring> Java_Double_toHexString(JNIEnv
 }
 
 static std::atomic<jmethodID> g_java_lang_Double_valueOfJLD_JLS(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_Double_valueOfJLD_JLS(JNIEnv* env, const
-    base::android::JavaRef<jstring>& p0) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject>
+    Java_Double_valueOfJLD_JLS(JNIEnv* env, const base::android::JavaRef<jstring>& p0);
 static base::android::ScopedJavaLocalRef<jobject> Java_Double_valueOfJLD_JLS(JNIEnv* env, const
     base::android::JavaRef<jstring>& p0) {
   jclass clazz = java_lang_Double_clazz(env);
@@ -119,8 +119,8 @@ static base::android::ScopedJavaLocalRef<jobject> Java_Double_valueOfJLD_JLS(JNI
 }
 
 static std::atomic<jmethodID> g_java_lang_Double_valueOfJLD_D(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_Double_valueOfJLD_D(JNIEnv* env, jdouble p0)
-    __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject> Java_Double_valueOfJLD_D(JNIEnv*
+    env, jdouble p0);
 static base::android::ScopedJavaLocalRef<jobject> Java_Double_valueOfJLD_D(JNIEnv* env, jdouble p0)
     {
   jclass clazz = java_lang_Double_clazz(env);
@@ -143,8 +143,8 @@ static base::android::ScopedJavaLocalRef<jobject> Java_Double_valueOfJLD_D(JNIEn
 }
 
 static std::atomic<jmethodID> g_java_lang_Double_parseDouble(nullptr);
-static jdouble Java_Double_parseDouble(JNIEnv* env, const base::android::JavaRef<jstring>& p0)
-    __attribute__ ((unused));
+[[maybe_unused]] static jdouble Java_Double_parseDouble(JNIEnv* env, const
+    base::android::JavaRef<jstring>& p0);
 static jdouble Java_Double_parseDouble(JNIEnv* env, const base::android::JavaRef<jstring>& p0) {
   jclass clazz = java_lang_Double_clazz(env);
   CHECK_CLAZZ(env, clazz,
@@ -166,7 +166,7 @@ static jdouble Java_Double_parseDouble(JNIEnv* env, const base::android::JavaRef
 }
 
 static std::atomic<jmethodID> g_java_lang_Double_isNaNZ_D(nullptr);
-static jboolean Java_Double_isNaNZ_D(JNIEnv* env, jdouble p0) __attribute__ ((unused));
+[[maybe_unused]] static jboolean Java_Double_isNaNZ_D(JNIEnv* env, jdouble p0);
 static jboolean Java_Double_isNaNZ_D(JNIEnv* env, jdouble p0) {
   jclass clazz = java_lang_Double_clazz(env);
   CHECK_CLAZZ(env, clazz,
@@ -188,7 +188,7 @@ static jboolean Java_Double_isNaNZ_D(JNIEnv* env, jdouble p0) {
 }
 
 static std::atomic<jmethodID> g_java_lang_Double_isInfiniteZ_D(nullptr);
-static jboolean Java_Double_isInfiniteZ_D(JNIEnv* env, jdouble p0) __attribute__ ((unused));
+[[maybe_unused]] static jboolean Java_Double_isInfiniteZ_D(JNIEnv* env, jdouble p0);
 static jboolean Java_Double_isInfiniteZ_D(JNIEnv* env, jdouble p0) {
   jclass clazz = java_lang_Double_clazz(env);
   CHECK_CLAZZ(env, clazz,
@@ -210,7 +210,7 @@ static jboolean Java_Double_isInfiniteZ_D(JNIEnv* env, jdouble p0) {
 }
 
 static std::atomic<jmethodID> g_java_lang_Double_isFinite(nullptr);
-static jboolean Java_Double_isFinite(JNIEnv* env, jdouble p0) __attribute__ ((unused));
+[[maybe_unused]] static jboolean Java_Double_isFinite(JNIEnv* env, jdouble p0);
 static jboolean Java_Double_isFinite(JNIEnv* env, jdouble p0) {
   jclass clazz = java_lang_Double_clazz(env);
   CHECK_CLAZZ(env, clazz,
@@ -232,8 +232,8 @@ static jboolean Java_Double_isFinite(JNIEnv* env, jdouble p0) {
 }
 
 static std::atomic<jmethodID> g_java_lang_Double_isNaNZ(nullptr);
-static jboolean Java_Double_isNaNZ(JNIEnv* env, const base::android::JavaRef<jobject>& obj)
-    __attribute__ ((unused));
+[[maybe_unused]] static jboolean Java_Double_isNaNZ(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj);
 static jboolean Java_Double_isNaNZ(JNIEnv* env, const base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_lang_Double_clazz(env);
   CHECK_CLAZZ(env, obj.obj(),
@@ -255,8 +255,8 @@ static jboolean Java_Double_isNaNZ(JNIEnv* env, const base::android::JavaRef<job
 }
 
 static std::atomic<jmethodID> g_java_lang_Double_isInfiniteZ(nullptr);
-static jboolean Java_Double_isInfiniteZ(JNIEnv* env, const base::android::JavaRef<jobject>& obj)
-    __attribute__ ((unused));
+[[maybe_unused]] static jboolean Java_Double_isInfiniteZ(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj);
 static jboolean Java_Double_isInfiniteZ(JNIEnv* env, const base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_lang_Double_clazz(env);
   CHECK_CLAZZ(env, obj.obj(),
@@ -278,8 +278,8 @@ static jboolean Java_Double_isInfiniteZ(JNIEnv* env, const base::android::JavaRe
 }
 
 static std::atomic<jmethodID> g_java_lang_Double_toStringJLS(nullptr);
-static base::android::ScopedJavaLocalRef<jstring> Java_Double_toStringJLS(JNIEnv* env, const
-    base::android::JavaRef<jobject>& obj) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jstring> Java_Double_toStringJLS(JNIEnv*
+    env, const base::android::JavaRef<jobject>& obj);
 static base::android::ScopedJavaLocalRef<jstring> Java_Double_toStringJLS(JNIEnv* env, const
     base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_lang_Double_clazz(env);
@@ -302,8 +302,8 @@ static base::android::ScopedJavaLocalRef<jstring> Java_Double_toStringJLS(JNIEnv
 }
 
 static std::atomic<jmethodID> g_java_lang_Double_byteValue(nullptr);
-static jbyte Java_Double_byteValue(JNIEnv* env, const base::android::JavaRef<jobject>& obj)
-    __attribute__ ((unused));
+[[maybe_unused]] static jbyte Java_Double_byteValue(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj);
 static jbyte Java_Double_byteValue(JNIEnv* env, const base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_lang_Double_clazz(env);
   CHECK_CLAZZ(env, obj.obj(),
@@ -325,8 +325,8 @@ static jbyte Java_Double_byteValue(JNIEnv* env, const base::android::JavaRef<job
 }
 
 static std::atomic<jmethodID> g_java_lang_Double_shortValue(nullptr);
-static jshort Java_Double_shortValue(JNIEnv* env, const base::android::JavaRef<jobject>& obj)
-    __attribute__ ((unused));
+[[maybe_unused]] static jshort Java_Double_shortValue(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj);
 static jshort Java_Double_shortValue(JNIEnv* env, const base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_lang_Double_clazz(env);
   CHECK_CLAZZ(env, obj.obj(),
@@ -348,8 +348,8 @@ static jshort Java_Double_shortValue(JNIEnv* env, const base::android::JavaRef<j
 }
 
 static std::atomic<jmethodID> g_java_lang_Double_intValue(nullptr);
-static jint Java_Double_intValue(JNIEnv* env, const base::android::JavaRef<jobject>& obj)
-    __attribute__ ((unused));
+[[maybe_unused]] static jint Java_Double_intValue(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj);
 static jint Java_Double_intValue(JNIEnv* env, const base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_lang_Double_clazz(env);
   CHECK_CLAZZ(env, obj.obj(),
@@ -371,8 +371,8 @@ static jint Java_Double_intValue(JNIEnv* env, const base::android::JavaRef<jobje
 }
 
 static std::atomic<jmethodID> g_java_lang_Double_longValue(nullptr);
-static jlong Java_Double_longValue(JNIEnv* env, const base::android::JavaRef<jobject>& obj)
-    __attribute__ ((unused));
+[[maybe_unused]] static jlong Java_Double_longValue(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj);
 static jlong Java_Double_longValue(JNIEnv* env, const base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_lang_Double_clazz(env);
   CHECK_CLAZZ(env, obj.obj(),
@@ -394,8 +394,8 @@ static jlong Java_Double_longValue(JNIEnv* env, const base::android::JavaRef<job
 }
 
 static std::atomic<jmethodID> g_java_lang_Double_floatValue(nullptr);
-static jfloat Java_Double_floatValue(JNIEnv* env, const base::android::JavaRef<jobject>& obj)
-    __attribute__ ((unused));
+[[maybe_unused]] static jfloat Java_Double_floatValue(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj);
 static jfloat Java_Double_floatValue(JNIEnv* env, const base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_lang_Double_clazz(env);
   CHECK_CLAZZ(env, obj.obj(),
@@ -417,8 +417,8 @@ static jfloat Java_Double_floatValue(JNIEnv* env, const base::android::JavaRef<j
 }
 
 static std::atomic<jmethodID> g_java_lang_Double_doubleValue(nullptr);
-static jdouble Java_Double_doubleValue(JNIEnv* env, const base::android::JavaRef<jobject>& obj)
-    __attribute__ ((unused));
+[[maybe_unused]] static jdouble Java_Double_doubleValue(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj);
 static jdouble Java_Double_doubleValue(JNIEnv* env, const base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_lang_Double_clazz(env);
   CHECK_CLAZZ(env, obj.obj(),
@@ -440,8 +440,8 @@ static jdouble Java_Double_doubleValue(JNIEnv* env, const base::android::JavaRef
 }
 
 static std::atomic<jmethodID> g_java_lang_Double_hashCodeI(nullptr);
-static jint Java_Double_hashCodeI(JNIEnv* env, const base::android::JavaRef<jobject>& obj)
-    __attribute__ ((unused));
+[[maybe_unused]] static jint Java_Double_hashCodeI(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj);
 static jint Java_Double_hashCodeI(JNIEnv* env, const base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_lang_Double_clazz(env);
   CHECK_CLAZZ(env, obj.obj(),
@@ -463,7 +463,7 @@ static jint Java_Double_hashCodeI(JNIEnv* env, const base::android::JavaRef<jobj
 }
 
 static std::atomic<jmethodID> g_java_lang_Double_hashCodeI_D(nullptr);
-static jint Java_Double_hashCodeI_D(JNIEnv* env, jdouble p0) __attribute__ ((unused));
+[[maybe_unused]] static jint Java_Double_hashCodeI_D(JNIEnv* env, jdouble p0);
 static jint Java_Double_hashCodeI_D(JNIEnv* env, jdouble p0) {
   jclass clazz = java_lang_Double_clazz(env);
   CHECK_CLAZZ(env, clazz,
@@ -485,8 +485,8 @@ static jint Java_Double_hashCodeI_D(JNIEnv* env, jdouble p0) {
 }
 
 static std::atomic<jmethodID> g_java_lang_Double_equals(nullptr);
-static jboolean Java_Double_equals(JNIEnv* env, const base::android::JavaRef<jobject>& obj, const
-    base::android::JavaRef<jobject>& p0) __attribute__ ((unused));
+[[maybe_unused]] static jboolean Java_Double_equals(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobject>& p0);
 static jboolean Java_Double_equals(JNIEnv* env, const base::android::JavaRef<jobject>& obj, const
     base::android::JavaRef<jobject>& p0) {
   jclass clazz = java_lang_Double_clazz(env);
@@ -509,7 +509,7 @@ static jboolean Java_Double_equals(JNIEnv* env, const base::android::JavaRef<job
 }
 
 static std::atomic<jmethodID> g_java_lang_Double_doubleToLongBits(nullptr);
-static jlong Java_Double_doubleToLongBits(JNIEnv* env, jdouble p0) __attribute__ ((unused));
+[[maybe_unused]] static jlong Java_Double_doubleToLongBits(JNIEnv* env, jdouble p0);
 static jlong Java_Double_doubleToLongBits(JNIEnv* env, jdouble p0) {
   jclass clazz = java_lang_Double_clazz(env);
   CHECK_CLAZZ(env, clazz,
@@ -531,7 +531,7 @@ static jlong Java_Double_doubleToLongBits(JNIEnv* env, jdouble p0) {
 }
 
 static std::atomic<jmethodID> g_java_lang_Double_doubleToRawLongBits(nullptr);
-static jlong Java_Double_doubleToRawLongBits(JNIEnv* env, jdouble p0) __attribute__ ((unused));
+[[maybe_unused]] static jlong Java_Double_doubleToRawLongBits(JNIEnv* env, jdouble p0);
 static jlong Java_Double_doubleToRawLongBits(JNIEnv* env, jdouble p0) {
   jclass clazz = java_lang_Double_clazz(env);
   CHECK_CLAZZ(env, clazz,
@@ -553,7 +553,7 @@ static jlong Java_Double_doubleToRawLongBits(JNIEnv* env, jdouble p0) {
 }
 
 static std::atomic<jmethodID> g_java_lang_Double_longBitsToDouble(nullptr);
-static jdouble Java_Double_longBitsToDouble(JNIEnv* env, jlong p0) __attribute__ ((unused));
+[[maybe_unused]] static jdouble Java_Double_longBitsToDouble(JNIEnv* env, jlong p0);
 static jdouble Java_Double_longBitsToDouble(JNIEnv* env, jlong p0) {
   jclass clazz = java_lang_Double_clazz(env);
   CHECK_CLAZZ(env, clazz,
@@ -575,8 +575,8 @@ static jdouble Java_Double_longBitsToDouble(JNIEnv* env, jlong p0) {
 }
 
 static std::atomic<jmethodID> g_java_lang_Double_compareToI_JLD(nullptr);
-static jint Java_Double_compareToI_JLD(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
-    const base::android::JavaRef<jobject>& p0) __attribute__ ((unused));
+[[maybe_unused]] static jint Java_Double_compareToI_JLD(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobject>& p0);
 static jint Java_Double_compareToI_JLD(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
     const base::android::JavaRef<jobject>& p0) {
   jclass clazz = java_lang_Double_clazz(env);
@@ -599,8 +599,8 @@ static jint Java_Double_compareToI_JLD(JNIEnv* env, const base::android::JavaRef
 }
 
 static std::atomic<jmethodID> g_java_lang_Double_compare(nullptr);
-static jint Java_Double_compare(JNIEnv* env, jdouble p0,
-    jdouble p1) __attribute__ ((unused));
+[[maybe_unused]] static jint Java_Double_compare(JNIEnv* env, jdouble p0,
+    jdouble p1);
 static jint Java_Double_compare(JNIEnv* env, jdouble p0,
     jdouble p1) {
   jclass clazz = java_lang_Double_clazz(env);
@@ -623,8 +623,8 @@ static jint Java_Double_compare(JNIEnv* env, jdouble p0,
 }
 
 static std::atomic<jmethodID> g_java_lang_Double_sum(nullptr);
-static jdouble Java_Double_sum(JNIEnv* env, jdouble p0,
-    jdouble p1) __attribute__ ((unused));
+[[maybe_unused]] static jdouble Java_Double_sum(JNIEnv* env, jdouble p0,
+    jdouble p1);
 static jdouble Java_Double_sum(JNIEnv* env, jdouble p0,
     jdouble p1) {
   jclass clazz = java_lang_Double_clazz(env);
@@ -647,8 +647,8 @@ static jdouble Java_Double_sum(JNIEnv* env, jdouble p0,
 }
 
 static std::atomic<jmethodID> g_java_lang_Double_max(nullptr);
-static jdouble Java_Double_max(JNIEnv* env, jdouble p0,
-    jdouble p1) __attribute__ ((unused));
+[[maybe_unused]] static jdouble Java_Double_max(JNIEnv* env, jdouble p0,
+    jdouble p1);
 static jdouble Java_Double_max(JNIEnv* env, jdouble p0,
     jdouble p1) {
   jclass clazz = java_lang_Double_clazz(env);
@@ -671,8 +671,8 @@ static jdouble Java_Double_max(JNIEnv* env, jdouble p0,
 }
 
 static std::atomic<jmethodID> g_java_lang_Double_min(nullptr);
-static jdouble Java_Double_min(JNIEnv* env, jdouble p0,
-    jdouble p1) __attribute__ ((unused));
+[[maybe_unused]] static jdouble Java_Double_min(JNIEnv* env, jdouble p0,
+    jdouble p1);
 static jdouble Java_Double_min(JNIEnv* env, jdouble p0,
     jdouble p1) {
   jclass clazz = java_lang_Double_clazz(env);
@@ -695,8 +695,8 @@ static jdouble Java_Double_min(JNIEnv* env, jdouble p0,
 }
 
 static std::atomic<jmethodID> g_java_lang_Double_compareToI_JLO(nullptr);
-static jint Java_Double_compareToI_JLO(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
-    const base::android::JavaRef<jobject>& p0) __attribute__ ((unused));
+[[maybe_unused]] static jint Java_Double_compareToI_JLO(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobject>& p0);
 static jint Java_Double_compareToI_JLO(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
     const base::android::JavaRef<jobject>& p0) {
   jclass clazz = java_lang_Double_clazz(env);
@@ -719,8 +719,8 @@ static jint Java_Double_compareToI_JLO(JNIEnv* env, const base::android::JavaRef
 }
 
 static std::atomic<jmethodID> g_java_lang_Double_ConstructorJLD_D(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_Double_ConstructorJLD_D(JNIEnv* env, jdouble
-    p0) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject>
+    Java_Double_ConstructorJLD_D(JNIEnv* env, jdouble p0);
 static base::android::ScopedJavaLocalRef<jobject> Java_Double_ConstructorJLD_D(JNIEnv* env, jdouble
     p0) {
   jclass clazz = java_lang_Double_clazz(env);
@@ -743,8 +743,8 @@ static base::android::ScopedJavaLocalRef<jobject> Java_Double_ConstructorJLD_D(J
 }
 
 static std::atomic<jmethodID> g_java_lang_Double_ConstructorJLD_JLS(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_Double_ConstructorJLD_JLS(JNIEnv* env, const
-    base::android::JavaRef<jstring>& p0) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject>
+    Java_Double_ConstructorJLD_JLS(JNIEnv* env, const base::android::JavaRef<jstring>& p0);
 static base::android::ScopedJavaLocalRef<jobject> Java_Double_ConstructorJLD_JLS(JNIEnv* env, const
     base::android::JavaRef<jstring>& p0) {
   jclass clazz = java_lang_Double_clazz(env);
@@ -767,8 +767,5 @@ static base::android::ScopedJavaLocalRef<jobject> Java_Double_ConstructorJLD_JLS
 }
 
 }  // namespace JNI_Double
-
-// Step 4: Generated test functions (optional).
-
 
 #endif  // java_lang_Double_JNI

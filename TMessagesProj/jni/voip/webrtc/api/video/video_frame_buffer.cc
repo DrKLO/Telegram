@@ -11,6 +11,7 @@
 #include "api/video/video_frame_buffer.h"
 
 #include "api/video/i420_buffer.h"
+#include "api/video/i444_buffer.h"
 #include "api/video/nv12_buffer.h"
 #include "rtc_base/checks.h"
 
@@ -81,7 +82,7 @@ const char* VideoFrameBufferTypeToString(VideoFrameBuffer::Type type) {
     case VideoFrameBuffer::Type::kNV12:
       return "kNV12";
     default:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
   }
 }
 
@@ -94,7 +95,7 @@ int I420BufferInterface::ChromaHeight() const {
 }
 
 rtc::scoped_refptr<I420BufferInterface> I420BufferInterface::ToI420() {
-  return this;
+  return rtc::scoped_refptr<I420BufferInterface>(this);
 }
 
 const I420BufferInterface* I420BufferInterface::GetI420() const {
@@ -115,6 +116,19 @@ int I444BufferInterface::ChromaWidth() const {
 
 int I444BufferInterface::ChromaHeight() const {
   return height();
+}
+
+rtc::scoped_refptr<VideoFrameBuffer> I444BufferInterface::CropAndScale(
+    int offset_x,
+    int offset_y,
+    int crop_width,
+    int crop_height,
+    int scaled_width,
+    int scaled_height) {
+  rtc::scoped_refptr<I444Buffer> result =
+      I444Buffer::Create(scaled_width, scaled_height);
+  result->CropAndScaleFrom(*this, offset_x, offset_y, crop_width, crop_height);
+  return result;
 }
 
 VideoFrameBuffer::Type I010BufferInterface::type() const {

@@ -16,7 +16,6 @@
 #include <memory>
 
 #include "api/array_view.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -34,15 +33,18 @@ class BackgroundNoise {
   explicit BackgroundNoise(size_t num_channels);
   virtual ~BackgroundNoise();
 
+  BackgroundNoise(const BackgroundNoise&) = delete;
+  BackgroundNoise& operator=(const BackgroundNoise&) = delete;
+
   void Reset();
 
   // Updates the parameter estimates based on the signal currently in the
-  // |sync_buffer|, and on the latest decision in |vad| if it is running.
+  // `sync_buffer`, and on the latest decision in `vad` if it is running.
   // Returns true if the filter parameters are updated.
   bool Update(const AudioMultiVector& sync_buffer, const PostDecodeVad& vad);
 
   // Generates background noise given a random vector and writes the output to
-  // |buffer|.
+  // `buffer`.
   void GenerateBackgroundNoise(rtc::ArrayView<const int16_t> random_vector,
                                size_t channel,
                                int mute_slope,
@@ -50,29 +52,29 @@ class BackgroundNoise {
                                size_t num_noise_samples,
                                int16_t* buffer);
 
-  // Returns |energy_| for |channel|.
+  // Returns `energy_` for `channel`.
   int32_t Energy(size_t channel) const;
 
-  // Sets the value of |mute_factor_| for |channel| to |value|.
+  // Sets the value of `mute_factor_` for `channel` to `value`.
   void SetMuteFactor(size_t channel, int16_t value);
 
-  // Returns |mute_factor_| for |channel|.
+  // Returns `mute_factor_` for `channel`.
   int16_t MuteFactor(size_t channel) const;
 
-  // Returns a pointer to |filter_| for |channel|.
+  // Returns a pointer to `filter_` for `channel`.
   const int16_t* Filter(size_t channel) const;
 
-  // Returns a pointer to |filter_state_| for |channel|.
+  // Returns a pointer to `filter_state_` for `channel`.
   const int16_t* FilterState(size_t channel) const;
 
-  // Copies |input| to the filter state. Will not copy more than |kMaxLpcOrder|
+  // Copies `input` to the filter state. Will not copy more than `kMaxLpcOrder`
   // elements.
   void SetFilterState(size_t channel, rtc::ArrayView<const int16_t> input);
 
-  // Returns |scale_| for |channel|.
+  // Returns `scale_` for `channel`.
   int16_t Scale(size_t channel) const;
 
-  // Returns |scale_shift_| for |channel|.
+  // Returns `scale_shift_` for `channel`.
   int16_t ScaleShift(size_t channel) const;
 
   // Accessors.
@@ -117,7 +119,7 @@ class BackgroundNoise {
                                    size_t length,
                                    int32_t* auto_correlation) const;
 
-  // Increments the energy threshold by a factor 1 + |kThresholdIncrement|.
+  // Increments the energy threshold by a factor 1 + `kThresholdIncrement`.
   void IncrementEnergyThreshold(size_t channel, int32_t sample_energy);
 
   // Updates the filter parameters.
@@ -130,8 +132,6 @@ class BackgroundNoise {
   size_t num_channels_;
   std::unique_ptr<ChannelParameters[]> channel_parameters_;
   bool initialized_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(BackgroundNoise);
 };
 
 }  // namespace webrtc

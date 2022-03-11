@@ -49,6 +49,10 @@ rtc::scoped_refptr<PeerConnectionFactoryInterface> CreatePeerConnectionFactory(
       dependencies.task_queue_factory.get());
   dependencies.trials = std::make_unique<webrtc::FieldTrialBasedConfig>();
 
+  if (network_thread) {
+    // TODO(bugs.webrtc.org/13145): Add an rtc::SocketFactory* argument.
+    dependencies.socket_factory = network_thread->socketserver();
+  }
   cricket::MediaEngineDependencies media_dependencies;
   media_dependencies.task_queue_factory = dependencies.task_queue_factory.get();
   media_dependencies.adm = std::move(default_adm);

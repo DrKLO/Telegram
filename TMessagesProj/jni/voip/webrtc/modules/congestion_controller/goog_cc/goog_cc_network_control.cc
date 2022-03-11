@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "absl/strings/match.h"
+#include "api/units/data_rate.h"
 #include "api/units/time_delta.h"
 #include "logging/rtc_event_log/events/rtc_event_remote_estimate.h"
 #include "modules/congestion_controller/goog_cc/alr_detector.h"
@@ -88,6 +89,9 @@ GoogCcNetworkController::GoogCcNetworkController(NetworkControllerConfig config,
           RateControlSettings::ParseFromKeyValueConfig(key_value_config_)),
       loss_based_stable_rate_(
           IsEnabled(key_value_config_, "WebRTC-Bwe-LossBasedStableRate")),
+      pace_at_max_of_bwe_and_lower_link_capacity_(
+          IsEnabled(key_value_config_,
+                    "WebRTC-Bwe-PaceAtMaxOfBweAndLowerLinkCapacity")),
       probe_controller_(
           new ProbeController(key_value_config_, config.event_log)),
       congestion_window_pushback_controller_(
@@ -465,7 +469,7 @@ NetworkControlUpdate GoogCcNetworkController::OnTransportPacketsFeedback(
     expected_packets_since_last_loss_update_ +=
         report.PacketsWithFeedback().size();
     for (const auto& packet_feedback : report.PacketsWithFeedback()) {
-      if (packet_feedback.receive_time.IsInfinite())
+      if (!packet_feedback.IsReceived())
         lost_packets_since_last_loss_update_ += 1;
     }
     if (report.feedback_time > next_loss_update_) {
@@ -694,9 +698,17 @@ void GoogCcNetworkController::MaybeTriggerOnNetworkChanged(
 PacerConfig GoogCcNetworkController::GetPacingRates(Timestamp at_time) const {
   // Pacing rate is based on target rate before congestion window pushback,
   // because we don't want to build queues in the pacer when pushback occurs.
-  DataRate pacing_rate =
-      std::max(min_total_allocated_bitrate_, last_loss_based_target_rate_) *
-      pacing_factor_;
+  DataRate pacing_rate = DataRate::Zero();
+  if (pace_at_max_of_bwe_and_lower_link_capacity_ && estimate_) {
+    pacing_rate =
+        std::max({min_total_allocated_bitrate_, estimate_->link_capacity_lower,
+                  last_loss_based_target_rate_}) *
+        pacing_factor_;
+  } else {
+    pacing_rate =
+        std::max(min_total_allocated_bitrate_, last_loss_based_target_rate_) *
+        pacing_factor_;
+  }
   DataRate padding_rate =
       std::min(max_padding_rate_, last_pushback_target_rate_);
   PacerConfig msg;

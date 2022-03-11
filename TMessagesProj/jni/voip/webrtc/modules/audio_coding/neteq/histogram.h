@@ -21,7 +21,7 @@ namespace webrtc {
 
 class Histogram {
  public:
-  // Creates histogram with capacity |num_buckets| and |forget_factor| in Q15.
+  // Creates histogram with capacity `num_buckets` and `forget_factor` in Q15.
   Histogram(size_t num_buckets,
             int forget_factor,
             absl::optional<double> start_forget_weight = absl::nullopt);
@@ -31,10 +31,10 @@ class Histogram {
   // Resets the histogram to the default start distribution.
   virtual void Reset();
 
-  // Add entry in bucket |index|.
+  // Add entry in bucket `index`.
   virtual void Add(int index);
 
-  // Calculates the quantile at |probability| (in Q30) of the histogram
+  // Calculates the quantile at `probability` (in Q30) of the histogram
   // distribution.
   virtual int Quantile(int probability);
 
@@ -42,7 +42,7 @@ class Histogram {
   virtual int NumBuckets() const;
 
   // Returns the probability for each bucket in Q30.
-  std::vector<int> buckets() const { return buckets_; }
+  const std::vector<int>& buckets() const { return buckets_; }
 
   // Accessors only intended for testing purposes.
   int base_forget_factor_for_testing() const { return base_forget_factor_; }

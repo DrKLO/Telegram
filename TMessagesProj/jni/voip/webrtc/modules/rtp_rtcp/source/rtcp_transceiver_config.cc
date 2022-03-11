@@ -48,13 +48,13 @@ bool RtcpTransceiverConfig::Validate() const {
     RTC_LOG(LS_ERROR) << debug_id << "outgoing transport must be set";
     return false;
   }
-  if (initial_report_delay_ms < 0) {
-    RTC_LOG(LS_ERROR) << debug_id << "delay " << initial_report_delay_ms
+  if (initial_report_delay < TimeDelta::Zero()) {
+    RTC_LOG(LS_ERROR) << debug_id << "delay " << initial_report_delay.ms()
                       << "ms before first report shouldn't be negative.";
     return false;
   }
-  if (report_period_ms <= 0) {
-    RTC_LOG(LS_ERROR) << debug_id << "period " << report_period_ms
+  if (report_period <= TimeDelta::Zero()) {
+    RTC_LOG(LS_ERROR) << debug_id << "period " << report_period.ms()
                       << "ms between reports should be positive.";
     return false;
   }
@@ -67,7 +67,7 @@ bool RtcpTransceiverConfig::Validate() const {
     RTC_LOG(LS_ERROR) << debug_id << "unsupported rtcp mode";
     return false;
   }
-  if (non_sender_rtt_measurement && !rtt_observer)
+  if (non_sender_rtt_measurement && !network_link_observer)
     RTC_LOG(LS_WARNING) << debug_id
                         << "Enabled special feature to calculate rtt, but no "
                            "rtt observer is provided.";

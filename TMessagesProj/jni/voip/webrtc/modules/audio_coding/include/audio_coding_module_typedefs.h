@@ -81,19 +81,22 @@ struct NetworkStatistics {
   // adding extra delay due to "peaky jitter"
   bool jitterPeaksFound;
   // Stats below correspond to similarly-named fields in the WebRTC stats spec.
-  // https://w3c.github.io/webrtc-stats/#dom-rtcmediastreamtrackstats
+  // https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats
   uint64_t totalSamplesReceived;
   uint64_t concealedSamples;
   uint64_t silentConcealedSamples;
   uint64_t concealmentEvents;
   uint64_t jitterBufferDelayMs;
   uint64_t jitterBufferEmittedCount;
-  // Non standard stats propagated to spec complaint GetStats API.
-  uint64_t jitterBufferTargetDelayMs;
   uint64_t insertedSamplesForDeceleration;
   uint64_t removedSamplesForAcceleration;
   uint64_t fecPacketsReceived;
   uint64_t fecPacketsDiscarded;
+  // Stats below correspond to similarly-named fields in the WebRTC stats spec.
+  // https://w3c.github.io/webrtc-stats/#dom-rtcreceivedrtpstreamstats
+  uint64_t packetsDiscarded;
+  // Non standard stats propagated to spec complaint GetStats API.
+  uint64_t jitterBufferTargetDelayMs;
   // Stats below DO NOT correspond directly to anything in the WebRTC stats
   // fraction (of original stream) of synthesized audio inserted through
   // expansion (in Q14)

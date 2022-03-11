@@ -13,7 +13,6 @@
 
 #include <vector>
 
-#include "rtc_base/async_socket.h"
 #include "rtc_base/ip_address.h"
 #include "rtc_base/socket.h"
 #include "rtc_base/socket_address.h"
@@ -78,14 +77,12 @@ class FirewallSocketServer : public SocketServer {
   bool IsBindableIp(const rtc::IPAddress& ip);
 
   Socket* CreateSocket(int family, int type) override;
-  AsyncSocket* CreateAsyncSocket(int family, int type) override;
 
   void SetMessageQueue(Thread* queue) override;
   bool Wait(int cms, bool process_io) override;
   void WakeUp() override;
 
   Socket* WrapSocket(Socket* sock, int type);
-  AsyncSocket* WrapSocket(AsyncSocket* sock, int type);
 
  private:
   SocketServer* server_;

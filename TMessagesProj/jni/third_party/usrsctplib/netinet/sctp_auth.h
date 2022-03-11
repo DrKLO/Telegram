@@ -32,9 +32,9 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) && !defined(__Userspace__)
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD: head/sys/netinet/sctp_auth.h 338749 2018-09-18 10:53:07Z tuexen $");
+__FBSDID("$FreeBSD: head/sys/netinet/sctp_auth.h 365071 2020-09-01 21:19:14Z mjg $");
 #endif
 
 #ifndef _NETINET_SCTP_AUTH_H_
@@ -99,8 +99,6 @@ typedef struct sctp_authinformation {
 	uint16_t recv_keyid;	/* last recv keyid (cached) */
 } sctp_authinfo_t;
 
-
-
 /*
  * Macros
  */
@@ -148,7 +146,6 @@ extern int sctp_copy_skeylist(const struct sctp_keyhead *src,
 extern void sctp_auth_key_acquire(struct sctp_tcb *stcb, uint16_t keyid);
 extern void sctp_auth_key_release(struct sctp_tcb *stcb, uint16_t keyid,
     int so_locked);
-
 
 /* hmac list handling */
 extern sctp_hmaclist_t *sctp_alloc_hmaclist(uint16_t num_hmacs);

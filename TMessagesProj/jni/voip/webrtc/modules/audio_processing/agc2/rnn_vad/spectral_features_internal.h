@@ -50,8 +50,8 @@ class SpectralCorrelator {
   ~SpectralCorrelator();
 
   // Computes the band-wise spectral auto-correlations.
-  // |x| must:
-  //  - have size equal to |kFrameSize20ms24kHz|;
+  // `x` must:
+  //  - have size equal to `kFrameSize20ms24kHz`;
   //  - be encoded as vectors of interleaved real-complex FFT coefficients
   //    where x[1] = y[1] = 0 (the Nyquist frequency coefficient is omitted).
   void ComputeAutoCorrelation(
@@ -59,8 +59,8 @@ class SpectralCorrelator {
       rtc::ArrayView<float, kOpusBands24kHz> auto_corr) const;
 
   // Computes the band-wise spectral cross-correlations.
-  // |x| and |y| must:
-  //  - have size equal to |kFrameSize20ms24kHz|;
+  // `x` and `y` must:
+  //  - have size equal to `kFrameSize20ms24kHz`;
   //  - be encoded as vectors of interleaved real-complex FFT coefficients where
   //    x[1] = y[1] = 0 (the Nyquist frequency coefficient is omitted).
   void ComputeCrossCorrelation(
@@ -82,12 +82,12 @@ void ComputeSmoothedLogMagnitudeSpectrum(
 
 // TODO(bugs.webrtc.org/10480): Move to anonymous namespace in
 // spectral_features.cc. Creates a DCT table for arrays having size equal to
-// |kNumBands|. Declared here for unit testing.
+// `kNumBands`. Declared here for unit testing.
 std::array<float, kNumBands * kNumBands> ComputeDctTable();
 
 // TODO(bugs.webrtc.org/10480): Move to anonymous namespace in
-// spectral_features.cc. Computes DCT for |in| given a pre-computed DCT table.
-// In-place computation is not allowed and |out| can be smaller than |in| in
+// spectral_features.cc. Computes DCT for `in` given a pre-computed DCT table.
+// In-place computation is not allowed and `out` can be smaller than `in` in
 // order to only compute the first DCT coefficients. Declared here for unit
 // testing.
 void ComputeDct(rtc::ArrayView<const float> in,

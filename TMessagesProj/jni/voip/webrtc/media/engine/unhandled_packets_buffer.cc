@@ -35,7 +35,7 @@ void UnhandledPacketsBuffer::AddPacket(uint32_t ssrc,
   insert_pos_ = (insert_pos_ + 1) % kMaxStashedPackets;
 }
 
-// Backfill |consumer| with all stored packet related |ssrcs|.
+// Backfill `consumer` with all stored packet related `ssrcs`.
 void UnhandledPacketsBuffer::BackfillPackets(
     rtc::ArrayView<const uint32_t> ssrcs,
     std::function<void(uint32_t, int64_t, rtc::CopyOnWriteBuffer)> consumer) {

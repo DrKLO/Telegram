@@ -10,9 +10,6 @@
 
 #include "pc/sctp_data_channel_transport.h"
 
-#include "absl/types/optional.h"
-#include "pc/sctp_utils.h"
-
 namespace webrtc {
 
 SctpDataChannelTransport::SctpDataChannelTransport(
@@ -102,9 +99,9 @@ void SctpDataChannelTransport::OnClosingProcedureComplete(int channel_id) {
   }
 }
 
-void SctpDataChannelTransport::OnClosedAbruptly() {
+void SctpDataChannelTransport::OnClosedAbruptly(RTCError error) {
   if (sink_) {
-    sink_->OnTransportClosed();
+    sink_->OnTransportClosed(error);
   }
 }
 

@@ -107,7 +107,7 @@ NetworkManager::~NetworkManager() {
 }
 
 void NetworkManager::start() {
-    _socketFactory.reset(new rtc::BasicPacketSocketFactory(_thread));
+    _socketFactory.reset(new rtc::BasicPacketSocketFactory(_thread->socketserver()));
 
     _networkManager = std::make_unique<rtc::BasicNetworkManager>(_networkMonitorFactory.get());
     
@@ -274,7 +274,7 @@ void NetworkManager::logCurrentNetworkState() {
 
 void NetworkManager::checkConnectionTimeout() {
     const auto weak = std::weak_ptr<NetworkManager>(shared_from_this());
-    _thread->PostDelayedTask(RTC_FROM_HERE, [weak]() {
+    _thread->PostDelayedTask([weak]() {
         auto strong = weak.lock();
         if (!strong) {
             return;

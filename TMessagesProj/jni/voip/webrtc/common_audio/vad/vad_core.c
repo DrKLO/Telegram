@@ -90,11 +90,11 @@ static const int16_t kOverHangMax2VAG[3] = { 9, 5, 3 };
 static const int16_t kLocalThresholdVAG[3] = { 94, 94, 94 };
 static const int16_t kGlobalThresholdVAG[3] = { 1100, 1050, 1100 };
 
-// Calculates the weighted average w.r.t. number of Gaussians. The |data| are
-// updated with an |offset| before averaging.
+// Calculates the weighted average w.r.t. number of Gaussians. The `data` are
+// updated with an `offset` before averaging.
 //
 // - data     [i/o] : Data to average.
-// - offset   [i]   : An offset added to |data|.
+// - offset   [i]   : An offset added to `data`.
 // - weights  [i]   : Weights used for averaging.
 //
 // returns          : The weighted average.
@@ -124,7 +124,7 @@ static inline int32_t RTC_NO_SANITIZE("signed-integer-overflow")
 // type of signal is most probable.
 //
 // - self           [i/o] : Pointer to VAD instance
-// - features       [i]   : Feature vector of length |kNumChannels|
+// - features       [i]   : Feature vector of length `kNumChannels`
 //                          = log10(energy in frequency band)
 // - total_power    [i]   : Total power in audio frame.
 // - frame_length   [i]   : Number of input samples
@@ -183,10 +183,10 @@ static int16_t GmmProbability(VadInstT* self, int16_t* features,
     // H1: Speech
     //
     // We combine a global LRT with local tests, for each frequency sub-band,
-    // here defined as |channel|.
+    // here defined as `channel`.
     for (channel = 0; channel < kNumChannels; channel++) {
       // For each channel we model the probability with a GMM consisting of
-      // |kNumGaussians|, with different means and standard deviations depending
+      // `kNumGaussians`, with different means and standard deviations depending
       // on H0 or H1.
       h0_test = 0;
       h1_test = 0;
@@ -234,7 +234,7 @@ static int16_t GmmProbability(VadInstT* self, int16_t* features,
       }
       log_likelihood_ratio = shifts_h0 - shifts_h1;
 
-      // Update |sum_log_likelihood_ratios| with spectrum weighting. This is
+      // Update `sum_log_likelihood_ratios` with spectrum weighting. This is
       // used for the global VAD decision.
       sum_log_likelihood_ratios +=
           (int32_t) (log_likelihood_ratio * kSpectrumWeight[channel]);
@@ -298,8 +298,8 @@ static int16_t GmmProbability(VadInstT* self, int16_t* features,
         nmk2 = nmk;
         if (!vadflag) {
           // deltaN = (x-mu)/sigma^2
-          // ngprvec[k] = |noise_probability[k]| /
-          //   (|noise_probability[0]| + |noise_probability[1]|)
+          // ngprvec[k] = `noise_probability[k]` /
+          //   (`noise_probability[0]` + `noise_probability[1]`)
 
           // (Q14 * Q11 >> 11) = Q14.
           delt = (int16_t)((ngprvec[gaussian] * deltaN[gaussian]) >> 11);
@@ -326,9 +326,9 @@ static int16_t GmmProbability(VadInstT* self, int16_t* features,
 
         if (vadflag) {
           // Update speech mean vector:
-          // |deltaS| = (x-mu)/sigma^2
-          // sgprvec[k] = |speech_probability[k]| /
-          //   (|speech_probability[0]| + |speech_probability[1]|)
+          // `deltaS` = (x-mu)/sigma^2
+          // sgprvec[k] = `speech_probability[k]` /
+          //   (`speech_probability[0]` + `speech_probability[1]`)
 
           // (Q14 * Q11) >> 11 = Q14.
           delt = (int16_t)((sgprvec[gaussian] * deltaS[gaussian]) >> 11);
@@ -409,35 +409,35 @@ static int16_t GmmProbability(VadInstT* self, int16_t* features,
       }
 
       // Separate models if they are too close.
-      // |noise_global_mean| in Q14 (= Q7 * Q7).
+      // `noise_global_mean` in Q14 (= Q7 * Q7).
       noise_global_mean = WeightedAverage(&self->noise_means[channel], 0,
                                           &kNoiseDataWeights[channel]);
 
-      // |speech_global_mean| in Q14 (= Q7 * Q7).
+      // `speech_global_mean` in Q14 (= Q7 * Q7).
       speech_global_mean = WeightedAverage(&self->speech_means[channel], 0,
                                            &kSpeechDataWeights[channel]);
 
-      // |diff| = "global" speech mean - "global" noise mean.
+      // `diff` = "global" speech mean - "global" noise mean.
       // (Q14 >> 9) - (Q14 >> 9) = Q5.
       diff = (int16_t) (speech_global_mean >> 9) -
           (int16_t) (noise_global_mean >> 9);
       if (diff < kMinimumDifference[channel]) {
         tmp_s16 = kMinimumDifference[channel] - diff;
 
-        // |tmp1_s16| = ~0.8 * (kMinimumDifference - diff) in Q7.
-        // |tmp2_s16| = ~0.2 * (kMinimumDifference - diff) in Q7.
+        // `tmp1_s16` = ~0.8 * (kMinimumDifference - diff) in Q7.
+        // `tmp2_s16` = ~0.2 * (kMinimumDifference - diff) in Q7.
         tmp1_s16 = (int16_t)((13 * tmp_s16) >> 2);
         tmp2_s16 = (int16_t)((3 * tmp_s16) >> 2);
 
-        // Move Gaussian means for speech model by |tmp1_s16| and update
-        // |speech_global_mean|. Note that |self->speech_means[channel]| is
+        // Move Gaussian means for speech model by `tmp1_s16` and update
+        // `speech_global_mean`. Note that `self->speech_means[channel]` is
         // changed after the call.
         speech_global_mean = WeightedAverage(&self->speech_means[channel],
                                              tmp1_s16,
                                              &kSpeechDataWeights[channel]);
 
-        // Move Gaussian means for noise model by -|tmp2_s16| and update
-        // |noise_global_mean|. Note that |self->noise_means[channel]| is
+        // Move Gaussian means for noise model by -`tmp2_s16` and update
+        // `noise_global_mean`. Note that `self->noise_means[channel]` is
         // changed after the call.
         noise_global_mean = WeightedAverage(&self->noise_means[channel],
                                             -tmp2_s16,
@@ -534,7 +534,7 @@ int WebRtcVad_InitCore(VadInstT* self) {
     self->mean_value[i] = 1600;
   }
 
-  // Set aggressiveness mode to default (=|kDefaultMode|).
+  // Set aggressiveness mode to default (=`kDefaultMode`).
   if (WebRtcVad_set_mode_core(self, kDefaultMode) != 0) {
     return -1;
   }
@@ -609,7 +609,7 @@ int WebRtcVad_CalcVad48khz(VadInstT* inst, const int16_t* speech_frame,
   int vad;
   size_t i;
   int16_t speech_nb[240];  // 30 ms in 8 kHz.
-  // |tmp_mem| is a temporary memory used by resample function, length is
+  // `tmp_mem` is a temporary memory used by resample function, length is
   // frame length in 10 ms (480 samples) + 256 extra.
   int32_t tmp_mem[480 + 256] = { 0 };
   const size_t kFrameLen10ms48khz = 480;

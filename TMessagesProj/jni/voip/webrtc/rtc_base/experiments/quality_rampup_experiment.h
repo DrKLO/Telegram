@@ -26,13 +26,14 @@ class QualityRampupExperiment final {
   absl::optional<double> MaxBitrateFactor() const;
 
   // Sets the max bitrate and the frame size.
-  // The call has no effect if the frame size is less than |min_pixels_|.
+  // The call has no effect if the frame size is less than `min_pixels_`.
   void SetMaxBitrate(int pixels, uint32_t max_bitrate_kbps);
 
   // Returns true if the available bandwidth is a certain percentage
-  // (max_bitrate_factor_) above |max_bitrate_kbps_| for |min_duration_ms_|.
+  // (max_bitrate_factor_) above `max_bitrate_kbps_` for `min_duration_ms_`.
   bool BwHigh(int64_t now_ms, uint32_t available_bw_kbps);
 
+  void Reset();
   bool Enabled() const;
 
  private:

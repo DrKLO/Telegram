@@ -41,6 +41,15 @@ JNI_REGISTRATION_EXPORT extern const char
     kClassPath_org_webrtc_VideoEncoder_00024ResolutionBitrateLimits[];
 const char kClassPath_org_webrtc_VideoEncoder_00024ResolutionBitrateLimits[] =
     "org/webrtc/VideoEncoder$ResolutionBitrateLimits";
+
+JNI_REGISTRATION_EXPORT extern const char
+    kClassPath_org_webrtc_VideoEncoder_00024RateControlParameters[];
+const char kClassPath_org_webrtc_VideoEncoder_00024RateControlParameters[] =
+    "org/webrtc/VideoEncoder$RateControlParameters";
+
+JNI_REGISTRATION_EXPORT extern const char kClassPath_org_webrtc_VideoEncoder_00024EncoderInfo[];
+const char kClassPath_org_webrtc_VideoEncoder_00024EncoderInfo[] =
+    "org/webrtc/VideoEncoder$EncoderInfo";
 // Leaking this jclass as we cannot use LazyInstance from some threads.
 JNI_REGISTRATION_EXPORT std::atomic<jclass> g_org_webrtc_VideoEncoder_clazz(nullptr);
 #ifndef org_webrtc_VideoEncoder_clazz_defined
@@ -98,6 +107,27 @@ inline jclass org_webrtc_VideoEncoder_00024ResolutionBitrateLimits_clazz(JNIEnv*
   return base::android::LazyGetClass(env,
       kClassPath_org_webrtc_VideoEncoder_00024ResolutionBitrateLimits,
       &g_org_webrtc_VideoEncoder_00024ResolutionBitrateLimits_clazz);
+}
+#endif
+// Leaking this jclass as we cannot use LazyInstance from some threads.
+JNI_REGISTRATION_EXPORT std::atomic<jclass>
+    g_org_webrtc_VideoEncoder_00024RateControlParameters_clazz(nullptr);
+#ifndef org_webrtc_VideoEncoder_00024RateControlParameters_clazz_defined
+#define org_webrtc_VideoEncoder_00024RateControlParameters_clazz_defined
+inline jclass org_webrtc_VideoEncoder_00024RateControlParameters_clazz(JNIEnv* env) {
+  return base::android::LazyGetClass(env,
+      kClassPath_org_webrtc_VideoEncoder_00024RateControlParameters,
+      &g_org_webrtc_VideoEncoder_00024RateControlParameters_clazz);
+}
+#endif
+// Leaking this jclass as we cannot use LazyInstance from some threads.
+JNI_REGISTRATION_EXPORT std::atomic<jclass>
+    g_org_webrtc_VideoEncoder_00024EncoderInfo_clazz(nullptr);
+#ifndef org_webrtc_VideoEncoder_00024EncoderInfo_clazz_defined
+#define org_webrtc_VideoEncoder_00024EncoderInfo_clazz_defined
+inline jclass org_webrtc_VideoEncoder_00024EncoderInfo_clazz(JNIEnv* env) {
+  return base::android::LazyGetClass(env, kClassPath_org_webrtc_VideoEncoder_00024EncoderInfo,
+      &g_org_webrtc_VideoEncoder_00024EncoderInfo_clazz);
 }
 #endif
 
@@ -299,6 +329,76 @@ static jint Java_ResolutionBitrateLimits_getMaxBitrateBps(JNIEnv* env, const
   return ret;
 }
 
+static std::atomic<jmethodID>
+    g_org_webrtc_VideoEncoder_00024RateControlParameters_Constructor(nullptr);
+static base::android::ScopedJavaLocalRef<jobject> Java_RateControlParameters_Constructor(JNIEnv*
+    env, const base::android::JavaRef<jobject>& bitrate,
+    jdouble framerateFps) {
+  jclass clazz = org_webrtc_VideoEncoder_00024RateControlParameters_clazz(env);
+  CHECK_CLAZZ(env, clazz,
+      org_webrtc_VideoEncoder_00024RateControlParameters_clazz(env), NULL);
+
+  jni_generator::JniJavaCallContextChecked call_context;
+  call_context.Init<
+      base::android::MethodID::TYPE_INSTANCE>(
+          env,
+          clazz,
+          "<init>",
+          "(Lorg/webrtc/VideoEncoder$BitrateAllocation;D)V",
+          &g_org_webrtc_VideoEncoder_00024RateControlParameters_Constructor);
+
+  jobject ret =
+      env->NewObject(clazz,
+          call_context.base.method_id, bitrate.obj(), framerateFps);
+  return base::android::ScopedJavaLocalRef<jobject>(env, ret);
+}
+
+static std::atomic<jmethodID>
+    g_org_webrtc_VideoEncoder_00024EncoderInfo_getRequestedResolutionAlignment(nullptr);
+static jint Java_EncoderInfo_getRequestedResolutionAlignment(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj) {
+  jclass clazz = org_webrtc_VideoEncoder_00024EncoderInfo_clazz(env);
+  CHECK_CLAZZ(env, obj.obj(),
+      org_webrtc_VideoEncoder_00024EncoderInfo_clazz(env), 0);
+
+  jni_generator::JniJavaCallContextChecked call_context;
+  call_context.Init<
+      base::android::MethodID::TYPE_INSTANCE>(
+          env,
+          clazz,
+          "getRequestedResolutionAlignment",
+          "()I",
+          &g_org_webrtc_VideoEncoder_00024EncoderInfo_getRequestedResolutionAlignment);
+
+  jint ret =
+      env->CallIntMethod(obj.obj(),
+          call_context.base.method_id);
+  return ret;
+}
+
+static std::atomic<jmethodID>
+    g_org_webrtc_VideoEncoder_00024EncoderInfo_getApplyAlignmentToAllSimulcastLayers(nullptr);
+static jboolean Java_EncoderInfo_getApplyAlignmentToAllSimulcastLayers(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj) {
+  jclass clazz = org_webrtc_VideoEncoder_00024EncoderInfo_clazz(env);
+  CHECK_CLAZZ(env, obj.obj(),
+      org_webrtc_VideoEncoder_00024EncoderInfo_clazz(env), false);
+
+  jni_generator::JniJavaCallContextChecked call_context;
+  call_context.Init<
+      base::android::MethodID::TYPE_INSTANCE>(
+          env,
+          clazz,
+          "getApplyAlignmentToAllSimulcastLayers",
+          "()Z",
+          &g_org_webrtc_VideoEncoder_00024EncoderInfo_getApplyAlignmentToAllSimulcastLayers);
+
+  jboolean ret =
+      env->CallBooleanMethod(obj.obj(),
+          call_context.base.method_id);
+  return ret;
+}
+
 static std::atomic<jmethodID> g_org_webrtc_VideoEncoder_createNativeVideoEncoder(nullptr);
 static jlong Java_VideoEncoder_createNativeVideoEncoder(JNIEnv* env, const
     base::android::JavaRef<jobject>& obj) {
@@ -411,10 +511,9 @@ static base::android::ScopedJavaLocalRef<jobject> Java_VideoEncoder_encode(JNIEn
   return base::android::ScopedJavaLocalRef<jobject>(env, ret);
 }
 
-static std::atomic<jmethodID> g_org_webrtc_VideoEncoder_setRateAllocation(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_VideoEncoder_setRateAllocation(JNIEnv* env,
-    const base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobject>& allocation,
-    JniIntWrapper framerate) {
+static std::atomic<jmethodID> g_org_webrtc_VideoEncoder_setRates(nullptr);
+static base::android::ScopedJavaLocalRef<jobject> Java_VideoEncoder_setRates(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobject>& rcParameters) {
   jclass clazz = org_webrtc_VideoEncoder_clazz(env);
   CHECK_CLAZZ(env, obj.obj(),
       org_webrtc_VideoEncoder_clazz(env), NULL);
@@ -424,13 +523,13 @@ static base::android::ScopedJavaLocalRef<jobject> Java_VideoEncoder_setRateAlloc
       base::android::MethodID::TYPE_INSTANCE>(
           env,
           clazz,
-          "setRateAllocation",
-          "(Lorg/webrtc/VideoEncoder$BitrateAllocation;I)Lorg/webrtc/VideoCodecStatus;",
-          &g_org_webrtc_VideoEncoder_setRateAllocation);
+          "setRates",
+          "(Lorg/webrtc/VideoEncoder$RateControlParameters;)Lorg/webrtc/VideoCodecStatus;",
+          &g_org_webrtc_VideoEncoder_setRates);
 
   jobject ret =
       env->CallObjectMethod(obj.obj(),
-          call_context.base.method_id, allocation.obj(), as_jint(framerate));
+          call_context.base.method_id, rcParameters.obj());
   return base::android::ScopedJavaLocalRef<jobject>(env, ret);
 }
 
@@ -501,10 +600,29 @@ static base::android::ScopedJavaLocalRef<jstring> Java_VideoEncoder_getImplement
   return base::android::ScopedJavaLocalRef<jstring>(env, ret);
 }
 
+static std::atomic<jmethodID> g_org_webrtc_VideoEncoder_getEncoderInfo(nullptr);
+static base::android::ScopedJavaLocalRef<jobject> Java_VideoEncoder_getEncoderInfo(JNIEnv* env,
+    const base::android::JavaRef<jobject>& obj) {
+  jclass clazz = org_webrtc_VideoEncoder_clazz(env);
+  CHECK_CLAZZ(env, obj.obj(),
+      org_webrtc_VideoEncoder_clazz(env), NULL);
+
+  jni_generator::JniJavaCallContextChecked call_context;
+  call_context.Init<
+      base::android::MethodID::TYPE_INSTANCE>(
+          env,
+          clazz,
+          "getEncoderInfo",
+          "()Lorg/webrtc/VideoEncoder$EncoderInfo;",
+          &g_org_webrtc_VideoEncoder_getEncoderInfo);
+
+  jobject ret =
+      env->CallObjectMethod(obj.obj(),
+          call_context.base.method_id);
+  return base::android::ScopedJavaLocalRef<jobject>(env, ret);
+}
+
 }  // namespace jni
 }  // namespace  webrtc
-
-// Step 4: Generated test functions (optional).
-
 
 #endif  // org_webrtc_VideoEncoder_JNI

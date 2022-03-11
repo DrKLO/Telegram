@@ -17,7 +17,6 @@
 #include "api/scoped_refptr.h"
 #include "api/video/encoded_image.h"
 #include "api/video/i420_buffer.h"
-#include "api/video_codecs/video_codec.h"
 #include "api/video_codecs/video_decoder.h"
 #include "common_video/include/video_frame_buffer_pool.h"
 #include "modules/video_coding/include/video_error_codes.h"
@@ -40,8 +39,7 @@ class LibaomAv1Decoder final : public VideoDecoder {
   ~LibaomAv1Decoder();
 
   // Implements VideoDecoder.
-  int32_t InitDecode(const VideoCodec* codec_settings,
-                     int number_of_cores) override;
+  bool Configure(const Settings& settings) override;
 
   // Decode an encoded video frame.
   int32_t Decode(const EncodedImage& encoded_image,
@@ -74,23 +72,20 @@ LibaomAv1Decoder::~LibaomAv1Decoder() {
   Release();
 }
 
-int32_t LibaomAv1Decoder::InitDecode(const VideoCodec* codec_settings,
-                                     int number_of_cores) {
-  aom_codec_dec_cfg_t config = {
-      static_cast<unsigned int>(number_of_cores),  // Max # of threads.
-      0,                    // Frame width set after decode.
-      0,                    // Frame height set after decode.
-      kConfigLowBitDepth};  // Enable low-bit-depth code path.
+bool LibaomAv1Decoder::Configure(const Settings& settings) {
+  aom_codec_dec_cfg_t config = {};
+  config.threads = static_cast<unsigned int>(settings.number_of_cores());
+  config.allow_lowbitdepth = kConfigLowBitDepth;
 
   aom_codec_err_t ret =
       aom_codec_dec_init(&context_, aom_codec_av1_dx(), &config, kDecFlags);
   if (ret != AOM_CODEC_OK) {
-    RTC_LOG(LS_WARNING) << "LibaomAv1Decoder::InitDecode returned " << ret
+    RTC_LOG(LS_WARNING) << "LibaomAv1Decoder::Configure returned " << ret
                         << " on aom_codec_dec_init.";
-    return WEBRTC_VIDEO_CODEC_ERROR;
+    return false;
   }
   inited_ = true;
-  return WEBRTC_VIDEO_CODEC_OK;
+  return true;
 }
 
 int32_t LibaomAv1Decoder::Decode(const EncodedImage& encoded_image,

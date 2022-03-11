@@ -24,20 +24,20 @@ class MockRtpReceiver : public rtc::RefCountedObject<RtpReceiverInterface> {
   MOCK_METHOD(rtc::scoped_refptr<MediaStreamTrackInterface>,
               track,
               (),
-              (const override));
+              (const, override));
   MOCK_METHOD(std::vector<rtc::scoped_refptr<MediaStreamInterface>>,
               streams,
               (),
-              (const override));
-  MOCK_METHOD(cricket::MediaType, media_type, (), (const override));
-  MOCK_METHOD(std::string, id, (), (const override));
-  MOCK_METHOD(RtpParameters, GetParameters, (), (const override));
+              (const, override));
+  MOCK_METHOD(cricket::MediaType, media_type, (), (const, override));
+  MOCK_METHOD(std::string, id, (), (const, override));
+  MOCK_METHOD(RtpParameters, GetParameters, (), (const, override));
   MOCK_METHOD(void, SetObserver, (RtpReceiverObserverInterface*), (override));
   MOCK_METHOD(void,
               SetJitterBufferMinimumDelay,
               (absl::optional<double>),
               (override));
-  MOCK_METHOD(std::vector<RtpSource>, GetSources, (), (const override));
+  MOCK_METHOD(std::vector<RtpSource>, GetSources, (), (const, override));
 };
 
 }  // namespace webrtc

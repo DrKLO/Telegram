@@ -10,7 +10,6 @@
 
 #include "modules/audio_coding/include/audio_coding_module.h"
 
-#include <assert.h>
 #include <algorithm>
 #include <cstdint>
 
@@ -93,6 +92,8 @@ class AudioCodingModuleImpl final : public AudioCodingModule {
 
   ANAStats GetANAStats() const override;
 
+  int GetTargetBitrate() const override;
+
  private:
   struct InputData {
     InputData() : buffer(kInitialInputDataBufferSize) {}
@@ -126,7 +127,7 @@ class AudioCodingModuleImpl final : public AudioCodingModule {
   int Add10MsDataInternal(const AudioFrame& audio_frame, InputData* input_data)
       RTC_EXCLUSIVE_LOCKS_REQUIRED(acm_mutex_);
 
-  // TODO(bugs.webrtc.org/10739): change |absolute_capture_timestamp_ms| to
+  // TODO(bugs.webrtc.org/10739): change `absolute_capture_timestamp_ms` to
   // int64_t when it always receives a valid value.
   int Encode(const InputData& input_data,
              absl::optional<int64_t> absolute_capture_timestamp_ms)
@@ -142,8 +143,8 @@ class AudioCodingModuleImpl final : public AudioCodingModule {
   //
   // in_frame: input audio-frame
   // ptr_out: pointer to output audio_frame. If no preprocessing is required
-  //          |ptr_out| will be pointing to |in_frame|, otherwise pointing to
-  //          |preprocess_frame_|.
+  //          `ptr_out` will be pointing to `in_frame`, otherwise pointing to
+  //          `preprocess_frame_`.
   //
   // Return value:
   //   -1: if encountering an error.
@@ -153,7 +154,7 @@ class AudioCodingModuleImpl final : public AudioCodingModule {
       RTC_EXCLUSIVE_LOCKS_REQUIRED(acm_mutex_);
 
   // Change required states after starting to receive the codec corresponding
-  // to |index|.
+  // to `index`.
   int UpdateUponReceivingCodec(int index);
 
   mutable Mutex acm_mutex_;
@@ -230,7 +231,7 @@ int32_t AudioCodingModuleImpl::Encode(
     const InputData& input_data,
     absl::optional<int64_t> absolute_capture_timestamp_ms) {
   // TODO(bugs.webrtc.org/10739): add dcheck that
-  // |audio_frame.absolute_capture_timestamp_ms()| always has a value.
+  // `audio_frame.absolute_capture_timestamp_ms()` always has a value.
   AudioEncoder::EncodedInfo encoded_info;
   uint8_t previous_pltype;
 
@@ -334,7 +335,7 @@ int AudioCodingModuleImpl::Add10MsData(const AudioFrame& audio_frame) {
   MutexLock lock(&acm_mutex_);
   int r = Add10MsDataInternal(audio_frame, &input_data_);
   // TODO(bugs.webrtc.org/10739): add dcheck that
-  // |audio_frame.absolute_capture_timestamp_ms()| always has a value.
+  // `audio_frame.absolute_capture_timestamp_ms()` always has a value.
   return r < 0
              ? r
              : Encode(input_data_, audio_frame.absolute_capture_timestamp_ms());
@@ -343,13 +344,13 @@ int AudioCodingModuleImpl::Add10MsData(const AudioFrame& audio_frame) {
 int AudioCodingModuleImpl::Add10MsDataInternal(const AudioFrame& audio_frame,
                                                InputData* input_data) {
   if (audio_frame.samples_per_channel_ == 0) {
-    assert(false);
+    RTC_DCHECK_NOTREACHED();
     RTC_LOG(LS_ERROR) << "Cannot Add 10 ms audio, payload length is zero";
     return -1;
   }
 
   if (audio_frame.sample_rate_hz_ > kMaxInputSampleRateHz) {
-    assert(false);
+    RTC_DCHECK_NOTREACHED();
     RTC_LOG(LS_ERROR) << "Cannot Add 10 ms audio, input frequency not valid";
     return -1;
   }
@@ -398,7 +399,7 @@ int AudioCodingModuleImpl::Add10MsDataInternal(const AudioFrame& audio_frame,
     // output data if needed.
     ReMixFrame(*ptr_frame, current_num_channels, &input_data->buffer);
 
-    // For pushing data to primary, point the |ptr_audio| to correct buffer.
+    // For pushing data to primary, point the `ptr_audio` to correct buffer.
     input_data->audio = input_data->buffer.data();
     RTC_DCHECK_GE(input_data->buffer.size(),
                   input_data->length_per_channel * input_data->audio_channel);
@@ -415,7 +416,7 @@ int AudioCodingModuleImpl::Add10MsDataInternal(const AudioFrame& audio_frame,
 // encoder is mono and input is stereo. In case of dual-streaming, both
 // encoders has to be mono for down-mix to take place.
 // |*ptr_out| will point to the pre-processed audio-frame. If no pre-processing
-// is required, |*ptr_out| points to |in_frame|.
+// is required, |*ptr_out| points to `in_frame`.
 // TODO(yujo): Make this more efficient for muted frames.
 int AudioCodingModuleImpl::PreprocessToAddData(const AudioFrame& in_frame,
                                                const AudioFrame** ptr_out) {
@@ -602,6 +603,14 @@ ANAStats AudioCodingModuleImpl::GetANAStats() const {
     return encoder_stack_->GetANAStats();
   // If no encoder is set, return default stats.
   return ANAStats();
+}
+
+int AudioCodingModuleImpl::GetTargetBitrate() const {
+  MutexLock lock(&acm_mutex_);
+  if (!encoder_stack_) {
+    return -1;
+  }
+  return encoder_stack_->GetTargetBitrate();
 }
 
 }  // namespace

@@ -11,8 +11,10 @@
 #ifndef RTC_BASE_NETWORK_MONITOR_H_
 #define RTC_BASE_NETWORK_MONITOR_H_
 
+#include <functional>
+#include <utility>
+
 #include "rtc_base/network_constants.h"
-#include "rtc_base/third_party/sigslot/sigslot.h"
 
 namespace rtc {
 
@@ -40,8 +42,8 @@ const char* NetworkPreferenceToString(NetworkPreference preference);
 // where only the ip address is known at the time of binding.
 class NetworkBinderInterface {
  public:
-  // Binds a socket to the network that is attached to |address| so that all
-  // packets on the socket |socket_fd| will be sent via that network.
+  // Binds a socket to the network that is attached to `address` so that all
+  // packets on the socket `socket_fd` will be sent via that network.
   // This is needed because some operating systems (like Android) require a
   // special bind call to put packets on a non-default network interface.
   virtual NetworkBindingResult BindSocketToNetwork(
@@ -51,7 +53,7 @@ class NetworkBinderInterface {
 };
 
 /*
- * Receives network-change events via |OnNetworksChanged| and signals the
+ * Receives network-change events via `OnNetworksChanged` and signals the
  * networks changed event.
  *
  * Threading consideration:
@@ -73,8 +75,6 @@ class NetworkMonitorInterface {
   NetworkMonitorInterface();
   virtual ~NetworkMonitorInterface();
 
-  sigslot::signal0<> SignalNetworksChanged;
-
   virtual void Start() = 0;
   virtual void Stop() = 0;
 
@@ -85,7 +85,7 @@ class NetworkMonitorInterface {
   virtual NetworkPreference GetNetworkPreference(
       const std::string& interface_name) = 0;
 
-  // Does |this| NetworkMonitorInterface implement BindSocketToNetwork?
+  // Does `this` NetworkMonitorInterface implement BindSocketToNetwork?
   // Only Android returns true.
   virtual bool SupportsBindSocketToNetwork() const { return false; }
 
@@ -110,6 +110,20 @@ class NetworkMonitorInterface {
   virtual bool IsAdapterAvailable(const std::string& interface_name) {
     return true;
   }
+
+  void SetNetworksChangedCallback(std::function<void()> callback) {
+    networks_changed_callback_ = std::move(callback);
+  }
+
+ protected:
+  void InvokeNetworksChangedCallback() {
+    if (networks_changed_callback_) {
+      networks_changed_callback_();
+    }
+  }
+
+ private:
+  std::function<void()> networks_changed_callback_;
 };
 
 }  // namespace rtc

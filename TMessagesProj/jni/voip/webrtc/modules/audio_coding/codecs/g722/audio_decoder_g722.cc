@@ -114,6 +114,12 @@ int AudioDecoderG722StereoImpl::DecodeInternal(const uint8_t* encoded,
   return static_cast<int>(ret);
 }
 
+int AudioDecoderG722StereoImpl::PacketDuration(const uint8_t* encoded,
+                                               size_t encoded_len) const {
+  // 1/2 encoded byte per sample per channel.
+  return static_cast<int>(2 * encoded_len / Channels());
+}
+
 int AudioDecoderG722StereoImpl::SampleRateHz() const {
   return 16000;
 }

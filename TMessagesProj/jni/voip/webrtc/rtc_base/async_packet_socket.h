@@ -13,7 +13,6 @@
 
 #include <vector>
 
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/dscp.h"
 #include "rtc_base/network/sent_packet.h"
 #include "rtc_base/socket.h"
@@ -69,6 +68,9 @@ class RTC_EXPORT AsyncPacketSocket : public sigslot::has_slots<> {
   AsyncPacketSocket();
   ~AsyncPacketSocket() override;
 
+  AsyncPacketSocket(const AsyncPacketSocket&) = delete;
+  AsyncPacketSocket& operator=(const AsyncPacketSocket&) = delete;
+
   // Returns current local address. Address may be set to null if the
   // socket is not bound yet (GetState() returns STATE_BINDING).
   virtual SocketAddress GetLocalAddress() const = 0;
@@ -117,8 +119,7 @@ class RTC_EXPORT AsyncPacketSocket : public sigslot::has_slots<> {
 
   // Emitted after address for the socket is allocated, i.e. binding
   // is finished. State of the socket is changed from BINDING to BOUND
-  // (for UDP and server TCP sockets) or CONNECTING (for client TCP
-  // sockets).
+  // (for UDP sockets).
   sigslot::signal2<AsyncPacketSocket*, const SocketAddress&> SignalAddressReady;
 
   // Emitted for client TCP sockets when state is changed from
@@ -128,12 +129,24 @@ class RTC_EXPORT AsyncPacketSocket : public sigslot::has_slots<> {
   // Emitted for client TCP sockets when state is changed from
   // CONNECTED to CLOSED.
   sigslot::signal2<AsyncPacketSocket*, int> SignalClose;
+};
 
-  // Used only for listening TCP sockets.
-  sigslot::signal2<AsyncPacketSocket*, AsyncPacketSocket*> SignalNewConnection;
+// Listen socket, producing an AsyncPacketSocket when a peer connects.
+class RTC_EXPORT AsyncListenSocket : public sigslot::has_slots<> {
+ public:
+  enum class State {
+    kClosed,
+    kBound,
+  };
 
- private:
-  RTC_DISALLOW_COPY_AND_ASSIGN(AsyncPacketSocket);
+  // Returns current state of the socket.
+  virtual State GetState() const = 0;
+
+  // Returns current local address. Address may be set to null if the
+  // socket is not bound yet (GetState() returns kBinding).
+  virtual SocketAddress GetLocalAddress() const = 0;
+
+  sigslot::signal2<AsyncListenSocket*, AsyncPacketSocket*> SignalNewConnection;
 };
 
 void CopySocketInformationToPacketInfo(size_t packet_size_bytes,

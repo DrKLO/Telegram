@@ -307,7 +307,4 @@ static jint Java_WebRtcAudioTrack_getInitialBufferSizeInFrames(JNIEnv* env, cons
 }  // namespace jni
 }  // namespace  webrtc
 
-// Step 4: Generated test functions (optional).
-
-
 #endif  // org_webrtc_audio_WebRtcAudioTrack_JNI

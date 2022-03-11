@@ -11,6 +11,8 @@
 #ifndef API_VIDEO_VIDEO_SINK_INTERFACE_H_
 #define API_VIDEO_VIDEO_SINK_INTERFACE_H_
 
+#include "absl/types/optional.h"
+#include "api/video_track_source_constraints.h"
 #include "rtc_base/checks.h"
 
 namespace rtc {
@@ -25,6 +27,11 @@ class VideoSinkInterface {
   // Should be called by the source when it discards the frame due to rate
   // limiting.
   virtual void OnDiscardedFrame() {}
+
+  // Called on the network thread when video constraints change.
+  // TODO(crbug/1255737): make pure virtual once downstream project adapts.
+  virtual void OnConstraintsChanged(
+      const webrtc::VideoTrackSourceConstraints& constraints) {}
 };
 
 }  // namespace rtc

@@ -137,4 +137,51 @@ void BM_DoubleToString_By_SixDigits(benchmark::State& state) {
 }
 BENCHMARK(BM_DoubleToString_By_SixDigits);
 
+template <typename... Chunks>
+void BM_StrAppendImpl(benchmark::State& state, size_t total_bytes,
+                      Chunks... chunks) {
+  for (auto s : state) {
+    std::string result;
+    while (result.size() < total_bytes) {
+      absl::StrAppend(&result, chunks...);
+      benchmark::DoNotOptimize(result);
+    }
+  }
+}
+
+void BM_StrAppend(benchmark::State& state) {
+  const int total_bytes = state.range(0);
+  const int chunks_at_a_time = state.range(1);
+  const absl::string_view kChunk = "0123456789";
+
+  switch (chunks_at_a_time) {
+    case 1:
+      return BM_StrAppendImpl(state, total_bytes, kChunk);
+    case 2:
+      return BM_StrAppendImpl(state, total_bytes, kChunk, kChunk);
+    case 4:
+      return BM_StrAppendImpl(state, total_bytes, kChunk, kChunk, kChunk,
+                              kChunk);
+    case 8:
+      return BM_StrAppendImpl(state, total_bytes, kChunk, kChunk, kChunk,
+                              kChunk, kChunk, kChunk, kChunk, kChunk);
+    default:
+      std::abort();
+  }
+}
+
+template <typename B>
+void StrAppendConfig(B* benchmark) {
+  for (int bytes : {10, 100, 1000, 10000}) {
+    for (int chunks : {1, 2, 4, 8}) {
+      // Only add the ones that divide properly. Otherwise we are over counting.
+      if (bytes % (10 * chunks) == 0) {
+        benchmark->Args({bytes, chunks});
+      }
+    }
+  }
+}
+
+BENCHMARK(BM_StrAppend)->Apply(StrAppendConfig);
+
 }  // namespace

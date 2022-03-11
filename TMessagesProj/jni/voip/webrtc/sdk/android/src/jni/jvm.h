@@ -23,7 +23,7 @@ JNIEnv* GetEnv();
 
 JavaVM* GetJVM();
 
-// Return a |JNIEnv*| usable on this thread.  Attaches to |g_jvm| if necessary.
+// Return a |JNIEnv*| usable on this thread.  Attaches to `g_jvm` if necessary.
 JNIEnv* AttachCurrentThreadIfNeeded();
 
 }  // namespace jni

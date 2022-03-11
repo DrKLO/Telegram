@@ -86,7 +86,4 @@ static base::android::ScopedJavaLocalRef<jobject> Java_State_fromNativeIndex(JNI
 }  // namespace jni
 }  // namespace  webrtc
 
-// Step 4: Generated test functions (optional).
-
-
 #endif  // org_webrtc_MediaSource_JNI

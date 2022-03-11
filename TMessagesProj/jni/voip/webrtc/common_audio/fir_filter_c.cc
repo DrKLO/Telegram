@@ -34,7 +34,7 @@ FIRFilterC::FIRFilterC(const float* coefficients, size_t coefficients_length)
 void FIRFilterC::Filter(const float* in, size_t length, float* out) {
   RTC_DCHECK_GT(length, 0);
 
-  // Convolves the input signal |in| with the filter kernel |coefficients_|
+  // Convolves the input signal `in` with the filter kernel `coefficients_`
   // taking into account the previous state.
   for (size_t i = 0; i < length; ++i) {
     out[i] = 0.f;

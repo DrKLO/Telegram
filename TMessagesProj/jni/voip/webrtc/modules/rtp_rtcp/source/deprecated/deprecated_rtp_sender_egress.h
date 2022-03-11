@@ -20,6 +20,7 @@
 #include "api/rtc_event_log/rtc_event_log.h"
 #include "api/units/data_rate.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
+#include "modules/rtp_rtcp/source/packet_sequencer.h"
 #include "modules/rtp_rtcp/source/rtp_packet_history.h"
 #include "modules/rtp_rtcp/source/rtp_packet_to_send.h"
 #include "modules/rtp_rtcp/source/rtp_rtcp_interface.h"
@@ -36,7 +37,8 @@ class DEPRECATED_RtpSenderEgress {
   // without passing through an actual paced sender.
   class NonPacedPacketSender : public RtpPacketSender {
    public:
-    explicit NonPacedPacketSender(DEPRECATED_RtpSenderEgress* sender);
+    NonPacedPacketSender(DEPRECATED_RtpSenderEgress* sender,
+                         PacketSequencer* sequence_number_assigner);
     virtual ~NonPacedPacketSender();
 
     void EnqueuePackets(
@@ -45,6 +47,7 @@ class DEPRECATED_RtpSenderEgress {
    private:
     uint16_t transport_sequence_number_;
     DEPRECATED_RtpSenderEgress* const sender_;
+    PacketSequencer* sequence_number_assigner_;
   };
 
   DEPRECATED_RtpSenderEgress(const RtpRtcpInterface::Configuration& config,
@@ -69,7 +72,7 @@ class DEPRECATED_RtpSenderEgress {
   void SetMediaHasBeenSent(bool media_sent) RTC_LOCKS_EXCLUDED(lock_);
   void SetTimestampOffset(uint32_t timestamp) RTC_LOCKS_EXCLUDED(lock_);
 
-  // For each sequence number in |sequence_number|, recall the last RTP packet
+  // For each sequence number in `sequence_number`, recall the last RTP packet
   // which bore it - its timestamp and whether it was the first and/or last
   // packet in that frame. If all of the given sequence numbers could be
   // recalled, return a vector with all of them (in corresponding order).
@@ -96,7 +99,7 @@ class DEPRECATED_RtpSenderEgress {
   void UpdateOnSendPacket(int packet_id,
                           int64_t capture_time_ms,
                           uint32_t ssrc);
-  // Sends packet on to |transport_|, leaving the RTP module.
+  // Sends packet on to `transport_`, leaving the RTP module.
   bool SendPacketToNetwork(const RtpPacketToSend& packet,
                            const PacketOptions& options,
                            const PacedPacketInfo& pacing_info);

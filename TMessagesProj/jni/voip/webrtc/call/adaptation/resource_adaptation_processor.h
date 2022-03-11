@@ -58,8 +58,6 @@ class ResourceAdaptationProcessor : public ResourceAdaptationProcessorInterface,
       VideoStreamAdapter* video_stream_adapter);
   ~ResourceAdaptationProcessor() override;
 
-  void SetTaskQueue(TaskQueueBase* task_queue) override;
-
   // ResourceAdaptationProcessorInterface implementation.
   void AddResourceLimitationsListener(
       ResourceLimitationsListener* limitations_listener) override;
@@ -90,7 +88,6 @@ class ResourceAdaptationProcessor : public ResourceAdaptationProcessorInterface,
    public:
     explicit ResourceListenerDelegate(ResourceAdaptationProcessor* processor);
 
-    void SetTaskQueue(TaskQueueBase* task_queue);
     void OnProcessorDestroyed();
 
     // ResourceListener implementation.
@@ -129,7 +126,7 @@ class ResourceAdaptationProcessor : public ResourceAdaptationProcessorInterface,
                                  const VideoAdaptationCounters& counters)
       RTC_RUN_ON(task_queue_);
 
-  // Searches |adaptation_limits_by_resources_| for each resource with the
+  // Searches `adaptation_limits_by_resources_` for each resource with the
   // highest total adaptation counts. Adaptation up may only occur if the
   // resource performing the adaptation is the only most limited resource. This
   // function returns the list of all most limited resources as well as the

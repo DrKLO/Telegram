@@ -14,7 +14,6 @@
 #include <memory>
 
 #include "rtc_base/buffer.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/message_handler.h"
 #include "rtc_base/system/rtc_export.h"
 #include "rtc_base/third_party/sigslot/sigslot.h"
@@ -51,6 +50,9 @@ enum StreamEvent { SE_OPEN = 1, SE_READ = 2, SE_WRITE = 4, SE_CLOSE = 8 };
 class RTC_EXPORT StreamInterface {
  public:
   virtual ~StreamInterface() {}
+
+  StreamInterface(const StreamInterface&) = delete;
+  StreamInterface& operator=(const StreamInterface&) = delete;
 
   virtual StreamState GetState() const = 0;
 
@@ -110,9 +112,6 @@ class RTC_EXPORT StreamInterface {
 
  protected:
   StreamInterface();
-
- private:
-  RTC_DISALLOW_COPY_AND_ASSIGN(StreamInterface);
 };
 
 }  // namespace rtc

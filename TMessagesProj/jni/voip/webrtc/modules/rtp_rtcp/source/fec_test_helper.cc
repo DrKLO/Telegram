@@ -16,7 +16,6 @@
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
 #include "modules/rtp_rtcp/source/byte_io.h"
 #include "modules/rtp_rtcp/source/rtp_packet.h"
-#include "modules/rtp_rtcp/source/rtp_utility.h"
 #include "rtc_base/checks.h"
 
 namespace webrtc {
@@ -24,6 +23,9 @@ namespace test {
 namespace fec {
 
 namespace {
+
+constexpr uint8_t kRtpMarkerBitMask = 0x80;
+
 constexpr uint8_t kFecPayloadType = 96;
 constexpr uint8_t kRedPayloadType = 97;
 constexpr uint8_t kVp8PayloadType = 120;

@@ -109,7 +109,7 @@ ABSL_NAMESPACE_BEGIN
 
 // absl::BitGen::max()
 //
-// Returns the largest possible value from this bit generator., and
+// Returns the largest possible value from this bit generator.
 
 // absl::BitGen::discard(num)
 //

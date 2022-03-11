@@ -30,8 +30,8 @@ namespace webrtc {
 
 // Typical usage:
 // When posting a task, post a copy (capture by-value in a lambda) of the flag
-// reference and before performing the work, check the |alive()| state. Abort if
-// alive() returns |false|:
+// reference and before performing the work, check the `alive()` state. Abort if
+// alive() returns `false`:
 //
 // class ExampleClass {
 // ....
@@ -93,6 +93,8 @@ class PendingTaskSafetyFlag final
   explicit PendingTaskSafetyFlag(bool alive) : alive_(alive) {}
 
  private:
+  static rtc::scoped_refptr<PendingTaskSafetyFlag> CreateInternal(bool alive);
+
   bool alive_ = true;
   RTC_NO_UNIQUE_ADDRESS SequenceChecker main_sequence_;
 };

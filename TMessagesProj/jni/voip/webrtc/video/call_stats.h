@@ -18,7 +18,6 @@
 #include "modules/include/module.h"
 #include "modules/include/module_common_types.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "system_wrappers/include/clock.h"
 
@@ -35,12 +34,15 @@ class CallStats : public Module, public RtcpRttStats {
   CallStats(Clock* clock, ProcessThread* process_thread);
   ~CallStats() override;
 
+  CallStats(const CallStats&) = delete;
+  CallStats& operator=(const CallStats&) = delete;
+
   // Registers/deregisters a new observer to receive statistics updates.
   // Must be called from the construction thread.
   void RegisterStatsObserver(CallStatsObserver* observer);
   void DeregisterStatsObserver(CallStatsObserver* observer);
 
-  // Expose |LastProcessedRtt()| from RtcpRttStats to the public interface, as
+  // Expose `LastProcessedRtt()` from RtcpRttStats to the public interface, as
   // it is the part of the API that is needed by direct users of CallStats.
   // TODO(tommi): Threading or lifetime guarantees are not explicit in how
   // CallStats is used as RtcpRttStats or how pointers are cached in a
@@ -84,15 +86,15 @@ class CallStats : public Module, public RtcpRttStats {
   int64_t max_rtt_ms_ RTC_GUARDED_BY(process_thread_checker_);
 
   // Accessed from random threads (seemingly). Consider atomic.
-  // |avg_rtt_ms_| is allowed to be read on the process thread without a lock.
-  // |avg_rtt_ms_lock_| must be held elsewhere for reading.
-  // |avg_rtt_ms_lock_| must be held on the process thread for writing.
+  // `avg_rtt_ms_` is allowed to be read on the process thread without a lock.
+  // `avg_rtt_ms_lock_` must be held elsewhere for reading.
+  // `avg_rtt_ms_lock_` must be held on the process thread for writing.
   int64_t avg_rtt_ms_;
 
-  // Protects |avg_rtt_ms_|.
+  // Protects `avg_rtt_ms_`.
   mutable Mutex avg_rtt_ms_lock_;
 
-  // |sum_avg_rtt_ms_|, |num_avg_rtt_| and |time_of_first_rtt_ms_| are only used
+  // `sum_avg_rtt_ms_`, `num_avg_rtt_` and `time_of_first_rtt_ms_` are only used
   // on the ProcessThread when running. When the Process Thread is not running,
   // (and only then) they can be used in UpdateHistograms(), usually called from
   // the dtor.
@@ -114,8 +116,6 @@ class CallStats : public Module, public RtcpRttStats {
   SequenceChecker process_thread_checker_;
   ProcessThread* const process_thread_;
   bool process_thread_running_ RTC_GUARDED_BY(construction_thread_checker_);
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(CallStats);
 };
 
 }  // namespace webrtc

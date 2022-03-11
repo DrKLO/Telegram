@@ -11,11 +11,10 @@
 #ifndef AUDIO_DEVICE_LATEBINDINGSYMBOLTABLE_LINUX_H_
 #define AUDIO_DEVICE_LATEBINDINGSYMBOLTABLE_LINUX_H_
 
-#include <assert.h>
 #include <stddef.h>  // for NULL
 #include <string.h>
 
-#include "rtc_base/constructor_magic.h"
+#include "rtc_base/checks.h"
 
 // This file provides macros for creating "symbol table" classes to simplify the
 // dynamic loading of symbols from DLLs. Currently the implementation only
@@ -55,11 +54,14 @@ class LateBindingSymbolTable {
 
   ~LateBindingSymbolTable() { Unload(); }
 
+  LateBindingSymbolTable(const LateBindingSymbolTable&) = delete;
+  LateBindingSymbolTable& operator=(LateBindingSymbolTable&) = delete;
+
   static int NumSymbols() { return SYMBOL_TABLE_SIZE; }
 
   // We do not use this, but we offer it for theoretical convenience.
   static const char* GetSymbolName(int index) {
-    assert(index < NumSymbols());
+    RTC_DCHECK_LT(index, NumSymbols());
     return kSymbolNames[index];
   }
 
@@ -100,8 +102,8 @@ class LateBindingSymbolTable {
   // Retrieves the given symbol. NOTE: Recommended to use LATESYM_GET below
   // instead of this.
   void* GetSymbol(int index) const {
-    assert(IsLoaded());
-    assert(index < NumSymbols());
+    RTC_DCHECK(IsLoaded());
+    RTC_DCHECK_LT(index, NumSymbols());
     return symbols_[index];
   }
 
@@ -109,8 +111,6 @@ class LateBindingSymbolTable {
   DllHandle handle_;
   bool undefined_symbols_;
   void* symbols_[SYMBOL_TABLE_SIZE];
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(LateBindingSymbolTable);
 };
 
 // This macro must be invoked in a header to declare a symbol table class.

@@ -38,8 +38,8 @@ class VadCircularBuffer {
   // The mean value of the elements in the buffer. The return value is zero if
   // buffer is empty, i.e. no value is inserted.
   double Mean();
-  // Remove transients. If the values exceed |val_threshold| for a period
-  // shorter then or equal to |width_threshold|, then that period is considered
+  // Remove transients. If the values exceed `val_threshold` for a period
+  // shorter then or equal to `width_threshold`, then that period is considered
   // transient and set to zero.
   int RemoveTransient(int width_threshold, double val_threshold);
 
@@ -49,7 +49,7 @@ class VadCircularBuffer {
   // insertion. |index = 1| is the one before the most recent insertion, and
   // so on.
   int Get(int index, double* value) const;
-  // Set a given position to |value|. |index| is interpreted as above.
+  // Set a given position to `value`. `index` is interpreted as above.
   int Set(int index, double value);
   // Return the number of valid elements in the buffer.
   int BufferLevel();

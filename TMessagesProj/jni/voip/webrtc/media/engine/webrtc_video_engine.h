@@ -167,7 +167,7 @@ class WebRtcVideoChannel : public VideoMediaChannel,
                         int64_t packet_time_us) override;
   void OnPacketSent(const rtc::SentPacket& sent_packet) override;
   void OnReadyToSend(bool ready) override;
-  void OnNetworkRouteChanged(const std::string& transport_name,
+  void OnNetworkRouteChanged(absl::string_view transport_name,
                              const rtc::NetworkRoute& network_route) override;
   void SetInterface(NetworkInterface* iface) override;
 
@@ -218,17 +218,14 @@ class WebRtcVideoChannel : public VideoMediaChannel,
 
   std::vector<webrtc::RtpSource> GetSources(uint32_t ssrc) const override;
 
-  // Take the buffered packets for |ssrcs| and feed them into DeliverPacket.
+  // Take the buffered packets for `ssrcs` and feed them into DeliverPacket.
   // This method does nothing unless unknown_ssrc_packet_buffer_ is configured.
   void BackfillBufferedPackets(rtc::ArrayView<const uint32_t> ssrcs);
 
   // Implements webrtc::EncoderSwitchRequestCallback.
   void RequestEncoderFallback() override;
-
-  // TODO(bugs.webrtc.org/11341) : Remove this version of RequestEncoderSwitch.
-  void RequestEncoderSwitch(
-      const EncoderSwitchRequestCallback::Config& conf) override;
-  void RequestEncoderSwitch(const webrtc::SdpVideoFormat& format) override;
+  void RequestEncoderSwitch(const webrtc::SdpVideoFormat& format,
+                            bool allow_default_fallback) override;
 
   void SetRecordableEncodedFrameCallback(
       uint32_t ssrc,
@@ -258,12 +255,12 @@ class WebRtcVideoChannel : public VideoMediaChannel,
     VideoCodecSettings();
 
     // Checks if all members of |*this| are equal to the corresponding members
-    // of |other|.
+    // of `other`.
     bool operator==(const VideoCodecSettings& other) const;
     bool operator!=(const VideoCodecSettings& other) const;
 
-    // Checks if all members of |a|, except |flexfec_payload_type|, are equal
-    // to the corresponding members of |b|.
+    // Checks if all members of `a`, except `flexfec_payload_type`, are equal
+    // to the corresponding members of `b`.
     static bool EqualsDisregardingFlexfec(const VideoCodecSettings& a,
                                           const VideoCodecSettings& b);
 
@@ -290,7 +287,7 @@ class WebRtcVideoChannel : public VideoMediaChannel,
     // These optionals are unset if not changed.
     absl::optional<std::vector<VideoCodecSettings>> codec_settings;
     absl::optional<std::vector<webrtc::RtpExtension>> rtp_header_extensions;
-    // Keep track of the FlexFEC payload type separately from |codec_settings|.
+    // Keep track of the FlexFEC payload type separately from `codec_settings`.
     // This allows us to recreate the FlexfecReceiveStream separately from the
     // VideoReceiveStream when the FlexFEC payload type is changed.
     absl::optional<int> flexfec_payload_type;
@@ -389,8 +386,8 @@ class WebRtcVideoChannel : public VideoMediaChannel,
         const VideoCodec& codec) const;
     void ReconfigureEncoder();
 
-    // Calls Start or Stop according to whether or not |sending_| is true,
-    // and whether or not the encoding in |rtp_parameters_| is active.
+    // Calls Start or Stop according to whether or not `sending_` is true,
+    // and whether or not the encoding in `rtp_parameters_` is active.
     void UpdateSendState();
 
     webrtc::DegradationPreference GetDegradationPreference() const
@@ -436,7 +433,6 @@ class WebRtcVideoChannel : public VideoMediaChannel,
         webrtc::Call* call,
         const StreamParams& sp,
         webrtc::VideoReceiveStream::Config config,
-        webrtc::VideoDecoderFactory* decoder_factory,
         bool default_stream,
         const std::vector<VideoCodecSettings>& recv_codecs,
         const webrtc::FlexfecReceiveStream::Config& flexfec_config);
@@ -484,7 +480,10 @@ class WebRtcVideoChannel : public VideoMediaChannel,
    private:
     void RecreateWebRtcVideoStream();
 
-    void ConfigureCodecs(const std::vector<VideoCodecSettings>& recv_codecs);
+    // Applies a new receive codecs configration to `config_`. Returns true
+    // if the internal stream needs to be reconstructed, or false if no changes
+    // were applied.
+    bool ConfigureCodecs(const std::vector<VideoCodecSettings>& recv_codecs);
 
     std::string GetCodecNameFromPayloadType(int payload_type);
 
@@ -492,7 +491,7 @@ class WebRtcVideoChannel : public VideoMediaChannel,
     webrtc::Call* const call_;
     const StreamParams stream_params_;
 
-    // Both |stream_| and |flexfec_stream_| are managed by |this|. They are
+    // Both `stream_` and `flexfec_stream_` are managed by `this`. They are
     // destroyed by calling call_->DestroyVideoReceiveStream and
     // call_->DestroyFlexfecReceiveStream, respectively.
     webrtc::VideoReceiveStream* stream_;
@@ -500,8 +499,6 @@ class WebRtcVideoChannel : public VideoMediaChannel,
     webrtc::VideoReceiveStream::Config config_;
     webrtc::FlexfecReceiveStream::Config flexfec_config_;
     webrtc::FlexfecReceiveStream* flexfec_stream_;
-
-    webrtc::VideoDecoderFactory* const decoder_factory_;
 
     webrtc::Mutex sink_lock_;
     rtc::VideoSinkInterface<webrtc::VideoFrame>* sink_
@@ -577,8 +574,8 @@ class WebRtcVideoChannel : public VideoMediaChannel,
   // criteria because the streams live on the worker thread and the demuxer
   // lives on the network thread. Because packets are posted from the network
   // thread to the worker thread, they can still be in-flight when streams are
-  // reconfgured. This can happen when |demuxer_criteria_id_| and
-  // |demuxer_criteria_completed_id_| don't match. During this time, we do not
+  // reconfgured. This can happen when `demuxer_criteria_id_` and
+  // `demuxer_criteria_completed_id_` don't match. During this time, we do not
   // want to create unsignalled receive streams and should instead drop the
   // packets. E.g:
   // * If RemoveRecvStream(old_ssrc) was recently called, there may be packets
@@ -588,6 +585,8 @@ class WebRtcVideoChannel : public VideoMediaChannel,
   //   is a risk of receiving ssrcs for other, recently added m= sections.
   uint32_t demuxer_criteria_id_ RTC_GUARDED_BY(thread_checker_) = 0;
   uint32_t demuxer_criteria_completed_id_ RTC_GUARDED_BY(thread_checker_) = 0;
+  absl::optional<int64_t> last_unsignalled_ssrc_creation_time_ms_
+      RTC_GUARDED_BY(thread_checker_);
   std::set<uint32_t> send_ssrcs_ RTC_GUARDED_BY(thread_checker_);
   std::set<uint32_t> receive_ssrcs_ RTC_GUARDED_BY(thread_checker_);
 
@@ -596,7 +595,7 @@ class WebRtcVideoChannel : public VideoMediaChannel,
   std::vector<VideoCodecSettings> negotiated_codecs_
       RTC_GUARDED_BY(thread_checker_);
 
-  absl::optional<std::vector<webrtc::RtpExtension>> send_rtp_extensions_
+  std::vector<webrtc::RtpExtension> send_rtp_extensions_
       RTC_GUARDED_BY(thread_checker_);
 
   webrtc::VideoEncoderFactory* const encoder_factory_
@@ -636,9 +635,10 @@ class WebRtcVideoChannel : public VideoMediaChannel,
   std::unique_ptr<UnhandledPacketsBuffer> unknown_ssrc_packet_buffer_
       RTC_GUARDED_BY(thread_checker_);
 
+  // TODO(bugs.webrtc.org/11341): Remove this and relevant PC API. Presence
+  // of multiple negotiated codecs allows generic encoder fallback on failures.
+  // Presence of EncoderSelector allows switching to specific encoders.
   bool allow_codec_switching_ = false;
-  absl::optional<EncoderSwitchRequestCallback::Config>
-      requested_encoder_switch_;
 };
 
 class EncoderStreamFactory

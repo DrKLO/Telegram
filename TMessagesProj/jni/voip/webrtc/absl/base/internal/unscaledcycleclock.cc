@@ -87,6 +87,10 @@ int64_t UnscaledCycleClock::Now() {
 double UnscaledCycleClock::Frequency() {
 #ifdef __GLIBC__
   return __ppc_get_timebase_freq();
+#elif defined(_AIX)
+  // This is the same constant value as returned by
+  // __ppc_get_timebase_freq().
+  return static_cast<double>(512000000);
 #elif defined(__FreeBSD__)
   static once_flag init_timebase_frequency_once;
   static double timebase_frequency = 0.0;
@@ -119,13 +123,23 @@ double UnscaledCycleClock::Frequency() {
   return aarch64_timer_frequency;
 }
 
+#elif defined(__riscv)
+
+int64_t UnscaledCycleClock::Now() {
+  int64_t virtual_timer_value;
+  asm volatile("rdcycle %0" : "=r"(virtual_timer_value));
+  return virtual_timer_value;
+}
+
+double UnscaledCycleClock::Frequency() {
+  return base_internal::NominalCPUFrequency();
+}
+
 #elif defined(_M_IX86) || defined(_M_X64)
 
 #pragma intrinsic(__rdtsc)
 
-int64_t UnscaledCycleClock::Now() {
-  return __rdtsc();
-}
+int64_t UnscaledCycleClock::Now() { return __rdtsc(); }
 
 double UnscaledCycleClock::Frequency() {
   return base_internal::NominalCPUFrequency();

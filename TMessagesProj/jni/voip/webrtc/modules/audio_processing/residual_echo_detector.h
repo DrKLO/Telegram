@@ -51,12 +51,12 @@ class ResidualEchoDetector : public EchoDetector {
  private:
   static int instance_count_;
   std::unique_ptr<ApmDataDumper> data_dumper_;
-  // Keep track if the |Process| function has been previously called.
+  // Keep track if the `Process` function has been previously called.
   bool first_process_call_ = true;
   // Buffer for storing the power of incoming farend buffers. This is needed for
   // cases where calls to BufferFarend and Process are jittery.
   CircularBuffer render_buffer_;
-  // Count how long ago it was that the size of |render_buffer_| was zero. This
+  // Count how long ago it was that the size of `render_buffer_` was zero. This
   // value is also reset to zero when clock drift is detected and a value from
   // the renderbuffer is discarded, even though the buffer is not actually zero
   // at that point. This is done to avoid repeatedly removing elements in this

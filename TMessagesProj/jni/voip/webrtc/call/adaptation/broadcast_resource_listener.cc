@@ -32,7 +32,8 @@ class BroadcastResourceListener::AdapterResource : public Resource {
     MutexLock lock(&lock_);
     if (!listener_)
       return;
-    listener_->OnResourceUsageStateMeasured(this, usage_state);
+    listener_->OnResourceUsageStateMeasured(rtc::scoped_refptr<Resource>(this),
+                                            usage_state);
   }
 
   // Resource implementation.

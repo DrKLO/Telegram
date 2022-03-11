@@ -40,13 +40,7 @@ namespace webrtc {
 // SharedModuleThread supports a callback that is issued when only one reference
 // remains, which is used to indicate to the original owner that the thread may
 // be discarded.
-class SharedModuleThread : public rtc::RefCountInterface {
- protected:
-  SharedModuleThread(std::unique_ptr<ProcessThread> process_thread,
-                     std::function<void()> on_one_ref_remaining);
-  friend class rtc::scoped_refptr<SharedModuleThread>;
-  ~SharedModuleThread() override;
-
+class SharedModuleThread final {
  public:
   // Allows injection of an externally created process thread.
   static rtc::scoped_refptr<SharedModuleThread> Create(
@@ -58,16 +52,28 @@ class SharedModuleThread : public rtc::RefCountInterface {
   ProcessThread* process_thread();
 
  private:
-  void AddRef() const override;
-  rtc::RefCountReleaseStatus Release() const override;
+  friend class rtc::scoped_refptr<SharedModuleThread>;
+  SharedModuleThread(std::unique_ptr<ProcessThread> process_thread,
+                     std::function<void()> on_one_ref_remaining);
+  ~SharedModuleThread();
+
+  void AddRef() const;
+  rtc::RefCountReleaseStatus Release() const;
 
   class Impl;
   mutable std::unique_ptr<Impl> impl_;
 };
 
+// A Call represents a two-way connection carrying zero or more outgoing
+// and incoming media streams, transported over one or more RTP transports.
+
 // A Call instance can contain several send and/or receive streams. All streams
 // are assumed to have the same remote endpoint and will share bitrate estimates
 // etc.
+
+// When using the PeerConnection API, there is an one to one relationship
+// between the PeerConnection and the Call.
+
 class Call {
  public:
   using Config = CallConfig;
@@ -84,11 +90,14 @@ class Call {
 
   static Call* Create(const Call::Config& config);
   static Call* Create(const Call::Config& config,
-                      rtc::scoped_refptr<SharedModuleThread> call_thread);
-  static Call* Create(const Call::Config& config,
                       Clock* clock,
                       rtc::scoped_refptr<SharedModuleThread> call_thread,
                       std::unique_ptr<ProcessThread> pacer_thread);
+  static Call* Create(const Call::Config& config,
+                      Clock* clock,
+                      rtc::scoped_refptr<SharedModuleThread> call_thread,
+                      std::unique_ptr<RtpTransportControllerSendInterface>
+                          transportControllerSend);
 
   virtual AudioSendStream* CreateAudioSendStream(
       const AudioSendStream::Config& config) = 0;
@@ -151,6 +160,14 @@ class Call {
 
   virtual void OnAudioTransportOverheadChanged(
       int transport_overhead_per_packet) = 0;
+
+  // Called when a receive stream's local ssrc has changed and association with
+  // send streams needs to be updated.
+  virtual void OnLocalSsrcUpdated(AudioReceiveStream& stream,
+                                  uint32_t local_ssrc) = 0;
+
+  virtual void OnUpdateSyncGroup(AudioReceiveStream& stream,
+                                 const std::string& sync_group) = 0;
 
   virtual void OnSentPacket(const rtc::SentPacket& sent_packet) = 0;
 

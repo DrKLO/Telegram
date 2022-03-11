@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <vector>
 
+#include "common_video/h265/legacy_bit_buffer.h"
 #include "common_video/h264/h264_common.h"
 #include "rtc_base/bit_buffer.h"
 

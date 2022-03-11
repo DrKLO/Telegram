@@ -53,6 +53,24 @@ constexpr uint16_t kMinSctpSid = 0;
 // usrsctp.h)
 const int kSctpDefaultPort = 5000;
 
+// Error cause codes defined at
+// https://www.iana.org/assignments/sctp-parameters/sctp-parameters.xhtml#sctp-parameters-24
+enum class SctpErrorCauseCode : uint16_t {
+  kInvalidStreamIdentifier = 1,
+  kMissingMandatoryParameter = 2,
+  kStaleCookieError = 3,
+  kOutOfResource = 4,
+  kUnresolvableAddress = 5,
+  kUnrecognizedChunkType = 6,
+  kInvalidMandatoryParameter = 7,
+  kUnrecognizedParameters = 8,
+  kNoUserData = 9,
+  kCookieReceivedWhileShuttingDown = 10,
+  kRestartWithNewAddresses = 11,
+  kUserInitiatedAbort = 12,
+  kProtocolViolation = 13,
+};
+
 // Abstract SctpTransport interface for use internally (by PeerConnection etc.).
 // Exists to allow mock/fake SctpTransports to be created.
 class SctpTransportInternal {
@@ -68,11 +86,11 @@ class SctpTransportInternal {
   // completes. This method can be called multiple times, though not if either
   // of the ports are changed.
   //
-  // |local_sctp_port| and |remote_sctp_port| are passed along the wire and the
+  // `local_sctp_port` and `remote_sctp_port` are passed along the wire and the
   // listener and connector must be using the same port. They are not related
   // to the ports at the IP level. If set to -1, we default to
   // kSctpDefaultPort.
-  // |max_message_size_| sets the max message size on the connection.
+  // `max_message_size_` sets the max message size on the connection.
   // It must be smaller than or equal to kSctpSendBufferSize.
   // It can be changed by a secons Start() call.
   //
@@ -86,10 +104,10 @@ class SctpTransportInternal {
   // NOTE: Initially there was a "Stop" method here, but it was never used, so
   // it was removed.
 
-  // Informs SctpTransport that |sid| will start being used. Returns false if
-  // it is impossible to use |sid|, or if it's already in use.
-  // Until calling this, can't send data using |sid|.
-  // TODO(deadbeef): Actually implement the "returns false if |sid| can't be
+  // Informs SctpTransport that `sid` will start being used. Returns false if
+  // it is impossible to use `sid`, or if it's already in use.
+  // Until calling this, can't send data using `sid`.
+  // TODO(deadbeef): Actually implement the "returns false if `sid` can't be
   // used" part. See:
   // https://bugs.chromium.org/p/chromium/issues/detail?id=619849
   virtual bool OpenStream(int sid) = 0;
@@ -101,7 +119,7 @@ class SctpTransportInternal {
   // Send data down this channel (will be wrapped as SCTP packets then given to
   // usrsctp that will then post the network interface).
   // Returns true iff successful data somewhere on the send-queue/network.
-  // Uses |params.ssrc| as the SCTP sid.
+  // Uses `params.ssrc` as the SCTP sid.
   virtual bool SendData(int sid,
                         const webrtc::SendDataParams& params,
                         const rtc::CopyOnWriteBuffer& payload,
@@ -137,8 +155,8 @@ class SctpTransportInternal {
   // and outgoing streams reset).
   sigslot::signal1<int> SignalClosingProcedureComplete;
   // Fired when the underlying DTLS transport has closed due to an error
-  // or an incoming DTLS disconnect.
-  sigslot::signal0<> SignalClosedAbruptly;
+  // or an incoming DTLS disconnect or SCTP transport errors.
+  sigslot::signal1<webrtc::RTCError> SignalClosedAbruptly;
 
   // Helper for debugging.
   virtual void set_debug_name_for_testing(const char* debug_name) = 0;

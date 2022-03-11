@@ -23,7 +23,6 @@
 #include "api/audio_codecs/audio_encoder.h"
 #include "api/units/time_delta.h"
 #include "rtc_base/buffer.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -46,6 +45,9 @@ class AudioEncoderCopyRed final : public AudioEncoder {
   explicit AudioEncoderCopyRed(Config&& config);
 
   ~AudioEncoderCopyRed() override;
+
+  AudioEncoderCopyRed(const AudioEncoderCopyRed&) = delete;
+  AudioEncoderCopyRed& operator=(const AudioEncoderCopyRed&) = delete;
 
   int SampleRateHz() const override;
   size_t NumChannels() const override;
@@ -92,8 +94,6 @@ class AudioEncoderCopyRed final : public AudioEncoder {
   size_t max_packet_length_;
   int red_payload_type_;
   std::list<std::pair<EncodedInfo, rtc::Buffer>> redundant_encodings_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(AudioEncoderCopyRed);
 };
 
 }  // namespace webrtc

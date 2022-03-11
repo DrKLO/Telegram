@@ -27,6 +27,8 @@ class ScalableVideoController {
   struct StreamLayersConfig {
     int num_spatial_layers = 1;
     int num_temporal_layers = 1;
+    // Indicates if frames can reference frames of a different resolution.
+    bool uses_reference_scaling = true;
     // Spatial layers scaling. Frames with spatial_id = i expected to be encoded
     // with original_resolution * scaling_factor_num[i] / scaling_factor_den[i].
     int scaling_factor_num[DependencyDescriptor::kMaxSpatialIds] = {1, 1, 1, 1};

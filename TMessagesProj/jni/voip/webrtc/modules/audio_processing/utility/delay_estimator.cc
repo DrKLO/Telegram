@@ -55,7 +55,7 @@ static int BitCount(uint32_t u32) {
   return ((int)tmp);
 }
 
-// Compares the |binary_vector| with all rows of the |binary_matrix| and counts
+// Compares the `binary_vector` with all rows of the `binary_matrix` and counts
 // per row the number of times they have the same value.
 //
 // Inputs:
@@ -74,7 +74,7 @@ static void BitCountComparison(uint32_t binary_vector,
                                int32_t* bit_counts) {
   int n = 0;
 
-  // Compare |binary_vector| with all rows of the |binary_matrix|
+  // Compare `binary_vector` with all rows of the `binary_matrix`
   for (; n < matrix_size; n++) {
     bit_counts[n] = (int32_t)BitCount(binary_vector ^ binary_matrix[n]);
   }
@@ -83,9 +83,9 @@ static void BitCountComparison(uint32_t binary_vector,
 // Collects necessary statistics for the HistogramBasedValidation().  This
 // function has to be called prior to calling HistogramBasedValidation().  The
 // statistics updated and used by the HistogramBasedValidation() are:
-//  1. the number of |candidate_hits|, which states for how long we have had the
-//     same |candidate_delay|
-//  2. the |histogram| of candidate delays over time.  This histogram is
+//  1. the number of `candidate_hits`, which states for how long we have had the
+//     same `candidate_delay`
+//  2. the `histogram` of candidate delays over time.  This histogram is
 //     weighted with respect to a reliability measure and time-varying to cope
 //     with possible delay shifts.
 // For further description see commented code.
@@ -93,7 +93,7 @@ static void BitCountComparison(uint32_t binary_vector,
 // Inputs:
 //  - candidate_delay   : The delay to validate.
 //  - valley_depth_q14  : The cost function has a valley/minimum at the
-//                        |candidate_delay| location.  |valley_depth_q14| is the
+//                        `candidate_delay` location.  `valley_depth_q14` is the
 //                        cost function difference between the minimum and
 //                        maximum locations.  The value is in the Q14 domain.
 //  - valley_level_q14  : Is the cost function value at the minimum, in Q14.
@@ -109,37 +109,37 @@ static void UpdateRobustValidationStatistics(BinaryDelayEstimator* self,
   int i = 0;
 
   RTC_DCHECK_EQ(self->history_size, self->farend->history_size);
-  // Reset |candidate_hits| if we have a new candidate.
+  // Reset `candidate_hits` if we have a new candidate.
   if (candidate_delay != self->last_candidate_delay) {
     self->candidate_hits = 0;
     self->last_candidate_delay = candidate_delay;
   }
   self->candidate_hits++;
 
-  // The |histogram| is updated differently across the bins.
-  // 1. The |candidate_delay| histogram bin is increased with the
-  //    |valley_depth|, which is a simple measure of how reliable the
-  //    |candidate_delay| is.  The histogram is not increased above
-  //    |kHistogramMax|.
+  // The `histogram` is updated differently across the bins.
+  // 1. The `candidate_delay` histogram bin is increased with the
+  //    `valley_depth`, which is a simple measure of how reliable the
+  //    `candidate_delay` is.  The histogram is not increased above
+  //    `kHistogramMax`.
   self->histogram[candidate_delay] += valley_depth;
   if (self->histogram[candidate_delay] > kHistogramMax) {
     self->histogram[candidate_delay] = kHistogramMax;
   }
-  // 2. The histogram bins in the neighborhood of |candidate_delay| are
+  // 2. The histogram bins in the neighborhood of `candidate_delay` are
   //    unaffected.  The neighborhood is defined as x + {-2, -1, 0, 1}.
-  // 3. The histogram bins in the neighborhood of |last_delay| are decreased
-  //    with |decrease_in_last_set|.  This value equals the difference between
-  //    the cost function values at the locations |candidate_delay| and
-  //    |last_delay| until we reach |max_hits_for_slow_change| consecutive hits
-  //    at the |candidate_delay|.  If we exceed this amount of hits the
-  //    |candidate_delay| is a "potential" candidate and we start decreasing
-  //    these histogram bins more rapidly with |valley_depth|.
+  // 3. The histogram bins in the neighborhood of `last_delay` are decreased
+  //    with `decrease_in_last_set`.  This value equals the difference between
+  //    the cost function values at the locations `candidate_delay` and
+  //    `last_delay` until we reach `max_hits_for_slow_change` consecutive hits
+  //    at the `candidate_delay`.  If we exceed this amount of hits the
+  //    `candidate_delay` is a "potential" candidate and we start decreasing
+  //    these histogram bins more rapidly with `valley_depth`.
   if (self->candidate_hits < max_hits_for_slow_change) {
     decrease_in_last_set =
         (self->mean_bit_counts[self->compare_delay] - valley_level_q14) *
         kQ14Scaling;
   }
-  // 4. All other bins are decreased with |valley_depth|.
+  // 4. All other bins are decreased with `valley_depth`.
   // TODO(bjornv): Investigate how to make this loop more efficient.  Split up
   // the loop?  Remove parts that doesn't add too much.
   for (i = 0; i < self->history_size; ++i) {
@@ -157,15 +157,15 @@ static void UpdateRobustValidationStatistics(BinaryDelayEstimator* self,
   }
 }
 
-// Validates the |candidate_delay|, estimated in WebRtc_ProcessBinarySpectrum(),
+// Validates the `candidate_delay`, estimated in WebRtc_ProcessBinarySpectrum(),
 // based on a mix of counting concurring hits with a modified histogram
 // of recent delay estimates.  In brief a candidate is valid (returns 1) if it
 // is the most likely according to the histogram.  There are a couple of
 // exceptions that are worth mentioning:
-//  1. If the |candidate_delay| < |last_delay| it can be that we are in a
+//  1. If the `candidate_delay` < `last_delay` it can be that we are in a
 //     non-causal state, breaking a possible echo control algorithm.  Hence, we
 //     open up for a quicker change by allowing the change even if the
-//     |candidate_delay| is not the most likely one according to the histogram.
+//     `candidate_delay` is not the most likely one according to the histogram.
 //  2. There's a minimum number of hits (kMinRequiredHits) and the histogram
 //     value has to reached a minimum (kMinHistogramThreshold) to be valid.
 //  3. The action is also depending on the filter length used for echo control.
@@ -177,7 +177,7 @@ static void UpdateRobustValidationStatistics(BinaryDelayEstimator* self,
 //  - candidate_delay     : The delay to validate.
 //
 // Return value:
-//  - is_histogram_valid  : 1 - The |candidate_delay| is valid.
+//  - is_histogram_valid  : 1 - The `candidate_delay` is valid.
 //                          0 - Otherwise.
 static int HistogramBasedValidation(const BinaryDelayEstimator* self,
                                     int candidate_delay) {
@@ -186,22 +186,22 @@ static int HistogramBasedValidation(const BinaryDelayEstimator* self,
   const int delay_difference = candidate_delay - self->last_delay;
   int is_histogram_valid = 0;
 
-  // The histogram based validation of |candidate_delay| is done by comparing
-  // the |histogram| at bin |candidate_delay| with a |histogram_threshold|.
-  // This |histogram_threshold| equals a |fraction| of the |histogram| at bin
-  // |last_delay|.  The |fraction| is a piecewise linear function of the
-  // |delay_difference| between the |candidate_delay| and the |last_delay|
+  // The histogram based validation of `candidate_delay` is done by comparing
+  // the `histogram` at bin `candidate_delay` with a `histogram_threshold`.
+  // This `histogram_threshold` equals a `fraction` of the `histogram` at bin
+  // `last_delay`.  The `fraction` is a piecewise linear function of the
+  // `delay_difference` between the `candidate_delay` and the `last_delay`
   // allowing for a quicker move if
   //  i) a potential echo control filter can not handle these large differences.
-  // ii) keeping |last_delay| instead of updating to |candidate_delay| could
+  // ii) keeping `last_delay` instead of updating to `candidate_delay` could
   //     force an echo control into a non-causal state.
   // We further require the histogram to have reached a minimum value of
-  // |kMinHistogramThreshold|.  In addition, we also require the number of
-  // |candidate_hits| to be more than |kMinRequiredHits| to remove spurious
+  // `kMinHistogramThreshold`.  In addition, we also require the number of
+  // `candidate_hits` to be more than `kMinRequiredHits` to remove spurious
   // values.
 
-  // Calculate a comparison histogram value (|histogram_threshold|) that is
-  // depending on the distance between the |candidate_delay| and |last_delay|.
+  // Calculate a comparison histogram value (`histogram_threshold`) that is
+  // depending on the distance between the `candidate_delay` and `last_delay`.
   // TODO(bjornv): How much can we gain by turning the fraction calculation
   // into tables?
   if (delay_difference > self->allowed_offset) {
@@ -226,9 +226,9 @@ static int HistogramBasedValidation(const BinaryDelayEstimator* self,
   return is_histogram_valid;
 }
 
-// Performs a robust validation of the |candidate_delay| estimated in
+// Performs a robust validation of the `candidate_delay` estimated in
 // WebRtc_ProcessBinarySpectrum().  The algorithm takes the
-// |is_instantaneous_valid| and the |is_histogram_valid| and combines them
+// `is_instantaneous_valid` and the `is_histogram_valid` and combines them
 // into a robust validation.  The HistogramBasedValidation() has to be called
 // prior to this call.
 // For further description on how the combination is done, see commented code.
@@ -250,18 +250,18 @@ static int RobustValidation(const BinaryDelayEstimator* self,
   int is_robust = 0;
 
   // The final robust validation is based on the two algorithms; 1) the
-  // |is_instantaneous_valid| and 2) the histogram based with result stored in
-  // |is_histogram_valid|.
-  //   i) Before we actually have a valid estimate (|last_delay| == -2), we say
+  // `is_instantaneous_valid` and 2) the histogram based with result stored in
+  // `is_histogram_valid`.
+  //   i) Before we actually have a valid estimate (`last_delay` == -2), we say
   //      a candidate is valid if either algorithm states so
-  //      (|is_instantaneous_valid| OR |is_histogram_valid|).
+  //      (`is_instantaneous_valid` OR `is_histogram_valid`).
   is_robust =
       (self->last_delay < 0) && (is_instantaneous_valid || is_histogram_valid);
   //  ii) Otherwise, we need both algorithms to be certain
-  //      (|is_instantaneous_valid| AND |is_histogram_valid|)
+  //      (`is_instantaneous_valid` AND `is_histogram_valid`)
   is_robust |= is_instantaneous_valid && is_histogram_valid;
   // iii) With one exception, i.e., the histogram based algorithm can overrule
-  //      the instantaneous one if |is_histogram_valid| = 1 and the histogram
+  //      the instantaneous one if `is_histogram_valid` = 1 and the histogram
   //      is significantly strong.
   is_robust |= is_histogram_valid &&
                (self->histogram[candidate_delay] > self->last_delay_histogram);
@@ -373,13 +373,13 @@ void WebRtc_SoftResetBinaryDelayEstimatorFarend(
 void WebRtc_AddBinaryFarSpectrum(BinaryDelayEstimatorFarend* handle,
                                  uint32_t binary_far_spectrum) {
   RTC_DCHECK(handle);
-  // Shift binary spectrum history and insert current |binary_far_spectrum|.
+  // Shift binary spectrum history and insert current `binary_far_spectrum`.
   memmove(&(handle->binary_far_history[1]), &(handle->binary_far_history[0]),
           (handle->history_size - 1) * sizeof(uint32_t));
   handle->binary_far_history[0] = binary_far_spectrum;
 
   // Shift history of far-end binary spectrum bit counts and insert bit count
-  // of current |binary_far_spectrum|.
+  // of current `binary_far_spectrum`.
   memmove(&(handle->far_bit_counts[1]), &(handle->far_bit_counts[0]),
           (handle->history_size - 1) * sizeof(int));
   handle->far_bit_counts[0] = BitCount(binary_far_spectrum);
@@ -402,7 +402,7 @@ void WebRtc_FreeBinaryDelayEstimator(BinaryDelayEstimator* self) {
   free(self->histogram);
   self->histogram = NULL;
 
-  // BinaryDelayEstimator does not have ownership of |farend|, hence we do not
+  // BinaryDelayEstimator does not have ownership of `farend`, hence we do not
   // free the memory here. That should be handled separately by the user.
   self->farend = NULL;
 
@@ -454,8 +454,8 @@ int WebRtc_AllocateHistoryBufferMemory(BinaryDelayEstimator* self,
     // Only update far-end buffers if we need.
     history_size = WebRtc_AllocateFarendBufferMemory(far, history_size);
   }
-  // The extra array element in |mean_bit_counts| and |histogram| is a dummy
-  // element only used while |last_delay| == -2, i.e., before we have a valid
+  // The extra array element in `mean_bit_counts` and `histogram` is a dummy
+  // element only used while `last_delay` == -2, i.e., before we have a valid
   // estimate.
   self->mean_bit_counts = static_cast<int32_t*>(
       realloc(self->mean_bit_counts,
@@ -539,36 +539,36 @@ int WebRtc_ProcessBinarySpectrum(BinaryDelayEstimator* self,
   }
   if (self->near_history_size > 1) {
     // If we apply lookahead, shift near-end binary spectrum history. Insert
-    // current |binary_near_spectrum| and pull out the delayed one.
+    // current `binary_near_spectrum` and pull out the delayed one.
     memmove(&(self->binary_near_history[1]), &(self->binary_near_history[0]),
             (self->near_history_size - 1) * sizeof(uint32_t));
     self->binary_near_history[0] = binary_near_spectrum;
     binary_near_spectrum = self->binary_near_history[self->lookahead];
   }
 
-  // Compare with delayed spectra and store the |bit_counts| for each delay.
+  // Compare with delayed spectra and store the `bit_counts` for each delay.
   BitCountComparison(binary_near_spectrum, self->farend->binary_far_history,
                      self->history_size, self->bit_counts);
 
-  // Update |mean_bit_counts|, which is the smoothed version of |bit_counts|.
+  // Update `mean_bit_counts`, which is the smoothed version of `bit_counts`.
   for (i = 0; i < self->history_size; i++) {
-    // |bit_counts| is constrained to [0, 32], meaning we can smooth with a
+    // `bit_counts` is constrained to [0, 32], meaning we can smooth with a
     // factor up to 2^26. We use Q9.
     int32_t bit_count = (self->bit_counts[i] << 9);  // Q9.
 
-    // Update |mean_bit_counts| only when far-end signal has something to
-    // contribute. If |far_bit_counts| is zero the far-end signal is weak and
+    // Update `mean_bit_counts` only when far-end signal has something to
+    // contribute. If `far_bit_counts` is zero the far-end signal is weak and
     // we likely have a poor echo condition, hence don't update.
     if (self->farend->far_bit_counts[i] > 0) {
-      // Make number of right shifts piecewise linear w.r.t. |far_bit_counts|.
+      // Make number of right shifts piecewise linear w.r.t. `far_bit_counts`.
       int shifts = kShiftsAtZero;
       shifts -= (kShiftsLinearSlope * self->farend->far_bit_counts[i]) >> 4;
       WebRtc_MeanEstimatorFix(bit_count, shifts, &(self->mean_bit_counts[i]));
     }
   }
 
-  // Find |candidate_delay|, |value_best_candidate| and |value_worst_candidate|
-  // of |mean_bit_counts|.
+  // Find `candidate_delay`, `value_best_candidate` and `value_worst_candidate`
+  // of `mean_bit_counts`.
   for (i = 0; i < self->history_size; i++) {
     if (self->mean_bit_counts[i] < value_best_candidate) {
       value_best_candidate = self->mean_bit_counts[i];
@@ -580,25 +580,25 @@ int WebRtc_ProcessBinarySpectrum(BinaryDelayEstimator* self,
   }
   valley_depth = value_worst_candidate - value_best_candidate;
 
-  // The |value_best_candidate| is a good indicator on the probability of
-  // |candidate_delay| being an accurate delay (a small |value_best_candidate|
+  // The `value_best_candidate` is a good indicator on the probability of
+  // `candidate_delay` being an accurate delay (a small `value_best_candidate`
   // means a good binary match). In the following sections we make a decision
-  // whether to update |last_delay| or not.
+  // whether to update `last_delay` or not.
   // 1) If the difference bit counts between the best and the worst delay
   //    candidates is too small we consider the situation to be unreliable and
-  //    don't update |last_delay|.
-  // 2) If the situation is reliable we update |last_delay| if the value of the
+  //    don't update `last_delay`.
+  // 2) If the situation is reliable we update `last_delay` if the value of the
   //    best candidate delay has a value less than
-  //     i) an adaptive threshold |minimum_probability|, or
-  //    ii) this corresponding value |last_delay_probability|, but updated at
+  //     i) an adaptive threshold `minimum_probability`, or
+  //    ii) this corresponding value `last_delay_probability`, but updated at
   //        this time instant.
 
-  // Update |minimum_probability|.
+  // Update `minimum_probability`.
   if ((self->minimum_probability > kProbabilityLowerLimit) &&
       (valley_depth > kProbabilityMinSpread)) {
     // The "hard" threshold can't be lower than 17 (in Q9).
     // The valley in the curve also has to be distinct, i.e., the
-    // difference between |value_worst_candidate| and |value_best_candidate| has
+    // difference between `value_worst_candidate` and `value_best_candidate` has
     // to be large enough.
     int32_t threshold = value_best_candidate + kProbabilityOffset;
     if (threshold < kProbabilityLowerLimit) {
@@ -608,17 +608,17 @@ int WebRtc_ProcessBinarySpectrum(BinaryDelayEstimator* self,
       self->minimum_probability = threshold;
     }
   }
-  // Update |last_delay_probability|.
+  // Update `last_delay_probability`.
   // We use a Markov type model, i.e., a slowly increasing level over time.
   self->last_delay_probability++;
-  // Validate |candidate_delay|.  We have a reliable instantaneous delay
+  // Validate `candidate_delay`.  We have a reliable instantaneous delay
   // estimate if
-  //  1) The valley is distinct enough (|valley_depth| > |kProbabilityOffset|)
+  //  1) The valley is distinct enough (`valley_depth` > `kProbabilityOffset`)
   // and
   //  2) The depth of the valley is deep enough
-  //      (|value_best_candidate| < |minimum_probability|)
+  //      (`value_best_candidate` < `minimum_probability`)
   //     and deeper than the best estimate so far
-  //      (|value_best_candidate| < |last_delay_probability|)
+  //      (`value_best_candidate` < `last_delay_probability`)
   valid_candidate = ((valley_depth > kProbabilityOffset) &&
                      ((value_best_candidate < self->minimum_probability) ||
                       (value_best_candidate < self->last_delay_probability)));
@@ -650,7 +650,7 @@ int WebRtc_ProcessBinarySpectrum(BinaryDelayEstimator* self,
           (self->histogram[candidate_delay] > kLastHistogramMax
                ? kLastHistogramMax
                : self->histogram[candidate_delay]);
-      // Adjust the histogram if we made a change to |last_delay|, though it was
+      // Adjust the histogram if we made a change to `last_delay`, though it was
       // not the most likely one according to the histogram.
       if (self->histogram[candidate_delay] <
           self->histogram[self->compare_delay]) {
@@ -680,7 +680,7 @@ float WebRtc_binary_last_delay_quality(BinaryDelayEstimator* self) {
     // Simply a linear function of the histogram height at delay estimate.
     quality = self->histogram[self->compare_delay] / kHistogramMax;
   } else {
-    // Note that |last_delay_probability| states how deep the minimum of the
+    // Note that `last_delay_probability` states how deep the minimum of the
     // cost function is, so it is rather an error probability.
     quality = (float)(kMaxBitCountsQ9 - self->last_delay_probability) /
               kMaxBitCountsQ9;

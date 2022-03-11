@@ -36,14 +36,24 @@ bool IsDisabled(absl::string_view name,
 }  // namespace
 
 DEPRECATED_RtpSenderEgress::NonPacedPacketSender::NonPacedPacketSender(
-    DEPRECATED_RtpSenderEgress* sender)
-    : transport_sequence_number_(0), sender_(sender) {}
+    DEPRECATED_RtpSenderEgress* sender,
+    PacketSequencer* sequence_number_assigner)
+    : transport_sequence_number_(0),
+      sender_(sender),
+      sequence_number_assigner_(sequence_number_assigner) {
+  RTC_DCHECK(sequence_number_assigner_);
+}
 DEPRECATED_RtpSenderEgress::NonPacedPacketSender::~NonPacedPacketSender() =
     default;
 
 void DEPRECATED_RtpSenderEgress::NonPacedPacketSender::EnqueuePackets(
     std::vector<std::unique_ptr<RtpPacketToSend>> packets) {
   for (auto& packet : packets) {
+    // Assign sequence numbers, but not for flexfec which is already running on
+    // an internally maintained sequence number series.
+    if (packet->Ssrc() != sender_->FlexFecSsrc()) {
+      sequence_number_assigner_->Sequence(*packet);
+    }
     if (!packet->SetExtension<TransportSequenceNumber>(
             ++transport_sequence_number_)) {
       --transport_sequence_number_;
@@ -146,7 +156,7 @@ void DEPRECATED_RtpSenderEgress::SendPacket(
   // In case of VideoTimingExtension, since it's present not in every packet,
   // data after rtp header may be corrupted if these packets are protected by
   // the FEC.
-  int64_t diff_ms = now_ms - packet->capture_time_ms();
+  int64_t diff_ms = now_ms - packet->capture_time().ms();
   if (packet->HasExtension<TransmissionOffset>()) {
     packet->SetExtension<TransmissionOffset>(kTimestampTicksPerMs * diff_ms);
   }
@@ -157,9 +167,9 @@ void DEPRECATED_RtpSenderEgress::SendPacket(
 
   if (packet->HasExtension<VideoTimingExtension>()) {
     if (populate_network2_timestamp_) {
-      packet->set_network2_time_ms(now_ms);
+      packet->set_network2_time(Timestamp::Millis(now_ms));
     } else {
-      packet->set_pacer_exit_time_ms(now_ms);
+      packet->set_pacer_exit_time(Timestamp::Millis(now_ms));
     }
   }
 
@@ -180,8 +190,8 @@ void DEPRECATED_RtpSenderEgress::SendPacket(
 
   if (packet->packet_type() != RtpPacketMediaType::kPadding &&
       packet->packet_type() != RtpPacketMediaType::kRetransmission) {
-    UpdateDelayStatistics(packet->capture_time_ms(), now_ms, packet_ssrc);
-    UpdateOnSendPacket(options.packet_id, packet->capture_time_ms(),
+    UpdateDelayStatistics(packet->capture_time().ms(), now_ms, packet_ssrc);
+    UpdateOnSendPacket(options.packet_id, packet->capture_time().ms(),
                        packet_ssrc);
   }
 
@@ -313,7 +323,7 @@ void DEPRECATED_RtpSenderEgress::AddPacketToTransportFeedback(
     }
 
     RtpPacketSendInfo packet_info;
-    packet_info.ssrc = ssrc_;
+    packet_info.media_ssrc = ssrc_;
     packet_info.transport_sequence_number = packet_id;
     packet_info.rtp_sequence_number = packet.SequenceNumber();
     packet_info.length = packet_size;

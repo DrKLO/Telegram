@@ -19,7 +19,6 @@
 #include "pc/video_track.h"
 #include "legacy/InstanceImplLegacy.h"
 #include "InstanceImpl.h"
-#include "reference/InstanceImplReference.h"
 #include "libtgvoip/os/android/AudioOutputOpenSLES.h"
 #include "libtgvoip/os/android/AudioInputOpenSLES.h"
 #include "libtgvoip/os/android/JNIUtilities.h"
@@ -29,7 +28,6 @@ using namespace tgcalls;
 
 const auto RegisterTag = Register<InstanceImpl>();
 const auto RegisterTagLegacy = Register<InstanceImplLegacy>();
-const auto RegisterTagReference = tgcalls::Register<InstanceImplReference>();
 
 jclass TrafficStatsClass;
 jclass FingerprintClass;
@@ -135,6 +133,19 @@ private:
     int64_t _timestamp;
     int32_t _videoChannel;
     VideoChannelDescription::Quality _quality;
+};
+
+class RequestCurrentTimeTaskJava : public BroadcastPartTask {
+public:
+    RequestCurrentTimeTaskJava(std::function<void(int64_t)> callback) :
+            _callback(std::move(callback)) {
+    }
+
+    std::function<void(int64_t)> _callback;
+private:
+    void cancel() override {
+
+    }
 };
 
 class JavaObject {
@@ -465,6 +476,14 @@ JNIEXPORT jlong JNICALL Java_org_telegram_messenger_voip_NativeInstance_makeGrou
             });
             return task;
         };
+        descriptor.requestCurrentTime = [platformContext](std::function<void(int64_t)> callback) -> std::shared_ptr<BroadcastPartTask> {
+            std::shared_ptr<RequestCurrentTimeTaskJava> task = std::make_shared<RequestCurrentTimeTaskJava>(callback);
+            tgvoip::jni::DoWithJNI([platformContext, task](JNIEnv *env) {
+                jobject globalRef = ((AndroidContext *) platformContext.get())->getJavaInstance();
+                env->CallVoidMethod(globalRef, env->GetMethodID(NativeInstanceClass, "requestCurrentTime", "(J)V"), (jlong) task.get());
+            });
+            return task;
+        };
     }
 
     auto *holder = new InstanceHolder;
@@ -480,17 +499,18 @@ JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_setJoinRe
     if (instance->groupNativeInstance == nullptr) {
         return;
     }
-    instance->groupNativeInstance->setConnectionMode(GroupConnectionMode::GroupConnectionModeRtc, true);
+    instance->groupNativeInstance->setConnectionMode(GroupConnectionMode::GroupConnectionModeRtc, true, true);
     instance->groupNativeInstance->setJoinResponsePayload(tgvoip::jni::JavaStringToStdString(env, payload));
 }
 
 extern "C"
-JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_prepareForStream(JNIEnv *env, jobject obj) {
+JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_prepareForStream(JNIEnv *env, jobject obj, jboolean isRtmpStream) {
     InstanceHolder *instance = getInstanceHolder(env, obj);
     if (instance->groupNativeInstance == nullptr) {
         return;
     }
-    instance->groupNativeInstance->setConnectionMode(GroupConnectionMode::GroupConnectionModeBroadcast, true);
+    instance->groupNativeInstance->setConnectionMode(GroupConnectionMode::GroupConnectionModeBroadcast, true,
+                                                     isRtmpStream);
 }
 
 void onEmitJoinPayload(const std::shared_ptr<PlatformContext>& platformContext, const GroupJoinPayload& payload) {
@@ -506,7 +526,7 @@ JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_resetGrou
         return;
     }
     if (set) {
-        instance->groupNativeInstance->setConnectionMode(GroupConnectionMode::GroupConnectionModeNone, !disconnect);
+        instance->groupNativeInstance->setConnectionMode(GroupConnectionMode::GroupConnectionModeNone, !disconnect, true);
     }
     std::shared_ptr<PlatformContext> platformContext = instance->_platformContext;
     instance->groupNativeInstance->emitJoinPayload([platformContext](const GroupJoinPayload& payload) {
@@ -1064,6 +1084,16 @@ JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_onSignali
     memcpy(&array[0], valueBytes, size);
     instance->nativeInstance->receiveSignalingData(array);
     env->ReleaseByteArrayElements(value, (jbyte *) valueBytes, JNI_ABORT);
+}
+
+extern "C"
+JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_onRequestTimeComplete(JNIEnv *env, jobject obj, jlong taskPtr, jlong currentTime) {
+    InstanceHolder *instance = getInstanceHolder(env, obj);
+    if (instance->groupNativeInstance == nullptr) {
+        return;
+    }
+    auto task = reinterpret_cast<RequestCurrentTimeTaskJava *>(taskPtr);
+    task->_callback(currentTime);
 }
 
 }

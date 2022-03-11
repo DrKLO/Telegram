@@ -23,7 +23,7 @@ class NetEqControllerFactory {
  public:
   virtual ~NetEqControllerFactory() = default;
 
-  // Creates a new NetEqController object, with parameters set in |config|.
+  // Creates a new NetEqController object, with parameters set in `config`.
   virtual std::unique_ptr<NetEqController> CreateNetEqController(
       const NetEqController::Config& config) const = 0;
 };

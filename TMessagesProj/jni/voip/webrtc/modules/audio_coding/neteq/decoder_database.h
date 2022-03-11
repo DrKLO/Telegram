@@ -20,7 +20,6 @@
 #include "api/scoped_refptr.h"
 #include "modules/audio_coding/codecs/cng/webrtc_cng.h"
 #include "modules/audio_coding/neteq/packet.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -80,15 +79,15 @@ class DecoderDatabase {
     // Returns true if the decoder's format is RED.
     bool IsRed() const { return subtype_ == Subtype::kRed; }
 
-    // Returns true if the decoder's format is named |name|.
+    // Returns true if the decoder's format is named `name`.
     bool IsType(const char* name) const;
-    // Returns true if the decoder's format is named |name|.
+    // Returns true if the decoder's format is named `name`.
     bool IsType(const std::string& name) const;
 
     const std::string& get_name() const { return name_; }
 
    private:
-    // TODO(ossu): |name_| is kept here while we retain the old external
+    // TODO(ossu): `name_` is kept here while we retain the old external
     //             decoder interface. Remove this once using an
     //             AudioDecoderFactory has supplanted the old functionality.
     const std::string name_;
@@ -122,6 +121,9 @@ class DecoderDatabase {
 
   virtual ~DecoderDatabase();
 
+  DecoderDatabase(const DecoderDatabase&) = delete;
+  DecoderDatabase& operator=(const DecoderDatabase&) = delete;
+
   // Returns true if the database is empty.
   virtual bool Empty() const;
 
@@ -143,26 +145,26 @@ class DecoderDatabase {
   virtual int RegisterPayload(int rtp_payload_type,
                               const SdpAudioFormat& audio_format);
 
-  // Removes the entry for |rtp_payload_type| from the database.
+  // Removes the entry for `rtp_payload_type` from the database.
   // Returns kDecoderNotFound or kOK depending on the outcome of the operation.
   virtual int Remove(uint8_t rtp_payload_type);
 
   // Remove all entries.
   virtual void RemoveAll();
 
-  // Returns a pointer to the DecoderInfo struct for |rtp_payload_type|. If
-  // no decoder is registered with that |rtp_payload_type|, NULL is returned.
+  // Returns a pointer to the DecoderInfo struct for `rtp_payload_type`. If
+  // no decoder is registered with that `rtp_payload_type`, NULL is returned.
   virtual const DecoderInfo* GetDecoderInfo(uint8_t rtp_payload_type) const;
 
-  // Sets the active decoder to be |rtp_payload_type|. If this call results in a
-  // change of active decoder, |new_decoder| is set to true. The previous active
+  // Sets the active decoder to be `rtp_payload_type`. If this call results in a
+  // change of active decoder, `new_decoder` is set to true. The previous active
   // decoder's AudioDecoder object is deleted.
   virtual int SetActiveDecoder(uint8_t rtp_payload_type, bool* new_decoder);
 
   // Returns the current active decoder, or NULL if no active decoder exists.
   virtual AudioDecoder* GetActiveDecoder() const;
 
-  // Sets the active comfort noise decoder to be |rtp_payload_type|. If this
+  // Sets the active comfort noise decoder to be `rtp_payload_type`. If this
   // call results in a change of active comfort noise decoder, the previous
   // active decoder's AudioDecoder object is deleted.
   virtual int SetActiveCngDecoder(uint8_t rtp_payload_type);
@@ -176,26 +178,26 @@ class DecoderDatabase {
   // exists.
 
   // Returns a pointer to the AudioDecoder object associated with
-  // |rtp_payload_type|, or NULL if none is registered. If the AudioDecoder
+  // `rtp_payload_type`, or NULL if none is registered. If the AudioDecoder
   // object does not exist for that decoder, the object is created.
   AudioDecoder* GetDecoder(uint8_t rtp_payload_type) const;
 
-  // Returns if |rtp_payload_type| is registered with a format named |name|.
+  // Returns if `rtp_payload_type` is registered with a format named `name`.
   bool IsType(uint8_t rtp_payload_type, const char* name) const;
 
-  // Returns if |rtp_payload_type| is registered with a format named |name|.
+  // Returns if `rtp_payload_type` is registered with a format named `name`.
   bool IsType(uint8_t rtp_payload_type, const std::string& name) const;
 
-  // Returns true if |rtp_payload_type| is registered as comfort noise.
+  // Returns true if `rtp_payload_type` is registered as comfort noise.
   bool IsComfortNoise(uint8_t rtp_payload_type) const;
 
-  // Returns true if |rtp_payload_type| is registered as DTMF.
+  // Returns true if `rtp_payload_type` is registered as DTMF.
   bool IsDtmf(uint8_t rtp_payload_type) const;
 
-  // Returns true if |rtp_payload_type| is registered as RED.
+  // Returns true if `rtp_payload_type` is registered as RED.
   bool IsRed(uint8_t rtp_payload_type) const;
 
-  // Returns kOK if all packets in |packet_list| carry payload types that are
+  // Returns kOK if all packets in `packet_list` carry payload types that are
   // registered in the database. Otherwise, returns kDecoderNotFound.
   int CheckPayloadTypes(const PacketList& packet_list) const;
 
@@ -208,8 +210,6 @@ class DecoderDatabase {
   mutable std::unique_ptr<ComfortNoiseDecoder> active_cng_decoder_;
   rtc::scoped_refptr<AudioDecoderFactory> decoder_factory_;
   const absl::optional<AudioCodecPairId> codec_pair_id_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(DecoderDatabase);
 };
 
 }  // namespace webrtc

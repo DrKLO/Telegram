@@ -102,7 +102,7 @@ int TransientSuppressorImpl::Initialize(int sample_rate_hz,
   detector_.reset(new TransientDetector(detection_rate_hz));
   data_length_ = sample_rate_hz * ts::kChunkSizeMs / 1000;
   if (data_length_ > analysis_length_) {
-    RTC_NOTREACHED();
+    RTC_DCHECK_NOTREACHED();
     return -1;
   }
   buffer_delay_ = analysis_length_ - data_length_;
@@ -194,7 +194,7 @@ int TransientSuppressorImpl::Suppress(float* data,
 
     using_reference_ = detector_->using_reference();
 
-    // |detector_smoothed_| follows the |detector_result| when this last one is
+    // `detector_smoothed_` follows the `detector_result` when this last one is
     // increasing, but has an exponential decaying tail to be able to suppress
     // the ringing of keyclicks.
     float smooth_factor = using_reference_ ? 0.6 : 0.1;
@@ -223,7 +223,7 @@ int TransientSuppressorImpl::Suppress(float* data,
 }
 
 // This should only be called when detection is enabled. UpdateBuffers() must
-// have been called. At return, |out_buffer_| will be filled with the
+// have been called. At return, `out_buffer_` will be filled with the
 // processed output.
 void TransientSuppressorImpl::Suppress(float* in_ptr,
                                        float* spectral_mean,
@@ -325,7 +325,7 @@ void TransientSuppressorImpl::UpdateRestoration(float voice_probability) {
 }
 
 // Shift buffers to make way for new data. Must be called after
-// |detection_enabled_| is updated by UpdateKeypress().
+// `detection_enabled_` is updated by UpdateKeypress().
 void TransientSuppressorImpl::UpdateBuffers(float* data) {
   // TODO(aluebs): Change to ring buffer.
   memmove(in_buffer_.get(), &in_buffer_[data_length_],
@@ -350,9 +350,9 @@ void TransientSuppressorImpl::UpdateBuffers(float* data) {
 }
 
 // Restores the unvoiced signal if a click is present.
-// Attenuates by a certain factor every peak in the |fft_buffer_| that exceeds
-// the spectral mean. The attenuation depends on |detector_smoothed_|.
-// If a restoration takes place, the |magnitudes_| are updated to the new value.
+// Attenuates by a certain factor every peak in the `fft_buffer_` that exceeds
+// the spectral mean. The attenuation depends on `detector_smoothed_`.
+// If a restoration takes place, the `magnitudes_` are updated to the new value.
 void TransientSuppressorImpl::HardRestoration(float* spectral_mean) {
   const float detector_result =
       1.f - std::pow(1.f - detector_smoothed_, using_reference_ ? 200.f : 50.f);
@@ -376,10 +376,10 @@ void TransientSuppressorImpl::HardRestoration(float* spectral_mean) {
 }
 
 // Restores the voiced signal if a click is present.
-// Attenuates by a certain factor every peak in the |fft_buffer_| that exceeds
+// Attenuates by a certain factor every peak in the `fft_buffer_` that exceeds
 // the spectral mean and that is lower than some function of the current block
-// frequency mean. The attenuation depends on |detector_smoothed_|.
-// If a restoration takes place, the |magnitudes_| are updated to the new value.
+// frequency mean. The attenuation depends on `detector_smoothed_`.
+// If a restoration takes place, the `magnitudes_` are updated to the new value.
 void TransientSuppressorImpl::SoftRestoration(float* spectral_mean) {
   // Get the spectral magnitude mean of the current block.
   float block_frequency_mean = 0;

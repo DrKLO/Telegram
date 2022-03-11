@@ -28,8 +28,8 @@ namespace webrtc {
 // and plays out into a file.
 class FileAudioDevice : public AudioDeviceGeneric {
  public:
-  // Constructs a file audio device with |id|. It will read audio from
-  // |inputFilename| and record output audio to |outputFilename|.
+  // Constructs a file audio device with `id`. It will read audio from
+  // `inputFilename` and record output audio to `outputFilename`.
   //
   // The input file should be a readable 48k stereo raw file, and the output
   // file should point to a writable location. The output format will also be

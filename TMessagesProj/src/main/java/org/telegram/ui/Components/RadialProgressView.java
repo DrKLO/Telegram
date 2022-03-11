@@ -13,10 +13,11 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
-import androidx.annotation.Keep;
 import android.view.View;
 import android.view.animation.AccelerateInterpolator;
 import android.view.animation.DecelerateInterpolator;
+
+import androidx.annotation.Keep;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
@@ -102,6 +103,23 @@ public class RadialProgressView extends View {
         progressTime = 0;
     }
 
+    public void sync(RadialProgressView from) {
+        lastUpdateTime = from.lastUpdateTime;
+        radOffset = from.radOffset;
+        toCircle = from.toCircle;
+        toCircleProgress = from.toCircleProgress;
+        noProgress = from.noProgress;
+        currentCircleLength = from.currentCircleLength;
+        drawingCircleLenght = from.drawingCircleLenght;
+        currentProgressTime = from.currentProgressTime;
+        currentProgress = from.currentProgress;
+        progressTime = from.progressTime;
+        animatedProgress = from.animatedProgress;
+        risingCircleLength = from.risingCircleLength;
+        progressAnimationStart = from.progressAnimationStart;
+        updateAnimation(17 * 5);
+    }
+
     private void updateAnimation() {
         long newTime = System.currentTimeMillis();
         long dt = newTime - lastUpdateTime;
@@ -109,7 +127,10 @@ public class RadialProgressView extends View {
             dt = 17;
         }
         lastUpdateTime = newTime;
+        updateAnimation(dt);
+    }
 
+    private void updateAnimation(long dt) {
         radOffset += 360 * dt / rotationTime;
         int count = (int) (radOffset / 360);
         radOffset -= count * 360;

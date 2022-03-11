@@ -17,7 +17,6 @@
 #include <string>
 
 #include "rtc_base/checks.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/ssl_identity.h"
 
 namespace rtc {
@@ -39,6 +38,9 @@ class OpenSSLKeyPair final {
 
   ~OpenSSLKeyPair();
 
+  OpenSSLKeyPair(const OpenSSLKeyPair&) = delete;
+  OpenSSLKeyPair& operator=(const OpenSSLKeyPair&) = delete;
+
   std::unique_ptr<OpenSSLKeyPair> Clone();
 
   EVP_PKEY* pkey() const { return pkey_; }
@@ -51,8 +53,6 @@ class OpenSSLKeyPair final {
   void AddReference();
 
   EVP_PKEY* pkey_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(OpenSSLKeyPair);
 };
 
 }  // namespace rtc

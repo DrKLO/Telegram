@@ -13,6 +13,7 @@
 
 #include <string>
 
+#include "absl/types/optional.h"
 #include "api/media_stream_interface.h"
 #include "api/media_stream_track.h"
 #include "api/scoped_refptr.h"
@@ -21,13 +22,19 @@
 #include "api/video/video_sink_interface.h"
 #include "api/video/video_source_interface.h"
 #include "media/base/video_source_base.h"
+#include "pc/video_track_source_proxy.h"
+#include "rtc_base/system/no_unique_address.h"
 #include "rtc_base/thread.h"
 #include "rtc_base/thread_annotations.h"
 
 namespace webrtc {
 
+// TODO(tommi): Instead of inheriting from `MediaStreamTrack<>`, implement the
+// properties directly in this class. `MediaStreamTrack` doesn't guard against
+// conflicting access, so we'd need to override those methods anyway in this
+// class in order to make sure things are correctly checked.
 class VideoTrack : public MediaStreamTrack<VideoTrackInterface>,
-                   public rtc::VideoSourceBase,
+                   public rtc::VideoSourceBaseGuarded,
                    public ObserverInterface {
  public:
   static rtc::scoped_refptr<VideoTrack> Create(
@@ -38,29 +45,42 @@ class VideoTrack : public MediaStreamTrack<VideoTrackInterface>,
   void AddOrUpdateSink(rtc::VideoSinkInterface<VideoFrame>* sink,
                        const rtc::VideoSinkWants& wants) override;
   void RemoveSink(rtc::VideoSinkInterface<VideoFrame>* sink) override;
+  void RequestRefreshFrame() override;
+  VideoTrackSourceInterface* GetSource() const override;
 
-  VideoTrackSourceInterface* GetSource() const override {
-    return video_source_.get();
-  }
   ContentHint content_hint() const override;
   void set_content_hint(ContentHint hint) override;
   bool set_enabled(bool enable) override;
+  bool enabled() const override;
+  MediaStreamTrackInterface::TrackState state() const override;
   std::string kind() const override;
 
+  // Direct access to the non-proxied source object for internal implementation.
+  VideoTrackSourceInterface* GetSourceInternal() const;
+
  protected:
-  VideoTrack(const std::string& id,
-             VideoTrackSourceInterface* video_source,
-             rtc::Thread* worker_thread);
+  VideoTrack(
+      const std::string& id,
+      rtc::scoped_refptr<
+          VideoTrackSourceProxyWithInternal<VideoTrackSourceInterface>> source,
+      rtc::Thread* worker_thread);
   ~VideoTrack();
 
  private:
-  // Implements ObserverInterface. Observes |video_source_| state.
+  // Implements ObserverInterface. Observes `video_source_` state.
   void OnChanged() override;
 
+  RTC_NO_UNIQUE_ADDRESS webrtc::SequenceChecker signaling_thread_;
   rtc::Thread* const worker_thread_;
-  SequenceChecker signaling_thread_checker_;
-  rtc::scoped_refptr<VideoTrackSourceInterface> video_source_;
-  ContentHint content_hint_ RTC_GUARDED_BY(signaling_thread_checker_);
+  const rtc::scoped_refptr<
+      VideoTrackSourceProxyWithInternal<VideoTrackSourceInterface>>
+      video_source_;
+  ContentHint content_hint_ RTC_GUARDED_BY(&signaling_thread_);
+  // Cached `enabled` state for the worker thread. This is kept in sync with
+  // the state maintained on the signaling thread via set_enabled() but can
+  // be queried without blocking on the worker thread by callers that don't
+  // use an api proxy to call the `enabled()` method.
+  bool enabled_w_ RTC_GUARDED_BY(worker_thread_) = true;
 };
 
 }  // namespace webrtc

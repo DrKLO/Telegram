@@ -107,7 +107,7 @@ class RemoteEstimatorProxy : public RemoteBitrateEstimator {
   int64_t last_process_time_ms_;
 
   Mutex lock_;
-  //  |network_state_estimator_| may be null.
+  //  `network_state_estimator_` may be null.
   NetworkStateEstimator* const network_state_estimator_
       RTC_PT_GUARDED_BY(&lock_);
   uint32_t media_ssrc_ RTC_GUARDED_BY(&lock_);

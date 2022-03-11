@@ -19,17 +19,17 @@ namespace webrtc {
 class AlignmentAdjuster {
  public:
   // Returns the resolution alignment requested by the encoder (i.e
-  // |EncoderInfo::requested_resolution_alignment| which ensures that delivered
+  // `EncoderInfo::requested_resolution_alignment` which ensures that delivered
   // frames to the encoder are divisible by this alignment).
   //
-  // If |EncoderInfo::apply_alignment_to_all_simulcast_layers| is enabled, the
+  // If `EncoderInfo::apply_alignment_to_all_simulcast_layers` is enabled, the
   // alignment will be adjusted to ensure that each simulcast layer also is
-  // divisible by |requested_resolution_alignment|. The configured scale factors
-  // |scale_resolution_down_by| may be adjusted to a common multiple to limit
+  // divisible by `requested_resolution_alignment`. The configured scale factors
+  // `scale_resolution_down_by` may be adjusted to a common multiple to limit
   // the alignment value to avoid largely cropped frames and possibly with an
   // aspect ratio far from the original.
 
-  // Note: |max_layers| currently only taken into account when using default
+  // Note: `max_layers` currently only taken into account when using default
   // scale factors.
   static int GetAlignmentAndMaybeAdjustScaleFactors(
       const VideoEncoder::EncoderInfo& info,

@@ -20,7 +20,6 @@
 #include "api/task_queue/queued_task.h"
 #include "api/task_queue/task_queue_base.h"
 #include "api/task_queue/task_queue_factory.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/system/rtc_export.h"
 #include "rtc_base/task_utils/to_queued_task.h"
 #include "rtc_base/thread_annotations.h"
@@ -83,6 +82,9 @@ class RTC_LOCKABLE RTC_EXPORT TaskQueue {
                                      webrtc::TaskQueueDeleter> task_queue);
   ~TaskQueue();
 
+  TaskQueue(const TaskQueue&) = delete;
+  TaskQueue& operator=(const TaskQueue&) = delete;
+
   // Used for DCHECKing the current queue.
   bool IsCurrent() const;
 
@@ -93,14 +95,11 @@ class RTC_LOCKABLE RTC_EXPORT TaskQueue {
 
   // Ownership of the task is passed to PostTask.
   void PostTask(std::unique_ptr<webrtc::QueuedTask> task);
-
-  // Schedules a task to execute a specified number of milliseconds from when
-  // the call is made. The precision should be considered as "best effort"
-  // and in some cases, such as on Windows when all high precision timers have
-  // been used up, can be off by as much as 15 millseconds (although 8 would be
-  // more likely). This can be mitigated by limiting the use of delayed tasks.
+  // See webrtc::TaskQueueBase for precision expectations.
   void PostDelayedTask(std::unique_ptr<webrtc::QueuedTask> task,
                        uint32_t milliseconds);
+  void PostDelayedHighPrecisionTask(std::unique_ptr<webrtc::QueuedTask> task,
+                                    uint32_t milliseconds);
 
   // std::enable_if is used here to make sure that calls to PostTask() with
   // std::unique_ptr<SomeClassDerivedFromQueuedTask> would not end up being
@@ -112,8 +111,6 @@ class RTC_LOCKABLE RTC_EXPORT TaskQueue {
   void PostTask(Closure&& closure) {
     PostTask(webrtc::ToQueuedTask(std::forward<Closure>(closure)));
   }
-
-  // See documentation above for performance expectations.
   template <class Closure,
             typename std::enable_if<!std::is_convertible<
                 Closure,
@@ -122,11 +119,17 @@ class RTC_LOCKABLE RTC_EXPORT TaskQueue {
     PostDelayedTask(webrtc::ToQueuedTask(std::forward<Closure>(closure)),
                     milliseconds);
   }
+  template <class Closure,
+            typename std::enable_if<!std::is_convertible<
+                Closure,
+                std::unique_ptr<webrtc::QueuedTask>>::value>::type* = nullptr>
+  void PostDelayedHighPrecisionTask(Closure&& closure, uint32_t milliseconds) {
+    PostDelayedHighPrecisionTask(
+        webrtc::ToQueuedTask(std::forward<Closure>(closure)), milliseconds);
+  }
 
  private:
   webrtc::TaskQueueBase* const impl_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(TaskQueue);
 };
 
 }  // namespace rtc

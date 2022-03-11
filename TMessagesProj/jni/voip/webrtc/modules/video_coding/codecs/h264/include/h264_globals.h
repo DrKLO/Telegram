@@ -52,7 +52,7 @@ inline std::string ToString(H264PacketizationMode mode) {
   } else if (mode == H264PacketizationMode::SingleNalUnit) {
     return "SingleNalUnit";
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return "";
 }
 

@@ -52,7 +52,7 @@ template <int FixedSize>
 class BoundedByteReader {
  public:
   explicit BoundedByteReader(rtc::ArrayView<const uint8_t> data) : data_(data) {
-    RTC_DCHECK(data.size() >= FixedSize);
+    RTC_CHECK(data.size() >= FixedSize);
   }
 
   template <size_t offset>
@@ -77,7 +77,7 @@ class BoundedByteReader {
 
   template <size_t SubSize>
   BoundedByteReader<SubSize> sub_reader(size_t variable_offset) const {
-    RTC_DCHECK(FixedSize + variable_offset + SubSize <= data_.size());
+    RTC_CHECK(FixedSize + variable_offset + SubSize <= data_.size());
 
     rtc::ArrayView<const uint8_t> sub_span =
         data_.subview(FixedSize + variable_offset, SubSize);

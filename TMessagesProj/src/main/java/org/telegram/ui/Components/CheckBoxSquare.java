@@ -14,8 +14,9 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.RectF;
-import androidx.annotation.Keep;
 import android.view.View;
+
+import androidx.annotation.Keep;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
@@ -67,6 +68,7 @@ public class CheckBoxSquare extends View {
         key1 = unchecked;
         key2 = checked;
         key3 = check;
+        invalidate();
     }
 
     @Keep

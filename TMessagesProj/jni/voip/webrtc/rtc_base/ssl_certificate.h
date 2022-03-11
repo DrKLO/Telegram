@@ -17,12 +17,12 @@
 
 #include <stddef.h>
 #include <stdint.h>
+
 #include <memory>
 #include <string>
 #include <vector>
 
 #include "rtc_base/buffer.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/system/rtc_export.h"
 
 namespace rtc {
@@ -101,6 +101,9 @@ class RTC_EXPORT SSLCertChain final {
 
   ~SSLCertChain();
 
+  SSLCertChain(const SSLCertChain&) = delete;
+  SSLCertChain& operator=(const SSLCertChain&) = delete;
+
   // Vector access methods.
   size_t GetSize() const { return certs_.size(); }
 
@@ -118,8 +121,6 @@ class RTC_EXPORT SSLCertChain final {
 
  private:
   std::vector<std::unique_ptr<SSLCertificate>> certs_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(SSLCertChain);
 };
 
 // SSLCertificateVerifier provides a simple interface to allow third parties to

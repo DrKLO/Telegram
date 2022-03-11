@@ -15,6 +15,7 @@
 #include "absl/time/clock.h"
 
 #include "absl/base/attributes.h"
+#include "absl/base/optimization.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -74,9 +75,7 @@ ABSL_NAMESPACE_END
 #if !ABSL_USE_CYCLECLOCK_FOR_GET_CURRENT_TIME_NANOS
 namespace absl {
 ABSL_NAMESPACE_BEGIN
-int64_t GetCurrentTimeNanos() {
-  return GET_CURRENT_TIME_NANOS_FROM_SYSTEM();
-}
+int64_t GetCurrentTimeNanos() { return GET_CURRENT_TIME_NANOS_FROM_SYSTEM(); }
 ABSL_NAMESPACE_END
 }  // namespace absl
 #else  // Use the cyclecounter-based implementation below.
@@ -86,13 +85,6 @@ ABSL_NAMESPACE_END
 #define GET_CURRENT_TIME_NANOS_CYCLECLOCK_NOW() \
   ::absl::time_internal::UnscaledCycleClockWrapperForGetCurrentTime::Now()
 #endif
-
-// The following counters are used only by the test code.
-static int64_t stats_initializations;
-static int64_t stats_reinitializations;
-static int64_t stats_calibrations;
-static int64_t stats_slow_paths;
-static int64_t stats_fast_slow_paths;
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
@@ -106,72 +98,6 @@ class UnscaledCycleClockWrapperForGetCurrentTime {
 }  // namespace time_internal
 
 // uint64_t is used in this module to provide an extra bit in multiplications
-
-// Return the time in ns as told by the kernel interface.  Place in *cycleclock
-// the value of the cycleclock at about the time of the syscall.
-// This call represents the time base that this module synchronizes to.
-// Ensures that *cycleclock does not step back by up to (1 << 16) from
-// last_cycleclock, to discard small backward counter steps.  (Larger steps are
-// assumed to be complete resyncs, which shouldn't happen.  If they do, a full
-// reinitialization of the outer algorithm should occur.)
-static int64_t GetCurrentTimeNanosFromKernel(uint64_t last_cycleclock,
-                                             uint64_t *cycleclock) {
-  // We try to read clock values at about the same time as the kernel clock.
-  // This value gets adjusted up or down as estimate of how long that should
-  // take, so we can reject attempts that take unusually long.
-  static std::atomic<uint64_t> approx_syscall_time_in_cycles{10 * 1000};
-
-  uint64_t local_approx_syscall_time_in_cycles =  // local copy
-      approx_syscall_time_in_cycles.load(std::memory_order_relaxed);
-
-  int64_t current_time_nanos_from_system;
-  uint64_t before_cycles;
-  uint64_t after_cycles;
-  uint64_t elapsed_cycles;
-  int loops = 0;
-  do {
-    before_cycles = GET_CURRENT_TIME_NANOS_CYCLECLOCK_NOW();
-    current_time_nanos_from_system = GET_CURRENT_TIME_NANOS_FROM_SYSTEM();
-    after_cycles = GET_CURRENT_TIME_NANOS_CYCLECLOCK_NOW();
-    // elapsed_cycles is unsigned, so is large on overflow
-    elapsed_cycles = after_cycles - before_cycles;
-    if (elapsed_cycles >= local_approx_syscall_time_in_cycles &&
-        ++loops == 20) {  // clock changed frequencies?  Back off.
-      loops = 0;
-      if (local_approx_syscall_time_in_cycles < 1000 * 1000) {
-        local_approx_syscall_time_in_cycles =
-            (local_approx_syscall_time_in_cycles + 1) << 1;
-      }
-      approx_syscall_time_in_cycles.store(
-          local_approx_syscall_time_in_cycles,
-          std::memory_order_relaxed);
-    }
-  } while (elapsed_cycles >= local_approx_syscall_time_in_cycles ||
-           last_cycleclock - after_cycles < (static_cast<uint64_t>(1) << 16));
-
-  // Number of times in a row we've seen a kernel time call take substantially
-  // less than approx_syscall_time_in_cycles.
-  static std::atomic<uint32_t> seen_smaller{ 0 };
-
-  // Adjust approx_syscall_time_in_cycles to be within a factor of 2
-  // of the typical time to execute one iteration of the loop above.
-  if ((local_approx_syscall_time_in_cycles >> 1) < elapsed_cycles) {
-    // measured time is no smaller than half current approximation
-    seen_smaller.store(0, std::memory_order_relaxed);
-  } else if (seen_smaller.fetch_add(1, std::memory_order_relaxed) >= 3) {
-    // smaller delays several times in a row; reduce approximation by 12.5%
-    const uint64_t new_approximation =
-        local_approx_syscall_time_in_cycles -
-        (local_approx_syscall_time_in_cycles >> 3);
-    approx_syscall_time_in_cycles.store(new_approximation,
-                                        std::memory_order_relaxed);
-    seen_smaller.store(0, std::memory_order_relaxed);
-  }
-
-  *cycleclock = after_cycles;
-  return current_time_nanos_from_system;
-}
-
 
 // ---------------------------------------------------------------------
 // An implementation of reader-write locks that use no atomic ops in the read
@@ -224,32 +150,110 @@ static_assert(((kMinNSBetweenSamples << (kScale + 1)) >> (kScale + 1)) ==
                kMinNSBetweenSamples,
                "cannot represent kMaxBetweenSamplesNSScaled");
 
-// A reader-writer lock protecting the static locations below.
-// See SeqAcquire() and SeqRelease() above.
-static absl::base_internal::SpinLock lock(
-    absl::base_internal::kLinkerInitialized);
-static std::atomic<uint64_t> seq(0);
-
 // data from a sample of the kernel's time value
 struct TimeSampleAtomic {
-  std::atomic<uint64_t> raw_ns;              // raw kernel time
-  std::atomic<uint64_t> base_ns;             // our estimate of time
-  std::atomic<uint64_t> base_cycles;         // cycle counter reading
-  std::atomic<uint64_t> nsscaled_per_cycle;  // cycle period
+  std::atomic<uint64_t> raw_ns{0};              // raw kernel time
+  std::atomic<uint64_t> base_ns{0};             // our estimate of time
+  std::atomic<uint64_t> base_cycles{0};         // cycle counter reading
+  std::atomic<uint64_t> nsscaled_per_cycle{0};  // cycle period
   // cycles before we'll sample again (a scaled reciprocal of the period,
   // to avoid a division on the fast path).
-  std::atomic<uint64_t> min_cycles_per_sample;
+  std::atomic<uint64_t> min_cycles_per_sample{0};
 };
 // Same again, but with non-atomic types
 struct TimeSample {
-  uint64_t raw_ns;                 // raw kernel time
-  uint64_t base_ns;                // our estimate of time
-  uint64_t base_cycles;            // cycle counter reading
-  uint64_t nsscaled_per_cycle;     // cycle period
-  uint64_t min_cycles_per_sample;  // approx cycles before next sample
+  uint64_t raw_ns = 0;                 // raw kernel time
+  uint64_t base_ns = 0;                // our estimate of time
+  uint64_t base_cycles = 0;            // cycle counter reading
+  uint64_t nsscaled_per_cycle = 0;     // cycle period
+  uint64_t min_cycles_per_sample = 0;  // approx cycles before next sample
 };
 
-static struct TimeSampleAtomic last_sample;   // the last sample; under seq
+struct ABSL_CACHELINE_ALIGNED TimeState {
+  std::atomic<uint64_t> seq{0};
+  TimeSampleAtomic last_sample;  // the last sample; under seq
+
+  // The following counters are used only by the test code.
+  int64_t stats_initializations{0};
+  int64_t stats_reinitializations{0};
+  int64_t stats_calibrations{0};
+  int64_t stats_slow_paths{0};
+  int64_t stats_fast_slow_paths{0};
+
+  uint64_t last_now_cycles ABSL_GUARDED_BY(lock){0};
+
+  // Used by GetCurrentTimeNanosFromKernel().
+  // We try to read clock values at about the same time as the kernel clock.
+  // This value gets adjusted up or down as estimate of how long that should
+  // take, so we can reject attempts that take unusually long.
+  std::atomic<uint64_t> approx_syscall_time_in_cycles{10 * 1000};
+  // Number of times in a row we've seen a kernel time call take substantially
+  // less than approx_syscall_time_in_cycles.
+  std::atomic<uint32_t> kernel_time_seen_smaller{0};
+
+  // A reader-writer lock protecting the static locations below.
+  // See SeqAcquire() and SeqRelease() above.
+  absl::base_internal::SpinLock lock{absl::kConstInit,
+                                     base_internal::SCHEDULE_KERNEL_ONLY};
+};
+ABSL_CONST_INIT static TimeState time_state{};
+
+// Return the time in ns as told by the kernel interface.  Place in *cycleclock
+// the value of the cycleclock at about the time of the syscall.
+// This call represents the time base that this module synchronizes to.
+// Ensures that *cycleclock does not step back by up to (1 << 16) from
+// last_cycleclock, to discard small backward counter steps.  (Larger steps are
+// assumed to be complete resyncs, which shouldn't happen.  If they do, a full
+// reinitialization of the outer algorithm should occur.)
+static int64_t GetCurrentTimeNanosFromKernel(uint64_t last_cycleclock,
+                                             uint64_t *cycleclock)
+    ABSL_EXCLUSIVE_LOCKS_REQUIRED(time_state.lock) {
+  uint64_t local_approx_syscall_time_in_cycles =  // local copy
+      time_state.approx_syscall_time_in_cycles.load(std::memory_order_relaxed);
+
+  int64_t current_time_nanos_from_system;
+  uint64_t before_cycles;
+  uint64_t after_cycles;
+  uint64_t elapsed_cycles;
+  int loops = 0;
+  do {
+    before_cycles = GET_CURRENT_TIME_NANOS_CYCLECLOCK_NOW();
+    current_time_nanos_from_system = GET_CURRENT_TIME_NANOS_FROM_SYSTEM();
+    after_cycles = GET_CURRENT_TIME_NANOS_CYCLECLOCK_NOW();
+    // elapsed_cycles is unsigned, so is large on overflow
+    elapsed_cycles = after_cycles - before_cycles;
+    if (elapsed_cycles >= local_approx_syscall_time_in_cycles &&
+        ++loops == 20) {  // clock changed frequencies?  Back off.
+      loops = 0;
+      if (local_approx_syscall_time_in_cycles < 1000 * 1000) {
+        local_approx_syscall_time_in_cycles =
+            (local_approx_syscall_time_in_cycles + 1) << 1;
+      }
+      time_state.approx_syscall_time_in_cycles.store(
+          local_approx_syscall_time_in_cycles, std::memory_order_relaxed);
+    }
+  } while (elapsed_cycles >= local_approx_syscall_time_in_cycles ||
+           last_cycleclock - after_cycles < (static_cast<uint64_t>(1) << 16));
+
+  // Adjust approx_syscall_time_in_cycles to be within a factor of 2
+  // of the typical time to execute one iteration of the loop above.
+  if ((local_approx_syscall_time_in_cycles >> 1) < elapsed_cycles) {
+    // measured time is no smaller than half current approximation
+    time_state.kernel_time_seen_smaller.store(0, std::memory_order_relaxed);
+  } else if (time_state.kernel_time_seen_smaller.fetch_add(
+                 1, std::memory_order_relaxed) >= 3) {
+    // smaller delays several times in a row; reduce approximation by 12.5%
+    const uint64_t new_approximation =
+        local_approx_syscall_time_in_cycles -
+        (local_approx_syscall_time_in_cycles >> 3);
+    time_state.approx_syscall_time_in_cycles.store(new_approximation,
+                                                   std::memory_order_relaxed);
+    time_state.kernel_time_seen_smaller.store(0, std::memory_order_relaxed);
+  }
+
+  *cycleclock = after_cycles;
+  return current_time_nanos_from_system;
+}
 
 static int64_t GetCurrentTimeNanosSlowPath() ABSL_ATTRIBUTE_COLD;
 
@@ -317,14 +321,15 @@ int64_t GetCurrentTimeNanos() {
   // Acquire pairs with the barrier in SeqRelease - if this load sees that
   // store, the shared-data reads necessarily see that SeqRelease's updates
   // to the same shared data.
-  seq_read0 = seq.load(std::memory_order_acquire);
+  seq_read0 = time_state.seq.load(std::memory_order_acquire);
 
-  base_ns = last_sample.base_ns.load(std::memory_order_relaxed);
-  base_cycles = last_sample.base_cycles.load(std::memory_order_relaxed);
+  base_ns = time_state.last_sample.base_ns.load(std::memory_order_relaxed);
+  base_cycles =
+      time_state.last_sample.base_cycles.load(std::memory_order_relaxed);
   nsscaled_per_cycle =
-      last_sample.nsscaled_per_cycle.load(std::memory_order_relaxed);
-  min_cycles_per_sample =
-      last_sample.min_cycles_per_sample.load(std::memory_order_relaxed);
+      time_state.last_sample.nsscaled_per_cycle.load(std::memory_order_relaxed);
+  min_cycles_per_sample = time_state.last_sample.min_cycles_per_sample.load(
+      std::memory_order_relaxed);
 
   // This acquire fence pairs with the release fence in SeqAcquire.  Since it
   // is sequenced between reads of shared data and seq_read1, the reads of
@@ -335,7 +340,7 @@ int64_t GetCurrentTimeNanos() {
   // shared-data writes are effectively release ordered. Therefore if our
   // shared-data reads see any of a particular update's shared-data writes,
   // seq_read1 is guaranteed to see that update's SeqAcquire.
-  seq_read1 = seq.load(std::memory_order_relaxed);
+  seq_read1 = time_state.seq.load(std::memory_order_relaxed);
 
   // Fast path.  Return if min_cycles_per_sample has not yet elapsed since the
   // last sample, and we read a consistent sample.  The fast path activates
@@ -348,9 +353,9 @@ int64_t GetCurrentTimeNanos() {
   // last_sample was updated). This is harmless, because delta_cycles will wrap
   // and report a time much much bigger than min_cycles_per_sample. In that case
   // we will take the slow path.
-  uint64_t delta_cycles = now_cycles - base_cycles;
+  uint64_t delta_cycles;
   if (seq_read0 == seq_read1 && (seq_read0 & 1) == 0 &&
-      delta_cycles < min_cycles_per_sample) {
+      (delta_cycles = now_cycles - base_cycles) < min_cycles_per_sample) {
     return base_ns + ((delta_cycles * nsscaled_per_cycle) >> kScale);
   }
   return GetCurrentTimeNanosSlowPath();
@@ -390,24 +395,25 @@ static uint64_t UpdateLastSample(
 // TODO(absl-team): Remove this attribute when our compiler is smart enough
 // to do the right thing.
 ABSL_ATTRIBUTE_NOINLINE
-static int64_t GetCurrentTimeNanosSlowPath() ABSL_LOCKS_EXCLUDED(lock) {
+static int64_t GetCurrentTimeNanosSlowPath()
+    ABSL_LOCKS_EXCLUDED(time_state.lock) {
   // Serialize access to slow-path.  Fast-path readers are not blocked yet, and
   // code below must not modify last_sample until the seqlock is acquired.
-  lock.Lock();
+  time_state.lock.Lock();
 
   // Sample the kernel time base.  This is the definition of
   // "now" if we take the slow path.
-  static uint64_t last_now_cycles;  // protected by lock
   uint64_t now_cycles;
-  uint64_t now_ns = GetCurrentTimeNanosFromKernel(last_now_cycles, &now_cycles);
-  last_now_cycles = now_cycles;
+  uint64_t now_ns =
+      GetCurrentTimeNanosFromKernel(time_state.last_now_cycles, &now_cycles);
+  time_state.last_now_cycles = now_cycles;
 
   uint64_t estimated_base_ns;
 
   // ----------
   // Read the "last_sample" values again; this time holding the write lock.
   struct TimeSample sample;
-  ReadTimeSampleAtomic(&last_sample, &sample);
+  ReadTimeSampleAtomic(&time_state.last_sample, &sample);
 
   // ----------
   // Try running the fast path again; another thread may have updated the
@@ -418,13 +424,13 @@ static int64_t GetCurrentTimeNanosSlowPath() ABSL_LOCKS_EXCLUDED(lock) {
     // so that blocked readers can make progress without blocking new readers.
     estimated_base_ns = sample.base_ns +
         ((delta_cycles * sample.nsscaled_per_cycle) >> kScale);
-    stats_fast_slow_paths++;
+    time_state.stats_fast_slow_paths++;
   } else {
     estimated_base_ns =
         UpdateLastSample(now_cycles, now_ns, delta_cycles, &sample);
   }
 
-  lock.Unlock();
+  time_state.lock.Unlock();
 
   return estimated_base_ns;
 }
@@ -435,9 +441,10 @@ static int64_t GetCurrentTimeNanosSlowPath() ABSL_LOCKS_EXCLUDED(lock) {
 static uint64_t UpdateLastSample(uint64_t now_cycles, uint64_t now_ns,
                                  uint64_t delta_cycles,
                                  const struct TimeSample *sample)
-    ABSL_EXCLUSIVE_LOCKS_REQUIRED(lock) {
+    ABSL_EXCLUSIVE_LOCKS_REQUIRED(time_state.lock) {
   uint64_t estimated_base_ns = now_ns;
-  uint64_t lock_value = SeqAcquire(&seq);  // acquire seqlock to block readers
+  uint64_t lock_value =
+      SeqAcquire(&time_state.seq);  // acquire seqlock to block readers
 
   // The 5s in the next if-statement limits the time for which we will trust
   // the cycle counter and our last sample to give a reasonable result.
@@ -447,12 +454,16 @@ static uint64_t UpdateLastSample(uint64_t now_cycles, uint64_t now_ns,
       sample->raw_ns + static_cast<uint64_t>(5) * 1000 * 1000 * 1000 < now_ns ||
       now_ns < sample->raw_ns || now_cycles < sample->base_cycles) {
     // record this sample, and forget any previously known slope.
-    last_sample.raw_ns.store(now_ns, std::memory_order_relaxed);
-    last_sample.base_ns.store(estimated_base_ns, std::memory_order_relaxed);
-    last_sample.base_cycles.store(now_cycles, std::memory_order_relaxed);
-    last_sample.nsscaled_per_cycle.store(0, std::memory_order_relaxed);
-    last_sample.min_cycles_per_sample.store(0, std::memory_order_relaxed);
-    stats_initializations++;
+    time_state.last_sample.raw_ns.store(now_ns, std::memory_order_relaxed);
+    time_state.last_sample.base_ns.store(estimated_base_ns,
+                                         std::memory_order_relaxed);
+    time_state.last_sample.base_cycles.store(now_cycles,
+                                             std::memory_order_relaxed);
+    time_state.last_sample.nsscaled_per_cycle.store(0,
+                                                    std::memory_order_relaxed);
+    time_state.last_sample.min_cycles_per_sample.store(
+        0, std::memory_order_relaxed);
+    time_state.stats_initializations++;
   } else if (sample->raw_ns + 500 * 1000 * 1000 < now_ns &&
              sample->base_cycles + 50 < now_cycles) {
     // Enough time has passed to compute the cycle time.
@@ -495,28 +506,32 @@ static uint64_t UpdateLastSample(uint64_t now_cycles, uint64_t now_ns,
     if (new_nsscaled_per_cycle != 0 &&
         diff_ns < 100 * 1000 * 1000 && -diff_ns < 100 * 1000 * 1000) {
       // record the cycle time measurement
-      last_sample.nsscaled_per_cycle.store(
+      time_state.last_sample.nsscaled_per_cycle.store(
           new_nsscaled_per_cycle, std::memory_order_relaxed);
       uint64_t new_min_cycles_per_sample =
           SafeDivideAndScale(kMinNSBetweenSamples, new_nsscaled_per_cycle);
-      last_sample.min_cycles_per_sample.store(
+      time_state.last_sample.min_cycles_per_sample.store(
           new_min_cycles_per_sample, std::memory_order_relaxed);
-      stats_calibrations++;
+      time_state.stats_calibrations++;
     } else {  // something went wrong; forget the slope
-      last_sample.nsscaled_per_cycle.store(0, std::memory_order_relaxed);
-      last_sample.min_cycles_per_sample.store(0, std::memory_order_relaxed);
+      time_state.last_sample.nsscaled_per_cycle.store(
+          0, std::memory_order_relaxed);
+      time_state.last_sample.min_cycles_per_sample.store(
+          0, std::memory_order_relaxed);
       estimated_base_ns = now_ns;
-      stats_reinitializations++;
+      time_state.stats_reinitializations++;
     }
-    last_sample.raw_ns.store(now_ns, std::memory_order_relaxed);
-    last_sample.base_ns.store(estimated_base_ns, std::memory_order_relaxed);
-    last_sample.base_cycles.store(now_cycles, std::memory_order_relaxed);
+    time_state.last_sample.raw_ns.store(now_ns, std::memory_order_relaxed);
+    time_state.last_sample.base_ns.store(estimated_base_ns,
+                                         std::memory_order_relaxed);
+    time_state.last_sample.base_cycles.store(now_cycles,
+                                             std::memory_order_relaxed);
   } else {
     // have a sample, but no slope; waiting for enough time for a calibration
-    stats_slow_paths++;
+    time_state.stats_slow_paths++;
   }
 
-  SeqRelease(&seq, lock_value);  // release the readers
+  SeqRelease(&time_state.seq, lock_value);  // release the readers
 
   return estimated_base_ns;
 }
@@ -558,7 +573,8 @@ ABSL_NAMESPACE_END
 
 extern "C" {
 
-ABSL_ATTRIBUTE_WEAK void AbslInternalSleepFor(absl::Duration duration) {
+ABSL_ATTRIBUTE_WEAK void ABSL_INTERNAL_C_SYMBOL(AbslInternalSleepFor)(
+    absl::Duration duration) {
   while (duration > absl::ZeroDuration()) {
     absl::Duration to_sleep = std::min(duration, absl::MaxSleep());
     absl::SleepOnce(to_sleep);

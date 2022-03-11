@@ -10,11 +10,18 @@
 
 #include "pc/srtp_session.h"
 
+#include <string.h>
+
 #include <iomanip>
+#include <string>
 
 #include "absl/base/attributes.h"
-#include "media/base/rtp_utils.h"
+#include "absl/base/const_init.h"
+#include "api/array_view.h"
+#include "modules/rtp_rtcp/source/rtp_util.h"
 #include "pc/external_hmac.h"
+#include "rtc_base/byte_order.h"
+#include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/ssl_stream_adapter.h"
 #include "rtc_base/string_encode.h"
@@ -25,6 +32,8 @@
 #include "third_party/libsrtp/include/srtp_priv.h"
 
 namespace cricket {
+
+using ::webrtc::ParseRtpSequenceNumber;
 
 // One more than the maximum libsrtp error code. Required by
 // RTC_HISTOGRAM_ENUMERATION. Keep this in sync with srtp_error_status_t defined
@@ -96,8 +105,8 @@ bool SrtpSession::ProtectRtp(void* p, int in_len, int max_len, int* out_len) {
 
   *out_len = in_len;
   int err = srtp_protect(session_, p, out_len);
-  int seq_num;
-  GetRtpSeqNum(p, in_len, &seq_num);
+  int seq_num = ParseRtpSequenceNumber(
+      rtc::MakeArrayView(reinterpret_cast<const uint8_t*>(p), in_len));
   if (err != srtp_err_status_ok) {
     RTC_LOG(LS_WARNING) << "Failed to protect SRTP packet, seqnum=" << seq_num
                         << ", err=" << err

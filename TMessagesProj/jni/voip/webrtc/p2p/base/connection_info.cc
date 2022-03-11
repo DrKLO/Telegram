@@ -19,6 +19,7 @@ ConnectionInfo::ConnectionInfo()
       timeout(false),
       new_connection(false),
       rtt(0),
+      sent_discarded_bytes(0),
       sent_total_bytes(0),
       sent_bytes_second(0),
       sent_discarded_packets(0),

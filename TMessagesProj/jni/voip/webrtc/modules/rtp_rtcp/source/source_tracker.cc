@@ -72,7 +72,7 @@ std::vector<RtpSource> SourceTracker::GetSources() const {
 
 SourceTracker::SourceEntry& SourceTracker::UpdateEntry(const SourceKey& key) {
   // We intentionally do |find() + emplace()|, instead of checking the return
-  // value of |emplace()|, for performance reasons. It's much more likely for
+  // value of `emplace()`, for performance reasons. It's much more likely for
   // the key to already exist than for it not to.
   auto map_it = map_.find(key);
   if (map_it == map_.end()) {

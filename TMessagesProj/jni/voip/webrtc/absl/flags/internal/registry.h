@@ -17,11 +17,9 @@
 #define ABSL_FLAGS_INTERNAL_REGISTRY_H_
 
 #include <functional>
-#include <map>
-#include <string>
 
 #include "absl/base/config.h"
-#include "absl/base/macros.h"
+#include "absl/flags/commandlineflag.h"
 #include "absl/flags/internal/commandlineflag.h"
 #include "absl/strings/string_view.h"
 
@@ -32,19 +30,15 @@ namespace absl {
 ABSL_NAMESPACE_BEGIN
 namespace flags_internal {
 
-CommandLineFlag* FindCommandLineFlag(absl::string_view name);
-CommandLineFlag* FindRetiredFlag(absl::string_view name);
-
-// Executes specified visitor for each non-retired flag in the registry.
-// Requires the caller hold the registry lock.
-void ForEachFlagUnlocked(std::function<void(CommandLineFlag*)> visitor);
 // Executes specified visitor for each non-retired flag in the registry. While
 // callback are executed, the registry is locked and can't be changed.
-void ForEachFlag(std::function<void(CommandLineFlag*)> visitor);
+void ForEachFlag(std::function<void(CommandLineFlag&)> visitor);
 
 //-----------------------------------------------------------------------------
 
-bool RegisterCommandLineFlag(CommandLineFlag*);
+bool RegisterCommandLineFlag(CommandLineFlag&, const char* filename);
+
+void FinalizeRegistry();
 
 //-----------------------------------------------------------------------------
 // Retired registrations:
@@ -79,42 +73,21 @@ bool RegisterCommandLineFlag(CommandLineFlag*);
 //
 
 // Retire flag with name "name" and type indicated by ops.
-bool Retire(const char* name, FlagFastTypeId type_id);
+void Retire(const char* name, FlagFastTypeId type_id, char* buf);
+
+constexpr size_t kRetiredFlagObjSize = 3 * sizeof(void*);
+constexpr size_t kRetiredFlagObjAlignment = alignof(void*);
 
 // Registered a retired flag with name 'flag_name' and type 'T'.
 template <typename T>
-inline bool RetiredFlag(const char* flag_name) {
-  return flags_internal::Retire(flag_name, base_internal::FastTypeId<T>());
-}
-
-// If the flag is retired, returns true and indicates in |*type_is_bool|
-// whether the type of the retired flag is a bool.
-// Only to be called by code that needs to explicitly ignore retired flags.
-bool IsRetiredFlag(absl::string_view name, bool* type_is_bool);
-
-//-----------------------------------------------------------------------------
-// Saves the states (value, default value, whether the user has set
-// the flag, registered validators, etc) of all flags, and restores
-// them when the FlagSaver is destroyed.
-//
-// This class is thread-safe.  However, its destructor writes to
-// exactly the set of flags that have changed value during its
-// lifetime, so concurrent _direct_ access to those flags
-// (i.e. FLAGS_foo instead of {Get,Set}CommandLineOption()) is unsafe.
-
-class FlagSaver {
+class RetiredFlag {
  public:
-  FlagSaver();
-  ~FlagSaver();
-
-  FlagSaver(const FlagSaver&) = delete;
-  void operator=(const FlagSaver&) = delete;
-
-  // Prevents saver from restoring the saved state of flags.
-  void Ignore();
+  void Retire(const char* flag_name) {
+    flags_internal::Retire(flag_name, base_internal::FastTypeId<T>(), buf_);
+  }
 
  private:
-  class FlagSaverImpl* impl_;  // we use pimpl here to keep API steady
+  alignas(kRetiredFlagObjAlignment) char buf_[kRetiredFlagObjSize];
 };
 
 }  // namespace flags_internal

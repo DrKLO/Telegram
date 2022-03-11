@@ -39,7 +39,9 @@ void MatchedFilterCore_AVX2(size_t x_start_index,
 
     // Initialize values for the accumulation.
     __m256 s_256 = _mm256_set1_ps(0);
+    __m256 s_256_8 = _mm256_set1_ps(0);
     __m256 x2_sum_256 = _mm256_set1_ps(0);
+    __m256 x2_sum_256_8 = _mm256_set1_ps(0);
     float x2_sum = 0.f;
     float s = 0;
 
@@ -52,18 +54,22 @@ void MatchedFilterCore_AVX2(size_t x_start_index,
     const int chunk2 = h_size - chunk1;
     for (int limit : {chunk1, chunk2}) {
       // Perform 256 bit vector operations.
-      const int limit_by_8 = limit >> 3;
-      for (int k = limit_by_8; k > 0; --k, h_p += 8, x_p += 8) {
+      const int limit_by_16 = limit >> 4;
+      for (int k = limit_by_16; k > 0; --k, h_p += 16, x_p += 16) {
         // Load the data into 256 bit vectors.
         __m256 x_k = _mm256_loadu_ps(x_p);
         __m256 h_k = _mm256_loadu_ps(h_p);
+        __m256 x_k_8 = _mm256_loadu_ps(x_p + 8);
+        __m256 h_k_8 = _mm256_loadu_ps(h_p + 8);
         // Compute and accumulate x * x and h * x.
         x2_sum_256 = _mm256_fmadd_ps(x_k, x_k, x2_sum_256);
+        x2_sum_256_8 = _mm256_fmadd_ps(x_k_8, x_k_8, x2_sum_256_8);
         s_256 = _mm256_fmadd_ps(h_k, x_k, s_256);
+        s_256_8 = _mm256_fmadd_ps(h_k_8, x_k_8, s_256_8);
       }
 
       // Perform non-vector operations for any remaining items.
-      for (int k = limit - limit_by_8 * 8; k > 0; --k, ++h_p, ++x_p) {
+      for (int k = limit - limit_by_16 * 16; k > 0; --k, ++h_p, ++x_p) {
         const float x_k = *x_p;
         x2_sum += x_k * x_k;
         s += *h_p * x_k;
@@ -73,6 +79,8 @@ void MatchedFilterCore_AVX2(size_t x_start_index,
     }
 
     // Sum components together.
+    x2_sum_256 = _mm256_add_ps(x2_sum_256, x2_sum_256_8);
+    s_256 = _mm256_add_ps(s_256, s_256_8);
     __m128 x2_sum_128 = _mm_add_ps(_mm256_extractf128_ps(x2_sum_256, 0),
                                    _mm256_extractf128_ps(x2_sum_256, 1));
     __m128 s_128 = _mm_add_ps(_mm256_extractf128_ps(s_256, 0),

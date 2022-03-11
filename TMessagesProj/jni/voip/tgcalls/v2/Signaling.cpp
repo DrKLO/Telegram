@@ -325,6 +325,10 @@ std::vector<uint8_t> InitialSetupMessage_serialize(const InitialSetupMessage * c
         object.insert(std::make_pair("video", json11::Json(MediaContent_serialize(video.value()))));
     }
 
+    if (const auto screencast = message->screencast) {
+        object.insert(std::make_pair("screencast", json11::Json(MediaContent_serialize(screencast.value()))));
+    }
+
     auto json = json11::Json(std::move(object));
     std::string result = json.dump();
     return std::vector<uint8_t>(result.begin(), result.end());
@@ -393,6 +397,18 @@ absl::optional<InitialSetupMessage> InitialSetupMessage_parse(json11::Json::obje
         }
         if (const auto parsedVideo = MediaContent_parse(video->second.object_items())) {
             message.video = parsedVideo.value();
+        } else {
+            return absl::nullopt;
+        }
+    }
+
+    const auto screencast = object.find("screencast");
+    if (screencast != object.end()) {
+        if (!screencast->second.is_object()) {
+            return absl::nullopt;
+        }
+        if (const auto parsedScreencast = MediaContent_parse(screencast->second.object_items())) {
+            message.screencast = parsedScreencast.value();
         } else {
             return absl::nullopt;
         }
@@ -529,6 +545,27 @@ std::vector<uint8_t> MediaStateMessage_serialize(const MediaStateMessage * const
     }
     object.insert(std::make_pair("videoRotation", json11::Json(videoRotationValue)));
 
+    std::string screencastStateValue;
+    switch (message->screencastState) {
+        case MediaStateMessage::VideoState::Inactive: {
+            screencastStateValue = "inactive";
+            break;
+        }
+        case MediaStateMessage::VideoState::Suspended: {
+            screencastStateValue = "suspended";
+            break;
+        }
+        case MediaStateMessage::VideoState::Active: {
+            screencastStateValue = "active";
+            break;
+        }
+        default: {
+            RTC_FATAL() << "Unknown videoState";
+            break;
+        }
+    }
+    object.insert(std::make_pair("screencastState", json11::Json(screencastStateValue)));
+
     auto json = json11::Json(std::move(object));
     std::string result = json.dump();
     return std::vector<uint8_t>(result.begin(), result.end());
@@ -567,6 +604,22 @@ absl::optional<MediaStateMessage> MediaStateMessage_parse(json11::Json::object c
         }
     } else {
         message.videoState = MediaStateMessage::VideoState::Inactive;
+    }
+
+    const auto screencastState = object.find("screencastState");
+    if (screencastState != object.end()) {
+        if (!screencastState->second.is_string()) {
+            return absl::nullopt;
+        }
+        if (screencastState->second.string_value() == "inactive") {
+            message.screencastState = MediaStateMessage::VideoState::Inactive;
+        } else if (screencastState->second.string_value() == "suspended") {
+            message.screencastState = MediaStateMessage::VideoState::Suspended;
+        } else if (screencastState->second.string_value() == "active") {
+            message.screencastState = MediaStateMessage::VideoState::Active;
+        }
+    } else {
+        message.screencastState = MediaStateMessage::VideoState::Inactive;
     }
 
     const auto videoRotation = object.find("videoRotation");

@@ -62,7 +62,4 @@ static void Java_VideoSink_onFrame(JNIEnv* env, const base::android::JavaRef<job
 }  // namespace jni
 }  // namespace  webrtc
 
-// Step 4: Generated test functions (optional).
-
-
 #endif  // org_webrtc_VideoSink_JNI

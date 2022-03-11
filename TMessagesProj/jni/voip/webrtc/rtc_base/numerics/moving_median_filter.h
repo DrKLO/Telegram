@@ -17,7 +17,6 @@
 #include <list>
 
 #include "rtc_base/checks.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/numerics/percentile_filter.h"
 
 namespace webrtc {
@@ -26,9 +25,12 @@ namespace webrtc {
 template <typename T>
 class MovingMedianFilter {
  public:
-  // Construct filter. |window_size| is how many latest samples are stored and
-  // used to take median. |window_size| must be positive.
+  // Construct filter. `window_size` is how many latest samples are stored and
+  // used to take median. `window_size` must be positive.
   explicit MovingMedianFilter(size_t window_size);
+
+  MovingMedianFilter(const MovingMedianFilter&) = delete;
+  MovingMedianFilter& operator=(const MovingMedianFilter&) = delete;
 
   // Insert a new sample.
   void Insert(const T& value);
@@ -47,8 +49,6 @@ class MovingMedianFilter {
   std::list<T> samples_;
   size_t samples_stored_;
   const size_t window_size_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(MovingMedianFilter);
 };
 
 template <typename T>

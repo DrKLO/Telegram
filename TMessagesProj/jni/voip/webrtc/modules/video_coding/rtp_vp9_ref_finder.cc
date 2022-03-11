@@ -219,7 +219,7 @@ bool RtpVp9RefFinder::MissingRequiredFrameVp9(uint16_t picture_id,
   }
 
   // For every reference this frame has, check if there is a frame missing in
-  // the interval (|ref_pid|, |picture_id|) in any of the lower temporal
+  // the interval (`ref_pid`, `picture_id`) in any of the lower temporal
   // layers. If so, we are missing a required frame.
   uint8_t num_references = info.gof->num_ref_pics[gof_idx];
   for (size_t i = 0; i < num_references; ++i) {
@@ -314,7 +314,7 @@ void RtpVp9RefFinder::RetryStashedFrames(
         case kHandOff:
           complete_frame = true;
           res.push_back(std::move(*frame_it));
-          ABSL_FALLTHROUGH_INTENDED;
+          [[fallthrough]];
         case kDrop:
           frame_it = stashed_frames_.erase(frame_it);
       }

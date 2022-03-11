@@ -212,7 +212,7 @@ rtc::ArrayView<const uint8_t> PacketMaskTable::LookUp(int num_media_packets,
           static_cast<size_t>(num_fec_packets * mask_length)};
 }
 
-// If |num_media_packets| is larger than the maximum allowed by |fec_mask_type|
+// If `num_media_packets` is larger than the maximum allowed by `fec_mask_type`
 // for the bursty type, or the random table is explicitly asked for, then the
 // random type is selected. Otherwise the bursty table callback is returned.
 const uint8_t* PacketMaskTable::PickTable(FecMaskType fec_mask_type,
@@ -266,7 +266,7 @@ void RemainingPacketProtection(int num_media_packets,
       }
     }
   } else {
-    RTC_NOTREACHED();
+    RTC_DCHECK_NOTREACHED();
   }
 }
 
@@ -393,8 +393,8 @@ void UnequalProtectionMask(int num_media_packets,
   }
 }
 
-// This algorithm is tailored to look up data in the |kPacketMaskRandomTbl| and
-// |kPacketMaskBurstyTbl| tables. These tables only cover fec code for up to 12
+// This algorithm is tailored to look up data in the `kPacketMaskRandomTbl` and
+// `kPacketMaskBurstyTbl` tables. These tables only cover fec code for up to 12
 // media packets. Starting from 13 media packets, the fec code will be generated
 // at runtime. The format of those arrays is that they're essentially a 3
 // dimensional array with the following dimensions: * media packet
