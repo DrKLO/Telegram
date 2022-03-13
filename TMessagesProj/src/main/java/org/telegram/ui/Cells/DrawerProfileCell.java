@@ -330,7 +330,8 @@ public class DrawerProfileCell extends FrameLayout {
         accountsShown = accounts;
         setArrowState(false);
         nameTextView.setText(UserObject.getUserName(user));
-        phoneTextView.setText(PhoneFormat.getInstance().format("+" + user.phone));
+//        phoneTextView.setText(PhoneFormat.getInstance().format("+" + user.phone));
+        phoneTextView.setText(user.username != null && !user.username.isEmpty() ? String.format("@%s", user.username) : "");
         AvatarDrawable avatarDrawable = new AvatarDrawable(user);
         avatarDrawable.setColor(Theme.getColor(Theme.key_avatar_backgroundInProfileBlue));
         avatarImageView.setForUserOrChat(user, avatarDrawable);
