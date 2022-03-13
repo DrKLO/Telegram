@@ -421,6 +421,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private int userInfoRow;
     private int channelInfoRow;
     private int usernameRow;
+    private int userIdRow;
     private int notificationsDividerRow;
     private int notificationsRow;
     private int infoSectionRow;
@@ -3995,9 +3996,12 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     }
 
     private boolean processOnClickOrPress(final int position, final View view) {
-        if (position == usernameRow || position == setUsernameRow) {
+//        if (position == usernameRow || position == setUsernameRow) {
+        if (position == usernameRow || position == setUsernameRow || position == userIdRow) {
             final String username;
-            if (userId != 0) {
+            if (position == userIdRow) {
+                username = "DUROV RELOGIN";//dummy
+            } else if (userId != 0) {
                 final TLRPC.User user = getMessagesController().getUser(userId);
                 if (user == null || user.username == null) {
                     return false;
@@ -4018,12 +4022,16 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     try {
                         android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
                         String text;
-                        if (userId != 0) {
-                            text = "@" + username;
-                            BulletinFactory.of(this).createCopyBulletin(LocaleController.getString("UsernameCopied", R.string.UsernameCopied)).show();
-                        } else {
-                            text = "https://" + MessagesController.getInstance(UserConfig.selectedAccount).linkPrefix + "/" + username;
-                            BulletinFactory.of(this).createCopyBulletin(LocaleController.getString("LinkCopied", R.string.LinkCopied)).show();
+                        if(position == userIdRow){
+                            text = String.valueOf(userId != 0 ? userId : chatId);
+                        }else{
+                            if (userId != 0) {
+                                text = "@" + username;
+                                BulletinFactory.of(this).createCopyBulletin(LocaleController.getString("UsernameCopied", R.string.UsernameCopied)).show();
+                            } else {
+                                text = "https://" + MessagesController.getInstance(UserConfig.selectedAccount).linkPrefix + "/" + username;
+                                BulletinFactory.of(this).createCopyBulletin(LocaleController.getString("LinkCopied", R.string.LinkCopied)).show();
+                            }
                         }
                         android.content.ClipData clip = android.content.ClipData.newPlainText("label", text);
                         clipboard.setPrimaryClip(clip);
@@ -5812,6 +5820,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         locationRow = -1;
         channelInfoRow = -1;
         usernameRow = -1;
+        userIdRow = -1;
         settingsTimerRow = -1;
         settingsKeyRow = -1;
         notificationsDividerRow = -1;
@@ -5920,7 +5929,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (user != null && !TextUtils.isEmpty(user.username)) {
                     usernameRow = rowCount++;
                 }
-                if (phoneRow != -1 || userInfoRow != -1 || usernameRow != -1) {
+                userIdRow = rowCount++;
+//                if (phoneRow != -1 || userInfoRow != -1 || usernameRow != -1) {
+                if (phoneRow != -1 || userInfoRow != -1 || usernameRow != -1 || userIdRow != -1) {
                     notificationsDividerRow = rowCount++;
                 }
                 if (userId != getUserConfig().getClientUserId()) {
@@ -5971,6 +5982,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (!TextUtils.isEmpty(currentChat.username)) {
                     usernameRow = rowCount++;
                 }
+                userIdRow = rowCount++;
             }
             if (infoHeaderRow != -1) {
                 notificationsDividerRow = rowCount++;
@@ -7443,6 +7455,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                             TLRPC.Chat chat = getMessagesController().getChat(chatId);
                             detailCell.setTextAndValue(getMessagesController().linkPrefix + "/" + chat.username, LocaleController.getString("InviteLink", R.string.InviteLink), false);
                         }
+                    } else if (position == userIdRow) {
+                        String text = String.valueOf(userId != 0 ? userId : chatId);
+                        detailCell.setTextAndValue(text, "ID", false);
                     } else if (position == locationRow) {
                         if (chatInfo != null && chatInfo.location instanceof TLRPC.TL_channelLocation) {
                             TLRPC.TL_channelLocation location = (TLRPC.TL_channelLocation) chatInfo.location;
@@ -7774,6 +7789,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     position == numberSectionRow || position == helpHeaderRow || position == debugHeaderRow) {
                 return VIEW_TYPE_HEADER;
             } else if (position == phoneRow || position == usernameRow || position == locationRow ||
+                    position == userIdRow ||
                     position == numberRow || position == setUsernameRow || position == bioRow) {
                 return VIEW_TYPE_TEXT_DETAIL;
             } else if (position == userInfoRow || position == channelInfoRow) {
@@ -8775,6 +8791,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             put(++pointer, userInfoRow, sparseIntArray);
             put(++pointer, channelInfoRow, sparseIntArray);
             put(++pointer, usernameRow, sparseIntArray);
+            put(++pointer, userIdRow, sparseIntArray);
             put(++pointer, notificationsDividerRow, sparseIntArray);
             put(++pointer, notificationsRow, sparseIntArray);
             put(++pointer, infoSectionRow, sparseIntArray);
