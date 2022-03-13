@@ -27,7 +27,7 @@ public class BuildVars {
     public static String APPCENTER_HASH = "a5b5c4f5-51da-dedc-9918-d9766a22ca7c";
 
     public static String SMS_HASH = isStandaloneApp() ? "w0lkcmTZkKh" : (DEBUG_VERSION ? "O2P2z+/jBpJ" : "oLeq9AcOZkT");
-    public static String PLAYSTORE_APP_URL = "https://play.google.com/store/apps/details?id=org.telegram.messenger";
+    public static String PLAYSTORE_APP_URL = "https://github.com/nikitasius/Telegraher/releases";
 
     static {
         if (ApplicationLoader.applicationContext != null) {
