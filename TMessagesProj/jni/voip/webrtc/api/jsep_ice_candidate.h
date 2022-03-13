@@ -22,6 +22,7 @@
 
 #include "api/candidate.h"
 #include "api/jsep.h"
+#include "rtc_base/constructor_magic.h"
 #include "rtc_base/system/rtc_export.h"
 
 namespace webrtc {
@@ -63,10 +64,6 @@ class JsepCandidateCollection : public IceCandidateCollection {
   // Move constructor is defined so that a vector of JsepCandidateCollections
   // can be resized.
   JsepCandidateCollection(JsepCandidateCollection&& o);
-
-  JsepCandidateCollection(const JsepCandidateCollection&) = delete;
-  JsepCandidateCollection& operator=(const JsepCandidateCollection&) = delete;
-
   // Returns a copy of the candidate collection.
   JsepCandidateCollection Clone() const;
   size_t count() const override;
@@ -83,6 +80,8 @@ class JsepCandidateCollection : public IceCandidateCollection {
 
  private:
   std::vector<std::unique_ptr<JsepIceCandidate>> candidates_;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(JsepCandidateCollection);
 };
 
 }  // namespace webrtc

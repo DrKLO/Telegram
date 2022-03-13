@@ -357,7 +357,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
     ImageUpdater currentAvatarUpdater;
     AvatarUpdaterDelegate avatarUpdaterDelegate;
 
-    private Boolean wasNotInLayoutFullscreen = false;
+    private Boolean wasNotInLayoutFullscreen;
     private Boolean wasExpandBigSize = true;
 
     private int scheduleStartAt;
@@ -4200,12 +4200,10 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                             if (isLandscapeMode == isRtmpLandscapeMode()) {
                                 fullscreenFor(participant);
                             }
-                            if (participant.aspectRatioFromWidth != 0 && participant.aspectRatioFromHeight != 0) {
-                                if (isRtmpLandscapeMode()) {
-                                    parentActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
-                                } else {
-                                    parentActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-                                }
+                            if (isRtmpLandscapeMode()) {
+                                parentActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
+                            } else {
+                                parentActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
                             }
                         }
                     }
@@ -8601,7 +8599,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
     }
 
     public boolean isRtmpLandscapeMode() {
-        return isRtmpStream() && !call.visibleVideoParticipants.isEmpty() && call.visibleVideoParticipants.get(0).aspectRatio != 0 && call.visibleVideoParticipants.get(0).aspectRatio >= 1;
+        return isRtmpStream() && !call.visibleVideoParticipants.isEmpty() && (call.visibleVideoParticipants.get(0).aspectRatio == 0 || call.visibleVideoParticipants.get(0).aspectRatio >= 1);
     }
 
     public boolean isRtmpStream() {

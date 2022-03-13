@@ -64,41 +64,6 @@ class MediaReceiverRtcpObserver {
                                    const VideoBitrateAllocation& allocation) {}
 };
 
-// Handles RTCP related messages for a single RTP stream (i.e. single SSRC)
-class RtpStreamRtcpHandler {
- public:
-  virtual ~RtpStreamRtcpHandler() = default;
-
-  // Statistic about sent RTP packets to propagate to RTCP sender report.
-  class RtpStats {
-   public:
-    RtpStats() = default;
-    RtpStats(const RtpStats&) = default;
-    RtpStats& operator=(const RtpStats&) = default;
-    ~RtpStats() = default;
-
-    size_t num_sent_packets() const { return num_sent_packets_; }
-    size_t num_sent_bytes() const { return num_sent_bytes_; }
-    Timestamp last_capture_time() const { return last_capture_time_; }
-    uint32_t last_rtp_timestamp() const { return last_rtp_timestamp_; }
-    int last_clock_rate() const { return last_clock_rate_; }
-
-    void set_num_sent_packets(size_t v) { num_sent_packets_ = v; }
-    void set_num_sent_bytes(size_t v) { num_sent_bytes_ = v; }
-    void set_last_capture_time(Timestamp v) { last_capture_time_ = v; }
-    void set_last_rtp_timestamp(uint32_t v) { last_rtp_timestamp_ = v; }
-    void set_last_clock_rate(int v) { last_clock_rate_ = v; }
-
-   private:
-    size_t num_sent_packets_ = 0;
-    size_t num_sent_bytes_ = 0;
-    Timestamp last_capture_time_ = Timestamp::Zero();
-    uint32_t last_rtp_timestamp_ = 0;
-    int last_clock_rate_ = 90'000;
-  };
-  virtual RtpStats SentStats() = 0;
-};
-
 struct RtcpTransceiverConfig {
   RtcpTransceiverConfig();
   RtcpTransceiverConfig(const RtcpTransceiverConfig&);
@@ -149,10 +114,10 @@ struct RtcpTransceiverConfig {
   // Initial state if `outgoing_transport` ready to accept packets.
   bool initial_ready_to_send = true;
   // Delay before 1st periodic compound packet.
-  TimeDelta initial_report_delay = TimeDelta::Millis(500);
+  int initial_report_delay_ms = 500;
 
   // Period between periodic compound packets.
-  TimeDelta report_period = TimeDelta::Seconds(1);
+  int report_period_ms = 1000;
 
   //
   // Flags for features and experiments.
@@ -161,13 +126,6 @@ struct RtcpTransceiverConfig {
   // Estimate RTT as non-sender as described in
   // https://tools.ietf.org/html/rfc3611#section-4.4 and #section-4.5
   bool non_sender_rtt_measurement = false;
-
-  // Reply to incoming RRTR messages so that remote endpoint may estimate RTT as
-  // non-sender as described in https://tools.ietf.org/html/rfc3611#section-4.4
-  // and #section-4.5
-  // TODO(danilchap): Make it true by default after users got enough time to
-  // turn it off if not needed.
-  bool reply_to_non_sender_rtt_measurement = false;
 
   // Allows a REMB message to be sent immediately when SetRemb is called without
   // having to wait for the next compount message to be sent.

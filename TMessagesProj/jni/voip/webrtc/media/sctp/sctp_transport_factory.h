@@ -29,7 +29,7 @@ class SctpTransportFactory : public webrtc::SctpTransportFactoryInterface {
 
  private:
   rtc::Thread* network_thread_;
-  webrtc::FieldTrialFlag use_usrsctp_;
+  webrtc::FieldTrialFlag use_dcsctp_;
 };
 
 }  // namespace cricket

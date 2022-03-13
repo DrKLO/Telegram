@@ -2656,7 +2656,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     }
                 }
             };
-//            viewPage.listView.setItemAnimator(viewPage.dialogsItemAnimator);
+            viewPage.listView.setItemAnimator(viewPage.dialogsItemAnimator);
             viewPage.listView.setVerticalScrollBarEnabled(true);
             viewPage.listView.setInstantClick(true);
             viewPage.layoutManager = new LinearLayoutManager(context) {
@@ -6753,7 +6753,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
             boolean updateVisibleRows = false;
             for (int a = 0; a < viewPages.length; a++) {
-                if (viewPages[a].isDefaultDialogType() && getMessagesController().getDialogs(folderId).size() <= 10) {
+                if (viewPages[a].isDefaultDialogType() && getMessagesController().getAllFoldersDialogsCount() <= 10) {
                     viewPages[a].dialogsAdapter.notifyDataSetChanged();
                 } else {
                     updateVisibleRows = true;
@@ -8226,7 +8226,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
     @Override
     public boolean isLightStatusBar() {
-        int color = searching ? Theme.getColor(Theme.key_windowBackgroundWhite) : Theme.getColor(folderId == 0 ? Theme.key_actionBarDefault : Theme.key_actionBarDefaultArchived);
+        int color = (searching && whiteActionBar) ? Theme.getColor(Theme.key_windowBackgroundWhite) : Theme.getColor(folderId == 0 ? Theme.key_actionBarDefault : Theme.key_actionBarDefaultArchived);
         if (actionBar.isActionModeShowed()) {
             color = Theme.getColor(Theme.key_actionBarActionModeDefault);
         }

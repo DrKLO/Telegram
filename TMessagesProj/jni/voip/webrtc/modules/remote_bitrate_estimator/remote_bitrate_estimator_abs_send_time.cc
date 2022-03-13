@@ -278,7 +278,13 @@ void RemoteBitrateEstimatorAbsSendTime::IncomingPacketInfo(
     TimeoutStreams(now);
     RTC_DCHECK(inter_arrival_);
     RTC_DCHECK(estimator_);
-    ssrcs_.insert_or_assign(ssrc, now);
+    // TODO(danilchap): Replace 5 lines below with insert_or_assign when that
+    // c++17 function is available.
+    auto inserted = ssrcs_.insert(std::make_pair(ssrc, now));
+    if (!inserted.second) {
+      // Already inserted, update.
+      inserted.first->second = now;
+    }
 
     // For now only try to detect probes while we don't have a valid estimate.
     // We currently assume that only packets larger than 200 bytes are paced by

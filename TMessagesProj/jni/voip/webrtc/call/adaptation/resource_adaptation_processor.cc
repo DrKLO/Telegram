@@ -27,8 +27,14 @@ namespace webrtc {
 
 ResourceAdaptationProcessor::ResourceListenerDelegate::ResourceListenerDelegate(
     ResourceAdaptationProcessor* processor)
-    : task_queue_(TaskQueueBase::Current()), processor_(processor) {
-  RTC_DCHECK(task_queue_);
+    : task_queue_(nullptr), processor_(processor) {}
+
+void ResourceAdaptationProcessor::ResourceListenerDelegate::SetTaskQueue(
+    TaskQueueBase* task_queue) {
+  RTC_DCHECK(!task_queue_);
+  RTC_DCHECK(task_queue);
+  task_queue_ = task_queue;
+  RTC_DCHECK_RUN_ON(task_queue_);
 }
 
 void ResourceAdaptationProcessor::ResourceListenerDelegate::
@@ -64,15 +70,14 @@ ResourceAdaptationProcessor::MitigationResultAndLogMessage::
 
 ResourceAdaptationProcessor::ResourceAdaptationProcessor(
     VideoStreamAdapter* stream_adapter)
-    : task_queue_(TaskQueueBase::Current()),
+    : task_queue_(nullptr),
       resource_listener_delegate_(
           rtc::make_ref_counted<ResourceListenerDelegate>(this)),
       resources_(),
       stream_adapter_(stream_adapter),
       last_reported_source_restrictions_(),
       previous_mitigation_results_() {
-  RTC_DCHECK(task_queue_);
-  stream_adapter_->AddRestrictionsListener(this);
+  RTC_DCHECK(stream_adapter_);
 }
 
 ResourceAdaptationProcessor::~ResourceAdaptationProcessor() {
@@ -82,6 +87,16 @@ ResourceAdaptationProcessor::~ResourceAdaptationProcessor() {
       << "being destroyed.";
   stream_adapter_->RemoveRestrictionsListener(this);
   resource_listener_delegate_->OnProcessorDestroyed();
+}
+
+void ResourceAdaptationProcessor::SetTaskQueue(TaskQueueBase* task_queue) {
+  RTC_DCHECK(!task_queue_);
+  RTC_DCHECK(task_queue);
+  task_queue_ = task_queue;
+  resource_listener_delegate_->SetTaskQueue(task_queue);
+  RTC_DCHECK_RUN_ON(task_queue_);
+  // Now that we have the queue we can attach as adaptation listener.
+  stream_adapter_->AddRestrictionsListener(this);
 }
 
 void ResourceAdaptationProcessor::AddResourceLimitationsListener(

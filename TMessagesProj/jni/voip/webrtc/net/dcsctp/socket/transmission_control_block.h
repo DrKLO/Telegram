@@ -19,7 +19,6 @@
 
 #include "absl/functional/bind_front.h"
 #include "absl/strings/string_view.h"
-#include "api/task_queue/task_queue_base.h"
 #include "net/dcsctp/common/sequence_numbers.h"
 #include "net/dcsctp/packet/chunk/cookie_echo_chunk.h"
 #include "net/dcsctp/packet/sctp_packet.h"
@@ -79,9 +78,7 @@ class TransmissionControlBlock : public Context {
                              this),
             TimerOptions(options.delayed_ack_max_timeout,
                          TimerBackoffAlgorithm::kExponential,
-                         /*max_restarts=*/0,
-                         /*max_backoff_duration=*/absl::nullopt,
-                         webrtc::TaskQueueBase::DelayPrecision::kHigh))),
+                         /*max_restarts=*/0))),
         my_verification_tag_(my_verification_tag),
         my_initial_tsn_(my_initial_tsn),
         peer_verification_tag_(peer_verification_tag),

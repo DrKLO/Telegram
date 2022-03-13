@@ -16,6 +16,7 @@
 #include <string>
 #include <utility>
 
+#include "absl/base/macros.h"
 #include "api/video/encoded_image.h"
 #include "api/video_codecs/video_decoder.h"
 #include "modules/video_coding/include/video_error_codes.h"
@@ -214,7 +215,7 @@ int32_t VideoDecoderSoftwareFallbackWrapper::Decode(
       }
 
       // Fallback decoder initialized, fall-through.
-      [[fallthrough]];
+      ABSL_FALLTHROUGH_INTENDED;
     }
     case DecoderType::kFallback:
       return fallback_decoder_->Decode(input_image, missing_frames,

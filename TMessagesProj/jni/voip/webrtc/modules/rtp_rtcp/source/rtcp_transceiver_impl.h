@@ -11,7 +11,7 @@
 #ifndef MODULES_RTP_RTCP_SOURCE_RTCP_TRANSCEIVER_IMPL_H_
 #define MODULES_RTP_RTCP_SOURCE_RTCP_TRANSCEIVER_IMPL_H_
 
-#include <list>
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -48,11 +48,6 @@ class RtcpTransceiverImpl {
   void RemoveMediaReceiverRtcpObserver(uint32_t remote_ssrc,
                                        MediaReceiverRtcpObserver* observer);
 
-  // Returns false on failure, e.g. when there is already an handler for the
-  // `local_ssrc`.
-  bool AddMediaSender(uint32_t local_ssrc, RtpStreamRtcpHandler* handler);
-  bool RemoveMediaSender(uint32_t local_ssrc);
-
   void SetReadyToSend(bool ready);
 
   void ReceivePacket(rtc::ArrayView<const uint8_t> packet, Timestamp now);
@@ -81,14 +76,6 @@ class RtcpTransceiverImpl {
  private:
   class PacketSender;
   struct RemoteSenderState;
-  struct LocalSenderState;
-  struct RrtrTimes {
-    // Received remote NTP timestamp in compact representation.
-    uint32_t received_remote_mid_ntp_time;
-
-    // Local NTP time when the report was received in compact representation.
-    uint32_t local_receive_mid_ntp_time;
-  };
 
   void HandleReceivedPacket(const rtcp::CommonHeader& rtcp_packet_header,
                             Timestamp now,
@@ -116,30 +103,15 @@ class RtcpTransceiverImpl {
       rtc::ArrayView<const rtcp::ReportBlock> report_blocks);
 
   void ReschedulePeriodicCompoundPackets();
-  void SchedulePeriodicCompoundPackets(TimeDelta delay);
-  // Appends RTCP sender and receiver reports to the `sender`.
-  // Both sender and receiver reports may have attached report blocks.
-  // Uses up to `config_.max_packet_size - reserved_bytes`
-  struct CompoundPacketInfo {
-    uint32_t sender_ssrc;
-    bool has_sender_report;
-  };
-  CompoundPacketInfo FillReports(Timestamp now,
-                                 size_t reserved_bytes,
-                                 PacketSender& rtcp_sender);
-
+  void SchedulePeriodicCompoundPackets(int64_t delay_ms);
   // Creates compound RTCP packet, as defined in
   // https://tools.ietf.org/html/rfc5506#section-2
-  void CreateCompoundPacket(Timestamp now,
-                            size_t reserved_bytes,
-                            PacketSender& rtcp_sender);
-
+  void CreateCompoundPacket(PacketSender* sender);
   // Sends RTCP packets.
   void SendPeriodicCompoundPacket();
   void SendImmediateFeedback(const rtcp::RtcpPacket& rtcp_packet);
-  // Generate Report Blocks to be send in Sender or Receiver Reports.
-  std::vector<rtcp::ReportBlock> CreateReportBlocks(Timestamp now,
-                                                    size_t num_max_blocks);
+  // Generate Report Blocks to be send in Sender or Receiver Report.
+  std::vector<rtcp::ReportBlock> CreateReportBlocks(Timestamp now);
 
   const RtcpTransceiverConfig config_;
 
@@ -148,10 +120,6 @@ class RtcpTransceiverImpl {
   // TODO(danilchap): Remove entries from remote_senders_ that are no longer
   // needed.
   flat_map<uint32_t, RemoteSenderState> remote_senders_;
-  std::list<LocalSenderState> local_senders_;
-  flat_map<uint32_t, std::list<LocalSenderState>::iterator>
-      local_senders_by_ssrc_;
-  flat_map<uint32_t, RrtrTimes> received_rrtrs_;
   RepeatingTaskHandle periodic_task_handle_;
 };
 

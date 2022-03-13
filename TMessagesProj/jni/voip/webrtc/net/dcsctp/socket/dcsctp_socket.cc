@@ -22,7 +22,6 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "api/array_view.h"
-#include "api/task_queue/task_queue_base.h"
 #include "net/dcsctp/packet/chunk/abort_chunk.h"
 #include "net/dcsctp/packet/chunk/chunk.h"
 #include "net/dcsctp/packet/chunk/cookie_ack_chunk.h"
@@ -163,9 +162,7 @@ DcSctpSocket::DcSctpSocket(absl::string_view log_prefix,
       packet_observer_(std::move(packet_observer)),
       options_(options),
       callbacks_(callbacks),
-      timer_manager_([this](webrtc::TaskQueueBase::DelayPrecision precision) {
-        return callbacks_.CreateTimeout(precision);
-      }),
+      timer_manager_([this]() { return callbacks_.CreateTimeout(); }),
       t1_init_(timer_manager_.CreateTimer(
           "t1-init",
           absl::bind_front(&DcSctpSocket::OnInitTimerExpiry, this),
@@ -196,7 +193,7 @@ DcSctpSocket::DcSctpSocket(absl::string_view log_prefix,
           [this]() { callbacks_.OnTotalBufferedAmountLow(); }) {}
 
 std::string DcSctpSocket::log_prefix() const {
-  return log_prefix_ + "[" + std::string(ToString(state_)) + "] ";
+  return log_prefix_ + "[" + std::string(ToString(state_)) + "] ";
 }
 
 bool DcSctpSocket::IsConsistent() const {
@@ -497,13 +494,17 @@ SocketState DcSctpSocket::state() const {
     case State::kClosed:
       return SocketState::kClosed;
     case State::kCookieWait:
+      ABSL_FALLTHROUGH_INTENDED;
     case State::kCookieEchoed:
       return SocketState::kConnecting;
     case State::kEstablished:
       return SocketState::kConnected;
     case State::kShutdownPending:
+      ABSL_FALLTHROUGH_INTENDED;
     case State::kShutdownSent:
+      ABSL_FALLTHROUGH_INTENDED;
     case State::kShutdownReceived:
+      ABSL_FALLTHROUGH_INTENDED;
     case State::kShutdownAckSent:
       return SocketState::kShuttingDown;
   }

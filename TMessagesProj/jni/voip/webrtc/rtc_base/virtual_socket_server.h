@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "rtc_base/checks.h"
+#include "rtc_base/constructor_magic.h"
 #include "rtc_base/event.h"
 #include "rtc_base/fake_clock.h"
 #include "rtc_base/message_handler.h"
@@ -161,9 +162,6 @@ class VirtualSocketServer : public SocketServer {
   // advancing time.
   explicit VirtualSocketServer(ThreadProcessingFakeClock* fake_clock);
   ~VirtualSocketServer() override;
-
-  VirtualSocketServer(const VirtualSocketServer&) = delete;
-  VirtualSocketServer& operator=(const VirtualSocketServer&) = delete;
 
   // The default source address specifies which local address to use when a
   // socket is bound to the 'any' address, e.g. 0.0.0.0. (If not set, the 'any'
@@ -421,6 +419,7 @@ class VirtualSocketServer : public SocketServer {
   size_t max_udp_payload_ RTC_GUARDED_BY(mutex_) = 65507;
 
   bool sending_blocked_ RTC_GUARDED_BY(mutex_) = false;
+  RTC_DISALLOW_COPY_AND_ASSIGN(VirtualSocketServer);
 };
 
 }  // namespace rtc

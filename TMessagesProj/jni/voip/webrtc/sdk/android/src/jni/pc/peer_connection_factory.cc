@@ -351,12 +351,11 @@ JNI_PeerConnectionFactory_CreatePeerConnectionFactory(
     jlong native_network_controller_factory,
     jlong native_network_state_predictor_factory,
     jlong native_neteq_factory) {
-  rtc::scoped_refptr<AudioProcessing> audio_processor(
-      reinterpret_cast<AudioProcessing*>(native_audio_processor));
+  rtc::scoped_refptr<AudioProcessing> audio_processor =
+      reinterpret_cast<AudioProcessing*>(native_audio_processor);
   return CreatePeerConnectionFactoryForJava(
       jni, jcontext, joptions,
-      rtc::scoped_refptr<AudioDeviceModule>(
-          reinterpret_cast<AudioDeviceModule*>(native_audio_device_module)),
+      reinterpret_cast<AudioDeviceModule*>(native_audio_device_module),
       TakeOwnershipOfRefPtr<AudioEncoderFactory>(native_audio_encoder_factory),
       TakeOwnershipOfRefPtr<AudioDecoderFactory>(native_audio_decoder_factory),
       jencoder_factory, jdecoder_factory,

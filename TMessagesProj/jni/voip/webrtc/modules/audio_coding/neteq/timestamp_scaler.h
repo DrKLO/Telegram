@@ -12,6 +12,7 @@
 #define MODULES_AUDIO_CODING_NETEQ_TIMESTAMP_SCALER_H_
 
 #include "modules/audio_coding/neteq/packet.h"
+#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -32,9 +33,6 @@ class TimestampScaler {
         decoder_database_(decoder_database) {}
 
   virtual ~TimestampScaler() {}
-
-  TimestampScaler(const TimestampScaler&) = delete;
-  TimestampScaler& operator=(const TimestampScaler&) = delete;
 
   // Start over.
   virtual void Reset();
@@ -61,6 +59,8 @@ class TimestampScaler {
   uint32_t external_ref_;
   uint32_t internal_ref_;
   const DecoderDatabase& decoder_database_;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(TimestampScaler);
 };
 
 }  // namespace webrtc

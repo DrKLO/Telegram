@@ -13,7 +13,7 @@
 namespace webrtc {
 
 bool EncodedFrame::delayed_by_retransmission() const {
-  return false;
+  return 0;
 }
 
 }  // namespace webrtc

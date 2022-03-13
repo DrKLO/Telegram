@@ -99,7 +99,7 @@ class StunBindingRequest : public StunRequest {
                       << port_->Network()->name() << ")";
     port_->OnStunBindingOrResolveRequestFailed(
         server_addr_, SERVER_NOT_REACHABLE_ERROR,
-        "STUN binding request timed out.");
+        "STUN allocate request timed out.");
   }
 
  private:
@@ -512,7 +512,7 @@ void UDPPort::OnStunBindingRequestSucceeded(
     }
 
     rtc::StringBuilder url;
-    url << "stun:" << stun_server_addr.hostname() << ":"
+    url << "stun:" << stun_server_addr.ipaddr().ToString() << ":"
         << stun_server_addr.port();
     AddAddress(stun_reflected_addr, socket_->GetLocalAddress(), related_address,
                UDP_PROTOCOL_NAME, "", "", STUN_PORT_TYPE,

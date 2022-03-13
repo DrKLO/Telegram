@@ -21,11 +21,9 @@
 namespace webrtc {
 namespace {
 
-constexpr int kDefaultLevelDbfs = -18;
-constexpr int kNumAnalysisFrames = 100;
-constexpr double kActivityThreshold = 0.3;
-constexpr int kNum10msFramesInOneSecond = 100;
-constexpr int kMaxSampleRateHz = 384000;
+const int kDefaultLevelDbfs = -18;
+const int kNumAnalysisFrames = 100;
+const double kActivityThreshold = 0.3;
 
 }  // namespace
 
@@ -37,10 +35,8 @@ Agc::Agc()
 
 Agc::~Agc() = default;
 
-void Agc::Process(rtc::ArrayView<const int16_t> audio) {
-  const int sample_rate_hz = audio.size() * kNum10msFramesInOneSecond;
-  RTC_DCHECK_LE(sample_rate_hz, kMaxSampleRateHz);
-  vad_.ProcessChunk(audio.data(), audio.size(), sample_rate_hz);
+void Agc::Process(const int16_t* audio, size_t length, int sample_rate_hz) {
+  vad_.ProcessChunk(audio, length, sample_rate_hz);
   const std::vector<double>& rms = vad_.chunkwise_rms();
   const std::vector<double>& probabilities =
       vad_.chunkwise_voice_probabilities();

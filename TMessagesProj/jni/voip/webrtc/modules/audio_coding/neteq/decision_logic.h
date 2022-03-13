@@ -18,6 +18,7 @@
 #include "api/neteq/tick_timer.h"
 #include "modules/audio_coding/neteq/buffer_level_filter.h"
 #include "modules/audio_coding/neteq/delay_manager.h"
+#include "rtc_base/constructor_magic.h"
 #include "rtc_base/experiments/field_trial_parser.h"
 
 namespace webrtc {
@@ -35,9 +36,6 @@ class DecisionLogic : public NetEqController {
                 std::unique_ptr<BufferLevelFilter> buffer_level_filter);
 
   ~DecisionLogic() override;
-
-  DecisionLogic(const DecisionLogic&) = delete;
-  DecisionLogic& operator=(const DecisionLogic&) = delete;
 
   // Resets object to a clean state.
   void Reset() override;
@@ -194,6 +192,8 @@ class DecisionLogic : public NetEqController {
   FieldTrialParameter<bool> estimate_dtx_delay_;
   FieldTrialParameter<bool> time_stretch_cn_;
   FieldTrialConstrained<int> target_level_window_ms_;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(DecisionLogic);
 };
 
 }  // namespace webrtc

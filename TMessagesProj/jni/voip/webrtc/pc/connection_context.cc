@@ -10,15 +10,13 @@
 
 #include "pc/connection_context.h"
 
+#include <string>
 #include <type_traits>
 #include <utility>
 
 #include "api/transport/field_trial_based_config.h"
-#include "media/base/media_engine.h"
 #include "media/sctp/sctp_transport_factory.h"
 #include "rtc_base/helpers.h"
-#include "rtc_base/internal/default_socket_server.h"
-#include "rtc_base/socket_server.h"
 #include "rtc_base/task_utils/to_queued_task.h"
 #include "rtc_base/time_utils.h"
 
@@ -26,31 +24,19 @@ namespace webrtc {
 
 namespace {
 
-rtc::Thread* MaybeStartNetworkThread(
-    rtc::Thread* old_thread,
-    std::unique_ptr<rtc::SocketFactory>& socket_factory_holder,
-    std::unique_ptr<rtc::Thread>& thread_holder) {
+rtc::Thread* MaybeStartThread(rtc::Thread* old_thread,
+                              const std::string& thread_name,
+                              bool with_socket_server,
+                              std::unique_ptr<rtc::Thread>& thread_holder) {
   if (old_thread) {
     return old_thread;
   }
-  std::unique_ptr<rtc::SocketServer> socket_server =
-      rtc::CreateDefaultSocketServer();
-  thread_holder = std::make_unique<rtc::Thread>(socket_server.get());
-  socket_factory_holder = std::move(socket_server);
-
-  thread_holder->SetName("pc_network_thread", nullptr);
-  thread_holder->Start();
-  return thread_holder.get();
-}
-
-rtc::Thread* MaybeStartWorkerThread(
-    rtc::Thread* old_thread,
-    std::unique_ptr<rtc::Thread>& thread_holder) {
-  if (old_thread) {
-    return old_thread;
+  if (with_socket_server) {
+    thread_holder = rtc::Thread::CreateWithSocketServer();
+  } else {
+    thread_holder = rtc::Thread::Create();
   }
-  thread_holder = rtc::Thread::Create();
-  thread_holder->SetName("pc_worker_thread", nullptr);
+  thread_holder->SetName(thread_name, nullptr);
   thread_holder->Start();
   return thread_holder.get();
 }
@@ -89,17 +75,19 @@ std::unique_ptr<SctpTransportFactoryInterface> MaybeCreateSctpFactory(
 // Static
 rtc::scoped_refptr<ConnectionContext> ConnectionContext::Create(
     PeerConnectionFactoryDependencies* dependencies) {
-  return rtc::scoped_refptr<ConnectionContext>(
-      new ConnectionContext(dependencies));
+  return new ConnectionContext(dependencies);
 }
 
 ConnectionContext::ConnectionContext(
     PeerConnectionFactoryDependencies* dependencies)
-    : network_thread_(MaybeStartNetworkThread(dependencies->network_thread,
-                                              owned_socket_factory_,
-                                              owned_network_thread_)),
-      worker_thread_(MaybeStartWorkerThread(dependencies->worker_thread,
-                                            owned_worker_thread_)),
+    : network_thread_(MaybeStartThread(dependencies->network_thread,
+                                       "pc_network_thread",
+                                       true,
+                                       owned_network_thread_)),
+      worker_thread_(MaybeStartThread(dependencies->worker_thread,
+                                      "pc_worker_thread",
+                                      false,
+                                      owned_worker_thread_)),
       signaling_thread_(MaybeWrapThread(dependencies->signaling_thread,
                                         wraps_current_thread_)),
       network_monitor_factory_(
@@ -128,30 +116,23 @@ ConnectionContext::ConnectionContext(
   RTC_DCHECK_RUN_ON(signaling_thread_);
   rtc::InitRandom(rtc::Time32());
 
-  rtc::SocketFactory* socket_factory = dependencies->socket_factory;
-  if (socket_factory == nullptr) {
-    if (owned_socket_factory_) {
-      socket_factory = owned_socket_factory_.get();
-    } else {
-      // TODO(bugs.webrtc.org/13145): This case should be deleted. Either
-      // require that a PacketSocketFactory and NetworkManager always are
-      // injected (with no need to construct these default objects), or require
-      // that if a network_thread is injected, an approprite rtc::SocketServer
-      // should be injected too.
-      socket_factory = network_thread()->socketserver();
-    }
-  }
   // If network_monitor_factory_ is non-null, it will be used to create a
   // network monitor while on the network thread.
   default_network_manager_ = std::make_unique<rtc::BasicNetworkManager>(
-      network_monitor_factory_.get(), socket_factory);
+      network_monitor_factory_.get(), network_thread()->socketserver());
 
-  default_socket_factory_ =
-      std::make_unique<rtc::BasicPacketSocketFactory>(socket_factory);
+  // TODO(bugs.webrtc.org/13145): Either require that a PacketSocketFactory
+  // always is injected (with no need to construct this default factory), or get
+  // the appropriate underlying SocketFactory without going through the
+  // rtc::Thread::socketserver() accessor.
+  default_socket_factory_ = std::make_unique<rtc::BasicPacketSocketFactory>(
+      network_thread()->socketserver());
 
-  channel_manager_ = cricket::ChannelManager::Create(
-      std::move(dependencies->media_engine),
-      /*enable_rtx=*/true, worker_thread(), network_thread());
+  worker_thread_->Invoke<void>(RTC_FROM_HERE, [&]() {
+    channel_manager_ = cricket::ChannelManager::Create(
+        std::move(dependencies->media_engine),
+        /*enable_rtx=*/true, worker_thread(), network_thread());
+  });
 
   // Set warning levels on the threads, to give warnings when response
   // may be slower than is expected of the thread.
@@ -165,7 +146,8 @@ ConnectionContext::ConnectionContext(
 
 ConnectionContext::~ConnectionContext() {
   RTC_DCHECK_RUN_ON(signaling_thread_);
-  channel_manager_.reset(nullptr);
+  worker_thread_->Invoke<void>(RTC_FROM_HERE,
+                               [&]() { channel_manager_.reset(nullptr); });
 
   // Make sure `worker_thread()` and `signaling_thread()` outlive
   // `default_socket_factory_` and `default_network_manager_`.

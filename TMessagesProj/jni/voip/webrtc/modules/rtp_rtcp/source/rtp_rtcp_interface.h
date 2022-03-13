@@ -27,6 +27,7 @@
 #include "modules/rtp_rtcp/source/rtp_packet_to_send.h"
 #include "modules/rtp_rtcp/source/rtp_sequence_number_map.h"
 #include "modules/rtp_rtcp/source/video_fec_generator.h"
+#include "rtc_base/constructor_magic.h"
 #include "system_wrappers/include/ntp_time.h"
 
 namespace webrtc {
@@ -45,9 +46,6 @@ class RtpRtcpInterface : public RtcpFeedbackSenderInterface {
   struct Configuration {
     Configuration() = default;
     Configuration(Configuration&& rhs) = default;
-
-    Configuration(const Configuration&) = delete;
-    Configuration& operator=(const Configuration&) = delete;
 
     // True for a audio version of the RTP/RTCP module object false will create
     // a video version.
@@ -147,6 +145,9 @@ class RtpRtcpInterface : public RtcpFeedbackSenderInterface {
     // Estimate RTT as non-sender as described in
     // https://tools.ietf.org/html/rfc3611#section-4.4 and #section-4.5
     bool non_sender_rtt_measurement = false;
+
+   private:
+    RTC_DISALLOW_COPY_AND_ASSIGN(Configuration);
   };
 
   // Stats for RTCP sender reports (SR) for a specific SSRC.

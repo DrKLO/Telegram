@@ -140,7 +140,9 @@ void TransmissionControlBlock::SendBufferedPackets(SctpPacket::Builder& builder,
 
     auto chunks =
         retransmission_queue_.GetChunksToSend(now, builder.bytes_remaining());
-    for (auto& [tsn, data] : chunks) {
+    for (auto& elem : chunks) {
+      TSN tsn = elem.first;
+      Data data = std::move(elem.second);
       if (capabilities_.message_interleaving) {
         builder.Add(IDataChunk(tsn, std::move(data), false));
       } else {

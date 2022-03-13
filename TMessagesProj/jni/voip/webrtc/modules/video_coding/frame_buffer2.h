@@ -147,6 +147,9 @@ class FrameBuffer {
 
   void ClearFramesAndHistory() RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
+  bool HasBadRenderTiming(const EncodedFrame& frame, int64_t now_ms)
+      RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+
   // The cleaner solution would be to have the NextFrame function return a
   // vector of frames, but until the decoding pipeline can support decoding
   // multiple frames at the same time we combine all frames to one frame and

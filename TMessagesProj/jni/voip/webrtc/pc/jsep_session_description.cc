@@ -11,20 +11,11 @@
 #include "api/jsep_session_description.h"
 
 #include <memory>
-#include <utility>
 
-#include "absl/types/optional.h"
-#include "p2p/base/p2p_constants.h"
 #include "p2p/base/port.h"
-#include "p2p/base/transport_description.h"
-#include "p2p/base/transport_info.h"
-#include "pc/media_session.h"  // IWYU pragma: keep
+#include "pc/media_session.h"
 #include "pc/webrtc_sdp.h"
-#include "rtc_base/checks.h"
-#include "rtc_base/ip_address.h"
-#include "rtc_base/logging.h"
-#include "rtc_base/net_helper.h"
-#include "rtc_base/socket_address.h"
+#include "rtc_base/arraysize.h"
 
 using cricket::SessionDescription;
 

@@ -24,11 +24,13 @@
 #include "common_audio/include/audio_util.h"
 #include "modules/audio_processing/aec_dump/aec_dump_factory.h"
 #include "modules/audio_processing/audio_buffer.h"
+#include "modules/audio_processing/common.h"
 #include "modules/audio_processing/include/audio_frame_view.h"
 #include "modules/audio_processing/logging/apm_data_dumper.h"
 #include "modules/audio_processing/optionally_built_submodule_creators.h"
 #include "rtc_base/atomic_ops.h"
 #include "rtc_base/checks.h"
+#include "rtc_base/constructor_magic.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/ref_counted_object.h"
 #include "rtc_base/time_utils.h"
@@ -48,6 +50,20 @@
 namespace webrtc {
 
 namespace {
+
+static bool LayoutHasKeyboard(AudioProcessing::ChannelLayout layout) {
+  switch (layout) {
+    case AudioProcessing::kMono:
+    case AudioProcessing::kStereo:
+      return false;
+    case AudioProcessing::kMonoAndKeyboard:
+    case AudioProcessing::kStereoAndKeyboard:
+      return true;
+  }
+
+  RTC_DCHECK_NOTREACHED();
+  return false;
+}
 
 bool SampleRateSupportsMultiBand(int sample_rate_hz) {
   return sample_rate_hz == AudioProcessing::kSampleRate32kHz ||
@@ -113,13 +129,6 @@ static const size_t kMaxAllowedValuesOfSamplesPerFrame = 480;
 // reverse and forward call numbers.
 static const size_t kMaxNumFramesToBuffer = 100;
 
-void PackRenderAudioBufferForEchoDetector(const AudioBuffer& audio,
-                                          std::vector<float>& packed_buffer) {
-  packed_buffer.clear();
-  packed_buffer.insert(packed_buffer.end(), audio.channels_const()[0],
-                       audio.channels_const()[0] + audio.num_frames());
-}
-
 }  // namespace
 
 // Throughout webrtc, it's assumed that success is represented by zero.
@@ -136,31 +145,38 @@ AudioProcessingImpl::SubmoduleStates::SubmoduleStates(
 bool AudioProcessingImpl::SubmoduleStates::Update(
     bool high_pass_filter_enabled,
     bool mobile_echo_controller_enabled,
+    bool residual_echo_detector_enabled,
     bool noise_suppressor_enabled,
     bool adaptive_gain_controller_enabled,
     bool gain_controller2_enabled,
     bool gain_adjustment_enabled,
     bool echo_controller_enabled,
+    bool voice_detector_enabled,
     bool transient_suppressor_enabled) {
   bool changed = false;
   changed |= (high_pass_filter_enabled != high_pass_filter_enabled_);
   changed |=
       (mobile_echo_controller_enabled != mobile_echo_controller_enabled_);
+  changed |=
+      (residual_echo_detector_enabled != residual_echo_detector_enabled_);
   changed |= (noise_suppressor_enabled != noise_suppressor_enabled_);
   changed |=
       (adaptive_gain_controller_enabled != adaptive_gain_controller_enabled_);
   changed |= (gain_controller2_enabled != gain_controller2_enabled_);
   changed |= (gain_adjustment_enabled != gain_adjustment_enabled_);
   changed |= (echo_controller_enabled != echo_controller_enabled_);
+  changed |= (voice_detector_enabled != voice_detector_enabled_);
   changed |= (transient_suppressor_enabled != transient_suppressor_enabled_);
   if (changed) {
     high_pass_filter_enabled_ = high_pass_filter_enabled;
     mobile_echo_controller_enabled_ = mobile_echo_controller_enabled;
+    residual_echo_detector_enabled_ = residual_echo_detector_enabled;
     noise_suppressor_enabled_ = noise_suppressor_enabled;
     adaptive_gain_controller_enabled_ = adaptive_gain_controller_enabled;
     gain_controller2_enabled_ = gain_controller2_enabled;
     gain_adjustment_enabled_ = gain_adjustment_enabled;
     echo_controller_enabled_ = echo_controller_enabled;
+    voice_detector_enabled_ = voice_detector_enabled;
     transient_suppressor_enabled_ = transient_suppressor_enabled;
   }
 
@@ -171,7 +187,7 @@ bool AudioProcessingImpl::SubmoduleStates::Update(
 
 bool AudioProcessingImpl::SubmoduleStates::CaptureMultiBandSubModulesActive()
     const {
-  return CaptureMultiBandProcessingPresent();
+  return CaptureMultiBandProcessingPresent() || voice_detector_enabled_;
 }
 
 bool AudioProcessingImpl::SubmoduleStates::CaptureMultiBandProcessingPresent()
@@ -280,6 +296,11 @@ AudioProcessingImpl::AudioProcessingImpl(
   capture_nonlocked_.echo_controller_enabled =
       static_cast<bool>(echo_control_factory_);
 
+  // If no echo detector is injected, use the ResidualEchoDetector.
+  if (!submodules_.echo_detector) {
+    submodules_.echo_detector = rtc::make_ref_counted<ResidualEchoDetector>();
+  }
+
   Initialize();
 }
 
@@ -291,6 +312,26 @@ int AudioProcessingImpl::Initialize() {
   MutexLock lock_capture(&mutex_capture_);
   InitializeLocked();
   return kNoError;
+}
+
+int AudioProcessingImpl::Initialize(int capture_input_sample_rate_hz,
+                                    int capture_output_sample_rate_hz,
+                                    int render_input_sample_rate_hz,
+                                    ChannelLayout capture_input_layout,
+                                    ChannelLayout capture_output_layout,
+                                    ChannelLayout render_input_layout) {
+  const ProcessingConfig processing_config = {
+      {{capture_input_sample_rate_hz, ChannelsFromLayout(capture_input_layout),
+        LayoutHasKeyboard(capture_input_layout)},
+       {capture_output_sample_rate_hz,
+        ChannelsFromLayout(capture_output_layout),
+        LayoutHasKeyboard(capture_output_layout)},
+       {render_input_sample_rate_hz, ChannelsFromLayout(render_input_layout),
+        LayoutHasKeyboard(render_input_layout)},
+       {render_input_sample_rate_hz, ChannelsFromLayout(render_input_layout),
+        LayoutHasKeyboard(render_input_layout)}}};
+
+  return Initialize(processing_config);
 }
 
 int AudioProcessingImpl::Initialize(const ProcessingConfig& processing_config) {
@@ -368,6 +409,7 @@ void AudioProcessingImpl::InitializeLocked() {
   InitializeGainController1();
   InitializeTransientSuppressor();
   InitializeHighPassFilter(true);
+  InitializeVoiceDetector();
   InitializeResidualEchoDetector();
   InitializeEchoController();
   InitializeGainController2(/*config_has_changed=*/true);
@@ -502,6 +544,9 @@ void AudioProcessingImpl::ApplyConfig(const AudioProcessing::Config& config) {
   const bool agc2_config_changed =
       config_.gain_controller2 != config.gain_controller2;
 
+  const bool voice_detection_config_changed =
+      config_.voice_detection.enabled != config.voice_detection.enabled;
+
   const bool ns_config_changed =
       config_.noise_suppression.enabled != config.noise_suppression.enabled ||
       config_.noise_suppression.level != config.noise_suppression.level;
@@ -548,6 +593,10 @@ void AudioProcessingImpl::ApplyConfig(const AudioProcessing::Config& config) {
 
   if (pre_amplifier_config_changed || gain_adjustment_config_changed) {
     InitializeCaptureLevelsAdjuster();
+  }
+
+  if (voice_detection_config_changed) {
+    InitializeVoiceDetector();
   }
 
   // Reinitialization must happen after all submodule configuration to avoid
@@ -732,6 +781,7 @@ int AudioProcessingImpl::ProcessStream(const float* const* src,
     RecordUnprocessedCaptureStream(src);
   }
 
+  capture_.keyboard_info.Extract(src, formats_.api_format.input_stream());
   capture_.capture_audio->CopyFrom(src, formats_.api_format.input_stream());
   if (capture_.capture_fullband_audio) {
     capture_.capture_fullband_audio->CopyFrom(
@@ -919,18 +969,16 @@ void AudioProcessingImpl::QueueBandedRenderAudio(AudioBuffer* audio) {
 }
 
 void AudioProcessingImpl::QueueNonbandedRenderAudio(AudioBuffer* audio) {
-  if (submodules_.echo_detector) {
-    PackRenderAudioBufferForEchoDetector(*audio, red_render_queue_buffer_);
-    RTC_DCHECK(red_render_signal_queue_);
-    // Insert the samples into the queue.
-    if (!red_render_signal_queue_->Insert(&red_render_queue_buffer_)) {
-      // The data queue is full and needs to be emptied.
-      EmptyQueuedRenderAudio();
+  ResidualEchoDetector::PackRenderAudioBuffer(audio, &red_render_queue_buffer_);
 
-      // Retry the insert (should always work).
-      bool result = red_render_signal_queue_->Insert(&red_render_queue_buffer_);
-      RTC_DCHECK(result);
-    }
+  // Insert the samples into the queue.
+  if (!red_render_signal_queue_->Insert(&red_render_queue_buffer_)) {
+    // The data queue is full and needs to be emptied.
+    EmptyQueuedRenderAudio();
+
+    // Retry the insert (should always work).
+    bool result = red_render_signal_queue_->Insert(&red_render_queue_buffer_);
+    RTC_DCHECK(result);
   }
 }
 
@@ -963,26 +1011,23 @@ void AudioProcessingImpl::AllocateRenderQueue() {
     agc_render_signal_queue_->Clear();
   }
 
-  if (submodules_.echo_detector) {
-    if (red_render_queue_element_max_size_ <
-        new_red_render_queue_element_max_size) {
-      red_render_queue_element_max_size_ =
-          new_red_render_queue_element_max_size;
+  if (red_render_queue_element_max_size_ <
+      new_red_render_queue_element_max_size) {
+    red_render_queue_element_max_size_ = new_red_render_queue_element_max_size;
 
-      std::vector<float> template_queue_element(
-          red_render_queue_element_max_size_);
+    std::vector<float> template_queue_element(
+        red_render_queue_element_max_size_);
 
-      red_render_signal_queue_.reset(
-          new SwapQueue<std::vector<float>, RenderQueueItemVerifier<float>>(
-              kMaxNumFramesToBuffer, template_queue_element,
-              RenderQueueItemVerifier<float>(
-                  red_render_queue_element_max_size_)));
+    red_render_signal_queue_.reset(
+        new SwapQueue<std::vector<float>, RenderQueueItemVerifier<float>>(
+            kMaxNumFramesToBuffer, template_queue_element,
+            RenderQueueItemVerifier<float>(
+                red_render_queue_element_max_size_)));
 
-      red_render_queue_buffer_.resize(red_render_queue_element_max_size_);
-      red_capture_queue_buffer_.resize(red_render_queue_element_max_size_);
-    } else {
-      red_render_signal_queue_->Clear();
-    }
+    red_render_queue_buffer_.resize(red_render_queue_element_max_size_);
+    red_capture_queue_buffer_.resize(red_render_queue_element_max_size_);
+  } else {
+    red_render_signal_queue_->Clear();
   }
 }
 
@@ -1006,10 +1051,9 @@ void AudioProcessingImpl::EmptyQueuedRenderAudioLocked() {
     }
   }
 
-  if (submodules_.echo_detector) {
-    while (red_render_signal_queue_->Remove(&red_capture_queue_buffer_)) {
-      submodules_.echo_detector->AnalyzeRenderAudio(red_capture_queue_buffer_);
-    }
+  while (red_render_signal_queue_->Remove(&red_capture_queue_buffer_)) {
+    RTC_DCHECK(submodules_.echo_detector);
+    submodules_.echo_detector->AnalyzeRenderAudio(red_capture_queue_buffer_);
   }
 }
 
@@ -1204,6 +1248,13 @@ int AudioProcessingImpl::ProcessCaptureStreamLocked() {
     }
   }
 
+  if (config_.voice_detection.enabled) {
+    capture_.stats.voice_detected =
+        submodules_.voice_detector->ProcessCaptureAudio(capture_buffer);
+  } else {
+    capture_.stats.voice_detected = absl::nullopt;
+  }
+
   if (submodules_.agc_manager) {
     submodules_.agc_manager->Process(capture_buffer);
 
@@ -1238,7 +1289,8 @@ int AudioProcessingImpl::ProcessCaptureStreamLocked() {
       capture_buffer = capture_.capture_fullband_audio.get();
     }
 
-    if (submodules_.echo_detector) {
+    if (config_.residual_echo_detector.enabled) {
+      RTC_DCHECK(submodules_.echo_detector);
       submodules_.echo_detector->AnalyzeCaptureAudio(
           rtc::ArrayView<const float>(capture_buffer->channels()[0],
                                       capture_buffer->num_frames()));
@@ -1257,7 +1309,8 @@ int AudioProcessingImpl::ProcessCaptureStreamLocked() {
           capture_buffer->num_channels(),
           capture_buffer->split_bands_const(0)[kBand0To8kHz],
           capture_buffer->num_frames_per_band(),
-          /*reference_data=*/nullptr, /*reference_length=*/0, voice_probability,
+          capture_.keyboard_info.keyboard_data,
+          capture_.keyboard_info.num_keyboard_frames, voice_probability,
           capture_.key_pressed);
     }
 
@@ -1295,7 +1348,8 @@ int AudioProcessingImpl::ProcessCaptureStreamLocked() {
     }
 
     // Compute echo-detector stats.
-    if (submodules_.echo_detector) {
+    if (config_.residual_echo_detector.enabled) {
+      RTC_DCHECK(submodules_.echo_detector);
       auto ed_metrics = submodules_.echo_detector->GetMetrics();
       capture_.stats.residual_echo_likelihood = ed_metrics.echo_likelihood;
       capture_.stats.residual_echo_likelihood_recent_max =
@@ -1660,11 +1714,11 @@ AudioProcessing::Config AudioProcessingImpl::GetConfig() const {
 bool AudioProcessingImpl::UpdateActiveSubmoduleStates() {
   return submodule_states_.Update(
       config_.high_pass_filter.enabled, !!submodules_.echo_control_mobile,
-      !!submodules_.noise_suppressor, !!submodules_.gain_control,
-      !!submodules_.gain_controller2,
+      config_.residual_echo_detector.enabled, !!submodules_.noise_suppressor,
+      !!submodules_.gain_control, !!submodules_.gain_controller2,
       config_.pre_amplifier.enabled || config_.capture_level_adjustment.enabled,
       capture_nonlocked_.echo_controller_enabled,
-      !!submodules_.transient_suppressor);
+      config_.voice_detection.enabled, !!submodules_.transient_suppressor);
 }
 
 void AudioProcessingImpl::InitializeTransientSuppressor() {
@@ -1714,6 +1768,14 @@ void AudioProcessingImpl::InitializeHighPassFilter(bool forced_reset) {
   }
 }
 
+void AudioProcessingImpl::InitializeVoiceDetector() {
+  if (config_.voice_detection.enabled) {
+    submodules_.voice_detector = std::make_unique<VoiceDetection>(
+        proc_split_sample_rate_hz(), VoiceDetection::kVeryLowLikelihood);
+  } else {
+    submodules_.voice_detector.reset();
+  }
+}
 void AudioProcessingImpl::InitializeEchoController() {
   bool use_echo_controller =
       echo_control_factory_ ||
@@ -1831,7 +1893,9 @@ void AudioProcessingImpl::InitializeGainController1() {
 
   if (!submodules_.agc_manager.get() ||
       submodules_.agc_manager->num_channels() !=
-          static_cast<int>(num_proc_channels())) {
+          static_cast<int>(num_proc_channels()) ||
+      submodules_.agc_manager->sample_rate_hz() !=
+          capture_nonlocked_.split_rate) {
     int stream_analog_level = -1;
     const bool re_creation = !!submodules_.agc_manager;
     if (re_creation) {
@@ -1843,6 +1907,7 @@ void AudioProcessingImpl::InitializeGainController1() {
         config_.gain_controller1.analog_gain_controller.clipped_level_min,
         !config_.gain_controller1.analog_gain_controller
              .enable_digital_adaptive,
+        capture_nonlocked_.split_rate,
         config_.gain_controller1.analog_gain_controller.clipped_level_step,
         config_.gain_controller1.analog_gain_controller.clipped_ratio_threshold,
         config_.gain_controller1.analog_gain_controller.clipped_wait_frames,
@@ -1926,11 +1991,10 @@ void AudioProcessingImpl::InitializeCaptureLevelsAdjuster() {
 }
 
 void AudioProcessingImpl::InitializeResidualEchoDetector() {
-  if (submodules_.echo_detector) {
-    submodules_.echo_detector->Initialize(
-        proc_fullband_sample_rate_hz(), 1,
-        formats_.render_processing_format.sample_rate_hz(), 1);
-  }
+  RTC_DCHECK(submodules_.echo_detector);
+  submodules_.echo_detector->Initialize(
+      proc_fullband_sample_rate_hz(), 1,
+      formats_.render_processing_format.sample_rate_hz(), 1);
 }
 
 void AudioProcessingImpl::InitializeAnalyzer() {
@@ -2094,6 +2158,17 @@ AudioProcessingImpl::ApmCaptureState::ApmCaptureState()
       prev_playout_volume(-1) {}
 
 AudioProcessingImpl::ApmCaptureState::~ApmCaptureState() = default;
+
+void AudioProcessingImpl::ApmCaptureState::KeyboardInfo::Extract(
+    const float* const* data,
+    const StreamConfig& stream_config) {
+  if (stream_config.has_keyboard()) {
+    keyboard_data = data[stream_config.num_channels()];
+  } else {
+    keyboard_data = NULL;
+  }
+  num_keyboard_frames = stream_config.num_frames();
+}
 
 AudioProcessingImpl::ApmRenderState::ApmRenderState() = default;
 

@@ -34,7 +34,6 @@
 #include "rtc_base/string_encode.h"
 #include "rtc_base/string_utils.h"
 #include "rtc_base/strings/string_builder.h"
-#include "rtc_base/task_utils/to_queued_task.h"
 #include "rtc_base/thread.h"
 #include "system_wrappers/include/field_trial.h"
 
@@ -48,6 +47,9 @@ constexpr uint8_t kVpns[2][6] = {
     // GlobalProtect Virtual Ethernet.
     {0x2, 0x50, 0x41, 0x0, 0x0, 0x1},
 };
+
+const uint32_t kUpdateNetworksMessage = 1;
+const uint32_t kSignalNetworksMessage = 2;
 
 // Fetch list of networks every two seconds.
 const int kNetworksUpdateIntervalMs = 2000;
@@ -526,11 +528,7 @@ BasicNetworkManager::BasicNetworkManager(
       bind_using_ifname_(
           !webrtc::field_trial::IsDisabled("WebRTC-BindUsingInterfaceName")) {}
 
-BasicNetworkManager::~BasicNetworkManager() {
-  if (task_safety_flag_) {
-    task_safety_flag_->SetNotAlive();
-  }
-}
+BasicNetworkManager::~BasicNetworkManager() {}
 
 void BasicNetworkManager::OnNetworksChanged() {
   RTC_DCHECK_RUN_ON(thread_);
@@ -899,17 +897,9 @@ void BasicNetworkManager::StartUpdating() {
     // we should trigger network signal immediately for the new clients
     // to start allocating ports.
     if (sent_first_update_)
-      thread_->PostTask(ToQueuedTask(task_safety_flag_, [this] {
-        RTC_DCHECK_RUN_ON(thread_);
-        SignalNetworksChanged();
-      }));
+      thread_->Post(RTC_FROM_HERE, this, kSignalNetworksMessage);
   } else {
-    RTC_DCHECK(task_safety_flag_ == nullptr);
-    task_safety_flag_ = webrtc::PendingTaskSafetyFlag::Create();
-    thread_->PostTask(ToQueuedTask(task_safety_flag_, [this] {
-      RTC_DCHECK_RUN_ON(thread_);
-      UpdateNetworksContinually();
-    }));
+    thread_->Post(RTC_FROM_HERE, this, kUpdateNetworksMessage);
     StartNetworkMonitor();
   }
   ++start_count_;
@@ -922,8 +912,7 @@ void BasicNetworkManager::StopUpdating() {
 
   --start_count_;
   if (!start_count_) {
-    task_safety_flag_->SetNotAlive();
-    task_safety_flag_ = nullptr;
+    thread_->Clear(this);
     sent_first_update_ = false;
     StopNetworkMonitor();
   }
@@ -964,6 +953,22 @@ void BasicNetworkManager::StopNetworkMonitor() {
     if (thread_->socketserver()->network_binder() == this) {
       thread_->socketserver()->set_network_binder(nullptr);
     }
+  }
+}
+
+void BasicNetworkManager::OnMessage(Message* msg) {
+  RTC_DCHECK_RUN_ON(thread_);
+  switch (msg->message_id) {
+    case kUpdateNetworksMessage: {
+      UpdateNetworksContinually();
+      break;
+    }
+    case kSignalNetworksMessage: {
+      SignalNetworksChanged();
+      break;
+    }
+    default:
+      RTC_DCHECK_NOTREACHED();
   }
 }
 
@@ -1021,12 +1026,8 @@ void BasicNetworkManager::UpdateNetworksOnce() {
 
 void BasicNetworkManager::UpdateNetworksContinually() {
   UpdateNetworksOnce();
-  thread_->PostDelayedTask(ToQueuedTask(task_safety_flag_,
-                                        [this] {
-                                          RTC_DCHECK_RUN_ON(thread_);
-                                          UpdateNetworksContinually();
-                                        }),
-                           kNetworksUpdateIntervalMs);
+  thread_->PostDelayed(RTC_FROM_HERE, kNetworksUpdateIntervalMs, this,
+                       kUpdateNetworksMessage);
 }
 
 void BasicNetworkManager::DumpNetworks() {
@@ -1165,51 +1166,6 @@ uint16_t Network::GetCost() const {
   return ComputeNetworkCostByType(type, IsVpn(),
                                   use_differentiated_cellular_costs_,
                                   add_network_cost_to_vpn_);
-}
-
-// This is the inverse of ComputeNetworkCostByType().
-std::pair<rtc::AdapterType, bool /* vpn */>
-Network::GuessAdapterFromNetworkCost(int network_cost) {
-  switch (network_cost) {
-    case kNetworkCostMin:
-      return {rtc::ADAPTER_TYPE_ETHERNET, false};
-    case kNetworkCostMin + kNetworkCostVpn:
-      return {rtc::ADAPTER_TYPE_ETHERNET, true};
-    case kNetworkCostLow:
-      return {rtc::ADAPTER_TYPE_WIFI, false};
-    case kNetworkCostLow + kNetworkCostVpn:
-      return {rtc::ADAPTER_TYPE_WIFI, true};
-    case kNetworkCostCellular:
-      return {rtc::ADAPTER_TYPE_CELLULAR, false};
-    case kNetworkCostCellular + kNetworkCostVpn:
-      return {rtc::ADAPTER_TYPE_CELLULAR, true};
-    case kNetworkCostCellular2G:
-      return {rtc::ADAPTER_TYPE_CELLULAR_2G, false};
-    case kNetworkCostCellular2G + kNetworkCostVpn:
-      return {rtc::ADAPTER_TYPE_CELLULAR_2G, true};
-    case kNetworkCostCellular3G:
-      return {rtc::ADAPTER_TYPE_CELLULAR_3G, false};
-    case kNetworkCostCellular3G + kNetworkCostVpn:
-      return {rtc::ADAPTER_TYPE_CELLULAR_3G, true};
-    case kNetworkCostCellular4G:
-      return {rtc::ADAPTER_TYPE_CELLULAR_4G, false};
-    case kNetworkCostCellular4G + kNetworkCostVpn:
-      return {rtc::ADAPTER_TYPE_CELLULAR_4G, true};
-    case kNetworkCostCellular5G:
-      return {rtc::ADAPTER_TYPE_CELLULAR_5G, false};
-    case kNetworkCostCellular5G + kNetworkCostVpn:
-      return {rtc::ADAPTER_TYPE_CELLULAR_5G, true};
-    case kNetworkCostUnknown:
-      return {rtc::ADAPTER_TYPE_UNKNOWN, false};
-    case kNetworkCostUnknown + kNetworkCostVpn:
-      return {rtc::ADAPTER_TYPE_UNKNOWN, true};
-    case kNetworkCostMax:
-      return {rtc::ADAPTER_TYPE_ANY, false};
-    case kNetworkCostMax + kNetworkCostVpn:
-      return {rtc::ADAPTER_TYPE_ANY, true};
-  }
-  RTC_LOG(LS_VERBOSE) << "Unknown network cost: " << network_cost;
-  return {rtc::ADAPTER_TYPE_UNKNOWN, false};
 }
 
 std::string Network::ToString() const {

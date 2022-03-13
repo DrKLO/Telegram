@@ -17,6 +17,7 @@
 #include <memory>
 
 #include "rtc_base/checks.h"
+#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -29,9 +30,6 @@ class AudioVector {
   explicit AudioVector(size_t initial_size);
 
   virtual ~AudioVector();
-
-  AudioVector(const AudioVector&) = delete;
-  AudioVector& operator=(const AudioVector&) = delete;
 
   // Deletes all values and make the vector empty.
   virtual void Clear();
@@ -166,6 +164,8 @@ class AudioVector {
 
   // The index of the sample after the last sample in `array_`.
   size_t end_index_;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(AudioVector);
 };
 
 }  // namespace webrtc

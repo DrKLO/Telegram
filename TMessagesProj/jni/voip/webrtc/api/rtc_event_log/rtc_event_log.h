@@ -29,7 +29,7 @@ class RtcEventLog {
 
   // TODO(eladalon):  Get rid of the legacy encoding and this enum once all
   // clients have migrated to the new format.
-  enum class EncodingType { Legacy, NewFormat, ProtoFree };
+  enum class EncodingType { Legacy, NewFormat };
 
   virtual ~RtcEventLog() = default;
 

@@ -28,7 +28,6 @@
 #include "api/video/video_bitrate_allocator_factory.h"
 #include "api/video/video_codec_constants.h"
 #include "api/video/video_layers_allocation.h"
-#include "api/video_codecs/sdp_video_format.h"
 #include "api/video_codecs/video_encoder.h"
 #include "call/adaptation/resource_adaptation_processor.h"
 #include "call/adaptation/video_stream_adapter.h"
@@ -36,6 +35,7 @@
 #include "modules/video_coding/svc/svc_rate_allocator.h"
 #include "rtc_base/arraysize.h"
 #include "rtc_base/checks.h"
+#include "rtc_base/constructor_magic.h"
 #include "rtc_base/event.h"
 #include "rtc_base/experiments/alr_experiment.h"
 #include "rtc_base/experiments/encoder_info_settings.h"
@@ -51,7 +51,6 @@
 #include "system_wrappers/include/metrics.h"
 #include "video/adaptation/video_stream_encoder_resource_manager.h"
 #include "video/alignment_adjuster.h"
-#include "video/frame_cadence_adapter.h"
 
 namespace webrtc {
 
@@ -64,11 +63,6 @@ const int64_t kFrameLogIntervalMs = 60000;
 const int64_t kPendingFrameTimeoutMs = 1000;
 
 constexpr char kFrameDropperFieldTrial[] = "WebRTC-FrameDropper";
-
-// TODO(bugs.webrtc.org/13572): Remove this kill switch after deploying the
-// feature.
-constexpr char kSwitchEncoderOnInitializationFailuresFieldTrial[] =
-    "WebRTC-SwitchEncoderOnInitializationFailures";
 
 const size_t kDefaultPayloadSize = 1440;
 
@@ -653,6 +647,9 @@ VideoStreamEncoder::VideoStreamEncoder(
       video_stream_adapter_(
           std::make_unique<VideoStreamAdapter>(&input_state_provider_,
                                                encoder_stats_observer)),
+      resource_adaptation_processor_(
+          std::make_unique<ResourceAdaptationProcessor>(
+              video_stream_adapter_.get())),
       degradation_preference_manager_(
           std::make_unique<DegradationPreferenceManager>(
               video_stream_adapter_.get())),
@@ -669,8 +666,6 @@ VideoStreamEncoder::VideoStreamEncoder(
           !field_trial::IsEnabled("WebRTC-DefaultBitrateLimitsKillSwitch")),
       qp_parsing_allowed_(
           !field_trial::IsEnabled("WebRTC-QpParsingKillSwitch")),
-      switch_encoder_on_init_failures_(!field_trial::IsDisabled(
-          kSwitchEncoderOnInitializationFailuresFieldTrial)),
       encoder_queue_(std::move(encoder_queue)) {
   TRACE_EVENT0("webrtc", "VideoStreamEncoder::VideoStreamEncoder");
   RTC_DCHECK_RUN_ON(worker_queue_);
@@ -680,13 +675,10 @@ VideoStreamEncoder::VideoStreamEncoder(
   frame_cadence_adapter_->Initialize(&cadence_callback_);
   stream_resource_manager_.Initialize(&encoder_queue_);
 
-  encoder_queue_.PostTask([this] {
+  rtc::Event initialize_processor_event;
+  encoder_queue_.PostTask([this, &initialize_processor_event] {
     RTC_DCHECK_RUN_ON(&encoder_queue_);
-
-    resource_adaptation_processor_ =
-        std::make_unique<ResourceAdaptationProcessor>(
-            video_stream_adapter_.get());
-
+    resource_adaptation_processor_->SetTaskQueue(encoder_queue_.Get());
     stream_resource_manager_.SetAdaptationProcessor(
         resource_adaptation_processor_.get(), video_stream_adapter_.get());
     resource_adaptation_processor_->AddResourceLimitationsListener(
@@ -700,7 +692,9 @@ VideoStreamEncoder::VideoStreamEncoder(
     for (auto* constraint : adaptation_constraints_) {
       video_stream_adapter_->AddAdaptationConstraint(constraint);
     }
+    initialize_processor_event.Set();
   });
+  initialize_processor_event.Wait(rtc::Event::kForever);
 }
 
 VideoStreamEncoder::~VideoStreamEncoder() {
@@ -764,31 +758,22 @@ void VideoStreamEncoder::AddAdaptationResource(
   // of this MapResourceToReason() call.
   TRACE_EVENT_ASYNC_BEGIN0(
       "webrtc", "VideoStreamEncoder::AddAdaptationResource(latency)", this);
-  encoder_queue_.PostTask([this, resource = std::move(resource)] {
+  rtc::Event map_resource_event;
+  encoder_queue_.PostTask([this, resource, &map_resource_event] {
     TRACE_EVENT_ASYNC_END0(
         "webrtc", "VideoStreamEncoder::AddAdaptationResource(latency)", this);
     RTC_DCHECK_RUN_ON(&encoder_queue_);
     additional_resources_.push_back(resource);
     stream_resource_manager_.AddResource(resource, VideoAdaptationReason::kCpu);
+    map_resource_event.Set();
   });
+  map_resource_event.Wait(rtc::Event::kForever);
 }
 
 std::vector<rtc::scoped_refptr<Resource>>
 VideoStreamEncoder::GetAdaptationResources() {
   RTC_DCHECK_RUN_ON(worker_queue_);
-  // In practice, this method is only called by tests to verify operations that
-  // run on the encoder queue. So rather than force PostTask() operations to
-  // be accompanied by an event and a `Wait()`, we'll use PostTask + Wait()
-  // here.
-  rtc::Event event;
-  std::vector<rtc::scoped_refptr<Resource>> resources;
-  encoder_queue_.PostTask([&] {
-    RTC_DCHECK_RUN_ON(&encoder_queue_);
-    resources = resource_adaptation_processor_->GetResources();
-    event.Set();
-  });
-  event.Wait(rtc::Event::kForever);
-  return resources;
+  return resource_adaptation_processor_->GetResources();
 }
 
 void VideoStreamEncoder::SetSource(
@@ -845,20 +830,8 @@ void VideoStreamEncoder::ConfigureEncoder(VideoEncoderConfig config,
         RTC_DCHECK(sink_);
         RTC_LOG(LS_INFO) << "ConfigureEncoder requested.";
 
-        // Set up the frame cadence adapter according to if we're going to do
-        // screencast. The final number of spatial layers is based on info
-        // in `send_codec_`, which is computed based on incoming frame
-        // dimensions which can only be determined later.
-        //
-        // Note: zero-hertz mode isn't enabled by this alone. Constraints also
-        // have to be set up with min_fps = 0 and max_fps > 0.
-        if (config.content_type == VideoEncoderConfig::ContentType::kScreen) {
-          frame_cadence_adapter_->SetZeroHertzModeEnabled(
-              FrameCadenceAdapterInterface::ZeroHertzModeParams{});
-        } else {
-          frame_cadence_adapter_->SetZeroHertzModeEnabled(absl::nullopt);
-        }
-
+        frame_cadence_adapter_->SetZeroHertzModeEnabled(
+            config.content_type == VideoEncoderConfig::ContentType::kScreen);
         pending_encoder_creation_ =
             (!encoder_ || encoder_config_.video_format != config.video_format ||
              max_data_payload_length_ != max_data_payload_length);
@@ -1154,6 +1127,7 @@ void VideoStreamEncoder::ReconfigureEncoder() {
   // Encoder creation block is split in two since EncoderInfo needed to start
   // CPU adaptation with the correct settings should be polled after
   // encoder_->InitEncode().
+  bool success = true;
   if (encoder_reset_required) {
     ReleaseEncoder();
     const size_t max_data_payload_length = max_data_payload_length_ > 0
@@ -1168,6 +1142,7 @@ void VideoStreamEncoder::ReconfigureEncoder() {
                         << CodecTypeToPayloadString(send_codec_.codecType)
                         << " (" << send_codec_.codecType << ")";
       ReleaseEncoder();
+      success = false;
     } else {
       encoder_initialized_ = true;
       encoder_->RegisterEncodeCompleteCallback(this);
@@ -1186,7 +1161,7 @@ void VideoStreamEncoder::ReconfigureEncoder() {
   // Inform dependents of updated encoder settings.
   OnEncoderSettingsChanged();
 
-  if (encoder_initialized_) {
+  if (success) {
     RTC_LOG(LS_VERBOSE) << " max bitrate " << codec.maxBitrate
                         << " start bitrate " << codec.startBitrate
                         << " max frame rate " << codec.maxFramerate
@@ -1272,49 +1247,6 @@ void VideoStreamEncoder::ReconfigureEncoder() {
 
   stream_resource_manager_.ConfigureQualityScaler(info);
   stream_resource_manager_.ConfigureBandwidthQualityScaler(info);
-
-  if (!encoder_initialized_) {
-    RTC_LOG(LS_WARNING) << "Failed to initialize "
-                        << CodecTypeToPayloadString(codec.codecType)
-                        << " encoder."
-                        << "switch_encoder_on_init_failures: "
-                        << switch_encoder_on_init_failures_;
-
-    if (switch_encoder_on_init_failures_) {
-      RequestEncoderSwitch();
-    }
-  }
-}
-
-void VideoStreamEncoder::RequestEncoderSwitch() {
-  bool is_encoder_switching_supported =
-      settings_.encoder_switch_request_callback != nullptr;
-  bool is_encoder_selector_available = encoder_selector_ != nullptr;
-
-  RTC_LOG(LS_INFO) << "RequestEncoderSwitch."
-                   << " is_encoder_selector_available: "
-                   << is_encoder_selector_available
-                   << " is_encoder_switching_supported: "
-                   << is_encoder_switching_supported;
-
-  if (!is_encoder_switching_supported) {
-    return;
-  }
-
-  // If encoder selector is available, switch to the encoder it prefers.
-  // Otherwise try switching to VP8 (default WebRTC codec).
-  absl::optional<SdpVideoFormat> preferred_fallback_encoder;
-  if (is_encoder_selector_available) {
-    preferred_fallback_encoder = encoder_selector_->OnEncoderBroken();
-  }
-
-  if (!preferred_fallback_encoder) {
-    preferred_fallback_encoder =
-        SdpVideoFormat(CodecTypeToPayloadString(kVideoCodecVP8));
-  }
-
-  settings_.encoder_switch_request_callback->RequestEncoderSwitch(
-      *preferred_fallback_encoder, /*allow_default_fallback=*/true);
 }
 
 void VideoStreamEncoder::OnEncoderSettingsChanged() {
@@ -1327,11 +1259,6 @@ void VideoStreamEncoder::OnEncoderSettingsChanged() {
   bool is_screenshare = encoder_settings.encoder_config().content_type ==
                         VideoEncoderConfig::ContentType::kScreen;
   degradation_preference_manager_->SetIsScreenshare(is_screenshare);
-  if (is_screenshare) {
-    frame_cadence_adapter_->SetZeroHertzModeEnabled(
-        FrameCadenceAdapterInterface::ZeroHertzModeParams{
-            send_codec_.numberOfSimulcastStreams});
-  }
 }
 
 void VideoStreamEncoder::OnFrame(Timestamp post_time,
@@ -1529,16 +1456,8 @@ void VideoStreamEncoder::SetEncoderRates(
     last_encoder_rate_settings_ = rate_settings;
   }
 
-  if (!encoder_)
+  if (!encoder_) {
     return;
-
-  // Make the cadence adapter know if streams were disabled.
-  for (int spatial_index = 0;
-       spatial_index != send_codec_.numberOfSimulcastStreams; ++spatial_index) {
-    frame_cadence_adapter_->UpdateLayerStatus(
-        spatial_index,
-        /*enabled=*/rate_settings.rate_control.target_bitrate
-                .GetSpatialLayerSum(spatial_index) > 0);
   }
 
   // `bitrate_allocation` is 0 it means that the network is down or the send
@@ -1547,8 +1466,9 @@ void VideoStreamEncoder::SetEncoderRates(
   // bitrate.
   // TODO(perkj): Make sure all known encoder implementations handle zero
   // target bitrate and remove this check.
-  if (rate_settings.rate_control.bitrate.get_sum_bps() == 0)
+  if (rate_settings.rate_control.bitrate.get_sum_bps() == 0) {
     return;
+  }
 
   if (rate_control_changed) {
     encoder_->SetRates(rate_settings.rate_control);
@@ -1713,7 +1633,7 @@ void VideoStreamEncoder::EncodeVideoFrame(const VideoFrame& video_frame,
   // If the encoder fail we can't continue to encode frames. When this happens
   // the WebrtcVideoSender is notified and the whole VideoSendStream is
   // recreated.
-  if (encoder_failed_ || !encoder_initialized_)
+  if (encoder_failed_)
     return;
 
   // It's possible that EncodeVideoFrame can be called after we've completed
@@ -1851,7 +1771,21 @@ void VideoStreamEncoder::EncodeVideoFrame(const VideoFrame& video_frame,
     if (encode_status == WEBRTC_VIDEO_CODEC_ENCODER_FAILURE) {
       RTC_LOG(LS_ERROR) << "Encoder failed, failing encoder format: "
                         << encoder_config_.video_format.ToString();
-      RequestEncoderSwitch();
+
+      if (settings_.encoder_switch_request_callback) {
+        if (encoder_selector_) {
+          if (auto encoder = encoder_selector_->OnEncoderBroken()) {
+            settings_.encoder_switch_request_callback->RequestEncoderSwitch(
+                *encoder);
+          }
+        } else {
+          encoder_failed_ = true;
+          settings_.encoder_switch_request_callback->RequestEncoderFallback();
+        }
+      } else {
+        RTC_LOG(LS_ERROR)
+            << "Encoder failed but no encoder fallback callback is registered";
+      }
     } else {
       RTC_LOG(LS_ERROR) << "Failed to encode frame. Error code: "
                         << encode_status;
@@ -1865,13 +1799,6 @@ void VideoStreamEncoder::EncodeVideoFrame(const VideoFrame& video_frame,
   }
 }
 
-void VideoStreamEncoder::RequestRefreshFrame() {
-  worker_queue_->PostTask(ToQueuedTask(task_safety_, [this] {
-    RTC_DCHECK_RUN_ON(worker_queue_);
-    video_source_sink_controller_.RequestRefreshFrame();
-  }));
-}
-
 void VideoStreamEncoder::SendKeyFrame() {
   if (!encoder_queue_.IsCurrent()) {
     encoder_queue_.PostTask([this] { SendKeyFrame(); });
@@ -1881,13 +1808,8 @@ void VideoStreamEncoder::SendKeyFrame() {
   TRACE_EVENT0("webrtc", "OnKeyFrameRequest");
   RTC_DCHECK(!next_frame_types_.empty());
 
-  if (frame_cadence_adapter_)
-    frame_cadence_adapter_->ProcessKeyFrameRequest();
-
-  if (!encoder_) {
-    RTC_DLOG(LS_INFO) << __func__ << " no encoder.";
-    return;  // Shutting down, or not configured yet.
-  }
+  if (!encoder_)
+    return;  // Shutting down.
 
   // TODO(webrtc:10615): Map keyframe request to spatial layer.
   std::fill(next_frame_types_.begin(), next_frame_types_.end(),
@@ -1952,24 +1874,14 @@ EncodedImageCallback::Result VideoStreamEncoder::OnEncodedImage(
   RTC_CHECK(videocontenttypehelpers::SetSimulcastId(
       &image_copy.content_type_, static_cast<uint8_t>(spatial_idx + 1)));
 
-  // Post a task because `send_codec_` requires `encoder_queue_` lock and we
-  // need to update on quality convergence.
+  // Currently internal quality scaler is used for VP9 instead of webrtc qp
+  // scaler (in no-svc case or if only a single spatial layer is encoded).
+  // It has to be explicitly detected and reported to adaptation metrics.
+  // Post a task because `send_codec_` requires `encoder_queue_` lock.
   unsigned int image_width = image_copy._encodedWidth;
   unsigned int image_height = image_copy._encodedHeight;
-  encoder_queue_.PostTask([this, codec_type, image_width, image_height,
-                           spatial_idx,
-                           at_target_quality = image_copy.IsAtTargetQuality()] {
+  encoder_queue_.PostTask([this, codec_type, image_width, image_height] {
     RTC_DCHECK_RUN_ON(&encoder_queue_);
-
-    // Let the frame cadence adapter know about quality convergence.
-    if (frame_cadence_adapter_)
-      frame_cadence_adapter_->UpdateLayerQualityConvergence(spatial_idx,
-                                                            at_target_quality);
-
-    // Currently, the internal quality scaler is used for VP9 instead of the
-    // webrtc qp scaler (in the no-svc case or if only a single spatial layer is
-    // encoded). It has to be explicitly detected and reported to adaptation
-    // metrics.
     if (codec_type == VideoCodecType::kVideoCodecVP9 &&
         send_codec_.VP9()->automaticResizeOn) {
       unsigned int expected_width = send_codec_.width;
@@ -2107,8 +2019,7 @@ void VideoStreamEncoder::OnBitrateUpdated(DataRate target_bitrate,
   if (!video_is_suspended && settings_.encoder_switch_request_callback &&
       encoder_selector_) {
     if (auto encoder = encoder_selector_->OnAvailableBitrate(link_allocation)) {
-      settings_.encoder_switch_request_callback->RequestEncoderSwitch(
-          *encoder, /*allow_default_fallback=*/false);
+      settings_.encoder_switch_request_callback->RequestEncoderSwitch(*encoder);
     }
   }
 
@@ -2362,11 +2273,14 @@ void VideoStreamEncoder::CheckForAnimatedContent(
 void VideoStreamEncoder::InjectAdaptationResource(
     rtc::scoped_refptr<Resource> resource,
     VideoAdaptationReason reason) {
-  encoder_queue_.PostTask([this, resource = std::move(resource), reason] {
+  rtc::Event map_resource_event;
+  encoder_queue_.PostTask([this, resource, reason, &map_resource_event] {
     RTC_DCHECK_RUN_ON(&encoder_queue_);
     additional_resources_.push_back(resource);
     stream_resource_manager_.AddResource(resource, reason);
+    map_resource_event.Set();
   });
+  map_resource_event.Wait(rtc::Event::kForever);
 }
 
 void VideoStreamEncoder::InjectAdaptationConstraint(

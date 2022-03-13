@@ -280,6 +280,13 @@ public class LoginActivity extends BaseFragment {
     private Runnable[] editDoneCallback = new Runnable[2];
     private boolean[] postedEditDoneCallback = new boolean[2];
 
+    private static Map<String, PhoneNumberExclusionRule> phoneNumberExclusionRules = new HashMap<>();
+
+    static {
+        phoneNumberExclusionRules.put("60", hintLengthFrom -> --hintLengthFrom);
+        phoneNumberExclusionRules.put("372", hintLengthFrom -> --hintLengthFrom);
+    }
+
     private static class ProgressView extends View {
 
         private final Path path = new Path();
@@ -1447,29 +1454,28 @@ public class LoginActivity extends BaseFragment {
     }
 
     private void onAuthSuccess(TLRPC.TL_auth_authorization res, boolean afterSignup) {
-        Utilities.cacheClearQueue.postRunnable(()->{
-            ConnectionsManager.getInstance(currentAccount).setUserId(res.user.id);
-            UserConfig.getInstance(currentAccount).clearConfig();
-            MessagesController.getInstance(currentAccount).cleanup();
-            UserConfig.getInstance(currentAccount).syncContacts = syncContacts;
-            UserConfig.getInstance(currentAccount).setCurrentUser(res.user);
-            UserConfig.getInstance(currentAccount).saveConfig(true);
-            MessagesStorage.getInstance(currentAccount).cleanup(true);
-            ArrayList<TLRPC.User> users = new ArrayList<>();
-            users.add(res.user);
-            MessagesStorage.getInstance(currentAccount).putUsersAndChats(users, null, true, true);
-            MessagesController.getInstance(currentAccount).putUser(res.user, false);
-            ContactsController.getInstance(currentAccount).checkAppAccount();
-            MessagesController.getInstance(currentAccount).checkPromoInfo(true);
-            ConnectionsManager.getInstance(currentAccount).updateDcSettings();
+        MessagesController.getInstance(currentAccount).cleanup();
+        ConnectionsManager.getInstance(currentAccount).setUserId(res.user.id);
+        UserConfig.getInstance(currentAccount).clearConfig();
+        MessagesController.getInstance(currentAccount).cleanup();
+        UserConfig.getInstance(currentAccount).syncContacts = syncContacts;
+        UserConfig.getInstance(currentAccount).setCurrentUser(res.user);
+        UserConfig.getInstance(currentAccount).saveConfig(true);
+        MessagesStorage.getInstance(currentAccount).cleanup(true);
+        ArrayList<TLRPC.User> users = new ArrayList<>();
+        users.add(res.user);
+        MessagesStorage.getInstance(currentAccount).putUsersAndChats(users, null, true, true);
+        MessagesController.getInstance(currentAccount).putUser(res.user, false);
+        ContactsController.getInstance(currentAccount).checkAppAccount();
+        MessagesController.getInstance(currentAccount).checkPromoInfo(true);
+        ConnectionsManager.getInstance(currentAccount).updateDcSettings();
 
-            if (afterSignup) {
-                MessagesController.getInstance(currentAccount).putDialogsEndReachedAfterRegistration();
-            }
-            MediaDataController.getInstance(currentAccount).loadStickersByEmojiOrName(AndroidUtilities.STICKERS_PLACEHOLDER_PACK_NAME, false, true);
+        if (afterSignup) {
+            MessagesController.getInstance(currentAccount).putDialogsEndReachedAfterRegistration();
+        }
+        MediaDataController.getInstance(currentAccount).loadStickersByEmojiOrName(AndroidUtilities.STICKERS_PLACEHOLDER_PACK_NAME, false, true);
 
-            AndroidUtilities.runOnUIThread(()-> needFinishActivity(afterSignup, res.setup_password_required, res.otherwise_relogin_days));
-        });
+        needFinishActivity(afterSignup, res.setup_password_required, res.otherwise_relogin_days);
     }
 
     private void fillNextCodeParams(Bundle params, TLRPC.TL_auth_sentCode res) {
@@ -2177,8 +2183,9 @@ public class LoginActivity extends BaseFragment {
             String phoneNumber = "+" + codeField.getText() + " " + phoneField.getText();
             String hintText = phoneField.getHintText();
             int hintLength = hintText != null ? hintText.length() : 0;
-            if (codeField.getText().toString().equals("60")) { // Malaysia's numbers can contain less symbols
-                hintLength--;
+            PhoneNumberExclusionRule exclusionRule = phoneNumberExclusionRules.get(codeField.getText().toString());
+            if (exclusionRule != null) {
+                hintLength = exclusionRule.modifyHintLengthRequirement(hintLength);
             }
             if (hintText != null && phoneField.length() < hintLength) {
                 new AlertDialog.Builder(getParentActivity())
@@ -6117,5 +6124,15 @@ public class LoginActivity extends BaseFragment {
             void onConfirmPressed(PhoneNumberConfirmView confirmView, TextView confirmTextView);
             void onDismiss(PhoneNumberConfirmView confirmView);
         }
+    }
+
+    private interface PhoneNumberExclusionRule {
+        int modifyHintLengthRequirement(int lengthFrom);
+    }
+
+    @Override
+    public boolean isLightStatusBar() {
+        int color = Theme.getColor(Theme.key_windowBackgroundWhite, null, true);
+        return ColorUtils.calculateLuminance(color) > 0.7f;
     }
 }

@@ -58,9 +58,7 @@ class FieldTrialList : public FieldTrialListBase {
 
   std::vector<T> Get() const { return values_; }
   operator std::vector<T>() const { return Get(); }
-  typename std::vector<T>::const_reference operator[](size_t index) const {
-    return values_[index];
-  }
+  const T& operator[](size_t index) const { return values_[index]; }
   const std::vector<T>* operator->() const { return &values_; }
 
  protected:

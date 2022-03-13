@@ -12,6 +12,7 @@
 
 #include <type_traits>
 
+#include "rtc_base/constructor_magic.h"
 #include "rtc_base/ref_counter.h"
 
 namespace rtc {
@@ -19,9 +20,6 @@ namespace rtc {
 class RefCountedBase {
  public:
   RefCountedBase() = default;
-
-  RefCountedBase(const RefCountedBase&) = delete;
-  RefCountedBase& operator=(const RefCountedBase&) = delete;
 
   void AddRef() const { ref_count_.IncRef(); }
   RefCountReleaseStatus Release() const {
@@ -41,6 +39,8 @@ class RefCountedBase {
 
  private:
   mutable webrtc::webrtc_impl::RefCounter ref_count_{0};
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(RefCountedBase);
 };
 
 // Template based version of `RefCountedBase` for simple implementations that do
@@ -60,9 +60,6 @@ template <typename T>
 class RefCountedNonVirtual {
  public:
   RefCountedNonVirtual() = default;
-
-  RefCountedNonVirtual(const RefCountedNonVirtual&) = delete;
-  RefCountedNonVirtual& operator=(const RefCountedNonVirtual&) = delete;
 
   void AddRef() const { ref_count_.IncRef(); }
   RefCountReleaseStatus Release() const {
@@ -91,6 +88,8 @@ class RefCountedNonVirtual {
 
  private:
   mutable webrtc::webrtc_impl::RefCounter ref_count_{0};
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(RefCountedNonVirtual);
 };
 
 }  // namespace rtc

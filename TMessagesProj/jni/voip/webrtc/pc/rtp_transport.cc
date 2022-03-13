@@ -11,13 +11,11 @@
 #include "pc/rtp_transport.h"
 
 #include <errno.h>
-
-#include <cstdint>
+#include <string>
 #include <utility>
 
 #include "absl/strings/string_view.h"
 #include "api/array_view.h"
-#include "api/units/timestamp.h"
 #include "media/base/rtp_utils.h"
 #include "modules/rtp_rtcp/source/rtp_packet_received.h"
 #include "rtc_base/checks.h"

@@ -509,7 +509,7 @@ webrtc::RtpTransport *GroupNetworkManager::getRtpTransport() {
 
 void GroupNetworkManager::checkConnectionTimeout() {
     const auto weak = std::weak_ptr<GroupNetworkManager>(shared_from_this());
-    _threads->getNetworkThread()->PostDelayedTask([weak]() {
+    _threads->getNetworkThread()->PostDelayedTask(RTC_FROM_HERE, [weak]() {
         auto strong = weak.lock();
         if (!strong) {
             return;
@@ -553,7 +553,7 @@ void GroupNetworkManager::DtlsReadyToSend(bool isReadyToSend) {
 
     if (isReadyToSend) {
         const auto weak = std::weak_ptr<GroupNetworkManager>(shared_from_this());
-        _threads->getNetworkThread()->PostTask([weak]() {
+        _threads->getNetworkThread()->PostTask(RTC_FROM_HERE, [weak]() {
             const auto strong = weak.lock();
             if (!strong) {
                 return;

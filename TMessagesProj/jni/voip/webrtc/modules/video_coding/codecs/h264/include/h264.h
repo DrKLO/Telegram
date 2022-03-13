@@ -38,14 +38,9 @@ CreateH264Format(H264Profile profile,
 // and is not thread-safe.
 RTC_EXPORT void DisableRtcUseH264();
 
-// Returns a vector with all supported internal H264 encode profiles that we can
+// Returns a vector with all supported internal H264 profiles that we can
 // negotiate in SDP, in order of preference.
 std::vector<SdpVideoFormat> SupportedH264Codecs();
-
-// Returns a vector with all supported internal H264 decode profiles that we can
-// negotiate in SDP, in order of preference. This will be available for receive
-// only connections.
-std::vector<SdpVideoFormat> SupportedH264DecoderCodecs();
 
 class RTC_EXPORT H264Encoder : public VideoEncoder {
  public:

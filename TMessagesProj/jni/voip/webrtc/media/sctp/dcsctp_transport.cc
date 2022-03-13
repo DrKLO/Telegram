@@ -10,7 +10,6 @@
 
 #include "media/sctp/dcsctp_transport.h"
 
-#include <atomic>
 #include <cstdint>
 #include <limits>
 #include <utility>
@@ -127,7 +126,7 @@ DcSctpTransport::DcSctpTransport(rtc::Thread* network_thread,
             socket_->HandleTimeout(timeout_id);
           }) {
   RTC_DCHECK_RUN_ON(network_thread_);
-  static std::atomic<int> instance_count = 0;
+  static int instance_count = 0;
   rtc::StringBuilder sb;
   sb << debug_name_ << instance_count++;
   debug_name_ = sb.Release();
@@ -360,9 +359,8 @@ SendPacketStatus DcSctpTransport::SendPacketWithStatus(
   return SendPacketStatus::kSuccess;
 }
 
-std::unique_ptr<dcsctp::Timeout> DcSctpTransport::CreateTimeout(
-    webrtc::TaskQueueBase::DelayPrecision precision) {
-  return task_queue_timeout_factory_.CreateTimeout(precision);
+std::unique_ptr<dcsctp::Timeout> DcSctpTransport::CreateTimeout() {
+  return task_queue_timeout_factory_.CreateTimeout();
 }
 
 dcsctp::TimeMs DcSctpTransport::TimeMillis() {
@@ -527,7 +525,6 @@ void DcSctpTransport::OnTransportReadPacket(
     size_t length,
     const int64_t& /* packet_time_us */,
     int flags) {
-  RTC_DCHECK_RUN_ON(network_thread_);
   if (flags) {
     // We are only interested in SCTP packets.
     return;

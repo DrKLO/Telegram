@@ -24,8 +24,6 @@
 #include <sys/utsname.h>
 #include <unistd.h>
 
-#include "absl/cleanup/cleanup.h"
-
 namespace {
 
 struct netlinkrequest {
@@ -140,12 +138,10 @@ int populate_ifaddrs(struct ifaddrs* ifaddr,
 }
 
 int getifaddrs(struct ifaddrs** result) {
-  *result = nullptr;
   int fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
   if (fd < 0) {
     return -1;
   }
-  absl::Cleanup close_file = [fd] { close(fd); };
 
   netlinkrequest ifaddr_request;
   memset(&ifaddr_request, 0, sizeof(ifaddr_request));
@@ -155,10 +151,10 @@ int getifaddrs(struct ifaddrs** result) {
 
   ssize_t count = send(fd, &ifaddr_request, ifaddr_request.header.nlmsg_len, 0);
   if (static_cast<size_t>(count) != ifaddr_request.header.nlmsg_len) {
+    close(fd);
     return -1;
   }
   struct ifaddrs* start = nullptr;
-  absl::Cleanup cleanup_start = [&start] { freeifaddrs(start); };
   struct ifaddrs* current = nullptr;
   char buf[kMaxReadSize];
   ssize_t amount_read = recv(fd, &buf, kMaxReadSize, 0);
@@ -169,12 +165,13 @@ int getifaddrs(struct ifaddrs** result) {
          header = NLMSG_NEXT(header, header_size)) {
       switch (header->nlmsg_type) {
         case NLMSG_DONE:
-          // Success. Return `start`. Cancel `start` cleanup  because it
-          // becomes callers responsibility.
-          std::move(cleanup_start).Cancel();
+          // Success. Return.
           *result = start;
+          close(fd);
           return 0;
         case NLMSG_ERROR:
+          close(fd);
+          freeifaddrs(start);
           return -1;
         case RTM_NEWADDR: {
           ifaddrmsg* address_msg =
@@ -195,6 +192,8 @@ int getifaddrs(struct ifaddrs** result) {
               }
               if (populate_ifaddrs(newest, address_msg, RTA_DATA(rta),
                                    RTA_PAYLOAD(rta)) != 0) {
+                freeifaddrs(start);
+                *result = nullptr;
                 return -1;
               }
               current = newest;
@@ -207,6 +206,8 @@ int getifaddrs(struct ifaddrs** result) {
     }
     amount_read = recv(fd, &buf, kMaxReadSize, 0);
   }
+  close(fd);
+  freeifaddrs(start);
   return -1;
 }
 

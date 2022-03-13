@@ -225,7 +225,7 @@ void RtpSenderEgress::SendPacket(RtpPacketToSend* packet,
   // In case of VideoTimingExtension, since it's present not in every packet,
   // data after rtp header may be corrupted if these packets are protected by
   // the FEC.
-  int64_t diff_ms = now_ms - packet->capture_time().ms();
+  int64_t diff_ms = now_ms - packet->capture_time_ms();
   if (packet->HasExtension<TransmissionOffset>()) {
     packet->SetExtension<TransmissionOffset>(kTimestampTicksPerMs * diff_ms);
   }
@@ -236,9 +236,9 @@ void RtpSenderEgress::SendPacket(RtpPacketToSend* packet,
 
   if (packet->HasExtension<VideoTimingExtension>()) {
     if (populate_network2_timestamp_) {
-      packet->set_network2_time(Timestamp::Millis(now_ms));
+      packet->set_network2_time_ms(now_ms);
     } else {
-      packet->set_pacer_exit_time(Timestamp::Millis(now_ms));
+      packet->set_pacer_exit_time_ms(now_ms);
     }
   }
 
@@ -265,8 +265,8 @@ void RtpSenderEgress::SendPacket(RtpPacketToSend* packet,
 
   if (packet->packet_type() != RtpPacketMediaType::kPadding &&
       packet->packet_type() != RtpPacketMediaType::kRetransmission) {
-    UpdateDelayStatistics(packet->capture_time().ms(), now_ms, packet_ssrc);
-    UpdateOnSendPacket(options.packet_id, packet->capture_time().ms(),
+    UpdateDelayStatistics(packet->capture_time_ms(), now_ms, packet_ssrc);
+    UpdateOnSendPacket(options.packet_id, packet->capture_time_ms(),
                        packet_ssrc);
   }
 

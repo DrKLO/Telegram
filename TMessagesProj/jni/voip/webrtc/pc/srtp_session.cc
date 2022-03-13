@@ -10,18 +10,12 @@
 
 #include "pc/srtp_session.h"
 
-#include <string.h>
-
 #include <iomanip>
-#include <string>
 
 #include "absl/base/attributes.h"
-#include "absl/base/const_init.h"
 #include "api/array_view.h"
 #include "modules/rtp_rtcp/source/rtp_util.h"
 #include "pc/external_hmac.h"
-#include "rtc_base/byte_order.h"
-#include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/ssl_stream_adapter.h"
 #include "rtc_base/string_encode.h"

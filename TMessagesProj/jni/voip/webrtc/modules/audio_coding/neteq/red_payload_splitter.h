@@ -12,6 +12,7 @@
 #define MODULES_AUDIO_CODING_NETEQ_RED_PAYLOAD_SPLITTER_H_
 
 #include "modules/audio_coding/neteq/packet.h"
+#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -29,9 +30,6 @@ class RedPayloadSplitter {
 
   virtual ~RedPayloadSplitter() {}
 
-  RedPayloadSplitter(const RedPayloadSplitter&) = delete;
-  RedPayloadSplitter& operator=(const RedPayloadSplitter&) = delete;
-
   // Splits each packet in `packet_list` into its separate RED payloads. Each
   // RED payload is packetized into a Packet. The original elements in
   // `packet_list` are properly deleted, and replaced by the new packets.
@@ -45,6 +43,9 @@ class RedPayloadSplitter {
   // is accepted. Any packet with another payload type is discarded.
   virtual void CheckRedPayloads(PacketList* packet_list,
                                 const DecoderDatabase& decoder_database);
+
+ private:
+  RTC_DISALLOW_COPY_AND_ASSIGN(RedPayloadSplitter);
 };
 
 }  // namespace webrtc

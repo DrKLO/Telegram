@@ -12,7 +12,6 @@
 
 #include <stddef.h>
 
-#include <string>
 #include <utility>
 #include <vector>
 
@@ -21,29 +20,25 @@
 #include "pc/media_stream_track_proxy.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/location.h"
-#include "rtc_base/ref_counted_object.h"
+#include "rtc_base/logging.h"
 #include "rtc_base/task_utils/to_queued_task.h"
 
 namespace webrtc {
 
-AudioRtpReceiver::AudioRtpReceiver(
-    rtc::Thread* worker_thread,
-    std::string receiver_id,
-    std::vector<std::string> stream_ids,
-    bool is_unified_plan,
-    cricket::VoiceMediaChannel* voice_channel /*= nullptr*/)
+AudioRtpReceiver::AudioRtpReceiver(rtc::Thread* worker_thread,
+                                   std::string receiver_id,
+                                   std::vector<std::string> stream_ids,
+                                   bool is_unified_plan)
     : AudioRtpReceiver(worker_thread,
                        receiver_id,
                        CreateStreamsFromIds(std::move(stream_ids)),
-                       is_unified_plan,
-                       voice_channel) {}
+                       is_unified_plan) {}
 
 AudioRtpReceiver::AudioRtpReceiver(
     rtc::Thread* worker_thread,
     const std::string& receiver_id,
     const std::vector<rtc::scoped_refptr<MediaStreamInterface>>& streams,
-    bool is_unified_plan,
-    cricket::VoiceMediaChannel* voice_channel /*= nullptr*/)
+    bool is_unified_plan)
     : worker_thread_(worker_thread),
       id_(receiver_id),
       source_(rtc::make_ref_counted<RemoteAudioSource>(
@@ -54,8 +49,7 @@ AudioRtpReceiver::AudioRtpReceiver(
       track_(AudioTrackProxyWithInternal<AudioTrack>::Create(
           rtc::Thread::Current(),
           AudioTrack::Create(receiver_id, source_))),
-      media_channel_(voice_channel),
-      cached_track_enabled_(track_->internal()->enabled()),
+      cached_track_enabled_(track_->enabled()),
       attachment_id_(GenerateUniqueId()),
       worker_thread_safety_(PendingTaskSafetyFlag::CreateDetachedInactive()) {
   RTC_DCHECK(worker_thread_);
@@ -67,6 +61,7 @@ AudioRtpReceiver::AudioRtpReceiver(
 
 AudioRtpReceiver::~AudioRtpReceiver() {
   RTC_DCHECK_RUN_ON(&signaling_thread_checker_);
+  RTC_DCHECK(stopped_);
   RTC_DCHECK(!media_channel_);
 
   track_->GetSource()->UnregisterAudioObserver(this);
@@ -75,25 +70,21 @@ AudioRtpReceiver::~AudioRtpReceiver() {
 
 void AudioRtpReceiver::OnChanged() {
   RTC_DCHECK_RUN_ON(&signaling_thread_checker_);
-  const bool enabled = track_->internal()->enabled();
-  if (cached_track_enabled_ == enabled)
-    return;
-  cached_track_enabled_ = enabled;
-  worker_thread_->PostTask(
-      ToQueuedTask(worker_thread_safety_, [this, enabled]() {
-        RTC_DCHECK_RUN_ON(worker_thread_);
-        Reconfigure(enabled);
-      }));
+  if (cached_track_enabled_ != track_->enabled()) {
+    cached_track_enabled_ = track_->enabled();
+    worker_thread_->PostTask(ToQueuedTask(
+        worker_thread_safety_,
+        [this, enabled = cached_track_enabled_, volume = cached_volume_]() {
+          RTC_DCHECK_RUN_ON(worker_thread_);
+          Reconfigure(enabled, volume);
+        }));
+  }
 }
 
 // RTC_RUN_ON(worker_thread_)
 void AudioRtpReceiver::SetOutputVolume_w(double volume) {
   RTC_DCHECK_GE(volume, 0.0);
   RTC_DCHECK_LE(volume, 10.0);
-
-  if (!media_channel_)
-    return;
-
   ssrc_ ? media_channel_->SetOutputVolume(*ssrc_, volume)
         : media_channel_->SetDefaultOutputVolume(volume);
 }
@@ -103,18 +94,23 @@ void AudioRtpReceiver::OnSetVolume(double volume) {
   RTC_DCHECK_GE(volume, 0);
   RTC_DCHECK_LE(volume, 10);
 
-  bool track_enabled = track_->internal()->enabled();
-  worker_thread_->Invoke<void>(RTC_FROM_HERE, [&]() {
-    RTC_DCHECK_RUN_ON(worker_thread_);
-    // Update the cached_volume_ even when stopped, to allow clients to set
-    // the volume before starting/restarting, eg see crbug.com/1272566.
-    cached_volume_ = volume;
-    // When the track is disabled, the volume of the source, which is the
-    // corresponding WebRtc Voice Engine channel will be 0. So we do not
-    // allow setting the volume to the source when the track is disabled.
-    if (track_enabled)
-      SetOutputVolume_w(volume);
-  });
+  // Update the cached_volume_ even when stopped_, to allow clients to set the
+  // volume before starting/restarting, eg see crbug.com/1272566.
+  cached_volume_ = volume;
+
+  if (stopped_)
+    return;
+
+  // When the track is disabled, the volume of the source, which is the
+  // corresponding WebRtc Voice Engine channel will be 0. So we do not allow
+  // setting the volume to the source when the track is disabled.
+  if (track_->enabled()) {
+    worker_thread_->PostTask(
+        ToQueuedTask(worker_thread_safety_, [this, volume = cached_volume_]() {
+          RTC_DCHECK_RUN_ON(worker_thread_);
+          SetOutputVolume_w(volume);
+        }));
+  }
 }
 
 rtc::scoped_refptr<DtlsTransportInterface> AudioRtpReceiver::dtls_transport()
@@ -163,47 +159,63 @@ AudioRtpReceiver::GetFrameDecryptor() const {
 
 void AudioRtpReceiver::Stop() {
   RTC_DCHECK_RUN_ON(&signaling_thread_checker_);
-  source_->SetState(MediaSourceInterface::kEnded);
+  // TODO(deadbeef): Need to do more here to fully stop receiving packets.
+  if (!stopped_) {
+    source_->SetState(MediaSourceInterface::kEnded);
+    stopped_ = true;
+  }
+
+  worker_thread_->Invoke<void>(RTC_FROM_HERE, [&]() {
+    RTC_DCHECK_RUN_ON(worker_thread_);
+
+    if (media_channel_)
+      SetOutputVolume_w(0.0);
+
+    SetMediaChannel_w(nullptr);
+  });
+}
+
+void AudioRtpReceiver::StopAndEndTrack() {
+  RTC_DCHECK_RUN_ON(&signaling_thread_checker_);
+  Stop();
   track_->internal()->set_ended();
 }
 
-void AudioRtpReceiver::SetSourceEnded() {
-  RTC_DCHECK_RUN_ON(&signaling_thread_checker_);
-  source_->SetState(MediaSourceInterface::kEnded);
-}
-
-// RTC_RUN_ON(&signaling_thread_checker_)
 void AudioRtpReceiver::RestartMediaChannel(absl::optional<uint32_t> ssrc) {
-  bool enabled = track_->internal()->enabled();
-  MediaSourceInterface::SourceState state = source_->state();
-  worker_thread_->Invoke<void>(RTC_FROM_HERE, [&]() {
-    RTC_DCHECK_RUN_ON(worker_thread_);
-    RestartMediaChannel_w(std::move(ssrc), enabled, state);
-  });
-  source_->SetState(MediaSourceInterface::kLive);
-}
+  RTC_DCHECK_RUN_ON(&signaling_thread_checker_);
+  bool ok = worker_thread_->Invoke<bool>(
+      RTC_FROM_HERE, [&, enabled = cached_track_enabled_,
+                      volume = cached_volume_, was_stopped = stopped_]() {
+        RTC_DCHECK_RUN_ON(worker_thread_);
+        if (!media_channel_) {
+          RTC_DCHECK(was_stopped);
+          return false;  // Can't restart.
+        }
 
-// RTC_RUN_ON(worker_thread_)
-void AudioRtpReceiver::RestartMediaChannel_w(
-    absl::optional<uint32_t> ssrc,
-    bool track_enabled,
-    MediaSourceInterface::SourceState state) {
-  if (!media_channel_)
-    return;  // Can't restart.
+        if (!was_stopped && ssrc_ == ssrc) {
+          // Already running with that ssrc.
+          RTC_DCHECK(worker_thread_safety_->alive());
+          return true;
+        }
 
-  if (state != MediaSourceInterface::kInitializing) {
-    if (ssrc_ == ssrc)
-      return;
-    source_->Stop(media_channel_, ssrc_);
-  }
+        if (!was_stopped) {
+          source_->Stop(media_channel_, ssrc_);
+        }
 
-  ssrc_ = std::move(ssrc);
-  source_->Start(media_channel_, ssrc_);
-  if (ssrc_) {
-    media_channel_->SetBaseMinimumPlayoutDelayMs(*ssrc_, delay_.GetMs());
-  }
+        ssrc_ = std::move(ssrc);
+        source_->Start(media_channel_, ssrc_);
+        if (ssrc_) {
+          media_channel_->SetBaseMinimumPlayoutDelayMs(*ssrc_, delay_.GetMs());
+        }
 
-  Reconfigure(track_enabled);
+        Reconfigure(enabled, volume);
+        return true;
+      });
+
+  if (!ok)
+    return;
+
+  stopped_ = false;
 }
 
 void AudioRtpReceiver::SetupMediaChannel(uint32_t ssrc) {
@@ -285,10 +297,10 @@ void AudioRtpReceiver::SetDepacketizerToDecoderFrameTransformer(
 }
 
 // RTC_RUN_ON(worker_thread_)
-void AudioRtpReceiver::Reconfigure(bool track_enabled) {
+void AudioRtpReceiver::Reconfigure(bool track_enabled, double volume) {
   RTC_DCHECK(media_channel_);
 
-  SetOutputVolume_w(track_enabled ? cached_volume_ : 0);
+  SetOutputVolume_w(track_enabled ? volume : 0);
 
   if (ssrc_ && frame_decryptor_) {
     // Reattach the frame decryptor if we were reconfigured.
@@ -319,12 +331,21 @@ void AudioRtpReceiver::SetJitterBufferMinimumDelay(
 }
 
 void AudioRtpReceiver::SetMediaChannel(cricket::MediaChannel* media_channel) {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(&signaling_thread_checker_);
   RTC_DCHECK(media_channel == nullptr ||
              media_channel->media_type() == media_type());
-  if (!media_channel && media_channel_)
-    SetOutputVolume_w(0.0);
 
+  if (stopped_ && !media_channel)
+    return;
+
+  worker_thread_->Invoke<void>(RTC_FROM_HERE, [&] {
+    RTC_DCHECK_RUN_ON(worker_thread_);
+    SetMediaChannel_w(media_channel);
+  });
+}
+
+// RTC_RUN_ON(worker_thread_)
+void AudioRtpReceiver::SetMediaChannel_w(cricket::MediaChannel* media_channel) {
   media_channel ? worker_thread_safety_->SetAlive()
                 : worker_thread_safety_->SetNotAlive();
   media_channel_ = static_cast<cricket::VoiceMediaChannel*>(media_channel);

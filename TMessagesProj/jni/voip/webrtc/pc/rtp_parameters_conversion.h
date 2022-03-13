@@ -11,6 +11,7 @@
 #ifndef PC_RTP_PARAMETERS_CONVERSION_H_
 #define PC_RTP_PARAMETERS_CONVERSION_H_
 
+#include <iosfwd>
 #include <vector>
 
 #include "absl/types/optional.h"

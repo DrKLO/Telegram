@@ -492,7 +492,7 @@ RtpPacketHistory::PacketState RtpPacketHistory::StoredPacketToPacketState(
   RtpPacketHistory::PacketState state;
   state.rtp_sequence_number = stored_packet.packet_->SequenceNumber();
   state.send_time_ms = stored_packet.send_time_ms_;
-  state.capture_time_ms = stored_packet.packet_->capture_time().ms();
+  state.capture_time_ms = stored_packet.packet_->capture_time_ms();
   state.ssrc = stored_packet.packet_->Ssrc();
   state.packet_size = stored_packet.packet_->size();
   state.times_retransmitted = stored_packet.times_retransmitted();

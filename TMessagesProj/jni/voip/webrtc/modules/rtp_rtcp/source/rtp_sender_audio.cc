@@ -272,7 +272,7 @@ bool RTPSenderAudio::SendAudio(AudioFrameType frame_type,
   packet->SetMarker(MarkerBit(frame_type, payload_type));
   packet->SetPayloadType(payload_type);
   packet->SetTimestamp(rtp_timestamp);
-  packet->set_capture_time(clock_->CurrentTime());
+  packet->set_capture_time_ms(clock_->TimeInMilliseconds());
   // Update audio level extension, if included.
   packet->SetExtension<AudioLevel>(
       frame_type == AudioFrameType::kAudioFrameSpeech, audio_level_dbov);
@@ -370,7 +370,7 @@ bool RTPSenderAudio::SendTelephoneEventPacket(bool ended,
     packet->SetMarker(marker_bit);
     packet->SetSsrc(rtp_sender_->SSRC());
     packet->SetTimestamp(dtmf_timestamp);
-    packet->set_capture_time(clock_->CurrentTime());
+    packet->set_capture_time_ms(clock_->TimeInMilliseconds());
 
     // Create DTMF data.
     uint8_t* dtmfbuffer = packet->AllocatePayload(kDtmfSize);

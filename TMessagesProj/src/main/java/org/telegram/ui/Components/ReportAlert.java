@@ -87,17 +87,17 @@ public class ReportAlert extends BottomSheet {
         percentTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         percentTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 24);
         percentTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
-        if (type == 0) {
+        if (type == AlertsCreator.REPORT_TYPE_SPAM) {
             percentTextView.setText(LocaleController.getString("ReportTitleSpam", R.string.ReportTitleSpam));
-        } else if (type == 1) {
+        } else if (type == AlertsCreator.REPORT_TYPE_FAKE_ACCOUNT) {
             percentTextView.setText(LocaleController.getString("ReportTitleFake", R.string.ReportTitleFake));
-        } else if (type == 2) {
+        } else if (type == AlertsCreator.REPORT_TYPE_VIOLENCE) {
             percentTextView.setText(LocaleController.getString("ReportTitleViolence", R.string.ReportTitleViolence));
-        } else if (type == 3) {
+        } else if (type == AlertsCreator.REPORT_TYPE_CHILD_ABUSE) {
             percentTextView.setText(LocaleController.getString("ReportTitleChild", R.string.ReportTitleChild));
-        } else if (type == 4) {
+        } else if (type == AlertsCreator.REPORT_TYPE_PORNOGRAPHY) {
             percentTextView.setText(LocaleController.getString("ReportTitlePornography", R.string.ReportTitlePornography));
-        } else if (type == 5) {
+        } else if (type == AlertsCreator.REPORT_TYPE_OTHER) {
             percentTextView.setText(LocaleController.getString("ReportChat", R.string.ReportChat));
         }
         frameLayout.addView(percentTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 17, 197, 17, 0));

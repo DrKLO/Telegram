@@ -11,8 +11,8 @@
 #include "pc/srtp_filter.h"
 
 #include <string.h>
-
-#include <string>
+#include <cstdint>
+#include <memory>
 
 #include "absl/strings/match.h"
 #include "rtc_base/logging.h"

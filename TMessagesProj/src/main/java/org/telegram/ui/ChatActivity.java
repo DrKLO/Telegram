@@ -2464,14 +2464,18 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             avatarContainer.setOccupyStatusBar(false);
         }
         if (reportType >= 0) {
-            if (reportType == 0) {
+            if (reportType == AlertsCreator.REPORT_TYPE_SPAM) {
                 actionBar.setTitle(LocaleController.getString("ReportChatSpam", R.string.ReportChatSpam));
-            } else if (reportType == 2) {
+            } else if (reportType == AlertsCreator.REPORT_TYPE_VIOLENCE) {
                 actionBar.setTitle(LocaleController.getString("ReportChatViolence", R.string.ReportChatViolence));
-            } else if (reportType == 3) {
+            } else if (reportType == AlertsCreator.REPORT_TYPE_CHILD_ABUSE) {
                 actionBar.setTitle(LocaleController.getString("ReportChatChild", R.string.ReportChatChild));
-            } else if (reportType == 4) {
+            } else if (reportType == AlertsCreator.REPORT_TYPE_PORNOGRAPHY) {
                 actionBar.setTitle(LocaleController.getString("ReportChatPornography", R.string.ReportChatPornography));
+            } else if (reportType == AlertsCreator.REPORT_TYPE_ILLEGAL_DRUGS) {
+                actionBar.setTitle(LocaleController.getString("ReportChatIllegalDrugs", R.string.ReportChatIllegalDrugs));
+            } else if (reportType == AlertsCreator.REPORT_TYPE_PERSONAL_DETAILS) {
+                actionBar.setTitle(LocaleController.getString("ReportChatPersonalDetails", R.string.ReportChatPersonalDetails));
             }
             actionBar.setSubtitle(LocaleController.getString("ReportSelectMessages", R.string.ReportSelectMessages));
         } else if (startLoadFromDate != 0) {
@@ -5522,7 +5526,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 if (!foundTopView) {
                     scrolled = super.scrollVerticallyBy(dy, recycler, state);
                 }
-                if (dy > 0 && scrolled == 0 && ChatObject.isChannel(currentChat) && !currentChat.megagroup && chatListView.getScrollState() == RecyclerView.SCROLL_STATE_DRAGGING && !chatListView.isFastScrollAnimationRunning() && !chatListView.isMultiselect()) {
+                if (dy > 0 && scrolled == 0 && ChatObject.isChannel(currentChat) && !currentChat.megagroup && chatListView.getScrollState() == RecyclerView.SCROLL_STATE_DRAGGING && !chatListView.isFastScrollAnimationRunning() && !chatListView.isMultiselect() && reportType < 0) {
                     if (pullingDownOffset == 0 && pullingDownDrawable != null) {
                         pullingDownDrawable.updateDialog();
                     }
@@ -27751,5 +27755,20 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             return false;
         }
         return super.hideKeyboardOnShow();
+    }
+
+    @Override
+    public boolean isLightStatusBar() {
+        if (reportType >= 0) {
+            Theme.ResourcesProvider resourcesProvider = getResourceProvider();
+            int color;
+            if (resourcesProvider != null) {
+                color = resourcesProvider.getColorOrDefault(Theme.key_actionBarActionModeDefault);
+            } else {
+                color = Theme.getColor(Theme.key_actionBarActionModeDefault, null, true);
+            }
+            return ColorUtils.calculateLuminance(color) > 0.7f;
+        }
+        return super.isLightStatusBar();
     }
 }

@@ -22,13 +22,16 @@
 #include "modules/rtp_rtcp/source/rtp_rtcp_config.h"
 #include "modules/rtp_rtcp/source/time_util.h"
 #include "rtc_base/logging.h"
-#include "rtc_base/time_utils.h"
 #include "system_wrappers/include/clock.h"
 
 namespace webrtc {
 namespace {
 constexpr int64_t kStatisticsTimeoutMs = 8000;
 constexpr int64_t kStatisticsProcessIntervalMs = 1000;
+
+// Number of seconds since 1900 January 1 00:00 GMT (see
+// https://tools.ietf.org/html/rfc868).
+constexpr int64_t kNtpJan1970Millisecs = 2'208'988'800'000;
 }  // namespace
 
 StreamStatistician::~StreamStatistician() {}
@@ -40,7 +43,7 @@ StreamStatisticianImpl::StreamStatisticianImpl(uint32_t ssrc,
       clock_(clock),
       delta_internal_unix_epoch_ms_(clock_->CurrentNtpInMilliseconds() -
                                     clock_->TimeInMilliseconds() -
-                                    rtc::kNtpJan1970Millisecs),
+                                    kNtpJan1970Millisecs),
       incoming_bitrate_(kStatisticsProcessIntervalMs,
                         RateStatistics::kBpsScale),
       max_reordering_threshold_(max_reordering_threshold),

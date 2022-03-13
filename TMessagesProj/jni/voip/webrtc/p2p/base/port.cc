@@ -194,10 +194,8 @@ Port::~Port() {
     ++iter;
   }
 
-  for (uint32_t i = 0; i < list.size(); i++) {
-    list[i]->SignalDestroyed.disconnect(this);
+  for (uint32_t i = 0; i < list.size(); i++)
     delete list[i];
-  }
 }
 
 const std::string& Port::Type() const {
@@ -606,15 +604,6 @@ bool Port::IsCompatibleAddress(const rtc::SocketAddress& addr) {
 rtc::DiffServCodePoint Port::StunDscpValue() const {
   // By default, inherit from whatever the MediaChannel sends.
   return rtc::DSCP_NO_CHANGE;
-}
-
-void Port::DestroyAllConnections() {
-  RTC_DCHECK_RUN_ON(thread_);
-  for (auto kv : connections_) {
-    kv.second->SignalDestroyed.disconnect(this);
-    kv.second->Destroy();
-  }
-  connections_.clear();
 }
 
 void Port::set_timeout_delay(int delay) {

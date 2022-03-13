@@ -22,6 +22,7 @@
 
 #include "absl/types/optional.h"
 #include "rtc_base/buffer.h"
+#include "rtc_base/constructor_magic.h"
 #include "rtc_base/copy_on_write_buffer.h"
 #include "rtc_base/task_utils/pending_task_safety_flag.h"
 #include "rtc_base/third_party/sigslot/sigslot.h"
@@ -74,9 +75,6 @@ class UsrsctpTransport : public SctpTransportInternal,
   UsrsctpTransport(rtc::Thread* network_thread,
                    rtc::PacketTransportInternal* transport);
   ~UsrsctpTransport() override;
-
-  UsrsctpTransport(const UsrsctpTransport&) = delete;
-  UsrsctpTransport& operator=(const UsrsctpTransport&) = delete;
 
   // SctpTransportInternal overrides (see sctptransportinternal.h for comments).
   void SetDtlsTransport(rtc::PacketTransportInternal* transport) override;
@@ -287,6 +285,8 @@ class UsrsctpTransport : public SctpTransportInternal,
   uintptr_t id_ = 0;
 
   friend class UsrsctpTransportMap;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(UsrsctpTransport);
 };
 
 class UsrsctpTransportMap;

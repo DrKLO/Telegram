@@ -16,10 +16,8 @@
 namespace dcsctp {
 
 TaskQueueTimeoutFactory::TaskQueueTimeout::TaskQueueTimeout(
-    TaskQueueTimeoutFactory& parent,
-    webrtc::TaskQueueBase::DelayPrecision precision)
+    TaskQueueTimeoutFactory& parent)
     : parent_(parent),
-      precision_(precision),
       pending_task_safety_flag_(webrtc::PendingTaskSafetyFlag::Create()) {}
 
 TaskQueueTimeoutFactory::TaskQueueTimeout::~TaskQueueTimeout() {
@@ -56,8 +54,7 @@ void TaskQueueTimeoutFactory::TaskQueueTimeout::Start(DurationMs duration_ms,
   }
 
   posted_task_expiration_ = timeout_expiration_;
-  parent_.task_queue_.PostDelayedTaskWithPrecision(
-      precision_,
+  parent_.task_queue_.PostDelayedTask(
       webrtc::ToQueuedTask(
           pending_task_safety_flag_,
           [timeout_id, this]() {

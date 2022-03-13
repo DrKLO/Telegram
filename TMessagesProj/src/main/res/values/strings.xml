@@ -5099,4 +5099,7 @@
     <string name="CreatePasscodeInfoPassword">Please enter the password you will use to unlock Telegram.</string>
     <string name="PasscodeReinstallNotice">If you forget your passcode, you\'ll need to **reinstall** the app. All secret chats will be lost.</string>
     <string name="EditNumberInfo">Do you want to edit your number?\n\n**%1$s**\n\nIf the number above is correct, please wait for the verification code.</string>
+    <string name="ReportChatIllegalDrugs">Illegal Drugs</string>
+    <string name="ReportChatPersonalDetails">Personal Details</string>
+    <string name="PrivacyPhoneInfo4">This public link opens a chat with you:</string>
 </resources>

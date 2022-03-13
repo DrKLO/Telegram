@@ -10,7 +10,7 @@
 
 #include "pc/peer_connection_factory.h"
 
-#include <type_traits>
+#include <memory>
 #include <utility>
 
 #include "absl/strings/match.h"
@@ -105,8 +105,7 @@ PeerConnectionFactory::PeerConnectionFactory(
       transport_controller_send_factory_(
           (dependencies->transport_controller_send_factory)
               ? std::move(dependencies->transport_controller_send_factory)
-              : std::make_unique<RtpTransportControllerSendFactory>()),
-      metronome_(std::move(dependencies->metronome)) {}
+              : std::make_unique<RtpTransportControllerSendFactory>()) {}
 
 PeerConnectionFactory::PeerConnectionFactory(
     PeerConnectionFactoryDependencies dependencies)
@@ -285,8 +284,7 @@ rtc::scoped_refptr<AudioTrackInterface> PeerConnectionFactory::CreateAudioTrack(
     const std::string& id,
     AudioSourceInterface* source) {
   RTC_DCHECK(signaling_thread()->IsCurrent());
-  rtc::scoped_refptr<AudioTrackInterface> track(
-      AudioTrack::Create(id, rtc::scoped_refptr<AudioSourceInterface>(source)));
+  rtc::scoped_refptr<AudioTrackInterface> track(AudioTrack::Create(id, source));
   return AudioTrackProxy::Create(signaling_thread(), track);
 }
 
@@ -349,7 +347,6 @@ std::unique_ptr<Call> PeerConnectionFactory::CreateCall_w(
   call_config.trials = &trials();
   call_config.rtp_transport_controller_send_factory =
       transport_controller_send_factory_.get();
-  call_config.metronome = metronome_.get();
   return std::unique_ptr<Call>(
       context_->call_factory()->CreateCall(call_config));
 }

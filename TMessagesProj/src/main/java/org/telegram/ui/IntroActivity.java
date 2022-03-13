@@ -42,6 +42,7 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.graphics.ColorUtils;
 import androidx.viewpager.widget.PagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 
@@ -60,6 +61,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
@@ -362,20 +364,39 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
             if (startPressed || localeInfo == null) {
                 return;
             }
-            LocaleController.getInstance().applyLanguage(localeInfo, true, false, currentAccount);
             startPressed = true;
-            presentFragment(new LoginActivity().setIntroView(frameContainerView, startMessagingButton), true);
-            destroyed = true;
+
+            AlertDialog loaderDialog = new AlertDialog(v.getContext(), 3);
+            loaderDialog.setCanCancel(false);
+            loaderDialog.showDelayed(1000);
+
+            NotificationCenter.getGlobalInstance().addObserver(new NotificationCenter.NotificationCenterDelegate() {
+                @Override
+                public void didReceivedNotification(int id, int account, Object... args) {
+                    if (id == NotificationCenter.reloadInterface) {
+                        loaderDialog.dismiss();
+
+                        NotificationCenter.getGlobalInstance().removeObserver(this, id);
+                        AndroidUtilities.runOnUIThread(()->{
+                            presentFragment(new LoginActivity().setIntroView(frameContainerView, startMessagingButton), true);
+                            destroyed = true;
+                        }, 100);
+                    }
+                }
+            }, NotificationCenter.reloadInterface);
+            LocaleController.getInstance().applyLanguage(localeInfo, true, false, currentAccount);
         });
 
         frameContainerView.addView(themeFrameLayout, LayoutHelper.createFrame(64, 64, Gravity.TOP | Gravity.RIGHT, 0, themeMargin, themeMargin, 0));
 
         fragmentView = scrollView;
 
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.suggestedLangpack);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.configLoaded);
+        ConnectionsManager.getInstance(currentAccount).updateDcSettings();
         LocaleController.getInstance().loadRemoteLanguages(currentAccount);
         checkContinueText();
         justCreated = true;
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.suggestedLangpack);
 
         updateColors(false);
 
@@ -426,6 +447,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
         super.onFragmentDestroy();
         destroyed = true;
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.suggestedLangpack);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.configLoaded);
         MessagesController.getGlobalMainSettings().edit().putLong("intro_crashed_time", 0).apply();
     }
 
@@ -433,7 +455,14 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
         LocaleController.LocaleInfo englishInfo = null;
         LocaleController.LocaleInfo systemInfo = null;
         LocaleController.LocaleInfo currentLocaleInfo = LocaleController.getInstance().getCurrentLocaleInfo();
-        final String systemLang = MessagesController.getInstance(currentAccount).suggestedLangCode;
+        String systemLang = MessagesController.getInstance(currentAccount).suggestedLangCode;
+        if (systemLang == null || systemLang.equals("en") && LocaleController.getInstance().getSystemDefaultLocale().getLanguage() != null && !LocaleController.getInstance().getSystemDefaultLocale().getLanguage().equals("en")) {
+            systemLang = LocaleController.getInstance().getSystemDefaultLocale().getLanguage();
+            if (systemLang == null) {
+                systemLang = "en";
+            }
+        }
+
         String arg = systemLang.contains("-") ? systemLang.split("-")[0] : systemLang;
         String alias = LocaleController.getLocaleAlias(arg);
         for (int a = 0; a < LocaleController.getInstance().languages.size(); a++) {
@@ -460,6 +489,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
             localeInfo = englishInfo;
         }
         req.keys.add("ContinueOnThisLanguage");
+        String finalSystemLang = systemLang;
         ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
             if (response != null) {
                 TLRPC.Vector vector = (TLRPC.Vector) response;
@@ -472,7 +502,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
                         if (!destroyed) {
                             switchLanguageTextView.setText(string.value);
                             SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-                            preferences.edit().putString("language_showed2", systemLang.toLowerCase()).apply();
+                            preferences.edit().putString("language_showed2", finalSystemLang.toLowerCase()).apply();
                         }
                     });
                 }
@@ -482,7 +512,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.suggestedLangpack) {
+        if (id == NotificationCenter.suggestedLangpack || id == NotificationCenter.configLoaded) {
             checkContinueText();
         }
     }
@@ -934,5 +964,11 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
                 messageTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3));
             }
         } else Intro.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+    }
+
+    @Override
+    public boolean isLightStatusBar() {
+        int color = Theme.getColor(Theme.key_windowBackgroundWhite, null, true);
+        return ColorUtils.calculateLuminance(color) > 0.7f;
     }
 }

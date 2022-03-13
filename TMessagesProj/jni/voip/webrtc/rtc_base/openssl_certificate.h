@@ -18,6 +18,7 @@
 #include <string>
 
 #include "rtc_base/buffer.h"
+#include "rtc_base/constructor_magic.h"
 #include "rtc_base/ssl_certificate.h"
 #include "rtc_base/ssl_identity.h"
 
@@ -40,9 +41,6 @@ class OpenSSLCertificate final : public SSLCertificate {
       const std::string& pem_string);
 
   ~OpenSSLCertificate() override;
-
-  OpenSSLCertificate(const OpenSSLCertificate&) = delete;
-  OpenSSLCertificate& operator=(const OpenSSLCertificate&) = delete;
 
   std::unique_ptr<SSLCertificate> Clone() const override;
 
@@ -72,6 +70,7 @@ class OpenSSLCertificate final : public SSLCertificate {
 
  private:
   X509* x509_;  // NOT OWNED
+  RTC_DISALLOW_COPY_AND_ASSIGN(OpenSSLCertificate);
 };
 
 }  // namespace rtc

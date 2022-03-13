@@ -23,11 +23,11 @@
 #include "api/sequence_checker.h"
 #include "rtc_base/ip_address.h"
 #include "rtc_base/mdns_responder_interface.h"
+#include "rtc_base/message_handler.h"
 #include "rtc_base/network_monitor.h"
 #include "rtc_base/network_monitor_factory.h"
 #include "rtc_base/socket_factory.h"
 #include "rtc_base/system/rtc_export.h"
-#include "rtc_base/task_utils/pending_task_safety_flag.h"
 #include "rtc_base/third_party/sigslot/sigslot.h"
 #include "rtc_base/thread_annotations.h"
 
@@ -251,6 +251,7 @@ class RTC_EXPORT NetworkManagerBase : public NetworkManager {
 // Basic implementation of the NetworkManager interface that gets list
 // of networks using OS APIs.
 class RTC_EXPORT BasicNetworkManager : public NetworkManagerBase,
+                                       public MessageHandlerAutoCleanup,
                                        public NetworkBinderInterface,
                                        public sigslot::has_slots<> {
  public:
@@ -270,6 +271,8 @@ class RTC_EXPORT BasicNetworkManager : public NetworkManagerBase,
 
   void DumpNetworks() override;
 
+  // MessageHandler interface.
+  void OnMessage(Message* msg) override;
   bool started() { return start_count_ > 0; }
 
   // Sets the network ignore list, which is empty by default. Any network on the
@@ -344,7 +347,6 @@ class RTC_EXPORT BasicNetworkManager : public NetworkManagerBase,
   bool bind_using_ifname_ RTC_GUARDED_BY(thread_) = false;
 
   std::vector<NetworkMask> vpn_;
-  rtc::scoped_refptr<webrtc::PendingTaskSafetyFlag> task_safety_flag_;
 };
 
 // Represents a Unix-type network interface, with a name and single address.
@@ -523,9 +525,6 @@ class RTC_EXPORT Network {
     network_preference_ = val;
     SignalNetworkPreferenceChanged(this);
   }
-
-  static std::pair<rtc::AdapterType, bool /* vpn */>
-  GuessAdapterFromNetworkCost(int network_cost);
 
   // Debugging description of this network
   std::string ToString() const;

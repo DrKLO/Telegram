@@ -274,7 +274,7 @@ void NetworkManager::logCurrentNetworkState() {
 
 void NetworkManager::checkConnectionTimeout() {
     const auto weak = std::weak_ptr<NetworkManager>(shared_from_this());
-    _thread->PostDelayedTask([weak]() {
+    _thread->PostDelayedTask(RTC_FROM_HERE, [weak]() {
         auto strong = weak.lock();
         if (!strong) {
             return;

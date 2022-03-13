@@ -30,6 +30,7 @@
 #include "api/scoped_refptr.h"
 #include "modules/audio_processing/include/audio_processing_statistics.h"
 #include "rtc_base/arraysize.h"
+#include "rtc_base/constructor_magic.h"
 #include "rtc_base/ref_count.h"
 #include "rtc_base/system/file_wrapper.h"
 #include "rtc_base/system/rtc_export.h"
@@ -113,6 +114,8 @@ static constexpr int kClippedLevelMin = 70;
 //
 // config.high_pass_filter.enabled = true;
 //
+// config.voice_detection.enabled = true;
+//
 // apm->ApplyConfig(config)
 //
 // apm->noise_reduction()->set_level(kHighSuppression);
@@ -158,6 +161,7 @@ class RTC_EXPORT AudioProcessing : public rtc::RefCountInterface {
   // submodule resets, affecting the audio quality. Use the RuntimeSetting
   // construct for runtime configuration.
   struct RTC_EXPORT Config {
+
     // Sets the properties of the audio processing pipeline.
     struct RTC_EXPORT Pipeline {
       // Maximum allowed processing rate used internally. May only be set to
@@ -229,6 +233,11 @@ class RTC_EXPORT AudioProcessing : public rtc::RefCountInterface {
     struct TransientSuppression {
       bool enabled = false;
     } transient_suppression;
+
+    // Enables reporting of `voice_detected` in webrtc::AudioProcessingStats.
+    struct VoiceDetection {
+      bool enabled = false;
+    } voice_detection;
 
     // Enables automatic gain control (AGC) functionality.
     // The automatic gain control (AGC) component brings the signal to an
@@ -369,13 +378,22 @@ class RTC_EXPORT AudioProcessing : public rtc::RefCountInterface {
       } adaptive_digital;
     } gain_controller2;
 
-    // TODO(bugs.webrtc.org/11539): Deprecated. Delete this flag. Replaced by
-    // injectable submodule.
     struct ResidualEchoDetector {
-      bool enabled = false;
+      bool enabled = true;
     } residual_echo_detector;
 
     std::string ToString() const;
+  };
+
+  // TODO(mgraczyk): Remove once all methods that use ChannelLayout are gone.
+  enum ChannelLayout {
+    kMono,
+    // Left, right.
+    kStereo,
+    // Mono, keyboard, and mic.
+    kMonoAndKeyboard,
+    // Left, right, keyboard, and mic.
+    kStereoAndKeyboard
   };
 
   // Specifies the properties of a setting to be passed to AudioProcessing at
@@ -511,6 +529,16 @@ class RTC_EXPORT AudioProcessing : public rtc::RefCountInterface {
   // output layouts, but the output must have either one channel or the same
   // number of channels as the input.
   virtual int Initialize(const ProcessingConfig& processing_config) = 0;
+
+  // Initialize with unpacked parameters. See Initialize() above for details.
+  //
+  // TODO(mgraczyk): Remove once clients are updated to use the new interface.
+  virtual int Initialize(int capture_input_sample_rate_hz,
+                         int capture_output_sample_rate_hz,
+                         int render_sample_rate_hz,
+                         ChannelLayout capture_input_layout,
+                         ChannelLayout capture_output_layout,
+                         ChannelLayout render_input_layout) = 0;
 
   // TODO(peah): This method is a temporary solution used to take control
   // over the parameters in the audio processing module and is likely to change.
@@ -769,10 +797,23 @@ class RTC_EXPORT AudioProcessingBuilder {
 class StreamConfig {
  public:
   // sample_rate_hz: The sampling rate of the stream.
-  // num_channels: The number of audio channels in the stream.
-  StreamConfig(int sample_rate_hz = 0, size_t num_channels = 0)
+  //
+  // num_channels: The number of audio channels in the stream, excluding the
+  //               keyboard channel if it is present. When passing a
+  //               StreamConfig with an array of arrays T*[N],
+  //
+  //                N == {num_channels + 1  if  has_keyboard
+  //                     {num_channels      if  !has_keyboard
+  //
+  // has_keyboard: True if the stream has a keyboard channel. When has_keyboard
+  //               is true, the last channel in any corresponding list of
+  //               channels is the keyboard channel.
+  StreamConfig(int sample_rate_hz = 0,
+               size_t num_channels = 0,
+               bool has_keyboard = false)
       : sample_rate_hz_(sample_rate_hz),
         num_channels_(num_channels),
+        has_keyboard_(has_keyboard),
         num_frames_(calculate_frames(sample_rate_hz)) {}
 
   void set_sample_rate_hz(int value) {
@@ -780,18 +821,22 @@ class StreamConfig {
     num_frames_ = calculate_frames(value);
   }
   void set_num_channels(size_t value) { num_channels_ = value; }
+  void set_has_keyboard(bool value) { has_keyboard_ = value; }
 
   int sample_rate_hz() const { return sample_rate_hz_; }
 
-  // The number of channels in the stream.
+  // The number of channels in the stream, not including the keyboard channel if
+  // present.
   size_t num_channels() const { return num_channels_; }
 
+  bool has_keyboard() const { return has_keyboard_; }
   size_t num_frames() const { return num_frames_; }
   size_t num_samples() const { return num_channels_ * num_frames_; }
 
   bool operator==(const StreamConfig& other) const {
     return sample_rate_hz_ == other.sample_rate_hz_ &&
-           num_channels_ == other.num_channels_;
+           num_channels_ == other.num_channels_ &&
+           has_keyboard_ == other.has_keyboard_;
   }
 
   bool operator!=(const StreamConfig& other) const { return !(*this == other); }
@@ -804,6 +849,7 @@ class StreamConfig {
 
   int sample_rate_hz_;
   size_t num_channels_;
+  bool has_keyboard_;
   size_t num_frames_;
 };
 
@@ -893,12 +939,16 @@ class EchoDetector : public rtc::RefCountInterface {
                           int render_sample_rate_hz,
                           int num_render_channels) = 0;
 
-  // Analysis (not changing) of the first channel of the render signal.
+  // Analysis (not changing) of the render signal.
   virtual void AnalyzeRenderAudio(rtc::ArrayView<const float> render_audio) = 0;
 
   // Analysis (not changing) of the capture signal.
   virtual void AnalyzeCaptureAudio(
       rtc::ArrayView<const float> capture_audio) = 0;
+
+  // Pack an AudioBuffer into a vector<float>.
+  static void PackRenderAudioBuffer(AudioBuffer* audio,
+                                    std::vector<float>* packed_buffer);
 
   struct Metrics {
     absl::optional<double> echo_likelihood;

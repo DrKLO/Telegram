@@ -75,12 +75,6 @@ bool VideoSourceSinkController::HasSource() const {
   return source_ != nullptr;
 }
 
-void VideoSourceSinkController::RequestRefreshFrame() {
-  RTC_DCHECK_RUN_ON(&sequence_checker_);
-  if (source_)
-    source_->RequestRefreshFrame();
-}
-
 void VideoSourceSinkController::PushSourceSinkSettings() {
   RTC_DCHECK_RUN_ON(&sequence_checker_);
   if (!source_)

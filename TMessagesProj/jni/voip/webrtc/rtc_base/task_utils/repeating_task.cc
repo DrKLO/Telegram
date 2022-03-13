@@ -21,12 +21,10 @@ namespace webrtc_repeating_task_impl {
 
 RepeatingTaskBase::RepeatingTaskBase(
     TaskQueueBase* task_queue,
-    TaskQueueBase::DelayPrecision precision,
     TimeDelta first_delay,
     Clock* clock,
     rtc::scoped_refptr<PendingTaskSafetyFlag> alive_flag)
     : task_queue_(task_queue),
-      precision_(precision),
       clock_(clock),
       next_run_time_(clock_->CurrentTime() + first_delay),
       alive_flag_(std::move(alive_flag)) {}
@@ -40,21 +38,19 @@ bool RepeatingTaskBase::Run() {
     return true;
 
   TimeDelta delay = RunClosure();
-  RTC_DCHECK_GE(delay, TimeDelta::Zero());
 
-  // A delay of +infinity means that the task should not be run again.
-  // Alternatively, the closure might have stopped this task. In either which
-  // case we return true to destruct this object.
-  if (delay.IsPlusInfinity() || !alive_flag_->alive())
+  // The closure might have stopped this task, in which case we return true to
+  // destruct this object.
+  if (!alive_flag_->alive())
     return true;
 
+  RTC_DCHECK(delay.IsFinite());
   TimeDelta lost_time = clock_->CurrentTime() - next_run_time_;
   next_run_time_ += delay;
   delay -= lost_time;
   delay = std::max(delay, TimeDelta::Zero());
 
-  task_queue_->PostDelayedTaskWithPrecision(precision_, absl::WrapUnique(this),
-                                            delay.ms());
+  task_queue_->PostDelayedTask(absl::WrapUnique(this), delay.ms());
 
   // Return false to tell the TaskQueue to not destruct this object since we
   // have taken ownership with absl::WrapUnique.

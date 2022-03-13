@@ -208,7 +208,8 @@ class VideoSendStream {
   // Note: This starts stream activity if it is inactive and one of the layers
   // is active. This stops stream activity if it is active and all layers are
   // inactive.
-  virtual void UpdateActiveSimulcastLayers(std::vector<bool> active_layers) = 0;
+  virtual void UpdateActiveSimulcastLayers(
+      const std::vector<bool> active_layers) = 0;
 
   // Starts stream activity.
   // When a stream is active, it can receive, process and deliver packets.

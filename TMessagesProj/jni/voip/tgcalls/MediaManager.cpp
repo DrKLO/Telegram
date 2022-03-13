@@ -314,7 +314,7 @@ _platformContext(platformContext) {
 
     webrtc::AudioProcessingBuilder builder;
     std::unique_ptr<AudioCapturePostProcessor> audioProcessor = std::make_unique<AudioCapturePostProcessor>([this](float level) {
-        this->_thread->PostTask([this, level](){
+        this->_thread->PostTask(RTC_FROM_HERE, [this, level](){
             auto strong = this;
             strong->_currentMyAudioLevel = level;
         });
@@ -436,7 +436,7 @@ void MediaManager::start() {
     // Here we hope that thread outlives the sink
     rtc::Thread *thread = _thread;
     std::unique_ptr<AudioTrackSinkInterfaceImpl> incomingSink(new AudioTrackSinkInterfaceImpl([weak, thread](float level) {
-        thread->PostTask([weak, level] {
+        thread->PostTask(RTC_FROM_HERE, [weak, level] {
             if (const auto strong = weak.lock()) {
                 strong->_currentAudioLevel = level;
             }
@@ -545,7 +545,7 @@ void MediaManager::sendOutgoingMediaStateMessage() {
 
 void MediaManager::beginStatsTimer(int timeoutMs) {
     const auto weak = std::weak_ptr<MediaManager>(shared_from_this());
-    _thread->PostDelayedTask([weak]() {
+    _thread->PostDelayedTask(RTC_FROM_HERE, [weak]() {
         auto strong = weak.lock();
         if (!strong) {
             return;
@@ -556,7 +556,7 @@ void MediaManager::beginStatsTimer(int timeoutMs) {
 
 void MediaManager::beginLevelsTimer(int timeoutMs) {
     const auto weak = std::weak_ptr<MediaManager>(shared_from_this());
-    _thread->PostDelayedTask([weak]() {
+    _thread->PostDelayedTask(RTC_FROM_HERE, [weak]() {
         auto strong = weak.lock();
         if (!strong) {
             return;
@@ -653,7 +653,7 @@ void MediaManager::setSendVideo(std::shared_ptr<VideoCaptureInterface> videoCapt
         const auto object = GetVideoCaptureAssumingSameThread(_videoCapture.get());
         _isScreenCapture = object->isScreenCapture();
 		object->setStateUpdated([=](VideoState state) {
-			thread->PostTask([=] {
+			thread->PostTask(RTC_FROM_HERE, [=] {
 				if (const auto strong = weak.lock()) {
 					strong->setOutgoingVideoState(state);
 				}

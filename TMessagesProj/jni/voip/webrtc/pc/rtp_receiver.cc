@@ -17,7 +17,7 @@
 
 #include "pc/media_stream.h"
 #include "pc/media_stream_proxy.h"
-#include "rtc_base/thread.h"
+#include "rtc_base/location.h"
 
 namespace webrtc {
 

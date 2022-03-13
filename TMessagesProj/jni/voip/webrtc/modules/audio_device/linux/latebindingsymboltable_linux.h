@@ -15,6 +15,7 @@
 #include <string.h>
 
 #include "rtc_base/checks.h"
+#include "rtc_base/constructor_magic.h"
 
 // This file provides macros for creating "symbol table" classes to simplify the
 // dynamic loading of symbols from DLLs. Currently the implementation only
@@ -53,9 +54,6 @@ class LateBindingSymbolTable {
   }
 
   ~LateBindingSymbolTable() { Unload(); }
-
-  LateBindingSymbolTable(const LateBindingSymbolTable&) = delete;
-  LateBindingSymbolTable& operator=(LateBindingSymbolTable&) = delete;
 
   static int NumSymbols() { return SYMBOL_TABLE_SIZE; }
 
@@ -111,6 +109,8 @@ class LateBindingSymbolTable {
   DllHandle handle_;
   bool undefined_symbols_;
   void* symbols_[SYMBOL_TABLE_SIZE];
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(LateBindingSymbolTable);
 };
 
 // This macro must be invoked in a header to declare a symbol table class.

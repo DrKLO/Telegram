@@ -25,18 +25,17 @@
 #if defined(WEBRTC_POSIX)
 #include <pthread.h>
 #endif
-#include "absl/base/attributes.h"
 #include "api/function_view.h"
 #include "api/task_queue/queued_task.h"
 #include "api/task_queue/task_queue_base.h"
 #include "rtc_base/checks.h"
+#include "rtc_base/constructor_magic.h"
 #include "rtc_base/deprecated/recursive_critical_section.h"
 #include "rtc_base/location.h"
 #include "rtc_base/message_handler.h"
 #include "rtc_base/platform_thread_types.h"
 #include "rtc_base/socket_server.h"
 #include "rtc_base/system/rtc_export.h"
-#include "rtc_base/task_utils/to_queued_task.h"
 #include "rtc_base/thread_annotations.h"
 #include "rtc_base/thread_message.h"
 
@@ -90,15 +89,14 @@ class MessageWithFunctor final : public MessageLikeTask {
   explicit MessageWithFunctor(FunctorT&& functor)
       : functor_(std::forward<FunctorT>(functor)) {}
 
-  MessageWithFunctor(const MessageWithFunctor&) = delete;
-  MessageWithFunctor& operator=(const MessageWithFunctor&) = delete;
-
   void Run() override { functor_(); }
 
  private:
   ~MessageWithFunctor() override {}
 
   typename std::remove_reference<FunctorT>::type functor_;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(MessageWithFunctor);
 };
 
 }  // namespace rtc_thread_internal
@@ -141,6 +139,8 @@ class RTC_EXPORT ThreadManager {
   Thread* WrapCurrentThread();
   void UnwrapCurrentThread();
 
+  bool IsMainThread();
+
 #if RTC_DCHECK_IS_ON
   // Registers that a Send operation is to be performed between `source` and
   // `target`, while checking that this does not cause a send cycle that could
@@ -151,9 +151,6 @@ class RTC_EXPORT ThreadManager {
  private:
   ThreadManager();
   ~ThreadManager();
-
-  ThreadManager(const ThreadManager&) = delete;
-  ThreadManager& operator=(const ThreadManager&) = delete;
 
   void SetCurrentThreadInternal(Thread* thread);
   void AddInternal(Thread* message_queue);
@@ -186,6 +183,11 @@ class RTC_EXPORT ThreadManager {
 #if defined(WEBRTC_WIN)
   const DWORD key_;
 #endif
+
+  // The thread to potentially autowrap.
+  const PlatformThreadRef main_thread_ref_;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(ThreadManager);
 };
 
 // WARNING! SUBCLASSES MUST CALL Stop() IN THEIR DESTRUCTORS!  See ~Thread().
@@ -218,9 +220,6 @@ class RTC_LOCKABLE RTC_EXPORT Thread : public webrtc::TaskQueueBase {
   // between the destructor modifying the vtable, and the ThreadManager
   // calling Clear on the object from a different thread.
   ~Thread() override;
-
-  Thread(const Thread&) = delete;
-  Thread& operator=(const Thread&) = delete;
 
   static std::unique_ptr<Thread> CreateWithSocketServer();
   static std::unique_ptr<Thread> Create();
@@ -415,38 +414,61 @@ class RTC_LOCKABLE RTC_EXPORT Thread : public webrtc::TaskQueueBase {
   // true.
   bool IsInvokeToThreadAllowed(rtc::Thread* target);
 
+  // Posts a task to invoke the functor on `this` thread asynchronously, i.e.
+  // without blocking the thread that invoked PostTask(). Ownership of `functor`
+  // is passed and (usually, see below) destroyed on `this` thread after it is
+  // invoked.
+  // Requirements of FunctorT:
+  // - FunctorT is movable.
+  // - FunctorT implements "T operator()()" or "T operator()() const" for some T
+  //   (if T is not void, the return value is discarded on `this` thread).
+  // - FunctorT has a public destructor that can be invoked from `this` thread
+  //   after operation() has been invoked.
+  // - The functor must not cause the thread to quit before PostTask() is done.
+  //
+  // Destruction of the functor/task mimics what TaskQueue::PostTask does: If
+  // the task is run, it will be destroyed on `this` thread. However, if there
+  // are pending tasks by the time the Thread is destroyed, or a task is posted
+  // to a thread that is quitting, the task is destroyed immediately, on the
+  // calling thread. Destroying the Thread only blocks for any currently running
+  // task to complete. Note that TQ abstraction is even vaguer on how
+  // destruction happens in these cases, allowing destruction to happen
+  // asynchronously at a later time and on some arbitrary thread. So to ease
+  // migration, don't depend on Thread::PostTask destroying un-run tasks
+  // immediately.
+  //
+  // Example - Calling a class method:
+  // class Foo {
+  //  public:
+  //   void DoTheThing();
+  // };
+  // Foo foo;
+  // thread->PostTask(RTC_FROM_HERE, Bind(&Foo::DoTheThing, &foo));
+  //
+  // Example - Calling a lambda function:
+  // thread->PostTask(RTC_FROM_HERE,
+  //                  [&x, &y] { x.TrackComputations(y.Compute()); });
+  template <class FunctorT>
+  void PostTask(const Location& posted_from, FunctorT&& functor) {
+    Post(posted_from, GetPostTaskMessageHandler(), /*id=*/0,
+         new rtc_thread_internal::MessageWithFunctor<FunctorT>(
+             std::forward<FunctorT>(functor)));
+  }
+  template <class FunctorT>
+  void PostDelayedTask(const Location& posted_from,
+                       FunctorT&& functor,
+                       uint32_t milliseconds) {
+    PostDelayed(posted_from, milliseconds, GetPostTaskMessageHandler(),
+                /*id=*/0,
+                new rtc_thread_internal::MessageWithFunctor<FunctorT>(
+                    std::forward<FunctorT>(functor)));
+  }
+
   // From TaskQueueBase
   void PostTask(std::unique_ptr<webrtc::QueuedTask> task) override;
   void PostDelayedTask(std::unique_ptr<webrtc::QueuedTask> task,
                        uint32_t milliseconds) override;
-  void PostDelayedHighPrecisionTask(std::unique_ptr<webrtc::QueuedTask> task,
-                                    uint32_t milliseconds) override;
   void Delete() override;
-
-  // Helper methods to avoid having to do ToQueuedTask() at the calling places.
-  template <class Closure,
-            typename std::enable_if<!std::is_convertible<
-                Closure,
-                std::unique_ptr<webrtc::QueuedTask>>::value>::type* = nullptr>
-  void PostTask(Closure&& closure) {
-    PostTask(webrtc::ToQueuedTask(std::forward<Closure>(closure)));
-  }
-  template <class Closure,
-            typename std::enable_if<!std::is_convertible<
-                Closure,
-                std::unique_ptr<webrtc::QueuedTask>>::value>::type* = nullptr>
-  void PostDelayedTask(Closure&& closure, uint32_t milliseconds) {
-    PostDelayedTask(webrtc::ToQueuedTask(std::forward<Closure>(closure)),
-                    milliseconds);
-  }
-  template <class Closure,
-            typename std::enable_if<!std::is_convertible<
-                Closure,
-                std::unique_ptr<webrtc::QueuedTask>>::value>::type* = nullptr>
-  void PostDelayedHighPrecisionTask(Closure&& closure, uint32_t milliseconds) {
-    PostDelayedHighPrecisionTask(
-        webrtc::ToQueuedTask(std::forward<Closure>(closure)), milliseconds);
-  }
 
   // ProcessMessages will process I/O and dispatch messages until:
   //  1) cms milliseconds have elapsed (returns true)
@@ -663,6 +685,8 @@ class RTC_LOCKABLE RTC_EXPORT Thread : public webrtc::TaskQueueBase {
   friend class ThreadManager;
 
   int dispatch_warning_ms_ RTC_GUARDED_BY(this) = kSlowDispatchLoggingThreshold;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(Thread);
 };
 
 // AutoThread automatically installs itself at construction
@@ -676,8 +700,8 @@ class AutoThread : public Thread {
   AutoThread();
   ~AutoThread() override;
 
-  AutoThread(const AutoThread&) = delete;
-  AutoThread& operator=(const AutoThread&) = delete;
+ private:
+  RTC_DISALLOW_COPY_AND_ASSIGN(AutoThread);
 };
 
 // AutoSocketServerThread automatically installs itself at
@@ -690,11 +714,10 @@ class AutoSocketServerThread : public Thread {
   explicit AutoSocketServerThread(SocketServer* ss);
   ~AutoSocketServerThread() override;
 
-  AutoSocketServerThread(const AutoSocketServerThread&) = delete;
-  AutoSocketServerThread& operator=(const AutoSocketServerThread&) = delete;
-
  private:
   rtc::Thread* old_thread_;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(AutoSocketServerThread);
 };
 }  // namespace rtc
 

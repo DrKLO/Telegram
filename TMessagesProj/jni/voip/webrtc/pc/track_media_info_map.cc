@@ -12,7 +12,7 @@
 
 #include <cstdint>
 #include <set>
-#include <type_traits>
+#include <string>
 #include <utility>
 
 #include "api/media_types.h"

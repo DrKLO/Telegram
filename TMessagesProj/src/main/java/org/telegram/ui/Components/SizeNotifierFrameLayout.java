@@ -562,6 +562,13 @@ public class SizeNotifierFrameLayout extends FrameLayout {
             }
 
             AndroidUtilities.runOnUIThread(() -> {
+                if (!blurIsRunning) {
+                    if (finalBitmap != null) {
+                        finalBitmap.recycle();
+                    }
+                    blurGeneratingTuskIsRunning = false;
+                    return;
+                }
                 prevBitmap = currentBitmap;
                 BlurBitmap oldBitmap = currentBitmap;
                 blurPaintTop2.setShader(blurPaintTop.getShader());

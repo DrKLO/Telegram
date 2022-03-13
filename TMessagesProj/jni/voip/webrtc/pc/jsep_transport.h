@@ -44,6 +44,7 @@
 #include "pc/srtp_transport.h"
 #include "pc/transport_stats.h"
 #include "rtc_base/checks.h"
+#include "rtc_base/constructor_magic.h"
 #include "rtc_base/rtc_certificate.h"
 #include "rtc_base/ssl_fingerprint.h"
 #include "rtc_base/ssl_stream_adapter.h"
@@ -104,9 +105,6 @@ class JsepTransport {
       std::function<void()> rtcp_mux_active_callback);
 
   ~JsepTransport();
-
-  JsepTransport(const JsepTransport&) = delete;
-  JsepTransport& operator=(const JsepTransport&) = delete;
 
   // Returns the MID of this transport. This is only used for logging.
   const std::string& mid() const { return mid_; }
@@ -328,6 +326,8 @@ class JsepTransport {
   // `rtcp_dtls_transport_` is destroyed. The JsepTransportController will
   // receive the callback and update the aggregate transport states.
   std::function<void()> rtcp_mux_active_callback_;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(JsepTransport);
 };
 
 }  // namespace cricket

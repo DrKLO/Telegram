@@ -17,6 +17,7 @@
 #include "modules/audio_processing/agc2/fixed_digital_level_estimator.h"
 #include "modules/audio_processing/agc2/interpolated_gain_curve.h"
 #include "modules/audio_processing/include/audio_frame_view.h"
+#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 class ApmDataDumper;

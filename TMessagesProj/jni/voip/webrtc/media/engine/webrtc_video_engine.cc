@@ -135,15 +135,8 @@ bool IsCodecValidForLowerRange(const VideoCodec& codec) {
     return true;
   } else if (absl::EqualsIgnoreCase(codec.name, kH264CodecName)) {
     std::string profileLevelId;
-    std::string packetizationMode;
-
+    // H264 with YUV444.
     if (codec.GetParam(kH264FmtpProfileLevelId, &profileLevelId)) {
-      if (absl::StartsWithIgnoreCase(profileLevelId, "4d00")) {
-        if (codec.GetParam(kH264FmtpPacketizationMode, &packetizationMode)) {
-          return packetizationMode == "0";
-        }
-      }
-      // H264 with YUV444.
       return absl::StartsWithIgnoreCase(profileLevelId, "f400");
     }
   }
@@ -486,6 +479,7 @@ WebRtcVideoChannel::WebRtcVideoSendStream::ConfigureVideoEncoderSettings(
                           (parameters_.config.rtp.ssrcs.size() == 1 ||
                            NumActiveStreams(rtp_parameters_) == 1);
 
+  bool frame_dropping = !is_screencast;
   bool denoising;
   bool codec_default_denoising = false;
   if (is_screencast) {
@@ -499,6 +493,7 @@ WebRtcVideoChannel::WebRtcVideoSendStream::ConfigureVideoEncoderSettings(
   if (absl::EqualsIgnoreCase(codec.name, kH264CodecName)) {
     webrtc::VideoCodecH264 h264_settings =
         webrtc::VideoEncoder::GetDefaultH264Settings();
+    h264_settings.frameDroppingOn = frame_dropping;
     return rtc::make_ref_counted<
         webrtc::VideoEncoderConfig::H264EncoderSpecificSettings>(h264_settings);
   }
@@ -508,6 +503,7 @@ WebRtcVideoChannel::WebRtcVideoSendStream::ConfigureVideoEncoderSettings(
     vp8_settings.automaticResizeOn = automatic_resize;
     // VP8 denoising is enabled by default.
     vp8_settings.denoisingOn = codec_default_denoising ? true : denoising;
+    vp8_settings.frameDroppingOn = frame_dropping;
     return rtc::make_ref_counted<
         webrtc::VideoEncoderConfig::Vp8EncoderSpecificSettings>(vp8_settings);
   }
@@ -529,16 +525,15 @@ WebRtcVideoChannel::WebRtcVideoSendStream::ConfigureVideoEncoderSettings(
     // Ensure frame dropping is always enabled.
     RTC_DCHECK(vp9_settings.frameDroppingOn);
     if (!is_screencast) {
-      webrtc::FieldTrialFlag interlayer_pred_experiment_enabled("Enabled");
+      webrtc::FieldTrialFlag interlayer_pred_experiment_enabled =
+          webrtc::FieldTrialFlag("Enabled");
       webrtc::FieldTrialEnum<webrtc::InterLayerPredMode> inter_layer_pred_mode(
           "inter_layer_pred_mode", webrtc::InterLayerPredMode::kOnKeyPic,
           {{"off", webrtc::InterLayerPredMode::kOff},
            {"on", webrtc::InterLayerPredMode::kOn},
            {"onkeypic", webrtc::InterLayerPredMode::kOnKeyPic}});
-      webrtc::FieldTrialFlag force_flexible_mode("FlexibleMode");
       webrtc::ParseFieldTrial(
-          {&interlayer_pred_experiment_enabled, &inter_layer_pred_mode,
-           &force_flexible_mode},
+          {&interlayer_pred_experiment_enabled, &inter_layer_pred_mode},
           call_->trials().Lookup("WebRTC-Vp9InterLayerPred"));
       if (interlayer_pred_experiment_enabled) {
         vp9_settings.interLayerPred = inter_layer_pred_mode;
@@ -546,7 +541,6 @@ WebRtcVideoChannel::WebRtcVideoSendStream::ConfigureVideoEncoderSettings(
         // Limit inter-layer prediction to key pictures by default.
         vp9_settings.interLayerPred = webrtc::InterLayerPredMode::kOnKeyPic;
       }
-      vp9_settings.flexibleMode = force_flexible_mode.Get();
     } else {
       // Multiple spatial layers vp9 screenshare needs flexible mode.
       vp9_settings.flexibleMode = vp9_settings.numberOfSpatialLayers > 1;
@@ -693,7 +687,7 @@ WebRtcVideoChannel::WebRtcVideoChannel(
     webrtc::VideoEncoderFactory* encoder_factory,
     webrtc::VideoDecoderFactory* decoder_factory,
     webrtc::VideoBitrateAllocatorFactory* bitrate_allocator_factory)
-    : VideoMediaChannel(call->network_thread(), config.enable_dscp),
+    : VideoMediaChannel(config, call->network_thread()),
       worker_thread_(call->worker_thread()),
       call_(call),
       unsignalled_ssrc_handler_(&default_unsignalled_ssrc_handler_),
@@ -906,13 +900,56 @@ void WebRtcVideoChannel::RequestEncoderFallback() {
 }
 
 void WebRtcVideoChannel::RequestEncoderSwitch(
-    const webrtc::SdpVideoFormat& format,
-    bool allow_default_fallback) {
+    const EncoderSwitchRequestCallback::Config& conf) {
   if (!worker_thread_->IsCurrent()) {
-    worker_thread_->PostTask(
-        ToQueuedTask(task_safety_, [this, format, allow_default_fallback] {
-          RequestEncoderSwitch(format, allow_default_fallback);
-        }));
+    worker_thread_->PostTask(ToQueuedTask(
+        task_safety_, [this, conf] { RequestEncoderSwitch(conf); }));
+    return;
+  }
+
+  RTC_DCHECK_RUN_ON(&thread_checker_);
+
+  if (!allow_codec_switching_) {
+    RTC_LOG(LS_INFO) << "Encoder switch requested but codec switching has"
+                        " not been enabled yet.";
+    requested_encoder_switch_ = conf;
+    return;
+  }
+
+  for (const VideoCodecSettings& codec_setting : negotiated_codecs_) {
+    if (codec_setting.codec.name == conf.codec_name) {
+      if (conf.param) {
+        auto it = codec_setting.codec.params.find(*conf.param);
+        if (it == codec_setting.codec.params.end())
+          continue;
+
+        if (conf.value && it->second != *conf.value)
+          continue;
+      }
+
+      if (send_codec_ == codec_setting) {
+        // Already using this codec, no switch required.
+        return;
+      }
+
+      ChangedSendParameters params;
+      params.send_codec = codec_setting;
+      ApplyChangedParams(params);
+      return;
+    }
+  }
+
+  RTC_LOG(LS_WARNING) << "Requested encoder with codec_name:" << conf.codec_name
+                      << ", param:" << conf.param.value_or("none")
+                      << " and value:" << conf.value.value_or("none")
+                      << "not found. No switch performed.";
+}
+
+void WebRtcVideoChannel::RequestEncoderSwitch(
+    const webrtc::SdpVideoFormat& format) {
+  if (!worker_thread_->IsCurrent()) {
+    worker_thread_->PostTask(ToQueuedTask(
+        task_safety_, [this, format] { RequestEncoderSwitch(format); }));
     return;
   }
 
@@ -938,13 +975,8 @@ void WebRtcVideoChannel::RequestEncoderSwitch(
     }
   }
 
-  RTC_LOG(LS_WARNING) << "Failed to switch encoder to: " << format.ToString()
-                      << ". Is default fallback allowed: "
-                      << allow_default_fallback;
-
-  if (allow_default_fallback) {
-    RequestEncoderFallback();
-  }
+  RTC_LOG(LS_WARNING) << "Encoder switch failed: SdpVideoFormat "
+                      << format.ToString() << " not negotiated.";
 }
 
 bool WebRtcVideoChannel::ApplyChangedParams(
@@ -1038,16 +1070,8 @@ webrtc::RtpParameters WebRtcVideoChannel::GetRtpSendParameters(
   // Need to add the common list of codecs to the send stream-specific
   // RTP parameters.
   for (const VideoCodec& codec : send_params_.codecs) {
-    if (send_codec_ && send_codec_->codec.id == codec.id) {
-      // Put the current send codec to the front of the codecs list.
-      RTC_DCHECK_EQ(codec.name, send_codec_->codec.name);
-      rtp_params.codecs.insert(rtp_params.codecs.begin(),
-                               codec.ToCodecParameters());
-    } else {
-      rtp_params.codecs.push_back(codec.ToCodecParameters());
-    }
+    rtp_params.codecs.push_back(codec.ToCodecParameters());
   }
-
   return rtp_params;
 }
 
@@ -1572,8 +1596,11 @@ void WebRtcVideoChannel::OnDemuxerCriteriaUpdatePending() {
 }
 
 void WebRtcVideoChannel::OnDemuxerCriteriaUpdateComplete() {
-  RTC_DCHECK_RUN_ON(&thread_checker_);
-  ++demuxer_criteria_completed_id_;
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
+  worker_thread_->PostTask(ToQueuedTask(task_safety_, [this] {
+    RTC_DCHECK_RUN_ON(&thread_checker_);
+    ++demuxer_criteria_completed_id_;
+  }));
 }
 
 bool WebRtcVideoChannel::SetSink(
@@ -1843,12 +1870,11 @@ void WebRtcVideoChannel::OnReadyToSend(bool ready) {
 }
 
 void WebRtcVideoChannel::OnNetworkRouteChanged(
-    absl::string_view transport_name,
+    const std::string& transport_name,
     const rtc::NetworkRoute& network_route) {
   RTC_DCHECK_RUN_ON(&network_thread_checker_);
   worker_thread_->PostTask(ToQueuedTask(
-      task_safety_,
-      [this, name = std::string(transport_name), route = network_route] {
+      task_safety_, [this, name = transport_name, route = network_route] {
         RTC_DCHECK_RUN_ON(&thread_checker_);
         webrtc::RtpTransportControllerSendInterface* transport =
             call_->GetTransportControllerSend();
@@ -1925,6 +1951,11 @@ void WebRtcVideoChannel::SetVideoCodecSwitchingEnabled(bool enabled) {
   allow_codec_switching_ = enabled;
   if (allow_codec_switching_) {
     RTC_LOG(LS_INFO) << "Encoder switching enabled.";
+    if (requested_encoder_switch_) {
+      RTC_LOG(LS_INFO) << "Executing cached video encoder switch request.";
+      RequestEncoderSwitch(*requested_encoder_switch_);
+      requested_encoder_switch_.reset();
+    }
   }
 }
 

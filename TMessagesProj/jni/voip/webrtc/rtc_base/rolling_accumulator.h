@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "rtc_base/checks.h"
+#include "rtc_base/constructor_magic.h"
 #include "rtc_base/numerics/running_statistics.h"
 
 namespace rtc {
@@ -33,9 +34,6 @@ class RollingAccumulator {
     Reset();
   }
   ~RollingAccumulator() {}
-
-  RollingAccumulator(const RollingAccumulator&) = delete;
-  RollingAccumulator& operator=(const RollingAccumulator&) = delete;
 
   size_t max_count() const { return samples_.size(); }
 
@@ -138,6 +136,8 @@ class RollingAccumulator {
   mutable T min_;
   mutable bool min_stale_;
   std::vector<T> samples_;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(RollingAccumulator);
 };
 
 }  // namespace rtc

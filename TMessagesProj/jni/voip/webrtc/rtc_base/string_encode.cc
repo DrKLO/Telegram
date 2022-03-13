@@ -214,27 +214,19 @@ std::string join(const std::vector<std::string>& source, char delimiter) {
   return joined_string;
 }
 
-std::vector<absl::string_view> split(absl::string_view source, char delimiter) {
-  std::vector<absl::string_view> fields;
-  size_t last = 0;
-  for (size_t i = 0; i < source.length(); ++i) {
-    if (source[i] == delimiter) {
-      fields.push_back(source.substr(last, i - last));
-      last = i + 1;
-    }
-  }
-  fields.push_back(source.substr(last));
-  return fields;
-}
-
 size_t split(absl::string_view source,
              char delimiter,
              std::vector<std::string>* fields) {
   RTC_DCHECK(fields);
   fields->clear();
-  for (const absl::string_view field_view : split(source, delimiter)) {
-    fields->emplace_back(field_view);
+  size_t last = 0;
+  for (size_t i = 0; i < source.length(); ++i) {
+    if (source[i] == delimiter) {
+      fields->emplace_back(source.substr(last, i - last));
+      last = i + 1;
+    }
   }
+  fields->emplace_back(source.substr(last));
   return fields->size();
 }
 

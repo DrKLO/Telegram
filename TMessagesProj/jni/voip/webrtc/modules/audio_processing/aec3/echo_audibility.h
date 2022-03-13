@@ -19,6 +19,7 @@
 #include "modules/audio_processing/aec3/render_buffer.h"
 #include "modules/audio_processing/aec3/spectrum_buffer.h"
 #include "modules/audio_processing/aec3/stationarity_estimator.h"
+#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 

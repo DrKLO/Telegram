@@ -103,12 +103,6 @@ enum RTCPPacketType : uint32_t {
   kRtcpXrTargetBitrate = 0x200000
 };
 
-enum class KeyFrameReqMethod : uint8_t {
-  kNone,     // Don't request keyframes.
-  kPliRtcp,  // Request keyframes through Picture Loss Indication.
-  kFirRtcp   // Request keyframes through Full Intra-frame Request.
-};
-
 enum RtxMode {
   kRtxOff = 0x0,
   kRtxRetransmitted = 0x1,     // Only send retransmissions over RTX.

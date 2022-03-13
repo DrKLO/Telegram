@@ -218,7 +218,7 @@ void RtpVp8RefFinder::RetryStashedFrames(
         case kHandOff:
           complete_frame = true;
           res.push_back(std::move(*frame_it));
-          [[fallthrough]];
+          ABSL_FALLTHROUGH_INTENDED;
         case kDrop:
           frame_it = stashed_frames_.erase(frame_it);
       }

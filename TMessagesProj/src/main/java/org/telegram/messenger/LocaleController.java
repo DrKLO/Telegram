@@ -40,7 +40,6 @@ import java.util.Currency;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
 import java.util.TimeZone;
 
 public class LocaleController {
@@ -876,10 +875,12 @@ public class LocaleController {
                 saveOtherLanguages();
             }
         }
+        boolean isLoadingRemote = false;
         if ((localeInfo.isRemote() || localeInfo.isUnofficial()) && (force || !pathToFile.exists() || hasBase && !pathToBaseFile.exists())) {
             if (BuildVars.LOGS_ENABLED) {
                 FileLog.d("reload locale because one of file doesn't exist" + pathToFile + " " + pathToBaseFile);
             }
+            isLoadingRemote = true;
             if (init) {
                 AndroidUtilities.runOnUIThread(() -> applyRemoteLanguage(localeInfo, null, true, currentAccount));
             } else {
@@ -945,6 +946,9 @@ public class LocaleController {
                     reloadCurrentRemoteLocale(currentAccount, null, force);
                 }
                 reloadLastFile = false;
+            }
+            if (!isLoadingRemote) {
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.reloadInterface);
             }
         } catch (Exception e) {
             FileLog.e(e);

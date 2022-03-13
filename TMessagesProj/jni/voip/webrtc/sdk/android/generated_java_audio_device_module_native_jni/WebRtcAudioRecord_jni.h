@@ -53,12 +53,10 @@ JNI_GENERATOR_EXPORT void Java_org_webrtc_audio_WebRtcAudioRecord_nativeDataIsRe
     JNIEnv* env,
     jobject jcaller,
     jlong nativeAudioRecordJni,
-    jint bytes,
-    jlong captureTimestampNs) {
+    jint bytes) {
   AudioRecordJni* native = reinterpret_cast<AudioRecordJni*>(nativeAudioRecordJni);
   CHECK_NATIVE_PTR(env, jcaller, native, "DataIsRecorded");
-  return native->DataIsRecorded(env, base::android::JavaParamRef<jobject>(env, jcaller), bytes,
-      captureTimestampNs);
+  return native->DataIsRecorded(env, base::android::JavaParamRef<jobject>(env, jcaller), bytes);
 }
 
 

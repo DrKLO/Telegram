@@ -15,12 +15,6 @@
 
 namespace webrtc {
 
-constexpr RtcEventDefinition<RtcEventBweUpdateDelayBased,
-                             LoggedBweDelayBasedUpdate,
-                             int32_t,
-                             BandwidthUsage>
-    RtcEventBweUpdateDelayBased::definition_;
-
 RtcEventBweUpdateDelayBased::RtcEventBweUpdateDelayBased(
     int32_t bitrate_bps,
     BandwidthUsage detector_state)

@@ -167,7 +167,7 @@ class WebRtcVideoChannel : public VideoMediaChannel,
                         int64_t packet_time_us) override;
   void OnPacketSent(const rtc::SentPacket& sent_packet) override;
   void OnReadyToSend(bool ready) override;
-  void OnNetworkRouteChanged(absl::string_view transport_name,
+  void OnNetworkRouteChanged(const std::string& transport_name,
                              const rtc::NetworkRoute& network_route) override;
   void SetInterface(NetworkInterface* iface) override;
 
@@ -224,8 +224,11 @@ class WebRtcVideoChannel : public VideoMediaChannel,
 
   // Implements webrtc::EncoderSwitchRequestCallback.
   void RequestEncoderFallback() override;
-  void RequestEncoderSwitch(const webrtc::SdpVideoFormat& format,
-                            bool allow_default_fallback) override;
+
+  // TODO(bugs.webrtc.org/11341) : Remove this version of RequestEncoderSwitch.
+  void RequestEncoderSwitch(
+      const EncoderSwitchRequestCallback::Config& conf) override;
+  void RequestEncoderSwitch(const webrtc::SdpVideoFormat& format) override;
 
   void SetRecordableEncodedFrameCallback(
       uint32_t ssrc,
@@ -635,10 +638,9 @@ class WebRtcVideoChannel : public VideoMediaChannel,
   std::unique_ptr<UnhandledPacketsBuffer> unknown_ssrc_packet_buffer_
       RTC_GUARDED_BY(thread_checker_);
 
-  // TODO(bugs.webrtc.org/11341): Remove this and relevant PC API. Presence
-  // of multiple negotiated codecs allows generic encoder fallback on failures.
-  // Presence of EncoderSelector allows switching to specific encoders.
   bool allow_codec_switching_ = false;
+  absl::optional<EncoderSwitchRequestCallback::Config>
+      requested_encoder_switch_;
 };
 
 class EncoderStreamFactory

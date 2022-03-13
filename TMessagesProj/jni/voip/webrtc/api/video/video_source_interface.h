@@ -97,10 +97,6 @@ class VideoSourceInterface {
   // RemoveSink must guarantee that at the time the method returns,
   // there is no current and no future calls to VideoSinkInterface::OnFrame.
   virtual void RemoveSink(VideoSinkInterface<VideoFrameT>* sink) = 0;
-
-  // Request underlying source to capture a new frame.
-  // TODO(crbug/1255737): make pure virtual once downstream projects adapt.
-  virtual void RequestRefreshFrame() {}
 };
 
 }  // namespace rtc

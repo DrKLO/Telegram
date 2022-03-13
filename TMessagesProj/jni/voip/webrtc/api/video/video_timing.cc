@@ -11,7 +11,6 @@
 #include "api/video/video_timing.h"
 
 #include "api/array_view.h"
-#include "api/units/time_delta.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/numerics/safe_conversions.h"
 #include "rtc_base/strings/string_builder.h"
@@ -24,14 +23,6 @@ uint16_t VideoSendTiming::GetDeltaCappedMs(int64_t base_ms, int64_t time_ms) {
                        << "ms expected to be positive";
   }
   return rtc::saturated_cast<uint16_t>(time_ms - base_ms);
-}
-
-uint16_t VideoSendTiming::GetDeltaCappedMs(TimeDelta delta) {
-  if (delta < TimeDelta::Zero()) {
-    RTC_DLOG(LS_ERROR) << "Delta " << delta.ms()
-                       << "ms expected to be positive";
-  }
-  return rtc::saturated_cast<uint16_t>(delta.ms());
 }
 
 TimingFrameInfo::TimingFrameInfo()

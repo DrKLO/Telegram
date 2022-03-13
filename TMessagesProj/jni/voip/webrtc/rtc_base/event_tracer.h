@@ -28,8 +28,6 @@
 
 #include <stdio.h>
 
-#include "rtc_base/system/rtc_export.h"
-
 namespace webrtc {
 
 typedef const unsigned char* (*GetCategoryEnabledPtr)(const char* name);
@@ -72,12 +70,12 @@ class EventTracer {
 namespace rtc {
 namespace tracing {
 // Set up internal event tracer.
-RTC_EXPORT void SetupInternalTracer();
-RTC_EXPORT bool StartInternalCapture(const char* filename);
-RTC_EXPORT void StartInternalCaptureToFile(FILE* file);
-RTC_EXPORT void StopInternalCapture();
+void SetupInternalTracer();
+bool StartInternalCapture(const char* filename);
+void StartInternalCaptureToFile(FILE* file);
+void StopInternalCapture();
 // Make sure we run this, this will tear down the internal tracing.
-RTC_EXPORT void ShutdownInternalTracer();
+void ShutdownInternalTracer();
 }  // namespace tracing
 }  // namespace rtc
 

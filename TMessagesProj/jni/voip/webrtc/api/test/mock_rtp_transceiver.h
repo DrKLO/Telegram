@@ -23,7 +23,7 @@ class MockRtpTransceiver final
     : public rtc::RefCountedObject<RtpTransceiverInterface> {
  public:
   static rtc::scoped_refptr<MockRtpTransceiver> Create() {
-    return rtc::scoped_refptr<MockRtpTransceiver>(new MockRtpTransceiver());
+    return new MockRtpTransceiver();
   }
 
   MOCK_METHOD(cricket::MediaType, media_type, (), (const, override));
@@ -68,10 +68,6 @@ class MockRtpTransceiver final
               (const, override));
   MOCK_METHOD(std::vector<RtpHeaderExtensionCapability>,
               HeaderExtensionsToOffer,
-              (),
-              (const, override));
-  MOCK_METHOD(std::vector<RtpHeaderExtensionCapability>,
-              HeaderExtensionsNegotiated,
               (),
               (const, override));
   MOCK_METHOD(webrtc::RTCError,

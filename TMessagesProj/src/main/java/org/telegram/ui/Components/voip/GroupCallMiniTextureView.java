@@ -475,6 +475,9 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
                     }
 
                 }
+                if (renderer.rotatedFrameHeight != 0 && renderer.rotatedFrameWidth != 0 && participant != null) {
+                    participant.setAspectRatio(renderer.rotatedFrameWidth, renderer.rotatedFrameHeight, call);
+                }
             }
         };
         textureView.renderer.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FIT);

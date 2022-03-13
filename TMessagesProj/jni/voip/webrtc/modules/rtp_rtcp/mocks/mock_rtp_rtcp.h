@@ -19,6 +19,7 @@
 
 #include "absl/types/optional.h"
 #include "api/video/video_bitrate_allocation.h"
+#include "modules/include/module.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
 #include "modules/rtp_rtcp/source/rtp_packet_to_send.h"
 #include "modules/rtp_rtcp/source/rtp_rtcp_interface.h"

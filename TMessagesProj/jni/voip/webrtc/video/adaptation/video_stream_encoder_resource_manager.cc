@@ -288,8 +288,6 @@ VideoStreamEncoderResourceManager::VideoStreamEncoderResourceManager(
       initial_frame_dropper_(
           std::make_unique<InitialFrameDropper>(quality_scaler_resource_)),
       quality_scaling_experiment_enabled_(QualityScalingExperiment::Enabled()),
-      pixel_limit_resource_experiment_enabled_(
-          field_trial::IsEnabled(kPixelLimitResourceFieldTrialName)),
       encoder_target_bitrate_bps_(absl::nullopt),
       quality_rampup_experiment_(
           QualityRampUpExperimentHelper::CreateIfEnabled(this, clock_)),
@@ -352,7 +350,7 @@ void VideoStreamEncoderResourceManager::MaybeInitializePixelLimitResource() {
   RTC_DCHECK_RUN_ON(encoder_queue_);
   RTC_DCHECK(adaptation_processor_);
   RTC_DCHECK(!pixel_limit_resource_);
-  if (!pixel_limit_resource_experiment_enabled_) {
+  if (!field_trial::IsEnabled(kPixelLimitResourceFieldTrialName)) {
     // The field trial is not running.
     return;
   }

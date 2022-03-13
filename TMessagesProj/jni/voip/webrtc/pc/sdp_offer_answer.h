@@ -47,12 +47,12 @@
 #include "pc/channel.h"
 #include "pc/channel_interface.h"
 #include "pc/channel_manager.h"
-#include "pc/connection_context.h"
 #include "pc/data_channel_controller.h"
 #include "pc/ice_server_parsing.h"
 #include "pc/jsep_transport_controller.h"
 #include "pc/media_session.h"
 #include "pc/media_stream_observer.h"
+#include "pc/peer_connection_factory.h"
 #include "pc/peer_connection_internal.h"
 #include "pc/rtc_stats_collector.h"
 #include "pc/rtp_receiver.h"
@@ -94,10 +94,9 @@ class SdpOfferAnswerHandler : public SdpStateProvider,
 
   // Creates an SdpOfferAnswerHandler. Modifies dependencies.
   static std::unique_ptr<SdpOfferAnswerHandler> Create(
-      PeerConnectionSdpMethods* pc,
+      PeerConnection* pc,
       const PeerConnectionInterface::RTCConfiguration& configuration,
-      PeerConnectionDependencies& dependencies,
-      ConnectionContext* context);
+      PeerConnectionDependencies& dependencies);
 
   void ResetSessionDescFactory() {
     RTC_DCHECK_RUN_ON(signaling_thread());
@@ -182,16 +181,7 @@ class SdpOfferAnswerHandler : public SdpStateProvider,
   rtc::scoped_refptr<StreamCollectionInterface> local_streams();
   rtc::scoped_refptr<StreamCollectionInterface> remote_streams();
 
-  bool initial_offerer() {
-    RTC_DCHECK_RUN_ON(signaling_thread());
-    if (initial_offerer_) {
-      return *initial_offerer_;
-    }
-    return false;
-  }
-
  private:
-  class RemoteDescriptionOperation;
   class ImplicitCreateSessionDescriptionObserver;
 
   friend class ImplicitCreateSessionDescriptionObserver;
@@ -214,8 +204,7 @@ class SdpOfferAnswerHandler : public SdpStateProvider,
   class LocalIceCredentialsToReplace;
 
   // Only called by the Create() function.
-  explicit SdpOfferAnswerHandler(PeerConnectionSdpMethods* pc,
-                                 ConnectionContext* context);
+  explicit SdpOfferAnswerHandler(PeerConnection* pc);
   // Called from the `Create()` function. Can only be called
   // once. Modifies dependencies.
   void Initialize(
@@ -223,7 +212,6 @@ class SdpOfferAnswerHandler : public SdpStateProvider,
       PeerConnectionDependencies& dependencies);
 
   rtc::Thread* signaling_thread() const;
-  rtc::Thread* network_thread() const;
   // Non-const versions of local_description()/remote_description(), for use
   // internally.
   SessionDescriptionInterface* mutable_local_description()
@@ -243,24 +231,10 @@ class SdpOfferAnswerHandler : public SdpStateProvider,
       std::unique_ptr<SessionDescriptionInterface> desc,
       const std::map<std::string, const cricket::ContentGroup*>&
           bundle_groups_by_mid);
-  void ApplyRemoteDescription(
-      std::unique_ptr<RemoteDescriptionOperation> operation);
-
-  RTCError ReplaceRemoteDescription(
+  RTCError ApplyRemoteDescription(
       std::unique_ptr<SessionDescriptionInterface> desc,
-      SdpType sdp_type,
-      std::unique_ptr<SessionDescriptionInterface>* replaced_description)
-      RTC_RUN_ON(signaling_thread());
-
-  // Part of ApplyRemoteDescription steps specific to Unified Plan.
-  void ApplyRemoteDescriptionUpdateTransceiverState(SdpType sdp_type);
-
-  // Part of ApplyRemoteDescription steps specific to plan b.
-  void PlanBUpdateSendersAndReceivers(
-      const cricket::ContentInfo* audio_content,
-      const cricket::AudioContentDescription* audio_desc,
-      const cricket::ContentInfo* video_content,
-      const cricket::VideoContentDescription* video_desc);
+      const std::map<std::string, const cricket::ContentGroup*>&
+          bundle_groups_by_mid);
 
   // Implementation of the offer/answer exchange operations. These are chained
   // onto the `operations_chain_` when the public CreateOffer(), CreateAnswer(),
@@ -275,11 +249,8 @@ class SdpOfferAnswerHandler : public SdpStateProvider,
       std::unique_ptr<SessionDescriptionInterface> desc,
       rtc::scoped_refptr<SetLocalDescriptionObserverInterface> observer);
   void DoSetRemoteDescription(
-      std::unique_ptr<RemoteDescriptionOperation> operation);
-
-  // Called after a DoSetRemoteDescription operation completes.
-  void SetRemoteDescriptionPostProcess(bool was_answer)
-      RTC_RUN_ON(signaling_thread());
+      std::unique_ptr<SessionDescriptionInterface> desc,
+      rtc::scoped_refptr<SetRemoteDescriptionObserverInterface> observer);
 
   // Update the state, signaling if necessary.
   void ChangeSignalingState(
@@ -511,11 +482,9 @@ class SdpOfferAnswerHandler : public SdpStateProvider,
   // exist.
   void UpdateEndedRemoteMediaStreams();
 
-  // Uses all remote candidates in the currently set remote_description().
-  // If no remote description is currently set (nullptr), the return value will
-  // be true. If `UseCandidate()` fails for any candidate in the remote
-  // description, the return value will be false.
-  bool UseCandidatesInRemoteDescription();
+  // Uses all remote candidates in `remote_desc` in this session.
+  bool UseCandidatesInSessionDescription(
+      const SessionDescriptionInterface* remote_desc);
   // Uses `candidate` in this session.
   bool UseCandidate(const IceCandidateInterface* candidate);
   // Returns true if we are ready to push down the remote candidate.
@@ -544,12 +513,22 @@ class SdpOfferAnswerHandler : public SdpStateProvider,
   cricket::VideoChannel* CreateVideoChannel(const std::string& mid);
   bool CreateDataChannel(const std::string& mid);
 
+  // Destroys and clears the BaseChannel associated with the given transceiver,
+  // if such channel is set.
+  void DestroyTransceiverChannel(
+      rtc::scoped_refptr<RtpTransceiverProxyWithInternal<RtpTransceiver>>
+          transceiver);
+
   // Destroys the RTP data channel transport and/or the SCTP data channel
   // transport and clears it.
   void DestroyDataChannelTransport(RTCError error);
 
+  // Destroys the given ChannelInterface.
+  // The channel cannot be accessed after this method is called.
+  void DestroyChannelInterface(cricket::ChannelInterface* channel);
   // Generates MediaDescriptionOptions for the `session_opts` based on existing
   // local description or remote description.
+
   void GenerateMediaDescriptionOptions(
       const SessionDescriptionInterface* session_desc,
       RtpTransceiverDirection audio_direction,
@@ -596,20 +575,13 @@ class SdpOfferAnswerHandler : public SdpStateProvider,
   const cricket::PortAllocator* port_allocator() const;
   RtpTransmissionManager* rtp_manager();
   const RtpTransmissionManager* rtp_manager() const;
-  JsepTransportController* transport_controller_s()
-      RTC_RUN_ON(signaling_thread());
-  const JsepTransportController* transport_controller_s() const
-      RTC_RUN_ON(signaling_thread());
-  JsepTransportController* transport_controller_n()
-      RTC_RUN_ON(network_thread());
-  const JsepTransportController* transport_controller_n() const
-      RTC_RUN_ON(network_thread());
+  JsepTransportController* transport_controller();
+  const JsepTransportController* transport_controller() const;
   // ===================================================================
   const cricket::AudioOptions& audio_options() { return audio_options_; }
   const cricket::VideoOptions& video_options() { return video_options_; }
 
-  PeerConnectionSdpMethods* const pc_;
-  ConnectionContext* const context_;
+  PeerConnection* const pc_;
 
   std::unique_ptr<WebRtcSessionDescriptionFactory> webrtc_session_desc_factory_
       RTC_GUARDED_BY(signaling_thread());
@@ -690,6 +662,14 @@ class SdpOfferAnswerHandler : public SdpStateProvider,
   cricket::AudioOptions audio_options_ RTC_GUARDED_BY(signaling_thread());
   cricket::VideoOptions video_options_ RTC_GUARDED_BY(signaling_thread());
 
+  // This object should be used to generate any SSRC that is not explicitly
+  // specified by the user (or by the remote party).
+  // The generator is not used directly, instead it is passed on to the
+  // channel manager and the session description factory.
+  // TODO(bugs.webrtc.org/12666): This variable is used from both the signaling
+  // and worker threads. See if we can't restrict usage to a single thread.
+  rtc::UniqueRandomIdGenerator ssrc_generator_;
+
   // A video bitrate allocator factory.
   // This can be injected using the PeerConnectionDependencies,
   // or else the CreateBuiltinVideoBitrateAllocatorFactory() will be called.
@@ -697,10 +677,6 @@ class SdpOfferAnswerHandler : public SdpStateProvider,
   // if one wants too.
   std::unique_ptr<webrtc::VideoBitrateAllocatorFactory>
       video_bitrate_allocator_factory_ RTC_GUARDED_BY(signaling_thread());
-
-  // Whether we are the initial offerer on the association. This
-  // determines the SSL role.
-  absl::optional<bool> initial_offerer_ RTC_GUARDED_BY(signaling_thread());
 
   rtc::WeakPtrFactory<SdpOfferAnswerHandler> weak_ptr_factory_
       RTC_GUARDED_BY(signaling_thread());

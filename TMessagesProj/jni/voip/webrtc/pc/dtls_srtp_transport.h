@@ -11,7 +11,6 @@
 #ifndef PC_DTLS_SRTP_TRANSPORT_H_
 #define PC_DTLS_SRTP_TRANSPORT_H_
 
-#include <functional>
 #include <string>
 #include <vector>
 

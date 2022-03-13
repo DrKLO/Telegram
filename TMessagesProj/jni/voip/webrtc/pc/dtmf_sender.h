@@ -17,14 +17,13 @@
 
 #include "api/dtmf_sender_interface.h"
 #include "api/scoped_refptr.h"
-#include "api/sequence_checker.h"
 #include "pc/proxy.h"
+#include "rtc_base/constructor_magic.h"
 #include "rtc_base/location.h"
 #include "rtc_base/ref_count.h"
 #include "rtc_base/task_utils/pending_task_safety_flag.h"
 #include "rtc_base/third_party/sigslot/sigslot.h"
 #include "rtc_base/thread.h"
-#include "rtc_base/thread_annotations.h"
 
 // DtmfSender is the native implementation of the RTCDTMFSender defined by
 // the WebRTC W3C Editor's Draft.
@@ -73,9 +72,6 @@ class DtmfSender : public DtmfSenderInterface, public sigslot::has_slots<> {
   DtmfSender(rtc::Thread* signaling_thread, DtmfProviderInterface* provider);
   virtual ~DtmfSender();
 
-  DtmfSender(const DtmfSender&) = delete;
-  DtmfSender& operator=(const DtmfSender&) = delete;
-
  private:
   DtmfSender();
 
@@ -100,11 +96,12 @@ class DtmfSender : public DtmfSenderInterface, public sigslot::has_slots<> {
   // For cancelling the tasks which feed the DTMF provider one tone at a time.
   rtc::scoped_refptr<PendingTaskSafetyFlag> safety_flag_ RTC_GUARDED_BY(
       signaling_thread_) RTC_PT_GUARDED_BY(signaling_thread_) = nullptr;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(DtmfSender);
 };
 
 // Define proxy for DtmfSenderInterface.
 BEGIN_PRIMARY_PROXY_MAP(DtmfSender)
-
 PROXY_PRIMARY_THREAD_DESTRUCTOR()
 PROXY_METHOD1(void, RegisterObserver, DtmfSenderObserverInterface*)
 PROXY_METHOD0(void, UnregisterObserver)

@@ -1725,6 +1725,10 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
                                                 group = path.replace("joinchat/", "");
                                             } else if (path.startsWith("+")) {
                                                 group = path.replace("+", "");
+                                                if (AndroidUtilities.isNumeric(group)) {
+                                                    username = group;
+                                                    group = null;
+                                                }
                                             } else if (path.startsWith("addstickers/")) {
                                                 sticker = path.replace("addstickers/", "");
                                             } else if (path.startsWith("msg/") || path.startsWith("share/")) {
@@ -2877,8 +2881,16 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
         Runnable cancelRunnable = null;
 
         if (username != null) {
-            TLRPC.TL_contacts_resolveUsername req = new TLRPC.TL_contacts_resolveUsername();
-            req.username = username;
+            TLObject req;
+            if (AndroidUtilities.isNumeric(username)) {
+                TLRPC.TL_contacts_resolvePhone resolvePhone = new TLRPC.TL_contacts_resolvePhone();
+                resolvePhone.phone = username;
+                req = resolvePhone;
+            } else {
+                TLRPC.TL_contacts_resolveUsername resolveUsername = new TLRPC.TL_contacts_resolveUsername();
+                resolveUsername.username = username;
+                req = resolveUsername;
+            }
             requestId[0] = ConnectionsManager.getInstance(intentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                 if (!LaunchActivity.this.isFinishing()) {
                     boolean hideProgressDialog = true;

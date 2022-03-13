@@ -16,7 +16,7 @@
 #include "api/video_codecs/sdp_video_format.h"
 #include "media/base/codec.h"
 #include "media/base/media_constants.h"
-#include "modules/video_coding/codecs/av1/libaom_av1_encoder_supported.h"
+#include "modules/video_coding/codecs/av1/libaom_av1_encoder.h"
 #include "modules/video_coding/codecs/h264/include/h264.h"
 #include "modules/video_coding/codecs/vp8/include/vp8.h"
 #include "modules/video_coding/codecs/vp9/include/vp9.h"
@@ -51,7 +51,7 @@ std::unique_ptr<VideoEncoder> InternalEncoderFactory::CreateVideoEncoder(
     return H264Encoder::Create(cricket::VideoCodec(format));
   if (kIsLibaomAv1EncoderSupported &&
       absl::EqualsIgnoreCase(format.name, cricket::kAv1CodecName))
-    return CreateLibaomAv1EncoderIfSupported();
+    return CreateLibaomAv1Encoder();
   RTC_LOG(LS_ERROR) << "Trying to created encoder of unsupported format "
                     << format.name;
   return nullptr;

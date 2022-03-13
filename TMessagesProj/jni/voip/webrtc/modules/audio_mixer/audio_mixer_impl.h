@@ -22,6 +22,7 @@
 #include "api/scoped_refptr.h"
 #include "modules/audio_mixer/frame_combiner.h"
 #include "modules/audio_mixer/output_rate_calculator.h"
+#include "rtc_base/constructor_magic.h"
 #include "rtc_base/race_checker.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/thread_annotations.h"
@@ -46,9 +47,6 @@ class AudioMixerImpl : public AudioMixer {
       int max_sources_to_mix = kDefaultNumberOfMixedAudioSources);
 
   ~AudioMixerImpl() override;
-
-  AudioMixerImpl(const AudioMixerImpl&) = delete;
-  AudioMixerImpl& operator=(const AudioMixerImpl&) = delete;
 
   // AudioMixer functions
   bool AddSource(Source* audio_source) override;
@@ -94,6 +92,8 @@ class AudioMixerImpl : public AudioMixer {
 
   // Component that handles actual adding of audio frames.
   FrameCombiner frame_combiner_;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(AudioMixerImpl);
 };
 }  // namespace webrtc
 

@@ -16,7 +16,6 @@
 #include <utility>
 #include <vector>
 
-#include "absl/strings/string_view.h"
 #include "rtc_base/containers/flat_map.h"
 #include "rtc_base/containers/flat_set.h"
 
@@ -27,10 +26,7 @@ class RtpPacketSinkInterface;
 
 // This struct describes the criteria that will be used to match packets to a
 // specific sink.
-class RtpDemuxerCriteria {
- public:
-  explicit RtpDemuxerCriteria(absl::string_view mid,
-                              absl::string_view rsid = absl::string_view());
+struct RtpDemuxerCriteria {
   RtpDemuxerCriteria();
   ~RtpDemuxerCriteria();
 
@@ -38,37 +34,23 @@ class RtpDemuxerCriteria {
   bool operator!=(const RtpDemuxerCriteria& other) const;
 
   // If not the empty string, will match packets with this MID.
-  const std::string& mid() const { return mid_; }
-
-  // Return string representation of demux criteria to facilitate logging
-  std::string ToString() const;
+  std::string mid;
 
   // If not the empty string, will match packets with this as their RTP stream
   // ID or repaired RTP stream ID.
   // Note that if both MID and RSID are specified, this will only match packets
   // that have both specified (either through RTP header extensions, SSRC
   // latching or RTCP).
-  const std::string& rsid() const { return rsid_; }
+  std::string rsid;
 
-  // The criteria will match packets with any of these SSRCs.
-  const flat_set<uint32_t>& ssrcs() const { return ssrcs_; }
+  // Will match packets with any of these SSRCs.
+  flat_set<uint32_t> ssrcs;
 
-  // Writable accessor for directly modifying the list of ssrcs.
-  flat_set<uint32_t>& ssrcs() { return ssrcs_; }
+  // Will match packets with any of these payload types.
+  flat_set<uint8_t> payload_types;
 
-  // The criteria will match packets with any of these payload types.
-  const flat_set<uint8_t>& payload_types() const { return payload_types_; }
-
-  // Writable accessor for directly modifying the list of payload types.
-  flat_set<uint8_t>& payload_types() { return payload_types_; }
-
- private:
-  // Intentionally private member variables to encourage specifying them via the
-  // constructor and consider them to be const as much as possible.
-  const std::string mid_;
-  const std::string rsid_;
-  flat_set<uint32_t> ssrcs_;
-  flat_set<uint8_t> payload_types_;
+  // Return string representation of demux criteria to facilitate logging
+  std::string ToString() const;
 };
 
 // This class represents the RTP demuxing, for a single RTP session (i.e., one

@@ -22223,6 +22223,24 @@ public class TLRPC {
         }
     }
 
+    public static class TL_inputReportReasonIllegalDrugs extends ReportReason {
+        public static int constructor = 0xa8eb2be;
+
+
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+        }
+    }
+
+    public static class TL_inputReportReasonPersonalDetails extends ReportReason {
+        public static int constructor = 0x9ec7863d;
+
+
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+        }
+    }
+
     public static class TL_messages_archivedStickers extends TLObject {
         public static int constructor = 0x4fcba9c8;
 
@@ -45744,6 +45762,21 @@ public class TLRPC {
             flags = report_spam ? (flags | 4) : (flags &~ 4);
             stream.writeInt32(flags);
             stream.writeInt32(msg_id);
+        }
+    }
+
+    public static class TL_contacts_resolvePhone extends TLObject {
+        public static int constructor = 0x8af94344;
+
+        public String phone;
+
+        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+            return TL_contacts_resolvedPeer.TLdeserialize(stream, constructor, exception);
+        }
+
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeString(phone);
         }
     }
 

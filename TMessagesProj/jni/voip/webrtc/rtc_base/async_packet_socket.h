@@ -13,6 +13,7 @@
 
 #include <vector>
 
+#include "rtc_base/constructor_magic.h"
 #include "rtc_base/dscp.h"
 #include "rtc_base/network/sent_packet.h"
 #include "rtc_base/socket.h"
@@ -67,9 +68,6 @@ class RTC_EXPORT AsyncPacketSocket : public sigslot::has_slots<> {
 
   AsyncPacketSocket();
   ~AsyncPacketSocket() override;
-
-  AsyncPacketSocket(const AsyncPacketSocket&) = delete;
-  AsyncPacketSocket& operator=(const AsyncPacketSocket&) = delete;
 
   // Returns current local address. Address may be set to null if the
   // socket is not bound yet (GetState() returns STATE_BINDING).
@@ -129,6 +127,9 @@ class RTC_EXPORT AsyncPacketSocket : public sigslot::has_slots<> {
   // Emitted for client TCP sockets when state is changed from
   // CONNECTED to CLOSED.
   sigslot::signal2<AsyncPacketSocket*, int> SignalClose;
+
+ private:
+  RTC_DISALLOW_COPY_AND_ASSIGN(AsyncPacketSocket);
 };
 
 // Listen socket, producing an AsyncPacketSocket when a peer connects.

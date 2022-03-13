@@ -132,7 +132,10 @@ TEST(PCFullStackTest, Pc_Foreman_Cif_Net_Delay_0_0_Plr_0_VP9) {
                 {kVP9FmtpProfileId,
                  VP9ProfileToString(VP9Profile::kProfile0)}})});
       });
-  fixture->Run(RunParams(TimeDelta::Seconds(kTestDurationSec)));
+  RunParams run_params(TimeDelta::Seconds(kTestDurationSec));
+  run_params.use_flex_fec = false;
+  run_params.use_ulp_fec = false;
+  fixture->Run(std::move(run_params));
 }
 
 TEST(PCGenericDescriptorTest,
@@ -163,7 +166,10 @@ TEST(PCGenericDescriptorTest,
                 {kVP9FmtpProfileId,
                  VP9ProfileToString(VP9Profile::kProfile0)}})});
       });
-  fixture->Run(RunParams(TimeDelta::Seconds(kTestDurationSec)));
+  RunParams run_params(TimeDelta::Seconds(kTestDurationSec));
+  run_params.use_flex_fec = false;
+  run_params.use_ulp_fec = false;
+  fixture->Run(std::move(run_params));
 }
 
 // VP9 2nd profile isn't supported on android arm and arm 64.
@@ -201,7 +207,10 @@ TEST(PCFullStackTest, MAYBE_Pc_Generator_Net_Delay_0_0_Plr_0_VP9Profile2) {
                 {kVP9FmtpProfileId,
                  VP9ProfileToString(VP9Profile::kProfile2)}})});
       });
-  fixture->Run(RunParams(TimeDelta::Seconds(kTestDurationSec)));
+  RunParams run_params(TimeDelta::Seconds(kTestDurationSec));
+  run_params.use_flex_fec = false;
+  run_params.use_ulp_fec = false;
+  fixture->Run(std::move(run_params));
 }
 
 /*
@@ -251,7 +260,10 @@ TEST(PCFullStackTest, Pc_Net_Delay_0_0_Plr_0) {
         alice->AddVideoConfig(std::move(video), std::move(frame_generator));
       },
       [](PeerConfigurer* bob) {});
-  fixture->Run(RunParams(TimeDelta::Seconds(kTestDurationSec)));
+  RunParams run_params(TimeDelta::Seconds(kTestDurationSec));
+  run_params.use_flex_fec = false;
+  run_params.use_ulp_fec = false;
+  fixture->Run(std::move(run_params));
 }
 
 TEST(PCGenericDescriptorTest,
@@ -271,7 +283,10 @@ TEST(PCGenericDescriptorTest,
         alice->AddVideoConfig(std::move(video), std::move(frame_generator));
       },
       [](PeerConfigurer* bob) {});
-  fixture->Run(RunParams(TimeDelta::Seconds(kTestDurationSec)));
+  RunParams run_params(TimeDelta::Seconds(kTestDurationSec));
+  run_params.use_flex_fec = false;
+  run_params.use_ulp_fec = false;
+  fixture->Run(std::move(run_params));
 }
 
 TEST(PCGenericDescriptorTest,
@@ -298,6 +313,8 @@ TEST(PCGenericDescriptorTest,
       },
       [](PeerConfigurer* bob) {});
   RunParams run_params(TimeDelta::Seconds(kTestDurationSec));
+  run_params.use_flex_fec = false;
+  run_params.use_ulp_fec = false;
   fixture->Run(std::move(run_params));
 }
 
@@ -319,7 +336,10 @@ TEST(PCFullStackTest, Pc_Foreman_Cif_Link_150kbps_Net_Delay_0_0_Plr_0) {
         alice->AddVideoConfig(std::move(video), std::move(frame_generator));
       },
       [](PeerConfigurer* bob) {});
-  fixture->Run(RunParams(TimeDelta::Seconds(kTestDurationSec)));
+  RunParams run_params(TimeDelta::Seconds(kTestDurationSec));
+  run_params.use_flex_fec = false;
+  run_params.use_ulp_fec = false;
+  fixture->Run(std::move(run_params));
 }
 
 TEST(PCFullStackTest, Pc_Foreman_Cif_Link_130kbps_Delay100ms_Loss1_Ulpfec) {
@@ -339,10 +359,12 @@ TEST(PCFullStackTest, Pc_Foreman_Cif_Link_130kbps_Delay100ms_Loss1_Ulpfec) {
         auto frame_generator = CreateFromYuvFileFrameGenerator(
             video, ClipNameToClipPath("foreman_cif"));
         alice->AddVideoConfig(std::move(video), std::move(frame_generator));
-        alice->SetUseUlpFEC(true);
       },
-      [](PeerConfigurer* bob) { bob->SetUseUlpFEC(true); });
-  fixture->Run(RunParams(TimeDelta::Seconds(kTestDurationSec)));
+      [](PeerConfigurer* bob) {});
+  RunParams run_params(TimeDelta::Seconds(kTestDurationSec));
+  run_params.use_flex_fec = false;
+  run_params.use_ulp_fec = true;
+  fixture->Run(std::move(run_params));
 }
 
 TEST(PCFullStackTest, Pc_Foreman_Cif_Link_50kbps_Delay100ms_Loss1_Ulpfec) {
@@ -362,10 +384,12 @@ TEST(PCFullStackTest, Pc_Foreman_Cif_Link_50kbps_Delay100ms_Loss1_Ulpfec) {
         auto frame_generator = CreateFromYuvFileFrameGenerator(
             video, ClipNameToClipPath("foreman_cif"));
         alice->AddVideoConfig(std::move(video), std::move(frame_generator));
-        alice->SetUseUlpFEC(true);
       },
-      [](PeerConfigurer* bob) { bob->SetUseUlpFEC(true); });
-  fixture->Run(RunParams(TimeDelta::Seconds(kTestDurationSec)));
+      [](PeerConfigurer* bob) {});
+  RunParams run_params(TimeDelta::Seconds(kTestDurationSec));
+  run_params.use_flex_fec = false;
+  run_params.use_ulp_fec = true;
+  fixture->Run(std::move(run_params));
 }
 
 // Restricted network and encoder overproducing by 30%.
@@ -387,10 +411,13 @@ TEST(PCFullStackTest,
         auto frame_generator = CreateFromYuvFileFrameGenerator(
             video, ClipNameToClipPath("foreman_cif"));
         alice->AddVideoConfig(std::move(video), std::move(frame_generator));
-        alice->SetVideoEncoderBitrateMultiplier(1.30);
       },
-      [](PeerConfigurer* bob) { bob->SetVideoEncoderBitrateMultiplier(1.30); });
-  fixture->Run(RunParams(TimeDelta::Seconds(kTestDurationSec)));
+      [](PeerConfigurer* bob) {});
+  RunParams run_params(TimeDelta::Seconds(kTestDurationSec));
+  run_params.use_flex_fec = false;
+  run_params.use_ulp_fec = false;
+  run_params.video_encoder_bitrate_multiplier = 1.30;
+  fixture->Run(std::move(run_params));
 }
 
 // Weak 3G-style link: 250kbps, 1% loss, 100ms delay, 15 packets queue.
@@ -415,10 +442,13 @@ TEST(PCFullStackTest, Pc_Foreman_Cif_Link_250kbps_Delay100ms_10pkts_Loss1) {
         auto frame_generator = CreateFromYuvFileFrameGenerator(
             video, ClipNameToClipPath("foreman_cif"));
         alice->AddVideoConfig(std::move(video), std::move(frame_generator));
-        alice->SetVideoEncoderBitrateMultiplier(1.30);
       },
-      [](PeerConfigurer* bob) { bob->SetVideoEncoderBitrateMultiplier(1.30); });
-  fixture->Run(RunParams(TimeDelta::Seconds(kTestDurationSec)));
+      [](PeerConfigurer* bob) {});
+  RunParams run_params(TimeDelta::Seconds(kTestDurationSec));
+  run_params.use_flex_fec = false;
+  run_params.use_ulp_fec = false;
+  run_params.video_encoder_bitrate_multiplier = 1.30;
+  fixture->Run(std::move(run_params));
 }
 
 TEST(PCGenericDescriptorTest,
@@ -440,7 +470,10 @@ TEST(PCGenericDescriptorTest,
         alice->AddVideoConfig(std::move(video), std::move(frame_generator));
       },
       [](PeerConfigurer* bob) {});
-  fixture->Run(RunParams(TimeDelta::Seconds(kTestDurationSec)));
+  RunParams run_params(TimeDelta::Seconds(kTestDurationSec));
+  run_params.use_flex_fec = false;
+  run_params.use_ulp_fec = false;
+  fixture->Run(std::move(run_params));
 }
 
 TEST(PCGenericDescriptorTest,
@@ -460,10 +493,12 @@ TEST(PCGenericDescriptorTest,
         auto frame_generator = CreateFromYuvFileFrameGenerator(
             video, ClipNameToClipPath("foreman_cif"));
         alice->AddVideoConfig(std::move(video), std::move(frame_generator));
-        alice->SetUseUlpFEC(true);
       },
-      [](PeerConfigurer* bob) { bob->SetUseUlpFEC(true); });
-  fixture->Run(RunParams(TimeDelta::Seconds(kTestDurationSec)));
+      [](PeerConfigurer* bob) {});
+  RunParams run_params(TimeDelta::Seconds(kTestDurationSec));
+  run_params.use_flex_fec = false;
+  run_params.use_ulp_fec = true;
+  fixture->Run(std::move(run_params));
 }
 
 TEST(PCFullStackTest, Pc_Foreman_Cif_Delay_50_0_Plr_5_Flexfec) {
@@ -482,11 +517,11 @@ TEST(PCFullStackTest, Pc_Foreman_Cif_Delay_50_0_Plr_5_Flexfec) {
         auto frame_generator = CreateFromYuvFileFrameGenerator(
             video, ClipNameToClipPath("foreman_cif"));
         alice->AddVideoConfig(std::move(video), std::move(frame_generator));
-        alice->SetUseFlexFEC(true);
       },
-      [](PeerConfigurer* bob) { bob->SetUseFlexFEC(true); });
+      [](PeerConfigurer* bob) {});
   RunParams run_params(TimeDelta::Seconds(kTestDurationSec));
-  run_params.enable_flex_fec_support = true;
+  run_params.use_flex_fec = true;
+  run_params.use_ulp_fec = false;
   fixture->Run(std::move(run_params));
 }
 
@@ -507,11 +542,11 @@ TEST(PCFullStackTest, Pc_Foreman_Cif_500kbps_Delay_50_0_Plr_3_Flexfec) {
         auto frame_generator = CreateFromYuvFileFrameGenerator(
             video, ClipNameToClipPath("foreman_cif"));
         alice->AddVideoConfig(std::move(video), std::move(frame_generator));
-        alice->SetUseFlexFEC(true);
       },
-      [](PeerConfigurer* bob) { bob->SetUseFlexFEC(true); });
+      [](PeerConfigurer* bob) {});
   RunParams run_params(TimeDelta::Seconds(kTestDurationSec));
-  run_params.enable_flex_fec_support = true;
+  run_params.use_flex_fec = true;
+  run_params.use_ulp_fec = false;
   fixture->Run(std::move(run_params));
 }
 
@@ -532,10 +567,12 @@ TEST(PCFullStackTest, Pc_Foreman_Cif_500kbps_Delay_50_0_Plr_3_Ulpfec) {
         auto frame_generator = CreateFromYuvFileFrameGenerator(
             video, ClipNameToClipPath("foreman_cif"));
         alice->AddVideoConfig(std::move(video), std::move(frame_generator));
-        alice->SetUseUlpFEC(true);
       },
-      [](PeerConfigurer* bob) { bob->SetUseUlpFEC(true); });
-  fixture->Run(RunParams(TimeDelta::Seconds(kTestDurationSec)));
+      [](PeerConfigurer* bob) {});
+  RunParams run_params(TimeDelta::Seconds(kTestDurationSec));
+  run_params.use_flex_fec = false;
+  run_params.use_ulp_fec = true;
+  fixture->Run(std::move(run_params));
 }
 
 #if defined(WEBRTC_USE_H264)
@@ -558,7 +595,10 @@ TEST(PCFullStackTest, Pc_Foreman_Cif_Net_Delay_0_0_Plr_0_H264) {
       [](PeerConfigurer* bob) {
         bob->SetVideoCodecs({VideoCodecConfig(cricket::kH264CodecName)});
       });
-  fixture->Run(RunParams(TimeDelta::Seconds(kTestDurationSec)));
+  RunParams run_params(TimeDelta::Seconds(kTestDurationSec));
+  run_params.use_flex_fec = false;
+  run_params.use_ulp_fec = false;
+  fixture->Run(std::move(run_params));
 }
 
 TEST(PCFullStackTest, Pc_Foreman_Cif_30kbps_Net_Delay_0_0_Plr_0_H264) {
@@ -586,7 +626,10 @@ TEST(PCFullStackTest, Pc_Foreman_Cif_30kbps_Net_Delay_0_0_Plr_0_H264) {
       [](PeerConfigurer* bob) {
         bob->SetVideoCodecs({VideoCodecConfig(cricket::kH264CodecName)});
       });
-  fixture->Run(RunParams(TimeDelta::Seconds(kTestDurationSec)));
+  RunParams run_params(TimeDelta::Seconds(kTestDurationSec));
+  run_params.use_flex_fec = false;
+  run_params.use_ulp_fec = false;
+  fixture->Run(std::move(run_params));
 }
 
 TEST(PCGenericDescriptorTest,
@@ -611,7 +654,10 @@ TEST(PCGenericDescriptorTest,
       [](PeerConfigurer* bob) {
         bob->SetVideoCodecs({VideoCodecConfig(cricket::kH264CodecName)});
       });
-  fixture->Run(RunParams(TimeDelta::Seconds(kTestDurationSec)));
+  RunParams run_params(TimeDelta::Seconds(kTestDurationSec));
+  run_params.use_flex_fec = false;
+  run_params.use_ulp_fec = false;
+  fixture->Run(std::move(run_params));
 }
 
 TEST(PCFullStackTest, Pc_Foreman_Cif_Delay_50_0_Plr_5_H264_Sps_Pps_Idr) {
@@ -638,7 +684,10 @@ TEST(PCFullStackTest, Pc_Foreman_Cif_Delay_50_0_Plr_5_H264_Sps_Pps_Idr) {
       [](PeerConfigurer* bob) {
         bob->SetVideoCodecs({VideoCodecConfig(cricket::kH264CodecName)});
       });
-  fixture->Run(RunParams(TimeDelta::Seconds(kTestDurationSec)));
+  RunParams run_params(TimeDelta::Seconds(kTestDurationSec));
+  run_params.use_flex_fec = false;
+  run_params.use_ulp_fec = false;
+  fixture->Run(std::move(run_params));
 }
 
 TEST(PCFullStackTest, Pc_Foreman_Cif_Delay_50_0_Plr_5_H264_Flexfec) {
@@ -658,14 +707,13 @@ TEST(PCFullStackTest, Pc_Foreman_Cif_Delay_50_0_Plr_5_H264_Flexfec) {
             video, ClipNameToClipPath("foreman_cif"));
         alice->AddVideoConfig(std::move(video), std::move(frame_generator));
         alice->SetVideoCodecs({VideoCodecConfig(cricket::kH264CodecName)});
-        alice->SetUseFlexFEC(true);
       },
       [](PeerConfigurer* bob) {
         bob->SetVideoCodecs({VideoCodecConfig(cricket::kH264CodecName)});
-        bob->SetUseFlexFEC(true);
       });
   RunParams run_params(TimeDelta::Seconds(kTestDurationSec));
-  run_params.enable_flex_fec_support = true;
+  run_params.use_flex_fec = true;
+  run_params.use_ulp_fec = false;
   fixture->Run(std::move(run_params));
 }
 
@@ -688,13 +736,14 @@ TEST(PCFullStackTest, DISABLED_Pc_Foreman_Cif_Delay_50_0_Plr_5_H264_Ulpfec) {
             video, ClipNameToClipPath("foreman_cif"));
         alice->AddVideoConfig(std::move(video), std::move(frame_generator));
         alice->SetVideoCodecs({VideoCodecConfig(cricket::kH264CodecName)});
-        alice->SetUseUlpFEC(true);
       },
       [](PeerConfigurer* bob) {
         bob->SetVideoCodecs({VideoCodecConfig(cricket::kH264CodecName)});
-        bob->SetUseUlpFEC(true);
       });
-  fixture->Run(RunParams(TimeDelta::Seconds(kTestDurationSec)));
+  RunParams run_params(TimeDelta::Seconds(kTestDurationSec));
+  run_params.use_flex_fec = false;
+  run_params.use_ulp_fec = true;
+  fixture->Run(std::move(run_params));
 }
 #endif  // defined(WEBRTC_USE_H264)
 
@@ -716,7 +765,10 @@ TEST(PCFullStackTest, Pc_Foreman_Cif_500kbps) {
         alice->AddVideoConfig(std::move(video), std::move(frame_generator));
       },
       [](PeerConfigurer* bob) {});
-  fixture->Run(RunParams(TimeDelta::Seconds(kTestDurationSec)));
+  RunParams run_params(TimeDelta::Seconds(kTestDurationSec));
+  run_params.use_flex_fec = false;
+  run_params.use_ulp_fec = false;
+  fixture->Run(std::move(run_params));
 }
 
 TEST(PCFullStackTest, Pc_Foreman_Cif_500kbps_32pkts_Queue) {
@@ -738,7 +790,10 @@ TEST(PCFullStackTest, Pc_Foreman_Cif_500kbps_32pkts_Queue) {
         alice->AddVideoConfig(std::move(video), std::move(frame_generator));
       },
       [](PeerConfigurer* bob) {});
-  fixture->Run(RunParams(TimeDelta::Seconds(kTestDurationSec)));
+  RunParams run_params(TimeDelta::Seconds(kTestDurationSec));
+  run_params.use_flex_fec = false;
+  run_params.use_ulp_fec = false;
+  fixture->Run(std::move(run_params));
 }
 
 TEST(PCFullStackTest, Pc_Foreman_Cif_500kbps_100ms) {
@@ -760,7 +815,10 @@ TEST(PCFullStackTest, Pc_Foreman_Cif_500kbps_100ms) {
         alice->AddVideoConfig(std::move(video), std::move(frame_generator));
       },
       [](PeerConfigurer* bob) {});
-  fixture->Run(RunParams(TimeDelta::Seconds(kTestDurationSec)));
+  RunParams run_params(TimeDelta::Seconds(kTestDurationSec));
+  run_params.use_flex_fec = false;
+  run_params.use_ulp_fec = false;
+  fixture->Run(std::move(run_params));
 }
 
 TEST(PCGenericDescriptorTest,
@@ -783,7 +841,10 @@ TEST(PCGenericDescriptorTest,
         alice->AddVideoConfig(std::move(video), std::move(frame_generator));
       },
       [](PeerConfigurer* bob) {});
-  fixture->Run(RunParams(TimeDelta::Seconds(kTestDurationSec)));
+  RunParams run_params(TimeDelta::Seconds(kTestDurationSec));
+  run_params.use_flex_fec = false;
+  run_params.use_ulp_fec = false;
+  fixture->Run(std::move(run_params));
 }
 
 /*
@@ -826,7 +887,10 @@ TEST(PCFullStackTest, Pc_Foreman_Cif_1000kbps_100ms_32pkts_Queue) {
         alice->AddVideoConfig(std::move(video), std::move(frame_generator));
       },
       [](PeerConfigurer* bob) {});
-  fixture->Run(RunParams(TimeDelta::Seconds(kTestDurationSec)));
+  RunParams run_params(TimeDelta::Seconds(kTestDurationSec));
+  run_params.use_flex_fec = false;
+  run_params.use_ulp_fec = false;
+  fixture->Run(std::move(run_params));
 }
 
 // TODO(sprang): Remove this if we have the similar ModerateLimits below?
@@ -849,7 +913,10 @@ TEST(PCFullStackTest, Pc_Conference_Motion_Hd_2000kbps_100ms_32pkts_Queue) {
         alice->AddVideoConfig(std::move(video), std::move(frame_generator));
       },
       [](PeerConfigurer* bob) {});
-  fixture->Run(RunParams(TimeDelta::Seconds(kTestDurationSec)));
+  RunParams run_params(TimeDelta::Seconds(kTestDurationSec));
+  run_params.use_flex_fec = false;
+  run_params.use_ulp_fec = false;
+  fixture->Run(std::move(run_params));
 }
 
 /*
@@ -1007,7 +1074,10 @@ TEST(PCFullStackTest, Pc_Conference_Motion_Hd_2000kbps_100ms_32pkts_Queue_Vp9) {
                 {kVP9FmtpProfileId,
                  VP9ProfileToString(VP9Profile::kProfile0)}})});
       });
-  fixture->Run(RunParams(TimeDelta::Seconds(kTestDurationSec)));
+  RunParams run_params(TimeDelta::Seconds(kTestDurationSec));
+  run_params.use_flex_fec = false;
+  run_params.use_ulp_fec = false;
+  fixture->Run(std::move(run_params));
 }
 #endif
 
@@ -1028,7 +1098,10 @@ TEST(PCFullStackTest, Pc_Screenshare_Slides_No_Conference_Mode) {
         alice->AddVideoConfig(std::move(video), std::move(frame_generator));
       },
       [](PeerConfigurer* bob) {});
-  fixture->Run(RunParams(TimeDelta::Seconds(kTestDurationSec)));
+  RunParams run_params(TimeDelta::Seconds(kTestDurationSec));
+  run_params.use_flex_fec = false;
+  run_params.use_ulp_fec = false;
+  fixture->Run(std::move(run_params));
 }
 
 TEST(PCFullStackTest, Pc_Screenshare_Slides) {
@@ -1048,6 +1121,8 @@ TEST(PCFullStackTest, Pc_Screenshare_Slides) {
       },
       [](PeerConfigurer* bob) {});
   RunParams run_params(TimeDelta::Seconds(kTestDurationSec));
+  run_params.use_flex_fec = false;
+  run_params.use_ulp_fec = false;
   run_params.use_conference_mode = true;
   fixture->Run(std::move(run_params));
 }
@@ -1073,7 +1148,10 @@ TEST(PCFullStackTest, Pc_Screenshare_Slides_Simulcast_No_Conference_Mode) {
         alice->AddVideoConfig(std::move(video), std::move(frame_generator));
       },
       [](PeerConfigurer* bob) {});
-  fixture->Run(RunParams(TimeDelta::Seconds(kTestDurationSec)));
+  RunParams run_params(TimeDelta::Seconds(kTestDurationSec));
+  run_params.use_flex_fec = false;
+  run_params.use_ulp_fec = false;
+  fixture->Run(std::move(run_params));
 }
 
 TEST(PCFullStackTest, Pc_Screenshare_Slides_Simulcast) {
@@ -1096,6 +1174,8 @@ TEST(PCFullStackTest, Pc_Screenshare_Slides_Simulcast) {
       },
       [](PeerConfigurer* bob) {});
   RunParams run_params(TimeDelta::Seconds(kTestDurationSec));
+  run_params.use_flex_fec = false;
+  run_params.use_ulp_fec = false;
   run_params.use_conference_mode = true;
   fixture->Run(std::move(run_params));
 }
@@ -1308,7 +1388,10 @@ TEST(PCFullStackTest, Pc_Screenshare_Slides_Vp9_3sl_High_Fps) {
                 {kVP9FmtpProfileId,
                  VP9ProfileToString(VP9Profile::kProfile0)}})});
       });
-  fixture->Run(RunParams(TimeDelta::Seconds(kTestDurationSec)));
+  RunParams run_params(TimeDelta::Seconds(kTestDurationSec));
+  run_params.use_flex_fec = false;
+  run_params.use_ulp_fec = false;
+  fixture->Run(std::move(run_params));
 }
 
 TEST(PCFullStackTest, Pc_Vp9svc_3sl_High) {
@@ -1340,7 +1423,10 @@ TEST(PCFullStackTest, Pc_Vp9svc_3sl_High) {
                 {kVP9FmtpProfileId,
                  VP9ProfileToString(VP9Profile::kProfile0)}})});
       });
-  fixture->Run(RunParams(TimeDelta::Seconds(kTestDurationSec)));
+  RunParams run_params(TimeDelta::Seconds(kTestDurationSec));
+  run_params.use_flex_fec = false;
+  run_params.use_ulp_fec = false;
+  fixture->Run(std::move(run_params));
 }
 
 TEST(PCFullStackTest, Pc_Vp9svc_3sl_Low) {
@@ -1372,7 +1458,10 @@ TEST(PCFullStackTest, Pc_Vp9svc_3sl_Low) {
                 {kVP9FmtpProfileId,
                  VP9ProfileToString(VP9Profile::kProfile0)}})});
       });
-  fixture->Run(RunParams(TimeDelta::Seconds(kTestDurationSec)));
+  RunParams run_params(TimeDelta::Seconds(kTestDurationSec));
+  run_params.use_flex_fec = false;
+  run_params.use_ulp_fec = false;
+  fixture->Run(std::move(run_params));
 }
 
 #endif  // defined(RTC_ENABLE_VP9)
@@ -1493,7 +1582,10 @@ TEST(PCFullStackTest, MAYBE_Pc_Simulcast_HD_High) {
         alice->AddVideoConfig(std::move(video));
       },
       [](PeerConfigurer* bob) {});
-  fixture->Run(RunParams(TimeDelta::Seconds(kTestDurationSec)));
+  RunParams run_params(TimeDelta::Seconds(kTestDurationSec));
+  run_params.use_flex_fec = false;
+  run_params.use_ulp_fec = false;
+  fixture->Run(std::move(run_params));
 }
 
 TEST(PCFullStackTest, Pc_Simulcast_Vp8_3sl_High) {
@@ -1515,7 +1607,10 @@ TEST(PCFullStackTest, Pc_Simulcast_Vp8_3sl_High) {
         alice->AddVideoConfig(std::move(video), std::move(frame_generator));
       },
       [](PeerConfigurer* bob) {});
-  fixture->Run(RunParams(TimeDelta::Seconds(kTestDurationSec)));
+  RunParams run_params(TimeDelta::Seconds(kTestDurationSec));
+  run_params.use_flex_fec = false;
+  run_params.use_ulp_fec = false;
+  fixture->Run(std::move(run_params));
 }
 
 TEST(PCFullStackTest, Pc_Simulcast_Vp8_3sl_Low) {
@@ -1536,7 +1631,10 @@ TEST(PCFullStackTest, Pc_Simulcast_Vp8_3sl_Low) {
         alice->AddVideoConfig(std::move(video), std::move(frame_generator));
       },
       [](PeerConfigurer* bob) {});
-  fixture->Run(RunParams(TimeDelta::Seconds(kTestDurationSec)));
+  RunParams run_params(TimeDelta::Seconds(kTestDurationSec));
+  run_params.use_flex_fec = false;
+  run_params.use_ulp_fec = false;
+  fixture->Run(std::move(run_params));
 }
 
 /*

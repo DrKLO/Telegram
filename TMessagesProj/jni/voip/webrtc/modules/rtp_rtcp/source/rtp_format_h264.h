@@ -23,6 +23,7 @@
 #include "modules/rtp_rtcp/source/rtp_packet_to_send.h"
 #include "modules/video_coding/codecs/h264/include/h264_globals.h"
 #include "rtc_base/buffer.h"
+#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -35,9 +36,6 @@ class RtpPacketizerH264 : public RtpPacketizer {
                     H264PacketizationMode packetization_mode);
 
   ~RtpPacketizerH264() override;
-
-  RtpPacketizerH264(const RtpPacketizerH264&) = delete;
-  RtpPacketizerH264& operator=(const RtpPacketizerH264&) = delete;
 
   size_t NumPackets() const override;
 
@@ -84,6 +82,8 @@ class RtpPacketizerH264 : public RtpPacketizer {
   size_t num_packets_left_;
   std::deque<rtc::ArrayView<const uint8_t>> input_fragments_;
   std::queue<PacketUnit> packets_;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(RtpPacketizerH264);
 };
 }  // namespace webrtc
 #endif  // MODULES_RTP_RTCP_SOURCE_RTP_FORMAT_H264_H_

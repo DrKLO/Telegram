@@ -25,7 +25,6 @@ enum class H264Profile {
   kProfileMain,
   kProfileConstrainedHigh,
   kProfileHigh,
-  kProfilePredictiveHigh444,
 };
 
 // All values are equal to ten times the level number, except level 1b which is

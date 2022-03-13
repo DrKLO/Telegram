@@ -24,7 +24,6 @@
 #include "call/audio_state.h"
 #include "media/base/codec.h"
 #include "media/base/media_channel.h"
-#include "media/base/media_config.h"
 #include "media/base/video_common.h"
 #include "rtc_base/system/file_wrapper.h"
 
@@ -64,9 +63,7 @@ class VoiceEngineInterface : public RtpHeaderExtensionQueryInterface {
  public:
   VoiceEngineInterface() = default;
   virtual ~VoiceEngineInterface() = default;
-
-  VoiceEngineInterface(const VoiceEngineInterface&) = delete;
-  VoiceEngineInterface& operator=(const VoiceEngineInterface&) = delete;
+  RTC_DISALLOW_COPY_AND_ASSIGN(VoiceEngineInterface);
 
   // Initialization
   // Starts the engine.
@@ -100,9 +97,7 @@ class VideoEngineInterface : public RtpHeaderExtensionQueryInterface {
  public:
   VideoEngineInterface() = default;
   virtual ~VideoEngineInterface() = default;
-
-  VideoEngineInterface(const VideoEngineInterface&) = delete;
-  VideoEngineInterface& operator=(const VideoEngineInterface&) = delete;
+  RTC_DISALLOW_COPY_AND_ASSIGN(VideoEngineInterface);
 
   // Creates a video media channel, paired with the specified voice channel.
   // Returns NULL on failure.

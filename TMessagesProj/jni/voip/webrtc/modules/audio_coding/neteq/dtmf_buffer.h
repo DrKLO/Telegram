@@ -16,6 +16,8 @@
 
 #include <list>
 
+#include "rtc_base/constructor_magic.h"
+
 namespace webrtc {
 
 struct DtmfEvent {
@@ -47,9 +49,6 @@ class DtmfBuffer {
   explicit DtmfBuffer(int fs_hz);
 
   virtual ~DtmfBuffer();
-
-  DtmfBuffer(const DtmfBuffer&) = delete;
-  DtmfBuffer& operator=(const DtmfBuffer&) = delete;
 
   // Flushes the buffer.
   virtual void Flush();
@@ -98,6 +97,8 @@ class DtmfBuffer {
   static bool CompareEvents(const DtmfEvent& a, const DtmfEvent& b);
 
   DtmfList buffer_;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(DtmfBuffer);
 };
 
 }  // namespace webrtc

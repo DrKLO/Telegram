@@ -10,7 +10,6 @@
 
 #include "pc/peer_connection_message_handler.h"
 
-#include <list>
 #include <utility>
 
 #include "api/jsep.h"

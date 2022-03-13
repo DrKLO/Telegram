@@ -184,13 +184,6 @@ class I444BufferInterface : public PlanarYuv8Buffer {
   int ChromaWidth() const final;
   int ChromaHeight() const final;
 
-  rtc::scoped_refptr<VideoFrameBuffer> CropAndScale(int offset_x,
-                                                    int offset_y,
-                                                    int crop_width,
-                                                    int crop_height,
-                                                    int scaled_width,
-                                                    int scaled_height) override;
-
  protected:
   ~I444BufferInterface() override {}
 };

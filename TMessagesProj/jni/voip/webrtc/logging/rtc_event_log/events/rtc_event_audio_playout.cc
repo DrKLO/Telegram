@@ -14,11 +14,6 @@
 
 namespace webrtc {
 
-constexpr RtcEventDefinition<RtcEventAudioPlayout,
-                             LoggedAudioPlayoutEvent,
-                             uint32_t>
-    RtcEventAudioPlayout::definition_;
-
 RtcEventAudioPlayout::RtcEventAudioPlayout(uint32_t ssrc) : ssrc_(ssrc) {}
 
 RtcEventAudioPlayout::RtcEventAudioPlayout(const RtcEventAudioPlayout& other)

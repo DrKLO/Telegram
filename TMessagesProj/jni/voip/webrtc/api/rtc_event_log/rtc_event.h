@@ -27,7 +27,7 @@ class RtcEvent {
   // of Type. This leaks the information of existing subclasses into the
   // superclass, but the *actual* information - rtclog::StreamConfig, etc. -
   // is kept separate.
-  enum class Type : uint32_t {
+  enum class Type {
     AlrStateEvent,
     RouteChangeEvent,
     RemoteEstimateEvent,
@@ -53,9 +53,7 @@ class RtcEvent {
     GenericPacketSent,
     GenericPacketReceived,
     GenericAckReceived,
-    FrameDecoded,
-    BeginV3Log = 0x2501580,
-    EndV3Log = 0x2501581
+    FrameDecoded
   };
 
   RtcEvent();
@@ -64,13 +62,6 @@ class RtcEvent {
   virtual Type GetType() const = 0;
 
   virtual bool IsConfigEvent() const = 0;
-
-  // Events are grouped by Type before being encoded.
-  // Optionally, `GetGroupKey` can be overloaded to group the
-  // events by a secondary key (in addition to the event type.)
-  // This can, in some cases, improve compression efficiency
-  // e.g. by grouping events by SSRC.
-  virtual uint32_t GetGroupKey() const { return 0; }
 
   int64_t timestamp_ms() const { return timestamp_us_ / 1000; }
   int64_t timestamp_us() const { return timestamp_us_; }

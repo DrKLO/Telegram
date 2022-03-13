@@ -938,20 +938,7 @@ public class ImageLoader {
                     }
                 }
                 if (firstFrameBitmap) {
-                    Bitmap bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
-                    Canvas canvas = new Canvas(bitmap);
-                    canvas.scale(2f, 2f, w / 2f, h / 2f);
-
-                    BitmapDrawable bitmapDrawable = null;
-                    lottieDrawable.setCurrentFrame(0, false, true);
-                    if (lottieDrawable.hasBitmap()) {
-                        lottieDrawable.draw(canvas);
-                        bitmapDrawable = new BitmapDrawable(bitmap);
-                    }
-                    AndroidUtilities.runOnUIThread(() -> {
-                        lottieDrawable.recycle();
-                    });
-                    onPostExecute(bitmapDrawable);
+                    loadFirstFrame(lottieDrawable, h, w);
                 } else {
                     lottieDrawable.setAutoRepeat(autoRepeat);
                     onPostExecute(lottieDrawable);
@@ -1466,6 +1453,27 @@ public class ImageLoader {
                     onPostExecute(image != null ? new BitmapDrawable(image) : null);
                 }
             }
+        }
+
+        private void loadFirstFrame(RLottieDrawable lottieDrawable, int w, int h) {
+            Bitmap bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(bitmap);
+            canvas.scale(2f, 2f, w / 2f, h / 2f);
+
+            AndroidUtilities.runOnUIThread(() -> {
+                lottieDrawable.setOnFrameReadyRunnable(() -> {
+                    lottieDrawable.setOnFrameReadyRunnable(null);
+                    BitmapDrawable bitmapDrawable = null;
+                    if (lottieDrawable.getBackgroundBitmap() != null || lottieDrawable.getRenderingBitmap() != null) {
+                        Bitmap currentBitmap = lottieDrawable.getBackgroundBitmap() != null ? lottieDrawable.getBackgroundBitmap() : lottieDrawable.getRenderingBitmap();
+                        canvas.drawBitmap(currentBitmap, 0, 0, null);
+                        bitmapDrawable = new BitmapDrawable(bitmap);
+                    }
+                    onPostExecute(bitmapDrawable);
+                    lottieDrawable.recycle();
+                });
+                lottieDrawable.setCurrentFrame(lottieDrawable.getFramesCount() - 1, false, true);
+            });
         }
 
         private void onPostExecute(final Drawable drawable) {

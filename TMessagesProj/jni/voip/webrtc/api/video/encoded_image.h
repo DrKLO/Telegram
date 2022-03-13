@@ -154,16 +154,6 @@ class RTC_EXPORT EncodedImage {
     return encoded_data_ ? encoded_data_->data() : nullptr;
   }
 
-  // Returns whether the encoded image can be considered to be of target
-  // quality.
-  bool IsAtTargetQuality() const { return at_target_quality_; }
-
-  // Sets that the encoded image can be considered to be of target quality to
-  // true or false.
-  void SetAtTargetQuality(bool at_target_quality) {
-    at_target_quality_ = at_target_quality;
-  }
-
   uint32_t _encodedWidth = 0;
   uint32_t _encodedHeight = 0;
   // NTP time of the capture time in local timebase in milliseconds.
@@ -210,8 +200,6 @@ class RTC_EXPORT EncodedImage {
   // https://w3c.github.io/webrtc-pc/#dom-rtcrtpreceiver-getcontributingsources
   RtpPacketInfos packet_infos_;
   bool retransmission_allowed_ = true;
-  // True if the encoded image can be considered to be of target quality.
-  bool at_target_quality_ = false;
 };
 
 }  // namespace webrtc

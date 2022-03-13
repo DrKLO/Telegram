@@ -102,8 +102,8 @@ void RtpVideoStreamReceiverFrameTransformerDelegate::TransformFrame(
 
 void RtpVideoStreamReceiverFrameTransformerDelegate::OnTransformedFrame(
     std::unique_ptr<TransformableFrameInterface> frame) {
-  rtc::scoped_refptr<RtpVideoStreamReceiverFrameTransformerDelegate> delegate(
-      this);
+  rtc::scoped_refptr<RtpVideoStreamReceiverFrameTransformerDelegate> delegate =
+      this;
   network_thread_->PostTask(ToQueuedTask(
       [delegate = std::move(delegate), frame = std::move(frame)]() mutable {
         delegate->ManageFrame(std::move(frame));

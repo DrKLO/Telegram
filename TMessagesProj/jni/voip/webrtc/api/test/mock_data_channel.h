@@ -22,8 +22,7 @@ class MockDataChannelInterface final
     : public rtc::RefCountedObject<webrtc::DataChannelInterface> {
  public:
   static rtc::scoped_refptr<MockDataChannelInterface> Create() {
-    return rtc::scoped_refptr<MockDataChannelInterface>(
-        new MockDataChannelInterface());
+    return new MockDataChannelInterface();
   }
 
   MOCK_METHOD(void,

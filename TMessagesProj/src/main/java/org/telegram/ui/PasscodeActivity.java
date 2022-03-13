@@ -693,6 +693,11 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
         return fragmentView;
     }
 
+    @Override
+    public boolean hasForceLightStatusBar() {
+        return type != TYPE_MANAGE_CODE_SETTINGS;
+    }
+
     /**
      * Sets custom keyboard visibility
      *

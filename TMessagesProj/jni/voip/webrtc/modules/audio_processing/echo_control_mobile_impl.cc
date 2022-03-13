@@ -18,6 +18,7 @@
 #include "modules/audio_processing/audio_buffer.h"
 #include "modules/audio_processing/include/audio_processing.h"
 #include "rtc_base/checks.h"
+#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -84,9 +85,6 @@ class EchoControlMobileImpl::Canceller {
     WebRtcAecm_Free(state_);
   }
 
-  Canceller(const Canceller&) = delete;
-  Canceller& operator=(const Canceller&) = delete;
-
   void* state() {
     RTC_DCHECK(state_);
     return state_;
@@ -100,6 +98,7 @@ class EchoControlMobileImpl::Canceller {
 
  private:
   void* state_;
+  RTC_DISALLOW_COPY_AND_ASSIGN(Canceller);
 };
 
 EchoControlMobileImpl::EchoControlMobileImpl()

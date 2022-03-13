@@ -1903,7 +1903,7 @@ public class AndroidUtilities {
 
     public static boolean isSmallScreen() {
         if (isSmallScreen == null) {
-            isSmallScreen = (Math.max(displaySize.x, displaySize.y) - statusBarHeight - navigationBarHeight) / density <= 610;
+            isSmallScreen = (Math.max(displaySize.x, displaySize.y) - statusBarHeight - navigationBarHeight) / density <= 650;
         }
         return isSmallScreen;
     }
@@ -4165,5 +4165,14 @@ public class AndroidUtilities {
             FileLog.e(e);
         }
         return null;
+    }
+
+    public static boolean isNumeric(String str) {
+        try {
+            Double.parseDouble(str);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
 }

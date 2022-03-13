@@ -225,6 +225,7 @@ class RTC_EXPORT RTCIceCandidateStats : public RTCStats {
   // TODO(hbos): Support enum types? "RTCStatsMember<RTCIceCandidateType>"?
   RTCStatsMember<std::string> candidate_type;
   RTCStatsMember<int32_t> priority;
+  // TODO(hbos): Not collected by `RTCStatsCollector`. crbug.com/632723
   RTCStatsMember<std::string> url;
 
  protected:

@@ -14,7 +14,6 @@
 #include <memory>
 
 #include "absl/types/optional.h"
-#include "api/array_view.h"
 #include "modules/audio_processing/agc/agc.h"
 #include "modules/audio_processing/agc/clipping_predictor.h"
 #include "modules/audio_processing/agc/clipping_predictor_evaluator.h"
@@ -48,6 +47,7 @@ class AgcManagerDirect final {
       int startup_min_level,
       int clipped_level_min,
       bool disable_digital_adaptive,
+      int sample_rate_hz,
       int clipped_level_step,
       float clipped_ratio_threshold,
       int clipped_wait_frames,
@@ -72,6 +72,7 @@ class AgcManagerDirect final {
   int stream_analog_level() const { return stream_analog_level_; }
   void set_stream_analog_level(int level);
   int num_channels() const { return num_capture_channels_; }
+  int sample_rate_hz() const { return sample_rate_hz_; }
 
   // If available, returns a new compression gain for the digital gain control.
   absl::optional<int> GetDigitalComressionGain();
@@ -116,6 +117,7 @@ class AgcManagerDirect final {
       Agc* agc,
       int startup_min_level,
       int clipped_level_min,
+      int sample_rate_hz,
       int clipped_level_step,
       float clipped_ratio_threshold,
       int clipped_wait_frames,
@@ -126,10 +128,10 @@ class AgcManagerDirect final {
 
   void AggregateChannelLevels();
 
-  const absl::optional<int> min_mic_level_override_;
   std::unique_ptr<ApmDataDumper> data_dumper_;
   static int instance_counter_;
   const bool use_min_channel_level_;
+  const int sample_rate_hz_;
   const int num_capture_channels_;
   const bool disable_digital_adaptive_;
 
@@ -169,7 +171,9 @@ class MonoAgc {
 
   void HandleClipping(int clipped_level_step);
 
-  void Process(rtc::ArrayView<const int16_t> audio);
+  void Process(const int16_t* audio,
+               size_t samples_per_channel,
+               int sample_rate_hz);
 
   void set_stream_analog_level(int level) { stream_analog_level_ = level; }
   int stream_analog_level() const { return stream_analog_level_; }

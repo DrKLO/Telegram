@@ -15,6 +15,7 @@
 #include <set>
 
 #include "rtc_base/async_udp_socket.h"
+#include "rtc_base/constructor_magic.h"
 #include "rtc_base/nat_types.h"
 #include "rtc_base/proxy_server.h"
 #include "rtc_base/socket_address_pair.h"
@@ -67,9 +68,6 @@ class NATServer : public sigslot::has_slots<> {
             SocketFactory* external,
             const SocketAddress& external_ip);
   ~NATServer() override;
-
-  NATServer(const NATServer&) = delete;
-  NATServer& operator=(const NATServer&) = delete;
 
   SocketAddress internal_udp_address() const {
     return udp_server_socket_->GetLocalAddress();
@@ -124,6 +122,7 @@ class NATServer : public sigslot::has_slots<> {
   ProxyServer* tcp_proxy_server_;
   InternalMap* int_map_;
   ExternalMap* ext_map_;
+  RTC_DISALLOW_COPY_AND_ASSIGN(NATServer);
 };
 
 }  // namespace rtc

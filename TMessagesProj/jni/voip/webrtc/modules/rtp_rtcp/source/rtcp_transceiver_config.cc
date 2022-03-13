@@ -48,13 +48,13 @@ bool RtcpTransceiverConfig::Validate() const {
     RTC_LOG(LS_ERROR) << debug_id << "outgoing transport must be set";
     return false;
   }
-  if (initial_report_delay < TimeDelta::Zero()) {
-    RTC_LOG(LS_ERROR) << debug_id << "delay " << initial_report_delay.ms()
+  if (initial_report_delay_ms < 0) {
+    RTC_LOG(LS_ERROR) << debug_id << "delay " << initial_report_delay_ms
                       << "ms before first report shouldn't be negative.";
     return false;
   }
-  if (report_period <= TimeDelta::Zero()) {
-    RTC_LOG(LS_ERROR) << debug_id << "period " << report_period.ms()
+  if (report_period_ms <= 0) {
+    RTC_LOG(LS_ERROR) << debug_id << "period " << report_period_ms
                       << "ms between reports should be positive.";
     return false;
   }

@@ -29,7 +29,9 @@
 
 namespace webrtc {
 class PacketRouter;
+class ProcessThread;
 class RtcEventLog;
+class RtpPacketReceived;
 class RtpStreamReceiverControllerInterface;
 class RtpStreamReceiverInterface;
 

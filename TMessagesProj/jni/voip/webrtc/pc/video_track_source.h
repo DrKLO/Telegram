@@ -20,10 +20,7 @@
 #include "api/video/video_sink_interface.h"
 #include "api/video/video_source_interface.h"
 #include "media/base/media_channel.h"
-#include "rtc_base/checks.h"
-#include "rtc_base/system/no_unique_address.h"
 #include "rtc_base/system/rtc_export.h"
-#include "rtc_base/thread_annotations.h"
 
 namespace webrtc {
 
@@ -34,10 +31,7 @@ class RTC_EXPORT VideoTrackSource : public Notifier<VideoTrackSourceInterface> {
   explicit VideoTrackSource(bool remote);
   void SetState(SourceState new_state);
 
-  SourceState state() const override {
-    RTC_DCHECK_RUN_ON(&signaling_thread_checker_);
-    return state_;
-  }
+  SourceState state() const override { return state_; }
   bool remote() const override { return remote_; }
 
   bool is_screencast() const override { return false; }
@@ -62,9 +56,8 @@ class RTC_EXPORT VideoTrackSource : public Notifier<VideoTrackSourceInterface> {
   virtual rtc::VideoSourceInterface<VideoFrame>* source() = 0;
 
  private:
-  RTC_NO_UNIQUE_ADDRESS SequenceChecker worker_thread_checker_;
-  RTC_NO_UNIQUE_ADDRESS SequenceChecker signaling_thread_checker_;
-  SourceState state_ RTC_GUARDED_BY(&signaling_thread_checker_);
+  SequenceChecker worker_thread_checker_;
+  SourceState state_;
   const bool remote_;
 };
 

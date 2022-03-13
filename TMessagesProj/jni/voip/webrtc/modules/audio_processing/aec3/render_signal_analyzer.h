@@ -20,6 +20,7 @@
 #include "modules/audio_processing/aec3/aec3_common.h"
 #include "modules/audio_processing/aec3/render_buffer.h"
 #include "rtc_base/checks.h"
+#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -28,9 +29,6 @@ class RenderSignalAnalyzer {
  public:
   explicit RenderSignalAnalyzer(const EchoCanceller3Config& config);
   ~RenderSignalAnalyzer();
-
-  RenderSignalAnalyzer(const RenderSignalAnalyzer&) = delete;
-  RenderSignalAnalyzer& operator=(const RenderSignalAnalyzer&) = delete;
 
   // Updates the render signal analysis with the most recent render signal.
   void Update(const RenderBuffer& render_buffer,
@@ -55,6 +53,8 @@ class RenderSignalAnalyzer {
   std::array<size_t, kFftLengthBy2 - 1> narrow_band_counters_;
   absl::optional<int> narrow_peak_band_;
   size_t narrow_peak_counter_;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(RenderSignalAnalyzer);
 };
 
 }  // namespace webrtc

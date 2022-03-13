@@ -28,7 +28,6 @@
 #include "logging/rtc_event_log/encoder/delta_encoding.h"
 #include "logging/rtc_event_log/encoder/rtc_event_log_encoder_common.h"
 #include "logging/rtc_event_log/encoder/var_int.h"
-#include "logging/rtc_event_log/events/logged_rtp_rtcp.h"
 #include "logging/rtc_event_log/rtc_event_processor.h"
 #include "modules/audio_coding/audio_network_adaptor/include/audio_network_adaptor.h"
 #include "modules/include/module_common_types_public.h"
@@ -52,12 +51,6 @@
   do {                                                                      \
     if (!(X))                                                               \
       return ParsedRtcEventLog::ParseStatus::Error(#X, __FILE__, __LINE__); \
-  } while (0)
-
-#define RTC_PARSE_CHECK_OR_RETURN_MESSAGE(X, M)                              \
-  do {                                                                       \
-    if (!(X))                                                                \
-      return ParsedRtcEventLog::ParseStatus::Error((M), __FILE__, __LINE__); \
   } while (0)
 
 #define RTC_PARSE_CHECK_OR_RETURN_OP(OP, X, Y)                          \
@@ -954,35 +947,6 @@ std::vector<RtpExtension> GetRuntimeRtpHeaderExtensionConfig(
 }
 // End of conversion functions.
 
-LoggedPacketInfo::LoggedPacketInfo(const LoggedRtpPacket& rtp,
-                                   LoggedMediaType media_type,
-                                   bool rtx,
-                                   Timestamp capture_time)
-    : ssrc(rtp.header.ssrc),
-      stream_seq_no(rtp.header.sequenceNumber),
-      size(static_cast<uint16_t>(rtp.total_length)),
-      payload_size(static_cast<uint16_t>(rtp.total_length -
-                                         rtp.header.paddingLength -
-                                         rtp.header.headerLength)),
-      padding_size(static_cast<uint16_t>(rtp.header.paddingLength)),
-      payload_type(rtp.header.payloadType),
-      media_type(media_type),
-      rtx(rtx),
-      marker_bit(rtp.header.markerBit),
-      has_transport_seq_no(rtp.header.extension.hasTransportSequenceNumber),
-      transport_seq_no(static_cast<uint16_t>(
-          has_transport_seq_no ? rtp.header.extension.transportSequenceNumber
-                               : 0)),
-      capture_time(capture_time),
-      log_packet_time(Timestamp::Micros(rtp.log_time_us())),
-      reported_send_time(rtp.header.extension.hasAbsoluteSendTime
-                             ? rtp.header.extension.GetAbsoluteSendTimestamp()
-                             : Timestamp::MinusInfinity()) {}
-
-LoggedPacketInfo::LoggedPacketInfo(const LoggedPacketInfo&) = default;
-
-LoggedPacketInfo::~LoggedPacketInfo() {}
-
 ParsedRtcEventLog::~ParsedRtcEventLog() = default;
 
 ParsedRtcEventLog::LoggedRtpStreamIncoming::LoggedRtpStreamIncoming() = default;
@@ -1112,8 +1076,8 @@ void ParsedRtcEventLog::Clear() {
 
   last_incoming_rtcp_packet_.clear();
 
-  first_timestamp_ = Timestamp::PlusInfinity();
-  last_timestamp_ = Timestamp::MinusInfinity();
+  first_timestamp_ = std::numeric_limits<int64_t>::max();
+  last_timestamp_ = std::numeric_limits<int64_t>::min();
   first_log_segment_ = LogSegment(0, std::numeric_limits<int64_t>::max());
 
   incoming_rtp_extensions_maps_.clear();
@@ -1234,8 +1198,8 @@ ParsedRtcEventLog::ParseStatus ParsedRtcEventLog::ParseStream(
   // stream configurations and starting/stopping the log.
   // TODO(terelius): Figure out if we actually need to find the first and last
   // timestamp in the parser. It seems like this could be done by the caller.
-  first_timestamp_ = Timestamp::PlusInfinity();
-  last_timestamp_ = Timestamp::MinusInfinity();
+  first_timestamp_ = std::numeric_limits<int64_t>::max();
+  last_timestamp_ = std::numeric_limits<int64_t>::min();
   StoreFirstAndLastTimestamp(alr_state_events());
   StoreFirstAndLastTimestamp(route_change_events());
   for (const auto& audio_stream : audio_playout_events()) {
@@ -1274,8 +1238,7 @@ ParsedRtcEventLog::ParseStatus ParsedRtcEventLog::ParseStream(
   // event, we could use the timestamp of the the last previous regular event.
   auto start_iter = start_log_events().begin();
   auto stop_iter = stop_log_events().begin();
-  int64_t start_us =
-      first_timestamp().us_or(std::numeric_limits<int64_t>::max());
+  int64_t start_us = first_timestamp();
   int64_t next_start_us = std::numeric_limits<int64_t>::max();
   int64_t stop_us = std::numeric_limits<int64_t>::max();
   if (start_iter != start_log_events().end()) {
@@ -1289,14 +1252,15 @@ ParsedRtcEventLog::ParseStatus ParsedRtcEventLog::ParseStream(
   }
   stop_us = std::min(stop_us, next_start_us);
   if (stop_us == std::numeric_limits<int64_t>::max() &&
-      !last_timestamp().IsMinusInfinity()) {
-    stop_us = last_timestamp().us();
+      last_timestamp() != std::numeric_limits<int64_t>::min()) {
+    stop_us = last_timestamp();
   }
   RTC_PARSE_CHECK_OR_RETURN_LE(start_us, stop_us);
   first_log_segment_ = LogSegment(start_us, stop_us);
 
-  if (first_timestamp_ > last_timestamp_) {
-    first_timestamp_ = last_timestamp_ = Timestamp::Zero();
+  if (first_timestamp_ == std::numeric_limits<int64_t>::max() &&
+      last_timestamp_ == std::numeric_limits<int64_t>::min()) {
+    first_timestamp_ = last_timestamp_ = 0;
   }
 
   return status;
@@ -1305,34 +1269,18 @@ ParsedRtcEventLog::ParseStatus ParsedRtcEventLog::ParseStream(
 ParsedRtcEventLog::ParseStatus ParsedRtcEventLog::ParseStreamInternal(
     absl::string_view s) {
   constexpr uint64_t kMaxEventSize = 10000000;  // Sanity check.
-  // Protobuf defines the message tag as
-  // (field_number << 3) | wire_type. In the legacy encoding, the field number
-  // is supposed to be 1 and the wire type for a length-delimited field is 2.
-  // In the new encoding we still expect the wire type to be 2, but the field
-  // number will be greater than 1.
-  constexpr uint64_t kExpectedV1Tag = (1 << 3) | 2;
-  bool success = false;
-
-  // "Peek" at the first varint.
-  absl::string_view event_start = s;
-  uint64_t tag = 0;
-  std::tie(success, std::ignore) = DecodeVarInt(s, &tag);
-  if (!success) {
-    RTC_LOG(LS_WARNING) << "Failed to read varint from beginning of event log.";
-    RTC_PARSE_WARN_AND_RETURN_SUCCESS_IF(allow_incomplete_logs_,
-                                         kIncompleteLogError);
-    return ParseStatus::Error("Failed to read field tag varint", __FILE__,
-                              __LINE__);
-  }
-  s = event_start;
-
-  if (tag >> 1 == static_cast<uint64_t>(RtcEvent::Type::BeginV3Log)) {
-    return ParseStreamInternalV3(s);
-  }
 
   while (!s.empty()) {
-    // If not, "reset" event_start and read the field tag for the next event.
-    event_start = s;
+    absl::string_view event_start = s;
+    bool success = false;
+
+    // Read the next message tag. Protobuf defines the message tag as
+    // (field_number << 3) | wire_type. In the legacy encoding, the field number
+    // is supposed to be 1 and the wire type for a length-delimited field is 2.
+    // In the new encoding we still expect the wire type to be 2, but the field
+    // number will be greater than 1.
+    constexpr uint64_t kExpectedV1Tag = (1 << 3) | 2;
+    uint64_t tag = 0;
     std::tie(success, s) = DecodeVarInt(s, &tag);
     if (!success) {
       RTC_LOG(LS_WARNING)
@@ -1342,7 +1290,6 @@ ParsedRtcEventLog::ParseStatus ParsedRtcEventLog::ParseStreamInternal(
       return ParseStatus::Error("Failed to read field tag varint", __FILE__,
                                 __LINE__);
     }
-
     constexpr uint64_t kWireTypeMask = 0x07;
     const uint64_t wire_type = tag & kWireTypeMask;
     if (wire_type != 2) {
@@ -1412,161 +1359,12 @@ ParsedRtcEventLog::ParseStatus ParsedRtcEventLog::ParseStreamInternal(
   return ParseStatus::Success();
 }
 
-ParsedRtcEventLog::ParseStatus ParsedRtcEventLog::ParseStreamInternalV3(
-    absl::string_view s) {
-  constexpr uint64_t kMaxEventSize = 10000000;  // Sanity check.
-  bool expect_begin_log_event = true;
-  bool success = false;
-
-  while (!s.empty()) {
-    // Read event type.
-    uint64_t event_tag = 0;
-    std::tie(success, s) = DecodeVarInt(s, &event_tag);
-    RTC_PARSE_CHECK_OR_RETURN_MESSAGE(success, "Failed to read event type.");
-    bool batched = event_tag & 1;
-    uint64_t event_type = event_tag >> 1;
-
-    // Read event size
-    uint64_t event_size_bytes = 0;
-    std::tie(success, s) = DecodeVarInt(s, &event_size_bytes);
-    RTC_PARSE_CHECK_OR_RETURN_MESSAGE(success, "Failed to read event size.");
-    if (event_size_bytes > kMaxEventSize || event_size_bytes > s.size()) {
-      RTC_LOG(LS_WARNING) << "Event size is too large.";
-      RTC_PARSE_CHECK_OR_RETURN_LE(event_size_bytes, kMaxEventSize);
-      RTC_PARSE_CHECK_OR_RETURN_LE(event_size_bytes, s.size());
-    }
-
-    // Read remaining event fields into a buffer.
-    absl::string_view event_fields = s.substr(0, event_size_bytes);
-    s = s.substr(event_size_bytes);
-
-    if (expect_begin_log_event) {
-      RTC_PARSE_CHECK_OR_RETURN_EQ(
-          event_type, static_cast<uint32_t>(RtcEvent::Type::BeginV3Log));
-      expect_begin_log_event = false;
-    }
-
-    switch (event_type) {
-      case static_cast<uint32_t>(RtcEvent::Type::BeginV3Log):
-        RtcEventBeginLog::Parse(event_fields, batched, start_log_events_);
-        break;
-      case static_cast<uint32_t>(RtcEvent::Type::EndV3Log):
-        RtcEventEndLog::Parse(event_fields, batched, stop_log_events_);
-        expect_begin_log_event = true;
-        break;
-      case static_cast<uint32_t>(RtcEvent::Type::AlrStateEvent):
-        RtcEventAlrState::Parse(event_fields, batched, alr_state_events_);
-        break;
-      case static_cast<uint32_t>(RtcEvent::Type::AudioPlayout):
-        RtcEventAudioPlayout::Parse(event_fields, batched,
-                                    audio_playout_events_);
-        break;
-      case static_cast<uint32_t>(RtcEvent::Type::BweUpdateDelayBased):
-        RtcEventBweUpdateDelayBased::Parse(event_fields, batched,
-                                           bwe_delay_updates_);
-        break;
-      case static_cast<uint32_t>(RtcEvent::Type::AudioNetworkAdaptation):
-        RtcEventAudioNetworkAdaptation::Parse(event_fields, batched,
-                                              audio_network_adaptation_events_);
-        break;
-      case static_cast<uint32_t>(RtcEvent::Type::AudioReceiveStreamConfig):
-        RtcEventAudioReceiveStreamConfig::Parse(event_fields, batched,
-                                                audio_recv_configs_);
-        break;
-      case static_cast<uint32_t>(RtcEvent::Type::AudioSendStreamConfig):
-        RtcEventAudioSendStreamConfig::Parse(event_fields, batched,
-                                             audio_send_configs_);
-        break;
-      case static_cast<uint32_t>(RtcEvent::Type::BweUpdateLossBased):
-        RtcEventBweUpdateLossBased::Parse(event_fields, batched,
-                                          bwe_loss_updates_);
-        break;
-      case static_cast<uint32_t>(RtcEvent::Type::DtlsTransportState):
-        RtcEventDtlsTransportState::Parse(event_fields, batched,
-                                          dtls_transport_states_);
-        break;
-      case static_cast<uint32_t>(RtcEvent::Type::DtlsWritableState):
-        RtcEventDtlsWritableState::Parse(event_fields, batched,
-                                         dtls_writable_states_);
-        break;
-      case static_cast<uint32_t>(RtcEvent::Type::FrameDecoded):
-        RtcEventFrameDecoded::Parse(event_fields, batched, decoded_frames_);
-        break;
-      case static_cast<uint32_t>(RtcEvent::Type::GenericAckReceived):
-        RtcEventGenericAckReceived::Parse(event_fields, batched,
-                                          generic_acks_received_);
-        break;
-      case static_cast<uint32_t>(RtcEvent::Type::GenericPacketReceived):
-        RtcEventGenericPacketReceived::Parse(event_fields, batched,
-                                             generic_packets_received_);
-        break;
-      case static_cast<uint32_t>(RtcEvent::Type::GenericPacketSent):
-        RtcEventGenericPacketSent::Parse(event_fields, batched,
-                                         generic_packets_sent_);
-        break;
-      case static_cast<uint32_t>(RtcEvent::Type::IceCandidatePairConfig):
-        RtcEventIceCandidatePairConfig::Parse(event_fields, batched,
-                                              ice_candidate_pair_configs_);
-        break;
-      case static_cast<uint32_t>(RtcEvent::Type::IceCandidatePairEvent):
-        RtcEventIceCandidatePair::Parse(event_fields, batched,
-                                        ice_candidate_pair_events_);
-        break;
-      case static_cast<uint32_t>(RtcEvent::Type::ProbeClusterCreated):
-        RtcEventProbeClusterCreated::Parse(event_fields, batched,
-                                           bwe_probe_cluster_created_events_);
-        break;
-      case static_cast<uint32_t>(RtcEvent::Type::ProbeResultFailure):
-        RtcEventProbeResultFailure::Parse(event_fields, batched,
-                                          bwe_probe_failure_events_);
-        break;
-      case static_cast<uint32_t>(RtcEvent::Type::ProbeResultSuccess):
-        RtcEventProbeResultSuccess::Parse(event_fields, batched,
-                                          bwe_probe_success_events_);
-        break;
-      case static_cast<uint32_t>(RtcEvent::Type::RemoteEstimateEvent):
-        RtcEventRemoteEstimate::Parse(event_fields, batched,
-                                      remote_estimate_events_);
-        break;
-      case static_cast<uint32_t>(RtcEvent::Type::RouteChangeEvent):
-        RtcEventRouteChange::Parse(event_fields, batched, route_change_events_);
-        break;
-      case static_cast<uint32_t>(RtcEvent::Type::RtcpPacketIncoming):
-        RtcEventRtcpPacketIncoming::Parse(event_fields, batched,
-                                          incoming_rtcp_packets_);
-        break;
-      case static_cast<uint32_t>(RtcEvent::Type::RtcpPacketOutgoing):
-        RtcEventRtcpPacketOutgoing::Parse(event_fields, batched,
-                                          outgoing_rtcp_packets_);
-        break;
-      case static_cast<uint32_t>(RtcEvent::Type::RtpPacketIncoming):
-        RtcEventRtpPacketIncoming::Parse(event_fields, batched,
-                                         incoming_rtp_packets_map_);
-        break;
-      case static_cast<uint32_t>(RtcEvent::Type::RtpPacketOutgoing):
-        RtcEventRtpPacketOutgoing::Parse(event_fields, batched,
-                                         outgoing_rtp_packets_map_);
-        break;
-      case static_cast<uint32_t>(RtcEvent::Type::VideoReceiveStreamConfig):
-        RtcEventVideoReceiveStreamConfig::Parse(event_fields, batched,
-                                                video_recv_configs_);
-        break;
-      case static_cast<uint32_t>(RtcEvent::Type::VideoSendStreamConfig):
-        RtcEventVideoSendStreamConfig::Parse(event_fields, batched,
-                                             video_send_configs_);
-        break;
-    }
-  }
-
-  return ParseStatus::Success();
-}
-
 template <typename T>
 void ParsedRtcEventLog::StoreFirstAndLastTimestamp(const std::vector<T>& v) {
   if (v.empty())
     return;
-  first_timestamp_ = std::min(first_timestamp_, v.front().log_time());
-  last_timestamp_ = std::max(last_timestamp_, v.back().log_time());
+  first_timestamp_ = std::min(first_timestamp_, v.front().log_time_us());
+  last_timestamp_ = std::max(last_timestamp_, v.back().log_time_us());
 }
 
 ParsedRtcEventLog::ParseStatus ParsedRtcEventLog::StoreParsedLegacyEvent(
@@ -1793,13 +1591,13 @@ const RtpHeaderExtensionMap* ParsedRtcEventLog::GetRtpHeaderExtensionMap(
   }
   if (parse_unconfigured_header_extensions_ ==
       UnconfiguredHeaderExtensions::kAttemptWebrtcDefaultConfig) {
-    RTC_DLOG(LS_WARNING) << "Using default header extension map for SSRC "
-                         << ssrc;
+    RTC_LOG(LS_WARNING) << "Using default header extension map for SSRC "
+                        << ssrc;
     extensions_maps.insert(std::make_pair(ssrc, default_extension_map_));
     return &default_extension_map_;
   }
-  RTC_DLOG(LS_WARNING) << "Not parsing header extensions for SSRC " << ssrc
-                       << ". No header extension map found.";
+  RTC_LOG(LS_WARNING) << "Not parsing header extensions for SSRC " << ssrc
+                      << ". No header extension map found.";
   return nullptr;
 }
 

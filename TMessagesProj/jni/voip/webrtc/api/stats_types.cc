@@ -648,7 +648,6 @@ const char* StatsReport::Value::display_name() const {
       return "googTrackId";
     case kStatsValueNameTimingFrameInfo:
       return "googTimingFrameInfo";
-    // TODO(bugs.webrtc.org/11226): Remove.
     case kStatsValueNameTypingNoiseState:
       return "googTypingNoiseState";
     case kStatsValueNameWritable:

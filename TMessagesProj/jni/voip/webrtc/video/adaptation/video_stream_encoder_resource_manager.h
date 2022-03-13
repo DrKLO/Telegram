@@ -213,8 +213,6 @@ class VideoStreamEncoderResourceManager
   const std::unique_ptr<InitialFrameDropper> initial_frame_dropper_
       RTC_GUARDED_BY(encoder_queue_);
   const bool quality_scaling_experiment_enabled_ RTC_GUARDED_BY(encoder_queue_);
-  const bool pixel_limit_resource_experiment_enabled_
-      RTC_GUARDED_BY(encoder_queue_);
   absl::optional<uint32_t> encoder_target_bitrate_bps_
       RTC_GUARDED_BY(encoder_queue_);
   absl::optional<VideoEncoder::RateControlParameters> encoder_rates_

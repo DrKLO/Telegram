@@ -248,7 +248,7 @@ int WebRtcAecm_ProcessBlock(AecmCore* aecm,
 //
 void WebRtcAecm_BufferFarFrame(AecmCore* const aecm,
                                const int16_t* const farend,
-                               int farLen);
+                               const int farLen);
 
 ////////////////////////////////////////////////////////////////////////////////
 // WebRtcAecm_FetchFarFrame()
@@ -263,8 +263,8 @@ void WebRtcAecm_BufferFarFrame(AecmCore* const aecm,
 //
 void WebRtcAecm_FetchFarFrame(AecmCore* const aecm,
                               int16_t* const farend,
-                              int farLen,
-                              int knownDelay);
+                              const int farLen,
+                              const int knownDelay);
 
 // All the functions below are intended to be private
 
@@ -339,8 +339,8 @@ int16_t WebRtcAecm_CalcSuppressionGain(AecmCore* const aecm);
 //
 void WebRtcAecm_CalcEnergies(AecmCore* aecm,
                              const uint16_t* far_spectrum,
-                             int16_t far_q,
-                             uint32_t nearEner,
+                             const int16_t far_q,
+                             const uint32_t nearEner,
                              int32_t* echoEst);
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -374,9 +374,9 @@ int16_t WebRtcAecm_CalcStepSize(AecmCore* const aecm);
 //
 void WebRtcAecm_UpdateChannel(AecmCore* aecm,
                               const uint16_t* far_spectrum,
-                              int16_t far_q,
+                              const int16_t far_q,
                               const uint16_t* const dfa,
-                              int16_t mu,
+                              const int16_t mu,
                               int32_t* echoEst);
 
 extern const int16_t WebRtcAecm_kCosTable[];

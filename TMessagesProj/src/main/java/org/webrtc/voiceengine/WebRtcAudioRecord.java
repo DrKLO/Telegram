@@ -197,7 +197,12 @@ public class WebRtcAudioRecord {
           // failed to join this thread. To be a bit safer, try to avoid calling any native methods
           // in case they've been unregistered after stopRecording() returned.
           if (keepAlive) {
-            nativeDataIsRecorded(bytesRead, nativeAudioRecord);
+            try {
+              nativeDataIsRecorded(bytesRead, nativeAudioRecord);
+            } catch (UnsatisfiedLinkError unsatisfiedLinkError) {
+              FileLog.e(unsatisfiedLinkError);
+              keepAlive = false;
+            }
           }
           if (audioSamplesReadyCallback != null) {
             // Copy the entire byte buffer array.  Assume that the start of the byteBuffer is

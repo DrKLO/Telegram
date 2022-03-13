@@ -17,6 +17,7 @@
 #include <string>
 #include <vector>
 
+#include "rtc_base/constructor_magic.h"
 #include "rtc_base/system/file_wrapper.h"
 
 namespace rtc {
@@ -35,9 +36,6 @@ class FileRotatingStream {
                      size_t num_files);
 
   virtual ~FileRotatingStream();
-
-  FileRotatingStream(const FileRotatingStream&) = delete;
-  FileRotatingStream& operator=(const FileRotatingStream&) = delete;
 
   bool IsOpen() const;
 
@@ -102,6 +100,8 @@ class FileRotatingStream {
   // buffering the file size read from disk might not be accurate.
   size_t current_bytes_written_;
   bool disable_buffering_;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(FileRotatingStream);
 };
 
 // CallSessionFileRotatingStream is meant to be used in situations where we will
@@ -130,10 +130,6 @@ class CallSessionFileRotatingStream : public FileRotatingStream {
                                 size_t max_total_log_size);
   ~CallSessionFileRotatingStream() override {}
 
-  CallSessionFileRotatingStream(const CallSessionFileRotatingStream&) = delete;
-  CallSessionFileRotatingStream& operator=(
-      const CallSessionFileRotatingStream&) = delete;
-
  protected:
   void OnRotation() override;
 
@@ -144,6 +140,8 @@ class CallSessionFileRotatingStream : public FileRotatingStream {
 
   const size_t max_total_log_size_;
   size_t num_rotations_;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(CallSessionFileRotatingStream);
 };
 
 // This is a convenience class, to read all files produced by a

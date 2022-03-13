@@ -18,6 +18,7 @@
 
 #include "rtc_base/buffer.h"
 #include "rtc_base/byte_order.h"
+#include "rtc_base/constructor_magic.h"
 
 // Reads/Writes from/to buffer using network byte order (big endian)
 namespace rtc {
@@ -27,9 +28,6 @@ class ByteBufferWriterT {
  public:
   ByteBufferWriterT() { Construct(nullptr, kDefaultCapacity); }
   ByteBufferWriterT(const char* bytes, size_t len) { Construct(bytes, len); }
-
-  ByteBufferWriterT(const ByteBufferWriterT&) = delete;
-  ByteBufferWriterT& operator=(const ByteBufferWriterT&) = delete;
 
   const char* Data() const { return buffer_.data(); }
   size_t Length() const { return buffer_.size(); }
@@ -106,6 +104,7 @@ class ByteBufferWriterT {
 
   // There are sensible ways to define these, but they aren't needed in our code
   // base.
+  RTC_DISALLOW_COPY_AND_ASSIGN(ByteBufferWriterT);
 };
 
 class ByteBufferWriter : public ByteBufferWriterT<BufferT<char>> {
@@ -113,8 +112,8 @@ class ByteBufferWriter : public ByteBufferWriterT<BufferT<char>> {
   ByteBufferWriter();
   ByteBufferWriter(const char* bytes, size_t len);
 
-  ByteBufferWriter(const ByteBufferWriter&) = delete;
-  ByteBufferWriter& operator=(const ByteBufferWriter&) = delete;
+ private:
+  RTC_DISALLOW_COPY_AND_ASSIGN(ByteBufferWriter);
 };
 
 // The ByteBufferReader references the passed data, i.e. the pointer must be
@@ -129,9 +128,6 @@ class ByteBufferReader {
   explicit ByteBufferReader(const Buffer& buf);
 
   explicit ByteBufferReader(const ByteBufferWriter& buf);
-
-  ByteBufferReader(const ByteBufferReader&) = delete;
-  ByteBufferReader& operator=(const ByteBufferReader&) = delete;
 
   // Returns start of unprocessed data.
   const char* Data() const { return bytes_ + start_; }
@@ -165,6 +161,9 @@ class ByteBufferReader {
   size_t size_;
   size_t start_;
   size_t end_;
+
+ private:
+  RTC_DISALLOW_COPY_AND_ASSIGN(ByteBufferReader);
 };
 
 }  // namespace rtc

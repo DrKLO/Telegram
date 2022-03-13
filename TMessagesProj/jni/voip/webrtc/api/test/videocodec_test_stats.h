@@ -101,11 +101,6 @@ class VideoCodecTestStats {
     float enc_speed_fps = 0.0f;
     float dec_speed_fps = 0.0f;
 
-    float avg_encode_latency_sec = 0.0f;
-    float max_encode_latency_sec = 0.0f;
-    float avg_decode_latency_sec = 0.0f;
-    float max_decode_latency_sec = 0.0f;
-
     float avg_delay_sec = 0.0f;
     float max_key_frame_delay_sec = 0.0f;
     float max_delta_frame_delay_sec = 0.0f;

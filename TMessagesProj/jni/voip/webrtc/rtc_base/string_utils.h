@@ -86,7 +86,7 @@ inline std::string ToUtf8(const std::wstring& wstr) {
 std::string string_trim(const std::string& s);
 
 // TODO(jonasolsson): replace with absl::Hex when that becomes available.
-std::string ToHex(int i);
+std::string ToHex(const int i);
 
 // CompileTimeString comprises of a string-like object which can be used as a
 // regular const char* in compile time and supports concatenation. Useful for

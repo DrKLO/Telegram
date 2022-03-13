@@ -15,6 +15,7 @@
 
 #include "absl/types/optional.h"
 #include "modules/audio_processing/aec3/clockdrift_detector.h"
+#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -22,10 +23,6 @@ namespace webrtc {
 class RenderDelayControllerMetrics {
  public:
   RenderDelayControllerMetrics();
-
-  RenderDelayControllerMetrics(const RenderDelayControllerMetrics&) = delete;
-  RenderDelayControllerMetrics& operator=(const RenderDelayControllerMetrics&) =
-      delete;
 
   // Updates the metric with new data.
   void Update(absl::optional<size_t> delay_samples,
@@ -49,6 +46,8 @@ class RenderDelayControllerMetrics {
   bool metrics_reported_ = false;
   bool initial_update = true;
   int skew_shift_count_ = 0;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(RenderDelayControllerMetrics);
 };
 
 }  // namespace webrtc

@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "modules/audio_coding/audio_network_adaptor/controller.h"
+#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -79,9 +80,6 @@ class ControllerManagerImpl final : public ControllerManager {
 
   ~ControllerManagerImpl() override;
 
-  ControllerManagerImpl(const ControllerManagerImpl&) = delete;
-  ControllerManagerImpl& operator=(const ControllerManagerImpl&) = delete;
-
   // Sort controllers based on their significance.
   std::vector<Controller*> GetSortedControllers(
       const Controller::NetworkMetrics& metrics) override;
@@ -116,6 +114,8 @@ class ControllerManagerImpl final : public ControllerManager {
   // `scoring_points_` saves the scoring points of various
   // controllers.
   std::map<const Controller*, ScoringPoint> controller_scoring_points_;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(ControllerManagerImpl);
 };
 
 }  // namespace webrtc

@@ -19,6 +19,7 @@
 #include "absl/types/optional.h"
 #include "modules/audio_coding/audio_network_adaptor/controller.h"
 #include "modules/audio_coding/audio_network_adaptor/include/audio_network_adaptor_config.h"
+#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -61,9 +62,6 @@ class FrameLengthController final : public Controller {
 
   ~FrameLengthController() override;
 
-  FrameLengthController(const FrameLengthController&) = delete;
-  FrameLengthController& operator=(const FrameLengthController&) = delete;
-
   void UpdateNetworkMetrics(const NetworkMetrics& network_metrics) override;
 
   void MakeDecision(AudioEncoderRuntimeConfig* config) override;
@@ -86,6 +84,8 @@ class FrameLengthController final : public Controller {
   // True if the previous frame length decision was an increase, otherwise
   // false.
   bool prev_decision_increase_ = false;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(FrameLengthController);
 };
 
 }  // namespace webrtc

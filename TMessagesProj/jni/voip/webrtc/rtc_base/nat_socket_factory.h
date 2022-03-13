@@ -17,6 +17,7 @@
 #include <memory>
 #include <set>
 
+#include "rtc_base/constructor_magic.h"
 #include "rtc_base/nat_server.h"
 #include "rtc_base/nat_types.h"
 #include "rtc_base/socket.h"
@@ -49,9 +50,6 @@ class NATSocketFactory : public SocketFactory, public NATInternalSocketFactory {
                    const SocketAddress& nat_udp_addr,
                    const SocketAddress& nat_tcp_addr);
 
-  NATSocketFactory(const NATSocketFactory&) = delete;
-  NATSocketFactory& operator=(const NATSocketFactory&) = delete;
-
   // SocketFactory implementation
   Socket* CreateSocket(int family, int type) override;
 
@@ -65,6 +63,7 @@ class NATSocketFactory : public SocketFactory, public NATInternalSocketFactory {
   SocketFactory* factory_;
   SocketAddress nat_udp_addr_;
   SocketAddress nat_tcp_addr_;
+  RTC_DISALLOW_COPY_AND_ASSIGN(NATSocketFactory);
 };
 
 // Creates sockets that will send traffic through a NAT depending on what
@@ -136,9 +135,6 @@ class NATSocketServer : public SocketServer, public NATInternalSocketFactory {
 
   explicit NATSocketServer(SocketServer* ss);
 
-  NATSocketServer(const NATSocketServer&) = delete;
-  NATSocketServer& operator=(const NATSocketServer&) = delete;
-
   SocketServer* socketserver() { return server_; }
   Thread* queue() { return msg_queue_; }
 
@@ -165,6 +161,7 @@ class NATSocketServer : public SocketServer, public NATInternalSocketFactory {
   SocketServer* server_;
   Thread* msg_queue_;
   TranslatorMap nats_;
+  RTC_DISALLOW_COPY_AND_ASSIGN(NATSocketServer);
 };
 
 // Free-standing NAT helper functions.

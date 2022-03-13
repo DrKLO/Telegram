@@ -38,9 +38,6 @@ class VideoSourceSinkController {
   void SetSource(rtc::VideoSourceInterface<VideoFrame>* source);
   bool HasSource() const;
 
-  // Requests a refresh frame from the current source, if set.
-  void RequestRefreshFrame();
-
   // Must be called in order for changes to settings to have an effect. This
   // allows you to modify multiple properties in a single push to the sink.
   void PushSourceSinkSettings();

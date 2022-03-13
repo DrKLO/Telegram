@@ -18,7 +18,6 @@
 #include <utility>
 #include <vector>
 
-#include "api/jsep.h"
 #include "api/peer_connection_interface.h"
 #include "api/sequence_checker.h"
 #include "pc/jsep_transport.h"

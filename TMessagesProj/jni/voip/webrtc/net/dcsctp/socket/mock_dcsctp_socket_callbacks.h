@@ -20,7 +20,6 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "api/array_view.h"
-#include "api/task_queue/task_queue_base.h"
 #include "net/dcsctp/public/dcsctp_message.h"
 #include "net/dcsctp/public/dcsctp_socket.h"
 #include "net/dcsctp/public/timeout.h"
@@ -88,9 +87,7 @@ class MockDcSctpSocketCallbacks : public DcSctpSocketCallbacks {
               (rtc::ArrayView<const uint8_t> data),
               (override));
 
-  std::unique_ptr<Timeout> CreateTimeout(
-      webrtc::TaskQueueBase::DelayPrecision precision) override {
-    // The fake timeout manager does not implement |precision|.
+  std::unique_ptr<Timeout> CreateTimeout() override {
     return timeout_manager_.CreateTimeout();
   }
 

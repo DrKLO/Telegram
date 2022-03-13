@@ -75,9 +75,6 @@ class MessageHandlerWithTask final : public MessageHandler {
  public:
   MessageHandlerWithTask() {}
 
-  MessageHandlerWithTask(const MessageHandlerWithTask&) = delete;
-  MessageHandlerWithTask& operator=(const MessageHandlerWithTask&) = delete;
-
   void OnMessage(Message* msg) override {
     static_cast<rtc_thread_internal::MessageLikeTask*>(msg->pdata)->Run();
     delete msg->pdata;
@@ -85,6 +82,8 @@ class MessageHandlerWithTask final : public MessageHandler {
 
  private:
   ~MessageHandlerWithTask() override {}
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(MessageHandlerWithTask);
 };
 
 class RTC_SCOPED_LOCKABLE MarkProcessingCritScope {
@@ -101,12 +100,11 @@ class RTC_SCOPED_LOCKABLE MarkProcessingCritScope {
     cs_->Leave();
   }
 
-  MarkProcessingCritScope(const MarkProcessingCritScope&) = delete;
-  MarkProcessingCritScope& operator=(const MarkProcessingCritScope&) = delete;
-
  private:
   const RecursiveCriticalSection* const cs_;
   size_t* processing_;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(MarkProcessingCritScope);
 };
 
 }  // namespace
@@ -255,11 +253,19 @@ Thread* Thread::Current() {
   ThreadManager* manager = ThreadManager::Instance();
   Thread* thread = manager->CurrentThread();
 
+#ifndef NO_MAIN_THREAD_WRAPPING
+  // Only autowrap the thread which instantiated the ThreadManager.
+  if (!thread && manager->IsMainThread()) {
+    thread = new Thread(CreateDefaultSocketServer());
+    thread->WrapCurrentWithThreadManager(manager, true);
+  }
+#endif
+
   return thread;
 }
 
 #if defined(WEBRTC_POSIX)
-ThreadManager::ThreadManager() {
+ThreadManager::ThreadManager() : main_thread_ref_(CurrentThreadRef()) {
 #if defined(WEBRTC_MAC)
   InitCocoaMultiThreading();
 #endif
@@ -276,7 +282,8 @@ void ThreadManager::SetCurrentThreadInternal(Thread* thread) {
 #endif
 
 #if defined(WEBRTC_WIN)
-ThreadManager::ThreadManager() : key_(TlsAlloc()) {}
+ThreadManager::ThreadManager()
+    : key_(TlsAlloc()), main_thread_ref_(CurrentThreadRef()) {}
 
 Thread* ThreadManager::CurrentThread() {
   return static_cast<Thread*>(TlsGetValue(key_));
@@ -330,6 +337,10 @@ void ThreadManager::UnwrapCurrentThread() {
     t->UnwrapCurrent();
     delete t;
   }
+}
+
+bool ThreadManager::IsMainThread() {
+  return IsThreadRefEqual(CurrentThreadRef(), main_thread_ref_);
 }
 
 Thread::ScopedDisallowBlockingCalls::ScopedDisallowBlockingCalls()
@@ -1096,16 +1107,10 @@ void Thread::PostTask(std::unique_ptr<webrtc::QueuedTask> task) {
 
 void Thread::PostDelayedTask(std::unique_ptr<webrtc::QueuedTask> task,
                              uint32_t milliseconds) {
-  // This implementation does not support low precision yet.
-  PostDelayedHighPrecisionTask(std::move(task), milliseconds);
-}
-
-void Thread::PostDelayedHighPrecisionTask(
-    std::unique_ptr<webrtc::QueuedTask> task,
-    uint32_t milliseconds) {
   // Though PostDelayed takes MessageData by raw pointer (last parameter),
   // it still takes it with ownership.
-  PostDelayed(RTC_FROM_HERE, milliseconds, &queued_task_handler_, /*id=*/0,
+  PostDelayed(RTC_FROM_HERE, milliseconds, &queued_task_handler_,
+              /*id=*/0,
               new ScopedMessageData<webrtc::QueuedTask>(std::move(task)));
 }
 
@@ -1223,6 +1228,11 @@ AutoSocketServerThread::AutoSocketServerThread(SocketServer* ss)
 
 AutoSocketServerThread::~AutoSocketServerThread() {
   RTC_DCHECK(ThreadManager::Instance()->CurrentThread() == this);
+  // Some tests post destroy messages to this thread. To avoid memory
+  // leaks, we have to process those messages. In particular
+  // P2PTransportChannelPingTest, relying on the message posted in
+  // cricket::Connection::Destroy.
+  ProcessMessages(0);
   // Stop and destroy the thread before clearing it as the current thread.
   // Sometimes there are messages left in the Thread that will be
   // destroyed by DoDestroy, and sometimes the destructors of the message and/or

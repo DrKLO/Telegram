@@ -12,9 +12,9 @@
 
 #include <ctype.h>
 #include <limits.h>
+#include <stdio.h>
 
 #include <algorithm>
-#include <cstddef>
 #include <cstdint>
 #include <map>
 #include <memory>
@@ -31,7 +31,6 @@
 #include "api/jsep_session_description.h"
 #include "api/media_types.h"
 // for RtpExtension
-#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "api/rtc_error.h"
 #include "api/rtp_parameters.h"

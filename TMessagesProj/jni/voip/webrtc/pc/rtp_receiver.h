@@ -42,27 +42,16 @@ namespace webrtc {
 // Internal class used by PeerConnection.
 class RtpReceiverInternal : public RtpReceiverInterface {
  public:
-  // Call on the signaling thread, to let the receiver know that the the
-  // embedded source object should enter a stopped/ended state and the track's
-  // state set to `kEnded`, a final state that cannot be reversed.
+  // Stops receiving. The track may be reactivated.
   virtual void Stop() = 0;
-
-  // Call on the signaling thread to set the source's state to `ended` before
-  // clearing the media channel (`SetMediaChannel(nullptr)`) on the worker
-  // thread.
-  // The difference between `Stop()` and `SetSourceEnded()` is that the latter
-  // does not change the state of the associated track.
-  // NOTE: Calling this function should be followed with a call to
-  // `SetMediaChannel(nullptr)` on the worker thread, to complete the operation.
-  virtual void SetSourceEnded() = 0;
+  // Stops the receiver permanently.
+  // Causes the associated track to enter kEnded state. Cannot be reversed.
+  virtual void StopAndEndTrack() = 0;
 
   // Sets the underlying MediaEngine channel associated with this RtpSender.
   // A VoiceMediaChannel should be used for audio RtpSenders and
   // a VideoMediaChannel should be used for video RtpSenders.
-  // NOTE:
-  // * SetMediaChannel(nullptr) must be called before the media channel is
-  //   destroyed.
-  // * This method must be invoked on the worker thread.
+  // Must call SetMediaChannel(nullptr) before the media channel is destroyed.
   virtual void SetMediaChannel(cricket::MediaChannel* media_channel) = 0;
 
   // Configures the RtpReceiver with the underlying media channel, with the

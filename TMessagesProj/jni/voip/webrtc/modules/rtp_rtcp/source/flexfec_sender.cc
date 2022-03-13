@@ -142,7 +142,7 @@ std::vector<std::unique_ptr<RtpPacketToSend>> FlexfecSender::GetFecPackets() {
                               clock_->TimeInMilliseconds()));
     // Set "capture time" so that the TransmissionOffset header extension
     // can be set by the RTPSender.
-    fec_packet_to_send->set_capture_time(clock_->CurrentTime());
+    fec_packet_to_send->set_capture_time_ms(clock_->TimeInMilliseconds());
     fec_packet_to_send->SetSsrc(ssrc_);
     // Reserve extensions, if registered. These will be set by the RTPSender.
     fec_packet_to_send->ReserveExtension<AbsoluteSendTime>();

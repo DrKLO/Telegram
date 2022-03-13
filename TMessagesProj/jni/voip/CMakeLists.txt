@@ -657,7 +657,6 @@ add_library(tgcalls STATIC
         voip/webrtc/api/video/video_adaptation_counters.cc
         voip/webrtc/api/video/video_frame_metadata.cc
         voip/webrtc/api/voip/voip_engine_factory.cc
-        voip/webrtc/api/video/i444_buffer.cc
         voip/webrtc/api/video/rtp_video_frame_assembler.cc
         voip/webrtc/api/numerics/samples_stats_counter.cc
         voip/webrtc/api/wrapping_async_dns_resolver.cc
@@ -1181,6 +1180,7 @@ add_library(tgcalls STATIC
         voip/webrtc/modules/audio_processing/vad/vad_audio_proc.cc
         voip/webrtc/modules/audio_processing/vad/vad_circular_buffer.cc
         voip/webrtc/modules/audio_processing/vad/voice_activity_detector.cc
+        voip/webrtc/modules/audio_processing/voice_detection.cc
         voip/webrtc/modules/audio_processing/optionally_built_submodule_creators.cc
         voip/webrtc/modules/audio_processing/capture_levels_adjuster/capture_levels_adjuster.cc
         voip/webrtc/modules/audio_processing/capture_levels_adjuster/audio_samples_scaler.cc
@@ -1327,7 +1327,7 @@ add_library(tgcalls STATIC
         voip/webrtc/modules/video_capture/video_capture_impl.cc
         voip/webrtc/modules/video_coding/codec_timer.cc
         voip/webrtc/modules/video_coding/codecs/av1/libaom_av1_decoder_absent.cc
-        voip/webrtc/modules/video_coding/codecs/av1/libaom_av1_encoder_supported.cc
+        voip/webrtc/modules/video_coding/codecs/av1/libaom_av1_encoder_absent.cc
         voip/webrtc/modules/video_coding/codecs/h264/h264.cc
         voip/webrtc/modules/video_coding/codecs/h264/h264_color_space.cc
         voip/webrtc/modules/video_coding/codecs/h264/h264_decoder_impl.cc
@@ -1409,7 +1409,6 @@ add_library(tgcalls STATIC
         voip/webrtc/modules/video_coding/codecs/av1/av1_svc_config.cc
         voip/webrtc/modules/video_coding/nack_requester.cc
         voip/webrtc/modules/video_coding/frame_buffer3.cc
-        voip/webrtc/modules/video_coding/frame_helpers.cc
         voip/webrtc/modules/video_coding/h264_packet_buffer.cc
         voip/webrtc/modules/video_processing/util/denoiser_filter.cc
         voip/webrtc/modules/video_processing/util/denoiser_filter_c.cc
@@ -1635,12 +1634,7 @@ add_library(tgcalls STATIC
         voip/webrtc/video/receive_statistics_proxy2.cc
         voip/webrtc/video/call_stats2.cc
         voip/webrtc/video/alignment_adjuster.cc
-        voip/webrtc/video/frame_buffer_proxy.cc
-        voip/webrtc/video/decode_synchronizer.cc
         voip/webrtc/video/frame_cadence_adapter.cc
-        voip/webrtc/video/frame_decode_timing.cc
-        voip/webrtc/video/task_queue_frame_decode_scheduler.cc
-        voip/webrtc/video/video_receive_stream_timeout_tracker.cc
         voip/webrtc/audio/audio_level.cc
         voip/webrtc/audio/audio_receive_stream.cc
         voip/webrtc/audio/audio_send_stream.cc
@@ -1786,7 +1780,7 @@ add_library(voipandroid STATIC
         voip/webrtc/sdk/android/native_api/video/wrapper.cc
         voip/webrtc/sdk/android/native_api/network_monitor/network_monitor.cc
         voip/webrtc/sdk/android/src/jni/android_histogram.cc
-        voip/webrtc/sdk/android/src/jni/libaom_av1_codec.cc
+        voip/webrtc/sdk/android/src/jni/av1_codec.cc
         voip/webrtc/sdk/android/src/jni/egl_base_10_impl.cc
         voip/webrtc/sdk/android/src/jni/android_metrics.cc
         voip/webrtc/sdk/android/src/jni/android_network_monitor.cc

@@ -35,6 +35,7 @@
 #include "modules/rtp_rtcp/source/rtp_format.h"
 #include "modules/rtp_rtcp/source/rtp_packet_to_send.h"
 #include "modules/video_coding/codecs/vp8/include/vp8_globals.h"
+#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -48,9 +49,6 @@ class RtpPacketizerVp8 : public RtpPacketizer {
                    const RTPVideoHeaderVP8& hdr_info);
 
   ~RtpPacketizerVp8() override;
-
-  RtpPacketizerVp8(const RtpPacketizerVp8&) = delete;
-  RtpPacketizerVp8& operator=(const RtpPacketizerVp8&) = delete;
 
   size_t NumPackets() const override;
 
@@ -68,6 +66,8 @@ class RtpPacketizerVp8 : public RtpPacketizer {
   rtc::ArrayView<const uint8_t> remaining_payload_;
   std::vector<int> payload_sizes_;
   std::vector<int>::const_iterator current_packet_;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(RtpPacketizerVp8);
 };
 
 }  // namespace webrtc

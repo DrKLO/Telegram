@@ -290,11 +290,6 @@ EchoCanceller3Config AdjustConfig(const EchoCanceller3Config& config) {
     adjusted_cfg.ep_strength.use_conservative_tail_frequency_response = true;
   }
 
-  if (field_trial::IsDisabled("WebRTC-Aec3ConservativeTailFreqResponse")) {
-    adjusted_cfg.ep_strength.use_conservative_tail_frequency_response = false;
-  }
-
-
   if (field_trial::IsEnabled("WebRTC-Aec3ShortHeadroomKillSwitch")) {
     // Two blocks headroom.
     adjusted_cfg.delay.delay_headroom_samples = kBlockSize * 2;

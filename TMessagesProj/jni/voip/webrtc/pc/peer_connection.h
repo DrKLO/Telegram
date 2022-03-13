@@ -116,7 +116,8 @@ namespace webrtc {
 // - The ICE state machine.
 // - Generating stats.
 class PeerConnection : public PeerConnectionInternal,
-                       public JsepTransportController::Observer {
+                       public JsepTransportController::Observer,
+                       public sigslot::has_slots<> {
  public:
   // Creates a PeerConnection and initializes it with the given values.
   // If the initialization fails, the function releases the PeerConnection
@@ -140,7 +141,8 @@ class PeerConnection : public PeerConnectionInternal,
   RTCErrorOr<rtc::scoped_refptr<RtpSenderInterface>> AddTrack(
       rtc::scoped_refptr<MediaStreamTrackInterface> track,
       const std::vector<std::string>& stream_ids) override;
-  RTCError RemoveTrackOrError(
+  bool RemoveTrack(RtpSenderInterface* sender) override;
+  RTCError RemoveTrackNew(
       rtc::scoped_refptr<RtpSenderInterface> sender) override;
 
   RTCErrorOr<rtc::scoped_refptr<RtpTransceiverInterface>> AddTransceiver(
@@ -185,9 +187,6 @@ class PeerConnection : public PeerConnectionInternal,
   SignalingState signaling_state() override;
 
   IceConnectionState ice_connection_state() override;
-  IceConnectionState ice_connection_state_internal() override {
-    return ice_connection_state();
-  }
   IceConnectionState standardized_ice_connection_state() override;
   PeerConnectionState peer_connection_state() override;
   IceGatheringState ice_gathering_state() override;
@@ -266,6 +265,7 @@ class PeerConnection : public PeerConnectionInternal,
     return context_->signaling_thread();
   }
 
+  // PeerConnectionInternal implementation.
   rtc::Thread* network_thread() const final {
     return context_->network_thread();
   }
@@ -277,7 +277,7 @@ class PeerConnection : public PeerConnectionInternal,
 
   bool initial_offerer() const override {
     RTC_DCHECK_RUN_ON(signaling_thread());
-    return sdp_handler_->initial_offerer();
+    return transport_controller_ && transport_controller_->initial_offerer();
   }
 
   std::vector<
@@ -312,81 +312,73 @@ class PeerConnection : public PeerConnectionInternal,
   bool GetSslRole(const std::string& content_name, rtc::SSLRole* role) override;
 
   // Functions needed by DataChannelController
-  void NoteDataAddedEvent() override { NoteUsageEvent(UsageEvent::DATA_ADDED); }
+  void NoteDataAddedEvent() { NoteUsageEvent(UsageEvent::DATA_ADDED); }
   // Returns the observer. Will crash on CHECK if the observer is removed.
-  PeerConnectionObserver* Observer() const override;
-  bool IsClosed() const override {
+  PeerConnectionObserver* Observer() const;
+  bool IsClosed() const {
     RTC_DCHECK_RUN_ON(signaling_thread());
     return !sdp_handler_ ||
            sdp_handler_->signaling_state() == PeerConnectionInterface::kClosed;
   }
   // Get current SSL role used by SCTP's underlying transport.
-  bool GetSctpSslRole(rtc::SSLRole* role) override;
+  bool GetSctpSslRole(rtc::SSLRole* role);
   // Handler for the "channel closed" signal
-  void OnSctpDataChannelClosed(DataChannelInterface* channel) override;
+  void OnSctpDataChannelClosed(DataChannelInterface* channel);
 
   bool ShouldFireNegotiationNeededEvent(uint32_t event_id) override;
 
   // Functions needed by SdpOfferAnswerHandler
-  StatsCollector* stats() override {
+  StatsCollector* stats() {
     RTC_DCHECK_RUN_ON(signaling_thread());
     return stats_.get();
   }
-  DataChannelController* data_channel_controller() override {
+  DataChannelController* data_channel_controller() {
     RTC_DCHECK_RUN_ON(signaling_thread());
     return &data_channel_controller_;
   }
-  bool dtls_enabled() const override {
+  bool dtls_enabled() const {
     RTC_DCHECK_RUN_ON(signaling_thread());
     return dtls_enabled_;
   }
-  const PeerConnectionInterface::RTCConfiguration* configuration()
-      const override {
+  const PeerConnectionInterface::RTCConfiguration* configuration() const {
     RTC_DCHECK_RUN_ON(signaling_thread());
     return &configuration_;
   }
-  PeerConnectionMessageHandler* message_handler() override {
+  PeerConnectionMessageHandler* message_handler() {
     RTC_DCHECK_RUN_ON(signaling_thread());
     return &message_handler_;
   }
 
-  RtpTransmissionManager* rtp_manager() override { return rtp_manager_.get(); }
-  const RtpTransmissionManager* rtp_manager() const override {
+  RtpTransmissionManager* rtp_manager() { return rtp_manager_.get(); }
+  const RtpTransmissionManager* rtp_manager() const {
     return rtp_manager_.get();
   }
-  cricket::ChannelManager* channel_manager();
+  cricket::ChannelManager* channel_manager() const;
 
-  JsepTransportController* transport_controller_s() override {
-    RTC_DCHECK_RUN_ON(signaling_thread());
-    return transport_controller_copy_;
-  }
-  JsepTransportController* transport_controller_n() override {
-    RTC_DCHECK_RUN_ON(network_thread());
+  JsepTransportController* transport_controller() {
     return transport_controller_.get();
   }
-  cricket::PortAllocator* port_allocator() override {
-    return port_allocator_.get();
-  }
-  Call* call_ptr() override { return call_ptr_; }
+  cricket::PortAllocator* port_allocator() { return port_allocator_.get(); }
+  Call* call_ptr() { return call_ptr_; }
 
   ConnectionContext* context() { return context_.get(); }
-  const PeerConnectionFactoryInterface::Options* options() const override {
+  const PeerConnectionFactoryInterface::Options* options() const {
     return &options_;
   }
-  void SetIceConnectionState(IceConnectionState new_state) override;
-  void NoteUsageEvent(UsageEvent event) override;
+  void SetIceConnectionState(IceConnectionState new_state);
+  void NoteUsageEvent(UsageEvent event);
 
   // Asynchronously adds a remote candidate on the network thread.
   void AddRemoteCandidate(const std::string& mid,
-                          const cricket::Candidate& candidate) override;
+                          const cricket::Candidate& candidate);
 
   // Report the UMA metric SdpFormatReceived for the given remote description.
   void ReportSdpFormatReceived(
-      const SessionDescriptionInterface& remote_description) override;
+      const SessionDescriptionInterface& remote_description);
 
   // Report the UMA metric BundleUsage for the given remote description.
   void ReportSdpBundleUsage(
-      const SessionDescriptionInterface& remote_description) override;
+      const SessionDescriptionInterface& remote_description);
 
   // Returns true if the PeerConnection is configured to use Unified Plan
   // semantics for creating offers/answers and setting local/remote
@@ -394,34 +386,34 @@ class PeerConnection : public PeerConnectionInternal,
   // to the user. If this is false, Plan B semantics are assumed.
   // TODO(bugs.webrtc.org/8530): Flip the default to be Unified Plan once
   // sufficient time has passed.
-  bool IsUnifiedPlan() const override {
+  bool IsUnifiedPlan() const {
     RTC_DCHECK_RUN_ON(signaling_thread());
     return is_unified_plan_;
   }
   bool ValidateBundleSettings(
       const cricket::SessionDescription* desc,
       const std::map<std::string, const cricket::ContentGroup*>&
-          bundle_groups_by_mid) override;
+          bundle_groups_by_mid);
 
   // Returns the MID for the data section associated with the
   // SCTP data channel, if it has been set. If no data
   // channels are configured this will return nullopt.
-  absl::optional<std::string> GetDataMid() const override;
+  absl::optional<std::string> GetDataMid() const;
 
-  void SetSctpDataMid(const std::string& mid) override;
+  void SetSctpDataMid(const std::string& mid);
 
-  void ResetSctpDataMid() override;
+  void ResetSctpDataMid();
 
   // Asynchronously calls SctpTransport::Start() on the network thread for
   // `sctp_mid()` if set. Called as part of setting the local description.
   void StartSctpTransport(int local_port,
                           int remote_port,
-                          int max_message_size) override;
+                          int max_message_size);
 
   // Returns the CryptoOptions for this PeerConnection. This will always
   // return the RTCConfiguration.crypto_options if set and will only default
   // back to the PeerConnectionFactory settings if nothing was set.
-  CryptoOptions GetCryptoOptions() override;
+  CryptoOptions GetCryptoOptions();
 
   // Internal implementation for AddTransceiver family of methods. If
   // `fire_callback` is set, fires OnRenegotiationNeeded callback if successful.
@@ -429,19 +421,19 @@ class PeerConnection : public PeerConnectionInternal,
       cricket::MediaType media_type,
       rtc::scoped_refptr<MediaStreamTrackInterface> track,
       const RtpTransceiverInit& init,
-      bool fire_callback = true) override;
+      bool fire_callback = true);
 
   // Returns rtp transport, result can not be nullptr.
   RtpTransportInternal* GetRtpTransport(const std::string& mid);
 
   // Returns true if SRTP (either using DTLS-SRTP or SDES) is required by
   // this session.
-  bool SrtpRequired() const override;
+  bool SrtpRequired() const;
 
-  bool SetupDataChannelTransport_n(const std::string& mid) override
+  bool SetupDataChannelTransport_n(const std::string& mid)
       RTC_RUN_ON(network_thread());
-  void TeardownDataChannelTransport_n() override RTC_RUN_ON(network_thread());
-  cricket::ChannelInterface* GetChannel(const std::string& mid)
+  void TeardownDataChannelTransport_n() RTC_RUN_ON(network_thread());
+  cricket::ChannelInterface* GetChannel(const std::string& content_name)
       RTC_RUN_ON(network_thread());
 
   // Functions made public for testing.
@@ -467,7 +459,7 @@ class PeerConnection : public PeerConnectionInternal,
   RTCError Initialize(
       const PeerConnectionInterface::RTCConfiguration& configuration,
       PeerConnectionDependencies dependencies);
-  JsepTransportController* InitializeTransportController_n(
+  void InitializeTransportController_n(
       const RTCConfiguration& configuration,
       const PeerConnectionDependencies& dependencies)
       RTC_RUN_ON(network_thread());
@@ -668,14 +660,9 @@ class PeerConnection : public PeerConnectionInternal,
 
   const std::string session_id_;
 
-  // The transport controller is set and used on the network thread.
-  // Some functions pass the value of the transport_controller_ pointer
-  // around as arguments while running on the signaling thread; these
-  // use the transport_controller_copy.
-  std::unique_ptr<JsepTransportController> transport_controller_
-      RTC_GUARDED_BY(network_thread());
-  JsepTransportController* transport_controller_copy_
-      RTC_GUARDED_BY(signaling_thread()) = nullptr;
+  std::unique_ptr<JsepTransportController>
+      transport_controller_;  // TODO(bugs.webrtc.org/9987): Accessed on both
+                              // signaling and network thread.
 
   // `sctp_mid_` is the content name (MID) in SDP.
   // Note: this is used as the data channel MID by both SCTP and data channel

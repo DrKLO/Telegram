@@ -437,8 +437,9 @@ public class ReactionsLayoutInBubble {
                 TLRPC.TL_availableReaction r = MediaDataController.getInstance(currentAccount).getReactionsMap().get(reaction);
                 if (r != null) {
                     SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(r.static_icon, Theme.key_windowBackgroundGray, 1.0f);
-                    imageReceiver.setImage(ImageLocation.getForDocument(r.center_icon), "40_40_firstframe", svgThumb, "webp", r, 1);
-                    imageReceiver.setImage(ImageLocation.getForDocument(r.center_icon), "40_40_firstframe", svgThumb, "webp", r, 1);
+                    imageReceiver.setImage(ImageLocation.getForDocument(r.static_icon), "40_40", svgThumb, "webp", r, 1);
+                    //TODO uncomment when fixed ImageLoader
+                    //imageReceiver.setImage(ImageLocation.getForDocument(r.center_icon), "40_40_firstframe", svgThumb, "webp", r, 1);
                 }
             }
 

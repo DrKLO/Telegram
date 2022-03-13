@@ -21,6 +21,7 @@
 #include "rtc_base/bit_buffer.h"
 #include "rtc_base/bitstream_reader.h"
 #include "rtc_base/checks.h"
+#include "rtc_base/constructor_magic.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/numerics/safe_conversions.h"
 
@@ -186,9 +187,6 @@ class FixedLengthDeltaEncoder final {
       absl::optional<uint64_t> base,
       const std::vector<absl::optional<uint64_t>>& values);
 
-  FixedLengthDeltaEncoder(const FixedLengthDeltaEncoder&) = delete;
-  FixedLengthDeltaEncoder& operator=(const FixedLengthDeltaEncoder&) = delete;
-
  private:
   // Calculate min/max values of unsigned/signed deltas, given the bit width
   // of all the values in the series.
@@ -251,6 +249,8 @@ class FixedLengthDeltaEncoder final {
   // ctor has finished running when this is constructed, so that the lower
   // bound on the buffer size would be guaranteed correct.
   std::unique_ptr<BitWriter> writer_;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(FixedLengthDeltaEncoder);
 };
 
 // TODO(eladalon): Reduce the number of passes.
@@ -566,9 +566,6 @@ class FixedLengthDeltaDecoder final {
       absl::optional<uint64_t> base,
       size_t num_of_deltas);
 
-  FixedLengthDeltaDecoder(const FixedLengthDeltaDecoder&) = delete;
-  FixedLengthDeltaDecoder& operator=(const FixedLengthDeltaDecoder&) = delete;
-
  private:
   // Reads the encoding header in `input` and returns a FixedLengthDeltaDecoder
   // with the corresponding configuration, that can be used to decode the
@@ -622,6 +619,8 @@ class FixedLengthDeltaDecoder final {
 
   // The number of values to be known to be decoded.
   const size_t num_of_deltas_;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(FixedLengthDeltaDecoder);
 };
 
 bool FixedLengthDeltaDecoder::IsSuitableDecoderFor(const std::string& input) {

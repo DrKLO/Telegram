@@ -32,7 +32,7 @@ class RtpRtcp;
 // TODO(nisse): Make these properties not codec specific.
 class RtpPayloadParams final {
  public:
-  RtpPayloadParams(uint32_t ssrc,
+  RtpPayloadParams(const uint32_t ssrc,
                    const RtpPayloadState* state,
                    const WebRtcKeyValueConfig& trials);
   RtpPayloadParams(const RtpPayloadParams& other);

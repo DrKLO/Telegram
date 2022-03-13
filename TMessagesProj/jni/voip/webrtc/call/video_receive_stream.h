@@ -191,10 +191,6 @@ class VideoReceiveStream : public MediaReceiveStream {
         bool receiver_reference_time_report = false;
       } rtcp_xr;
 
-      // How to request keyframes from a remote sender. Applies only if lntf is
-      // disabled.
-      KeyFrameReqMethod keyframe_method = KeyFrameReqMethod::kPliRtcp;
-
       // See LntfConfig for description.
       LntfConfig lntf;
 

@@ -122,12 +122,16 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable {
     private static ThreadPoolExecutor lottieCacheGenerateQueue;
 
     private Runnable onAnimationEndListener;
+    private Runnable onFrameReadyRunnable;
 
     protected Runnable uiRunnableNoFrame = new Runnable() {
         @Override
         public void run() {
             loadFrameTask = null;
             decodeFrameFinishedInternal();
+            if (onFrameReadyRunnable != null) {
+                onFrameReadyRunnable.run();
+            }
         }
     };
 
@@ -145,6 +149,9 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable {
             singleFrameDecoded = true;
             invalidateInternal();
             decodeFrameFinishedInternal();
+            if (onFrameReadyRunnable != null) {
+                onFrameReadyRunnable.run();
+            }
         }
     };
 
@@ -1086,5 +1093,9 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable {
 
     public boolean isGeneratingCache() {
         return cacheGenerateTask != null;
+    }
+
+    public void setOnFrameReadyRunnable(Runnable onFrameReadyRunnable) {
+        this.onFrameReadyRunnable = onFrameReadyRunnable;
     }
 }

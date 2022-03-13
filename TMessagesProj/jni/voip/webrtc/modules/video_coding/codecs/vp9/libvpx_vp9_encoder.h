@@ -29,7 +29,7 @@
 #include "modules/video_coding/svc/scalable_video_controller.h"
 #include "modules/video_coding/utility/framerate_controller_deprecated.h"
 #include "rtc_base/experiments/encoder_info_settings.h"
-#include <libvpx/vp8cx.h>
+#include "libvpx/vp8cx.h"
 
 namespace webrtc {
 
@@ -67,12 +67,14 @@ class LibvpxVp9Encoder : public VP9Encoder {
 
   bool PopulateCodecSpecific(CodecSpecificInfo* codec_specific,
                              absl::optional<int>* spatial_idx,
-                             const vpx_codec_cx_pkt& pkt);
+                             const vpx_codec_cx_pkt& pkt,
+                             uint32_t timestamp);
   void FillReferenceIndices(const vpx_codec_cx_pkt& pkt,
-                            size_t pic_num,
-                            bool inter_layer_predicted,
+                            const size_t pic_num,
+                            const bool inter_layer_predicted,
                             CodecSpecificInfoVP9* vp9_info);
-  void UpdateReferenceBuffers(const vpx_codec_cx_pkt& pkt, size_t pic_num);
+  void UpdateReferenceBuffers(const vpx_codec_cx_pkt& pkt,
+                              const size_t pic_num);
   vpx_svc_ref_frame_config_t SetReferences(
       bool is_key_pic,
       size_t first_active_spatial_layer_id);
@@ -106,7 +108,7 @@ class LibvpxVp9Encoder : public VP9Encoder {
 
   size_t SteadyStateSize(int sid, int tid);
 
-  void MaybeRewrapRawWithFormat(vpx_img_fmt fmt);
+  void MaybeRewrapRawWithFormat(const vpx_img_fmt fmt);
   // Prepares `raw_` to reference image data of `buffer`, or of mapped or scaled
   // versions of `buffer`. Returns the buffer that got referenced as a result,
   // allowing the caller to keep a reference to it until after encoding has

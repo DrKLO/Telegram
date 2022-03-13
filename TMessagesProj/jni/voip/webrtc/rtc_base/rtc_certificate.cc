@@ -13,7 +13,6 @@
 #include <memory>
 
 #include "rtc_base/checks.h"
-#include "rtc_base/ref_counted_object.h"
 #include "rtc_base/ssl_certificate.h"
 #include "rtc_base/ssl_identity.h"
 #include "rtc_base/time_utils.h"
@@ -22,9 +21,7 @@ namespace rtc {
 
 scoped_refptr<RTCCertificate> RTCCertificate::Create(
     std::unique_ptr<SSLIdentity> identity) {
-  // Explicit new to access proteced constructor.
-  return rtc::scoped_refptr<RTCCertificate>(
-      new RTCCertificate(identity.release()));
+  return new RTCCertificate(identity.release());
 }
 
 RTCCertificate::RTCCertificate(SSLIdentity* identity) : identity_(identity) {
@@ -64,7 +61,7 @@ scoped_refptr<RTCCertificate> RTCCertificate::FromPEM(
       SSLIdentity::CreateFromPEMStrings(pem.private_key(), pem.certificate()));
   if (!identity)
     return nullptr;
-  return RTCCertificate::Create(std::move(identity));
+  return new RTCCertificate(identity.release());
 }
 
 bool RTCCertificate::operator==(const RTCCertificate& certificate) const {

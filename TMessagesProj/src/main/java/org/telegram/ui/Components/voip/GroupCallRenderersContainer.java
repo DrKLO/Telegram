@@ -476,7 +476,7 @@ public class GroupCallRenderersContainer extends FrameLayout {
                     canvas.save();
                 }
                 boolean swipeToBack = swipeToBackGesture || swipeToBackAnimator != null;
-                if (swipeToBack) {
+                if (swipeToBack && !isRtmpStream()) {
                     canvas.clipRect(0, 0, getMeasuredWidth(), getMeasuredHeight() - ((isLandscapeMode || GroupCallActivity.isTabletMode) ? 0 : AndroidUtilities.dp(90)));
                 }
                 canvas.translate(fullscreenTextureView.getX(), fullscreenTextureView.getY());

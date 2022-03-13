@@ -12,6 +12,7 @@
 #define MODULES_AUDIO_CODING_CODECS_G722_AUDIO_DECODER_G722_H_
 
 #include "api/audio_codecs/audio_decoder.h"
+#include "rtc_base/constructor_magic.h"
 
 typedef struct WebRtcG722DecInst G722DecInst;
 
@@ -21,10 +22,6 @@ class AudioDecoderG722Impl final : public AudioDecoder {
  public:
   AudioDecoderG722Impl();
   ~AudioDecoderG722Impl() override;
-
-  AudioDecoderG722Impl(const AudioDecoderG722Impl&) = delete;
-  AudioDecoderG722Impl& operator=(const AudioDecoderG722Impl&) = delete;
-
   bool HasDecodePlc() const override;
   void Reset() override;
   std::vector<ParseResult> ParsePayload(rtc::Buffer&& payload,
@@ -42,22 +39,17 @@ class AudioDecoderG722Impl final : public AudioDecoder {
 
  private:
   G722DecInst* dec_state_;
+  RTC_DISALLOW_COPY_AND_ASSIGN(AudioDecoderG722Impl);
 };
 
 class AudioDecoderG722StereoImpl final : public AudioDecoder {
  public:
   AudioDecoderG722StereoImpl();
   ~AudioDecoderG722StereoImpl() override;
-
-  AudioDecoderG722StereoImpl(const AudioDecoderG722StereoImpl&) = delete;
-  AudioDecoderG722StereoImpl& operator=(const AudioDecoderG722StereoImpl&) =
-      delete;
-
   void Reset() override;
   std::vector<ParseResult> ParsePayload(rtc::Buffer&& payload,
                                         uint32_t timestamp) override;
   int SampleRateHz() const override;
-  int PacketDuration(const uint8_t* encoded, size_t encoded_len) const override;
   size_t Channels() const override;
 
  protected:
@@ -79,6 +71,7 @@ class AudioDecoderG722StereoImpl final : public AudioDecoder {
 
   G722DecInst* dec_state_left_;
   G722DecInst* dec_state_right_;
+  RTC_DISALLOW_COPY_AND_ASSIGN(AudioDecoderG722StereoImpl);
 };
 
 }  // namespace webrtc

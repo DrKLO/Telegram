@@ -12,16 +12,15 @@
 
 #include <stddef.h>
 
-#include <string>
 #include <utility>
 #include <vector>
 
 #include "api/video/recordable_encoded_frame.h"
+#include "api/video_track_source_proxy_factory.h"
 #include "pc/video_track.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/location.h"
 #include "rtc_base/logging.h"
-#include "rtc_base/ref_counted_object.h"
 
 namespace webrtc {
 
@@ -42,15 +41,20 @@ VideoRtpReceiver::VideoRtpReceiver(
       track_(VideoTrackProxyWithInternal<VideoTrack>::Create(
           rtc::Thread::Current(),
           worker_thread,
-          VideoTrack::Create(receiver_id, source_, worker_thread))),
+          VideoTrack::Create(receiver_id,
+                             CreateVideoTrackSourceProxy(rtc::Thread::Current(),
+                                                         worker_thread,
+                                                         source_),
+                             worker_thread))),
       attachment_id_(GenerateUniqueId()) {
   RTC_DCHECK(worker_thread_);
   SetStreams(streams);
-  RTC_DCHECK_EQ(source_->state(), MediaSourceInterface::kInitializing);
+  RTC_DCHECK_EQ(source_->state(), MediaSourceInterface::kLive);
 }
 
 VideoRtpReceiver::~VideoRtpReceiver() {
   RTC_DCHECK_RUN_ON(&signaling_thread_checker_);
+  RTC_DCHECK(stopped_);
   RTC_DCHECK(!media_channel_);
 }
 
@@ -110,66 +114,87 @@ void VideoRtpReceiver::SetDepacketizerToDecoderFrameTransformer(
 
 void VideoRtpReceiver::Stop() {
   RTC_DCHECK_RUN_ON(&signaling_thread_checker_);
-  source_->SetState(MediaSourceInterface::kEnded);
+  // TODO(deadbeef): Need to do more here to fully stop receiving packets.
+
+  if (!stopped_) {
+    source_->SetState(MediaSourceInterface::kEnded);
+    stopped_ = true;
+  }
+
+  worker_thread_->Invoke<void>(RTC_FROM_HERE, [&] {
+    RTC_DCHECK_RUN_ON(worker_thread_);
+    if (media_channel_) {
+      SetSink(nullptr);
+      SetMediaChannel_w(nullptr);
+    }
+    source_->ClearCallback();
+  });
+}
+
+void VideoRtpReceiver::StopAndEndTrack() {
+  RTC_DCHECK_RUN_ON(&signaling_thread_checker_);
+  Stop();
   track_->internal()->set_ended();
 }
 
-void VideoRtpReceiver::SetSourceEnded() {
-  RTC_DCHECK_RUN_ON(&signaling_thread_checker_);
-  source_->SetState(MediaSourceInterface::kEnded);
-}
-
-// RTC_RUN_ON(&signaling_thread_checker_)
 void VideoRtpReceiver::RestartMediaChannel(absl::optional<uint32_t> ssrc) {
-  MediaSourceInterface::SourceState state = source_->state();
+  RTC_DCHECK_RUN_ON(&signaling_thread_checker_);
+
+  // `stopped_` will be `true` on construction. RestartMediaChannel
+  // can in this case function like "ensure started" and flip `stopped_`
+  // to false.
+
   // TODO(tommi): Can we restart the media channel without blocking?
-  worker_thread_->Invoke<void>(RTC_FROM_HERE, [&] {
+  bool ok = worker_thread_->Invoke<bool>(RTC_FROM_HERE, [&, was_stopped =
+                                                                stopped_] {
     RTC_DCHECK_RUN_ON(worker_thread_);
-    RestartMediaChannel_w(std::move(ssrc), state);
-  });
-  source_->SetState(MediaSourceInterface::kLive);
-}
-
-// RTC_RUN_ON(worker_thread_)
-void VideoRtpReceiver::RestartMediaChannel_w(
-    absl::optional<uint32_t> ssrc,
-    MediaSourceInterface::SourceState state) {
-  if (!media_channel_) {
-    return;  // Can't restart.
-  }
-
-  const bool encoded_sink_enabled = saved_encoded_sink_enabled_;
-
-  if (state != MediaSourceInterface::kInitializing) {
-    if (ssrc == ssrc_)
-      return;
-
-    // Disconnect from a previous ssrc.
-    SetSink(nullptr);
-
-    if (encoded_sink_enabled)
-      SetEncodedSinkEnabled(false);
-  }
-
-  // Set up the new ssrc.
-  ssrc_ = std::move(ssrc);
-  SetSink(source_->sink());
-  if (encoded_sink_enabled) {
-    SetEncodedSinkEnabled(true);
-  }
-
-  if (frame_transformer_ && media_channel_) {
-    media_channel_->SetDepacketizerToDecoderFrameTransformer(
-        ssrc_.value_or(0), frame_transformer_);
-  }
-
-  if (media_channel_ && ssrc_) {
-    if (frame_decryptor_) {
-      media_channel_->SetFrameDecryptor(*ssrc_, frame_decryptor_);
+    if (!media_channel_) {
+      // Ignore further negotiations if we've already been stopped and don't
+      // have an associated media channel.
+      RTC_DCHECK(was_stopped);
+      return false;  // Can't restart.
     }
 
-    media_channel_->SetBaseMinimumPlayoutDelayMs(*ssrc_, delay_.GetMs());
-  }
+    if (!was_stopped && ssrc_ == ssrc) {
+      // Already running with that ssrc.
+      return true;
+    }
+
+    // Disconnect from the previous ssrc.
+    if (!was_stopped) {
+      SetSink(nullptr);
+    }
+
+    bool encoded_sink_enabled = saved_encoded_sink_enabled_;
+    SetEncodedSinkEnabled(false);
+
+    // Set up the new ssrc.
+    ssrc_ = std::move(ssrc);
+    SetSink(source_->sink());
+    if (encoded_sink_enabled) {
+      SetEncodedSinkEnabled(true);
+    }
+
+    if (frame_transformer_ && media_channel_) {
+      media_channel_->SetDepacketizerToDecoderFrameTransformer(
+          ssrc_.value_or(0), frame_transformer_);
+    }
+
+    if (media_channel_ && ssrc_) {
+      if (frame_decryptor_) {
+        media_channel_->SetFrameDecryptor(*ssrc_, frame_decryptor_);
+      }
+
+      media_channel_->SetBaseMinimumPlayoutDelayMs(*ssrc_, delay_.GetMs());
+    }
+
+    return true;
+  });
+
+  if (!ok)
+    return;
+
+  stopped_ = false;
 }
 
 // RTC_RUN_ON(worker_thread_)
@@ -259,21 +284,23 @@ void VideoRtpReceiver::SetJitterBufferMinimumDelay(
 }
 
 void VideoRtpReceiver::SetMediaChannel(cricket::MediaChannel* media_channel) {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(&signaling_thread_checker_);
   RTC_DCHECK(media_channel == nullptr ||
              media_channel->media_type() == media_type());
 
-  SetMediaChannel_w(media_channel);
+  if (stopped_ && !media_channel)
+    return;
+
+  worker_thread_->Invoke<void>(RTC_FROM_HERE, [&] {
+    RTC_DCHECK_RUN_ON(worker_thread_);
+    SetMediaChannel_w(media_channel);
+  });
 }
 
 // RTC_RUN_ON(worker_thread_)
 void VideoRtpReceiver::SetMediaChannel_w(cricket::MediaChannel* media_channel) {
   if (media_channel == media_channel_)
     return;
-
-  if (!media_channel) {
-    SetSink(nullptr);
-  }
 
   bool encoded_sink_enabled = saved_encoded_sink_enabled_;
   if (encoded_sink_enabled && media_channel_) {
@@ -297,9 +324,6 @@ void VideoRtpReceiver::SetMediaChannel_w(cricket::MediaChannel* media_channel) {
           ssrc_.value_or(0), frame_transformer_);
     }
   }
-
-  if (!media_channel)
-    source_->ClearCallback();
 }
 
 void VideoRtpReceiver::NotifyFirstPacketReceived() {
@@ -315,19 +339,6 @@ std::vector<RtpSource> VideoRtpReceiver::GetSources() const {
   if (!ssrc_ || !media_channel_)
     return std::vector<RtpSource>();
   return media_channel_->GetSources(*ssrc_);
-}
-
-void VideoRtpReceiver::SetupMediaChannel(absl::optional<uint32_t> ssrc,
-                                         cricket::MediaChannel* media_channel) {
-  RTC_DCHECK_RUN_ON(&signaling_thread_checker_);
-  RTC_DCHECK(media_channel);
-  MediaSourceInterface::SourceState state = source_->state();
-  worker_thread_->Invoke<void>(RTC_FROM_HERE, [&] {
-    RTC_DCHECK_RUN_ON(worker_thread_);
-    SetMediaChannel_w(media_channel);
-    RestartMediaChannel_w(std::move(ssrc), state);
-  });
-  source_->SetState(MediaSourceInterface::kLive);
 }
 
 void VideoRtpReceiver::OnGenerateKeyFrame() {

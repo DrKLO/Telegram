@@ -99,7 +99,7 @@ void PacketSequencer::UpdateLastPacketState(const RtpPacketToSend& packet) {
   // Save timestamps to generate timestamp field and extensions for the padding.
   last_rtp_timestamp_ = packet.Timestamp();
   last_timestamp_time_ms_ = clock_->TimeInMilliseconds();
-  last_capture_time_ms_ = packet.capture_time().ms();
+  last_capture_time_ms_ = packet.capture_time_ms();
 }
 
 void PacketSequencer::PopulatePaddingFields(RtpPacketToSend& packet) {
@@ -107,7 +107,7 @@ void PacketSequencer::PopulatePaddingFields(RtpPacketToSend& packet) {
     RTC_DCHECK(CanSendPaddingOnMediaSsrc());
 
     packet.SetTimestamp(last_rtp_timestamp_);
-    packet.set_capture_time(Timestamp::Millis(last_capture_time_ms_));
+    packet.set_capture_time_ms(last_capture_time_ms_);
     packet.SetPayloadType(last_payload_type_);
     return;
   }
@@ -119,7 +119,7 @@ void PacketSequencer::PopulatePaddingFields(RtpPacketToSend& packet) {
   }
 
   packet.SetTimestamp(last_rtp_timestamp_);
-  packet.set_capture_time(Timestamp::Millis(last_capture_time_ms_));
+  packet.set_capture_time_ms(last_capture_time_ms_);
 
   // Only change the timestamp of padding packets sent over RTX.
   // Padding only packets over RTP has to be sent as part of a media
@@ -129,10 +129,9 @@ void PacketSequencer::PopulatePaddingFields(RtpPacketToSend& packet) {
     packet.SetTimestamp(packet.Timestamp() +
                         (now_ms - last_timestamp_time_ms_) *
                             kTimestampTicksPerMs);
-    if (packet.capture_time() > Timestamp::Zero()) {
-      packet.set_capture_time(
-          packet.capture_time() +
-          TimeDelta::Millis(now_ms - last_timestamp_time_ms_));
+    if (packet.capture_time_ms() > 0) {
+      packet.set_capture_time_ms(packet.capture_time_ms() +
+                                 (now_ms - last_timestamp_time_ms_));
     }
   }
 }

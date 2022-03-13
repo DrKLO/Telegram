@@ -79,13 +79,13 @@ void RTCCertificateGenerator::GenerateCertificateAsync(
   // Create a new `RTCCertificateGenerationTask` for this generation request. It
   // is reference counted and referenced by the message data, ensuring it lives
   // until the task has completed (independent of `RTCCertificateGenerator`).
-  worker_thread_->PostTask([key_params, expires_ms,
-                            signaling_thread = signaling_thread_,
-                            cb = callback]() {
+  worker_thread_->PostTask(RTC_FROM_HERE, [key_params, expires_ms,
+                                           signaling_thread = signaling_thread_,
+                                           cb = callback]() {
     scoped_refptr<RTCCertificate> certificate =
         RTCCertificateGenerator::GenerateCertificate(key_params, expires_ms);
     signaling_thread->PostTask(
-        [cert = std::move(certificate), cb = std::move(cb)]() {
+        RTC_FROM_HERE, [cert = std::move(certificate), cb = std::move(cb)]() {
           cert ? cb->OnSuccess(cert) : cb->OnFailure();
         });
   });

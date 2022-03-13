@@ -90,8 +90,7 @@ class AudioRecordJni : public AudioInput {
   // the thread is 'AudioRecordThread'.
   void DataIsRecorded(JNIEnv* env,
                       const JavaParamRef<jobject>& j_caller,
-                      int length,
-                      int64_t capture_timestamp_ns);
+                      int length);
 
  private:
   // Stores thread ID in constructor.

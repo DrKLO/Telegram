@@ -54,6 +54,7 @@
 #include "absl/base/attributes.h"
 #include "absl/meta/type_traits.h"
 #include "absl/strings/string_view.h"
+#include "rtc_base/constructor_magic.h"
 #include "rtc_base/strings/string_builder.h"
 #include "rtc_base/system/inline.h"
 
@@ -88,6 +89,11 @@ enum LoggingSeverity {
   LS_WARNING,
   LS_ERROR,
   LS_NONE,
+  // Compatibility aliases, to be deleted.
+  // TODO(bugs.webrtc.org/13362): Remove usage and delete.
+  INFO [[deprecated("Use LS_INFO")]] = LS_INFO,
+  WARNING [[deprecated("Use LS_WARNING")]] = LS_WARNING,
+  LERROR [[deprecated("Use LS_ERROR")]] = LS_ERROR
 };
 
 // LogErrorContext assists in interpreting the meaning of an error value.
@@ -437,9 +443,6 @@ class LogMessage {
              const std::string& tag);
   ~LogMessage();
 
-  LogMessage(const LogMessage&) = delete;
-  LogMessage& operator=(const LogMessage&) = delete;
-
   void AddTag(const char* tag);
   rtc::StringBuilder& stream();
   // Returns the time at which this function was called for the first time.
@@ -599,6 +602,8 @@ class LogMessage {
 
   // The stringbuilder that buffers the formatted message before output
   rtc::StringBuilder print_stream_;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(LogMessage);
 };
 
 //////////////////////////////////////////////////////////////////////

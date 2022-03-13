@@ -65,7 +65,7 @@ bool IsLastFrameInTemporalUnit(const FrameIteratorT& it) {
 
 FrameBuffer::FrameBuffer(int max_size, int max_decode_history)
     : legacy_frame_id_jump_behavior_(
-          !field_trial::IsDisabled("WebRTC-LegacyFrameIdJumpBehavior")),
+          field_trial::IsEnabled("WebRTC-LegacyFrameIdJumpBehavior")),
       max_size_(max_size),
       decoded_frame_history_(max_decode_history) {}
 
@@ -175,10 +175,6 @@ int FrameBuffer::GetTotalNumberOfContinuousTemporalUnits() const {
 }
 int FrameBuffer::GetTotalNumberOfDroppedFrames() const {
   return num_dropped_frames_;
-}
-
-size_t FrameBuffer::CurrentSize() const {
-  return frames_.size();
 }
 
 bool FrameBuffer::IsContinuous(const FrameIterator& it) const {

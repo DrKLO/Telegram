@@ -18,6 +18,7 @@
 #include "modules/include/module.h"
 #include "modules/include/module_common_types.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
+#include "rtc_base/constructor_magic.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "system_wrappers/include/clock.h"
 
@@ -33,9 +34,6 @@ class CallStats : public Module, public RtcpRttStats {
 
   CallStats(Clock* clock, ProcessThread* process_thread);
   ~CallStats() override;
-
-  CallStats(const CallStats&) = delete;
-  CallStats& operator=(const CallStats&) = delete;
 
   // Registers/deregisters a new observer to receive statistics updates.
   // Must be called from the construction thread.
@@ -116,6 +114,8 @@ class CallStats : public Module, public RtcpRttStats {
   SequenceChecker process_thread_checker_;
   ProcessThread* const process_thread_;
   bool process_thread_running_ RTC_GUARDED_BY(construction_thread_checker_);
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(CallStats);
 };
 
 }  // namespace webrtc

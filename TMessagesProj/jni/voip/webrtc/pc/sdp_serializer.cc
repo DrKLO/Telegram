@@ -10,9 +10,9 @@
 
 #include "pc/sdp_serializer.h"
 
+#include <algorithm>
 #include <map>
 #include <string>
-#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -101,33 +101,33 @@ rtc::StringBuilder& operator<<(rtc::StringBuilder& builder,
 // sc-id        = [sc-id-paused] rid-id
 // rid-id       = 1*(alpha-numeric / "-" / "_") ; see: I-D.ietf-mmusic-rid
 RTCErrorOr<SimulcastLayerList> ParseSimulcastLayerList(const std::string& str) {
-  std::vector<absl::string_view> tokens =
-      rtc::split(str, kDelimiterSemicolonChar);
+  std::vector<std::string> tokens;
+  rtc::split(str, kDelimiterSemicolonChar, &tokens);
   if (tokens.empty()) {
     return ParseError("Layer list cannot be empty.");
   }
 
   SimulcastLayerList result;
-  for (const absl::string_view& token : tokens) {
+  for (const std::string& token : tokens) {
     if (token.empty()) {
       return ParseError("Simulcast alternative layer list is empty.");
     }
 
-    std::vector<absl::string_view> rid_tokens =
-        rtc::split(token, kDelimiterCommaChar);
+    std::vector<std::string> rid_tokens;
+    rtc::split(token, kDelimiterCommaChar, &rid_tokens);
 
     if (rid_tokens.empty()) {
       return ParseError("Simulcast alternative layer list is malformed.");
     }
 
     std::vector<SimulcastLayer> layers;
-    for (const absl::string_view& rid_token : rid_tokens) {
+    for (const std::string& rid_token : rid_tokens) {
       if (rid_token.empty() || rid_token == kSimulcastPausedStream) {
         return ParseError("Rid must not be empty.");
       }
 
       bool paused = rid_token[0] == kSimulcastPausedStreamChar;
-      absl::string_view rid = paused ? rid_token.substr(1) : rid_token;
+      std::string rid = paused ? rid_token.substr(1) : rid_token;
       layers.push_back(SimulcastLayer(rid, paused));
     }
 

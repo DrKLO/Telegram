@@ -190,7 +190,7 @@ class AudioCodingModule {
   //    0 if payload is successfully pushed in.
   //
   virtual int32_t IncomingPacket(const uint8_t* incoming_payload,
-                                 size_t payload_len_bytes,
+                                 const size_t payload_len_bytes,
                                  const RTPHeader& rtp_header) = 0;
 
   ///////////////////////////////////////////////////////////////////////////

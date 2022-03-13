@@ -363,12 +363,6 @@ std::string RtcEventLogEncoderLegacy::Encode(const RtcEvent& event) {
           static_cast<const RtcEventVideoSendStreamConfig&>(event);
       return EncodeVideoSendStreamConfig(rtc_event);
     }
-    case RtcEvent::Type::BeginV3Log:
-    case RtcEvent::Type::EndV3Log:
-      // These special events are written as part of starting
-      // and stopping the log, and only as part of version 3 of the format.
-      RTC_DCHECK_NOTREACHED();
-      break;
     case RtcEvent::Type::RouteChangeEvent:
     case RtcEvent::Type::RemoteEstimateEvent:
     case RtcEvent::Type::GenericPacketReceived:

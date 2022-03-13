@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "api/media_types.h"
+#include "modules/utility/include/process_thread.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
 #include "system_wrappers/include/clock.h"

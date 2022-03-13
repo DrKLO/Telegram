@@ -29,9 +29,7 @@
 #include "media/base/media_channel.h"
 #include "pc/channel_manager.h"
 #include "pc/rtp_receiver.h"
-#include "pc/rtp_receiver_proxy.h"
 #include "pc/rtp_sender.h"
-#include "pc/rtp_sender_proxy.h"
 #include "pc/rtp_transceiver.h"
 #include "pc/stats_collector_interface.h"
 #include "pc/transceiver_list.h"
@@ -52,7 +50,7 @@ namespace webrtc {
 struct RtpSenderInfo {
   RtpSenderInfo() : first_ssrc(0) {}
   RtpSenderInfo(const std::string& stream_id,
-                const std::string& sender_id,
+                const std::string sender_id,
                 uint32_t ssrc)
       : stream_id(stream_id), sender_id(sender_id), first_ssrc(ssrc) {}
   bool operator==(const RtpSenderInfo& other) {
@@ -186,7 +184,7 @@ class RtpTransmissionManager : public RtpSenderBase::SetStreamsObserver {
       cricket::MediaType media_type);
   const RtpSenderInfo* FindSenderInfo(const std::vector<RtpSenderInfo>& infos,
                                       const std::string& stream_id,
-                                      const std::string& sender_id) const;
+                                      const std::string sender_id) const;
 
   // Return the RtpSender with the given track attached.
   rtc::scoped_refptr<RtpSenderProxyWithInternal<RtpSenderInternal>>

@@ -209,6 +209,7 @@ struct InstanceHolder {
     std::unique_ptr<GroupInstanceCustomImpl> groupNativeInstance;
     std::shared_ptr<tgcalls::VideoCaptureInterface> _videoCapture;
     std::shared_ptr<tgcalls::VideoCaptureInterface> _screenVideoCapture;
+    std::shared_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> _sink;
     std::shared_ptr<PlatformContext> _platformContext;
     std::map<std::string, SetVideoSink> remoteGroupSinks;
     bool useScreencast = false;
@@ -754,7 +755,8 @@ JNIEXPORT jlong JNICALL Java_org_telegram_messenger_voip_NativeInstance_makeNati
     holder->nativeInstance = tgcalls::Meta::Create(v, std::move(descriptor));
     holder->_videoCapture = videoCapture;
     holder->_platformContext = platformContext;
-    holder->nativeInstance->setIncomingVideoOutput(webrtc::JavaToNativeVideoSink(env, remoteSink));
+    holder->_sink = webrtc::JavaToNativeVideoSink(env, remoteSink);
+    holder->nativeInstance->setIncomingVideoOutput(holder->_sink);
     holder->nativeInstance->setNetworkType(parseNetworkType(networkType));
     holder->nativeInstance->setRequestedVideoAspect(aspectRatio);
     return reinterpret_cast<jlong>(holder);

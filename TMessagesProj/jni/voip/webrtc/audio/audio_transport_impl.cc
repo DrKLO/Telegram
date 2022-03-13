@@ -102,23 +102,6 @@ AudioTransportImpl::AudioTransportImpl(
 
 AudioTransportImpl::~AudioTransportImpl() {}
 
-int32_t AudioTransportImpl::RecordedDataIsAvailable(
-    const void* audio_data,
-    const size_t number_of_frames,
-    const size_t bytes_per_sample,
-    const size_t number_of_channels,
-    const uint32_t sample_rate,
-    const uint32_t audio_delay_milliseconds,
-    const int32_t clock_drift,
-    const uint32_t volume,
-    const bool key_pressed,
-    uint32_t& new_mic_volume) {  // NOLINT: to avoid changing APIs
-  return RecordedDataIsAvailable(
-      audio_data, number_of_frames, bytes_per_sample, number_of_channels,
-      sample_rate, audio_delay_milliseconds, clock_drift, volume, key_pressed,
-      new_mic_volume, /* estimated_capture_time_ns */ 0);
-}
-
 // Not used in Chromium. Process captured audio and distribute to all sending
 // streams, and try to do this at the lowest possible sample rate.
 int32_t AudioTransportImpl::RecordedDataIsAvailable(
@@ -131,9 +114,7 @@ int32_t AudioTransportImpl::RecordedDataIsAvailable(
     const int32_t /*clock_drift*/,
     const uint32_t /*volume*/,
     const bool key_pressed,
-    uint32_t& /*new_mic_volume*/,
-    const int64_t
-        estimated_capture_time_ns) {  // NOLINT: to avoid changing APIs
+    uint32_t& /*new_mic_volume*/) {  // NOLINT: to avoid changing APIs
   RTC_DCHECK(audio_data);
   RTC_DCHECK_GE(number_of_channels, 1);
   RTC_DCHECK_LE(number_of_channels, 2);
@@ -163,8 +144,25 @@ int32_t AudioTransportImpl::RecordedDataIsAvailable(
   ProcessCaptureFrame(audio_delay_milliseconds, key_pressed,
                       swap_stereo_channels, audio_processing_,
                       audio_frame.get());
-  audio_frame->set_absolute_capture_timestamp_ms(estimated_capture_time_ns /
-                                                 1000000);
+
+  // Typing detection (utilizes the APM/VAD decision). We let the VAD determine
+  // if we're using this feature or not.
+  // TODO(solenberg): GetConfig() takes a lock. Work around that.
+  bool typing_detected = false;
+  if (audio_processing_ &&
+      audio_processing_->GetConfig().voice_detection.enabled) {
+    if (audio_frame->vad_activity_ != AudioFrame::kVadUnknown) {
+      bool vad_active = audio_frame->vad_activity_ == AudioFrame::kVadActive;
+      typing_detected = typing_detection_.Process(key_pressed, vad_active);
+    }
+  }
+
+  // Copy frame and push to each sending stream. The copy is required since an
+  // encoding task will be posted internally to each stream.
+  {
+    MutexLock lock(&capture_lock_);
+    typing_noise_detected_ = typing_detected;
+  }
 
   RTC_DCHECK_GT(audio_frame->samples_per_channel_, 0);
   if (async_audio_processing_)
@@ -272,4 +270,8 @@ void AudioTransportImpl::SetStereoChannelSwapping(bool enable) {
   swap_stereo_channels_ = enable;
 }
 
+bool AudioTransportImpl::typing_noise_detected() const {
+  MutexLock lock(&capture_lock_);
+  return typing_noise_detected_;
+}
 }  // namespace webrtc

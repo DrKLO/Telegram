@@ -20,7 +20,6 @@
 #include "p2p/base/port.h"
 #include "rtc_base/async_packet_socket.h"
 #include "rtc_base/containers/flat_map.h"
-#include "rtc_base/task_utils/pending_task_safety_flag.h"
 
 namespace cricket {
 
@@ -136,6 +135,8 @@ class TCPConnection : public Connection {
 
   rtc::AsyncPacketSocket* socket() { return socket_.get(); }
 
+  void OnMessage(rtc::Message* pmsg) override;
+
   // Allow test cases to overwrite the default timeout period.
   int reconnection_timeout() const { return reconnection_timeout_; }
   void set_reconnection_timeout(int timeout_in_ms) {
@@ -143,6 +144,11 @@ class TCPConnection : public Connection {
   }
 
  protected:
+  enum {
+    MSG_TCPCONNECTION_DELAYED_ONCLOSE = Connection::MSG_FIRST_AVAILABLE,
+    MSG_TCPCONNECTION_FAILED_CREATE_SOCKET,
+  };
+
   // Set waiting_for_stun_binding_complete_ to false to allow data packets in
   // addition to what Port::OnConnectionRequestResponse does.
   void OnConnectionRequestResponse(ConnectionRequest* req,
@@ -183,8 +189,6 @@ class TCPConnection : public Connection {
 
   // Allow test case to overwrite the default timeout period.
   int reconnection_timeout_;
-
-  webrtc::ScopedTaskSafety network_safety_;
 
   friend class TCPPort;
 };

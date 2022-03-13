@@ -19,6 +19,7 @@
 #include "api/video/video_source_interface.h"
 #include "common_video/framerate_controller.h"
 #include "media/base/video_common.h"
+#include "rtc_base/constructor_magic.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/system/rtc_export.h"
 #include "rtc_base/thread_annotations.h"
@@ -36,9 +37,6 @@ class RTC_EXPORT VideoAdapter {
   // by `source_resolution_alignment`.
   explicit VideoAdapter(int source_resolution_alignment);
   virtual ~VideoAdapter();
-
-  VideoAdapter(const VideoAdapter&) = delete;
-  VideoAdapter& operator=(const VideoAdapter&) = delete;
 
   // Return the adapted resolution and cropping parameters given the
   // input resolution. The input frame should first be cropped, then
@@ -148,6 +146,8 @@ class RTC_EXPORT VideoAdapter {
 
   // The critical section to protect the above variables.
   mutable webrtc::Mutex mutex_;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(VideoAdapter);
 };
 
 }  // namespace cricket

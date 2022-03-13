@@ -862,9 +862,10 @@ void TurnPort::OnAllocateSuccess(const rtc::SocketAddress& address,
              related_address,  // Related address.
              UDP_PROTOCOL_NAME,
              ProtoToString(server_address_.proto),  // The first hop protocol.
-             "",  // TCP candidate type, empty for turn candidates.
+             "",  // TCP canddiate type, empty for turn candidates.
              RELAY_PORT_TYPE, GetRelayPreference(server_address_.proto),
-             server_priority_, ReconstructedServerUrl(), true);
+             server_priority_, ReconstructedServerUrl(false /* use_hostname */),
+             true);
 }
 
 void TurnPort::OnAllocateError(int error_code, const std::string& reason) {
@@ -880,8 +881,9 @@ void TurnPort::OnAllocateError(int error_code, const std::string& reason) {
     port = 0;
   }
   SignalCandidateError(
-      this, IceCandidateErrorEvent(address, port, ReconstructedServerUrl(),
-                                   error_code, reason));
+      this, IceCandidateErrorEvent(
+                address, port, ReconstructedServerUrl(true /* use_hostname */),
+                error_code, reason));
 }
 
 void TurnPort::OnRefreshError() {
@@ -920,7 +922,9 @@ void TurnPort::Close() {
   // Stop the port from creating new connections.
   state_ = STATE_DISCONNECTED;
   // Delete all existing connections; stop sending data.
-  DestroyAllConnections();
+  for (auto kv : connections()) {
+    kv.second->Destroy();
+  }
 
   SignalTurnPortClosed(this);
 }
@@ -1268,6 +1272,10 @@ void TurnPort::HandleConnectionDestroyed(Connection* conn) {
   const rtc::SocketAddress& remote_address = conn->remote_candidate().address();
   TurnEntry* entry = FindEntry(remote_address);
   RTC_DCHECK(entry != NULL);
+  ScheduleEntryDestruction(entry);
+}
+
+void TurnPort::ScheduleEntryDestruction(TurnEntry* entry) {
   RTC_DCHECK(!entry->destruction_timestamp().has_value());
   int64_t timestamp = rtc::TimeMillis();
   entry->set_destruction_timestamp(timestamp);
@@ -1289,7 +1297,7 @@ bool TurnPort::SetEntryChannelId(const rtc::SocketAddress& address,
   return true;
 }
 
-std::string TurnPort::ReconstructedServerUrl() {
+std::string TurnPort::ReconstructedServerUrl(bool use_hostname) {
   // draft-petithuguenin-behave-turn-uris-01
   // turnURI       = scheme ":" turn-host [ ":" turn-port ]
   //                 [ "?transport=" transport ]
@@ -1312,8 +1320,10 @@ std::string TurnPort::ReconstructedServerUrl() {
       break;
   }
   rtc::StringBuilder url;
-  url << scheme << ":" << server_address_.address.hostname() << ":"
-      << server_address_.address.port() << "?transport=" << transport;
+  url << scheme << ":"
+      << (use_hostname ? server_address_.address.hostname()
+                       : server_address_.address.ipaddr().ToString())
+      << ":" << server_address_.address.port() << "?transport=" << transport;
   return url.Release();
 }
 

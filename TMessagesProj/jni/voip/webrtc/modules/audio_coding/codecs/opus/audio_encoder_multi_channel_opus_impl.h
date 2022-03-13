@@ -21,6 +21,7 @@
 #include "api/audio_codecs/opus/audio_encoder_multi_channel_opus_config.h"
 #include "api/units/time_delta.h"
 #include "modules/audio_coding/codecs/opus/opus_interface.h"
+#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -32,11 +33,6 @@ class AudioEncoderMultiChannelOpusImpl final : public AudioEncoder {
       const AudioEncoderMultiChannelOpusConfig& config,
       int payload_type);
   ~AudioEncoderMultiChannelOpusImpl() override;
-
-  AudioEncoderMultiChannelOpusImpl(const AudioEncoderMultiChannelOpusImpl&) =
-      delete;
-  AudioEncoderMultiChannelOpusImpl& operator=(
-      const AudioEncoderMultiChannelOpusImpl&) = delete;
 
   // Static interface for use by BuiltinAudioEncoderFactory.
   static constexpr const char* GetPayloadName() { return "multiopus"; }
@@ -85,6 +81,7 @@ class AudioEncoderMultiChannelOpusImpl final : public AudioEncoder {
   int next_frame_length_ms_;
 
   friend struct AudioEncoderMultiChannelOpus;
+  RTC_DISALLOW_COPY_AND_ASSIGN(AudioEncoderMultiChannelOpusImpl);
 };
 
 }  // namespace webrtc

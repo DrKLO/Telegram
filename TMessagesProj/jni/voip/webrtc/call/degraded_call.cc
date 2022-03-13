@@ -18,13 +18,13 @@
 namespace webrtc {
 
 DegradedCall::FakeNetworkPipeOnTaskQueue::FakeNetworkPipeOnTaskQueue(
-    TaskQueueBase* task_queue,
-    const ScopedTaskSafety& task_safety,
+    TaskQueueFactory* task_queue_factory,
     Clock* clock,
     std::unique_ptr<NetworkBehaviorInterface> network_behavior)
     : clock_(clock),
-      task_queue_(task_queue),
-      task_safety_(task_safety),
+      task_queue_(task_queue_factory->CreateTaskQueue(
+          "DegradedSendQueue",
+          TaskQueueFactory::Priority::NORMAL)),
       pipe_(clock, std::move(network_behavior)) {}
 
 void DegradedCall::FakeNetworkPipeOnTaskQueue::SendRtp(
@@ -61,22 +61,21 @@ bool DegradedCall::FakeNetworkPipeOnTaskQueue::Process() {
     return false;
   }
 
-  task_queue_->PostTask(ToQueuedTask(task_safety_, [this, time_to_next] {
-    RTC_DCHECK_RUN_ON(task_queue_);
+  task_queue_.PostTask([this, time_to_next]() {
+    RTC_DCHECK_RUN_ON(&task_queue_);
     int64_t next_process_time = *time_to_next + clock_->TimeInMilliseconds();
     if (!next_process_ms_ || next_process_time < *next_process_ms_) {
       next_process_ms_ = next_process_time;
-      task_queue_->PostDelayedHighPrecisionTask(
-          ToQueuedTask(task_safety_,
-                       [this] {
-                         RTC_DCHECK_RUN_ON(task_queue_);
-                         if (!Process()) {
-                           next_process_ms_.reset();
-                         }
-                       }),
+      task_queue_.PostDelayedTask(
+          [this]() {
+            RTC_DCHECK_RUN_ON(&task_queue_);
+            if (!Process()) {
+              next_process_ms_.reset();
+            }
+          },
           *time_to_next);
     }
-  }));
+  });
 
   return true;
 }
@@ -128,37 +127,27 @@ bool DegradedCall::FakeNetworkPipeTransportAdapter::SendRtcp(
 
 DegradedCall::DegradedCall(
     std::unique_ptr<Call> call,
-    const std::vector<TimeScopedNetworkConfig>& send_configs,
-    const std::vector<TimeScopedNetworkConfig>& receive_configs)
+    absl::optional<BuiltInNetworkBehaviorConfig> send_config,
+    absl::optional<BuiltInNetworkBehaviorConfig> receive_config,
+    TaskQueueFactory* task_queue_factory)
     : clock_(Clock::GetRealTimeClock()),
       call_(std::move(call)),
-      send_config_index_(0),
-      send_configs_(send_configs),
+      task_queue_factory_(task_queue_factory),
+      send_config_(send_config),
       send_simulated_network_(nullptr),
-      receive_config_index_(0),
-      receive_configs_(receive_configs) {
-  if (!receive_configs_.empty()) {
-    auto network = std::make_unique<SimulatedNetwork>(receive_configs_[0]);
+      receive_config_(receive_config) {
+  if (receive_config_) {
+    auto network = std::make_unique<SimulatedNetwork>(*receive_config_);
     receive_simulated_network_ = network.get();
     receive_pipe_ =
         std::make_unique<webrtc::FakeNetworkPipe>(clock_, std::move(network));
     receive_pipe_->SetReceiver(call_->Receiver());
-    if (receive_configs_.size() > 1) {
-      call_->network_thread()->PostDelayedTask(
-          ToQueuedTask(task_safety_, [this] { UpdateReceiveNetworkConfig(); }),
-          receive_configs_[0].duration.ms());
-    }
   }
-  if (!send_configs_.empty()) {
-    auto network = std::make_unique<SimulatedNetwork>(send_configs_[0]);
+  if (send_config_) {
+    auto network = std::make_unique<SimulatedNetwork>(*send_config_);
     send_simulated_network_ = network.get();
     send_pipe_ = std::make_unique<FakeNetworkPipeOnTaskQueue>(
-        call_->network_thread(), task_safety_, clock_, std::move(network));
-    if (send_configs_.size() > 1) {
-      call_->network_thread()->PostDelayedTask(
-          ToQueuedTask(task_safety_, [this] { UpdateSendNetworkConfig(); }),
-          send_configs_[0].duration.ms());
-    }
+        task_queue_factory_, clock_, std::move(network));
   }
 }
 
@@ -166,7 +155,7 @@ DegradedCall::~DegradedCall() = default;
 
 AudioSendStream* DegradedCall::CreateAudioSendStream(
     const AudioSendStream::Config& config) {
-  if (!send_configs_.empty()) {
+  if (send_config_) {
     auto transport_adapter = std::make_unique<FakeNetworkPipeTransportAdapter>(
         send_pipe_.get(), call_.get(), clock_, config.send_transport);
     AudioSendStream::Config degrade_config = config;
@@ -200,7 +189,7 @@ VideoSendStream* DegradedCall::CreateVideoSendStream(
     VideoSendStream::Config config,
     VideoEncoderConfig encoder_config) {
   std::unique_ptr<FakeNetworkPipeTransportAdapter> transport_adapter;
-  if (!send_configs_.empty()) {
+  if (send_config_) {
     transport_adapter = std::make_unique<FakeNetworkPipeTransportAdapter>(
         send_pipe_.get(), call_.get(), clock_, config.send_transport);
     config.send_transport = transport_adapter.get();
@@ -218,7 +207,7 @@ VideoSendStream* DegradedCall::CreateVideoSendStream(
     VideoEncoderConfig encoder_config,
     std::unique_ptr<FecController> fec_controller) {
   std::unique_ptr<FakeNetworkPipeTransportAdapter> transport_adapter;
-  if (!send_configs_.empty()) {
+  if (send_config_) {
     transport_adapter = std::make_unique<FakeNetworkPipeTransportAdapter>(
         send_pipe_.get(), call_.get(), clock_, config.send_transport);
     config.send_transport = transport_adapter.get();
@@ -262,7 +251,7 @@ void DegradedCall::AddAdaptationResource(
 }
 
 PacketReceiver* DegradedCall::Receiver() {
-  if (!receive_configs_.empty()) {
+  if (receive_config_) {
     return this;
   }
   return call_->Receiver();
@@ -310,7 +299,7 @@ void DegradedCall::OnUpdateSyncGroup(AudioReceiveStream& stream,
 }
 
 void DegradedCall::OnSentPacket(const rtc::SentPacket& sent_packet) {
-  if (!send_configs_.empty()) {
+  if (send_config_) {
     // If we have a degraded send-transport, we have already notified call
     // about the supposed network send time. Discard the actual network send
     // time in order to properly fool the BWE.
@@ -335,22 +324,5 @@ PacketReceiver::DeliveryStatus DegradedCall::DeliverPacket(
   // than anticipated at very low packet rates.
   receive_pipe_->Process();
   return status;
-}
-
-void DegradedCall::UpdateSendNetworkConfig() {
-  send_config_index_ = (send_config_index_ + 1) % send_configs_.size();
-  send_simulated_network_->SetConfig(send_configs_[send_config_index_]);
-  call_->network_thread()->PostDelayedTask(
-      ToQueuedTask(task_safety_, [this] { UpdateSendNetworkConfig(); }),
-      send_configs_[send_config_index_].duration.ms());
-}
-
-void DegradedCall::UpdateReceiveNetworkConfig() {
-  receive_config_index_ = (receive_config_index_ + 1) % receive_configs_.size();
-  receive_simulated_network_->SetConfig(
-      receive_configs_[receive_config_index_]);
-  call_->network_thread()->PostDelayedTask(
-      ToQueuedTask(task_safety_, [this] { UpdateReceiveNetworkConfig(); }),
-      receive_configs_[receive_config_index_].duration.ms());
 }
 }  // namespace webrtc

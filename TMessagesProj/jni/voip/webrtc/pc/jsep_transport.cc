@@ -15,7 +15,6 @@
 
 #include <functional>
 #include <memory>
-#include <string>
 #include <utility>
 
 #include "api/array_view.h"
@@ -208,15 +207,17 @@ webrtc::RTCError JsepTransport::SetLocalJsepTransportDescription(
       return error;
     }
   }
-  RTC_DCHECK(rtp_dtls_transport_->internal());
-  rtp_dtls_transport_->internal()->ice_transport()->SetIceParameters(
-      ice_parameters);
-
-  if (rtcp_dtls_transport_) {
-    RTC_DCHECK(rtcp_dtls_transport_->internal());
-    rtcp_dtls_transport_->internal()->ice_transport()->SetIceParameters(
+    RTC_DCHECK(rtp_dtls_transport_->internal());
+    rtp_dtls_transport_->internal()->ice_transport()->SetIceParameters(
         ice_parameters);
-  }
+
+    {
+      if (rtcp_dtls_transport_) {
+        RTC_DCHECK(rtcp_dtls_transport_->internal());
+        rtcp_dtls_transport_->internal()->ice_transport()->SetIceParameters(
+            ice_parameters);
+      }
+    }
   // If PRANSWER/ANSWER is set, we should decide transport protocol type.
   if (type == SdpType::kPrAnswer || type == SdpType::kAnswer) {
     error = NegotiateAndSetDtlsParameters(type);

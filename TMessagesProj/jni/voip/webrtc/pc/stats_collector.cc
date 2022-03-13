@@ -13,19 +13,18 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <algorithm>
 #include <cmath>
-#include <list>
+#include <memory>
 #include <set>
 #include <utility>
 #include <vector>
 
-#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "api/audio_codecs/audio_encoder.h"
 #include "api/candidate.h"
 #include "api/data_channel_interface.h"
 #include "api/media_types.h"
+#include "api/rtp_receiver_interface.h"
 #include "api/rtp_sender_interface.h"
 #include "api/scoped_refptr.h"
 #include "api/sequence_checker.h"
@@ -40,8 +39,6 @@
 #include "pc/channel_interface.h"
 #include "pc/data_channel_utils.h"
 #include "pc/rtp_receiver.h"
-#include "pc/rtp_receiver_proxy.h"
-#include "pc/rtp_sender_proxy.h"
 #include "pc/rtp_transceiver.h"
 #include "pc/transport_stats.h"
 #include "rtc_base/checks.h"
@@ -889,8 +886,8 @@ StatsCollector::SessionStats StatsCollector::ExtractSessionInfo_n(
   for (auto& transceiver : transceivers) {
     cricket::ChannelInterface* channel = transceiver->internal()->channel();
     if (channel) {
-      stats.transport_names_by_mid[channel->mid()] =
-          std::string(channel->transport_name());
+      stats.transport_names_by_mid[channel->content_name()] =
+          channel->transport_name();
     }
   }
 
@@ -1185,7 +1182,7 @@ void StatsCollector::ExtractMediaInfo(
       }
       std::unique_ptr<MediaChannelStatsGatherer> gatherer =
           CreateMediaChannelStatsGatherer(channel->media_channel());
-      gatherer->mid = channel->mid();
+      gatherer->mid = channel->content_name();
       gatherer->transport_name = transport_names_by_mid.at(gatherer->mid);
 
       for (const auto& sender : transceiver->internal()->senders()) {
@@ -1212,7 +1209,7 @@ void StatsCollector::ExtractMediaInfo(
       if (!channel)
         continue;
       MediaChannelStatsGatherer* gatherer = gatherers[i++].get();
-      RTC_DCHECK_EQ(gatherer->mid, channel->mid());
+      RTC_DCHECK_EQ(gatherer->mid, channel->content_name());
 
       for (const auto& receiver : transceiver->internal()->receivers()) {
         gatherer->receiver_track_id_by_ssrc.insert(std::make_pair(
@@ -1370,8 +1367,7 @@ void StatsCollector::UpdateTrackReports() {
   }
 }
 
-void StatsCollector::InvalidateCache() {
-  RTC_DCHECK_RUN_ON(pc_->signaling_thread());
+void StatsCollector::ClearUpdateStatsCacheForTest() {
   cache_timestamp_ms_ = 0;
 }
 

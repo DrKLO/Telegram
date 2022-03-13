@@ -18,6 +18,7 @@
 #include "api/transport/bitrate_settings.h"
 #include "api/transport/network_control.h"
 #include "api/transport/webrtc_key_value_config.h"
+#include "modules/utility/include/process_thread.h"
 #include "rtc_base/task_queue.h"
 
 namespace webrtc {

@@ -435,8 +435,6 @@ class Port : public PortInterface,
   // Extra work to be done in subclasses when a connection is destroyed.
   virtual void HandleConnectionDestroyed(Connection* conn) {}
 
-  void DestroyAllConnections();
-
   void CopyPortInformationToPacketInfo(rtc::PacketInfo* info) const;
 
   MdnsNameRegistrationStatus mdns_name_registration_status() const {

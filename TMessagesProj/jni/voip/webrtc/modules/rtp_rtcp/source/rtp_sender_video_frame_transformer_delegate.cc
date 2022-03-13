@@ -139,7 +139,7 @@ void RTPSenderVideoFrameTransformerDelegate::OnTransformedFrame(
   // arrives.
   if (!sender_ || !encoder_queue_)
     return;
-  rtc::scoped_refptr<RTPSenderVideoFrameTransformerDelegate> delegate(this);
+  rtc::scoped_refptr<RTPSenderVideoFrameTransformerDelegate> delegate = this;
   encoder_queue_->PostTask(ToQueuedTask(
       [delegate = std::move(delegate), frame = std::move(frame)]() mutable {
         delegate->SendVideo(std::move(frame));

@@ -19,6 +19,7 @@
 #include "api/video/video_bitrate_allocation.h"
 #include "api/video/video_bitrate_allocator.h"
 #include "api/video_codecs/video_codec.h"
+#include "rtc_base/constructor_magic.h"
 #include "rtc_base/experiments/rate_control_settings.h"
 #include "rtc_base/experiments/stable_target_rate_experiment.h"
 
@@ -28,9 +29,6 @@ class SimulcastRateAllocator : public VideoBitrateAllocator {
  public:
   explicit SimulcastRateAllocator(const VideoCodec& codec);
   ~SimulcastRateAllocator() override;
-
-  SimulcastRateAllocator(const SimulcastRateAllocator&) = delete;
-  SimulcastRateAllocator& operator=(const SimulcastRateAllocator&) = delete;
 
   VideoBitrateAllocation Allocate(
       VideoBitrateAllocationParameters parameters) override;
@@ -63,6 +61,8 @@ class SimulcastRateAllocator : public VideoBitrateAllocator {
   const RateControlSettings rate_control_settings_;
   std::vector<bool> stream_enabled_;
   bool legacy_conference_mode_;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(SimulcastRateAllocator);
 };
 
 }  // namespace webrtc

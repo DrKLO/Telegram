@@ -42,6 +42,7 @@ import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.style.URLSpan;
 import android.util.Base64;
+import android.util.Log;
 import android.util.SparseArray;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -2990,17 +2991,21 @@ public class AlertsCreator {
         request.peer = peer;
         request.id.addAll(messages);
         request.message = message;
-        if (type == 0) {
+        if (type == AlertsCreator.REPORT_TYPE_SPAM) {
             request.reason = new TLRPC.TL_inputReportReasonSpam();
-        } else if (type == 1) {
+        } else if (type == AlertsCreator.REPORT_TYPE_FAKE_ACCOUNT) {
             request.reason = new TLRPC.TL_inputReportReasonFake();
-        } else if (type == 2) {
+        } else if (type == AlertsCreator.REPORT_TYPE_VIOLENCE) {
             request.reason = new TLRPC.TL_inputReportReasonViolence();
-        } else if (type == 3) {
+        } else if (type == AlertsCreator.REPORT_TYPE_CHILD_ABUSE) {
             request.reason = new TLRPC.TL_inputReportReasonChildAbuse();
-        } else if (type == 4) {
+        } else if (type == AlertsCreator.REPORT_TYPE_PORNOGRAPHY) {
             request.reason = new TLRPC.TL_inputReportReasonPornography();
-        } else if (type == 5) {
+        } else if (type == AlertsCreator.REPORT_TYPE_ILLEGAL_DRUGS) {
+            request.reason = new TLRPC.TL_inputReportReasonIllegalDrugs();
+        } else if (type == AlertsCreator.REPORT_TYPE_PERSONAL_DETAILS) {
+            request.reason = new TLRPC.TL_inputReportReasonPersonalDetails();
+        } else if (type == AlertsCreator.REPORT_TYPE_OTHER) {
             request.reason = new TLRPC.TL_inputReportReasonOther();
         }
         ConnectionsManager.getInstance(UserConfig.selectedAccount).sendRequest(request, (response, error) -> {
@@ -3011,6 +3016,15 @@ public class AlertsCreator {
     public static void createReportAlert(final Context context, final long dialog_id, final int messageId, final BaseFragment parentFragment, Runnable hideDim) {
         createReportAlert(context, dialog_id, messageId, parentFragment, null, hideDim);
     }
+
+    public final static int REPORT_TYPE_SPAM = 0;
+    public final static int REPORT_TYPE_VIOLENCE = 1;
+    public final static int REPORT_TYPE_CHILD_ABUSE = 2;
+    public final static int REPORT_TYPE_ILLEGAL_DRUGS = 3;
+    public final static int REPORT_TYPE_PERSONAL_DETAILS = 4;
+    public final static int REPORT_TYPE_PORNOGRAPHY = 5;
+    public final static int REPORT_TYPE_FAKE_ACCOUNT = 6;
+    public final static int REPORT_TYPE_OTHER = 100;
 
     public static void createReportAlert(final Context context, final long dialog_id, final int messageId, final BaseFragment parentFragment, Theme.ResourcesProvider resourcesProvider, Runnable hideDim) {
         if (context == null || parentFragment == null) {
@@ -3027,11 +3041,15 @@ public class AlertsCreator {
         builder.setTitle(LocaleController.getString("ReportChat", R.string.ReportChat), true);
         CharSequence[] items;
         int[] icons;
+        int[] types;
         if (messageId != 0) {
+
             items = new CharSequence[]{
                     LocaleController.getString("ReportChatSpam", R.string.ReportChatSpam),
                     LocaleController.getString("ReportChatViolence", R.string.ReportChatViolence),
                     LocaleController.getString("ReportChatChild", R.string.ReportChatChild),
+                    LocaleController.getString("ReportChatIllegalDrugs", R.string.ReportChatIllegalDrugs),
+                    LocaleController.getString("ReportChatPersonalDetails", R.string.ReportChatPersonalDetails),
                     LocaleController.getString("ReportChatPornography", R.string.ReportChatPornography),
                     LocaleController.getString("ReportChatOther", R.string.ReportChatOther)
             };
@@ -3039,8 +3057,19 @@ public class AlertsCreator {
                     R.drawable.msg_report_spam,
                     R.drawable.msg_report_violence,
                     R.drawable.msg_report_abuse,
+                    R.drawable.msg_report_drugs,
+                    R.drawable.msg_report_personal,
                     R.drawable.msg_report_xxx,
                     R.drawable.msg_report_other
+            };
+            types = new int[] {
+                    REPORT_TYPE_SPAM,
+                    REPORT_TYPE_VIOLENCE,
+                    REPORT_TYPE_CHILD_ABUSE,
+                    REPORT_TYPE_ILLEGAL_DRUGS,
+                    REPORT_TYPE_PERSONAL_DETAILS,
+                    REPORT_TYPE_PORNOGRAPHY,
+                    REPORT_TYPE_OTHER
             };
         } else {
             items = new CharSequence[]{
@@ -3048,6 +3077,8 @@ public class AlertsCreator {
                     LocaleController.getString("ReportChatFakeAccount", R.string.ReportChatFakeAccount),
                     LocaleController.getString("ReportChatViolence", R.string.ReportChatViolence),
                     LocaleController.getString("ReportChatChild", R.string.ReportChatChild),
+                    LocaleController.getString("ReportChatIllegalDrugs", R.string.ReportChatIllegalDrugs),
+                    LocaleController.getString("ReportChatPersonalDetails", R.string.ReportChatPersonalDetails),
                     LocaleController.getString("ReportChatPornography", R.string.ReportChatPornography),
                     LocaleController.getString("ReportChatOther", R.string.ReportChatOther)
             };
@@ -3056,19 +3087,32 @@ public class AlertsCreator {
                     R.drawable.msg_report_fake,
                     R.drawable.msg_report_violence,
                     R.drawable.msg_report_abuse,
+                    R.drawable.msg_report_drugs,
+                    R.drawable.msg_report_personal,
                     R.drawable.msg_report_xxx,
                     R.drawable.msg_report_other
             };
+            types = new int[] {
+                    REPORT_TYPE_SPAM,
+                    REPORT_TYPE_FAKE_ACCOUNT,
+                    REPORT_TYPE_VIOLENCE,
+                    REPORT_TYPE_CHILD_ABUSE,
+                    REPORT_TYPE_ILLEGAL_DRUGS,
+                    REPORT_TYPE_PERSONAL_DETAILS,
+                    REPORT_TYPE_PORNOGRAPHY,
+                    REPORT_TYPE_OTHER
+            };
         }
         builder.setItems(items, icons, (dialogInterface, i) -> {
-            if (messageId == 0 && (i == 0 || i == 2 || i == 3 || i == 4) && parentFragment instanceof ChatActivity) {
-                ((ChatActivity) parentFragment).openReportChat(i);
+            int type = types[i];
+            if (messageId == 0 && (type == REPORT_TYPE_SPAM || type == REPORT_TYPE_VIOLENCE || type == REPORT_TYPE_CHILD_ABUSE || type == REPORT_TYPE_PORNOGRAPHY || type == REPORT_TYPE_ILLEGAL_DRUGS || type == REPORT_TYPE_PERSONAL_DETAILS) && parentFragment instanceof ChatActivity) {
+                ((ChatActivity) parentFragment).openReportChat(type);
                 return;
-            } else if (messageId == 0 && (i == 5 || i == 1) || messageId != 0 && i == 4) {
+            } else if (messageId == 0 && (type == REPORT_TYPE_OTHER || type == REPORT_TYPE_FAKE_ACCOUNT) || messageId != 0 && type == REPORT_TYPE_OTHER) {
                 if (parentFragment instanceof ChatActivity) {
                     AndroidUtilities.requestAdjustNothing(parentFragment.getParentActivity(), parentFragment.getClassGuid());
                 }
-                parentFragment.showDialog(new ReportAlert(context, i == 4 ? 5 : i) {
+                parentFragment.showDialog(new ReportAlert(context, type) {
 
                     @Override
                     public void dismissInternal() {
@@ -3100,30 +3144,38 @@ public class AlertsCreator {
                 request.peer = peer;
                 request.id.add(messageId);
                 request.message = "";
-                if (i == 0) {
+                if (type == REPORT_TYPE_SPAM) {
                     request.reason = new TLRPC.TL_inputReportReasonSpam();
-                } else if (i == 1) {
+                } else if (type == REPORT_TYPE_VIOLENCE) {
                     request.reason = new TLRPC.TL_inputReportReasonViolence();
-                } else if (i == 2) {
+                } else if (type == REPORT_TYPE_CHILD_ABUSE) {
                     request.reason = new TLRPC.TL_inputReportReasonChildAbuse();
-                } else if (i == 3) {
+                } else if (type == REPORT_TYPE_PORNOGRAPHY) {
                     request.reason = new TLRPC.TL_inputReportReasonPornography();
+                } else if (type == REPORT_TYPE_ILLEGAL_DRUGS) {
+                    request.reason = new TLRPC.TL_inputReportReasonIllegalDrugs();
+                } else if (type == REPORT_TYPE_PERSONAL_DETAILS) {
+                    request.reason = new TLRPC.TL_inputReportReasonPersonalDetails();
                 }
                 req = request;
             } else {
                 TLRPC.TL_account_reportPeer request = new TLRPC.TL_account_reportPeer();
                 request.peer = peer;
                 request.message = "";
-                if (i == 0) {
+                if (type == REPORT_TYPE_SPAM) {
                     request.reason = new TLRPC.TL_inputReportReasonSpam();
-                } else if (i == 1) {
+                } else if (type == REPORT_TYPE_FAKE_ACCOUNT) {
                     request.reason = new TLRPC.TL_inputReportReasonFake();
-                } else if (i == 2) {
+                } else if (type == REPORT_TYPE_VIOLENCE) {
                     request.reason = new TLRPC.TL_inputReportReasonViolence();
-                } else if (i == 3) {
+                } else if (type == REPORT_TYPE_CHILD_ABUSE) {
                     request.reason = new TLRPC.TL_inputReportReasonChildAbuse();
-                } else if (i == 4) {
+                } else if (type == REPORT_TYPE_PORNOGRAPHY) {
                     request.reason = new TLRPC.TL_inputReportReasonPornography();
+                } else if (type == REPORT_TYPE_ILLEGAL_DRUGS) {
+                    request.reason = new TLRPC.TL_inputReportReasonIllegalDrugs();
+                } else if (type == REPORT_TYPE_PERSONAL_DETAILS) {
+                    request.reason = new TLRPC.TL_inputReportReasonPersonalDetails();
                 }
                 req = request;
             }

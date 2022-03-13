@@ -16,6 +16,7 @@
 #include <memory>
 
 #include "api/array_view.h"
+#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -32,9 +33,6 @@ class BackgroundNoise {
 
   explicit BackgroundNoise(size_t num_channels);
   virtual ~BackgroundNoise();
-
-  BackgroundNoise(const BackgroundNoise&) = delete;
-  BackgroundNoise& operator=(const BackgroundNoise&) = delete;
 
   void Reset();
 
@@ -132,6 +130,8 @@ class BackgroundNoise {
   size_t num_channels_;
   std::unique_ptr<ChannelParameters[]> channel_parameters_;
   bool initialized_;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(BackgroundNoise);
 };
 
 }  // namespace webrtc

@@ -20,6 +20,7 @@
 #include "absl/types/optional.h"
 #include "api/array_view.h"
 #include "rtc_base/buffer.h"
+#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -35,9 +36,6 @@ class AudioDecoder {
 
   AudioDecoder() = default;
   virtual ~AudioDecoder() = default;
-
-  AudioDecoder(const AudioDecoder&) = delete;
-  AudioDecoder& operator=(const AudioDecoder&) = delete;
 
   class EncodedAudioFrame {
    public:
@@ -189,6 +187,9 @@ class AudioDecoder {
                                       int sample_rate_hz,
                                       int16_t* decoded,
                                       SpeechType* speech_type);
+
+ private:
+  RTC_DISALLOW_COPY_AND_ASSIGN(AudioDecoder);
 };
 
 }  // namespace webrtc

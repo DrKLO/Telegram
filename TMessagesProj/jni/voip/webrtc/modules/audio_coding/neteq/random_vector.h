@@ -14,6 +14,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "rtc_base/constructor_magic.h"
+
 namespace webrtc {
 
 // This class generates pseudo-random samples.
@@ -23,9 +25,6 @@ class RandomVector {
   static const int16_t kRandomTable[kRandomTableSize];
 
   RandomVector() : seed_(777), seed_increment_(1) {}
-
-  RandomVector(const RandomVector&) = delete;
-  RandomVector& operator=(const RandomVector&) = delete;
 
   void Reset();
 
@@ -40,6 +39,8 @@ class RandomVector {
  private:
   uint32_t seed_;
   int16_t seed_increment_;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(RandomVector);
 };
 
 }  // namespace webrtc

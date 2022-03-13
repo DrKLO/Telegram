@@ -333,8 +333,6 @@ class MediaStreamInterface : public rtc::RefCountInterface,
   virtual rtc::scoped_refptr<VideoTrackInterface> FindVideoTrack(
       const std::string& track_id) = 0;
 
-  // Takes ownership of added tracks.
-  // TODO(hta): Should take scoped_refptr rather than raw pointer.
   virtual bool AddTrack(AudioTrackInterface* track) = 0;
   virtual bool AddTrack(VideoTrackInterface* track) = 0;
   virtual bool RemoveTrack(AudioTrackInterface* track) = 0;

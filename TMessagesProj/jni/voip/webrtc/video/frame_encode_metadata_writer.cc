@@ -70,13 +70,8 @@ void FrameEncodeMetadataWriter::OnEncoderInit(const VideoCodec& codec) {
              codec_settings_.ScalabilityMode() != "") {
     std::unique_ptr<ScalableVideoController> structure =
         CreateScalabilityStructure(codec_settings_.ScalabilityMode());
-    if (structure) {
-      num_spatial_layers = structure->StreamConfig().num_spatial_layers;
-    } else {
-      // |structure| maybe nullptr if the scalability mode is invalid.
-      RTC_LOG(LS_WARNING) << "Cannot create ScalabilityStructure, since the "
-                             "scalability mode is invalid";
-    }
+    RTC_DCHECK(structure);
+    num_spatial_layers = structure->StreamConfig().num_spatial_layers;
   }
   num_spatial_layers_ = std::max(num_spatial_layers, size_t{1});
 }

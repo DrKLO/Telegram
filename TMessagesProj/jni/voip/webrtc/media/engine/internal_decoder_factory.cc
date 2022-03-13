@@ -24,7 +24,7 @@
 #include "system_wrappers/include/field_trial.h"
 
 #if defined(RTC_DAV1D_IN_INTERNAL_DECODER_FACTORY)
-#include "modules/video_coding/codecs/av1/dav1d_decoder.h"  // nogncheck
+#include "modules/video_coding/codecs/av1/dav1d_decoder.h"
 #endif
 
 namespace webrtc {
@@ -47,7 +47,7 @@ std::vector<SdpVideoFormat> InternalDecoderFactory::GetSupportedFormats()
   formats.push_back(SdpVideoFormat(cricket::kVp8CodecName));
   for (const SdpVideoFormat& format : SupportedVP9DecoderCodecs())
     formats.push_back(format);
-  for (const SdpVideoFormat& h264_format : SupportedH264DecoderCodecs())
+  for (const SdpVideoFormat& h264_format : SupportedH264Codecs())
     formats.push_back(h264_format);
 
   if (kIsLibaomAv1DecoderSupported ||

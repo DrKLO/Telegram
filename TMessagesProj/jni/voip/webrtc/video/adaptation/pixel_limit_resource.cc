@@ -84,11 +84,11 @@ void PixelLimitResource::SetResourceListener(ResourceListener* listener) {
       int target_pixels_lower_bounds =
           GetLowerResolutionThan(target_pixel_upper_bounds);
       if (current_pixels > target_pixel_upper_bounds) {
-        listener_->OnResourceUsageStateMeasured(
-            rtc::scoped_refptr<Resource>(this), ResourceUsageState::kOveruse);
+        listener_->OnResourceUsageStateMeasured(this,
+                                                ResourceUsageState::kOveruse);
       } else if (current_pixels < target_pixels_lower_bounds) {
-        listener_->OnResourceUsageStateMeasured(
-            rtc::scoped_refptr<Resource>(this), ResourceUsageState::kUnderuse);
+        listener_->OnResourceUsageStateMeasured(this,
+                                                ResourceUsageState::kUnderuse);
       }
       return kResourceUsageCheckIntervalMs;
     });
