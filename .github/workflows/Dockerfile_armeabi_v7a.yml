@@ -1,0 +1,65 @@
+name: Docker Image CI armeabi_v7a
+
+on:
+  pull_request:
+    branches: [ master ]
+    types: [closed]
+
+jobs:
+  build_release:
+    name: build_release
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: build docker
+        run: docker build -t telegraher-${{ env.AARCH }} -f Dockerfile_${{ env.AARCH }} .
+      - name: build app
+        run: docker run --rm -v "$PWD":/home/source telegraher-${{ env.AARCH }}
+      - name: sha256 basic apk
+        run: echo "::set-output name=SHA256BASIC::$(sha256sum ./TMessagesProj/build/outputs/apk/${{ env.AARCH }}/release/app.apk|head -c 64)"
+        id: sha256_basic
+      - name: sha256 sdk32 apk
+        run: echo "::set-output name=SHA256SDK23::$(sha256sum ./TMessagesProj/build/outputs/apk/${{ env.AARCH }}_sdk23/release/app.apk|head -c 64)"
+        id: sha256_sdk23
+      - name: release
+        if: github.event.pull_request.merged
+        uses: actions/create-release@v1
+        id: create_release
+        with:
+          draft: false
+          prerelease: false
+          release_name: ${{ env.RNAME }} (${{ env.AARCH }})
+          tag_name: ${{ env.TNAME }}${{ env.AARCH }}
+          body: |
+            ${{ env.ANAME }}${{ env.AARCH }}.apk (sha256 `${{ steps.sha256_basic.outputs.SHA256BASIC }}`)
+            ${{ env.ANAME }}${{ env.AARCH }}_sdk23.apk (sha256 `${{ steps.sha256_sdk23.outputs.SHA256SDK23 }}`)
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: upload apk basic
+        if: github.event.pull_request.merged
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./TMessagesProj/build/outputs/apk/${{ env.AARCH }}/release/app.apk
+          asset_name: ${{ env.ANAME }}${{ env.AARCH }}.apk
+          asset_content_type: application/gzip
+      - name: upload apk basic sdk23
+        if: github.event.pull_request.merged
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./TMessagesProj/build/outputs/apk/${{ env.AARCH }}_sdk23/release/app.apk
+          asset_name: ${{ env.ANAME }}${{ env.AARCH }}_sdk23.apk
+          asset_content_type: application/gzip
+    env:
+      RNAME: Telegraher 8.5.4 release 4
+      TNAME: noshit_8.5.4_r4_
+      ANAME: Telegraher.8.5.4r4.
+      AARCH: armeabi_v7a
