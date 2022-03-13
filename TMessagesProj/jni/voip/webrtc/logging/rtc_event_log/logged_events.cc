@@ -40,13 +40,13 @@ LoggedPacketInfo::LoggedPacketInfo(const LoggedPacketInfo&) = default;
 
 LoggedPacketInfo::~LoggedPacketInfo() {}
 
-LoggedRtcpPacket::LoggedRtcpPacket(int64_t timestamp_us,
+LoggedRtcpPacket::LoggedRtcpPacket(Timestamp timestamp,
                                    const std::vector<uint8_t>& packet)
-    : timestamp_us(timestamp_us), raw_data(packet) {}
+    : timestamp(timestamp), raw_data(packet) {}
 
-LoggedRtcpPacket::LoggedRtcpPacket(int64_t timestamp_us,
+LoggedRtcpPacket::LoggedRtcpPacket(Timestamp timestamp,
                                    const std::string& packet)
-    : timestamp_us(timestamp_us), raw_data(packet.size()) {
+    : timestamp(timestamp), raw_data(packet.size()) {
   memcpy(raw_data.data(), packet.data(), packet.size());
 }
 

@@ -61,7 +61,7 @@ class StunProber::Requester : public sigslot::has_slots<> {
     void ProcessResponse(const char* buf, size_t buf_len);
   };
 
-  // StunProber provides |server_ips| for Requester to probe. For shared
+  // StunProber provides `server_ips` for Requester to probe. For shared
   // socket mode, it'll be all the resolved IP addresses. For non-shared mode,
   // it'll just be a single address.
   Requester(StunProber* prober,

@@ -147,10 +147,10 @@ class RTC_EXPORT PseudoTcp {
   // Creates a packet and submits it to the network. This method can either
   // send payload or just an ACK packet.
   //
-  // |seq| is the sequence number of this packet.
-  // |flags| is the flags for sending this packet.
-  // |offset| is the offset to read from |m_sbuf|.
-  // |len| is the number of bytes to read from |m_sbuf| as payload. If this
+  // `seq` is the sequence number of this packet.
+  // `flags` is the flags for sending this packet.
+  // `offset` is the offset to read from `m_sbuf`.
+  // `len` is the number of bytes to read from `m_sbuf` as payload. If this
   // value is 0 then this is an ACK packet, otherwise this packet has payload.
   IPseudoTcpNotify::WriteResult packet(uint32_t seq,
                                        uint8_t flags,
@@ -190,11 +190,11 @@ class RTC_EXPORT PseudoTcp {
   // Apply window scale option.
   void applyWindowScaleOption(uint8_t scale_factor);
 
-  // Resize the send buffer with |new_size| in bytes.
+  // Resize the send buffer with `new_size` in bytes.
   void resizeSendBuffer(uint32_t new_size);
 
-  // Resize the receive buffer with |new_size| in bytes. This call adjusts
-  // window scale factor |m_swnd_scale| accordingly.
+  // Resize the receive buffer with `new_size` in bytes. This call adjusts
+  // window scale factor `m_swnd_scale` accordingly.
   void resizeReceiveBuffer(uint32_t new_size);
 
   class LockedFifoBuffer final {

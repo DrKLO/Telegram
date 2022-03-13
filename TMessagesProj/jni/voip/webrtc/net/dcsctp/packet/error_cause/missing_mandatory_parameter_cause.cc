@@ -48,14 +48,14 @@ MissingMandatoryParameterCause::Parse(rtc::ArrayView<const uint8_t> data) {
   }
 
   uint32_t count = reader->Load32<4>();
-  if (reader->variable_data_size() != count * kMissingParameterSize) {
+  if (reader->variable_data_size() / kMissingParameterSize != count) {
     RTC_DLOG(LS_WARNING) << "Invalid number of missing parameters";
     return absl::nullopt;
   }
 
   std::vector<uint16_t> missing_parameter_types;
   missing_parameter_types.reserve(count);
-  for (size_t i = 0; i < count; ++i) {
+  for (uint32_t i = 0; i < count; ++i) {
     BoundedByteReader<kMissingParameterSize> sub_reader =
         reader->sub_reader<kMissingParameterSize>(i * kMissingParameterSize);
 

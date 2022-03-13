@@ -33,11 +33,11 @@ class PushSincResampler : public SincResamplerCallback {
   PushSincResampler(size_t source_frames, size_t destination_frames);
   ~PushSincResampler() override;
 
-  // Perform the resampling. |source_frames| must always equal the
-  // |source_frames| provided at construction. |destination_capacity| must be
-  // at least as large as |destination_frames|. Returns the number of samples
+  // Perform the resampling. `source_frames` must always equal the
+  // `source_frames` provided at construction. `destination_capacity` must be
+  // at least as large as `destination_frames`. Returns the number of samples
   // provided in destination (for convenience, since this will always be equal
-  // to |destination_frames|).
+  // to `destination_frames`).
   size_t Resample(const int16_t* source,
                   size_t source_frames,
                   int16_t* destination,

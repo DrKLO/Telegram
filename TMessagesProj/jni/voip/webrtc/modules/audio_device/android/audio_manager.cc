@@ -33,11 +33,11 @@ AudioManager::JavaAudioManager::JavaAudioManager(
       is_device_blacklisted_for_open_sles_usage_(
           native_reg->GetMethodId("isDeviceBlacklistedForOpenSLESUsage",
                                   "()Z")) {
-  RTC_LOG(INFO) << "JavaAudioManager::ctor";
+  RTC_LOG(LS_INFO) << "JavaAudioManager::ctor";
 }
 
 AudioManager::JavaAudioManager::~JavaAudioManager() {
-  RTC_LOG(INFO) << "JavaAudioManager::~dtor";
+  RTC_LOG(LS_INFO) << "JavaAudioManager::~dtor";
 }
 
 bool AudioManager::JavaAudioManager::Init() {
@@ -68,7 +68,7 @@ AudioManager::AudioManager()
       low_latency_playout_(false),
       low_latency_record_(false),
       delay_estimate_in_milliseconds_(0) {
-  RTC_LOG(INFO) << "ctor";
+  RTC_LOG(LS_INFO) << "ctor";
   RTC_CHECK(j_environment_);
   JNINativeMethod native_methods[] = {
       {"nativeCacheAudioParameters", "(IIIZZZZZZZIIJ)V",
@@ -83,14 +83,14 @@ AudioManager::AudioManager()
 }
 
 AudioManager::~AudioManager() {
-  RTC_LOG(INFO) << "dtor";
+  RTC_LOG(LS_INFO) << "dtor";
   RTC_DCHECK(thread_checker_.IsCurrent());
   Close();
 }
 
 void AudioManager::SetActiveAudioLayer(
     AudioDeviceModule::AudioLayer audio_layer) {
-  RTC_LOG(INFO) << "SetActiveAudioLayer: " << audio_layer;
+  RTC_LOG(LS_INFO) << "SetActiveAudioLayer: " << audio_layer;
   RTC_DCHECK(thread_checker_.IsCurrent());
   RTC_DCHECK(!initialized_);
   // Store the currently utilized audio layer.
@@ -98,23 +98,23 @@ void AudioManager::SetActiveAudioLayer(
   // The delay estimate can take one of two fixed values depending on if the
   // device supports low-latency output or not. However, it is also possible
   // that the user explicitly selects the high-latency audio path, hence we use
-  // the selected |audio_layer| here to set the delay estimate.
+  // the selected `audio_layer` here to set the delay estimate.
   delay_estimate_in_milliseconds_ =
       (audio_layer == AudioDeviceModule::kAndroidJavaAudio)
           ? kHighLatencyModeDelayEstimateInMilliseconds
           : kLowLatencyModeDelayEstimateInMilliseconds;
-  RTC_LOG(INFO) << "delay_estimate_in_milliseconds: "
-                << delay_estimate_in_milliseconds_;
+  RTC_LOG(LS_INFO) << "delay_estimate_in_milliseconds: "
+                   << delay_estimate_in_milliseconds_;
 }
 
 SLObjectItf AudioManager::GetOpenSLEngine() {
-  RTC_LOG(INFO) << "GetOpenSLEngine";
+  RTC_LOG(LS_INFO) << "GetOpenSLEngine";
   RTC_DCHECK(thread_checker_.IsCurrent());
   // Only allow usage of OpenSL ES if such an audio layer has been specified.
   if (audio_layer_ != AudioDeviceModule::kAndroidOpenSLESAudio &&
       audio_layer_ !=
           AudioDeviceModule::kAndroidJavaInputAndOpenSLESOutputAudio) {
-    RTC_LOG(INFO)
+    RTC_LOG(LS_INFO)
         << "Unable to create OpenSL engine for the current audio layer: "
         << audio_layer_;
     return nullptr;
@@ -123,7 +123,8 @@ SLObjectItf AudioManager::GetOpenSLEngine() {
   // If one already has been created, return existing object instead of
   // creating a new.
   if (engine_object_.Get() != nullptr) {
-    RTC_LOG(WARNING) << "The OpenSL ES engine object has already been created";
+    RTC_LOG(LS_WARNING)
+        << "The OpenSL ES engine object has already been created";
     return engine_object_.Get();
   }
   // Create the engine object in thread safe mode.
@@ -149,7 +150,7 @@ SLObjectItf AudioManager::GetOpenSLEngine() {
 }
 
 bool AudioManager::Init() {
-  RTC_LOG(INFO) << "Init";
+  RTC_LOG(LS_INFO) << "Init";
   RTC_DCHECK(thread_checker_.IsCurrent());
   RTC_DCHECK(!initialized_);
   RTC_DCHECK_NE(audio_layer_, AudioDeviceModule::kPlatformDefaultAudio);
@@ -162,7 +163,7 @@ bool AudioManager::Init() {
 }
 
 bool AudioManager::Close() {
-  RTC_LOG(INFO) << "Close";
+  RTC_LOG(LS_INFO) << "Close";
   RTC_DCHECK(thread_checker_.IsCurrent());
   if (!initialized_)
     return true;
@@ -273,7 +274,7 @@ void AudioManager::OnCacheAudioParameters(JNIEnv* env,
                                           jboolean a_audio,
                                           jint output_buffer_size,
                                           jint input_buffer_size) {
-  RTC_LOG(INFO)
+  RTC_LOG(LS_INFO)
       << "OnCacheAudioParameters: "
          "hardware_aec: "
       << static_cast<bool>(hardware_aec)

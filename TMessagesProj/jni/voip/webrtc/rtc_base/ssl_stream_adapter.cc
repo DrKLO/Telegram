@@ -19,57 +19,57 @@ namespace rtc {
 
 // TODO(guoweis): Move this to SDP layer and use int form internally.
 // webrtc:5043.
-const char CS_AES_CM_128_HMAC_SHA1_80[] = "AES_CM_128_HMAC_SHA1_80";
-const char CS_AES_CM_128_HMAC_SHA1_32[] = "AES_CM_128_HMAC_SHA1_32";
-const char CS_AEAD_AES_128_GCM[] = "AEAD_AES_128_GCM";
-const char CS_AEAD_AES_256_GCM[] = "AEAD_AES_256_GCM";
+const char kCsAesCm128HmacSha1_80[] = "AES_CM_128_HMAC_SHA1_80";
+const char kCsAesCm128HmacSha1_32[] = "AES_CM_128_HMAC_SHA1_32";
+const char kCsAeadAes128Gcm[] = "AEAD_AES_128_GCM";
+const char kCsAeadAes256Gcm[] = "AEAD_AES_256_GCM";
 
 std::string SrtpCryptoSuiteToName(int crypto_suite) {
   switch (crypto_suite) {
-    case SRTP_AES128_CM_SHA1_32:
-      return CS_AES_CM_128_HMAC_SHA1_32;
-    case SRTP_AES128_CM_SHA1_80:
-      return CS_AES_CM_128_HMAC_SHA1_80;
-    case SRTP_AEAD_AES_128_GCM:
-      return CS_AEAD_AES_128_GCM;
-    case SRTP_AEAD_AES_256_GCM:
-      return CS_AEAD_AES_256_GCM;
+    case kSrtpAes128CmSha1_32:
+      return kCsAesCm128HmacSha1_32;
+    case kSrtpAes128CmSha1_80:
+      return kCsAesCm128HmacSha1_80;
+    case kSrtpAeadAes128Gcm:
+      return kCsAeadAes128Gcm;
+    case kSrtpAeadAes256Gcm:
+      return kCsAeadAes256Gcm;
     default:
       return std::string();
   }
 }
 
 int SrtpCryptoSuiteFromName(const std::string& crypto_suite) {
-  if (crypto_suite == CS_AES_CM_128_HMAC_SHA1_32)
-    return SRTP_AES128_CM_SHA1_32;
-  if (crypto_suite == CS_AES_CM_128_HMAC_SHA1_80)
-    return SRTP_AES128_CM_SHA1_80;
-  if (crypto_suite == CS_AEAD_AES_128_GCM)
-    return SRTP_AEAD_AES_128_GCM;
-  if (crypto_suite == CS_AEAD_AES_256_GCM)
-    return SRTP_AEAD_AES_256_GCM;
-  return SRTP_INVALID_CRYPTO_SUITE;
+  if (crypto_suite == kCsAesCm128HmacSha1_32)
+    return kSrtpAes128CmSha1_32;
+  if (crypto_suite == kCsAesCm128HmacSha1_80)
+    return kSrtpAes128CmSha1_80;
+  if (crypto_suite == kCsAeadAes128Gcm)
+    return kSrtpAeadAes128Gcm;
+  if (crypto_suite == kCsAeadAes256Gcm)
+    return kSrtpAeadAes256Gcm;
+  return kSrtpInvalidCryptoSuite;
 }
 
 bool GetSrtpKeyAndSaltLengths(int crypto_suite,
                               int* key_length,
                               int* salt_length) {
   switch (crypto_suite) {
-    case SRTP_AES128_CM_SHA1_32:
-    case SRTP_AES128_CM_SHA1_80:
+    case kSrtpAes128CmSha1_32:
+    case kSrtpAes128CmSha1_80:
       // SRTP_AES128_CM_HMAC_SHA1_32 and SRTP_AES128_CM_HMAC_SHA1_80 are defined
       // in RFC 5764 to use a 128 bits key and 112 bits salt for the cipher.
       *key_length = 16;
       *salt_length = 14;
       break;
-    case SRTP_AEAD_AES_128_GCM:
-      // SRTP_AEAD_AES_128_GCM is defined in RFC 7714 to use a 128 bits key and
+    case kSrtpAeadAes128Gcm:
+      // kSrtpAeadAes128Gcm is defined in RFC 7714 to use a 128 bits key and
       // a 96 bits salt for the cipher.
       *key_length = 16;
       *salt_length = 12;
       break;
-    case SRTP_AEAD_AES_256_GCM:
-      // SRTP_AEAD_AES_256_GCM is defined in RFC 7714 to use a 256 bits key and
+    case kSrtpAeadAes256Gcm:
+      // kSrtpAeadAes256Gcm is defined in RFC 7714 to use a 256 bits key and
       // a 96 bits salt for the cipher.
       *key_length = 32;
       *salt_length = 12;
@@ -81,13 +81,12 @@ bool GetSrtpKeyAndSaltLengths(int crypto_suite,
 }
 
 bool IsGcmCryptoSuite(int crypto_suite) {
-  return (crypto_suite == SRTP_AEAD_AES_256_GCM ||
-          crypto_suite == SRTP_AEAD_AES_128_GCM);
+  return (crypto_suite == kSrtpAeadAes256Gcm ||
+          crypto_suite == kSrtpAeadAes128Gcm);
 }
 
 bool IsGcmCryptoSuiteName(const std::string& crypto_suite) {
-  return (crypto_suite == CS_AEAD_AES_256_GCM ||
-          crypto_suite == CS_AEAD_AES_128_GCM);
+  return (crypto_suite == kCsAeadAes256Gcm || crypto_suite == kCsAeadAes128Gcm);
 }
 
 std::unique_ptr<SSLStreamAdapter> SSLStreamAdapter::Create(

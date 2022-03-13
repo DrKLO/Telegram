@@ -13,10 +13,10 @@
 #include <cstdint>
 #include <memory>
 #include <string>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
+#include "absl/functional/bind_front.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "api/array_view.h"
@@ -32,6 +32,7 @@
 #include "net/dcsctp/socket/context.h"
 #include "net/dcsctp/timer/timer.h"
 #include "net/dcsctp/tx/retransmission_queue.h"
+#include "rtc_base/containers/flat_set.h"
 
 namespace dcsctp {
 
@@ -69,7 +70,8 @@ class StreamResetHandler {
                      TimerManager* timer_manager,
                      DataTracker* data_tracker,
                      ReassemblyQueue* reassembly_queue,
-                     RetransmissionQueue* retransmission_queue)
+                     RetransmissionQueue* retransmission_queue,
+                     const DcSctpSocketHandoverState* handover_state = nullptr)
       : log_prefix_(std::string(log_prefix) + "reset: "),
         ctx_(context),
         data_tracker_(data_tracker),
@@ -77,11 +79,17 @@ class StreamResetHandler {
         retransmission_queue_(retransmission_queue),
         reconfig_timer_(timer_manager->CreateTimer(
             "re-config",
-            [this]() { return OnReconfigTimerExpiry(); },
+            absl::bind_front(&StreamResetHandler::OnReconfigTimerExpiry, this),
             TimerOptions(DurationMs(0)))),
-        next_outgoing_req_seq_nbr_(ReconfigRequestSN(*ctx_->my_initial_tsn())),
+        next_outgoing_req_seq_nbr_(
+            handover_state
+                ? ReconfigRequestSN(handover_state->tx.next_reset_req_sn)
+                : ReconfigRequestSN(*ctx_->my_initial_tsn())),
         last_processed_req_seq_nbr_(
-            ReconfigRequestSN(*ctx_->peer_initial_tsn() - 1)) {}
+            handover_state ? ReconfigRequestSN(
+                                 handover_state->rx.last_completed_reset_req_sn)
+                           : ReconfigRequestSN(*ctx_->peer_initial_tsn() - 1)) {
+  }
 
   // Initiates reset of the provided streams. While there can only be one
   // ongoing stream reset request at any time, this method can be called at any
@@ -98,6 +106,10 @@ class StreamResetHandler {
 
   // Called when handling and incoming RE-CONFIG chunk.
   void HandleReConfig(ReConfigChunk chunk);
+
+  HandoverReadinessStatus GetHandoverReadiness() const;
+
+  void AddHandoverState(DcSctpSocketHandoverState& state);
 
  private:
   // Represents a stream request operation. There can only be one ongoing at
@@ -206,7 +218,7 @@ class StreamResetHandler {
 
   // Outgoing streams that have been requested to be reset, but hasn't yet
   // been included in an outgoing request.
-  std::unordered_set<StreamID, StreamID::Hasher> streams_to_reset_;
+  webrtc::flat_set<StreamID> streams_to_reset_;
 
   // The next sequence number for outgoing stream requests.
   ReconfigRequestSN next_outgoing_req_seq_nbr_;

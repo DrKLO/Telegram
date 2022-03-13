@@ -21,6 +21,7 @@
 
 #include "absl/base/config.h"
 #include "absl/flags/declare.h"
+#include "absl/strings/string_view.h"
 
 ABSL_DECLARE_FLAG(std::vector<std::string>, flagfile);
 ABSL_DECLARE_FLAG(std::vector<std::string>, fromenv);
@@ -43,6 +44,13 @@ std::vector<char*> ParseCommandLineImpl(int argc, char* argv[],
                                         ArgvListAction arg_list_act,
                                         UsageFlagsAction usage_flag_act,
                                         OnUndefinedFlag on_undef_flag);
+
+// --------------------------------------------------------------------
+// Inspect original command line
+
+// Returns true if flag with specified name was either present on the original
+// command line or specified in flag file present on the original command line.
+bool WasPresentOnCommandLine(absl::string_view flag_name);
 
 }  // namespace flags_internal
 ABSL_NAMESPACE_END

@@ -32,9 +32,9 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) && !defined(__Userspace__)
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD: head/sys/netinet/sctp_auth.c 355931 2019-12-20 15:25:08Z tuexen $");
+__FBSDID("$FreeBSD: head/sys/netinet/sctp_auth.c 365071 2020-09-01 21:19:14Z mjg $");
 #endif
 
 #include <netinet/sctp_os.h>
@@ -52,7 +52,6 @@ __FBSDID("$FreeBSD: head/sys/netinet/sctp_auth.c 355931 2019-12-20 15:25:08Z tue
 #define SCTP_AUTH_DEBUG		(SCTP_BASE_SYSCTL(sctp_debug_on) & SCTP_DEBUG_AUTH1)
 #define SCTP_AUTH_DEBUG2	(SCTP_BASE_SYSCTL(sctp_debug_on) & SCTP_DEBUG_AUTH2)
 #endif /* SCTP_DEBUG */
-
 
 void
 sctp_clear_chunklist(sctp_auth_chklist_t *chklist)
@@ -100,7 +99,6 @@ sctp_copy_chunklist(sctp_auth_chklist_t *list)
 
 	return (new_list);
 }
-
 
 /*
  * add a chunk to the required chunks list
@@ -240,7 +238,6 @@ sctp_unpack_auth_chunks(const uint8_t *ptr, uint8_t num_chunks,
 	}
 	return (size);
 }
-
 
 /*
  * allocate structure space for a key of length keylen
@@ -458,7 +455,6 @@ sctp_compute_hashkey(sctp_key_t *key1, sctp_key_t *key2, sctp_key_t *shared)
 	return (new_key);
 }
 
-
 sctp_sharedkey_t *
 sctp_alloc_sharedkey(void)
 {
@@ -567,11 +563,7 @@ sctp_auth_key_acquire(struct sctp_tcb *stcb, uint16_t key_id)
 }
 
 void
-sctp_auth_key_release(struct sctp_tcb *stcb, uint16_t key_id, int so_locked
-#if !defined(__APPLE__) && !defined(SCTP_SO_LOCK_TESTING)
-	SCTP_UNUSED
-#endif
-)
+sctp_auth_key_release(struct sctp_tcb *stcb, uint16_t key_id, int so_locked)
 {
 	sctp_sharedkey_t *skey;
 
@@ -636,7 +628,6 @@ sctp_copy_skeylist(const struct sctp_keyhead *src, struct sctp_keyhead *dest)
 	return (count);
 }
 
-
 sctp_hmaclist_t *
 sctp_alloc_hmaclist(uint16_t num_hmacs)
 {
@@ -660,7 +651,6 @@ sctp_free_hmaclist(sctp_hmaclist_t *list)
 {
 	if (list != NULL) {
 		SCTP_FREE(list,SCTP_M_AUTH_HL);
-		list = NULL;
 	}
 }
 
@@ -830,7 +820,6 @@ sctp_free_authinfo(sctp_authinfo_t *authinfo)
 	/* We are NOT dynamically allocating authinfo's right now... */
 	/* SCTP_FREE(authinfo, SCTP_M_AUTH_??); */
 }
-
 
 uint32_t
 sctp_get_auth_chunk_len(uint16_t hmac_algo)
@@ -1170,7 +1159,6 @@ sctp_auth_is_supported_hmac(sctp_hmaclist_t *list, uint16_t id)
 	/* not in the list */
 	return (0);
 }
-
 
 /*-
  * clear any cached key(s) if they match the given key id on an association.
@@ -1584,7 +1572,6 @@ sctp_fill_hmac_digest_m(struct mbuf *m, uint32_t auth_offset,
 				  m, auth_offset, auth->hmac);
 }
 
-
 static void
 sctp_zero_m(struct mbuf *m, uint32_t m_offset, uint32_t size)
 {
@@ -1650,6 +1637,9 @@ sctp_handle_auth(struct sctp_tcb *stcb, struct sctp_auth_chunk *auth,
 		"SCTP AUTH Chunk: shared key %u, HMAC id %u\n",
 		shared_key_id, hmac_id);
 
+#if defined(__Userspace__) && defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION)
+	return (0);
+#endif
 	/* is the indicated HMAC supported? */
 	if (!sctp_auth_is_supported_hmac(stcb->asoc.local_hmacs, hmac_id)) {
 		struct mbuf *op_err;
@@ -1730,11 +1720,6 @@ sctp_handle_auth(struct sctp_tcb *stcb, struct sctp_auth_chunk *auth,
 	(void)sctp_compute_hmac_m(hmac_id, stcb->asoc.authinfo.recv_key,
 	    m, offset, computed_digest);
 
-#if defined(__Userspace__)
-#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-	return (0);
-#endif
-#endif
 	/* compare the computed digest with the one in the AUTH chunk */
 	if (timingsafe_bcmp(digest, computed_digest, digestlen) != 0) {
 		SCTP_STAT_INCR(sctps_recvauthfailed);
@@ -1750,11 +1735,7 @@ sctp_handle_auth(struct sctp_tcb *stcb, struct sctp_auth_chunk *auth,
  */
 void
 sctp_notify_authentication(struct sctp_tcb *stcb, uint32_t indication,
-			   uint16_t keyid, uint16_t alt_keyid, int so_locked
-#if !defined(__APPLE__) && !defined(SCTP_SO_LOCK_TESTING)
-	SCTP_UNUSED
-#endif
-)
+			   uint16_t keyid, uint16_t alt_keyid, int so_locked)
 {
 	struct mbuf *m_notify;
 	struct sctp_authkey_event *auth;
@@ -1808,7 +1789,6 @@ sctp_notify_authentication(struct sctp_tcb *stcb, uint32_t indication,
 	sctp_add_to_readq(stcb->sctp_ep, stcb, control,
 	    &stcb->sctp_socket->so_rcv, 1, SCTP_READ_LOCK_NOT_HELD, so_locked);
 }
-
 
 /*-
  * validates the AUTHentication related parameters in an INIT/INIT-ACK
@@ -1924,7 +1904,6 @@ sctp_validate_init_auth_params(struct mbuf *m, int offset, int limit)
 					saw_asconf = 1;
 				if (chunks->chunk_types[i] == SCTP_ASCONF_ACK)
 					saw_asconf_ack = 1;
-
 			}
 			if (num_chunks)
 				got_chklist = 1;

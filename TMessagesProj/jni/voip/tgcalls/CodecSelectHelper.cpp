@@ -106,11 +106,7 @@ std::vector<VideoFormat>::const_iterator FindEqualFormat(
 		const std::vector<VideoFormat> &list,
 		const VideoFormat &format) {
 	return std::find_if(list.begin(), list.end(), [&](const VideoFormat &other) {
-		return cricket::IsSameCodec(
-			format.name,
-			format.parameters,
-			other.name,
-			other.parameters);
+        return format.IsSameCodec(other);
 	});
 }
 

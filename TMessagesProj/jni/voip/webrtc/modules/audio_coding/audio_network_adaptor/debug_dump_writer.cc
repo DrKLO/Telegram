@@ -76,7 +76,7 @@ DebugDumpWriterImpl::DebugDumpWriterImpl(FILE* file_handle) {
   dump_file_ = FileWrapper(file_handle);
   RTC_CHECK(dump_file_.is_open());
 #else
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
 #endif
 }
 

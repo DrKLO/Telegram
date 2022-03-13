@@ -14,6 +14,7 @@
 #include <utility>
 
 #include "absl/types/optional.h"
+#include "api/dtls_transport_interface.h"
 #include "api/sequence_checker.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/location.h"
@@ -95,9 +96,9 @@ void SctpTransport::SetDtlsTransport(
     if (transport) {
       internal_sctp_transport_->SetDtlsTransport(transport->internal());
 
-      transport->internal()->SubscribeDtlsState(
+      transport->internal()->SubscribeDtlsTransportState(
           [this](cricket::DtlsTransportInternal* transport,
-                 cricket::DtlsTransportState state) {
+                 DtlsTransportState state) {
             OnDtlsStateChange(transport, state);
           });
       if (info_.state() == SctpTransportState::kNew) {
@@ -159,11 +160,11 @@ void SctpTransport::OnAssociationChangeCommunicationUp() {
 }
 
 void SctpTransport::OnDtlsStateChange(cricket::DtlsTransportInternal* transport,
-                                      cricket::DtlsTransportState state) {
+                                      DtlsTransportState state) {
   RTC_DCHECK_RUN_ON(owner_thread_);
   RTC_CHECK(transport == dtls_transport_->internal());
-  if (state == cricket::DTLS_TRANSPORT_CLOSED ||
-      state == cricket::DTLS_TRANSPORT_FAILED) {
+  if (state == DtlsTransportState::kClosed ||
+      state == DtlsTransportState::kFailed) {
     UpdateInformation(SctpTransportState::kClosed);
     // TODO(http://bugs.webrtc.org/11090): Close all the data channels
   }

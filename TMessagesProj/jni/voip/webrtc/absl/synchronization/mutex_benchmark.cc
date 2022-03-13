@@ -16,6 +16,7 @@
 #include <mutex>  // NOLINT(build/c++11)
 #include <vector>
 
+#include "absl/base/config.h"
 #include "absl/base/internal/cycleclock.h"
 #include "absl/base/internal/spinlock.h"
 #include "absl/synchronization/blocking_counter.h"
@@ -60,8 +61,124 @@ class RaiiLocker<std::mutex> {
   std::mutex* mu_;
 };
 
+// RAII object to change the Mutex priority of the running thread.
+class ScopedThreadMutexPriority {
+ public:
+  explicit ScopedThreadMutexPriority(int priority) {
+    absl::base_internal::ThreadIdentity* identity =
+        absl::synchronization_internal::GetOrCreateCurrentThreadIdentity();
+    identity->per_thread_synch.priority = priority;
+    // Bump next_priority_read_cycles to the infinite future so that the
+    // implementation doesn't re-read the thread's actual scheduler priority
+    // and replace our temporary scoped priority.
+    identity->per_thread_synch.next_priority_read_cycles =
+        std::numeric_limits<int64_t>::max();
+  }
+  ~ScopedThreadMutexPriority() {
+    // Reset the "next priority read time" back to the infinite past so that
+    // the next time the Mutex implementation wants to know this thread's
+    // priority, it re-reads it from the OS instead of using our overridden
+    // priority.
+    absl::synchronization_internal::GetOrCreateCurrentThreadIdentity()
+        ->per_thread_synch.next_priority_read_cycles =
+        std::numeric_limits<int64_t>::min();
+  }
+};
+
+void BM_MutexEnqueue(benchmark::State& state) {
+  // In the "multiple priorities" variant of the benchmark, one of the
+  // threads runs with Mutex priority 0 while the rest run at elevated priority.
+  // This benchmarks the performance impact of the presence of a low priority
+  // waiter when a higher priority waiter adds itself of the queue
+  // (b/175224064).
+  //
+  // NOTE: The actual scheduler priority is not modified in this benchmark:
+  // all of the threads get CPU slices with the same priority. Only the
+  // Mutex queueing behavior is modified.
+  const bool multiple_priorities = state.range(0);
+  ScopedThreadMutexPriority priority_setter(
+      (multiple_priorities && state.thread_index() != 0) ? 1 : 0);
+
+  struct Shared {
+    absl::Mutex mu;
+    std::atomic<int> looping_threads{0};
+    std::atomic<int> blocked_threads{0};
+    std::atomic<bool> thread_has_mutex{false};
+  };
+  static Shared* shared = new Shared;
+
+  // Set up 'blocked_threads' to count how many threads are currently blocked
+  // in Abseil synchronization code.
+  //
+  // NOTE: Blocking done within the Google Benchmark library itself (e.g.
+  // the barrier which synchronizes threads entering and exiting the benchmark
+  // loop) does _not_ get registered in this counter. This is because Google
+  // Benchmark uses its own synchronization primitives based on std::mutex, not
+  // Abseil synchronization primitives. If at some point the benchmark library
+  // merges into Abseil, this code may break.
+  absl::synchronization_internal::PerThreadSem::SetThreadBlockedCounter(
+      &shared->blocked_threads);
+
+  // The benchmark framework may run several iterations in the same process,
+  // reusing the same static-initialized 'shared' object. Given the semantics
+  // of the members, here, we expect everything to be reset to zero by the
+  // end of any iteration. Assert that's the case, just to be sure.
+  ABSL_RAW_CHECK(
+      shared->looping_threads.load(std::memory_order_relaxed) == 0 &&
+          shared->blocked_threads.load(std::memory_order_relaxed) == 0 &&
+          !shared->thread_has_mutex.load(std::memory_order_relaxed),
+      "Shared state isn't zeroed at start of benchmark iteration");
+
+  static constexpr int kBatchSize = 1000;
+  while (state.KeepRunningBatch(kBatchSize)) {
+    shared->looping_threads.fetch_add(1);
+    for (int i = 0; i < kBatchSize; i++) {
+      {
+        absl::MutexLock l(&shared->mu);
+        shared->thread_has_mutex.store(true, std::memory_order_relaxed);
+        // Spin until all other threads are either out of the benchmark loop
+        // or blocked on the mutex. This ensures that the mutex queue is kept
+        // at its maximal length to benchmark the performance of queueing on
+        // a highly contended mutex.
+        while (shared->looping_threads.load(std::memory_order_relaxed) -
+                   shared->blocked_threads.load(std::memory_order_relaxed) !=
+               1) {
+        }
+        shared->thread_has_mutex.store(false);
+      }
+      // Spin until some other thread has acquired the mutex before we block
+      // again. This ensures that we always go through the slow (queueing)
+      // acquisition path rather than reacquiring the mutex we just released.
+      while (!shared->thread_has_mutex.load(std::memory_order_relaxed) &&
+             shared->looping_threads.load(std::memory_order_relaxed) > 1) {
+      }
+    }
+    // The benchmark framework uses a barrier to ensure that all of the threads
+    // complete their benchmark loop together before any of the threads exit
+    // the loop. So, we need to remove ourselves from the "looping threads"
+    // counter here before potentially blocking on that barrier. Otherwise,
+    // another thread spinning above might wait forever for this thread to
+    // block on the mutex while we in fact are waiting to exit.
+    shared->looping_threads.fetch_add(-1);
+  }
+  absl::synchronization_internal::PerThreadSem::SetThreadBlockedCounter(
+      nullptr);
+}
+
+BENCHMARK(BM_MutexEnqueue)
+    ->Threads(4)
+    ->Threads(64)
+    ->Threads(128)
+    ->Threads(512)
+    ->ArgName("multiple_priorities")
+    ->Arg(false)
+    ->Arg(true);
+
 template <typename MutexType>
 void BM_Contended(benchmark::State& state) {
+  int priority = state.thread_index() % state.range(1);
+  ScopedThreadMutexPriority priority_setter(priority);
+
   struct Shared {
     MutexType mu;
     int data = 0;
@@ -79,86 +196,56 @@ void BM_Contended(benchmark::State& state) {
     // To achieve this amount of local work is multiplied by number of threads
     // to keep ratio between local work and critical section approximately
     // equal regardless of number of threads.
-    DelayNs(100 * state.threads, &local);
+    DelayNs(100 * state.threads(), &local);
     RaiiLocker<MutexType> locker(&shared->mu);
     DelayNs(state.range(0), &shared->data);
   }
 }
+void SetupBenchmarkArgs(benchmark::internal::Benchmark* bm,
+                        bool do_test_priorities) {
+  const int max_num_priorities = do_test_priorities ? 2 : 1;
+  bm->UseRealTime()
+      // ThreadPerCpu poorly handles non-power-of-two CPU counts.
+      ->Threads(1)
+      ->Threads(2)
+      ->Threads(4)
+      ->Threads(6)
+      ->Threads(8)
+      ->Threads(12)
+      ->Threads(16)
+      ->Threads(24)
+      ->Threads(32)
+      ->Threads(48)
+      ->Threads(64)
+      ->Threads(96)
+      ->Threads(128)
+      ->Threads(192)
+      ->Threads(256)
+      ->ArgNames({"cs_ns", "num_prios"});
+  // Some empirically chosen amounts of work in critical section.
+  // 1 is low contention, 2000 is high contention and few values in between.
+  for (int critical_section_ns : {1, 20, 50, 200, 2000}) {
+    for (int num_priorities = 1; num_priorities <= max_num_priorities;
+         num_priorities++) {
+      bm->ArgPair(critical_section_ns, num_priorities);
+    }
+  }
+}
 
 BENCHMARK_TEMPLATE(BM_Contended, absl::Mutex)
-    ->UseRealTime()
-    // ThreadPerCpu poorly handles non-power-of-two CPU counts.
-    ->Threads(1)
-    ->Threads(2)
-    ->Threads(4)
-    ->Threads(6)
-    ->Threads(8)
-    ->Threads(12)
-    ->Threads(16)
-    ->Threads(24)
-    ->Threads(32)
-    ->Threads(48)
-    ->Threads(64)
-    ->Threads(96)
-    ->Threads(128)
-    ->Threads(192)
-    ->Threads(256)
-    // Some empirically chosen amounts of work in critical section.
-    // 1 is low contention, 200 is high contention and few values in between.
-    ->Arg(1)
-    ->Arg(20)
-    ->Arg(50)
-    ->Arg(200);
+    ->Apply([](benchmark::internal::Benchmark* bm) {
+      SetupBenchmarkArgs(bm, /*do_test_priorities=*/true);
+    });
 
 BENCHMARK_TEMPLATE(BM_Contended, absl::base_internal::SpinLock)
-    ->UseRealTime()
-    // ThreadPerCpu poorly handles non-power-of-two CPU counts.
-    ->Threads(1)
-    ->Threads(2)
-    ->Threads(4)
-    ->Threads(6)
-    ->Threads(8)
-    ->Threads(12)
-    ->Threads(16)
-    ->Threads(24)
-    ->Threads(32)
-    ->Threads(48)
-    ->Threads(64)
-    ->Threads(96)
-    ->Threads(128)
-    ->Threads(192)
-    ->Threads(256)
-    // Some empirically chosen amounts of work in critical section.
-    // 1 is low contention, 200 is high contention and few values in between.
-    ->Arg(1)
-    ->Arg(20)
-    ->Arg(50)
-    ->Arg(200);
+    ->Apply([](benchmark::internal::Benchmark* bm) {
+      SetupBenchmarkArgs(bm, /*do_test_priorities=*/false);
+    });
 
 BENCHMARK_TEMPLATE(BM_Contended, std::mutex)
-    ->UseRealTime()
-    // ThreadPerCpu poorly handles non-power-of-two CPU counts.
-    ->Threads(1)
-    ->Threads(2)
-    ->Threads(4)
-    ->Threads(6)
-    ->Threads(8)
-    ->Threads(12)
-    ->Threads(16)
-    ->Threads(24)
-    ->Threads(32)
-    ->Threads(48)
-    ->Threads(64)
-    ->Threads(96)
-    ->Threads(128)
-    ->Threads(192)
-    ->Threads(256)
-    // Some empirically chosen amounts of work in critical section.
-    // 1 is low contention, 200 is high contention and few values in between.
-    ->Arg(1)
-    ->Arg(20)
-    ->Arg(50)
-    ->Arg(200);
+    ->Apply([](benchmark::internal::Benchmark* bm) {
+      SetupBenchmarkArgs(bm, /*do_test_priorities=*/false);
+    });
 
 // Measure the overhead of conditions on mutex release (when they must be
 // evaluated).  Mutex has (some) support for equivalence classes allowing
@@ -213,7 +300,7 @@ void BM_ConditionWaiters(benchmark::State& state) {
 }
 
 // Some configurations have higher thread limits than others.
-#if defined(__linux__) && !defined(THREAD_SANITIZER)
+#if defined(__linux__) && !defined(ABSL_HAVE_THREAD_SANITIZER)
 constexpr int kMaxConditionWaiters = 8192;
 #else
 constexpr int kMaxConditionWaiters = 1024;

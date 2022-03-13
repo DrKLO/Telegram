@@ -116,7 +116,7 @@ int32_t DeviceInfoLinux::GetDeviceName(uint32_t deviceNumber,
   memset(deviceNameUTF8, 0, deviceNameLength);
   memcpy(cameraName, cap.card, sizeof(cap.card));
 
-  if (deviceNameLength >= strlen(cameraName)) {
+  if (deviceNameLength > strlen(cameraName)) {
     memcpy(deviceNameUTF8, cameraName, strlen(cameraName));
   } else {
     RTC_LOG(LS_INFO) << "buffer passed is too small";
@@ -126,7 +126,7 @@ int32_t DeviceInfoLinux::GetDeviceName(uint32_t deviceNumber,
   if (cap.bus_info[0] != 0)  // may not available in all drivers
   {
     // copy device id
-    if (deviceUniqueIdUTF8Length >= strlen((const char*)cap.bus_info)) {
+    if (deviceUniqueIdUTF8Length > strlen((const char*)cap.bus_info)) {
       memset(deviceUniqueIdUTF8, 0, deviceUniqueIdUTF8Length);
       memcpy(deviceUniqueIdUTF8, cap.bus_info,
              strlen((const char*)cap.bus_info));
@@ -146,7 +146,7 @@ int32_t DeviceInfoLinux::CreateCapabilityMap(const char* deviceUniqueIdUTF8) {
 
   const int32_t deviceUniqueIdUTF8Length =
       (int32_t)strlen((char*)deviceUniqueIdUTF8);
-  if (deviceUniqueIdUTF8Length > kVideoCaptureUniqueNameLength) {
+  if (deviceUniqueIdUTF8Length >= kVideoCaptureUniqueNameLength) {
     RTC_LOG(LS_INFO) << "Device name too long";
     return -1;
   }

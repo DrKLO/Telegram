@@ -37,7 +37,7 @@ class RTC_EXPORT JsepIceCandidate : public IceCandidateInterface {
   JsepIceCandidate(const JsepIceCandidate&) = delete;
   JsepIceCandidate& operator=(const JsepIceCandidate&) = delete;
   ~JsepIceCandidate() override;
-  // |err| may be null.
+  // `err` may be null.
   bool Initialize(const std::string& sdp, SdpParseError* err);
   void SetCandidate(const cricket::Candidate& candidate) {
     candidate_ = candidate;

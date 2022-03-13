@@ -24,7 +24,7 @@ std::unique_ptr<VoipEngine> CreateVoipEngine(VoipEngineConfig config) {
   RTC_CHECK(config.audio_device_module);
 
   if (!config.audio_processing) {
-    RTC_DLOG(INFO) << "No audio processing functionality provided.";
+    RTC_DLOG(LS_INFO) << "No audio processing functionality provided.";
   }
 
   return std::make_unique<VoipCore>(std::move(config.encoder_factory),

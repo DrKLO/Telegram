@@ -66,7 +66,7 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
     private RLottieImageView statusImageView;
     private LineProgressView progressView;
     private CheckBox2 checkBox;
-    private TextView rightDateTextView;
+    public TextView rightDateTextView;
     private TextView captionTextView;
 
     private boolean drawDownloadIcon = true;
@@ -395,6 +395,17 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
                 }
             }
             String fileName = FileLoader.getDocumentFileName(document);
+            if (TextUtils.isEmpty(fileName)) {
+                if (document.mime_type.startsWith("video")) {
+                    fileName = LocaleController.getString("AttachVideo", R.string.AttachVideo);
+                } else if (document.mime_type.startsWith("image")) {
+                    fileName = LocaleController.getString("AttachPhoto", R.string.AttachPhoto);
+                } else if (document.mime_type.startsWith("audio")) {
+                    fileName = LocaleController.getString("AttachAudio", R.string.AttachAudio);
+                } else {
+                    fileName = LocaleController.getString("AttachDocument", R.string.AttachDocument);
+                }
+            }
             if (name == null) {
                 name = fileName;
             }

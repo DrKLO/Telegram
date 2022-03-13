@@ -55,21 +55,22 @@ uint16_t VCMDecodingState::sequence_num() const {
 }
 
 bool VCMDecodingState::IsOldFrame(const VCMFrameBuffer* frame) const {
-  assert(frame != NULL);
+  RTC_DCHECK(frame);
   if (in_initial_state_)
     return false;
   return !IsNewerTimestamp(frame->Timestamp(), time_stamp_);
 }
 
 bool VCMDecodingState::IsOldPacket(const VCMPacket* packet) const {
-  assert(packet != NULL);
+  RTC_DCHECK(packet);
   if (in_initial_state_)
     return false;
   return !IsNewerTimestamp(packet->timestamp, time_stamp_);
 }
 
 void VCMDecodingState::SetState(const VCMFrameBuffer* frame) {
-  assert(frame != NULL && frame->GetHighSeqNum() >= 0);
+  RTC_DCHECK(frame);
+  RTC_CHECK_GE(frame->GetHighSeqNum(), 0);
   if (!UsingFlexibleMode(frame))
     UpdateSyncState(frame);
   sequence_num_ = static_cast<uint16_t>(frame->GetHighSeqNum());
@@ -150,7 +151,7 @@ bool VCMDecodingState::UpdateEmptyFrame(const VCMFrameBuffer* frame) {
 }
 
 void VCMDecodingState::UpdateOldPacket(const VCMPacket* packet) {
-  assert(packet != NULL);
+  RTC_DCHECK(packet);
   if (packet->timestamp == time_stamp_) {
     // Late packet belonging to the last decoded frame - make sure we update the
     // last decoded sequence number.
@@ -204,7 +205,7 @@ bool VCMDecodingState::ContinuousFrame(const VCMFrameBuffer* frame) const {
   // - Sequence numbers.
   // Return true when in initial state.
   // Note that when a method is not applicable it will return false.
-  assert(frame != NULL);
+  RTC_DCHECK(frame);
   // A key frame is always considered continuous as it doesn't refer to any
   // frames and therefore won't introduce any errors even if prior frames are
   // missing.

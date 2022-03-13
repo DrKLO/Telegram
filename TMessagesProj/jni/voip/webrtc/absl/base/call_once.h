@@ -175,17 +175,10 @@ void CallOnceImpl(std::atomic<uint32_t>* control,
                                        std::memory_order_relaxed) ||
       base_internal::SpinLockWait(control, ABSL_ARRAYSIZE(trans), trans,
                                   scheduling_mode) == kOnceInit) {
-    base_internal::Invoke(std::forward<Callable>(fn),
+    base_internal::invoke(std::forward<Callable>(fn),
                           std::forward<Args>(args)...);
-    // The call to SpinLockWake below is an optimization, because the waiter
-    // in SpinLockWait is waiting with a short timeout. The atomic load/store
-    // sequence is slightly faster than an atomic exchange:
-    //   old_control = control->exchange(base_internal::kOnceDone,
-    //                                   std::memory_order_release);
-    // We opt for a slightly faster case when there are no waiters, in spite
-    // of longer tail latency when there are waiters.
-    old_control = control->load(std::memory_order_relaxed);
-    control->store(base_internal::kOnceDone, std::memory_order_release);
+    old_control =
+        control->exchange(base_internal::kOnceDone, std::memory_order_release);
     if (old_control == base_internal::kOnceWaiter) {
       base_internal::SpinLockWake(control, true);
     }

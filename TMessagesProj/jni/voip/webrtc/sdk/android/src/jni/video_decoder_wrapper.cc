@@ -10,7 +10,9 @@
 
 #include "sdk/android/src/jni/video_decoder_wrapper.h"
 
+#include "api/video/render_resolution.h"
 #include "api/video/video_frame.h"
+#include "api/video_codecs/video_decoder.h"
 #include "modules/video_coding/include/video_codec_interface.h"
 #include "modules/video_coding/utility/vp8_header_parser.h"
 #include "modules/video_coding/utility/vp9_uncompressed_header_parser.h"
@@ -54,18 +56,18 @@ VideoDecoderWrapper::VideoDecoderWrapper(JNIEnv* jni,
 
 VideoDecoderWrapper::~VideoDecoderWrapper() = default;
 
-int32_t VideoDecoderWrapper::InitDecode(const VideoCodec* codec_settings,
-                                        int32_t number_of_cores) {
+bool VideoDecoderWrapper::Configure(const Settings& settings) {
   RTC_DCHECK_RUN_ON(&decoder_thread_checker_);
   JNIEnv* jni = AttachCurrentThreadIfNeeded();
-  codec_settings_ = *codec_settings;
-  number_of_cores_ = number_of_cores;
-  return InitDecodeInternal(jni);
+  decoder_settings_ = settings;
+  return ConfigureInternal(jni);
 }
 
-int32_t VideoDecoderWrapper::InitDecodeInternal(JNIEnv* jni) {
-  ScopedJavaLocalRef<jobject> settings = Java_Settings_Constructor(
-      jni, number_of_cores_, codec_settings_.width, codec_settings_.height);
+bool VideoDecoderWrapper::ConfigureInternal(JNIEnv* jni) {
+  RenderResolution resolution = decoder_settings_.max_render_resolution();
+  ScopedJavaLocalRef<jobject> settings =
+      Java_Settings_Constructor(jni, decoder_settings_.number_of_cores(),
+                                resolution.Width(), resolution.Height());
 
   ScopedJavaLocalRef<jobject> callback =
       Java_VideoDecoderWrapper_createDecoderCallback(jni,
@@ -82,7 +84,7 @@ int32_t VideoDecoderWrapper::InitDecodeInternal(JNIEnv* jni) {
   // providing QP values.
   qp_parsing_enabled_ = true;
 
-  return status;
+  return status == WEBRTC_VIDEO_CODEC_OK;
 }
 
 int32_t VideoDecoderWrapper::Decode(
@@ -211,8 +213,7 @@ int32_t VideoDecoderWrapper::HandleReturnCode(JNIEnv* jni,
   }
 
   // Try resetting the codec.
-  if (Release() == WEBRTC_VIDEO_CODEC_OK &&
-      InitDecodeInternal(jni) == WEBRTC_VIDEO_CODEC_OK) {
+  if (Release() == WEBRTC_VIDEO_CODEC_OK && ConfigureInternal(jni)) {
     RTC_LOG(LS_WARNING) << "Reset Java decoder.";
     return WEBRTC_VIDEO_CODEC_ERROR;
   }
@@ -228,7 +229,7 @@ absl::optional<uint8_t> VideoDecoderWrapper::ParseQP(
   }
 
   absl::optional<uint8_t> qp;
-  switch (codec_settings_.codecType) {
+  switch (decoder_settings_.codec_type()) {
     case kVideoCodecVP8: {
       int qp_int;
       if (vp8::GetQp(input_image.data(), input_image.size(), &qp_int)) {

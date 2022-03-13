@@ -102,13 +102,13 @@ class DelayedTaskInfo {
  private:
   int64_t due_time_ = 0;  // Absolute timestamp in milliseconds.
 
-  // |task| needs to be mutable because std::priority_queue::top() returns
+  // `task` needs to be mutable because std::priority_queue::top() returns
   // a const reference and a key in an ordered queue must not be changed.
   // There are two basic workarounds, one using const_cast, which would also
-  // make the key (|due_time|), non-const and the other is to make the non-key
-  // (|task|), mutable.
-  // Because of this, the |task| variable is made private and can only be
-  // mutated by calling the |Run()| method.
+  // make the key (`due_time`), non-const and the other is to make the non-key
+  // (`task`), mutable.
+  // Because of this, the `task` variable is made private and can only be
+  // mutated by calling the `Run()` method.
   mutable std::unique_ptr<QueuedTask> task_;
 };
 
@@ -335,7 +335,7 @@ bool TaskQueueWin::ProcessQueuedMessages() {
           break;
         }
         default:
-          RTC_NOTREACHED();
+          RTC_DCHECK_NOTREACHED();
           break;
       }
     } else {

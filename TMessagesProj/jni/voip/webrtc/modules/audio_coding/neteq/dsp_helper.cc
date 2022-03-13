@@ -10,7 +10,6 @@
 
 #include "modules/audio_coding/neteq/dsp_helper.h"
 
-#include <assert.h>
 #include <string.h>  // Access to memset.
 
 #include <algorithm>  // Access to min, max.
@@ -89,13 +88,13 @@ int DspHelper::RampSignal(AudioMultiVector* signal,
                           size_t length,
                           int factor,
                           int increment) {
-  assert(start_index + length <= signal->Size());
+  RTC_DCHECK_LE(start_index + length, signal->Size());
   if (start_index + length > signal->Size()) {
     // Wrong parameters. Do nothing and return the scale factor unaltered.
     return factor;
   }
   int end_factor = 0;
-  // Loop over the channels, starting at the same |factor| each time.
+  // Loop over the channels, starting at the same `factor` each time.
   for (size_t channel = 0; channel < signal->Channels(); ++channel) {
     end_factor =
         RampSignal(&(*signal)[channel], start_index, length, factor, increment);
@@ -117,7 +116,7 @@ void DspHelper::PeakDetection(int16_t* data,
       // Single peak.  The parabola fit assumes that an extra point is
       // available; worst case it gets a zero on the high end of the signal.
       // TODO(hlundin): This can potentially get much worse. It breaks the
-      // API contract, that the length of |data| is |data_length|.
+      // API contract, that the length of `data` is `data_length`.
       data_length++;
     }
 
@@ -355,7 +354,7 @@ int DspHelper::DownsampleTo4kHz(const int16_t* input,
       break;
     }
     default: {
-      assert(false);
+      RTC_DCHECK_NOTREACHED();
       return -1;
     }
   }

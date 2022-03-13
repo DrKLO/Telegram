@@ -31,12 +31,12 @@ class DecodedFramesHistory {
   void InsertDecoded(int64_t frame_id, uint32_t timestamp);
   // Query if the following (frame_id, spatial_id) pair was inserted before.
   // Should be at most less by window_size-1 than the last inserted frame id.
-  bool WasDecoded(int64_t frame_id);
+  bool WasDecoded(int64_t frame_id) const;
 
   void Clear();
 
-  absl::optional<int64_t> GetLastDecodedFrameId();
-  absl::optional<uint32_t> GetLastDecodedFrameTimestamp();
+  absl::optional<int64_t> GetLastDecodedFrameId() const;
+  absl::optional<uint32_t> GetLastDecodedFrameTimestamp() const;
 
  private:
   int FrameIdToIndex(int64_t frame_id) const;

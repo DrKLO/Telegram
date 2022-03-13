@@ -57,7 +57,7 @@
 #include "absl/random/beta_distribution.h"
 #include "absl/random/exponential_distribution.h"
 #include "absl/random/gaussian_distribution.h"
-#include "absl/random/internal/distributions.h"  // IWYU pragma: export
+#include "absl/random/internal/distribution_caller.h"  // IWYU pragma: export
 #include "absl/random/internal/uniform_helper.h"  // IWYU pragma: export
 #include "absl/random/log_uniform_int_distribution.h"
 #include "absl/random/poisson_distribution.h"
@@ -128,7 +128,7 @@ Uniform(TagType tag,
 
   auto a = random_internal::uniform_lower_bound(tag, lo, hi);
   auto b = random_internal::uniform_upper_bound(tag, lo, hi);
-  if (a > b) return a;
+  if (!random_internal::is_uniform_range_valid(a, b)) return lo;
 
   return random_internal::DistributionCaller<gen_t>::template Call<
       distribution_t>(&urbg, tag, lo, hi);
@@ -144,11 +144,11 @@ Uniform(URBG&& urbg,  // NOLINT(runtime/references)
         R lo, R hi) {
   using gen_t = absl::decay_t<URBG>;
   using distribution_t = random_internal::UniformDistributionWrapper<R>;
-
   constexpr auto tag = absl::IntervalClosedOpen;
+
   auto a = random_internal::uniform_lower_bound(tag, lo, hi);
   auto b = random_internal::uniform_upper_bound(tag, lo, hi);
-  if (a > b) return a;
+  if (!random_internal::is_uniform_range_valid(a, b)) return lo;
 
   return random_internal::DistributionCaller<gen_t>::template Call<
       distribution_t>(&urbg, lo, hi);
@@ -172,7 +172,7 @@ Uniform(TagType tag,
 
   auto a = random_internal::uniform_lower_bound<return_t>(tag, lo, hi);
   auto b = random_internal::uniform_upper_bound<return_t>(tag, lo, hi);
-  if (a > b) return a;
+  if (!random_internal::is_uniform_range_valid(a, b)) return lo;
 
   return random_internal::DistributionCaller<gen_t>::template Call<
       distribution_t>(&urbg, tag, static_cast<return_t>(lo),
@@ -196,7 +196,7 @@ Uniform(URBG&& urbg,  // NOLINT(runtime/references)
   constexpr auto tag = absl::IntervalClosedOpen;
   auto a = random_internal::uniform_lower_bound<return_t>(tag, lo, hi);
   auto b = random_internal::uniform_upper_bound<return_t>(tag, lo, hi);
-  if (a > b) return a;
+  if (!random_internal::is_uniform_range_valid(a, b)) return lo;
 
   return random_internal::DistributionCaller<gen_t>::template Call<
       distribution_t>(&urbg, static_cast<return_t>(lo),
@@ -373,7 +373,7 @@ RealType Gaussian(URBG&& urbg,  // NOLINT(runtime/references)
 template <typename IntType, typename URBG>
 IntType LogUniform(URBG&& urbg,  // NOLINT(runtime/references)
                    IntType lo, IntType hi, IntType base = 2) {
-  static_assert(std::is_integral<IntType>::value,
+  static_assert(random_internal::IsIntegral<IntType>::value,
                 "Template-argument 'IntType' must be an integral type, in "
                 "absl::LogUniform<IntType, URBG>(...)");
 
@@ -403,7 +403,7 @@ IntType LogUniform(URBG&& urbg,  // NOLINT(runtime/references)
 template <typename IntType, typename URBG>
 IntType Poisson(URBG&& urbg,  // NOLINT(runtime/references)
                 double mean = 1.0) {
-  static_assert(std::is_integral<IntType>::value,
+  static_assert(random_internal::IsIntegral<IntType>::value,
                 "Template-argument 'IntType' must be an integral type, in "
                 "absl::Poisson<IntType, URBG>(...)");
 
@@ -435,7 +435,7 @@ template <typename IntType, typename URBG>
 IntType Zipf(URBG&& urbg,  // NOLINT(runtime/references)
              IntType hi = (std::numeric_limits<IntType>::max)(), double q = 2.0,
              double v = 1.0) {
-  static_assert(std::is_integral<IntType>::value,
+  static_assert(random_internal::IsIntegral<IntType>::value,
                 "Template-argument 'IntType' must be an integral type, in "
                 "absl::Zipf<IntType, URBG>(...)");
 

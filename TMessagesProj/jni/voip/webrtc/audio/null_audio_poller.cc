@@ -47,7 +47,7 @@ void NullAudioPoller::OnMessage(rtc::Message* msg) {
 
   // Buffer to hold the audio samples.
   int16_t buffer[kNumSamples * kNumChannels];
-  // Output variables from |NeedMorePlayData|.
+  // Output variables from `NeedMorePlayData`.
   size_t n_samples;
   int64_t elapsed_time_ms;
   int64_t ntp_time_ms;

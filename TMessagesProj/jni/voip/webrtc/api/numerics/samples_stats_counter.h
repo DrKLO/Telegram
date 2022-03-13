@@ -82,7 +82,7 @@ class SamplesStatsCounter {
   // additions were done. This function may not be called if there are no
   // samples.
   //
-  // |percentile| has to be in [0; 1]. 0 percentile is the min in the array and
+  // `percentile` has to be in [0; 1]. 0 percentile is the min in the array and
   // 1 percentile is the max in the array.
   double GetPercentile(double percentile);
   // Returns array view with all samples added into counter. There are no
@@ -105,14 +105,14 @@ class SamplesStatsCounter {
   bool sorted_ = false;
 };
 
-// Multiply all sample values on |value| and return new SamplesStatsCounter
+// Multiply all sample values on `value` and return new SamplesStatsCounter
 // with resulted samples. Doesn't change origin SamplesStatsCounter.
 SamplesStatsCounter operator*(const SamplesStatsCounter& counter, double value);
 inline SamplesStatsCounter operator*(double value,
                                      const SamplesStatsCounter& counter) {
   return counter * value;
 }
-// Divide all sample values on |value| and return new SamplesStatsCounter with
+// Divide all sample values on `value` and return new SamplesStatsCounter with
 // resulted samples. Doesn't change origin SamplesStatsCounter.
 SamplesStatsCounter operator/(const SamplesStatsCounter& counter, double value);
 

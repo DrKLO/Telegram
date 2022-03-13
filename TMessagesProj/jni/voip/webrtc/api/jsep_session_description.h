@@ -43,7 +43,7 @@ class JsepSessionDescription : public SessionDescriptionInterface {
       absl::string_view session_version);
   virtual ~JsepSessionDescription();
 
-  // Takes ownership of |description|.
+  // Takes ownership of `description`.
   bool Initialize(std::unique_ptr<cricket::SessionDescription> description,
                   const std::string& session_id,
                   const std::string& session_version);

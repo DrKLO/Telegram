@@ -18,7 +18,7 @@
 #include <utility>
 
 #include "absl/strings/string_view.h"
-#include "rtc_base/bit_buffer.h"
+#include "rtc_base/bitstream_reader.h"
 
 namespace webrtc {
 
@@ -39,13 +39,11 @@ std::string EncodeVarInt(uint64_t input);
 std::pair<bool, absl::string_view> DecodeVarInt(absl::string_view input,
                                                 uint64_t* output);
 
-// Same as other version, but uses a rtc::BitBuffer for input.
-// If decoding is successful, a non-zero number is returned, indicating the
-// number of bytes read from `input`, and the decoded varint is written
-// into `output`.
-// If not successful, 0 is returned, and `output` is not modified.
-// Some bits may be consumed even if a varint fails to be read.
-size_t DecodeVarInt(rtc::BitBuffer* input, uint64_t* output);
+// Same as other version, but uses a BitstreamReader for input.
+// If decoding is successful returns the decoded varint.
+// If not successful, `input` reader is set into the failure state, return value
+// is unspecified.
+uint64_t DecodeVarInt(BitstreamReader& input);
 
 }  // namespace webrtc
 

@@ -14,9 +14,12 @@
 #include <stdint.h>
 
 #include <string>
+#include <vector>
 
+#include "absl/strings/string_view.h"
 #include "api/array_view.h"
 #include "api/rtp_headers.h"
+#include "api/rtp_parameters.h"
 #include "api/video/color_space.h"
 #include "api/video/video_content_type.h"
 #include "api/video/video_rotation.h"
@@ -30,8 +33,9 @@ class AbsoluteSendTime {
   using value_type = uint32_t;
   static constexpr RTPExtensionType kId = kRtpExtensionAbsoluteSendTime;
   static constexpr uint8_t kValueSizeBytes = 3;
-  static constexpr const char kUri[] =
-      "http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time";
+  static constexpr absl::string_view Uri() {
+    return RtpExtension::kAbsSendTimeUri;
+  }
 
   static bool Parse(rtc::ArrayView<const uint8_t> data, uint32_t* time_24bits);
   static size_t ValueSize(uint32_t time_24bits) { return kValueSizeBytes; }
@@ -49,8 +53,9 @@ class AbsoluteCaptureTimeExtension {
   static constexpr uint8_t kValueSizeBytes = 16;
   static constexpr uint8_t kValueSizeBytesWithoutEstimatedCaptureClockOffset =
       8;
-  static constexpr const char kUri[] =
-      "http://www.webrtc.org/experiments/rtp-hdrext/abs-capture-time";
+  static constexpr absl::string_view Uri() {
+    return RtpExtension::kAbsoluteCaptureTimeUri;
+  }
 
   static bool Parse(rtc::ArrayView<const uint8_t> data,
                     AbsoluteCaptureTime* extension);
@@ -63,8 +68,9 @@ class AudioLevel {
  public:
   static constexpr RTPExtensionType kId = kRtpExtensionAudioLevel;
   static constexpr uint8_t kValueSizeBytes = 1;
-  static constexpr const char kUri[] =
-      "urn:ietf:params:rtp-hdrext:ssrc-audio-level";
+  static constexpr absl::string_view Uri() {
+    return RtpExtension::kAudioLevelUri;
+  }
 
   static bool Parse(rtc::ArrayView<const uint8_t> data,
                     bool* voice_activity,
@@ -77,12 +83,29 @@ class AudioLevel {
                     uint8_t audio_level);
 };
 
+class CsrcAudioLevel {
+ public:
+  static constexpr RTPExtensionType kId = kRtpExtensionCsrcAudioLevel;
+  static constexpr uint8_t kMaxValueSizeBytes = 15;
+  static constexpr absl::string_view Uri() {
+    return RtpExtension::kCsrcAudioLevelsUri;
+  }
+
+  static bool Parse(rtc::ArrayView<const uint8_t> data,
+                    std::vector<uint8_t>* csrc_audio_levels);
+  static size_t ValueSize(rtc::ArrayView<const uint8_t> csrc_audio_levels);
+  static bool Write(rtc::ArrayView<uint8_t> data,
+                    rtc::ArrayView<const uint8_t> csrc_audio_levels);
+};
+
 class TransmissionOffset {
  public:
   using value_type = int32_t;
   static constexpr RTPExtensionType kId = kRtpExtensionTransmissionTimeOffset;
   static constexpr uint8_t kValueSizeBytes = 3;
-  static constexpr const char kUri[] = "urn:ietf:params:rtp-hdrext:toffset";
+  static constexpr absl::string_view Uri() {
+    return RtpExtension::kTimestampOffsetUri;
+  }
 
   static bool Parse(rtc::ArrayView<const uint8_t> data, int32_t* rtp_time);
   static size_t ValueSize(int32_t rtp_time) { return kValueSizeBytes; }
@@ -94,9 +117,10 @@ class TransportSequenceNumber {
   using value_type = uint16_t;
   static constexpr RTPExtensionType kId = kRtpExtensionTransportSequenceNumber;
   static constexpr uint8_t kValueSizeBytes = 2;
-  static constexpr const char kUri[] =
-      "http://www.ietf.org/id/"
-      "draft-holmer-rmcat-transport-wide-cc-extensions-01";
+  static constexpr absl::string_view Uri() {
+    return RtpExtension::kTransportSequenceNumberUri;
+  }
+
   static bool Parse(rtc::ArrayView<const uint8_t> data,
                     uint16_t* transport_sequence_number);
   static size_t ValueSize(uint16_t /*transport_sequence_number*/) {
@@ -112,8 +136,10 @@ class TransportSequenceNumberV2 {
       kRtpExtensionTransportSequenceNumber02;
   static constexpr uint8_t kValueSizeBytes = 4;
   static constexpr uint8_t kValueSizeBytesWithoutFeedbackRequest = 2;
-  static constexpr const char kUri[] =
-      "http://www.webrtc.org/experiments/rtp-hdrext/transport-wide-cc-02";
+  static constexpr absl::string_view Uri() {
+    return RtpExtension::kTransportSequenceNumberV2Uri;
+  }
+
   static bool Parse(rtc::ArrayView<const uint8_t> data,
                     uint16_t* transport_sequence_number,
                     absl::optional<FeedbackRequest>* feedback_request);
@@ -136,7 +162,9 @@ class VideoOrientation {
   using value_type = VideoRotation;
   static constexpr RTPExtensionType kId = kRtpExtensionVideoRotation;
   static constexpr uint8_t kValueSizeBytes = 1;
-  static constexpr const char kUri[] = "urn:3gpp:video-orientation";
+  static constexpr absl::string_view Uri() {
+    return RtpExtension::kVideoRotationUri;
+  }
 
   static bool Parse(rtc::ArrayView<const uint8_t> data, VideoRotation* value);
   static size_t ValueSize(VideoRotation) { return kValueSizeBytes; }
@@ -151,8 +179,9 @@ class PlayoutDelayLimits {
   using value_type = VideoPlayoutDelay;
   static constexpr RTPExtensionType kId = kRtpExtensionPlayoutDelay;
   static constexpr uint8_t kValueSizeBytes = 3;
-  static constexpr const char kUri[] =
-      "http://www.webrtc.org/experiments/rtp-hdrext/playout-delay";
+  static constexpr absl::string_view Uri() {
+    return RtpExtension::kPlayoutDelayUri;
+  }
 
   // Playout delay in milliseconds. A playout delay limit (min or max)
   // has 12 bits allocated. This allows a range of 0-4095 values which
@@ -173,8 +202,9 @@ class VideoContentTypeExtension {
   using value_type = VideoContentType;
   static constexpr RTPExtensionType kId = kRtpExtensionVideoContentType;
   static constexpr uint8_t kValueSizeBytes = 1;
-  static constexpr const char kUri[] =
-      "http://www.webrtc.org/experiments/rtp-hdrext/video-content-type";
+  static constexpr absl::string_view Uri() {
+    return RtpExtension::kVideoContentTypeUri;
+  }
 
   static bool Parse(rtc::ArrayView<const uint8_t> data,
                     VideoContentType* content_type);
@@ -188,8 +218,9 @@ class VideoTimingExtension {
   using value_type = VideoSendTiming;
   static constexpr RTPExtensionType kId = kRtpExtensionVideoTiming;
   static constexpr uint8_t kValueSizeBytes = 13;
-  static constexpr const char kUri[] =
-      "http://www.webrtc.org/experiments/rtp-hdrext/video-timing";
+  static constexpr absl::string_view Uri() {
+    return RtpExtension::kVideoTimingUri;
+  }
 
   // Offsets of the fields in the RTP header extension, counting from the first
   // byte after the one-byte header.
@@ -222,8 +253,9 @@ class ColorSpaceExtension {
   static constexpr RTPExtensionType kId = kRtpExtensionColorSpace;
   static constexpr uint8_t kValueSizeBytes = 28;
   static constexpr uint8_t kValueSizeBytesWithoutHdrMetadata = 4;
-  static constexpr const char kUri[] =
-      "http://www.webrtc.org/experiments/rtp-hdrext/color-space";
+  static constexpr absl::string_view Uri() {
+    return RtpExtension::kColorSpaceUri;
+  }
 
   static bool Parse(rtc::ArrayView<const uint8_t> data,
                     ColorSpace* color_space);
@@ -272,21 +304,21 @@ class BaseRtpStringExtension {
 class RtpStreamId : public BaseRtpStringExtension {
  public:
   static constexpr RTPExtensionType kId = kRtpExtensionRtpStreamId;
-  static constexpr const char kUri[] =
-      "urn:ietf:params:rtp-hdrext:sdes:rtp-stream-id";
+  static constexpr absl::string_view Uri() { return RtpExtension::kRidUri; }
 };
 
 class RepairedRtpStreamId : public BaseRtpStringExtension {
  public:
   static constexpr RTPExtensionType kId = kRtpExtensionRepairedRtpStreamId;
-  static constexpr const char kUri[] =
-      "urn:ietf:params:rtp-hdrext:sdes:repaired-rtp-stream-id";
+  static constexpr absl::string_view Uri() {
+    return RtpExtension::kRepairedRidUri;
+  }
 };
 
 class RtpMid : public BaseRtpStringExtension {
  public:
   static constexpr RTPExtensionType kId = kRtpExtensionMid;
-  static constexpr const char kUri[] = "urn:ietf:params:rtp-hdrext:sdes:mid";
+  static constexpr absl::string_view Uri() { return RtpExtension::kMidUri; }
 };
 
 class InbandComfortNoiseExtension {
@@ -297,6 +329,7 @@ class InbandComfortNoiseExtension {
   static constexpr uint8_t kValueSizeBytes = 1;
   static constexpr const char kUri[] =
       "http://www.webrtc.org/experiments/rtp-hdrext/inband-cn";
+  static constexpr absl::string_view Uri() { return kUri; }
 
   static bool Parse(rtc::ArrayView<const uint8_t> data,
                     absl::optional<uint8_t>* level);
@@ -312,8 +345,10 @@ class VideoFrameTrackingIdExtension {
   using value_type = uint16_t;
   static constexpr RTPExtensionType kId = kRtpExtensionVideoFrameTrackingId;
   static constexpr uint8_t kValueSizeBytes = 2;
-  static constexpr const char kUri[] =
-      "http://www.webrtc.org/experiments/rtp-hdrext/video-frame-tracking-id";
+  static constexpr absl::string_view Uri() {
+    return RtpExtension::kVideoFrameTrackingIdUri;
+  }
+
   static bool Parse(rtc::ArrayView<const uint8_t> data,
                     uint16_t* video_frame_tracking_id);
   static size_t ValueSize(uint16_t /*video_frame_tracking_id*/) {

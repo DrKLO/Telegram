@@ -27,10 +27,6 @@ class NoiseLevelEstimator {
   virtual float Analyze(const AudioFrameView<const float>& frame) = 0;
 };
 
-// Creates a noise level estimator based on stationarity detection.
-std::unique_ptr<NoiseLevelEstimator> CreateStationaryNoiseEstimator(
-    ApmDataDumper* data_dumper);
-
 // Creates a noise level estimator based on noise floor detection.
 std::unique_ptr<NoiseLevelEstimator> CreateNoiseFloorEstimator(
     ApmDataDumper* data_dumper);

@@ -29,7 +29,7 @@ static inline size_t ChannelsFromLayout(AudioProcessing::ChannelLayout layout) {
     case AudioProcessing::kStereoAndKeyboard:
       return 2;
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return 0;
 }
 

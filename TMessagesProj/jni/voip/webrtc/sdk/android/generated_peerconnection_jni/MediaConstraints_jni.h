@@ -145,7 +145,4 @@ static base::android::ScopedJavaLocalRef<jobject> Java_MediaConstraints_getOptio
 }  // namespace jni
 }  // namespace  webrtc
 
-// Step 4: Generated test functions (optional).
-
-
 #endif  // org_webrtc_MediaConstraints_JNI

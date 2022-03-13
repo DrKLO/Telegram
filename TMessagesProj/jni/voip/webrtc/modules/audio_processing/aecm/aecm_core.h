@@ -58,7 +58,7 @@ typedef struct {
   void* delay_estimator;
   uint16_t currentDelay;
   // Far end history variables
-  // TODO(bjornv): Replace |far_history| with ring_buffer.
+  // TODO(bjornv): Replace `far_history` with ring_buffer.
   uint16_t far_history[PART_LEN1 * MAX_DELAY];
   int far_history_pos;
   int far_q_domains[MAX_DELAY];
@@ -271,7 +271,7 @@ void WebRtcAecm_FetchFarFrame(AecmCore* const aecm,
 ////////////////////////////////////////////////////////////////////////////////
 // WebRtcAecm_UpdateFarHistory()
 //
-// Moves the pointer to the next entry and inserts |far_spectrum| and
+// Moves the pointer to the next entry and inserts `far_spectrum` and
 // corresponding Q-domain in its buffer.
 //
 // Inputs:

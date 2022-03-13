@@ -22,7 +22,7 @@ class RTC_EXPORT TypingDetection {
 
   // Run the detection algortihm. Shall be called every 10 ms. Returns true if
   // typing is detected, or false if not, based on the update period as set with
-  // SetParameters(). See |report_detection_update_period_| description below.
+  // SetParameters(). See `report_detection_update_period_` description below.
   bool Process(bool key_pressed, bool vad_activity);
 
   // Gets the time in seconds since the last detection.
@@ -43,14 +43,14 @@ class RTC_EXPORT TypingDetection {
   int penalty_counter_;
 
   // Counter since last time the detection status reported by Process() was
-  // updated. See also |report_detection_update_period_|.
+  // updated. See also `report_detection_update_period_`.
   int counter_since_last_detection_update_;
 
   // The detection status to report. Updated every
-  // |report_detection_update_period_| call to Process().
+  // `report_detection_update_period_` call to Process().
   bool detection_to_report_;
 
-  // What |detection_to_report_| should be set to next time it is updated.
+  // What `detection_to_report_` should be set to next time it is updated.
   bool new_detection_to_report_;
 
   // Settable threshold values.
@@ -61,10 +61,10 @@ class RTC_EXPORT TypingDetection {
   // Penalty added for a typing + activity coincide.
   int cost_per_typing_;
 
-  // Threshold for |penalty_counter_|.
+  // Threshold for `penalty_counter_`.
   int reporting_threshold_;
 
-  // How much we reduce |penalty_counter_| every 10 ms.
+  // How much we reduce `penalty_counter_` every 10 ms.
   int penalty_decay_;
 
   // How old typing events we allow.

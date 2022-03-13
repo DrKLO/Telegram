@@ -14,20 +14,20 @@
 
 #include <algorithm>
 #include <functional>
+#include <map>
 #include <memory>
 #include <string>
-#include <unordered_map>
 #include <utility>
 
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
-#include "net/dcsctp/public/strong_alias.h"
 #include "net/dcsctp/public/timeout.h"
+#include "rtc_base/strong_alias.h"
 
 namespace dcsctp {
 
-using TimerID = StrongAlias<class TimerIDTag, uint32_t>;
-using TimerGeneration = StrongAlias<class TimerGenerationTag, uint32_t>;
+using TimerID = webrtc::StrongAlias<class TimerIDTag, uint32_t>;
+using TimerGeneration = webrtc::StrongAlias<class TimerGenerationTag, uint32_t>;
 
 enum class TimerBackoffAlgorithm {
   // The base duration will be used for any restart.
@@ -42,21 +42,31 @@ struct TimerOptions {
   explicit TimerOptions(DurationMs duration)
       : TimerOptions(duration, TimerBackoffAlgorithm::kExponential) {}
   TimerOptions(DurationMs duration, TimerBackoffAlgorithm backoff_algorithm)
-      : TimerOptions(duration, backoff_algorithm, -1) {}
+      : TimerOptions(duration, backoff_algorithm, absl::nullopt) {}
   TimerOptions(DurationMs duration,
                TimerBackoffAlgorithm backoff_algorithm,
-               int max_restarts)
+               absl::optional<int> max_restarts)
+      : TimerOptions(duration, backoff_algorithm, max_restarts, absl::nullopt) {
+  }
+  TimerOptions(DurationMs duration,
+               TimerBackoffAlgorithm backoff_algorithm,
+               absl::optional<int> max_restarts,
+               absl::optional<DurationMs> max_backoff_duration)
       : duration(duration),
         backoff_algorithm(backoff_algorithm),
-        max_restarts(max_restarts) {}
+        max_restarts(max_restarts),
+        max_backoff_duration(max_backoff_duration) {}
 
   // The initial timer duration. Can be overridden with `set_duration`.
   const DurationMs duration;
   // If the duration should be increased (using exponential backoff) when it is
   // restarted. If not set, the same duration will be used.
   const TimerBackoffAlgorithm backoff_algorithm;
-  // The maximum number of times that the timer will be automatically restarted.
-  const int max_restarts;
+  // The maximum number of times that the timer will be automatically restarted,
+  // or absl::nullopt if there is no limit.
+  const absl::optional<int> max_restarts;
+  // The maximum timeout value for exponential backoff.
+  const absl::optional<DurationMs> max_backoff_duration;
 };
 
 // A high-level timer (in contrast to the low-level `Timeout` class).
@@ -176,7 +186,7 @@ class TimerManager {
 
  private:
   const std::function<std::unique_ptr<Timeout>()> create_timeout_;
-  std::unordered_map<TimerID, Timer*, TimerID::Hasher> timers_;
+  std::map<TimerID, Timer*> timers_;
   TimerID next_id_ = TimerID(0);
 };
 

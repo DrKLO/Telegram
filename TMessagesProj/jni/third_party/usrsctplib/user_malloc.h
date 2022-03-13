@@ -12,7 +12,7 @@
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 4. Neither the name of the University nor the names of its contributors
+ * 3. Neither the name of the University nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
  *
@@ -37,7 +37,7 @@
 /*__Userspace__*/
 #include <stdlib.h>
 #include <sys/types.h>
-#if !defined (__Userspace_os_Windows)
+#if !defined(_WIN32)
 #include <strings.h>
 #include <stdint.h>
 #else
@@ -199,68 +199,5 @@ Start copy: Copied code for __Userspace__ */
 	  memset(space,0,size);                                         \
 	}								\
     } while (0);
-
-
-/* End copy: Copied code for __Userspace__ */
-
-#if 0
-#ifdef _KERNEL
-#define	MALLOC_DEFINE(type, shortdesc, longdesc)			\
-	struct malloc_type type[1] = {					\
-		{ NULL, 0, 0, 0, 0, 0, M_MAGIC, shortdesc, NULL, NULL,	\
-		    NULL, 0, NULL, NULL, 0, 0 }				\
-	};								\
-	SYSINIT(type##_init, SI_SUB_KMEM, SI_ORDER_SECOND, malloc_init,	\
-	    type);							\
-	SYSUNINIT(type##_uninit, SI_SUB_KMEM, SI_ORDER_ANY,		\
-	    malloc_uninit, type)
-
-
-#define	MALLOC_DECLARE(type) \
-	extern struct malloc_type type[1]
-
-MALLOC_DECLARE(M_CACHE);
-MALLOC_DECLARE(M_DEVBUF);
-MALLOC_DECLARE(M_TEMP);
-
-MALLOC_DECLARE(M_IP6OPT); /* for INET6 */
-MALLOC_DECLARE(M_IP6NDP); /* for INET6 */
-
-/*
- * Deprecated macro versions of not-quite-malloc() and free().
- */
-#define	MALLOC(space, cast, size, type, flags) \
-	((space) = (cast)malloc((u_long)(size), (type), (flags)))
-#define	FREE(addr, type) free((addr), (type))
-
-/*
- * XXX this should be declared in <sys/uio.h>, but that tends to fail
- * because <sys/uio.h> is included in a header before the source file
- * has a chance to include <sys/malloc.h> to get MALLOC_DECLARE() defined.
- */
-MALLOC_DECLARE(M_IOV);
-
-extern struct mtx malloc_mtx;
-
-/* XXX struct malloc_type is unused for contig*(). */
-void	contigfree(void *addr, unsigned long size, struct malloc_type *type);
-void	*contigmalloc(unsigned long size, struct malloc_type *type, int flags,
-	    vm_paddr_t low, vm_paddr_t high, unsigned long alignment,
-	    unsigned long boundary);
-void	free(void *addr, struct malloc_type *type);
-void	*malloc(unsigned long size, struct malloc_type *type, int flags);
-void	malloc_init(void *);
-int	malloc_last_fail(void);
-void	malloc_type_allocated(struct malloc_type *type, unsigned long size);
-void	malloc_type_freed(struct malloc_type *type, unsigned long size);
-void	malloc_uninit(void *);
-void	*realloc(void *addr, unsigned long size, struct malloc_type *type,
-	    int flags);
-void	*reallocf(void *addr, unsigned long size, struct malloc_type *type,
-	    int flags);
-
-
-#endif /* _KERNEL */
-#endif
 
 #endif /* !_SYS_MALLOC_H_ */

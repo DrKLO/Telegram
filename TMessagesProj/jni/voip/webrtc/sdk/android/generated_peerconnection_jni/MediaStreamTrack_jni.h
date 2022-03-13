@@ -184,7 +184,4 @@ static base::android::ScopedJavaLocalRef<jobject> Java_MediaType_fromNativeIndex
 }  // namespace jni
 }  // namespace  webrtc
 
-// Step 4: Generated test functions (optional).
-
-
 #endif  // org_webrtc_MediaStreamTrack_JNI

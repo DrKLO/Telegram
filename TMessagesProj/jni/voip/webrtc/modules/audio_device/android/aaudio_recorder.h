@@ -69,8 +69,8 @@ class AAudioRecorder : public AAudioObserverInterface,
  protected:
   // AAudioObserverInterface implementation.
 
-  // For an input stream, this function should read |num_frames| of recorded
-  // data, in the stream's current data format, from the |audio_data| buffer.
+  // For an input stream, this function should read `num_frames` of recorded
+  // data, in the stream's current data format, from the `audio_data` buffer.
   // Called on a real-time thread owned by AAudio.
   aaudio_data_callback_result_t OnDataCallback(void* audio_data,
                                                int32_t num_frames) override;

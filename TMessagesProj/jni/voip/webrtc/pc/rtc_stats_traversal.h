@@ -22,16 +22,16 @@ namespace webrtc {
 
 // Traverses the stats graph, taking all stats objects that are directly or
 // indirectly accessible from and including the stats objects identified by
-// |ids|, returning them as a new stats report.
+// `ids`, returning them as a new stats report.
 // This is meant to be used to implement the stats selection algorithm.
 // https://w3c.github.io/webrtc-pc/#dfn-stats-selection-algorithm
 rtc::scoped_refptr<RTCStatsReport> TakeReferencedStats(
     rtc::scoped_refptr<RTCStatsReport> report,
     const std::vector<std::string>& ids);
 
-// Gets pointers to the string values of any members in |stats| that are used as
+// Gets pointers to the string values of any members in `stats` that are used as
 // references for looking up other stats objects in the same report by ID. The
-// pointers are valid for the lifetime of |stats| assumings its members are not
+// pointers are valid for the lifetime of `stats` assumings its members are not
 // modified.
 //
 // For example, RTCCodecStats contains "transportId"

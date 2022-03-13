@@ -39,14 +39,14 @@ void WebRtc_InitBuffer(RingBuffer* handle);
 void WebRtc_FreeBuffer(void* handle);
 
 // Reads data from the buffer. Returns the number of elements that were read.
-// The |data_ptr| will point to the address where the read data is located.
-// If no data can be read, |data_ptr| is set to |NULL|. If all data can be read
-// without buffer wrap around then |data_ptr| will point to the location in the
-// buffer. Otherwise, the data will be copied to |data| (memory allocation done
-// by the user) and |data_ptr| points to the address of |data|. |data_ptr| is
+// The `data_ptr` will point to the address where the read data is located.
+// If no data can be read, `data_ptr` is set to `NULL`. If all data can be read
+// without buffer wrap around then `data_ptr` will point to the location in the
+// buffer. Otherwise, the data will be copied to `data` (memory allocation done
+// by the user) and `data_ptr` points to the address of `data`. `data_ptr` is
 // only guaranteed to be valid until the next call to WebRtc_WriteBuffer().
 //
-// To force a copying to |data|, pass a null |data_ptr|.
+// To force a copying to `data`, pass a null `data_ptr`.
 //
 // Returns number of elements read.
 size_t WebRtc_ReadBuffer(RingBuffer* handle,
@@ -54,14 +54,14 @@ size_t WebRtc_ReadBuffer(RingBuffer* handle,
                          void* data,
                          size_t element_count);
 
-// Writes |data| to buffer and returns the number of elements written.
+// Writes `data` to buffer and returns the number of elements written.
 size_t WebRtc_WriteBuffer(RingBuffer* handle,
                           const void* data,
                           size_t element_count);
 
 // Moves the buffer read position and returns the number of elements moved.
-// Positive |element_count| moves the read position towards the write position,
-// that is, flushing the buffer. Negative |element_count| moves the read
+// Positive `element_count` moves the read position towards the write position,
+// that is, flushing the buffer. Negative `element_count` moves the read
 // position away from the the write position, that is, stuffing the buffer.
 // Returns number of elements moved.
 int WebRtc_MoveReadPtr(RingBuffer* handle, int element_count);

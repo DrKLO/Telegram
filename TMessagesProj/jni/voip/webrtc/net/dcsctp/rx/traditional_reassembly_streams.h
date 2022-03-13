@@ -14,7 +14,6 @@
 
 #include <map>
 #include <string>
-#include <unordered_map>
 
 #include "absl/strings/string_view.h"
 #include "api/array_view.h"
@@ -30,9 +29,10 @@ namespace dcsctp {
 // RFC4960 is to be followed.
 class TraditionalReassemblyStreams : public ReassemblyStreams {
  public:
-  TraditionalReassemblyStreams(absl::string_view log_prefix,
-                               OnAssembledMessage on_assembled_message)
-      : log_prefix_(log_prefix), on_assembled_message_(on_assembled_message) {}
+  TraditionalReassemblyStreams(
+      absl::string_view log_prefix,
+      OnAssembledMessage on_assembled_message,
+      const DcSctpSocketHandoverState* handover_state = nullptr);
 
   int Add(UnwrappedTSN tsn, Data data) override;
 
@@ -42,6 +42,9 @@ class TraditionalReassemblyStreams : public ReassemblyStreams {
       override;
 
   void ResetStreams(rtc::ArrayView<const StreamID> stream_ids) override;
+
+  HandoverReadinessStatus GetHandoverReadiness() const override;
+  void AddHandoverState(DcSctpSocketHandoverState& state) override;
 
  private:
   using ChunkMap = std::map<UnwrappedTSN, Data>;
@@ -66,6 +69,7 @@ class TraditionalReassemblyStreams : public ReassemblyStreams {
     int Add(UnwrappedTSN tsn, Data data);
     // Returns the number of bytes removed from the queue.
     size_t EraseTo(UnwrappedTSN tsn);
+    bool has_unassembled_chunks() const { return !chunks_.empty(); }
 
    private:
     // Given an iterator to any chunk within the map, try to assemble a message
@@ -82,14 +86,17 @@ class TraditionalReassemblyStreams : public ReassemblyStreams {
   // messages when possible.
   class OrderedStream : StreamBase {
    public:
-    explicit OrderedStream(TraditionalReassemblyStreams* parent)
-        : StreamBase(parent), next_ssn_(ssn_unwrapper_.Unwrap(SSN(0))) {}
+    explicit OrderedStream(TraditionalReassemblyStreams* parent,
+                           SSN next_ssn = SSN(0))
+        : StreamBase(parent), next_ssn_(ssn_unwrapper_.Unwrap(next_ssn)) {}
     int Add(UnwrappedTSN tsn, Data data);
     size_t EraseTo(SSN ssn);
     void Reset() {
       ssn_unwrapper_.Reset();
       next_ssn_ = ssn_unwrapper_.Unwrap(SSN(0));
     }
+    SSN next_ssn() const { return next_ssn_.Wrap(); }
+    bool has_unassembled_chunks() const { return !chunks_by_ssn_.empty(); }
 
    private:
     // Try to assemble one or several messages in order from the stream.
@@ -108,10 +115,8 @@ class TraditionalReassemblyStreams : public ReassemblyStreams {
   const OnAssembledMessage on_assembled_message_;
 
   // All unordered and ordered streams, managing not-yet-assembled data.
-  std::unordered_map<StreamID, UnorderedStream, StreamID::Hasher>
-      unordered_streams_;
-  std::unordered_map<StreamID, OrderedStream, StreamID::Hasher>
-      ordered_streams_;
+  std::map<StreamID, UnorderedStream> unordered_streams_;
+  std::map<StreamID, OrderedStream> ordered_streams_;
 };
 
 }  // namespace dcsctp

@@ -10,17 +10,32 @@
 
 #include "pc/media_stream_observer.h"
 
+#include <functional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/algorithm/container.h"
 
 namespace webrtc {
 
-MediaStreamObserver::MediaStreamObserver(MediaStreamInterface* stream)
+MediaStreamObserver::MediaStreamObserver(
+    MediaStreamInterface* stream,
+    std::function<void(AudioTrackInterface*, MediaStreamInterface*)>
+        audio_track_added_callback,
+    std::function<void(AudioTrackInterface*, MediaStreamInterface*)>
+        audio_track_removed_callback,
+    std::function<void(VideoTrackInterface*, MediaStreamInterface*)>
+        video_track_added_callback,
+    std::function<void(VideoTrackInterface*, MediaStreamInterface*)>
+        video_track_removed_callback)
     : stream_(stream),
       cached_audio_tracks_(stream->GetAudioTracks()),
-      cached_video_tracks_(stream->GetVideoTracks()) {
+      cached_video_tracks_(stream->GetVideoTracks()),
+      audio_track_added_callback_(std::move(audio_track_added_callback)),
+      audio_track_removed_callback_(std::move(audio_track_removed_callback)),
+      video_track_added_callback_(std::move(video_track_added_callback)),
+      video_track_removed_callback_(std::move(video_track_removed_callback)) {
   stream_->RegisterObserver(this);
 }
 
@@ -39,7 +54,7 @@ void MediaStreamObserver::OnChanged() {
             [cached_track](const AudioTrackVector::value_type& new_track) {
               return new_track->id() == cached_track->id();
             })) {
-      SignalAudioTrackRemoved(cached_track.get(), stream_);
+      audio_track_removed_callback_(cached_track.get(), stream_);
     }
   }
 
@@ -50,7 +65,7 @@ void MediaStreamObserver::OnChanged() {
             [new_track](const AudioTrackVector::value_type& cached_track) {
               return new_track->id() == cached_track->id();
             })) {
-      SignalAudioTrackAdded(new_track.get(), stream_);
+      audio_track_added_callback_(new_track.get(), stream_);
     }
   }
 
@@ -61,7 +76,7 @@ void MediaStreamObserver::OnChanged() {
             [cached_track](const VideoTrackVector::value_type& new_track) {
               return new_track->id() == cached_track->id();
             })) {
-      SignalVideoTrackRemoved(cached_track.get(), stream_);
+      video_track_removed_callback_(cached_track.get(), stream_);
     }
   }
 
@@ -72,7 +87,7 @@ void MediaStreamObserver::OnChanged() {
             [new_track](const VideoTrackVector::value_type& cached_track) {
               return new_track->id() == cached_track->id();
             })) {
-      SignalVideoTrackAdded(new_track.get(), stream_);
+      video_track_added_callback_(new_track.get(), stream_);
     }
   }
 

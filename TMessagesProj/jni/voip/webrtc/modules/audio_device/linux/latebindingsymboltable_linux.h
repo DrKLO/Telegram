@@ -11,10 +11,10 @@
 #ifndef AUDIO_DEVICE_LATEBINDINGSYMBOLTABLE_LINUX_H_
 #define AUDIO_DEVICE_LATEBINDINGSYMBOLTABLE_LINUX_H_
 
-#include <assert.h>
 #include <stddef.h>  // for NULL
 #include <string.h>
 
+#include "rtc_base/checks.h"
 #include "rtc_base/constructor_magic.h"
 
 // This file provides macros for creating "symbol table" classes to simplify the
@@ -59,7 +59,7 @@ class LateBindingSymbolTable {
 
   // We do not use this, but we offer it for theoretical convenience.
   static const char* GetSymbolName(int index) {
-    assert(index < NumSymbols());
+    RTC_DCHECK_LT(index, NumSymbols());
     return kSymbolNames[index];
   }
 
@@ -100,8 +100,8 @@ class LateBindingSymbolTable {
   // Retrieves the given symbol. NOTE: Recommended to use LATESYM_GET below
   // instead of this.
   void* GetSymbol(int index) const {
-    assert(IsLoaded());
-    assert(index < NumSymbols());
+    RTC_DCHECK(IsLoaded());
+    RTC_DCHECK_LT(index, NumSymbols());
     return symbols_[index];
   }
 

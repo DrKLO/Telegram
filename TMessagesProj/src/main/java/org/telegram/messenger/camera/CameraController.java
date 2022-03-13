@@ -63,6 +63,7 @@ public class CameraController implements MediaRecorder.OnInfoListener {
     private VideoTakeCallback onVideoTakeCallback;
     private boolean cameraInitied;
     private boolean loadingCameras;
+    private boolean previewStarted = false;
 
     private ArrayList<Runnable> onFinishCameraInitRunnables = new ArrayList<>();
     CameraView recordingCurrentCameraView;
@@ -244,7 +245,7 @@ public class CameraController implements MediaRecorder.OnInfoListener {
                     onFinishCameraInitRunnables.clear();
                     loadingCameras = false;
                     cameraInitied = false;
-                    if (!withDelay && "APP_PAUSED".equals(e.getMessage())) {
+                    if (!withDelay && "APP_PAUSED".equals(e.getMessage()) && onInitRunnable != null) {
                         AndroidUtilities.runOnUIThread(() -> initCamera(onInitRunnable, true), 1000);
                     }
                 });
@@ -473,6 +474,7 @@ public class CameraController implements MediaRecorder.OnInfoListener {
                     camera = session.cameraInfo.camera = Camera.open(session.cameraInfo.cameraId);
                 }
                 camera.startPreview();
+                session.previewStarted = true;
             } catch (Exception e) {
                 session.cameraInfo.camera = null;
                 if (camera != null) {
@@ -494,6 +496,7 @@ public class CameraController implements MediaRecorder.OnInfoListener {
                     camera = session.cameraInfo.camera = Camera.open(session.cameraInfo.cameraId);
                 }
                 camera.stopPreview();
+                session.previewStarted = false;
             } catch (Exception e) {
                 session.cameraInfo.camera = null;
                 if (camera != null) {
@@ -503,6 +506,11 @@ public class CameraController implements MediaRecorder.OnInfoListener {
             }
         });
     }
+
+    public boolean isPreviewRunning(final CameraSession session) {
+        return session != null && session.previewStarted;
+    }
+
 
     public void openRound(final CameraSession session, final SurfaceTexture texture, final Runnable callback, final Runnable configureCallback) {
         if (session == null || texture == null) {
@@ -637,7 +645,7 @@ public class CameraController implements MediaRecorder.OnInfoListener {
                         FileLog.e(e);
                     }
                     camera.unlock();
-                    //camera.stopPreview();
+//                    camera.stopPreview();
                     try {
                         mirrorRecorderVideo = mirror;
                         recorder = new MediaRecorder();

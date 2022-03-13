@@ -47,7 +47,7 @@ void PccMonitorInterval::OnPacketsFeedback(
       feedback_collection_done_ = true;
       return;
     }
-    if (packet_result.receive_time.IsInfinite()) {
+    if (!packet_result.IsReceived()) {
       lost_packets_sent_time_.push_back(packet_result.sent_packet.send_time);
     } else {
       received_packets_.push_back(
@@ -70,13 +70,10 @@ double PccMonitorInterval::ComputeDelayGradient(
     return 0;
   }
   double sum_times = 0;
-  double sum_delays = 0;
   for (const ReceivedPacket& packet : received_packets_) {
     double time_delta_us =
         (packet.sent_time - received_packets_[0].sent_time).us();
-    double delay = packet.delay.us();
     sum_times += time_delta_us;
-    sum_delays += delay;
   }
   double sum_squared_scaled_time_deltas = 0;
   double sum_scaled_time_delta_dot_delay = 0;

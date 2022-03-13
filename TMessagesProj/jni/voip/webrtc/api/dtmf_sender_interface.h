@@ -23,8 +23,8 @@ namespace webrtc {
 // DtmfSender.
 class DtmfSenderObserverInterface {
  public:
-  // Triggered when DTMF |tone| is sent.
-  // If |tone| is empty that means the DtmfSender has sent out all the given
+  // Triggered when DTMF `tone` is sent.
+  // If `tone` is empty that means the DtmfSender has sent out all the given
   // tones.
   // The callback includes the state of the tone buffer at the time when
   // the tone finished playing.
@@ -58,7 +58,7 @@ class DtmfSenderInterface : public rtc::RefCountInterface {
   // able to send packets, and a "telephone-event" codec must be negotiated.
   virtual bool CanInsertDtmf() = 0;
 
-  // Queues a task that sends the DTMF |tones|. The |tones| parameter is treated
+  // Queues a task that sends the DTMF `tones`. The `tones` parameter is treated
   // as a series of characters. The characters 0 through 9, A through D, #, and
   // * generate the associated DTMF tones. The characters a to d are equivalent
   // to A to D. The character ',' indicates a delay of 2 seconds before
@@ -66,18 +66,18 @@ class DtmfSenderInterface : public rtc::RefCountInterface {
   //
   // Unrecognized characters are ignored.
   //
-  // The |duration| parameter indicates the duration in ms to use for each
-  // character passed in the |tones| parameter. The duration cannot be more
+  // The `duration` parameter indicates the duration in ms to use for each
+  // character passed in the `tones` parameter. The duration cannot be more
   // than 6000 or less than 70.
   //
-  // The |inter_tone_gap| parameter indicates the gap between tones in ms. The
-  // |inter_tone_gap| must be at least 50 ms but should be as short as
+  // The `inter_tone_gap` parameter indicates the gap between tones in ms. The
+  // `inter_tone_gap` must be at least 50 ms but should be as short as
   // possible.
   //
-  // The |comma_delay| parameter indicates the delay after the ','
-  // character. InsertDtmf specifies |comma_delay| as an argument
+  // The `comma_delay` parameter indicates the delay after the ','
+  // character. InsertDtmf specifies `comma_delay` as an argument
   // with a default value of 2 seconds as per the WebRTC spec. This parameter
-  // allows users to comply with legacy WebRTC clients. The |comma_delay|
+  // allows users to comply with legacy WebRTC clients. The `comma_delay`
   // must be at least 50 ms.
   //
   // If InsertDtmf is called on the same object while an existing task for this

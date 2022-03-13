@@ -42,7 +42,7 @@ class UlpfecReceiver {
   // Takes a RED packet, strips the RED header, and adds the resulting
   // "virtual" RTP packet(s) into the internal buffer.
   //
-  // TODO(brandtr): Set |ulpfec_payload_type| during constructor call,
+  // TODO(brandtr): Set `ulpfec_payload_type` during constructor call,
   // rather than as a parameter here.
   virtual bool AddReceivedRedPacket(const RtpPacketReceived& rtp_packet,
                                     uint8_t ulpfec_payload_type) = 0;
@@ -53,6 +53,9 @@ class UlpfecReceiver {
 
   // Returns a counter describing the added and recovered packets.
   virtual FecPacketCounter GetPacketCounter() const = 0;
+
+  virtual void SetRtpExtensions(
+      rtc::ArrayView<const RtpExtension> extensions) = 0;
 };
 }  // namespace webrtc
 #endif  // MODULES_RTP_RTCP_INCLUDE_ULPFEC_RECEIVER_H_

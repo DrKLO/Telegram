@@ -27,6 +27,11 @@ constexpr uint16_t kNetworkCostUnknown = 50;
 constexpr uint16_t kNetworkCostLow = 10;
 constexpr uint16_t kNetworkCostMin = 0;
 
+// Add 1 to network cost of underlying network type
+// so that e.g a "plain" WIFI is prefered over a VPN over WIFI
+// everything else being equal.
+constexpr uint16_t kNetworkCostVpn = 1;
+
 // alias
 constexpr uint16_t kNetworkCostHigh = kNetworkCostCellular;
 

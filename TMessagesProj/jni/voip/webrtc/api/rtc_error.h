@@ -176,13 +176,13 @@ inline std::ostream& operator<<(  // no-presubmit-check TODO(webrtc:8982)
 #endif  // WEBRTC_UNIT_TEST
 
 // Helper macro that can be used by implementations to create an error with a
-// message and log it. |message| should be a string literal or movable
+// message and log it. `message` should be a string literal or movable
 // std::string.
-#define LOG_AND_RETURN_ERROR_EX(type, message, severity)           \
-  {                                                                \
-    RTC_DCHECK(type != RTCErrorType::NONE);                        \
-    RTC_LOG(severity) << message << " (" << ToString(type) << ")"; \
-    return webrtc::RTCError(type, message);                        \
+#define LOG_AND_RETURN_ERROR_EX(type, message, severity)                     \
+  {                                                                          \
+    RTC_DCHECK(type != RTCErrorType::NONE);                                  \
+    RTC_LOG(severity) << message << " (" << ::webrtc::ToString(type) << ")"; \
+    return ::webrtc::RTCError(type, message);                                \
   }
 
 #define LOG_AND_RETURN_ERROR(type, message) \

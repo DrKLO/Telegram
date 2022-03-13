@@ -38,8 +38,8 @@ namespace JNI_Boolean {
 
 
 static std::atomic<jmethodID> g_java_lang_Boolean_parseBoolean(nullptr);
-static jboolean Java_Boolean_parseBoolean(JNIEnv* env, const base::android::JavaRef<jstring>& p0)
-    __attribute__ ((unused));
+[[maybe_unused]] static jboolean Java_Boolean_parseBoolean(JNIEnv* env, const
+    base::android::JavaRef<jstring>& p0);
 static jboolean Java_Boolean_parseBoolean(JNIEnv* env, const base::android::JavaRef<jstring>& p0) {
   jclass clazz = java_lang_Boolean_clazz(env);
   CHECK_CLAZZ(env, clazz,
@@ -61,8 +61,8 @@ static jboolean Java_Boolean_parseBoolean(JNIEnv* env, const base::android::Java
 }
 
 static std::atomic<jmethodID> g_java_lang_Boolean_booleanValue(nullptr);
-static jboolean Java_Boolean_booleanValue(JNIEnv* env, const base::android::JavaRef<jobject>& obj)
-    __attribute__ ((unused));
+[[maybe_unused]] static jboolean Java_Boolean_booleanValue(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj);
 static jboolean Java_Boolean_booleanValue(JNIEnv* env, const base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_lang_Boolean_clazz(env);
   CHECK_CLAZZ(env, obj.obj(),
@@ -84,8 +84,8 @@ static jboolean Java_Boolean_booleanValue(JNIEnv* env, const base::android::Java
 }
 
 static std::atomic<jmethodID> g_java_lang_Boolean_valueOfJLB_Z(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_Boolean_valueOfJLB_Z(JNIEnv* env, jboolean
-    p0) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject> Java_Boolean_valueOfJLB_Z(JNIEnv*
+    env, jboolean p0);
 static base::android::ScopedJavaLocalRef<jobject> Java_Boolean_valueOfJLB_Z(JNIEnv* env, jboolean
     p0) {
   jclass clazz = java_lang_Boolean_clazz(env);
@@ -108,8 +108,8 @@ static base::android::ScopedJavaLocalRef<jobject> Java_Boolean_valueOfJLB_Z(JNIE
 }
 
 static std::atomic<jmethodID> g_java_lang_Boolean_valueOfJLB_JLS(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_Boolean_valueOfJLB_JLS(JNIEnv* env, const
-    base::android::JavaRef<jstring>& p0) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject>
+    Java_Boolean_valueOfJLB_JLS(JNIEnv* env, const base::android::JavaRef<jstring>& p0);
 static base::android::ScopedJavaLocalRef<jobject> Java_Boolean_valueOfJLB_JLS(JNIEnv* env, const
     base::android::JavaRef<jstring>& p0) {
   jclass clazz = java_lang_Boolean_clazz(env);
@@ -132,8 +132,8 @@ static base::android::ScopedJavaLocalRef<jobject> Java_Boolean_valueOfJLB_JLS(JN
 }
 
 static std::atomic<jmethodID> g_java_lang_Boolean_toStringJLS_Z(nullptr);
-static base::android::ScopedJavaLocalRef<jstring> Java_Boolean_toStringJLS_Z(JNIEnv* env, jboolean
-    p0) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jstring>
+    Java_Boolean_toStringJLS_Z(JNIEnv* env, jboolean p0);
 static base::android::ScopedJavaLocalRef<jstring> Java_Boolean_toStringJLS_Z(JNIEnv* env, jboolean
     p0) {
   jclass clazz = java_lang_Boolean_clazz(env);
@@ -156,8 +156,8 @@ static base::android::ScopedJavaLocalRef<jstring> Java_Boolean_toStringJLS_Z(JNI
 }
 
 static std::atomic<jmethodID> g_java_lang_Boolean_toStringJLS(nullptr);
-static base::android::ScopedJavaLocalRef<jstring> Java_Boolean_toStringJLS(JNIEnv* env, const
-    base::android::JavaRef<jobject>& obj) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jstring> Java_Boolean_toStringJLS(JNIEnv*
+    env, const base::android::JavaRef<jobject>& obj);
 static base::android::ScopedJavaLocalRef<jstring> Java_Boolean_toStringJLS(JNIEnv* env, const
     base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_lang_Boolean_clazz(env);
@@ -180,8 +180,8 @@ static base::android::ScopedJavaLocalRef<jstring> Java_Boolean_toStringJLS(JNIEn
 }
 
 static std::atomic<jmethodID> g_java_lang_Boolean_hashCodeI(nullptr);
-static jint Java_Boolean_hashCodeI(JNIEnv* env, const base::android::JavaRef<jobject>& obj)
-    __attribute__ ((unused));
+[[maybe_unused]] static jint Java_Boolean_hashCodeI(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj);
 static jint Java_Boolean_hashCodeI(JNIEnv* env, const base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_lang_Boolean_clazz(env);
   CHECK_CLAZZ(env, obj.obj(),
@@ -203,7 +203,7 @@ static jint Java_Boolean_hashCodeI(JNIEnv* env, const base::android::JavaRef<job
 }
 
 static std::atomic<jmethodID> g_java_lang_Boolean_hashCodeI_Z(nullptr);
-static jint Java_Boolean_hashCodeI_Z(JNIEnv* env, jboolean p0) __attribute__ ((unused));
+[[maybe_unused]] static jint Java_Boolean_hashCodeI_Z(JNIEnv* env, jboolean p0);
 static jint Java_Boolean_hashCodeI_Z(JNIEnv* env, jboolean p0) {
   jclass clazz = java_lang_Boolean_clazz(env);
   CHECK_CLAZZ(env, clazz,
@@ -225,8 +225,8 @@ static jint Java_Boolean_hashCodeI_Z(JNIEnv* env, jboolean p0) {
 }
 
 static std::atomic<jmethodID> g_java_lang_Boolean_equals(nullptr);
-static jboolean Java_Boolean_equals(JNIEnv* env, const base::android::JavaRef<jobject>& obj, const
-    base::android::JavaRef<jobject>& p0) __attribute__ ((unused));
+[[maybe_unused]] static jboolean Java_Boolean_equals(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobject>& p0);
 static jboolean Java_Boolean_equals(JNIEnv* env, const base::android::JavaRef<jobject>& obj, const
     base::android::JavaRef<jobject>& p0) {
   jclass clazz = java_lang_Boolean_clazz(env);
@@ -249,8 +249,8 @@ static jboolean Java_Boolean_equals(JNIEnv* env, const base::android::JavaRef<jo
 }
 
 static std::atomic<jmethodID> g_java_lang_Boolean_getBoolean(nullptr);
-static jboolean Java_Boolean_getBoolean(JNIEnv* env, const base::android::JavaRef<jstring>& p0)
-    __attribute__ ((unused));
+[[maybe_unused]] static jboolean Java_Boolean_getBoolean(JNIEnv* env, const
+    base::android::JavaRef<jstring>& p0);
 static jboolean Java_Boolean_getBoolean(JNIEnv* env, const base::android::JavaRef<jstring>& p0) {
   jclass clazz = java_lang_Boolean_clazz(env);
   CHECK_CLAZZ(env, clazz,
@@ -272,8 +272,8 @@ static jboolean Java_Boolean_getBoolean(JNIEnv* env, const base::android::JavaRe
 }
 
 static std::atomic<jmethodID> g_java_lang_Boolean_compareToI_JLB(nullptr);
-static jint Java_Boolean_compareToI_JLB(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
-    const base::android::JavaRef<jobject>& p0) __attribute__ ((unused));
+[[maybe_unused]] static jint Java_Boolean_compareToI_JLB(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobject>& p0);
 static jint Java_Boolean_compareToI_JLB(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
     const base::android::JavaRef<jobject>& p0) {
   jclass clazz = java_lang_Boolean_clazz(env);
@@ -296,8 +296,8 @@ static jint Java_Boolean_compareToI_JLB(JNIEnv* env, const base::android::JavaRe
 }
 
 static std::atomic<jmethodID> g_java_lang_Boolean_compare(nullptr);
-static jint Java_Boolean_compare(JNIEnv* env, jboolean p0,
-    jboolean p1) __attribute__ ((unused));
+[[maybe_unused]] static jint Java_Boolean_compare(JNIEnv* env, jboolean p0,
+    jboolean p1);
 static jint Java_Boolean_compare(JNIEnv* env, jboolean p0,
     jboolean p1) {
   jclass clazz = java_lang_Boolean_clazz(env);
@@ -320,8 +320,8 @@ static jint Java_Boolean_compare(JNIEnv* env, jboolean p0,
 }
 
 static std::atomic<jmethodID> g_java_lang_Boolean_logicalAnd(nullptr);
-static jboolean Java_Boolean_logicalAnd(JNIEnv* env, jboolean p0,
-    jboolean p1) __attribute__ ((unused));
+[[maybe_unused]] static jboolean Java_Boolean_logicalAnd(JNIEnv* env, jboolean p0,
+    jboolean p1);
 static jboolean Java_Boolean_logicalAnd(JNIEnv* env, jboolean p0,
     jboolean p1) {
   jclass clazz = java_lang_Boolean_clazz(env);
@@ -344,8 +344,8 @@ static jboolean Java_Boolean_logicalAnd(JNIEnv* env, jboolean p0,
 }
 
 static std::atomic<jmethodID> g_java_lang_Boolean_logicalOr(nullptr);
-static jboolean Java_Boolean_logicalOr(JNIEnv* env, jboolean p0,
-    jboolean p1) __attribute__ ((unused));
+[[maybe_unused]] static jboolean Java_Boolean_logicalOr(JNIEnv* env, jboolean p0,
+    jboolean p1);
 static jboolean Java_Boolean_logicalOr(JNIEnv* env, jboolean p0,
     jboolean p1) {
   jclass clazz = java_lang_Boolean_clazz(env);
@@ -368,8 +368,8 @@ static jboolean Java_Boolean_logicalOr(JNIEnv* env, jboolean p0,
 }
 
 static std::atomic<jmethodID> g_java_lang_Boolean_logicalXor(nullptr);
-static jboolean Java_Boolean_logicalXor(JNIEnv* env, jboolean p0,
-    jboolean p1) __attribute__ ((unused));
+[[maybe_unused]] static jboolean Java_Boolean_logicalXor(JNIEnv* env, jboolean p0,
+    jboolean p1);
 static jboolean Java_Boolean_logicalXor(JNIEnv* env, jboolean p0,
     jboolean p1) {
   jclass clazz = java_lang_Boolean_clazz(env);
@@ -392,8 +392,8 @@ static jboolean Java_Boolean_logicalXor(JNIEnv* env, jboolean p0,
 }
 
 static std::atomic<jmethodID> g_java_lang_Boolean_compareToI_JLO(nullptr);
-static jint Java_Boolean_compareToI_JLO(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
-    const base::android::JavaRef<jobject>& p0) __attribute__ ((unused));
+[[maybe_unused]] static jint Java_Boolean_compareToI_JLO(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobject>& p0);
 static jint Java_Boolean_compareToI_JLO(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
     const base::android::JavaRef<jobject>& p0) {
   jclass clazz = java_lang_Boolean_clazz(env);
@@ -416,8 +416,8 @@ static jint Java_Boolean_compareToI_JLO(JNIEnv* env, const base::android::JavaRe
 }
 
 static std::atomic<jmethodID> g_java_lang_Boolean_ConstructorJLB_Z(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_Boolean_ConstructorJLB_Z(JNIEnv* env,
-    jboolean p0) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject>
+    Java_Boolean_ConstructorJLB_Z(JNIEnv* env, jboolean p0);
 static base::android::ScopedJavaLocalRef<jobject> Java_Boolean_ConstructorJLB_Z(JNIEnv* env,
     jboolean p0) {
   jclass clazz = java_lang_Boolean_clazz(env);
@@ -440,8 +440,8 @@ static base::android::ScopedJavaLocalRef<jobject> Java_Boolean_ConstructorJLB_Z(
 }
 
 static std::atomic<jmethodID> g_java_lang_Boolean_ConstructorJLB_JLS(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_Boolean_ConstructorJLB_JLS(JNIEnv* env, const
-    base::android::JavaRef<jstring>& p0) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject>
+    Java_Boolean_ConstructorJLB_JLS(JNIEnv* env, const base::android::JavaRef<jstring>& p0);
 static base::android::ScopedJavaLocalRef<jobject> Java_Boolean_ConstructorJLB_JLS(JNIEnv* env, const
     base::android::JavaRef<jstring>& p0) {
   jclass clazz = java_lang_Boolean_clazz(env);
@@ -464,8 +464,5 @@ static base::android::ScopedJavaLocalRef<jobject> Java_Boolean_ConstructorJLB_JL
 }
 
 }  // namespace JNI_Boolean
-
-// Step 4: Generated test functions (optional).
-
 
 #endif  // java_lang_Boolean_JNI

@@ -17,6 +17,7 @@
 
 #include "api/network_state_predictor.h"
 #include "api/rtc_event_log/rtc_event.h"
+#include "api/units/timestamp.h"
 
 namespace webrtc {
 
@@ -45,17 +46,17 @@ class RtcEventBweUpdateDelayBased final : public RtcEvent {
 
 struct LoggedBweDelayBasedUpdate {
   LoggedBweDelayBasedUpdate() = default;
-  LoggedBweDelayBasedUpdate(int64_t timestamp_us,
+  LoggedBweDelayBasedUpdate(Timestamp timestamp,
                             int32_t bitrate_bps,
                             BandwidthUsage detector_state)
-      : timestamp_us(timestamp_us),
+      : timestamp(timestamp),
         bitrate_bps(bitrate_bps),
         detector_state(detector_state) {}
 
-  int64_t log_time_us() const { return timestamp_us; }
-  int64_t log_time_ms() const { return timestamp_us / 1000; }
+  int64_t log_time_us() const { return timestamp.us(); }
+  int64_t log_time_ms() const { return timestamp.ms(); }
 
-  int64_t timestamp_us;
+  Timestamp timestamp = Timestamp::MinusInfinity();
   int32_t bitrate_bps;
   BandwidthUsage detector_state;
 };

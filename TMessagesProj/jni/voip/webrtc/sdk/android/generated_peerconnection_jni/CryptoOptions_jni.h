@@ -202,7 +202,4 @@ static base::android::ScopedJavaLocalRef<jobject> Java_CryptoOptions_getSFrame(J
 }  // namespace jni
 }  // namespace  webrtc
 
-// Step 4: Generated test functions (optional).
-
-
 #endif  // org_webrtc_CryptoOptions_JNI

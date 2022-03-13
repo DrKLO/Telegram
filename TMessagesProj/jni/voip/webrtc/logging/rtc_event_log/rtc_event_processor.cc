@@ -15,7 +15,7 @@ RtcEventProcessor::RtcEventProcessor() = default;
 
 RtcEventProcessor::~RtcEventProcessor() = default;
 void RtcEventProcessor::ProcessEventsInOrder() {
-  // |event_lists_| is a min-heap of lists ordered by the timestamp of the
+  // `event_lists_` is a min-heap of lists ordered by the timestamp of the
   // first element in the list. We therefore process the first element of the
   // first list, then reinsert the remainder of that list into the heap
   // if the list still contains unprocessed elements.

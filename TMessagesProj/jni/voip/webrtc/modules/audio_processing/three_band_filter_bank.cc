@@ -39,16 +39,16 @@
 namespace webrtc {
 namespace {
 
-// Factors to take into account when choosing |kFilterSize|:
-//   1. Higher |kFilterSize|, means faster transition, which ensures less
+// Factors to take into account when choosing `kFilterSize`:
+//   1. Higher `kFilterSize`, means faster transition, which ensures less
 //      aliasing. This is especially important when there is non-linear
 //      processing between the splitting and merging.
 //   2. The delay that this filter bank introduces is
-//      |kNumBands| * |kSparsity| * |kFilterSize| / 2, so it increases linearly
-//      with |kFilterSize|.
-//   3. The computation complexity also increases linearly with |kFilterSize|.
+//      `kNumBands` * `kSparsity` * `kFilterSize` / 2, so it increases linearly
+//      with `kFilterSize`.
+//   3. The computation complexity also increases linearly with `kFilterSize`.
 
-// The Matlab code to generate these |kFilterCoeffs| is:
+// The Matlab code to generate these `kFilterCoeffs` is:
 //
 // N = kNumBands * kSparsity * kFilterSize - 1;
 // h = fir1(N, 1 / (2 * kNumBands), kaiser(N + 1, 3.5));
@@ -59,7 +59,7 @@ namespace {
 
 // Because the total bandwidth of the lower and higher band is double the middle
 // one (because of the spectrum parity), the low-pass prototype is half the
-// bandwidth of 1 / (2 * |kNumBands|) and is then shifted with cosine modulation
+// bandwidth of 1 / (2 * `kNumBands`) and is then shifted with cosine modulation
 // to the right places.
 // A Kaiser window is used because of its flexibility and the alpha is set to
 // 3.5, since that sets a stop band attenuation of 40dB ensuring a fast
@@ -100,8 +100,8 @@ const float kDctModulation[ThreeBandFilterBank::kNumNonZeroFilters][kDctSize] =
      {1.f, -2.f, 1.f},
      {1.73205077f, 0.f, -1.73205077f}};
 
-// Filters the input signal |in| with the filter |filter| using a shift by
-// |in_shift|, taking into account the previous state.
+// Filters the input signal `in` with the filter `filter` using a shift by
+// `in_shift`, taking into account the previous state.
 void FilterCore(
     rtc::ArrayView<const float, kFilterSize> filter,
     rtc::ArrayView<const float, ThreeBandFilterBank::kSplitBandSize> in,
@@ -164,10 +164,10 @@ ThreeBandFilterBank::ThreeBandFilterBank() {
 ThreeBandFilterBank::~ThreeBandFilterBank() = default;
 
 // The analysis can be separated in these steps:
-//   1. Serial to parallel downsampling by a factor of |kNumBands|.
-//   2. Filtering of |kSparsity| different delayed signals with polyphase
+//   1. Serial to parallel downsampling by a factor of `kNumBands`.
+//   2. Filtering of `kSparsity` different delayed signals with polyphase
 //      decomposition of the low-pass prototype filter and upsampled by a factor
-//      of |kSparsity|.
+//      of `kSparsity`.
 //   3. Modulating with cosines and accumulating to get the desired band.
 void ThreeBandFilterBank::Analysis(
     rtc::ArrayView<const float, kFullBandSize> in,
@@ -222,9 +222,9 @@ void ThreeBandFilterBank::Analysis(
 // The synthesis can be separated in these steps:
 //   1. Modulating with cosines.
 //   2. Filtering each one with a polyphase decomposition of the low-pass
-//      prototype filter upsampled by a factor of |kSparsity| and accumulating
-//      |kSparsity| signals with different delays.
-//   3. Parallel to serial upsampling by a factor of |kNumBands|.
+//      prototype filter upsampled by a factor of `kSparsity` and accumulating
+//      `kSparsity` signals with different delays.
+//   3. Parallel to serial upsampling by a factor of `kNumBands`.
 void ThreeBandFilterBank::Synthesis(
     rtc::ArrayView<const rtc::ArrayView<float>, ThreeBandFilterBank::kNumBands>
         in,

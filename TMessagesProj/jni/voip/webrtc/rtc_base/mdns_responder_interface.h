@@ -29,17 +29,17 @@ class MdnsResponderInterface {
   MdnsResponderInterface() = default;
   virtual ~MdnsResponderInterface() = default;
 
-  // Asynchronously creates and returns a new name via |callback| for |addr| if
+  // Asynchronously creates and returns a new name via `callback` for `addr` if
   // there is no name mapped to it by this responder, and initializes the
   // reference count of this name to one. Otherwise the existing name mapped to
-  // |addr| is returned and its reference count is incremented by one.
+  // `addr` is returned and its reference count is incremented by one.
   virtual void CreateNameForAddress(const rtc::IPAddress& addr,
                                     NameCreatedCallback callback) = 0;
-  // Decrements the reference count of the mapped name of |addr|, if
+  // Decrements the reference count of the mapped name of `addr`, if
   // there is a map created previously via CreateNameForAddress; asynchronously
-  // removes the association between |addr| and its mapped name, and returns
-  // true via |callback| if the decremented reference count reaches zero.
-  // Otherwise no operation is done and false is returned via |callback|
+  // removes the association between `addr` and its mapped name, and returns
+  // true via `callback` if the decremented reference count reaches zero.
+  // Otherwise no operation is done and false is returned via `callback`
   // asynchronously.
   virtual void RemoveNameForAddress(const rtc::IPAddress& addr,
                                     NameRemovedCallback callback) = 0;

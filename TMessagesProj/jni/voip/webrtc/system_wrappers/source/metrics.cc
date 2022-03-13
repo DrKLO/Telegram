@@ -265,7 +265,7 @@ Histogram* SparseHistogramFactoryGetEnumeration(const std::string& name,
   return HistogramFactoryGetEnumeration(name, boundary);
 }
 
-// Fast path. Adds |sample| to cached |histogram_pointer|.
+// Fast path. Adds `sample` to cached `histogram_pointer`.
 void HistogramAdd(Histogram* histogram_pointer, int sample) {
   RtcHistogram* ptr = reinterpret_cast<RtcHistogram*>(histogram_pointer);
   ptr->Add(sample);

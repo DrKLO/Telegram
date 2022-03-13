@@ -27,6 +27,7 @@
 
 #include <cassert>
 #include <cstdint>
+#include <limits>
 
 #include "absl/base/macros.h"
 #include "absl/base/port.h"
@@ -132,9 +133,8 @@ static uintptr_t GetFP(const void *vuc) {
     const uintptr_t bp = 0;
     const uintptr_t sp = 0;
 #endif
-    // Sanity-check that the base pointer is valid.  It should be as long as
-    // SHRINK_WRAP_FRAME_POINTER is not set, but it's possible that some code in
-    // the process is compiled with --copt=-fomit-frame-pointer or
+    // Sanity-check that the base pointer is valid. It's possible that some
+    // code in the process is compiled with --copt=-fomit-frame-pointer or
     // --copt=-momit-leaf-frame-pointer.
     //
     // TODO(bcmills): -momit-leaf-frame-pointer is currently the default
@@ -159,7 +159,8 @@ static uintptr_t GetFP(const void *vuc) {
 template <bool STRICT_UNWINDING, bool WITH_CONTEXT>
 ABSL_ATTRIBUTE_NO_SANITIZE_ADDRESS  // May read random elements from stack.
 ABSL_ATTRIBUTE_NO_SANITIZE_MEMORY   // May read random elements from stack.
-static void **NextStackFrame(void **old_fp, const void *uc) {
+static void **NextStackFrame(void **old_fp, const void *uc,
+                             size_t stack_low, size_t stack_high) {
   void **new_fp = (void **)*old_fp;
 
 #if defined(__linux__) && defined(__i386__)
@@ -247,7 +248,7 @@ static void **NextStackFrame(void **old_fp, const void *uc) {
   // using an alternate signal stack.
   //
   // TODO(bcmills): The GetFP call should be completely unnecessary when
-  // SHRINK_WRAP_FRAME_POINTER is set (because we should be back in the thread's
+  // ENABLE_COMBINED_UNWINDER is set (because we should be back in the thread's
   // stack by this point), but it is empirically still needed (e.g. when the
   // stack includes a call to abort).  unw_get_reg returns UNW_EBADREG for some
   // frames.  Figure out why GetValidFrameAddr and/or libunwind isn't doing what
@@ -258,6 +259,18 @@ static void **NextStackFrame(void **old_fp, const void *uc) {
     // at a greater address that the current one.
     if (new_fp_u <= old_fp_u) return nullptr;
     if (new_fp_u - old_fp_u > kMaxFrameBytes) return nullptr;
+
+    if (stack_low < old_fp_u && old_fp_u <= stack_high) {
+      // Old BP was in the expected stack region...
+      if (!(stack_low < new_fp_u && new_fp_u <= stack_high)) {
+        // ... but new BP is outside of expected stack region.
+        // It is most likely bogus.
+        return nullptr;
+      }
+    } else {
+      // We may be here if we are executing in a co-routine with a
+      // separate stack. We can't do safety checks in this case.
+    }
   } else {
     if (new_fp == nullptr) return nullptr;  // skip AddressIsReadable() below
     // In the non-strict mode, allow discontiguous stack frames.
@@ -297,13 +310,17 @@ static int UnwindImpl(void **result, int *sizes, int max_depth, int skip_count,
   int n = 0;
   void **fp = reinterpret_cast<void **>(__builtin_frame_address(0));
 
+  size_t stack_low = getpagesize();  // Assume that the first page is not stack.
+  size_t stack_high = std::numeric_limits<size_t>::max() - sizeof(void *);
+
   while (fp && n < max_depth) {
     if (*(fp + 1) == reinterpret_cast<void *>(0)) {
       // In 64-bit code, we often see a frame that
       // points to itself and has a return address of 0.
       break;
     }
-    void **next_fp = NextStackFrame<!IS_STACK_FRAMES, IS_WITH_CONTEXT>(fp, ucp);
+    void **next_fp = NextStackFrame<!IS_STACK_FRAMES, IS_WITH_CONTEXT>(
+        fp, ucp, stack_low, stack_high);
     if (skip_count > 0) {
       skip_count--;
     } else {
@@ -324,11 +341,17 @@ static int UnwindImpl(void **result, int *sizes, int max_depth, int skip_count,
     // Implementation detail: we clamp the max of frames we are willing to
     // count, so as not to spend too much time in the loop below.
     const int kMaxUnwind = 1000;
-    int j = 0;
-    for (; fp != nullptr && j < kMaxUnwind; j++) {
-      fp = NextStackFrame<!IS_STACK_FRAMES, IS_WITH_CONTEXT>(fp, ucp);
+    int num_dropped_frames = 0;
+    for (int j = 0; fp != nullptr && j < kMaxUnwind; j++) {
+      if (skip_count > 0) {
+        skip_count--;
+      } else {
+        num_dropped_frames++;
+      }
+      fp = NextStackFrame<!IS_STACK_FRAMES, IS_WITH_CONTEXT>(fp, ucp, stack_low,
+                                                             stack_high);
     }
-    *min_dropped_frames = j;
+    *min_dropped_frames = num_dropped_frames;
   }
   return n;
 }

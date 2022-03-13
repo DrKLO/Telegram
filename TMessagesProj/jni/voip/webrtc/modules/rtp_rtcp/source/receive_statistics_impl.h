@@ -14,7 +14,6 @@
 #include <algorithm>
 #include <functional>
 #include <memory>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -22,6 +21,7 @@
 #include "modules/include/module_common_types_public.h"
 #include "modules/rtp_rtcp/include/receive_statistics.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/report_block.h"
+#include "rtc_base/containers/flat_map.h"
 #include "rtc_base/rate_statistics.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/thread_annotations.h"
@@ -195,8 +195,7 @@ class ReceiveStatisticsImpl : public ReceiveStatistics {
   size_t last_returned_ssrc_idx_;
   std::vector<uint32_t> all_ssrcs_;
   int max_reordering_threshold_;
-  std::unordered_map<uint32_t /*ssrc*/,
-                     std::unique_ptr<StreamStatisticianImplInterface>>
+  flat_map<uint32_t /*ssrc*/, std::unique_ptr<StreamStatisticianImplInterface>>
       statisticians_;
 };
 

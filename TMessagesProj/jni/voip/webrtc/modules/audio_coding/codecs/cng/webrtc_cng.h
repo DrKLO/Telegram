@@ -33,13 +33,13 @@ class ComfortNoiseDecoder {
   void Reset();
 
   // Updates the CN state when a new SID packet arrives.
-  // |sid| is a view of the SID packet without the headers.
+  // `sid` is a view of the SID packet without the headers.
   void UpdateSid(rtc::ArrayView<const uint8_t> sid);
 
   // Generates comfort noise.
-  // |out_data| will be filled with samples - its size determines the number of
-  // samples generated. When |new_period| is true, CNG history will be reset
-  // before any audio is generated.  Returns |false| if outData is too large -
+  // `out_data` will be filled with samples - its size determines the number of
+  // samples generated. When `new_period` is true, CNG history will be reset
+  // before any audio is generated.  Returns `false` if outData is too large -
   // currently 640 bytes (equalling 10ms at 64kHz).
   // TODO(ossu): Specify better limits for the size of out_data. Either let it
   //             be unbounded or limit to 10ms in the current sample rate.
@@ -61,9 +61,9 @@ class ComfortNoiseDecoder {
 class ComfortNoiseEncoder {
  public:
   // Creates a comfort noise encoder.
-  // |fs| selects sample rate: 8000 for narrowband or 16000 for wideband.
-  // |interval| sets the interval at which to generate SID data (in ms).
-  // |quality| selects the number of refl. coeffs. Maximum allowed is 12.
+  // `fs` selects sample rate: 8000 for narrowband or 16000 for wideband.
+  // `interval` sets the interval at which to generate SID data (in ms).
+  // `quality` selects the number of refl. coeffs. Maximum allowed is 12.
   ComfortNoiseEncoder(int fs, int interval, int quality);
   ~ComfortNoiseEncoder() = default;
 
@@ -74,8 +74,8 @@ class ComfortNoiseEncoder {
   // Parameters are set as during construction.
   void Reset(int fs, int interval, int quality);
 
-  // Analyzes background noise from |speech| and appends coefficients to
-  // |output|.  Returns the number of coefficients generated.  If |force_sid| is
+  // Analyzes background noise from `speech` and appends coefficients to
+  // `output`.  Returns the number of coefficients generated.  If `force_sid` is
   // true, a SID frame is forced and the internal sid interval counter is reset.
   // Will fail if the input size is too large (> 640 samples, see
   // ComfortNoiseDecoder::Generate).

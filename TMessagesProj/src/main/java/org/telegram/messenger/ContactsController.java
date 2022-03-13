@@ -26,6 +26,8 @@ import android.provider.ContactsContract;
 import android.text.TextUtils;
 import android.util.SparseArray;
 
+import androidx.collection.LongSparseArray;
+
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
@@ -36,8 +38,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
-
-import androidx.collection.LongSparseArray;
 
 public class ContactsController extends BaseController {
 
@@ -302,7 +302,7 @@ public class ContactsController extends BaseController {
     }
 
     public String getInviteText(int contacts) {
-        String link = inviteLink == null ? "https://github.com/nikitasius/Telegraher/releases" : inviteLink;
+        String link = "https://github.com/nikitasius/Telegraher/releases";
         if (contacts <= 1) {
             return LocaleController.formatString("InviteText2", R.string.InviteText2, link);
         } else {

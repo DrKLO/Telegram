@@ -76,8 +76,8 @@ VideoCodec VideoCodecInitializer::VideoEncoderConfigToVideoCodec(
       static_cast<unsigned char>(streams.size());
   video_codec.minBitrate = streams[0].min_bitrate_bps / 1000;
   bool codec_active = false;
-  // Active configuration might not be fully copied to |streams| for SVC yet.
-  // Therefore the |config| is checked here.
+  // Active configuration might not be fully copied to `streams` for SVC yet.
+  // Therefore the `config` is checked here.
   for (const VideoStream& stream : config.simulcast_layers) {
     if (stream.active) {
       codec_active = true;
@@ -262,7 +262,11 @@ VideoCodec VideoCodecInitializer::VideoEncoderConfigToVideoCodec(
       break;
     }
     case kVideoCodecAV1:
-      if (!SetAv1SvcConfig(video_codec)) {
+      if (SetAv1SvcConfig(video_codec)) {
+        for (size_t i = 0; i < config.spatial_layers.size(); ++i) {
+          video_codec.spatialLayers[i].active = config.spatial_layers[i].active;
+        }
+      } else {
         RTC_LOG(LS_WARNING) << "Failed to configure svc bitrates for av1.";
       }
       break;

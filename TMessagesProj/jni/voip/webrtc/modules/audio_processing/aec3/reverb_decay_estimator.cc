@@ -93,7 +93,8 @@ ReverbDecayEstimator::ReverbDecayEstimator(const EchoCanceller3Config& config)
       late_reverb_start_(kEarlyReverbMinSizeBlocks),
       late_reverb_end_(kEarlyReverbMinSizeBlocks),
       previous_gains_(config.filter.refined.length_blocks, 0.f),
-      decay_(std::fabs(config.ep_strength.default_len)) {
+      decay_(std::fabs(config.ep_strength.default_len)),
+      mild_decay_(std::fabs(config.ep_strength.nearend_len)) {
   RTC_DCHECK_GT(config.filter.refined.length_blocks,
                 static_cast<size_t>(kEarlyReverbMinSizeBlocks));
 }
@@ -295,7 +296,7 @@ void ReverbDecayEstimator::LateReverbLinearRegressor::Accumulate(float z) {
 float ReverbDecayEstimator::LateReverbLinearRegressor::Estimate() {
   RTC_DCHECK(EstimateAvailable());
   if (nn_ == 0.f) {
-    RTC_NOTREACHED();
+    RTC_DCHECK_NOTREACHED();
     return 0.f;
   }
   return nz_ / nn_;

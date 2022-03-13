@@ -10,41 +10,55 @@
 
 #include "modules/audio_coding/neteq/nack_tracker.h"
 
-#include <assert.h>
-
 #include <cstdint>
 #include <utility>
 
 #include "rtc_base/checks.h"
+#include "rtc_base/experiments/struct_parameters_parser.h"
+#include "rtc_base/logging.h"
+#include "system_wrappers/include/field_trial.h"
 
 namespace webrtc {
 namespace {
 
 const int kDefaultSampleRateKhz = 48;
-const int kDefaultPacketSizeMs = 20;
+const int kMaxPacketSizeMs = 120;
+constexpr char kNackTrackerConfigFieldTrial[] =
+    "WebRTC-Audio-NetEqNackTrackerConfig";
 
 }  // namespace
 
-NackTracker::NackTracker(int nack_threshold_packets)
-    : nack_threshold_packets_(nack_threshold_packets),
-      sequence_num_last_received_rtp_(0),
+NackTracker::Config::Config() {
+  auto parser = StructParametersParser::Create(
+      "packet_loss_forget_factor", &packet_loss_forget_factor,
+      "ms_per_loss_percent", &ms_per_loss_percent, "never_nack_multiple_times",
+      &never_nack_multiple_times, "require_valid_rtt", &require_valid_rtt,
+      "max_loss_rate", &max_loss_rate);
+  parser->Parse(
+      webrtc::field_trial::FindFullName(kNackTrackerConfigFieldTrial));
+  RTC_LOG(LS_INFO) << "Nack tracker config:"
+                      " packet_loss_forget_factor="
+                   << packet_loss_forget_factor
+                   << " ms_per_loss_percent=" << ms_per_loss_percent
+                   << " never_nack_multiple_times=" << never_nack_multiple_times
+                   << " require_valid_rtt=" << require_valid_rtt
+                   << " max_loss_rate=" << max_loss_rate;
+}
+
+NackTracker::NackTracker()
+    : sequence_num_last_received_rtp_(0),
       timestamp_last_received_rtp_(0),
       any_rtp_received_(false),
       sequence_num_last_decoded_rtp_(0),
       timestamp_last_decoded_rtp_(0),
       any_rtp_decoded_(false),
       sample_rate_khz_(kDefaultSampleRateKhz),
-      samples_per_packet_(sample_rate_khz_ * kDefaultPacketSizeMs),
       max_nack_list_size_(kNackListSizeLimit) {}
 
 NackTracker::~NackTracker() = default;
 
-NackTracker* NackTracker::Create(int nack_threshold_packets) {
-  return new NackTracker(nack_threshold_packets);
-}
-
 void NackTracker::UpdateSampleRate(int sample_rate_hz) {
-  assert(sample_rate_hz > 0);
+  RTC_DCHECK_GT(sample_rate_hz, 0);
   sample_rate_khz_ = sample_rate_hz / 1000;
 }
 
@@ -75,67 +89,60 @@ void NackTracker::UpdateLastReceivedPacket(uint16_t sequence_number,
   if (IsNewerSequenceNumber(sequence_num_last_received_rtp_, sequence_number))
     return;
 
-  UpdateSamplesPerPacket(sequence_number, timestamp);
+  UpdatePacketLossRate(sequence_number - sequence_num_last_received_rtp_ - 1);
 
-  UpdateList(sequence_number);
+  UpdateList(sequence_number, timestamp);
 
   sequence_num_last_received_rtp_ = sequence_number;
   timestamp_last_received_rtp_ = timestamp;
   LimitNackListSize();
 }
 
-void NackTracker::UpdateSamplesPerPacket(
+absl::optional<int> NackTracker::GetSamplesPerPacket(
     uint16_t sequence_number_current_received_rtp,
-    uint32_t timestamp_current_received_rtp) {
+    uint32_t timestamp_current_received_rtp) const {
   uint32_t timestamp_increase =
       timestamp_current_received_rtp - timestamp_last_received_rtp_;
   uint16_t sequence_num_increase =
       sequence_number_current_received_rtp - sequence_num_last_received_rtp_;
 
-  samples_per_packet_ = timestamp_increase / sequence_num_increase;
+  int samples_per_packet = timestamp_increase / sequence_num_increase;
+  if (samples_per_packet == 0 ||
+      samples_per_packet > kMaxPacketSizeMs * sample_rate_khz_) {
+    // Not a valid samples per packet.
+    return absl::nullopt;
+  }
+  return samples_per_packet;
 }
 
-void NackTracker::UpdateList(uint16_t sequence_number_current_received_rtp) {
-  // Some of the packets which were considered late, now are considered missing.
-  ChangeFromLateToMissing(sequence_number_current_received_rtp);
+void NackTracker::UpdateList(uint16_t sequence_number_current_received_rtp,
+                             uint32_t timestamp_current_received_rtp) {
+  if (!IsNewerSequenceNumber(sequence_number_current_received_rtp,
+                             sequence_num_last_received_rtp_ + 1)) {
+    return;
+  }
+  RTC_DCHECK(!any_rtp_decoded_ ||
+             IsNewerSequenceNumber(sequence_number_current_received_rtp,
+                                   sequence_num_last_decoded_rtp_));
 
-  if (IsNewerSequenceNumber(sequence_number_current_received_rtp,
-                            sequence_num_last_received_rtp_ + 1))
-    AddToList(sequence_number_current_received_rtp);
-}
-
-void NackTracker::ChangeFromLateToMissing(
-    uint16_t sequence_number_current_received_rtp) {
-  NackList::const_iterator lower_bound =
-      nack_list_.lower_bound(static_cast<uint16_t>(
-          sequence_number_current_received_rtp - nack_threshold_packets_));
-
-  for (NackList::iterator it = nack_list_.begin(); it != lower_bound; ++it)
-    it->second.is_missing = true;
-}
-
-uint32_t NackTracker::EstimateTimestamp(uint16_t sequence_num) {
-  uint16_t sequence_num_diff = sequence_num - sequence_num_last_received_rtp_;
-  return sequence_num_diff * samples_per_packet_ + timestamp_last_received_rtp_;
-}
-
-void NackTracker::AddToList(uint16_t sequence_number_current_received_rtp) {
-  assert(!any_rtp_decoded_ ||
-         IsNewerSequenceNumber(sequence_number_current_received_rtp,
-                               sequence_num_last_decoded_rtp_));
-
-  // Packets with sequence numbers older than |upper_bound_missing| are
-  // considered missing, and the rest are considered late.
-  uint16_t upper_bound_missing =
-      sequence_number_current_received_rtp - nack_threshold_packets_;
+  absl::optional<int> samples_per_packet = GetSamplesPerPacket(
+      sequence_number_current_received_rtp, timestamp_current_received_rtp);
+  if (!samples_per_packet) {
+    return;
+  }
 
   for (uint16_t n = sequence_num_last_received_rtp_ + 1;
        IsNewerSequenceNumber(sequence_number_current_received_rtp, n); ++n) {
-    bool is_missing = IsNewerSequenceNumber(upper_bound_missing, n);
-    uint32_t timestamp = EstimateTimestamp(n);
-    NackElement nack_element(TimeToPlay(timestamp), timestamp, is_missing);
+    uint32_t timestamp = EstimateTimestamp(n, *samples_per_packet);
+    NackElement nack_element(TimeToPlay(timestamp), timestamp);
     nack_list_.insert(nack_list_.end(), std::make_pair(n, nack_element));
   }
+}
+
+uint32_t NackTracker::EstimateTimestamp(uint16_t sequence_num,
+                                        int samples_per_packet) {
+  uint16_t sequence_num_diff = sequence_num - sequence_num_last_received_rtp_;
+  return sequence_num_diff * samples_per_packet + timestamp_last_received_rtp_;
 }
 
 void NackTracker::UpdateEstimatedPlayoutTimeBy10ms() {
@@ -164,7 +171,7 @@ void NackTracker::UpdateLastDecodedPacket(uint16_t sequence_number,
          ++it)
       it->second.time_to_play_ms = TimeToPlay(it->second.estimated_timestamp);
   } else {
-    assert(sequence_number == sequence_num_last_decoded_rtp_);
+    RTC_DCHECK_EQ(sequence_number, sequence_num_last_decoded_rtp_);
 
     // Same sequence number as before. 10 ms is elapsed, update estimations for
     // time-to-play.
@@ -191,7 +198,6 @@ void NackTracker::Reset() {
   timestamp_last_decoded_rtp_ = 0;
   any_rtp_decoded_ = false;
   sample_rate_khz_ = kDefaultSampleRateKhz;
-  samples_per_packet_ = sample_rate_khz_ * kDefaultPacketSizeMs;
 }
 
 void NackTracker::SetMaxNackListSize(size_t max_nack_list_size) {
@@ -216,17 +222,42 @@ int64_t NackTracker::TimeToPlay(uint32_t timestamp) const {
 }
 
 // We don't erase elements with time-to-play shorter than round-trip-time.
-std::vector<uint16_t> NackTracker::GetNackList(
-    int64_t round_trip_time_ms) const {
+std::vector<uint16_t> NackTracker::GetNackList(int64_t round_trip_time_ms) {
   RTC_DCHECK_GE(round_trip_time_ms, 0);
   std::vector<uint16_t> sequence_numbers;
+  if (config_.require_valid_rtt && round_trip_time_ms == 0) {
+    return sequence_numbers;
+  }
+  if (packet_loss_rate_ >
+      static_cast<uint32_t>(config_.max_loss_rate * (1 << 30))) {
+    return sequence_numbers;
+  }
+  // The estimated packet loss is between 0 and 1, so we need to multiply by 100
+  // here.
+  int max_wait_ms =
+      100.0 * config_.ms_per_loss_percent * packet_loss_rate_ / (1 << 30);
   for (NackList::const_iterator it = nack_list_.begin(); it != nack_list_.end();
        ++it) {
-    if (it->second.is_missing &&
-        it->second.time_to_play_ms > round_trip_time_ms)
+    int64_t time_since_packet_ms =
+        (timestamp_last_received_rtp_ - it->second.estimated_timestamp) /
+        sample_rate_khz_;
+    if (it->second.time_to_play_ms > round_trip_time_ms ||
+        time_since_packet_ms + round_trip_time_ms < max_wait_ms)
       sequence_numbers.push_back(it->first);
+  }
+  if (config_.never_nack_multiple_times) {
+    nack_list_.clear();
   }
   return sequence_numbers;
 }
 
+void NackTracker::UpdatePacketLossRate(int packets_lost) {
+  const uint64_t alpha_q30 = (1 << 30) * config_.packet_loss_forget_factor;
+  // Exponential filter.
+  packet_loss_rate_ = (alpha_q30 * packet_loss_rate_) >> 30;
+  for (int i = 0; i < packets_lost; ++i) {
+    packet_loss_rate_ =
+        ((alpha_q30 * packet_loss_rate_) >> 30) + ((1 << 30) - alpha_q30);
+  }
+}
 }  // namespace webrtc

@@ -23,7 +23,7 @@ void CaptureStreamInfo::AddInput(const AudioFrameView<const float>& src) {
   RTC_DCHECK(task_);
   auto* stream = task_->GetEvent()->mutable_stream();
 
-  for (size_t i = 0; i < src.num_channels(); ++i) {
+  for (int i = 0; i < src.num_channels(); ++i) {
     const auto& channel_view = src.channel(i);
     stream->add_input_channel(channel_view.begin(),
                               sizeof(float) * channel_view.size());
@@ -34,7 +34,7 @@ void CaptureStreamInfo::AddOutput(const AudioFrameView<const float>& src) {
   RTC_DCHECK(task_);
   auto* stream = task_->GetEvent()->mutable_stream();
 
-  for (size_t i = 0; i < src.num_channels(); ++i) {
+  for (int i = 0; i < src.num_channels(); ++i) {
     const auto& channel_view = src.channel(i);
     stream->add_output_channel(channel_view.begin(),
                                sizeof(float) * channel_view.size());

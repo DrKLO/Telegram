@@ -10,7 +10,7 @@
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 4. Neither the name of the University nor the names of its contributors
+ * 3. Neither the name of the University nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
  *
@@ -40,8 +40,8 @@
  * Internal of an ICMP Router Advertisement
  */
 struct icmp_ra_addr {
-	u_int32_t ira_addr;
-	u_int32_t ira_preference;
+	uint32_t ira_addr;
+	uint32_t ira_preference;
 };
 
 /*
@@ -53,16 +53,16 @@ struct icmphdr {
 	u_short	icmp_cksum;		/* ones complement cksum of struct */
 };
 
-#if defined(__Userspace_os_Windows)
+#if defined(_WIN32)
 #pragma pack (push, 1)
 struct icmp6_hdr {
-	u_int8_t icmp6_type;
-	u_int8_t icmp6_code;
-	u_int16_t icmp6_cksum;
+	uint8_t icmp6_type;
+	uint8_t icmp6_code;
+	uint16_t icmp6_cksum;
 	union {
-		u_int32_t icmp6_un_data32[1];
-		u_int16_t icmp6_un_data16[2];
-		u_int8_t icmp6_un_data8[4];
+		uint32_t icmp6_un_data32[1];
+		uint16_t icmp6_un_data16[2];
+		uint8_t icmp6_un_data8[4];
 	} icmp6_dataun;
 };
 #pragma pack(pop)
@@ -98,7 +98,7 @@ struct icmp {
 		struct ih_rtradv {
 			u_char irt_num_addrs;
 			u_char irt_wpa;
-			u_int16_t irt_lifetime;
+			uint16_t irt_lifetime;
 		} ih_rtradv;
 	} icmp_hun;
 #define	icmp_pptr	icmp_hun.ih_pptr
@@ -126,7 +126,7 @@ struct icmp {
 			/* options and then 64 bits of data */
 		} id_ip;
 		struct icmp_ra_addr id_radv;
-		u_int32_t id_mask;
+		uint32_t id_mask;
 		char	id_data[1];
 	} icmp_dun;
 #define	icmp_otime	icmp_dun.id_ts.its_otime

@@ -105,7 +105,7 @@ double LimiterDbGainCurve::GetGainLinear(double input_level_linear) const {
          input_level_linear;
 }
 
-// Computes the first derivative of GetGainLinear() in |x|.
+// Computes the first derivative of GetGainLinear() in `x`.
 double LimiterDbGainCurve::GetGainFirstDerivativeLinear(double x) const {
   // Beyond-knee region only.
   RTC_CHECK_GE(x, limiter_start_linear_ - 1e-7 * kMaxAbsFloatS16Value);

@@ -8,8 +8,8 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Paint;
 import android.graphics.Rect;
+import android.os.Build;
 import android.text.Editable;
 import android.text.Layout;
 import android.text.StaticLayout;
@@ -21,19 +21,52 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.OvershootInterpolator;
-import android.widget.TextView;
 
 import androidx.core.content.ContextCompat;
+import androidx.dynamicanimation.animation.FloatPropertyCompat;
+import androidx.dynamicanimation.animation.SpringAnimation;
+import androidx.dynamicanimation.animation.SpringForce;
 
-import org.checkerframework.checker.regex.qual.Regex;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.EditTextBoldCursor;
-import org.telegram.ui.Components.StaticLayoutEx;
+import org.telegram.ui.Components.SimpleFloatPropertyCompat;
 
 public class CodeNumberField extends EditTextBoldCursor {
+    private final static float SPRING_MULTIPLIER = 100f;
+    private final static FloatPropertyCompat<CodeNumberField> FOCUSED_PROGRESS = new SimpleFloatPropertyCompat<CodeNumberField>("focusedProgress", obj -> obj.focusedProgress, (obj, value) -> {
+        obj.focusedProgress = value;
+        if (obj.getParent() != null) {
+            ((View) obj.getParent()).invalidate();
+        }
+    }).setMultiplier(SPRING_MULTIPLIER);
+    private final static FloatPropertyCompat<CodeNumberField> ERROR_PROGRESS = new SimpleFloatPropertyCompat<CodeNumberField>("errorProgress", obj -> obj.errorProgress, (obj, value) -> {
+        obj.errorProgress = value;
+        if (obj.getParent() != null) {
+            ((View) obj.getParent()).invalidate();
+        }
+    }).setMultiplier(SPRING_MULTIPLIER);
+    private final static FloatPropertyCompat<CodeNumberField> SUCCESS_PROGRESS = new SimpleFloatPropertyCompat<CodeNumberField>("successProgress", obj -> obj.successProgress, (obj, value) -> {
+        obj.successProgress = value;
+        if (obj.getParent() != null) {
+            ((View) obj.getParent()).invalidate();
+        }
+    }).setMultiplier(SPRING_MULTIPLIER);
+    private final static FloatPropertyCompat<CodeNumberField> SUCCESS_SCALE_PROGRESS = new SimpleFloatPropertyCompat<CodeNumberField>("successScaleProgress", obj -> obj.successScaleProgress, (obj, value) -> {
+        obj.successScaleProgress = value;
+        if (obj.getParent() != null) {
+            ((View) obj.getParent()).invalidate();
+        }
+    }).setMultiplier(SPRING_MULTIPLIER);
 
-    float focusedProgress;
+    private float focusedProgress, errorProgress, successProgress, successScaleProgress = 1f;
+    private SpringAnimation focusedSpringAnimation = new SpringAnimation(this, FOCUSED_PROGRESS);
+    private SpringAnimation errorSpringAnimation = new SpringAnimation(this, ERROR_PROGRESS);
+    private SpringAnimation successSpringAnimation = new SpringAnimation(this, SUCCESS_PROGRESS);
+    private SpringAnimation successScaleSpringAnimation = new SpringAnimation(this, SUCCESS_SCALE_PROGRESS);
+
+    private boolean showSoftInputOnFocusInternal = true;
+
     float enterAnimation = 1f;
     float exitAnimation = 1f;
     boolean replaceAnimation;
@@ -70,6 +103,71 @@ public class CodeNumberField extends EditTextBoldCursor {
 
     }
 
+    public void setShowSoftInputOnFocusCompat(boolean showSoftInputOnFocus) {
+        this.showSoftInputOnFocusInternal = showSoftInputOnFocus;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            setShowSoftInputOnFocus(showSoftInputOnFocus);
+        }
+    }
+
+    public float getFocusedProgress() {
+        return focusedProgress;
+    }
+
+    public void animateFocusedProgress(float newProgress) {
+        animateSpring(focusedSpringAnimation, newProgress * SPRING_MULTIPLIER);
+    }
+
+    public float getErrorProgress() {
+        return errorProgress;
+    }
+
+    public void animateErrorProgress(float newProgress) {
+        animateSpring(errorSpringAnimation, newProgress * SPRING_MULTIPLIER);
+    }
+
+    public float getSuccessProgress() {
+        return successProgress;
+    }
+
+    public float getSuccessScaleProgress() {
+        return successScaleProgress;
+    }
+
+    public void animateSuccessProgress(float newProgress) {
+        animateSpring(successSpringAnimation, newProgress * SPRING_MULTIPLIER);
+
+        successScaleSpringAnimation.cancel();
+        if (newProgress != 0f) {
+            successScaleSpringAnimation.setSpring(new SpringForce(1f)
+                    .setStiffness(500)
+                    .setDampingRatio(SpringForce.DAMPING_RATIO_LOW_BOUNCY)
+                    .setFinalPosition(SPRING_MULTIPLIER))
+                    .setStartValue(SPRING_MULTIPLIER)
+                    .setStartVelocity(4000)
+                    .start();
+        } else successScaleProgress = 1f;
+    }
+
+    private void animateSpring(SpringAnimation anim, float progress) {
+        if (anim.getSpring() != null && progress == anim.getSpring()
+                .getFinalPosition()) return;
+
+        anim.cancel();
+        anim.setSpring(new SpringForce(progress)
+                .setStiffness(400f)
+                .setDampingRatio(SpringForce.DAMPING_RATIO_NO_BOUNCY)
+                .setFinalPosition(progress))
+                .start();
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        focusedSpringAnimation.cancel();
+        errorSpringAnimation.cancel();
+    }
+
     public void startExitAnimation() {
         if (getMeasuredHeight() == 0 || getMeasuredWidth() == 0 || getLayout() == null) {
             return;
@@ -83,7 +181,8 @@ public class CodeNumberField extends EditTextBoldCursor {
         }
         exitBitmap.eraseColor(Color.TRANSPARENT);
 
-        StaticLayout staticLayout = new StaticLayout(getText(), getLayout().getPaint(), (int) Math.ceil(getLayout().getPaint().measureText(String.valueOf(getText()))), Layout.Alignment.ALIGN_NORMAL, getLineSpacingMultiplier(), getLineSpacingExtra(), getIncludeFontPadding());
+        CharSequence transformed = getTransformationMethod().getTransformation(getText(), this);
+        StaticLayout staticLayout = new StaticLayout(transformed, getLayout().getPaint(), (int) Math.ceil(getLayout().getPaint().measureText(transformed, 0, transformed.length())), Layout.Alignment.ALIGN_NORMAL, getLineSpacingMultiplier(), getLineSpacingExtra(), getIncludeFontPadding());
         exitCanvas.save();
         exitCanvas.translate((getMeasuredWidth() - staticLayout.getWidth()) / 2f, (getMeasuredHeight() - staticLayout.getHeight()) / 2f);
         staticLayout.draw(exitCanvas);
@@ -196,7 +295,9 @@ public class CodeNumberField extends EditTextBoldCursor {
                     requestFocus();
                 }
                 setSelection(0);
-                AndroidUtilities.showKeyboard(this);
+                if (showSoftInputOnFocusInternal) {
+                    AndroidUtilities.showKeyboard(this);
+                }
             }
             pressed = false;
         }

@@ -70,7 +70,7 @@ int WriteLeb128(uint32_t value, uint8_t* buffer) {
   return size;
 }
 
-// Given |remaining_bytes| free bytes left in a packet, returns max size of an
+// Given `remaining_bytes` free bytes left in a packet, returns max size of an
 // OBU fragment that can fit into the packet.
 // i.e. MaxFragmentSize + Leb128Size(MaxFragmentSize) <= remaining_bytes.
 int MaxFragmentSize(int remaining_bytes) {
@@ -191,7 +191,7 @@ std::vector<RtpPacketizerAv1::Packet> RtpPacketizerAv1::Packetize(
     const bool is_last_obu = obu_index == obus.size() - 1;
     const Obu& obu = obus[obu_index];
 
-    // Putting |obu| into the last packet would make last obu element stored in
+    // Putting `obu` into the last packet would make last obu element stored in
     // that packet not last. All not last OBU elements must be prepend with the
     // element length. AdditionalBytesForPreviousObuElement calculates how many
     // bytes are needed to store that length.
@@ -242,12 +242,12 @@ std::vector<RtpPacketizerAv1::Packet> RtpPacketizerAv1::Packetize(
                                       : packet_remaining_bytes;
     // Because available_bytes might be different than
     // packet_remaining_bytes it might happen that max_first_fragment_size >=
-    // obu.size. Also, since checks above verified |obu| should not be put
-    // completely into the |packet|, leave at least 1 byte for later packet.
+    // obu.size. Also, since checks above verified `obu` should not be put
+    // completely into the `packet`, leave at least 1 byte for later packet.
     int first_fragment_size = std::min(obu.size - 1, max_first_fragment_size);
     if (first_fragment_size == 0) {
       // Rather than writing 0-size element at the tail of the packet,
-      // 'uninsert' the |obu| from the |packet|.
+      // 'uninsert' the `obu` from the `packet`.
       packet.num_obu_elements--;
       packet.packet_size -= previous_obu_extra_size;
     } else {

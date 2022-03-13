@@ -27,6 +27,8 @@ namespace dcsctp {
 // a lot, which is an indicator of a bad connection.
 class RetransmissionTimeout {
  public:
+  static constexpr int kRttShift = 3;
+  static constexpr int kRttVarShift = 2;
   explicit RetransmissionTimeout(const DcSctpOptions& options);
 
   // To be called when a RTT has been measured, to update the RTO value.
@@ -36,22 +38,21 @@ class RetransmissionTimeout {
   DurationMs rto() const { return DurationMs(rto_); }
 
   // Returns the smoothed RTT value, in milliseconds.
-  DurationMs srtt() const { return DurationMs(srtt_); }
+  DurationMs srtt() const { return DurationMs(scaled_srtt_ >> kRttShift); }
 
  private:
-  // Note that all intermediate state calculation is done in the floating point
-  // domain, to maintain precision.
-  const double min_rto_;
-  const double max_rto_;
-  const double max_rtt_;
+  const int32_t min_rto_;
+  const int32_t max_rto_;
+  const int32_t max_rtt_;
+  const int32_t min_rtt_variance_;
   // If this is the first measurement
   bool first_measurement_ = true;
-  // Smoothed Round-Trip Time
-  double srtt_ = 0.0;
-  // Round-Trip Time Variation
-  double rttvar_ = 0.0;
+  // Smoothed Round-Trip Time, shifted by kRttShift
+  int32_t scaled_srtt_ = 0;
+  // Round-Trip Time Variation, shifted by kRttVarShift
+  int32_t scaled_rtt_var_ = 0;
   // Retransmission Timeout
-  double rto_;
+  int32_t rto_;
 };
 }  // namespace dcsctp
 

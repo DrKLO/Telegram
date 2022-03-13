@@ -41,6 +41,7 @@ public class ReactedUsersListView extends FrameLayout {
     public final static int VISIBLE_ITEMS = 6;
     public final static int ITEM_HEIGHT_DP = 48;
 
+    private int predictiveCount;
     private int currentAccount;
     private MessageObject message;
     private String filter;
@@ -64,7 +65,7 @@ public class ReactedUsersListView extends FrameLayout {
         this.currentAccount = currentAccount;
         this.message = message;
         this.filter = reactionCount == null ? null : reactionCount.reaction;
-
+        predictiveCount = reactionCount == null ? VISIBLE_ITEMS : reactionCount.count;
         listView = new RecyclerListView(context, resourcesProvider) {
             @Override
             protected void onMeasure(int widthSpec, int heightSpec) {
@@ -223,10 +224,14 @@ public class ReactedUsersListView extends FrameLayout {
     private void updateHeight() {
         if (onHeightChangedListener != null) {
             int h;
+            int count = userReactions.size();
+            if (count == 0) {
+                count = predictiveCount;
+            }
             if (listView.getMeasuredHeight() != 0) {
-                h = Math.min(listView.getMeasuredHeight(), AndroidUtilities.dp(ITEM_HEIGHT_DP * Math.min(userReactions.size(), VISIBLE_ITEMS)));
+                h = Math.min(listView.getMeasuredHeight(), AndroidUtilities.dp(ITEM_HEIGHT_DP * count));
             } else {
-                h = AndroidUtilities.dp(ITEM_HEIGHT_DP * Math.min(userReactions.size(), VISIBLE_ITEMS));
+                h = AndroidUtilities.dp(ITEM_HEIGHT_DP * count);
             }
             onHeightChangedListener.onHeightChanged(ReactedUsersListView.this, h);
         }

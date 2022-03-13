@@ -50,8 +50,8 @@ class RTC_EXPORT VideoBitrateAllocation {
   // Get the sum of all the temporal layer for a specific spatial layer.
   uint32_t GetSpatialLayerSum(size_t spatial_index) const;
 
-  // Sum of bitrates of temporal layers, from layer 0 to |temporal_index|
-  // inclusive, of specified spatial layer |spatial_index|. Bitrates of lower
+  // Sum of bitrates of temporal layers, from layer 0 to `temporal_index`
+  // inclusive, of specified spatial layer `spatial_index`. Bitrates of lower
   // spatial layers are not included.
   uint32_t GetTemporalLayerSum(size_t spatial_index,
                                size_t temporal_index) const;

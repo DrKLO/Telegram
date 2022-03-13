@@ -32,7 +32,7 @@ class RtpVideoFrameReceiver {
 };
 
 // Delegates calls to FrameTransformerInterface to transform frames, and to
-// RtpVideoStreamReceiver to manage transformed frames on the |network_thread_|.
+// RtpVideoStreamReceiver to manage transformed frames on the `network_thread_`.
 class RtpVideoStreamReceiverFrameTransformerDelegate
     : public TransformedFrameCallback {
  public:
@@ -49,12 +49,12 @@ class RtpVideoStreamReceiverFrameTransformerDelegate
   void TransformFrame(std::unique_ptr<RtpFrameObject> frame);
 
   // Implements TransformedFrameCallback. Can be called on any thread. Posts
-  // the transformed frame to be managed on the |network_thread_|.
+  // the transformed frame to be managed on the `network_thread_`.
   void OnTransformedFrame(
       std::unique_ptr<TransformableFrameInterface> frame) override;
 
   // Delegates the call to RtpVideoFrameReceiver::ManageFrame on the
-  // |network_thread_|.
+  // `network_thread_`.
   void ManageFrame(std::unique_ptr<TransformableFrameInterface> frame);
 
  protected:

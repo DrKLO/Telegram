@@ -69,12 +69,15 @@ std::vector<SpatialLayer> ConfigureSvcNormalVideo(size_t input_width,
   std::vector<SpatialLayer> spatial_layers;
 
   // Limit number of layers for given resolution.
+  const bool is_landscape = input_width >= input_height;
+  const size_t min_width = is_landscape ? kMinVp9SpatialLayerLongSideLength
+                                        : kMinVp9SpatialLayerShortSideLength;
+  const size_t min_height = is_landscape ? kMinVp9SpatialLayerShortSideLength
+                                         : kMinVp9SpatialLayerLongSideLength;
   const size_t num_layers_fit_horz = static_cast<size_t>(std::floor(
-      1 + std::max(0.0f,
-                   std::log2(1.0f * input_width / kMinVp9SpatialLayerWidth))));
-  const size_t num_layers_fit_vert = static_cast<size_t>(
-      std::floor(1 + std::max(0.0f, std::log2(1.0f * input_height /
-                                              kMinVp9SpatialLayerHeight))));
+      1 + std::max(0.0f, std::log2(1.0f * input_width / min_width))));
+  const size_t num_layers_fit_vert = static_cast<size_t>(std::floor(
+      1 + std::max(0.0f, std::log2(1.0f * input_height / min_height))));
   const size_t limited_num_spatial_layers =
       std::min(num_layers_fit_horz, num_layers_fit_vert);
   if (limited_num_spatial_layers < num_spatial_layers) {

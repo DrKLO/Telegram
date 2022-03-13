@@ -102,9 +102,9 @@ void SctpDataChannelTransport::OnClosingProcedureComplete(int channel_id) {
   }
 }
 
-void SctpDataChannelTransport::OnClosedAbruptly() {
+void SctpDataChannelTransport::OnClosedAbruptly(RTCError error) {
   if (sink_) {
-    sink_->OnTransportClosed();
+    sink_->OnTransportClosed(error);
   }
 }
 

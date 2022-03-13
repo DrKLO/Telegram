@@ -31,7 +31,7 @@ class RtpPacketHistory {
  public:
   enum class StorageMode {
     kDisabled,     // Don't store any packets.
-    kStoreAndCull  // Store up to |number_to_store| packets, but try to remove
+    kStoreAndCull  // Store up to `number_to_store` packets, but try to remove
                    // packets as they time out or as signaled as received.
   };
 
@@ -54,7 +54,7 @@ class RtpPacketHistory {
   // Maximum number of packets we ever allow in the history.
   static constexpr size_t kMaxCapacity = 9600;
   // Maximum number of entries in prioritized queue of padding packets.
-  static constexpr size_t kMaxPaddingtHistory = 63;
+  static constexpr size_t kMaxPaddingHistory = 63;
   // Don't remove packets within max(1000ms, 3x RTT).
   static constexpr int64_t kMinPacketDurationMs = 1000;
   static constexpr int kMinPacketDurationRtt = 3;
@@ -78,7 +78,7 @@ class RtpPacketHistory {
   // a packet in the history before we are reasonably sure it has been received.
   void SetRtt(int64_t rtt_ms);
 
-  // If |send_time| is set, packet was sent without using pacer, so state will
+  // If `send_time` is set, packet was sent without using pacer, so state will
   // be set accordingly.
   void PutRtpPacket(std::unique_ptr<RtpPacketToSend> packet,
                     absl::optional<int64_t> send_time_ms);
@@ -206,13 +206,13 @@ class RtpPacketHistory {
   // the front and new packets being added to the back. Note that there may be
   // wrap-arounds so the back may have a lower sequence number.
   // Packets may also be removed out-of-order, in which case there will be
-  // instances of StoredPacket with |packet_| set to nullptr. The first and last
+  // instances of StoredPacket with `packet_` set to nullptr. The first and last
   // entry in the queue will however always be populated.
   std::deque<StoredPacket> packet_history_ RTC_GUARDED_BY(lock_);
 
   // Total number of packets with inserted.
   uint64_t packets_inserted_ RTC_GUARDED_BY(lock_);
-  // Objects from |packet_history_| ordered by "most likely to be useful", used
+  // Objects from `packet_history_` ordered by "most likely to be useful", used
   // in GetPayloadPaddingPacket().
   PacketPrioritySet padding_priority_ RTC_GUARDED_BY(lock_);
 };

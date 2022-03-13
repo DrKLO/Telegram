@@ -50,7 +50,7 @@ class RealFourier {
   // output (i.e. |2^order / 2 + 1|).
   static size_t ComplexLength(int order);
 
-  // Buffer allocation helpers. The buffers are large enough to hold |count|
+  // Buffer allocation helpers. The buffers are large enough to hold `count`
   // floats/complexes and suitably aligned for use by the implementation.
   // The returned scopers are set up with proper deleters; the caller owns
   // the allocated memory.

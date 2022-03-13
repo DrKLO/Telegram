@@ -15,8 +15,8 @@
 // UnscaledCycleClock
 //    An UnscaledCycleClock yields the value and frequency of a cycle counter
 //    that increments at a rate that is approximately constant.
-//    This class is for internal / whitelisted use only, you should consider
-//    using CycleClock instead.
+//    This class is for internal use only, you should consider using CycleClock
+//    instead.
 //
 // Notes:
 // The cycle counter frequency is not necessarily the core clock frequency.
@@ -46,8 +46,8 @@
 
 // The following platforms have an implementation of a hardware counter.
 #if defined(__i386__) || defined(__x86_64__) || defined(__aarch64__) || \
-  defined(__powerpc__) || defined(__ppc__) || \
-  defined(_M_IX86) || defined(_M_X64)
+    defined(__powerpc__) || defined(__ppc__) || defined(__riscv) ||     \
+    defined(_M_IX86) || defined(_M_X64)
 #define ABSL_HAVE_UNSCALED_CYCLECLOCK_IMPLEMENTATION 1
 #else
 #define ABSL_HAVE_UNSCALED_CYCLECLOCK_IMPLEMENTATION 0
@@ -80,8 +80,8 @@
 
 // This macro can be used to test if UnscaledCycleClock::Frequency()
 // is NominalCPUFrequency() on a particular platform.
-#if  (defined(__i386__) || defined(__x86_64__) || \
-      defined(_M_IX86) || defined(_M_X64))
+#if (defined(__i386__) || defined(__x86_64__) || defined(__riscv) || \
+     defined(_M_IX86) || defined(_M_X64))
 #define ABSL_INTERNAL_UNSCALED_CYCLECLOCK_FREQUENCY_IS_CPU_FREQUENCY
 #endif
 
@@ -109,7 +109,7 @@ class UnscaledCycleClock {
   // value.
   static double Frequency();
 
-  // Whitelisted friends.
+  // Allowed users
   friend class base_internal::CycleClock;
   friend class time_internal::UnscaledCycleClockWrapperForGetCurrentTime;
   friend class base_internal::UnscaledCycleClockWrapperForInitializeFrequency;

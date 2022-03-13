@@ -52,8 +52,8 @@ constexpr int kBufSize12kHz = kBufSize24kHz / 2;
 constexpr int kInitialMinPitch12kHz = kInitialMinPitch24kHz / 2;
 constexpr int kMaxPitch12kHz = kMaxPitch24kHz / 2;
 static_assert(kMaxPitch12kHz > kInitialMinPitch12kHz, "");
-// The inverted lags for the pitch interval [|kInitialMinPitch12kHz|,
-// |kMaxPitch12kHz|] are in the range [0, |kNumLags12kHz|].
+// The inverted lags for the pitch interval [`kInitialMinPitch12kHz`,
+// `kMaxPitch12kHz`] are in the range [0, `kNumLags12kHz`].
 constexpr int kNumLags12kHz = kMaxPitch12kHz - kInitialMinPitch12kHz;
 
 // 48 kHz constants.

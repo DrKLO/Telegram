@@ -32,9 +32,9 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) && !defined(__Userspace__)
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD: head/sys/netinet/sctp_crc32.h 327200 2017-12-26 12:35:02Z tuexen $");
+__FBSDID("$FreeBSD: head/sys/netinet/sctp_crc32.h 362338 2020-06-18 19:32:34Z markj $");
 #endif
 
 #ifndef _NETINET_SCTP_CRC32_H_
@@ -42,8 +42,8 @@ __FBSDID("$FreeBSD: head/sys/netinet/sctp_crc32.h 327200 2017-12-26 12:35:02Z tu
 
 #if defined(_KERNEL)
 uint32_t sctp_calculate_cksum(struct mbuf *, uint32_t);
-#if defined(__FreeBSD__)
-#ifdef SCTP
+#if defined(__FreeBSD__) && !defined(__Userspace__)
+#if defined(SCTP) || defined(SCTP_SUPPORT)
 void sctp_delayed_cksum(struct mbuf *, uint32_t offset);
 #endif
 #endif

@@ -26,7 +26,7 @@ extern "C" {
 //      - vector_length : Number of samples used in the dot product
 //      - scaling       : The number of right bit shifts to apply on each term
 //                        during calculation to avoid overflow, i.e., the
-//                        output will be in Q(-|scaling|)
+//                        output will be in Q(-`scaling`)
 //
 // Return value         : The dot product in Q(-scaling)
 int32_t WebRtcSpl_DotProductWithScale(const int16_t* vector1,

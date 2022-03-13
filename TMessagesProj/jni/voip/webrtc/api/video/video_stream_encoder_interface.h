@@ -39,7 +39,7 @@ namespace webrtc {
 //
 // 2. Moving responsibility for simulcast and for software fallback into this
 //    class.
-class VideoStreamEncoderInterface : public rtc::VideoSinkInterface<VideoFrame> {
+class VideoStreamEncoderInterface {
  public:
   // Interface for receiving encoded video frames and notifications about
   // configuration changes.
@@ -58,6 +58,8 @@ class VideoStreamEncoderInterface : public rtc::VideoSinkInterface<VideoFrame> {
         VideoLayersAllocation allocation) = 0;
   };
 
+  virtual ~VideoStreamEncoderInterface() = default;
+
   // If the resource is overusing, the VideoStreamEncoder will try to reduce
   // resolution or frame rate until no resource is overusing.
   // TODO(https://crbug.com/webrtc/11565): When the ResourceAdaptationProcessor
@@ -68,9 +70,9 @@ class VideoStreamEncoderInterface : public rtc::VideoSinkInterface<VideoFrame> {
   GetAdaptationResources() = 0;
 
   // Sets the source that will provide video frames to the VideoStreamEncoder's
-  // OnFrame method. |degradation_preference| control whether or not resolution
+  // OnFrame method. `degradation_preference` control whether or not resolution
   // or frame rate may be reduced. The VideoStreamEncoder registers itself with
-  // |source|, and signals adaptation decisions to the source in the form of
+  // `source`, and signals adaptation decisions to the source in the form of
   // VideoSinkWants.
   // TODO(nisse): When adaptation logic is extracted from this class,
   // it no longer needs to know the source.
@@ -78,8 +80,8 @@ class VideoStreamEncoderInterface : public rtc::VideoSinkInterface<VideoFrame> {
       rtc::VideoSourceInterface<VideoFrame>* source,
       const DegradationPreference& degradation_preference) = 0;
 
-  // Sets the |sink| that gets the encoded frames. |rotation_applied| means
-  // that the source must support rotation. Only set |rotation_applied| if the
+  // Sets the `sink` that gets the encoded frames. `rotation_applied` means
+  // that the source must support rotation. Only set `rotation_applied` if the
   // remote side does not support the rotation extension.
   virtual void SetSink(EncoderSink* sink, bool rotation_applied) = 0;
 
@@ -102,13 +104,13 @@ class VideoStreamEncoderInterface : public rtc::VideoSinkInterface<VideoFrame> {
   virtual void OnLossNotification(
       const VideoEncoder::LossNotification& loss_notification) = 0;
 
-  // Set the currently estimated network properties. A |target_bitrate|
+  // Set the currently estimated network properties. A `target_bitrate`
   // of zero pauses the encoder.
-  // |stable_target_bitrate| is a filtered version of |target_bitrate|. It  is
+  // `stable_target_bitrate` is a filtered version of `target_bitrate`. It  is
   // always less or equal to it. It can be used to avoid rapid changes of
   // expensive encoding settings, such as resolution.
-  // |link_allocation| is the bandwidth available for this video stream on the
-  // network link. It is always at least |target_bitrate| but may be higher
+  // `link_allocation` is the bandwidth available for this video stream on the
+  // network link. It is always at least `target_bitrate` but may be higher
   // if we are not network constrained.
   virtual void OnBitrateUpdated(DataRate target_bitrate,
                                 DataRate stable_target_bitrate,
@@ -122,8 +124,8 @@ class VideoStreamEncoderInterface : public rtc::VideoSinkInterface<VideoFrame> {
   virtual void SetFecControllerOverride(
       FecControllerOverride* fec_controller_override) = 0;
 
-  // Creates and configures an encoder with the given |config|. The
-  // |max_data_payload_length| is used to support single NAL unit
+  // Creates and configures an encoder with the given `config`. The
+  // `max_data_payload_length` is used to support single NAL unit
   // packetization for H.264.
   virtual void ConfigureEncoder(VideoEncoderConfig config,
                                 size_t max_data_payload_length) = 0;

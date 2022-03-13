@@ -63,7 +63,7 @@ bool ConstTimeIsDifferent(const void *a, const void *b, size_t size) {
     auto cb = reinterpret_cast<const char*>(b);
     volatile auto different = false;
     for (const auto ce = ca + size; ca != ce; ++ca, ++cb) {
-        different |= (*ca != *cb);
+        different = different | (*ca != *cb);
     }
     return different;
 }

@@ -57,4 +57,38 @@ std::unique_ptr<VideoEncoder> InternalEncoderFactory::CreateVideoEncoder(
   return nullptr;
 }
 
+VideoEncoderFactory::CodecSupport InternalEncoderFactory::QueryCodecSupport(
+    const SdpVideoFormat& format,
+    absl::optional<std::string> scalability_mode) const {
+  // Query for supported formats and check if the specified format is supported.
+  // Begin with filtering out unsupported scalability modes.
+  if (scalability_mode) {
+    bool scalability_mode_supported = false;
+    if (absl::EqualsIgnoreCase(format.name, cricket::kVp8CodecName)) {
+      scalability_mode_supported =
+          VP8Encoder::SupportsScalabilityMode(*scalability_mode);
+    } else if (absl::EqualsIgnoreCase(format.name, cricket::kVp9CodecName)) {
+      scalability_mode_supported =
+          VP9Encoder::SupportsScalabilityMode(*scalability_mode);
+    } else if (absl::EqualsIgnoreCase(format.name, cricket::kH264CodecName)) {
+      scalability_mode_supported =
+          H264Encoder::SupportsScalabilityMode(*scalability_mode);
+    } else if (kIsLibaomAv1EncoderSupported &&
+               absl::EqualsIgnoreCase(format.name, cricket::kAv1CodecName)) {
+      scalability_mode_supported =
+          LibaomAv1EncoderSupportsScalabilityMode(*scalability_mode);
+    }
+
+    static constexpr VideoEncoderFactory::CodecSupport kUnsupported = {
+        /*is_supported=*/false, /*is_power_efficient=*/false};
+    if (!scalability_mode_supported) {
+      return kUnsupported;
+    }
+  }
+
+  CodecSupport codec_support;
+  codec_support.is_supported = format.IsCodecInList(GetSupportedFormats());
+  return codec_support;
+}
+
 }  // namespace webrtc

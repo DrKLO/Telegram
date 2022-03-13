@@ -158,6 +158,8 @@ struct PacketResult {
   PacketResult(const PacketResult&);
   ~PacketResult();
 
+  inline bool IsReceived() const { return !receive_time.IsPlusInfinity(); }
+
   SentPacket sent_packet;
   Timestamp receive_time = Timestamp::PlusInfinity();
 };

@@ -35,9 +35,9 @@ class RtpStreamsSynchronizer {
   void ConfigureSync(Syncable* syncable_audio);
 
   // Gets the estimated playout NTP timestamp for the video frame with
-  // |rtp_timestamp| and the sync offset between the current played out audio
+  // `rtp_timestamp` and the sync offset between the current played out audio
   // frame and the video frame. Returns true on success, false otherwise.
-  // The |estimated_freq_khz| is the frequency used in the RTP to NTP timestamp
+  // The `estimated_freq_khz` is the frequency used in the RTP to NTP timestamp
   // conversion.
   bool GetStreamSyncOffsetInMs(uint32_t rtp_timestamp,
                                int64_t render_time_ms,

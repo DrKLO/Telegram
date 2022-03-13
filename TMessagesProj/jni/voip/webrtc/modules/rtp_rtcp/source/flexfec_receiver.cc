@@ -62,7 +62,7 @@ void FlexfecReceiver::OnRtpPacket(const RtpPacketReceived& packet) {
 
   // If this packet was recovered, it might be originating from
   // ProcessReceivedPacket in this object. To avoid lifetime issues with
-  // |recovered_packets_|, we therefore break the cycle here.
+  // `recovered_packets_`, we therefore break the cycle here.
   // This might reduce decoding efficiency a bit, since we can't disambiguate
   // recovered packets by RTX from recovered packets by FlexFEC.
   if (packet.recovered())

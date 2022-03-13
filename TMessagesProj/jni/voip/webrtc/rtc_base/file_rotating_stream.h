@@ -112,7 +112,7 @@ class FileRotatingStream {
 // logs are most useful for call diagnostics.
 //
 // This implementation simply writes to a single file until
-// |max_total_log_size| / 2 bytes are written to it, and subsequently writes to
+// `max_total_log_size` / 2 bytes are written to it, and subsequently writes to
 // a set of rotating files. We do this by inheriting FileRotatingStream and
 // setting the appropriate internal variables so that we don't delete the last
 // (earliest) file on rotate, and that that file's size is bigger.
@@ -124,7 +124,7 @@ class FileRotatingStream {
 class CallSessionFileRotatingStream : public FileRotatingStream {
  public:
   // Use this constructor for writing to a directory. Files in the directory
-  // matching what's used by the stream will be deleted. |max_total_log_size|
+  // matching what's used by the stream will be deleted. `max_total_log_size`
   // must be at least 4.
   CallSessionFileRotatingStream(const std::string& dir_path,
                                 size_t max_total_log_size);

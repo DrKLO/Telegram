@@ -144,7 +144,7 @@ strings_internal::DereferenceFormatterImpl<Formatter> DereferenceFormatter(
       std::forward<Formatter>(f));
 }
 
-// Function overload of `DererefenceFormatter()` for using a default
+// Function overload of `DereferenceFormatter()` for using a default
 // `AlphaNumFormatter()`.
 inline strings_internal::DereferenceFormatterImpl<
     strings_internal::AlphaNumFormatterImpl>

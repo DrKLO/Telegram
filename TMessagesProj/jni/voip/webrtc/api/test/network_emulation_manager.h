@@ -17,8 +17,10 @@
 #include <vector>
 
 #include "api/array_view.h"
+#include "api/packet_socket_factory.h"
 #include "api/test/network_emulation/cross_traffic.h"
 #include "api/test/network_emulation/network_emulation_interfaces.h"
+#include "api/test/peer_network_dependencies.h"
 #include "api/test/simulated_network.h"
 #include "api/test/time_controller.h"
 #include "api/units/timestamp.h"
@@ -125,12 +127,19 @@ class EmulatedNetworkManagerInterface {
   // WebRTC to properly setup network emulation. Returned manager is owned by
   // EmulatedNetworkManagerInterface implementation.
   virtual rtc::NetworkManager* network_manager() = 0;
+  // Returns non-null pointer to packet socket factory that have to be injected
+  // into WebRTC to properly setup network emulation. Returned factory is owned
+  // by EmulatedNetworkManagerInterface implementation.
+  virtual rtc::PacketSocketFactory* packet_socket_factory() = 0;
+  webrtc::webrtc_pc_e2e::PeerNetworkDependencies network_dependencies() {
+    return {network_thread(), network_manager(), packet_socket_factory()};
+  }
   // Returns list of endpoints that are associated with this instance. Pointers
   // are guaranteed to be non-null and are owned by NetworkEmulationManager.
   virtual std::vector<EmulatedEndpoint*> endpoints() const = 0;
 
   // Passes summarized network stats for endpoints for this manager into
-  // specified |stats_callback|. Callback will be executed on network emulation
+  // specified `stats_callback`. Callback will be executed on network emulation
   // internal task queue.
   virtual void GetStats(
       std::function<void(std::unique_ptr<EmulatedNetworkStats>)> stats_callback)
@@ -180,13 +189,13 @@ class NetworkEmulationManager {
 
   // Creates an emulated network node, which represents single network in
   // the emulated network layer. Uses default implementation on network behavior
-  // which can be configured with |config|. |random_seed| can be provided to
+  // which can be configured with `config`. `random_seed` can be provided to
   // alter randomization behavior.
   virtual EmulatedNetworkNode* CreateEmulatedNode(
       BuiltInNetworkBehaviorConfig config,
       uint64_t random_seed = 1) = 0;
   // Creates an emulated network node, which represents single network in
-  // the emulated network layer. |network_behavior| determines how created node
+  // the emulated network layer. `network_behavior` determines how created node
   // will forward incoming packets to the next receiver.
   virtual EmulatedNetworkNode* CreateEmulatedNode(
       std::unique_ptr<NetworkBehaviorInterface> network_behavior) = 0;
@@ -205,8 +214,8 @@ class NetworkEmulationManager {
 
   // Creates a route between endpoints going through specified network nodes.
   // This route is single direction only and describe how traffic that was
-  // sent by network interface |from| have to be delivered to the network
-  // interface |to|. Return object can be used to remove created route. The
+  // sent by network interface `from` have to be delivered to the network
+  // interface `to`. Return object can be used to remove created route. The
   // route must contains at least one network node inside it.
   //
   // Assume that E{0-9} are endpoints and N{0-9} are network nodes, then
@@ -228,7 +237,7 @@ class NetworkEmulationManager {
       const std::vector<EmulatedNetworkNode*>& via_nodes,
       EmulatedEndpoint* to) = 0;
 
-  // Creates a route over the given |via_nodes| creating the required endpoints
+  // Creates a route over the given `via_nodes` creating the required endpoints
   // in the process. The returned EmulatedRoute pointer can be used in other
   // calls as a transport route for message or cross traffic.
   virtual EmulatedRoute* CreateRoute(
@@ -239,7 +248,7 @@ class NetworkEmulationManager {
   // packet's destination IP.
   //
   // This route is single direction only and describe how traffic that was
-  // sent by network interface |from| have to be delivered in case if routing
+  // sent by network interface `from` have to be delivered in case if routing
   // was unspecified. Return object can be used to remove created route. The
   // route must contains at least one network node inside it.
   //
@@ -269,29 +278,29 @@ class NetworkEmulationManager {
   // packets being dropped.
   virtual void ClearRoute(EmulatedRoute* route) = 0;
 
-  // Creates a simulated TCP connection using |send_route| for traffic and
-  // |ret_route| for feedback. This can be used to emulate HTTP cross traffic
+  // Creates a simulated TCP connection using `send_route` for traffic and
+  // `ret_route` for feedback. This can be used to emulate HTTP cross traffic
   // and to implement realistic reliable signaling over lossy networks.
   // TODO(srte): Handle clearing of the routes involved.
   virtual TcpMessageRoute* CreateTcpRoute(EmulatedRoute* send_route,
                                           EmulatedRoute* ret_route) = 0;
 
-  // Creates a route over the given |via_nodes|. Returns an object that can be
+  // Creates a route over the given `via_nodes`. Returns an object that can be
   // used to emulate network load with cross traffic over the created route.
   virtual CrossTrafficRoute* CreateCrossTrafficRoute(
       const std::vector<EmulatedNetworkNode*>& via_nodes) = 0;
 
-  // Starts generating cross traffic using given |generator|. Takes ownership
+  // Starts generating cross traffic using given `generator`. Takes ownership
   // over the generator.
   virtual CrossTrafficGenerator* StartCrossTraffic(
       std::unique_ptr<CrossTrafficGenerator> generator) = 0;
 
-  // Stops generating cross traffic that was started using given |generator|.
-  // The |generator| shouldn't be used after and the reference may be invalid.
+  // Stops generating cross traffic that was started using given `generator`.
+  // The `generator` shouldn't be used after and the reference may be invalid.
   virtual void StopCrossTraffic(CrossTrafficGenerator* generator) = 0;
 
   // Creates EmulatedNetworkManagerInterface which can be used then to inject
-  // network emulation layer into PeerConnection. |endpoints| - are available
+  // network emulation layer into PeerConnection. `endpoints` - are available
   // network interfaces for PeerConnection. If endpoint is enabled, it will be
   // immediately available for PeerConnection, otherwise user will be able to
   // enable endpoint later to make it available for PeerConnection.
@@ -299,8 +308,8 @@ class NetworkEmulationManager {
   CreateEmulatedNetworkManagerInterface(
       const std::vector<EmulatedEndpoint*>& endpoints) = 0;
 
-  // Passes summarized network stats for specified |endpoints| into specified
-  // |stats_callback|. Callback will be executed on network emulation
+  // Passes summarized network stats for specified `endpoints` into specified
+  // `stats_callback`. Callback will be executed on network emulation
   // internal task queue.
   virtual void GetStats(
       rtc::ArrayView<EmulatedEndpoint* const> endpoints,

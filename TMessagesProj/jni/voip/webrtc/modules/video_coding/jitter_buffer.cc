@@ -9,7 +9,6 @@
  */
 #include "modules/video_coding/jitter_buffer.h"
 
-#include <assert.h>
 
 #include <algorithm>
 #include <limits>
@@ -211,8 +210,8 @@ int VCMJitterBuffer::num_duplicated_packets() const {
   return num_duplicated_packets_;
 }
 
-// Returns immediately or a |max_wait_time_ms| ms event hang waiting for a
-// complete frame, |max_wait_time_ms| decided by caller.
+// Returns immediately or a `max_wait_time_ms` ms event hang waiting for a
+// complete frame, `max_wait_time_ms` decided by caller.
 VCMEncodedFrame* VCMJitterBuffer::NextCompleteFrame(uint32_t max_wait_time_ms) {
   MutexLock lock(&mutex_);
   if (!running_) {
@@ -347,7 +346,7 @@ VCMFrameBufferEnum VCMJitterBuffer::GetFrame(const VCMPacket& packet,
 
 int64_t VCMJitterBuffer::LastPacketTime(const VCMEncodedFrame* frame,
                                         bool* retransmitted) const {
-  assert(retransmitted);
+  RTC_DCHECK(retransmitted);
   MutexLock lock(&mutex_);
   const VCMFrameBuffer* frame_buffer =
       static_cast<const VCMFrameBuffer*>(frame);
@@ -498,7 +497,7 @@ VCMFrameBufferEnum VCMJitterBuffer::InsertPacket(const VCMPacket& packet,
       RecycleFrameBuffer(frame);
       return kFlushIndicator;
     default:
-      assert(false);
+      RTC_DCHECK_NOTREACHED();
   }
   return buffer_state;
 }
@@ -580,8 +579,8 @@ void VCMJitterBuffer::SetNackSettings(size_t max_nack_list_size,
                                       int max_packet_age_to_nack,
                                       int max_incomplete_time_ms) {
   MutexLock lock(&mutex_);
-  assert(max_packet_age_to_nack >= 0);
-  assert(max_incomplete_time_ms_ >= 0);
+  RTC_DCHECK_GE(max_packet_age_to_nack, 0);
+  RTC_DCHECK_GE(max_incomplete_time_ms_, 0);
   max_nack_list_size_ = max_nack_list_size;
   max_packet_age_to_nack_ = max_packet_age_to_nack;
   max_incomplete_time_ms_ = max_incomplete_time_ms;
@@ -600,7 +599,7 @@ int VCMJitterBuffer::NonContinuousOrIncompleteDuration() {
 
 uint16_t VCMJitterBuffer::EstimatedLowSequenceNumber(
     const VCMFrameBuffer& frame) const {
-  assert(frame.GetLowSeqNum() >= 0);
+  RTC_DCHECK_GE(frame.GetLowSeqNum(), 0);
   if (frame.HaveFirstPacket())
     return frame.GetLowSeqNum();
 
@@ -821,7 +820,7 @@ void VCMJitterBuffer::UpdateAveragePacketsPerFrame(int current_number_packets) {
   }
 }
 
-// Must be called under the critical section |mutex_|.
+// Must be called under the critical section `mutex_`.
 void VCMJitterBuffer::CleanUpOldOrEmptyFrames() {
   decodable_frames_.CleanUpOldOrEmptyFrames(&last_decoded_state_,
                                             &free_frames_);
@@ -832,13 +831,13 @@ void VCMJitterBuffer::CleanUpOldOrEmptyFrames() {
   }
 }
 
-// Must be called from within |mutex_|.
+// Must be called from within `mutex_`.
 bool VCMJitterBuffer::IsPacketRetransmitted(const VCMPacket& packet) const {
   return missing_sequence_numbers_.find(packet.seqNum) !=
          missing_sequence_numbers_.end();
 }
 
-// Must be called under the critical section |mutex_|. Should never be
+// Must be called under the critical section `mutex_`. Should never be
 // called with retransmitted frames, they must be filtered out before this
 // function is called.
 void VCMJitterBuffer::UpdateJitterEstimate(const VCMJitterSample& sample,
@@ -864,7 +863,7 @@ void VCMJitterBuffer::UpdateJitterEstimate(const VCMFrameBuffer& frame,
                        frame.size(), incomplete_frame);
 }
 
-// Must be called under the critical section |mutex_|. Should never be
+// Must be called under the critical section `mutex_`. Should never be
 // called with retransmitted frames, they must be filtered out before this
 // function is called.
 void VCMJitterBuffer::UpdateJitterEstimate(int64_t latest_packet_time_ms,

@@ -15,9 +15,9 @@
 #include <utility>
 #include <vector>
 
-#include "api/media_stream_track_proxy.h"
 #include "api/sequence_checker.h"
 #include "pc/audio_track.h"
+#include "pc/media_stream_track_proxy.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/location.h"
 #include "rtc_base/logging.h"
@@ -93,10 +93,13 @@ void AudioRtpReceiver::OnSetVolume(double volume) {
   RTC_DCHECK_RUN_ON(&signaling_thread_checker_);
   RTC_DCHECK_GE(volume, 0);
   RTC_DCHECK_LE(volume, 10);
+
+  // Update the cached_volume_ even when stopped_, to allow clients to set the
+  // volume before starting/restarting, eg see crbug.com/1272566.
+  cached_volume_ = volume;
+
   if (stopped_)
     return;
-
-  cached_volume_ = volume;
 
   // When the track is disabled, the volume of the source, which is the
   // corresponding WebRtc Voice Engine channel will be 0. So we do not allow
@@ -164,8 +167,10 @@ void AudioRtpReceiver::Stop() {
 
   worker_thread_->Invoke<void>(RTC_FROM_HERE, [&]() {
     RTC_DCHECK_RUN_ON(worker_thread_);
+
     if (media_channel_)
       SetOutputVolume_w(0.0);
+
     SetMediaChannel_w(nullptr);
   });
 }

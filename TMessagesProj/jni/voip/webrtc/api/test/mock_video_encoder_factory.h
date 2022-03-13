@@ -28,10 +28,6 @@ class MockVideoEncoderFactory : public webrtc::VideoEncoderFactory {
               GetSupportedFormats,
               (),
               (const, override));
-  MOCK_METHOD(CodecInfo,
-              QueryVideoEncoder,
-              (const SdpVideoFormat&),
-              (const, override));
   MOCK_METHOD(std::unique_ptr<VideoEncoder>,
               CreateVideoEncoder,
               (const SdpVideoFormat&),

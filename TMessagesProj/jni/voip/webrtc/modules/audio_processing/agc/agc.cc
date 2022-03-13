@@ -48,7 +48,7 @@ void Agc::Process(const int16_t* audio, size_t length, int sample_rate_hz) {
 
 bool Agc::GetRmsErrorDb(int* error) {
   if (!error) {
-    RTC_NOTREACHED();
+    RTC_DCHECK_NOTREACHED();
     return false;
   }
 

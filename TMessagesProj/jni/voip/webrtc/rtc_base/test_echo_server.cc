@@ -15,8 +15,8 @@
 namespace rtc {
 
 TestEchoServer::TestEchoServer(Thread* thread, const SocketAddress& addr)
-    : server_socket_(thread->socketserver()->CreateAsyncSocket(addr.family(),
-                                                               SOCK_STREAM)) {
+    : server_socket_(
+          thread->socketserver()->CreateSocket(addr.family(), SOCK_STREAM)) {
   server_socket_->Bind(addr);
   server_socket_->Listen(5);
   server_socket_->SignalReadEvent.connect(this, &TestEchoServer::OnAccept);

@@ -43,6 +43,7 @@
 #include "rtc_base/thread_annotations.h"
 #include "system_wrappers/include/clock.h"
 #include "video/adaptation/balanced_constraint.h"
+#include "video/adaptation/bandwidth_quality_scaler_resource.h"
 #include "video/adaptation/bitrate_constraint.h"
 #include "video/adaptation/encode_usage_resource.h"
 #include "video/adaptation/overuse_frame_detector.h"
@@ -66,7 +67,7 @@ extern const int kDefaultInputPixelsHeight;
 // resources.
 //
 // The manager is also involved with various mitigations not part of the
-// ResourceAdaptationProcessor code such as the inital frame dropping.
+// ResourceAdaptationProcessor code such as the initial frame dropping.
 class VideoStreamEncoderResourceManager
     : public VideoSourceRestrictionsListener,
       public ResourceLimitationsListener,
@@ -109,6 +110,8 @@ class VideoStreamEncoderResourceManager
   // TODO(https://crbug.com/webrtc/11338): This can be made private if we
   // configure on SetDegredationPreference and SetEncoderSettings.
   void ConfigureQualityScaler(const VideoEncoder::EncoderInfo& encoder_info);
+  void ConfigureBandwidthQualityScaler(
+      const VideoEncoder::EncoderInfo& encoder_info);
 
   // Methods corresponding to different points in the encoding pipeline.
   void OnFrameDroppedDueToSize();
@@ -117,7 +120,8 @@ class VideoStreamEncoderResourceManager
                        int64_t time_when_first_seen_us);
   void OnEncodeCompleted(const EncodedImage& encoded_image,
                          int64_t time_sent_in_us,
-                         absl::optional<int> encode_duration_us);
+                         absl::optional<int> encode_duration_us,
+                         DataSize frame_size);
   void OnFrameDropped(EncodedImageCallback::DropReason reason);
 
   // Resources need to be mapped to an AdaptReason (kCpu or kQuality) in order
@@ -133,7 +137,7 @@ class VideoStreamEncoderResourceManager
   absl::optional<uint32_t> UseBandwidthAllocationBps() const;
 
   // VideoSourceRestrictionsListener implementation.
-  // Updates |video_source_restrictions_|.
+  // Updates `video_source_restrictions_`.
   void OnVideoSourceRestrictionsUpdated(
       VideoSourceRestrictions restrictions,
       const VideoAdaptationCounters& adaptation_counters,
@@ -156,15 +160,20 @@ class VideoStreamEncoderResourceManager
       rtc::scoped_refptr<Resource> resource) const;
 
   CpuOveruseOptions GetCpuOveruseOptions() const;
-  int LastInputFrameSizeOrDefault() const;
+  int LastFrameSizeOrDefault() const;
 
   // Calculates an up-to-date value of the target frame rate and informs the
-  // |encode_usage_resource_| of the new value.
+  // `encode_usage_resource_` of the new value.
   void MaybeUpdateTargetFrameRate();
 
   // Use nullopt to disable quality scaling.
   void UpdateQualityScalerSettings(
       absl::optional<VideoEncoder::QpThresholds> qp_thresholds);
+
+  void UpdateBandwidthQualityScalerSettings(
+      bool bandwidth_quality_scaling_allowed,
+      const std::vector<VideoEncoder::ResolutionBitrateLimits>&
+          resolution_bitrate_limits);
 
   void UpdateStatsAdaptationSettings() const;
 
@@ -180,6 +189,8 @@ class VideoStreamEncoderResourceManager
   const rtc::scoped_refptr<EncodeUsageResource> encode_usage_resource_;
   const rtc::scoped_refptr<QualityScalerResource> quality_scaler_resource_;
   rtc::scoped_refptr<PixelLimitResource> pixel_limit_resource_;
+  const rtc::scoped_refptr<BandwidthQualityScalerResource>
+      bandwidth_quality_scaler_resource_;
 
   rtc::TaskQueue* encoder_queue_;
   VideoStreamInputStateProvider* const input_state_provider_

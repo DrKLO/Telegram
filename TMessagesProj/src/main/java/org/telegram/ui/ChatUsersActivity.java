@@ -2230,7 +2230,6 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
     }
 
     private void loadChatParticipants(int offset, int count, boolean reset) {
-        Log.i("chat users", "loadChatParticipants(" + offset + ", " + count + ", " + reset + ")");
         if (!ChatObject.isChannel(currentChat)) {
             loadingUsers = false;
             participants.clear();
@@ -2303,7 +2302,6 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
             }
             final ArrayList<TLRPC.TL_channels_getParticipants> requests = loadChatParticipantsRequests(offset, count, reset);
             final ArrayList<TLRPC.TL_channels_channelParticipants> responses = new ArrayList<>();
-            Log.i("chat users", "requests.size() = " + requests.size());
             final Runnable onRequestsEnd = () -> {
                 for (int i = 0; i < requests.size(); ++i) {
                     TLRPC.TL_channels_getParticipants req = requests.get(i);

@@ -30,11 +30,22 @@ class TransformableFrameInterface {
   // method call.
   virtual rtc::ArrayView<const uint8_t> GetData() const = 0;
 
-  // Copies |data| into the owned frame payload data.
+  // Copies `data` into the owned frame payload data.
   virtual void SetData(rtc::ArrayView<const uint8_t> data) = 0;
 
-  virtual uint32_t GetTimestamp() const = 0;
+  virtual uint8_t GetPayloadType() const = 0;
   virtual uint32_t GetSsrc() const = 0;
+  virtual uint32_t GetTimestamp() const = 0;
+
+  enum class Direction {
+    kUnknown,
+    kReceiver,
+    kSender,
+  };
+  // TODO(crbug.com/1250638): Remove this distinction between receiver and
+  // sender frames to allow received frames to be directly re-transmitted on
+  // other PeerConnectionss.
+  virtual Direction GetDirection() const { return Direction::kUnknown; }
 };
 
 class TransformableVideoFrameInterface : public TransformableFrameInterface {
@@ -78,7 +89,7 @@ class TransformedFrameCallback : public rtc::RefCountInterface {
 // the TransformedFrameCallback interface (see above).
 class FrameTransformerInterface : public rtc::RefCountInterface {
  public:
-  // Transforms |frame| using the implementing class' processing logic.
+  // Transforms `frame` using the implementing class' processing logic.
   virtual void Transform(
       std::unique_ptr<TransformableFrameInterface> transformable_frame) = 0;
 

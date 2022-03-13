@@ -13,7 +13,6 @@
 #include <inttypes.h>
 
 #include <algorithm>
-#include <cassert>
 #include <cmath>
 #include <cstdio>
 #include <string>
@@ -54,9 +53,9 @@ double ReadBackoffFactor(const WebRtcKeyValueConfig& key_value_config) {
       sscanf(experiment_string.c_str(), "Enabled-%lf", &backoff_factor);
   if (parsed_values == 1) {
     if (backoff_factor >= 1.0) {
-      RTC_LOG(WARNING) << "Back-off factor must be less than 1.";
+      RTC_LOG(LS_WARNING) << "Back-off factor must be less than 1.";
     } else if (backoff_factor <= 0.0) {
-      RTC_LOG(WARNING) << "Back-off factor must be greater than 0.";
+      RTC_LOG(LS_WARNING) << "Back-off factor must be greater than 0.";
     } else {
       return backoff_factor;
     }
@@ -362,7 +361,7 @@ void AimdRateControl::ChangeBitrate(const RateControlInput& input,
       break;
     }
     default:
-      assert(false);
+      RTC_DCHECK_NOTREACHED();
   }
 
   current_bitrate_ = ClampBitrate(new_bitrate.value_or(current_bitrate_));
@@ -417,7 +416,7 @@ void AimdRateControl::ChangeState(const RateControlInput& input,
       rate_control_state_ = RateControlState::kRcHold;
       break;
     default:
-      assert(false);
+      RTC_DCHECK_NOTREACHED();
   }
 }
 

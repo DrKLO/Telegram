@@ -40,7 +40,7 @@ class VideoFrameBufferPool {
   ~VideoFrameBufferPool();
 
   // Returns a buffer from the pool. If no suitable buffer exist in the pool
-  // and there are less than |max_number_of_buffers| pending, a buffer is
+  // and there are less than `max_number_of_buffers` pending, a buffer is
   // created. Returns null otherwise.
   rtc::scoped_refptr<I420Buffer> CreateI420Buffer(int width, int height);
   rtc::scoped_refptr<NV12Buffer> CreateNV12Buffer(int width, int height);

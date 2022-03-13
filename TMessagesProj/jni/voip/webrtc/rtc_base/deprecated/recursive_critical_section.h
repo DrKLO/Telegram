@@ -70,7 +70,7 @@ class RTC_LOCKABLE RecursiveCriticalSection {
   // TODO(tommi): We could use this number and subtract the recursion count
   // to find places where we have multiple threads contending on the same lock.
   mutable volatile int lock_queue_;
-  // |recursion_| represents the recursion count + 1 for the thread that owns
+  // `recursion_` represents the recursion count + 1 for the thread that owns
   // the lock. Only modified by the thread that owns the lock.
   mutable int recursion_;
   // Used to signal a single waiting thread when the lock becomes available.

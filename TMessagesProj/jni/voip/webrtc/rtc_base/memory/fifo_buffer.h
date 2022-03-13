@@ -31,26 +31,6 @@ class FifoBuffer final : public StreamInterface {
   ~FifoBuffer() override;
   // Gets the amount of data currently readable from the buffer.
   bool GetBuffered(size_t* data_len) const;
-  // Resizes the buffer to the specified capacity. Fails if data_length_ > size
-  bool SetCapacity(size_t length);
-
-  // Read into |buffer| with an offset from the current read position, offset
-  // is specified in number of bytes.
-  // This method doesn't adjust read position nor the number of available
-  // bytes, user has to call ConsumeReadData() to do this.
-  StreamResult ReadOffset(void* buffer,
-                          size_t bytes,
-                          size_t offset,
-                          size_t* bytes_read);
-
-  // Write |buffer| with an offset from the current write position, offset is
-  // specified in number of bytes.
-  // This method doesn't adjust the number of buffered bytes, user has to call
-  // ConsumeWriteBuffer() to do this.
-  StreamResult WriteOffset(const void* buffer,
-                           size_t bytes,
-                           size_t offset,
-                           size_t* bytes_written);
 
   // StreamInterface methods
   StreamState GetState() const override;
@@ -95,10 +75,6 @@ class FifoBuffer final : public StreamInterface {
   void* GetWriteBuffer(size_t* buf_len);
   void ConsumeWriteBuffer(size_t used);
 
-  // Return the number of Write()-able bytes remaining before end-of-stream.
-  // Returns false if not known.
-  bool GetWriteRemaining(size_t* size) const;
-
  private:
   void PostEvent(int events, int err) {
     owner_->PostTask(webrtc::ToQueuedTask(task_safety_, [this, events, err]() {
@@ -106,20 +82,16 @@ class FifoBuffer final : public StreamInterface {
     }));
   }
 
-  // Helper method that implements ReadOffset. Caller must acquire a lock
+  // Helper method that implements Read. Caller must acquire a lock
   // when calling this method.
-  StreamResult ReadOffsetLocked(void* buffer,
-                                size_t bytes,
-                                size_t offset,
-                                size_t* bytes_read)
+  StreamResult ReadLocked(void* buffer, size_t bytes, size_t* bytes_read)
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
-  // Helper method that implements WriteOffset. Caller must acquire a lock
+  // Helper method that implements Write. Caller must acquire a lock
   // when calling this method.
-  StreamResult WriteOffsetLocked(const void* buffer,
-                                 size_t bytes,
-                                 size_t offset,
-                                 size_t* bytes_written)
+  StreamResult WriteLocked(const void* buffer,
+                           size_t bytes,
+                           size_t* bytes_written)
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   webrtc::ScopedTaskSafety task_safety_;
@@ -129,7 +101,7 @@ class FifoBuffer final : public StreamInterface {
   // the allocated buffer
   std::unique_ptr<char[]> buffer_ RTC_GUARDED_BY(mutex_);
   // size of the allocated buffer
-  size_t buffer_length_ RTC_GUARDED_BY(mutex_);
+  const size_t buffer_length_;
   // amount of readable data in the buffer
   size_t data_length_ RTC_GUARDED_BY(mutex_);
   // offset to the readable data

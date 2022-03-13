@@ -82,14 +82,14 @@ class VCMSessionInfo {
   void InformOfEmptyPacket(uint16_t seq_num);
 
   // Finds the packet of the beginning of the next VP8 partition. If
-  // none is found the returned iterator points to |packets_.end()|.
-  // |it| is expected to point to the last packet of the previous partition,
-  // or to the first packet of the frame. |packets_skipped| is incremented
+  // none is found the returned iterator points to `packets_.end()`.
+  // `it` is expected to point to the last packet of the previous partition,
+  // or to the first packet of the frame. `packets_skipped` is incremented
   // for each packet found which doesn't have the beginning bit set.
   PacketIterator FindNextPartitionBeginning(PacketIterator it) const;
 
   // Returns an iterator pointing to the last packet of the partition pointed to
-  // by |it|.
+  // by `it`.
   PacketIterator FindPartitionEnd(PacketIterator it) const;
   static bool InSequence(const PacketIterator& it,
                          const PacketIterator& prev_it);
@@ -100,7 +100,7 @@ class VCMSessionInfo {
                 uint8_t* frame_buffer);
   void ShiftSubsequentPackets(PacketIterator it, int steps_to_shift);
   PacketIterator FindNaluEnd(PacketIterator packet_iter) const;
-  // Deletes the data of all packets between |start| and |end|, inclusively.
+  // Deletes the data of all packets between `start` and `end`, inclusively.
   // Note that this function doesn't delete the actual packets.
   size_t DeletePacketData(PacketIterator start, PacketIterator end);
   void UpdateCompleteSession();

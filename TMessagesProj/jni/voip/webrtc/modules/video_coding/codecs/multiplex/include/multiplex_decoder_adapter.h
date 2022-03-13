@@ -24,15 +24,14 @@ namespace webrtc {
 
 class MultiplexDecoderAdapter : public VideoDecoder {
  public:
-  // |factory| is not owned and expected to outlive this class.
+  // `factory` is not owned and expected to outlive this class.
   MultiplexDecoderAdapter(VideoDecoderFactory* factory,
                           const SdpVideoFormat& associated_format,
                           bool supports_augmenting_data = false);
   virtual ~MultiplexDecoderAdapter();
 
   // Implements VideoDecoder
-  int32_t InitDecode(const VideoCodec* codec_settings,
-                     int32_t number_of_cores) override;
+  bool Configure(const Settings& settings) override;
   int32_t Decode(const EncodedImage& input_image,
                  bool missing_frames,
                  int64_t render_time_ms) override;

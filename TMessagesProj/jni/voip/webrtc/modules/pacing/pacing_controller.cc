@@ -281,13 +281,8 @@ absl::optional<Timestamp> PacingController::FirstSentPacketTime() const {
   return first_sent_packet_time_;
 }
 
-TimeDelta PacingController::OldestPacketWaitTime() const {
-  Timestamp oldest_packet = packet_queue_.OldestEnqueueTime();
-  if (oldest_packet.IsInfinite()) {
-    return TimeDelta::Zero();
-  }
-
-  return CurrentTime() - oldest_packet;
+Timestamp PacingController::OldestPacketEnqueueTime() const {
+  return packet_queue_.OldestEnqueueTime();
 }
 
 void PacingController::EnqueuePacketInternal(
@@ -297,10 +292,21 @@ void PacingController::EnqueuePacketInternal(
 
   Timestamp now = CurrentTime();
 
-  if (mode_ == ProcessMode::kDynamic && packet_queue_.Empty() &&
-      NextSendTime() <= now) {
-    TimeDelta elapsed_time = UpdateTimeAndGetElapsed(now);
+  if (mode_ == ProcessMode::kDynamic && packet_queue_.Empty()) {
+    // If queue is empty, we need to "fast-forward" the last process time,
+    // so that we don't use passed time as budget for sending the first new
+    // packet.
+    Timestamp target_process_time = now;
+    Timestamp next_send_time = NextSendTime();
+    if (next_send_time.IsFinite()) {
+      // There was already a valid planned send time, such as a keep-alive.
+      // Use that as last process time only if it's prior to now.
+      target_process_time = std::min(now, next_send_time);
+    }
+
+    TimeDelta elapsed_time = UpdateTimeAndGetElapsed(target_process_time);
     UpdateBudgetWithElapsedTime(elapsed_time);
+    last_process_time_ = target_process_time;
   }
   packet_queue_.Push(priority, now, packet_counter_++, std::move(packet));
 }
@@ -346,7 +352,7 @@ Timestamp PacingController::NextSendTime() const {
   // If probing is active, that always takes priority.
   if (prober_.is_probing()) {
     Timestamp probe_time = prober_.NextProbeTime(now);
-    // |probe_time| == PlusInfinity indicates no probe scheduled.
+    // `probe_time` == PlusInfinity indicates no probe scheduled.
     if (probe_time != Timestamp::PlusInfinity() && !probing_send_failure_) {
       return probe_time;
     }

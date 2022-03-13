@@ -174,6 +174,9 @@ public class AvatarsDarawable {
     }
 
     public void animateFromState(AvatarsDarawable avatarsDarawable, int currentAccount) {
+        if (avatarsDarawable.transitionProgressAnimator != null) {
+            avatarsDarawable.transitionProgressAnimator.cancel();
+        }
         TLObject[] objects = new TLObject[3];
         for (int i = 0; i < 3; i++) {
             objects[i] = currentStates[i].object;

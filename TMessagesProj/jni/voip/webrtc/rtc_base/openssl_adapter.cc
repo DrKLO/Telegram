@@ -70,7 +70,7 @@ static BIO_METHOD* BIO_socket_method() {
   return methods;
 }
 
-static BIO* BIO_new_socket(rtc::AsyncSocket* socket) {
+static BIO* BIO_new_socket(rtc::Socket* socket) {
   BIO* ret = BIO_new(BIO_socket_method());
   if (ret == nullptr) {
     return nullptr;
@@ -95,7 +95,7 @@ static int socket_free(BIO* b) {
 static int socket_read(BIO* b, char* out, int outl) {
   if (!out)
     return -1;
-  rtc::AsyncSocket* socket = static_cast<rtc::AsyncSocket*>(BIO_get_data(b));
+  rtc::Socket* socket = static_cast<rtc::Socket*>(BIO_get_data(b));
   BIO_clear_retry_flags(b);
   int result = socket->Recv(out, outl, nullptr);
   if (result > 0) {
@@ -109,7 +109,7 @@ static int socket_read(BIO* b, char* out, int outl) {
 static int socket_write(BIO* b, const char* in, int inl) {
   if (!in)
     return -1;
-  rtc::AsyncSocket* socket = static_cast<rtc::AsyncSocket*>(BIO_get_data(b));
+  rtc::Socket* socket = static_cast<rtc::Socket*>(BIO_get_data(b));
   BIO_clear_retry_flags(b);
   int result = socket->Send(in, inl);
   if (result > 0) {
@@ -129,9 +129,9 @@ static long socket_ctrl(BIO* b, int cmd, long num, void* ptr) {  // NOLINT
     case BIO_CTRL_RESET:
       return 0;
     case BIO_CTRL_EOF: {
-      rtc::AsyncSocket* socket = static_cast<rtc::AsyncSocket*>(ptr);
+      rtc::Socket* socket = static_cast<rtc::Socket*>(ptr);
       // 1 means socket closed.
-      return (socket->GetState() == rtc::AsyncSocket::CS_CLOSED) ? 1 : 0;
+      return (socket->GetState() == rtc::Socket::CS_CLOSED) ? 1 : 0;
     }
     case BIO_CTRL_WPENDING:
     case BIO_CTRL_PENDING:
@@ -181,7 +181,7 @@ bool OpenSSLAdapter::CleanupSSL() {
   return true;
 }
 
-OpenSSLAdapter::OpenSSLAdapter(AsyncSocket* socket,
+OpenSSLAdapter::OpenSSLAdapter(Socket* socket,
                                OpenSSLSessionCache* ssl_session_cache,
                                SSLCertificateVerifier* ssl_cert_verifier)
     : SSLAdapter(socket),
@@ -250,28 +250,13 @@ void OpenSSLAdapter::SetRole(SSLRole role) {
   role_ = role;
 }
 
-AsyncSocket* OpenSSLAdapter::Accept(SocketAddress* paddr) {
-  RTC_DCHECK(role_ == SSL_SERVER);
-  AsyncSocket* socket = SSLAdapter::Accept(paddr);
-  if (!socket) {
-    return nullptr;
-  }
-
-  SSLAdapter* adapter = SSLAdapter::Create(socket);
-  adapter->SetIdentity(identity_->Clone());
-  adapter->SetRole(rtc::SSL_SERVER);
-  adapter->SetIgnoreBadCert(ignore_bad_cert_);
-  adapter->StartSSL("");
-  return adapter;
-}
-
 int OpenSSLAdapter::StartSSL(const char* hostname) {
   if (state_ != SSL_NONE)
     return -1;
 
   ssl_host_name_ = hostname;
 
-  if (socket_->GetState() != Socket::CS_CONNECTED) {
+  if (GetSocket()->GetState() != Socket::CS_CONNECTED) {
     state_ = SSL_WAIT;
     return 0;
   }
@@ -289,38 +274,34 @@ int OpenSSLAdapter::BeginSSL() {
   RTC_LOG(LS_INFO) << "OpenSSLAdapter::BeginSSL: " << ssl_host_name_;
   RTC_DCHECK(state_ == SSL_CONNECTING);
 
-  int err = 0;
-  BIO* bio = nullptr;
+  // Cleanup action to deal with on error cleanup a bit cleaner.
+  EarlyExitCatcher early_exit_catcher(*this);
 
   // First set up the context. We should either have a factory, with its own
   // pre-existing context, or be running standalone, in which case we will
-  // need to create one, and specify |false| to disable session caching.
+  // need to create one, and specify `false` to disable session caching.
   if (ssl_session_cache_ == nullptr) {
     RTC_DCHECK(!ssl_ctx_);
     ssl_ctx_ = CreateContext(ssl_mode_, false);
   }
 
   if (!ssl_ctx_) {
-    err = -1;
-    goto ssl_error;
+    return -1;
   }
 
   if (identity_ && !identity_->ConfigureIdentity(ssl_ctx_)) {
-    SSL_CTX_free(ssl_ctx_);
-    err = -1;
-    goto ssl_error;
+    return -1;
   }
 
-  bio = BIO_new_socket(socket_);
+  std::unique_ptr<BIO, decltype(&::BIO_free)> bio{BIO_new_socket(GetSocket()),
+                                                  ::BIO_free};
   if (!bio) {
-    err = -1;
-    goto ssl_error;
+    return -1;
   }
 
   ssl_ = SSL_new(ssl_ctx_);
   if (!ssl_) {
-    err = -1;
-    goto ssl_error;
+    return -1;
   }
 
   SSL_set_app_data(ssl_, this);
@@ -346,8 +327,7 @@ int OpenSSLAdapter::BeginSSL() {
       if (cached) {
         if (SSL_set_session(ssl_, cached) == 0) {
           RTC_LOG(LS_WARNING) << "Failed to apply SSL session from cache";
-          err = -1;
-          goto ssl_error;
+          return -1;
         }
 
         RTC_LOG(LS_INFO) << "Attempting to resume SSL session to "
@@ -375,26 +355,18 @@ int OpenSSLAdapter::BeginSSL() {
     SSL_set1_curves_list(ssl_, rtc::join(elliptic_curves_, ':').c_str());
   }
 
-  // Now that the initial config is done, transfer ownership of |bio| to the
+  // Now that the initial config is done, transfer ownership of `bio` to the
   // SSL object. If ContinueSSL() fails, the bio will be freed in Cleanup().
-  SSL_set_bio(ssl_, bio, bio);
-  bio = nullptr;
+  SSL_set_bio(ssl_, bio.get(), bio.get());
+  bio.release();
 
   // Do the connect.
-  err = ContinueSSL();
+  int err = ContinueSSL();
   if (err != 0) {
-    goto ssl_error;
+    return err;
   }
-
-  return err;
-
-ssl_error:
-  Cleanup();
-  if (bio) {
-    BIO_free(bio);
-  }
-
-  return err;
+  early_exit_catcher.disable();
+  return 0;
 }
 
 int OpenSSLAdapter::ContinueSSL() {
@@ -521,7 +493,7 @@ int OpenSSLAdapter::DoSslWrite(const void* pv, size_t cb, int* error) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// AsyncSocket Implementation
+// Socket Implementation
 ///////////////////////////////////////////////////////////////////////////////
 
 int OpenSSLAdapter::Send(const void* pv, size_t cb) {
@@ -591,8 +563,8 @@ int OpenSSLAdapter::Send(const void* pv, size_t cb) {
 int OpenSSLAdapter::SendTo(const void* pv,
                            size_t cb,
                            const SocketAddress& addr) {
-  if (socket_->GetState() == Socket::CS_CONNECTED &&
-      addr == socket_->GetRemoteAddress()) {
+  if (GetSocket()->GetState() == Socket::CS_CONNECTED &&
+      addr == GetSocket()->GetRemoteAddress()) {
     return Send(pv, cb);
   }
 
@@ -653,7 +625,7 @@ int OpenSSLAdapter::RecvFrom(void* pv,
                              size_t cb,
                              SocketAddress* paddr,
                              int64_t* timestamp) {
-  if (socket_->GetState() == Socket::CS_CONNECTED) {
+  if (GetSocket()->GetState() == Socket::CS_CONNECTED) {
     int ret = Recv(pv, cb, timestamp);
     *paddr = GetRemoteAddress();
     return ret;
@@ -670,7 +642,7 @@ int OpenSSLAdapter::Close() {
 }
 
 Socket::ConnState OpenSSLAdapter::GetState() const {
-  ConnState state = socket_->GetState();
+  ConnState state = GetSocket()->GetState();
   if ((state == CS_CONNECTED) &&
       ((state_ == SSL_WAIT) || (state_ == SSL_CONNECTING))) {
     state = CS_CONNECTING;
@@ -690,7 +662,7 @@ void OpenSSLAdapter::OnMessage(Message* msg) {
   }
 }
 
-void OpenSSLAdapter::OnConnectEvent(AsyncSocket* socket) {
+void OpenSSLAdapter::OnConnectEvent(Socket* socket) {
   RTC_LOG(LS_INFO) << "OpenSSLAdapter::OnConnectEvent";
   if (state_ != SSL_WAIT) {
     RTC_DCHECK(state_ == SSL_NONE);
@@ -704,7 +676,7 @@ void OpenSSLAdapter::OnConnectEvent(AsyncSocket* socket) {
   }
 }
 
-void OpenSSLAdapter::OnReadEvent(AsyncSocket* socket) {
+void OpenSSLAdapter::OnReadEvent(Socket* socket) {
   if (state_ == SSL_NONE) {
     AsyncSocketAdapter::OnReadEvent(socket);
     return;
@@ -730,7 +702,7 @@ void OpenSSLAdapter::OnReadEvent(AsyncSocket* socket) {
   AsyncSocketAdapter::OnReadEvent(socket);
 }
 
-void OpenSSLAdapter::OnWriteEvent(AsyncSocket* socket) {
+void OpenSSLAdapter::OnWriteEvent(Socket* socket) {
   if (state_ == SSL_NONE) {
     AsyncSocketAdapter::OnWriteEvent(socket);
     return;
@@ -767,7 +739,7 @@ void OpenSSLAdapter::OnWriteEvent(AsyncSocket* socket) {
   AsyncSocketAdapter::OnWriteEvent(socket);
 }
 
-void OpenSSLAdapter::OnCloseEvent(AsyncSocket* socket, int err) {
+void OpenSSLAdapter::OnCloseEvent(Socket* socket, int err) {
   RTC_LOG(LS_INFO) << "OpenSSLAdapter::OnCloseEvent(" << err << ")";
   AsyncSocketAdapter::OnCloseEvent(socket, err);
 }
@@ -861,27 +833,31 @@ enum ssl_verify_result_t OpenSSLAdapter::SSLVerifyInternal(SSL* ssl,
   return ssl_verify_ok;
 }
 #else  // WEBRTC_USE_CRYPTO_BUFFER_CALLBACK
-int OpenSSLAdapter::SSLVerifyCallback(int ok, X509_STORE_CTX* store) {
+int OpenSSLAdapter::SSLVerifyCallback(int status, X509_STORE_CTX* store) {
   // Get our stream pointer from the store
   SSL* ssl = reinterpret_cast<SSL*>(
       X509_STORE_CTX_get_ex_data(store, SSL_get_ex_data_X509_STORE_CTX_idx()));
 
   OpenSSLAdapter* stream =
       reinterpret_cast<OpenSSLAdapter*>(SSL_get_app_data(ssl));
-  ok = stream->SSLVerifyInternal(ok, ssl, store);
+  // Update status with the custom verifier.
+  // Status is unchanged if verification fails.
+  status = stream->SSLVerifyInternal(status, ssl, store);
 
   // Should only be used for debugging and development.
-  if (!ok && stream->ignore_bad_cert_) {
+  if (!status && stream->ignore_bad_cert_) {
     RTC_DLOG(LS_WARNING) << "Ignoring cert error while verifying cert chain";
     return 1;
   }
 
-  return ok;
+  return status;
 }
 
-int OpenSSLAdapter::SSLVerifyInternal(int ok, SSL* ssl, X509_STORE_CTX* store) {
+int OpenSSLAdapter::SSLVerifyInternal(int previous_status,
+                                      SSL* ssl,
+                                      X509_STORE_CTX* store) {
 #if !defined(NDEBUG)
-  if (!ok) {
+  if (!previous_status) {
     char data[256];
     X509* cert = X509_STORE_CTX_get_current_cert(store);
     int depth = X509_STORE_CTX_get_error_depth(store);
@@ -896,8 +872,10 @@ int OpenSSLAdapter::SSLVerifyInternal(int ok, SSL* ssl, X509_STORE_CTX* store) {
                       << X509_verify_cert_error_string(err);
   }
 #endif
-  if (ssl_cert_verifier_ == nullptr) {
-    return ok;
+  // `ssl_cert_verifier_` is used to override errors; if there is no error
+  // there is no reason to call it.
+  if (previous_status || ssl_cert_verifier_ == nullptr) {
+    return previous_status;
   }
 
   RTC_LOG(LS_INFO) << "Invoking SSL Verify Callback.";
@@ -907,14 +885,14 @@ int OpenSSLAdapter::SSLVerifyInternal(int ok, SSL* ssl, X509_STORE_CTX* store) {
   int length = i2d_X509(X509_STORE_CTX_get_current_cert(store), &data);
   if (length < 0) {
     RTC_LOG(LS_ERROR) << "Failed to encode X509.";
-    return ok;
+    return previous_status;
   }
   bssl::UniquePtr<uint8_t> owned_data(data);
   bssl::UniquePtr<CRYPTO_BUFFER> crypto_buffer(
       CRYPTO_BUFFER_new(data, length, openssl::GetBufferPool()));
   if (!crypto_buffer) {
     RTC_LOG(LS_ERROR) << "Failed to allocate CRYPTO_BUFFER.";
-    return ok;
+    return previous_status;
   }
   const BoringSSLCertificate cert(std::move(crypto_buffer));
 #else
@@ -922,7 +900,7 @@ int OpenSSLAdapter::SSLVerifyInternal(int ok, SSL* ssl, X509_STORE_CTX* store) {
 #endif
   if (!ssl_cert_verifier_->Verify(cert)) {
     RTC_LOG(LS_INFO) << "Failed to verify certificate using custom callback";
-    return ok;
+    return previous_status;
   }
 
   custom_cert_verifier_status_ = true;
@@ -981,14 +959,17 @@ SSL_CTX* OpenSSLAdapter::CreateContext(SSLMode mode, bool enable_cache) {
   SSL_CTX_set_custom_verify(ctx, SSL_VERIFY_PEER, SSLVerifyCallback);
 #else
   SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, SSLVerifyCallback);
+  // Verify certificate chains up to a depth of 4. This is not
+  // needed for DTLS-SRTP which uses self-signed certificates
+  // (so the depth is 0) but is required to support TURN/TLS.
   SSL_CTX_set_verify_depth(ctx, 4);
 #endif
   // Use defaults, but disable HMAC-SHA256 and HMAC-SHA384 ciphers
   // (note that SHA256 and SHA384 only select legacy CBC ciphers).
   // Additionally disable HMAC-SHA1 ciphers in ECDSA. These are the remaining
-  // CBC-mode ECDSA ciphers.
+  // CBC-mode ECDSA ciphers. Finally, disable 3DES.
   SSL_CTX_set_cipher_list(
-      ctx, "ALL:!SHA256:!SHA384:!aPSK:!ECDSA+SHA1:!ADH:!LOW:!EXP:!MD5");
+      ctx, "ALL:!SHA256:!SHA384:!aPSK:!ECDSA+SHA1:!ADH:!LOW:!EXP:!MD5:!3DES");
 
   if (mode == SSL_MODE_DTLS) {
     SSL_CTX_set_read_ahead(ctx, 1);
@@ -1042,7 +1023,22 @@ void OpenSSLAdapterFactory::SetCertVerifier(
   ssl_cert_verifier_ = ssl_cert_verifier;
 }
 
-OpenSSLAdapter* OpenSSLAdapterFactory::CreateAdapter(AsyncSocket* socket) {
+void OpenSSLAdapterFactory::SetIdentity(std::unique_ptr<SSLIdentity> identity) {
+  RTC_DCHECK(!ssl_session_cache_);
+  identity_ = std::move(identity);
+}
+
+void OpenSSLAdapterFactory::SetRole(SSLRole role) {
+  RTC_DCHECK(!ssl_session_cache_);
+  ssl_role_ = role;
+}
+
+void OpenSSLAdapterFactory::SetIgnoreBadCert(bool ignore) {
+  RTC_DCHECK(!ssl_session_cache_);
+  ignore_bad_cert_ = ignore;
+}
+
+OpenSSLAdapter* OpenSSLAdapterFactory::CreateAdapter(Socket* socket) {
   if (ssl_session_cache_ == nullptr) {
     SSL_CTX* ssl_ctx = OpenSSLAdapter::CreateContext(ssl_mode_, true);
     if (ssl_ctx == nullptr) {
@@ -1053,8 +1049,27 @@ OpenSSLAdapter* OpenSSLAdapterFactory::CreateAdapter(AsyncSocket* socket) {
         std::make_unique<OpenSSLSessionCache>(ssl_mode_, ssl_ctx);
     SSL_CTX_free(ssl_ctx);
   }
-  return new OpenSSLAdapter(socket, ssl_session_cache_.get(),
-                            ssl_cert_verifier_);
+  OpenSSLAdapter* ssl_adapter =
+      new OpenSSLAdapter(socket, ssl_session_cache_.get(), ssl_cert_verifier_);
+  ssl_adapter->SetRole(ssl_role_);
+  ssl_adapter->SetIgnoreBadCert(ignore_bad_cert_);
+  if (identity_) {
+    ssl_adapter->SetIdentity(identity_->Clone());
+  }
+  return ssl_adapter;
+}
+
+OpenSSLAdapter::EarlyExitCatcher::EarlyExitCatcher(OpenSSLAdapter& adapter_ptr)
+    : adapter_ptr_(adapter_ptr) {}
+
+void OpenSSLAdapter::EarlyExitCatcher::disable() {
+  disabled_ = true;
+}
+
+OpenSSLAdapter::EarlyExitCatcher::~EarlyExitCatcher() {
+  if (!disabled_) {
+    adapter_ptr_.Cleanup();
+  }
 }
 
 }  // namespace rtc

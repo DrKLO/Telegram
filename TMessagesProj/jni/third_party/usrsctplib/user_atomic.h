@@ -42,8 +42,8 @@
 #include <stdio.h>
 #include <sys/types.h>
 
-#if defined(__Userspace_os_Darwin) || defined (__Userspace_os_Windows)
-#if defined (__Userspace_os_Windows)
+#if defined(__APPLE__) || defined(_WIN32)
+#if defined(_WIN32)
 #define atomic_add_int(addr, val) InterlockedExchangeAdd((LPLONG)addr, (LONG)val)
 #define atomic_fetchadd_int(addr, val) InterlockedExchangeAdd((LPLONG)addr, (LONG)val)
 #define atomic_subtract_int(addr, val)   InterlockedExchangeAdd((LPLONG)addr,-((LONG)val))
@@ -77,7 +77,7 @@
 	} \
 }
 #endif
-#if defined(__Userspace_os_Windows)
+#if defined(_WIN32)
 static void atomic_init(void) {} /* empty when we are not using atomic_mtx */
 #else
 static inline void atomic_init(void) {} /* empty when we are not using atomic_mtx */
@@ -173,7 +173,7 @@ static inline void atomic_init() {} /* empty when we are not using atomic_mtx */
 
 extern userland_mutex_t atomic_mtx;
 
-#if defined (__Userspace_os_Windows)
+#if defined(_WIN32)
 static inline void atomic_init() {
 	InitializeCriticalSection(&atomic_mtx);
 }

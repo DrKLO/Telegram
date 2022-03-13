@@ -29,7 +29,6 @@ constexpr uint8_t kVp8Header[kCodecTypeBytesCount] = {'V', 'P', '8', '0'};
 constexpr uint8_t kVp9Header[kCodecTypeBytesCount] = {'V', 'P', '9', '0'};
 constexpr uint8_t kAv1Header[kCodecTypeBytesCount] = {'A', 'V', '0', '1'};
 constexpr uint8_t kH264Header[kCodecTypeBytesCount] = {'H', '2', '6', '4'};
-constexpr uint8_t kH265Header[kCodecTypeBytesCount] = {'H', '2', '6', '5'};
 
 }  // namespace
 
@@ -105,10 +104,10 @@ bool IvfFileReader::Reset() {
   has_error_ = false;
 
   const char* codec_name = CodecTypeToPayloadString(codec_type_);
-  RTC_LOG(INFO) << "Opened IVF file with codec data of type " << codec_name
-                << " at resolution " << width_ << " x " << height_ << ", using "
-                << (using_capture_timestamps_ ? "1" : "90")
-                << "kHz clock resolution.";
+  RTC_LOG(LS_INFO) << "Opened IVF file with codec data of type " << codec_name
+                   << " at resolution " << width_ << " x " << height_
+                   << ", using " << (using_capture_timestamps_ ? "1" : "90")
+                   << "kHz clock resolution.";
 
   return true;
 }
@@ -197,9 +196,6 @@ absl::optional<VideoCodecType> IvfFileReader::ParseCodecType(uint8_t* buffer,
   }
   if (memcmp(&buffer[start_pos], kH264Header, kCodecTypeBytesCount) == 0) {
     return VideoCodecType::kVideoCodecH264;
-  }
-  if (memcmp(&buffer[start_pos], kH265Header, kCodecTypeBytesCount) == 0) {
-    return VideoCodecType::kVideoCodecH265;
   }
   has_error_ = true;
   RTC_LOG(LS_ERROR) << "Unknown codec type: "

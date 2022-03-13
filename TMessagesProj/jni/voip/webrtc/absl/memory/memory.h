@@ -420,6 +420,9 @@ struct pointer_traits<T*> {
 //
 // A C++11 compatible implementation of C++17's std::allocator_traits.
 //
+#if __cplusplus >= 201703L || (defined(_MSVC_LANG) && _MSVC_LANG >= 201703L)
+using std::allocator_traits;
+#else  // __cplusplus >= 201703L
 template <typename Alloc>
 struct allocator_traits {
   using allocator_type = Alloc;
@@ -609,6 +612,7 @@ struct allocator_traits {
     return a;
   }
 };
+#endif  // __cplusplus >= 201703L
 
 namespace memory_internal {
 

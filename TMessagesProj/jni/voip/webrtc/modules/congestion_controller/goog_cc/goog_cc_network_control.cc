@@ -465,7 +465,7 @@ NetworkControlUpdate GoogCcNetworkController::OnTransportPacketsFeedback(
     expected_packets_since_last_loss_update_ +=
         report.PacketsWithFeedback().size();
     for (const auto& packet_feedback : report.PacketsWithFeedback()) {
-      if (packet_feedback.receive_time.IsInfinite())
+      if (!packet_feedback.IsReceived())
         lost_packets_since_last_loss_update_ += 1;
     }
     if (report.feedback_time > next_loss_update_) {

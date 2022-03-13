@@ -25,8 +25,8 @@
 
 namespace webrtc {
 
-// Callback class for providing more data into the resampler.  Expects |frames|
-// of data to be rendered into |destination|; zero padded if not enough frames
+// Callback class for providing more data into the resampler.  Expects `frames`
+// of data to be rendered into `destination`; zero padded if not enough frames
 // are available to satisfy the request.
 class SincResamplerCallback {
  public:
@@ -53,10 +53,10 @@ class SincResampler {
   static const size_t kKernelStorageSize =
       kKernelSize * (kKernelOffsetCount + 1);
 
-  // Constructs a SincResampler with the specified |read_cb|, which is used to
-  // acquire audio data for resampling.  |io_sample_rate_ratio| is the ratio
-  // of input / output sample rates.  |request_frames| controls the size in
-  // frames of the buffer requested by each |read_cb| call.  The value must be
+  // Constructs a SincResampler with the specified `read_cb`, which is used to
+  // acquire audio data for resampling.  `io_sample_rate_ratio` is the ratio
+  // of input / output sample rates.  `request_frames` controls the size in
+  // frames of the buffer requested by each `read_cb` call.  The value must be
   // greater than kKernelSize.  Specify kDefaultRequestSize if there are no
   // request size constraints.
   SincResampler(double io_sample_rate_ratio,
@@ -64,11 +64,11 @@ class SincResampler {
                 SincResamplerCallback* read_cb);
   virtual ~SincResampler();
 
-  // Resample |frames| of data from |read_cb_| into |destination|.
+  // Resample `frames` of data from `read_cb_` into `destination`.
   void Resample(size_t frames, float* destination);
 
   // The maximum size in frames that guarantees Resample() will only make a
-  // single call to |read_cb_| for more data.
+  // single call to `read_cb_` for more data.
   size_t ChunkSize() const;
 
   size_t request_frames() const { return request_frames_; }
@@ -77,12 +77,12 @@ class SincResampler {
   // not call while Resample() is in progress.
   void Flush();
 
-  // Update |io_sample_rate_ratio_|.  SetRatio() will cause a reconstruction of
+  // Update `io_sample_rate_ratio_`.  SetRatio() will cause a reconstruction of
   // the kernels used for resampling.  Not thread safe, do not call while
   // Resample() is in progress.
   //
   // TODO(ajm): Use this in PushSincResampler rather than reconstructing
-  // SincResampler.  We would also need a way to update |request_frames_|.
+  // SincResampler.  We would also need a way to update `request_frames_`.
   void SetRatio(double io_sample_rate_ratio);
 
   float* get_kernel_for_testing() { return kernel_storage_.get(); }
@@ -97,11 +97,11 @@ class SincResampler {
   // Selects runtime specific CPU features like SSE.  Must be called before
   // using SincResampler.
   // TODO(ajm): Currently managed by the class internally. See the note with
-  // |convolve_proc_| below.
+  // `convolve_proc_` below.
   void InitializeCPUSpecificFeatures();
 
-  // Compute convolution of |k1| and |k2| over |input_ptr|, resultant sums are
-  // linearly interpolated using |kernel_interpolation_factor|.  On x86 and ARM
+  // Compute convolution of `k1` and `k2` over `input_ptr`, resultant sums are
+  // linearly interpolated using `kernel_interpolation_factor`.  On x86 and ARM
   // the underlying implementation is chosen at run time.
   static float Convolve_C(const float* input_ptr,
                           const float* k1,
@@ -136,7 +136,7 @@ class SincResampler {
   // Source of data for resampling.
   SincResamplerCallback* read_cb_;
 
-  // The size (in samples) to request from each |read_cb_| execution.
+  // The size (in samples) to request from each `read_cb_` execution.
   const size_t request_frames_;
 
   // The number of source frames processed per pass.
@@ -165,7 +165,7 @@ class SincResampler {
                                 double);
   ConvolveProc convolve_proc_;
 
-  // Pointers to the various regions inside |input_buffer_|.  See the diagram at
+  // Pointers to the various regions inside `input_buffer_`.  See the diagram at
   // the top of the .cc file for more information.
   float* r0_;
   float* const r1_;

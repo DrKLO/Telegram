@@ -223,14 +223,12 @@ TurnPort::TurnPort(rtc::Thread* thread,
                    const ProtocolAddress& server_address,
                    const RelayCredentials& credentials,
                    int server_priority,
-                   const std::string& origin,
                    webrtc::TurnCustomizer* customizer)
     : Port(thread, RELAY_PORT_TYPE, factory, network, username, password),
       server_address_(server_address),
       tls_cert_verifier_(nullptr),
       credentials_(credentials),
       socket_(socket),
-      resolver_(NULL),
       error_(0),
       stun_dscp_value_(rtc::DSCP_NO_CHANGE),
       request_manager_(thread),
@@ -240,7 +238,6 @@ TurnPort::TurnPort(rtc::Thread* thread,
       allocate_mismatch_retries_(0),
       turn_customizer_(customizer) {
   request_manager_.SignalSendPacket.connect(this, &TurnPort::OnSendStunPacket);
-  request_manager_.set_origin(origin);
 }
 
 TurnPort::TurnPort(rtc::Thread* thread,
@@ -253,7 +250,6 @@ TurnPort::TurnPort(rtc::Thread* thread,
                    const ProtocolAddress& server_address,
                    const RelayCredentials& credentials,
                    int server_priority,
-                   const std::string& origin,
                    const std::vector<std::string>& tls_alpn_protocols,
                    const std::vector<std::string>& tls_elliptic_curves,
                    webrtc::TurnCustomizer* customizer,
@@ -272,7 +268,6 @@ TurnPort::TurnPort(rtc::Thread* thread,
       tls_cert_verifier_(tls_cert_verifier),
       credentials_(credentials),
       socket_(NULL),
-      resolver_(NULL),
       error_(0),
       stun_dscp_value_(rtc::DSCP_NO_CHANGE),
       request_manager_(thread),
@@ -282,7 +277,6 @@ TurnPort::TurnPort(rtc::Thread* thread,
       allocate_mismatch_retries_(0),
       turn_customizer_(customizer) {
   request_manager_.SignalSendPacket.connect(this, &TurnPort::OnSendStunPacket);
-  request_manager_.set_origin(origin);
 }
 
 TurnPort::~TurnPort() {
@@ -296,9 +290,6 @@ TurnPort::~TurnPort() {
 
   while (!entries_.empty()) {
     DestroyEntry(entries_.front());
-  }
-  if (resolver_) {
-    resolver_->Destroy(false);
   }
   if (!SharedSocket()) {
     delete socket_;
@@ -797,44 +788,43 @@ void TurnPort::ResolveTurnAddress(const rtc::SocketAddress& address) {
 
   RTC_LOG(LS_INFO) << ToString() << ": Starting TURN host lookup for "
                    << address.ToSensitiveString();
-  resolver_ = socket_factory()->CreateAsyncResolver();
-  resolver_->SignalDone.connect(this, &TurnPort::OnResolveResult);
-  resolver_->Start(address);
-}
+  resolver_ = socket_factory()->CreateAsyncDnsResolver();
+  resolver_->Start(address, [this] {
+    // If DNS resolve is failed when trying to connect to the server using TCP,
+    // one of the reason could be due to DNS queries blocked by firewall.
+    // In such cases we will try to connect to the server with hostname,
+    // assuming socket layer will resolve the hostname through a HTTP proxy (if
+    // any).
+    auto& result = resolver_->result();
+    if (result.GetError() != 0 && (server_address_.proto == PROTO_TCP ||
+                                   server_address_.proto == PROTO_TLS)) {
+      if (!CreateTurnClientSocket()) {
+        OnAllocateError(SERVER_NOT_REACHABLE_ERROR,
+                        "TURN host lookup received error.");
+      }
+      return;
+    }
 
-void TurnPort::OnResolveResult(rtc::AsyncResolverInterface* resolver) {
-  RTC_DCHECK(resolver == resolver_);
-  // If DNS resolve is failed when trying to connect to the server using TCP,
-  // one of the reason could be due to DNS queries blocked by firewall.
-  // In such cases we will try to connect to the server with hostname, assuming
-  // socket layer will resolve the hostname through a HTTP proxy (if any).
-  if (resolver_->GetError() != 0 && (server_address_.proto == PROTO_TCP ||
-                                     server_address_.proto == PROTO_TLS)) {
-    if (!CreateTurnClientSocket()) {
+    // Copy the original server address in `resolved_address`. For TLS based
+    // sockets we need hostname along with resolved address.
+    rtc::SocketAddress resolved_address = server_address_.address;
+    if (result.GetError() != 0 ||
+        !result.GetResolvedAddress(Network()->GetBestIP().family(),
+                                   &resolved_address)) {
+      RTC_LOG(LS_WARNING) << ToString() << ": TURN host lookup received error "
+                          << result.GetError();
+      error_ = result.GetError();
       OnAllocateError(SERVER_NOT_REACHABLE_ERROR,
                       "TURN host lookup received error.");
+      return;
     }
-    return;
-  }
-
-  // Copy the original server address in |resolved_address|. For TLS based
-  // sockets we need hostname along with resolved address.
-  rtc::SocketAddress resolved_address = server_address_.address;
-  if (resolver_->GetError() != 0 ||
-      !resolver_->GetResolvedAddress(Network()->GetBestIP().family(),
-                                     &resolved_address)) {
-    RTC_LOG(LS_WARNING) << ToString() << ": TURN host lookup received error "
-                        << resolver_->GetError();
-    error_ = resolver_->GetError();
-    OnAllocateError(SERVER_NOT_REACHABLE_ERROR,
-                    "TURN host lookup received error.");
-    return;
-  }
-  // Signal needs both resolved and unresolved address. After signal is sent
-  // we can copy resolved address back into |server_address_|.
-  SignalResolvedServerAddress(this, server_address_.address, resolved_address);
-  server_address_.address = resolved_address;
-  PrepareAddress();
+    // Signal needs both resolved and unresolved address. After signal is sent
+    // we can copy resolved address back into `server_address_`.
+    SignalResolvedServerAddress(this, server_address_.address,
+                                resolved_address);
+    server_address_.address = resolved_address;
+    PrepareAddress();
+  });
 }
 
 void TurnPort::OnSendStunPacket(const void* data,
@@ -1070,7 +1060,7 @@ void TurnPort::HandleChannelData(int channel_id,
                         << len;
     return;
   }
-  // Allowing messages larger than |len|, as ChannelData can be padded.
+  // Allowing messages larger than `len`, as ChannelData can be padded.
 
   TurnEntry* entry = FindEntry(channel_id);
   if (!entry) {
@@ -1113,8 +1103,8 @@ bool TurnPort::ScheduleRefresh(uint32_t lifetime) {
                         << lifetime << " seconds.";
     delay = (lifetime * 1000) / 2;
   } else if (lifetime > max_lifetime) {
-    // Make 1 hour largest delay, and then sce
-    // we schedule a refresh for one minute less than max lifetime.
+    // Make 1 hour largest delay, and then we schedule a refresh for one minute
+    // less than max lifetime.
     RTC_LOG(LS_WARNING) << ToString()
                         << ": Received response with long lifetime: "
                         << lifetime << " seconds.";
@@ -1786,7 +1776,7 @@ TurnEntry::TurnEntry(TurnPort* port,
       ext_addr_(ext_addr),
       state_(STATE_UNBOUND),
       remote_ufrag_(remote_ufrag) {
-  // Creating permission for |ext_addr_|.
+  // Creating permission for `ext_addr_`.
   SendCreatePermissionRequest(0);
 }
 
@@ -1846,7 +1836,7 @@ void TurnEntry::OnCreatePermissionSuccess() {
   port_->SignalCreatePermissionResult(port_, ext_addr_,
                                       TURN_SUCCESS_RESULT_CODE);
 
-  // If |state_| is STATE_BOUND, the permission will be refreshed
+  // If `state_` is STATE_BOUND, the permission will be refreshed
   // by ChannelBindRequest.
   if (state_ != STATE_BOUND) {
     // Refresh the permission request about 1 minute before the permission

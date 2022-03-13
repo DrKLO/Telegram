@@ -25,7 +25,7 @@ namespace rtc {
 // when you might otherwise be tempted to use a stringstream (discouraged for
 // anything except logging). It uses a fixed-size buffer provided by the caller
 // and concatenates strings and numbers into it, allowing the results to be
-// read via |str()|.
+// read via `str()`.
 class SimpleStringBuilder {
  public:
   explicit SimpleStringBuilder(rtc::ArrayView<char> buffer);
@@ -45,12 +45,12 @@ class SimpleStringBuilder {
   SimpleStringBuilder& operator<<(double f);
   SimpleStringBuilder& operator<<(long double f);
 
-  // Returns a pointer to the built string. The name |str()| is borrowed for
+  // Returns a pointer to the built string. The name `str()` is borrowed for
   // compatibility reasons as we replace usage of stringstream throughout the
   // code base.
   const char* str() const { return buffer_.data(); }
 
-  // Returns the length of the string. The name |size()| is picked for STL
+  // Returns the length of the string. The name `size()` is picked for STL
   // compatibility reasons.
   size_t size() const { return size_; }
 

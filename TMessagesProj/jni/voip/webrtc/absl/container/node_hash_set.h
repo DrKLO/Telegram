@@ -18,7 +18,7 @@
 //
 // An `absl::node_hash_set<T>` is an unordered associative container designed to
 // be a more efficient replacement for `std::unordered_set`. Like
-// `unordered_set`, search, insertion, and deletion of map elements can be done
+// `unordered_set`, search, insertion, and deletion of set elements can be done
 // as an `O(1)` operation. However, `node_hash_set` (and other unordered
 // associative containers known as the collection of Abseil "Swiss tables")
 // contain other optimizations that result in both memory and computation
@@ -38,8 +38,9 @@
 #include <type_traits>
 
 #include "absl/algorithm/container.h"
+#include "absl/base/macros.h"
 #include "absl/container/internal/hash_function_defaults.h"  // IWYU pragma: export
-#include "absl/container/internal/node_hash_policy.h"
+#include "absl/container/internal/node_slot_policy.h"
 #include "absl/container/internal/raw_hash_set.h"  // IWYU pragma: export
 #include "absl/memory/memory.h"
 
@@ -60,7 +61,7 @@ struct NodeHashSetPolicy;
 // following notable differences:
 //
 // * Supports heterogeneous lookup, through `find()`, `operator[]()` and
-//   `insert()`, provided that the map is provided a compatible heterogeneous
+//   `insert()`, provided that the set is provided a compatible heterogeneous
 //   hashing function and equality operator.
 // * Contains a `capacity()` member function indicating the number of element
 //   slots (open, deleted, and empty) within the hash set.
@@ -76,13 +77,13 @@ struct NodeHashSetPolicy;
 // Example:
 //
 //   // Create a node hash set of three strings
-//   absl::node_hash_map<std::string, std::string> ducks =
+//   absl::node_hash_set<std::string> ducks =
 //     {"huey", "dewey", "louie"};
 //
-//  // Insert a new element into the node hash map
-//  ducks.insert("donald"};
+//  // Insert a new element into the node hash set
+//  ducks.insert("donald");
 //
-//  // Force a rehash of the node hash map
+//  // Force a rehash of the node hash set
 //  ducks.rehash(0);
 //
 //  // See if "dewey" is present
@@ -100,7 +101,7 @@ class node_hash_set
  public:
   // Constructors and Assignment Operators
   //
-  // A node_hash_set supports the same overload set as `std::unordered_map`
+  // A node_hash_set supports the same overload set as `std::unordered_set`
   // for construction and assignment:
   //
   // *  Default constructor
@@ -167,7 +168,7 @@ class node_hash_set
   // available within the `node_hash_set`.
   //
   // NOTE: this member function is particular to `absl::node_hash_set` and is
-  // not provided in the `std::unordered_map` API.
+  // not provided in the `std::unordered_set` API.
   using Base::capacity;
 
   // node_hash_set::empty()
@@ -208,7 +209,7 @@ class node_hash_set
   //   `void`.
   //
   //   NOTE: this return behavior is different than that of STL containers in
-  //   general and `std::unordered_map` in particular.
+  //   general and `std::unordered_set` in particular.
   //
   // iterator erase(const_iterator first, const_iterator last):
   //
@@ -217,7 +218,8 @@ class node_hash_set
   //
   // size_type erase(const key_type& key):
   //
-  //   Erases the element with the matching key, if it exists.
+  //   Erases the element with the matching key, if it exists, returning the
+  //   number of elements erased (0 or 1).
   using Base::erase;
 
   // node_hash_set::insert()
@@ -313,7 +315,7 @@ class node_hash_set
 
   // node_hash_set::merge()
   //
-  // Extracts elements from a given `source` flat hash map into this
+  // Extracts elements from a given `source` node hash set into this
   // `node_hash_set`. If the destination `node_hash_set` already contains an
   // element with an equivalent key, that element is not extracted.
   using Base::merge;
@@ -321,15 +323,15 @@ class node_hash_set
   // node_hash_set::swap(node_hash_set& other)
   //
   // Exchanges the contents of this `node_hash_set` with those of the `other`
-  // flat hash map, avoiding invocation of any move, copy, or swap operations on
+  // node hash set, avoiding invocation of any move, copy, or swap operations on
   // individual elements.
   //
   // All iterators and references on the `node_hash_set` remain valid, excepting
   // for the past-the-end iterator, which is invalidated.
   //
-  // `swap()` requires that the flat hash set's hashing and key equivalence
+  // `swap()` requires that the node hash set's hashing and key equivalence
   // functions be Swappable, and are exchaged using unqualified calls to
-  // non-member `swap()`. If the map's allocator has
+  // non-member `swap()`. If the set's allocator has
   // `std::allocator_traits<allocator_type>::propagate_on_container_swap::value`
   // set to `true`, the allocators are also exchanged using an unqualified call
   // to non-member `swap()`; otherwise, the allocators are not swapped.
@@ -384,14 +386,14 @@ class node_hash_set
   // node_hash_set::bucket_count()
   //
   // Returns the number of "buckets" within the `node_hash_set`. Note that
-  // because a flat hash map contains all elements within its internal storage,
+  // because a node hash set contains all elements within its internal storage,
   // this value simply equals the current capacity of the `node_hash_set`.
   using Base::bucket_count;
 
   // node_hash_set::load_factor()
   //
   // Returns the current load factor of the `node_hash_set` (the average number
-  // of slots occupied with a value within the hash map).
+  // of slots occupied with a value within the hash set).
   using Base::load_factor;
 
   // node_hash_set::max_load_factor()
@@ -427,27 +429,23 @@ class node_hash_set
   //
   // Returns the function used for comparing keys equality.
   using Base::key_eq;
-
-  ABSL_DEPRECATED("Call `hash_function()` instead.")
-  typename Base::hasher hash_funct() { return this->hash_function(); }
-
-  ABSL_DEPRECATED("Call `rehash()` instead.")
-  void resize(typename Base::size_type hint) { this->rehash(hint); }
 };
 
 // erase_if(node_hash_set<>, Pred)
 //
 // Erases all elements that satisfy the predicate `pred` from the container `c`.
+// Returns the number of erased elements.
 template <typename T, typename H, typename E, typename A, typename Predicate>
-void erase_if(node_hash_set<T, H, E, A>& c, Predicate pred) {
-  container_internal::EraseIf(pred, &c);
+typename node_hash_set<T, H, E, A>::size_type erase_if(
+    node_hash_set<T, H, E, A>& c, Predicate pred) {
+  return container_internal::EraseIf(pred, &c);
 }
 
 namespace container_internal {
 
 template <class T>
 struct NodeHashSetPolicy
-    : absl::container_internal::node_hash_policy<T&, NodeHashSetPolicy<T>> {
+    : absl::container_internal::node_slot_policy<T&, NodeHashSetPolicy<T>> {
   using key_type = T;
   using init_type = T;
   using constant_iterators = std::true_type;

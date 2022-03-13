@@ -83,14 +83,14 @@ struct uma_zone {
 /* Prototype */
 uma_zone_t
 uma_zcreate(char *name, size_t size, uma_ctor ctor, uma_dtor dtor,
-	    uma_init uminit, uma_fini fini, int align, u_int32_t flags);
+	    uma_init uminit, uma_fini fini, int align, uint32_t flags);
 
 
 #define uma_zone_set_max(zone, number) /* stub TODO __Userspace__ */
 
 uma_zone_t
 uma_zcreate(char *name, size_t size, uma_ctor ctor, uma_dtor dtor,
-	    uma_init uminit, uma_fini fini, int align, u_int32_t flags) {
+	    uma_init uminit, uma_fini fini, int align, uint32_t flags) {
 	return NULL; /* stub TODO __Userspace__. Also place implementation in a separate .c file */
 }
 #endif

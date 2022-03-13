@@ -53,7 +53,7 @@ class RtpPacketizerVp8 : public RtpPacketizer {
   size_t NumPackets() const override;
 
   // Get the next payload with VP8 payload header.
-  // Write payload and set marker bit of the |packet|.
+  // Write payload and set marker bit of the `packet`.
   // Returns true on success, false otherwise.
   bool NextPacket(RtpPacketToSend* packet) override;
 

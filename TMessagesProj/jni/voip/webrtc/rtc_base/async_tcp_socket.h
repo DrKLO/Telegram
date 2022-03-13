@@ -16,7 +16,6 @@
 #include <memory>
 
 #include "rtc_base/async_packet_socket.h"
-#include "rtc_base/async_socket.h"
 #include "rtc_base/buffer.h"
 #include "rtc_base/constructor_magic.h"
 #include "rtc_base/socket.h"
@@ -29,7 +28,7 @@ namespace rtc {
 // buffer them in user space.
 class AsyncTCPSocketBase : public AsyncPacketSocket {
  public:
-  AsyncTCPSocketBase(AsyncSocket* socket, bool listen, size_t max_packet_size);
+  AsyncTCPSocketBase(Socket* socket, size_t max_packet_size);
   ~AsyncTCPSocketBase() override;
 
   // Pure virtual methods to send and recv data.
@@ -37,8 +36,6 @@ class AsyncTCPSocketBase : public AsyncPacketSocket {
            size_t cb,
            const rtc::PacketOptions& options) override = 0;
   virtual void ProcessInput(char* data, size_t* len) = 0;
-  // Signals incoming connection.
-  virtual void HandleIncomingConnection(AsyncSocket* socket) = 0;
 
   SocketAddress GetLocalAddress() const override;
   SocketAddress GetRemoteAddress() const override;
@@ -55,29 +52,28 @@ class AsyncTCPSocketBase : public AsyncPacketSocket {
   void SetError(int error) override;
 
  protected:
-  // Binds and connects |socket| and creates AsyncTCPSocket for
-  // it. Takes ownership of |socket|. Returns null if bind() or
-  // connect() fail (|socket| is destroyed in that case).
-  static AsyncSocket* ConnectSocket(AsyncSocket* socket,
-                                    const SocketAddress& bind_address,
-                                    const SocketAddress& remote_address);
+  // Binds and connects `socket` and creates AsyncTCPSocket for
+  // it. Takes ownership of `socket`. Returns null if bind() or
+  // connect() fail (`socket` is destroyed in that case).
+  static Socket* ConnectSocket(Socket* socket,
+                               const SocketAddress& bind_address,
+                               const SocketAddress& remote_address);
   int FlushOutBuffer();
-  // Add data to |outbuf_|.
+  // Add data to `outbuf_`.
   void AppendToOutBuffer(const void* pv, size_t cb);
 
-  // Helper methods for |outpos_|.
+  // Helper methods for `outpos_`.
   bool IsOutBufferEmpty() const { return outbuf_.size() == 0; }
   void ClearOutBuffer() { outbuf_.Clear(); }
 
  private:
   // Called by the underlying socket
-  void OnConnectEvent(AsyncSocket* socket);
-  void OnReadEvent(AsyncSocket* socket);
-  void OnWriteEvent(AsyncSocket* socket);
-  void OnCloseEvent(AsyncSocket* socket, int error);
+  void OnConnectEvent(Socket* socket);
+  void OnReadEvent(Socket* socket);
+  void OnWriteEvent(Socket* socket);
+  void OnCloseEvent(Socket* socket, int error);
 
-  std::unique_ptr<AsyncSocket> socket_;
-  bool listen_;
+  std::unique_ptr<Socket> socket_;
   Buffer inbuf_;
   Buffer outbuf_;
   size_t max_insize_;
@@ -88,23 +84,38 @@ class AsyncTCPSocketBase : public AsyncPacketSocket {
 
 class AsyncTCPSocket : public AsyncTCPSocketBase {
  public:
-  // Binds and connects |socket| and creates AsyncTCPSocket for
-  // it. Takes ownership of |socket|. Returns null if bind() or
-  // connect() fail (|socket| is destroyed in that case).
-  static AsyncTCPSocket* Create(AsyncSocket* socket,
+  // Binds and connects `socket` and creates AsyncTCPSocket for
+  // it. Takes ownership of `socket`. Returns null if bind() or
+  // connect() fail (`socket` is destroyed in that case).
+  static AsyncTCPSocket* Create(Socket* socket,
                                 const SocketAddress& bind_address,
                                 const SocketAddress& remote_address);
-  AsyncTCPSocket(AsyncSocket* socket, bool listen);
+  explicit AsyncTCPSocket(Socket* socket);
   ~AsyncTCPSocket() override {}
 
   int Send(const void* pv,
            size_t cb,
            const rtc::PacketOptions& options) override;
   void ProcessInput(char* data, size_t* len) override;
-  void HandleIncomingConnection(AsyncSocket* socket) override;
 
  private:
   RTC_DISALLOW_COPY_AND_ASSIGN(AsyncTCPSocket);
+};
+
+class AsyncTcpListenSocket : public AsyncListenSocket {
+ public:
+  explicit AsyncTcpListenSocket(std::unique_ptr<Socket> socket);
+
+  State GetState() const override;
+  SocketAddress GetLocalAddress() const override;
+
+  virtual void HandleIncomingConnection(rtc::Socket* socket);
+
+ private:
+  // Called by the underlying socket
+  void OnReadEvent(Socket* socket);
+
+  std::unique_ptr<Socket> socket_;
 };
 
 }  // namespace rtc

@@ -11,54 +11,44 @@
 #ifndef MODULES_AUDIO_PROCESSING_AGC2_BIQUAD_FILTER_H_
 #define MODULES_AUDIO_PROCESSING_AGC2_BIQUAD_FILTER_H_
 
-#include <algorithm>
-
 #include "api/array_view.h"
-#include "rtc_base/arraysize.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
+// Transposed direct form I implementation of a bi-quad filter.
+//        b[0] + b[1] • z^(-1) + b[2] • z^(-2)
+// H(z) = ------------------------------------
+//          1 + a[1] • z^(-1) + a[2] • z^(-2)
 class BiQuadFilter {
  public:
   // Normalized filter coefficients.
-  //        b_0 + b_1 • z^(-1) + b_2 • z^(-2)
-  // H(z) = ---------------------------------
-  //         1 + a_1 • z^(-1) + a_2 • z^(-2)
-  struct BiQuadCoefficients {
-    float b[3];
-    float a[2];
+  // Computed as `[b, a] = scipy.signal.butter(N=2, Wn, btype)`.
+  struct Config {
+    float b[3];  // b[0], b[1], b[2].
+    float a[2];  // a[1], a[2].
   };
 
-  BiQuadFilter() = default;
+  explicit BiQuadFilter(const Config& config);
+  BiQuadFilter(const BiQuadFilter&) = delete;
+  BiQuadFilter& operator=(const BiQuadFilter&) = delete;
+  ~BiQuadFilter();
 
-  void Initialize(const BiQuadCoefficients& coefficients) {
-    coefficients_ = coefficients;
-  }
+  // Sets the filter configuration and resets the internal state.
+  void SetConfig(const Config& config);
 
-  void Reset() { biquad_state_.Reset(); }
+  // Zeroes the filter state.
+  void Reset();
 
-  // Produces a filtered output y of the input x. Both x and y need to
-  // have the same length. In-place modification is allowed.
+  // Filters `x` and writes the output in `y`, which must have the same length
+  // of `x`. In-place processing is supported.
   void Process(rtc::ArrayView<const float> x, rtc::ArrayView<float> y);
 
  private:
-  struct BiQuadState {
-    BiQuadState() { Reset(); }
-
-    void Reset() {
-      std::fill(b, b + arraysize(b), 0.f);
-      std::fill(a, a + arraysize(a), 0.f);
-    }
-
+  Config config_;
+  struct State {
     float b[2];
     float a[2];
-  };
-
-  BiQuadState biquad_state_;
-  BiQuadCoefficients coefficients_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(BiQuadFilter);
+  } state_;
 };
 
 }  // namespace webrtc

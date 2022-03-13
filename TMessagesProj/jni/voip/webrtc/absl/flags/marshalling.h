@@ -83,7 +83,7 @@
 //   // AbslParseFlag converts from a string to OutputMode.
 //   // Must be in same namespace as OutputMode.
 //
-//   // Parses an OutputMode from the command line flag value `text. Returns
+//   // Parses an OutputMode from the command line flag value `text`. Returns
 //   // `true` and sets `*mode` on success; returns `false` and sets `*error`
 //   // on failure.
 //   bool AbslParseFlag(absl::string_view text,
@@ -139,7 +139,7 @@
 //
 //   // Within the implementation, `AbslParseFlag()` will, in turn invoke
 //   // `absl::ParseFlag()` on its constituent `int` and `std::string` types
-//   // (which have built-in Abseil flag support.
+//   // (which have built-in Abseil flag support).
 //
 //   bool AbslParseFlag(absl::string_view text, MyFlagType* flag,
 //                      std::string* err) {

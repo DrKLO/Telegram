@@ -41,21 +41,26 @@ namespace webrtc {
 class AsyncDnsResolverResult {
  public:
   virtual ~AsyncDnsResolverResult() = default;
-  // Returns true iff the address from |Start| was successfully resolved.
-  // If the address was successfully resolved, sets |addr| to a copy of the
-  // address from |Start| with the IP address set to the top most resolved
-  // address of |family| (|addr| will have both hostname and the resolved ip).
+  // Returns true iff the address from `Start` was successfully resolved.
+  // If the address was successfully resolved, sets `addr` to a copy of the
+  // address from `Start` with the IP address set to the top most resolved
+  // address of `family` (`addr` will have both hostname and the resolved ip).
   virtual bool GetResolvedAddress(int family,
                                   rtc::SocketAddress* addr) const = 0;
   // Returns error from resolver.
   virtual int GetError() const = 0;
 };
 
+// The API for a single name query.
+// The constructor, destructor and all functions must be called from
+// the same sequence, and the callback will also be called on that sequence.
+// The class guarantees that the callback will not be called if the
+// resolver's destructor has been called.
 class RTC_EXPORT AsyncDnsResolverInterface {
  public:
   virtual ~AsyncDnsResolverInterface() = default;
 
-  // Start address resolution of the hostname in |addr|.
+  // Start address resolution of the hostname in `addr`.
   virtual void Start(const rtc::SocketAddress& addr,
                      std::function<void()> callback) = 0;
   virtual const AsyncDnsResolverResult& result() const = 0;
@@ -70,7 +75,7 @@ class AsyncDnsResolverFactoryInterface {
 
   // Creates an AsyncDnsResolver and starts resolving the name. The callback
   // will be called when resolution is finished.
-  // The callback will be called on the thread that the caller runs on.
+  // The callback will be called on the sequence that the caller runs on.
   virtual std::unique_ptr<webrtc::AsyncDnsResolverInterface> CreateAndResolve(
       const rtc::SocketAddress& addr,
       std::function<void()> callback) = 0;

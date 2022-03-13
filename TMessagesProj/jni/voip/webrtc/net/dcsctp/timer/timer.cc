@@ -13,7 +13,6 @@
 #include <cstdint>
 #include <limits>
 #include <memory>
-#include <unordered_map>
 #include <utility>
 
 #include "absl/memory/memory.h"
@@ -27,10 +26,10 @@ TimeoutID MakeTimeoutId(TimerID timer_id, TimerGeneration generation) {
   return TimeoutID(static_cast<uint64_t>(*timer_id) << 32 | *generation);
 }
 
-DurationMs GetBackoffDuration(TimerBackoffAlgorithm algorithm,
+DurationMs GetBackoffDuration(const TimerOptions& options,
                               DurationMs base_duration,
                               int expiration_count) {
-  switch (algorithm) {
+  switch (options.backoff_algorithm) {
     case TimerBackoffAlgorithm::kFixed:
       return base_duration;
     case TimerBackoffAlgorithm::kExponential: {
@@ -39,6 +38,11 @@ DurationMs GetBackoffDuration(TimerBackoffAlgorithm algorithm,
       while (expiration_count > 0 && duration_ms < *Timer::kMaxTimerDuration) {
         duration_ms *= 2;
         --expiration_count;
+
+        if (options.max_backoff_duration.has_value() &&
+            duration_ms > **options.max_backoff_duration) {
+          return *options.max_backoff_duration;
+        }
       }
 
       return DurationMs(std::min(duration_ms, *Timer::kMaxTimerDuration));
@@ -94,14 +98,14 @@ void Timer::Trigger(TimerGeneration generation) {
   if (is_running_ && generation == generation_) {
     ++expiration_count_;
     is_running_ = false;
-    if (options_.max_restarts < 0 ||
-        expiration_count_ <= options_.max_restarts) {
+    if (!options_.max_restarts.has_value() ||
+        expiration_count_ <= *options_.max_restarts) {
       // The timer should still be running after this triggers. Start a new
       // timer. Note that it might be very quickly restarted again, if the
       // `on_expired_` callback returns a new duration.
       is_running_ = true;
-      DurationMs duration = GetBackoffDuration(options_.backoff_algorithm,
-                                               duration_, expiration_count_);
+      DurationMs duration =
+          GetBackoffDuration(options_, duration_, expiration_count_);
       generation_ = TimerGeneration(*generation_ + 1);
       timeout_->Start(duration, MakeTimeoutId(id_, generation_));
     }
@@ -113,8 +117,8 @@ void Timer::Trigger(TimerGeneration generation) {
         // Restart it with new duration.
         timeout_->Stop();
 
-        DurationMs duration = GetBackoffDuration(options_.backoff_algorithm,
-                                                 duration_, expiration_count_);
+        DurationMs duration =
+            GetBackoffDuration(options_, duration_, expiration_count_);
         generation_ = TimerGeneration(*generation_ + 1);
         timeout_->Start(duration, MakeTimeoutId(id_, generation_));
       }
@@ -140,9 +144,11 @@ std::unique_ptr<Timer> TimerManager::CreateTimer(absl::string_view name,
   // after 800 million reconnections on a single socket. Ensure this will never
   // happen.
   RTC_CHECK_NE(*id, std::numeric_limits<uint32_t>::max());
+  std::unique_ptr<Timeout> timeout = create_timeout_();
+  RTC_CHECK(timeout != nullptr);
   auto timer = absl::WrapUnique(new Timer(
       id, name, std::move(on_expired), [this, id]() { timers_.erase(id); },
-      create_timeout_(), options));
+      std::move(timeout), options));
   timers_[id] = timer.get();
   return timer;
 }

@@ -43,8 +43,8 @@ TransientDetector::TransientDetector(int sample_rate_hz)
              sample_rate_hz == ts::kSampleRate48kHz);
   int samples_per_transient = sample_rate_hz * kTransientLengthMs / 1000;
   // Adjustment to avoid data loss while downsampling, making
-  // |samples_per_chunk_| and |samples_per_transient| always divisible by
-  // |kLeaves|.
+  // `samples_per_chunk_` and `samples_per_transient` always divisible by
+  // `kLeaves`.
   samples_per_chunk_ -= samples_per_chunk_ % kLeaves;
   samples_per_transient -= samples_per_transient % kLeaves;
 
@@ -137,7 +137,7 @@ float TransientDetector::Detect(const float* data,
 
   // In the current implementation we return the max of the current result and
   // the previous results, so the high results have a width equals to
-  // |transient_length|.
+  // `transient_length`.
   return *std::max_element(previous_results_.begin(), previous_results_.end());
 }
 

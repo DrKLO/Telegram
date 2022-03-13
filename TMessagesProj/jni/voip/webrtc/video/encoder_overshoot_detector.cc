@@ -16,7 +16,7 @@ namespace webrtc {
 namespace {
 // The buffer level for media-rate utilization is allowed to go below zero,
 // down to
-// -(|kMaxMediaUnderrunFrames| / |target_framerate_fps_|) * |target_bitrate_|.
+// -(`kMaxMediaUnderrunFrames` / `target_framerate_fps_`) * `target_bitrate_`.
 static constexpr double kMaxMediaUnderrunFrames = 5.0;
 }  // namespace
 
@@ -173,7 +173,7 @@ void EncoderOvershootDetector::LeakBits(int64_t time_ms) {
     network_buffer_level_bits_ =
         std::max<int64_t>(0, network_buffer_level_bits_ - leaked_bits);
 
-    // Media buffer my go down to minus |kMaxMediaUnderrunFrames| frames worth
+    // Media buffer my go down to minus `kMaxMediaUnderrunFrames` frames worth
     // of data.
     const double max_underrun_seconds =
         std::min(kMaxMediaUnderrunFrames, target_framerate_fps_) /

@@ -99,7 +99,7 @@ ABSL_CONST_INIT GlobalMutex g_signal_handler_lock(absl::kConstInit);
 SignalHandlerOutputState* volatile g_signal_handler_output_state;
 
 // This function is called iteratively for each stack trace element and stores
-// the element in the array from |unwind_output_state|.
+// the element in the array from `unwind_output_state`.
 _Unwind_Reason_Code UnwindBacktrace(struct _Unwind_Context* unwind_context,
                                     void* unwind_output_state) {
   SignalHandlerOutputState* const output_state =
@@ -136,7 +136,7 @@ void SignalHandler(int signum, siginfo_t* info, void* ptr) {
 
 // Temporarily change the signal handler to a function that records a raw stack
 // trace and interrupt the given tid. This function will block until the output
-// thread stack trace has been stored in |params|. The return value is an error
+// thread stack trace has been stored in `params`. The return value is an error
 // string on failure and null on success.
 const char* CaptureRawStacktrace(int pid,
                                  int tid,
@@ -206,8 +206,8 @@ std::vector<StackTraceElement> FormatStackTrace(
 std::vector<StackTraceElement> GetStackTrace(int tid) {
   // Only a thread itself can unwind its stack, so we will interrupt the given
   // tid with a custom signal handler in order to unwind its stack. The stack
-  // will be recorded to |params| through the use of the global pointer
-  // |g_signal_handler_param|.
+  // will be recorded to `params` through the use of the global pointer
+  // `g_signal_handler_param`.
   SignalHandlerOutputState params;
 
   const char* error_string = CaptureRawStacktrace(getpid(), tid, &params);

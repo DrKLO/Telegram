@@ -68,6 +68,10 @@ void PacketRouter::AddSendRtpModule(RtpRtcpInterface* rtp_module,
 void PacketRouter::AddSendRtpModuleToMap(RtpRtcpInterface* rtp_module,
                                          uint32_t ssrc) {
   RTC_DCHECK(send_modules_map_.find(ssrc) == send_modules_map_.end());
+
+  // Signal to module that the pacer thread is attached and can send packets.
+  rtp_module->OnPacketSendingThreadSwitched();
+
   // Always keep the audio modules at the back of the list, so that when we
   // iterate over the modules in order to find one that can send padding we
   // will prioritize video. This is important to make sure they are counted
@@ -102,6 +106,7 @@ void PacketRouter::RemoveSendRtpModule(RtpRtcpInterface* rtp_module) {
   if (last_send_module_ == rtp_module) {
     last_send_module_ = nullptr;
   }
+  rtp_module->OnPacketSendingThreadSwitched();
 }
 
 void PacketRouter::AddReceiveRtpModule(RtcpFeedbackSenderInterface* rtcp_sender,

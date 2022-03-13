@@ -31,7 +31,7 @@ class ByteBufferWriter;
 // protocol before commencing normal socket behavior.
 class BufferedReadAdapter : public AsyncSocketAdapter {
  public:
-  BufferedReadAdapter(AsyncSocket* socket, size_t buffer_size);
+  BufferedReadAdapter(Socket* socket, size_t buffer_size);
   ~BufferedReadAdapter() override;
 
   int Send(const void* pv, size_t cb) override;
@@ -45,7 +45,7 @@ class BufferedReadAdapter : public AsyncSocketAdapter {
   void BufferInput(bool on = true);
   virtual void ProcessInput(char* data, size_t* len) = 0;
 
-  void OnReadEvent(AsyncSocket* socket) override;
+  void OnReadEvent(Socket* socket) override;
 
  private:
   char* buffer_;
@@ -63,12 +63,12 @@ class AsyncSSLSocket : public BufferedReadAdapter {
   static ArrayView<const uint8_t> SslClientHello();
   static ArrayView<const uint8_t> SslServerHello();
 
-  explicit AsyncSSLSocket(AsyncSocket* socket);
+  explicit AsyncSSLSocket(Socket* socket);
 
   int Connect(const SocketAddress& addr) override;
 
  protected:
-  void OnConnectEvent(AsyncSocket* socket) override;
+  void OnConnectEvent(Socket* socket) override;
   void ProcessInput(char* data, size_t* len) override;
   RTC_DISALLOW_COPY_AND_ASSIGN(AsyncSSLSocket);
 };
@@ -78,7 +78,7 @@ class AsyncSSLSocket : public BufferedReadAdapter {
 // Implements a socket adapter that speaks the HTTP/S proxy protocol.
 class AsyncHttpsProxySocket : public BufferedReadAdapter {
  public:
-  AsyncHttpsProxySocket(AsyncSocket* socket,
+  AsyncHttpsProxySocket(Socket* socket,
                         const std::string& user_agent,
                         const SocketAddress& proxy,
                         const std::string& username,
@@ -96,8 +96,8 @@ class AsyncHttpsProxySocket : public BufferedReadAdapter {
   ConnState GetState() const override;
 
  protected:
-  void OnConnectEvent(AsyncSocket* socket) override;
-  void OnCloseEvent(AsyncSocket* socket, int err) override;
+  void OnConnectEvent(Socket* socket) override;
+  void OnCloseEvent(Socket* socket, int err) override;
   void ProcessInput(char* data, size_t* len) override;
 
   bool ShouldIssueConnect() const;
@@ -136,7 +136,7 @@ class AsyncHttpsProxySocket : public BufferedReadAdapter {
 // Implements a socket adapter that speaks the SOCKS proxy protocol.
 class AsyncSocksProxySocket : public BufferedReadAdapter {
  public:
-  AsyncSocksProxySocket(AsyncSocket* socket,
+  AsyncSocksProxySocket(Socket* socket,
                         const SocketAddress& proxy,
                         const std::string& username,
                         const CryptString& password);
@@ -148,7 +148,7 @@ class AsyncSocksProxySocket : public BufferedReadAdapter {
   ConnState GetState() const override;
 
  protected:
-  void OnConnectEvent(AsyncSocket* socket) override;
+  void OnConnectEvent(Socket* socket) override;
   void ProcessInput(char* data, size_t* len) override;
 
   void SendHello();

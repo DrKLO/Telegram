@@ -18,7 +18,7 @@ namespace {
 
 // The first kIgnoredSampleCount samples will be ignored.
 const int kIgnoredSampleCount = 5;
-// Return the |kPercentile| value in RequiredDecodeTimeMs().
+// Return the `kPercentile` value in RequiredDecodeTimeMs().
 const float kPercentile = 0.95f;
 // The window size in ms.
 const int64_t kTimeLimitMs = 10000;
@@ -30,7 +30,7 @@ VCMCodecTimer::VCMCodecTimer()
 VCMCodecTimer::~VCMCodecTimer() = default;
 
 void VCMCodecTimer::AddTiming(int64_t decode_time_ms, int64_t now_ms) {
-  // Ignore the first |kIgnoredSampleCount| samples.
+  // Ignore the first `kIgnoredSampleCount` samples.
   if (ignored_sample_count_ < kIgnoredSampleCount) {
     ++ignored_sample_count_;
     return;

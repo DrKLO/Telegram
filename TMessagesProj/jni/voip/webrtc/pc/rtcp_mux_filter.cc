@@ -91,7 +91,8 @@ bool RtcpMuxFilter::SetAnswer(bool answer_enable, ContentSource src) {
   }
 
   if (!ExpectAnswer(src)) {
-    RTC_LOG(LS_ERROR) << "Invalid state for RTCP mux answer";
+    RTC_LOG(LS_ERROR) << "Invalid state for RTCP mux answer, state is "
+                      << state_ << ", source is " << src;
     return false;
   }
 

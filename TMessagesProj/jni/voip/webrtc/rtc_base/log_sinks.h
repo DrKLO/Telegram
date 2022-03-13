@@ -26,7 +26,7 @@ namespace rtc {
 // Init() must be called before adding this sink.
 class FileRotatingLogSink : public LogSink {
  public:
-  // |num_log_files| must be greater than 1 and |max_log_size| must be greater
+  // `num_log_files` must be greater than 1 and `max_log_size` must be greater
   // than 0.
   FileRotatingLogSink(const std::string& log_dir_path,
                       const std::string& log_prefix,

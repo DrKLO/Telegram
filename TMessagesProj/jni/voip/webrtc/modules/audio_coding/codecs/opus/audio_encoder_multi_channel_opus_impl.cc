@@ -131,6 +131,7 @@ AudioEncoderMultiChannelOpusImpl::MakeAudioEncoder(
     const AudioEncoderMultiChannelOpusConfig& config,
     int payload_type) {
   if (!config.IsOk()) {
+    RTC_DCHECK_NOTREACHED();
     return nullptr;
   }
   return std::make_unique<AudioEncoderMultiChannelOpusImpl>(config,
@@ -280,6 +281,9 @@ AudioEncoderMultiChannelOpusImpl::SdpToConfig(const SdpAudioFormat& format) {
   }
   config.channel_mapping = *channel_mapping;
 
+  if (!config.IsOk()) {
+    return absl::nullopt;
+  }
   return config;
 }
 

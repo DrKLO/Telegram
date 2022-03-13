@@ -81,7 +81,7 @@ int WebRtcSpl_RealForwardFFT(struct RealFFT* self,
 //                   boundary.
 //
 // Return Value:
-//   0 or a positive number - a value that the elements in the |real_data_out|
+//   0 or a positive number - a value that the elements in the `real_data_out`
 //                            should be shifted left with in order to get
 //                            correct physical values.
 //   -1 - Error with bad arguments (null pointers).

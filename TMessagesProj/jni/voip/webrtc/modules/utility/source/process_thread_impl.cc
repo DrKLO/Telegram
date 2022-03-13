@@ -180,6 +180,7 @@ void ProcessThreadImpl::PostDelayedTask(std::unique_ptr<QueuedTask> task,
 
 void ProcessThreadImpl::RegisterModule(Module* module,
                                        const rtc::Location& from) {
+  TRACE_EVENT0("webrtc", "ProcessThreadImpl::RegisterModule");
   RTC_DCHECK(thread_checker_.IsCurrent());
   RTC_DCHECK(module) << from.ToString();
 

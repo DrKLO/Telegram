@@ -41,7 +41,7 @@ class RtpToNtpEstimator {
     int64_t unwrapped_rtp_timestamp;
   };
 
-  // Estimated parameters from RTP and NTP timestamp pairs in |measurements_|.
+  // Estimated parameters from RTP and NTP timestamp pairs in `measurements_`.
   struct Parameters {
     Parameters() : frequency_khz(0.0), offset_ms(0.0) {}
 
@@ -53,7 +53,7 @@ class RtpToNtpEstimator {
   };
 
   // Updates measurements with RTP/NTP timestamp pair from a RTCP sender report.
-  // |new_rtcp_sr| is set to true if a new report is added.
+  // `new_rtcp_sr` is set to true if a new report is added.
   bool UpdateMeasurements(uint32_t ntp_secs,
                           uint32_t ntp_frac,
                           uint32_t rtp_timestamp,

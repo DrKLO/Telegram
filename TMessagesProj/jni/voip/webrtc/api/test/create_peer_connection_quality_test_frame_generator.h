@@ -21,7 +21,7 @@ namespace webrtc {
 namespace webrtc_pc_e2e {
 
 // Creates a frame generator that produces frames with small squares that move
-// randomly towards the lower right corner. |type| has the default value
+// randomly towards the lower right corner. `type` has the default value
 // FrameGeneratorInterface::OutputType::I420. video_config specifies frame
 // weight and height.
 std::unique_ptr<test::FrameGeneratorInterface> CreateSquareFrameGenerator(

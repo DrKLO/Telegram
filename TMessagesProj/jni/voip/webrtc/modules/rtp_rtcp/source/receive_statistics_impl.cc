@@ -64,7 +64,7 @@ StreamStatisticianImpl::~StreamStatisticianImpl() = default;
 bool StreamStatisticianImpl::UpdateOutOfOrder(const RtpPacketReceived& packet,
                                               int64_t sequence_number,
                                               int64_t now_ms) {
-  // Check if |packet| is second packet of a stream restart.
+  // Check if `packet` is second packet of a stream restart.
   if (received_seq_out_of_order_) {
     // Count the previous packet as a received; it was postponed below.
     --cumulative_loss_;
@@ -75,7 +75,7 @@ bool StreamStatisticianImpl::UpdateOutOfOrder(const RtpPacketReceived& packet,
       // Ignore sequence number gap caused by stream restart for packet loss
       // calculation, by setting received_seq_max_ to the sequence number just
       // before the out-of-order seqno. This gives a net zero change of
-      // |cumulative_loss_|, for the two packets interpreted as a stream reset.
+      // `cumulative_loss_`, for the two packets interpreted as a stream reset.
       //
       // Fraction loss for the next report may get a bit off, since we don't
       // update last_report_seq_max_ and last_report_cumulative_loss_ in a
@@ -92,10 +92,10 @@ bool StreamStatisticianImpl::UpdateOutOfOrder(const RtpPacketReceived& packet,
     // for a stream restart.
     received_seq_out_of_order_ = packet.SequenceNumber();
     // Postpone counting this as a received packet until we know how to update
-    // |received_seq_max_|, otherwise we temporarily decrement
-    // |cumulative_loss_|. The
+    // `received_seq_max_`, otherwise we temporarily decrement
+    // `cumulative_loss_`. The
     // ReceiveStatisticsTest.StreamRestartDoesntCountAsLoss test expects
-    // |cumulative_loss_| to be unchanged by the reception of the first packet
+    // `cumulative_loss_` to be unchanged by the reception of the first packet
     // after stream reset.
     ++cumulative_loss_;
     return true;

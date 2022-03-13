@@ -12,7 +12,6 @@ import android.Manifest;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -20,7 +19,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
-import android.text.style.ImageSpan;
 import android.util.Base64;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -33,23 +31,28 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.DocumentObject;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.SvgHelper;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -68,20 +71,12 @@ import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.EmptyTextProgressView;
 import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.RecyclerItemsEnterAnimator;
 import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.Components.ReplaceableIconDrawable;
-import org.telegram.ui.Components.SlideChooseView;
 import org.telegram.ui.Components.URLSpanNoUnderline;
 import org.telegram.ui.Components.UndoView;
 
 import java.util.ArrayList;
-
-import androidx.annotation.NonNull;
-import androidx.core.content.ContextCompat;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 public class SessionsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -410,7 +405,7 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
                         return;
                     }
                     final AlertDialog progressDialog = new AlertDialog(getParentActivity(), 3);
-                    progressDialog.setCanCacnel(false);
+                    progressDialog.setCanCancel(false);
                     progressDialog.show();
 
                     if (currentType == 0) {
@@ -970,12 +965,7 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
                     getParentActivity().requestPermissions(new String[]{Manifest.permission.CAMERA}, ActionIntroActivity.CAMERA_PERMISSION_REQUEST_CODE);
                     return;
                 }
-                CameraScanActivity.showAsSheet(SessionsActivity.this, false, CameraScanActivity.TYPE_QR_LOGIN, new CameraScanActivity.CameraScanActivityDelegate() {
-                    @Override
-                    public void didFindQr(String text) {
-                        proccessQrCode(text);
-                    }
-                });
+                openCameraScanActivity();
             });
             addView(buttonTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM, 16, 15, 16, 16));
 
@@ -1042,37 +1032,61 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
         }
     }
 
-    private void proccessQrCode(String code) {
-        AlertDialog progressDialog = new AlertDialog(getParentActivity(), 3);
-        progressDialog.setCanCacnel(false);
-        progressDialog.show();
-        byte[] token = Base64.decode(code.substring("tg://login?token=".length()), Base64.URL_SAFE);
-        TLRPC.TL_auth_acceptLoginToken req = new TLRPC.TL_auth_acceptLoginToken();
-        req.token = token;
-        getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-            try {
-                progressDialog.dismiss();
-            } catch (Exception ignore) {
+    private void openCameraScanActivity() {
+        CameraScanActivity.showAsSheet(SessionsActivity.this, false, CameraScanActivity.TYPE_QR_LOGIN, new CameraScanActivity.CameraScanActivityDelegate() {
 
+            private TLObject response = null;
+            private TLRPC.TL_error error = null;
+
+            @Override
+            public void didFindQr(String link) {
+                if (response instanceof TLRPC.TL_authorization) {
+                    TLRPC.TL_authorization authorization = (TLRPC.TL_authorization) response;
+                    sessions.add(0, authorization);
+                    updateRows();
+                    listAdapter.notifyDataSetChanged();
+                    undoView.showWithAction(0, UndoView.ACTION_QR_SESSION_ACCEPTED, response);
+                } else if (error != null) {
+                    AndroidUtilities.runOnUIThread(() -> {
+                        final String text;
+                        if (error.text != null && error.text.equals("AUTH_TOKEN_EXCEPTION")) {
+                            text = LocaleController.getString("AccountAlreadyLoggedIn", R.string.AccountAlreadyLoggedIn);
+                        } else {
+                            text = LocaleController.getString("ErrorOccurred", R.string.ErrorOccurred) + "\n" + error.text;
+                        }
+                        AlertsCreator.showSimpleAlert(SessionsActivity.this, LocaleController.getString("AuthAnotherClient", R.string.AuthAnotherClient), text);
+                    });
+                }
             }
-            if (response instanceof TLRPC.TL_authorization) {
-                TLRPC.TL_authorization authorization = (TLRPC.TL_authorization) response;
-                sessions.add(0, authorization);
-                updateRows();
-                listAdapter.notifyDataSetChanged();
-                undoView.showWithAction(0, UndoView.ACTION_QR_SESSION_ACCEPTED, response);
-            } else {
+
+            @Override
+            public boolean processQr(String link, Runnable onLoadEnd) {
+                this.response = null;
+                this.error = null;
                 AndroidUtilities.runOnUIThread(() -> {
-                    final String text;
-                    if (error.text.equals("AUTH_TOKEN_EXCEPTION")) {
-                        text = LocaleController.getString("AccountAlreadyLoggedIn", R.string.AccountAlreadyLoggedIn);
-                    } else {
-                        text = LocaleController.getString("ErrorOccurred", R.string.ErrorOccurred) + "\n" + error.text;
+                    try {
+                        String code = link.substring("tg://login?token=".length());
+                        code = code.replaceAll("\\/", "_");
+                        code = code.replaceAll("\\+", "-");
+                        byte[] token = Base64.decode(code, Base64.URL_SAFE);
+                        TLRPC.TL_auth_acceptLoginToken req = new TLRPC.TL_auth_acceptLoginToken();
+                        req.token = token;
+                        getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                            this.response = response;
+                            this.error = error;
+                            onLoadEnd.run();
+                        }));
+                    } catch (Exception e) {
+                        FileLog.e("Failed to pass qr code auth", e);
+                        AndroidUtilities.runOnUIThread(() -> {
+                            AlertsCreator.showSimpleAlert(SessionsActivity.this, LocaleController.getString("AuthAnotherClient", R.string.AuthAnotherClient), LocaleController.getString("ErrorOccurred", R.string.ErrorOccurred));
+                        });
+                        onLoadEnd.run();
                     }
-                    AlertsCreator.showSimpleAlert(SessionsActivity.this, LocaleController.getString("AuthAnotherClient", R.string.AuthAnotherClient), text);
-                });
+                }, 750);
+                return true;
             }
-        }));
+        });
     }
 
     @Override
@@ -1129,12 +1143,22 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
         }
         if (requestCode == ActionIntroActivity.CAMERA_PERMISSION_REQUEST_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                CameraScanActivity.showAsSheet(SessionsActivity.this, false, CameraScanActivity.TYPE_QR_LOGIN, new CameraScanActivity.CameraScanActivityDelegate() {
-                    @Override
-                    public void didFindQr(String text) {
-                        proccessQrCode(text);
-                    }
-                });
+                openCameraScanActivity();
+            } else {
+                new AlertDialog.Builder(getParentActivity())
+                        .setMessage(AndroidUtilities.replaceTags(LocaleController.getString("QRCodePermissionNoCameraWithHint", R.string.QRCodePermissionNoCameraWithHint)))
+                        .setPositiveButton(LocaleController.getString("PermissionOpenSettings", R.string.PermissionOpenSettings), (dialogInterface, i) -> {
+                            try {
+                                Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                                intent.setData(Uri.parse("package:" + ApplicationLoader.applicationContext.getPackageName()));
+                                getParentActivity().startActivity(intent);
+                            } catch (Exception e) {
+                                FileLog.e(e);
+                            }
+                        })
+                        .setNegativeButton(LocaleController.getString("ContactsPermissionAlertNotNow", R.string.ContactsPermissionAlertNotNow), null)
+                        .setTopAnimation(R.raw.permission_request_camera, 72, false, Theme.getColor(Theme.key_dialogTopBackground))
+                        .show();
             }
         }
     }

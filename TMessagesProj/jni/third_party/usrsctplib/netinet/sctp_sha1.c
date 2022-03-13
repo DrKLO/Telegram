@@ -80,13 +80,31 @@ sctp_sha1_final(unsigned char *digest, struct sctp_sha1_context *ctx)
 {
 	SHA1_Final(digest, &ctx->sha_ctx);
 }
+#elif defined(SCTP_USE_MBEDTLS_SHA1)
+void
+sctp_sha1_init(struct sctp_sha1_context *ctx)
+{
+	mbedtls_sha1_init(&ctx->sha1_ctx);
+	mbedtls_sha1_starts_ret(&ctx->sha1_ctx);
+}
 
+void
+sctp_sha1_update(struct sctp_sha1_context *ctx, const unsigned char *ptr, unsigned int siz)
+{
+	mbedtls_sha1_update_ret(&ctx->sha1_ctx, ptr, siz);
+}
+
+void
+sctp_sha1_final(unsigned char *digest, struct sctp_sha1_context *ctx)
+{
+	mbedtls_sha1_finish_ret(&ctx->sha1_ctx, digest);
+}
 #else
 
 #include <string.h>
-#if defined(__Userspace_os_Windows)
+#if defined(_WIN32) && defined(__Userspace__)
 #include <winsock2.h>
-#elif !defined(__Windows__)
+#elif !(defined(_WIN32) && !defined(__Userspace__))
 #include <arpa/inet.h>
 #endif
 

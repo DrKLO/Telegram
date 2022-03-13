@@ -46,18 +46,11 @@ class ScopedMessageData : public MessageData {
  public:
   explicit ScopedMessageData(std::unique_ptr<T> data)
       : data_(std::move(data)) {}
-  // Deprecated.
-  // TODO(deadbeef): Remove this once downstream applications stop using it.
-  explicit ScopedMessageData(T* data) : data_(data) {}
-  // Deprecated.
-  // TODO(deadbeef): Returning a reference to a unique ptr? Why. Get rid of
-  // this once downstream applications stop using it, then rename inner_data to
-  // just data.
-  const std::unique_ptr<T>& data() const { return data_; }
-  std::unique_ptr<T>& data() { return data_; }
 
-  const T& inner_data() const { return *data_; }
-  T& inner_data() { return *data_; }
+  const T& data() const { return *data_; }
+  T& data() { return *data_; }
+
+  T* Release() { return data_.release(); }
 
  private:
   std::unique_ptr<T> data_;

@@ -19,9 +19,9 @@
 
 #include "absl/algorithm/container.h"
 #include "rtc_base/async_packet_socket.h"
-#include "rtc_base/async_socket.h"
 #include "rtc_base/async_tcp_socket.h"
 #include "rtc_base/constructor_magic.h"
+#include "rtc_base/socket.h"
 #include "rtc_base/socket_address.h"
 #include "rtc_base/third_party/sigslot/sigslot.h"
 #include "rtc_base/thread.h"
@@ -38,10 +38,10 @@ class TestEchoServer : public sigslot::has_slots<> {
   SocketAddress address() const { return server_socket_->GetLocalAddress(); }
 
  private:
-  void OnAccept(AsyncSocket* socket) {
-    AsyncSocket* raw_socket = socket->Accept(nullptr);
+  void OnAccept(Socket* socket) {
+    Socket* raw_socket = socket->Accept(nullptr);
     if (raw_socket) {
-      AsyncTCPSocket* packet_socket = new AsyncTCPSocket(raw_socket, false);
+      AsyncTCPSocket* packet_socket = new AsyncTCPSocket(raw_socket);
       packet_socket->SignalReadPacket.connect(this, &TestEchoServer::OnPacket);
       packet_socket->SignalClose.connect(this, &TestEchoServer::OnClose);
       client_sockets_.push_back(packet_socket);
@@ -62,7 +62,7 @@ class TestEchoServer : public sigslot::has_slots<> {
   }
 
   typedef std::list<AsyncTCPSocket*> ClientList;
-  std::unique_ptr<AsyncSocket> server_socket_;
+  std::unique_ptr<Socket> server_socket_;
   ClientList client_sockets_;
   RTC_DISALLOW_COPY_AND_ASSIGN(TestEchoServer);
 };

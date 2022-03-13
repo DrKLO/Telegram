@@ -26,12 +26,12 @@ class StandaloneVad {
 
   // Outputs
   //   p: a buffer where probabilities are written to.
-  //   length_p: number of elements of |p|.
+  //   length_p: number of elements of `p`.
   //
   // return value:
   //    -1: if no audio is stored or VAD returns error.
   //     0: in success.
-  // In case of error the content of |activity| is unchanged.
+  // In case of error the content of `activity` is unchanged.
   //
   // Note that due to a high false-positive (VAD decision is active while the
   // processed audio is just background noise) rate, stand-alone VAD is used as

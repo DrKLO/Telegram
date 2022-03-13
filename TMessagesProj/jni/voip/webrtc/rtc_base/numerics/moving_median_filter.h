@@ -26,8 +26,8 @@ namespace webrtc {
 template <typename T>
 class MovingMedianFilter {
  public:
-  // Construct filter. |window_size| is how many latest samples are stored and
-  // used to take median. |window_size| must be positive.
+  // Construct filter. `window_size` is how many latest samples are stored and
+  // used to take median. `window_size` must be positive.
   explicit MovingMedianFilter(size_t window_size);
 
   // Insert a new sample.

@@ -62,7 +62,6 @@ enum StunAttributeType {
   STUN_ATTR_SOFTWARE = 0x8022,            // ByteString
   STUN_ATTR_ALTERNATE_SERVER = 0x8023,    // Address
   STUN_ATTR_FINGERPRINT = 0x8028,         // UInt32
-  STUN_ATTR_ORIGIN = 0x802F,              // ByteString
   STUN_ATTR_RETRANSMIT_COUNT = 0xFF00     // UInt32
 };
 
@@ -95,7 +94,6 @@ enum StunErrorCode {
   STUN_ERROR_BAD_REQUEST = 400,
   STUN_ERROR_UNAUTHORIZED = 401,
   STUN_ERROR_UNKNOWN_ATTRIBUTE = 420,
-  STUN_ERROR_STALE_CREDENTIALS = 430,  // GICE only
   STUN_ERROR_STALE_NONCE = 438,
   STUN_ERROR_SERVER_ERROR = 500,
   STUN_ERROR_GLOBAL_FAILURE = 600
@@ -106,7 +104,6 @@ extern const char STUN_ERROR_REASON_TRY_ALTERNATE_SERVER[];
 extern const char STUN_ERROR_REASON_BAD_REQUEST[];
 extern const char STUN_ERROR_REASON_UNAUTHORIZED[];
 extern const char STUN_ERROR_REASON_UNKNOWN_ATTRIBUTE[];
-extern const char STUN_ERROR_REASON_STALE_CREDENTIALS[];
 extern const char STUN_ERROR_REASON_STALE_NONCE[];
 extern const char STUN_ERROR_REASON_SERVER_ERROR[];
 
@@ -254,11 +251,11 @@ class StunMessage {
   // This is used for testing.
   void SetStunMagicCookie(uint32_t val);
 
-  // Contruct a copy of |this|.
+  // Contruct a copy of `this`.
   std::unique_ptr<StunMessage> Clone() const;
 
-  // Check if the attributes of this StunMessage equals those of |other|
-  // for all attributes that |attribute_type_mask| return true
+  // Check if the attributes of this StunMessage equals those of `other`
+  // for all attributes that `attribute_type_mask` return true
   bool EqualAttributes(const StunMessage* other,
                        std::function<bool(int type)> attribute_type_mask) const;
 
@@ -570,11 +567,11 @@ class StunUInt16ListAttribute : public StunAttribute {
 std::string StunMethodToString(int msg_type);
 
 // Returns the (successful) response type for the given request type.
-// Returns -1 if |request_type| is not a valid request type.
+// Returns -1 if `request_type` is not a valid request type.
 int GetStunSuccessResponseType(int request_type);
 
 // Returns the error response type for the given request type.
-// Returns -1 if |request_type| is not a valid request type.
+// Returns -1 if `request_type` is not a valid request type.
 int GetStunErrorResponseType(int request_type);
 
 // Returns whether a given message is a request type.
@@ -595,13 +592,13 @@ bool ComputeStunCredentialHash(const std::string& username,
                                const std::string& password,
                                std::string* hash);
 
-// Make a copy af |attribute| and return a new StunAttribute.
+// Make a copy af `attribute` and return a new StunAttribute.
 //   This is useful if you don't care about what kind of attribute you
 //   are handling.
 //
 // The implementation copies by calling Write() followed by Read().
 //
-// If |tmp_buffer| is supplied this buffer will be used, otherwise
+// If `tmp_buffer` is supplied this buffer will be used, otherwise
 // a buffer will created in the method.
 std::unique_ptr<StunAttribute> CopyStunAttribute(
     const StunAttribute& attribute,

@@ -22,9 +22,9 @@
 
 namespace webrtc {
 
-// Test if the sequence number |a| is ahead or at sequence number |b|.
+// Test if the sequence number `a` is ahead or at sequence number `b`.
 //
-// If |M| is an even number and the two sequence numbers are at max distance
+// If `M` is an even number and the two sequence numbers are at max distance
 // from each other, then the sequence number with the highest value is
 // considered to be ahead.
 template <typename T, T M>
@@ -52,9 +52,9 @@ inline bool AheadOrAt(T a, T b) {
   return AheadOrAt<T, 0>(a, b);
 }
 
-// Test if the sequence number |a| is ahead of sequence number |b|.
+// Test if the sequence number `a` is ahead of sequence number `b`.
 //
-// If |M| is an even number and the two sequence numbers are at max distance
+// If `M` is an even number and the two sequence numbers are at max distance
 // from each other, then the sequence number with the highest value is
 // considered to be ahead.
 template <typename T, T M = 0>
@@ -103,6 +103,28 @@ class SeqNumUnwrapper {
             M == 0 ? int64_t{std::numeric_limits<T>::max()} + 1 : M;
         last_unwrapped_ -= kBackwardAdjustment;
       }
+    }
+
+    last_value_ = value;
+    return last_unwrapped_;
+  }
+
+  int64_t UnwrapForward(T value) {
+    if (!last_value_) {
+      last_unwrapped_ = {value};
+    } else {
+      last_unwrapped_ += ForwardDiff<T, M>(*last_value_, value);
+    }
+
+    last_value_ = value;
+    return last_unwrapped_;
+  }
+
+  int64_t UnwrapBackwards(T value) {
+    if (!last_value_) {
+      last_unwrapped_ = {value};
+    } else {
+      last_unwrapped_ -= ReverseDiff<T, M>(*last_value_, value);
     }
 
     last_value_ = value;

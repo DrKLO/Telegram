@@ -534,6 +534,28 @@ void BM_ConstructFromMove(benchmark::State& state) {
 ABSL_INTERNAL_BENCHMARK_ONE_SIZE(BM_ConstructFromMove, TrivialType);
 ABSL_INTERNAL_BENCHMARK_ONE_SIZE(BM_ConstructFromMove, NontrivialType);
 
+// Measure cost of copy-constructor+destructor.
+void BM_CopyTrivial(benchmark::State& state) {
+  const int n = state.range(0);
+  InlVec<int64_t> src(n);
+  for (auto s : state) {
+    InlVec<int64_t> copy(src);
+    benchmark::DoNotOptimize(copy);
+  }
+}
+BENCHMARK(BM_CopyTrivial)->Arg(0)->Arg(1)->Arg(kLargeSize);
+
+// Measure cost of copy-constructor+destructor.
+void BM_CopyNonTrivial(benchmark::State& state) {
+  const int n = state.range(0);
+  InlVec<InlVec<int64_t>> src(n);
+  for (auto s : state) {
+    InlVec<InlVec<int64_t>> copy(src);
+    benchmark::DoNotOptimize(copy);
+  }
+}
+BENCHMARK(BM_CopyNonTrivial)->Arg(0)->Arg(1)->Arg(kLargeSize);
+
 template <typename T, size_t FromSize, size_t ToSize>
 void BM_AssignSizeRef(benchmark::State& state) {
   auto size = ToSize;

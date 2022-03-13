@@ -16,7 +16,6 @@ import android.util.Base64;
 import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLRPC;
 
-import java.io.File;
 import java.util.Arrays;
 
 public class UserConfig extends BaseController {
@@ -341,7 +340,7 @@ public class UserConfig extends BaseController {
     }
 
     public void clearConfig() {
-        getPreferences().edit().clear().commit();
+        getPreferences().edit().clear().apply();
 
         sharingMyLocationUntil = 0;
         lastMyLocationShareTime = 0;

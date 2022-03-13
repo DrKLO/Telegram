@@ -1,3 +1,17 @@
+// Copyright 2020 The Abseil Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #include "absl/strings/internal/str_format/parser.h"
 
 #include <assert.h>
@@ -17,63 +31,70 @@ namespace absl {
 ABSL_NAMESPACE_BEGIN
 namespace str_format_internal {
 
-using CC = ConversionChar;
+using CC = FormatConversionCharInternal;
 using LM = LengthMod;
 
+// Abbreviations to fit in the table below.
+constexpr auto f_sign = Flags::kSignCol;
+constexpr auto f_alt = Flags::kAlt;
+constexpr auto f_pos = Flags::kShowPos;
+constexpr auto f_left = Flags::kLeft;
+constexpr auto f_zero = Flags::kZero;
+
 ABSL_CONST_INIT const ConvTag kTags[256] = {
-    {},    {},    {},    {},    {},    {},    {},    {},     // 00-07
-    {},    {},    {},    {},    {},    {},    {},    {},     // 08-0f
-    {},    {},    {},    {},    {},    {},    {},    {},     // 10-17
-    {},    {},    {},    {},    {},    {},    {},    {},     // 18-1f
-    {},    {},    {},    {},    {},    {},    {},    {},     // 20-27
-    {},    {},    {},    {},    {},    {},    {},    {},     // 28-2f
-    {},    {},    {},    {},    {},    {},    {},    {},     // 30-37
-    {},    {},    {},    {},    {},    {},    {},    {},     // 38-3f
-    {},    CC::A, {},    CC::C, {},    CC::E, CC::F, CC::G,  // @ABCDEFG
-    {},    {},    {},    {},    LM::L, {},    {},    {},     // HIJKLMNO
-    {},    {},    {},    CC::S, {},    {},    {},    {},     // PQRSTUVW
-    CC::X, {},    {},    {},    {},    {},    {},    {},     // XYZ[\]^_
-    {},    CC::a, {},    CC::c, CC::d, CC::e, CC::f, CC::g,  // `abcdefg
-    LM::h, CC::i, LM::j, {},    LM::l, {},    CC::n, CC::o,  // hijklmno
-    CC::p, LM::q, {},    CC::s, LM::t, CC::u, {},    {},     // pqrstuvw
-    CC::x, {},    LM::z, {},    {},    {},    {},    {},     // xyz{|}!
-    {},    {},    {},    {},    {},    {},    {},    {},     // 80-87
-    {},    {},    {},    {},    {},    {},    {},    {},     // 88-8f
-    {},    {},    {},    {},    {},    {},    {},    {},     // 90-97
-    {},    {},    {},    {},    {},    {},    {},    {},     // 98-9f
-    {},    {},    {},    {},    {},    {},    {},    {},     // a0-a7
-    {},    {},    {},    {},    {},    {},    {},    {},     // a8-af
-    {},    {},    {},    {},    {},    {},    {},    {},     // b0-b7
-    {},    {},    {},    {},    {},    {},    {},    {},     // b8-bf
-    {},    {},    {},    {},    {},    {},    {},    {},     // c0-c7
-    {},    {},    {},    {},    {},    {},    {},    {},     // c8-cf
-    {},    {},    {},    {},    {},    {},    {},    {},     // d0-d7
-    {},    {},    {},    {},    {},    {},    {},    {},     // d8-df
-    {},    {},    {},    {},    {},    {},    {},    {},     // e0-e7
-    {},    {},    {},    {},    {},    {},    {},    {},     // e8-ef
-    {},    {},    {},    {},    {},    {},    {},    {},     // f0-f7
-    {},    {},    {},    {},    {},    {},    {},    {},     // f8-ff
+    {},     {},    {},    {},    {},    {},     {},    {},     // 00-07
+    {},     {},    {},    {},    {},    {},     {},    {},     // 08-0f
+    {},     {},    {},    {},    {},    {},     {},    {},     // 10-17
+    {},     {},    {},    {},    {},    {},     {},    {},     // 18-1f
+    f_sign, {},    {},    f_alt, {},    {},     {},    {},     //  !"#$%&'
+    {},     {},    {},    f_pos, {},    f_left, {},    {},     // ()*+,-./
+    f_zero, {},    {},    {},    {},    {},     {},    {},     // 01234567
+    {},     {},    {},    {},    {},    {},     {},    {},     // 89:;<=>?
+    {},     CC::A, {},    {},    {},    CC::E,  CC::F, CC::G,  // @ABCDEFG
+    {},     {},    {},    {},    LM::L, {},     {},    {},     // HIJKLMNO
+    {},     {},    {},    {},    {},    {},     {},    {},     // PQRSTUVW
+    CC::X,  {},    {},    {},    {},    {},     {},    {},     // XYZ[\]^_
+    {},     CC::a, {},    CC::c, CC::d, CC::e,  CC::f, CC::g,  // `abcdefg
+    LM::h,  CC::i, LM::j, {},    LM::l, {},     CC::n, CC::o,  // hijklmno
+    CC::p,  LM::q, {},    CC::s, LM::t, CC::u,  {},    {},     // pqrstuvw
+    CC::x,  {},    LM::z, {},    {},    {},     {},    {},     // xyz{|}!
+    {},     {},    {},    {},    {},    {},     {},    {},     // 80-87
+    {},     {},    {},    {},    {},    {},     {},    {},     // 88-8f
+    {},     {},    {},    {},    {},    {},     {},    {},     // 90-97
+    {},     {},    {},    {},    {},    {},     {},    {},     // 98-9f
+    {},     {},    {},    {},    {},    {},     {},    {},     // a0-a7
+    {},     {},    {},    {},    {},    {},     {},    {},     // a8-af
+    {},     {},    {},    {},    {},    {},     {},    {},     // b0-b7
+    {},     {},    {},    {},    {},    {},     {},    {},     // b8-bf
+    {},     {},    {},    {},    {},    {},     {},    {},     // c0-c7
+    {},     {},    {},    {},    {},    {},     {},    {},     // c8-cf
+    {},     {},    {},    {},    {},    {},     {},    {},     // d0-d7
+    {},     {},    {},    {},    {},    {},     {},    {},     // d8-df
+    {},     {},    {},    {},    {},    {},     {},    {},     // e0-e7
+    {},     {},    {},    {},    {},    {},     {},    {},     // e8-ef
+    {},     {},    {},    {},    {},    {},     {},    {},     // f0-f7
+    {},     {},    {},    {},    {},    {},     {},    {},     // f8-ff
 };
 
 namespace {
 
 bool CheckFastPathSetting(const UnboundConversion& conv) {
-  bool should_be_basic = !conv.flags.left &&      //
-                         !conv.flags.show_pos &&  //
-                         !conv.flags.sign_col &&  //
-                         !conv.flags.alt &&       //
-                         !conv.flags.zero &&      //
-                         (conv.width.value() == -1) &&
-                         (conv.precision.value() == -1);
-  if (should_be_basic != conv.flags.basic) {
+  bool width_precision_needed =
+      conv.width.value() >= 0 || conv.precision.value() >= 0;
+  if (width_precision_needed && conv.flags == Flags::kBasic) {
     fprintf(stderr,
             "basic=%d left=%d show_pos=%d sign_col=%d alt=%d zero=%d "
             "width=%d precision=%d\n",
-            conv.flags.basic, conv.flags.left, conv.flags.show_pos,
-            conv.flags.sign_col, conv.flags.alt, conv.flags.zero,
-            conv.width.value(), conv.precision.value());
+            conv.flags == Flags::kBasic ? 1 : 0,
+            FlagsContains(conv.flags, Flags::kLeft) ? 1 : 0,
+            FlagsContains(conv.flags, Flags::kShowPos) ? 1 : 0,
+            FlagsContains(conv.flags, Flags::kSignCol) ? 1 : 0,
+            FlagsContains(conv.flags, Flags::kAlt) ? 1 : 0,
+            FlagsContains(conv.flags, Flags::kZero) ? 1 : 0, conv.width.value(),
+            conv.precision.value());
+    return false;
   }
-  return should_be_basic == conv.flags.basic;
+  return true;
 }
 
 template <bool is_positional>
@@ -117,40 +138,21 @@ const char *ConsumeConversion(const char *pos, const char *const end,
   ABSL_FORMAT_PARSER_INTERNAL_GET_CHAR();
 
   // We should start with the basic flag on.
-  assert(conv->flags.basic);
+  assert(conv->flags == Flags::kBasic);
 
   // Any non alpha character makes this conversion not basic.
   // This includes flags (-+ #0), width (1-9, *) or precision (.).
   // All conversion characters and length modifiers are alpha characters.
   if (c < 'A') {
-    conv->flags.basic = false;
-
-    for (; c <= '0';) {
-      // FIXME: We might be able to speed this up reusing the lookup table from
-      // above. It might require changing Flags to be a plain integer where we
-      // can |= a value.
-      switch (c) {
-        case '-':
-          conv->flags.left = true;
-          break;
-        case '+':
-          conv->flags.show_pos = true;
-          break;
-        case ' ':
-          conv->flags.sign_col = true;
-          break;
-        case '#':
-          conv->flags.alt = true;
-          break;
-        case '0':
-          conv->flags.zero = true;
-          break;
-        default:
-          goto flags_done;
+    while (c <= '0') {
+      auto tag = GetTagForChar(c);
+      if (tag.is_flags()) {
+        conv->flags = conv->flags | tag.as_flags();
+        ABSL_FORMAT_PARSER_INTERNAL_GET_CHAR();
+      } else {
+        break;
       }
-      ABSL_FORMAT_PARSER_INTERNAL_GET_CHAR();
     }
-flags_done:
 
     if (c <= '9') {
       if (c >= '0') {
@@ -159,12 +161,12 @@ flags_done:
           if (ABSL_PREDICT_FALSE(*next_arg != 0)) return nullptr;
           // Positional conversion.
           *next_arg = -1;
-          conv->flags = Flags();
-          conv->flags.basic = true;
           return ConsumeConversion<true>(original_pos, end, conv, next_arg);
         }
+        conv->flags = conv->flags | Flags::kNonBasic;
         conv->width.set_value(maybe_width);
       } else if (c == '*') {
+        conv->flags = conv->flags | Flags::kNonBasic;
         ABSL_FORMAT_PARSER_INTERNAL_GET_CHAR();
         if (is_positional) {
           if (ABSL_PREDICT_FALSE(c < '1' || c > '9')) return nullptr;
@@ -178,6 +180,7 @@ flags_done:
     }
 
     if (c == '.') {
+      conv->flags = conv->flags | Flags::kNonBasic;
       ABSL_FORMAT_PARSER_INTERNAL_GET_CHAR();
       if (std::isdigit(c)) {
         conv->precision.set_value(parse_digits());
@@ -296,15 +299,17 @@ struct ParsedFormatBase::ParsedFormatConsumer {
   char* data_pos;
 };
 
-ParsedFormatBase::ParsedFormatBase(string_view format, bool allow_ignored,
-                                   std::initializer_list<Conv> convs)
+ParsedFormatBase::ParsedFormatBase(
+    string_view format, bool allow_ignored,
+    std::initializer_list<FormatConversionCharSet> convs)
     : data_(format.empty() ? nullptr : new char[format.size()]) {
   has_error_ = !ParseFormatString(format, ParsedFormatConsumer(this)) ||
                !MatchesConversions(allow_ignored, convs);
 }
 
 bool ParsedFormatBase::MatchesConversions(
-    bool allow_ignored, std::initializer_list<Conv> convs) const {
+    bool allow_ignored,
+    std::initializer_list<FormatConversionCharSet> convs) const {
   std::unordered_set<int> used;
   auto add_if_valid_conv = [&](int pos, char c) {
       if (static_cast<size_t>(pos) > convs.size() ||

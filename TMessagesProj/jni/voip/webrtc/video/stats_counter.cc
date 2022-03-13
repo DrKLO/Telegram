@@ -228,7 +228,7 @@ bool StatsCounter::TimeToProcess(int* elapsed_intervals) {
   if (diff_ms < process_intervals_ms_)
     return false;
 
-  // Advance number of complete |process_intervals_ms_| that have passed.
+  // Advance number of complete `process_intervals_ms_` that have passed.
   int64_t num_intervals = diff_ms / process_intervals_ms_;
   last_process_time_ms_ += num_intervals * process_intervals_ms_;
 
@@ -338,7 +338,7 @@ MaxCounter::MaxCounter(Clock* clock,
                        int64_t process_intervals_ms)
     : StatsCounter(clock,
                    process_intervals_ms,
-                   false,  // |include_empty_intervals|
+                   false,  // `include_empty_intervals`
                    observer) {}
 
 void MaxCounter::Add(int sample) {
@@ -354,14 +354,14 @@ bool MaxCounter::GetMetric(int* metric) const {
 }
 
 int MaxCounter::GetValueForEmptyInterval() const {
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return 0;
 }
 
 PercentCounter::PercentCounter(Clock* clock, StatsCounterObserver* observer)
     : StatsCounter(clock,
                    kDefaultProcessIntervalMs,
-                   false,  // |include_empty_intervals|
+                   false,  // `include_empty_intervals`
                    observer) {}
 
 void PercentCounter::Add(bool sample) {
@@ -378,14 +378,14 @@ bool PercentCounter::GetMetric(int* metric) const {
 }
 
 int PercentCounter::GetValueForEmptyInterval() const {
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return 0;
 }
 
 PermilleCounter::PermilleCounter(Clock* clock, StatsCounterObserver* observer)
     : StatsCounter(clock,
                    kDefaultProcessIntervalMs,
-                   false,  // |include_empty_intervals|
+                   false,  // `include_empty_intervals`
                    observer) {}
 
 void PermilleCounter::Add(bool sample) {
@@ -402,7 +402,7 @@ bool PermilleCounter::GetMetric(int* metric) const {
 }
 
 int PermilleCounter::GetValueForEmptyInterval() const {
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return 0;
 }
 

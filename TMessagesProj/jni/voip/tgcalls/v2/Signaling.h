@@ -59,6 +59,7 @@ struct InitialSetupMessage {
     std::vector<DtlsFingerprint> fingerprints;
     absl::optional<MediaContent> audio;
     absl::optional<MediaContent> video;
+    absl::optional<MediaContent> screencast;
 };
 
 struct CandidatesMessage {
@@ -82,6 +83,7 @@ struct MediaStateMessage {
     bool isMuted = false;
     VideoState videoState = VideoState::Inactive;
     VideoRotation videoRotation = VideoRotation::Rotation0;
+    VideoState screencastState = VideoState::Inactive;
     bool isBatteryLow = false;
 
 };

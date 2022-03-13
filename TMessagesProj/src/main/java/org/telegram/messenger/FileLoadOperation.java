@@ -131,7 +131,7 @@ public class FileLoadOperation {
     private boolean encryptFile;
     private boolean allowDisordererFileSave;
 
-    private Object parentObject;
+    public Object parentObject;
 
     private SparseArray<TLRPC.TL_fileHash> cdnHashes;
 

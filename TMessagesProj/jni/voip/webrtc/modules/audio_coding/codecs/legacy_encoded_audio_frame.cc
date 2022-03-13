@@ -59,7 +59,7 @@ std::vector<AudioDecoder::ParseResult> LegacyEncodedAudioFrame::SplitBySamples(
         new LegacyEncodedAudioFrame(decoder, std::move(payload)));
     results.emplace_back(timestamp, 0, std::move(frame));
   } else {
-    // Reduce the split size by half as long as |split_size_bytes| is at least
+    // Reduce the split size by half as long as `split_size_bytes` is at least
     // twice the minimum chunk size (so that the resulting size is at least as
     // large as the minimum chunk size).
     while (split_size_bytes >= 2 * min_chunk_size) {

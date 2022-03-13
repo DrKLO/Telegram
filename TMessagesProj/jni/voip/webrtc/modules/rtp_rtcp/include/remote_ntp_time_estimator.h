@@ -25,21 +25,21 @@ class Clock;
 // RemoteNtpTimeEstimator can be used to estimate a given RTP timestamp's NTP
 // time in local timebase.
 // Note that it needs to be trained with at least 2 RTCP SR (by calling
-// |UpdateRtcpTimestamp|) before it can be used.
+// `UpdateRtcpTimestamp`) before it can be used.
 class RemoteNtpTimeEstimator {
  public:
   explicit RemoteNtpTimeEstimator(Clock* clock);
 
   ~RemoteNtpTimeEstimator();
 
-  // Updates the estimator with round trip time |rtt|, NTP seconds |ntp_secs|,
-  // NTP fraction |ntp_frac| and RTP timestamp |rtp_timestamp|.
+  // Updates the estimator with round trip time `rtt`, NTP seconds `ntp_secs`,
+  // NTP fraction `ntp_frac` and RTP timestamp `rtp_timestamp`.
   bool UpdateRtcpTimestamp(int64_t rtt,
                            uint32_t ntp_secs,
                            uint32_t ntp_frac,
                            uint32_t rtp_timestamp);
 
-  // Estimates the NTP timestamp in local timebase from |rtp_timestamp|.
+  // Estimates the NTP timestamp in local timebase from `rtp_timestamp`.
   // Returns the NTP timestamp in ms when success. -1 if failed.
   int64_t Estimate(uint32_t rtp_timestamp);
 

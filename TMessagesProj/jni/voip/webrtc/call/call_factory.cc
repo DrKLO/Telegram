@@ -14,11 +14,13 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "absl/types/optional.h"
 #include "api/test/simulated_network.h"
 #include "call/call.h"
 #include "call/degraded_call.h"
+#include "call/rtp_transport_config.h"
 #include "rtc_base/checks.h"
 #include "system_wrappers/include/field_trial.h"
 
@@ -81,10 +83,19 @@ Call* CallFactory::CreateCall(const Call::Config& config) {
   absl::optional<webrtc::BuiltInNetworkBehaviorConfig>
       receive_degradation_config = ParseDegradationConfig(false);
 
+  RtpTransportConfig transportConfig = config.ExtractTransportConfig();
+
   if (send_degradation_config || receive_degradation_config) {
-    return new DegradedCall(std::unique_ptr<Call>(Call::Create(config)),
-                            send_degradation_config, receive_degradation_config,
-                            config.task_queue_factory);
+    return new DegradedCall(
+        std::unique_ptr<Call>(Call::Create(
+            config, Clock::GetRealTimeClock(),
+            SharedModuleThread::Create(
+                ProcessThread::Create("ModuleProcessThread"), nullptr),
+            config.rtp_transport_controller_send_factory->Create(
+                transportConfig, Clock::GetRealTimeClock(),
+                ProcessThread::Create("PacerThread")))),
+        send_degradation_config, receive_degradation_config,
+        config.task_queue_factory);
   }
 
   if (!module_thread_) {
@@ -95,7 +106,10 @@ Call* CallFactory::CreateCall(const Call::Config& config) {
         });
   }
 
-  return Call::Create(config, module_thread_);
+  return Call::Create(config, Clock::GetRealTimeClock(), module_thread_,
+                      config.rtp_transport_controller_send_factory->Create(
+                          transportConfig, Clock::GetRealTimeClock(),
+                          ProcessThread::Create("PacerThread")));
 }
 
 std::unique_ptr<CallFactoryInterface> CreateCallFactory() {

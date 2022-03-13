@@ -30,7 +30,7 @@ class CallStatsObserver {
 // Interface used by NackModule and JitterBuffer.
 class NackSender {
  public:
-  // If |buffering_allowed|, other feedback messages (e.g. key frame requests)
+  // If `buffering_allowed`, other feedback messages (e.g. key frame requests)
   // may be added to the same outgoing feedback message. In that case, it's up
   // to the user of the interface to ensure that when all buffer-able messages
   // have been added, the feedback message is triggered.

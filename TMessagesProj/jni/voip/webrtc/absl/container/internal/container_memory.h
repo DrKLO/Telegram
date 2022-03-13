@@ -15,24 +15,26 @@
 #ifndef ABSL_CONTAINER_INTERNAL_CONTAINER_MEMORY_H_
 #define ABSL_CONTAINER_INTERNAL_CONTAINER_MEMORY_H_
 
-#ifdef ADDRESS_SANITIZER
-#include <sanitizer/asan_interface.h>
-#endif
-
-#ifdef MEMORY_SANITIZER
-#include <sanitizer/msan_interface.h>
-#endif
-
 #include <cassert>
 #include <cstddef>
 #include <memory>
+#include <new>
 #include <tuple>
 #include <type_traits>
 #include <utility>
 
+#include "absl/base/config.h"
 #include "absl/memory/memory.h"
 #include "absl/meta/type_traits.h"
 #include "absl/utility/utility.h"
+
+#ifdef ABSL_HAVE_ADDRESS_SANITIZER
+#include <sanitizer/asan_interface.h>
+#endif
+
+#ifdef ABSL_HAVE_MEMORY_SANITIZER
+#include <sanitizer/msan_interface.h>
+#endif
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
@@ -55,8 +57,11 @@ void* Allocate(Alloc* alloc, size_t n) {
   using M = AlignedType<Alignment>;
   using A = typename absl::allocator_traits<Alloc>::template rebind_alloc<M>;
   using AT = typename absl::allocator_traits<Alloc>::template rebind_traits<M>;
-  A mem_alloc(*alloc);
-  void* p = AT::allocate(mem_alloc, (n + sizeof(M) - 1) / sizeof(M));
+  // On macOS, "mem_alloc" is a #define with one argument defined in
+  // rpc/types.h, so we can't name the variable "mem_alloc" and initialize it
+  // with the "foo(bar)" syntax.
+  A my_mem_alloc(*alloc);
+  void* p = AT::allocate(my_mem_alloc, (n + sizeof(M) - 1) / sizeof(M));
   assert(reinterpret_cast<uintptr_t>(p) % Alignment == 0 &&
          "allocator does not respect alignment");
   return p;
@@ -71,8 +76,11 @@ void Deallocate(Alloc* alloc, void* p, size_t n) {
   using M = AlignedType<Alignment>;
   using A = typename absl::allocator_traits<Alloc>::template rebind_alloc<M>;
   using AT = typename absl::allocator_traits<Alloc>::template rebind_traits<M>;
-  A mem_alloc(*alloc);
-  AT::deallocate(mem_alloc, static_cast<M*>(p),
+  // On macOS, "mem_alloc" is a #define with one argument defined in
+  // rpc/types.h, so we can't name the variable "mem_alloc" and initialize it
+  // with the "foo(bar)" syntax.
+  A my_mem_alloc(*alloc);
+  AT::deallocate(my_mem_alloc, static_cast<M*>(p),
                  (n + sizeof(M) - 1) / sizeof(M));
 }
 
@@ -209,10 +217,10 @@ DecomposeValue(F&& f, Arg&& arg) {
 
 // Helper functions for asan and msan.
 inline void SanitizerPoisonMemoryRegion(const void* m, size_t s) {
-#ifdef ADDRESS_SANITIZER
+#ifdef ABSL_HAVE_ADDRESS_SANITIZER
   ASAN_POISON_MEMORY_REGION(m, s);
 #endif
-#ifdef MEMORY_SANITIZER
+#ifdef ABSL_HAVE_MEMORY_SANITIZER
   __msan_poison(m, s);
 #endif
   (void)m;
@@ -220,10 +228,10 @@ inline void SanitizerPoisonMemoryRegion(const void* m, size_t s) {
 }
 
 inline void SanitizerUnpoisonMemoryRegion(const void* m, size_t s) {
-#ifdef ADDRESS_SANITIZER
+#ifdef ABSL_HAVE_ADDRESS_SANITIZER
   ASAN_UNPOISON_MEMORY_REGION(m, s);
 #endif
-#ifdef MEMORY_SANITIZER
+#ifdef ABSL_HAVE_MEMORY_SANITIZER
   __msan_unpoison(m, s);
 #endif
   (void)m;
@@ -250,8 +258,8 @@ namespace memory_internal {
 // type, which is non-portable.
 template <class Pair, class = std::true_type>
 struct OffsetOf {
-  static constexpr size_t kFirst = -1;
-  static constexpr size_t kSecond = -1;
+  static constexpr size_t kFirst = static_cast<size_t>(-1);
+  static constexpr size_t kSecond = static_cast<size_t>(-1);
 };
 
 template <class Pair>
@@ -351,6 +359,20 @@ struct map_slot_policy {
     return slot->value;
   }
 
+  // When C++17 is available, we can use std::launder to provide mutable
+  // access to the key for use in node handle.
+#if defined(__cpp_lib_launder) && __cpp_lib_launder >= 201606
+  static K& mutable_key(slot_type* slot) {
+    // Still check for kMutableKeys so that we can avoid calling std::launder
+    // unless necessary because it can interfere with optimizations.
+    return kMutableKeys::value ? slot->key
+                               : *std::launder(const_cast<K*>(
+                                     std::addressof(slot->value.first)));
+  }
+#else  // !(defined(__cpp_lib_launder) && __cpp_lib_launder >= 201606)
+  static const K& mutable_key(slot_type* slot) { return key(slot); }
+#endif
+
   static const K& key(const slot_type* slot) {
     return kMutableKeys::value ? slot->key : slot->value.first;
   }
@@ -428,13 +450,6 @@ struct map_slot_policy {
       absl::allocator_traits<Allocator>::construct(*alloc, &dest->value,
                                                    std::move(src->value));
     }
-  }
-
-  template <class Allocator>
-  static void move(Allocator* alloc, slot_type* first, slot_type* last,
-                   slot_type* result) {
-    for (slot_type *src = first, *dest = result; src != last; ++src, ++dest)
-      move(alloc, src, dest);
   }
 };
 

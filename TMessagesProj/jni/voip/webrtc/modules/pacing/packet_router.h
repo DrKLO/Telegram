@@ -22,7 +22,6 @@
 
 #include "api/transport/network_types.h"
 #include "modules/pacing/pacing_controller.h"
-#include "modules/remote_bitrate_estimator/include/remote_bitrate_estimator.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
 #include "modules/rtp_rtcp/source/rtcp_packet.h"
 #include "modules/rtp_rtcp/source/rtp_packet_to_send.h"
@@ -63,7 +62,7 @@ class PacketRouter : public PacingController::PacketSender {
   // Send REMB feedback.
   void SendRemb(int64_t bitrate_bps, std::vector<uint32_t> ssrcs);
 
-  // Sends |packets| in one or more IP packets.
+  // Sends `packets` in one or more IP packets.
   void SendCombinedRtcpPacket(
       std::vector<std::unique_ptr<rtcp::RtcpPacket>> packets);
 

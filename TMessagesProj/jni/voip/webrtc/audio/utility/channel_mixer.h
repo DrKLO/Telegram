@@ -38,8 +38,8 @@ class ChannelMixer {
   ChannelMixer(ChannelLayout input_layout, ChannelLayout output_layout);
   ~ChannelMixer();
 
-  // Transforms all input channels corresponding to the selected |input_layout|
-  // to the number of channels in the selected |output_layout|.
+  // Transforms all input channels corresponding to the selected `input_layout`
+  // to the number of channels in the selected `output_layout`.
   // Example usage (downmix from stereo to mono):
   //
   //   ChannelMixer mixer(CHANNEL_LAYOUT_STEREO, CHANNEL_LAYOUT_MONO);
@@ -69,11 +69,11 @@ class ChannelMixer {
   // 1D array used as temporary storage during the transformation.
   std::unique_ptr<int16_t[]> audio_vector_;
 
-  // Number of elements allocated for |audio_vector_|.
+  // Number of elements allocated for `audio_vector_`.
   size_t audio_vector_size_ = 0;
 
   // Optimization case for when we can simply remap the input channels to output
-  // channels, i.e., when all scaling factors in |matrix_| equals 1.0.
+  // channels, i.e., when all scaling factors in `matrix_` equals 1.0.
   bool remapping_;
 
   // Delete the copy constructor and assignment operator.

@@ -14,6 +14,7 @@
 
 #include "absl/base/internal/strerror.h"
 
+#include <array>
 #include <cerrno>
 #include <cstddef>
 #include <cstdio>
@@ -21,13 +22,13 @@
 #include <string>
 #include <type_traits>
 
-#include "absl/base/attributes.h"
 #include "absl/base/internal/errno_saver.h"
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
 namespace base_internal {
 namespace {
+
 const char* StrErrorAdaptor(int errnum, char* buf, size_t buflen) {
 #if defined(_WIN32)
   int rc = strerror_s(buf, buflen, errnum);
@@ -35,15 +36,6 @@ const char* StrErrorAdaptor(int errnum, char* buf, size_t buflen) {
   if (rc == 0 && strncmp(buf, "Unknown error", buflen) == 0) *buf = '\0';
   return buf;
 #else
-#if defined(__GLIBC__) || defined(__APPLE__)
-  // Use the BSD sys_errlist API provided by GNU glibc and others to
-  // avoid any need to copy the message into the local buffer first.
-  if (0 <= errnum && errnum < sys_nerr) {
-    if (const char* p = sys_errlist[errnum]) {
-      return p;
-    }
-  }
-#endif
   // The type of `ret` is platform-specific; both of these branches must compile
   // either way but only one will execute on any given platform:
   auto ret = strerror_r(errnum, buf, buflen);
@@ -57,10 +49,8 @@ const char* StrErrorAdaptor(int errnum, char* buf, size_t buflen) {
   }
 #endif
 }
-}  // namespace
 
-std::string StrError(int errnum) {
-  absl::base_internal::ErrnoSaver errno_saver;
+std::string StrErrorInternal(int errnum) {
   char buf[100];
   const char* str = StrErrorAdaptor(errnum, buf, sizeof buf);
   if (*str == '\0') {
@@ -68,6 +58,29 @@ std::string StrError(int errnum) {
     str = buf;
   }
   return str;
+}
+
+// kSysNerr is the number of errors from a recent glibc. `StrError()` falls back
+// to `StrErrorAdaptor()` if the value is larger than this.
+constexpr int kSysNerr = 135;
+
+std::array<std::string, kSysNerr>* NewStrErrorTable() {
+  auto* table = new std::array<std::string, kSysNerr>;
+  for (int i = 0; i < static_cast<int>(table->size()); ++i) {
+    (*table)[i] = StrErrorInternal(i);
+  }
+  return table;
+}
+
+}  // namespace
+
+std::string StrError(int errnum) {
+  absl::base_internal::ErrnoSaver errno_saver;
+  static const auto* table = NewStrErrorTable();
+  if (errnum >= 0 && errnum < static_cast<int>(table->size())) {
+    return (*table)[errnum];
+  }
+  return StrErrorInternal(errnum);
 }
 
 }  // namespace base_internal

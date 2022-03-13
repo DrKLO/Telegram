@@ -59,9 +59,8 @@ class VideoReceiver : public Module {
   VideoReceiver(Clock* clock, VCMTiming* timing);
   ~VideoReceiver() override;
 
-  int32_t RegisterReceiveCodec(uint8_t payload_type,
-                               const VideoCodec* receiveCodec,
-                               int32_t numberOfCores);
+  void RegisterReceiveCodec(uint8_t payload_type,
+                            const VideoDecoder::Settings& settings);
 
   void RegisterExternalDecoder(VideoDecoder* externalDecoder,
                                uint8_t payloadType);
@@ -120,7 +119,7 @@ class VideoReceiver : public Module {
   size_t max_nack_list_size_;
 
   // Callbacks are set before the decoder thread starts.
-  // Once the decoder thread has been started, usage of |_codecDataBase| moves
+  // Once the decoder thread has been started, usage of `_codecDataBase` moves
   // over to the decoder thread.
   VCMDecoderDataBase _codecDataBase;
 

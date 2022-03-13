@@ -71,9 +71,9 @@ class SctpTransport : public SctpTransportInterface,
   void OnInternalClosingProcedureStartedRemotely(int sid);
   void OnInternalClosingProcedureComplete(int sid);
   void OnDtlsStateChange(cricket::DtlsTransportInternal* transport,
-                         cricket::DtlsTransportState state);
+                         DtlsTransportState state);
 
-  // NOTE: |owner_thread_| is the thread that the SctpTransport object is
+  // NOTE: `owner_thread_` is the thread that the SctpTransport object is
   // constructed on. In the context of PeerConnection, it's the network thread.
   rtc::Thread* const owner_thread_;
   SctpTransportInformation info_ RTC_GUARDED_BY(owner_thread_);

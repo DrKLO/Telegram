@@ -257,7 +257,7 @@ class ABSL_INTERNAL_COMPRESSED_TUPLE_DECLSPEC CompressedTuple
 
   template <int I>
   ElemT<I>& get() & {
-    return internal_compressed_tuple::Storage<ElemT<I>, I>::get();
+    return StorageT<I>::get();
   }
 
   template <int I>

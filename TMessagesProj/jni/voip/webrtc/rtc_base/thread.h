@@ -28,6 +28,7 @@
 #include "api/function_view.h"
 #include "api/task_queue/queued_task.h"
 #include "api/task_queue/task_queue_base.h"
+#include "rtc_base/checks.h"
 #include "rtc_base/constructor_magic.h"
 #include "rtc_base/deprecated/recursive_critical_section.h"
 #include "rtc_base/location.h"
@@ -141,8 +142,8 @@ class RTC_EXPORT ThreadManager {
   bool IsMainThread();
 
 #if RTC_DCHECK_IS_ON
-  // Registers that a Send operation is to be performed between |source| and
-  // |target|, while checking that this does not cause a send cycle that could
+  // Registers that a Send operation is to be performed between `source` and
+  // `target`, while checking that this does not cause a send cycle that could
   // potentially cause a deadlock.
   void RegisterSendAndCheckForCycles(Thread* source, Thread* target);
 #endif
@@ -204,7 +205,7 @@ class RTC_LOCKABLE RTC_EXPORT Thread : public webrtc::TaskQueueBase {
   explicit Thread(std::unique_ptr<SocketServer> ss);
 
   // Constructors meant for subclasses; they should call DoInit themselves and
-  // pass false for |do_init|, so that DoInit is called only on the fully
+  // pass false for `do_init`, so that DoInit is called only on the fully
   // instantiated class, which avoids a vptr data race.
   Thread(SocketServer* ss, bool do_init);
   Thread(std::unique_ptr<SocketServer> ss, bool do_init);
@@ -298,7 +299,7 @@ class RTC_LOCKABLE RTC_EXPORT Thread : public webrtc::TaskQueueBase {
                    int cmsWait = kForever,
                    bool process_io = true);
   virtual bool Peek(Message* pmsg, int cmsWait = 0);
-  // |time_sensitive| is deprecated and should always be false.
+  // `time_sensitive` is deprecated and should always be false.
   virtual void Post(const Location& posted_from,
                     MessageHandler* phandler,
                     uint32_t id = 0,
@@ -344,7 +345,7 @@ class RTC_LOCKABLE RTC_EXPORT Thread : public webrtc::TaskQueueBase {
   static bool SleepMs(int millis);
 
   // Sets the thread's name, for debugging. Must be called before Start().
-  // If |obj| is non-null, its value is appended to |name|.
+  // If `obj` is non-null, its value is appended to `name`.
   const std::string& name() const { return name_; }
   bool SetName(const std::string& name, const void* obj);
 
@@ -373,7 +374,7 @@ class RTC_LOCKABLE RTC_EXPORT Thread : public webrtc::TaskQueueBase {
                     MessageData* pdata = nullptr);
 
   // Convenience method to invoke a functor on another thread.  Caller must
-  // provide the |ReturnT| template argument, which cannot (easily) be deduced.
+  // provide the `ReturnT` template argument, which cannot (easily) be deduced.
   // Uses Send() internally, which blocks the current thread until execution
   // is complete.
   // Ex: bool result = thread.Invoke<bool>(RTC_FROM_HERE,
@@ -398,33 +399,35 @@ class RTC_LOCKABLE RTC_EXPORT Thread : public webrtc::TaskQueueBase {
     InvokeInternal(posted_from, functor);
   }
 
-  // Allows invoke to specified |thread|. Thread never will be dereferenced and
+  // Allows invoke to specified `thread`. Thread never will be dereferenced and
   // will be used only for reference-based comparison, so instance can be safely
-  // deleted. If NDEBUG is defined and DCHECK_ALWAYS_ON is undefined do nothing.
+  // deleted. If NDEBUG is defined and RTC_DCHECK_IS_ON is undefined do
+  // nothing.
   void AllowInvokesToThread(Thread* thread);
 
-  // If NDEBUG is defined and DCHECK_ALWAYS_ON is undefined do nothing.
+  // If NDEBUG is defined and RTC_DCHECK_IS_ON is undefined do nothing.
   void DisallowAllInvokes();
-  // Returns true if |target| was allowed by AllowInvokesToThread() or if no
+  // Returns true if `target` was allowed by AllowInvokesToThread() or if no
   // calls were made to AllowInvokesToThread and DisallowAllInvokes. Otherwise
   // returns false.
-  // If NDEBUG is defined and DCHECK_ALWAYS_ON is undefined always returns true.
+  // If NDEBUG is defined and RTC_DCHECK_IS_ON is undefined always returns
+  // true.
   bool IsInvokeToThreadAllowed(rtc::Thread* target);
 
-  // Posts a task to invoke the functor on |this| thread asynchronously, i.e.
-  // without blocking the thread that invoked PostTask(). Ownership of |functor|
-  // is passed and (usually, see below) destroyed on |this| thread after it is
+  // Posts a task to invoke the functor on `this` thread asynchronously, i.e.
+  // without blocking the thread that invoked PostTask(). Ownership of `functor`
+  // is passed and (usually, see below) destroyed on `this` thread after it is
   // invoked.
   // Requirements of FunctorT:
   // - FunctorT is movable.
   // - FunctorT implements "T operator()()" or "T operator()() const" for some T
-  //   (if T is not void, the return value is discarded on |this| thread).
-  // - FunctorT has a public destructor that can be invoked from |this| thread
+  //   (if T is not void, the return value is discarded on `this` thread).
+  // - FunctorT has a public destructor that can be invoked from `this` thread
   //   after operation() has been invoked.
   // - The functor must not cause the thread to quit before PostTask() is done.
   //
   // Destruction of the functor/task mimics what TaskQueue::PostTask does: If
-  // the task is run, it will be destroyed on |this| thread. However, if there
+  // the task is run, it will be destroyed on `this` thread. However, if there
   // are pending tasks by the time the Thread is destroyed, or a task is posted
   // to a thread that is quitting, the task is destroyed immediately, on the
   // calling thread. Destroying the Thread only blocks for any currently running
@@ -610,7 +613,7 @@ class RTC_LOCKABLE RTC_EXPORT Thread : public webrtc::TaskQueueBase {
   // ThreadManager::Instance() cannot be used while ThreadManager is
   // being created.
   // The method tries to get synchronization rights of the thread on Windows if
-  // |need_synchronize_access| is true.
+  // `need_synchronize_access` is true.
   bool WrapCurrentWithThreadManager(ThreadManager* thread_manager,
                                     bool need_synchronize_access);
 
@@ -649,7 +652,7 @@ class RTC_LOCKABLE RTC_EXPORT Thread : public webrtc::TaskQueueBase {
 
   // The SocketServer might not be owned by Thread.
   SocketServer* const ss_;
-  // Used if SocketServer ownership lies with |this|.
+  // Used if SocketServer ownership lies with `this`.
   std::unique_ptr<SocketServer> own_ss_;
 
   std::string name_;

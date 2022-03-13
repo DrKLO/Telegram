@@ -32,7 +32,7 @@
 #include <array>
 #include <initializer_list>
 #include <iterator>
-#include <map>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -51,9 +51,9 @@ ABSL_NAMESPACE_BEGIN
 namespace strings_internal {
 
 // This class is implicitly constructible from everything that absl::string_view
-// is implicitly constructible from. If it's constructed from a temporary
-// string, the data is moved into a data member so its lifetime matches that of
-// the ConvertibleToStringView instance.
+// is implicitly constructible from, except for rvalue strings.  This means it
+// can be used as a function parameter in places where passing a temporary
+// string might cause memory lifetime issues.
 class ConvertibleToStringView {
  public:
   ConvertibleToStringView(const char* s)  // NOLINT(runtime/explicit)
@@ -64,42 +64,13 @@ class ConvertibleToStringView {
   ConvertibleToStringView(const std::string& s)  // NOLINT(runtime/explicit)
       : value_(s) {}
 
-  // Matches rvalue strings and moves their data to a member.
-  ConvertibleToStringView(std::string&& s)  // NOLINT(runtime/explicit)
-      : copy_(std::move(s)), value_(copy_) {}
-
-  ConvertibleToStringView(const ConvertibleToStringView& other)
-      : copy_(other.copy_),
-        value_(other.IsSelfReferential() ? copy_ : other.value_) {}
-
-  ConvertibleToStringView(ConvertibleToStringView&& other) {
-    StealMembers(std::move(other));
-  }
-
-  ConvertibleToStringView& operator=(ConvertibleToStringView other) {
-    StealMembers(std::move(other));
-    return *this;
-  }
+  // Disable conversion from rvalue strings.
+  ConvertibleToStringView(std::string&& s) = delete;
+  ConvertibleToStringView(const std::string&& s) = delete;
 
   absl::string_view value() const { return value_; }
 
  private:
-  // Returns true if ctsp's value refers to its internal copy_ member.
-  bool IsSelfReferential() const { return value_.data() == copy_.data(); }
-
-  void StealMembers(ConvertibleToStringView&& other) {
-    if (other.IsSelfReferential()) {
-      copy_ = std::move(other.copy_);
-      value_ = copy_;
-      other.value_ = other.copy_;
-    } else {
-      value_ = other.value_;
-    }
-  }
-
-  // Holds the data moved from temporary std::string arguments. Declared first
-  // so that 'value' can refer to 'copy_'.
-  std::string copy_;
   absl::string_view value_;
 };
 
@@ -211,6 +182,13 @@ template <typename T>
 struct HasConstIterator<T, absl::void_t<typename T::const_iterator>>
     : std::true_type {};
 
+// HasEmplace<T>::value is true iff there exists a method T::emplace().
+template <typename T, typename = void>
+struct HasEmplace : std::false_type {};
+template <typename T>
+struct HasEmplace<T, absl::void_t<decltype(std::declval<T>().emplace())>>
+    : std::true_type {};
+
 // IsInitializerList<T>::value is true iff T is an std::initializer_list. More
 // details below in Splitter<> where this is used.
 std::false_type IsInitializerListDispatch(...);  // default: No
@@ -273,7 +251,11 @@ struct SplitterIsConvertibleTo
 // the split strings: only strings for which the predicate returns true will be
 // kept. A Predicate object is any unary functor that takes an absl::string_view
 // and returns bool.
-template <typename Delimiter, typename Predicate>
+//
+// The StringType parameter can be either string_view or string, depending on
+// whether the Splitter refers to a string stored elsewhere, or if the string
+// resides inside the Splitter itself.
+template <typename Delimiter, typename Predicate, typename StringType>
 class Splitter {
  public:
   using DelimiterType = Delimiter;
@@ -281,12 +263,12 @@ class Splitter {
   using const_iterator = strings_internal::SplitIterator<Splitter>;
   using value_type = typename std::iterator_traits<const_iterator>::value_type;
 
-  Splitter(ConvertibleToStringView input_text, Delimiter d, Predicate p)
+  Splitter(StringType input_text, Delimiter d, Predicate p)
       : text_(std::move(input_text)),
         delimiter_(std::move(d)),
         predicate_(std::move(p)) {}
 
-  absl::string_view text() const { return text_.value(); }
+  absl::string_view text() const { return text_; }
   const Delimiter& delimiter() const { return delimiter_; }
   const Predicate& predicate() const { return predicate_; }
 
@@ -336,7 +318,7 @@ class Splitter {
     Container operator()(const Splitter& splitter) const {
       Container c;
       auto it = std::inserter(c, c.end());
-      for (const auto sp : splitter) {
+      for (const auto& sp : splitter) {
         *it++ = ValueType(sp);
       }
       return c;
@@ -397,53 +379,46 @@ class Splitter {
   // value.
   template <typename Container, typename First, typename Second>
   struct ConvertToContainer<Container, std::pair<const First, Second>, true> {
+    using iterator = typename Container::iterator;
+
     Container operator()(const Splitter& splitter) const {
       Container m;
-      typename Container::iterator it;
+      iterator it;
       bool insert = true;
-      for (const auto sp : splitter) {
+      for (const absl::string_view sv : splitter) {
         if (insert) {
-          it = Inserter<Container>::Insert(&m, First(sp), Second());
+          it = InsertOrEmplace(&m, sv);
         } else {
-          it->second = Second(sp);
+          it->second = Second(sv);
         }
         insert = !insert;
       }
       return m;
     }
 
-    // Inserts the key and value into the given map, returning an iterator to
-    // the inserted item. Specialized for std::map and std::multimap to use
-    // emplace() and adapt emplace()'s return value.
-    template <typename Map>
-    struct Inserter {
-      using M = Map;
-      template <typename... Args>
-      static typename M::iterator Insert(M* m, Args&&... args) {
-        return m->insert(std::make_pair(std::forward<Args>(args)...)).first;
-      }
-    };
+    // Inserts the key and an empty value into the map, returning an iterator to
+    // the inserted item. We use emplace() if available, otherwise insert().
+    template <typename M>
+    static absl::enable_if_t<HasEmplace<M>::value, iterator> InsertOrEmplace(
+        M* m, absl::string_view key) {
+      // Use piecewise_construct to support old versions of gcc in which pair
+      // constructor can't otherwise construct string from string_view.
+      return ToIter(m->emplace(std::piecewise_construct, std::make_tuple(key),
+                               std::tuple<>()));
+    }
+    template <typename M>
+    static absl::enable_if_t<!HasEmplace<M>::value, iterator> InsertOrEmplace(
+        M* m, absl::string_view key) {
+      return ToIter(m->insert(std::make_pair(First(key), Second(""))));
+    }
 
-    template <typename... Ts>
-    struct Inserter<std::map<Ts...>> {
-      using M = std::map<Ts...>;
-      template <typename... Args>
-      static typename M::iterator Insert(M* m, Args&&... args) {
-        return m->emplace(std::make_pair(std::forward<Args>(args)...)).first;
-      }
-    };
-
-    template <typename... Ts>
-    struct Inserter<std::multimap<Ts...>> {
-      using M = std::multimap<Ts...>;
-      template <typename... Args>
-      static typename M::iterator Insert(M* m, Args&&... args) {
-        return m->emplace(std::make_pair(std::forward<Args>(args)...));
-      }
-    };
+    static iterator ToIter(std::pair<iterator, bool> pair) {
+      return pair.first;
+    }
+    static iterator ToIter(iterator iter) { return iter; }
   };
 
-  ConvertibleToStringView text_;
+  StringType text_;
   Delimiter delimiter_;
   Predicate predicate_;
 };

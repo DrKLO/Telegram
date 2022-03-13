@@ -40,6 +40,7 @@ public class NotificationCenter {
     public static final int messageReceivedByAck = totalEvents++;
     public static final int messageReceivedByServer = totalEvents++;
     public static final int messageSendError = totalEvents++;
+    public static final int forceImportContactsStart = totalEvents++;
     public static final int contactsDidLoad = totalEvents++;
     public static final int contactsImported = totalEvents++;
     public static final int hasNewContactsToImport = totalEvents++;
@@ -122,6 +123,8 @@ public class NotificationCenter {
     public static final int stickersImportProgressChanged = totalEvents++;
     public static final int stickersImportComplete = totalEvents++;
     public static final int dialogDeleted = totalEvents++;
+
+    public static final int didGenerateFingerprintKeyPair = totalEvents++;
 
     public static final int walletPendingTransactionsChanged = totalEvents++;
     public static final int walletSyncProgressChanged = totalEvents++;
@@ -232,6 +235,8 @@ public class NotificationCenter {
     public static final int reactionsDidLoad = totalEvents++;
     public static final int chatAvailableReactionsUpdated = totalEvents++;
     public static final int dialogsUnreadReactionsCounterChanged = totalEvents++;
+    public static final int onDatabaseOpened = totalEvents++;
+    public static final int onDownloadingFilesChanged = totalEvents++;
 
     private SparseArray<ArrayList<NotificationCenterDelegate>> observers = new SparseArray<>();
     private SparseArray<ArrayList<NotificationCenterDelegate>> removeAfterBroadcast = new SparseArray<>();

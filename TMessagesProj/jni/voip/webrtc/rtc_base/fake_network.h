@@ -36,7 +36,12 @@ class FakeNetworkManager : public NetworkManagerBase,
  public:
   FakeNetworkManager() {}
 
-  typedef std::vector<std::pair<SocketAddress, AdapterType>> IfaceList;
+  struct Iface {
+    SocketAddress socket_address;
+    AdapterType adapter_type;
+    absl::optional<AdapterType> underlying_vpn_adapter_type;
+  };
+  typedef std::vector<Iface> IfaceList;
 
   void AddInterface(const SocketAddress& iface) {
     // Ensure a unique name for the interface if its name is not given.
@@ -47,18 +52,20 @@ class FakeNetworkManager : public NetworkManagerBase,
     AddInterface(iface, if_name, ADAPTER_TYPE_UNKNOWN);
   }
 
-  void AddInterface(const SocketAddress& iface,
-                    const std::string& if_name,
-                    AdapterType type) {
+  void AddInterface(
+      const SocketAddress& iface,
+      const std::string& if_name,
+      AdapterType type,
+      absl::optional<AdapterType> underlying_vpn_adapter_type = absl::nullopt) {
     SocketAddress address(if_name, 0);
     address.SetResolvedIP(iface.ipaddr());
-    ifaces_.push_back(std::make_pair(address, type));
+    ifaces_.push_back({address, type, underlying_vpn_adapter_type});
     DoUpdateNetworks();
   }
 
   void RemoveInterface(const SocketAddress& iface) {
     for (IfaceList::iterator it = ifaces_.begin(); it != ifaces_.end(); ++it) {
-      if (it->first.EqualIPs(iface)) {
+      if (it->socket_address.EqualIPs(iface)) {
         ifaces_.erase(it);
         break;
       }
@@ -112,17 +119,20 @@ class FakeNetworkManager : public NetworkManagerBase,
     std::vector<Network*> networks;
     for (IfaceList::iterator it = ifaces_.begin(); it != ifaces_.end(); ++it) {
       int prefix_length = 0;
-      if (it->first.ipaddr().family() == AF_INET) {
+      if (it->socket_address.ipaddr().family() == AF_INET) {
         prefix_length = kFakeIPv4NetworkPrefixLength;
-      } else if (it->first.ipaddr().family() == AF_INET6) {
+      } else if (it->socket_address.ipaddr().family() == AF_INET6) {
         prefix_length = kFakeIPv6NetworkPrefixLength;
       }
-      IPAddress prefix = TruncateIP(it->first.ipaddr(), prefix_length);
-      std::unique_ptr<Network> net(new Network(it->first.hostname(),
-                                               it->first.hostname(), prefix,
-                                               prefix_length, it->second));
+      IPAddress prefix = TruncateIP(it->socket_address.ipaddr(), prefix_length);
+      std::unique_ptr<Network> net(new Network(
+          it->socket_address.hostname(), it->socket_address.hostname(), prefix,
+          prefix_length, it->adapter_type));
+      if (it->underlying_vpn_adapter_type.has_value()) {
+        net->set_underlying_type_for_vpn(*it->underlying_vpn_adapter_type);
+      }
       net->set_default_local_address_provider(this);
-      net->AddIP(it->first.ipaddr());
+      net->AddIP(it->socket_address.ipaddr());
       networks.push_back(net.release());
     }
     bool changed;

@@ -18,13 +18,16 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.tgnet.ConnectionsManager;
@@ -46,9 +49,6 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
-
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 public class PrivacySettingsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -91,8 +91,10 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
     private int contactsSyncRow;
     private int contactsDetailRow;
     private int secretSectionRow;
+    private int nonsecretSectionRow;
     private int secretMapRow;
     private int secretWebpageRow;
+    private int nonsecretWebpageRow;
     private int secretDetailRow;
     private int rowCount;
 
@@ -264,7 +266,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                             value = 365;
                         }
                         final AlertDialog progressDialog = new AlertDialog(getParentActivity(), 3);
-                        progressDialog.setCanCacnel(false);
+                        progressDialog.setCanCancel(false);
                         progressDialog.show();
 
                         final TLRPC.TL_account_setAccountTTL req = new TLRPC.TL_account_setAccountTTL();
@@ -318,11 +320,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                     presentFragment(new TwoStepVerificationSetupActivity(type, currentPassword));
                 }
             } else if (position == passcodeRow) {
-                if (SharedConfig.passcodeHash.length() > 0) {
-                    presentFragment(new PasscodeActivity(2));
-                } else {
-                    presentFragment(new PasscodeActivity(0));
-                }
+                presentFragment(PasscodeActivity.determineOpenFragment());
             } else if (position == secretWebpageRow) {
                 if (getMessagesController().secretWebpagePreview == 1) {
                     getMessagesController().secretWebpagePreview = 0;
@@ -332,6 +330,16 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                 MessagesController.getGlobalMainSettings().edit().putInt("secretWebpage2", getMessagesController().secretWebpagePreview).commit();
                 if (view instanceof TextCheckCell) {
                     ((TextCheckCell) view).setChecked(getMessagesController().secretWebpagePreview == 1);
+                }
+            } else if (position == nonsecretWebpageRow) {
+                if (getMessagesController().nonsecretWebpagePreview == 1) {
+                    getMessagesController().nonsecretWebpagePreview = 0;
+                } else {
+                    getMessagesController().nonsecretWebpagePreview = 1;
+                }
+                MessagesController.getGlobalMainSettings().edit().putInt("nonsecretWebpage2", getMessagesController().nonsecretWebpagePreview).commit();
+                if (view instanceof TextCheckCell) {
+                    ((TextCheckCell) view).setChecked(getMessagesController().nonsecretWebpagePreview == 1);
                 }
             } else if (position == contactsDeleteRow) {
                 if (getParentActivity() == null) {
@@ -344,7 +352,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                 builder.setPositiveButton(LocaleController.getString("Delete", R.string.Delete), (dialogInterface, i) -> {
                     AlertDialog.Builder builder12 = new AlertDialog.Builder(getParentActivity(), 3, null);
                     progressDialog = builder12.show();
-                    progressDialog.setCanCacnel(false);
+                    progressDialog.setCanCancel(false);
 
                     if (currentSync != newSync) {
                         currentSync = getUserConfig().syncContacts = newSync;
@@ -556,6 +564,8 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
         secretSectionRow = rowCount++;
         secretMapRow = rowCount++;
         secretWebpageRow = rowCount++;
+        nonsecretSectionRow = rowCount++;
+        nonsecretWebpageRow = rowCount++;
         secretDetailRow = rowCount++;
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
@@ -709,7 +719,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
             int position = holder.getAdapterPosition();
-            return position == passcodeRow || position == passwordRow || position == blockedRow || position == sessionsRow || position == secretWebpageRow || position == webSessionsRow ||
+            return position == passcodeRow || position == passwordRow || position == blockedRow || position == sessionsRow || position == secretWebpageRow || position == nonsecretWebpageRow || position == webSessionsRow ||
                     position == groupsRow && !getContactsController().getLoadingPrivicyInfo(ContactsController.PRIVACY_RULES_TYPE_INVITE) ||
                     position == lastSeenRow && !getContactsController().getLoadingPrivicyInfo(ContactsController.PRIVACY_RULES_TYPE_LASTSEEN) ||
                     position == callsRow && !getContactsController().getLoadingPrivicyInfo(ContactsController.PRIVACY_RULES_TYPE_CALLS) ||
@@ -913,6 +923,8 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                         headerCell.setText(LocaleController.getString("DeleteMyAccount", R.string.DeleteMyAccount));
                     } else if (position == secretSectionRow) {
                         headerCell.setText(LocaleController.getString("SecretChat", R.string.SecretChat));
+                    } else if (position == nonsecretSectionRow) {
+                        headerCell.setText(LocaleController.getString("NonSecretChat", R.string.NonSecretChat));
                     } else if (position == botsSectionRow) {
                         headerCell.setText(LocaleController.getString("PrivacyBots", R.string.PrivacyBots));
                     } else if (position == contactsSectionRow) {
@@ -925,6 +937,8 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                     TextCheckCell textCheckCell = (TextCheckCell) holder.itemView;
                     if (position == secretWebpageRow) {
                         textCheckCell.setTextAndCheck(LocaleController.getString("SecretWebPage", R.string.SecretWebPage), getMessagesController().secretWebpagePreview == 1, false);
+                    } else if (position == nonsecretWebpageRow) {
+                        textCheckCell.setTextAndCheck(LocaleController.getString("NonSecretWebPage", R.string.NonSecretWebPage), getMessagesController().nonsecretWebpagePreview == 1, false);
                     } else if (position == contactsSyncRow) {
                         textCheckCell.setTextAndCheck(LocaleController.getString("SyncContacts", R.string.SyncContacts), newSync, true);
                     } else if (position == contactsSuggestRow) {
@@ -942,9 +956,9 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                 return 0;
             } else if (position == deleteAccountDetailRow || position == groupsDetailRow || position == sessionsDetailRow || position == secretDetailRow || position == botsDetailRow || position == contactsDetailRow || position == newChatsSectionRow) {
                 return 1;
-            } else if (position == securitySectionRow || position == advancedSectionRow || position == privacySectionRow || position == secretSectionRow || position == botsSectionRow || position == contactsSectionRow || position == newChatsHeaderRow) {
+            } else if (position == securitySectionRow || position == advancedSectionRow || position == privacySectionRow || position == secretSectionRow || position == nonsecretSectionRow || position == botsSectionRow || position == contactsSectionRow || position == newChatsHeaderRow) {
                 return 2;
-            } else if (position == secretWebpageRow || position == contactsSyncRow || position == contactsSuggestRow || position == newChatsRow) {
+            } else if (position == secretWebpageRow || position == nonsecretWebpageRow || position == contactsSyncRow || position == contactsSuggestRow || position == newChatsRow) {
                 return 3;
             }
             return 0;

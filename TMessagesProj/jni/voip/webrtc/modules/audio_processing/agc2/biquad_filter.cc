@@ -10,26 +10,37 @@
 
 #include "modules/audio_processing/agc2/biquad_filter.h"
 
-#include <stddef.h>
+#include "rtc_base/arraysize.h"
 
 namespace webrtc {
 
-// Transposed direct form I implementation of a bi-quad filter applied to an
-// input signal |x| to produce an output signal |y|.
+BiQuadFilter::BiQuadFilter(const Config& config)
+    : config_(config), state_({}) {}
+
+BiQuadFilter::~BiQuadFilter() = default;
+
+void BiQuadFilter::SetConfig(const Config& config) {
+  config_ = config;
+  state_ = {};
+}
+
+void BiQuadFilter::Reset() {
+  state_ = {};
+}
+
 void BiQuadFilter::Process(rtc::ArrayView<const float> x,
                            rtc::ArrayView<float> y) {
+  RTC_DCHECK_EQ(x.size(), y.size());
   for (size_t k = 0; k < x.size(); ++k) {
-    // Use temporary variable for x[k] to allow in-place function call
-    // (that x and y refer to the same array).
+    // Use a temporary variable for `x[k]` to allow in-place processing.
     const float tmp = x[k];
-    y[k] = coefficients_.b[0] * tmp + coefficients_.b[1] * biquad_state_.b[0] +
-           coefficients_.b[2] * biquad_state_.b[1] -
-           coefficients_.a[0] * biquad_state_.a[0] -
-           coefficients_.a[1] * biquad_state_.a[1];
-    biquad_state_.b[1] = biquad_state_.b[0];
-    biquad_state_.b[0] = tmp;
-    biquad_state_.a[1] = biquad_state_.a[0];
-    biquad_state_.a[0] = y[k];
+    y[k] = config_.b[0] * tmp + config_.b[1] * state_.b[0] +
+           config_.b[2] * state_.b[1] - config_.a[0] * state_.a[0] -
+           config_.a[1] * state_.a[1];
+    state_.b[1] = state_.b[0];
+    state_.b[0] = tmp;
+    state_.a[1] = state_.a[0];
+    state_.a[0] = y[k];
   }
 }
 

@@ -107,7 +107,7 @@ NetworkManager::~NetworkManager() {
 }
 
 void NetworkManager::start() {
-    _socketFactory.reset(new rtc::BasicPacketSocketFactory(_thread));
+    _socketFactory.reset(new rtc::BasicPacketSocketFactory(_thread->socketserver()));
 
     _networkManager = std::make_unique<rtc::BasicNetworkManager>(_networkMonitorFactory.get());
     

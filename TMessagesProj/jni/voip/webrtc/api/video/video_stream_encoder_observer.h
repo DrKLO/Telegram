@@ -101,7 +101,7 @@ class VideoStreamEncoderObserver : public CpuOveruseMetricsObserver {
       const VideoBitrateAllocation& allocation) {}
 
   // Informes observer if an internal encoder scaler has reduced video
-  // resolution or not. |is_scaled| is a flag indicating if the video is scaled
+  // resolution or not. `is_scaled` is a flag indicating if the video is scaled
   // down.
   virtual void OnEncoderInternalScalerUpdate(bool is_scaled) {}
 

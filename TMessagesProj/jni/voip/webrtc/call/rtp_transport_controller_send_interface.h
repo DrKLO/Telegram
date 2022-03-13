@@ -96,7 +96,7 @@ class RtpTransportControllerSendInterface {
   virtual PacketRouter* packet_router() = 0;
 
   virtual RtpVideoSenderInterface* CreateRtpVideoSender(
-      std::map<uint32_t, RtpState> suspended_ssrcs,
+      const std::map<uint32_t, RtpState>& suspended_ssrcs,
       // TODO(holmer): Move states into RtpTransportControllerSend.
       const std::map<uint32_t, RtpPayloadState>& states,
       const RtpConfig& rtp_config,

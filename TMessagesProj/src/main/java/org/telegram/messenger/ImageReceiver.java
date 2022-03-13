@@ -585,6 +585,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         if (staticThumbDrawable instanceof SvgHelper.SvgDrawable) {
             ((SvgHelper.SvgDrawable) staticThumbDrawable).setParent(this);
         }
+        updateDrawableRadius(staticThumbDrawable);
 
         if (delegate != null) {
             delegate.didSetImage(this, currentImageDrawable != null || currentThumbDrawable != null || staticThumbDrawable != null || currentMediaDrawable != null, currentImageDrawable == null && currentMediaDrawable == null, false);
@@ -1899,8 +1900,8 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         setRoundRadius(new int[]{value, value, value, value});
     }
 
-    public void setRoundRadius(int tl, int tr, int bl, int br) {
-        setRoundRadius(new int[]{tl, tr, bl, br});
+    public void setRoundRadius(int tl, int tr, int br, int bl) {
+        setRoundRadius(new int[]{tl, tr, br, bl});
     }
 
     public void setRoundRadius(int[] value) {

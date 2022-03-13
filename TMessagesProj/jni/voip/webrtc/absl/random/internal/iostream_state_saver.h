@@ -192,8 +192,8 @@ struct stream_u128_helper<absl::uint128> {
 
   template <typename OStream>
   inline void write(absl::uint128 val, OStream& out) {
-    uint64_t h = Uint128High64(val);
-    uint64_t l = Uint128Low64(val);
+    uint64_t h = absl::Uint128High64(val);
+    uint64_t l = absl::Uint128Low64(val);
     out << h << out.fill() << l;
   }
 };

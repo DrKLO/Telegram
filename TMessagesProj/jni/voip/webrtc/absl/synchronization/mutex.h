@@ -31,22 +31,23 @@
 //
 //  MutexLock - An RAII wrapper to acquire and release a `Mutex` for exclusive/
 //              write access within the current scope.
+//
 //  ReaderMutexLock
 //            - An RAII wrapper to acquire and release a `Mutex` for shared/read
 //              access within the current scope.
 //
 //  WriterMutexLock
-//            - Alias for `MutexLock` above, designed for use in distinguishing
-//              reader and writer locks within code.
+//            - Effectively an alias for `MutexLock` above, designed for use in
+//              distinguishing reader and writer locks within code.
 //
 // In addition to simple mutex locks, this file also defines ways to perform
 // locking under certain conditions.
 //
-//  Condition   - (Preferred) Used to wait for a particular predicate that
-//                depends on state protected by the `Mutex` to become true.
-//  CondVar     - A lower-level variant of `Condition` that relies on
-//                application code to explicitly signal the `CondVar` when
-//                a condition has been met.
+//  Condition - (Preferred) Used to wait for a particular predicate that
+//              depends on state protected by the `Mutex` to become true.
+//  CondVar   - A lower-level variant of `Condition` that relies on
+//              application code to explicitly signal the `CondVar` when
+//              a condition has been met.
 //
 // See below for more information on using `Condition` or `CondVar`.
 //
@@ -71,15 +72,6 @@
 #include "absl/synchronization/internal/kernel_timeout.h"
 #include "absl/synchronization/internal/per_thread_sem.h"
 #include "absl/time/time.h"
-
-// Decide if we should use the non-production implementation because
-// the production implementation hasn't been fully ported yet.
-#ifdef ABSL_INTERNAL_USE_NONPROD_MUTEX
-#error ABSL_INTERNAL_USE_NONPROD_MUTEX cannot be directly set
-#elif defined(ABSL_LOW_LEVEL_ALLOC_MISSING)
-#define ABSL_INTERNAL_USE_NONPROD_MUTEX 1
-#include "absl/synchronization/internal/mutex_nonprod.inc"
-#endif
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
@@ -155,7 +147,7 @@ class ABSL_LOCKABLE Mutex {
   //
   // Example usage:
   //   namespace foo {
-  //   ABSL_CONST_INIT Mutex mu(absl::kConstInit);
+  //   ABSL_CONST_INIT absl::Mutex mu(absl::kConstInit);
   //   }
   explicit constexpr Mutex(absl::ConstInitType);
 
@@ -170,7 +162,7 @@ class ABSL_LOCKABLE Mutex {
   // Mutex::Unlock()
   //
   // Releases this `Mutex` and returns it from the exclusive/write state to the
-  // free state. Caller must hold the `Mutex` exclusively.
+  // free state. Calling thread must hold the `Mutex` exclusively.
   void Unlock() ABSL_UNLOCK_FUNCTION();
 
   // Mutex::TryLock()
@@ -331,16 +323,15 @@ class ABSL_LOCKABLE Mutex {
   // Mutex::AwaitWithTimeout()
   // Mutex::AwaitWithDeadline()
   //
-  // If `cond` is initially true, do nothing, or act as though `cond` is
-  // initially false.
-  //
-  // If `cond` is initially false, unlock this `Mutex` and block until
-  // simultaneously:
+  // Unlocks this `Mutex` and blocks until simultaneously:
   //   - either `cond` is true or the {timeout has expired, deadline has passed}
   //     and
   //   - this `Mutex` can be reacquired,
   // then reacquire this `Mutex` in the same mode in which it was previously
   // held, returning `true` iff `cond` is `true` on return.
+  //
+  // If the condition is initially `true`, the implementation *may* skip the
+  // release/re-acquire step and return immediately.
   //
   // Deadlines in the past are equivalent to an immediate deadline.
   // Negative timeouts are equivalent to a zero timeout.
@@ -462,24 +453,13 @@ class ABSL_LOCKABLE Mutex {
   static void InternalAttemptToUseMutexInFatalSignalHandler();
 
  private:
-#ifdef ABSL_INTERNAL_USE_NONPROD_MUTEX
-  friend class CondVar;
-
-  synchronization_internal::MutexImpl *impl() { return impl_.get(); }
-
-  synchronization_internal::SynchronizationStorage<
-      synchronization_internal::MutexImpl>
-      impl_;
-#else
   std::atomic<intptr_t> mu_;  // The Mutex state.
 
   // Post()/Wait() versus associated PerThreadSem; in class for required
   // friendship with PerThreadSem.
-  static inline void IncrementSynchSem(Mutex *mu,
-                                       base_internal::PerThreadSynch *w);
-  static inline bool DecrementSynchSem(
-      Mutex *mu, base_internal::PerThreadSynch *w,
-      synchronization_internal::KernelTimeout t);
+  static void IncrementSynchSem(Mutex *mu, base_internal::PerThreadSynch *w);
+  static bool DecrementSynchSem(Mutex *mu, base_internal::PerThreadSynch *w,
+                                synchronization_internal::KernelTimeout t);
 
   // slow path acquire
   void LockSlowLoop(SynchWaitParams *waitp, int flags);
@@ -505,7 +485,6 @@ class ABSL_LOCKABLE Mutex {
   void Trans(MuHow how);  // used for CondVar->Mutex transfer
   void Fer(
       base_internal::PerThreadSynch *w);  // used for CondVar->Mutex transfer
-#endif
 
   // Catch the error of writing Mutex when intending MutexLock.
   Mutex(const volatile Mutex * /*ignored*/) {}  // NOLINT(runtime/explicit)
@@ -526,20 +505,34 @@ class ABSL_LOCKABLE Mutex {
 // Example:
 //
 // Class Foo {
-//
+//  public:
 //   Foo::Bar* Baz() {
-//     MutexLock l(&lock_);
+//     MutexLock lock(&mu_);
 //     ...
 //     return bar;
 //   }
 //
 // private:
-//   Mutex lock_;
+//   Mutex mu_;
 // };
 class ABSL_SCOPED_LOCKABLE MutexLock {
  public:
+  // Constructors
+
+  // Calls `mu->Lock()` and returns when that call returns. That is, `*mu` is
+  // guaranteed to be locked when this object is constructed. Requires that
+  // `mu` be dereferenceable.
   explicit MutexLock(Mutex *mu) ABSL_EXCLUSIVE_LOCK_FUNCTION(mu) : mu_(mu) {
     this->mu_->Lock();
+  }
+
+  // Like above, but calls `mu->LockWhen(cond)` instead. That is, in addition to
+  // the above, the condition given by `cond` is also guaranteed to hold when
+  // this object is constructed.
+  explicit MutexLock(Mutex *mu, const Condition &cond)
+      ABSL_EXCLUSIVE_LOCK_FUNCTION(mu)
+      : mu_(mu) {
+    this->mu_->LockWhen(cond);
   }
 
   MutexLock(const MutexLock &) = delete;  // NOLINT(runtime/mutex)
@@ -563,6 +556,12 @@ class ABSL_SCOPED_LOCKABLE ReaderMutexLock {
     mu->ReaderLock();
   }
 
+  explicit ReaderMutexLock(Mutex *mu, const Condition &cond)
+      ABSL_SHARED_LOCK_FUNCTION(mu)
+      : mu_(mu) {
+    mu->ReaderLockWhen(cond);
+  }
+
   ReaderMutexLock(const ReaderMutexLock&) = delete;
   ReaderMutexLock(ReaderMutexLock&&) = delete;
   ReaderMutexLock& operator=(const ReaderMutexLock&) = delete;
@@ -583,6 +582,12 @@ class ABSL_SCOPED_LOCKABLE WriterMutexLock {
   explicit WriterMutexLock(Mutex *mu) ABSL_EXCLUSIVE_LOCK_FUNCTION(mu)
       : mu_(mu) {
     mu->WriterLock();
+  }
+
+  explicit WriterMutexLock(Mutex *mu, const Condition &cond)
+      ABSL_EXCLUSIVE_LOCK_FUNCTION(mu)
+      : mu_(mu) {
+    mu->WriterLockWhen(cond);
   }
 
   WriterMutexLock(const WriterMutexLock&) = delete;
@@ -623,16 +628,26 @@ class ABSL_SCOPED_LOCKABLE WriterMutexLock {
 // `noexcept`; until then this requirement cannot be enforced in the
 // type system.)
 //
-// Note: to use a `Condition`, you need only construct it and pass it within the
-// appropriate `Mutex' member function, such as `Mutex::Await()`.
+// Note: to use a `Condition`, you need only construct it and pass it to a
+// suitable `Mutex' member function, such as `Mutex::Await()`, or to the
+// constructor of one of the scope guard classes.
 //
-// Example:
+// Example using LockWhen/Unlock:
 //
 //   // assume count_ is not internal reference count
 //   int count_ ABSL_GUARDED_BY(mu_);
+//   Condition count_is_zero(+[](int *count) { return *count == 0; }, &count_);
 //
-//   mu_.LockWhen(Condition(+[](int* count) { return *count == 0; },
-//         &count_));
+//   mu_.LockWhen(count_is_zero);
+//   // ...
+//   mu_.Unlock();
+//
+// Example using a scope guard:
+//
+//   {
+//     MutexLock lock(&mu_, count_is_zero);
+//     // ...
+//   }
 //
 // When multiple threads are waiting on exactly the same condition, make sure
 // that they are constructed with the same parameters (same pointer to function
@@ -686,6 +701,11 @@ class Condition {
   //     return processed_ >= current;
   //   };
   //   mu_.Await(Condition(&reached));
+  //
+  // NOTE: never use "mu_.AssertHeld()" instead of "mu_.AssertReaderHeld()" in
+  // the lambda as it may be called when the mutex is being unlocked from a
+  // scope holding only a reader lock, which will make the assertion not
+  // fulfilled and crash the binary.
 
   // See class comment for performance advice. In particular, if there
   // might be more than one waiter for the same condition, make sure
@@ -758,9 +778,9 @@ class Condition {
 //
 // Usage to wake T is:
 //       mu.Lock();
-//      // process data, possibly establishing C
-//      if (C) { cv->Signal(); }
-//      mu.Unlock();
+//       // process data, possibly establishing C
+//       if (C) { cv->Signal(); }
+//       mu.Unlock();
 //
 // If C may be useful to more than one waiter, use `SignalAll()` instead of
 // `Signal()`.
@@ -770,6 +790,8 @@ class Condition {
 //
 class CondVar {
  public:
+  // A `CondVar` allocated on the heap or on the stack can use the this
+  // constructor.
   CondVar();
   ~CondVar();
 
@@ -832,17 +854,10 @@ class CondVar {
   void EnableDebugLog(const char *name);
 
  private:
-#ifdef ABSL_INTERNAL_USE_NONPROD_MUTEX
-  synchronization_internal::CondVarImpl *impl() { return impl_.get(); }
-  synchronization_internal::SynchronizationStorage<
-      synchronization_internal::CondVarImpl>
-      impl_;
-#else
   bool WaitCommon(Mutex *mutex, synchronization_internal::KernelTimeout t);
   void Remove(base_internal::PerThreadSynch *s);
   void Wakeup(base_internal::PerThreadSynch *w);
   std::atomic<intptr_t> cv_;  // Condition variable state.
-#endif
   CondVar(const CondVar&) = delete;
   CondVar& operator=(const CondVar&) = delete;
 };
@@ -864,6 +879,15 @@ class ABSL_SCOPED_LOCKABLE MutexLockMaybe {
       this->mu_->Lock();
     }
   }
+
+  explicit MutexLockMaybe(Mutex *mu, const Condition &cond)
+      ABSL_EXCLUSIVE_LOCK_FUNCTION(mu)
+      : mu_(mu) {
+    if (this->mu_ != nullptr) {
+      this->mu_->LockWhen(cond);
+    }
+  }
+
   ~MutexLockMaybe() ABSL_UNLOCK_FUNCTION() {
     if (this->mu_ != nullptr) { this->mu_->Unlock(); }
   }
@@ -886,6 +910,13 @@ class ABSL_SCOPED_LOCKABLE ReleasableMutexLock {
       : mu_(mu) {
     this->mu_->Lock();
   }
+
+  explicit ReleasableMutexLock(Mutex *mu, const Condition &cond)
+      ABSL_EXCLUSIVE_LOCK_FUNCTION(mu)
+      : mu_(mu) {
+    this->mu_->LockWhen(cond);
+  }
+
   ~ReleasableMutexLock() ABSL_UNLOCK_FUNCTION() {
     if (this->mu_ != nullptr) { this->mu_->Unlock(); }
   }
@@ -900,10 +931,6 @@ class ABSL_SCOPED_LOCKABLE ReleasableMutexLock {
   ReleasableMutexLock& operator=(ReleasableMutexLock&&) = delete;
 };
 
-#ifdef ABSL_INTERNAL_USE_NONPROD_MUTEX
-inline constexpr Mutex::Mutex(absl::ConstInitType) : impl_(absl::kConstInit) {}
-
-#else
 inline Mutex::Mutex() : mu_(0) {
   ABSL_TSAN_MUTEX_CREATE(this, __tsan_mutex_not_static);
 }
@@ -911,7 +938,6 @@ inline Mutex::Mutex() : mu_(0) {
 inline constexpr Mutex::Mutex(absl::ConstInitType) : mu_(0) {}
 
 inline CondVar::CondVar() : cv_(0) {}
-#endif
 
 // static
 template <typename T>
@@ -958,14 +984,15 @@ inline Condition::Condition(const T *object,
 // Register a hook for profiling support.
 //
 // The function pointer registered here will be called whenever a mutex is
-// contended.  The callback is given the absl/base/cycleclock.h timestamp when
-// waiting began.
+// contended.  The callback is given the cycles for which waiting happened (as
+// measured by //absl/base/internal/cycleclock.h, and which may not
+// be real "cycle" counts.)
 //
 // Calls to this function do not race or block, but there is no ordering
 // guaranteed between calls to this function and call to the provided hook.
 // In particular, the previously registered hook may still be called for some
 // time after this function returns.
-void RegisterMutexProfiler(void (*fn)(int64_t wait_timestamp));
+void RegisterMutexProfiler(void (*fn)(int64_t wait_cycles));
 
 // Register a hook for Mutex tracing.
 //
@@ -979,7 +1006,7 @@ void RegisterMutexProfiler(void (*fn)(int64_t wait_timestamp));
 //
 // This has the same memory ordering concerns as RegisterMutexProfiler() above.
 void RegisterMutexTracer(void (*fn)(const char *msg, const void *obj,
-                              int64_t wait_cycles));
+                                    int64_t wait_cycles));
 
 // TODO(gfalcon): Combine RegisterMutexProfiler() and RegisterMutexTracer()
 // into a single interface, since they are only ever called in pairs.
@@ -1050,7 +1077,7 @@ ABSL_NAMESPACE_END
 // By changing our extension points to be extern "C", we dodge this
 // check.
 extern "C" {
-void AbslInternalMutexYield();
+void ABSL_INTERNAL_C_SYMBOL(AbslInternalMutexYield)();
 }  // extern "C"
 
 #endif  // ABSL_SYNCHRONIZATION_MUTEX_H_

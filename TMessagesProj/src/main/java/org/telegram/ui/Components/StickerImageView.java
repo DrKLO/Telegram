@@ -23,7 +23,10 @@ public class StickerImageView extends BackupImageView implements NotificationCen
     }
 
     public void setStickerNum(int stickerNum) {
-        this.stickerNum = stickerNum;
+        if (this.stickerNum != stickerNum) {
+            this.stickerNum = stickerNum;
+            setSticker();
+        }
     }
 
     public void setStickerPackName(String stickerPackName) {
@@ -53,7 +56,7 @@ public class StickerImageView extends BackupImageView implements NotificationCen
         }
     }
 
-    private void setSticker() {
+    public void setSticker() {
         String imageFilter = null;
         TLRPC.Document document = null;
         TLRPC.TL_messages_stickerSet set = null;
@@ -79,6 +82,7 @@ public class StickerImageView extends BackupImageView implements NotificationCen
             ImageLocation imageLocation = ImageLocation.getForDocument(document);
             setImage(imageLocation, imageFilter, "tgs", svgThumb, set);
         } else {
+            imageReceiver.clearImage();
             MediaDataController.getInstance(currentAccount).loadStickersByEmojiOrName(stickerPackName, false, set == null);
         }
     }

@@ -133,7 +133,7 @@ class LibvpxFacade : public LibvpxInterface {
       case VP9E_SET_POSTENCODE_DROP:
         return vpx_codec_control(ctx, VP9E_SET_POSTENCODE_DROP, param);
       default:
-        RTC_NOTREACHED() << "Unsupported libvpx ctrl_id: " << ctrl_id;
+        RTC_DCHECK_NOTREACHED() << "Unsupported libvpx ctrl_id: " << ctrl_id;
     }
     return VPX_CODEC_ERROR;
   }
@@ -181,7 +181,7 @@ class LibvpxFacade : public LibvpxInterface {
           // Might be intended for uint32_t but int literal used, try fallback.
           return codec_control(ctx, ctrl_id, static_cast<uint32_t>(param));
         }
-        RTC_NOTREACHED() << "Unsupported libvpx ctrl_id: " << ctrl_id;
+        RTC_DCHECK_NOTREACHED() << "Unsupported libvpx ctrl_id: " << ctrl_id;
     }
     return VPX_CODEC_ERROR;
   }
@@ -199,7 +199,7 @@ class LibvpxFacade : public LibvpxInterface {
       case VP9E_GET_LEVEL:
         return vpx_codec_control(ctx, VP9E_GET_LEVEL, param);
       default:
-        RTC_NOTREACHED() << "Unsupported libvpx ctrl_id: " << ctrl_id;
+        RTC_DCHECK_NOTREACHED() << "Unsupported libvpx ctrl_id: " << ctrl_id;
     }
     return VPX_CODEC_ERROR;
   }
@@ -213,7 +213,7 @@ class LibvpxFacade : public LibvpxInterface {
       case VP9E_SET_ROI_MAP:
         return vpx_codec_control(ctx, VP9E_SET_ROI_MAP, param);
       default:
-        RTC_NOTREACHED() << "Unsupported libvpx ctrl_id: " << ctrl_id;
+        RTC_DCHECK_NOTREACHED() << "Unsupported libvpx ctrl_id: " << ctrl_id;
     }
     return VPX_CODEC_ERROR;
   }
@@ -227,7 +227,7 @@ class LibvpxFacade : public LibvpxInterface {
       case VP9E_GET_ACTIVEMAP:
         return vpx_codec_control(ctx, VP8E_SET_ACTIVEMAP, param);
       default:
-        RTC_NOTREACHED() << "Unsupported libvpx ctrl_id: " << ctrl_id;
+        RTC_DCHECK_NOTREACHED() << "Unsupported libvpx ctrl_id: " << ctrl_id;
     }
     return VPX_CODEC_ERROR;
   }
@@ -239,7 +239,7 @@ class LibvpxFacade : public LibvpxInterface {
       case VP8E_SET_SCALEMODE:
         return vpx_codec_control(ctx, VP8E_SET_SCALEMODE, param);
       default:
-        RTC_NOTREACHED() << "Unsupported libvpx ctrl_id: " << ctrl_id;
+        RTC_DCHECK_NOTREACHED() << "Unsupported libvpx ctrl_id: " << ctrl_id;
     }
     return VPX_CODEC_ERROR;
   }
@@ -251,7 +251,7 @@ class LibvpxFacade : public LibvpxInterface {
       case VP9E_SET_SVC_PARAMETERS:
         return vpx_codec_control_(ctx, VP9E_SET_SVC_PARAMETERS, param);
       default:
-        RTC_NOTREACHED() << "Unsupported libvpx ctrl_id: " << ctrl_id;
+        RTC_DCHECK_NOTREACHED() << "Unsupported libvpx ctrl_id: " << ctrl_id;
     }
     return VPX_CODEC_ERROR;
   }
@@ -263,7 +263,7 @@ class LibvpxFacade : public LibvpxInterface {
       case VP9E_SET_SVC_FRAME_DROP_LAYER:
         return vpx_codec_control_(ctx, VP9E_SET_SVC_FRAME_DROP_LAYER, param);
       default:
-        RTC_NOTREACHED() << "Unsupported libvpx ctrl_id: " << ctrl_id;
+        RTC_DCHECK_NOTREACHED() << "Unsupported libvpx ctrl_id: " << ctrl_id;
     }
     return VPX_CODEC_ERROR;
   }
@@ -277,7 +277,7 @@ class LibvpxFacade : public LibvpxInterface {
       case VP9E_REGISTER_CX_CALLBACK:
         return vpx_codec_control_(ctx, VP9E_REGISTER_CX_CALLBACK, param);
       default:
-        RTC_NOTREACHED() << "Unsupported libvpx ctrl_id: " << ctrl_id;
+        RTC_DCHECK_NOTREACHED() << "Unsupported libvpx ctrl_id: " << ctrl_id;
     }
     return VPX_CODEC_ERROR;
   }
@@ -291,7 +291,7 @@ class LibvpxFacade : public LibvpxInterface {
       case VP9E_GET_SVC_LAYER_ID:
         return vpx_codec_control_(ctx, VP9E_GET_SVC_LAYER_ID, param);
       default:
-        RTC_NOTREACHED() << "Unsupported libvpx ctrl_id: " << ctrl_id;
+        RTC_DCHECK_NOTREACHED() << "Unsupported libvpx ctrl_id: " << ctrl_id;
     }
     return VPX_CODEC_ERROR;
   }
@@ -306,7 +306,7 @@ class LibvpxFacade : public LibvpxInterface {
       case VP9E_GET_SVC_REF_FRAME_CONFIG:
         return vpx_codec_control_(ctx, VP9E_GET_SVC_REF_FRAME_CONFIG, param);
       default:
-        RTC_NOTREACHED() << "Unsupported libvpx ctrl_id: " << ctrl_id;
+        RTC_DCHECK_NOTREACHED() << "Unsupported libvpx ctrl_id: " << ctrl_id;
     }
     return VPX_CODEC_ERROR;
   }
@@ -319,7 +319,7 @@ class LibvpxFacade : public LibvpxInterface {
       case VP9E_SET_SVC_SPATIAL_LAYER_SYNC:
         return vpx_codec_control_(ctx, VP9E_SET_SVC_SPATIAL_LAYER_SYNC, param);
       default:
-        RTC_NOTREACHED() << "Unsupported libvpx ctrl_id: " << ctrl_id;
+        RTC_DCHECK_NOTREACHED() << "Unsupported libvpx ctrl_id: " << ctrl_id;
     }
     return VPX_CODEC_ERROR;
   }
@@ -331,7 +331,7 @@ class LibvpxFacade : public LibvpxInterface {
       case VP9E_SET_EXTERNAL_RATE_CONTROL:
         return vpx_codec_control_(ctx, VP9E_SET_EXTERNAL_RATE_CONTROL, param);
       default:
-        RTC_NOTREACHED() << "Unsupported libvpx ctrl_id: " << ctrl_id;
+        RTC_DCHECK_NOTREACHED() << "Unsupported libvpx ctrl_id: " << ctrl_id;
     }
     return VPX_CODEC_ERROR;
   }

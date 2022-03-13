@@ -142,7 +142,4 @@ static base::android::ScopedJavaLocalRef<jobject>
 }  // namespace jni
 }  // namespace  webrtc
 
-// Step 4: Generated test functions (optional).
-
-
 #endif  // org_webrtc_VideoEncoderWrapper_JNI

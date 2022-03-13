@@ -220,6 +220,7 @@ void BaseChannel::Deinit() {
 }
 
 bool BaseChannel::SetRtpTransport(webrtc::RtpTransportInternal* rtp_transport) {
+  TRACE_EVENT0("webrtc", "BaseChannel::SetRtpTransport");
   RTC_DCHECK_RUN_ON(network_thread());
   if (rtp_transport == rtp_transport_) {
     return true;
@@ -232,10 +233,7 @@ bool BaseChannel::SetRtpTransport(webrtc::RtpTransportInternal* rtp_transport) {
   rtp_transport_ = rtp_transport;
   if (rtp_transport_) {
     transport_name_ = rtp_transport_->transport_name();
-
     if (!ConnectToRtpTransport()) {
-      RTC_LOG(LS_ERROR) << "Failed to connect to the new RtpTransport for "
-                        << ToString() << ".";
       return false;
     }
     OnTransportReadyToSend(rtp_transport_->IsReadyToSend());
@@ -421,7 +419,7 @@ bool BaseChannel::SendPacket(bool rtcp,
       // (and SetSend(true) is called).
       RTC_LOG(LS_ERROR) << "Can't send outgoing RTP packet for " << ToString()
                         << " when SRTP is inactive and crypto is required";
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
       return false;
     }
 
@@ -463,9 +461,11 @@ void BaseChannel::OnRtpPacket(const webrtc::RtpPacketReceived& parsed_packet) {
   }
 
   webrtc::Timestamp packet_time = parsed_packet.arrival_time();
-  media_channel_->OnPacketReceived(
-      parsed_packet.Buffer(),
-      packet_time.IsMinusInfinity() ? -1 : packet_time.us());
+  if (media_channel_) {
+    media_channel_->OnPacketReceived(
+            parsed_packet.Buffer(),
+            packet_time.IsMinusInfinity() ? -1 : packet_time.us());
+  }
 }
 
 void BaseChannel::UpdateRtpHeaderExtensionMap(
@@ -524,6 +524,7 @@ void BaseChannel::DisableMedia_w() {
 }
 
 void BaseChannel::UpdateWritableState_n() {
+  TRACE_EVENT0("webrtc", "BaseChannel::UpdateWritableState_n");
   if (rtp_transport_->IsWritable(/*rtcp=*/true) &&
       rtp_transport_->IsWritable(/*rtcp=*/false)) {
     ChannelWritable_n();
@@ -533,6 +534,7 @@ void BaseChannel::UpdateWritableState_n() {
 }
 
 void BaseChannel::ChannelWritable_n() {
+  TRACE_EVENT0("webrtc", "BaseChannel::ChannelWritable_n");
   if (writable_) {
     return;
   }
@@ -552,6 +554,7 @@ void BaseChannel::ChannelWritable_n() {
 }
 
 void BaseChannel::ChannelNotWritable_n() {
+  TRACE_EVENT0("webrtc", "BaseChannel::ChannelNotWritable_n");
   if (!writable_) {
     return;
   }
@@ -606,13 +609,13 @@ bool BaseChannel::UpdateLocalStreams_w(const std::vector<StreamParams>& streams,
                                        std::string* error_desc) {
   // In the case of RIDs (where SSRCs are not negotiated), this method will
   // generate an SSRC for each layer in StreamParams. That representation will
-  // be stored internally in |local_streams_|.
-  // In subsequent offers, the same stream can appear in |streams| again
+  // be stored internally in `local_streams_`.
+  // In subsequent offers, the same stream can appear in `streams` again
   // (without the SSRCs), so it should be looked up using RIDs (if available)
   // and then by primary SSRC.
   // In both scenarios, it is safe to assume that the media channel will be
   // created with a StreamParams object with SSRCs. However, it is not safe to
-  // assume that |local_streams_| will always have SSRCs as there are scenarios
+  // assume that `local_streams_` will always have SSRCs as there are scenarios
   // in which niether SSRCs or RIDs are negotiated.
 
   // Check for streams that have been removed.
@@ -748,18 +751,12 @@ bool BaseChannel::UpdateRemoteStreams_w(
   return ret;
 }
 
-RtpHeaderExtensions BaseChannel::GetFilteredRtpHeaderExtensions(
+RtpHeaderExtensions BaseChannel::GetDeduplicatedRtpHeaderExtensions(
     const RtpHeaderExtensions& extensions) {
-  if (crypto_options_.srtp.enable_encrypted_rtp_header_extensions) {
-    RtpHeaderExtensions filtered;
-    absl::c_copy_if(extensions, std::back_inserter(filtered),
-                    [](const webrtc::RtpExtension& extension) {
-                      return !extension.encrypt;
-                    });
-    return filtered;
-  }
-
-  return webrtc::RtpExtension::FilterDuplicateNonEncrypted(extensions);
+  return webrtc::RtpExtension::DeduplicateHeaderExtensions(
+      extensions, crypto_options_.srtp.enable_encrypted_rtp_header_extensions
+                      ? webrtc::RtpExtension::kPreferEncryptedExtension
+                      : webrtc::RtpExtension::kDiscardEncryptedExtension);
 }
 
 void BaseChannel::MaybeAddHandledPayloadType(int payload_type) {
@@ -829,7 +826,7 @@ bool VoiceChannel::SetLocalContent_w(const MediaContentDescription* content,
   RTC_LOG(LS_INFO) << "Setting local voice description for " << ToString();
 
   RtpHeaderExtensions rtp_header_extensions =
-      GetFilteredRtpHeaderExtensions(content->rtp_header_extensions());
+      GetDeduplicatedRtpHeaderExtensions(content->rtp_header_extensions());
   // TODO(tommi): There's a hop to the network thread here.
   // some of the below is also network thread related.
   UpdateRtpHeaderExtensionMap(rtp_header_extensions);
@@ -891,7 +888,7 @@ bool VoiceChannel::SetRemoteContent_w(const MediaContentDescription* content,
   const AudioContentDescription* audio = content->as_audio();
 
   RtpHeaderExtensions rtp_header_extensions =
-      GetFilteredRtpHeaderExtensions(audio->rtp_header_extensions());
+      GetDeduplicatedRtpHeaderExtensions(audio->rtp_header_extensions());
 
   AudioSendParameters send_params = last_send_params_;
   RtpSendParametersFromMediaDescription(
@@ -991,7 +988,7 @@ bool VideoChannel::SetLocalContent_w(const MediaContentDescription* content,
   RTC_LOG(LS_INFO) << "Setting local video description for " << ToString();
 
   RtpHeaderExtensions rtp_header_extensions =
-      GetFilteredRtpHeaderExtensions(content->rtp_header_extensions());
+      GetDeduplicatedRtpHeaderExtensions(content->rtp_header_extensions());
   UpdateRtpHeaderExtensionMap(rtp_header_extensions);
   media_channel()->SetExtmapAllowMixed(content->extmap_allow_mixed());
 
@@ -1084,7 +1081,7 @@ bool VideoChannel::SetRemoteContent_w(const MediaContentDescription* content,
   const VideoContentDescription* video = content->as_video();
 
   RtpHeaderExtensions rtp_header_extensions =
-      GetFilteredRtpHeaderExtensions(video->rtp_header_extensions());
+      GetDeduplicatedRtpHeaderExtensions(video->rtp_header_extensions());
 
   VideoSendParameters send_params = last_send_params_;
   RtpSendParametersFromMediaDescription(

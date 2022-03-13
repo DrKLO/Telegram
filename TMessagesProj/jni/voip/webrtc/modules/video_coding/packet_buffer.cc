@@ -129,7 +129,7 @@ void PacketBuffer::ClearTo(uint16_t seq_num) {
     return;
 
   // Avoid iterating over the buffer more than once by capping the number of
-  // iterations to the |size_| of the buffer.
+  // iterations to the `size_` of the buffer.
   ++seq_num;
   size_t diff = ForwardDiff<uint16_t>(first_seq_num_, seq_num);
   size_t iterations = std::min(diff, buffer_.size());
@@ -141,8 +141,8 @@ void PacketBuffer::ClearTo(uint16_t seq_num) {
     ++first_seq_num_;
   }
 
-  // If |diff| is larger than |iterations| it means that we don't increment
-  // |first_seq_num_| until we reach |seq_num|, so we set it here.
+  // If `diff` is larger than `iterations` it means that we don't increment
+  // `first_seq_num_` until we reach `seq_num`, so we set it here.
   first_seq_num_ = seq_num;
 
   is_cleared_to_first_seq_num_ = true;
@@ -235,7 +235,7 @@ std::vector<std::unique_ptr<PacketBuffer::Packet>> PacketBuffer::FindFrames(
       uint16_t start_seq_num = seq_num;
 
       // Find the start index by searching backward until the packet with
-      // the |frame_begin| flag is set.
+      // the `frame_begin` flag is set.
       int start_index = index;
       size_t tested_packets = 0;
       int64_t frame_timestamp = buffer_[start_index]->timestamp;
@@ -328,7 +328,7 @@ std::vector<std::unique_ptr<PacketBuffer::Packet>> PacketBuffer::FindFrames(
         start_index = start_index > 0 ? start_index - 1 : buffer_.size() - 1;
 
         // In the case of H264 we don't have a frame_begin bit (yes,
-        // |frame_begin| might be set to true but that is a lie). So instead
+        // `frame_begin` might be set to true but that is a lie). So instead
         // we traverese backwards as long as we have a previous packet and
         // the timestamp of that packet is the same as this one. This may cause
         // the PacketBuffer to hand out incomplete frames.

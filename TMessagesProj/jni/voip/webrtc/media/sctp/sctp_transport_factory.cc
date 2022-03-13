@@ -27,7 +27,10 @@ namespace cricket {
 SctpTransportFactory::SctpTransportFactory(rtc::Thread* network_thread)
     : network_thread_(network_thread), use_dcsctp_("Enabled", false) {
   RTC_UNUSED(network_thread_);
-  webrtc::ParseFieldTrial({&use_dcsctp_}, "WebRTC-DataChannel-Dcsctp");
+#ifdef WEBRTC_HAVE_DCSCTP
+  webrtc::ParseFieldTrial({&use_dcsctp_}, webrtc::field_trial::FindFullName(
+                                              "WebRTC-DataChannel-Dcsctp"));
+#endif
 }
 
 std::unique_ptr<SctpTransportInternal>

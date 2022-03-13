@@ -50,12 +50,12 @@ class PlatformThread final {
   // removed.
   PlatformThread() = default;
 
-  // Moves |rhs| into this, storing an empty state in |rhs|.
+  // Moves `rhs` into this, storing an empty state in `rhs`.
   // TODO(bugs.webrtc.org/12727) Look into if default and move support can be
   // removed.
   PlatformThread(PlatformThread&& rhs);
 
-  // Moves |rhs| into this, storing an empty state in |rhs|.
+  // Moves `rhs` into this, storing an empty state in `rhs`.
   // TODO(bugs.webrtc.org/12727) Look into if default and move support can be
   // removed.
   PlatformThread& operator=(PlatformThread&& rhs);

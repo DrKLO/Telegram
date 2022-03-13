@@ -23,7 +23,7 @@ namespace rtc {
 
 class DEPRECATED_AsyncInvoker;
 
-// Helper class for AsyncInvoker. Runs a task and triggers a callback
+// Helper class for DEPRECATED_AsyncInvoker. Runs a task and triggers a callback
 // on the calling thread if necessary.
 class AsyncClosure {
  public:

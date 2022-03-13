@@ -67,28 +67,32 @@
 #undef ABSL_HAVE_RAW_IO
 #endif
 
-// TODO(gfalcon): We want raw-logging to work on as many platforms as possible.
-// Explicitly #error out when not ABSL_LOW_LEVEL_WRITE_SUPPORTED, except for a
-// whitelisted set of platforms for which we expect not to be able to raw log.
+namespace absl {
+ABSL_NAMESPACE_BEGIN
+namespace raw_logging_internal {
+namespace {
 
-ABSL_INTERNAL_ATOMIC_HOOK_ATTRIBUTES static absl::base_internal::AtomicHook<
-    absl::raw_logging_internal::LogPrefixHook>
-    log_prefix_hook;
-ABSL_INTERNAL_ATOMIC_HOOK_ATTRIBUTES static absl::base_internal::AtomicHook<
-    absl::raw_logging_internal::AbortHook>
-    abort_hook;
+// TODO(gfalcon): We want raw-logging to work on as many platforms as possible.
+// Explicitly `#error` out when not `ABSL_LOW_LEVEL_WRITE_SUPPORTED`, except for
+// a selected set of platforms for which we expect not to be able to raw log.
+
+ABSL_INTERNAL_ATOMIC_HOOK_ATTRIBUTES
+    absl::base_internal::AtomicHook<LogPrefixHook>
+        log_prefix_hook;
+ABSL_INTERNAL_ATOMIC_HOOK_ATTRIBUTES
+    absl::base_internal::AtomicHook<AbortHook>
+        abort_hook;
 
 #ifdef ABSL_LOW_LEVEL_WRITE_SUPPORTED
-static const char kTruncated[] = " ... (message truncated)\n";
+constexpr char kTruncated[] = " ... (message truncated)\n";
 
 // sprintf the format to the buffer, adjusting *buf and *size to reflect the
 // consumed bytes, and return whether the message fit without truncation.  If
 // truncation occurred, if possible leave room in the buffer for the message
 // kTruncated[].
-inline static bool VADoRawLog(char** buf, int* size, const char* format,
-                              va_list ap) ABSL_PRINTF_ATTRIBUTE(3, 0);
-inline static bool VADoRawLog(char** buf, int* size,
-                              const char* format, va_list ap) {
+bool VADoRawLog(char** buf, int* size, const char* format, va_list ap)
+    ABSL_PRINTF_ATTRIBUTE(3, 0);
+bool VADoRawLog(char** buf, int* size, const char* format, va_list ap) {
   int n = vsnprintf(*buf, *size, format, ap);
   bool result = true;
   if (n < 0 || n > *size) {
@@ -96,7 +100,7 @@ inline static bool VADoRawLog(char** buf, int* size,
     if (static_cast<size_t>(*size) > sizeof(kTruncated)) {
       n = *size - sizeof(kTruncated);  // room for truncation message
     } else {
-      n = 0;                           // no room for truncation message
+      n = 0;  // no room for truncation message
     }
   }
   *size -= n;
@@ -105,9 +109,7 @@ inline static bool VADoRawLog(char** buf, int* size,
 }
 #endif  // ABSL_LOW_LEVEL_WRITE_SUPPORTED
 
-static constexpr int kLogBufSize = 3000;
-
-namespace {
+constexpr int kLogBufSize = 3000;
 
 // CAVEAT: vsnprintf called from *DoRawLog below has some (exotic) code paths
 // that invoke malloc() and getenv() that might acquire some locks.
@@ -166,7 +168,7 @@ void RawLogVA(absl::LogSeverity severity, const char* file, int line,
     } else {
       DoRawLog(&buf, &size, "%s", kTruncated);
     }
-    absl::raw_logging_internal::SafeWriteToStderr(buffer, strlen(buffer));
+    SafeWriteToStderr(buffer, strlen(buffer));
   }
 #else
   static_cast<void>(format);
@@ -181,11 +183,18 @@ void RawLogVA(absl::LogSeverity severity, const char* file, int line,
   }
 }
 
+// Non-formatting version of RawLog().
+//
+// TODO(gfalcon): When string_view no longer depends on base, change this
+// interface to take its message as a string_view instead.
+void DefaultInternalLog(absl::LogSeverity severity, const char* file, int line,
+                        const std::string& message) {
+  RawLog(severity, file, line, "%.*s", static_cast<int>(message.size()),
+         message.data());
+}
+
 }  // namespace
 
-namespace absl {
-ABSL_NAMESPACE_BEGIN
-namespace raw_logging_internal {
 void SafeWriteToStderr(const char *s, size_t len) {
 #if defined(ABSL_HAVE_SYSCALL_WRITE)
   syscall(SYS_write, STDERR_FILENO, s, len);
@@ -201,22 +210,11 @@ void SafeWriteToStderr(const char *s, size_t len) {
 }
 
 void RawLog(absl::LogSeverity severity, const char* file, int line,
-            const char* format, ...) ABSL_PRINTF_ATTRIBUTE(4, 5);
-void RawLog(absl::LogSeverity severity, const char* file, int line,
             const char* format, ...) {
   va_list ap;
   va_start(ap, format);
   RawLogVA(severity, file, line, format, ap);
   va_end(ap);
-}
-
-// Non-formatting version of RawLog().
-//
-// TODO(gfalcon): When string_view no longer depends on base, change this
-// interface to take its message as a string_view instead.
-static void DefaultInternalLog(absl::LogSeverity severity, const char* file,
-                               int line, const std::string& message) {
-  RawLog(severity, file, line, "%s", message.c_str());
 }
 
 bool RawLoggingFullySupported() {
@@ -227,9 +225,13 @@ bool RawLoggingFullySupported() {
 #endif  // !ABSL_LOW_LEVEL_WRITE_SUPPORTED
 }
 
-ABSL_DLL ABSL_INTERNAL_ATOMIC_HOOK_ATTRIBUTES
+ABSL_INTERNAL_ATOMIC_HOOK_ATTRIBUTES ABSL_DLL
     absl::base_internal::AtomicHook<InternalLogFunction>
         internal_log_function(DefaultInternalLog);
+
+void RegisterLogPrefixHook(LogPrefixHook func) { log_prefix_hook.Store(func); }
+
+void RegisterAbortHook(AbortHook func) { abort_hook.Store(func); }
 
 void RegisterInternalLogFunction(InternalLogFunction func) {
   internal_log_function.Store(func);

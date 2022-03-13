@@ -10,7 +10,6 @@
 
 #include "modules/audio_coding/neteq/statistics_calculator.h"
 
-#include <assert.h>
 #include <string.h>  // memset
 
 #include <algorithm>
@@ -340,7 +339,7 @@ void StatisticsCalculator::GetNetworkStatistics(size_t samples_per_packet,
   } else {
     std::sort(waiting_times_.begin(), waiting_times_.end());
     // Find mid-point elements. If the size is odd, the two values
-    // |middle_left| and |middle_right| will both be the one middle element; if
+    // `middle_left` and `middle_right` will both be the one middle element; if
     // the size is even, they will be the the two neighboring elements at the
     // middle of the list.
     const int middle_left = waiting_times_[(waiting_times_.size() - 1) / 2];
@@ -375,7 +374,7 @@ uint16_t StatisticsCalculator::CalculateQ14Ratio(size_t numerator,
     return 0;
   } else if (numerator < denominator) {
     // Ratio must be smaller than 1 in Q14.
-    assert((numerator << 14) / denominator < (1 << 14));
+    RTC_DCHECK_LT((numerator << 14) / denominator, (1 << 14));
     return static_cast<uint16_t>((numerator << 14) / denominator);
   } else {
     // Will not produce a ratio larger than 1, since this is probably an error.

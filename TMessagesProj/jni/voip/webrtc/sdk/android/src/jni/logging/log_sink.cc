@@ -28,7 +28,7 @@ void JNILogSink::OnLogMessage(const std::string& msg,
 }
 
 void JNILogSink::OnLogMessage(const std::string& msg) {
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
 }
 
 }  // namespace jni

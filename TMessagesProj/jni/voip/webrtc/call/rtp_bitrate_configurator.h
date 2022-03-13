@@ -49,8 +49,8 @@ class RtpBitrateConfigurator {
   absl::optional<BitrateConstraints> UpdateWithRelayCap(DataRate cap);
 
  private:
-  // Applies update to the BitrateConstraints cached in |config_|, resetting
-  // with |new_start| if set.
+  // Applies update to the BitrateConstraints cached in `config_`, resetting
+  // with `new_start` if set.
   absl::optional<BitrateConstraints> UpdateConstraints(
       const absl::optional<int>& new_start);
 

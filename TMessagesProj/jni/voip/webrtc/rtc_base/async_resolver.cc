@@ -40,13 +40,37 @@
 #include "rtc_base/task_utils/to_queued_task.h"
 #include "rtc_base/third_party/sigslot/sigslot.h"  // for signal_with_thread...
 
+#if defined(WEBRTC_MAC) || defined(WEBRTC_IOS)
+#include <dispatch/dispatch.h>
+#endif
+
 namespace rtc {
+
+#if defined(WEBRTC_MAC) || defined(WEBRTC_IOS)
+namespace {
+
+void GlobalGcdRunTask(void* context) {
+  std::unique_ptr<webrtc::QueuedTask> task(
+      static_cast<webrtc::QueuedTask*>(context));
+  task->Run();
+}
+
+// Post a task into the system-defined global concurrent queue.
+void PostTaskToGlobalQueue(std::unique_ptr<webrtc::QueuedTask> task) {
+  dispatch_queue_global_t global_queue =
+      dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+  webrtc::QueuedTask* context = task.release();
+  dispatch_async_f(global_queue, context, &GlobalGcdRunTask);
+}
+
+}  // namespace
+#endif
 
 int ResolveHostname(const std::string& hostname,
                     int family,
                     std::vector<IPAddress>* addresses) {
 #ifdef __native_client__
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   RTC_LOG(LS_WARNING) << "ResolveHostname() is not implemented for NaCl";
   return -1;
 #else   // __native_client__
@@ -57,7 +81,7 @@ int ResolveHostname(const std::string& hostname,
   struct addrinfo* result = nullptr;
   struct addrinfo hints = {0};
   hints.ai_family = family;
-  // |family| here will almost always be AF_UNSPEC, because |family| comes from
+  // `family` here will almost always be AF_UNSPEC, because `family` comes from
   // AsyncResolver::addr_.family(), which comes from a SocketAddress constructed
   // with a hostname. When a SocketAddress is constructed with a hostname, its
   // family is AF_UNSPEC. However, if someday in the future we construct
@@ -123,7 +147,7 @@ void AsyncResolver::Start(const SocketAddress& addr) {
   RTC_DCHECK_RUN_ON(&sequence_checker_);
   RTC_DCHECK(!destroy_called_);
   addr_ = addr;
-  PlatformThread::SpawnDetached(
+  auto thread_function =
       [this, addr, caller_task_queue = webrtc::TaskQueueBase::Current(),
        state = state_] {
         std::vector<IPAddress> addresses;
@@ -146,8 +170,12 @@ void AsyncResolver::Start(const SocketAddress& addr) {
                 }
               }));
         }
-      },
-      "AsyncResolver");
+      };
+#if defined(WEBRTC_MAC) || defined(WEBRTC_IOS)
+  PostTaskToGlobalQueue(webrtc::ToQueuedTask(std::move(thread_function)));
+#else
+  PlatformThread::SpawnDetached(std::move(thread_function), "AsyncResolver");
+#endif
 }
 
 bool AsyncResolver::GetResolvedAddress(int family, SocketAddress* addr) const {
@@ -174,7 +202,7 @@ int AsyncResolver::GetError() const {
 
 void AsyncResolver::Destroy(bool wait) {
   // Some callers have trouble guaranteeing that Destroy is called on the
-  // sequence guarded by |sequence_checker_|.
+  // sequence guarded by `sequence_checker_`.
   // RTC_DCHECK_RUN_ON(&sequence_checker_);
   RTC_DCHECK(!destroy_called_);
   destroy_called_ = true;

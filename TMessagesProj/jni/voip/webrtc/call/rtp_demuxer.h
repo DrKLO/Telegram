@@ -12,13 +12,12 @@
 #define CALL_RTP_DEMUXER_H_
 
 #include <map>
-#include <set>
 #include <string>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
-#include "rtc_base/hash.h"
+#include "rtc_base/containers/flat_map.h"
+#include "rtc_base/containers/flat_set.h"
 
 namespace webrtc {
 
@@ -45,10 +44,10 @@ struct RtpDemuxerCriteria {
   std::string rsid;
 
   // Will match packets with any of these SSRCs.
-  std::set<uint32_t> ssrcs;
+  flat_set<uint32_t> ssrcs;
 
   // Will match packets with any of these payload types.
-  std::set<uint8_t> payload_types;
+  flat_set<uint8_t> payload_types;
 
   // Return string representation of demux criteria to facilitate logging
   std::string ToString() const;
@@ -171,26 +170,24 @@ class RtpDemuxer {
   // Note: Mappings are only modified by AddSink/RemoveSink (except for
   // SSRC mapping which receives all MID, payload type, or RSID to SSRC bindings
   // discovered when demuxing packets).
-  std::unordered_map<std::string, RtpPacketSinkInterface*> sink_by_mid_;
-  std::unordered_map<uint32_t, RtpPacketSinkInterface*> sink_by_ssrc_;
-  std::unordered_multimap<uint8_t, RtpPacketSinkInterface*> sinks_by_pt_;
-  std::unordered_map<std::pair<std::string, std::string>,
-                     RtpPacketSinkInterface*,
-                     webrtc::PairHash>
+  flat_map<std::string, RtpPacketSinkInterface*> sink_by_mid_;
+  flat_map<uint32_t, RtpPacketSinkInterface*> sink_by_ssrc_;
+  std::multimap<uint8_t, RtpPacketSinkInterface*> sinks_by_pt_;
+  flat_map<std::pair<std::string, std::string>, RtpPacketSinkInterface*>
       sink_by_mid_and_rsid_;
-  std::unordered_map<std::string, RtpPacketSinkInterface*> sink_by_rsid_;
+  flat_map<std::string, RtpPacketSinkInterface*> sink_by_rsid_;
 
   // Tracks all the MIDs that have been identified in added criteria. Used to
   // determine if a packet should be dropped right away because the MID is
   // unknown.
-  std::set<std::string> known_mids_;
+  flat_set<std::string> known_mids_;
 
   // Records learned mappings of MID --> SSRC and RSID --> SSRC as packets are
   // received.
   // This is stored separately from the sink mappings because if a sink is
   // removed we want to still remember these associations.
-  std::unordered_map<uint32_t, std::string> mid_by_ssrc_;
-  std::unordered_map<uint32_t, std::string> rsid_by_ssrc_;
+  flat_map<uint32_t, std::string> mid_by_ssrc_;
+  flat_map<uint32_t, std::string> rsid_by_ssrc_;
 
   // Adds a binding from the SSRC to the given sink.
   void AddSsrcSinkBinding(uint32_t ssrc, RtpPacketSinkInterface* sink);

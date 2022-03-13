@@ -139,7 +139,7 @@ class AudioEncoderOpusImpl final : public AudioEncoder {
       absl::optional<int64_t> link_capacity_allocation);
 
   // TODO(minyue): remove "override" when we can deprecate
-  // |AudioEncoder::SetTargetBitrate|.
+  // `AudioEncoder::SetTargetBitrate`.
   void SetTargetBitrate(int target_bps) override;
 
   void ApplyAudioNetworkAdaptor();

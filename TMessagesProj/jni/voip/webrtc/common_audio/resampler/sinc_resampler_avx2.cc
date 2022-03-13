@@ -25,7 +25,7 @@ float SincResampler::Convolve_AVX2(const float* input_ptr,
   __m256 m_sums1 = _mm256_setzero_ps();
   __m256 m_sums2 = _mm256_setzero_ps();
 
-  // Based on |input_ptr| alignment, we need to use loadu or load.  Unrolling
+  // Based on `input_ptr` alignment, we need to use loadu or load.  Unrolling
   // these loops has not been tested or benchmarked.
   bool aligned_input = (reinterpret_cast<uintptr_t>(input_ptr) & 0x1F) == 0;
   if (!aligned_input) {

@@ -11,6 +11,7 @@
 #ifndef MEDIA_BASE_VIDEO_BROADCASTER_H_
 #define MEDIA_BASE_VIDEO_BROADCASTER_H_
 
+#include "api/media_stream_interface.h"
 #include "api/scoped_refptr.h"
 #include "api/sequence_checker.h"
 #include "api/video/video_frame_buffer.h"
@@ -31,6 +32,11 @@ class VideoBroadcaster : public VideoSourceBase,
  public:
   VideoBroadcaster();
   ~VideoBroadcaster() override;
+
+  // Adds a new, or updates an already existing sink. If the sink is new and
+  // ProcessConstraints has been called previously, the new sink's
+  // OnConstraintsCalled method will be invoked with the most recent
+  // constraints.
   void AddOrUpdateSink(VideoSinkInterface<webrtc::VideoFrame>* sink,
                        const VideoSinkWants& wants) override;
   void RemoveSink(VideoSinkInterface<webrtc::VideoFrame>* sink) override;
@@ -50,6 +56,11 @@ class VideoBroadcaster : public VideoSourceBase,
 
   void OnDiscardedFrame() override;
 
+  // Called on the network thread when constraints change. Forwards the
+  // constraints to sinks added with AddOrUpdateSink via OnConstraintsChanged.
+  void ProcessConstraints(
+      const webrtc::VideoTrackSourceConstraints& constraints);
+
  protected:
   void UpdateWants() RTC_EXCLUSIVE_LOCKS_REQUIRED(sinks_and_wants_lock_);
   const rtc::scoped_refptr<webrtc::VideoFrameBuffer>& GetBlackFrameBuffer(
@@ -62,6 +73,8 @@ class VideoBroadcaster : public VideoSourceBase,
   rtc::scoped_refptr<webrtc::VideoFrameBuffer> black_frame_buffer_;
   bool previous_frame_sent_to_all_sinks_ RTC_GUARDED_BY(sinks_and_wants_lock_) =
       true;
+  absl::optional<webrtc::VideoTrackSourceConstraints> last_constraints_
+      RTC_GUARDED_BY(sinks_and_wants_lock_);
 };
 
 }  // namespace rtc

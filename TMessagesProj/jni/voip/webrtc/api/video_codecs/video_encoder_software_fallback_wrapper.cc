@@ -25,6 +25,7 @@
 #include "api/video/video_frame.h"
 #include "api/video_codecs/video_codec.h"
 #include "api/video_codecs/video_encoder.h"
+#include "media/base/video_common.h"
 #include "modules/video_coding/include/video_error_codes.h"
 #include "modules/video_coding/utility/simulcast_utility.h"
 #include "rtc_base/checks.h"
@@ -38,8 +39,8 @@ namespace {
 // If forced fallback is allowed, either:
 //
 // 1) The forced fallback is requested if the resolution is less than or equal
-//    to |max_pixels_|. The resolution is allowed to be scaled down to
-//    |min_pixels_|.
+//    to `max_pixels_`. The resolution is allowed to be scaled down to
+//    `min_pixels_`.
 //
 // 2) The forced fallback is requested if temporal support is preferred and the
 //    SW fallback supports temporal layers while the HW encoder does not.
@@ -179,7 +180,6 @@ class VideoEncoderSoftwareFallbackWrapper final : public VideoEncoder {
   // The last channel parameters set.
   absl::optional<float> packet_loss_;
   absl::optional<int64_t> rtt_;
-  FecControllerOverride* fec_controller_override_;
   absl::optional<LossNotification> loss_notification_;
 
   enum class EncoderState {
@@ -204,8 +204,7 @@ VideoEncoderSoftwareFallbackWrapper::VideoEncoderSoftwareFallbackWrapper(
     std::unique_ptr<webrtc::VideoEncoder> sw_encoder,
     std::unique_ptr<webrtc::VideoEncoder> hw_encoder,
     bool prefer_temporal_support)
-    : fec_controller_override_(nullptr),
-      encoder_state_(EncoderState::kUninitialized),
+    : encoder_state_(EncoderState::kUninitialized),
       encoder_(std::move(hw_encoder)),
       fallback_encoder_(std::move(sw_encoder)),
       callback_(nullptr),
@@ -233,9 +232,7 @@ void VideoEncoderSoftwareFallbackWrapper::PrimeEncoder(
   if (packet_loss_.has_value()) {
     encoder->OnPacketLossRateUpdate(packet_loss_.value());
   }
-  if (fec_controller_override_) {
-    encoder->SetFecControllerOverride(fec_controller_override_);
-  }
+
   if (loss_notification_.has_value()) {
     encoder->OnLossNotification(loss_notification_.value());
   }
@@ -273,11 +270,11 @@ bool VideoEncoderSoftwareFallbackWrapper::InitFallbackEncoder(bool is_forced) {
 void VideoEncoderSoftwareFallbackWrapper::SetFecControllerOverride(
     FecControllerOverride* fec_controller_override) {
   // It is important that only one of those would ever interact with the
-  // |fec_controller_override| at a given time. This is the responsibility
-  // of |this| to maintain.
+  // `fec_controller_override` at a given time. This is the responsibility
+  // of `this` to maintain.
 
-  fec_controller_override_ = fec_controller_override;
-  current_encoder()->SetFecControllerOverride(fec_controller_override);
+  encoder_->SetFecControllerOverride(fec_controller_override);
+  fallback_encoder_->SetFecControllerOverride(fec_controller_override);
 }
 
 int32_t VideoEncoderSoftwareFallbackWrapper::InitEncode(
@@ -361,8 +358,8 @@ int32_t VideoEncoderSoftwareFallbackWrapper::EncodeWithMainEncoder(
         fallback_encoder_->GetEncoderInfo().supports_native_handle) {
       return fallback_encoder_->Encode(frame, frame_types);
     } else {
-      RTC_LOG(INFO) << "Fallback encoder does not support native handle - "
-                       "converting frame to I420";
+      RTC_LOG(LS_INFO) << "Fallback encoder does not support native handle - "
+                          "converting frame to I420";
       rtc::scoped_refptr<I420BufferInterface> src_buffer =
           frame.video_frame_buffer()->ToI420();
       if (!src_buffer) {
@@ -416,6 +413,13 @@ VideoEncoder::EncoderInfo VideoEncoderSoftwareFallbackWrapper::GetEncoderInfo()
 
   EncoderInfo info =
       IsFallbackActive() ? fallback_encoder_info : default_encoder_info;
+
+  info.requested_resolution_alignment = cricket::LeastCommonMultiple(
+      fallback_encoder_info.requested_resolution_alignment,
+      default_encoder_info.requested_resolution_alignment);
+  info.apply_alignment_to_all_simulcast_layers =
+      fallback_encoder_info.apply_alignment_to_all_simulcast_layers ||
+      default_encoder_info.apply_alignment_to_all_simulcast_layers;
 
   if (fallback_params_.has_value()) {
     const auto settings = (encoder_state_ == EncoderState::kForcedFallback)

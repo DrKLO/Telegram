@@ -24,13 +24,13 @@
 //   void some_function() {
 //     scoped_refptr<MyFoo> foo = new MyFoo();
 //     foo->Method(param);
-//     // |foo| is released when this function returns
+//     // `foo` is released when this function returns
 //   }
 //
 //   void some_other_function() {
 //     scoped_refptr<MyFoo> foo = new MyFoo();
 //     ...
-//     foo = nullptr;  // explicitly releases |foo|
+//     foo = nullptr;  // explicitly releases `foo`
 //     ...
 //     if (foo)
 //       foo->Method(param);
@@ -45,10 +45,10 @@
 //     scoped_refptr<MyFoo> b;
 //
 //     b.swap(a);
-//     // now, |b| references the MyFoo object, and |a| references null.
+//     // now, `b` references the MyFoo object, and `a` references null.
 //   }
 //
-// To make both |a| and |b| in the above example reference the same MyFoo
+// To make both `a` and `b` in the above example reference the same MyFoo
 // object, simply use the assignment operator:
 //
 //   {
@@ -56,7 +56,7 @@
 //     scoped_refptr<MyFoo> b;
 //
 //     b = a;
-//     // now, |a| and |b| each own a reference to the same MyFoo object.
+//     // now, `a` and `b` each own a reference to the same MyFoo object.
 //   }
 //
 

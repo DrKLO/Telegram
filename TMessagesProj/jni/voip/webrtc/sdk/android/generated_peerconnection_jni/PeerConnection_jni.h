@@ -879,6 +879,27 @@ static void Java_Observer_onIceCandidate(JNIEnv* env, const base::android::JavaR
 }
 
 static std::atomic<jmethodID>
+    g_org_webrtc_PeerConnection_00024Observer_onIceCandidateError(nullptr);
+static void Java_Observer_onIceCandidateError(JNIEnv* env, const base::android::JavaRef<jobject>&
+    obj, const base::android::JavaRef<jobject>& event) {
+  jclass clazz = org_webrtc_PeerConnection_00024Observer_clazz(env);
+  CHECK_CLAZZ(env, obj.obj(),
+      org_webrtc_PeerConnection_00024Observer_clazz(env));
+
+  jni_generator::JniJavaCallContextChecked call_context;
+  call_context.Init<
+      base::android::MethodID::TYPE_INSTANCE>(
+          env,
+          clazz,
+          "onIceCandidateError",
+          "(Lorg/webrtc/IceCandidateErrorEvent;)V",
+          &g_org_webrtc_PeerConnection_00024Observer_onIceCandidateError);
+
+     env->CallVoidMethod(obj.obj(),
+          call_context.base.method_id, event.obj());
+}
+
+static std::atomic<jmethodID>
     g_org_webrtc_PeerConnection_00024Observer_onIceCandidatesRemoved(nullptr);
 static void Java_Observer_onIceCandidatesRemoved(JNIEnv* env, const base::android::JavaRef<jobject>&
     obj, const base::android::JavaRef<jobjectArray>& candidates) {
@@ -1020,6 +1041,26 @@ static void Java_Observer_onAddTrack(JNIEnv* env, const base::android::JavaRef<j
 
      env->CallVoidMethod(obj.obj(),
           call_context.base.method_id, receiver.obj(), mediaStreams.obj());
+}
+
+static std::atomic<jmethodID> g_org_webrtc_PeerConnection_00024Observer_onRemoveTrack(nullptr);
+static void Java_Observer_onRemoveTrack(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
+    const base::android::JavaRef<jobject>& receiver) {
+  jclass clazz = org_webrtc_PeerConnection_00024Observer_clazz(env);
+  CHECK_CLAZZ(env, obj.obj(),
+      org_webrtc_PeerConnection_00024Observer_clazz(env));
+
+  jni_generator::JniJavaCallContextChecked call_context;
+  call_context.Init<
+      base::android::MethodID::TYPE_INSTANCE>(
+          env,
+          clazz,
+          "onRemoveTrack",
+          "(Lorg/webrtc/RtpReceiver;)V",
+          &g_org_webrtc_PeerConnection_00024Observer_onRemoveTrack);
+
+     env->CallVoidMethod(obj.obj(),
+          call_context.base.method_id, receiver.obj());
 }
 
 static std::atomic<jmethodID> g_org_webrtc_PeerConnection_00024Observer_onTrack(nullptr);
@@ -2015,29 +2056,6 @@ static base::android::ScopedJavaLocalRef<jobject>
 }
 
 static std::atomic<jmethodID>
-    g_org_webrtc_PeerConnection_00024RTCConfiguration_getEnableDtlsSrtp(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_RTCConfiguration_getEnableDtlsSrtp(JNIEnv*
-    env, const base::android::JavaRef<jobject>& obj) {
-  jclass clazz = org_webrtc_PeerConnection_00024RTCConfiguration_clazz(env);
-  CHECK_CLAZZ(env, obj.obj(),
-      org_webrtc_PeerConnection_00024RTCConfiguration_clazz(env), NULL);
-
-  jni_generator::JniJavaCallContextChecked call_context;
-  call_context.Init<
-      base::android::MethodID::TYPE_INSTANCE>(
-          env,
-          clazz,
-          "getEnableDtlsSrtp",
-          "()Ljava/lang/Boolean;",
-          &g_org_webrtc_PeerConnection_00024RTCConfiguration_getEnableDtlsSrtp);
-
-  jobject ret =
-      env->CallObjectMethod(obj.obj(),
-          call_context.base.method_id);
-  return base::android::ScopedJavaLocalRef<jobject>(env, ret);
-}
-
-static std::atomic<jmethodID>
     g_org_webrtc_PeerConnection_00024RTCConfiguration_getNetworkPreference(nullptr);
 static base::android::ScopedJavaLocalRef<jobject> Java_RTCConfiguration_getNetworkPreference(JNIEnv*
     env, const base::android::JavaRef<jobject>& obj) {
@@ -2246,8 +2264,5 @@ static jlong Java_PeerConnection_getNativeOwnedPeerConnection(JNIEnv* env, const
 
 }  // namespace jni
 }  // namespace  webrtc
-
-// Step 4: Generated test functions (optional).
-
 
 #endif  // org_webrtc_PeerConnection_JNI

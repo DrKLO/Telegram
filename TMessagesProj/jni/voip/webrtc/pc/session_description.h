@@ -47,13 +47,6 @@ typedef std::vector<VideoCodec> VideoCodecs;
 typedef std::vector<CryptoParams> CryptoParamsVec;
 typedef std::vector<webrtc::RtpExtension> RtpHeaderExtensions;
 
-// RTC4585 RTP/AVPF
-extern const char kMediaProtocolAvpf[];
-// RFC5124 RTP/SAVPF
-extern const char kMediaProtocolSavpf[];
-
-extern const char kMediaProtocolDtlsSavpf[];
-
 // Options to control how session descriptions are generated.
 const int kAutoBandwidth = -1;
 
@@ -99,7 +92,7 @@ class MediaContentDescription {
     return absl::WrapUnique(CloneInternal());
   }
 
-  // |protocol| is the expected media transport protocol, such as RTP/AVPF,
+  // `protocol` is the expected media transport protocol, such as RTP/AVPF,
   // RTP/SAVPF or SCTP/DTLS.
   virtual std::string protocol() const { return protocol_; }
   virtual void set_protocol(const std::string& protocol) {
@@ -143,6 +136,11 @@ class MediaContentDescription {
     cryptos_ = cryptos;
   }
 
+  // List of RTP header extensions. URIs are **NOT** guaranteed to be unique
+  // as they can appear twice when both encrypted and non-encrypted extensions
+  // are present.
+  // Use RtpExtension::FindHeaderExtensionByUri for finding and
+  // RtpExtension::DeduplicateHeaderExtensions for filtering.
   virtual const RtpHeaderExtensions& rtp_header_extensions() const {
     return rtp_header_extensions_;
   }
@@ -438,11 +436,11 @@ class RTC_EXPORT ContentInfo {
   ContentInfo(ContentInfo&& o) = default;
   ContentInfo& operator=(ContentInfo&& o) = default;
 
-  // Alias for |name|.
+  // Alias for `name`.
   std::string mid() const { return name; }
   void set_mid(const std::string& mid) { this->name = mid; }
 
-  // Alias for |description|.
+  // Alias for `description`.
   MediaContentDescription* media_description();
   const MediaContentDescription* media_description() const;
 
@@ -465,7 +463,7 @@ typedef std::vector<std::string> ContentNames;
 
 // This class provides a mechanism to aggregate different media contents into a
 // group. This group can also be shared with the peers in a pre-defined format.
-// GroupInfo should be populated only with the |content_name| of the
+// GroupInfo should be populated only with the `content_name` of the
 // MediaDescription.
 class ContentGroup {
  public:
@@ -483,6 +481,8 @@ class ContentGroup {
   bool HasContentName(const std::string& content_name) const;
   void AddContentName(const std::string& content_name);
   bool RemoveContentName(const std::string& content_name);
+  // for debugging
+  std::string ToString() const;
 
  private:
   std::string semantics_;
@@ -573,7 +573,7 @@ class SessionDescription {
 
   // Group mutators.
   void AddGroup(const ContentGroup& group) { content_groups_.push_back(group); }
-  // Remove the first group with the same semantics specified by |name|.
+  // Remove the first group with the same semantics specified by `name`.
   void RemoveGroupByName(const std::string& name);
 
   // Global attributes.

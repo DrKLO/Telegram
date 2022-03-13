@@ -44,7 +44,7 @@ AudioTrackJni::AudioTrackJni(JNIEnv* env,
       initialized_(false),
       playing_(false),
       audio_device_buffer_(nullptr) {
-  RTC_LOG(INFO) << "ctor";
+  RTC_LOG(LS_INFO) << "ctor";
   RTC_DCHECK(audio_parameters_.is_valid());
   Java_WebRtcAudioTrack_setNativeAudioTrack(env, j_audio_track_,
                                             jni::jlongFromPointer(this));
@@ -55,20 +55,20 @@ AudioTrackJni::AudioTrackJni(JNIEnv* env,
 }
 
 AudioTrackJni::~AudioTrackJni() {
-  RTC_LOG(INFO) << "dtor";
+  RTC_LOG(LS_INFO) << "dtor";
   RTC_DCHECK(thread_checker_.IsCurrent());
   Terminate();
 }
 
 int32_t AudioTrackJni::Init() {
-  RTC_LOG(INFO) << "Init";
+  RTC_LOG(LS_INFO) << "Init";
   env_ = AttachCurrentThreadIfNeeded();
   RTC_DCHECK(thread_checker_.IsCurrent());
   return 0;
 }
 
 int32_t AudioTrackJni::Terminate() {
-  RTC_LOG(INFO) << "Terminate";
+  RTC_LOG(LS_INFO) << "Terminate";
   RTC_DCHECK(thread_checker_.IsCurrent());
   StopPlayout();
   thread_checker_.Detach();
@@ -76,7 +76,7 @@ int32_t AudioTrackJni::Terminate() {
 }
 
 int32_t AudioTrackJni::InitPlayout() {
-  RTC_LOG(INFO) << "InitPlayout";
+  RTC_LOG(LS_INFO) << "InitPlayout";
   RTC_DCHECK(thread_checker_.IsCurrent());
   if (initialized_) {
     // Already initialized.
@@ -126,7 +126,7 @@ bool AudioTrackJni::PlayoutIsInitialized() const {
 }
 
 int32_t AudioTrackJni::StartPlayout() {
-  RTC_LOG(INFO) << "StartPlayout";
+  RTC_LOG(LS_INFO) << "StartPlayout";
   RTC_DCHECK(thread_checker_.IsCurrent());
   if (playing_) {
     // Already playing.
@@ -146,7 +146,7 @@ int32_t AudioTrackJni::StartPlayout() {
 }
 
 int32_t AudioTrackJni::StopPlayout() {
-  RTC_LOG(INFO) << "StopPlayout";
+  RTC_LOG(LS_INFO) << "StopPlayout";
   RTC_DCHECK(thread_checker_.IsCurrent());
   if (!initialized_ || !playing_) {
     return 0;
@@ -185,7 +185,7 @@ bool AudioTrackJni::SpeakerVolumeIsAvailable() {
 }
 
 int AudioTrackJni::SetSpeakerVolume(uint32_t volume) {
-  RTC_LOG(INFO) << "SetSpeakerVolume(" << volume << ")";
+  RTC_LOG(LS_INFO) << "SetSpeakerVolume(" << volume << ")";
   RTC_DCHECK(thread_checker_.IsCurrent());
   return Java_WebRtcAudioTrack_setStreamVolume(env_, j_audio_track_,
                                                static_cast<int>(volume))
@@ -207,7 +207,7 @@ absl::optional<uint32_t> AudioTrackJni::SpeakerVolume() const {
   RTC_DCHECK(thread_checker_.IsCurrent());
   const uint32_t volume =
       Java_WebRtcAudioTrack_getStreamVolume(env_, j_audio_track_);
-  RTC_LOG(INFO) << "SpeakerVolume: " << volume;
+  RTC_LOG(LS_INFO) << "SpeakerVolume: " << volume;
   return volume;
 }
 
@@ -217,30 +217,30 @@ int AudioTrackJni::GetPlayoutUnderrunCount() {
 
 // TODO(henrika): possibly add stereo support.
 void AudioTrackJni::AttachAudioBuffer(AudioDeviceBuffer* audioBuffer) {
-  RTC_LOG(INFO) << "AttachAudioBuffer";
+  RTC_LOG(LS_INFO) << "AttachAudioBuffer";
   RTC_DCHECK(thread_checker_.IsCurrent());
   audio_device_buffer_ = audioBuffer;
   const int sample_rate_hz = audio_parameters_.sample_rate();
-  RTC_LOG(INFO) << "SetPlayoutSampleRate(" << sample_rate_hz << ")";
+  RTC_LOG(LS_INFO) << "SetPlayoutSampleRate(" << sample_rate_hz << ")";
   audio_device_buffer_->SetPlayoutSampleRate(sample_rate_hz);
   const size_t channels = audio_parameters_.channels();
-  RTC_LOG(INFO) << "SetPlayoutChannels(" << channels << ")";
+  RTC_LOG(LS_INFO) << "SetPlayoutChannels(" << channels << ")";
   audio_device_buffer_->SetPlayoutChannels(channels);
 }
 
 void AudioTrackJni::CacheDirectBufferAddress(
     JNIEnv* env,
     const JavaParamRef<jobject>& byte_buffer) {
-  RTC_LOG(INFO) << "OnCacheDirectBufferAddress";
+  RTC_LOG(LS_INFO) << "OnCacheDirectBufferAddress";
   RTC_DCHECK(thread_checker_.IsCurrent());
   RTC_DCHECK(!direct_buffer_address_);
   direct_buffer_address_ = env->GetDirectBufferAddress(byte_buffer.obj());
   jlong capacity = env->GetDirectBufferCapacity(byte_buffer.obj());
-  RTC_LOG(INFO) << "direct buffer capacity: " << capacity;
+  RTC_LOG(LS_INFO) << "direct buffer capacity: " << capacity;
   direct_buffer_capacity_in_bytes_ = static_cast<size_t>(capacity);
   const size_t bytes_per_frame = audio_parameters_.channels() * sizeof(int16_t);
   frames_per_buffer_ = direct_buffer_capacity_in_bytes_ / bytes_per_frame;
-  RTC_LOG(INFO) << "frames_per_buffer: " << frames_per_buffer_;
+  RTC_LOG(LS_INFO) << "frames_per_buffer: " << frames_per_buffer_;
 }
 
 // This method is called on a high-priority thread from Java. The name of

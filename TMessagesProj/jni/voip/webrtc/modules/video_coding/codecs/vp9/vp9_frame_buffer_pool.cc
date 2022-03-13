@@ -15,9 +15,9 @@
 
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
-#include <libvpx/vpx_codec.h>
-#include <libvpx/vpx_decoder.h>
-#include <libvpx/vpx_frame_buffer.h>
+#include "libvpx/vpx_codec.h"
+#include "libvpx/vpx_decoder.h"
+#include "libvpx/vpx_frame_buffer.h"
 
 namespace webrtc {
 
@@ -44,7 +44,7 @@ bool Vp9FrameBufferPool::InitializeVpxUsePool(
           &Vp9FrameBufferPool::VpxGetFrameBuffer,
           // Called by libvpx when it no longer uses a frame buffer.
           &Vp9FrameBufferPool::VpxReleaseFrameBuffer,
-          // |this| will be passed as |user_priv| to VpxGetFrameBuffer.
+          // `this` will be passed as `user_priv` to VpxGetFrameBuffer.
           this)) {
     // Failed to configure libvpx to use Vp9FrameBufferPool.
     return false;
@@ -79,7 +79,7 @@ Vp9FrameBufferPool::GetFrameBuffer(size_t min_size) {
 
         // TODO(phoglund): this limit is being hit in tests since Oct 5 2016.
         // See https://bugs.chromium.org/p/webrtc/issues/detail?id=6484.
-        // RTC_NOTREACHED();
+        // RTC_DCHECK_NOTREACHED();
       }
     }
   }
@@ -152,11 +152,11 @@ int32_t Vp9FrameBufferPool::VpxGetFrameBuffer(void* user_priv,
   rtc::scoped_refptr<Vp9FrameBuffer> buffer = pool->GetFrameBuffer(min_size);
   fb->data = buffer->GetData();
   fb->size = buffer->GetDataSize();
-  // Store Vp9FrameBuffer* in |priv| for use in VpxReleaseFrameBuffer.
-  // This also makes vpx_codec_get_frame return images with their |fb_priv| set
-  // to |buffer| which is important for external reference counting.
-  // Release from refptr so that the buffer's |ref_count_| remains 1 when
-  // |buffer| goes out of scope.
+  // Store Vp9FrameBuffer* in `priv` for use in VpxReleaseFrameBuffer.
+  // This also makes vpx_codec_get_frame return images with their `fb_priv` set
+  // to `buffer` which is important for external reference counting.
+  // Release from refptr so that the buffer's `ref_count_` remains 1 when
+  // `buffer` goes out of scope.
   fb->priv = static_cast<void*>(buffer.release());
   return 0;
 }
@@ -171,7 +171,7 @@ int32_t Vp9FrameBufferPool::VpxReleaseFrameBuffer(void* user_priv,
     buffer->Release();
     // When libvpx fails to decode and you continue to try to decode (and fail)
     // libvpx can for some reason try to release the same buffer multiple times.
-    // Setting |priv| to null protects against trying to Release multiple times.
+    // Setting `priv` to null protects against trying to Release multiple times.
     fb->priv = nullptr;
   }
   return 0;

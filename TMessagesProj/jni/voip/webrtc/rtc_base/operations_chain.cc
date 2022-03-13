@@ -30,7 +30,7 @@ void OperationsChain::CallbackHandle::OnOperationComplete() {
   has_run_ = true;
 #endif  // RTC_DCHECK_IS_ON
   operations_chain_->OnOperationComplete();
-  // We have no reason to keep the |operations_chain_| alive through reference
+  // We have no reason to keep the `operations_chain_` alive through reference
   // counting anymore.
   operations_chain_ = nullptr;
 }

@@ -60,7 +60,7 @@ class ReceiveSideCongestionController : public CallStatsObserver,
   void OnBitrateChanged(int bitrate_bps);
 
   // Ensures the remote party is notified of the receive bitrate no larger than
-  // |bitrate| using RTCP REMB.
+  // `bitrate` using RTCP REMB.
   void SetMaxDesiredReceiveBitrate(DataRate bitrate);
 
   // Implements Module.

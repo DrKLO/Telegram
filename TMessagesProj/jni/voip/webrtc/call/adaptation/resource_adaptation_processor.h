@@ -129,7 +129,7 @@ class ResourceAdaptationProcessor : public ResourceAdaptationProcessorInterface,
                                  const VideoAdaptationCounters& counters)
       RTC_RUN_ON(task_queue_);
 
-  // Searches |adaptation_limits_by_resources_| for each resource with the
+  // Searches `adaptation_limits_by_resources_` for each resource with the
   // highest total adaptation counts. Adaptation up may only occur if the
   // resource performing the adaptation is the only most limited resource. This
   // function returns the list of all most limited resources as well as the

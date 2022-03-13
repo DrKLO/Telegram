@@ -80,7 +80,4 @@ JNI_GENERATOR_EXPORT void Java_org_webrtc_JniCommon_nativeFreeByteBuffer(
 }  // namespace jni
 }  // namespace  webrtc
 
-// Step 4: Generated test functions (optional).
-
-
 #endif  // org_webrtc_JniCommon_JNI

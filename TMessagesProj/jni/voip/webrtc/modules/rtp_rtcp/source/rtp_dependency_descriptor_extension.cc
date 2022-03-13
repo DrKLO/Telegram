@@ -23,7 +23,6 @@
 namespace webrtc {
 
 constexpr RTPExtensionType RtpDependencyDescriptorExtension::kId;
-constexpr char RtpDependencyDescriptorExtension::kUri[];
 constexpr std::bitset<32> RtpDependencyDescriptorExtension::kAllChainsAreActive;
 
 bool RtpDependencyDescriptorExtension::Parse(

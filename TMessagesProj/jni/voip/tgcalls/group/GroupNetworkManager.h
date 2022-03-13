@@ -11,6 +11,7 @@
 #include "rtc_base/network_monitor_factory.h"
 #include "api/candidate.h"
 #include "media/base/media_channel.h"
+#include "pc/sctp_transport.h"
 #include "rtc_base/ssl_fingerprint.h"
 #include "pc/sctp_data_channel.h"
 

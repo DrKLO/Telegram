@@ -95,9 +95,9 @@ DelayBasedBwe::DelayBasedBwe(const WebRtcKeyValueConfig* key_value_config,
       prev_bitrate_(DataRate::Zero()),
       has_once_detected_overuse_(false),
       prev_state_(BandwidthUsage::kBwNormal),
-      use_new_inter_arrival_delta_(absl::StartsWith(
+      use_new_inter_arrival_delta_(!absl::StartsWith(
           key_value_config->Lookup("WebRTC-Bwe-NewInterArrivalDelta"),
-          "Enabled")),
+          "Disabled")),
       alr_limited_backoff_enabled_(absl::StartsWith(
           key_value_config->Lookup("WebRTC-Bwe-AlrLimitedBackoff"),
           "Enabled")) {

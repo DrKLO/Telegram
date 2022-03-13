@@ -15,6 +15,7 @@
 #include <memory>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "api/video_codecs/sdp_video_format.h"
 #include "media/base/codec.h"
 #include "modules/video_coding/include/video_codec_interface.h"
@@ -34,8 +35,9 @@ class VP9Encoder : public VideoEncoder {
   // Deprecated. Returns default implementation using VP9 Profile 0.
   // TODO(emircan): Remove once this is no longer used.
   static std::unique_ptr<VP9Encoder> Create();
-  // Parses VP9 Profile from |codec| and returns the appropriate implementation.
+  // Parses VP9 Profile from `codec` and returns the appropriate implementation.
   static std::unique_ptr<VP9Encoder> Create(const cricket::VideoCodec& codec);
+  static bool SupportsScalabilityMode(absl::string_view scalability_mode);
 
   ~VP9Encoder() override {}
 };

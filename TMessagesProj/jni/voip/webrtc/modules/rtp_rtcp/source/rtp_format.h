@@ -48,11 +48,11 @@ class RtpPacketizer {
   virtual size_t NumPackets() const = 0;
 
   // Get the next payload with payload header.
-  // Write payload and set marker bit of the |packet|.
+  // Write payload and set marker bit of the `packet`.
   // Returns true on success, false otherwise.
   virtual bool NextPacket(RtpPacketToSend* packet) = 0;
 
-  // Split payload_len into sum of integers with respect to |limits|.
+  // Split payload_len into sum of integers with respect to `limits`.
   // Returns empty vector on failure.
   static std::vector<int> SplitAboutEqually(int payload_len,
                                             const PayloadSizeLimits& limits);

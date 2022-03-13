@@ -28,7 +28,7 @@ ChannelController::Config::Config(size_t num_encoder_channels,
 ChannelController::ChannelController(const Config& config)
     : config_(config), channels_to_encode_(config_.intial_channels_to_encode) {
   RTC_DCHECK_GT(config_.intial_channels_to_encode, 0lu);
-  // Currently, we require |intial_channels_to_encode| to be <= 2.
+  // Currently, we require `intial_channels_to_encode` to be <= 2.
   RTC_DCHECK_LE(config_.intial_channels_to_encode, 2lu);
   RTC_DCHECK_GE(config_.num_encoder_channels,
                 config_.intial_channels_to_encode);
@@ -43,7 +43,7 @@ void ChannelController::UpdateNetworkMetrics(
 }
 
 void ChannelController::MakeDecision(AudioEncoderRuntimeConfig* config) {
-  // Decision on |num_channels| should not have been made.
+  // Decision on `num_channels` should not have been made.
   RTC_DCHECK(!config->num_channels);
 
   if (uplink_bandwidth_bps_) {

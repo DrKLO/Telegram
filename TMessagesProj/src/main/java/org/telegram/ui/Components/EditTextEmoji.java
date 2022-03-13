@@ -147,7 +147,8 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
         editText.setCursorColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
         if (style == STYLE_FRAGMENT) {
             editText.setGravity(Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT));
-            editText.setBackgroundDrawable(Theme.createEditTextDrawable(context, false));
+            editText.setBackground(null);
+            editText.setLineColors(getThemedColor(Theme.key_windowBackgroundWhiteInputField), getThemedColor(Theme.key_windowBackgroundWhiteInputFieldActivated), getThemedColor(Theme.key_windowBackgroundWhiteRedText3));
             editText.setHintTextColor(getThemedColor(Theme.key_windowBackgroundWhiteHintText));
             editText.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
             editText.setPadding(LocaleController.isRTL ? AndroidUtilities.dp(40) : 0, 0, LocaleController.isRTL ? 0 : AndroidUtilities.dp(40), AndroidUtilities.dp(8));
@@ -156,7 +157,7 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
             editText.setGravity(Gravity.CENTER_VERTICAL | Gravity.LEFT);
             editText.setHintTextColor(getThemedColor(Theme.key_dialogTextHint));
             editText.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
-            editText.setBackgroundDrawable(null);
+            editText.setBackground(null);
             editText.setPadding(0, AndroidUtilities.dp(11), 0, AndroidUtilities.dp(12));
             addView(editText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 48, 0, 0, 0));
         }
@@ -173,7 +174,7 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
             addView(emojiButton, LayoutHelper.createFrame(48, 48, Gravity.BOTTOM | Gravity.LEFT, 0, 0, 0, 0));
         }
         if (Build.VERSION.SDK_INT >= 21) {
-            emojiButton.setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
+            emojiButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
         }
         emojiButton.setOnClickListener(view -> {
             if (!emojiButton.isEnabled() || (adjustPanLayoutHelper != null && adjustPanLayoutHelper.animationInProgress())) {

@@ -39,7 +39,7 @@ void WebRtcIlbcfix_CreateAugmentedVec(
   const int16_t *ppo, *ppi;
   int16_t cbVecTmp[4];
   /* Interpolation starts 4 elements before cbVec+index, but must not start
-     outside |cbVec|; clamping interp_len to stay within |cbVec|.
+     outside `cbVec`; clamping interp_len to stay within `cbVec`.
    */
   size_t interp_len = WEBRTC_SPL_MIN(index, 4);
 
@@ -69,12 +69,12 @@ void WebRtcIlbcfix_CreateAugmentedVec(
 
   /* copy the second noninterpolated part */
   ppo = buffer - index;
-  /* |tempbuff2| is declared in WebRtcIlbcfix_GetCbVec and is SUBL+5 elements
-     long. |buffer| points one element past the end of that vector, i.e., at
+  /* `tempbuff2` is declared in WebRtcIlbcfix_GetCbVec and is SUBL+5 elements
+     long. `buffer` points one element past the end of that vector, i.e., at
      tempbuff2+SUBL+5. Since ppo=buffer-index, we cannot read any more than
-     |index| elements from |ppo|.
+     `index` elements from `ppo`.
 
-     |cbVec| is declared to be SUBL elements long in WebRtcIlbcfix_CbConstruct.
+     `cbVec` is declared to be SUBL elements long in WebRtcIlbcfix_CbConstruct.
      Therefore, we can only write SUBL-index elements to cbVec+index.
 
      These two conditions limit the number of elements to copy.

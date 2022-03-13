@@ -19,7 +19,10 @@
 #include <cstring>
 
 #include "absl/base/attributes.h"
+#include "absl/base/internal/endian.h"
+#include "absl/numeric/int128.h"
 #include "absl/random/internal/platform.h"
+#include "absl/random/internal/randen_traits.h"
 
 #if ABSL_HAVE_ATTRIBUTE(always_inline) || \
     (defined(__GNUC__) && !defined(__clang__))
@@ -37,369 +40,303 @@
 namespace {
 
 // AES portions based on rijndael-alg-fst.c,
-// https://fastcrypto.org/front/misc/rijndael-alg-fst.c
+// https://fastcrypto.org/front/misc/rijndael-alg-fst.c, and modified for
+// platform-endianness.
 //
 // Implementation of
 // http://www.csrc.nist.gov/publications/fips/fips197/fips-197.pdf
 constexpr uint32_t te0[256] = {
-    0xc66363a5, 0xf87c7c84, 0xee777799, 0xf67b7b8d, 0xfff2f20d, 0xd66b6bbd,
-    0xde6f6fb1, 0x91c5c554, 0x60303050, 0x02010103, 0xce6767a9, 0x562b2b7d,
-    0xe7fefe19, 0xb5d7d762, 0x4dababe6, 0xec76769a, 0x8fcaca45, 0x1f82829d,
-    0x89c9c940, 0xfa7d7d87, 0xeffafa15, 0xb25959eb, 0x8e4747c9, 0xfbf0f00b,
-    0x41adadec, 0xb3d4d467, 0x5fa2a2fd, 0x45afafea, 0x239c9cbf, 0x53a4a4f7,
-    0xe4727296, 0x9bc0c05b, 0x75b7b7c2, 0xe1fdfd1c, 0x3d9393ae, 0x4c26266a,
-    0x6c36365a, 0x7e3f3f41, 0xf5f7f702, 0x83cccc4f, 0x6834345c, 0x51a5a5f4,
-    0xd1e5e534, 0xf9f1f108, 0xe2717193, 0xabd8d873, 0x62313153, 0x2a15153f,
-    0x0804040c, 0x95c7c752, 0x46232365, 0x9dc3c35e, 0x30181828, 0x379696a1,
-    0x0a05050f, 0x2f9a9ab5, 0x0e070709, 0x24121236, 0x1b80809b, 0xdfe2e23d,
-    0xcdebeb26, 0x4e272769, 0x7fb2b2cd, 0xea75759f, 0x1209091b, 0x1d83839e,
-    0x582c2c74, 0x341a1a2e, 0x361b1b2d, 0xdc6e6eb2, 0xb45a5aee, 0x5ba0a0fb,
-    0xa45252f6, 0x763b3b4d, 0xb7d6d661, 0x7db3b3ce, 0x5229297b, 0xdde3e33e,
-    0x5e2f2f71, 0x13848497, 0xa65353f5, 0xb9d1d168, 0x00000000, 0xc1eded2c,
-    0x40202060, 0xe3fcfc1f, 0x79b1b1c8, 0xb65b5bed, 0xd46a6abe, 0x8dcbcb46,
-    0x67bebed9, 0x7239394b, 0x944a4ade, 0x984c4cd4, 0xb05858e8, 0x85cfcf4a,
-    0xbbd0d06b, 0xc5efef2a, 0x4faaaae5, 0xedfbfb16, 0x864343c5, 0x9a4d4dd7,
-    0x66333355, 0x11858594, 0x8a4545cf, 0xe9f9f910, 0x04020206, 0xfe7f7f81,
-    0xa05050f0, 0x783c3c44, 0x259f9fba, 0x4ba8a8e3, 0xa25151f3, 0x5da3a3fe,
-    0x804040c0, 0x058f8f8a, 0x3f9292ad, 0x219d9dbc, 0x70383848, 0xf1f5f504,
-    0x63bcbcdf, 0x77b6b6c1, 0xafdada75, 0x42212163, 0x20101030, 0xe5ffff1a,
-    0xfdf3f30e, 0xbfd2d26d, 0x81cdcd4c, 0x180c0c14, 0x26131335, 0xc3ecec2f,
-    0xbe5f5fe1, 0x359797a2, 0x884444cc, 0x2e171739, 0x93c4c457, 0x55a7a7f2,
-    0xfc7e7e82, 0x7a3d3d47, 0xc86464ac, 0xba5d5de7, 0x3219192b, 0xe6737395,
-    0xc06060a0, 0x19818198, 0x9e4f4fd1, 0xa3dcdc7f, 0x44222266, 0x542a2a7e,
-    0x3b9090ab, 0x0b888883, 0x8c4646ca, 0xc7eeee29, 0x6bb8b8d3, 0x2814143c,
-    0xa7dede79, 0xbc5e5ee2, 0x160b0b1d, 0xaddbdb76, 0xdbe0e03b, 0x64323256,
-    0x743a3a4e, 0x140a0a1e, 0x924949db, 0x0c06060a, 0x4824246c, 0xb85c5ce4,
-    0x9fc2c25d, 0xbdd3d36e, 0x43acacef, 0xc46262a6, 0x399191a8, 0x319595a4,
-    0xd3e4e437, 0xf279798b, 0xd5e7e732, 0x8bc8c843, 0x6e373759, 0xda6d6db7,
-    0x018d8d8c, 0xb1d5d564, 0x9c4e4ed2, 0x49a9a9e0, 0xd86c6cb4, 0xac5656fa,
-    0xf3f4f407, 0xcfeaea25, 0xca6565af, 0xf47a7a8e, 0x47aeaee9, 0x10080818,
-    0x6fbabad5, 0xf0787888, 0x4a25256f, 0x5c2e2e72, 0x381c1c24, 0x57a6a6f1,
-    0x73b4b4c7, 0x97c6c651, 0xcbe8e823, 0xa1dddd7c, 0xe874749c, 0x3e1f1f21,
-    0x964b4bdd, 0x61bdbddc, 0x0d8b8b86, 0x0f8a8a85, 0xe0707090, 0x7c3e3e42,
-    0x71b5b5c4, 0xcc6666aa, 0x904848d8, 0x06030305, 0xf7f6f601, 0x1c0e0e12,
-    0xc26161a3, 0x6a35355f, 0xae5757f9, 0x69b9b9d0, 0x17868691, 0x99c1c158,
-    0x3a1d1d27, 0x279e9eb9, 0xd9e1e138, 0xebf8f813, 0x2b9898b3, 0x22111133,
-    0xd26969bb, 0xa9d9d970, 0x078e8e89, 0x339494a7, 0x2d9b9bb6, 0x3c1e1e22,
-    0x15878792, 0xc9e9e920, 0x87cece49, 0xaa5555ff, 0x50282878, 0xa5dfdf7a,
-    0x038c8c8f, 0x59a1a1f8, 0x09898980, 0x1a0d0d17, 0x65bfbfda, 0xd7e6e631,
-    0x844242c6, 0xd06868b8, 0x824141c3, 0x299999b0, 0x5a2d2d77, 0x1e0f0f11,
-    0x7bb0b0cb, 0xa85454fc, 0x6dbbbbd6, 0x2c16163a,
+    0xa56363c6, 0x847c7cf8, 0x997777ee, 0x8d7b7bf6, 0x0df2f2ff, 0xbd6b6bd6,
+    0xb16f6fde, 0x54c5c591, 0x50303060, 0x03010102, 0xa96767ce, 0x7d2b2b56,
+    0x19fefee7, 0x62d7d7b5, 0xe6abab4d, 0x9a7676ec, 0x45caca8f, 0x9d82821f,
+    0x40c9c989, 0x877d7dfa, 0x15fafaef, 0xeb5959b2, 0xc947478e, 0x0bf0f0fb,
+    0xecadad41, 0x67d4d4b3, 0xfda2a25f, 0xeaafaf45, 0xbf9c9c23, 0xf7a4a453,
+    0x967272e4, 0x5bc0c09b, 0xc2b7b775, 0x1cfdfde1, 0xae93933d, 0x6a26264c,
+    0x5a36366c, 0x413f3f7e, 0x02f7f7f5, 0x4fcccc83, 0x5c343468, 0xf4a5a551,
+    0x34e5e5d1, 0x08f1f1f9, 0x937171e2, 0x73d8d8ab, 0x53313162, 0x3f15152a,
+    0x0c040408, 0x52c7c795, 0x65232346, 0x5ec3c39d, 0x28181830, 0xa1969637,
+    0x0f05050a, 0xb59a9a2f, 0x0907070e, 0x36121224, 0x9b80801b, 0x3de2e2df,
+    0x26ebebcd, 0x6927274e, 0xcdb2b27f, 0x9f7575ea, 0x1b090912, 0x9e83831d,
+    0x742c2c58, 0x2e1a1a34, 0x2d1b1b36, 0xb26e6edc, 0xee5a5ab4, 0xfba0a05b,
+    0xf65252a4, 0x4d3b3b76, 0x61d6d6b7, 0xceb3b37d, 0x7b292952, 0x3ee3e3dd,
+    0x712f2f5e, 0x97848413, 0xf55353a6, 0x68d1d1b9, 0x00000000, 0x2cededc1,
+    0x60202040, 0x1ffcfce3, 0xc8b1b179, 0xed5b5bb6, 0xbe6a6ad4, 0x46cbcb8d,
+    0xd9bebe67, 0x4b393972, 0xde4a4a94, 0xd44c4c98, 0xe85858b0, 0x4acfcf85,
+    0x6bd0d0bb, 0x2aefefc5, 0xe5aaaa4f, 0x16fbfbed, 0xc5434386, 0xd74d4d9a,
+    0x55333366, 0x94858511, 0xcf45458a, 0x10f9f9e9, 0x06020204, 0x817f7ffe,
+    0xf05050a0, 0x443c3c78, 0xba9f9f25, 0xe3a8a84b, 0xf35151a2, 0xfea3a35d,
+    0xc0404080, 0x8a8f8f05, 0xad92923f, 0xbc9d9d21, 0x48383870, 0x04f5f5f1,
+    0xdfbcbc63, 0xc1b6b677, 0x75dadaaf, 0x63212142, 0x30101020, 0x1affffe5,
+    0x0ef3f3fd, 0x6dd2d2bf, 0x4ccdcd81, 0x140c0c18, 0x35131326, 0x2fececc3,
+    0xe15f5fbe, 0xa2979735, 0xcc444488, 0x3917172e, 0x57c4c493, 0xf2a7a755,
+    0x827e7efc, 0x473d3d7a, 0xac6464c8, 0xe75d5dba, 0x2b191932, 0x957373e6,
+    0xa06060c0, 0x98818119, 0xd14f4f9e, 0x7fdcdca3, 0x66222244, 0x7e2a2a54,
+    0xab90903b, 0x8388880b, 0xca46468c, 0x29eeeec7, 0xd3b8b86b, 0x3c141428,
+    0x79dedea7, 0xe25e5ebc, 0x1d0b0b16, 0x76dbdbad, 0x3be0e0db, 0x56323264,
+    0x4e3a3a74, 0x1e0a0a14, 0xdb494992, 0x0a06060c, 0x6c242448, 0xe45c5cb8,
+    0x5dc2c29f, 0x6ed3d3bd, 0xefacac43, 0xa66262c4, 0xa8919139, 0xa4959531,
+    0x37e4e4d3, 0x8b7979f2, 0x32e7e7d5, 0x43c8c88b, 0x5937376e, 0xb76d6dda,
+    0x8c8d8d01, 0x64d5d5b1, 0xd24e4e9c, 0xe0a9a949, 0xb46c6cd8, 0xfa5656ac,
+    0x07f4f4f3, 0x25eaeacf, 0xaf6565ca, 0x8e7a7af4, 0xe9aeae47, 0x18080810,
+    0xd5baba6f, 0x887878f0, 0x6f25254a, 0x722e2e5c, 0x241c1c38, 0xf1a6a657,
+    0xc7b4b473, 0x51c6c697, 0x23e8e8cb, 0x7cdddda1, 0x9c7474e8, 0x211f1f3e,
+    0xdd4b4b96, 0xdcbdbd61, 0x868b8b0d, 0x858a8a0f, 0x907070e0, 0x423e3e7c,
+    0xc4b5b571, 0xaa6666cc, 0xd8484890, 0x05030306, 0x01f6f6f7, 0x120e0e1c,
+    0xa36161c2, 0x5f35356a, 0xf95757ae, 0xd0b9b969, 0x91868617, 0x58c1c199,
+    0x271d1d3a, 0xb99e9e27, 0x38e1e1d9, 0x13f8f8eb, 0xb398982b, 0x33111122,
+    0xbb6969d2, 0x70d9d9a9, 0x898e8e07, 0xa7949433, 0xb69b9b2d, 0x221e1e3c,
+    0x92878715, 0x20e9e9c9, 0x49cece87, 0xff5555aa, 0x78282850, 0x7adfdfa5,
+    0x8f8c8c03, 0xf8a1a159, 0x80898909, 0x170d0d1a, 0xdabfbf65, 0x31e6e6d7,
+    0xc6424284, 0xb86868d0, 0xc3414182, 0xb0999929, 0x772d2d5a, 0x110f0f1e,
+    0xcbb0b07b, 0xfc5454a8, 0xd6bbbb6d, 0x3a16162c,
 };
 
 constexpr uint32_t te1[256] = {
-    0xa5c66363, 0x84f87c7c, 0x99ee7777, 0x8df67b7b, 0x0dfff2f2, 0xbdd66b6b,
-    0xb1de6f6f, 0x5491c5c5, 0x50603030, 0x03020101, 0xa9ce6767, 0x7d562b2b,
-    0x19e7fefe, 0x62b5d7d7, 0xe64dabab, 0x9aec7676, 0x458fcaca, 0x9d1f8282,
-    0x4089c9c9, 0x87fa7d7d, 0x15effafa, 0xebb25959, 0xc98e4747, 0x0bfbf0f0,
-    0xec41adad, 0x67b3d4d4, 0xfd5fa2a2, 0xea45afaf, 0xbf239c9c, 0xf753a4a4,
-    0x96e47272, 0x5b9bc0c0, 0xc275b7b7, 0x1ce1fdfd, 0xae3d9393, 0x6a4c2626,
-    0x5a6c3636, 0x417e3f3f, 0x02f5f7f7, 0x4f83cccc, 0x5c683434, 0xf451a5a5,
-    0x34d1e5e5, 0x08f9f1f1, 0x93e27171, 0x73abd8d8, 0x53623131, 0x3f2a1515,
-    0x0c080404, 0x5295c7c7, 0x65462323, 0x5e9dc3c3, 0x28301818, 0xa1379696,
-    0x0f0a0505, 0xb52f9a9a, 0x090e0707, 0x36241212, 0x9b1b8080, 0x3ddfe2e2,
-    0x26cdebeb, 0x694e2727, 0xcd7fb2b2, 0x9fea7575, 0x1b120909, 0x9e1d8383,
-    0x74582c2c, 0x2e341a1a, 0x2d361b1b, 0xb2dc6e6e, 0xeeb45a5a, 0xfb5ba0a0,
-    0xf6a45252, 0x4d763b3b, 0x61b7d6d6, 0xce7db3b3, 0x7b522929, 0x3edde3e3,
-    0x715e2f2f, 0x97138484, 0xf5a65353, 0x68b9d1d1, 0x00000000, 0x2cc1eded,
-    0x60402020, 0x1fe3fcfc, 0xc879b1b1, 0xedb65b5b, 0xbed46a6a, 0x468dcbcb,
-    0xd967bebe, 0x4b723939, 0xde944a4a, 0xd4984c4c, 0xe8b05858, 0x4a85cfcf,
-    0x6bbbd0d0, 0x2ac5efef, 0xe54faaaa, 0x16edfbfb, 0xc5864343, 0xd79a4d4d,
-    0x55663333, 0x94118585, 0xcf8a4545, 0x10e9f9f9, 0x06040202, 0x81fe7f7f,
-    0xf0a05050, 0x44783c3c, 0xba259f9f, 0xe34ba8a8, 0xf3a25151, 0xfe5da3a3,
-    0xc0804040, 0x8a058f8f, 0xad3f9292, 0xbc219d9d, 0x48703838, 0x04f1f5f5,
-    0xdf63bcbc, 0xc177b6b6, 0x75afdada, 0x63422121, 0x30201010, 0x1ae5ffff,
-    0x0efdf3f3, 0x6dbfd2d2, 0x4c81cdcd, 0x14180c0c, 0x35261313, 0x2fc3ecec,
-    0xe1be5f5f, 0xa2359797, 0xcc884444, 0x392e1717, 0x5793c4c4, 0xf255a7a7,
-    0x82fc7e7e, 0x477a3d3d, 0xacc86464, 0xe7ba5d5d, 0x2b321919, 0x95e67373,
-    0xa0c06060, 0x98198181, 0xd19e4f4f, 0x7fa3dcdc, 0x66442222, 0x7e542a2a,
-    0xab3b9090, 0x830b8888, 0xca8c4646, 0x29c7eeee, 0xd36bb8b8, 0x3c281414,
-    0x79a7dede, 0xe2bc5e5e, 0x1d160b0b, 0x76addbdb, 0x3bdbe0e0, 0x56643232,
-    0x4e743a3a, 0x1e140a0a, 0xdb924949, 0x0a0c0606, 0x6c482424, 0xe4b85c5c,
-    0x5d9fc2c2, 0x6ebdd3d3, 0xef43acac, 0xa6c46262, 0xa8399191, 0xa4319595,
-    0x37d3e4e4, 0x8bf27979, 0x32d5e7e7, 0x438bc8c8, 0x596e3737, 0xb7da6d6d,
-    0x8c018d8d, 0x64b1d5d5, 0xd29c4e4e, 0xe049a9a9, 0xb4d86c6c, 0xfaac5656,
-    0x07f3f4f4, 0x25cfeaea, 0xafca6565, 0x8ef47a7a, 0xe947aeae, 0x18100808,
-    0xd56fbaba, 0x88f07878, 0x6f4a2525, 0x725c2e2e, 0x24381c1c, 0xf157a6a6,
-    0xc773b4b4, 0x5197c6c6, 0x23cbe8e8, 0x7ca1dddd, 0x9ce87474, 0x213e1f1f,
-    0xdd964b4b, 0xdc61bdbd, 0x860d8b8b, 0x850f8a8a, 0x90e07070, 0x427c3e3e,
-    0xc471b5b5, 0xaacc6666, 0xd8904848, 0x05060303, 0x01f7f6f6, 0x121c0e0e,
-    0xa3c26161, 0x5f6a3535, 0xf9ae5757, 0xd069b9b9, 0x91178686, 0x5899c1c1,
-    0x273a1d1d, 0xb9279e9e, 0x38d9e1e1, 0x13ebf8f8, 0xb32b9898, 0x33221111,
-    0xbbd26969, 0x70a9d9d9, 0x89078e8e, 0xa7339494, 0xb62d9b9b, 0x223c1e1e,
-    0x92158787, 0x20c9e9e9, 0x4987cece, 0xffaa5555, 0x78502828, 0x7aa5dfdf,
-    0x8f038c8c, 0xf859a1a1, 0x80098989, 0x171a0d0d, 0xda65bfbf, 0x31d7e6e6,
-    0xc6844242, 0xb8d06868, 0xc3824141, 0xb0299999, 0x775a2d2d, 0x111e0f0f,
-    0xcb7bb0b0, 0xfca85454, 0xd66dbbbb, 0x3a2c1616,
+    0x6363c6a5, 0x7c7cf884, 0x7777ee99, 0x7b7bf68d, 0xf2f2ff0d, 0x6b6bd6bd,
+    0x6f6fdeb1, 0xc5c59154, 0x30306050, 0x01010203, 0x6767cea9, 0x2b2b567d,
+    0xfefee719, 0xd7d7b562, 0xabab4de6, 0x7676ec9a, 0xcaca8f45, 0x82821f9d,
+    0xc9c98940, 0x7d7dfa87, 0xfafaef15, 0x5959b2eb, 0x47478ec9, 0xf0f0fb0b,
+    0xadad41ec, 0xd4d4b367, 0xa2a25ffd, 0xafaf45ea, 0x9c9c23bf, 0xa4a453f7,
+    0x7272e496, 0xc0c09b5b, 0xb7b775c2, 0xfdfde11c, 0x93933dae, 0x26264c6a,
+    0x36366c5a, 0x3f3f7e41, 0xf7f7f502, 0xcccc834f, 0x3434685c, 0xa5a551f4,
+    0xe5e5d134, 0xf1f1f908, 0x7171e293, 0xd8d8ab73, 0x31316253, 0x15152a3f,
+    0x0404080c, 0xc7c79552, 0x23234665, 0xc3c39d5e, 0x18183028, 0x969637a1,
+    0x05050a0f, 0x9a9a2fb5, 0x07070e09, 0x12122436, 0x80801b9b, 0xe2e2df3d,
+    0xebebcd26, 0x27274e69, 0xb2b27fcd, 0x7575ea9f, 0x0909121b, 0x83831d9e,
+    0x2c2c5874, 0x1a1a342e, 0x1b1b362d, 0x6e6edcb2, 0x5a5ab4ee, 0xa0a05bfb,
+    0x5252a4f6, 0x3b3b764d, 0xd6d6b761, 0xb3b37dce, 0x2929527b, 0xe3e3dd3e,
+    0x2f2f5e71, 0x84841397, 0x5353a6f5, 0xd1d1b968, 0x00000000, 0xededc12c,
+    0x20204060, 0xfcfce31f, 0xb1b179c8, 0x5b5bb6ed, 0x6a6ad4be, 0xcbcb8d46,
+    0xbebe67d9, 0x3939724b, 0x4a4a94de, 0x4c4c98d4, 0x5858b0e8, 0xcfcf854a,
+    0xd0d0bb6b, 0xefefc52a, 0xaaaa4fe5, 0xfbfbed16, 0x434386c5, 0x4d4d9ad7,
+    0x33336655, 0x85851194, 0x45458acf, 0xf9f9e910, 0x02020406, 0x7f7ffe81,
+    0x5050a0f0, 0x3c3c7844, 0x9f9f25ba, 0xa8a84be3, 0x5151a2f3, 0xa3a35dfe,
+    0x404080c0, 0x8f8f058a, 0x92923fad, 0x9d9d21bc, 0x38387048, 0xf5f5f104,
+    0xbcbc63df, 0xb6b677c1, 0xdadaaf75, 0x21214263, 0x10102030, 0xffffe51a,
+    0xf3f3fd0e, 0xd2d2bf6d, 0xcdcd814c, 0x0c0c1814, 0x13132635, 0xececc32f,
+    0x5f5fbee1, 0x979735a2, 0x444488cc, 0x17172e39, 0xc4c49357, 0xa7a755f2,
+    0x7e7efc82, 0x3d3d7a47, 0x6464c8ac, 0x5d5dbae7, 0x1919322b, 0x7373e695,
+    0x6060c0a0, 0x81811998, 0x4f4f9ed1, 0xdcdca37f, 0x22224466, 0x2a2a547e,
+    0x90903bab, 0x88880b83, 0x46468cca, 0xeeeec729, 0xb8b86bd3, 0x1414283c,
+    0xdedea779, 0x5e5ebce2, 0x0b0b161d, 0xdbdbad76, 0xe0e0db3b, 0x32326456,
+    0x3a3a744e, 0x0a0a141e, 0x494992db, 0x06060c0a, 0x2424486c, 0x5c5cb8e4,
+    0xc2c29f5d, 0xd3d3bd6e, 0xacac43ef, 0x6262c4a6, 0x919139a8, 0x959531a4,
+    0xe4e4d337, 0x7979f28b, 0xe7e7d532, 0xc8c88b43, 0x37376e59, 0x6d6ddab7,
+    0x8d8d018c, 0xd5d5b164, 0x4e4e9cd2, 0xa9a949e0, 0x6c6cd8b4, 0x5656acfa,
+    0xf4f4f307, 0xeaeacf25, 0x6565caaf, 0x7a7af48e, 0xaeae47e9, 0x08081018,
+    0xbaba6fd5, 0x7878f088, 0x25254a6f, 0x2e2e5c72, 0x1c1c3824, 0xa6a657f1,
+    0xb4b473c7, 0xc6c69751, 0xe8e8cb23, 0xdddda17c, 0x7474e89c, 0x1f1f3e21,
+    0x4b4b96dd, 0xbdbd61dc, 0x8b8b0d86, 0x8a8a0f85, 0x7070e090, 0x3e3e7c42,
+    0xb5b571c4, 0x6666ccaa, 0x484890d8, 0x03030605, 0xf6f6f701, 0x0e0e1c12,
+    0x6161c2a3, 0x35356a5f, 0x5757aef9, 0xb9b969d0, 0x86861791, 0xc1c19958,
+    0x1d1d3a27, 0x9e9e27b9, 0xe1e1d938, 0xf8f8eb13, 0x98982bb3, 0x11112233,
+    0x6969d2bb, 0xd9d9a970, 0x8e8e0789, 0x949433a7, 0x9b9b2db6, 0x1e1e3c22,
+    0x87871592, 0xe9e9c920, 0xcece8749, 0x5555aaff, 0x28285078, 0xdfdfa57a,
+    0x8c8c038f, 0xa1a159f8, 0x89890980, 0x0d0d1a17, 0xbfbf65da, 0xe6e6d731,
+    0x424284c6, 0x6868d0b8, 0x414182c3, 0x999929b0, 0x2d2d5a77, 0x0f0f1e11,
+    0xb0b07bcb, 0x5454a8fc, 0xbbbb6dd6, 0x16162c3a,
 };
 
 constexpr uint32_t te2[256] = {
-    0x63a5c663, 0x7c84f87c, 0x7799ee77, 0x7b8df67b, 0xf20dfff2, 0x6bbdd66b,
-    0x6fb1de6f, 0xc55491c5, 0x30506030, 0x01030201, 0x67a9ce67, 0x2b7d562b,
-    0xfe19e7fe, 0xd762b5d7, 0xabe64dab, 0x769aec76, 0xca458fca, 0x829d1f82,
-    0xc94089c9, 0x7d87fa7d, 0xfa15effa, 0x59ebb259, 0x47c98e47, 0xf00bfbf0,
-    0xadec41ad, 0xd467b3d4, 0xa2fd5fa2, 0xafea45af, 0x9cbf239c, 0xa4f753a4,
-    0x7296e472, 0xc05b9bc0, 0xb7c275b7, 0xfd1ce1fd, 0x93ae3d93, 0x266a4c26,
-    0x365a6c36, 0x3f417e3f, 0xf702f5f7, 0xcc4f83cc, 0x345c6834, 0xa5f451a5,
-    0xe534d1e5, 0xf108f9f1, 0x7193e271, 0xd873abd8, 0x31536231, 0x153f2a15,
-    0x040c0804, 0xc75295c7, 0x23654623, 0xc35e9dc3, 0x18283018, 0x96a13796,
-    0x050f0a05, 0x9ab52f9a, 0x07090e07, 0x12362412, 0x809b1b80, 0xe23ddfe2,
-    0xeb26cdeb, 0x27694e27, 0xb2cd7fb2, 0x759fea75, 0x091b1209, 0x839e1d83,
-    0x2c74582c, 0x1a2e341a, 0x1b2d361b, 0x6eb2dc6e, 0x5aeeb45a, 0xa0fb5ba0,
-    0x52f6a452, 0x3b4d763b, 0xd661b7d6, 0xb3ce7db3, 0x297b5229, 0xe33edde3,
-    0x2f715e2f, 0x84971384, 0x53f5a653, 0xd168b9d1, 0x00000000, 0xed2cc1ed,
-    0x20604020, 0xfc1fe3fc, 0xb1c879b1, 0x5bedb65b, 0x6abed46a, 0xcb468dcb,
-    0xbed967be, 0x394b7239, 0x4ade944a, 0x4cd4984c, 0x58e8b058, 0xcf4a85cf,
-    0xd06bbbd0, 0xef2ac5ef, 0xaae54faa, 0xfb16edfb, 0x43c58643, 0x4dd79a4d,
-    0x33556633, 0x85941185, 0x45cf8a45, 0xf910e9f9, 0x02060402, 0x7f81fe7f,
-    0x50f0a050, 0x3c44783c, 0x9fba259f, 0xa8e34ba8, 0x51f3a251, 0xa3fe5da3,
-    0x40c08040, 0x8f8a058f, 0x92ad3f92, 0x9dbc219d, 0x38487038, 0xf504f1f5,
-    0xbcdf63bc, 0xb6c177b6, 0xda75afda, 0x21634221, 0x10302010, 0xff1ae5ff,
-    0xf30efdf3, 0xd26dbfd2, 0xcd4c81cd, 0x0c14180c, 0x13352613, 0xec2fc3ec,
-    0x5fe1be5f, 0x97a23597, 0x44cc8844, 0x17392e17, 0xc45793c4, 0xa7f255a7,
-    0x7e82fc7e, 0x3d477a3d, 0x64acc864, 0x5de7ba5d, 0x192b3219, 0x7395e673,
-    0x60a0c060, 0x81981981, 0x4fd19e4f, 0xdc7fa3dc, 0x22664422, 0x2a7e542a,
-    0x90ab3b90, 0x88830b88, 0x46ca8c46, 0xee29c7ee, 0xb8d36bb8, 0x143c2814,
-    0xde79a7de, 0x5ee2bc5e, 0x0b1d160b, 0xdb76addb, 0xe03bdbe0, 0x32566432,
-    0x3a4e743a, 0x0a1e140a, 0x49db9249, 0x060a0c06, 0x246c4824, 0x5ce4b85c,
-    0xc25d9fc2, 0xd36ebdd3, 0xacef43ac, 0x62a6c462, 0x91a83991, 0x95a43195,
-    0xe437d3e4, 0x798bf279, 0xe732d5e7, 0xc8438bc8, 0x37596e37, 0x6db7da6d,
-    0x8d8c018d, 0xd564b1d5, 0x4ed29c4e, 0xa9e049a9, 0x6cb4d86c, 0x56faac56,
-    0xf407f3f4, 0xea25cfea, 0x65afca65, 0x7a8ef47a, 0xaee947ae, 0x08181008,
-    0xbad56fba, 0x7888f078, 0x256f4a25, 0x2e725c2e, 0x1c24381c, 0xa6f157a6,
-    0xb4c773b4, 0xc65197c6, 0xe823cbe8, 0xdd7ca1dd, 0x749ce874, 0x1f213e1f,
-    0x4bdd964b, 0xbddc61bd, 0x8b860d8b, 0x8a850f8a, 0x7090e070, 0x3e427c3e,
-    0xb5c471b5, 0x66aacc66, 0x48d89048, 0x03050603, 0xf601f7f6, 0x0e121c0e,
-    0x61a3c261, 0x355f6a35, 0x57f9ae57, 0xb9d069b9, 0x86911786, 0xc15899c1,
-    0x1d273a1d, 0x9eb9279e, 0xe138d9e1, 0xf813ebf8, 0x98b32b98, 0x11332211,
-    0x69bbd269, 0xd970a9d9, 0x8e89078e, 0x94a73394, 0x9bb62d9b, 0x1e223c1e,
-    0x87921587, 0xe920c9e9, 0xce4987ce, 0x55ffaa55, 0x28785028, 0xdf7aa5df,
-    0x8c8f038c, 0xa1f859a1, 0x89800989, 0x0d171a0d, 0xbfda65bf, 0xe631d7e6,
-    0x42c68442, 0x68b8d068, 0x41c38241, 0x99b02999, 0x2d775a2d, 0x0f111e0f,
-    0xb0cb7bb0, 0x54fca854, 0xbbd66dbb, 0x163a2c16,
+    0x63c6a563, 0x7cf8847c, 0x77ee9977, 0x7bf68d7b, 0xf2ff0df2, 0x6bd6bd6b,
+    0x6fdeb16f, 0xc59154c5, 0x30605030, 0x01020301, 0x67cea967, 0x2b567d2b,
+    0xfee719fe, 0xd7b562d7, 0xab4de6ab, 0x76ec9a76, 0xca8f45ca, 0x821f9d82,
+    0xc98940c9, 0x7dfa877d, 0xfaef15fa, 0x59b2eb59, 0x478ec947, 0xf0fb0bf0,
+    0xad41ecad, 0xd4b367d4, 0xa25ffda2, 0xaf45eaaf, 0x9c23bf9c, 0xa453f7a4,
+    0x72e49672, 0xc09b5bc0, 0xb775c2b7, 0xfde11cfd, 0x933dae93, 0x264c6a26,
+    0x366c5a36, 0x3f7e413f, 0xf7f502f7, 0xcc834fcc, 0x34685c34, 0xa551f4a5,
+    0xe5d134e5, 0xf1f908f1, 0x71e29371, 0xd8ab73d8, 0x31625331, 0x152a3f15,
+    0x04080c04, 0xc79552c7, 0x23466523, 0xc39d5ec3, 0x18302818, 0x9637a196,
+    0x050a0f05, 0x9a2fb59a, 0x070e0907, 0x12243612, 0x801b9b80, 0xe2df3de2,
+    0xebcd26eb, 0x274e6927, 0xb27fcdb2, 0x75ea9f75, 0x09121b09, 0x831d9e83,
+    0x2c58742c, 0x1a342e1a, 0x1b362d1b, 0x6edcb26e, 0x5ab4ee5a, 0xa05bfba0,
+    0x52a4f652, 0x3b764d3b, 0xd6b761d6, 0xb37dceb3, 0x29527b29, 0xe3dd3ee3,
+    0x2f5e712f, 0x84139784, 0x53a6f553, 0xd1b968d1, 0x00000000, 0xedc12ced,
+    0x20406020, 0xfce31ffc, 0xb179c8b1, 0x5bb6ed5b, 0x6ad4be6a, 0xcb8d46cb,
+    0xbe67d9be, 0x39724b39, 0x4a94de4a, 0x4c98d44c, 0x58b0e858, 0xcf854acf,
+    0xd0bb6bd0, 0xefc52aef, 0xaa4fe5aa, 0xfbed16fb, 0x4386c543, 0x4d9ad74d,
+    0x33665533, 0x85119485, 0x458acf45, 0xf9e910f9, 0x02040602, 0x7ffe817f,
+    0x50a0f050, 0x3c78443c, 0x9f25ba9f, 0xa84be3a8, 0x51a2f351, 0xa35dfea3,
+    0x4080c040, 0x8f058a8f, 0x923fad92, 0x9d21bc9d, 0x38704838, 0xf5f104f5,
+    0xbc63dfbc, 0xb677c1b6, 0xdaaf75da, 0x21426321, 0x10203010, 0xffe51aff,
+    0xf3fd0ef3, 0xd2bf6dd2, 0xcd814ccd, 0x0c18140c, 0x13263513, 0xecc32fec,
+    0x5fbee15f, 0x9735a297, 0x4488cc44, 0x172e3917, 0xc49357c4, 0xa755f2a7,
+    0x7efc827e, 0x3d7a473d, 0x64c8ac64, 0x5dbae75d, 0x19322b19, 0x73e69573,
+    0x60c0a060, 0x81199881, 0x4f9ed14f, 0xdca37fdc, 0x22446622, 0x2a547e2a,
+    0x903bab90, 0x880b8388, 0x468cca46, 0xeec729ee, 0xb86bd3b8, 0x14283c14,
+    0xdea779de, 0x5ebce25e, 0x0b161d0b, 0xdbad76db, 0xe0db3be0, 0x32645632,
+    0x3a744e3a, 0x0a141e0a, 0x4992db49, 0x060c0a06, 0x24486c24, 0x5cb8e45c,
+    0xc29f5dc2, 0xd3bd6ed3, 0xac43efac, 0x62c4a662, 0x9139a891, 0x9531a495,
+    0xe4d337e4, 0x79f28b79, 0xe7d532e7, 0xc88b43c8, 0x376e5937, 0x6ddab76d,
+    0x8d018c8d, 0xd5b164d5, 0x4e9cd24e, 0xa949e0a9, 0x6cd8b46c, 0x56acfa56,
+    0xf4f307f4, 0xeacf25ea, 0x65caaf65, 0x7af48e7a, 0xae47e9ae, 0x08101808,
+    0xba6fd5ba, 0x78f08878, 0x254a6f25, 0x2e5c722e, 0x1c38241c, 0xa657f1a6,
+    0xb473c7b4, 0xc69751c6, 0xe8cb23e8, 0xdda17cdd, 0x74e89c74, 0x1f3e211f,
+    0x4b96dd4b, 0xbd61dcbd, 0x8b0d868b, 0x8a0f858a, 0x70e09070, 0x3e7c423e,
+    0xb571c4b5, 0x66ccaa66, 0x4890d848, 0x03060503, 0xf6f701f6, 0x0e1c120e,
+    0x61c2a361, 0x356a5f35, 0x57aef957, 0xb969d0b9, 0x86179186, 0xc19958c1,
+    0x1d3a271d, 0x9e27b99e, 0xe1d938e1, 0xf8eb13f8, 0x982bb398, 0x11223311,
+    0x69d2bb69, 0xd9a970d9, 0x8e07898e, 0x9433a794, 0x9b2db69b, 0x1e3c221e,
+    0x87159287, 0xe9c920e9, 0xce8749ce, 0x55aaff55, 0x28507828, 0xdfa57adf,
+    0x8c038f8c, 0xa159f8a1, 0x89098089, 0x0d1a170d, 0xbf65dabf, 0xe6d731e6,
+    0x4284c642, 0x68d0b868, 0x4182c341, 0x9929b099, 0x2d5a772d, 0x0f1e110f,
+    0xb07bcbb0, 0x54a8fc54, 0xbb6dd6bb, 0x162c3a16,
 };
 
 constexpr uint32_t te3[256] = {
-    0x6363a5c6, 0x7c7c84f8, 0x777799ee, 0x7b7b8df6, 0xf2f20dff, 0x6b6bbdd6,
-    0x6f6fb1de, 0xc5c55491, 0x30305060, 0x01010302, 0x6767a9ce, 0x2b2b7d56,
-    0xfefe19e7, 0xd7d762b5, 0xababe64d, 0x76769aec, 0xcaca458f, 0x82829d1f,
-    0xc9c94089, 0x7d7d87fa, 0xfafa15ef, 0x5959ebb2, 0x4747c98e, 0xf0f00bfb,
-    0xadadec41, 0xd4d467b3, 0xa2a2fd5f, 0xafafea45, 0x9c9cbf23, 0xa4a4f753,
-    0x727296e4, 0xc0c05b9b, 0xb7b7c275, 0xfdfd1ce1, 0x9393ae3d, 0x26266a4c,
-    0x36365a6c, 0x3f3f417e, 0xf7f702f5, 0xcccc4f83, 0x34345c68, 0xa5a5f451,
-    0xe5e534d1, 0xf1f108f9, 0x717193e2, 0xd8d873ab, 0x31315362, 0x15153f2a,
-    0x04040c08, 0xc7c75295, 0x23236546, 0xc3c35e9d, 0x18182830, 0x9696a137,
-    0x05050f0a, 0x9a9ab52f, 0x0707090e, 0x12123624, 0x80809b1b, 0xe2e23ddf,
-    0xebeb26cd, 0x2727694e, 0xb2b2cd7f, 0x75759fea, 0x09091b12, 0x83839e1d,
-    0x2c2c7458, 0x1a1a2e34, 0x1b1b2d36, 0x6e6eb2dc, 0x5a5aeeb4, 0xa0a0fb5b,
-    0x5252f6a4, 0x3b3b4d76, 0xd6d661b7, 0xb3b3ce7d, 0x29297b52, 0xe3e33edd,
-    0x2f2f715e, 0x84849713, 0x5353f5a6, 0xd1d168b9, 0x00000000, 0xeded2cc1,
-    0x20206040, 0xfcfc1fe3, 0xb1b1c879, 0x5b5bedb6, 0x6a6abed4, 0xcbcb468d,
-    0xbebed967, 0x39394b72, 0x4a4ade94, 0x4c4cd498, 0x5858e8b0, 0xcfcf4a85,
-    0xd0d06bbb, 0xefef2ac5, 0xaaaae54f, 0xfbfb16ed, 0x4343c586, 0x4d4dd79a,
-    0x33335566, 0x85859411, 0x4545cf8a, 0xf9f910e9, 0x02020604, 0x7f7f81fe,
-    0x5050f0a0, 0x3c3c4478, 0x9f9fba25, 0xa8a8e34b, 0x5151f3a2, 0xa3a3fe5d,
-    0x4040c080, 0x8f8f8a05, 0x9292ad3f, 0x9d9dbc21, 0x38384870, 0xf5f504f1,
-    0xbcbcdf63, 0xb6b6c177, 0xdada75af, 0x21216342, 0x10103020, 0xffff1ae5,
-    0xf3f30efd, 0xd2d26dbf, 0xcdcd4c81, 0x0c0c1418, 0x13133526, 0xecec2fc3,
-    0x5f5fe1be, 0x9797a235, 0x4444cc88, 0x1717392e, 0xc4c45793, 0xa7a7f255,
-    0x7e7e82fc, 0x3d3d477a, 0x6464acc8, 0x5d5de7ba, 0x19192b32, 0x737395e6,
-    0x6060a0c0, 0x81819819, 0x4f4fd19e, 0xdcdc7fa3, 0x22226644, 0x2a2a7e54,
-    0x9090ab3b, 0x8888830b, 0x4646ca8c, 0xeeee29c7, 0xb8b8d36b, 0x14143c28,
-    0xdede79a7, 0x5e5ee2bc, 0x0b0b1d16, 0xdbdb76ad, 0xe0e03bdb, 0x32325664,
-    0x3a3a4e74, 0x0a0a1e14, 0x4949db92, 0x06060a0c, 0x24246c48, 0x5c5ce4b8,
-    0xc2c25d9f, 0xd3d36ebd, 0xacacef43, 0x6262a6c4, 0x9191a839, 0x9595a431,
-    0xe4e437d3, 0x79798bf2, 0xe7e732d5, 0xc8c8438b, 0x3737596e, 0x6d6db7da,
-    0x8d8d8c01, 0xd5d564b1, 0x4e4ed29c, 0xa9a9e049, 0x6c6cb4d8, 0x5656faac,
-    0xf4f407f3, 0xeaea25cf, 0x6565afca, 0x7a7a8ef4, 0xaeaee947, 0x08081810,
-    0xbabad56f, 0x787888f0, 0x25256f4a, 0x2e2e725c, 0x1c1c2438, 0xa6a6f157,
-    0xb4b4c773, 0xc6c65197, 0xe8e823cb, 0xdddd7ca1, 0x74749ce8, 0x1f1f213e,
-    0x4b4bdd96, 0xbdbddc61, 0x8b8b860d, 0x8a8a850f, 0x707090e0, 0x3e3e427c,
-    0xb5b5c471, 0x6666aacc, 0x4848d890, 0x03030506, 0xf6f601f7, 0x0e0e121c,
-    0x6161a3c2, 0x35355f6a, 0x5757f9ae, 0xb9b9d069, 0x86869117, 0xc1c15899,
-    0x1d1d273a, 0x9e9eb927, 0xe1e138d9, 0xf8f813eb, 0x9898b32b, 0x11113322,
-    0x6969bbd2, 0xd9d970a9, 0x8e8e8907, 0x9494a733, 0x9b9bb62d, 0x1e1e223c,
-    0x87879215, 0xe9e920c9, 0xcece4987, 0x5555ffaa, 0x28287850, 0xdfdf7aa5,
-    0x8c8c8f03, 0xa1a1f859, 0x89898009, 0x0d0d171a, 0xbfbfda65, 0xe6e631d7,
-    0x4242c684, 0x6868b8d0, 0x4141c382, 0x9999b029, 0x2d2d775a, 0x0f0f111e,
-    0xb0b0cb7b, 0x5454fca8, 0xbbbbd66d, 0x16163a2c,
-};
-
-struct alignas(16) u64x2 {
-  constexpr u64x2() : v{0, 0} {};
-  constexpr u64x2(uint64_t hi, uint64_t lo) : v{lo, hi} {}
-
-  uint64_t v[2];
+    0xc6a56363, 0xf8847c7c, 0xee997777, 0xf68d7b7b, 0xff0df2f2, 0xd6bd6b6b,
+    0xdeb16f6f, 0x9154c5c5, 0x60503030, 0x02030101, 0xcea96767, 0x567d2b2b,
+    0xe719fefe, 0xb562d7d7, 0x4de6abab, 0xec9a7676, 0x8f45caca, 0x1f9d8282,
+    0x8940c9c9, 0xfa877d7d, 0xef15fafa, 0xb2eb5959, 0x8ec94747, 0xfb0bf0f0,
+    0x41ecadad, 0xb367d4d4, 0x5ffda2a2, 0x45eaafaf, 0x23bf9c9c, 0x53f7a4a4,
+    0xe4967272, 0x9b5bc0c0, 0x75c2b7b7, 0xe11cfdfd, 0x3dae9393, 0x4c6a2626,
+    0x6c5a3636, 0x7e413f3f, 0xf502f7f7, 0x834fcccc, 0x685c3434, 0x51f4a5a5,
+    0xd134e5e5, 0xf908f1f1, 0xe2937171, 0xab73d8d8, 0x62533131, 0x2a3f1515,
+    0x080c0404, 0x9552c7c7, 0x46652323, 0x9d5ec3c3, 0x30281818, 0x37a19696,
+    0x0a0f0505, 0x2fb59a9a, 0x0e090707, 0x24361212, 0x1b9b8080, 0xdf3de2e2,
+    0xcd26ebeb, 0x4e692727, 0x7fcdb2b2, 0xea9f7575, 0x121b0909, 0x1d9e8383,
+    0x58742c2c, 0x342e1a1a, 0x362d1b1b, 0xdcb26e6e, 0xb4ee5a5a, 0x5bfba0a0,
+    0xa4f65252, 0x764d3b3b, 0xb761d6d6, 0x7dceb3b3, 0x527b2929, 0xdd3ee3e3,
+    0x5e712f2f, 0x13978484, 0xa6f55353, 0xb968d1d1, 0x00000000, 0xc12ceded,
+    0x40602020, 0xe31ffcfc, 0x79c8b1b1, 0xb6ed5b5b, 0xd4be6a6a, 0x8d46cbcb,
+    0x67d9bebe, 0x724b3939, 0x94de4a4a, 0x98d44c4c, 0xb0e85858, 0x854acfcf,
+    0xbb6bd0d0, 0xc52aefef, 0x4fe5aaaa, 0xed16fbfb, 0x86c54343, 0x9ad74d4d,
+    0x66553333, 0x11948585, 0x8acf4545, 0xe910f9f9, 0x04060202, 0xfe817f7f,
+    0xa0f05050, 0x78443c3c, 0x25ba9f9f, 0x4be3a8a8, 0xa2f35151, 0x5dfea3a3,
+    0x80c04040, 0x058a8f8f, 0x3fad9292, 0x21bc9d9d, 0x70483838, 0xf104f5f5,
+    0x63dfbcbc, 0x77c1b6b6, 0xaf75dada, 0x42632121, 0x20301010, 0xe51affff,
+    0xfd0ef3f3, 0xbf6dd2d2, 0x814ccdcd, 0x18140c0c, 0x26351313, 0xc32fecec,
+    0xbee15f5f, 0x35a29797, 0x88cc4444, 0x2e391717, 0x9357c4c4, 0x55f2a7a7,
+    0xfc827e7e, 0x7a473d3d, 0xc8ac6464, 0xbae75d5d, 0x322b1919, 0xe6957373,
+    0xc0a06060, 0x19988181, 0x9ed14f4f, 0xa37fdcdc, 0x44662222, 0x547e2a2a,
+    0x3bab9090, 0x0b838888, 0x8cca4646, 0xc729eeee, 0x6bd3b8b8, 0x283c1414,
+    0xa779dede, 0xbce25e5e, 0x161d0b0b, 0xad76dbdb, 0xdb3be0e0, 0x64563232,
+    0x744e3a3a, 0x141e0a0a, 0x92db4949, 0x0c0a0606, 0x486c2424, 0xb8e45c5c,
+    0x9f5dc2c2, 0xbd6ed3d3, 0x43efacac, 0xc4a66262, 0x39a89191, 0x31a49595,
+    0xd337e4e4, 0xf28b7979, 0xd532e7e7, 0x8b43c8c8, 0x6e593737, 0xdab76d6d,
+    0x018c8d8d, 0xb164d5d5, 0x9cd24e4e, 0x49e0a9a9, 0xd8b46c6c, 0xacfa5656,
+    0xf307f4f4, 0xcf25eaea, 0xcaaf6565, 0xf48e7a7a, 0x47e9aeae, 0x10180808,
+    0x6fd5baba, 0xf0887878, 0x4a6f2525, 0x5c722e2e, 0x38241c1c, 0x57f1a6a6,
+    0x73c7b4b4, 0x9751c6c6, 0xcb23e8e8, 0xa17cdddd, 0xe89c7474, 0x3e211f1f,
+    0x96dd4b4b, 0x61dcbdbd, 0x0d868b8b, 0x0f858a8a, 0xe0907070, 0x7c423e3e,
+    0x71c4b5b5, 0xccaa6666, 0x90d84848, 0x06050303, 0xf701f6f6, 0x1c120e0e,
+    0xc2a36161, 0x6a5f3535, 0xaef95757, 0x69d0b9b9, 0x17918686, 0x9958c1c1,
+    0x3a271d1d, 0x27b99e9e, 0xd938e1e1, 0xeb13f8f8, 0x2bb39898, 0x22331111,
+    0xd2bb6969, 0xa970d9d9, 0x07898e8e, 0x33a79494, 0x2db69b9b, 0x3c221e1e,
+    0x15928787, 0xc920e9e9, 0x8749cece, 0xaaff5555, 0x50782828, 0xa57adfdf,
+    0x038f8c8c, 0x59f8a1a1, 0x09808989, 0x1a170d0d, 0x65dabfbf, 0xd731e6e6,
+    0x84c64242, 0xd0b86868, 0x82c34141, 0x29b09999, 0x5a772d2d, 0x1e110f0f,
+    0x7bcbb0b0, 0xa8fc5454, 0x6dd6bbbb, 0x2c3a1616,
 };
 
 // Software implementation of the Vector128 class, using uint32_t
 // as an underlying vector register.
-//
-struct Vector128 {
-  inline ABSL_RANDOM_INTERNAL_ATTRIBUTE_ALWAYS_INLINE Vector128& operator^=(
-      const Vector128& other) {
-    s[0] ^= other.s[0];
-    s[1] ^= other.s[1];
-    s[2] ^= other.s[2];
-    s[3] ^= other.s[3];
-    return *this;
-  }
-
+struct alignas(16) Vector128 {
   uint32_t s[4];
 };
 
 inline ABSL_RANDOM_INTERNAL_ATTRIBUTE_ALWAYS_INLINE Vector128
-Vector128Load(const void* ABSL_RANDOM_INTERNAL_RESTRICT from) {
+Vector128Load(const void* from) {
   Vector128 result;
-  const uint8_t* ABSL_RANDOM_INTERNAL_RESTRICT src =
-      reinterpret_cast<const uint8_t*>(from);
-
-  result.s[0] = static_cast<uint32_t>(src[0]) << 24 |
-                static_cast<uint32_t>(src[1]) << 16 |
-                static_cast<uint32_t>(src[2]) << 8 |
-                static_cast<uint32_t>(src[3]);
-  result.s[1] = static_cast<uint32_t>(src[4]) << 24 |
-                static_cast<uint32_t>(src[5]) << 16 |
-                static_cast<uint32_t>(src[6]) << 8 |
-                static_cast<uint32_t>(src[7]);
-  result.s[2] = static_cast<uint32_t>(src[8]) << 24 |
-                static_cast<uint32_t>(src[9]) << 16 |
-                static_cast<uint32_t>(src[10]) << 8 |
-                static_cast<uint32_t>(src[11]);
-  result.s[3] = static_cast<uint32_t>(src[12]) << 24 |
-                static_cast<uint32_t>(src[13]) << 16 |
-                static_cast<uint32_t>(src[14]) << 8 |
-                static_cast<uint32_t>(src[15]);
+  std::memcpy(result.s, from, sizeof(Vector128));
   return result;
 }
 
 inline ABSL_RANDOM_INTERNAL_ATTRIBUTE_ALWAYS_INLINE void Vector128Store(
-    const Vector128& v, void* ABSL_RANDOM_INTERNAL_RESTRICT to) {
-  uint8_t* dst = reinterpret_cast<uint8_t*>(to);
-  dst[0] = static_cast<uint8_t>(v.s[0] >> 24);
-  dst[1] = static_cast<uint8_t>(v.s[0] >> 16);
-  dst[2] = static_cast<uint8_t>(v.s[0] >> 8);
-  dst[3] = static_cast<uint8_t>(v.s[0]);
-  dst[4] = static_cast<uint8_t>(v.s[1] >> 24);
-  dst[5] = static_cast<uint8_t>(v.s[1] >> 16);
-  dst[6] = static_cast<uint8_t>(v.s[1] >> 8);
-  dst[7] = static_cast<uint8_t>(v.s[1]);
-  dst[8] = static_cast<uint8_t>(v.s[2] >> 24);
-  dst[9] = static_cast<uint8_t>(v.s[2] >> 16);
-  dst[10] = static_cast<uint8_t>(v.s[2] >> 8);
-  dst[11] = static_cast<uint8_t>(v.s[2]);
-  dst[12] = static_cast<uint8_t>(v.s[3] >> 24);
-  dst[13] = static_cast<uint8_t>(v.s[3] >> 16);
-  dst[14] = static_cast<uint8_t>(v.s[3] >> 8);
-  dst[15] = static_cast<uint8_t>(v.s[3]);
+    const Vector128& v, void* to) {
+  std::memcpy(to, v.s, sizeof(Vector128));
 }
 
 // One round of AES. "round_key" is a public constant for breaking the
 // symmetry of AES (ensures previously equal columns differ afterwards).
 inline ABSL_RANDOM_INTERNAL_ATTRIBUTE_ALWAYS_INLINE Vector128
 AesRound(const Vector128& state, const Vector128& round_key) {
-  // clang-format off
   Vector128 result;
-  result.s[0] = round_key.s[0] ^
-                te0[uint8_t(state.s[0] >> 24)] ^
-                te1[uint8_t(state.s[1] >> 16)] ^
-                te2[uint8_t(state.s[2] >> 8)] ^
-                te3[uint8_t(state.s[3])];
-  result.s[1] = round_key.s[1] ^
-                te0[uint8_t(state.s[1] >> 24)] ^
-                te1[uint8_t(state.s[2] >> 16)] ^
-                te2[uint8_t(state.s[3] >> 8)] ^
-                te3[uint8_t(state.s[0])];
-  result.s[2] = round_key.s[2] ^
-                te0[uint8_t(state.s[2] >> 24)] ^
-                te1[uint8_t(state.s[3] >> 16)] ^
-                te2[uint8_t(state.s[0] >> 8)] ^
-                te3[uint8_t(state.s[1])];
-  result.s[3] = round_key.s[3] ^
-                te0[uint8_t(state.s[3] >> 24)] ^
-                te1[uint8_t(state.s[0] >> 16)] ^
-                te2[uint8_t(state.s[1] >> 8)] ^
-                te3[uint8_t(state.s[2])];
+#ifdef ABSL_IS_LITTLE_ENDIAN
+  result.s[0] = round_key.s[0] ^                  //
+                te0[uint8_t(state.s[0])] ^        //
+                te1[uint8_t(state.s[1] >> 8)] ^   //
+                te2[uint8_t(state.s[2] >> 16)] ^  //
+                te3[uint8_t(state.s[3] >> 24)];
+  result.s[1] = round_key.s[1] ^                  //
+                te0[uint8_t(state.s[1])] ^        //
+                te1[uint8_t(state.s[2] >> 8)] ^   //
+                te2[uint8_t(state.s[3] >> 16)] ^  //
+                te3[uint8_t(state.s[0] >> 24)];
+  result.s[2] = round_key.s[2] ^                  //
+                te0[uint8_t(state.s[2])] ^        //
+                te1[uint8_t(state.s[3] >> 8)] ^   //
+                te2[uint8_t(state.s[0] >> 16)] ^  //
+                te3[uint8_t(state.s[1] >> 24)];
+  result.s[3] = round_key.s[3] ^                  //
+                te0[uint8_t(state.s[3])] ^        //
+                te1[uint8_t(state.s[0] >> 8)] ^   //
+                te2[uint8_t(state.s[1] >> 16)] ^  //
+                te3[uint8_t(state.s[2] >> 24)];
+#else
+  result.s[0] = round_key.s[0] ^                  //
+                te0[uint8_t(state.s[0])] ^        //
+                te1[uint8_t(state.s[3] >> 8)] ^   //
+                te2[uint8_t(state.s[2] >> 16)] ^  //
+                te3[uint8_t(state.s[1] >> 24)];
+  result.s[1] = round_key.s[1] ^                  //
+                te0[uint8_t(state.s[1])] ^        //
+                te1[uint8_t(state.s[0] >> 8)] ^   //
+                te2[uint8_t(state.s[3] >> 16)] ^  //
+                te3[uint8_t(state.s[2] >> 24)];
+  result.s[2] = round_key.s[2] ^                  //
+                te0[uint8_t(state.s[2])] ^        //
+                te1[uint8_t(state.s[1] >> 8)] ^   //
+                te2[uint8_t(state.s[0] >> 16)] ^  //
+                te3[uint8_t(state.s[3] >> 24)];
+  result.s[3] = round_key.s[3] ^                  //
+                te0[uint8_t(state.s[3])] ^        //
+                te1[uint8_t(state.s[2] >> 8)] ^   //
+                te2[uint8_t(state.s[1] >> 16)] ^  //
+                te3[uint8_t(state.s[0] >> 24)];
+#endif
   return result;
-  // clang-format on
 }
 
-// RANDen = RANDom generator or beetroots in Swiss German.
-// 'Strong' (well-distributed, unpredictable, backtracking-resistant) random
-// generator, faster in some benchmarks than std::mt19937_64 and pcg64_c32.
-//
-// High-level summary:
-// 1) Reverie (see "A Robust and Sponge-Like PRNG with Improved Efficiency") is
-//    a sponge-like random generator that requires a cryptographic permutation.
-//    It improves upon "Provably Robust Sponge-Based PRNGs and KDFs" by
-//    achieving backtracking resistance with only one Permute() per buffer.
-//
-// 2) "Simpira v2: A Family of Efficient Permutations Using the AES Round
-//    Function" constructs up to 1024-bit permutations using an improved
-//    Generalized Feistel network with 2-round AES-128 functions. This Feistel
-//    block shuffle achieves diffusion faster and is less vulnerable to
-//    sliced-biclique attacks than the Type-2 cyclic shuffle.
-//
-// 3) "Improving the Generalized Feistel" and "New criterion for diffusion
-//    property" extends the same kind of improved Feistel block shuffle to 16
-//    branches, which enables a 2048-bit permutation.
-//
-// Combine these three ideas and also change Simpira's subround keys from
-// structured/low-entropy counters to digits of Pi.
-
-// Randen constants.
-constexpr size_t kFeistelBlocks = 16;
-constexpr size_t kFeistelFunctions = kFeistelBlocks / 2;  // = 8
-constexpr size_t kFeistelRounds = 16 + 1;  // > 4 * log2(kFeistelBlocks)
-constexpr size_t kKeys = kFeistelRounds * kFeistelFunctions;
-
-// INCLUDE keys.
-#include "absl/random/internal/randen-keys.inc"
-
-static_assert(kKeys == kRoundKeys, "kKeys and kRoundKeys must be equal");
-
-// 2 uint64_t lanes per Vector128
-static constexpr size_t kLanes = 2;
+using ::absl::random_internal::RandenTraits;
 
 // The improved Feistel block shuffle function for 16 blocks.
 inline ABSL_RANDOM_INTERNAL_ATTRIBUTE_ALWAYS_INLINE void BlockShuffle(
-    uint64_t* ABSL_RANDOM_INTERNAL_RESTRICT state_u64) {
-  static_assert(kFeistelBlocks == 16,
+    absl::uint128* state) {
+  static_assert(RandenTraits::kFeistelBlocks == 16,
                 "Feistel block shuffle only works for 16 blocks.");
 
-  constexpr size_t shuffle[kFeistelBlocks] = {7,  2, 13, 4,  11, 8,  3, 6,
-                                              15, 0, 9,  10, 1,  14, 5, 12};
-
-  u64x2* ABSL_RANDOM_INTERNAL_RESTRICT state =
-      reinterpret_cast<u64x2*>(state_u64);
+  constexpr size_t shuffle[RandenTraits::kFeistelBlocks] = {
+      7, 2, 13, 4, 11, 8, 3, 6, 15, 0, 9, 10, 1, 14, 5, 12};
 
   // The fully unrolled loop without the memcpy improves the speed by about
-  // 30% over the equivalent (leaving code here as a comment):
-  if (false) {
-    u64x2 source[kFeistelBlocks];
-    std::memcpy(source, state, sizeof(source));
-    for (size_t i = 0; i < kFeistelBlocks; i++) {
-      const u64x2 v0 = source[shuffle[i]];
-      state[i] = v0;
-    }
+  // 30% over the equivalent:
+#if 0
+  absl::uint128 source[RandenTraits::kFeistelBlocks];
+  std::memcpy(source, state, sizeof(source));
+  for (size_t i = 0; i < RandenTraits::kFeistelBlocks; i++) {
+    const absl::uint128 v0 = source[shuffle[i]];
+    state[i] = v0;
   }
+  return;
+#endif
 
-  const u64x2 v0 = state[shuffle[0]];
-  const u64x2 v1 = state[shuffle[1]];
-  const u64x2 v2 = state[shuffle[2]];
-  const u64x2 v3 = state[shuffle[3]];
-  const u64x2 v4 = state[shuffle[4]];
-  const u64x2 v5 = state[shuffle[5]];
-  const u64x2 v6 = state[shuffle[6]];
-  const u64x2 v7 = state[shuffle[7]];
-  const u64x2 w0 = state[shuffle[8]];
-  const u64x2 w1 = state[shuffle[9]];
-  const u64x2 w2 = state[shuffle[10]];
-  const u64x2 w3 = state[shuffle[11]];
-  const u64x2 w4 = state[shuffle[12]];
-  const u64x2 w5 = state[shuffle[13]];
-  const u64x2 w6 = state[shuffle[14]];
-  const u64x2 w7 = state[shuffle[15]];
+  const absl::uint128 v0 = state[shuffle[0]];
+  const absl::uint128 v1 = state[shuffle[1]];
+  const absl::uint128 v2 = state[shuffle[2]];
+  const absl::uint128 v3 = state[shuffle[3]];
+  const absl::uint128 v4 = state[shuffle[4]];
+  const absl::uint128 v5 = state[shuffle[5]];
+  const absl::uint128 v6 = state[shuffle[6]];
+  const absl::uint128 v7 = state[shuffle[7]];
+  const absl::uint128 w0 = state[shuffle[8]];
+  const absl::uint128 w1 = state[shuffle[9]];
+  const absl::uint128 w2 = state[shuffle[10]];
+  const absl::uint128 w3 = state[shuffle[11]];
+  const absl::uint128 w4 = state[shuffle[12]];
+  const absl::uint128 w5 = state[shuffle[13]];
+  const absl::uint128 w6 = state[shuffle[14]];
+  const absl::uint128 w7 = state[shuffle[15]];
   state[0] = v0;
   state[1] = v1;
   state[2] = v2;
@@ -423,24 +360,24 @@ inline ABSL_RANDOM_INTERNAL_ATTRIBUTE_ALWAYS_INLINE void BlockShuffle(
 // per 16 bytes (vs. 10 for AES-CTR). Computing eight round functions in
 // parallel hides the 7-cycle AESNI latency on HSW. Note that the Feistel
 // XORs are 'free' (included in the second AES instruction).
-inline ABSL_RANDOM_INTERNAL_ATTRIBUTE_ALWAYS_INLINE const u64x2* FeistelRound(
-    uint64_t* ABSL_RANDOM_INTERNAL_RESTRICT state,
-    const u64x2* ABSL_RANDOM_INTERNAL_RESTRICT keys) {
-  for (size_t branch = 0; branch < kFeistelBlocks; branch += 4) {
-    const Vector128 s0 = Vector128Load(state + kLanes * branch);
-    const Vector128 s1 = Vector128Load(state + kLanes * (branch + 1));
+inline ABSL_RANDOM_INTERNAL_ATTRIBUTE_ALWAYS_INLINE const absl::uint128*
+FeistelRound(absl::uint128* ABSL_RANDOM_INTERNAL_RESTRICT state,
+             const absl::uint128* ABSL_RANDOM_INTERNAL_RESTRICT keys) {
+  for (size_t branch = 0; branch < RandenTraits::kFeistelBlocks; branch += 4) {
+    const Vector128 s0 = Vector128Load(state + branch);
+    const Vector128 s1 = Vector128Load(state + branch + 1);
     const Vector128 f0 = AesRound(s0, Vector128Load(keys));
     keys++;
     const Vector128 o1 = AesRound(f0, s1);
-    Vector128Store(o1, state + kLanes * (branch + 1));
+    Vector128Store(o1, state + branch + 1);
 
     // Manually unroll this loop once. about 10% better than not unrolled.
-    const Vector128 s2 = Vector128Load(state + kLanes * (branch + 2));
-    const Vector128 s3 = Vector128Load(state + kLanes * (branch + 3));
+    const Vector128 s2 = Vector128Load(state + branch + 2);
+    const Vector128 s3 = Vector128Load(state + branch + 3);
     const Vector128 f2 = AesRound(s2, Vector128Load(keys));
     keys++;
     const Vector128 o3 = AesRound(f2, s3);
-    Vector128Store(o3, state + kLanes * (branch + 3));
+    Vector128Store(o3, state + branch + 3);
   }
   return keys;
 }
@@ -450,13 +387,29 @@ inline ABSL_RANDOM_INTERNAL_ATTRIBUTE_ALWAYS_INLINE const u64x2* FeistelRound(
 // 2^64 queries if the round function is a PRF. This is similar to the b=8 case
 // of Simpira v2, but more efficient than its generic construction for b=16.
 inline ABSL_RANDOM_INTERNAL_ATTRIBUTE_ALWAYS_INLINE void Permute(
-    const void* keys, uint64_t* ABSL_RANDOM_INTERNAL_RESTRICT state) {
-  const u64x2* ABSL_RANDOM_INTERNAL_RESTRICT keys128 =
-      static_cast<const u64x2*>(keys);
-  for (size_t round = 0; round < kFeistelRounds; ++round) {
-    keys128 = FeistelRound(state, keys128);
+    absl::uint128* state,
+    const absl::uint128* ABSL_RANDOM_INTERNAL_RESTRICT keys) {
+  for (size_t round = 0; round < RandenTraits::kFeistelRounds; ++round) {
+    keys = FeistelRound(state, keys);
     BlockShuffle(state);
   }
+}
+
+// Enables native loads in the round loop by pre-swapping.
+inline ABSL_RANDOM_INTERNAL_ATTRIBUTE_ALWAYS_INLINE void SwapEndian(
+    absl::uint128* state) {
+#ifdef ABSL_IS_BIG_ENDIAN
+  for (uint32_t block = 0; block < RandenTraits::kFeistelBlocks; ++block) {
+    uint64_t new_lo = absl::little_endian::ToHost64(
+        static_cast<uint64_t>(state[block] >> 64));
+    uint64_t new_hi = absl::little_endian::ToHost64(
+        static_cast<uint64_t>((state[block] << 64) >> 64));
+    state[block] = (static_cast<absl::uint128>(new_hi) << 64) | new_lo;
+  }
+#else
+  // Avoid warning about unused variable.
+  (void)state;
+#endif
 }
 
 }  // namespace
@@ -468,37 +421,49 @@ namespace random_internal {
 const void* RandenSlow::GetKeys() {
   // Round keys for one AES per Feistel round and branch.
   // The canonical implementation uses first digits of Pi.
-  return round_keys;
+#ifdef ABSL_IS_LITTLE_ENDIAN
+  return kRandenRoundKeys;
+#else
+  return kRandenRoundKeysBE;
+#endif
 }
 
 void RandenSlow::Absorb(const void* seed_void, void* state_void) {
-  uint64_t* ABSL_RANDOM_INTERNAL_RESTRICT state =
-      reinterpret_cast<uint64_t*>(state_void);
-  const uint64_t* ABSL_RANDOM_INTERNAL_RESTRICT seed =
-      reinterpret_cast<const uint64_t*>(seed_void);
+  auto* state =
+      reinterpret_cast<uint64_t * ABSL_RANDOM_INTERNAL_RESTRICT>(state_void);
+  const auto* seed =
+      reinterpret_cast<const uint64_t * ABSL_RANDOM_INTERNAL_RESTRICT>(
+          seed_void);
 
-  constexpr size_t kCapacityBlocks = kCapacityBytes / sizeof(uint64_t);
-  static_assert(kCapacityBlocks * sizeof(uint64_t) == kCapacityBytes,
-                "Not i*V");
-  for (size_t i = kCapacityBlocks; i < kStateBytes / sizeof(uint64_t); ++i) {
+  constexpr size_t kCapacityBlocks =
+      RandenTraits::kCapacityBytes / sizeof(uint64_t);
+  static_assert(
+      kCapacityBlocks * sizeof(uint64_t) == RandenTraits::kCapacityBytes,
+      "Not i*V");
+
+  for (size_t i = kCapacityBlocks;
+       i < RandenTraits::kStateBytes / sizeof(uint64_t); ++i) {
     state[i] ^= seed[i - kCapacityBlocks];
   }
 }
 
-void RandenSlow::Generate(const void* keys, void* state_void) {
-  static_assert(kCapacityBytes == sizeof(Vector128), "Capacity mismatch");
+void RandenSlow::Generate(const void* keys_void, void* state_void) {
+  static_assert(RandenTraits::kCapacityBytes == sizeof(absl::uint128),
+                "Capacity mismatch");
 
-  uint64_t* ABSL_RANDOM_INTERNAL_RESTRICT state =
-      reinterpret_cast<uint64_t*>(state_void);
+  auto* state = reinterpret_cast<absl::uint128*>(state_void);
+  const auto* keys = reinterpret_cast<const absl::uint128*>(keys_void);
 
-  const Vector128 prev_inner = Vector128Load(state);
+  const absl::uint128 prev_inner = state[0];
 
-  Permute(keys, state);
+  SwapEndian(state);
+
+  Permute(state, keys);
+
+  SwapEndian(state);
 
   // Ensure backtracking resistance.
-  Vector128 inner = Vector128Load(state);
-  inner ^= prev_inner;
-  Vector128Store(inner, state);
+  *state ^= prev_inner;
 }
 
 }  // namespace random_internal

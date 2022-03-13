@@ -98,7 +98,7 @@ SimpleStringBuilder& SimpleStringBuilder::AppendFormat(const char* fmt, ...) {
   } else {
     // This should never happen, but we're paranoid, so re-write the
     // terminator in case vsnprintf() overwrote it.
-    RTC_NOTREACHED();
+    RTC_DCHECK_NOTREACHED();
     buffer_[size_] = '\0';
   }
   va_end(args);

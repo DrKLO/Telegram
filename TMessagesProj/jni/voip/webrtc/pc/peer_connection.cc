@@ -102,7 +102,7 @@ uint32_t ConvertIceTransportTypeToCandidateFilter(
     case PeerConnectionInterface::kAll:
       return cricket::CF_ALL;
     default:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
   }
   return cricket::CF_NONE;
 }
@@ -220,7 +220,7 @@ cricket::IceConfig ParseIceConfig(
       gathering_policy = cricket::GATHER_CONTINUALLY;
       break;
     default:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
       gathering_policy = cricket::GATHER_ONCE;
   }
 
@@ -276,7 +276,7 @@ bool DtlsEnabled(const PeerConnectionInterface::RTCConfiguration& configuration,
   bool default_enabled =
       (dependencies.cert_generator || !configuration.certificates.empty());
 
-  // The |configuration| can override the default value.
+  // The `configuration` can override the default value.
   return configuration.enable_dtls_srtp.value_or(default_enabled);
 }
 
@@ -336,6 +336,9 @@ bool PeerConnectionInterface::RTCConfiguration::operator==(
     absl::optional<bool> allow_codec_switching;
     absl::optional<int> report_usage_pattern_delay_ms;
     absl::optional<int> stable_writable_connection_ping_interval_ms;
+    webrtc::VpnPreference vpn_preference;
+    std::vector<rtc::NetworkMask> vpn_list;
+    PortAllocatorConfig port_allocator_config;
   };
   static_assert(sizeof(stuff_being_tested_for_equality) == sizeof(*this),
                 "Did you add something to RTCConfiguration and forget to "
@@ -397,7 +400,11 @@ bool PeerConnectionInterface::RTCConfiguration::operator==(
          allow_codec_switching == o.allow_codec_switching &&
          report_usage_pattern_delay_ms == o.report_usage_pattern_delay_ms &&
          stable_writable_connection_ping_interval_ms ==
-             o.stable_writable_connection_ping_interval_ms;
+             o.stable_writable_connection_ping_interval_ms &&
+         vpn_preference == o.vpn_preference && vpn_list == o.vpn_list &&
+         port_allocator_config.min_port == o.port_allocator_config.min_port &&
+         port_allocator_config.max_port == o.port_allocator_config.max_port &&
+         port_allocator_config.flags == o.port_allocator_config.flags;
 }
 
 bool PeerConnectionInterface::RTCConfiguration::operator!=(
@@ -499,7 +506,7 @@ PeerConnection::PeerConnection(
       call_ptr_(call_.get()),
       // RFC 3264: The numeric value of the session id and version in the
       // o line MUST be representable with a "64 bit signed integer".
-      // Due to this constraint session id |session_id_| is max limited to
+      // Due to this constraint session id `session_id_` is max limited to
       // LLONG_MAX.
       session_id_(rtc::ToString(rtc::CreateRandomId64() & LLONG_MAX)),
       dtls_enabled_(dtls_enabled),
@@ -648,6 +655,10 @@ RTCError PeerConnection::Initialize(
         ReportUsagePattern();
       },
       delay_ms);
+
+  // Record the number of configured ICE servers for all connections.
+  RTC_HISTOGRAM_COUNTS_LINEAR("WebRTC.PeerConnection.IceServers.Configured",
+                              configuration_.servers.size(), 0, 31, 32);
 
   return RTCError::OK();
 }
@@ -1195,7 +1206,7 @@ void PeerConnection::GetStats(
         break;
     }
   }
-  // If there is no |internal_sender| then |selector| is either null or does not
+  // If there is no `internal_sender` then `selector` is either null or does not
   // belong to the PeerConnection (in Plan B, senders can be removed from the
   // PeerConnection). This means that "all the stats objects representing the
   // selector" is an empty set. Invoking GetStatsReport() with a null selector
@@ -1225,7 +1236,7 @@ void PeerConnection::GetStats(
         break;
     }
   }
-  // If there is no |internal_receiver| then |selector| is either null or does
+  // If there is no `internal_receiver` then `selector` is either null or does
   // not belong to the PeerConnection (in Plan B, receivers can be removed from
   // the PeerConnection). This means that "all the stats objects representing
   // the selector" is an empty set. Invoking GetStatsReport() with a null
@@ -1279,9 +1290,9 @@ absl::optional<bool> PeerConnection::can_trickle_ice_candidates() {
       "trickle");
 }
 
-rtc::scoped_refptr<DataChannelInterface> PeerConnection::CreateDataChannel(
-    const std::string& label,
-    const DataChannelInit* config) {
+RTCErrorOr<rtc::scoped_refptr<DataChannelInterface>>
+PeerConnection::CreateDataChannelOrError(const std::string& label,
+                                         const DataChannelInit* config) {
   RTC_DCHECK_RUN_ON(signaling_thread());
   TRACE_EVENT0("webrtc", "PeerConnection::CreateDataChannel");
 
@@ -1291,11 +1302,13 @@ rtc::scoped_refptr<DataChannelInterface> PeerConnection::CreateDataChannel(
   if (config) {
     internal_config.reset(new InternalDataChannelInit(*config));
   }
+  // TODO(bugs.webrtc.org/12796): Return a more specific error.
   rtc::scoped_refptr<DataChannelInterface> channel(
       data_channel_controller_.InternalCreateDataChannelWithProxy(
           label, internal_config.get()));
   if (!channel.get()) {
-    return nullptr;
+    return RTCError(RTCErrorType::INTERNAL_ERROR,
+                    "Data channel creation failed");
   }
 
   // Trigger the onRenegotiationNeeded event for
@@ -1451,7 +1464,7 @@ RTCError PeerConnection::SetConfiguration(
   RTCErrorType parse_error =
       ParseIceServers(configuration.servers, &stun_servers, &turn_servers);
   if (parse_error != RTCErrorType::NONE) {
-    return RTCError(parse_error);
+    return RTCError(parse_error, "ICE server parse failed");
   }
   // Add the turn logging id to all turn servers
   for (cricket::RelayServerConfig& turn_server : turn_servers) {
@@ -1881,6 +1894,20 @@ void PeerConnection::SetConnectionState(
             configuration_.ice_candidate_pool_size, 0, 255, 256);
         break;
     }
+
+    // Record whether there was a local or remote provisional answer.
+    ProvisionalAnswerUsage pranswer = kProvisionalAnswerNotUsed;
+    if (local_description()->GetType() == SdpType::kPrAnswer) {
+      pranswer = kProvisionalAnswerLocal;
+    } else if (remote_description()->GetType() == SdpType::kPrAnswer) {
+      pranswer = kProvisionalAnswerRemote;
+    }
+    RTC_HISTOGRAM_ENUMERATION("WebRTC.PeerConnection.ProvisionalAnswer",
+                              pranswer, kProvisionalAnswerMax);
+
+    // Record the number of configured ICE servers for connected connections.
+    RTC_HISTOGRAM_COUNTS_LINEAR("WebRTC.PeerConnection.IceServers.Connected",
+                                configuration_.servers.size(), 0, 31, 32);
   }
 }
 
@@ -2186,6 +2213,7 @@ cricket::CandidateStatsList PeerConnection::GetPooledCandidateStats() const {
 std::map<std::string, cricket::TransportStats>
 PeerConnection::GetTransportStatsByNames(
     const std::set<std::string>& transport_names) {
+  TRACE_EVENT0("webrtc", "PeerConnection::GetTransportStatsByNames");
   RTC_DCHECK_RUN_ON(network_thread());
   if (!network_thread_safety_->alive())
     return {};
@@ -2276,7 +2304,7 @@ void PeerConnection::OnTransportControllerConnectionState(
       NoteUsageEvent(UsageEvent::ICE_STATE_CONNECTED);
       break;
     default:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
   }
 }
 
@@ -2405,7 +2433,7 @@ bool PeerConnection::SetupDataChannelTransport_n(const std::string& mid) {
 
 void PeerConnection::TeardownDataChannelTransport_n() {
   if (sctp_mid_n_) {
-    // |sctp_mid_| may still be active through an SCTP transport.  If not, unset
+    // `sctp_mid_` may still be active through an SCTP transport.  If not, unset
     // it.
     RTC_LOG(LS_INFO) << "Tearing down data channel transport for mid="
                      << *sctp_mid_n_;
@@ -2512,7 +2540,7 @@ void PeerConnection::ReportSdpBundleUsage(
     } else {
       usage = kBundleUsageEmpty;
     }
-  } else if (configuration_.sdp_semantics == SdpSemantics::kPlanB) {
+  } else if (configuration_.sdp_semantics == SdpSemantics::kPlanB_DEPRECATED) {
     // In plan-b, simple/complex usage will not show up in the number of
     // m-lines or BUNDLE.
     usage = using_bundle ? kBundleUsageBundlePlanB : kBundleUsageNoBundlePlanB;
@@ -2628,12 +2656,13 @@ void PeerConnection::OnTransportControllerGatheringState(
     OnIceGatheringChange(PeerConnectionInterface::kIceGatheringNew);
   } else {
     RTC_LOG(LS_ERROR) << "Unknown state received: " << state;
-    RTC_NOTREACHED();
+    RTC_DCHECK_NOTREACHED();
   }
 }
 
 // Runs on network_thread().
 void PeerConnection::ReportTransportStats() {
+  TRACE_EVENT0("webrtc", "PeerConnection::ReportTransportStats");
   rtc::Thread::ScopedDisallowBlockingCalls no_blocking_calls;
   std::map<std::string, std::set<cricket::MediaType>>
       media_types_by_transport_name;
@@ -2727,56 +2756,56 @@ void PeerConnection::ReportNegotiatedCiphers(
 
   int srtp_crypto_suite = stats.channel_stats[0].srtp_crypto_suite;
   int ssl_cipher_suite = stats.channel_stats[0].ssl_cipher_suite;
-  if (srtp_crypto_suite == rtc::SRTP_INVALID_CRYPTO_SUITE &&
-      ssl_cipher_suite == rtc::TLS_NULL_WITH_NULL_NULL) {
+  if (srtp_crypto_suite == rtc::kSrtpInvalidCryptoSuite &&
+      ssl_cipher_suite == rtc::kTlsNullWithNullNull) {
     return;
   }
 
-  if (srtp_crypto_suite != rtc::SRTP_INVALID_CRYPTO_SUITE) {
+  if (srtp_crypto_suite != rtc::kSrtpInvalidCryptoSuite) {
     for (cricket::MediaType media_type : media_types) {
       switch (media_type) {
         case cricket::MEDIA_TYPE_AUDIO:
           RTC_HISTOGRAM_ENUMERATION_SPARSE(
               "WebRTC.PeerConnection.SrtpCryptoSuite.Audio", srtp_crypto_suite,
-              rtc::SRTP_CRYPTO_SUITE_MAX_VALUE);
+              rtc::kSrtpCryptoSuiteMaxValue);
           break;
         case cricket::MEDIA_TYPE_VIDEO:
           RTC_HISTOGRAM_ENUMERATION_SPARSE(
               "WebRTC.PeerConnection.SrtpCryptoSuite.Video", srtp_crypto_suite,
-              rtc::SRTP_CRYPTO_SUITE_MAX_VALUE);
+              rtc::kSrtpCryptoSuiteMaxValue);
           break;
         case cricket::MEDIA_TYPE_DATA:
           RTC_HISTOGRAM_ENUMERATION_SPARSE(
               "WebRTC.PeerConnection.SrtpCryptoSuite.Data", srtp_crypto_suite,
-              rtc::SRTP_CRYPTO_SUITE_MAX_VALUE);
+              rtc::kSrtpCryptoSuiteMaxValue);
           break;
         default:
-          RTC_NOTREACHED();
+          RTC_DCHECK_NOTREACHED();
           continue;
       }
     }
   }
 
-  if (ssl_cipher_suite != rtc::TLS_NULL_WITH_NULL_NULL) {
+  if (ssl_cipher_suite != rtc::kTlsNullWithNullNull) {
     for (cricket::MediaType media_type : media_types) {
       switch (media_type) {
         case cricket::MEDIA_TYPE_AUDIO:
           RTC_HISTOGRAM_ENUMERATION_SPARSE(
               "WebRTC.PeerConnection.SslCipherSuite.Audio", ssl_cipher_suite,
-              rtc::SSL_CIPHER_SUITE_MAX_VALUE);
+              rtc::kSslCipherSuiteMaxValue);
           break;
         case cricket::MEDIA_TYPE_VIDEO:
           RTC_HISTOGRAM_ENUMERATION_SPARSE(
               "WebRTC.PeerConnection.SslCipherSuite.Video", ssl_cipher_suite,
-              rtc::SSL_CIPHER_SUITE_MAX_VALUE);
+              rtc::kSslCipherSuiteMaxValue);
           break;
         case cricket::MEDIA_TYPE_DATA:
           RTC_HISTOGRAM_ENUMERATION_SPARSE(
               "WebRTC.PeerConnection.SslCipherSuite.Data", ssl_cipher_suite,
-              rtc::SSL_CIPHER_SUITE_MAX_VALUE);
+              rtc::kSslCipherSuiteMaxValue);
           break;
         default:
-          RTC_NOTREACHED();
+          RTC_DCHECK_NOTREACHED();
           continue;
       }
     }
@@ -2855,6 +2884,7 @@ bool PeerConnection::ShouldFireNegotiationNeededEvent(uint32_t event_id) {
 }
 
 void PeerConnection::RequestUsagePatternReportForTesting() {
+  RTC_DCHECK_RUN_ON(signaling_thread());
   message_handler_.RequestUsagePatternReport(
       [this]() {
         RTC_DCHECK_RUN_ON(signaling_thread());
@@ -2867,18 +2897,10 @@ std::function<void(const rtc::CopyOnWriteBuffer& packet,
                    int64_t packet_time_us)>
 PeerConnection::InitializeRtcpCallback() {
   RTC_DCHECK_RUN_ON(network_thread());
-  return [this, flag = worker_thread_safety_](
-             const rtc::CopyOnWriteBuffer& packet, int64_t packet_time_us) {
+  return [this](const rtc::CopyOnWriteBuffer& packet, int64_t packet_time_us) {
     RTC_DCHECK_RUN_ON(network_thread());
-    // TODO(bugs.webrtc.org/11993): We should actually be delivering this call
-    // directly to the Call class somehow directly on the network thread and not
-    // incur this hop here. The DeliverPacket() method will eventually just have
-    // to hop back over to the network thread.
-    worker_thread()->PostTask(ToQueuedTask(flag, [this, packet,
-                                                  packet_time_us] {
-      RTC_DCHECK_RUN_ON(worker_thread());
-      call_->Receiver()->DeliverPacket(MediaType::ANY, packet, packet_time_us);
-    }));
+    call_ptr_->Receiver()->DeliverPacket(MediaType::ANY, packet,
+                                         packet_time_us);
   };
 }
 

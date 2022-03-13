@@ -54,7 +54,7 @@ FrameLengthController::FrameLengthController(const Config& config)
   frame_length_ms_ = std::find(config_.encoder_frame_lengths_ms.begin(),
                                config_.encoder_frame_lengths_ms.end(),
                                config_.initial_frame_length_ms);
-  // |encoder_frame_lengths_ms| must contain |initial_frame_length_ms|.
+  // `encoder_frame_lengths_ms` must contain `initial_frame_length_ms`.
   RTC_DCHECK(frame_length_ms_ != config_.encoder_frame_lengths_ms.end());
 }
 
@@ -71,7 +71,7 @@ void FrameLengthController::UpdateNetworkMetrics(
 }
 
 void FrameLengthController::MakeDecision(AudioEncoderRuntimeConfig* config) {
-  // Decision on |frame_length_ms| should not have been made.
+  // Decision on `frame_length_ms` should not have been made.
   RTC_DCHECK(!config->frame_length_ms);
 
   if (FrameLengthIncreasingDecision(*config)) {
@@ -99,12 +99,12 @@ bool FrameLengthController::Config::FrameLengthChange::operator<(
 bool FrameLengthController::FrameLengthIncreasingDecision(
     const AudioEncoderRuntimeConfig& config) {
   // Increase frame length if
-  // 1. |uplink_bandwidth_bps| is known to be smaller or equal than
-  //    |min_encoder_bitrate_bps| plus |prevent_overuse_margin_bps| plus the
+  // 1. `uplink_bandwidth_bps` is known to be smaller or equal than
+  //    `min_encoder_bitrate_bps` plus `prevent_overuse_margin_bps` plus the
   //    current overhead rate OR all the following:
   // 2. longer frame length is available AND
-  // 3. |uplink_bandwidth_bps| is known to be smaller than a threshold AND
-  // 4. |uplink_packet_loss_fraction| is known to be smaller than a threshold.
+  // 3. `uplink_bandwidth_bps` is known to be smaller than a threshold AND
+  // 4. `uplink_packet_loss_fraction` is known to be smaller than a threshold.
 
   // Find next frame length to which a criterion is defined to shift from
   // current frame length.
@@ -156,12 +156,12 @@ bool FrameLengthController::FrameLengthDecreasingDecision(
     const AudioEncoderRuntimeConfig& config) {
   // Decrease frame length if
   // 1. shorter frame length is available AND
-  // 2. |uplink_bandwidth_bps| is known to be bigger than
-  // |min_encoder_bitrate_bps| plus |prevent_overuse_margin_bps| plus the
+  // 2. `uplink_bandwidth_bps` is known to be bigger than
+  // `min_encoder_bitrate_bps` plus `prevent_overuse_margin_bps` plus the
   // overhead which would be produced with the shorter frame length AND
   // one or more of the followings:
-  // 3. |uplink_bandwidth_bps| is known to be larger than a threshold,
-  // 4. |uplink_packet_loss_fraction| is known to be larger than a threshold,
+  // 3. `uplink_bandwidth_bps` is known to be larger than a threshold,
+  // 4. `uplink_packet_loss_fraction` is known to be larger than a threshold,
 
   // Find next frame length to which a criterion is defined to shift from
   // current frame length.

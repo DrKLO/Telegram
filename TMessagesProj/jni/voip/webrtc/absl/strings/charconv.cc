@@ -20,7 +20,7 @@
 #include <cstring>
 
 #include "absl/base/casts.h"
-#include "absl/base/internal/bits.h"
+#include "absl/numeric/bits.h"
 #include "absl/numeric/int128.h"
 #include "absl/strings/internal/charconv_bigint.h"
 #include "absl/strings/internal/charconv_parse.h"
@@ -111,7 +111,7 @@ struct FloatTraits<double> {
     return sign ? -ldexp(mantissa, exponent) : ldexp(mantissa, exponent);
 #else
     constexpr uint64_t kMantissaMask =
-        (uint64_t(1) << (kTargetMantissaBits - 1)) - 1;
+        (uint64_t{1} << (kTargetMantissaBits - 1)) - 1;
     uint64_t dbl = static_cast<uint64_t>(sign) << 63;
     if (mantissa > kMantissaMask) {
       // Normal value.
@@ -151,7 +151,7 @@ struct FloatTraits<float> {
     return sign ? -ldexpf(mantissa, exponent) : ldexpf(mantissa, exponent);
 #else
     constexpr uint32_t kMantissaMask =
-        (uint32_t(1) << (kTargetMantissaBits - 1)) - 1;
+        (uint32_t{1} << (kTargetMantissaBits - 1)) - 1;
     uint32_t flt = static_cast<uint32_t>(sign) << 31;
     if (mantissa > kMantissaMask) {
       // Normal value.
@@ -242,11 +242,11 @@ struct CalculatedFloat {
 
 // Returns the bit width of the given uint128.  (Equivalently, returns 128
 // minus the number of leading zero bits.)
-int BitWidth(uint128 value) {
+unsigned BitWidth(uint128 value) {
   if (Uint128High64(value) == 0) {
-    return 64 - base_internal::CountLeadingZeros64(Uint128Low64(value));
+    return static_cast<unsigned>(bit_width(Uint128Low64(value)));
   }
-  return 128 - base_internal::CountLeadingZeros64(Uint128High64(value));
+  return 128 - countl_zero(Uint128High64(value));
 }
 
 // Calculates how far to the right a mantissa needs to be shifted to create a
@@ -499,7 +499,7 @@ bool MustRoundUp(uint64_t guess_mantissa, int guess_exponent,
 template <typename FloatType>
 CalculatedFloat CalculatedFloatFromRawValues(uint64_t mantissa, int exponent) {
   CalculatedFloat result;
-  if (mantissa == uint64_t(1) << FloatTraits<FloatType>::kTargetMantissaBits) {
+  if (mantissa == uint64_t{1} << FloatTraits<FloatType>::kTargetMantissaBits) {
     mantissa >>= 1;
     exponent += 1;
   }
@@ -519,7 +519,7 @@ CalculatedFloat CalculateFromParsedHexadecimal(
     const strings_internal::ParsedFloat& parsed_hex) {
   uint64_t mantissa = parsed_hex.mantissa;
   int exponent = parsed_hex.exponent;
-  int mantissa_width = 64 - base_internal::CountLeadingZeros64(mantissa);
+  auto mantissa_width = static_cast<unsigned>(bit_width(mantissa));
   const int shift = NormalizedShiftSize<FloatType>(mantissa_width, exponent);
   bool result_exact;
   exponent += shift;

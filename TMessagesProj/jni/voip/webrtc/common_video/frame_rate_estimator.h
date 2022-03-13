@@ -43,7 +43,7 @@ class FrameRateEstimator {
   // Get the current average FPS, based on the frames currently in the window.
   absl::optional<double> GetAverageFps() const;
 
-  // Move the window so it ends at |now|, and return the new fps estimate.
+  // Move the window so it ends at `now`, and return the new fps estimate.
   absl::optional<double> GetAverageFps(Timestamp now);
 
   // Completely clear the averaging window.

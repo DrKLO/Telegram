@@ -12,41 +12,44 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
+import android.animation.StateListAnimator;
+import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.res.Configuration;
 import android.graphics.Canvas;
+import android.graphics.Outline;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Vibrator;
 import android.text.Editable;
 import android.text.InputType;
+import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.method.PasswordTransformationMethod;
 import android.util.TypedValue;
-import android.view.ActionMode;
 import android.view.Gravity;
-import android.view.Menu;
-import android.view.MenuItem;
+import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewOutlineProvider;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.inputmethod.EditorInfo;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
@@ -68,10 +71,20 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Components.AlertsCreator;
+import org.telegram.ui.Components.CombinedDrawable;
+import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.CustomPhoneKeyboardView;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.OutlineTextContainerView;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RLottieImageView;
+import org.telegram.ui.Components.RadialProgressView;
+import org.telegram.ui.Components.SizeNotifierFrameLayout;
+import org.telegram.ui.Components.TextStyleSpan;
+import org.telegram.ui.Components.TransformableLoginButtonView;
+import org.telegram.ui.Components.VerticalPositionAutoAnimator;
+import org.telegram.ui.Components.spoilers.SpoilersTextView;
 
 import java.util.ArrayList;
 
@@ -83,20 +96,24 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
     private TextView descriptionText;
     private TextView descriptionText2;
     private TextView descriptionText3;
-    private TextView topButton;
-    private EditTextBoldCursor passwordEditText;
+    private TextView bottomSkipButton;
+    private EditTextBoldCursor editTextFirstRow, editTextSecondRow;
+    private OutlineTextContainerView outlineTextFirstRow, outlineTextSecondRow;
+    private CodeFieldContainer codeFieldContainer;
     private ScrollView scrollView;
     private View actionBarBackground;
     private ImageView showPasswordButton;
+    private boolean needPasswordButton = false;
+    private boolean isPasswordVisible;
     private int otherwiseReloginDays = -1;
+    private boolean fromRegistration;
 
     private AnimatorSet buttonAnimation;
 
     private ArrayList<BaseFragment> fragmentsToClose = new ArrayList<>();
 
     private AnimatorSet actionBarAnimator;
-
-    private AlertDialog progressDialog;
+    private RadialProgressView radialProgressView;
 
     private boolean ignoreTextChange;
 
@@ -117,14 +134,29 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
     private boolean emailOnly;
     private String emailCode;
 
+    private VerticalPositionAutoAnimator floatingAutoAnimator;
+    private FrameLayout floatingButtonContainer;
+    private TransformableLoginButtonView floatingButtonIcon;
+    private RadialProgressView floatingProgressView;
+
+    private CustomPhoneKeyboardView keyboardView;
+
     private RLottieDrawable[] animationDrawables;
     private Runnable setAnimationRunnable;
 
+    private boolean postedErrorColorTimeout;
+    private Runnable errorColorTimeout = () -> {
+        postedErrorColorTimeout = false;
+        for (int i = 0; i < codeFieldContainer.codeField.length; i++) {
+            codeFieldContainer.codeField[i].animateErrorProgress(0);
+        }
+    };
+
     private Runnable finishCallback = () -> {
-        if (passwordEditText == null) {
+        if (editTextFirstRow == null) {
             return;
         }
-        if (passwordEditText.length() != 0) {
+        if (editTextFirstRow.length() != 0) {
             animationDrawables[2].setCustomEndFrame(49);
             animationDrawables[2].setProgress(0.0f, false);
             imageView.playAnimation();
@@ -133,8 +165,8 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
         }
     };
 
-    public static final int TYPE_ENTER_FIRST = 0;
-    public static final int TYPE_ENTER_SECOND = 1;
+    public static final int TYPE_CREATE_PASSWORD_STEP_1 = 0;
+    public static final int TYPE_CREATE_PASSWORD_STEP_2 = 1;
     public static final int TYPE_ENTER_HINT = 2;
     public static final int TYPE_ENTER_EMAIL = 3;
     public static final int TYPE_EMAIL_RECOVERY = 4;
@@ -145,7 +177,9 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
     public static final int TYPE_VERIFY_OK = 9;
 
     private static final int item_abort = 1;
-    private static final int item_resend = 2;
+
+    private Runnable monkeyAfterSwitchCallback;
+    private Runnable monkeyEndCallback;
 
     public TwoStepVerificationSetupActivity(int type, TLRPC.TL_account_password password) {
         super();
@@ -184,6 +218,10 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
         fragmentsToClose.add(fragment);
     }
 
+    public void setFromRegistration(boolean fromRegistration) {
+        this.fromRegistration = fromRegistration;
+    }
+
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
@@ -198,15 +236,10 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
             }
             animationDrawables = null;
         }
-        if (progressDialog != null) {
-            try {
-                progressDialog.dismiss();
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
-            progressDialog = null;
-        }
         AndroidUtilities.removeAdjustResize(getParentActivity(), classGuid);
+        if (isCustomKeyboardVisible()) {
+            AndroidUtilities.removeAltFocusable(getParentActivity(), classGuid);
+        }
     }
 
     @Override
@@ -215,7 +248,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(false);
         actionBar.setTitleColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-        actionBar.setItemsColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2), false);
+        actionBar.setItemsColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText), false);
         actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_actionBarWhiteSelector), false);
         actionBar.setCastShadows(false);
         actionBar.setAddToContainer(false);
@@ -231,16 +264,6 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
                     } else {
                         finishFragment();
                     }
-                } else if (id == item_resend) {
-                    TLRPC.TL_account_resendPasswordEmail req = new TLRPC.TL_account_resendPasswordEmail();
-                    ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
-
-                    });
-                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                    builder.setMessage(LocaleController.getString("ResendCodeInfo", R.string.ResendCodeInfo));
-                    builder.setTitle(LocaleController.getString("TwoStepVerificationTitle", R.string.TwoStepVerificationTitle));
-                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
-                    showDialog(builder.create());
                 } else if (id == item_abort) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     String text;
@@ -268,18 +291,60 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
         if (currentType == TYPE_EMAIL_CONFIRM) {
             ActionBarMenu menu = actionBar.createMenu();
             ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_other);
-            item.addSubItem(item_resend, LocaleController.getString("ResendCode", R.string.ResendCode));
             item.addSubItem(item_abort, LocaleController.getString("AbortPasswordMenu", R.string.AbortPasswordMenu));
         }
 
-        topButton = new TextView(context);
-        topButton.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText2));
-        topButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        topButton.setGravity(Gravity.CENTER_VERTICAL);
-        topButton.setVisibility(View.GONE);
-        actionBar.addView(topButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.RIGHT, 0, 0, 22, 0));
-        topButton.setOnClickListener(v -> {
-            if (currentType == TYPE_ENTER_FIRST) {
+        floatingButtonContainer = new FrameLayout(context);
+        if (Build.VERSION.SDK_INT >= 21) {
+            StateListAnimator animator = new StateListAnimator();
+            animator.addState(new int[]{android.R.attr.state_pressed}, ObjectAnimator.ofFloat(floatingButtonIcon, "translationZ", AndroidUtilities.dp(2), AndroidUtilities.dp(4)).setDuration(200));
+            animator.addState(new int[]{}, ObjectAnimator.ofFloat(floatingButtonIcon, "translationZ", AndroidUtilities.dp(4), AndroidUtilities.dp(2)).setDuration(200));
+            floatingButtonContainer.setStateListAnimator(animator);
+            floatingButtonContainer.setOutlineProvider(new ViewOutlineProvider() {
+                @SuppressLint("NewApi")
+                @Override
+                public void getOutline(View view, Outline outline) {
+                    outline.setOval(0, 0, AndroidUtilities.dp(56), AndroidUtilities.dp(56));
+                }
+            });
+        }
+        floatingAutoAnimator = VerticalPositionAutoAnimator.attach(floatingButtonContainer);
+        floatingButtonContainer.setOnClickListener(view -> processNext());
+
+        floatingButtonIcon = new TransformableLoginButtonView(context);
+        floatingButtonIcon.setTransformType(TransformableLoginButtonView.TRANSFORM_ARROW_CHECK);
+        floatingButtonIcon.setProgress(0f);
+        floatingButtonIcon.setColor(Theme.getColor(Theme.key_chats_actionIcon));
+        floatingButtonIcon.setDrawBackground(false);
+        floatingButtonContainer.setContentDescription(LocaleController.getString(R.string.Next));
+        floatingButtonContainer.addView(floatingButtonIcon, LayoutHelper.createFrame(Build.VERSION.SDK_INT >= 21 ? 56 : 60, Build.VERSION.SDK_INT >= 21 ? 56 : 60));
+
+        floatingProgressView = new RadialProgressView(context);
+        floatingProgressView.setSize(AndroidUtilities.dp(22));
+        floatingProgressView.setAlpha(0.0f);
+        floatingProgressView.setScaleX(0.1f);
+        floatingProgressView.setScaleY(0.1f);
+        floatingButtonContainer.addView(floatingProgressView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+
+        Drawable drawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(56), Theme.getColor(Theme.key_chats_actionBackground), Theme.getColor(Theme.key_chats_actionPressedBackground));
+        if (Build.VERSION.SDK_INT < 21) {
+            Drawable shadowDrawable = context.getResources().getDrawable(R.drawable.floating_shadow).mutate();
+            shadowDrawable.setColorFilter(new PorterDuffColorFilter(0xff000000, PorterDuff.Mode.MULTIPLY));
+            CombinedDrawable combinedDrawable = new CombinedDrawable(shadowDrawable, drawable, 0, 0);
+            combinedDrawable.setIconSize(AndroidUtilities.dp(56), AndroidUtilities.dp(56));
+            drawable = combinedDrawable;
+        }
+        floatingButtonContainer.setBackground(drawable);
+
+        bottomSkipButton = new TextView(context);
+        bottomSkipButton.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText2));
+        bottomSkipButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        bottomSkipButton.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
+        bottomSkipButton.setVisibility(View.GONE);
+        VerticalPositionAutoAnimator.attach(bottomSkipButton);
+        bottomSkipButton.setPadding(AndroidUtilities.dp(32), 0, AndroidUtilities.dp(32), 0);
+        bottomSkipButton.setOnClickListener(v -> {
+            if (currentType == TYPE_CREATE_PASSWORD_STEP_1) {
                 needShowProgress();
                 TLRPC.TL_auth_recoverPassword req = new TLRPC.TL_auth_recoverPassword();
                 req.code = emailCode;
@@ -339,6 +404,11 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
 
         imageView = new RLottieImageView(context);
         imageView.setScaleType(ImageView.ScaleType.CENTER);
+        if (currentType == TYPE_ENTER_HINT && AndroidUtilities.isSmallScreen()) {
+            imageView.setVisibility(View.GONE);
+        } else if (!isIntro()) {
+            imageView.setVisibility(isLandscape() ? View.GONE : View.VISIBLE);
+        }
 
         titleTextView = new TextView(context);
         titleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -346,7 +416,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
         titleTextView.setPadding(AndroidUtilities.dp(32), 0, AndroidUtilities.dp(32), 0);
         titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 24);
 
-        descriptionText = new TextView(context);
+        descriptionText = new SpoilersTextView(context);
         descriptionText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6));
         descriptionText.setGravity(Gravity.CENTER_HORIZONTAL);
         descriptionText.setLineSpacing(AndroidUtilities.dp(2), 1);
@@ -376,301 +446,23 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
         buttonTextView.setPadding(AndroidUtilities.dp(34), 0, AndroidUtilities.dp(34), 0);
         buttonTextView.setGravity(Gravity.CENTER);
         buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
-        buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         buttonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        buttonTextView.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
-        buttonTextView.setOnClickListener(v -> {
-            if (getParentActivity() == null) {
-                return;
-            }
-            switch (currentType) {
-                case TYPE_INTRO: {
-                    if (currentPassword == null) {
-                        needShowProgress();
-                        doneAfterPasswordLoad = true;
-                        return;
-                    }
-                    TwoStepVerificationSetupActivity fragment = new TwoStepVerificationSetupActivity(currentAccount, TYPE_ENTER_FIRST, currentPassword);
-                    fragment.closeAfterSet = closeAfterSet;
-                    fragment.setBlockingAlert(otherwiseReloginDays);
-                    presentFragment(fragment, true);
-                    break;
-                }
-                case TYPE_PASSWORD_SET: {
-                    if (closeAfterSet) {
-                        finishFragment();
-                    } else {
-                        TwoStepVerificationActivity fragment = new TwoStepVerificationActivity();
-                        fragment.setCurrentPasswordParams(currentPassword, currentPasswordHash, currentSecretId, currentSecret);
-                        fragment.setBlockingAlert(otherwiseReloginDays);
-                        presentFragment(fragment, true);
-                    }
-                    break;
-                }
-                case TYPE_VERIFY_OK: {
-                    finishFragment();
-                    break;
-                }
-                case TYPE_VERIFY: {
-                    if (currentPassword == null) {
-                        needShowProgress();
-                        doneAfterPasswordLoad = true;
-                        return;
-                    }
-                    String oldPassword = passwordEditText.getText().toString();
-                    if (oldPassword.length() == 0) {
-                        onFieldError(passwordEditText, false);
-                        return;
-                    }
-                    final byte[] oldPasswordBytes = AndroidUtilities.getStringBytes(oldPassword);
+        buttonTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(6), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
+        buttonTextView.setOnClickListener(v -> processNext());
 
-                    needShowProgress();
-                    Utilities.globalQueue.postRunnable(() -> {
-                        final TLRPC.TL_account_getPasswordSettings req = new TLRPC.TL_account_getPasswordSettings();
-                        final byte[] x_bytes;
-                        if (currentPassword.current_algo instanceof TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) {
-                            TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow algo = (TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) currentPassword.current_algo;
-                            x_bytes = SRPHelper.getX(oldPasswordBytes, algo);
-                        } else {
-                            x_bytes = null;
-                        }
-
-                        RequestDelegate requestDelegate = (response, error) -> {
-                            if (error == null) {
-                                AndroidUtilities.runOnUIThread(() -> {
-                                    needHideProgress();
-                                    currentPasswordHash = x_bytes;
-                                    getMessagesController().removeSuggestion(0, "VALIDATE_PASSWORD");
-                                    TwoStepVerificationSetupActivity fragment = new TwoStepVerificationSetupActivity(TYPE_VERIFY_OK, currentPassword);
-                                    fragment.setBlockingAlert(otherwiseReloginDays);
-                                    presentFragment(fragment, true);
-                                });
-                            } else {
-                                AndroidUtilities.runOnUIThread(() -> {
-                                    if ("SRP_ID_INVALID".equals(error.text)) {
-                                        TLRPC.TL_account_getPassword getPasswordReq = new TLRPC.TL_account_getPassword();
-                                        ConnectionsManager.getInstance(currentAccount).sendRequest(getPasswordReq, (response2, error2) -> AndroidUtilities.runOnUIThread(() -> {
-                                            if (error2 == null) {
-                                                currentPassword = (TLRPC.TL_account_password) response2;
-                                                TwoStepVerificationActivity.initPasswordNewAlgo(currentPassword);
-                                                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.didSetOrRemoveTwoStepPassword, currentPassword);
-                                                buttonTextView.callOnClick();
-                                            }
-                                        }), ConnectionsManager.RequestFlagWithoutLogin);
-                                        return;
-                                    }
-                                    needHideProgress();
-                                    if ("PASSWORD_HASH_INVALID".equals(error.text)) {
-                                        descriptionText.setText(LocaleController.getString("CheckPasswordWrong", R.string.CheckPasswordWrong));
-                                        descriptionText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText4));
-                                        onFieldError(passwordEditText, true);
-                                        showDoneButton(false);
-                                    } else if (error.text.startsWith("FLOOD_WAIT")) {
-                                        int time = Utilities.parseInt(error.text);
-                                        String timeString;
-                                        if (time < 60) {
-                                            timeString = LocaleController.formatPluralString("Seconds", time);
-                                        } else {
-                                            timeString = LocaleController.formatPluralString("Minutes", time / 60);
-                                        }
-                                        showAlertWithText(LocaleController.getString("AppName", R.string.AppName), LocaleController.formatString("FloodWaitTime", R.string.FloodWaitTime, timeString));
-                                    } else {
-                                        showAlertWithText(LocaleController.getString("AppName", R.string.AppName), error.text);
-                                    }
-                                });
-                            }
-                        };
-
-                        if (currentPassword.current_algo instanceof TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) {
-                            TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow algo = (TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) currentPassword.current_algo;
-                            req.password = SRPHelper.startCheck(x_bytes, currentPassword.srp_id, currentPassword.srp_B, algo);
-                            if (req.password == null) {
-                                TLRPC.TL_error error = new TLRPC.TL_error();
-                                error.text = "ALGO_INVALID";
-                                requestDelegate.run(null, error);
-                                return;
-                            }
-                            ConnectionsManager.getInstance(currentAccount).sendRequest(req, requestDelegate, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
-                        } else {
-                            TLRPC.TL_error error = new TLRPC.TL_error();
-                            error.text = "PASSWORD_HASH_INVALID";
-                            requestDelegate.run(null, error);
-                        }
-                    });
-                    break;
-                }
-                case TYPE_ENTER_FIRST: {
-                    if (passwordEditText.length() == 0) {
-                        onFieldError(passwordEditText, false);
-                        return;
-                    }
-                    TwoStepVerificationSetupActivity fragment = new TwoStepVerificationSetupActivity(currentAccount, TYPE_ENTER_SECOND, currentPassword);
-                    fragment.setCurrentPasswordParams(currentPasswordHash, currentSecretId, currentSecret, emailOnly);
-                    fragment.setCurrentEmailCode(emailCode);
-                    fragment.firstPassword = passwordEditText.getText().toString();
-                    fragment.fragmentsToClose.addAll(fragmentsToClose);
-                    fragment.fragmentsToClose.add(this);
-                    fragment.closeAfterSet = closeAfterSet;
-                    fragment.setBlockingAlert(otherwiseReloginDays);
-                    presentFragment(fragment);
-                    break;
-                }
-                case TYPE_ENTER_SECOND: {
-                    if (!firstPassword.equals(passwordEditText.getText().toString())) {
-                        try {
-                            Toast.makeText(getParentActivity(), LocaleController.getString("PasswordDoNotMatch", R.string.PasswordDoNotMatch), Toast.LENGTH_SHORT).show();
-                        } catch (Exception e) {
-                            FileLog.e(e);
-                        }
-                        onFieldError(passwordEditText, false);
-                        return;
-                    }
-                    TwoStepVerificationSetupActivity fragment = new TwoStepVerificationSetupActivity(currentAccount, TYPE_ENTER_HINT, currentPassword);
-                    fragment.setCurrentPasswordParams(currentPasswordHash, currentSecretId, currentSecret, emailOnly);
-                    fragment.setCurrentEmailCode(emailCode);
-                    fragment.firstPassword = firstPassword;
-                    fragment.fragmentsToClose.addAll(fragmentsToClose);
-                    fragment.fragmentsToClose.add(this);
-                    fragment.closeAfterSet = closeAfterSet;
-                    fragment.setBlockingAlert(otherwiseReloginDays);
-                    presentFragment(fragment);
-                    break;
-                }
-                case TYPE_ENTER_HINT: {
-                    String hint = passwordEditText.getText().toString();
-                    if (hint.toLowerCase().equals(firstPassword.toLowerCase())) {
-                        try {
-                            Toast.makeText(getParentActivity(), LocaleController.getString("PasswordAsHintError", R.string.PasswordAsHintError), Toast.LENGTH_SHORT).show();
-                        } catch (Exception e) {
-                            FileLog.e(e);
-                        }
-                        onFieldError(passwordEditText, false);
-                        return;
-                    }
-                    onHintDone();
-                    break;
-                }
-                case TYPE_ENTER_EMAIL: {
-                    email = passwordEditText.getText().toString();
-                    if (!isValidEmail(email)) {
-                        onFieldError(passwordEditText, false);
-                        return;
-                    }
-                    setNewPassword(false);
-                    break;
-                }
-                case TYPE_EMAIL_RECOVERY: {
-                    String code = passwordEditText.getText().toString();
-                    if (code.length() == 0) {
-                        onFieldError(passwordEditText, false);
-                        return;
-                    }
-                    TLRPC.TL_auth_checkRecoveryPassword req = new TLRPC.TL_auth_checkRecoveryPassword();
-                    req.code = code;
-                    ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                        if (response instanceof TLRPC.TL_boolTrue) {
-                            TwoStepVerificationSetupActivity fragment = new TwoStepVerificationSetupActivity(currentAccount, TYPE_ENTER_FIRST, currentPassword);
-                            fragment.fragmentsToClose.addAll(fragmentsToClose);
-                            fragment.addFragmentToClose(TwoStepVerificationSetupActivity.this);
-                            fragment.setCurrentEmailCode(code);
-                            fragment.setBlockingAlert(otherwiseReloginDays);
-                            presentFragment(fragment, true);
-                        } else {
-                            if (error == null || error.text.startsWith("CODE_INVALID")) {
-                                onFieldError(passwordEditText, true);
-                            } else if (error.text.startsWith("FLOOD_WAIT")) {
-                                int time = Utilities.parseInt(error.text);
-                                String timeString;
-                                if (time < 60) {
-                                    timeString = LocaleController.formatPluralString("Seconds", time);
-                                } else {
-                                    timeString = LocaleController.formatPluralString("Minutes", time / 60);
-                                }
-                                showAlertWithText(LocaleController.getString("TwoStepVerificationTitle", R.string.TwoStepVerificationTitle), LocaleController.formatString("FloodWaitTime", R.string.FloodWaitTime, timeString));
-                            } else {
-                                showAlertWithText(LocaleController.getString("TwoStepVerificationTitle", R.string.TwoStepVerificationTitle), error.text);
-                            }
-                        }
-                    }), ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
-                    break;
-                }
-                case TYPE_EMAIL_CONFIRM: {
-                    if (passwordEditText.length() == 0) {
-                        onFieldError(passwordEditText, false);
-                        return;
-                    }
-                    TLRPC.TL_account_confirmPasswordEmail req = new TLRPC.TL_account_confirmPasswordEmail();
-                    req.code = passwordEditText.getText().toString();
-                    ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                        needHideProgress();
-                        if (error == null) {
-                            if (getParentActivity() == null) {
-                                return;
-                            }
-                            if (currentPassword.has_password) {
-                                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                                builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialogInterface, i) -> {
-                                    for (int a = 0, N = fragmentsToClose.size(); a < N; a++) {
-                                        fragmentsToClose.get(a).removeSelfFromStack();
-                                    }
-                                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.twoStepPasswordChanged, currentPasswordHash, currentPassword.new_algo, currentPassword.new_secure_algo, currentPassword.secure_random, email, hint, null, firstPassword);
-                                    TwoStepVerificationActivity fragment = new TwoStepVerificationActivity();
-                                    currentPassword.has_password = true;
-                                    currentPassword.has_recovery = true;
-                                    currentPassword.email_unconfirmed_pattern = "";
-                                    fragment.setCurrentPasswordParams(currentPassword, currentPasswordHash, currentSecretId, currentSecret);
-                                    fragment.setBlockingAlert(otherwiseReloginDays);
-                                    presentFragment(fragment, true);
-                                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.didSetOrRemoveTwoStepPassword, currentPassword);
-                                });
-                                if (currentPassword.has_recovery) {
-                                    builder.setMessage(LocaleController.getString("YourEmailSuccessChangedText", R.string.YourEmailSuccessChangedText));
-                                } else {
-                                    builder.setMessage(LocaleController.getString("YourEmailSuccessText", R.string.YourEmailSuccessText));
-                                }
-                                builder.setTitle(LocaleController.getString("YourPasswordSuccess", R.string.YourPasswordSuccess));
-                                Dialog dialog = showDialog(builder.create());
-                                if (dialog != null) {
-                                    dialog.setCanceledOnTouchOutside(false);
-                                    dialog.setCancelable(false);
-                                }
-                            } else {
-                                for (int a = 0, N = fragmentsToClose.size(); a < N; a++) {
-                                    fragmentsToClose.get(a).removeSelfFromStack();
-                                }
-                                currentPassword.has_password = true;
-                                currentPassword.has_recovery = true;
-                                currentPassword.email_unconfirmed_pattern = "";
-                                TwoStepVerificationSetupActivity fragment = new TwoStepVerificationSetupActivity(TYPE_PASSWORD_SET, currentPassword);
-                                fragment.setCurrentPasswordParams(currentPasswordHash, currentSecretId, currentSecret, emailOnly);
-                                fragment.fragmentsToClose.addAll(fragmentsToClose);
-                                fragment.closeAfterSet = closeAfterSet;
-                                fragment.setBlockingAlert(otherwiseReloginDays);
-                                presentFragment(fragment, true);
-                                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.twoStepPasswordChanged, currentPasswordHash, currentPassword.new_algo, currentPassword.new_secure_algo, currentPassword.secure_random, email, hint, null, firstPassword);
-                                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.didSetOrRemoveTwoStepPassword, currentPassword);
-                            }
-                        } else {
-                            if (error.text.startsWith("CODE_INVALID")) {
-                                onFieldError(passwordEditText, true);
-                            } else if (error.text.startsWith("FLOOD_WAIT")) {
-                                int time = Utilities.parseInt(error.text);
-                                String timeString;
-                                if (time < 60) {
-                                    timeString = LocaleController.formatPluralString("Seconds", time);
-                                } else {
-                                    timeString = LocaleController.formatPluralString("Minutes", time / 60);
-                                }
-                                showAlertWithText(LocaleController.getString("AppName", R.string.AppName), LocaleController.formatString("FloodWaitTime", R.string.FloodWaitTime, timeString));
-                            } else {
-                                showAlertWithText(LocaleController.getString("AppName", R.string.AppName), error.text);
-                            }
-                        }
-                    }), ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
-                    needShowProgress();
-                }
-            }
-        });
+        switch (currentType) {
+            case TYPE_INTRO:
+            case TYPE_PASSWORD_SET:
+            case TYPE_VERIFY_OK:
+                titleTextView.setTypeface(Typeface.DEFAULT);
+                titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 24);
+                break;
+            default:
+                titleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+                break;
+        }
 
         switch (currentType) {
             case TYPE_INTRO:
@@ -692,11 +484,12 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
                             descriptionText2.measure(MeasureSpec.makeMeasureSpec((int) (width * 0.6f), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED));
                             buttonTextView.measure(MeasureSpec.makeMeasureSpec((int) (width * 0.6f), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(42), MeasureSpec.EXACTLY));
                         } else {
-                            imageView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec((int) (height * 0.399f), MeasureSpec.EXACTLY));
+                            int imageSize = currentType == TYPE_PASSWORD_SET ? 160 : 140;
+                            imageView.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(imageSize), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(imageSize), MeasureSpec.EXACTLY));
                             titleTextView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED));
                             descriptionText.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED));
                             descriptionText2.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED));
-                            buttonTextView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(42), MeasureSpec.EXACTLY));
+                            buttonTextView.measure(MeasureSpec.makeMeasureSpec(width - AndroidUtilities.dp(24 * 2), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(50), MeasureSpec.EXACTLY));
                         }
 
                         setMeasuredDimension(width, height);
@@ -722,14 +515,15 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
                             y = (int) (height * 0.64f);
                             buttonTextView.layout(x, y, x + buttonTextView.getMeasuredWidth(), y + buttonTextView.getMeasuredHeight());
                         } else {
-                            int y = (int) (height * 0.148f);
-                            imageView.layout(0, y, imageView.getMeasuredWidth(), y + imageView.getMeasuredHeight());
-                            y = (int) (height * 0.458f);
+                            int y = (int) (height * 0.3f);
+                            int x = (width - imageView.getMeasuredWidth()) / 2;
+                            imageView.layout(x, y, x + imageView.getMeasuredWidth(), y + imageView.getMeasuredHeight());
+                            y += imageView.getMeasuredHeight() + AndroidUtilities.dp(16);
                             titleTextView.layout(0, y, titleTextView.getMeasuredWidth(), y + titleTextView.getMeasuredHeight());
                             y += titleTextView.getMeasuredHeight() + AndroidUtilities.dp(12);
                             descriptionText.layout(0, y, descriptionText.getMeasuredWidth(), y + descriptionText.getMeasuredHeight());
-                            int x = (width - buttonTextView.getMeasuredWidth()) / 2;
-                            y = (int) (height * 0.791f);
+                            x = (width - buttonTextView.getMeasuredWidth()) / 2;
+                            y = height - buttonTextView.getMeasuredHeight() - AndroidUtilities.dp(48);
                             buttonTextView.layout(x, y, x + buttonTextView.getMeasuredWidth(), y + buttonTextView.getMeasuredHeight());
                         }
                     }
@@ -744,12 +538,55 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
                 break;
             }
             case TYPE_VERIFY:
-            case TYPE_ENTER_FIRST:
-            case TYPE_ENTER_SECOND:
+            case TYPE_CREATE_PASSWORD_STEP_1:
+            case TYPE_CREATE_PASSWORD_STEP_2:
             case TYPE_EMAIL_CONFIRM:
             case TYPE_EMAIL_RECOVERY:
             case TYPE_ENTER_HINT:
             case TYPE_ENTER_EMAIL: {
+                FrameLayout frameLayout = new FrameLayout(context) {
+                    @Override
+                    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+
+                        MarginLayoutParams params = (MarginLayoutParams) radialProgressView.getLayoutParams();
+                        params.topMargin = AndroidUtilities.statusBarHeight + AndroidUtilities.dp(16);
+                    }
+                };
+                SizeNotifierFrameLayout keyboardFrameLayout = new SizeNotifierFrameLayout(context) {
+                    @Override
+                    protected void onLayout(boolean changed, int l, int t, int r, int b) {
+                        int frameBottom;
+                        if (keyboardView.getVisibility() != View.GONE && measureKeyboardHeight() >= AndroidUtilities.dp(20)) {
+                            if (isCustomKeyboardVisible()) {
+                                frameLayout.layout(0, 0, getMeasuredWidth(), frameBottom = getMeasuredHeight() - AndroidUtilities.dp(CustomPhoneKeyboardView.KEYBOARD_HEIGHT_DP) + measureKeyboardHeight());
+                            } else {
+                                frameLayout.layout(0, 0, getMeasuredWidth(), frameBottom = getMeasuredHeight());
+                            }
+                        } else if (keyboardView.getVisibility() != View.GONE) {
+                            frameLayout.layout(0, 0, getMeasuredWidth(), frameBottom = getMeasuredHeight() - AndroidUtilities.dp(CustomPhoneKeyboardView.KEYBOARD_HEIGHT_DP));
+                        } else {
+                            frameLayout.layout(0, 0, getMeasuredWidth(), frameBottom = getMeasuredHeight());
+                        }
+
+                        keyboardView.layout(0, frameBottom, getMeasuredWidth(), frameBottom + AndroidUtilities.dp(CustomPhoneKeyboardView.KEYBOARD_HEIGHT_DP));
+                    }
+
+                    @Override
+                    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                        int width = MeasureSpec.getSize(widthMeasureSpec), height = MeasureSpec.getSize(heightMeasureSpec);
+                        setMeasuredDimension(width, height);
+
+                        int frameHeight = height;
+                        if (keyboardView.getVisibility() != View.GONE && measureKeyboardHeight() < AndroidUtilities.dp(20)) {
+                            frameHeight -= AndroidUtilities.dp(CustomPhoneKeyboardView.KEYBOARD_HEIGHT_DP);
+                        }
+                        frameLayout.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(frameHeight, MeasureSpec.EXACTLY));
+                        keyboardView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(CustomPhoneKeyboardView.KEYBOARD_HEIGHT_DP), MeasureSpec.EXACTLY));
+                    }
+                };
+                keyboardFrameLayout.addView(frameLayout);
+
                 ViewGroup container = new ViewGroup(context) {
 
                     @Override
@@ -757,14 +594,9 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
                         int width = MeasureSpec.getSize(widthMeasureSpec);
                         int height = MeasureSpec.getSize(heightMeasureSpec);
 
-                        if (topButton != null) {
-                            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) topButton.getLayoutParams();
-                            layoutParams.topMargin = AndroidUtilities.statusBarHeight;
-                        }
-
                         actionBar.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), heightMeasureSpec);
                         actionBarBackground.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(actionBar.getMeasuredHeight() + AndroidUtilities.dp(3), MeasureSpec.EXACTLY));
-                        scrollView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), heightMeasureSpec);
+                        keyboardFrameLayout.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), heightMeasureSpec);
 
                         setMeasuredDimension(width, height);
                     }
@@ -773,7 +605,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
                     protected void onLayout(boolean changed, int l, int t, int r, int b) {
                         actionBar.layout(0, 0, actionBar.getMeasuredWidth(), actionBar.getMeasuredHeight());
                         actionBarBackground.layout(0, 0, actionBarBackground.getMeasuredWidth(), actionBarBackground.getMeasuredHeight());
-                        scrollView.layout(0, 0, scrollView.getMeasuredWidth(), scrollView.getMeasuredHeight());
+                        keyboardFrameLayout.layout(0, 0, keyboardFrameLayout.getMeasuredWidth(), keyboardFrameLayout.getMeasuredHeight());
                     }
                 };
 
@@ -874,9 +706,20 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
                     }
                 };
                 scrollView.setVerticalScrollBarEnabled(false);
-                container.addView(scrollView);
+                frameLayout.addView(scrollView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+                frameLayout.addView(bottomSkipButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP ? 56 : 60, Gravity.BOTTOM, 0, 0, 0, 16));
+                frameLayout.addView(floatingButtonContainer, LayoutHelper.createFrame(Build.VERSION.SDK_INT >= 21 ? 56 : 60, Build.VERSION.SDK_INT >= 21 ? 56 : 60, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 24, 16));
+                container.addView(keyboardFrameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
-                LinearLayout scrollViewLinearLayout = new LinearLayout(context);
+                LinearLayout scrollViewLinearLayout = new LinearLayout(context) {
+                    @Override
+                    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+
+                        MarginLayoutParams params = (MarginLayoutParams) titleTextView.getLayoutParams();
+                        params.topMargin = (imageView.getVisibility() == GONE && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP ? AndroidUtilities.statusBarHeight : 0) + AndroidUtilities.dp(8) + (currentType == TYPE_ENTER_HINT && AndroidUtilities.isSmallScreen() && !isLandscape() ? AndroidUtilities.dp(32) : 0);
+                    }
+                };
                 scrollViewLinearLayout.setOrientation(LinearLayout.VERTICAL);
                 scrollView.addView(scrollViewLinearLayout, LayoutHelper.createScroll(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP));
 
@@ -884,102 +727,190 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
                 scrollViewLinearLayout.addView(titleTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 8, 0, 0));
                 scrollViewLinearLayout.addView(descriptionText, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 9, 0, 0));
 
-                FrameLayout frameLayout = new FrameLayout(context);
-                scrollViewLinearLayout.addView(frameLayout, LayoutHelper.createLinear(220, 36, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 40, 32, 40, 0));
+                outlineTextFirstRow = new OutlineTextContainerView(context);
+                outlineTextFirstRow.animateSelection(1f, false);
 
-                passwordEditText = new EditTextBoldCursor(context);
-                passwordEditText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
-                passwordEditText.setPadding(0, AndroidUtilities.dp(2), 0, 0);
-                passwordEditText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
-                passwordEditText.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-                passwordEditText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-                passwordEditText.setHintColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
-                passwordEditText.setBackgroundDrawable(Theme.createEditTextDrawable(context, false));
-                passwordEditText.setMaxLines(1);
-                passwordEditText.setLines(1);
-                passwordEditText.setGravity(Gravity.LEFT);
-                passwordEditText.setCursorSize(AndroidUtilities.dp(20));
-                passwordEditText.setSingleLine(true);
-                passwordEditText.setCursorWidth(1.5f);
-                frameLayout.addView(passwordEditText, LayoutHelper.createFrame(220, 36, Gravity.TOP | Gravity.CENTER_HORIZONTAL));
-                passwordEditText.setOnEditorActionListener((textView, i, keyEvent) -> {
+                editTextFirstRow = new EditTextBoldCursor(context);
+                editTextFirstRow.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+                int padding = AndroidUtilities.dp(16);
+                editTextFirstRow.setPadding(padding, padding, padding, padding);
+                editTextFirstRow.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated));
+                editTextFirstRow.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                editTextFirstRow.setBackground(null);
+                editTextFirstRow.setMaxLines(1);
+                editTextFirstRow.setLines(1);
+                editTextFirstRow.setGravity(Gravity.LEFT);
+                editTextFirstRow.setCursorSize(AndroidUtilities.dp(20));
+                editTextFirstRow.setSingleLine(true);
+                editTextFirstRow.setCursorWidth(1.5f);
+                editTextFirstRow.setOnEditorActionListener((textView, i, keyEvent) -> {
                     if (i == EditorInfo.IME_ACTION_NEXT || i == EditorInfo.IME_ACTION_DONE) {
-                        buttonTextView.callOnClick();
+                        if (outlineTextSecondRow.getVisibility() == View.VISIBLE) {
+                            editTextSecondRow.requestFocus();
+                            return true;
+                        }
+                        processNext();
                         return true;
                     }
                     return false;
                 });
-                passwordEditText.setCustomSelectionActionModeCallback(new ActionMode.Callback() {
-                    public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
-                        return false;
-                    }
+                outlineTextFirstRow.attachEditText(editTextFirstRow);
+                editTextFirstRow.setOnFocusChangeListener((v, hasFocus) -> outlineTextFirstRow.animateSelection(hasFocus ? 1f : 0f));
 
-                    public void onDestroyActionMode(ActionMode mode) {
-                    }
-
-                    public boolean onCreateActionMode(ActionMode mode, Menu menu) {
-                        return false;
-                    }
-
-                    public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-                        return false;
-                    }
-                });
+                LinearLayout firstRowLinearLayout = new LinearLayout(context);
+                firstRowLinearLayout.setOrientation(LinearLayout.HORIZONTAL);
+                firstRowLinearLayout.addView(editTextFirstRow, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
 
                 showPasswordButton = new ImageView(context) {
                     @Override
                     public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
                         super.onInitializeAccessibilityNodeInfo(info);
                         info.setCheckable(true);
-                        info.setChecked(passwordEditText.getTransformationMethod() == null);
+                        info.setChecked(editTextFirstRow.getTransformationMethod() == null);
                     }
                 };
                 showPasswordButton.setImageResource(R.drawable.msg_message);
                 showPasswordButton.setScaleType(ImageView.ScaleType.CENTER);
-                showPasswordButton.setContentDescription(LocaleController.getString("TwoStepVerificationShowPassword", R.string.TwoStepVerificationShowPassword));
+                showPasswordButton.setContentDescription(LocaleController.getString(R.string.TwoStepVerificationShowPassword));
                 if (Build.VERSION.SDK_INT >= 21) {
-                    showPasswordButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)));
+                    showPasswordButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)));
                 }
                 showPasswordButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_messagePanelIcons), PorterDuff.Mode.MULTIPLY));
-                showPasswordButton.setVisibility(View.GONE);
-                frameLayout.addView(showPasswordButton, LayoutHelper.createFrame(36, 36, Gravity.RIGHT | Gravity.TOP, 0, -5, 0, 0));
+                AndroidUtilities.updateViewVisibilityAnimated(showPasswordButton, false, 0.1f, false);
+
                 showPasswordButton.setOnClickListener(v -> {
                     ignoreTextChange = true;
-                    if (passwordEditText.getTransformationMethod() == null) {
-                        passwordEditText.setTransformationMethod(PasswordTransformationMethod.getInstance());
+                    if (editTextFirstRow.getTransformationMethod() == null) {
+                        isPasswordVisible = false;
+                        editTextFirstRow.setTransformationMethod(PasswordTransformationMethod.getInstance());
                         showPasswordButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_messagePanelIcons), PorterDuff.Mode.MULTIPLY));
-                        if (currentType == TYPE_ENTER_FIRST) {
-                            if (passwordEditText.length() > 0) {
-                                animationDrawables[3].setCustomEndFrame(-1);
-                                if (imageView.getAnimatedDrawable() != animationDrawables[3]) {
-                                    imageView.setAnimation(animationDrawables[3]);
-                                    animationDrawables[3].setCurrentFrame(18, false);
+                        if (currentType == TYPE_CREATE_PASSWORD_STEP_1) {
+                            if (editTextFirstRow.length() > 0 && editTextFirstRow.hasFocus()) {
+                                if (monkeyEndCallback == null) {
+                                    animationDrawables[3].setCustomEndFrame(-1);
+                                    if (imageView.getAnimatedDrawable() != animationDrawables[3]) {
+                                        imageView.setAnimation(animationDrawables[3]);
+                                        animationDrawables[3].setCurrentFrame(18, false);
+                                    }
+                                    imageView.playAnimation();
                                 }
-                                imageView.playAnimation();
                             }
                         }
                     } else {
-                        passwordEditText.setTransformationMethod(null);
+                        isPasswordVisible = true;
+                        editTextFirstRow.setTransformationMethod(null);
                         showPasswordButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_messagePanelSend), PorterDuff.Mode.MULTIPLY));
-                        if (currentType == TYPE_ENTER_FIRST) {
-                            if (passwordEditText.length() > 0) {
-                                animationDrawables[3].setCustomEndFrame(18);
-                                if (imageView.getAnimatedDrawable() != animationDrawables[3]) {
-                                    imageView.setAnimation(animationDrawables[3]);
+
+                        if (currentType == TYPE_CREATE_PASSWORD_STEP_1) {
+                            if (editTextFirstRow.length() > 0 && editTextFirstRow.hasFocus()) {
+                                if (monkeyEndCallback == null) {
+                                    animationDrawables[3].setCustomEndFrame(18);
+                                    if (imageView.getAnimatedDrawable() != animationDrawables[3]) {
+                                        imageView.setAnimation(animationDrawables[3]);
+                                    }
+                                    animationDrawables[3].setProgress(0.0f, false);
+                                    imageView.playAnimation();
                                 }
-                                animationDrawables[3].setProgress(0.0f, false);
-                                imageView.playAnimation();
                             }
                         }
                     }
-                    passwordEditText.setSelection(passwordEditText.length());
+                    editTextFirstRow.setSelection(editTextFirstRow.length());
                     ignoreTextChange = false;
                 });
+                firstRowLinearLayout.addView(showPasswordButton, LayoutHelper.createLinear(24, 24, Gravity.CENTER_VERTICAL, 0, 0, 16, 0));
+
+                editTextFirstRow.addTextChangedListener(new TextWatcher() {
+                    @Override
+                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+                    @Override
+                    public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+                    @Override
+                    public void afterTextChanged(Editable s) {
+                        if (needPasswordButton) {
+                            if (showPasswordButton.getVisibility() != View.VISIBLE && !TextUtils.isEmpty(s)) {
+                                AndroidUtilities.updateViewVisibilityAnimated(showPasswordButton, true, 0.1f, true);
+                            } else if (showPasswordButton.getVisibility() != View.GONE && TextUtils.isEmpty(s)) {
+                                AndroidUtilities.updateViewVisibilityAnimated(showPasswordButton, false, 0.1f, true);
+                            }
+                        }
+                    }
+                });
+
+                outlineTextFirstRow.addView(firstRowLinearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+                scrollViewLinearLayout.addView(outlineTextFirstRow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 24, 32, 24, 32));
+
+                outlineTextSecondRow = new OutlineTextContainerView(context);
+
+                editTextSecondRow = new EditTextBoldCursor(context);
+                editTextSecondRow.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+                padding = AndroidUtilities.dp(16);
+                editTextSecondRow.setPadding(padding, padding, padding, padding);
+                editTextSecondRow.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated));
+                editTextSecondRow.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                editTextSecondRow.setBackground(null);
+                editTextSecondRow.setMaxLines(1);
+                editTextSecondRow.setLines(1);
+                editTextSecondRow.setGravity(Gravity.LEFT);
+                editTextSecondRow.setCursorSize(AndroidUtilities.dp(20));
+                editTextSecondRow.setSingleLine(true);
+                editTextSecondRow.setCursorWidth(1.5f);
+                editTextSecondRow.setOnEditorActionListener((textView, i, keyEvent) -> {
+                    if (i == EditorInfo.IME_ACTION_NEXT || i == EditorInfo.IME_ACTION_DONE) {
+                        processNext();
+                        return true;
+                    }
+                    return false;
+                });
+                outlineTextSecondRow.attachEditText(editTextSecondRow);
+                editTextSecondRow.setOnFocusChangeListener((v, hasFocus) -> outlineTextSecondRow.animateSelection(hasFocus ? 1f : 0f));
+
+                outlineTextSecondRow.addView(editTextSecondRow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+                scrollViewLinearLayout.addView(outlineTextSecondRow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 24, 16, 24, 0));
+                outlineTextSecondRow.setVisibility(View.GONE);
+
+                keyboardView = new CustomPhoneKeyboardView(context);
+                keyboardView.setVisibility(View.GONE);
+                keyboardFrameLayout.addView(keyboardView);
+
+                codeFieldContainer = new CodeFieldContainer(context) {
+                    @Override
+                    protected void processNextPressed() {
+                        processNext();
+                    }
+                };
+                codeFieldContainer.setNumbersCount(6, LoginActivity.AUTH_TYPE_MESSAGE);
+                for (CodeNumberField f : codeFieldContainer.codeField) {
+                    f.setShowSoftInputOnFocusCompat(!isCustomKeyboardVisible());
+                    f.addTextChangedListener(new TextWatcher() {
+                        @Override
+                        public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+                        @Override
+                        public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+                        @Override
+                        public void afterTextChanged(Editable s) {
+                            if (postedErrorColorTimeout) {
+                                AndroidUtilities.cancelRunOnUIThread(errorColorTimeout);
+                                errorColorTimeout.run();
+                            }
+                        }
+                    });
+                    f.setOnFocusChangeListener((v, hasFocus) -> {
+                        if (hasFocus) {
+                            keyboardView.setEditText((EditText) v);
+                            keyboardView.setDispatchBackWhenEmpty(true);
+                        }
+                    });
+                }
+                codeFieldContainer.setVisibility(View.GONE);
+                scrollViewLinearLayout.addView(codeFieldContainer, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 32, 0, 0));
 
                 FrameLayout frameLayout2 = new FrameLayout(context);
                 scrollViewLinearLayout.addView(frameLayout2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 36, 0, 22));
 
-                frameLayout2.addView(buttonTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 42, Gravity.CENTER_HORIZONTAL | Gravity.TOP));
                 frameLayout2.addView(descriptionText2, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP));
 
                 if (currentType == TYPE_EMAIL_RECOVERY) {
@@ -1021,6 +952,14 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
                 actionBarBackground.setAlpha(0.0f);
                 container.addView(actionBarBackground);
                 container.addView(actionBar);
+
+                radialProgressView = new RadialProgressView(context);
+                radialProgressView.setSize(AndroidUtilities.dp(20));
+                radialProgressView.setAlpha(0);
+                radialProgressView.setScaleX(0.1f);
+                radialProgressView.setScaleY(0.1f);
+                radialProgressView.setProgressColor(Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated));
+                frameLayout.addView(radialProgressView, LayoutHelper.createFrame(32, 32, Gravity.RIGHT | Gravity.TOP, 0, 16, 16, 0));
                 break;
             }
         }
@@ -1034,7 +973,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
                 buttonTextView.setText(LocaleController.getString("TwoStepVerificationSetPassword", R.string.TwoStepVerificationSetPassword));
                 descriptionText.setVisibility(View.VISIBLE);
 
-                imageView.setAnimation(R.raw.tsv_setup_intro, 120, 120);
+                imageView.setAnimation(R.raw.tsv_setup_intro, 140, 140);
                 imageView.playAnimation();
                 break;
             }
@@ -1043,12 +982,14 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
                 descriptionText.setText(LocaleController.getString("TwoStepVerificationPasswordSetInfo", R.string.TwoStepVerificationPasswordSetInfo));
                 if (closeAfterSet) {
                     buttonTextView.setText(LocaleController.getString("TwoStepVerificationPasswordReturnPassport", R.string.TwoStepVerificationPasswordReturnPassport));
+                } else if (fromRegistration) {
+                    buttonTextView.setText(LocaleController.getString(R.string.Continue));
                 } else {
                     buttonTextView.setText(LocaleController.getString("TwoStepVerificationPasswordReturnSettings", R.string.TwoStepVerificationPasswordReturnSettings));
                 }
                 descriptionText.setVisibility(View.VISIBLE);
 
-                imageView.setAnimation(R.raw.wallet_allset, 120, 120);
+                imageView.setAnimation(R.raw.wallet_allset, 160, 160);
                 imageView.playAnimation();
                 break;
             }
@@ -1058,7 +999,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
                 buttonTextView.setText(LocaleController.getString("CheckPasswordBackToSettings", R.string.CheckPasswordBackToSettings));
                 descriptionText.setVisibility(View.VISIBLE);
 
-                imageView.setAnimation(R.raw.wallet_perfect, 120, 120);
+                imageView.setAnimation(R.raw.wallet_perfect, 140, 140);
                 imageView.playAnimation();
                 break;
             }
@@ -1069,83 +1010,72 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
 
                 descriptionText.setVisibility(View.VISIBLE);
                 actionBar.getTitleTextView().setAlpha(0.0f);
-                buttonTextView.setText(LocaleController.getString("CheckPassword", R.string.CheckPassword));
                 descriptionText2.setText(LocaleController.getString("ForgotPassword", R.string.ForgotPassword));
                 descriptionText2.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText2));
-                passwordEditText.setHint(LocaleController.getString("LoginPassword", R.string.LoginPassword));
-                passwordEditText.setImeOptions(EditorInfo.IME_ACTION_DONE | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-                passwordEditText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-                passwordEditText.setTransformationMethod(PasswordTransformationMethod.getInstance());
-                passwordEditText.setTypeface(Typeface.DEFAULT);
-                passwordEditText.setPadding(0, AndroidUtilities.dp(2), AndroidUtilities.dp(36), 0);
+                outlineTextFirstRow.setText(LocaleController.getString(R.string.LoginPassword));
+                editTextFirstRow.setContentDescription(LocaleController.getString(R.string.LoginPassword));
+                editTextFirstRow.setImeOptions(EditorInfo.IME_ACTION_DONE | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+                editTextFirstRow.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+                editTextFirstRow.setTransformationMethod(PasswordTransformationMethod.getInstance());
+                editTextFirstRow.setTypeface(Typeface.DEFAULT);
 
                 imageView.setAnimation(R.raw.wallet_science, 120, 120);
                 imageView.playAnimation();
                 break;
             }
-            case TYPE_ENTER_FIRST: {
+            case TYPE_CREATE_PASSWORD_STEP_1:
+            case TYPE_CREATE_PASSWORD_STEP_2: {
                 if (currentPassword.has_password) {
                     actionBar.setTitle(LocaleController.getString("PleaseEnterNewFirstPassword", R.string.PleaseEnterNewFirstPassword));
                     titleTextView.setText(LocaleController.getString("PleaseEnterNewFirstPassword", R.string.PleaseEnterNewFirstPassword));
                 } else {
-                    actionBar.setTitle(LocaleController.getString("PleaseEnterFirstPassword", R.string.PleaseEnterFirstPassword));
-                    titleTextView.setText(LocaleController.getString("PleaseEnterFirstPassword", R.string.PleaseEnterFirstPassword));
+                    CharSequence title = LocaleController.getString(currentType == TYPE_CREATE_PASSWORD_STEP_1 ? R.string.CreatePassword : R.string.ReEnterPassword);
+                    actionBar.setTitle(title);
+                    titleTextView.setText(title);
                 }
                 if (!TextUtils.isEmpty(emailCode)) {
-                    topButton.setVisibility(View.VISIBLE);
-                    topButton.setText(LocaleController.getString("YourEmailSkip", R.string.YourEmailSkip));
+                    bottomSkipButton.setVisibility(View.VISIBLE);
+                    bottomSkipButton.setText(LocaleController.getString("YourEmailSkip", R.string.YourEmailSkip));
                 }
                 actionBar.getTitleTextView().setAlpha(0.0f);
-                buttonTextView.setText(LocaleController.getString("Continue", R.string.Continue));
-                passwordEditText.setHint(LocaleController.getString("LoginPassword", R.string.LoginPassword));
-                passwordEditText.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-                passwordEditText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-                passwordEditText.setTransformationMethod(PasswordTransformationMethod.getInstance());
-                passwordEditText.setTypeface(Typeface.DEFAULT);
-                showPasswordButton.setVisibility(View.VISIBLE);
-                passwordEditText.setPadding(0, AndroidUtilities.dp(2), AndroidUtilities.dp(36), 0);
+                outlineTextFirstRow.setText(LocaleController.getString(currentType == TYPE_CREATE_PASSWORD_STEP_1 ? R.string.EnterPassword : R.string.ReEnterPassword));
+                editTextFirstRow.setContentDescription(LocaleController.getString(currentType == TYPE_CREATE_PASSWORD_STEP_1 ? R.string.EnterPassword : R.string.ReEnterPassword));
+                editTextFirstRow.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+                editTextFirstRow.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+                editTextFirstRow.setTransformationMethod(PasswordTransformationMethod.getInstance());
+                editTextFirstRow.setTypeface(Typeface.DEFAULT);
 
-                animationDrawables = new RLottieDrawable[6];
+                needPasswordButton = currentType == TYPE_CREATE_PASSWORD_STEP_1;
+                AndroidUtilities.updateViewVisibilityAnimated(showPasswordButton, false, 0.1f, false);
+
+                animationDrawables = new RLottieDrawable[7];
                 animationDrawables[0] = new RLottieDrawable(R.raw.tsv_setup_monkey_idle1, "" + R.raw.tsv_setup_monkey_idle1, AndroidUtilities.dp(120), AndroidUtilities.dp(120), true, null);
                 animationDrawables[1] = new RLottieDrawable(R.raw.tsv_setup_monkey_idle2, "" + R.raw.tsv_setup_monkey_idle2, AndroidUtilities.dp(120), AndroidUtilities.dp(120), true, null);
                 animationDrawables[2] = new RLottieDrawable(R.raw.tsv_monkey_close, "" + R.raw.tsv_monkey_close, AndroidUtilities.dp(120), AndroidUtilities.dp(120), true, null);
                 animationDrawables[3] = new RLottieDrawable(R.raw.tsv_setup_monkey_peek, "" + R.raw.tsv_setup_monkey_peek, AndroidUtilities.dp(120), AndroidUtilities.dp(120), true, null);
                 animationDrawables[4] = new RLottieDrawable(R.raw.tsv_setup_monkey_close_and_peek_to_idle, "" + R.raw.tsv_setup_monkey_close_and_peek_to_idle, AndroidUtilities.dp(120), AndroidUtilities.dp(120), true, null);
                 animationDrawables[5] = new RLottieDrawable(R.raw.tsv_setup_monkey_close_and_peek, "" + R.raw.tsv_setup_monkey_close_and_peek, AndroidUtilities.dp(120), AndroidUtilities.dp(120), true, null);
+                animationDrawables[6] = new RLottieDrawable(R.raw.tsv_setup_monkey_tracking, "" + R.raw.tsv_setup_monkey_tracking, AndroidUtilities.dp(120), AndroidUtilities.dp(120), true, null);
+                animationDrawables[6].setPlayInDirectionOfCustomEndFrame(true);
+                animationDrawables[6].setCustomEndFrame(19);
                 animationDrawables[2].setOnFinishCallback(finishCallback, 97);
                 setRandomMonkeyIdleAnimation(true);
-                break;
-            }
-            case TYPE_ENTER_SECOND: {
-                actionBar.setTitle(LocaleController.getString("PleaseReEnterPassword", R.string.PleaseReEnterPassword));
-                actionBar.getTitleTextView().setAlpha(0.0f);
-                titleTextView.setText(LocaleController.getString("PleaseReEnterPassword", R.string.PleaseReEnterPassword));
-                buttonTextView.setText(LocaleController.getString("Continue", R.string.Continue));
-                passwordEditText.setHint(LocaleController.getString("LoginPassword", R.string.LoginPassword));
-                passwordEditText.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-                passwordEditText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-                passwordEditText.setTransformationMethod(PasswordTransformationMethod.getInstance());
-                passwordEditText.setTypeface(Typeface.DEFAULT);
-                showPasswordButton.setVisibility(View.VISIBLE);
-                passwordEditText.setPadding(0, AndroidUtilities.dp(2), AndroidUtilities.dp(36), 0);
-
-                animationDrawables = new RLottieDrawable[1];
-                animationDrawables[0] = new RLottieDrawable(R.raw.tsv_setup_monkey_tracking, "" + R.raw.tsv_setup_monkey_tracking, AndroidUtilities.dp(120), AndroidUtilities.dp(120), true, null);
-                animationDrawables[0].setPlayInDirectionOfCustomEndFrame(true);
-                animationDrawables[0].setCustomEndFrame(19);
-                imageView.setAnimation(animationDrawables[0]);
-                imageView.playAnimation();
+                switchMonkeyAnimation(currentType == TYPE_CREATE_PASSWORD_STEP_2);
                 break;
             }
             case TYPE_ENTER_HINT: {
                 actionBar.setTitle(LocaleController.getString("PasswordHint", R.string.PasswordHint));
                 actionBar.getTitleTextView().setAlpha(0.0f);
-                topButton.setVisibility(View.VISIBLE);
-                topButton.setText(LocaleController.getString("YourEmailSkip", R.string.YourEmailSkip));
+                bottomSkipButton.setVisibility(View.VISIBLE);
+                bottomSkipButton.setText(LocaleController.getString("YourEmailSkip", R.string.YourEmailSkip));
                 titleTextView.setText(LocaleController.getString("PasswordHint", R.string.PasswordHint));
-                buttonTextView.setText(LocaleController.getString("Continue", R.string.Continue));
-                passwordEditText.setHint(LocaleController.getString("PasswordHintPlaceholder", R.string.PasswordHintPlaceholder));
-                passwordEditText.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+                descriptionText.setText(LocaleController.getString(R.string.PasswordHintDescription));
+                descriptionText.setVisibility(View.VISIBLE);
+
+                outlineTextFirstRow.setText(LocaleController.getString(R.string.PasswordHintPlaceholder));
+                editTextFirstRow.setContentDescription(LocaleController.getString(R.string.PasswordHintPlaceholder));
+                editTextFirstRow.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+                outlineTextSecondRow.setVisibility(View.GONE);
 
                 imageView.setAnimation(R.raw.tsv_setup_hint, 120, 120);
                 imageView.playAnimation();
@@ -1155,14 +1085,15 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
                 actionBar.setTitle(LocaleController.getString("RecoveryEmailTitle", R.string.RecoveryEmailTitle));
                 actionBar.getTitleTextView().setAlpha(0.0f);
                 if (!emailOnly) {
-                    topButton.setVisibility(View.VISIBLE);
-                    topButton.setText(LocaleController.getString("YourEmailSkip", R.string.YourEmailSkip));
+                    bottomSkipButton.setVisibility(View.VISIBLE);
+                    bottomSkipButton.setText(LocaleController.getString("YourEmailSkip", R.string.YourEmailSkip));
                 }
                 titleTextView.setText(LocaleController.getString("RecoveryEmailTitle", R.string.RecoveryEmailTitle));
-                buttonTextView.setText(LocaleController.getString("Continue", R.string.Continue));
-                passwordEditText.setHint(LocaleController.getString("PaymentShippingEmailPlaceholder", R.string.PaymentShippingEmailPlaceholder));
-                passwordEditText.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-                passwordEditText.setInputType(EditorInfo.TYPE_CLASS_TEXT | EditorInfo.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
+                outlineTextFirstRow.setText(LocaleController.getString(R.string.PaymentShippingEmailPlaceholder));
+                editTextFirstRow.setContentDescription(LocaleController.getString(R.string.PaymentShippingEmailPlaceholder));
+                editTextFirstRow.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+                editTextFirstRow.setInputType(EditorInfo.TYPE_CLASS_TEXT | EditorInfo.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
+                outlineTextSecondRow.setVisibility(View.GONE);
 
                 imageView.setAnimation(R.raw.tsv_setup_email_sent, 120, 120);
                 imageView.playAnimation();
@@ -1172,16 +1103,28 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
                 actionBar.setTitle(LocaleController.getString("VerificationCode", R.string.VerificationCode));
                 actionBar.getTitleTextView().setAlpha(0.0f);
                 titleTextView.setText(LocaleController.getString("VerificationCode", R.string.VerificationCode));
-                buttonTextView.setText(LocaleController.getString("Continue", R.string.Continue));
-                passwordEditText.setHint(LocaleController.getString("EnterCode", R.string.EnterCode));
-                passwordEditText.setInputType(InputType.TYPE_CLASS_PHONE);
-                passwordEditText.setImeOptions(EditorInfo.IME_ACTION_DONE | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-                descriptionText2.setText(LocaleController.formatString("EmailPasswordConfirmText2", R.string.EmailPasswordConfirmText2, currentPassword.email_unconfirmed_pattern != null ? currentPassword.email_unconfirmed_pattern : ""));
-                descriptionText2.setVisibility(View.VISIBLE);
-                buttonTextView.setVisibility(View.INVISIBLE);
-                buttonTextView.setAlpha(0.0f);
-                buttonTextView.setScaleX(0.9f);
-                buttonTextView.setScaleY(0.9f);
+                outlineTextFirstRow.setVisibility(View.GONE);
+                keyboardView.setVisibility(View.VISIBLE);
+                descriptionText.setText(LocaleController.formatString("EmailPasswordConfirmText2", R.string.EmailPasswordConfirmText2, currentPassword.email_unconfirmed_pattern != null ? currentPassword.email_unconfirmed_pattern : ""));
+                descriptionText.setVisibility(View.VISIBLE);
+
+                floatingButtonContainer.setVisibility(View.GONE);
+
+                bottomSkipButton.setVisibility(View.VISIBLE);
+                bottomSkipButton.setGravity(Gravity.CENTER);
+                ((ViewGroup.MarginLayoutParams) bottomSkipButton.getLayoutParams()).bottomMargin = 0;
+                bottomSkipButton.setText(LocaleController.getString(R.string.ResendCode));
+                bottomSkipButton.setOnClickListener(v -> {
+                    TLRPC.TL_account_resendPasswordEmail req = new TLRPC.TL_account_resendPasswordEmail();
+                    ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {});
+                    showDialog(new AlertDialog.Builder(getParentActivity())
+                            .setMessage(LocaleController.getString("ResendCodeInfo", R.string.ResendCodeInfo))
+                            .setTitle(LocaleController.getString("TwoStepVerificationTitle", R.string.TwoStepVerificationTitle))
+                            .setPositiveButton(LocaleController.getString("OK", R.string.OK), null)
+                            .create());
+                });
+
+                codeFieldContainer.setVisibility(View.VISIBLE);
 
                 imageView.setAnimation(R.raw.tsv_setup_mail, 120, 120);
                 imageView.playAnimation();
@@ -1191,16 +1134,25 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
                 actionBar.setTitle(LocaleController.getString("PasswordRecovery", R.string.PasswordRecovery));
                 actionBar.getTitleTextView().setAlpha(0.0f);
                 titleTextView.setText(LocaleController.getString("PasswordRecovery", R.string.PasswordRecovery));
-                buttonTextView.setText(LocaleController.getString("Continue", R.string.Continue));
-                passwordEditText.setHint(LocaleController.getString("EnterCode", R.string.EnterCode));
-                passwordEditText.setInputType(InputType.TYPE_CLASS_PHONE);
-                passwordEditText.setImeOptions(EditorInfo.IME_ACTION_DONE | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-                descriptionText2.setText(LocaleController.formatString("RestoreEmailSent", R.string.RestoreEmailSent, currentPassword.email_unconfirmed_pattern != null ? currentPassword.email_unconfirmed_pattern : ""));
-                descriptionText2.setVisibility(View.VISIBLE);
-                buttonTextView.setVisibility(View.INVISIBLE);
-                buttonTextView.setAlpha(0.0f);
-                buttonTextView.setScaleX(0.9f);
-                buttonTextView.setScaleY(0.9f);
+                keyboardView.setVisibility(View.VISIBLE);
+                outlineTextFirstRow.setVisibility(View.GONE);
+
+                String rawPattern = currentPassword.email_unconfirmed_pattern != null ? currentPassword.email_unconfirmed_pattern : "";
+                SpannableStringBuilder emailPattern = SpannableStringBuilder.valueOf(rawPattern);
+                int startIndex = rawPattern.indexOf('*'), endIndex = rawPattern.lastIndexOf('*');
+                if (startIndex != endIndex && startIndex != -1 && endIndex != -1) {
+                    TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
+                    run.flags |= TextStyleSpan.FLAG_STYLE_SPOILER;
+                    run.start = startIndex;
+                    run.end = endIndex + 1;
+                    emailPattern.setSpan(new TextStyleSpan(run), startIndex, endIndex + 1, 0);
+                }
+
+                descriptionText.setText(AndroidUtilities.formatSpannable(LocaleController.getString(R.string.RestoreEmailSent), emailPattern));
+                descriptionText.setVisibility(View.VISIBLE);
+
+                floatingButtonContainer.setVisibility(View.GONE);
+                codeFieldContainer.setVisibility(View.VISIBLE);
 
                 imageView.setAnimation(R.raw.tsv_setup_mail, 120, 120);
                 imageView.playAnimation();
@@ -1208,8 +1160,8 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
             }
         }
 
-        if (passwordEditText != null) {
-            passwordEditText.addTextChangedListener(new TextWatcher() {
+        if (editTextFirstRow != null) {
+            editTextFirstRow.addTextChangedListener(new TextWatcher() {
                 @Override
                 public void beforeTextChanged(CharSequence s, int start, int count, int after) {
 
@@ -1225,10 +1177,10 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
                     if (ignoreTextChange) {
                         return;
                     }
-                    if (currentType == TYPE_ENTER_FIRST) {
+                    if (currentType == TYPE_CREATE_PASSWORD_STEP_1) {
                         RLottieDrawable currentDrawable = imageView.getAnimatedDrawable();
-                        if (passwordEditText.length() > 0) {
-                            if (passwordEditText.getTransformationMethod() == null) {
+                        if (editTextFirstRow.length() > 0) {
+                            if (editTextFirstRow.getTransformationMethod() == null) {
                                 if (currentDrawable != animationDrawables[3] && currentDrawable != animationDrawables[5]) {
                                     imageView.setAnimation(animationDrawables[5]);
                                     animationDrawables[5].setProgress(0.0f, false);
@@ -1249,7 +1201,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
                                 }
                             }
                         } else {
-                            if (currentDrawable == animationDrawables[3] && passwordEditText.getTransformationMethod() == null || currentDrawable == animationDrawables[5]) {
+                            if (currentDrawable == animationDrawables[3] && editTextFirstRow.getTransformationMethod() == null || currentDrawable == animationDrawables[5]) {
                                 imageView.setAnimation(animationDrawables[4]);
                                 animationDrawables[4].setProgress(0.0f, false);
                                 imageView.playAnimation();
@@ -1262,19 +1214,14 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
                                 imageView.playAnimation();
                             }
                         }
-                    } else if (currentType == TYPE_ENTER_SECOND) {
+                    } else if (currentType == TYPE_CREATE_PASSWORD_STEP_2) {
                         try {
-                            float progress = Math.min(1.0f, passwordEditText.getLayout().getLineWidth(0) / passwordEditText.getWidth());
-                            animationDrawables[0].setCustomEndFrame((int) (18 + progress * (160 - 18)));
+                            float progress = Math.min(1.0f, editTextFirstRow.getLayout().getLineWidth(0) / editTextFirstRow.getWidth());
+                            animationDrawables[6].setCustomEndFrame((int) (18 + progress * (160 - 18)));
                             imageView.playAnimation();
                         } catch (Exception e) {
                             FileLog.e(e);
                         }
-                    } else if (currentType == TYPE_EMAIL_CONFIRM || currentType == TYPE_EMAIL_RECOVERY) {
-                        if (emailCodeLength != 0 && s.length() == emailCodeLength) {
-                            buttonTextView.callOnClick();
-                        }
-                        showDoneButton(s.length() > 0);
                     } else if (currentType == TYPE_VERIFY) {
                         if (s.length() > 0) {
                             showDoneButton(true);
@@ -1287,6 +1234,61 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
         return fragmentView;
     }
 
+    private boolean isIntro() {
+        return currentType == TYPE_INTRO || currentType == TYPE_VERIFY_OK || currentType == TYPE_PASSWORD_SET;
+    }
+
+    private boolean isLandscape() {
+        return AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y;
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        if (currentType == TYPE_ENTER_HINT && AndroidUtilities.isSmallScreen()) {
+            imageView.setVisibility(View.GONE);
+        } else if (!isIntro()) {
+            imageView.setVisibility(isLandscape() ? View.GONE : View.VISIBLE);
+        }
+        keyboardView.setVisibility(isCustomKeyboardVisible() ? View.VISIBLE : View.GONE);
+    }
+
+    private void animateSuccess(Runnable callback) {
+        for (int i = 0; i < codeFieldContainer.codeField.length; i++) {
+            CodeNumberField field = codeFieldContainer.codeField[i];
+            field.postDelayed(()-> field.animateSuccessProgress(1f), i * 75L);
+        }
+        codeFieldContainer.postDelayed(() -> {
+            for (CodeNumberField f : codeFieldContainer.codeField) {
+                f.animateSuccessProgress(0f);
+            }
+            callback.run();
+        }, codeFieldContainer.codeField.length * 75L + 350L);
+    }
+
+    private void switchMonkeyAnimation(boolean tracking) {
+        if (tracking) {
+            if (setAnimationRunnable != null) {
+                AndroidUtilities.cancelRunOnUIThread(setAnimationRunnable);
+            }
+            imageView.setAnimation(animationDrawables[6]);
+            imageView.playAnimation();
+        } else {
+            editTextFirstRow.dispatchTextWatchersTextChanged();
+            setRandomMonkeyIdleAnimation(true);
+        }
+    }
+
+    @Override
+    public boolean hasForceLightStatusBar() {
+        return true;
+    }
+
+    private boolean isCustomKeyboardVisible() {
+        return (currentType == TYPE_EMAIL_CONFIRM || currentType == TYPE_EMAIL_RECOVERY) && !AndroidUtilities.isTablet() &&
+                AndroidUtilities.displaySize.x < AndroidUtilities.displaySize.y && !AndroidUtilities.isAccessibilityTouchExplorationEnabled();
+    }
+
     @Override
     public void onPause() {
         super.onPause();
@@ -1297,15 +1299,321 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
     public void onResume() {
         super.onResume();
         paused = false;
-        if (passwordEditText != null && passwordEditText.getVisibility() == View.VISIBLE) {
-            AndroidUtilities.runOnUIThread(() -> {
-                if (passwordEditText != null) {
-                    passwordEditText.requestFocus();
-                    AndroidUtilities.showKeyboard(passwordEditText);
-                }
-            }, 200);
-        }
+
         AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid);
+        if (isCustomKeyboardVisible()) {
+            AndroidUtilities.requestAltFocusable(getParentActivity(), classGuid);
+            AndroidUtilities.hideKeyboard(fragmentView);
+        }
+    }
+
+    private void processNext() {
+        if (getParentActivity() == null) {
+            return;
+        }
+        switch (currentType) {
+            case TYPE_INTRO: {
+                if (currentPassword == null) {
+                    needShowProgress();
+                    doneAfterPasswordLoad = true;
+                    return;
+                }
+                TwoStepVerificationSetupActivity fragment = new TwoStepVerificationSetupActivity(currentAccount, TYPE_CREATE_PASSWORD_STEP_1, currentPassword);
+                fragment.fromRegistration = fromRegistration;
+                fragment.closeAfterSet = closeAfterSet;
+                fragment.setBlockingAlert(otherwiseReloginDays);
+                presentFragment(fragment, true);
+                break;
+            }
+            case TYPE_PASSWORD_SET: {
+                if (closeAfterSet) {
+                    finishFragment();
+                } else if (fromRegistration) {
+                    Bundle args = new Bundle();
+                    args.putBoolean("afterSignup", true);
+                    DialogsActivity dialogsActivity = new DialogsActivity(args);
+                    presentFragment(dialogsActivity, true);
+                } else {
+                    TwoStepVerificationActivity fragment = new TwoStepVerificationActivity();
+                    fragment.setCurrentPasswordParams(currentPassword, currentPasswordHash, currentSecretId, currentSecret);
+                    fragment.setBlockingAlert(otherwiseReloginDays);
+                    presentFragment(fragment, true);
+                }
+                break;
+            }
+            case TYPE_VERIFY_OK: {
+                finishFragment();
+                break;
+            }
+            case TYPE_VERIFY: {
+                if (currentPassword == null) {
+                    needShowProgress();
+                    doneAfterPasswordLoad = true;
+                    return;
+                }
+                String oldPassword = editTextFirstRow.getText().toString();
+                if (oldPassword.length() == 0) {
+                    onFieldError(outlineTextFirstRow, editTextFirstRow, false);
+                    return;
+                }
+                final byte[] oldPasswordBytes = AndroidUtilities.getStringBytes(oldPassword);
+
+                needShowProgress();
+                Utilities.globalQueue.postRunnable(() -> {
+                    final TLRPC.TL_account_getPasswordSettings req = new TLRPC.TL_account_getPasswordSettings();
+                    final byte[] x_bytes;
+                    if (currentPassword.current_algo instanceof TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) {
+                        TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow algo = (TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) currentPassword.current_algo;
+                        x_bytes = SRPHelper.getX(oldPasswordBytes, algo);
+                    } else {
+                        x_bytes = null;
+                    }
+
+                    RequestDelegate requestDelegate = (response, error) -> {
+                        if (error == null) {
+                            AndroidUtilities.runOnUIThread(() -> {
+                                needHideProgress();
+                                currentPasswordHash = x_bytes;
+                                getMessagesController().removeSuggestion(0, "VALIDATE_PASSWORD");
+                                TwoStepVerificationSetupActivity fragment = new TwoStepVerificationSetupActivity(TYPE_VERIFY_OK, currentPassword);
+                                fragment.fromRegistration = fromRegistration;
+                                fragment.setBlockingAlert(otherwiseReloginDays);
+                                presentFragment(fragment, true);
+                            });
+                        } else {
+                            AndroidUtilities.runOnUIThread(() -> {
+                                if ("SRP_ID_INVALID".equals(error.text)) {
+                                    TLRPC.TL_account_getPassword getPasswordReq = new TLRPC.TL_account_getPassword();
+                                    ConnectionsManager.getInstance(currentAccount).sendRequest(getPasswordReq, (response2, error2) -> AndroidUtilities.runOnUIThread(() -> {
+                                        if (error2 == null) {
+                                            currentPassword = (TLRPC.TL_account_password) response2;
+                                            TwoStepVerificationActivity.initPasswordNewAlgo(currentPassword);
+                                            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.didSetOrRemoveTwoStepPassword, currentPassword);
+                                            processNext();
+                                        }
+                                    }), ConnectionsManager.RequestFlagWithoutLogin);
+                                    return;
+                                }
+                                needHideProgress();
+                                if ("PASSWORD_HASH_INVALID".equals(error.text)) {
+                                    descriptionText.setText(LocaleController.getString("CheckPasswordWrong", R.string.CheckPasswordWrong));
+                                    descriptionText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText4));
+                                    onFieldError(outlineTextFirstRow, editTextFirstRow, true);
+                                    showDoneButton(false);
+                                } else if (error.text.startsWith("FLOOD_WAIT")) {
+                                    int time = Utilities.parseInt(error.text);
+                                    String timeString;
+                                    if (time < 60) {
+                                        timeString = LocaleController.formatPluralString("Seconds", time);
+                                    } else {
+                                        timeString = LocaleController.formatPluralString("Minutes", time / 60);
+                                    }
+                                    showAlertWithText(LocaleController.getString("AppName", R.string.AppName), LocaleController.formatString("FloodWaitTime", R.string.FloodWaitTime, timeString));
+                                } else {
+                                    showAlertWithText(LocaleController.getString("AppName", R.string.AppName), error.text);
+                                }
+                            });
+                        }
+                    };
+
+                    if (currentPassword.current_algo instanceof TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) {
+                        TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow algo = (TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) currentPassword.current_algo;
+                        req.password = SRPHelper.startCheck(x_bytes, currentPassword.srp_id, currentPassword.srp_B, algo);
+                        if (req.password == null) {
+                            TLRPC.TL_error error = new TLRPC.TL_error();
+                            error.text = "ALGO_INVALID";
+                            requestDelegate.run(null, error);
+                            return;
+                        }
+                        ConnectionsManager.getInstance(currentAccount).sendRequest(req, requestDelegate, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
+                    } else {
+                        TLRPC.TL_error error = new TLRPC.TL_error();
+                        error.text = "PASSWORD_HASH_INVALID";
+                        requestDelegate.run(null, error);
+                    }
+                });
+                break;
+            }
+            case TYPE_CREATE_PASSWORD_STEP_1:
+            case TYPE_CREATE_PASSWORD_STEP_2: {
+                if (editTextFirstRow.length() == 0) {
+                    onFieldError(outlineTextFirstRow, editTextFirstRow, false);
+                    return;
+                }
+                if (!editTextFirstRow.getText().toString().equals(firstPassword) && currentType == TYPE_CREATE_PASSWORD_STEP_2) {
+                    AndroidUtilities.shakeViewSpring(outlineTextFirstRow, 5);
+                    try {
+                        outlineTextFirstRow.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                    } catch (Exception ignored) {}
+                    try {
+                        Toast.makeText(getParentActivity(), LocaleController.getString("PasswordDoNotMatch", R.string.PasswordDoNotMatch), Toast.LENGTH_SHORT).show();
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                    return;
+                }
+                TwoStepVerificationSetupActivity fragment = new TwoStepVerificationSetupActivity(currentAccount, currentType == TYPE_CREATE_PASSWORD_STEP_1 ? TYPE_CREATE_PASSWORD_STEP_2 : TYPE_ENTER_HINT, currentPassword);
+                fragment.fromRegistration = fromRegistration;
+                fragment.firstPassword = editTextFirstRow.getText().toString();
+                fragment.setCurrentPasswordParams(currentPasswordHash, currentSecretId, currentSecret, emailOnly);
+                fragment.setCurrentEmailCode(emailCode);
+                fragment.fragmentsToClose.addAll(fragmentsToClose);
+                fragment.fragmentsToClose.add(this);
+                fragment.closeAfterSet = closeAfterSet;
+                fragment.setBlockingAlert(otherwiseReloginDays);
+                presentFragment(fragment);
+
+                break;
+            }
+            case TYPE_ENTER_HINT: {
+                hint = editTextFirstRow.getText().toString();
+                if (hint.equalsIgnoreCase(firstPassword)) {
+                    try {
+                        Toast.makeText(getParentActivity(), LocaleController.getString("PasswordAsHintError", R.string.PasswordAsHintError), Toast.LENGTH_SHORT).show();
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                    onFieldError(outlineTextFirstRow, editTextFirstRow, false);
+                    return;
+                }
+                onHintDone();
+                break;
+            }
+            case TYPE_ENTER_EMAIL: {
+                email = editTextFirstRow.getText().toString();
+                if (!isValidEmail(email)) {
+                    onFieldError(outlineTextFirstRow, editTextFirstRow, false);
+                    return;
+                }
+                setNewPassword(false);
+                break;
+            }
+            case TYPE_EMAIL_RECOVERY: {
+                String code = codeFieldContainer.getCode();
+                TLRPC.TL_auth_checkRecoveryPassword req = new TLRPC.TL_auth_checkRecoveryPassword();
+                req.code = code;
+                ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                    if (response instanceof TLRPC.TL_boolTrue) {
+                        animateSuccess(()->{
+                            TwoStepVerificationSetupActivity fragment = new TwoStepVerificationSetupActivity(currentAccount, TYPE_CREATE_PASSWORD_STEP_1, currentPassword);
+                            fragment.fromRegistration = fromRegistration;
+                            fragment.fragmentsToClose.addAll(fragmentsToClose);
+                            fragment.addFragmentToClose(TwoStepVerificationSetupActivity.this);
+                            fragment.setCurrentEmailCode(code);
+                            fragment.setBlockingAlert(otherwiseReloginDays);
+                            presentFragment(fragment, true);
+                        });
+                    } else {
+                        if (error == null || error.text.startsWith("CODE_INVALID")) {
+                            onCodeFieldError(true);
+                        } else if (error.text.startsWith("FLOOD_WAIT")) {
+                            int time = Utilities.parseInt(error.text);
+                            String timeString;
+                            if (time < 60) {
+                                timeString = LocaleController.formatPluralString("Seconds", time);
+                            } else {
+                                timeString = LocaleController.formatPluralString("Minutes", time / 60);
+                            }
+                            showAlertWithText(LocaleController.getString("TwoStepVerificationTitle", R.string.TwoStepVerificationTitle), LocaleController.formatString("FloodWaitTime", R.string.FloodWaitTime, timeString));
+                        } else {
+                            showAlertWithText(LocaleController.getString("TwoStepVerificationTitle", R.string.TwoStepVerificationTitle), error.text);
+                        }
+                    }
+                }), ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
+                break;
+            }
+            case TYPE_EMAIL_CONFIRM: {
+                TLRPC.TL_account_confirmPasswordEmail req = new TLRPC.TL_account_confirmPasswordEmail();
+                req.code = codeFieldContainer.getCode();
+                ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                    needHideProgress();
+                    if (error == null) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        animateSuccess(()->{
+                            if (currentPassword.has_password) {
+                                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                                builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialogInterface, i) -> {
+                                    for (int a = 0, N = fragmentsToClose.size(); a < N; a++) {
+                                        fragmentsToClose.get(a).removeSelfFromStack();
+                                    }
+                                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.twoStepPasswordChanged, currentPasswordHash, currentPassword.new_algo, currentPassword.new_secure_algo, currentPassword.secure_random, email, hint, null, firstPassword);
+                                    TwoStepVerificationActivity fragment = new TwoStepVerificationActivity();
+                                    currentPassword.has_password = true;
+                                    currentPassword.has_recovery = true;
+                                    currentPassword.email_unconfirmed_pattern = "";
+                                    fragment.setCurrentPasswordParams(currentPassword, currentPasswordHash, currentSecretId, currentSecret);
+                                    fragment.setBlockingAlert(otherwiseReloginDays);
+                                    presentFragment(fragment, true);
+                                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.didSetOrRemoveTwoStepPassword, currentPassword);
+                                });
+                                if (currentPassword.has_recovery) {
+                                    builder.setMessage(LocaleController.getString("YourEmailSuccessChangedText", R.string.YourEmailSuccessChangedText));
+                                } else {
+                                    builder.setMessage(LocaleController.getString("YourEmailSuccessText", R.string.YourEmailSuccessText));
+                                }
+                                builder.setTitle(LocaleController.getString("YourPasswordSuccess", R.string.YourPasswordSuccess));
+                                Dialog dialog = showDialog(builder.create());
+                                if (dialog != null) {
+                                    dialog.setCanceledOnTouchOutside(false);
+                                    dialog.setCancelable(false);
+                                }
+                            } else {
+                                for (int a = 0, N = fragmentsToClose.size(); a < N; a++) {
+                                    fragmentsToClose.get(a).removeSelfFromStack();
+                                }
+                                currentPassword.has_password = true;
+                                currentPassword.has_recovery = true;
+                                currentPassword.email_unconfirmed_pattern = "";
+                                TwoStepVerificationSetupActivity fragment = new TwoStepVerificationSetupActivity(TYPE_PASSWORD_SET, currentPassword);
+                                fragment.fromRegistration = fromRegistration;
+                                fragment.setCurrentPasswordParams(currentPasswordHash, currentSecretId, currentSecret, emailOnly);
+                                fragment.fragmentsToClose.addAll(fragmentsToClose);
+                                fragment.closeAfterSet = closeAfterSet;
+                                fragment.setBlockingAlert(otherwiseReloginDays);
+                                presentFragment(fragment, true);
+                                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.twoStepPasswordChanged, currentPasswordHash, currentPassword.new_algo, currentPassword.new_secure_algo, currentPassword.secure_random, email, hint, null, firstPassword);
+                                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.didSetOrRemoveTwoStepPassword, currentPassword);
+                            }
+                        });
+                    } else {
+                        if (error.text.startsWith("CODE_INVALID")) {
+                            onCodeFieldError(true);
+                        } else if (error.text.startsWith("FLOOD_WAIT")) {
+                            int time = Utilities.parseInt(error.text);
+                            String timeString;
+                            if (time < 60) {
+                                timeString = LocaleController.formatPluralString("Seconds", time);
+                            } else {
+                                timeString = LocaleController.formatPluralString("Minutes", time / 60);
+                            }
+                            showAlertWithText(LocaleController.getString("AppName", R.string.AppName), LocaleController.formatString("FloodWaitTime", R.string.FloodWaitTime, timeString));
+                        } else {
+                            showAlertWithText(LocaleController.getString("AppName", R.string.AppName), error.text);
+                        }
+                    }
+                }), ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
+                needShowProgress();
+            }
+        }
+    }
+
+    private void onCodeFieldError(boolean clear) {
+        for (CodeNumberField f : codeFieldContainer.codeField) {
+            if (clear) {
+                f.setText("");
+            }
+            f.animateErrorProgress(1f);
+        }
+        if (clear) {
+            codeFieldContainer.codeField[0].requestFocus();
+        }
+        AndroidUtilities.shakeViewSpring(codeFieldContainer, 8, () -> AndroidUtilities.runOnUIThread(()->{
+            for (CodeNumberField f : codeFieldContainer.codeField) {
+                f.animateErrorProgress(0f);
+            }
+        }, 150));
     }
 
     @Override
@@ -1316,6 +1624,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
     private void onHintDone() {
         if (!currentPassword.has_recovery) {
             TwoStepVerificationSetupActivity fragment = new TwoStepVerificationSetupActivity(currentAccount, TYPE_ENTER_EMAIL, currentPassword);
+            fragment.fromRegistration = fromRegistration;
             fragment.setCurrentPasswordParams(currentPasswordHash, currentSecretId, currentSecret, emailOnly);
             fragment.firstPassword = firstPassword;
             fragment.hint = hint;
@@ -1382,14 +1691,14 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
     }
 
     private void setRandomMonkeyIdleAnimation(boolean first) {
-        if (currentType != TYPE_ENTER_FIRST) {
+        if (currentType != TYPE_CREATE_PASSWORD_STEP_1) {
             return;
         }
         if (setAnimationRunnable != null) {
             AndroidUtilities.cancelRunOnUIThread(setAnimationRunnable);
         }
         RLottieDrawable currentAnimation = imageView.getAnimatedDrawable();
-        if (first || (currentAnimation == animationDrawables[0] || currentAnimation == animationDrawables[1]) || passwordEditText.length() == 0 && (currentAnimation == null || !currentAnimation.isRunning())) {
+        if (first || (currentAnimation == animationDrawables[0] || currentAnimation == animationDrawables[1]) || editTextFirstRow.length() == 0 && (currentAnimation == null || !currentAnimation.isRunning())) {
             if (Utilities.random.nextInt() % 2 == 0) {
                 imageView.setAnimation(animationDrawables[0]);
                 animationDrawables[0].setProgress(0.0f);
@@ -1416,8 +1725,20 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
     @Override
     public void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
         if (isOpen) {
-            if (passwordEditText != null && passwordEditText.getVisibility() == View.VISIBLE) {
-                AndroidUtilities.showKeyboard(passwordEditText);
+            if (editTextFirstRow != null && !isCustomKeyboardVisible()) {
+                AndroidUtilities.runOnUIThread(() -> {
+                    if (editTextFirstRow != null && editTextFirstRow.getVisibility() == View.VISIBLE) {
+                        editTextFirstRow.requestFocus();
+                        AndroidUtilities.showKeyboard(editTextFirstRow);
+                    }
+                }, 200);
+            }
+            if (codeFieldContainer != null && codeFieldContainer.getVisibility() == View.VISIBLE) {
+                AndroidUtilities.runOnUIThread(() -> {
+                    if (codeFieldContainer != null && codeFieldContainer.getVisibility() == View.VISIBLE) {
+                        codeFieldContainer.codeField[0].requestFocus();
+                    }
+                }, 200);
             }
         }
     }
@@ -1447,7 +1768,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
                 }
                 if (doneAfterPasswordLoad) {
                     needHideProgress();
-                    buttonTextView.callOnClick();
+                    processNext();
                 }
                 NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.didSetOrRemoveTwoStepPassword, currentPassword);
             }
@@ -1455,24 +1776,50 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
     }
 
     private void needShowProgress() {
-        if (getParentActivity() == null || getParentActivity().isFinishing() || progressDialog != null) {
+        if (getParentActivity() == null || getParentActivity().isFinishing()) {
             return;
         }
-        progressDialog = new AlertDialog(getParentActivity(), 3);
-        progressDialog.setCanCacnel(false);
-        progressDialog.show();
+        AnimatorSet set = new AnimatorSet();
+        if (floatingButtonContainer.getVisibility() == View.VISIBLE) {
+            set.playTogether(
+                    ObjectAnimator.ofFloat(floatingProgressView, View.ALPHA, 1),
+                    ObjectAnimator.ofFloat(floatingProgressView, View.SCALE_X, 1f),
+                    ObjectAnimator.ofFloat(floatingProgressView, View.SCALE_Y, 1f),
+                    ObjectAnimator.ofFloat(floatingButtonIcon, View.ALPHA, 0),
+                    ObjectAnimator.ofFloat(floatingButtonIcon, View.SCALE_X, 0.1f),
+                    ObjectAnimator.ofFloat(floatingButtonIcon, View.SCALE_Y, 0.1f)
+            );
+        } else {
+            set.playTogether(
+                    ObjectAnimator.ofFloat(radialProgressView, View.ALPHA, 1),
+                    ObjectAnimator.ofFloat(radialProgressView, View.SCALE_X, 1f),
+                    ObjectAnimator.ofFloat(radialProgressView, View.SCALE_Y, 1f)
+            );
+        }
+        set.setInterpolator(CubicBezierInterpolator.DEFAULT);
+        set.start();
     }
 
     protected void needHideProgress() {
-        if (progressDialog == null) {
-            return;
+        AnimatorSet set = new AnimatorSet();
+        if (floatingButtonContainer.getVisibility() == View.VISIBLE) {
+            set.playTogether(
+                    ObjectAnimator.ofFloat(floatingProgressView, View.ALPHA, 0),
+                    ObjectAnimator.ofFloat(floatingProgressView, View.SCALE_X, 0.1f),
+                    ObjectAnimator.ofFloat(floatingProgressView, View.SCALE_Y, 0.1f),
+                    ObjectAnimator.ofFloat(floatingButtonIcon, View.ALPHA, 1),
+                    ObjectAnimator.ofFloat(floatingButtonIcon, View.SCALE_X, 1f),
+                    ObjectAnimator.ofFloat(floatingButtonIcon, View.SCALE_Y, 1f)
+            );
+        } else {
+            set.playTogether(
+                    ObjectAnimator.ofFloat(radialProgressView, View.ALPHA, 0),
+                    ObjectAnimator.ofFloat(radialProgressView, View.SCALE_X, 0.1f),
+                    ObjectAnimator.ofFloat(radialProgressView, View.SCALE_Y, 0.1f)
+            );
         }
-        try {
-            progressDialog.dismiss();
-        } catch (Exception e) {
-            FileLog.e(e);
-        }
-        progressDialog = null;
+        set.setInterpolator(CubicBezierInterpolator.DEFAULT);
+        set.start();
     }
 
     private boolean isValidEmail(String text) {
@@ -1653,6 +2000,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
                                 NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.twoStepPasswordChanged);
                             }
                             TwoStepVerificationSetupActivity fragment = new TwoStepVerificationSetupActivity(TYPE_PASSWORD_SET, currentPassword);
+                            fragment.fromRegistration = fromRegistration;
                             fragment.setCurrentPasswordParams(newPasswordHash != null ? newPasswordHash : currentPasswordHash, currentSecretId, currentSecret, emailOnly);
                             fragment.closeAfterSet = closeAfterSet;
                             fragment.setBlockingAlert(otherwiseReloginDays);
@@ -1669,6 +2017,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
                         NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.twoStepPasswordChanged, newPasswordHash, new_settings.new_algo, currentPassword.new_secure_algo, currentPassword.secure_random, email, hint, email, firstPassword);
                         currentPassword.email_unconfirmed_pattern = email;
                         TwoStepVerificationSetupActivity fragment = new TwoStepVerificationSetupActivity(TwoStepVerificationSetupActivity.TYPE_EMAIL_CONFIRM, currentPassword);
+                        fragment.fromRegistration = fromRegistration;
                         fragment.setCurrentPasswordParams(newPasswordHash != null ? newPasswordHash : currentPasswordHash, currentSecretId, currentSecret, emailOnly);
                         fragment.closeAfterSet = closeAfterSet;
                         fragment.setBlockingAlert(otherwiseReloginDays);
@@ -1749,18 +2098,17 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
 
     }
 
-    private void onFieldError(TextView field, boolean clear) {
+    private void onFieldError(View shakeView, TextView field, boolean clear) {
         if (getParentActivity() == null) {
             return;
         }
-        Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
-        if (v != null) {
-            v.vibrate(200);
-        }
+        try {
+            field.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+        } catch (Exception ignored) {}
         if (clear) {
             field.setText("");
         }
-        AndroidUtilities.shakeView(field, 2, 0);
+        AndroidUtilities.shakeViewSpring(shakeView, 5);
     }
 
     @Override
@@ -1776,10 +2124,10 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector));
 
         themeDescriptions.add(new ThemeDescription(titleTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteGrayText6));
-        themeDescriptions.add(new ThemeDescription(passwordEditText, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-        themeDescriptions.add(new ThemeDescription(passwordEditText, ThemeDescription.FLAG_HINTTEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteHintText));
-        themeDescriptions.add(new ThemeDescription(passwordEditText, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_windowBackgroundWhiteInputField));
-        themeDescriptions.add(new ThemeDescription(passwordEditText, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_windowBackgroundWhiteInputFieldActivated));
+        themeDescriptions.add(new ThemeDescription(editTextFirstRow, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+        themeDescriptions.add(new ThemeDescription(editTextFirstRow, ThemeDescription.FLAG_HINTTEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteHintText));
+        themeDescriptions.add(new ThemeDescription(editTextFirstRow, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_windowBackgroundWhiteInputField));
+        themeDescriptions.add(new ThemeDescription(editTextFirstRow, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_windowBackgroundWhiteInputFieldActivated));
 
         return themeDescriptions;
     }
@@ -1798,20 +2146,28 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
             showSetForcePasswordAlert();
             return false;
         }
-        return super.onBackPressed();
+        finishFragment();
+        return true;
+    }
+
+    @Override
+    public void finishFragment(boolean animated) {
+        for (BaseFragment fragment : getParentLayout().fragmentsStack) {
+            if (fragment != this && fragment instanceof TwoStepVerificationSetupActivity) {
+                ((TwoStepVerificationSetupActivity) fragment).floatingAutoAnimator.ignoreNextLayout();
+            }
+        }
+
+        super.finishFragment(animated);
     }
 
     private void showSetForcePasswordAlert() {
         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
         builder.setTitle(LocaleController.getString("Warning", R.string.Warning));
-        builder.setMessage(LocaleController.formatPluralString("ForceSetPasswordAlertMessage", otherwiseReloginDays));
-        builder.setPositiveButton(LocaleController.getString("ForceSetPasswordContinue", R.string.ForceSetPasswordContinue), (a1, a2) -> {
+        builder.setMessage(LocaleController.formatPluralString("ForceSetPasswordAlertMessageShort", otherwiseReloginDays));
+        builder.setPositiveButton(LocaleController.getString("TwoStepVerificationSetPassword", R.string.TwoStepVerificationSetPassword), null);
 
-        });
-
-        builder.setNegativeButton(LocaleController.getString("ForceSetPasswordCancel", R.string.ForceSetPasswordCancel), (a1, a2) -> {
-            finishFragment();
-        });
+        builder.setNegativeButton(LocaleController.getString("ForceSetPasswordCancel", R.string.ForceSetPasswordCancel), (a1, a2) -> finishFragment());
         AlertDialog alertDialog = builder.show();
         ((TextView)alertDialog.getButton(DialogInterface.BUTTON_NEGATIVE)).setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
     }

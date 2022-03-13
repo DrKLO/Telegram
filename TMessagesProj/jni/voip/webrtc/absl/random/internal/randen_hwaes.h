@@ -26,7 +26,7 @@ namespace absl {
 ABSL_NAMESPACE_BEGIN
 namespace random_internal {
 
-// RANDen = RANDom generator or beetroots in Swiss German.
+// RANDen = RANDom generator or beetroots in Swiss High German.
 // 'Strong' (well-distributed, unpredictable, backtracking-resistant) random
 // generator, faster in some benchmarks than std::mt19937_64 and pcg64_c32.
 //

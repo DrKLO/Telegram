@@ -13,6 +13,7 @@
 
 #include "common_video/h265/h265_common.h"
 #include "common_video/h265/h265_vps_parser.h"
+#include "common_video/h265/legacy_bit_buffer.h"
 #include "rtc_base/bit_buffer.h"
 #include "rtc_base/logging.h"
 
@@ -52,7 +53,7 @@ absl::optional<H265VpsParser::VpsState> H265VpsParser::ParseInternal(
 
   // vps_video_parameter_set_id: u(4)
   vps.id = 0;
-  RETURN_EMPTY_ON_FAIL(buffer->ReadBits(4, vps.id));
+  RETURN_EMPTY_ON_FAIL(buffer->ReadBits(&vps.id, 4));
 
   return OptionalVps(vps);
 }

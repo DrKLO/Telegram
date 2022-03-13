@@ -48,7 +48,16 @@ public class RLottieImageView extends ImageView {
         setAnimation(new RLottieDrawable(resId, "" + resId, AndroidUtilities.dp(w), AndroidUtilities.dp(h), false, colorReplacement));
     }
 
+    public void setOnAnimationEndListener(Runnable r) {
+        if (drawable != null) {
+            drawable.setOnAnimationEndListener(r);
+        }
+    }
+
     public void setAnimation(RLottieDrawable lottieDrawable) {
+        if (drawable == lottieDrawable) {
+            return;
+        }
         drawable = lottieDrawable;
         if (autoRepeat) {
             drawable.setAutoRepeat(1);

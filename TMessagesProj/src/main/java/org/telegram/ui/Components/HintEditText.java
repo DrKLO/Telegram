@@ -12,22 +12,27 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.text.TextPaint;
+import android.util.TypedValue;
 
-import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 
 public class HintEditText extends EditTextBoldCursor {
+    protected TextPaint hintPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
 
     private String hintText;
-    private float textOffset;
-    private float spaceSize;
-    private float numberSize;
-    private Paint paint = new Paint();
     private Rect rect = new Rect();
 
     public HintEditText(Context context) {
         super(context);
-        paint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
+        hintPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
+    }
+
+    @Override
+    public void setTextSize(int unit, float size) {
+        super.setTextSize(unit, size);
+
+        hintPaint.setTextSize(TypedValue.applyDimension(unit, size, getResources().getDisplayMetrics()));
     }
 
     public String getHintText() {
@@ -47,27 +52,42 @@ public class HintEditText extends EditTextBoldCursor {
     }
 
     public void onTextChange() {
-        textOffset = (length() > 0 ? getPaint().measureText(getText(), 0, length()) : 0);
-        spaceSize = getPaint().measureText(" ");
-        numberSize = getPaint().measureText("1");
         invalidate();
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
-        super.onDraw(canvas);
         if (hintText != null && length() < hintText.length()) {
-            int top = getMeasuredHeight() / 2;
-            float offsetX = textOffset;
-            for (int a = length(); a < hintText.length(); a++) {
-                if (hintText.charAt(a) == ' ') {
-                    offsetX += spaceSize;
+            float offsetX = 0;
+            for (int a = 0; a < hintText.length(); a++) {
+                float newOffset;
+                if (a < length()) {
+                    newOffset = getPaint().measureText(getText(), a, a + 1);
                 } else {
-                    rect.set((int) offsetX + AndroidUtilities.dp(1), top, (int) (offsetX + numberSize) - AndroidUtilities.dp(1), top + AndroidUtilities.dp(2));
-                    canvas.drawRect(rect, paint);
-                    offsetX += numberSize;
+                    newOffset = hintPaint.measureText(hintText, a, a + 1);
                 }
+                if (!shouldDrawBehindText(a) && a < length()) {
+                    offsetX += newOffset;
+                    continue;
+                }
+
+                int color = hintPaint.getColor();
+                canvas.save();
+                hintPaint.getTextBounds(hintText, 0, hintText.length(), rect);
+                float offsetY = (getHeight() + rect.height()) / 2f;
+                onPreDrawHintCharacter(a, canvas, offsetX, offsetY);
+                canvas.drawText(hintText, a, a + 1, offsetX, offsetY, hintPaint);
+                offsetX += newOffset;
+                canvas.restore();
+                hintPaint.setColor(color);
             }
         }
+        super.onDraw(canvas);
     }
+
+    protected boolean shouldDrawBehindText(int index) {
+        return false;
+    }
+
+    protected void onPreDrawHintCharacter(int index, Canvas canvas, float pivotX, float pivotY) {}
 }

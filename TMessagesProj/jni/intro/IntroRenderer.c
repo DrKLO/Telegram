@@ -54,7 +54,7 @@ static TexturedShape powerful_mask, powerful_infinity, powerful_infinity_white;
 
 static Shape private_bg;
 
-static TexturedShape telegram_sphere, telegram_plane;
+static TexturedShape telegram_sphere, telegram_plane, telegram_mask;
 
 static Shape cloud_bg;
 
@@ -72,7 +72,7 @@ static mat4x4 ribbons_layer;
 
 static TexturedShape ic_bubble_dot, ic_bubble, ic_cam_lens, ic_cam, ic_pencil, ic_pin, ic_smile_eye, ic_smile, ic_videocam;
 static GLuint ic_bubble_dot_texture, ic_bubble_texture, ic_cam_lens_texture, ic_cam_texture, ic_pencil_texture, ic_pin_texture, ic_smile_eye_texture, ic_smile_texture, ic_videocam_texture;
-static GLuint telegram_sphere_texture, telegram_plane_texture;
+static GLuint telegram_sphere_texture, telegram_plane_texture, telegram_mask_texture;
 static GLuint fast_spiral_texture, fast_body_texture, fast_arrow_texture, fast_arrow_shadow_texture;
 static GLuint free_knot_up_texture, free_knot_down_texture;
 static GLuint powerful_mask_texture, powerful_star_texture, powerful_infinity_texture, powerful_infinity_white_texture;
@@ -105,6 +105,7 @@ static float scroll_offset;
 static float calculated_speedometer_sin;
 float ms0_anim;
 int fps_anim;
+int last_stars_update_fps;
 int count_anim_fps;
 static float speedometer_scroll_offset = 0, free_scroll_offset = 0, private_scroll_offset = 0;
 float anim_pencil_start_time, anim_pencil_start_all_time, anim_pencil_start_all_end_time;
@@ -124,6 +125,8 @@ float anim_pin_start_time, anim_pin_duration;
 static int32_t anim_pencil_period;
 static mat4x4 private_matrix;
 float cloud_scroll_offset;
+
+vec4 background_color = {1, 1, 1, 1};
 
 static inline void vec2_add(vec2 r, vec2 a, vec2 b) {
     int32_t i;
@@ -1122,6 +1125,8 @@ xyz star_initial_position(int32_t randZ, int32_t forward) {
 }
 
 void draw_stars() {
+    int update = last_stars_update_fps != fps_anim;
+    last_stars_update_fps = fps_anim;
     float k = (float) width / (float) height;
 
     set_y_offset_objects(-100 * k * 0);
@@ -1137,7 +1142,9 @@ void draw_stars() {
         }
 
         float speed = stars_scroll_offset + transition_speed;
-        stars[i].position.z += speed;
+        if (update) {
+            stars[i].position.z += speed;
+        }
 
         if (stars[i].position.z > 0 && speed > 0) {
             stars[i].position = star_initial_position(0, 1);
@@ -1682,8 +1689,24 @@ void draw_safe(int32_t type, float alpha, float screw_alpha) {
     draw_textured_shape(&private_screw, private_matrix, NORMAL_ONE);
 }
 
-JNIEXPORT void Java_org_telegram_messenger_Intro_onDrawFrame(JNIEnv *env, jclass class) {
-    time_local += 0.016f;
+JNIEXPORT void Java_org_telegram_messenger_Intro_setBackgroundColor(JNIEnv *env, jclass class, jfloat r, jfloat g, jfloat b, jfloat a) {
+    background_color[0] = r;
+    background_color[1] = g;
+    background_color[2] = b;
+    background_color[3] = a;
+
+    cloud_cover = create_rectangle(CSizeMake(240, 100), background_color);
+    cloud_cover.params.anchor.y = -50;
+
+    TexturedShape was_mask = powerful_mask;
+    powerful_mask = create_textured_rectangle(CSizeMake(200, 200), powerful_mask_texture);
+    powerful_mask.params = was_mask.params;
+
+    telegram_mask = create_textured_rectangle(CSizeMake(200, 150), telegram_mask_texture);
+}
+
+JNIEXPORT void Java_org_telegram_messenger_Intro_onDrawFrame(JNIEnv *env, jclass class, jint deltaMs) {
+    time_local += (float) deltaMs / 1000;
 
     if (current_page != prev_page) {
         reset_ic();
@@ -1722,7 +1745,8 @@ JNIEXPORT void Java_org_telegram_messenger_Intro_onDrawFrame(JNIEnv *env, jclass
         }
     }
 
-    fps_anim++;
+    // Normalize if FPS is greater than 60
+    fps_anim = (int)(time_local / 0.016f);
     if (count_anim_fps == 1 && date - ms0_anim >= duration_const) {
         count_anim_fps = 0;
     }
@@ -1735,7 +1759,7 @@ JNIEXPORT void Java_org_telegram_messenger_Intro_onDrawFrame(JNIEnv *env, jclass
 
     float private_back_k = .8;
 
-    glClearColor(1, 1, 1, 1);
+    glClearColor(background_color[0], background_color[1], background_color[2], background_color[3]);
     glClear(GL_COLOR_BUFFER_BIT);
 
 
@@ -2140,15 +2164,16 @@ JNIEXPORT void Java_org_telegram_messenger_Intro_onDrawFrame(JNIEnv *env, jclass
             draw_textured_shape(&telegram_sphere, main_matrix, NORMAL);
 
             float tt = MINf(0, (float) (-M_PI * 125.0f / 180.0f + time * M_PI * 2 * 1.5f));
-            float dx = sinf(tt) * 75;
-            float dy = -sinf(tt) * 60;
+            float dx = t(-75, 0, 0, 0.15f, EaseIn);
+            float dy = t(75, 0, 0, 0.15f, EaseIn);
             telegram_plane.params.position = xyzMake(dx, dy, 0);
-            float scale = (cosf(tt) + 1) * 0.5f;
-            telegram_plane.params.scale = xyzMake(cosf(tt) * scale, scale, 1);
+            float scale = t(0.1f, 1, 0.03f, 0.15f, EaseOut);
+            telegram_plane.params.scale = xyzMake(scale, scale, 1);
 
             if (tt < D2R(125)) {
                 glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
                 draw_textured_shape(&telegram_plane, main_matrix, NORMAL_ONE);
+                draw_textured_shape(&telegram_mask, main_matrix, NORMAL);
             }
         }
     } else if (current_page == 1) {
@@ -2159,18 +2184,18 @@ JNIEXPORT void Java_org_telegram_messenger_Intro_onDrawFrame(JNIEnv *env, jclass
 
             double tt = time * M_PI * 2 * 1.5f;
 
-            float dx = (float) sin(tt) * 75;
-            float dy = (float) -sin(tt) * 60;
+            float dx = t(0, 75, 0, 0.15f, EaseOut);
+            float dy = t(0, -75, 0, 0.15f, EaseOut);
 
             telegram_plane.params.position = xyzMake(dx, dy, 0);
 
-            float scale = (float) (cos(tt) + 1) * 0.5f;
-
-            telegram_plane.params.scale = xyzMake((float) cos(tt) * scale, scale, 1);
+            float scale = t(1, 0.1f, 0.03f, 0.15f, EaseOut);
+            telegram_plane.params.scale = xyzMake(scale, scale, 1);
 
             if (tt < D2R(125)) {
                 glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
                 draw_textured_shape(&telegram_plane, main_matrix, NORMAL_ONE);
+                draw_textured_shape(&telegram_mask, main_matrix, NORMAL);
             }
         }
     } else if (current_page == 2) {
@@ -2601,9 +2626,10 @@ JNIEXPORT void Java_org_telegram_messenger_Intro_setIcTextures(JNIEnv *env, jcla
     ic_videocam_texture = a_ic_videocam;
 }
 
-JNIEXPORT void Java_org_telegram_messenger_Intro_setTelegramTextures(JNIEnv *env, jclass class, GLuint a_telegram_sphere, GLuint a_telegram_plane) {
+JNIEXPORT void Java_org_telegram_messenger_Intro_setTelegramTextures(JNIEnv *env, jclass class, GLuint a_telegram_sphere, GLuint a_telegram_plane, GLuint a_telegram_mask) {
     telegram_sphere_texture = a_telegram_sphere;
     telegram_plane_texture = a_telegram_plane;
+    telegram_mask_texture = a_telegram_mask;
 }
 
 JNIEXPORT void Java_org_telegram_messenger_Intro_setFastTextures(JNIEnv *env, jclass class, GLuint a_fast_body, GLuint a_fast_spiral, GLuint a_fast_arrow, GLuint a_fast_arrow_shadow) {
@@ -2691,6 +2717,7 @@ JNIEXPORT void Java_org_telegram_messenger_Intro_onSurfaceCreated(JNIEnv *env, j
     mask1 = create_rounded_rectangle(CSizeMake(60, 60), 0, 16, black_color);
 
     telegram_sphere = create_textured_rectangle(CSizeMake(150, 150), telegram_sphere_texture);
+    telegram_mask = create_textured_rectangle(CSizeMake(200, 150), telegram_mask_texture);
     telegram_plane = create_textured_rectangle(CSizeMake(82, 74), telegram_plane_texture);
     telegram_plane.params.anchor = xyzMake(6, -5, 0);
 
@@ -2794,7 +2821,7 @@ JNIEXPORT void Java_org_telegram_messenger_Intro_onSurfaceCreated(JNIEnv *env, j
     cloud_extra_mask3 = create_circle(1, cloud_polygons_count, black_color);
     cloud_extra_mask4 = create_circle(1, cloud_polygons_count, black_color);
 
-    cloud_cover = create_rectangle(CSizeMake(240, 100), white_color);
+    cloud_cover = create_rectangle(CSizeMake(240, 100), background_color);
     cloud_cover.params.anchor.y = -50;
 
     vec4 cloud_color = {42 / 255.0f, 180 / 255.0f, 247 / 255.0f, 1};

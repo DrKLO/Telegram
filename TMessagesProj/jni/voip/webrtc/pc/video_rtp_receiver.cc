@@ -16,7 +16,7 @@
 #include <vector>
 
 #include "api/video/recordable_encoded_frame.h"
-#include "api/video_track_source_proxy.h"
+#include "api/video_track_source_proxy_factory.h"
 #include "pc/video_track.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/location.h"
@@ -41,16 +41,15 @@ VideoRtpReceiver::VideoRtpReceiver(
       track_(VideoTrackProxyWithInternal<VideoTrack>::Create(
           rtc::Thread::Current(),
           worker_thread,
-          VideoTrack::Create(
-              receiver_id,
-              VideoTrackSourceProxy::Create(rtc::Thread::Current(),
-                                            worker_thread,
-                                            source_),
-              worker_thread))),
+          VideoTrack::Create(receiver_id,
+                             CreateVideoTrackSourceProxy(rtc::Thread::Current(),
+                                                         worker_thread,
+                                                         source_),
+                             worker_thread))),
       attachment_id_(GenerateUniqueId()) {
   RTC_DCHECK(worker_thread_);
   SetStreams(streams);
-  source_->SetState(MediaSourceInterface::kLive);
+  RTC_DCHECK_EQ(source_->state(), MediaSourceInterface::kLive);
 }
 
 VideoRtpReceiver::~VideoRtpReceiver() {

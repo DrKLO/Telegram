@@ -275,7 +275,7 @@ const char* ChannelLayoutToString(ChannelLayout layout) {
     case CHANNEL_LAYOUT_BITSTREAM:
       return "BITSTREAM";
   }
-  RTC_NOTREACHED() << "Invalid channel layout provided: " << layout;
+  RTC_DCHECK_NOTREACHED() << "Invalid channel layout provided: " << layout;
   return "";
 }
 

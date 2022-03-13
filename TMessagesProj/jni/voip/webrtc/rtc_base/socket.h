@@ -27,6 +27,7 @@
 
 #include "rtc_base/constructor_magic.h"
 #include "rtc_base/socket_address.h"
+#include "rtc_base/third_party/sigslot/sigslot.h"
 
 // Rather than converting errors into a private namespace,
 // Reuse the POSIX socket api errors. Note this depends on
@@ -94,7 +95,7 @@ class Socket {
   virtual int Connect(const SocketAddress& addr) = 0;
   virtual int Send(const void* pv, size_t cb) = 0;
   virtual int SendTo(const void* pv, size_t cb, const SocketAddress& addr) = 0;
-  // |timestamp| is in units of microseconds.
+  // `timestamp` is in units of microseconds.
   virtual int Recv(void* pv, size_t cb, int64_t* timestamp) = 0;
   virtual int RecvFrom(void* pv,
                        size_t cb,
@@ -123,6 +124,17 @@ class Socket {
   };
   virtual int GetOption(Option opt, int* value) = 0;
   virtual int SetOption(Option opt, int value) = 0;
+
+  // SignalReadEvent and SignalWriteEvent use multi_threaded_local to allow
+  // access concurrently from different thread.
+  // For example SignalReadEvent::connect will be called in AsyncUDPSocket ctor
+  // but at the same time the SocketDispatcher may be signaling the read event.
+  // ready to read
+  sigslot::signal1<Socket*, sigslot::multi_threaded_local> SignalReadEvent;
+  // ready to write
+  sigslot::signal1<Socket*, sigslot::multi_threaded_local> SignalWriteEvent;
+  sigslot::signal1<Socket*> SignalConnectEvent;     // connected
+  sigslot::signal2<Socket*, int> SignalCloseEvent;  // closed
 
  protected:
   Socket() {}

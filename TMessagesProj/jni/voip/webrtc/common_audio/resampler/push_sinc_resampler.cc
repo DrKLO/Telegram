@@ -63,12 +63,12 @@ size_t PushSincResampler::Resample(const float* source,
   // request through Run().
   //
   // If this wasn't done, SincResampler would call Run() twice on the first
-  // pass, and we'd have to introduce an entire |source_frames| of delay, rather
+  // pass, and we'd have to introduce an entire `source_frames` of delay, rather
   // than the minimum half kernel.
   //
   // It works out that ChunkSize() is exactly the amount of output we need to
   // request in order to prime the buffer with a single Run() request for
-  // |source_frames|.
+  // `source_frames`.
   if (first_pass_)
     resampler_->Resample(resampler_->ChunkSize(), destination);
 

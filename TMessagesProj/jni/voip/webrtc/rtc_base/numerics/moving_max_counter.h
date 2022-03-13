@@ -27,8 +27,8 @@ namespace rtc {
 // fixed moving window.
 //
 // Window size is configured at constructor.
-// Samples can be added with |Add()| and max over current window is returned by
-// |MovingMax|. |current_time_ms| in successive calls to Add and MovingMax
+// Samples can be added with `Add()` and max over current window is returned by
+// `MovingMax`. `current_time_ms` in successive calls to Add and MovingMax
 // should never decrease as if it's a wallclock time.
 template <class T>
 class MovingMaxCounter {

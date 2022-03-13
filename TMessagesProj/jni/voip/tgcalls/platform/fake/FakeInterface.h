@@ -7,7 +7,7 @@ namespace tgcalls {
 
 class FakeInterface : public PlatformInterface {
  public:
-  std::unique_ptr<webrtc::VideoEncoderFactory> makeVideoEncoderFactory() override;
+  std::unique_ptr<webrtc::VideoEncoderFactory> makeVideoEncoderFactory(bool preferHardwareEncoding, bool isScreencast) override;
   std::unique_ptr<webrtc::VideoDecoderFactory> makeVideoDecoderFactory() override;
   bool supportsEncoding(const std::string &codecName) override;
   rtc::scoped_refptr<webrtc::VideoTrackSourceInterface> makeVideoSource(rtc::Thread *signalingThread,

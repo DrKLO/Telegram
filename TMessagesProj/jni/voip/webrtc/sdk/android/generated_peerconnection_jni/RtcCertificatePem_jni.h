@@ -122,7 +122,4 @@ static base::android::ScopedJavaLocalRef<jstring> Java_RtcCertificatePem_getCert
 }  // namespace jni
 }  // namespace  webrtc
 
-// Step 4: Generated test functions (optional).
-
-
 #endif  // org_webrtc_RtcCertificatePem_JNI

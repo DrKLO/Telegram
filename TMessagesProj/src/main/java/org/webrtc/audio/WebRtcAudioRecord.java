@@ -17,11 +17,15 @@ import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.AudioRecordingConfiguration;
+import android.media.AudioTimestamp;
 import android.media.MediaRecorder.AudioSource;
 import android.os.Build;
 import android.os.Process;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
+
+import com.google.android.exoplayer2.util.Log;
+
 import java.lang.System;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
