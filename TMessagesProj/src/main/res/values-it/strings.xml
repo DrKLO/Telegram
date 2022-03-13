@@ -1030,6 +1030,7 @@
     <string name="PreviousPinnedMessage">Messaggio precedente</string>
     <string name="PinnedPoll">Sondaggio fissato</string>
     <string name="EditedMessage">modificato</string>
+    <string name="DeletedMessage">cancellato</string>
     <string name="EditMessage">Modifica messaggio</string>
     <string name="EditCaption">Modifica didascalia</string>
     <string name="EditMessageMedia">Tocca per modificare</string>

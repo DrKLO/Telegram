@@ -1030,6 +1030,7 @@
     <string name="PreviousPinnedMessage">이전 메시지</string>
     <string name="PinnedPoll">고정된 설문</string>
     <string name="EditedMessage">수정됨</string>
+    <string name="DeletedMessage">삭제</string>
     <string name="EditMessage">메시지 수정</string>
     <string name="EditCaption">설명 수정</string>
     <string name="EditMessageMedia">미디어를 수정하려면 누르세요</string>

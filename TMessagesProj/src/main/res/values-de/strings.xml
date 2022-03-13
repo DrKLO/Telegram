@@ -1030,6 +1030,7 @@
     <string name="PreviousPinnedMessage">Vorherige Nachricht</string>
     <string name="PinnedPoll">Angeheftete Umfrage</string>
     <string name="EditedMessage">bearbeitet</string>
+    <string name="DeletedMessage">entfernt</string>
     <string name="EditMessage">Nachricht bearbeiten</string>
     <string name="EditCaption">Beschriftung bearbeiten</string>
     <string name="EditMessageMedia">Antippen, um Medium zu bearbeiten</string>
