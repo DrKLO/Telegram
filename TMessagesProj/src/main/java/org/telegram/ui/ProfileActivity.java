@@ -2954,7 +2954,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                 BuildVars.DEBUG_PRIVATE_VERSION ? "Reset suggestions" : null,
                                 BuildVars.DEBUG_PRIVATE_VERSION ? LocaleController.getString(SharedConfig.forceRtmpStream ? R.string.DebugMenuDisableForceRtmpStreamFlag : R.string.DebugMenuEnableForceRtmpStreamFlag) : null,
                                 BuildVars.DEBUG_PRIVATE_VERSION ? LocaleController.getString(R.string.DebugMenuClearWebViewCache) : null,
-                                Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT ? LocaleController.getString(R.string.DebugMenuEnableWebViewDebug) : null
+                                Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT ? LocaleController.getString(R.string.DebugMenuEnableWebViewDebug) : null,
+                                SharedConfig.drawSnowInChat ? "Hide snow in chat" : "Show snow in chat"
                         };
                         builder.setItems(items, (dialog, which) -> {
                             if (which == 0) {
@@ -3036,6 +3037,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                     WebView.setWebContentsDebuggingEnabled(true);
                                     Toast.makeText(getParentActivity(), LocaleController.getString(R.string.DebugMenuWebViewDebugEnabled), Toast.LENGTH_SHORT).show();
                                 }
+                            } else if (which == 20) {
+                                SharedConfig.toggleDrawSnowInChat();
                             }
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
