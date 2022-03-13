@@ -564,9 +564,9 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
         secretSectionRow = rowCount++;
         secretMapRow = rowCount++;
         secretWebpageRow = rowCount++;
-        secretDetailRow = rowCount++;
         nonsecretSectionRow = rowCount++;
         nonsecretWebpageRow = rowCount++;
+        secretDetailRow = rowCount++;
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
         }
