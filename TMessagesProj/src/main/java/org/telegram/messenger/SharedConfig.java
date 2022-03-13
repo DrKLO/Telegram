@@ -23,6 +23,9 @@ import android.util.SparseArray;
 import androidx.annotation.IntDef;
 import androidx.core.content.pm.ShortcutManagerCompat;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
 import org.json.JSONObject;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.SerializedData;
@@ -33,8 +36,10 @@ import java.io.File;
 import java.io.RandomAccessFile;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Locale;
 
@@ -154,6 +159,8 @@ public class SharedConfig {
     public static int fastScrollHintCount = 3;
     public static boolean dontAskManageStorage;
 
+    public static HashSet<Long> shadowBannedHS;
+
     static {
         loadConfig();
     }
@@ -228,6 +235,13 @@ public class SharedConfig {
                 editor.putBoolean("forwardingOptionsHintShown", forwardingOptionsHintShown);
                 editor.putInt("lockRecordAudioVideoHint", lockRecordAudioVideoHint);
                 editor.putString("storageCacheDir", !TextUtils.isEmpty(storageCacheDir) ? storageCacheDir : "");
+
+                SharedPreferences preferencesTH = ApplicationLoader.applicationContext.getSharedPreferences("telegraher", Context.MODE_PRIVATE);
+                SharedPreferences.Editor editorTH = preferencesTH.edit();
+                editorTH.putString("shadowBannedHS", new Gson().toJson(shadowBannedHS));
+//                System.out.printf("SAVE `%s`%n", new Gson().toJson(shadowBannedHS));
+                editorTH.commit();
+//                System.out.println("preferencesTH saved!");
 
                 if (pendingAppUpdate != null) {
                     try {
@@ -401,6 +415,12 @@ public class SharedConfig {
             preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
             showNotificationsForAllAccounts = preferences.getBoolean("AllAccounts", true);
 
+            preferences = ApplicationLoader.applicationContext.getSharedPreferences("telegraher", Activity.MODE_PRIVATE);
+            Type lhs = new TypeToken<HashSet<Long>>() {}.getType();
+            shadowBannedHS = new Gson().fromJson(preferences.getString("shadowBannedHS", "[]"), lhs);
+//            System.out.printf("LOAD `%s`%n", preferences.getString("shadowBannedHS", "[]"));
+//            System.out.println("preferencesTH loaded!");
+
             configLoaded = true;
         }
     }
@@ -443,6 +463,41 @@ public class SharedConfig {
         passportConfigHash = hash;
         saveConfig();
         getCountryLangs();
+    }
+
+    public static HashSet<Long> getShadowBannedHS() {
+        if (shadowBannedHS == null) shadowBannedHS = new HashSet<>();
+        return shadowBannedHS;
+    }
+
+    public static boolean isShadowBanned(TLRPC.Message m) {
+//        System.out.printf("isShadowBanned `%s`%n", "the message");
+        if (shadowBannedHS == null) {
+            shadowBannedHS = new HashSet<>();
+            return false;
+        }
+        return isShadowBanned(m.from_id.channel_id) || isShadowBanned(m.from_id.chat_id) || isShadowBanned(m.from_id.user_id);
+    }
+
+    public static boolean isShadowBanned(long id) {
+//        System.out.printf("isShadowBanned `%d`%n", id);
+        if (shadowBannedHS == null) {
+            shadowBannedHS = new HashSet<>();
+            return false;
+        }
+        return shadowBannedHS.contains(id < 0L ? -id : id);
+    }
+
+    public static void addShadowBanned(long id) {
+//        System.out.printf("addShadowBanned `%d`%n", id);
+        if (shadowBannedHS == null) shadowBannedHS = new HashSet<>();
+        shadowBannedHS.add(id < 0L ? -id : id);
+    }
+
+    public static void delShadowBanned(long id) {
+//        System.out.printf("delShadowBanned `%d`%n", id);
+        if (shadowBannedHS == null) shadowBannedHS = new HashSet<>();
+        shadowBannedHS.remove(id < 0L ? -id : id);
     }
 
     public static HashMap<String, String> getCountryLangs() {
