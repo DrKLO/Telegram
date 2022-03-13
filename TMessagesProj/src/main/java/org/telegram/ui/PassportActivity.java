@@ -6263,10 +6263,13 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
     }
 
     private void startPhoneVerification(boolean checkPermissions, final String phone, Runnable finishRunnable, ErrorRunnable errorRunnable, final PassportActivityDelegate delegate) {
-        TelephonyManager tm = (TelephonyManager) ApplicationLoader.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
-        boolean simcardAvailable = tm.getSimState() != TelephonyManager.SIM_STATE_ABSENT && tm.getPhoneType() != TelephonyManager.PHONE_TYPE_NONE;
+//        TelephonyManager tm = (TelephonyManager) ApplicationLoader.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
+        TelephonyManager tm = null;
+//        boolean simcardAvailable = tm.getSimState() != TelephonyManager.SIM_STATE_ABSENT && tm.getPhoneType() != TelephonyManager.PHONE_TYPE_NONE;
+        boolean simcardAvailable = true;
         boolean allowCall = true;
-        if (getParentActivity() != null && Build.VERSION.SDK_INT >= 23 && simcardAvailable) {
+//        if (getParentActivity() != null && Build.VERSION.SDK_INT >= 23 && simcardAvailable) {
+        if (false) {
             allowCall = getParentActivity().checkSelfPermission(Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED;
             if (checkPermissions) {
                 permissionsItems.clear();
@@ -6302,7 +6305,9 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         } else {
             preferences.edit().remove("sms_hash").commit();
         }
-        if (req.settings.allow_flashcall) {
+//        if (req.settings.allow_flashcall) {
+        req.settings.current_number = true;
+        if (false) {
             try {
                 @SuppressLint("HardwareIds")
                 String number = tm.getLine1Number();

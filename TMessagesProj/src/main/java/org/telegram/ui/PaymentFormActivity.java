@@ -3047,17 +3047,20 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
     @SuppressLint("HardwareIds")
     public void fillNumber(String number) {
         try {
-            TelephonyManager tm = (TelephonyManager) ApplicationLoader.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
+//            TelephonyManager tm = (TelephonyManager) ApplicationLoader.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
+            TelephonyManager tm = null;
             boolean allowCall = true;
             boolean allowSms = true;
-            if (number != null || tm.getSimState() != TelephonyManager.SIM_STATE_ABSENT && tm.getPhoneType() != TelephonyManager.PHONE_TYPE_NONE) {
-                if (Build.VERSION.SDK_INT >= 23) {
-                    allowCall = getParentActivity().checkSelfPermission(Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED;
-                }
-                if (number != null || allowCall) {
-                    if (number == null) {
-                        number = PhoneFormat.stripExceptNumbers(tm.getLine1Number());
-                    }
+//            if (number != null || tm.getSimState() != TelephonyManager.SIM_STATE_ABSENT && tm.getPhoneType() != TelephonyManager.PHONE_TYPE_NONE) {
+            if (number != null) {
+//                if (Build.VERSION.SDK_INT >= 23) {
+//                    allowCall = getParentActivity().checkSelfPermission(Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED;
+//                }
+//                if (number != null || allowCall) {
+                if (number != null) {
+//                    if (number == null) {
+//                        number = PhoneFormat.stripExceptNumbers(tm.getLine1Number());
+//                    }
                     String textToSet = null;
                     boolean ok = false;
                     if (!TextUtils.isEmpty(number)) {
