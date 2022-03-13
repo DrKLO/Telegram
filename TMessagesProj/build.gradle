@@ -190,17 +190,25 @@ android {
     flavorDimensions "minApi"
 
     productFlavors {
-        bundleAfat {
+        armeabi_v7a {
             ndk {
-                abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
+                abiFilters "armeabi-v7a"
             }
             ext {
                 abiVersionCode = 1
             }
         }
-        bundleAfat_SDK23 {
+        x86 {
             ndk {
-                abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
+                abiFilters "x86"
+            }
+            ext {
+                abiVersionCode = 2
+            }
+        }
+        armeabi_v7a_sdk23 {
+            ndk {
+                abiFilters "armeabi-v7a"
             }
             sourceSets.debug {
                 manifest.srcFile 'config/debug/AndroidManifest_SDK23.xml'
@@ -208,12 +216,70 @@ android {
             sourceSets.release {
                 manifest.srcFile 'config/release/AndroidManifest_SDK23.xml'
             }
-            sourceSets.standalone {
-                manifest.srcFile 'config/release/AndroidManifest_standalone.xml'
+            minSdkVersion 23
+            ext {
+                abiVersionCode = 3
+            }
+        }
+        x86_sdk23 {
+            ndk {
+                abiFilters "x86"
+            }
+            sourceSets.debug {
+                manifest.srcFile 'config/debug/AndroidManifest_SDK23.xml'
+            }
+            sourceSets.release {
+                manifest.srcFile 'config/release/AndroidManifest_SDK23.xml'
             }
             minSdkVersion 23
             ext {
-                abiVersionCode = 2
+                abiVersionCode = 4
+            }
+        }
+        arm64_v8a {
+            ndk {
+                abiFilters "arm64-v8a"
+            }
+            ext {
+                abiVersionCode = 5
+            }
+        }
+        x86_64 {
+            ndk {
+                abiFilters "x86_64"
+            }
+            ext {
+                abiVersionCode = 6
+            }
+        }
+        arm64_v8a_sdk23 {
+            ndk {
+                abiFilters "arm64-v8a"
+            }
+            sourceSets.debug {
+                manifest.srcFile 'config/debug/AndroidManifest_SDK23.xml'
+            }
+            sourceSets.release {
+                manifest.srcFile 'config/release/AndroidManifest_SDK23.xml'
+            }
+            minSdkVersion 23
+            ext {
+                abiVersionCode = 7
+            }
+        }
+        x86_64_sdk23 {
+            ndk {
+                abiFilters "x86_64"
+            }
+            sourceSets.debug {
+                manifest.srcFile 'config/debug/AndroidManifest_SDK23.xml'
+            }
+            sourceSets.release {
+                manifest.srcFile 'config/release/AndroidManifest_SDK23.xml'
+            }
+            minSdkVersion 23
+            ext {
+                abiVersionCode = 8
             }
         }
         afat {
@@ -233,9 +299,11 @@ android {
                 abiVersionCode = 9
             }
         }
-    }
 
+    }
+//    2636001 mean 2636 0 01 where 2636 is vanilla code version, and 01 is the release one
     defaultConfig.versionCode = 2721
+//    defaultConfig.versionCode = 2721001
 
     applicationVariants.all { variant ->
         variant.outputs.all { output ->
