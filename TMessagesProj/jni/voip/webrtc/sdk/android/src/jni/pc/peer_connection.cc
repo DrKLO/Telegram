@@ -112,13 +112,13 @@ SdpSemantics JavaToNativeSdpSemantics(JNIEnv* jni,
   std::string enum_name = GetJavaEnumName(jni, j_sdp_semantics);
 
   if (enum_name == "PLAN_B")
-    return SdpSemantics::kPlanB;
+    return SdpSemantics::kPlanB_DEPRECATED;
 
   if (enum_name == "UNIFIED_PLAN")
     return SdpSemantics::kUnifiedPlan;
 
-  RTC_NOTREACHED();
-  return SdpSemantics::kPlanB;
+  RTC_DCHECK_NOTREACHED();
+  return SdpSemantics::kPlanB_DEPRECATED;
 }
 
 ScopedJavaLocalRef<jobject> NativeToJavaCandidatePairChange(
@@ -263,8 +263,6 @@ void JavaToNativeRTCConfiguration(
       jni, Java_RTCConfiguration_getScreencastMinBitrate(jni, j_rtc_config));
   rtc_config->combined_audio_video_bwe = JavaToNativeOptionalBool(
       jni, Java_RTCConfiguration_getCombinedAudioVideoBwe(jni, j_rtc_config));
-  rtc_config->enable_dtls_srtp = JavaToNativeOptionalBool(
-      jni, Java_RTCConfiguration_getEnableDtlsSrtp(jni, j_rtc_config));
   rtc_config->network_preference =
       JavaToNativeNetworkPreference(jni, j_network_preference);
   rtc_config->sdp_semantics = JavaToNativeSdpSemantics(jni, j_sdp_semantics);
@@ -410,6 +408,16 @@ void PeerConnectionObserverJni::OnAddTrack(
                            NativeToJavaMediaStreamArray(env, streams));
 }
 
+void PeerConnectionObserverJni::OnRemoveTrack(
+    rtc::scoped_refptr<RtpReceiverInterface> receiver) {
+  JNIEnv* env = AttachCurrentThreadIfNeeded();
+  ScopedJavaLocalRef<jobject> j_rtp_receiver =
+      NativeToJavaRtpReceiver(env, receiver);
+  rtp_receivers_.emplace_back(env, j_rtp_receiver);
+
+  Java_Observer_onRemoveTrack(env, j_observer_global_, j_rtp_receiver);
+}
+
 void PeerConnectionObserverJni::OnTrack(
     rtc::scoped_refptr<RtpTransceiverInterface> transceiver) {
   JNIEnv* env = AttachCurrentThreadIfNeeded();
@@ -489,7 +497,7 @@ static ScopedJavaLocalRef<jobject> JNI_PeerConnection_GetLocalDescription(
     const JavaParamRef<jobject>& j_pc) {
   PeerConnectionInterface* pc = ExtractNativePC(jni, j_pc);
   // It's only safe to operate on SessionDescriptionInterface on the
-  // signaling thread, but |jni| may only be used on the current thread, so we
+  // signaling thread, but `jni` may only be used on the current thread, so we
   // must do this odd dance.
   std::string sdp;
   std::string type;
@@ -508,7 +516,7 @@ static ScopedJavaLocalRef<jobject> JNI_PeerConnection_GetRemoteDescription(
     const JavaParamRef<jobject>& j_pc) {
   PeerConnectionInterface* pc = ExtractNativePC(jni, j_pc);
   // It's only safe to operate on SessionDescriptionInterface on the
-  // signaling thread, but |jni| may only be used on the current thread, so we
+  // signaling thread, but `jni` may only be used on the current thread, so we
   // must do this odd dance.
   std::string sdp;
   std::string type;
@@ -538,10 +546,12 @@ static ScopedJavaLocalRef<jobject> JNI_PeerConnection_CreateDataChannel(
     const JavaParamRef<jstring>& j_label,
     const JavaParamRef<jobject>& j_init) {
   DataChannelInit init = JavaToNativeDataChannelInit(jni, j_init);
-  rtc::scoped_refptr<DataChannelInterface> channel(
-      ExtractNativePC(jni, j_pc)->CreateDataChannel(
-          JavaToNativeString(jni, j_label), &init));
-  return WrapNativeDataChannel(jni, channel);
+  auto result = ExtractNativePC(jni, j_pc)->CreateDataChannelOrError(
+      JavaToNativeString(jni, j_label), &init);
+  if (!result.ok()) {
+    return WrapNativeDataChannel(jni, nullptr);
+  }
+  return WrapNativeDataChannel(jni, result.MoveValue());
 }
 
 static void JNI_PeerConnection_CreateOffer(

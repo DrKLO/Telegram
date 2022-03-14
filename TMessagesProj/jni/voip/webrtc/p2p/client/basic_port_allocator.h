@@ -22,7 +22,9 @@
 #include "rtc_base/checks.h"
 #include "rtc_base/network.h"
 #include "rtc_base/system/rtc_export.h"
+#include "rtc_base/task_utils/pending_task_safety_flag.h"
 #include "rtc_base/thread.h"
+#include "rtc_base/thread_annotations.h"
 
 namespace cricket {
 
@@ -44,10 +46,7 @@ class RTC_EXPORT BasicPortAllocator : public PortAllocator {
 
   // Set to kDefaultNetworkIgnoreMask by default.
   void SetNetworkIgnoreMask(int network_ignore_mask) override;
-  int network_ignore_mask() const {
-    CheckRunOnValidThreadIfInitialized();
-    return network_ignore_mask_;
-  }
+  int GetNetworkIgnoreMask() const;
 
   rtc::NetworkManager* network_manager() const {
     CheckRunOnValidThreadIfInitialized();
@@ -74,6 +73,8 @@ class RTC_EXPORT BasicPortAllocator : public PortAllocator {
     CheckRunOnValidThreadIfInitialized();
     return relay_port_factory_;
   }
+
+  void SetVpnList(const std::vector<rtc::NetworkMask>& vpn_list) override;
 
  private:
   void OnIceRegathering(PortAllocatorSession* session,
@@ -106,8 +107,9 @@ enum class SessionState {
               // process will be started.
 };
 
-class RTC_EXPORT BasicPortAllocatorSession : public PortAllocatorSession,
-                                             public rtc::MessageHandler {
+// This class is thread-compatible and assumes it's created, operated upon and
+// destroyed on the network thread.
+class RTC_EXPORT BasicPortAllocatorSession : public PortAllocatorSession {
  public:
   BasicPortAllocatorSession(BasicPortAllocator* allocator,
                             const std::string& content_name,
@@ -155,10 +157,11 @@ class RTC_EXPORT BasicPortAllocatorSession : public PortAllocatorSession,
 
   // Adds a port configuration that is now ready.  Once we have one for each
   // network (or a timeout occurs), we will start allocating ports.
-  virtual void ConfigReady(PortConfiguration* config);
-
-  // MessageHandler.  Can be overriden if message IDs do not conflict.
-  void OnMessage(rtc::Message* message) override;
+  void ConfigReady(std::unique_ptr<PortConfiguration> config);
+  // TODO(bugs.webrtc.org/12840) Remove once unused in downstream projects.
+  ABSL_DEPRECATED(
+      "Use ConfigReady(std::unique_ptr<PortConfiguration>) instead!")
+  void ConfigReady(PortConfiguration* config);
 
  private:
   class PortData {
@@ -213,19 +216,17 @@ class RTC_EXPORT BasicPortAllocatorSession : public PortAllocatorSession,
     State state_ = STATE_INPROGRESS;
   };
 
-  void OnConfigReady(PortConfiguration* config);
+  void OnConfigReady(std::unique_ptr<PortConfiguration> config);
   void OnConfigStop();
   void AllocatePorts();
-  void OnAllocate();
+  void OnAllocate(int allocation_epoch);
   void DoAllocate(bool disable_equivalent_phases);
   void OnNetworksChanged();
   void OnAllocationSequenceObjectsCreated();
   void DisableEquivalentPhases(rtc::Network* network,
                                PortConfiguration* config,
                                uint32_t* flags);
-  void AddAllocatedPort(Port* port,
-                        AllocationSequence* seq,
-                        bool prepare_address);
+  void AddAllocatedPort(Port* port, AllocationSequence* seq);
   void OnCandidateReady(Port* port, const Candidate& c);
   void OnCandidateError(Port* port, const IceCandidateErrorEvent& event);
   void OnPortComplete(Port* port);
@@ -233,7 +234,7 @@ class RTC_EXPORT BasicPortAllocatorSession : public PortAllocatorSession,
   void OnProtocolEnabled(AllocationSequence* seq, ProtocolType proto);
   void OnPortDestroyed(PortInterface* port);
   void MaybeSignalCandidatesAllocationDone();
-  void OnPortAllocationComplete(AllocationSequence* seq);
+  void OnPortAllocationComplete();
   PortData* FindPort(Port* port);
   std::vector<rtc::Network*> GetNetworks();
   std::vector<rtc::Network*> GetFailedNetworks();
@@ -251,7 +252,7 @@ class RTC_EXPORT BasicPortAllocatorSession : public PortAllocatorSession,
   void PrunePortsAndRemoveCandidates(
       const std::vector<PortData*>& port_data_list);
   // Gets filtered and sanitized candidates generated from a port and
-  // append to |candidates|.
+  // append to `candidates`.
   void GetCandidatesFromPort(const PortData& data,
                              std::vector<Candidate>* candidates) const;
   Port* GetBestTurnPortForNetwork(const std::string& network_name) const;
@@ -266,7 +267,7 @@ class RTC_EXPORT BasicPortAllocatorSession : public PortAllocatorSession,
   bool allocation_started_;
   bool network_manager_started_;
   bool allocation_sequences_created_;
-  std::vector<PortConfiguration*> configs_;
+  std::vector<std::unique_ptr<PortConfiguration>> configs_;
   std::vector<AllocationSequence*> sequences_;
   std::vector<PortData> ports_;
   std::vector<IceCandidateErrorEvent> candidate_error_events_;
@@ -274,14 +275,16 @@ class RTC_EXPORT BasicPortAllocatorSession : public PortAllocatorSession,
   // Policy on how to prune turn ports, taken from the port allocator.
   webrtc::PortPrunePolicy turn_port_prune_policy_;
   SessionState state_ = SessionState::CLEARED;
+  int allocation_epoch_ RTC_GUARDED_BY(network_thread_) = 0;
+  webrtc::ScopedTaskSafety network_safety_;
 
   friend class AllocationSequence;
 };
 
 // Records configuration information useful in creating ports.
 // TODO(deadbeef): Rename "relay" to "turn_server" in this struct.
-struct RTC_EXPORT PortConfiguration : public rtc::MessageData {
-  // TODO(jiayl): remove |stun_address| when Chrome is updated.
+struct RTC_EXPORT PortConfiguration {
+  // TODO(jiayl): remove `stun_address` when Chrome is updated.
   rtc::SocketAddress stun_address;
   ServerAddresses stun_servers;
   std::string username;
@@ -299,8 +302,6 @@ struct RTC_EXPORT PortConfiguration : public rtc::MessageData {
   PortConfiguration(const ServerAddresses& stun_servers,
                     const std::string& username,
                     const std::string& password);
-
-  ~PortConfiguration() override;
 
   // Returns addresses of both the explicitly configured STUN servers,
   // and TURN servers that should be used as STUN servers.
@@ -323,8 +324,8 @@ class TurnPort;
 
 // Performs the allocation of ports, in a sequenced (timed) manner, for a given
 // network and IP address.
-class AllocationSequence : public rtc::MessageHandler,
-                           public sigslot::has_slots<> {
+// This class is thread-compatible.
+class AllocationSequence : public sigslot::has_slots<> {
  public:
   enum State {
     kInit,       // Initial state.
@@ -334,11 +335,18 @@ class AllocationSequence : public rtc::MessageHandler,
 
     // kInit --> kRunning --> {kCompleted|kStopped}
   };
+  // `port_allocation_complete_callback` is called when AllocationSequence is
+  // done with allocating ports. This signal is useful when port allocation
+  // fails which doesn't result in any candidates. Using this signal
+  // BasicPortAllocatorSession can send its candidate discovery conclusion
+  // signal. Without this signal, BasicPortAllocatorSession doesn't have any
+  // event to trigger signal. This can also be achieved by starting a timer in
+  // BPAS, but this is less deterministic.
   AllocationSequence(BasicPortAllocatorSession* session,
                      rtc::Network* network,
                      PortConfiguration* config,
-                     uint32_t flags);
-  ~AllocationSequence() override;
+                     uint32_t flags,
+                     std::function<void()> port_allocation_complete_callback);
   void Init();
   void Clear();
   void OnNetworkFailed();
@@ -360,17 +368,6 @@ class AllocationSequence : public rtc::MessageHandler,
   void Start();
   void Stop();
 
-  // MessageHandler
-  void OnMessage(rtc::Message* msg) override;
-
-  // Signal from AllocationSequence, when it's done with allocating ports.
-  // This signal is useful, when port allocation fails which doesn't result
-  // in any candidates. Using this signal BasicPortAllocatorSession can send
-  // its candidate discovery conclusion signal. Without this signal,
-  // BasicPortAllocatorSession doesn't have any event to trigger signal. This
-  // can also be achieved by starting timer in BPAS.
-  sigslot::signal1<AllocationSequence*> SignalPortAllocationComplete;
-
  protected:
   // For testing.
   void CreateTurnPort(const RelayServerConfig& config);
@@ -378,6 +375,7 @@ class AllocationSequence : public rtc::MessageHandler,
  private:
   typedef std::vector<ProtocolType> ProtocolList;
 
+  void Process(int epoch);
   bool IsFlagSet(uint32_t flag) { return ((flags_ & flag) != 0); }
   void CreateUDPPorts();
   void CreateTCPPorts();
@@ -406,6 +404,12 @@ class AllocationSequence : public rtc::MessageHandler,
   UDPPort* udp_port_;
   std::vector<Port*> relay_ports_;
   int phase_;
+  std::function<void()> port_allocation_complete_callback_;
+  // This counter is sampled and passed together with tasks when tasks are
+  // posted. If the sampled counter doesn't match `epoch_` on reception, the
+  // posted task is ignored.
+  int epoch_ = 0;
+  webrtc::ScopedTaskSafety safety_;
 };
 
 }  // namespace cricket

@@ -82,15 +82,8 @@ class TaskQueueStdlib final : public TaskQueueBase {
   // Indicates if the thread has started.
   rtc::Event started_;
 
-  // Indicates if the thread has stopped.
-  rtc::Event stopped_;
-
   // Signaled whenever a new task is pending.
   rtc::Event flag_notify_;
-
-  // Contains the active worker thread assigned to processing
-  // tasks (including delayed tasks).
-  rtc::PlatformThread thread_;
 
   Mutex pending_lock_;
 
@@ -114,12 +107,17 @@ class TaskQueueStdlib final : public TaskQueueBase {
   // std::unique_ptr out of the queue without the presence of a hack.
   std::map<DelayedEntryTimeout, std::unique_ptr<QueuedTask>> delayed_queue_
       RTC_GUARDED_BY(pending_lock_);
+
+  // Contains the active worker thread assigned to processing
+  // tasks (including delayed tasks).
+  // Placing this last ensures the thread doesn't touch uninitialized attributes
+  // throughout it's lifetime.
+  rtc::PlatformThread thread_;
 };
 
 TaskQueueStdlib::TaskQueueStdlib(absl::string_view queue_name,
                                  rtc::ThreadPriority priority)
     : started_(/*manual_reset=*/false, /*initially_signaled=*/false),
-      stopped_(/*manual_reset=*/false, /*initially_signaled=*/false),
       flag_notify_(/*manual_reset=*/false, /*initially_signaled=*/false),
       thread_(rtc::PlatformThread::SpawnJoinable(
           [this] {
@@ -141,8 +139,6 @@ void TaskQueueStdlib::Delete() {
 
   NotifyWake();
 
-  stopped_.Wait(rtc::Event::kForever);
-  thread_.Finalize();
   delete this;
 }
 
@@ -243,8 +239,6 @@ void TaskQueueStdlib::ProcessTasks() {
     else
       flag_notify_.Wait(task.sleep_time_ms_);
   }
-
-  stopped_.Set();
 }
 
 void TaskQueueStdlib::NotifyWake() {

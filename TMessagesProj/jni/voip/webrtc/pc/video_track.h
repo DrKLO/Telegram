@@ -27,7 +27,7 @@
 namespace webrtc {
 
 class VideoTrack : public MediaStreamTrack<VideoTrackInterface>,
-                   public rtc::VideoSourceBase,
+                   public rtc::VideoSourceBaseGuarded,
                    public ObserverInterface {
  public:
   static rtc::scoped_refptr<VideoTrack> Create(
@@ -38,13 +38,13 @@ class VideoTrack : public MediaStreamTrack<VideoTrackInterface>,
   void AddOrUpdateSink(rtc::VideoSinkInterface<VideoFrame>* sink,
                        const rtc::VideoSinkWants& wants) override;
   void RemoveSink(rtc::VideoSinkInterface<VideoFrame>* sink) override;
+  VideoTrackSourceInterface* GetSource() const override;
 
-  VideoTrackSourceInterface* GetSource() const override {
-    return video_source_.get();
-  }
   ContentHint content_hint() const override;
   void set_content_hint(ContentHint hint) override;
   bool set_enabled(bool enable) override;
+  bool enabled() const override;
+  MediaStreamTrackInterface::TrackState state() const override;
   std::string kind() const override;
 
  protected:
@@ -54,13 +54,13 @@ class VideoTrack : public MediaStreamTrack<VideoTrackInterface>,
   ~VideoTrack();
 
  private:
-  // Implements ObserverInterface. Observes |video_source_| state.
+  // Implements ObserverInterface. Observes `video_source_` state.
   void OnChanged() override;
 
+  RTC_NO_UNIQUE_ADDRESS webrtc::SequenceChecker signaling_thread_;
   rtc::Thread* const worker_thread_;
-  SequenceChecker signaling_thread_checker_;
-  rtc::scoped_refptr<VideoTrackSourceInterface> video_source_;
-  ContentHint content_hint_ RTC_GUARDED_BY(signaling_thread_checker_);
+  const rtc::scoped_refptr<VideoTrackSourceInterface> video_source_;
+  ContentHint content_hint_ RTC_GUARDED_BY(worker_thread_);
 };
 
 }  // namespace webrtc

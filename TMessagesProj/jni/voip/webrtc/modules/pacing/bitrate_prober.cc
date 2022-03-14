@@ -164,7 +164,7 @@ absl::optional<PacedPacketInfo> BitrateProber::CurrentCluster(Timestamp now) {
 }
 
 // Probe size is recommended based on the probe bitrate required. We choose
-// a minimum of twice |kMinProbeDeltaMs| interval to allow scheduling to be
+// a minimum of twice `kMinProbeDeltaMs` interval to allow scheduling to be
 // feasible.
 DataSize BitrateProber::RecommendedMinProbeSize() const {
   if (clusters_.empty()) {

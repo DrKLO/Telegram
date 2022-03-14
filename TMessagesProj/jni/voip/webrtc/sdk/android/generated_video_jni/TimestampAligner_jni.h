@@ -78,7 +78,4 @@ JNI_GENERATOR_EXPORT jlong Java_org_webrtc_TimestampAligner_nativeTranslateTimes
 }  // namespace jni
 }  // namespace  webrtc
 
-// Step 4: Generated test functions (optional).
-
-
 #endif  // org_webrtc_TimestampAligner_JNI

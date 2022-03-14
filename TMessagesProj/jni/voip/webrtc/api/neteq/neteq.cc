@@ -30,8 +30,7 @@ std::string NetEq::Config::ToString() const {
      << ", min_delay_ms=" << min_delay_ms << ", enable_fast_accelerate="
      << (enable_fast_accelerate ? "true" : "false")
      << ", enable_muted_state=" << (enable_muted_state ? "true" : "false")
-     << ", enable_rtx_handling=" << (enable_rtx_handling ? "true" : "false")
-     << ", extra_output_delay_ms=" << extra_output_delay_ms;
+     << ", enable_rtx_handling=" << (enable_rtx_handling ? "true" : "false");
   return ss.str();
 }
 

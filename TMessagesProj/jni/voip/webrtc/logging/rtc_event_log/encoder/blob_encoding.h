@@ -32,13 +32,13 @@ namespace webrtc {
 // EncodeBlobs() may not fail.
 // EncodeBlobs() never returns the empty string.
 //
-// Calling DecodeBlobs() on an empty string, or with |num_of_blobs| set to 0,
+// Calling DecodeBlobs() on an empty string, or with `num_of_blobs` set to 0,
 // is an error.
 // DecodeBlobs() returns an empty vector if it fails, e.g. due to a mismatch
-// between |num_of_blobs| and |encoded_blobs|, which can happen if
-// |encoded_blobs| is corrupted.
+// between `num_of_blobs` and `encoded_blobs`, which can happen if
+// `encoded_blobs` is corrupted.
 // When successful, DecodeBlobs() returns a vector of string_view objects,
-// which refer to the original input (|encoded_blobs|), and therefore may
+// which refer to the original input (`encoded_blobs`), and therefore may
 // not outlive it.
 //
 // Note that the returned std::string might have been reserved for significantly

@@ -33,7 +33,7 @@ enum AlphaCodecStream {
 
 class MultiplexEncoderAdapter : public VideoEncoder {
  public:
-  // |factory| is not owned and expected to outlive this class.
+  // `factory` is not owned and expected to outlive this class.
   MultiplexEncoderAdapter(VideoEncoderFactory* factory,
                           const SdpVideoFormat& associated_format,
                           bool supports_augmenting_data = false);

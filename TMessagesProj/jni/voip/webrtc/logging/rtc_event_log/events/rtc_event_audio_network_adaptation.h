@@ -14,6 +14,7 @@
 #include <memory>
 
 #include "api/rtc_event_log/rtc_event.h"
+#include "api/units/timestamp.h"
 #include "modules/audio_coding/audio_network_adaptor/include/audio_network_adaptor_config.h"
 
 namespace webrtc {
@@ -43,14 +44,14 @@ class RtcEventAudioNetworkAdaptation final : public RtcEvent {
 
 struct LoggedAudioNetworkAdaptationEvent {
   LoggedAudioNetworkAdaptationEvent() = default;
-  LoggedAudioNetworkAdaptationEvent(int64_t timestamp_us,
+  LoggedAudioNetworkAdaptationEvent(Timestamp timestamp,
                                     const AudioEncoderRuntimeConfig& config)
-      : timestamp_us(timestamp_us), config(config) {}
+      : timestamp(timestamp), config(config) {}
 
-  int64_t log_time_us() const { return timestamp_us; }
-  int64_t log_time_ms() const { return timestamp_us / 1000; }
+  int64_t log_time_us() const { return timestamp.us(); }
+  int64_t log_time_ms() const { return timestamp.ms(); }
 
-  int64_t timestamp_us;
+  Timestamp timestamp = Timestamp::MinusInfinity();
   AudioEncoderRuntimeConfig config;
 };
 

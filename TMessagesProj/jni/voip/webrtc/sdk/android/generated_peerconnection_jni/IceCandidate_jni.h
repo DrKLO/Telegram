@@ -113,7 +113,4 @@ static base::android::ScopedJavaLocalRef<jstring> Java_IceCandidate_getSdp(JNIEn
 }  // namespace jni
 }  // namespace  webrtc
 
-// Step 4: Generated test functions (optional).
-
-
 #endif  // org_webrtc_IceCandidate_JNI

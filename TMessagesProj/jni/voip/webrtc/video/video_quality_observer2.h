@@ -51,7 +51,7 @@ class VideoQualityObserver {
   uint32_t TotalFramesDurationMs() const;
   double SumSquaredFrameDurationsSec() const;
 
-  // Set |screenshare| to true if the last decoded frame was for screenshare.
+  // Set `screenshare` to true if the last decoded frame was for screenshare.
   void UpdateHistograms(bool screenshare);
 
   static const uint32_t kMinFrameSamplesToDetectFreeze;

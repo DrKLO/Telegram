@@ -349,6 +349,7 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
     public void didPressedButton() {
         if (buttonState == 0) {
             if (miniButtonState == 0) {
+                currentMessageObject.putInDownloadsStore = true;
                 FileLoader.getInstance(currentAccount).loadFile(currentMessageObject.getDocument(), currentMessageObject, 1, 0);
             }
             if (needPlayMessage(currentMessageObject)) {
@@ -370,6 +371,7 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
             }
         } else if (buttonState == 2) {
             radialProgress.setProgress(0, false);
+            currentMessageObject.putInDownloadsStore = true;
             FileLoader.getInstance(currentAccount).loadFile(currentMessageObject.getDocument(), currentMessageObject, 1, 0);
             buttonState = 4;
             radialProgress.setIcon(getIconForCurrentState(), false, true);

@@ -8,6 +8,9 @@
 #include "api/video/video_frame.h"
 #include "absl/types/optional.h"
 
+#include "AudioStreamingPart.h"
+#include "AudioStreamingPartInternal.h"
+
 namespace tgcalls {
 
 class VideoStreamingPartState;
@@ -30,7 +33,13 @@ struct VideoStreamingPartFrame {
 
 class VideoStreamingPart {
 public:
-    explicit VideoStreamingPart(std::vector<uint8_t> &&data);
+    enum class ContentType {
+        Audio,
+        Video
+    };
+    
+public:
+    explicit VideoStreamingPart(std::vector<uint8_t> &&data, VideoStreamingPart::ContentType contentType);
     ~VideoStreamingPart();
     
     VideoStreamingPart(const VideoStreamingPart&) = delete;
@@ -43,6 +52,9 @@ public:
 
     absl::optional<VideoStreamingPartFrame> getFrameAtRelativeTimestamp(double timestamp);
     absl::optional<std::string> getActiveEndpointId() const;
+    
+    int getAudioRemainingMilliseconds();
+    std::vector<AudioStreamingPart::StreamingPartChannel> getAudio10msPerChannel(AudioStreamingPartPersistentDecoder &persistentDecoder);
     
 private:
     VideoStreamingPartState *_state = nullptr;

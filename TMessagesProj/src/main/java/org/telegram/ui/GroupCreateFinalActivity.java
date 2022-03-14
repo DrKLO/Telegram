@@ -290,7 +290,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                 measureChildWithMargins(actionBar, widthMeasureSpec, 0, heightMeasureSpec, 0);
 
                 int keyboardSize = measureKeyboardHeight();
-                if (keyboardSize > AndroidUtilities.dp(20)) {
+                if (keyboardSize > AndroidUtilities.dp(20) && !editText.isPopupShowing()) {
                     ignoreLayout = true;
                     editText.hideEmojiView();
                     ignoreLayout = false;

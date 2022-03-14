@@ -24,7 +24,7 @@ namespace webrtc {
 // resampler for the specific sample rate conversion being used.
 class SinusoidalLinearChirpSource : public SincResamplerCallback {
  public:
-  // |delay_samples| can be used to insert a fractional sample delay into the
+  // `delay_samples` can be used to insert a fractional sample delay into the
   // source.  It will produce zeros until non-negative time is reached.
   SinusoidalLinearChirpSource(int sample_rate,
                               size_t samples,

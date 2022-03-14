@@ -45,7 +45,7 @@ _dataChannelMessageReceived(configuration.dataChannelMessageReceived) {
     
     _localCertificate = rtc::RTCCertificateGenerator::GenerateCertificate(rtc::KeyParams(rtc::KT_ECDSA), absl::nullopt);
     
-    _socketFactory.reset(new rtc::BasicPacketSocketFactory(_threads->getNetworkThread()));
+    _socketFactory.reset(new rtc::BasicPacketSocketFactory(_threads->getNetworkThread()->socketserver()));
     _networkManager = std::make_unique<rtc::BasicNetworkManager>();
     _asyncResolverFactory = std::make_unique<webrtc::BasicAsyncResolverFactory>();
     

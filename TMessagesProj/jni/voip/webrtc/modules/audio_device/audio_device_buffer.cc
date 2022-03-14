@@ -61,10 +61,10 @@ AudioDeviceBuffer::AudioDeviceBuffer(TaskQueueFactory* task_queue_factory)
       play_start_time_(0),
       only_silence_recorded_(true),
       log_stats_(false) {
-  RTC_LOG(INFO) << "AudioDeviceBuffer::ctor";
+  RTC_LOG(LS_INFO) << "AudioDeviceBuffer::ctor";
 #ifdef AUDIO_DEVICE_PLAYS_SINUS_TONE
   phase_ = 0.0;
-  RTC_LOG(WARNING) << "AUDIO_DEVICE_PLAYS_SINUS_TONE is defined!";
+  RTC_LOG(LS_WARNING) << "AUDIO_DEVICE_PLAYS_SINUS_TONE is defined!";
 #endif
 }
 
@@ -72,13 +72,13 @@ AudioDeviceBuffer::~AudioDeviceBuffer() {
   RTC_DCHECK_RUN_ON(&main_thread_checker_);
   RTC_DCHECK(!playing_);
   RTC_DCHECK(!recording_);
-  RTC_LOG(INFO) << "AudioDeviceBuffer::~dtor";
+  RTC_LOG(LS_INFO) << "AudioDeviceBuffer::~dtor";
 }
 
 int32_t AudioDeviceBuffer::RegisterAudioCallback(
     AudioTransport* audio_callback) {
   RTC_DCHECK_RUN_ON(&main_thread_checker_);
-  RTC_DLOG(INFO) << __FUNCTION__;
+  RTC_DLOG(LS_INFO) << __FUNCTION__;
   if (playing_ || recording_) {
     RTC_LOG(LS_ERROR) << "Failed to set audio transport since media was active";
     return -1;
@@ -95,7 +95,7 @@ void AudioDeviceBuffer::StartPlayout() {
   if (playing_) {
     return;
   }
-  RTC_DLOG(INFO) << __FUNCTION__;
+  RTC_DLOG(LS_INFO) << __FUNCTION__;
   // Clear members tracking playout stats and do it on the task queue.
   task_queue_.PostTask([this] { ResetPlayStats(); });
   // Start a periodic timer based on task queue if not already done by the
@@ -114,7 +114,7 @@ void AudioDeviceBuffer::StartRecording() {
   if (recording_) {
     return;
   }
-  RTC_DLOG(INFO) << __FUNCTION__;
+  RTC_DLOG(LS_INFO) << __FUNCTION__;
   // Clear members tracking recording stats and do it on the task queue.
   task_queue_.PostTask([this] { ResetRecStats(); });
   // Start a periodic timer based on task queue if not already done by the
@@ -136,13 +136,14 @@ void AudioDeviceBuffer::StopPlayout() {
   if (!playing_) {
     return;
   }
-  RTC_DLOG(INFO) << __FUNCTION__;
+  RTC_DLOG(LS_INFO) << __FUNCTION__;
   playing_ = false;
   // Stop periodic logging if no more media is active.
   if (!recording_) {
     StopPeriodicLogging();
   }
-  RTC_LOG(INFO) << "total playout time: " << rtc::TimeSince(play_start_time_);
+  RTC_LOG(LS_INFO) << "total playout time: "
+                   << rtc::TimeSince(play_start_time_);
 }
 
 void AudioDeviceBuffer::StopRecording() {
@@ -150,7 +151,7 @@ void AudioDeviceBuffer::StopRecording() {
   if (!recording_) {
     return;
   }
-  RTC_DLOG(INFO) << __FUNCTION__;
+  RTC_DLOG(LS_INFO) << __FUNCTION__;
   recording_ = false;
   // Stop periodic logging if no more media is active.
   if (!playing_) {
@@ -160,30 +161,30 @@ void AudioDeviceBuffer::StopRecording() {
   // recorded. Measurements (max of absolute level) are taken twice per second,
   // which means that if e.g 10 seconds of audio has been recorded, a total of
   // 20 level estimates must all be identical to zero to trigger the histogram.
-  // |only_silence_recorded_| can only be cleared on the native audio thread
+  // `only_silence_recorded_` can only be cleared on the native audio thread
   // that drives audio capture but we know by design that the audio has stopped
   // when this method is called, hence there should not be aby conflicts. Also,
-  // the fact that |only_silence_recorded_| can be affected during the complete
+  // the fact that `only_silence_recorded_` can be affected during the complete
   // call makes chances of conflicts with potentially one last callback very
   // small.
   const size_t time_since_start = rtc::TimeSince(rec_start_time_);
   if (time_since_start > kMinValidCallTimeTimeInMilliseconds) {
     const int only_zeros = static_cast<int>(only_silence_recorded_);
     RTC_HISTOGRAM_BOOLEAN("WebRTC.Audio.RecordedOnlyZeros", only_zeros);
-    RTC_LOG(INFO) << "HISTOGRAM(WebRTC.Audio.RecordedOnlyZeros): "
-                  << only_zeros;
+    RTC_LOG(LS_INFO) << "HISTOGRAM(WebRTC.Audio.RecordedOnlyZeros): "
+                     << only_zeros;
   }
-  RTC_LOG(INFO) << "total recording time: " << time_since_start;
+  RTC_LOG(LS_INFO) << "total recording time: " << time_since_start;
 }
 
 int32_t AudioDeviceBuffer::SetRecordingSampleRate(uint32_t fsHz) {
-  RTC_LOG(INFO) << "SetRecordingSampleRate(" << fsHz << ")";
+  RTC_LOG(LS_INFO) << "SetRecordingSampleRate(" << fsHz << ")";
   rec_sample_rate_ = fsHz;
   return 0;
 }
 
 int32_t AudioDeviceBuffer::SetPlayoutSampleRate(uint32_t fsHz) {
-  RTC_LOG(INFO) << "SetPlayoutSampleRate(" << fsHz << ")";
+  RTC_LOG(LS_INFO) << "SetPlayoutSampleRate(" << fsHz << ")";
   play_sample_rate_ = fsHz;
   return 0;
 }
@@ -197,13 +198,13 @@ uint32_t AudioDeviceBuffer::PlayoutSampleRate() const {
 }
 
 int32_t AudioDeviceBuffer::SetRecordingChannels(size_t channels) {
-  RTC_LOG(INFO) << "SetRecordingChannels(" << channels << ")";
+  RTC_LOG(LS_INFO) << "SetRecordingChannels(" << channels << ")";
   rec_channels_ = channels;
   return 0;
 }
 
 int32_t AudioDeviceBuffer::SetPlayoutChannels(size_t channels) {
-  RTC_LOG(INFO) << "SetPlayoutChannels(" << channels << ")";
+  RTC_LOG(LS_INFO) << "SetPlayoutChannels(" << channels << ")";
   play_channels_ = channels;
   return 0;
 }
@@ -245,7 +246,7 @@ int32_t AudioDeviceBuffer::SetRecordedBuffer(const void* audio_buffer,
     // Returns the largest absolute value in a signed 16-bit vector.
     max_abs = WebRtcSpl_MaxAbsValueW16(rec_buffer_.data(), rec_buffer_.size());
     rec_stat_count_ = 0;
-    // Set |only_silence_recorded_| to false as soon as at least one detection
+    // Set `only_silence_recorded_` to false as soon as at least one detection
     // of a non-zero audio packet is found. It can only be restored to true
     // again by restarting the call.
     if (max_abs > 0) {
@@ -408,21 +409,21 @@ void AudioDeviceBuffer::LogStats(LogState state) {
           ((100.0f * std::abs(rate - rec_sample_rate)) / rec_sample_rate));
       RTC_HISTOGRAM_PERCENTAGE("WebRTC.Audio.RecordSampleRateOffsetInPercent",
                                abs_diff_rate_in_percent);
-      RTC_LOG(INFO) << "[REC : " << time_since_last << "msec, "
-                    << rec_sample_rate / 1000 << "kHz] callbacks: "
-                    << stats.rec_callbacks - last_stats_.rec_callbacks
-                    << ", "
-                       "samples: "
-                    << diff_samples
-                    << ", "
-                       "rate: "
-                    << static_cast<int>(rate + 0.5)
-                    << ", "
-                       "rate diff: "
-                    << abs_diff_rate_in_percent
-                    << "%, "
-                       "level: "
-                    << stats.max_rec_level;
+      RTC_LOG(LS_INFO) << "[REC : " << time_since_last << "msec, "
+                       << rec_sample_rate / 1000 << "kHz] callbacks: "
+                       << stats.rec_callbacks - last_stats_.rec_callbacks
+                       << ", "
+                          "samples: "
+                       << diff_samples
+                       << ", "
+                          "rate: "
+                       << static_cast<int>(rate + 0.5)
+                       << ", "
+                          "rate diff: "
+                       << abs_diff_rate_in_percent
+                       << "%, "
+                          "level: "
+                       << stats.max_rec_level;
     }
 
     diff_samples = stats.play_samples - last_stats_.play_samples;
@@ -434,21 +435,21 @@ void AudioDeviceBuffer::LogStats(LogState state) {
           ((100.0f * std::abs(rate - play_sample_rate)) / play_sample_rate));
       RTC_HISTOGRAM_PERCENTAGE("WebRTC.Audio.PlayoutSampleRateOffsetInPercent",
                                abs_diff_rate_in_percent);
-      RTC_LOG(INFO) << "[PLAY: " << time_since_last << "msec, "
-                    << play_sample_rate / 1000 << "kHz] callbacks: "
-                    << stats.play_callbacks - last_stats_.play_callbacks
-                    << ", "
-                       "samples: "
-                    << diff_samples
-                    << ", "
-                       "rate: "
-                    << static_cast<int>(rate + 0.5)
-                    << ", "
-                       "rate diff: "
-                    << abs_diff_rate_in_percent
-                    << "%, "
-                       "level: "
-                    << stats.max_play_level;
+      RTC_LOG(LS_INFO) << "[PLAY: " << time_since_last << "msec, "
+                       << play_sample_rate / 1000 << "kHz] callbacks: "
+                       << stats.play_callbacks - last_stats_.play_callbacks
+                       << ", "
+                          "samples: "
+                       << diff_samples
+                       << ", "
+                          "rate: "
+                       << static_cast<int>(rate + 0.5)
+                       << ", "
+                          "rate diff: "
+                       << abs_diff_rate_in_percent
+                       << "%, "
+                          "level: "
+                       << stats.max_play_level;
     }
   }
   last_stats_ = stats;

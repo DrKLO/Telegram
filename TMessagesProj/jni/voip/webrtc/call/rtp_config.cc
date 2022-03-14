@@ -29,7 +29,7 @@ uint32_t FindAssociatedSsrc(uint32_t ssrc,
     if (ssrcs[i] == ssrc)
       return associated_ssrcs[i];
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return 0;
 }
 

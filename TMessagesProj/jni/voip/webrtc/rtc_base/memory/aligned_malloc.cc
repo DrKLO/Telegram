@@ -26,7 +26,7 @@
 namespace webrtc {
 
 uintptr_t GetRightAlign(uintptr_t start_pos, size_t alignment) {
-  // The pointer should be aligned with |alignment| bytes. The - 1 guarantees
+  // The pointer should be aligned with `alignment` bytes. The - 1 guarantees
   // that it is aligned towards the closest higher (right) address.
   return (start_pos + alignment - 1) & ~(alignment - 1);
 }

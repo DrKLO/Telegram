@@ -52,7 +52,7 @@ class BoringSSLCertificate final : public SSLCertificate {
   bool operator==(const BoringSSLCertificate& other) const;
   bool operator!=(const BoringSSLCertificate& other) const;
 
-  // Compute the digest of the certificate given |algorithm|.
+  // Compute the digest of the certificate given `algorithm`.
   bool ComputeDigest(const std::string& algorithm,
                      unsigned char* digest,
                      size_t size,

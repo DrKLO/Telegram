@@ -116,7 +116,7 @@ bool MediaChannel::DscpEnabled() const {
 }
 
 // This is the DSCP value used for both RTP and RTCP channels if DSCP is
-// enabled. It can be changed at any time via |SetPreferredDscp|.
+// enabled. It can be changed at any time via `SetPreferredDscp`.
 rtc::DiffServCodePoint MediaChannel::PreferredDscp() const {
   RTC_DCHECK_RUN_ON(network_thread_);
   return preferred_dscp_;

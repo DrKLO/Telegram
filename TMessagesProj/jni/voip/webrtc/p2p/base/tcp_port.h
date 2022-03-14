@@ -19,6 +19,7 @@
 #include "p2p/base/connection.h"
 #include "p2p/base/port.h"
 #include "rtc_base/async_packet_socket.h"
+#include "rtc_base/containers/flat_map.h"
 
 namespace cricket {
 
@@ -52,6 +53,9 @@ class TCPPort : public Port {
 
   void PrepareAddress() override;
 
+  // Options apply to accepted sockets.
+  // TODO(bugs.webrtc.org/13065): Apply also to outgoing and existing
+  // connections.
   int GetOption(rtc::Socket::Option opt, int* value) override;
   int SetOption(rtc::Socket::Option opt, int value) override;
   int GetError() override;
@@ -76,7 +80,7 @@ class TCPPort : public Port {
              bool payload) override;
 
   // Accepts incoming TCP connection.
-  void OnNewConnection(rtc::AsyncPacketSocket* socket,
+  void OnNewConnection(rtc::AsyncListenSocket* socket,
                        rtc::AsyncPacketSocket* new_socket);
 
  private:
@@ -102,11 +106,14 @@ class TCPPort : public Port {
 
   void OnReadyToSend(rtc::AsyncPacketSocket* socket);
 
-  void OnAddressReady(rtc::AsyncPacketSocket* socket,
-                      const rtc::SocketAddress& address);
-
   bool allow_listen_;
-  rtc::AsyncPacketSocket* socket_;
+  std::unique_ptr<rtc::AsyncListenSocket> listen_socket_;
+  // Options to be applied to accepted sockets.
+  // TODO(bugs.webrtc:13065): Configure connect/accept in the same way, but
+  // currently, setting OPT_NODELAY for client sockets is done (unconditionally)
+  // by BasicPacketSocketFactory::CreateClientTcpSocket.
+  webrtc::flat_map<rtc::Socket::Option, int> socket_options_;
+
   int error_;
   std::list<Incoming> incoming_;
 

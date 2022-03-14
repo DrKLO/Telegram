@@ -38,8 +38,8 @@ namespace JNI_Enum {
 
 
 static std::atomic<jmethodID> g_java_lang_Enum_name(nullptr);
-static base::android::ScopedJavaLocalRef<jstring> Java_Enum_name(JNIEnv* env, const
-    base::android::JavaRef<jobject>& obj) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jstring> Java_Enum_name(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj);
 static base::android::ScopedJavaLocalRef<jstring> Java_Enum_name(JNIEnv* env, const
     base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_lang_Enum_clazz(env);
@@ -62,8 +62,8 @@ static base::android::ScopedJavaLocalRef<jstring> Java_Enum_name(JNIEnv* env, co
 }
 
 static std::atomic<jmethodID> g_java_lang_Enum_ordinal(nullptr);
-static jint Java_Enum_ordinal(JNIEnv* env, const base::android::JavaRef<jobject>& obj) __attribute__
-    ((unused));
+[[maybe_unused]] static jint Java_Enum_ordinal(JNIEnv* env, const base::android::JavaRef<jobject>&
+    obj);
 static jint Java_Enum_ordinal(JNIEnv* env, const base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_lang_Enum_clazz(env);
   CHECK_CLAZZ(env, obj.obj(),
@@ -85,8 +85,8 @@ static jint Java_Enum_ordinal(JNIEnv* env, const base::android::JavaRef<jobject>
 }
 
 static std::atomic<jmethodID> g_java_lang_Enum_toString(nullptr);
-static base::android::ScopedJavaLocalRef<jstring> Java_Enum_toString(JNIEnv* env, const
-    base::android::JavaRef<jobject>& obj) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jstring> Java_Enum_toString(JNIEnv* env,
+    const base::android::JavaRef<jobject>& obj);
 static base::android::ScopedJavaLocalRef<jstring> Java_Enum_toString(JNIEnv* env, const
     base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_lang_Enum_clazz(env);
@@ -109,8 +109,8 @@ static base::android::ScopedJavaLocalRef<jstring> Java_Enum_toString(JNIEnv* env
 }
 
 static std::atomic<jmethodID> g_java_lang_Enum_equals(nullptr);
-static jboolean Java_Enum_equals(JNIEnv* env, const base::android::JavaRef<jobject>& obj, const
-    base::android::JavaRef<jobject>& p0) __attribute__ ((unused));
+[[maybe_unused]] static jboolean Java_Enum_equals(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobject>& p0);
 static jboolean Java_Enum_equals(JNIEnv* env, const base::android::JavaRef<jobject>& obj, const
     base::android::JavaRef<jobject>& p0) {
   jclass clazz = java_lang_Enum_clazz(env);
@@ -133,8 +133,8 @@ static jboolean Java_Enum_equals(JNIEnv* env, const base::android::JavaRef<jobje
 }
 
 static std::atomic<jmethodID> g_java_lang_Enum_hashCode(nullptr);
-static jint Java_Enum_hashCode(JNIEnv* env, const base::android::JavaRef<jobject>& obj)
-    __attribute__ ((unused));
+[[maybe_unused]] static jint Java_Enum_hashCode(JNIEnv* env, const base::android::JavaRef<jobject>&
+    obj);
 static jint Java_Enum_hashCode(JNIEnv* env, const base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_lang_Enum_clazz(env);
   CHECK_CLAZZ(env, obj.obj(),
@@ -156,8 +156,8 @@ static jint Java_Enum_hashCode(JNIEnv* env, const base::android::JavaRef<jobject
 }
 
 static std::atomic<jmethodID> g_java_lang_Enum_clone(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_Enum_clone(JNIEnv* env, const
-    base::android::JavaRef<jobject>& obj) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject> Java_Enum_clone(JNIEnv* env,
+    const base::android::JavaRef<jobject>& obj);
 static base::android::ScopedJavaLocalRef<jobject> Java_Enum_clone(JNIEnv* env, const
     base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_lang_Enum_clazz(env);
@@ -180,8 +180,8 @@ static base::android::ScopedJavaLocalRef<jobject> Java_Enum_clone(JNIEnv* env, c
 }
 
 static std::atomic<jmethodID> g_java_lang_Enum_compareToI_JLE(nullptr);
-static jint Java_Enum_compareToI_JLE(JNIEnv* env, const base::android::JavaRef<jobject>& obj, const
-    base::android::JavaRef<jobject>& p0) __attribute__ ((unused));
+[[maybe_unused]] static jint Java_Enum_compareToI_JLE(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobject>& p0);
 static jint Java_Enum_compareToI_JLE(JNIEnv* env, const base::android::JavaRef<jobject>& obj, const
     base::android::JavaRef<jobject>& p0) {
   jclass clazz = java_lang_Enum_clazz(env);
@@ -204,8 +204,8 @@ static jint Java_Enum_compareToI_JLE(JNIEnv* env, const base::android::JavaRef<j
 }
 
 static std::atomic<jmethodID> g_java_lang_Enum_getDeclaringClass(nullptr);
-static base::android::ScopedJavaLocalRef<jclass> Java_Enum_getDeclaringClass(JNIEnv* env, const
-    base::android::JavaRef<jobject>& obj) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jclass>
+    Java_Enum_getDeclaringClass(JNIEnv* env, const base::android::JavaRef<jobject>& obj);
 static base::android::ScopedJavaLocalRef<jclass> Java_Enum_getDeclaringClass(JNIEnv* env, const
     base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_lang_Enum_clazz(env);
@@ -228,9 +228,9 @@ static base::android::ScopedJavaLocalRef<jclass> Java_Enum_getDeclaringClass(JNI
 }
 
 static std::atomic<jmethodID> g_java_lang_Enum_valueOf(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_Enum_valueOf(JNIEnv* env, const
-    base::android::JavaRef<jclass>& p0,
-    const base::android::JavaRef<jstring>& p1) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject> Java_Enum_valueOf(JNIEnv* env,
+    const base::android::JavaRef<jclass>& p0,
+    const base::android::JavaRef<jstring>& p1);
 static base::android::ScopedJavaLocalRef<jobject> Java_Enum_valueOf(JNIEnv* env, const
     base::android::JavaRef<jclass>& p0,
     const base::android::JavaRef<jstring>& p1) {
@@ -254,8 +254,8 @@ static base::android::ScopedJavaLocalRef<jobject> Java_Enum_valueOf(JNIEnv* env,
 }
 
 static std::atomic<jmethodID> g_java_lang_Enum_finalize(nullptr);
-static void Java_Enum_finalize(JNIEnv* env, const base::android::JavaRef<jobject>& obj)
-    __attribute__ ((unused));
+[[maybe_unused]] static void Java_Enum_finalize(JNIEnv* env, const base::android::JavaRef<jobject>&
+    obj);
 static void Java_Enum_finalize(JNIEnv* env, const base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_lang_Enum_clazz(env);
   CHECK_CLAZZ(env, obj.obj(),
@@ -275,8 +275,8 @@ static void Java_Enum_finalize(JNIEnv* env, const base::android::JavaRef<jobject
 }
 
 static std::atomic<jmethodID> g_java_lang_Enum_compareToI_JLO(nullptr);
-static jint Java_Enum_compareToI_JLO(JNIEnv* env, const base::android::JavaRef<jobject>& obj, const
-    base::android::JavaRef<jobject>& p0) __attribute__ ((unused));
+[[maybe_unused]] static jint Java_Enum_compareToI_JLO(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobject>& p0);
 static jint Java_Enum_compareToI_JLO(JNIEnv* env, const base::android::JavaRef<jobject>& obj, const
     base::android::JavaRef<jobject>& p0) {
   jclass clazz = java_lang_Enum_clazz(env);
@@ -299,8 +299,5 @@ static jint Java_Enum_compareToI_JLO(JNIEnv* env, const base::android::JavaRef<j
 }
 
 }  // namespace JNI_Enum
-
-// Step 4: Generated test functions (optional).
-
 
 #endif  // java_lang_Enum_JNI

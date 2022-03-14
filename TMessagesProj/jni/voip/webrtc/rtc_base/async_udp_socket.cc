@@ -24,9 +24,9 @@ namespace rtc {
 
 static const int BUF_SIZE = 64 * 1024;
 
-AsyncUDPSocket* AsyncUDPSocket::Create(AsyncSocket* socket,
+AsyncUDPSocket* AsyncUDPSocket::Create(Socket* socket,
                                        const SocketAddress& bind_address) {
-  std::unique_ptr<AsyncSocket> owned_socket(socket);
+  std::unique_ptr<Socket> owned_socket(socket);
   if (socket->Bind(bind_address) < 0) {
     RTC_LOG(LS_ERROR) << "Bind() failed with error " << socket->GetError();
     return nullptr;
@@ -36,14 +36,13 @@ AsyncUDPSocket* AsyncUDPSocket::Create(AsyncSocket* socket,
 
 AsyncUDPSocket* AsyncUDPSocket::Create(SocketFactory* factory,
                                        const SocketAddress& bind_address) {
-  AsyncSocket* socket =
-      factory->CreateAsyncSocket(bind_address.family(), SOCK_DGRAM);
+  Socket* socket = factory->CreateSocket(bind_address.family(), SOCK_DGRAM);
   if (!socket)
     return nullptr;
   return Create(socket, bind_address);
 }
 
-AsyncUDPSocket::AsyncUDPSocket(AsyncSocket* socket) : socket_(socket) {
+AsyncUDPSocket::AsyncUDPSocket(Socket* socket) : socket_(socket) {
   size_ = BUF_SIZE;
   buf_ = new char[size_];
 
@@ -111,7 +110,7 @@ void AsyncUDPSocket::SetError(int error) {
   return socket_->SetError(error);
 }
 
-void AsyncUDPSocket::OnReadEvent(AsyncSocket* socket) {
+void AsyncUDPSocket::OnReadEvent(Socket* socket) {
   RTC_DCHECK(socket_.get() == socket);
 
   SocketAddress remote_addr;
@@ -134,7 +133,7 @@ void AsyncUDPSocket::OnReadEvent(AsyncSocket* socket) {
                    (timestamp > -1 ? timestamp : TimeMicros()));
 }
 
-void AsyncUDPSocket::OnWriteEvent(AsyncSocket* socket) {
+void AsyncUDPSocket::OnWriteEvent(Socket* socket) {
   SignalReadyToSend(this);
 }
 

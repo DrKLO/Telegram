@@ -20,8 +20,8 @@ class FIRFilter {
  public:
   virtual ~FIRFilter() {}
 
-  // Filters the |in| data supplied.
-  // |out| must be previously allocated and it must be at least of |length|.
+  // Filters the `in` data supplied.
+  // `out` must be previously allocated and it must be at least of `length`.
   virtual void Filter(const float* in, size_t length, float* out) = 0;
 };
 

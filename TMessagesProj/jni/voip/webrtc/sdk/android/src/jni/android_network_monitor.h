@@ -76,7 +76,7 @@ class AndroidNetworkMonitor : public rtc::NetworkMonitorInterface {
   void Start() override;
   void Stop() override;
 
-  // Does |this| NetworkMonitorInterface implement BindSocketToNetwork?
+  // Does `this` NetworkMonitorInterface implement BindSocketToNetwork?
   // Only Android returns true.
   virtual bool SupportsBindSocketToNetwork() const override { return true; }
 

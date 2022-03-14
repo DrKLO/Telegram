@@ -63,8 +63,11 @@ RTC_EXPORT std::unique_ptr<MediaEngineInterface> CreateMediaEngine(
     MediaEngineDependencies dependencies);
 
 // Verify that extension IDs are within 1-byte extension range and are not
-// overlapping.
-bool ValidateRtpExtensions(const std::vector<webrtc::RtpExtension>& extensions);
+// overlapping, and that they form a legal change from previously registerd
+// extensions (if any).
+bool ValidateRtpExtensions(
+    rtc::ArrayView<const webrtc::RtpExtension> extennsions,
+    rtc::ArrayView<const webrtc::RtpExtension> old_extensions);
 
 // Discard any extensions not validated by the 'supported' predicate. Duplicate
 // extensions are removed if 'filter_redundant_extensions' is set, and also any

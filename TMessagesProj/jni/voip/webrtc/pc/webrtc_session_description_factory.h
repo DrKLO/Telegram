@@ -41,7 +41,7 @@ namespace webrtc {
 class WebRtcCertificateGeneratorCallback
     : public rtc::RTCCertificateGeneratorCallback {
  public:
-  // |rtc::RTCCertificateGeneratorCallback| overrides.
+  // `rtc::RTCCertificateGeneratorCallback` overrides.
   void OnSuccess(
       const rtc::scoped_refptr<rtc::RTCCertificate>& certificate) override;
   void OnFailure() override;
@@ -75,7 +75,7 @@ struct CreateSessionDescriptionRequest {
 class WebRtcSessionDescriptionFactory : public rtc::MessageHandler,
                                         public sigslot::has_slots<> {
  public:
-  // Can specify either a |cert_generator| or |certificate| to enable DTLS. If
+  // Can specify either a `cert_generator` or `certificate` to enable DTLS. If
   // a certificate generator is given, starts generating the certificate
   // asynchronously. If a certificate is given, will use that for identifying
   // over DTLS. If neither is specified, DTLS is disabled.

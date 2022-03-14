@@ -42,7 +42,8 @@ namespace {
 // one of them is null, the results of p<q, p>q, p<=q, and p>=q are
 // unspecified. Therefore, instead we hardcode the direction of the
 // stack on platforms we know about.
-#if defined(__i386__) || defined(__x86_64__) || defined(__ppc__)
+#if defined(__i386__) || defined(__x86_64__) || defined(__ppc__) || \
+    defined(__aarch64__) || defined(__riscv)
 constexpr bool kStackGrowsDown = true;
 #else
 #error Need to define kStackGrowsDown

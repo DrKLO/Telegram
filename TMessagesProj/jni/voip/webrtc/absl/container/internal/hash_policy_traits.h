@@ -17,6 +17,7 @@
 
 #include <cstddef>
 #include <memory>
+#include <new>
 #include <type_traits>
 #include <utility>
 
@@ -29,15 +30,34 @@ namespace container_internal {
 // Defines how slots are initialized/destroyed/moved.
 template <class Policy, class = void>
 struct hash_policy_traits {
+  // The type of the keys stored in the hashtable.
+  using key_type = typename Policy::key_type;
+
  private:
   struct ReturnKey {
-    // We return `Key` here.
+    // When C++17 is available, we can use std::launder to provide mutable
+    // access to the key for use in node handle.
+#if defined(__cpp_lib_launder) && __cpp_lib_launder >= 201606
+    template <class Key,
+              absl::enable_if_t<std::is_lvalue_reference<Key>::value, int> = 0>
+    static key_type& Impl(Key&& k, int) {
+      return *std::launder(
+          const_cast<key_type*>(std::addressof(std::forward<Key>(k))));
+    }
+#endif
+
+    template <class Key>
+    static Key Impl(Key&& k, char) {
+      return std::forward<Key>(k);
+    }
+
     // When Key=T&, we forward the lvalue reference.
     // When Key=T, we return by value to avoid a dangling reference.
     // eg, for string_hash_map.
     template <class Key, class... Args>
-    Key operator()(Key&& k, const Args&...) const {
-      return std::forward<Key>(k);
+    auto operator()(Key&& k, const Args&...) const
+        -> decltype(Impl(std::forward<Key>(k), 0)) {
+      return Impl(std::forward<Key>(k), 0);
     }
   };
 
@@ -51,9 +71,6 @@ struct hash_policy_traits {
  public:
   // The actual object stored in the hash table.
   using slot_type = typename Policy::slot_type;
-
-  // The type of the keys stored in the hashtable.
-  using key_type = typename Policy::key_type;
 
   // The argument type for insertions into the hashtable. This is different
   // from value_type for increased performance. See initializer_list constructor
@@ -156,7 +173,7 @@ struct hash_policy_traits {
   // Returns the "key" portion of the slot.
   // Used for node handle manipulation.
   template <class P = Policy>
-  static auto key(slot_type* slot)
+  static auto mutable_key(slot_type* slot)
       -> decltype(P::apply(ReturnKey(), element(slot))) {
     return P::apply(ReturnKey(), element(slot));
   }

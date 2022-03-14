@@ -83,7 +83,7 @@ class ByteBufferWriterT {
     return buffer_.data();
   }
 
-  // Resize the buffer to the specified |size|.
+  // Resize the buffer to the specified `size`.
   void Resize(size_t size) { buffer_.SetSize(size); }
 
   // Clears the contents of the buffer. After this, Length() will be 0.
@@ -144,12 +144,12 @@ class ByteBufferReader {
   bool ReadUVarint(uint64_t* val);
   bool ReadBytes(char* val, size_t len);
 
-  // Appends next |len| bytes from the buffer to |val|. Returns false
-  // if there is less than |len| bytes left.
+  // Appends next `len` bytes from the buffer to `val`. Returns false
+  // if there is less than `len` bytes left.
   bool ReadString(std::string* val, size_t len);
 
-  // Moves current position |size| bytes forward. Returns false if
-  // there is less than |size| bytes left in the buffer. Consume doesn't
+  // Moves current position `size` bytes forward. Returns false if
+  // there is less than `size` bytes left in the buffer. Consume doesn't
   // permanently remove data, so remembered read positions are still valid
   // after this call.
   bool Consume(size_t size);

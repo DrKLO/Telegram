@@ -61,8 +61,8 @@ class TransportDescriptionFactory {
       IceCredentialsIterator* ice_credentials) const;
   // Create a transport description that is a response to an offer.
   //
-  // If |require_transport_attributes| is true, then TRANSPORT category
-  // attributes are expected to be present in |offer|, as defined by
+  // If `require_transport_attributes` is true, then TRANSPORT category
+  // attributes are expected to be present in `offer`, as defined by
   // sdp-mux-attributes, and null will be returned otherwise. It's expected
   // that this will be set to false for an m= section that's in a BUNDLE group
   // but isn't the first m= section in the group.

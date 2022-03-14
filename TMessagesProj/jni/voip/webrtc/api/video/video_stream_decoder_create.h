@@ -20,7 +20,7 @@
 #include "api/video_codecs/sdp_video_format.h"
 
 namespace webrtc {
-// The |decoder_settings| parameter is a map between:
+// The `decoder_settings` parameter is a map between:
 // <payload type> -->  <<video format>, <number of cores>>.
 // The video format is used when instantiating a decoder, and
 // the number of cores is used when initializing the decoder.

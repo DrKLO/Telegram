@@ -1169,7 +1169,7 @@ int32_t AudioDeviceLinuxPulse::StartPlayout() {
     _startPlay = true;
   }
 
-  // Both |_startPlay| and |_playing| needs protction since they are also
+  // Both `_startPlay` and `_playing` needs protction since they are also
   // accessed on the playout thread.
 
   // The audio thread will signal when playout has started.

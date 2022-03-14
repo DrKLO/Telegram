@@ -11,6 +11,8 @@
 #ifndef MODULES_RTP_RTCP_SOURCE_RTP_VIDEO_LAYERS_ALLOCATION_EXTENSION_H_
 #define MODULES_RTP_RTCP_SOURCE_RTP_VIDEO_LAYERS_ALLOCATION_EXTENSION_H_
 
+#include "absl/strings/string_view.h"
+#include "api/rtp_parameters.h"
 #include "api/video/video_layers_allocation.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
 
@@ -22,8 +24,10 @@ class RtpVideoLayersAllocationExtension {
  public:
   using value_type = VideoLayersAllocation;
   static constexpr RTPExtensionType kId = kRtpExtensionVideoLayersAllocation;
-  static constexpr const char kUri[] =
-      "http://www.webrtc.org/experiments/rtp-hdrext/video-layers-allocation00";
+  static constexpr absl::string_view Uri() {
+    return RtpExtension::kVideoLayersAllocationUri;
+  }
+
   static bool Parse(rtc::ArrayView<const uint8_t> data,
                     VideoLayersAllocation* allocation);
   static size_t ValueSize(const VideoLayersAllocation& allocation);

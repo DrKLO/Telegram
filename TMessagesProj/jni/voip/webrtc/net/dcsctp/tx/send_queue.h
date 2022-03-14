@@ -32,8 +32,8 @@ class SendQueue {
     Data data;
 
     // Partial reliability - RFC3758
-    absl::optional<int> max_retransmissions;
-    absl::optional<TimeMs> expires_at;
+    MaxRetransmits max_retransmissions = MaxRetransmits::NoLimit();
+    TimeMs expires_at = TimeMs::InfiniteFuture();
   };
 
   virtual ~SendQueue() = default;
@@ -60,7 +60,10 @@ class SendQueue {
   // receiver that any partially received message fragments should be skipped.
   // This means that any remaining fragments in the Send Queue must be removed
   // as well so that they are not sent.
-  virtual void Discard(IsUnordered unordered,
+  //
+  // This function returns true if this message had unsent fragments still in
+  // the queue that were discarded, and false if there were no such fragments.
+  virtual bool Discard(IsUnordered unordered,
                        StreamID stream_id,
                        MID message_id) = 0;
 
@@ -105,6 +108,20 @@ class SendQueue {
   // of data loss. However, data loss cannot be completely guaranteed when a
   // peer restarts.
   virtual void Reset() = 0;
+
+  // Returns the amount of buffered data. This doesn't include packets that are
+  // e.g. inflight.
+  virtual size_t buffered_amount(StreamID stream_id) const = 0;
+
+  // Returns the total amount of buffer data, for all streams.
+  virtual size_t total_buffered_amount() const = 0;
+
+  // Returns the limit for the `OnBufferedAmountLow` event. Default value is 0.
+  virtual size_t buffered_amount_low_threshold(StreamID stream_id) const = 0;
+
+  // Sets a limit for the `OnBufferedAmountLow` event.
+  virtual void SetBufferedAmountLowThreshold(StreamID stream_id,
+                                             size_t bytes) = 0;
 };
 }  // namespace dcsctp
 

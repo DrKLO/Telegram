@@ -43,22 +43,30 @@ QualityRampUpExperimentHelper::CreateIfEnabled(
   return nullptr;
 }
 
+void QualityRampUpExperimentHelper::ConfigureQualityRampupExperiment(
+    bool reset,
+    absl::optional<uint32_t> pixels,
+    absl::optional<DataRate> max_bitrate) {
+  if (reset)
+    quality_rampup_experiment_.Reset();
+  if (pixels && max_bitrate)
+    quality_rampup_experiment_.SetMaxBitrate(*pixels, max_bitrate->kbps());
+}
+
 void QualityRampUpExperimentHelper::PerformQualityRampupExperiment(
     rtc::scoped_refptr<QualityScalerResource> quality_scaler_resource,
     DataRate bandwidth,
     DataRate encoder_target_bitrate,
-    DataRate max_bitrate,
-    int pixels) {
-  if (!quality_scaler_resource->is_started())
+    absl::optional<DataRate> max_bitrate) {
+  if (!quality_scaler_resource->is_started() || !max_bitrate)
     return;
 
   int64_t now_ms = clock_->TimeInMilliseconds();
-  quality_rampup_experiment_.SetMaxBitrate(pixels, max_bitrate.kbps());
 
   bool try_quality_rampup = false;
   if (quality_rampup_experiment_.BwHigh(now_ms, bandwidth.kbps())) {
     // Verify that encoder is at max bitrate and the QP is low.
-    if (encoder_target_bitrate == max_bitrate &&
+    if (encoder_target_bitrate == *max_bitrate &&
         quality_scaler_resource->QpFastFilterLow()) {
       try_quality_rampup = true;
     }

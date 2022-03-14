@@ -58,6 +58,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Objects;
 
 import androidx.collection.LongSparseArray;
 import androidx.recyclerview.widget.RecyclerView;
@@ -166,6 +167,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
     };
 
     public MentionsAdapter(Context context, boolean darkTheme, long did, int threadMessageId, MentionsAdapterDelegate mentionsAdapterDelegate, Theme.ResourcesProvider resourcesProvider) {
+        setHasStableIds(true);
         this.resourcesProvider = resourcesProvider;
         mContext = context;
         delegate = mentionsAdapterDelegate;

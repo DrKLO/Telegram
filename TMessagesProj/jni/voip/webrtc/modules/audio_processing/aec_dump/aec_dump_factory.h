@@ -26,10 +26,10 @@ namespace webrtc {
 
 class RTC_EXPORT AecDumpFactory {
  public:
-  // The |worker_queue| may not be null and must outlive the created
+  // The `worker_queue` may not be null and must outlive the created
   // AecDump instance. |max_log_size_bytes == -1| means the log size
-  // will be unlimited. |handle| may not be null. The AecDump takes
-  // responsibility for |handle| and closes it in the destructor. A
+  // will be unlimited. `handle` may not be null. The AecDump takes
+  // responsibility for `handle` and closes it in the destructor. A
   // non-null return value indicates that the file has been
   // sucessfully opened.
   static std::unique_ptr<AecDump> Create(webrtc::FileWrapper file,

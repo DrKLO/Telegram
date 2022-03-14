@@ -41,7 +41,7 @@ class OveruseEstimator {
 
   // Update the estimator with a new sample. The deltas should represent deltas
   // between timestamp groups as defined by the InterArrival class.
-  // |current_hypothesis| should be the hypothesis of the over-use detector at
+  // `current_hypothesis` should be the hypothesis of the over-use detector at
   // this time.
   void Update(int64_t t_delta,
               double ts_delta,

@@ -45,26 +45,26 @@ class RTPSenderVideoFrameTransformerDelegate : public TransformedFrameCallback {
                       absl::optional<int64_t> expected_retransmission_time_ms);
 
   // Implements TransformedFrameCallback. Can be called on any thread. Posts
-  // the transformed frame to be sent on the |encoder_queue_|.
+  // the transformed frame to be sent on the `encoder_queue_`.
   void OnTransformedFrame(
       std::unique_ptr<TransformableFrameInterface> frame) override;
 
-  // Delegates the call to RTPSendVideo::SendVideo on the |encoder_queue_|.
+  // Delegates the call to RTPSendVideo::SendVideo on the `encoder_queue_`.
   void SendVideo(std::unique_ptr<TransformableFrameInterface> frame) const;
 
   // Delegates the call to RTPSendVideo::SetVideoStructureAfterTransformation
-  // under |sender_lock_|.
+  // under `sender_lock_`.
   void SetVideoStructureUnderLock(
       const FrameDependencyStructure* video_structure);
 
   // Delegates the call to
   // RTPSendVideo::SetVideoLayersAllocationAfterTransformation under
-  // |sender_lock_|.
+  // `sender_lock_`.
   void SetVideoLayersAllocationUnderLock(VideoLayersAllocation allocation);
 
-  // Unregisters and releases the |frame_transformer_| reference, and resets
-  // |sender_| under lock. Called from RTPSenderVideo destructor to prevent the
-  // |sender_| to dangle.
+  // Unregisters and releases the `frame_transformer_` reference, and resets
+  // `sender_` under lock. Called from RTPSenderVideo destructor to prevent the
+  // `sender_` to dangle.
   void Reset();
 
  protected:

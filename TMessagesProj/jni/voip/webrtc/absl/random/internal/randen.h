@@ -26,7 +26,7 @@ namespace absl {
 ABSL_NAMESPACE_BEGIN
 namespace random_internal {
 
-// RANDen = RANDom generator or beetroots in Swiss German.
+// RANDen = RANDom generator or beetroots in Swiss High German.
 // 'Strong' (well-distributed, unpredictable, backtracking-resistant) random
 // generator, faster in some benchmarks than std::mt19937_64 and pcg64_c32.
 //
@@ -43,10 +43,8 @@ class Randen {
 
   // Generate updates the randen sponge. The outer portion of the sponge
   // (kCapacityBytes .. kStateBytes) may be consumed as PRNG state.
-  template <typename T, size_t N>
-  void Generate(T (&state)[N]) const {
-    static_assert(N * sizeof(T) == kStateBytes,
-                  "Randen::Generate() requires kStateBytes of state");
+  // REQUIRES: state points to kStateBytes of state.
+  inline void Generate(void* state) const {
 #if ABSL_RANDOM_INTERNAL_AES_DISPATCH
     // HW AES Dispatch.
     if (has_crypto_) {
@@ -65,13 +63,9 @@ class Randen {
 
   // Absorb incorporates additional seed material into the randen sponge.  After
   // absorb returns, Generate must be called before the state may be consumed.
-  template <typename S, size_t M, typename T, size_t N>
-  void Absorb(const S (&seed)[M], T (&state)[N]) const {
-    static_assert(M * sizeof(S) == RandenTraits::kSeedBytes,
-                  "Randen::Absorb() requires kSeedBytes of seed");
-
-    static_assert(N * sizeof(T) == RandenTraits::kStateBytes,
-                  "Randen::Absorb() requires kStateBytes of state");
+  // REQUIRES: seed points to kSeedBytes of seed.
+  // REQUIRES: state points to kStateBytes of state.
+  inline void Absorb(const void* seed, void* state) const {
 #if ABSL_RANDOM_INTERNAL_AES_DISPATCH
     // HW AES Dispatch.
     if (has_crypto_) {

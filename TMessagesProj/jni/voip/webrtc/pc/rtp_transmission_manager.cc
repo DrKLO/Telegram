@@ -345,7 +345,7 @@ RtpTransmissionManager::GetAudioTransceiver() const {
       return transceiver;
     }
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return nullptr;
 }
 
@@ -360,7 +360,7 @@ RtpTransmissionManager::GetVideoTransceiver() const {
       return transceiver;
     }
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return nullptr;
 }
 
@@ -527,7 +527,7 @@ void RtpTransmissionManager::OnRemoteSenderAdded(
   } else if (media_type == cricket::MEDIA_TYPE_VIDEO) {
     CreateVideoReceiver(stream, sender_info);
   } else {
-    RTC_NOTREACHED() << "Invalid media type";
+    RTC_DCHECK_NOTREACHED() << "Invalid media type";
   }
 }
 
@@ -562,7 +562,7 @@ void RtpTransmissionManager::OnRemoteSenderRemoved(
       stream->RemoveTrack(video_track);
     }
   } else {
-    RTC_NOTREACHED() << "Invalid media type";
+    RTC_DCHECK_NOTREACHED() << "Invalid media type";
   }
   if (receiver) {
     RTC_DCHECK(!closed_);

@@ -53,8 +53,6 @@ import android.widget.ImageView;
 
 import androidx.core.graphics.ColorUtils;
 
-import com.google.android.exoplayer2.util.Log;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.DispatchQueue;
@@ -94,7 +92,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
     private TextureView textureView;
     private ImageView blurredStubView;
     private CameraSession cameraSession;
-    private boolean initied;
+    private boolean inited;
     private CameraViewDelegate delegate;
     private int clipTop;
     private int clipBottom;
@@ -247,7 +245,6 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
     }
 
     public interface CameraViewDelegate {
-        void onCameraCreated(Camera camera);
         void onCameraInit();
     }
 
@@ -349,7 +346,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
             CameraController.getInstance().close(cameraSession, new CountDownLatch(1), null);
             cameraSession = null;
         }
-        initied = false;
+        inited = false;
         isFrontface = !isFrontface;
         updateCameraInfoSize();
         cameraThread.reinitForNewCamera();
@@ -460,11 +457,11 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
 
     @Override
     public void onSurfaceTextureUpdated(SurfaceTexture surface) {
-        if (!initied && cameraSession != null && cameraSession.isInitied()) {
+        if (!inited && cameraSession != null && cameraSession.isInitied()) {
             if (delegate != null) {
                 delegate.onCameraInit();
             }
-            initied = true;
+            inited = true;
         }
     }
 
@@ -555,8 +552,8 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
         delegate = cameraViewDelegate;
     }
 
-    public boolean isInitied() {
-        return initied;
+    public boolean isInited() {
+        return inited;
     }
 
     public CameraSession getCameraSession() {

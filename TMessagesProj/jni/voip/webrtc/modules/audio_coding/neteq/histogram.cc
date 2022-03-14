@@ -34,42 +34,42 @@ Histogram::Histogram(size_t num_buckets,
 Histogram::~Histogram() {}
 
 // Each element in the vector is first multiplied by the forgetting factor
-// |forget_factor_|. Then the vector element indicated by |iat_packets| is then
-// increased (additive) by 1 - |forget_factor_|. This way, the probability of
-// |value| is slightly increased, while the sum of the histogram remains
+// `forget_factor_`. Then the vector element indicated by `iat_packets` is then
+// increased (additive) by 1 - `forget_factor_`. This way, the probability of
+// `value` is slightly increased, while the sum of the histogram remains
 // constant (=1).
 // Due to inaccuracies in the fixed-point arithmetic, the histogram may no
 // longer sum up to 1 (in Q30) after the update. To correct this, a correction
 // term is added or subtracted from the first element (or elements) of the
 // vector.
-// The forgetting factor |forget_factor_| is also updated. When the DelayManager
+// The forgetting factor `forget_factor_` is also updated. When the DelayManager
 // is reset, the factor is set to 0 to facilitate rapid convergence in the
 // beginning. With each update of the histogram, the factor is increased towards
-// the steady-state value |base_forget_factor_|.
+// the steady-state value `base_forget_factor_`.
 void Histogram::Add(int value) {
   RTC_DCHECK(value >= 0);
   RTC_DCHECK(value < static_cast<int>(buckets_.size()));
   int vector_sum = 0;  // Sum up the vector elements as they are processed.
-  // Multiply each element in |buckets_| with |forget_factor_|.
+  // Multiply each element in `buckets_` with `forget_factor_`.
   for (int& bucket : buckets_) {
     bucket = (static_cast<int64_t>(bucket) * forget_factor_) >> 15;
     vector_sum += bucket;
   }
 
   // Increase the probability for the currently observed inter-arrival time
-  // by 1 - |forget_factor_|. The factor is in Q15, |buckets_| in Q30.
+  // by 1 - `forget_factor_`. The factor is in Q15, `buckets_` in Q30.
   // Thus, left-shift 15 steps to obtain result in Q30.
   buckets_[value] += (32768 - forget_factor_) << 15;
   vector_sum += (32768 - forget_factor_) << 15;  // Add to vector sum.
 
-  // |buckets_| should sum up to 1 (in Q30), but it may not due to
+  // `buckets_` should sum up to 1 (in Q30), but it may not due to
   // fixed-point rounding errors.
   vector_sum -= 1 << 30;  // Should be zero. Compensate if not.
   if (vector_sum != 0) {
-    // Modify a few values early in |buckets_|.
+    // Modify a few values early in `buckets_`.
     int flip_sign = vector_sum > 0 ? -1 : 1;
     for (int& bucket : buckets_) {
-      // Add/subtract 1/16 of the element, but not more than |vector_sum|.
+      // Add/subtract 1/16 of the element, but not more than `vector_sum`.
       int correction = flip_sign * std::min(std::abs(vector_sum), bucket >> 4);
       bucket += correction;
       vector_sum += correction;
@@ -82,8 +82,8 @@ void Histogram::Add(int value) {
 
   ++add_count_;
 
-  // Update |forget_factor_| (changes only during the first seconds after a
-  // reset). The factor converges to |base_forget_factor_|.
+  // Update `forget_factor_` (changes only during the first seconds after a
+  // reset). The factor converges to `base_forget_factor_`.
   if (start_forget_weight_) {
     if (forget_factor_ != base_forget_factor_) {
       int old_forget_factor = forget_factor_;
@@ -92,7 +92,7 @@ void Histogram::Add(int value) {
       forget_factor_ =
           std::max(0, std::min(base_forget_factor_, forget_factor));
       // The histogram is updated recursively by forgetting the old histogram
-      // with |forget_factor_| and adding a new sample multiplied by |1 -
+      // with `forget_factor_` and adding a new sample multiplied by |1 -
       // forget_factor_|. We need to make sure that the effective weight on the
       // new sample is no smaller than those on the old samples, i.e., to
       // satisfy the following DCHECK.
@@ -106,21 +106,21 @@ void Histogram::Add(int value) {
 
 int Histogram::Quantile(int probability) {
   // Find the bucket for which the probability of observing an
-  // inter-arrival time larger than or equal to |index| is larger than or
-  // equal to |probability|. The sought probability is estimated using
+  // inter-arrival time larger than or equal to `index` is larger than or
+  // equal to `probability`. The sought probability is estimated using
   // the histogram as the reverse cumulant PDF, i.e., the sum of elements from
-  // the end up until |index|. Now, since the sum of all elements is 1
+  // the end up until `index`. Now, since the sum of all elements is 1
   // (in Q30) by definition, and since the solution is often a low value for
-  // |iat_index|, it is more efficient to start with |sum| = 1 and subtract
+  // `iat_index`, it is more efficient to start with `sum` = 1 and subtract
   // elements from the start of the histogram.
   int inverse_probability = (1 << 30) - probability;
-  size_t index = 0;        // Start from the beginning of |buckets_|.
+  size_t index = 0;        // Start from the beginning of `buckets_`.
   int sum = 1 << 30;       // Assign to 1 in Q30.
   sum -= buckets_[index];
 
   while ((sum > inverse_probability) && (index < buckets_.size() - 1)) {
     // Subtract the probabilities one by one until the sum is no longer greater
-    // than |inverse_probability|.
+    // than `inverse_probability`.
     ++index;
     sum -= buckets_[index];
   }

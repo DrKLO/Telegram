@@ -14,7 +14,7 @@
 namespace webrtc {
 
 // TODO(turajs): Write a description of this function. Also be consistent with
-// usage of |sampling_rate_hz| vs |kSamplingFreqHz|.
+// usage of `sampling_rate_hz` vs `kSamplingFreqHz`.
 void GetSubframesPitchParameters(int sampling_rate_hz,
                                  double* gains,
                                  double* lags,

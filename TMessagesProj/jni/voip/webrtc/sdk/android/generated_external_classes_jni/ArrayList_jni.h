@@ -39,8 +39,8 @@ namespace JNI_ArrayList {
 
 
 static std::atomic<jmethodID> g_java_util_ArrayList_trimToSize(nullptr);
-static void Java_ArrayList_trimToSize(JNIEnv* env, const base::android::JavaRef<jobject>& obj)
-    __attribute__ ((unused));
+[[maybe_unused]] static void Java_ArrayList_trimToSize(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj);
 static void Java_ArrayList_trimToSize(JNIEnv* env, const base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_util_ArrayList_clazz(env);
   CHECK_CLAZZ(env, obj.obj(),
@@ -60,8 +60,8 @@ static void Java_ArrayList_trimToSize(JNIEnv* env, const base::android::JavaRef<
 }
 
 static std::atomic<jmethodID> g_java_util_ArrayList_ensureCapacity(nullptr);
-static void Java_ArrayList_ensureCapacity(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
-    JniIntWrapper p0) __attribute__ ((unused));
+[[maybe_unused]] static void Java_ArrayList_ensureCapacity(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj, JniIntWrapper p0);
 static void Java_ArrayList_ensureCapacity(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
     JniIntWrapper p0) {
   jclass clazz = java_util_ArrayList_clazz(env);
@@ -82,8 +82,8 @@ static void Java_ArrayList_ensureCapacity(JNIEnv* env, const base::android::Java
 }
 
 static std::atomic<jmethodID> g_java_util_ArrayList_size(nullptr);
-static jint Java_ArrayList_size(JNIEnv* env, const base::android::JavaRef<jobject>& obj)
-    __attribute__ ((unused));
+[[maybe_unused]] static jint Java_ArrayList_size(JNIEnv* env, const base::android::JavaRef<jobject>&
+    obj);
 static jint Java_ArrayList_size(JNIEnv* env, const base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_util_ArrayList_clazz(env);
   CHECK_CLAZZ(env, obj.obj(),
@@ -105,8 +105,8 @@ static jint Java_ArrayList_size(JNIEnv* env, const base::android::JavaRef<jobjec
 }
 
 static std::atomic<jmethodID> g_java_util_ArrayList_isEmpty(nullptr);
-static jboolean Java_ArrayList_isEmpty(JNIEnv* env, const base::android::JavaRef<jobject>& obj)
-    __attribute__ ((unused));
+[[maybe_unused]] static jboolean Java_ArrayList_isEmpty(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj);
 static jboolean Java_ArrayList_isEmpty(JNIEnv* env, const base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_util_ArrayList_clazz(env);
   CHECK_CLAZZ(env, obj.obj(),
@@ -128,8 +128,8 @@ static jboolean Java_ArrayList_isEmpty(JNIEnv* env, const base::android::JavaRef
 }
 
 static std::atomic<jmethodID> g_java_util_ArrayList_contains(nullptr);
-static jboolean Java_ArrayList_contains(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
-    const base::android::JavaRef<jobject>& p0) __attribute__ ((unused));
+[[maybe_unused]] static jboolean Java_ArrayList_contains(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobject>& p0);
 static jboolean Java_ArrayList_contains(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
     const base::android::JavaRef<jobject>& p0) {
   jclass clazz = java_util_ArrayList_clazz(env);
@@ -152,8 +152,8 @@ static jboolean Java_ArrayList_contains(JNIEnv* env, const base::android::JavaRe
 }
 
 static std::atomic<jmethodID> g_java_util_ArrayList_indexOf(nullptr);
-static jint Java_ArrayList_indexOf(JNIEnv* env, const base::android::JavaRef<jobject>& obj, const
-    base::android::JavaRef<jobject>& p0) __attribute__ ((unused));
+[[maybe_unused]] static jint Java_ArrayList_indexOf(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobject>& p0);
 static jint Java_ArrayList_indexOf(JNIEnv* env, const base::android::JavaRef<jobject>& obj, const
     base::android::JavaRef<jobject>& p0) {
   jclass clazz = java_util_ArrayList_clazz(env);
@@ -176,8 +176,8 @@ static jint Java_ArrayList_indexOf(JNIEnv* env, const base::android::JavaRef<job
 }
 
 static std::atomic<jmethodID> g_java_util_ArrayList_lastIndexOf(nullptr);
-static jint Java_ArrayList_lastIndexOf(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
-    const base::android::JavaRef<jobject>& p0) __attribute__ ((unused));
+[[maybe_unused]] static jint Java_ArrayList_lastIndexOf(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobject>& p0);
 static jint Java_ArrayList_lastIndexOf(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
     const base::android::JavaRef<jobject>& p0) {
   jclass clazz = java_util_ArrayList_clazz(env);
@@ -200,8 +200,8 @@ static jint Java_ArrayList_lastIndexOf(JNIEnv* env, const base::android::JavaRef
 }
 
 static std::atomic<jmethodID> g_java_util_ArrayList_clone(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_clone(JNIEnv* env, const
-    base::android::JavaRef<jobject>& obj) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_clone(JNIEnv* env,
+    const base::android::JavaRef<jobject>& obj);
 static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_clone(JNIEnv* env, const
     base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_util_ArrayList_clazz(env);
@@ -224,8 +224,8 @@ static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_clone(JNIEnv* e
 }
 
 static std::atomic<jmethodID> g_java_util_ArrayList_toArrayLJLO(nullptr);
-static base::android::ScopedJavaLocalRef<jobjectArray> Java_ArrayList_toArrayLJLO(JNIEnv* env, const
-    base::android::JavaRef<jobject>& obj) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobjectArray>
+    Java_ArrayList_toArrayLJLO(JNIEnv* env, const base::android::JavaRef<jobject>& obj);
 static base::android::ScopedJavaLocalRef<jobjectArray> Java_ArrayList_toArrayLJLO(JNIEnv* env, const
     base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_util_ArrayList_clazz(env);
@@ -248,9 +248,9 @@ static base::android::ScopedJavaLocalRef<jobjectArray> Java_ArrayList_toArrayLJL
 }
 
 static std::atomic<jmethodID> g_java_util_ArrayList_toArrayLJUT_LJUT(nullptr);
-static base::android::ScopedJavaLocalRef<jobjectArray> Java_ArrayList_toArrayLJUT_LJUT(JNIEnv* env,
-    const base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobjectArray>& p0)
-    __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobjectArray>
+    Java_ArrayList_toArrayLJUT_LJUT(JNIEnv* env, const base::android::JavaRef<jobject>& obj, const
+    base::android::JavaRef<jobjectArray>& p0);
 static base::android::ScopedJavaLocalRef<jobjectArray> Java_ArrayList_toArrayLJUT_LJUT(JNIEnv* env,
     const base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobjectArray>& p0) {
   jclass clazz = java_util_ArrayList_clazz(env);
@@ -273,8 +273,8 @@ static base::android::ScopedJavaLocalRef<jobjectArray> Java_ArrayList_toArrayLJU
 }
 
 static std::atomic<jmethodID> g_java_util_ArrayList_get(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_get(JNIEnv* env, const
-    base::android::JavaRef<jobject>& obj, JniIntWrapper p0) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_get(JNIEnv* env,
+    const base::android::JavaRef<jobject>& obj, JniIntWrapper p0);
 static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_get(JNIEnv* env, const
     base::android::JavaRef<jobject>& obj, JniIntWrapper p0) {
   jclass clazz = java_util_ArrayList_clazz(env);
@@ -297,9 +297,9 @@ static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_get(JNIEnv* env
 }
 
 static std::atomic<jmethodID> g_java_util_ArrayList_set(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_set(JNIEnv* env, const
-    base::android::JavaRef<jobject>& obj, JniIntWrapper p0,
-    const base::android::JavaRef<jobject>& p1) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_set(JNIEnv* env,
+    const base::android::JavaRef<jobject>& obj, JniIntWrapper p0,
+    const base::android::JavaRef<jobject>& p1);
 static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_set(JNIEnv* env, const
     base::android::JavaRef<jobject>& obj, JniIntWrapper p0,
     const base::android::JavaRef<jobject>& p1) {
@@ -323,8 +323,8 @@ static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_set(JNIEnv* env
 }
 
 static std::atomic<jmethodID> g_java_util_ArrayList_addZ_JUE(nullptr);
-static jboolean Java_ArrayList_addZ_JUE(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
-    const base::android::JavaRef<jobject>& p0) __attribute__ ((unused));
+[[maybe_unused]] static jboolean Java_ArrayList_addZ_JUE(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobject>& p0);
 static jboolean Java_ArrayList_addZ_JUE(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
     const base::android::JavaRef<jobject>& p0) {
   jclass clazz = java_util_ArrayList_clazz(env);
@@ -347,9 +347,9 @@ static jboolean Java_ArrayList_addZ_JUE(JNIEnv* env, const base::android::JavaRe
 }
 
 static std::atomic<jmethodID> g_java_util_ArrayList_addV_I_JUE(nullptr);
-static void Java_ArrayList_addV_I_JUE(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
-    JniIntWrapper p0,
-    const base::android::JavaRef<jobject>& p1) __attribute__ ((unused));
+[[maybe_unused]] static void Java_ArrayList_addV_I_JUE(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj, JniIntWrapper p0,
+    const base::android::JavaRef<jobject>& p1);
 static void Java_ArrayList_addV_I_JUE(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
     JniIntWrapper p0,
     const base::android::JavaRef<jobject>& p1) {
@@ -371,8 +371,9 @@ static void Java_ArrayList_addV_I_JUE(JNIEnv* env, const base::android::JavaRef<
 }
 
 static std::atomic<jmethodID> g_java_util_ArrayList_removeJUE_I(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_removeJUE_I(JNIEnv* env, const
-    base::android::JavaRef<jobject>& obj, JniIntWrapper p0) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject>
+    Java_ArrayList_removeJUE_I(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
+    JniIntWrapper p0);
 static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_removeJUE_I(JNIEnv* env, const
     base::android::JavaRef<jobject>& obj, JniIntWrapper p0) {
   jclass clazz = java_util_ArrayList_clazz(env);
@@ -395,8 +396,8 @@ static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_removeJUE_I(JNI
 }
 
 static std::atomic<jmethodID> g_java_util_ArrayList_removeZ_JLO(nullptr);
-static jboolean Java_ArrayList_removeZ_JLO(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
-    const base::android::JavaRef<jobject>& p0) __attribute__ ((unused));
+[[maybe_unused]] static jboolean Java_ArrayList_removeZ_JLO(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobject>& p0);
 static jboolean Java_ArrayList_removeZ_JLO(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
     const base::android::JavaRef<jobject>& p0) {
   jclass clazz = java_util_ArrayList_clazz(env);
@@ -419,8 +420,8 @@ static jboolean Java_ArrayList_removeZ_JLO(JNIEnv* env, const base::android::Jav
 }
 
 static std::atomic<jmethodID> g_java_util_ArrayList_clear(nullptr);
-static void Java_ArrayList_clear(JNIEnv* env, const base::android::JavaRef<jobject>& obj)
-    __attribute__ ((unused));
+[[maybe_unused]] static void Java_ArrayList_clear(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj);
 static void Java_ArrayList_clear(JNIEnv* env, const base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_util_ArrayList_clazz(env);
   CHECK_CLAZZ(env, obj.obj(),
@@ -440,8 +441,8 @@ static void Java_ArrayList_clear(JNIEnv* env, const base::android::JavaRef<jobje
 }
 
 static std::atomic<jmethodID> g_java_util_ArrayList_addAllZ_JUC(nullptr);
-static jboolean Java_ArrayList_addAllZ_JUC(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
-    const base::android::JavaRef<jobject>& p0) __attribute__ ((unused));
+[[maybe_unused]] static jboolean Java_ArrayList_addAllZ_JUC(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobject>& p0);
 static jboolean Java_ArrayList_addAllZ_JUC(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
     const base::android::JavaRef<jobject>& p0) {
   jclass clazz = java_util_ArrayList_clazz(env);
@@ -464,9 +465,9 @@ static jboolean Java_ArrayList_addAllZ_JUC(JNIEnv* env, const base::android::Jav
 }
 
 static std::atomic<jmethodID> g_java_util_ArrayList_addAllZ_I_JUC(nullptr);
-static jboolean Java_ArrayList_addAllZ_I_JUC(JNIEnv* env, const base::android::JavaRef<jobject>&
-    obj, JniIntWrapper p0,
-    const base::android::JavaRef<jobject>& p1) __attribute__ ((unused));
+[[maybe_unused]] static jboolean Java_ArrayList_addAllZ_I_JUC(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj, JniIntWrapper p0,
+    const base::android::JavaRef<jobject>& p1);
 static jboolean Java_ArrayList_addAllZ_I_JUC(JNIEnv* env, const base::android::JavaRef<jobject>&
     obj, JniIntWrapper p0,
     const base::android::JavaRef<jobject>& p1) {
@@ -490,9 +491,9 @@ static jboolean Java_ArrayList_addAllZ_I_JUC(JNIEnv* env, const base::android::J
 }
 
 static std::atomic<jmethodID> g_java_util_ArrayList_removeRange(nullptr);
-static void Java_ArrayList_removeRange(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
-    JniIntWrapper p0,
-    JniIntWrapper p1) __attribute__ ((unused));
+[[maybe_unused]] static void Java_ArrayList_removeRange(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj, JniIntWrapper p0,
+    JniIntWrapper p1);
 static void Java_ArrayList_removeRange(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
     JniIntWrapper p0,
     JniIntWrapper p1) {
@@ -514,8 +515,8 @@ static void Java_ArrayList_removeRange(JNIEnv* env, const base::android::JavaRef
 }
 
 static std::atomic<jmethodID> g_java_util_ArrayList_removeAll(nullptr);
-static jboolean Java_ArrayList_removeAll(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
-    const base::android::JavaRef<jobject>& p0) __attribute__ ((unused));
+[[maybe_unused]] static jboolean Java_ArrayList_removeAll(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobject>& p0);
 static jboolean Java_ArrayList_removeAll(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
     const base::android::JavaRef<jobject>& p0) {
   jclass clazz = java_util_ArrayList_clazz(env);
@@ -538,8 +539,8 @@ static jboolean Java_ArrayList_removeAll(JNIEnv* env, const base::android::JavaR
 }
 
 static std::atomic<jmethodID> g_java_util_ArrayList_retainAll(nullptr);
-static jboolean Java_ArrayList_retainAll(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
-    const base::android::JavaRef<jobject>& p0) __attribute__ ((unused));
+[[maybe_unused]] static jboolean Java_ArrayList_retainAll(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobject>& p0);
 static jboolean Java_ArrayList_retainAll(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
     const base::android::JavaRef<jobject>& p0) {
   jclass clazz = java_util_ArrayList_clazz(env);
@@ -562,8 +563,9 @@ static jboolean Java_ArrayList_retainAll(JNIEnv* env, const base::android::JavaR
 }
 
 static std::atomic<jmethodID> g_java_util_ArrayList_listIteratorJULII_I(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_listIteratorJULII_I(JNIEnv* env,
-    const base::android::JavaRef<jobject>& obj, JniIntWrapper p0) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject>
+    Java_ArrayList_listIteratorJULII_I(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
+    JniIntWrapper p0);
 static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_listIteratorJULII_I(JNIEnv* env,
     const base::android::JavaRef<jobject>& obj, JniIntWrapper p0) {
   jclass clazz = java_util_ArrayList_clazz(env);
@@ -586,8 +588,8 @@ static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_listIteratorJUL
 }
 
 static std::atomic<jmethodID> g_java_util_ArrayList_listIteratorJULII(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_listIteratorJULII(JNIEnv* env,
-    const base::android::JavaRef<jobject>& obj) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject>
+    Java_ArrayList_listIteratorJULII(JNIEnv* env, const base::android::JavaRef<jobject>& obj);
 static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_listIteratorJULII(JNIEnv* env,
     const base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_util_ArrayList_clazz(env);
@@ -610,8 +612,8 @@ static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_listIteratorJUL
 }
 
 static std::atomic<jmethodID> g_java_util_ArrayList_iterator(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_iterator(JNIEnv* env, const
-    base::android::JavaRef<jobject>& obj) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_iterator(JNIEnv*
+    env, const base::android::JavaRef<jobject>& obj);
 static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_iterator(JNIEnv* env, const
     base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_util_ArrayList_clazz(env);
@@ -634,9 +636,9 @@ static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_iterator(JNIEnv
 }
 
 static std::atomic<jmethodID> g_java_util_ArrayList_subList(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_subList(JNIEnv* env, const
-    base::android::JavaRef<jobject>& obj, JniIntWrapper p0,
-    JniIntWrapper p1) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_subList(JNIEnv*
+    env, const base::android::JavaRef<jobject>& obj, JniIntWrapper p0,
+    JniIntWrapper p1);
 static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_subList(JNIEnv* env, const
     base::android::JavaRef<jobject>& obj, JniIntWrapper p0,
     JniIntWrapper p1) {
@@ -660,8 +662,8 @@ static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_subList(JNIEnv*
 }
 
 static std::atomic<jmethodID> g_java_util_ArrayList_forEach(nullptr);
-static void Java_ArrayList_forEach(JNIEnv* env, const base::android::JavaRef<jobject>& obj, const
-    base::android::JavaRef<jobject>& p0) __attribute__ ((unused));
+[[maybe_unused]] static void Java_ArrayList_forEach(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobject>& p0);
 static void Java_ArrayList_forEach(JNIEnv* env, const base::android::JavaRef<jobject>& obj, const
     base::android::JavaRef<jobject>& p0) {
   jclass clazz = java_util_ArrayList_clazz(env);
@@ -682,8 +684,8 @@ static void Java_ArrayList_forEach(JNIEnv* env, const base::android::JavaRef<job
 }
 
 static std::atomic<jmethodID> g_java_util_ArrayList_spliterator(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_spliterator(JNIEnv* env, const
-    base::android::JavaRef<jobject>& obj) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject>
+    Java_ArrayList_spliterator(JNIEnv* env, const base::android::JavaRef<jobject>& obj);
 static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_spliterator(JNIEnv* env, const
     base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_util_ArrayList_clazz(env);
@@ -706,8 +708,8 @@ static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_spliterator(JNI
 }
 
 static std::atomic<jmethodID> g_java_util_ArrayList_removeIf(nullptr);
-static jboolean Java_ArrayList_removeIf(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
-    const base::android::JavaRef<jobject>& p0) __attribute__ ((unused));
+[[maybe_unused]] static jboolean Java_ArrayList_removeIf(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobject>& p0);
 static jboolean Java_ArrayList_removeIf(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
     const base::android::JavaRef<jobject>& p0) {
   jclass clazz = java_util_ArrayList_clazz(env);
@@ -730,8 +732,8 @@ static jboolean Java_ArrayList_removeIf(JNIEnv* env, const base::android::JavaRe
 }
 
 static std::atomic<jmethodID> g_java_util_ArrayList_replaceAll(nullptr);
-static void Java_ArrayList_replaceAll(JNIEnv* env, const base::android::JavaRef<jobject>& obj, const
-    base::android::JavaRef<jobject>& p0) __attribute__ ((unused));
+[[maybe_unused]] static void Java_ArrayList_replaceAll(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobject>& p0);
 static void Java_ArrayList_replaceAll(JNIEnv* env, const base::android::JavaRef<jobject>& obj, const
     base::android::JavaRef<jobject>& p0) {
   jclass clazz = java_util_ArrayList_clazz(env);
@@ -752,8 +754,8 @@ static void Java_ArrayList_replaceAll(JNIEnv* env, const base::android::JavaRef<
 }
 
 static std::atomic<jmethodID> g_java_util_ArrayList_sort(nullptr);
-static void Java_ArrayList_sort(JNIEnv* env, const base::android::JavaRef<jobject>& obj, const
-    base::android::JavaRef<jobject>& p0) __attribute__ ((unused));
+[[maybe_unused]] static void Java_ArrayList_sort(JNIEnv* env, const base::android::JavaRef<jobject>&
+    obj, const base::android::JavaRef<jobject>& p0);
 static void Java_ArrayList_sort(JNIEnv* env, const base::android::JavaRef<jobject>& obj, const
     base::android::JavaRef<jobject>& p0) {
   jclass clazz = java_util_ArrayList_clazz(env);
@@ -774,8 +776,8 @@ static void Java_ArrayList_sort(JNIEnv* env, const base::android::JavaRef<jobjec
 }
 
 static std::atomic<jmethodID> g_java_util_ArrayList_ConstructorJUALI_I(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_ConstructorJUALI_I(JNIEnv* env,
-    JniIntWrapper p0) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject>
+    Java_ArrayList_ConstructorJUALI_I(JNIEnv* env, JniIntWrapper p0);
 static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_ConstructorJUALI_I(JNIEnv* env,
     JniIntWrapper p0) {
   jclass clazz = java_util_ArrayList_clazz(env);
@@ -798,8 +800,8 @@ static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_ConstructorJUAL
 }
 
 static std::atomic<jmethodID> g_java_util_ArrayList_ConstructorJUALI(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_ConstructorJUALI(JNIEnv* env)
-    __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject>
+    Java_ArrayList_ConstructorJUALI(JNIEnv* env);
 static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_ConstructorJUALI(JNIEnv* env) {
   jclass clazz = java_util_ArrayList_clazz(env);
   CHECK_CLAZZ(env, clazz,
@@ -821,8 +823,8 @@ static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_ConstructorJUAL
 }
 
 static std::atomic<jmethodID> g_java_util_ArrayList_ConstructorJUALI_JUC(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_ConstructorJUALI_JUC(JNIEnv* env,
-    const base::android::JavaRef<jobject>& p0) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject>
+    Java_ArrayList_ConstructorJUALI_JUC(JNIEnv* env, const base::android::JavaRef<jobject>& p0);
 static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_ConstructorJUALI_JUC(JNIEnv* env,
     const base::android::JavaRef<jobject>& p0) {
   jclass clazz = java_util_ArrayList_clazz(env);
@@ -845,8 +847,5 @@ static base::android::ScopedJavaLocalRef<jobject> Java_ArrayList_ConstructorJUAL
 }
 
 }  // namespace JNI_ArrayList
-
-// Step 4: Generated test functions (optional).
-
 
 #endif  // java_util_ArrayList_JNI

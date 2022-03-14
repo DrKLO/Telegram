@@ -50,7 +50,7 @@ struct SenderOptions {
   // Use RIDs and Simulcast Layers to indicate spec-compliant Simulcast.
   std::vector<RidDescription> rids;
   SimulcastLayerList simulcast_layers;
-  // Use |num_sim_layers| to indicate legacy simulcast.
+  // Use `num_sim_layers` to indicate legacy simulcast.
   int num_sim_layers;
 };
 
@@ -84,7 +84,7 @@ struct MediaDescriptionOptions {
   std::vector<webrtc::RtpHeaderExtensionCapability> header_extensions;
 
  private:
-  // Doesn't DCHECK on |type|.
+  // Doesn't DCHECK on `type`.
   void AddSenderInternal(const std::string& track_id,
                          const std::vector<std::string>& stream_ids,
                          const std::vector<RidDescription>& rids,

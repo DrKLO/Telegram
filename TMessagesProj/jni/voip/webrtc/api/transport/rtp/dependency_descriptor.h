@@ -20,30 +20,11 @@
 #include "absl/container/inlined_vector.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
+#include "api/video/render_resolution.h"
 
 namespace webrtc {
 // Structures to build and parse dependency descriptor as described in
 // https://aomediacodec.github.io/av1-rtp-spec/#dependency-descriptor-rtp-header-extension
-class RenderResolution {
- public:
-  constexpr RenderResolution() = default;
-  constexpr RenderResolution(int width, int height)
-      : width_(width), height_(height) {}
-  RenderResolution(const RenderResolution&) = default;
-  RenderResolution& operator=(const RenderResolution&) = default;
-
-  friend bool operator==(const RenderResolution& lhs,
-                         const RenderResolution& rhs) {
-    return lhs.width_ == rhs.width_ && lhs.height_ == rhs.height_;
-  }
-
-  constexpr int Width() const { return width_; }
-  constexpr int Height() const { return height_; }
-
- private:
-  int width_ = 0;
-  int height_ = 0;
-};
 
 // Relationship of a frame to a Decode target.
 enum class DecodeTargetIndication {

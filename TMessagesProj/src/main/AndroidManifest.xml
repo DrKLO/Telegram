@@ -227,11 +227,6 @@
 <!--            </intent-filter>-->
 <!--        </activity>-->
         <activity
-            android:name="org.telegram.ui.IntroActivity"
-            android:launchMode="singleTask"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode">
-        </activity>
-        <activity
             android:name="org.telegram.messenger.OpenChatReceiver"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
             android:exported="true">

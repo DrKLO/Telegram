@@ -32,9 +32,9 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) && !defined(__Userspace__)
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD: head/sys/netinet/sctp_timer.h 295709 2016-02-17 18:04:22Z tuexen $");
+__FBSDID("$FreeBSD: head/sys/netinet/sctp_timer.h 365071 2020-09-01 21:19:14Z mjg $");
 #endif
 
 #ifndef _NETINET_SCTP_TIMER_H_
@@ -46,18 +46,20 @@ __FBSDID("$FreeBSD: head/sys/netinet/sctp_timer.h 295709 2016-02-17 18:04:22Z tu
 #define SCTP_RTT_VAR_SHIFT 2
 
 struct sctp_nets *
-sctp_find_alternate_net(struct sctp_tcb *,
-    struct sctp_nets *, int mode);
+sctp_find_alternate_net(struct sctp_tcb *, struct sctp_nets *, int);
 
 int
 sctp_t3rxt_timer(struct sctp_inpcb *, struct sctp_tcb *,
     struct sctp_nets *);
+
 int
 sctp_t1init_timer(struct sctp_inpcb *, struct sctp_tcb *,
     struct sctp_nets *);
+
 int
 sctp_shutdown_timer(struct sctp_inpcb *, struct sctp_tcb *,
     struct sctp_nets *);
+
 int
 sctp_heartbeat_timer(struct sctp_inpcb *, struct sctp_tcb *,
     struct sctp_nets *);
@@ -74,32 +76,28 @@ int
 sctp_shutdownack_timer(struct sctp_inpcb *, struct sctp_tcb *,
     struct sctp_nets *);
 int
-sctp_strreset_timer(struct sctp_inpcb *inp, struct sctp_tcb *stcb,
-    struct sctp_nets *net);
+sctp_strreset_timer(struct sctp_inpcb *, struct sctp_tcb *);
 
 int
 sctp_asconf_timer(struct sctp_inpcb *, struct sctp_tcb *,
     struct sctp_nets *);
 
 void
-sctp_delete_prim_timer(struct sctp_inpcb *, struct sctp_tcb *,
-    struct sctp_nets *);
+sctp_delete_prim_timer(struct sctp_inpcb *, struct sctp_tcb *);
 
 void
-sctp_autoclose_timer(struct sctp_inpcb *, struct sctp_tcb *,
-    struct sctp_nets *net);
+sctp_autoclose_timer(struct sctp_inpcb *, struct sctp_tcb *);
 
 void sctp_audit_retranmission_queue(struct sctp_association *);
 
 void sctp_iterator_timer(struct sctp_iterator *it);
 
-#if defined(__APPLE__)
+#if defined(__APPLE__) && !defined(__Userspace__)
 #if defined(APPLE_LEOPARD) || defined(APPLE_SNOWLEOPARD) || defined(APPLE_LION) || defined(APPLE_MOUNTAINLION)
 void sctp_slowtimo(void);
 #else
 void sctp_gc(struct inpcbinfo *);
 #endif
 #endif
-
 #endif
 #endif

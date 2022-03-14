@@ -23,6 +23,7 @@
 #include <cassert>
 #include <memory>
 
+#include "absl/base/attributes.h"
 #include "absl/base/call_once.h"
 #include "absl/base/internal/raw_logging.h"
 #include "absl/base/internal/spinlock.h"
@@ -53,9 +54,11 @@ void AllocateThreadIdentityKey(ThreadIdentityReclaimerFunction reclaimer) {
 // exist within a process (via dlopen() or similar), references to
 // thread_identity_ptr from each instance of the code will refer to
 // *different* instances of this ptr.
-#ifdef __GNUC__
+// Apple platforms have the visibility attribute, but issue a compile warning
+// that protected visibility is unsupported.
+#if ABSL_HAVE_ATTRIBUTE(visibility) && !defined(__APPLE__)
 __attribute__((visibility("protected")))
-#endif  // __GNUC__
+#endif  // ABSL_HAVE_ATTRIBUTE(visibility) && !defined(__APPLE__)
 #if ABSL_PER_THREAD_TLS
 // Prefer __thread to thread_local as benchmarks indicate it is a bit faster.
 ABSL_PER_THREAD_TLS_KEYWORD ThreadIdentity* thread_identity_ptr = nullptr;
@@ -117,10 +120,10 @@ void SetCurrentThreadIdentity(
     ABSL_THREAD_IDENTITY_MODE == ABSL_THREAD_IDENTITY_MODE_USE_CPP11
 
 // Please see the comment on `CurrentThreadIdentityIfPresent` in
-// thread_identity.h. Because DLLs cannot expose thread_local variables in
-// headers, we opt for the correct-but-slower option of placing the definition
-// of this function only in a translation unit inside DLL.
-#if defined(ABSL_BUILD_DLL) || defined(ABSL_CONSUME_DLL)
+// thread_identity.h. When we cannot expose thread_local variables in
+// headers, we opt for the correct-but-slower option of not inlining this
+// function.
+#ifndef ABSL_INTERNAL_INLINE_CURRENT_THREAD_IDENTITY_IF_PRESENT
 ThreadIdentity* CurrentThreadIdentityIfPresent() { return thread_identity_ptr; }
 #endif
 #endif

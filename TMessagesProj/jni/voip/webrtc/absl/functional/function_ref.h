@@ -50,6 +50,7 @@
 #include <functional>
 #include <type_traits>
 
+#include "absl/base/attributes.h"
 #include "absl/functional/internal/function_ref.h"
 #include "absl/meta/type_traits.h"
 
@@ -68,7 +69,8 @@ class FunctionRef;
 // An `absl::FunctionRef` is a lightweight wrapper to any invokable object with
 // a compatible signature. Generally, an `absl::FunctionRef` should only be used
 // as an argument type and should be preferred as an argument over a const
-// reference to a `std::function`.
+// reference to a `std::function`. `absl::FunctionRef` itself does not allocate,
+// although the wrapped invokable may.
 //
 // Example:
 //
@@ -90,7 +92,7 @@ class FunctionRef<R(Args...)> {
   // Used to disable constructors for objects that are not compatible with the
   // signature of this FunctionRef.
   template <typename F,
-            typename FR = absl::base_internal::InvokeT<F, Args&&...>>
+            typename FR = absl::base_internal::invoke_result_t<F, Args&&...>>
   using EnableIfCompatible =
       typename std::enable_if<std::is_void<R>::value ||
                               std::is_convertible<FR, R>::value>::type;
@@ -98,7 +100,8 @@ class FunctionRef<R(Args...)> {
  public:
   // Constructs a FunctionRef from any invokable type.
   template <typename F, typename = EnableIfCompatible<const F&>>
-  FunctionRef(const F& f)  // NOLINT(runtime/explicit)
+  // NOLINTNEXTLINE(runtime/explicit)
+  FunctionRef(const F& f ABSL_ATTRIBUTE_LIFETIME_BOUND)
       : invoker_(&absl::functional_internal::InvokeObject<F, R, Args...>) {
     absl::functional_internal::AssertNonNull(f);
     ptr_.obj = &f;
@@ -122,6 +125,7 @@ class FunctionRef<R(Args...)> {
   // To help prevent subtle lifetime bugs, FunctionRef is not assignable.
   // Typically, it should only be used as an argument type.
   FunctionRef& operator=(const FunctionRef& rhs) = delete;
+  FunctionRef(const FunctionRef& rhs) = default;
 
   // Call the underlying object.
   R operator()(Args... args) const {

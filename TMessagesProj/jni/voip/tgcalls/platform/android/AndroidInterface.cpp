@@ -17,7 +17,7 @@
 #include "sdk/android/native_api/video/video_source.h"
 #include "api/video_codecs/builtin_video_encoder_factory.h"
 #include "api/video_codecs/builtin_video_decoder_factory.h"
-#include "api/video_track_source_proxy.h"
+#include "api/video_track_source_proxy_factory.h"
 #include "AndroidContext.h"
 
 
@@ -27,7 +27,7 @@ void AndroidInterface::configurePlatformAudio() {
 
 }
 
-std::unique_ptr<webrtc::VideoEncoderFactory> AndroidInterface::makeVideoEncoderFactory(std::shared_ptr<PlatformContext> platformContext) {
+std::unique_ptr<webrtc::VideoEncoderFactory> AndroidInterface::makeVideoEncoderFactory(std::shared_ptr<PlatformContext> platformContext,  bool preferHardwareEncoding, bool isScreencast) {
     JNIEnv *env = webrtc::AttachCurrentThreadIfNeeded();
 
     AndroidContext *context = (AndroidContext *) platformContext.get();
@@ -60,7 +60,7 @@ void AndroidInterface::adaptVideoSource(rtc::scoped_refptr<webrtc::VideoTrackSou
 rtc::scoped_refptr<webrtc::VideoTrackSourceInterface> AndroidInterface::makeVideoSource(rtc::Thread *signalingThread, rtc::Thread *workerThread, bool screencapture) {
     JNIEnv *env = webrtc::AttachCurrentThreadIfNeeded();
     _source[screencapture ? 1 : 0] = webrtc::CreateJavaVideoSource(env, signalingThread, false, false);
-    return webrtc::VideoTrackSourceProxy::Create(signalingThread, workerThread, _source[screencapture ? 1 : 0]);
+    return webrtc::CreateVideoTrackSourceProxy(signalingThread, workerThread, _source[screencapture ? 1 : 0]);
 }
 
 bool AndroidInterface::supportsEncoding(const std::string &codecName, std::shared_ptr<PlatformContext> platformContext) {

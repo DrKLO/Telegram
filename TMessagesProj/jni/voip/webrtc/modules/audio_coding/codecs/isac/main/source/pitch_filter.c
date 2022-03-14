@@ -25,8 +25,8 @@
  * Post-filtering:
  *   y(z) = x(z) - damper(z) * gain * (x(z) + y(z)) * z ^ (-lag);
  *
- * Note that |lag| is a floating number so we perform an interpolation to
- * obtain the correct |lag|.
+ * Note that `lag` is a floating number so we perform an interpolation to
+ * obtain the correct `lag`.
  *
  */
 
@@ -86,7 +86,7 @@ typedef enum {
  * buffer           : a buffer where the sum of previous inputs and outputs
  *                    are stored.
  * damper_state     : the state of the damping filter. The filter is defined by
- *                    |kDampFilter|.
+ *                    `kDampFilter`.
  * interpol_coeff   : pointer to a set of coefficient which are used to utilize
  *                    fractional pitch by interpolation.
  * gain             : pitch-gain to be applied to the current segment of input.
@@ -140,9 +140,9 @@ static void FilterSegment(const double* in_data, PitchFilterParam* parameters,
   int j;
   double sum;
   double sum2;
-  /* Index of |parameters->buffer| where the output is written to. */
+  /* Index of `parameters->buffer` where the output is written to. */
   int pos = parameters->index + PITCH_BUFFSIZE;
-  /* Index of |parameters->buffer| where samples are read for fractional-lag
+  /* Index of `parameters->buffer` where samples are read for fractional-lag
    * computation. */
   int pos_lag = pos - parameters->lag_offset;
 
@@ -174,9 +174,9 @@ static void FilterSegment(const double* in_data, PitchFilterParam* parameters,
         /* Filter for fractional pitch. */
         sum2 = 0.0;
         for (m = PITCH_FRACORDER-1; m >= m_tmp; --m) {
-          /* |lag_index + m| is always larger than or equal to zero, see how
+          /* `lag_index + m` is always larger than or equal to zero, see how
            * m_tmp is computed. This is equivalent to assume samples outside
-           * |out_dg[j]| are zero. */
+           * `out_dg[j]` are zero. */
           sum2 += out_dg[j][lag_index + m] * parameters->interpol_coeff[m];
         }
         /* Add the contribution of differential gain change. */
@@ -353,7 +353,7 @@ static void FilterFrame(const double* in_data, PitchFiltstr* filter_state,
 
   if ((mode == kPitchFilterPreGain) || (mode == kPitchFilterPreLa)) {
     /* Filter the lookahead segment, this is treated as the last sub-frame. So
-     * set |pf_param| to last sub-frame. */
+     * set `pf_param` to last sub-frame. */
     filter_parameters.sub_frame = PITCH_SUBFRAMES - 1;
     filter_parameters.num_samples = QLOOKAHEAD;
     FilterSegment(in_data, &filter_parameters, out_data, out_dg);

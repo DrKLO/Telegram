@@ -44,7 +44,7 @@ int PitchEstimator::Estimate(
   CandidatePitchPeriods pitch_periods = ComputePitchPeriod12kHz(
       pitch_buffer_12kHz_view, auto_correlation_12kHz_view, cpu_features_);
   // The refinement is done using the pitch buffer that contains 24 kHz samples.
-  // Therefore, adapt the inverted lags in |pitch_candidates_inv_lags| from 12
+  // Therefore, adapt the inverted lags in `pitch_candidates_inv_lags` from 12
   // to 24 kHz.
   pitch_periods.best *= 2;
   pitch_periods.second_best *= 2;

@@ -173,14 +173,14 @@ bool PortAllocator::SetConfiguration(
 
   turn_customizer_ = turn_customizer;
 
-  // If |candidate_pool_size_| is less than the number of pooled sessions, get
+  // If `candidate_pool_size_` is less than the number of pooled sessions, get
   // rid of the extras.
   while (candidate_pool_size_ < static_cast<int>(pooled_sessions_.size())) {
     pooled_sessions_.back().reset(nullptr);
     pooled_sessions_.pop_back();
   }
 
-  // |stun_candidate_keepalive_interval_| will be used in STUN port allocation
+  // `stun_candidate_keepalive_interval_` will be used in STUN port allocation
   // in future sessions. We also update the ready ports in the pooled sessions.
   // Ports in sessions that are taken and owned by P2PTransportChannel will be
   // updated there via IceConfig.
@@ -190,7 +190,7 @@ bool PortAllocator::SetConfiguration(
         stun_candidate_keepalive_interval_);
   }
 
-  // If |candidate_pool_size_| is greater than the number of pooled sessions,
+  // If `candidate_pool_size_` is greater than the number of pooled sessions,
   // create new sessions.
   while (static_cast<int>(pooled_sessions_.size()) < candidate_pool_size_) {
     IceParameters iceCredentials =
@@ -317,7 +317,8 @@ Candidate PortAllocator::SanitizeCandidate(const Candidate& c) const {
   // For a local host candidate, we need to conceal its IP address candidate if
   // the mDNS obfuscation is enabled.
   bool use_hostname_address =
-      c.type() == LOCAL_PORT_TYPE && MdnsObfuscationEnabled();
+      (c.type() == LOCAL_PORT_TYPE || c.type() == PRFLX_PORT_TYPE) &&
+      MdnsObfuscationEnabled();
   // If adapter enumeration is disabled or host candidates are disabled,
   // clear the raddr of STUN candidates to avoid local address leakage.
   bool filter_stun_related_address =

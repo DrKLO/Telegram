@@ -46,6 +46,8 @@ class RTC_EXPORT VideoFrameBuffer : public rtc::RefCountInterface {
   // New frame buffer types will be added conservatively when there is an
   // opportunity to optimize the path between some pair of video source and
   // video sink.
+  // GENERATED_JAVA_ENUM_PACKAGE: org.webrtc
+  // GENERATED_JAVA_CLASS_NAME_OVERRIDE: VideoFrameBufferType
   enum class Type {
     kNative,
     kI420,
@@ -67,6 +69,8 @@ class RTC_EXPORT VideoFrameBuffer : public rtc::RefCountInterface {
   // in another format, a conversion will take place. All implementations must
   // provide a fallback to I420 for compatibility with e.g. the internal WebRTC
   // software encoders.
+  // Conversion may fail, for example if reading the pixel data from a texture
+  // fails. If the conversion fails, nullptr is returned.
   virtual rtc::scoped_refptr<I420BufferInterface> ToI420() = 0;
 
   // GetI420() methods should return I420 buffer if conversion is trivial, i.e
@@ -82,8 +86,8 @@ class RTC_EXPORT VideoFrameBuffer : public rtc::RefCountInterface {
   // A format specific scale function. Default implementation works by
   // converting to I420. But more efficient implementations may override it,
   // especially for kNative.
-  // First, the image is cropped to |crop_width| and |crop_height| and then
-  // scaled to |scaled_width| and |scaled_height|.
+  // First, the image is cropped to `crop_width` and `crop_height` and then
+  // scaled to `scaled_width` and `scaled_height`.
   virtual rtc::scoped_refptr<VideoFrameBuffer> CropAndScale(int offset_x,
                                                             int offset_y,
                                                             int crop_width,

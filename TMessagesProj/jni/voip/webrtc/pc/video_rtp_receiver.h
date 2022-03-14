@@ -21,7 +21,6 @@
 #include "api/dtls_transport_interface.h"
 #include "api/frame_transformer_interface.h"
 #include "api/media_stream_interface.h"
-#include "api/media_stream_track_proxy.h"
 #include "api/media_types.h"
 #include "api/rtp_parameters.h"
 #include "api/rtp_receiver_interface.h"
@@ -33,6 +32,7 @@
 #include "api/video/video_source_interface.h"
 #include "media/base/media_channel.h"
 #include "pc/jitter_buffer_delay.h"
+#include "pc/media_stream_track_proxy.h"
 #include "pc/rtp_receiver.h"
 #include "pc/video_rtp_track_source.h"
 #include "pc/video_track.h"
@@ -146,7 +146,7 @@ class VideoRtpReceiver : public RtpReceiverInternal {
   cricket::VideoMediaChannel* media_channel_ RTC_GUARDED_BY(worker_thread_) =
       nullptr;
   absl::optional<uint32_t> ssrc_ RTC_GUARDED_BY(worker_thread_);
-  // |source_| is held here to be able to change the state of the source when
+  // `source_` is held here to be able to change the state of the source when
   // the VideoRtpReceiver is stopped.
   const rtc::scoped_refptr<VideoRtpTrackSource> source_;
   const rtc::scoped_refptr<VideoTrackProxyWithInternal<VideoTrack>> track_;
@@ -173,10 +173,10 @@ class VideoRtpReceiver : public RtpReceiverInternal {
   rtc::scoped_refptr<FrameTransformerInterface> frame_transformer_
       RTC_GUARDED_BY(worker_thread_);
   // Stores the minimum jitter buffer delay. Handles caching cases
-  // if |SetJitterBufferMinimumDelay| is called before start.
+  // if `SetJitterBufferMinimumDelay` is called before start.
   JitterBufferDelay delay_ RTC_GUARDED_BY(worker_thread_);
 
-  // Records if we should generate a keyframe when |media_channel_| gets set up
+  // Records if we should generate a keyframe when `media_channel_` gets set up
   // or switched.
   bool saved_generate_keyframe_ RTC_GUARDED_BY(worker_thread_) = false;
   bool saved_encoded_sink_enabled_ RTC_GUARDED_BY(worker_thread_) = false;

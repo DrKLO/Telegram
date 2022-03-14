@@ -20,7 +20,7 @@ constexpr uint8_t kFlagEndOfSubframe = 0x40;
 
 // In version 00, the flags F and L in the first byte correspond to
 // kFlagFirstSubframeV00 and kFlagLastSubframeV00. In practice, they were
-// always set to |true|.
+// always set to `true`.
 constexpr uint8_t kFlagFirstSubframeV00 = 0x20;
 constexpr uint8_t kFlagLastSubframeV00 = 0x10;
 
@@ -57,7 +57,6 @@ constexpr uint8_t kFlageXtendedOffset = 0x02;
 //      |      ...      |
 //      +-+-+-+-+-+-+-+-+
 constexpr RTPExtensionType RtpGenericFrameDescriptorExtension00::kId;
-constexpr char RtpGenericFrameDescriptorExtension00::kUri[];
 
 bool RtpGenericFrameDescriptorExtension00::Parse(
     rtc::ArrayView<const uint8_t> data,

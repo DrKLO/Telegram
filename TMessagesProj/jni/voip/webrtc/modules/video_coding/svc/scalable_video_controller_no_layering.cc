@@ -25,6 +25,7 @@ ScalableVideoControllerNoLayering::StreamConfig() const {
   StreamLayersConfig result;
   result.num_spatial_layers = 1;
   result.num_temporal_layers = 1;
+  result.uses_reference_scaling = false;
   return result;
 }
 

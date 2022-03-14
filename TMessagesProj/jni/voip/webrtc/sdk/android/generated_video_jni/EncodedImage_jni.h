@@ -260,7 +260,4 @@ static base::android::ScopedJavaLocalRef<jobject> Java_EncodedImage_getQp(JNIEnv
 }  // namespace jni
 }  // namespace  webrtc
 
-// Step 4: Generated test functions (optional).
-
-
 #endif  // org_webrtc_EncodedImage_JNI

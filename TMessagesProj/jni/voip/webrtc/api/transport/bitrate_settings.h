@@ -18,7 +18,7 @@
 
 namespace webrtc {
 
-// Configuration of send bitrate. The |start_bitrate_bps| value is
+// Configuration of send bitrate. The `start_bitrate_bps` value is
 // used for multiple purposes, both as a prior in the bandwidth
 // estimator, and for initial configuration of the encoder. We may
 // want to create separate apis for those, and use a smaller struct

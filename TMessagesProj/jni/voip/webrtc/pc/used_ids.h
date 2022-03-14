@@ -28,7 +28,7 @@ class UsedIds {
         next_id_(max_allowed_id) {}
   virtual ~UsedIds() {}
 
-  // Loops through all Id in |ids| and changes its id if it is
+  // Loops through all Id in `ids` and changes its id if it is
   // already in use by another IdStruct. Call this methods with all Id
   // in a session description to make sure no duplicate ids exists.
   // Note that typename Id must be a type of IdStruct.
@@ -39,7 +39,7 @@ class UsedIds {
     }
   }
 
-  // Finds and sets an unused id if the |idstruct| id is already in use.
+  // Finds and sets an unused id if the `idstruct` id is already in use.
   void FindAndSetIdUsed(IdStruct* idstruct) {
     const int original_id = idstruct->id;
     int new_id = idstruct->id;
@@ -108,7 +108,7 @@ class UsedPayloadTypes : public UsedIds<Codec> {
 
  private:
   static const int kFirstDynamicPayloadTypeLowerRange = 35;
-  static const int kLastDynamicPayloadTypeLowerRange = 65;
+  static const int kLastDynamicPayloadTypeLowerRange = 63;
 
   static const int kFirstDynamicPayloadTypeUpperRange = 96;
   static const int kLastDynamicPayloadTypeUpperRange = 127;
@@ -141,7 +141,7 @@ class UsedRtpHeaderExtensionIds : public UsedIds<webrtc::RtpExtension> {
   // header extensions. This hopefully reduce the risk of more collisions. We
   // want to change the default ids as little as possible. If no unused id is
   // found and two byte header extensions are enabled (i.e.,
-  // |extmap_allow_mixed_| is true), search for unused ids from 15 to 255.
+  // `extmap_allow_mixed_` is true), search for unused ids from 15 to 255.
   int FindUnusedId() override {
     if (next_extension_id_ <=
         webrtc::RtpExtension::kOneByteHeaderExtensionMaxId) {

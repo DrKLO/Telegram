@@ -63,9 +63,9 @@ class SSLCertChain;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-// If |allow| has a value, its value determines if legacy TLS protocols are
+// If `allow` has a value, its value determines if legacy TLS protocols are
 // allowed, overriding the default configuration.
-// If |allow| has no value, any previous override is removed and the default
+// If `allow` has no value, any previous override is removed and the default
 // configuration is restored.
 RTC_EXPORT void SetAllowLegacyTLSProtocols(const absl::optional<bool>& allow);
 
@@ -169,7 +169,7 @@ class OpenSSLStreamAdapter final : public SSLStreamAdapter {
   // raised on the stream with the specified error.
   // A 0 error means a graceful close, otherwise there is not really enough
   // context to interpret the error code.
-  // |alert| indicates an alert description (one of the SSL_AD constants) to
+  // `alert` indicates an alert description (one of the SSL_AD constants) to
   // send to the remote endpoint when closing the association. If 0, a normal
   // shutdown will be performed.
   void Error(const char* context, int err, uint8_t alert, bool signal);

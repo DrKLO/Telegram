@@ -17,20 +17,6 @@
 
 namespace webrtc {
 
-// Converts time obtained using rtc::TimeMicros to ntp format.
-// TimeMicrosToNtp guarantees difference of the returned values matches
-// difference of the passed values.
-// As a result TimeMicrosToNtp(rtc::TimeMicros()) doesn't guarantee to match
-// system time.
-// However, TimeMicrosToNtp Guarantees that returned NtpTime will be offsetted
-// from rtc::TimeMicros() by integral number of milliseconds.
-// Use NtpOffsetMs() to get that offset value.
-NtpTime TimeMicrosToNtp(int64_t time_us);
-
-// Difference between Ntp time and local relative time returned by
-// rtc::TimeMicros()
-int64_t NtpOffsetMs();
-
 // Helper function for compact ntp representation:
 // RFC 3550, Section 4. Time Format.
 // Wallclock time is represented using the timestamp format of

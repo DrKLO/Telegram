@@ -32,9 +32,9 @@ class MessageDigest {
   virtual ~MessageDigest() {}
   // Returns the digest output size (e.g. 16 bytes for MD5).
   virtual size_t Size() const = 0;
-  // Updates the digest with |len| bytes from |buf|.
+  // Updates the digest with `len` bytes from `buf`.
   virtual void Update(const void* buf, size_t len) = 0;
-  // Outputs the digest value to |buf| with length |len|.
+  // Outputs the digest value to `buf` with length `len`.
   // Returns the number of bytes written, i.e., Size().
   virtual size_t Finish(void* buf, size_t len) = 0;
 };
@@ -51,28 +51,28 @@ bool IsFips180DigestAlgorithm(const std::string& alg);
 
 // Functions to create hashes.
 
-// Computes the hash of |in_len| bytes of |input|, using the |digest| hash
-// implementation, and outputs the hash to the buffer |output|, which is
-// |out_len| bytes long. Returns the number of bytes written to |output| if
-// successful, or 0 if |out_len| was too small.
+// Computes the hash of `in_len` bytes of `input`, using the `digest` hash
+// implementation, and outputs the hash to the buffer `output`, which is
+// `out_len` bytes long. Returns the number of bytes written to `output` if
+// successful, or 0 if `out_len` was too small.
 size_t ComputeDigest(MessageDigest* digest,
                      const void* input,
                      size_t in_len,
                      void* output,
                      size_t out_len);
 // Like the previous function, but creates a digest implementation based on
-// the desired digest name |alg|, e.g. DIGEST_SHA_1. Returns 0 if there is no
+// the desired digest name `alg`, e.g. DIGEST_SHA_1. Returns 0 if there is no
 // digest with the given name.
 size_t ComputeDigest(const std::string& alg,
                      const void* input,
                      size_t in_len,
                      void* output,
                      size_t out_len);
-// Computes the hash of |input| using the |digest| hash implementation, and
+// Computes the hash of `input` using the `digest` hash implementation, and
 // returns it as a hex-encoded string.
 std::string ComputeDigest(MessageDigest* digest, const std::string& input);
 // Like the previous function, but creates a digest implementation based on
-// the desired digest name |alg|, e.g. DIGEST_SHA_1. Returns empty string if
+// the desired digest name `alg`, e.g. DIGEST_SHA_1. Returns empty string if
 // there is no digest with the given name.
 std::string ComputeDigest(const std::string& alg, const std::string& input);
 // Like the previous function, but returns an explicit result code.
@@ -87,10 +87,10 @@ inline std::string MD5(const std::string& input) {
 
 // Functions to compute RFC 2104 HMACs.
 
-// Computes the HMAC of |in_len| bytes of |input|, using the |digest| hash
-// implementation and |key_len| bytes of |key| to key the HMAC, and outputs
-// the HMAC to the buffer |output|, which is |out_len| bytes long. Returns the
-// number of bytes written to |output| if successful, or 0 if |out_len| was too
+// Computes the HMAC of `in_len` bytes of `input`, using the `digest` hash
+// implementation and `key_len` bytes of `key` to key the HMAC, and outputs
+// the HMAC to the buffer `output`, which is `out_len` bytes long. Returns the
+// number of bytes written to `output` if successful, or 0 if `out_len` was too
 // small.
 size_t ComputeHmac(MessageDigest* digest,
                    const void* key,
@@ -100,7 +100,7 @@ size_t ComputeHmac(MessageDigest* digest,
                    void* output,
                    size_t out_len);
 // Like the previous function, but creates a digest implementation based on
-// the desired digest name |alg|, e.g. DIGEST_SHA_1. Returns 0 if there is no
+// the desired digest name `alg`, e.g. DIGEST_SHA_1. Returns 0 if there is no
 // digest with the given name.
 size_t ComputeHmac(const std::string& alg,
                    const void* key,
@@ -109,13 +109,13 @@ size_t ComputeHmac(const std::string& alg,
                    size_t in_len,
                    void* output,
                    size_t out_len);
-// Computes the HMAC of |input| using the |digest| hash implementation and |key|
+// Computes the HMAC of `input` using the `digest` hash implementation and `key`
 // to key the HMAC, and returns it as a hex-encoded string.
 std::string ComputeHmac(MessageDigest* digest,
                         const std::string& key,
                         const std::string& input);
 // Like the previous function, but creates a digest implementation based on
-// the desired digest name |alg|, e.g. DIGEST_SHA_1. Returns empty string if
+// the desired digest name `alg`, e.g. DIGEST_SHA_1. Returns empty string if
 // there is no digest with the given name.
 std::string ComputeHmac(const std::string& alg,
                         const std::string& key,

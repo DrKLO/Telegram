@@ -21,10 +21,10 @@
 
 namespace webrtc {
 
-// Encode |values| as a sequence of deltas following on |base| and return it.
+// Encode `values` as a sequence of deltas following on `base` and return it.
 // If all of the values were equal to the base, an empty string will be
 // returned; this is a valid encoding of that edge case.
-// |base| is not guaranteed to be written into |output|, and must therefore
+// `base` is not guaranteed to be written into `output`, and must therefore
 // be provided separately to the decoder.
 // This function never fails.
 // TODO(eladalon): Split into optional and non-optional variants (efficiency).
@@ -34,8 +34,8 @@ std::string EncodeDeltas(absl::optional<uint64_t> base,
 // EncodeDeltas() and DecodeDeltas() are inverse operations;
 // invoking DecodeDeltas() over the output of EncodeDeltas(), will return
 // the input originally given to EncodeDeltas().
-// |num_of_deltas| must be greater than zero. If input is not a valid encoding
-// of |num_of_deltas| elements based on |base|, the function returns an empty
+// `num_of_deltas` must be greater than zero. If input is not a valid encoding
+// of `num_of_deltas` elements based on `base`, the function returns an empty
 // vector, which signals an error.
 // TODO(eladalon): Split into optional and non-optional variants (efficiency).
 std::vector<absl::optional<uint64_t>> DecodeDeltas(

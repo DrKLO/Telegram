@@ -161,7 +161,7 @@ uint16_t BlockAlign(size_t num_channels, size_t bytes_per_sample) {
   return static_cast<uint16_t>(num_channels * bytes_per_sample);
 }
 
-// Finds a chunk having the sought ID. If found, then |readable| points to the
+// Finds a chunk having the sought ID. If found, then `readable` points to the
 // first byte of the sought chunk data. If not found, the end of the file is
 // reached.
 bool FindWaveChunk(ChunkHeader* chunk_header,

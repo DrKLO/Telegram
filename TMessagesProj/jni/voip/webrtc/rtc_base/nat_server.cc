@@ -70,7 +70,7 @@ bool AddrCmp::operator()(const SocketAddress& a1,
 // a TCP connection to the NAT server.
 class NATProxyServerSocket : public AsyncProxyServerSocket {
  public:
-  NATProxyServerSocket(AsyncSocket* socket)
+  NATProxyServerSocket(Socket* socket)
       : AsyncProxyServerSocket(socket, kNATEncodedIPv6AddressSize) {
     BufferInput(true);
   }
@@ -119,7 +119,7 @@ class NATProxyServer : public ProxyServer {
       : ProxyServer(int_factory, int_addr, ext_factory, ext_ip) {}
 
  protected:
-  AsyncProxyServerSocket* WrapSocket(AsyncSocket* socket) override {
+  AsyncProxyServerSocket* WrapSocket(Socket* socket) override {
     return new NATProxyServerSocket(socket);
   }
 };

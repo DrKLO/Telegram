@@ -89,9 +89,11 @@ enum LoggingSeverity {
   LS_WARNING,
   LS_ERROR,
   LS_NONE,
-  INFO = LS_INFO,
-  WARNING = LS_WARNING,
-  LERROR = LS_ERROR
+  // Compatibility aliases, to be deleted.
+  // TODO(bugs.webrtc.org/13362): Remove usage and delete.
+  INFO [[deprecated("Use LS_INFO")]] = LS_INFO,
+  WARNING [[deprecated("Use LS_WARNING")]] = LS_WARNING,
+  LERROR [[deprecated("Use LS_ERROR")]] = LS_ERROR
 };
 
 // LogErrorContext assists in interpreting the meaning of an error value.
@@ -449,7 +451,7 @@ class LogMessage {
   // which case the logging start time will be the time of the first LogMessage
   // instance is created.
   static int64_t LogStartTime();
-  // Returns the wall clock equivalent of |LogStartTime|, in seconds from the
+  // Returns the wall clock equivalent of `LogStartTime`, in seconds from the
   // epoch.
   static uint32_t WallClockStartTime();
   //  LogThreads: Display the thread identifier of the current thread
@@ -463,14 +465,14 @@ class LogMessage {
   // Sets whether logs will be directed to stderr in debug mode.
   static void SetLogToStderr(bool log_to_stderr);
   // Stream: Any non-blocking stream interface.
-  // Installs the |stream| to collect logs with severtiy |min_sev| or higher.
-  // |stream| must live until deinstalled by RemoveLogToStream.
-  // If |stream| is the first stream added to the system, we might miss some
+  // Installs the `stream` to collect logs with severtiy `min_sev` or higher.
+  // `stream` must live until deinstalled by RemoveLogToStream.
+  // If `stream` is the first stream added to the system, we might miss some
   // early concurrent log statement happening from another thread happening near
   // this instant.
   static void AddLogToStream(LogSink* stream, LoggingSeverity min_sev);
   // Removes the specified stream, without destroying it. When the method
-  // has completed, it's guaranteed that |stream| will receive no more logging
+  // has completed, it's guaranteed that `stream` will receive no more logging
   // calls.
   static void RemoveLogToStream(LogSink* stream);
   // Returns the severity for the specified stream, of if none is specified,
@@ -482,9 +484,9 @@ class LogMessage {
   // Parses the provided parameter stream to configure the options above.
   // Useful for configuring logging from the command line.
   static void ConfigureLogging(const char* params);
-  // Checks the current global debug severity and if the |streams_| collection
-  // is empty. If |severity| is smaller than the global severity and if the
-  // |streams_| collection is empty, the LogMessage will be considered a noop
+  // Checks the current global debug severity and if the `streams_` collection
+  // is empty. If `severity` is smaller than the global severity and if the
+  // `streams_` collection is empty, the LogMessage will be considered a noop
   // LogMessage.
   static bool IsNoop(LoggingSeverity severity);
   // Version of IsNoop that uses fewer instructions at the call site, since the
@@ -573,7 +575,7 @@ class LogMessage {
   // The output streams and their associated severities
   static LogSink* streams_;
 
-  // Holds true with high probability if |streams_| is empty, false with high
+  // Holds true with high probability if `streams_` is empty, false with high
   // probability otherwise. Operated on with std::memory_order_relaxed because
   // it's ok to lose or log some additional statements near the instant streams
   // are added/removed.

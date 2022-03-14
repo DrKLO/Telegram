@@ -65,7 +65,7 @@ class RemoteBitrateEstimatorSingleStream : public RemoteBitrateEstimator {
   void GetSsrcs(std::vector<uint32_t>* ssrcs) const
       RTC_SHARED_LOCKS_REQUIRED(mutex_);
 
-  // Returns |remote_rate_| if the pointed to object exists,
+  // Returns `remote_rate_` if the pointed to object exists,
   // otherwise creates it.
   AimdRateControl* GetRemoteRate() RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 

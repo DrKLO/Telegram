@@ -216,7 +216,7 @@ void ConnectionRequest::Prepare(StunMessage* request) {
     request->AddAttribute(std::make_unique<StunUInt64Attribute>(
         STUN_ATTR_ICE_CONTROLLED, connection_->port()->IceTiebreaker()));
   } else {
-    RTC_NOTREACHED();
+    RTC_DCHECK_NOTREACHED();
   }
 
   // Adding PRIORITY Attribute.
@@ -513,7 +513,7 @@ void Connection::OnReadPacket(const char* data,
         break;
 
       // Remote end point sent an STUN indication instead of regular binding
-      // request. In this case |last_ping_received_| will be updated but no
+      // request. In this case `last_ping_received_` will be updated but no
       // response will be sent.
       case STUN_BINDING_INDICATION:
         ReceivedPing(msg->transaction_id());
@@ -528,7 +528,7 @@ void Connection::OnReadPacket(const char* data,
         }
         break;
       default:
-        RTC_NOTREACHED();
+        RTC_DCHECK_NOTREACHED();
         break;
     }
   }
@@ -928,7 +928,7 @@ bool Connection::dead(int64_t now) const {
     // working. This also allows a remote peer to continue pinging over a
     // locally inactive (pruned) connection. This also allows the local agent to
     // ping with longer interval than 30s as long as it shorter than
-    // |dead_connection_timeout_ms|.
+    // `dead_connection_timeout_ms`.
     if (now <= (last_received() + DEAD_CONNECTION_RECEIVE_TIMEOUT)) {
       // Not dead since we have received the last 30s.
       return false;
@@ -1138,8 +1138,6 @@ void Connection::OnConnectionRequestErrorResponse(ConnectionRequest* request,
       error_code == STUN_ERROR_SERVER_ERROR ||
       error_code == STUN_ERROR_UNAUTHORIZED) {
     // Recoverable error, retry
-  } else if (error_code == STUN_ERROR_STALE_CREDENTIALS) {
-    // Race failure, retry
   } else if (error_code == STUN_ERROR_ROLE_CONFLICT) {
     HandleRoleConflictFromPeer();
   } else if (request->msg()->type() == GOOG_PING_REQUEST) {
@@ -1376,6 +1374,7 @@ int ProxyConnection::Send(const void* data,
     RTC_DCHECK(sent < 0);
     error_ = port_->GetError();
     stats_.sent_discarded_packets++;
+    stats_.sent_discarded_bytes += size;
   } else {
     send_rate_tracker_.AddSamplesAtTime(now, sent);
   }

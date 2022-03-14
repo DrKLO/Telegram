@@ -66,6 +66,7 @@ uint64_t GetCPUFeaturesARM(void) {
   }
 #endif  // WEBRTC_GLIBC_PREREQ(2, 16)
 #if defined(__aarch64__)
+  (void)platform;
   architecture = 8;
   if ((hwcap & HWCAP_FP) != 0)
     result |= kCPUFeatureVFPv3;

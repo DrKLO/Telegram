@@ -25,7 +25,7 @@ class WPDNode {
   WPDNode(size_t length, const float* coefficients, size_t coefficients_length);
   ~WPDNode();
 
-  // Updates the node data. |parent_data| / 2 must be equals to |length_|.
+  // Updates the node data. `parent_data` / 2 must be equals to `length_`.
   // Returns 0 if correct, and -1 otherwise.
   int Update(const float* parent_data, size_t parent_data_length);
 

@@ -26,7 +26,7 @@ class UniqueTimestampCounter {
   ~UniqueTimestampCounter() = default;
 
   void Add(uint32_t timestamp);
-  // Returns number of different |timestamp| passed to the UniqueCounter.
+  // Returns number of different `timestamp` passed to the UniqueCounter.
   int GetUniqueSeen() const { return unique_seen_; }
 
  private:

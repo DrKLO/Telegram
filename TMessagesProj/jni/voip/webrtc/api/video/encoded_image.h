@@ -98,7 +98,7 @@ class RTC_EXPORT EncodedImage {
   }
 
   // These methods can be used to set/get size of subframe with spatial index
-  // |spatial_index| on encoded frames that consist of multiple spatial layers.
+  // `spatial_index` on encoded frames that consist of multiple spatial layers.
   absl::optional<size_t> SpatialLayerFrameSize(int spatial_index) const;
   void SetSpatialLayerFrameSize(int spatial_index, size_t size_bytes);
 
@@ -195,7 +195,7 @@ class RTC_EXPORT EncodedImage {
   // carries the webrtc::VideoFrame id field from the sender to the receiver.
   absl::optional<uint16_t> video_frame_tracking_id_;
   // Information about packets used to assemble this video frame. This is needed
-  // by |SourceTracker| when the frame is delivered to the RTCRtpReceiver's
+  // by `SourceTracker` when the frame is delivered to the RTCRtpReceiver's
   // MediaStreamTrack, in order to implement getContributingSources(). See:
   // https://w3c.github.io/webrtc-pc/#dom-rtcrtpreceiver-getcontributingsources
   RtpPacketInfos packet_infos_;

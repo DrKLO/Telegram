@@ -13,6 +13,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "absl/types/optional.h"
 #include "net/dcsctp/public/types.h"
 
 namespace dcsctp {
@@ -81,23 +82,27 @@ struct DcSctpOptions {
 
   // Maximum send buffer size. It will not be possible to queue more data than
   // this before sending it.
-  size_t max_send_buffer_size = 2 * 1024 * 1024;
+  size_t max_send_buffer_size = 2'000'000;
+
+  // A threshold that, when the amount of data in the send buffer goes below
+  // this value, will trigger `DcSctpCallbacks::OnTotalBufferedAmountLow`.
+  size_t total_buffered_amount_low_threshold = 1'800'000;
 
   // Max allowed RTT value. When the RTT is measured and it's found to be larger
   // than this value, it will be discarded and not used for e.g. any RTO
   // calculation. The default value is an extreme maximum but can be adapted
   // to better match the environment.
-  DurationMs rtt_max = DurationMs(8000);
+  DurationMs rtt_max = DurationMs(60'000);
 
   // Initial RTO value.
   DurationMs rto_initial = DurationMs(500);
 
   // Maximum RTO value.
-  DurationMs rto_max = DurationMs(800);
+  DurationMs rto_max = DurationMs(60'000);
 
   // Minimum RTO value. This must be larger than an expected peer delayed ack
   // timeout.
-  DurationMs rto_min = DurationMs(220);
+  DurationMs rto_min = DurationMs(400);
 
   // T1-init timeout.
   DurationMs t1_init_timeout = DurationMs(1000);
@@ -108,15 +113,35 @@ struct DcSctpOptions {
   // T2-shutdown timeout.
   DurationMs t2_shutdown_timeout = DurationMs(1000);
 
-  // Hearbeat interval (on idle connections only).
+  // For t1-init, t1-cookie, t2-shutdown, t3-rtx, this value - if set - will be
+  // the upper bound on how large the exponentially backed off timeout can
+  // become. The lower the duration, the faster the connection can recover on
+  // transient network issues. Setting this value may require changing
+  // `max_retransmissions` and `max_init_retransmits` to ensure that the
+  // connection is not closed too quickly.
+  absl::optional<DurationMs> max_timer_backoff_duration = absl::nullopt;
+
+  // Hearbeat interval (on idle connections only). Set to zero to disable.
   DurationMs heartbeat_interval = DurationMs(30000);
 
   // The maximum time when a SACK will be sent from the arrival of an
   // unacknowledged packet. Whatever is smallest of RTO/2 and this will be used.
   DurationMs delayed_ack_max_timeout = DurationMs(200);
 
-  // Do slow start as TCP - double cwnd instead of increasing it by MTU.
-  bool slow_start_tcp_style = false;
+  // The minimum limit for the measured RTT variance
+  //
+  // Setting this below the expected delayed ack timeout (+ margin) of the peer
+  // might result in unnecessary retransmissions, as the maximum time it takes
+  // to ACK a DATA chunk is typically RTT + ATO (delayed ack timeout), and when
+  // the SCTP channel is quite idle, and heartbeats dominate the source of RTT
+  // measurement, the RTO would converge with the smoothed RTT (SRTT). The
+  // default ATO is 200ms in usrsctp, and a 20ms (10%) margin would include the
+  // processing time of received packets and the clock granularity when setting
+  // the delayed ack timer on the peer.
+  //
+  // This is described for TCP in
+  // https://datatracker.ietf.org/doc/html/rfc6298#section-4.
+  DurationMs min_rtt_variance = DurationMs(220);
 
   // The initial congestion window size, in number of MTUs.
   // See https://tools.ietf.org/html/rfc4960#section-7.2.1 which defaults at ~3
@@ -124,15 +149,35 @@ struct DcSctpOptions {
   // segments.
   size_t cwnd_mtus_initial = 10;
 
-  // The minimum congestion window size, in number of MTUs.
-  // See https://tools.ietf.org/html/rfc4960#section-7.2.3.
+  // The minimum congestion window size, in number of MTUs, upon detection of
+  // packet loss by SACK. Note that if the retransmission timer expires, the
+  // congestion window will be as small as one MTU. See
+  // https://tools.ietf.org/html/rfc4960#section-7.2.3.
   size_t cwnd_mtus_min = 4;
 
-  // Maximum Data Retransmit Attempts (per DATA chunk).
-  int max_retransmissions = 10;
+  // When the congestion window is at or above this number of MTUs, the
+  // congestion control algorithm will avoid filling the congestion window
+  // fully, if that results in fragmenting large messages into quite small
+  // packets. When the congestion window is smaller than this option, it will
+  // aim to fill the congestion window as much as it can, even if it results in
+  // creating small fragmented packets.
+  size_t avoid_fragmentation_cwnd_mtus = 6;
 
-  // Max.Init.Retransmits (https://tools.ietf.org/html/rfc4960#section-15)
-  int max_init_retransmits = 8;
+  // The number of packets that may be sent at once. This is limited to avoid
+  // bursts that too quickly fill the send buffer. Typically in a a socket in
+  // its "slow start" phase (when it sends as much as it can), it will send
+  // up to three packets for every SACK received, so the default limit is set
+  // just above that, and then mostly applicable for (but not limited to) fast
+  // retransmission scenarios.
+  int max_burst = 4;
+
+  // Maximum Data Retransmit Attempts (per DATA chunk). Set to absl::nullopt for
+  // no limit.
+  absl::optional<int> max_retransmissions = 10;
+
+  // Max.Init.Retransmits (https://tools.ietf.org/html/rfc4960#section-15). Set
+  // to absl::nullopt for no limit.
+  absl::optional<int> max_init_retransmits = 8;
 
   // RFC3758 Partial Reliability Extension
   bool enable_partial_reliability = true;

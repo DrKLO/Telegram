@@ -62,7 +62,4 @@ static void Java_StatsObserver_onComplete(JNIEnv* env, const base::android::Java
 }  // namespace jni
 }  // namespace  webrtc
 
-// Step 4: Generated test functions (optional).
-
-
 #endif  // org_webrtc_StatsObserver_JNI

@@ -17,6 +17,7 @@
 // PacketTimeUpdateParams is defined in asyncpacketsocket.h.
 // TODO(sergeyu): Find more appropriate place for PacketTimeUpdateParams.
 #include "media/base/turn_utils.h"
+#include "modules/rtp_rtcp/source/rtp_util.h"
 #include "rtc_base/async_packet_socket.h"
 #include "rtc_base/byte_order.h"
 #include "rtc_base/checks.h"
@@ -24,12 +25,6 @@
 
 namespace cricket {
 
-static const uint8_t kRtpVersion = 2;
-static const size_t kRtpFlagsOffset = 0;
-static const size_t kRtpPayloadTypeOffset = 1;
-static const size_t kRtpSeqNumOffset = 2;
-static const size_t kRtpTimestampOffset = 4;
-static const size_t kRtpSsrcOffset = 8;
 static const size_t kRtcpPayloadTypeOffset = 1;
 static const size_t kRtpExtensionHeaderLen = 4;
 static const size_t kAbsSendTimeExtensionLen = 3;
@@ -63,7 +58,7 @@ void UpdateAbsSendTimeExtensionValue(uint8_t* extension_data,
   //   |  ID   | len=2 |              absolute send time               |
   //   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   if (length != kAbsSendTimeExtensionLen) {
-    RTC_NOTREACHED();
+    RTC_DCHECK_NOTREACHED();
     return;
   }
 
@@ -74,7 +69,7 @@ void UpdateAbsSendTimeExtensionValue(uint8_t* extension_data,
   extension_data[2] = static_cast<uint8_t>(send_time);
 }
 
-// Assumes |length| is actual packet length + tag length. Updates HMAC at end of
+// Assumes `length` is actual packet length + tag length. Updates HMAC at end of
 // the RTP packet.
 void UpdateRtpAuthTag(uint8_t* rtp,
                       size_t length,
@@ -89,7 +84,7 @@ void UpdateRtpAuthTag(uint8_t* rtp,
   // ROC (rollover counter) is at the beginning of the auth tag.
   const size_t kRocLength = 4;
   if (tag_length < kRocLength || tag_length > length) {
-    RTC_NOTREACHED();
+    RTC_DCHECK_NOTREACHED();
     return;
   }
 
@@ -110,7 +105,7 @@ void UpdateRtpAuthTag(uint8_t* rtp,
                        auth_required_length, output, sizeof(output));
 
   if (result < tag_length) {
-    RTC_NOTREACHED();
+    RTC_DCHECK_NOTREACHED();
     return;
   }
 
@@ -118,8 +113,6 @@ void UpdateRtpAuthTag(uint8_t* rtp,
   // may not be equal to the actual HMAC length.
   memcpy(auth_tag, output, tag_length);
 }
-
-}  // namespace
 
 bool GetUint8(const void* data, size_t offset, int* value) {
   if (!data || !value) {
@@ -129,113 +122,7 @@ bool GetUint8(const void* data, size_t offset, int* value) {
   return true;
 }
 
-bool GetUint16(const void* data, size_t offset, int* value) {
-  if (!data || !value) {
-    return false;
-  }
-  *value = static_cast<int>(
-      rtc::GetBE16(static_cast<const uint8_t*>(data) + offset));
-  return true;
-}
-
-bool GetUint32(const void* data, size_t offset, uint32_t* value) {
-  if (!data || !value) {
-    return false;
-  }
-  *value = rtc::GetBE32(static_cast<const uint8_t*>(data) + offset);
-  return true;
-}
-
-bool SetUint8(void* data, size_t offset, uint8_t value) {
-  if (!data) {
-    return false;
-  }
-  rtc::Set8(data, offset, value);
-  return true;
-}
-
-bool SetUint16(void* data, size_t offset, uint16_t value) {
-  if (!data) {
-    return false;
-  }
-  rtc::SetBE16(static_cast<uint8_t*>(data) + offset, value);
-  return true;
-}
-
-bool SetUint32(void* data, size_t offset, uint32_t value) {
-  if (!data) {
-    return false;
-  }
-  rtc::SetBE32(static_cast<uint8_t*>(data) + offset, value);
-  return true;
-}
-
-bool GetRtpFlags(const void* data, size_t len, int* value) {
-  if (len < kMinRtpPacketLen) {
-    return false;
-  }
-  return GetUint8(data, kRtpFlagsOffset, value);
-}
-
-bool GetRtpPayloadType(const void* data, size_t len, int* value) {
-  if (len < kMinRtpPacketLen) {
-    return false;
-  }
-  if (!GetUint8(data, kRtpPayloadTypeOffset, value)) {
-    return false;
-  }
-  *value &= 0x7F;
-  return true;
-}
-
-bool GetRtpSeqNum(const void* data, size_t len, int* value) {
-  if (len < kMinRtpPacketLen) {
-    return false;
-  }
-  return GetUint16(data, kRtpSeqNumOffset, value);
-}
-
-bool GetRtpTimestamp(const void* data, size_t len, uint32_t* value) {
-  if (len < kMinRtpPacketLen) {
-    return false;
-  }
-  return GetUint32(data, kRtpTimestampOffset, value);
-}
-
-bool GetRtpSsrc(const void* data, size_t len, uint32_t* value) {
-  if (len < kMinRtpPacketLen) {
-    return false;
-  }
-  return GetUint32(data, kRtpSsrcOffset, value);
-}
-
-bool GetRtpHeaderLen(const void* data, size_t len, size_t* value) {
-  if (!data || len < kMinRtpPacketLen || !value)
-    return false;
-  const uint8_t* header = static_cast<const uint8_t*>(data);
-  // Get base header size + length of CSRCs (not counting extension yet).
-  size_t header_size = kMinRtpPacketLen + (header[0] & 0xF) * sizeof(uint32_t);
-  if (len < header_size)
-    return false;
-  // If there's an extension, read and add in the extension size.
-  if (header[0] & 0x10) {
-    if (len < header_size + sizeof(uint32_t))
-      return false;
-    header_size +=
-        ((rtc::GetBE16(header + header_size + 2) + 1) * sizeof(uint32_t));
-    if (len < header_size)
-      return false;
-  }
-  *value = header_size;
-  return true;
-}
-
-bool GetRtpHeader(const void* data, size_t len, RtpHeader* header) {
-  return (GetRtpPayloadType(data, len, &(header->payload_type)) &&
-          GetRtpSeqNum(data, len, &(header->seq_num)) &&
-          GetRtpTimestamp(data, len, &(header->timestamp)) &&
-          GetRtpSsrc(data, len, &(header->ssrc)));
-}
+}  // namespace
 
 bool GetRtcpType(const void* data, size_t len, int* value) {
   if (len < kMinRtcpPacketLen) {
@@ -259,47 +146,6 @@ bool GetRtcpSsrc(const void* data, size_t len, uint32_t* value) {
     return false;
   *value = rtc::GetBE32(static_cast<const uint8_t*>(data) + 4);
   return true;
-}
-
-bool SetRtpSsrc(void* data, size_t len, uint32_t value) {
-  return SetUint32(data, kRtpSsrcOffset, value);
-}
-
-// Assumes version 2, no padding, no extensions, no csrcs.
-bool SetRtpHeader(void* data, size_t len, const RtpHeader& header) {
-  if (!IsValidRtpPayloadType(header.payload_type) || header.seq_num < 0 ||
-      header.seq_num > static_cast<int>(UINT16_MAX)) {
-    return false;
-  }
-  return (SetUint8(data, kRtpFlagsOffset, kRtpVersion << 6) &&
-          SetUint8(data, kRtpPayloadTypeOffset, header.payload_type & 0x7F) &&
-          SetUint16(data, kRtpSeqNumOffset,
-                    static_cast<uint16_t>(header.seq_num)) &&
-          SetUint32(data, kRtpTimestampOffset, header.timestamp) &&
-          SetRtpSsrc(data, len, header.ssrc));
-}
-
-static bool HasCorrectRtpVersion(rtc::ArrayView<const uint8_t> packet) {
-  return packet.data()[0] >> 6 == kRtpVersion;
-}
-
-bool IsRtpPacket(rtc::ArrayView<const char> packet) {
-  return packet.size() >= kMinRtpPacketLen &&
-         HasCorrectRtpVersion(
-             rtc::reinterpret_array_view<const uint8_t>(packet));
-}
-
-// Check the RTP payload type. If 63 < payload type < 96, it's RTCP.
-// For additional details, see http://tools.ietf.org/html/rfc5761.
-bool IsRtcpPacket(rtc::ArrayView<const char> packet) {
-  if (packet.size() < kMinRtcpPacketLen ||
-      !HasCorrectRtpVersion(
-          rtc::reinterpret_array_view<const uint8_t>(packet))) {
-    return false;
-  }
-
-  char pt = packet[1] & 0x7F;
-  return (63 < pt) && (pt < 96);
 }
 
 bool IsValidRtpPayloadType(int payload_type) {
@@ -327,11 +173,11 @@ absl::string_view RtpPacketTypeToString(RtpPacketType packet_type) {
 }
 
 RtpPacketType InferRtpPacketType(rtc::ArrayView<const char> packet) {
-  // RTCP packets are RTP packets so must check that first.
-  if (IsRtcpPacket(packet)) {
+  if (webrtc::IsRtcpPacket(
+          rtc::reinterpret_array_view<const uint8_t>(packet))) {
     return RtpPacketType::kRtcp;
   }
-  if (IsRtpPacket(packet)) {
+  if (webrtc::IsRtpPacket(rtc::reinterpret_array_view<const uint8_t>(packet))) {
     return RtpPacketType::kRtp;
   }
   return RtpPacketType::kUnknown;
@@ -513,7 +359,7 @@ bool ApplyPacketOptions(uint8_t* data,
   RTC_DCHECK(data);
   RTC_DCHECK(length);
 
-  // if there is no valid |rtp_sendtime_extension_id| and |srtp_auth_key| in
+  // if there is no valid `rtp_sendtime_extension_id` and `srtp_auth_key` in
   // PacketOptions, nothing to be updated in this packet.
   if (packet_time_params.rtp_sendtime_extension_id == -1 &&
       packet_time_params.srtp_auth_key.empty()) {
@@ -526,15 +372,15 @@ bool ApplyPacketOptions(uint8_t* data,
   size_t rtp_start_pos;
   size_t rtp_length;
   if (!UnwrapTurnPacket(data, length, &rtp_start_pos, &rtp_length)) {
-    RTC_NOTREACHED();
+    RTC_DCHECK_NOTREACHED();
     return false;
   }
 
   // Making sure we have a valid RTP packet at the end.
   auto packet = rtc::MakeArrayView(data + rtp_start_pos, rtp_length);
-  if (!IsRtpPacket(rtc::reinterpret_array_view<const char>(packet)) ||
+  if (!webrtc::IsRtpPacket(packet) ||
       !ValidateRtpHeader(data + rtp_start_pos, rtp_length, nullptr)) {
-    RTC_NOTREACHED();
+    RTC_DCHECK_NOTREACHED();
     return false;
   }
 

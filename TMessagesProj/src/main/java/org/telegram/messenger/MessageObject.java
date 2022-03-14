@@ -99,6 +99,8 @@ public class MessageObject {
     public String customName;
     public boolean reactionsChanged;
     public boolean isReactionPush;
+    public boolean putInDownloadsStore;
+    public boolean isDownloadingFile;
     private int isRoundVideoCached;
     public long eventId;
     public int contentType;
@@ -443,6 +445,9 @@ public class MessageObject {
         public boolean edge;
         public int flags;
         public float[] siblingHeights;
+
+        public float top; // sum of ph of media above
+        public float left; // sum of pw of media on the left side
 
         public void set(int minX, int maxX, int minY, int maxY, int w, float h, int flags) {
             this.minX = (byte) minX;
@@ -6154,6 +6159,8 @@ public class MessageObject {
 
     public void setQuery(String query) {
         if (TextUtils.isEmpty(query)) {
+            highlightedWords = null;
+            messageTrimmedToHighlight = null;
             return;
         }
         ArrayList<String> foundWords = new ArrayList<>();

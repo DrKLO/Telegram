@@ -138,7 +138,7 @@ class Connection : public CandidatePairInterface,
     inactive_timeout_ = value;
   }
 
-  // Gets the |ConnectionInfo| stats, where |best_connection| has not been
+  // Gets the `ConnectionInfo` stats, where `best_connection` has not been
   // populated (default value false).
   ConnectionInfo stats();
 
@@ -183,10 +183,10 @@ class Connection : public CandidatePairInterface,
   uint32_t remote_nomination() const { return remote_nomination_; }
   // One or several pairs may be nominated based on if Regular or Aggressive
   // Nomination is used. https://tools.ietf.org/html/rfc5245#section-8
-  // |nominated| is defined both for the controlling or controlled agent based
+  // `nominated` is defined both for the controlling or controlled agent based
   // on if a nomination has been pinged or acknowledged. The controlled agent
-  // gets its |remote_nomination_| set when pinged by the controlling agent with
-  // a nomination value. The controlling agent gets its |acked_nomination_| set
+  // gets its `remote_nomination_` set when pinged by the controlling agent with
+  // a nomination value. The controlling agent gets its `acked_nomination_` set
   // when receiving a response to a nominating ping.
   bool nominated() const { return acked_nomination_ || remote_nomination_; }
   void set_remote_ice_mode(IceMode mode) { remote_ice_mode_ = mode; }
@@ -277,14 +277,14 @@ class Connection : public CandidatePairInterface,
   uint32_t ComputeNetworkCost() const;
 
   // Update the ICE password and/or generation of the remote candidate if the
-  // ufrag in |params| matches the candidate's ufrag, and the
+  // ufrag in `params` matches the candidate's ufrag, and the
   // candidate's password and/or ufrag has not been set.
   void MaybeSetRemoteIceParametersAndGeneration(const IceParameters& params,
                                                 int generation);
 
-  // If |remote_candidate_| is peer reflexive and is equivalent to
-  // |new_candidate| except the type, update |remote_candidate_| to
-  // |new_candidate|.
+  // If `remote_candidate_` is peer reflexive and is equivalent to
+  // `new_candidate` except the type, update `remote_candidate_` to
+  // `new_candidate`.
   void MaybeUpdatePeerReflexiveCandidate(const Candidate& new_candidate);
 
   // Returns the last received time of any data, stun request, or stun
@@ -297,7 +297,7 @@ class Connection : public CandidatePairInterface,
 
   bool stable(int64_t now) const;
 
-  // Check if we sent |val| pings without receving a response.
+  // Check if we sent `val` pings without receving a response.
   bool TooManyOutstandingPings(const absl::optional<int>& val) const;
 
   void SetIceFieldTrials(const IceFieldTrials* field_trials);
@@ -401,7 +401,7 @@ class Connection : public CandidatePairInterface,
   bool connected_;
   bool pruned_;
   bool selected_ = false;
-  // By default |use_candidate_attr_| flag will be true,
+  // By default `use_candidate_attr_` flag will be true,
   // as we will be using aggressive nomination.
   // But when peer is ice-lite, this flag "must" be initialized to false and
   // turn on when connection becomes "best connection".

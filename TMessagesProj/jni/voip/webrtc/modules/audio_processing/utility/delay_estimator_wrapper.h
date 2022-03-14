@@ -35,7 +35,7 @@ void WebRtc_FreeDelayEstimatorFarend(void* handle);
 //                        determined together with WebRtc_set_lookahead().
 //
 // Return value:
-//  - void*             : Created |handle|. If the memory can't be allocated or
+//  - void*             : Created `handle`. If the memory can't be allocated or
 //                        if any of the input parameters are invalid NULL is
 //                        returned.
 void* WebRtc_CreateDelayEstimatorFarend(int spectrum_size, int history_size);
@@ -85,13 +85,13 @@ void WebRtc_FreeDelayEstimator(void* handle);
 //                        WebRtc_CreateDelayEstimatorFarend().
 //
 //                        Note that WebRtc_CreateDelayEstimator does not take
-//                        ownership of |farend_handle|, which has to be torn
+//                        ownership of `farend_handle`, which has to be torn
 //                        down properly after this instance.
 //
 //      - max_lookahead : Maximum amount of non-causal lookahead allowed. The
 //                        actual amount of lookahead used can be controlled by
-//                        WebRtc_set_lookahead(...). The default |lookahead| is
-//                        set to |max_lookahead| at create time. Use
+//                        WebRtc_set_lookahead(...). The default `lookahead` is
+//                        set to `max_lookahead` at create time. Use
 //                        WebRtc_set_lookahead(...) before start if a different
 //                        value is desired.
 //
@@ -106,12 +106,12 @@ void WebRtc_FreeDelayEstimator(void* handle);
 //                        estimated.
 //
 //                        Note that the effective range of delay estimates is
-//                        [-|lookahead|,... ,|history_size|-|lookahead|)
-//                        where |history_size| is set through
+//                        [-`lookahead`,... ,`history_size`-`lookahead`)
+//                        where `history_size` is set through
 //                        WebRtc_set_history_size().
 //
 // Return value:
-//      - void*         : Created |handle|. If the memory can't be allocated or
+//      - void*         : Created `handle`. If the memory can't be allocated or
 //                        if any of the input parameters are invalid NULL is
 //                        returned.
 void* WebRtc_CreateDelayEstimator(void* farend_handle, int max_lookahead);
@@ -129,12 +129,12 @@ int WebRtc_InitDelayEstimator(void* handle);
 //      - actual_shifts : The actual number of shifts performed.
 int WebRtc_SoftResetDelayEstimator(void* handle, int delay_shift);
 
-// Sets the effective |history_size| used. Valid values from 2. We simply need
-// at least two delays to compare to perform an estimate. If |history_size| is
+// Sets the effective `history_size` used. Valid values from 2. We simply need
+// at least two delays to compare to perform an estimate. If `history_size` is
 // changed, buffers are reallocated filling in with zeros if necessary.
-// Note that changing the |history_size| affects both buffers in far-end and
+// Note that changing the `history_size` affects both buffers in far-end and
 // near-end. Hence it is important to change all DelayEstimators that use the
-// same reference far-end, to the same |history_size| value.
+// same reference far-end, to the same `history_size` value.
 // Inputs:
 //  - handle            : Pointer to the delay estimation instance.
 //  - history_size      : Effective history size to be used.
@@ -148,8 +148,8 @@ int WebRtc_set_history_size(void* handle, int history_size);
 //      - handle        : Pointer to the delay estimation instance.
 int WebRtc_history_size(const void* handle);
 
-// Sets the amount of |lookahead| to use. Valid values are [0, max_lookahead]
-// where |max_lookahead| was set at create time through
+// Sets the amount of `lookahead` to use. Valid values are [0, max_lookahead]
+// where `max_lookahead` was set at create time through
 // WebRtc_CreateDelayEstimator(...).
 //
 // Input:
@@ -157,8 +157,8 @@ int WebRtc_history_size(const void* handle);
 //      - lookahead     : The amount of lookahead to be used.
 //
 // Return value:
-//      - new_lookahead : The actual amount of lookahead set, unless |handle| is
-//                        a NULL pointer or |lookahead| is invalid, for which an
+//      - new_lookahead : The actual amount of lookahead set, unless `handle` is
+//                        a NULL pointer or `lookahead` is invalid, for which an
 //                        error is returned.
 int WebRtc_set_lookahead(void* handle, int lookahead);
 
@@ -167,12 +167,12 @@ int WebRtc_set_lookahead(void* handle, int lookahead);
 //      - handle        : Pointer to the delay estimation instance.
 int WebRtc_lookahead(void* handle);
 
-// Sets the |allowed_offset| used in the robust validation scheme.  If the
+// Sets the `allowed_offset` used in the robust validation scheme.  If the
 // delay estimator is used in an echo control component, this parameter is
-// related to the filter length.  In principle |allowed_offset| should be set to
+// related to the filter length.  In principle `allowed_offset` should be set to
 // the echo control filter length minus the expected echo duration, i.e., the
 // delay offset the echo control can handle without quality regression.  The
-// default value, used if not set manually, is zero.  Note that |allowed_offset|
+// default value, used if not set manually, is zero.  Note that `allowed_offset`
 // has to be non-negative.
 // Inputs:
 //  - handle            : Pointer to the delay estimation instance.
@@ -180,7 +180,7 @@ int WebRtc_lookahead(void* handle);
 //                        the echo control filter can handle.
 int WebRtc_set_allowed_offset(void* handle, int allowed_offset);
 
-// Returns the |allowed_offset| in number of partitions.
+// Returns the `allowed_offset` in number of partitions.
 int WebRtc_get_allowed_offset(const void* handle);
 
 // Enables/Disables a robust validation functionality in the delay estimation.

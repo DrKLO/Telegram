@@ -10,7 +10,6 @@
 
 #include "modules/audio_coding/neteq/red_payload_splitter.h"
 
-#include <assert.h>
 #include <stddef.h>
 
 #include <cstdint>
@@ -28,9 +27,9 @@ namespace webrtc {
 
 // The method loops through a list of packets {A, B, C, ...}. Each packet is
 // split into its corresponding RED payloads, {A1, A2, ...}, which is
-// temporarily held in the list |new_packets|.
-// When the first packet in |packet_list| has been processed, the original
-// packet is replaced by the new ones in |new_packets|, so that |packet_list|
+// temporarily held in the list `new_packets`.
+// When the first packet in `packet_list` has been processed, the original
+// packet is replaced by the new ones in `new_packets`, so that `packet_list`
 // becomes: {A1, A2, ..., B, C, ...}. The method then continues with B, and C,
 // until all the original packets have been replaced by their split payloads.
 bool RedPayloadSplitter::SplitRed(PacketList* packet_list) {
@@ -41,7 +40,7 @@ bool RedPayloadSplitter::SplitRed(PacketList* packet_list) {
   PacketList::iterator it = packet_list->begin();
   while (it != packet_list->end()) {
     const Packet& red_packet = *it;
-    assert(!red_packet.payload.empty());
+    RTC_DCHECK(!red_packet.payload.empty());
     const uint8_t* payload_ptr = red_packet.payload.data();
     size_t payload_length = red_packet.payload.size();
 
@@ -111,7 +110,7 @@ bool RedPayloadSplitter::SplitRed(PacketList* packet_list) {
 
     if (new_headers.size() <= kMaxRedBlocks) {
       // Populate the new packets with payload data.
-      // |payload_ptr| now points at the first payload byte.
+      // `payload_ptr` now points at the first payload byte.
       PacketList new_packets;  // An empty list to store the split packets in.
       for (size_t i = 0; i != new_headers.size(); ++i) {
         const auto& new_header = new_headers[i];
@@ -137,21 +136,21 @@ bool RedPayloadSplitter::SplitRed(PacketList* packet_list) {
             /*ssrc=*/red_packet.packet_info.ssrc(),
             /*csrcs=*/std::vector<uint32_t>(),
             /*rtp_timestamp=*/new_packet.timestamp,
-            /*audio_level=*/absl::nullopt,
+            red_packet.packet_info.audio_level(),
             /*absolute_capture_time=*/absl::nullopt,
             /*receive_time=*/red_packet.packet_info.receive_time());
         new_packets.push_front(std::move(new_packet));
         payload_ptr += payload_length;
       }
       // Insert new packets into original list, before the element pointed to by
-      // iterator |it|.
+      // iterator `it`.
       packet_list->splice(it, std::move(new_packets));
     } else {
       RTC_LOG(LS_WARNING) << "SplitRed too many blocks: " << new_headers.size();
       ret = false;
     }
-    // Remove |it| from the packet list. This operation effectively moves the
-    // iterator |it| to the next packet in the list. Thus, we do not have to
+    // Remove `it` from the packet list. This operation effectively moves the
+    // iterator `it` to the next packet in the list. Thus, we do not have to
     // increment it manually.
     it = packet_list->erase(it);
   }
@@ -176,8 +175,8 @@ void RedPayloadSplitter::CheckRedPayloads(
       } else {
         if (this_payload_type != main_payload_type) {
           // We do not allow redundant payloads of a different type.
-          // Remove |it| from the packet list. This operation effectively
-          // moves the iterator |it| to the next packet in the list. Thus, we
+          // Remove `it` from the packet list. This operation effectively
+          // moves the iterator `it` to the next packet in the list. Thus, we
           // do not have to increment it manually.
           it = packet_list->erase(it);
           continue;

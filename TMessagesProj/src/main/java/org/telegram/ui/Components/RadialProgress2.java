@@ -370,6 +370,7 @@ public class RadialProgress2 {
         circleMiniPaint.setAlpha((int) (originalAlpha * wholeAlpha * overrideAlpha));
 
         boolean drawCircle = true;
+        float scale = 1f;
         int centerX;
         int centerY;
         if ((drawMiniIcon || circleCrossfadeColorKey != null) && miniDrawCanvas != null) {
@@ -407,8 +408,8 @@ public class RadialProgress2 {
         int restore = Integer.MIN_VALUE;
         if (miniDrawCanvas != null && circleCrossfadeColorKey != null && circleCheckProgress != 1.0f) {
             restore = miniDrawCanvas.save();
-            float scale = 1.0f - 0.1f * (1.0f - circleCheckProgress);
-            miniDrawCanvas.scale(scale, scale, centerX, centerY);
+            float scaleMini = 1.0f - 0.1f * (1.0f - circleCheckProgress);
+            miniDrawCanvas.scale(scaleMini, scaleMini, centerX, centerY);
         }
         if (drawCircle && drawBackground) {
             if ((drawMiniIcon || circleCrossfadeColorKey != null) && miniDrawCanvas != null) {
@@ -418,7 +419,7 @@ public class RadialProgress2 {
                     if (backgroundStroke != 0) {
                         canvas.drawCircle(centerX, centerY, (circleRadius - AndroidUtilities.dp(3.5f)), circlePaint);
                     } else {
-                        canvas.drawCircle(centerX, centerY, circleRadius * wholeAlpha, circlePaint);
+                        canvas.drawCircle(centerX, centerY, circleRadius, circlePaint);
                     }
                 }
             }

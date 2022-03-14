@@ -48,7 +48,7 @@ int64_t SystemTimeNanos() {
     // Get the timebase if this is the first time we run.
     // Recommended by Apple's QA1398.
     if (mach_timebase_info(&timebase) != KERN_SUCCESS) {
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
     }
   }
   // Use timebase to convert absolute time tick units into nanoseconds.

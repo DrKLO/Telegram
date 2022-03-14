@@ -51,6 +51,8 @@ class RTPSenderAudio {
                  const uint8_t* payload_data,
                  size_t payload_size);
 
+  // `absolute_capture_timestamp_ms` and `Clock::CurrentTime`
+  // should be using the same epoch.
   bool SendAudio(AudioFrameType frame_type,
                  int8_t payload_type,
                  uint32_t rtp_timestamp,

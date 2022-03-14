@@ -1035,7 +1035,8 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
         fieldLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 36, Gravity.TOP | Gravity.LEFT));
 
         EditTextBoldCursor editText = new EditTextBoldCursor(context);
-        editText.setBackgroundDrawable(Theme.createEditTextDrawable(context, true));
+        editText.setBackground(null);
+        editText.setLineColors(Theme.getColor(Theme.key_dialogInputField), Theme.getColor(Theme.key_dialogInputFieldActivated), Theme.getColor(Theme.key_dialogTextRed2));
         editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         editText.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
         editText.setMaxLines(1);

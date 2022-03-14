@@ -70,7 +70,7 @@ class DataChannelController : public SctpDataChannelProviderInterface,
   void OnChannelClosing(int channel_id) override;
   void OnChannelClosed(int channel_id) override;
   void OnReadyToSend() override;
-  void OnTransportClosed() override;
+  void OnTransportClosed(RTCError error) override;
 
   // Called from PeerConnection::SetupDataChannelTransport_n
   void SetupDataChannelTransport_n();
@@ -111,7 +111,7 @@ class DataChannelController : public SctpDataChannelProviderInterface,
     return SignalSctpDataChannelCreated_;
   }
   // Called when the transport for the data channels is closed or destroyed.
-  void OnTransportChannelClosed();
+  void OnTransportChannelClosed(RTCError error);
 
   void OnSctpDataChannelClosed(SctpDataChannel* channel);
 
@@ -161,7 +161,7 @@ class DataChannelController : public SctpDataChannelProviderInterface,
   std::vector<rtc::scoped_refptr<SctpDataChannel>> sctp_data_channels_to_free_
       RTC_GUARDED_BY(signaling_thread());
 
-  // Signals from |data_channel_transport_|.  These are invoked on the
+  // Signals from `data_channel_transport_`.  These are invoked on the
   // signaling thread.
   // TODO(bugs.webrtc.org/11547): These '_s' signals likely all belong on the
   // network thread.

@@ -15,12 +15,16 @@
 #include "absl/numeric/int128.h"
 
 #include <stddef.h>
+
 #include <cassert>
 #include <iomanip>
 #include <ostream>  // NOLINT(readability/streams)
 #include <sstream>
 #include <string>
 #include <type_traits>
+
+#include "absl/base/optimization.h"
+#include "absl/numeric/bits.h"
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
@@ -31,44 +35,26 @@ ABSL_DLL const uint128 kuint128max = MakeUint128(
 namespace {
 
 // Returns the 0-based position of the last set bit (i.e., most significant bit)
-// in the given uint64_t. The argument may not be 0.
+// in the given uint128. The argument is not 0.
 //
 // For example:
 //   Given: 5 (decimal) == 101 (binary)
 //   Returns: 2
-#define STEP(T, n, pos, sh)                   \
-  do {                                        \
-    if ((n) >= (static_cast<T>(1) << (sh))) { \
-      (n) = (n) >> (sh);                      \
-      (pos) |= (sh);                          \
-    }                                         \
-  } while (0)
-static inline int Fls64(uint64_t n) {
-  assert(n != 0);
-  int pos = 0;
-  STEP(uint64_t, n, pos, 0x20);
-  uint32_t n32 = static_cast<uint32_t>(n);
-  STEP(uint32_t, n32, pos, 0x10);
-  STEP(uint32_t, n32, pos, 0x08);
-  STEP(uint32_t, n32, pos, 0x04);
-  return pos + ((uint64_t{0x3333333322221100} >> (n32 << 2)) & 0x3);
-}
-#undef STEP
-
-// Like Fls64() above, but returns the 0-based position of the last set bit
-// (i.e., most significant bit) in the given uint128. The argument may not be 0.
-static inline int Fls128(uint128 n) {
+inline ABSL_ATTRIBUTE_ALWAYS_INLINE int Fls128(uint128 n) {
   if (uint64_t hi = Uint128High64(n)) {
-    return Fls64(hi) + 64;
+    ABSL_INTERNAL_ASSUME(hi != 0);
+    return 127 - countl_zero(hi);
   }
-  return Fls64(Uint128Low64(n));
+  const uint64_t low = Uint128Low64(n);
+  ABSL_INTERNAL_ASSUME(low != 0);
+  return 63 - countl_zero(low);
 }
 
 // Long division/modulo for uint128 implemented using the shift-subtract
 // division algorithm adapted from:
 // https://stackoverflow.com/questions/5386377/division-without-using
-void DivModImpl(uint128 dividend, uint128 divisor, uint128* quotient_ret,
-                uint128* remainder_ret) {
+inline void DivModImpl(uint128 dividend, uint128 divisor, uint128* quotient_ret,
+                       uint128* remainder_ret) {
   assert(divisor != 0);
 
   if (divisor > dividend) {
@@ -152,28 +138,21 @@ uint128::uint128(float v) : uint128(MakeUint128FromFloat(v)) {}
 uint128::uint128(double v) : uint128(MakeUint128FromFloat(v)) {}
 uint128::uint128(long double v) : uint128(MakeUint128FromFloat(v)) {}
 
+#if !defined(ABSL_HAVE_INTRINSIC_INT128)
 uint128 operator/(uint128 lhs, uint128 rhs) {
-#if defined(ABSL_HAVE_INTRINSIC_INT128)
-  return static_cast<unsigned __int128>(lhs) /
-         static_cast<unsigned __int128>(rhs);
-#else  // ABSL_HAVE_INTRINSIC_INT128
   uint128 quotient = 0;
   uint128 remainder = 0;
   DivModImpl(lhs, rhs, &quotient, &remainder);
   return quotient;
-#endif  // ABSL_HAVE_INTRINSIC_INT128
 }
+
 uint128 operator%(uint128 lhs, uint128 rhs) {
-#if defined(ABSL_HAVE_INTRINSIC_INT128)
-  return static_cast<unsigned __int128>(lhs) %
-         static_cast<unsigned __int128>(rhs);
-#else  // ABSL_HAVE_INTRINSIC_INT128
   uint128 quotient = 0;
   uint128 remainder = 0;
   DivModImpl(lhs, rhs, &quotient, &remainder);
   return remainder;
-#endif  // ABSL_HAVE_INTRINSIC_INT128
 }
+#endif  // !defined(ABSL_HAVE_INTRINSIC_INT128)
 
 namespace {
 

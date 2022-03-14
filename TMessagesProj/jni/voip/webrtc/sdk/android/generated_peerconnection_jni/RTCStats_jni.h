@@ -67,7 +67,4 @@ static base::android::ScopedJavaLocalRef<jobject> Java_RTCStats_create(JNIEnv* e
 }  // namespace jni
 }  // namespace  webrtc
 
-// Step 4: Generated test functions (optional).
-
-
 #endif  // org_webrtc_RTCStats_JNI

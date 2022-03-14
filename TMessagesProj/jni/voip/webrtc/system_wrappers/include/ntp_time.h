@@ -62,10 +62,10 @@ inline bool operator!=(const NtpTime& n1, const NtpTime& n2) {
   return !(n1 == n2);
 }
 
-// Converts |int64_t| milliseconds to Q32.32-formatted fixed-point seconds.
+// Converts `int64_t` milliseconds to Q32.32-formatted fixed-point seconds.
 // Performs clamping if the result overflows or underflows.
 inline int64_t Int64MsToQ32x32(int64_t milliseconds) {
-  // TODO(bugs.webrtc.org/10893): Change to use |rtc::saturated_cast| once the
+  // TODO(bugs.webrtc.org/10893): Change to use `rtc::saturated_cast` once the
   // bug has been fixed.
   double result =
       std::round(milliseconds * (NtpTime::kFractionsPerSecond / 1000.0));
@@ -85,10 +85,10 @@ inline int64_t Int64MsToQ32x32(int64_t milliseconds) {
   return rtc::dchecked_cast<int64_t>(result);
 }
 
-// Converts |int64_t| milliseconds to UQ32.32-formatted fixed-point seconds.
+// Converts `int64_t` milliseconds to UQ32.32-formatted fixed-point seconds.
 // Performs clamping if the result overflows or underflows.
 inline uint64_t Int64MsToUQ32x32(int64_t milliseconds) {
-  // TODO(bugs.webrtc.org/10893): Change to use |rtc::saturated_cast| once the
+  // TODO(bugs.webrtc.org/10893): Change to use `rtc::saturated_cast` once the
   // bug has been fixed.
   double result =
       std::round(milliseconds * (NtpTime::kFractionsPerSecond / 1000.0));
@@ -108,13 +108,13 @@ inline uint64_t Int64MsToUQ32x32(int64_t milliseconds) {
   return rtc::dchecked_cast<uint64_t>(result);
 }
 
-// Converts Q32.32-formatted fixed-point seconds to |int64_t| milliseconds.
+// Converts Q32.32-formatted fixed-point seconds to `int64_t` milliseconds.
 inline int64_t Q32x32ToInt64Ms(int64_t q32x32) {
   return rtc::dchecked_cast<int64_t>(
       std::round(q32x32 * (1000.0 / NtpTime::kFractionsPerSecond)));
 }
 
-// Converts UQ32.32-formatted fixed-point seconds to |int64_t| milliseconds.
+// Converts UQ32.32-formatted fixed-point seconds to `int64_t` milliseconds.
 inline int64_t UQ32x32ToInt64Ms(uint64_t q32x32) {
   return rtc::dchecked_cast<int64_t>(
       std::round(q32x32 * (1000.0 / NtpTime::kFractionsPerSecond)));

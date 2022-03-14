@@ -216,7 +216,4 @@ static void Java_MediaStream_removeVideoTrack(JNIEnv* env, const base::android::
 }  // namespace jni
 }  // namespace  webrtc
 
-// Step 4: Generated test functions (optional).
-
-
 #endif  // org_webrtc_MediaStream_JNI

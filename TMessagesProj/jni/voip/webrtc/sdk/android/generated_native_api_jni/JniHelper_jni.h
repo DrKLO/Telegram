@@ -129,7 +129,4 @@ static base::android::ScopedJavaLocalRef<jobject> Java_JniHelper_getValue(JNIEnv
 }  // namespace jni
 }  // namespace  webrtc
 
-// Step 4: Generated test functions (optional).
-
-
 #endif  // org_webrtc_JniHelper_JNI

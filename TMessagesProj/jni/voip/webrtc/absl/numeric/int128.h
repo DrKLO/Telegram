@@ -18,6 +18,10 @@
 // -----------------------------------------------------------------------------
 //
 // This header file defines 128-bit integer types, `uint128` and `int128`.
+//
+// TODO(absl-team): This module is inconsistent as many inline `uint128` methods
+// are defined in this file, while many inline `int128` methods are defined in
+// the `int128_*_intrinsic.inc` files.
 
 #ifndef ABSL_NUMERIC_INT128_H_
 #define ABSL_NUMERIC_INT128_H_
@@ -582,10 +586,10 @@ inline uint128& uint128::operator=(int128 v) {
 
 // Arithmetic operators.
 
-uint128 operator<<(uint128 lhs, int amount);
-uint128 operator>>(uint128 lhs, int amount);
-uint128 operator+(uint128 lhs, uint128 rhs);
-uint128 operator-(uint128 lhs, uint128 rhs);
+constexpr uint128 operator<<(uint128 lhs, int amount);
+constexpr uint128 operator>>(uint128 lhs, int amount);
+constexpr uint128 operator+(uint128 lhs, uint128 rhs);
+constexpr uint128 operator-(uint128 lhs, uint128 rhs);
 uint128 operator*(uint128 lhs, uint128 rhs);
 uint128 operator/(uint128 lhs, uint128 rhs);
 uint128 operator%(uint128 lhs, uint128 rhs);
@@ -782,16 +786,19 @@ inline uint128::operator long double() const {
 
 // Comparison operators.
 
-inline bool operator==(uint128 lhs, uint128 rhs) {
+constexpr bool operator==(uint128 lhs, uint128 rhs) {
+#if defined(ABSL_HAVE_INTRINSIC_INT128)
+  return static_cast<unsigned __int128>(lhs) ==
+         static_cast<unsigned __int128>(rhs);
+#else
   return (Uint128Low64(lhs) == Uint128Low64(rhs) &&
           Uint128High64(lhs) == Uint128High64(rhs));
+#endif
 }
 
-inline bool operator!=(uint128 lhs, uint128 rhs) {
-  return !(lhs == rhs);
-}
+constexpr bool operator!=(uint128 lhs, uint128 rhs) { return !(lhs == rhs); }
 
-inline bool operator<(uint128 lhs, uint128 rhs) {
+constexpr bool operator<(uint128 lhs, uint128 rhs) {
 #ifdef ABSL_HAVE_INTRINSIC_INT128
   return static_cast<unsigned __int128>(lhs) <
          static_cast<unsigned __int128>(rhs);
@@ -802,118 +809,169 @@ inline bool operator<(uint128 lhs, uint128 rhs) {
 #endif
 }
 
-inline bool operator>(uint128 lhs, uint128 rhs) { return rhs < lhs; }
+constexpr bool operator>(uint128 lhs, uint128 rhs) { return rhs < lhs; }
 
-inline bool operator<=(uint128 lhs, uint128 rhs) { return !(rhs < lhs); }
+constexpr bool operator<=(uint128 lhs, uint128 rhs) { return !(rhs < lhs); }
 
-inline bool operator>=(uint128 lhs, uint128 rhs) { return !(lhs < rhs); }
+constexpr bool operator>=(uint128 lhs, uint128 rhs) { return !(lhs < rhs); }
 
 // Unary operators.
 
-inline uint128 operator-(uint128 val) {
-  uint64_t hi = ~Uint128High64(val);
-  uint64_t lo = ~Uint128Low64(val) + 1;
-  if (lo == 0) ++hi;  // carry
-  return MakeUint128(hi, lo);
+constexpr inline uint128 operator+(uint128 val) {
+  return val;
 }
 
-inline bool operator!(uint128 val) {
+constexpr inline int128 operator+(int128 val) {
+  return val;
+}
+
+constexpr uint128 operator-(uint128 val) {
+#if defined(ABSL_HAVE_INTRINSIC_INT128)
+  return -static_cast<unsigned __int128>(val);
+#else
+  return MakeUint128(
+      ~Uint128High64(val) + static_cast<unsigned long>(Uint128Low64(val) == 0),
+      ~Uint128Low64(val) + 1);
+#endif
+}
+
+constexpr inline bool operator!(uint128 val) {
+#if defined(ABSL_HAVE_INTRINSIC_INT128)
+  return !static_cast<unsigned __int128>(val);
+#else
   return !Uint128High64(val) && !Uint128Low64(val);
+#endif
 }
 
 // Logical operators.
 
-inline uint128 operator~(uint128 val) {
+constexpr inline uint128 operator~(uint128 val) {
+#if defined(ABSL_HAVE_INTRINSIC_INT128)
+  return ~static_cast<unsigned __int128>(val);
+#else
   return MakeUint128(~Uint128High64(val), ~Uint128Low64(val));
+#endif
 }
 
-inline uint128 operator|(uint128 lhs, uint128 rhs) {
+constexpr inline uint128 operator|(uint128 lhs, uint128 rhs) {
+#if defined(ABSL_HAVE_INTRINSIC_INT128)
+  return static_cast<unsigned __int128>(lhs) |
+         static_cast<unsigned __int128>(rhs);
+#else
   return MakeUint128(Uint128High64(lhs) | Uint128High64(rhs),
-                           Uint128Low64(lhs) | Uint128Low64(rhs));
+                     Uint128Low64(lhs) | Uint128Low64(rhs));
+#endif
 }
 
-inline uint128 operator&(uint128 lhs, uint128 rhs) {
+constexpr inline uint128 operator&(uint128 lhs, uint128 rhs) {
+#if defined(ABSL_HAVE_INTRINSIC_INT128)
+  return static_cast<unsigned __int128>(lhs) &
+         static_cast<unsigned __int128>(rhs);
+#else
   return MakeUint128(Uint128High64(lhs) & Uint128High64(rhs),
-                           Uint128Low64(lhs) & Uint128Low64(rhs));
+                     Uint128Low64(lhs) & Uint128Low64(rhs));
+#endif
 }
 
-inline uint128 operator^(uint128 lhs, uint128 rhs) {
+constexpr inline uint128 operator^(uint128 lhs, uint128 rhs) {
+#if defined(ABSL_HAVE_INTRINSIC_INT128)
+  return static_cast<unsigned __int128>(lhs) ^
+         static_cast<unsigned __int128>(rhs);
+#else
   return MakeUint128(Uint128High64(lhs) ^ Uint128High64(rhs),
-                           Uint128Low64(lhs) ^ Uint128Low64(rhs));
+                     Uint128Low64(lhs) ^ Uint128Low64(rhs));
+#endif
 }
 
 inline uint128& uint128::operator|=(uint128 other) {
-  hi_ |= other.hi_;
-  lo_ |= other.lo_;
+  *this = *this | other;
   return *this;
 }
 
 inline uint128& uint128::operator&=(uint128 other) {
-  hi_ &= other.hi_;
-  lo_ &= other.lo_;
+  *this = *this & other;
   return *this;
 }
 
 inline uint128& uint128::operator^=(uint128 other) {
-  hi_ ^= other.hi_;
-  lo_ ^= other.lo_;
+  *this = *this ^ other;
   return *this;
 }
 
 // Arithmetic operators.
 
-inline uint128 operator<<(uint128 lhs, int amount) {
+constexpr uint128 operator<<(uint128 lhs, int amount) {
 #ifdef ABSL_HAVE_INTRINSIC_INT128
   return static_cast<unsigned __int128>(lhs) << amount;
 #else
   // uint64_t shifts of >= 64 are undefined, so we will need some
   // special-casing.
-  if (amount < 64) {
-    if (amount != 0) {
-      return MakeUint128(
-          (Uint128High64(lhs) << amount) | (Uint128Low64(lhs) >> (64 - amount)),
-          Uint128Low64(lhs) << amount);
-    }
-    return lhs;
-  }
-  return MakeUint128(Uint128Low64(lhs) << (amount - 64), 0);
+  return amount >= 64 ? MakeUint128(Uint128Low64(lhs) << (amount - 64), 0)
+         : amount == 0 ? lhs
+                       : MakeUint128((Uint128High64(lhs) << amount) |
+                                         (Uint128Low64(lhs) >> (64 - amount)),
+                                     Uint128Low64(lhs) << amount);
 #endif
 }
 
-inline uint128 operator>>(uint128 lhs, int amount) {
+constexpr uint128 operator>>(uint128 lhs, int amount) {
 #ifdef ABSL_HAVE_INTRINSIC_INT128
   return static_cast<unsigned __int128>(lhs) >> amount;
 #else
   // uint64_t shifts of >= 64 are undefined, so we will need some
   // special-casing.
-  if (amount < 64) {
-    if (amount != 0) {
-      return MakeUint128(Uint128High64(lhs) >> amount,
-                         (Uint128Low64(lhs) >> amount) |
-                             (Uint128High64(lhs) << (64 - amount)));
-    }
-    return lhs;
-  }
-  return MakeUint128(0, Uint128High64(lhs) >> (amount - 64));
+  return amount >= 64 ? MakeUint128(0, Uint128High64(lhs) >> (amount - 64))
+         : amount == 0 ? lhs
+                       : MakeUint128(Uint128High64(lhs) >> amount,
+                                     (Uint128Low64(lhs) >> amount) |
+                                         (Uint128High64(lhs) << (64 - amount)));
 #endif
 }
 
-inline uint128 operator+(uint128 lhs, uint128 rhs) {
-  uint128 result = MakeUint128(Uint128High64(lhs) + Uint128High64(rhs),
-                               Uint128Low64(lhs) + Uint128Low64(rhs));
-  if (Uint128Low64(result) < Uint128Low64(lhs)) {  // check for carry
-    return MakeUint128(Uint128High64(result) + 1, Uint128Low64(result));
-  }
-  return result;
+#if !defined(ABSL_HAVE_INTRINSIC_INT128)
+namespace int128_internal {
+constexpr uint128 AddResult(uint128 result, uint128 lhs) {
+  // check for carry
+  return (Uint128Low64(result) < Uint128Low64(lhs))
+             ? MakeUint128(Uint128High64(result) + 1, Uint128Low64(result))
+             : result;
+}
+}  // namespace int128_internal
+#endif
+
+constexpr uint128 operator+(uint128 lhs, uint128 rhs) {
+#if defined(ABSL_HAVE_INTRINSIC_INT128)
+  return static_cast<unsigned __int128>(lhs) +
+         static_cast<unsigned __int128>(rhs);
+#else
+  return int128_internal::AddResult(
+      MakeUint128(Uint128High64(lhs) + Uint128High64(rhs),
+                  Uint128Low64(lhs) + Uint128Low64(rhs)),
+      lhs);
+#endif
 }
 
-inline uint128 operator-(uint128 lhs, uint128 rhs) {
-  uint128 result = MakeUint128(Uint128High64(lhs) - Uint128High64(rhs),
-                               Uint128Low64(lhs) - Uint128Low64(rhs));
-  if (Uint128Low64(lhs) < Uint128Low64(rhs)) {  // check for carry
-    return MakeUint128(Uint128High64(result) - 1, Uint128Low64(result));
-  }
-  return result;
+#if !defined(ABSL_HAVE_INTRINSIC_INT128)
+namespace int128_internal {
+constexpr uint128 SubstructResult(uint128 result, uint128 lhs, uint128 rhs) {
+  // check for carry
+  return (Uint128Low64(lhs) < Uint128Low64(rhs))
+             ? MakeUint128(Uint128High64(result) - 1, Uint128Low64(result))
+             : result;
+}
+}  // namespace int128_internal
+#endif
+
+constexpr uint128 operator-(uint128 lhs, uint128 rhs) {
+#if defined(ABSL_HAVE_INTRINSIC_INT128)
+  return static_cast<unsigned __int128>(lhs) -
+         static_cast<unsigned __int128>(rhs);
+#else
+  return int128_internal::SubstructResult(
+      MakeUint128(Uint128High64(lhs) - Uint128High64(rhs),
+                  Uint128Low64(lhs) - Uint128Low64(rhs)),
+      lhs, rhs);
+#endif
 }
 
 inline uint128 operator*(uint128 lhs, uint128 rhs) {
@@ -942,6 +1000,18 @@ inline uint128 operator*(uint128 lhs, uint128 rhs) {
   return result;
 #endif  // ABSL_HAVE_INTRINSIC128
 }
+
+#if defined(ABSL_HAVE_INTRINSIC_INT128)
+inline uint128 operator/(uint128 lhs, uint128 rhs) {
+  return static_cast<unsigned __int128>(lhs) /
+         static_cast<unsigned __int128>(rhs);
+}
+
+inline uint128 operator%(uint128 lhs, uint128 rhs) {
+  return static_cast<unsigned __int128>(lhs) %
+         static_cast<unsigned __int128>(rhs);
+}
+#endif
 
 // Increment/decrement operators.
 
@@ -1000,17 +1070,17 @@ inline int128& int128::operator=(unsigned long long v) {
 }
 
 // Arithmetic operators.
-
-int128 operator+(int128 lhs, int128 rhs);
-int128 operator-(int128 lhs, int128 rhs);
+constexpr int128 operator-(int128 v);
+constexpr int128 operator+(int128 lhs, int128 rhs);
+constexpr int128 operator-(int128 lhs, int128 rhs);
 int128 operator*(int128 lhs, int128 rhs);
 int128 operator/(int128 lhs, int128 rhs);
 int128 operator%(int128 lhs, int128 rhs);
-int128 operator|(int128 lhs, int128 rhs);
-int128 operator&(int128 lhs, int128 rhs);
-int128 operator^(int128 lhs, int128 rhs);
-int128 operator<<(int128 lhs, int amount);
-int128 operator>>(int128 lhs, int amount);
+constexpr int128 operator|(int128 lhs, int128 rhs);
+constexpr int128 operator&(int128 lhs, int128 rhs);
+constexpr int128 operator^(int128 lhs, int128 rhs);
+constexpr int128 operator<<(int128 lhs, int amount);
+constexpr int128 operator>>(int128 lhs, int amount);
 
 inline int128& int128::operator+=(int128 other) {
   *this = *this + other;
@@ -1061,6 +1131,9 @@ inline int128& int128::operator>>=(int amount) {
   *this = *this >> amount;
   return *this;
 }
+
+// Forward declaration for comparison operators.
+constexpr bool operator!=(int128 lhs, int128 rhs);
 
 namespace int128_internal {
 

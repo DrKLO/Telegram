@@ -74,8 +74,8 @@ class AudioRecordJni : public AudioInput {
   int32_t EnableBuiltInNS(bool enable) override;
 
   // Called from Java side so we can cache the address of the Java-manged
-  // |byte_buffer| in |direct_buffer_address_|. The size of the buffer
-  // is also stored in |direct_buffer_capacity_in_bytes_|.
+  // `byte_buffer` in `direct_buffer_address_`. The size of the buffer
+  // is also stored in `direct_buffer_capacity_in_bytes_`.
   // This method will be called by the WebRtcAudioRecord constructor, i.e.,
   // on the same thread that this object is created on.
   void CacheDirectBufferAddress(JNIEnv* env,
@@ -83,8 +83,8 @@ class AudioRecordJni : public AudioInput {
                                 const JavaParamRef<jobject>& byte_buffer);
 
   // Called periodically by the Java based WebRtcAudioRecord object when
-  // recording has started. Each call indicates that there are |length| new
-  // bytes recorded in the memory area |direct_buffer_address_| and it is
+  // recording has started. Each call indicates that there are `length` new
+  // bytes recorded in the memory area `direct_buffer_address_` and it is
   // now time to send these to the consumer.
   // This method is called on a high-priority thread from Java. The name of
   // the thread is 'AudioRecordThread'.
@@ -111,10 +111,10 @@ class AudioRecordJni : public AudioInput {
   // possible values. See audio_common.h for details.
   const int total_delay_ms_;
 
-  // Cached copy of address to direct audio buffer owned by |j_audio_record_|.
+  // Cached copy of address to direct audio buffer owned by `j_audio_record_`.
   void* direct_buffer_address_;
 
-  // Number of bytes in the direct audio buffer owned by |j_audio_record_|.
+  // Number of bytes in the direct audio buffer owned by `j_audio_record_`.
   size_t direct_buffer_capacity_in_bytes_;
 
   // Number audio frames per audio buffer. Each audio frame corresponds to

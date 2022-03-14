@@ -35,6 +35,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.voip.VoIPService;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.Components.voip.RTMPStreamPipOverlay;
 import org.telegram.ui.GroupCallActivity;
 
 import static android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
@@ -442,6 +443,9 @@ public class GroupCallPip implements NotificationCenter.NotificationCenterDelega
     }
 
     public static boolean isShowing() {
+        if (RTMPStreamPipOverlay.isVisible()) {
+            return true;
+        }
         if (instance != null) {
             return true;
         }

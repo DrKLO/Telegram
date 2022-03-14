@@ -40,8 +40,8 @@ class Operation {
   virtual void Run() = 0;
 };
 
-// FunctorT is the same as in OperationsChain::ChainOperation(). |callback_| is
-// passed on to the |functor_| and is used to inform the OperationsChain that
+// FunctorT is the same as in OperationsChain::ChainOperation(). `callback_` is
+// passed on to the `functor_` and is used to inform the OperationsChain that
 // the operation completed. The functor is responsible for invoking the
 // callback when the operation has completed.
 template <typename FunctorT>
@@ -63,13 +63,13 @@ class OperationWithFunctor final : public Operation {
     has_run_ = true;
 #endif  // RTC_DCHECK_IS_ON
     // The functor being executed may invoke the callback synchronously,
-    // marking the operation as complete. As such, |this| OperationWithFunctor
-    // object may get deleted here, including destroying |functor_|. To
+    // marking the operation as complete. As such, `this` OperationWithFunctor
+    // object may get deleted here, including destroying `functor_`. To
     // protect the functor from self-destruction while running, it is moved to
     // a local variable.
     auto functor = std::move(functor_);
     functor(std::move(callback_));
-    // |this| may now be deleted; don't touch any member variables.
+    // `this` may now be deleted; don't touch any member variables.
   }
 
  private:
@@ -122,7 +122,7 @@ class OperationsChain final : public RefCountedObject<RefCountInterface> {
   bool IsEmpty() const;
 
   // Chains an operation. Chained operations are executed in FIFO order. The
-  // operation starts when |functor| is executed by the OperationsChain and is
+  // operation starts when `functor` is executed by the OperationsChain and is
   // contractually obligated to invoke the callback passed to it when the
   // operation is complete. Operations must start and complete on the same
   // sequence that this method was invoked on.

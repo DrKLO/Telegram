@@ -14,12 +14,14 @@
 
 #include "absl/hash/hash.h"
 
+#include <algorithm>
 #include <array>
 #include <bitset>
 #include <cstring>
 #include <deque>
 #include <forward_list>
 #include <functional>
+#include <initializer_list>
 #include <iterator>
 #include <limits>
 #include <list>
@@ -32,12 +34,18 @@
 #include <tuple>
 #include <type_traits>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "absl/container/btree_map.h"
+#include "absl/container/btree_set.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/container/node_hash_map.h"
+#include "absl/container/node_hash_set.h"
 #include "absl/hash/hash_testing.h"
 #include "absl/hash/internal/spy_hash_state.h"
 #include "absl/meta/type_traits.h"
@@ -45,6 +53,56 @@
 #include "absl/strings/cord_test_helpers.h"
 
 namespace {
+
+// Utility wrapper of T for the purposes of testing the `AbslHash` type erasure
+// mechanism.  `TypeErasedValue<T>` can be constructed with a `T`, and can
+// be compared and hashed.  However, all hashing goes through the hashing
+// type-erasure framework.
+template <typename T>
+class TypeErasedValue {
+ public:
+  TypeErasedValue() = default;
+  TypeErasedValue(const TypeErasedValue&) = default;
+  TypeErasedValue(TypeErasedValue&&) = default;
+  explicit TypeErasedValue(const T& n) : n_(n) {}
+
+  template <typename H>
+  friend H AbslHashValue(H hash_state, const TypeErasedValue& v) {
+    v.HashValue(absl::HashState::Create(&hash_state));
+    return hash_state;
+  }
+
+  void HashValue(absl::HashState state) const {
+    absl::HashState::combine(std::move(state), n_);
+  }
+
+  bool operator==(const TypeErasedValue& rhs) const { return n_ == rhs.n_; }
+  bool operator!=(const TypeErasedValue& rhs) const { return !(*this == rhs); }
+
+ private:
+  T n_;
+};
+
+// A TypeErasedValue refinement, for containers.  It exposes the wrapped
+// `value_type` and is constructible from an initializer list.
+template <typename T>
+class TypeErasedContainer : public TypeErasedValue<T> {
+ public:
+  using value_type = typename T::value_type;
+  TypeErasedContainer() = default;
+  TypeErasedContainer(const TypeErasedContainer&) = default;
+  TypeErasedContainer(TypeErasedContainer&&) = default;
+  explicit TypeErasedContainer(const T& n) : TypeErasedValue<T>(n) {}
+  TypeErasedContainer(std::initializer_list<value_type> init_list)
+      : TypeErasedContainer(T(init_list.begin(), init_list.end())) {}
+  // one-argument constructor of value type T, to appease older toolchains that
+  // get confused by one-element initializer lists in some contexts
+  explicit TypeErasedContainer(const value_type& v)
+      : TypeErasedContainer(T(&v, &v + 1)) {}
+};
+
+template <typename T>
+using TypeErasedVector = TypeErasedContainer<std::vector<T>>;
 
 using absl::Hash;
 using absl::hash_internal::SpyHashState;
@@ -81,10 +139,10 @@ TYPED_TEST_P(HashValueIntTest, FastPath) {
             absl::Hash<std::tuple<TypeParam>>{}(std::tuple<TypeParam>(n)));
 }
 
-REGISTER_TYPED_TEST_CASE_P(HashValueIntTest, BasicUsage, FastPath);
-using IntTypes = testing::Types<unsigned char, char, int, int32_t, int64_t, uint32_t,
-                                uint64_t, size_t>;
-INSTANTIATE_TYPED_TEST_CASE_P(My, HashValueIntTest, IntTypes);
+REGISTER_TYPED_TEST_SUITE_P(HashValueIntTest, BasicUsage, FastPath);
+using IntTypes = testing::Types<unsigned char, char, int, int32_t, int64_t,
+                                uint32_t, uint64_t, size_t>;
+INSTANTIATE_TYPED_TEST_SUITE_P(My, HashValueIntTest, IntTypes);
 
 enum LegacyEnum { kValue1, kValue2, kValue3 };
 
@@ -381,6 +439,52 @@ TEST(HashValueTest, StdBitset) {
        std::bitset<kNumBits>(bit_strings[5].c_str())}));
 }  // namespace
 
+// Dummy type with unordered equality and hashing semantics.  This preserves
+// input order internally, and is used below to ensure we get test coverage
+// for equal sequences with different iteraton orders.
+template <typename T>
+class UnorderedSequence {
+ public:
+  UnorderedSequence() = default;
+  template <typename TT>
+  UnorderedSequence(std::initializer_list<TT> l)
+      : values_(l.begin(), l.end()) {}
+  template <typename ForwardIterator,
+            typename std::enable_if<!std::is_integral<ForwardIterator>::value,
+                                    bool>::type = true>
+  UnorderedSequence(ForwardIterator begin, ForwardIterator end)
+      : values_(begin, end) {}
+  // one-argument constructor of value type T, to appease older toolchains that
+  // get confused by one-element initializer lists in some contexts
+  explicit UnorderedSequence(const T& v) : values_(&v, &v + 1) {}
+
+  using value_type = T;
+
+  size_t size() const { return values_.size(); }
+  typename std::vector<T>::const_iterator begin() const {
+    return values_.begin();
+  }
+  typename std::vector<T>::const_iterator end() const { return values_.end(); }
+
+  friend bool operator==(const UnorderedSequence& lhs,
+                         const UnorderedSequence& rhs) {
+    return lhs.size() == rhs.size() &&
+           std::is_permutation(lhs.begin(), lhs.end(), rhs.begin());
+  }
+  friend bool operator!=(const UnorderedSequence& lhs,
+                         const UnorderedSequence& rhs) {
+    return !(lhs == rhs);
+  }
+  template <typename H>
+  friend H AbslHashValue(H h, const UnorderedSequence& u) {
+    return H::combine(H::combine_unordered(std::move(h), u.begin(), u.end()),
+                      u.size());
+  }
+
+ private:
+  std::vector<T> values_;
+};
+
 template <typename T>
 class HashValueSequenceTest : public testing::Test {
 };
@@ -389,25 +493,69 @@ TYPED_TEST_SUITE_P(HashValueSequenceTest);
 TYPED_TEST_P(HashValueSequenceTest, BasicUsage) {
   EXPECT_TRUE((is_hashable<TypeParam>::value));
 
-  using ValueType = typename TypeParam::value_type;
-  auto a = static_cast<ValueType>(0);
-  auto b = static_cast<ValueType>(23);
-  auto c = static_cast<ValueType>(42);
+  using IntType = typename TypeParam::value_type;
+  auto a = static_cast<IntType>(0);
+  auto b = static_cast<IntType>(23);
+  auto c = static_cast<IntType>(42);
 
-  EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly(
-      std::make_tuple(TypeParam(), TypeParam{}, TypeParam{a, b, c},
-                      TypeParam{a, b}, TypeParam{b, c})));
+  std::vector<TypeParam> exemplars = {
+      TypeParam(),        TypeParam(),        TypeParam{a, b, c},
+      TypeParam{a, c, b}, TypeParam{c, a, b}, TypeParam{a},
+      TypeParam{a, a},    TypeParam{a, a, a}, TypeParam{a, a, b},
+      TypeParam{a, b, a}, TypeParam{b, a, a}, TypeParam{a, b},
+      TypeParam{b, c}};
+  EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly(exemplars));
 }
 
-REGISTER_TYPED_TEST_CASE_P(HashValueSequenceTest, BasicUsage);
-using IntSequenceTypes =
-    testing::Types<std::deque<int>, std::forward_list<int>, std::list<int>,
-                   std::vector<int>, std::vector<bool>, std::set<int>,
-                   std::multiset<int>>;
-INSTANTIATE_TYPED_TEST_CASE_P(My, HashValueSequenceTest, IntSequenceTypes);
+REGISTER_TYPED_TEST_SUITE_P(HashValueSequenceTest, BasicUsage);
+using IntSequenceTypes = testing::Types<
+    std::deque<int>, std::forward_list<int>, std::list<int>, std::vector<int>,
+    std::vector<bool>, TypeErasedContainer<std::vector<int>>, std::set<int>,
+    std::multiset<int>, UnorderedSequence<int>,
+    TypeErasedContainer<UnorderedSequence<int>>, std::unordered_set<int>,
+    std::unordered_multiset<int>, absl::flat_hash_set<int>,
+    absl::node_hash_set<int>, absl::btree_set<int>>;
+INSTANTIATE_TYPED_TEST_SUITE_P(My, HashValueSequenceTest, IntSequenceTypes);
+
+template <typename T>
+class HashValueNestedSequenceTest : public testing::Test {};
+TYPED_TEST_SUITE_P(HashValueNestedSequenceTest);
+
+TYPED_TEST_P(HashValueNestedSequenceTest, BasicUsage) {
+  using T = TypeParam;
+  using V = typename T::value_type;
+  std::vector<T> exemplars = {
+      // empty case
+      T{},
+      // sets of empty sets
+      T{V{}}, T{V{}, V{}}, T{V{}, V{}, V{}},
+      // multisets of different values
+      T{V{1}}, T{V{1, 1}, V{1, 1}}, T{V{1, 1, 1}, V{1, 1, 1}, V{1, 1, 1}},
+      // various orderings of same nested sets
+      T{V{}, V{1, 2}}, T{V{}, V{2, 1}}, T{V{1, 2}, V{}}, T{V{2, 1}, V{}},
+      // various orderings of various nested sets, case 2
+      T{V{1, 2}, V{3, 4}}, T{V{1, 2}, V{4, 3}}, T{V{1, 3}, V{2, 4}},
+      T{V{1, 3}, V{4, 2}}, T{V{1, 4}, V{2, 3}}, T{V{1, 4}, V{3, 2}},
+      T{V{2, 3}, V{1, 4}}, T{V{2, 3}, V{4, 1}}, T{V{2, 4}, V{1, 3}},
+      T{V{2, 4}, V{3, 1}}, T{V{3, 4}, V{1, 2}}, T{V{3, 4}, V{2, 1}}};
+  EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly(exemplars));
+}
+
+REGISTER_TYPED_TEST_SUITE_P(HashValueNestedSequenceTest, BasicUsage);
+template <typename T>
+using TypeErasedSet = TypeErasedContainer<UnorderedSequence<T>>;
+
+using NestedIntSequenceTypes = testing::Types<
+    std::vector<std::vector<int>>, std::vector<UnorderedSequence<int>>,
+    std::vector<TypeErasedSet<int>>, UnorderedSequence<std::vector<int>>,
+    UnorderedSequence<UnorderedSequence<int>>,
+    UnorderedSequence<TypeErasedSet<int>>, TypeErasedSet<std::vector<int>>,
+    TypeErasedSet<UnorderedSequence<int>>, TypeErasedSet<TypeErasedSet<int>>>;
+INSTANTIATE_TYPED_TEST_SUITE_P(My, HashValueNestedSequenceTest,
+                              NestedIntSequenceTypes);
 
 // Private type that only supports AbslHashValue to make sure our chosen hash
-// implentation is recursive within absl::Hash.
+// implementation is recursive within absl::Hash.
 // It uses std::abs() on the value to provide different bitwise representations
 // of the same logical value.
 struct Private {
@@ -564,21 +712,80 @@ TEST(HashValueTest, Variant) {
 #endif
 }
 
-TEST(HashValueTest, Maps) {
-  EXPECT_TRUE((is_hashable<std::map<int, std::string>>::value));
+template <typename T>
+class HashValueAssociativeMapTest : public testing::Test {};
+TYPED_TEST_SUITE_P(HashValueAssociativeMapTest);
 
-  using M = std::map<int, std::string>;
-  EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly(std::make_tuple(
-      M{}, M{{0, "foo"}}, M{{1, "foo"}}, M{{0, "bar"}}, M{{1, "bar"}},
-      M{{0, "foo"}, {42, "bar"}}, M{{1, "foo"}, {42, "bar"}},
-      M{{1, "foo"}, {43, "bar"}}, M{{1, "foo"}, {43, "baz"}})));
+TYPED_TEST_P(HashValueAssociativeMapTest, BasicUsage) {
+  using M = TypeParam;
+  using V = typename M::value_type;
+  std::vector<M> exemplars{M{},
+                           M{V{0, "foo"}},
+                           M{V{1, "foo"}},
+                           M{V{0, "bar"}},
+                           M{V{1, "bar"}},
+                           M{V{0, "foo"}, V{42, "bar"}},
+                           M{V{42, "bar"}, V{0, "foo"}},
+                           M{V{1, "foo"}, V{42, "bar"}},
+                           M{V{1, "foo"}, V{43, "bar"}},
+                           M{V{1, "foo"}, V{43, "baz"}}};
+  EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly(exemplars));
+}
 
-  using MM = std::multimap<int, std::string>;
+REGISTER_TYPED_TEST_SUITE_P(HashValueAssociativeMapTest, BasicUsage);
+using AssociativeMapTypes = testing::Types<
+    std::map<int, std::string>, std::unordered_map<int, std::string>,
+    absl::flat_hash_map<int, std::string>,
+    absl::node_hash_map<int, std::string>, absl::btree_map<int, std::string>,
+    UnorderedSequence<std::pair<const int, std::string>>>;
+INSTANTIATE_TYPED_TEST_SUITE_P(My, HashValueAssociativeMapTest,
+                              AssociativeMapTypes);
+
+template <typename T>
+class HashValueAssociativeMultimapTest : public testing::Test {};
+TYPED_TEST_SUITE_P(HashValueAssociativeMultimapTest);
+
+TYPED_TEST_P(HashValueAssociativeMultimapTest, BasicUsage) {
+  using MM = TypeParam;
+  using V = typename MM::value_type;
+  std::vector<MM> exemplars{MM{},
+                            MM{V{0, "foo"}},
+                            MM{V{1, "foo"}},
+                            MM{V{0, "bar"}},
+                            MM{V{1, "bar"}},
+                            MM{V{0, "foo"}, V{0, "bar"}},
+                            MM{V{0, "bar"}, V{0, "foo"}},
+                            MM{V{0, "foo"}, V{42, "bar"}},
+                            MM{V{1, "foo"}, V{42, "bar"}},
+                            MM{V{1, "foo"}, V{1, "foo"}, V{43, "bar"}},
+                            MM{V{1, "foo"}, V{43, "bar"}, V{1, "foo"}},
+                            MM{V{1, "foo"}, V{43, "baz"}}};
+  EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly(exemplars));
+}
+
+REGISTER_TYPED_TEST_SUITE_P(HashValueAssociativeMultimapTest, BasicUsage);
+using AssociativeMultimapTypes =
+    testing::Types<std::multimap<int, std::string>,
+                   std::unordered_multimap<int, std::string>>;
+INSTANTIATE_TYPED_TEST_SUITE_P(My, HashValueAssociativeMultimapTest,
+                              AssociativeMultimapTypes);
+
+TEST(HashValueTest, ReferenceWrapper) {
+  EXPECT_TRUE(is_hashable<std::reference_wrapper<Private>>::value);
+
+  Private p1{1}, p10{10};
   EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly(std::make_tuple(
-      MM{}, MM{{0, "foo"}}, MM{{1, "foo"}}, MM{{0, "bar"}}, MM{{1, "bar"}},
-      MM{{0, "foo"}, {0, "bar"}}, MM{{0, "bar"}, {0, "foo"}},
-      MM{{0, "foo"}, {42, "bar"}}, MM{{1, "foo"}, {42, "bar"}},
-      MM{{1, "foo"}, {1, "foo"}, {43, "bar"}}, MM{{1, "foo"}, {43, "baz"}})));
+      p1, p10, std::ref(p1), std::ref(p10), std::cref(p1), std::cref(p10))));
+
+  EXPECT_TRUE(is_hashable<std::reference_wrapper<int>>::value);
+  int one = 1, ten = 10;
+  EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly(std::make_tuple(
+      one, ten, std::ref(one), std::ref(ten), std::cref(one), std::cref(ten))));
+
+  EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly(
+      std::make_tuple(std::tuple<std::reference_wrapper<int>>(std::ref(one)),
+                      std::tuple<std::reference_wrapper<int>>(std::ref(ten)),
+                      std::tuple<int>(one), std::tuple<int>(ten))));
 }
 
 template <typename T, typename = void>
@@ -800,10 +1007,10 @@ TYPED_TEST_P(HashIntTest, BasicUsage) {
             Hash<CombineVariadic<TypeParam>>()({}));
 }
 
-REGISTER_TYPED_TEST_CASE_P(HashIntTest, BasicUsage);
-using IntTypes = testing::Types<unsigned char, char, int, int32_t, int64_t, uint32_t,
-                                uint64_t, size_t>;
-INSTANTIATE_TYPED_TEST_CASE_P(My, HashIntTest, IntTypes);
+REGISTER_TYPED_TEST_SUITE_P(HashIntTest, BasicUsage);
+using IntTypes = testing::Types<unsigned char, char, int, int32_t, int64_t,
+                                uint32_t, uint64_t, size_t>;
+INSTANTIATE_TYPED_TEST_SUITE_P(My, HashIntTest, IntTypes);
 
 struct StructWithPadding {
   char c;
@@ -910,29 +1117,23 @@ TEST(HashTest, SmallValueOn64ByteBoundary) {
   Hash<IntAndString>()(IntAndString{0, std::string(63, '0')});
 }
 
-struct TypeErased {
-  size_t n;
-
-  template <typename H>
-  friend H AbslHashValue(H hash_state, const TypeErased& v) {
-    v.HashValue(absl::HashState::Create(&hash_state));
-    return hash_state;
-  }
-
-  void HashValue(absl::HashState state) const {
-    absl::HashState::combine(std::move(state), n);
-  }
-};
-
 TEST(HashTest, TypeErased) {
-  EXPECT_TRUE((is_hashable<TypeErased>::value));
-  EXPECT_TRUE((is_hashable<std::pair<TypeErased, int>>::value));
+  EXPECT_TRUE((is_hashable<TypeErasedValue<size_t>>::value));
+  EXPECT_TRUE((is_hashable<std::pair<TypeErasedValue<size_t>, int>>::value));
 
-  EXPECT_EQ(SpyHash(TypeErased{7}), SpyHash(size_t{7}));
-  EXPECT_NE(SpyHash(TypeErased{7}), SpyHash(size_t{13}));
+  EXPECT_EQ(SpyHash(TypeErasedValue<size_t>(7)), SpyHash(size_t{7}));
+  EXPECT_NE(SpyHash(TypeErasedValue<size_t>(7)), SpyHash(size_t{13}));
 
-  EXPECT_EQ(SpyHash(std::make_pair(TypeErased{7}, 17)),
+  EXPECT_EQ(SpyHash(std::make_pair(TypeErasedValue<size_t>(7), 17)),
             SpyHash(std::make_pair(size_t{7}, 17)));
+
+  absl::flat_hash_set<absl::flat_hash_set<int>> ss = {{1, 2}, {3, 4}};
+  TypeErasedContainer<absl::flat_hash_set<absl::flat_hash_set<int>>> es = {
+      absl::flat_hash_set<int>{1, 2}, {3, 4}};
+  absl::flat_hash_set<TypeErasedContainer<absl::flat_hash_set<int>>> se = {
+      {1, 2}, {3, 4}};
+  EXPECT_EQ(SpyHash(ss), SpyHash(es));
+  EXPECT_EQ(SpyHash(ss), SpyHash(se));
 }
 
 struct ValueWithBoolConversion {
@@ -953,6 +1154,41 @@ namespace {
 TEST(HashTest, DoesNotUseImplicitConversionsToBool) {
   EXPECT_NE(absl::Hash<ValueWithBoolConversion>()(ValueWithBoolConversion{0}),
             absl::Hash<ValueWithBoolConversion>()(ValueWithBoolConversion{1}));
+}
+
+TEST(HashOf, MatchesHashForSingleArgument) {
+  std::string s = "forty two";
+  int i = 42;
+  double d = 42.0;
+  std::tuple<int, int> t{4, 2};
+
+  EXPECT_EQ(absl::HashOf(s), absl::Hash<std::string>{}(s));
+  EXPECT_EQ(absl::HashOf(i), absl::Hash<int>{}(i));
+  EXPECT_EQ(absl::HashOf(d), absl::Hash<double>{}(d));
+  EXPECT_EQ(absl::HashOf(t), (absl::Hash<std::tuple<int, int>>{}(t)));
+}
+
+TEST(HashOf, MatchesHashOfTupleForMultipleArguments) {
+  std::string hello = "hello";
+  std::string world = "world";
+
+  EXPECT_EQ(absl::HashOf(), absl::HashOf(std::make_tuple()));
+  EXPECT_EQ(absl::HashOf(hello), absl::HashOf(std::make_tuple(hello)));
+  EXPECT_EQ(absl::HashOf(hello, world),
+            absl::HashOf(std::make_tuple(hello, world)));
+}
+
+template <typename T>
+std::true_type HashOfExplicitParameter(decltype(absl::HashOf<T>(0))) {
+  return {};
+}
+template <typename T>
+std::false_type HashOfExplicitParameter(size_t) {
+  return {};
+}
+
+TEST(HashOf, CantPassExplicitTemplateParameters) {
+  EXPECT_FALSE(HashOfExplicitParameter<int>(0));
 }
 
 }  // namespace

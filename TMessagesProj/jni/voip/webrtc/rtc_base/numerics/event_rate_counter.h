@@ -19,10 +19,10 @@ namespace webrtc {
 // so it's mostly useful for end of call statistics.
 class EventRateCounter {
  public:
-  // Adds an event based on it's |event_time| for correct updates of the
+  // Adds an event based on it's `event_time` for correct updates of the
   // interval statistics, each event must be added past the previous events.
   void AddEvent(Timestamp event_time);
-  // Adds the events from |other|. Note that the interval stats won't be
+  // Adds the events from `other`. Note that the interval stats won't be
   // recalculated, only merged, so this is not equivalent to if the events would
   // have been added to the same counter from the start.
   void AddEvents(EventRateCounter other);

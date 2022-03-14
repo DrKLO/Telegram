@@ -49,7 +49,7 @@ RtpTransceiverDirection RtpTransceiverDirectionReversed(
     case RtpTransceiverDirection::kRecvOnly:
       return RtpTransceiverDirection::kSendOnly;
     default:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
       return direction;
   }
 }
@@ -81,7 +81,7 @@ const char* RtpTransceiverDirectionToString(RtpTransceiverDirection direction) {
     case RtpTransceiverDirection::kStopped:
       return "kStopped";
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return "";
 }
 

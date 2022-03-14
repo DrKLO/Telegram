@@ -65,7 +65,7 @@ ZoneInfoSourceFactory zone_info_source_factory __attribute__((weak)) =
 extern ZoneInfoSourceFactory zone_info_source_factory;
 extern ZoneInfoSourceFactory default_factory;
 ZoneInfoSourceFactory default_factory = DefaultFactory;
-#if defined(_M_IX86)
+#if defined(_M_IX86) || defined(_M_ARM)
 #pragma comment(                                                                                                         \
     linker,                                                                                                              \
     "/alternatename:?zone_info_source_factory@cctz_extension@time_internal@" ABSL_INTERNAL_MANGLED_NS                    \

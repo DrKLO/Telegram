@@ -16,8 +16,8 @@
 #include <string>
 
 #include "api/dtmf_sender_interface.h"
-#include "api/proxy.h"
 #include "api/scoped_refptr.h"
+#include "pc/proxy.h"
 #include "rtc_base/constructor_magic.h"
 #include "rtc_base/location.h"
 #include "rtc_base/ref_count.h"
@@ -38,11 +38,11 @@ class DtmfProviderInterface {
   // Returns true if the audio sender is capable of sending DTMF. Otherwise
   // returns false.
   virtual bool CanInsertDtmf() = 0;
-  // Sends DTMF |code|.
-  // The |duration| indicates the length of the DTMF tone in ms.
+  // Sends DTMF `code`.
+  // The `duration` indicates the length of the DTMF tone in ms.
   // Returns true on success and false on failure.
   virtual bool InsertDtmf(int code, int duration) = 0;
-  // Returns a |sigslot::signal0<>| signal. The signal should fire before
+  // Returns a `sigslot::signal0<>` signal. The signal should fire before
   // the provider is destroyed.
   virtual sigslot::signal0<>* GetOnDestroyedSignal() = 0;
 
@@ -102,7 +102,6 @@ class DtmfSender : public DtmfSenderInterface, public sigslot::has_slots<> {
 
 // Define proxy for DtmfSenderInterface.
 BEGIN_PRIMARY_PROXY_MAP(DtmfSender)
-
 PROXY_PRIMARY_THREAD_DESTRUCTOR()
 PROXY_METHOD1(void, RegisterObserver, DtmfSenderObserverInterface*)
 PROXY_METHOD0(void, UnregisterObserver)
@@ -112,7 +111,7 @@ PROXY_CONSTMETHOD0(std::string, tones)
 PROXY_CONSTMETHOD0(int, duration)
 PROXY_CONSTMETHOD0(int, inter_tone_gap)
 PROXY_CONSTMETHOD0(int, comma_delay)
-END_PROXY_MAP()
+END_PROXY_MAP(DtmfSender)
 
 // Get DTMF code from the DTMF event character.
 bool GetDtmfCode(char tone, int* code);

@@ -34,7 +34,7 @@ class ScopedHistogramTimer {
   ~ScopedHistogramTimer() {
     const int64_t life_time_ms = rtc::TimeSince(start_time_ms_);
     RTC_HISTOGRAM_COUNTS_1000(histogram_name_, life_time_ms);
-    RTC_LOG(INFO) << histogram_name_ << ": " << life_time_ms;
+    RTC_LOG(LS_INFO) << histogram_name_ << ": " << life_time_ms;
   }
 
  private:
@@ -96,7 +96,7 @@ AudioMergedScreenRecordJni::AudioMergedScreenRecordJni(AudioManager* audio_manag
       initialized_(false),
       recording_(false),
       audio_device_buffer_(nullptr) {
-  RTC_LOG(INFO) << "ctor";
+  RTC_LOG(LS_INFO) << "ctor";
   RTC_DCHECK(audio_parameters_.is_valid());
   RTC_CHECK(j_environment_);
   JNINativeMethod native_methods[] = {
@@ -118,26 +118,26 @@ AudioMergedScreenRecordJni::AudioMergedScreenRecordJni(AudioManager* audio_manag
 }
 
 AudioMergedScreenRecordJni::~AudioMergedScreenRecordJni() {
-  RTC_LOG(INFO) << "dtor";
+  RTC_LOG(LS_INFO) << "dtor";
   RTC_DCHECK(thread_checker_.IsCurrent());
   Terminate();
 }
 
 int32_t AudioMergedScreenRecordJni::Init() {
-  RTC_LOG(INFO) << "Init";
+  RTC_LOG(LS_INFO) << "Init";
   RTC_DCHECK(thread_checker_.IsCurrent());
   return 0;
 }
 
 int32_t AudioMergedScreenRecordJni::Terminate() {
-  RTC_LOG(INFO) << "Terminate";
+  RTC_LOG(LS_INFO) << "Terminate";
   RTC_DCHECK(thread_checker_.IsCurrent());
   StopRecording();
   return 0;
 }
 
 int32_t AudioMergedScreenRecordJni::InitRecording() {
-  RTC_LOG(INFO) << "InitRecording";
+  RTC_LOG(LS_INFO) << "InitRecording";
   RTC_DCHECK(thread_checker_.IsCurrent());
   RTC_DCHECK(!initialized_);
   RTC_DCHECK(!recording_);
@@ -150,7 +150,7 @@ int32_t AudioMergedScreenRecordJni::InitRecording() {
     return -1;
   }
   frames_per_buffer_ = static_cast<size_t>(frames_per_buffer);
-  RTC_LOG(INFO) << "frames_per_buffer: " << frames_per_buffer_;
+  RTC_LOG(LS_INFO) << "frames_per_buffer: " << frames_per_buffer_;
   const size_t bytes_per_frame = audio_parameters_.channels() * sizeof(int16_t);
   RTC_CHECK_EQ(direct_buffer_capacity_in_bytes_,
                frames_per_buffer_ * bytes_per_frame);
@@ -160,7 +160,7 @@ int32_t AudioMergedScreenRecordJni::InitRecording() {
 }
 
 int32_t AudioMergedScreenRecordJni::StartRecording() {
-  RTC_LOG(INFO) << "StartRecording";
+  RTC_LOG(LS_INFO) << "StartRecording";
   RTC_DCHECK(thread_checker_.IsCurrent());
   RTC_DCHECK(!recording_);
   if (!initialized_) {
@@ -178,7 +178,7 @@ int32_t AudioMergedScreenRecordJni::StartRecording() {
 }
 
 int32_t AudioMergedScreenRecordJni::StopRecording() {
-  RTC_LOG(INFO) << "StopRecording";
+  RTC_LOG(LS_INFO) << "StopRecording";
   RTC_DCHECK(thread_checker_.IsCurrent());
   if (!initialized_ || !recording_) {
     return 0;
@@ -198,24 +198,24 @@ int32_t AudioMergedScreenRecordJni::StopRecording() {
 }
 
 void AudioMergedScreenRecordJni::AttachAudioBuffer(AudioDeviceBuffer* audioBuffer) {
-  RTC_LOG(INFO) << "AttachAudioBuffer";
+  RTC_LOG(LS_INFO) << "AttachAudioBuffer";
   RTC_DCHECK(thread_checker_.IsCurrent());
   audio_device_buffer_ = audioBuffer;
   const int sample_rate_hz = audio_parameters_.sample_rate();
-  RTC_LOG(INFO) << "SetRecordingSampleRate(" << sample_rate_hz << ")";
+  RTC_LOG(LS_INFO) << "SetRecordingSampleRate(" << sample_rate_hz << ")";
   audio_device_buffer_->SetRecordingSampleRate(sample_rate_hz);
   const size_t channels = audio_parameters_.channels();
-  RTC_LOG(INFO) << "SetRecordingChannels(" << channels << ")";
+  RTC_LOG(LS_INFO) << "SetRecordingChannels(" << channels << ")";
   audio_device_buffer_->SetRecordingChannels(channels);
   total_delay_in_milliseconds_ =
       audio_manager_->GetDelayEstimateInMilliseconds();
   RTC_DCHECK_GT(total_delay_in_milliseconds_, 0);
-  RTC_LOG(INFO) << "total_delay_in_milliseconds: "
+  RTC_LOG(LS_INFO) << "total_delay_in_milliseconds: "
                 << total_delay_in_milliseconds_;
 }
 
 int32_t AudioMergedScreenRecordJni::EnableBuiltInAEC(bool enable) {
-  RTC_LOG(INFO) << "EnableBuiltInAEC(" << enable << ")";
+  RTC_LOG(LS_INFO) << "EnableBuiltInAEC(" << enable << ")";
   RTC_DCHECK(thread_checker_.IsCurrent());
   return j_audio_record_->EnableBuiltInAEC(enable) ? 0 : -1;
 }
@@ -226,7 +226,7 @@ int32_t AudioMergedScreenRecordJni::EnableBuiltInAGC(bool enable) {
 }
 
 int32_t AudioMergedScreenRecordJni::EnableBuiltInNS(bool enable) {
-  RTC_LOG(INFO) << "EnableBuiltInNS(" << enable << ")";
+  RTC_LOG(LS_INFO) << "EnableBuiltInNS(" << enable << ")";
   RTC_DCHECK(thread_checker_.IsCurrent());
   return j_audio_record_->EnableBuiltInNS(enable) ? 0 : -1;
 }
@@ -243,12 +243,12 @@ void JNICALL AudioMergedScreenRecordJni::CacheDirectBufferAddress(JNIEnv* env,
 
 void AudioMergedScreenRecordJni::OnCacheDirectBufferAddress(JNIEnv* env,
                                                 jobject byte_buffer) {
-  RTC_LOG(INFO) << "OnCacheDirectBufferAddress";
+  RTC_LOG(LS_INFO) << "OnCacheDirectBufferAddress";
   RTC_DCHECK(thread_checker_.IsCurrent());
   RTC_DCHECK(!direct_buffer_address_);
   direct_buffer_address_ = env->GetDirectBufferAddress(byte_buffer);
   jlong capacity = env->GetDirectBufferCapacity(byte_buffer);
-  RTC_LOG(INFO) << "direct buffer capacity: " << capacity;
+  RTC_LOG(LS_INFO) << "direct buffer capacity: " << capacity;
   direct_buffer_capacity_in_bytes_ = static_cast<size_t>(capacity);
 }
 
@@ -277,7 +277,7 @@ void AudioMergedScreenRecordJni::OnDataIsRecorded(int length) {
   // of |playDelayMs| and |recDelayMs|, hence the distributions does not matter.
   audio_device_buffer_->SetVQEData(total_delay_in_milliseconds_, 0);
   if (audio_device_buffer_->DeliverRecordedData() == -1) {
-    RTC_LOG(INFO) << "AudioDeviceBuffer::DeliverRecordedData failed";
+    RTC_LOG(LS_INFO) << "AudioDeviceBuffer::DeliverRecordedData failed";
   }
 }
 

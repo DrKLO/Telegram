@@ -16,6 +16,7 @@
 #include <memory>
 
 #include "api/rtc_event_log/rtc_event.h"
+#include "api/units/timestamp.h"
 
 namespace webrtc {
 
@@ -50,15 +51,15 @@ class RtcEventProbeResultFailure final : public RtcEvent {
 
 struct LoggedBweProbeFailureEvent {
   LoggedBweProbeFailureEvent() = default;
-  LoggedBweProbeFailureEvent(int64_t timestamp_us,
+  LoggedBweProbeFailureEvent(Timestamp timestamp,
                              int32_t id,
                              ProbeFailureReason failure_reason)
-      : timestamp_us(timestamp_us), id(id), failure_reason(failure_reason) {}
+      : timestamp(timestamp), id(id), failure_reason(failure_reason) {}
 
-  int64_t log_time_us() const { return timestamp_us; }
-  int64_t log_time_ms() const { return timestamp_us / 1000; }
+  int64_t log_time_us() const { return timestamp.us(); }
+  int64_t log_time_ms() const { return timestamp.ms(); }
 
-  int64_t timestamp_us;
+  Timestamp timestamp = Timestamp::MinusInfinity();
   int32_t id;
   ProbeFailureReason failure_reason;
 };

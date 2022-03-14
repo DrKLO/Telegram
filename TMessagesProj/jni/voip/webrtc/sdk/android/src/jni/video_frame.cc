@@ -10,12 +10,8 @@
 
 #include "sdk/android/src/jni/video_frame.h"
 
-#include <memory>
-
 #include "api/scoped_refptr.h"
 #include "common_video/include/video_frame_buffer.h"
-#include "rtc_base/checks.h"
-#include "rtc_base/logging.h"
 #include "rtc_base/ref_counted_object.h"
 #include "rtc_base/time_utils.h"
 #include "sdk/android/generated_video_jni/VideoFrame_jni.h"
@@ -27,8 +23,60 @@ namespace jni {
 
 namespace {
 
+class AndroidVideoBuffer : public VideoFrameBuffer {
+ public:
+  // Creates a native VideoFrameBuffer from a Java VideoFrame.Buffer.
+  static rtc::scoped_refptr<AndroidVideoBuffer> Create(
+      JNIEnv* jni,
+      const JavaRef<jobject>& j_video_frame_buffer);
+
+  // Similar to the Create() above, but adopts and takes ownership of the Java
+  // VideoFrame.Buffer. I.e. retain() will not be called, but release() will be
+  // called when the returned AndroidVideoBuffer is destroyed.
+  static rtc::scoped_refptr<AndroidVideoBuffer> Adopt(
+      JNIEnv* jni,
+      const JavaRef<jobject>& j_video_frame_buffer);
+
+  ~AndroidVideoBuffer() override;
+
+  const ScopedJavaGlobalRef<jobject>& video_frame_buffer() const;
+
+  // Crops a region defined by `crop_x`, `crop_y`, `crop_width` and
+  // `crop_height`. Scales it to size `scale_width` x `scale_height`.
+  rtc::scoped_refptr<VideoFrameBuffer> CropAndScale(int crop_x,
+                                                    int crop_y,
+                                                    int crop_width,
+                                                    int crop_height,
+                                                    int scale_width,
+                                                    int scale_height) override;
+
+ protected:
+  // Should not be called directly. Adopts the Java VideoFrame.Buffer. Use
+  // Create() or Adopt() instead for clarity.
+  AndroidVideoBuffer(JNIEnv* jni, const JavaRef<jobject>& j_video_frame_buffer);
+
+ private:
+  Type type() const override;
+  int width() const override;
+  int height() const override;
+
+  rtc::scoped_refptr<I420BufferInterface> ToI420() override;
+
+  const int width_;
+  const int height_;
+  // Holds a VideoFrame.Buffer.
+  const ScopedJavaGlobalRef<jobject> j_video_frame_buffer_;
+};
+
 class AndroidVideoI420Buffer : public I420BufferInterface {
  public:
+  // Creates a native VideoFrameBuffer from a Java VideoFrame.I420Buffer.
+  static rtc::scoped_refptr<AndroidVideoI420Buffer> Create(
+      JNIEnv* jni,
+      int width,
+      int height,
+      const JavaRef<jobject>& j_video_frame_buffer);
+
   // Adopts and takes ownership of the Java VideoFrame.Buffer. I.e. retain()
   // will not be called, but release() will be called when the returned
   // AndroidVideoBuffer is destroyed.
@@ -72,11 +120,24 @@ class AndroidVideoI420Buffer : public I420BufferInterface {
   int stride_v_;
 };
 
+rtc::scoped_refptr<AndroidVideoI420Buffer> AndroidVideoI420Buffer::Create(
+    JNIEnv* jni,
+    int width,
+    int height,
+    const JavaRef<jobject>& j_video_frame_buffer) {
+  Java_Buffer_retain(jni, j_video_frame_buffer);
+  return AndroidVideoI420Buffer::Adopt(jni, width, height,
+                                       j_video_frame_buffer);
+}
+
 rtc::scoped_refptr<AndroidVideoI420Buffer> AndroidVideoI420Buffer::Adopt(
     JNIEnv* jni,
     int width,
     int height,
     const JavaRef<jobject>& j_video_frame_buffer) {
+  RTC_DCHECK_EQ(
+      static_cast<Type>(Java_Buffer_getBufferType(jni, j_video_frame_buffer)),
+      Type::kI420);
   return rtc::make_ref_counted<AndroidVideoI420Buffer>(jni, width, height,
                                                        j_video_frame_buffer);
 }
@@ -123,6 +184,9 @@ int64_t GetJavaVideoFrameTimestampNs(JNIEnv* jni,
 rtc::scoped_refptr<AndroidVideoBuffer> AndroidVideoBuffer::Adopt(
     JNIEnv* jni,
     const JavaRef<jobject>& j_video_frame_buffer) {
+  RTC_DCHECK_EQ(
+      static_cast<Type>(Java_Buffer_getBufferType(jni, j_video_frame_buffer)),
+      Type::kNative);
   return rtc::make_ref_counted<AndroidVideoBuffer>(jni, j_video_frame_buffer);
 }
 
@@ -179,10 +243,33 @@ rtc::scoped_refptr<I420BufferInterface> AndroidVideoBuffer::ToI420() {
   JNIEnv* jni = AttachCurrentThreadIfNeeded();
   ScopedJavaLocalRef<jobject> j_i420_buffer =
       Java_Buffer_toI420(jni, j_video_frame_buffer_);
+  // In case I420 conversion fails, we propagate the nullptr.
+  if (j_i420_buffer.is_null()) {
+    return nullptr;
+  }
 
   // We don't need to retain the buffer because toI420 returns a new object that
   // we are assumed to take the ownership of.
   return AndroidVideoI420Buffer::Adopt(jni, width_, height_, j_i420_buffer);
+}
+
+rtc::scoped_refptr<VideoFrameBuffer> JavaToNativeFrameBuffer(
+    JNIEnv* jni,
+    const JavaRef<jobject>& j_video_frame_buffer) {
+  VideoFrameBuffer::Type type = static_cast<VideoFrameBuffer::Type>(
+      Java_Buffer_getBufferType(jni, j_video_frame_buffer));
+  switch (type) {
+    case VideoFrameBuffer::Type::kI420: {
+      const int width = Java_Buffer_getWidth(jni, j_video_frame_buffer);
+      const int height = Java_Buffer_getHeight(jni, j_video_frame_buffer);
+      return AndroidVideoI420Buffer::Create(jni, width, height,
+                                            j_video_frame_buffer);
+    }
+    case VideoFrameBuffer::Type::kNative:
+      return AndroidVideoBuffer::Create(jni, j_video_frame_buffer);
+    default:
+      RTC_CHECK_NOTREACHED();
+  }
 }
 
 VideoFrame JavaToNativeFrame(JNIEnv* jni,
@@ -192,8 +279,8 @@ VideoFrame JavaToNativeFrame(JNIEnv* jni,
       Java_VideoFrame_getBuffer(jni, j_video_frame);
   int rotation = Java_VideoFrame_getRotation(jni, j_video_frame);
   int64_t timestamp_ns = Java_VideoFrame_getTimestampNs(jni, j_video_frame);
-  rtc::scoped_refptr<AndroidVideoBuffer> buffer =
-      AndroidVideoBuffer::Create(jni, j_video_frame_buffer);
+  rtc::scoped_refptr<VideoFrameBuffer> buffer =
+      JavaToNativeFrameBuffer(jni, j_video_frame_buffer);
   return VideoFrame::Builder()
       .set_video_frame_buffer(buffer)
       .set_timestamp_rtp(timestamp_rtp)

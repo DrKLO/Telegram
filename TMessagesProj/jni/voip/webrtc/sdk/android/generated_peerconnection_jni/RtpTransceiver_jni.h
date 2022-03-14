@@ -329,7 +329,4 @@ static void Java_RtpTransceiver_dispose(JNIEnv* env, const base::android::JavaRe
 }  // namespace jni
 }  // namespace  webrtc
 
-// Step 4: Generated test functions (optional).
-
-
 #endif  // org_webrtc_RtpTransceiver_JNI

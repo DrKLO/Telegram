@@ -20,6 +20,8 @@
 #include <type_traits>
 
 #include "absl/base/config.h"
+#include "absl/numeric/bits.h"
+#include "absl/numeric/int128.h"
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
@@ -59,6 +61,31 @@ class is_widening_convertible {
       rank<A>() <= rank<B>();
 };
 
+template <typename T>
+struct IsIntegral : std::is_integral<T> {};
+template <>
+struct IsIntegral<absl::int128> : std::true_type {};
+template <>
+struct IsIntegral<absl::uint128> : std::true_type {};
+
+template <typename T>
+struct MakeUnsigned : std::make_unsigned<T> {};
+template <>
+struct MakeUnsigned<absl::int128> {
+  using type = absl::uint128;
+};
+template <>
+struct MakeUnsigned<absl::uint128> {
+  using type = absl::uint128;
+};
+
+template <typename T>
+struct IsUnsigned : std::is_unsigned<T> {};
+template <>
+struct IsUnsigned<absl::int128> : std::false_type {};
+template <>
+struct IsUnsigned<absl::uint128> : std::true_type {};
+
 // unsigned_bits<N>::type returns the unsigned int type with the indicated
 // number of bits.
 template <size_t N>
@@ -81,18 +108,39 @@ struct unsigned_bits<64> {
   using type = uint64_t;
 };
 
-#ifdef ABSL_HAVE_INTRINSIC_INT128
 template <>
 struct unsigned_bits<128> {
-  using type = __uint128_t;
+  using type = absl::uint128;
 };
-#endif
+
+// 256-bit wrapper for wide multiplications.
+struct U256 {
+  uint128 hi;
+  uint128 lo;
+};
+template <>
+struct unsigned_bits<256> {
+  using type = U256;
+};
 
 template <typename IntType>
 struct make_unsigned_bits {
-  using type = typename unsigned_bits<std::numeric_limits<
-      typename std::make_unsigned<IntType>::type>::digits>::type;
+  using type = typename unsigned_bits<
+      std::numeric_limits<typename MakeUnsigned<IntType>::type>::digits>::type;
 };
+
+template <typename T>
+int BitWidth(T v) {
+  // Workaround for bit_width not supporting int128.
+  // Don't hardcode `64` to make sure this code does not trigger compiler
+  // warnings in smaller types.
+  constexpr int half_bits = sizeof(T) * 8 / 2;
+  if (sizeof(T) == 16 && (v >> half_bits) != 0) {
+    return bit_width(static_cast<uint64_t>(v >> half_bits)) + half_bits;
+  } else {
+    return bit_width(static_cast<uint64_t>(v));
+  }
+}
 
 }  // namespace random_internal
 ABSL_NAMESPACE_END

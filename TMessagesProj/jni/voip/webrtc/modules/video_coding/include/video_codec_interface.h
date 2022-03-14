@@ -39,12 +39,12 @@ struct CodecSpecificInfoVP8 {
   int8_t keyIdx;  // Negative value to skip keyIdx.
 
   // Used to generate the list of dependency frames.
-  // |referencedBuffers| and |updatedBuffers| contain buffer IDs.
+  // `referencedBuffers` and `updatedBuffers` contain buffer IDs.
   // Note that the buffer IDs here have a one-to-one mapping with the actual
   // codec buffers, but the exact mapping (i.e. whether 0 refers to Last,
   // to Golden or to Arf) is not pre-determined.
   // More references may be specified than are strictly necessary, but not less.
-  // TODO(bugs.webrtc.org/10242): Remove |useExplicitDependencies| once all
+  // TODO(bugs.webrtc.org/10242): Remove `useExplicitDependencies` once all
   // encoder-wrappers are updated.
   bool useExplicitDependencies;
   static constexpr size_t kBuffersCount = 3;

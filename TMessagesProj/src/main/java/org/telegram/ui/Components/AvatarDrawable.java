@@ -58,6 +58,7 @@ public class AvatarDrawable extends Drawable {
     public static final int AVATAR_TYPE_FILTER_MUTED = 9;
     public static final int AVATAR_TYPE_FILTER_READ = 10;
     public static final int AVATAR_TYPE_FILTER_ARCHIVED = 11;
+    public static final int AVATAR_TYPE_REGISTER = 13;
 
     private int alpha = 255;
     private Theme.ResourcesProvider resourcesProvider;
@@ -161,7 +162,9 @@ public class AvatarDrawable extends Drawable {
 
     public void setAvatarType(int value) {
         avatarType = value;
-        if (avatarType == AVATAR_TYPE_ARCHIVED) {
+        if (avatarType == AVATAR_TYPE_REGISTER) {
+            color = Theme.getColor(Theme.key_chats_actionBackground);
+        } else if (avatarType == AVATAR_TYPE_ARCHIVED) {
             color = getThemedColor(Theme.key_avatar_backgroundArchivedHidden);
         } else if (avatarType == AVATAR_TYPE_REPLIES) {
             color = getThemedColor(Theme.key_avatar_backgroundSaved);

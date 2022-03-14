@@ -116,12 +116,13 @@ class ChannelManager final {
   // Stops recording AEC dump.
   void StopAecDump();
 
- private:
+protected:
   ChannelManager(std::unique_ptr<MediaEngineInterface> media_engine,
                  bool enable_rtx,
                  rtc::Thread* worker_thread,
                  rtc::Thread* network_thread);
 
+ private:
   const std::unique_ptr<MediaEngineInterface> media_engine_;  // Nullable.
   rtc::Thread* const worker_thread_;
   rtc::Thread* const network_thread_;

@@ -69,8 +69,8 @@ class FakeIceTransport : public IceTransportInternal {
   }
 
   // Simulates the two transports connecting to each other.
-  // If |asymmetric| is true this method only affects this FakeIceTransport.
-  // If false, it affects |dest| as well.
+  // If `asymmetric` is true this method only affects this FakeIceTransport.
+  // If false, it affects `dest` as well.
   void SetDestination(FakeIceTransport* dest, bool asymmetric = false) {
     RTC_DCHECK_RUN_ON(network_thread_);
     if (dest == dest_) {
@@ -107,7 +107,7 @@ class FakeIceTransport : public IceTransportInternal {
     if (connection_count) {
       had_connection_ = true;
     }
-    // In this fake transport channel, |connection_count_| determines the
+    // In this fake transport channel, `connection_count_` determines the
     // transport state.
     if (connection_count_ < old_connection_count) {
       SignalStateChanged(this);
@@ -364,7 +364,7 @@ class FakeIceTransport : public IceTransportInternal {
     if (writable_ == writable) {
       return;
     }
-    RTC_LOG(INFO) << "Change writable_ to " << writable;
+    RTC_LOG(LS_INFO) << "Change writable_ to " << writable;
     writable_ = writable;
     if (writable_) {
       SignalReadyToSend(this);

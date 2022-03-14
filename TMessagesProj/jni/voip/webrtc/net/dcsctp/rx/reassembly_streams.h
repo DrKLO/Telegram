@@ -21,6 +21,7 @@
 #include "net/dcsctp/common/sequence_numbers.h"
 #include "net/dcsctp/packet/chunk/forward_tsn_common.h"
 #include "net/dcsctp/packet/data.h"
+#include "net/dcsctp/public/dcsctp_handover_state.h"
 #include "net/dcsctp/public/dcsctp_message.h"
 
 namespace dcsctp {
@@ -77,6 +78,9 @@ class ReassemblyStreams {
   // either a few streams, or all streams (when the list is empty) to be
   // reset - to have their next SSN or Message ID to be zero.
   virtual void ResetStreams(rtc::ArrayView<const StreamID> stream_ids) = 0;
+
+  virtual HandoverReadinessStatus GetHandoverReadiness() const = 0;
+  virtual void AddHandoverState(DcSctpSocketHandoverState& state) = 0;
 };
 
 }  // namespace dcsctp

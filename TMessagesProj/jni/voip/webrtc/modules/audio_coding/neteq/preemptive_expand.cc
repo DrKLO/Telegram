@@ -26,7 +26,7 @@ PreemptiveExpand::ReturnCodes PreemptiveExpand::Process(
     size_t* length_change_samples) {
   old_data_length_per_channel_ = old_data_length;
   // Input length must be (almost) 30 ms.
-  // Also, the new part must be at least |overlap_samples_| elements.
+  // Also, the new part must be at least `overlap_samples_` elements.
   static const size_t k15ms = 120;  // 15 ms = 120 samples at 8 kHz sample rate.
   if (num_channels_ == 0 ||
       input_length / num_channels_ < (2 * k15ms - 1) * fs_mult_ ||
@@ -64,7 +64,7 @@ PreemptiveExpand::ReturnCodes PreemptiveExpand::CheckCriteriaAndStretch(
     bool active_speech,
     bool /*fast_mode*/,
     AudioMultiVector* output) const {
-  // Pre-calculate common multiplication with |fs_mult_|.
+  // Pre-calculate common multiplication with `fs_mult_`.
   // 120 corresponds to 15 ms.
   size_t fs_mult_120 = static_cast<size_t>(fs_mult_ * 120);
   // Check for strong correlation (>0.9 in Q14) and at least 15 ms new data,
@@ -80,12 +80,12 @@ PreemptiveExpand::ReturnCodes PreemptiveExpand::CheckCriteriaAndStretch(
     // Copy first part, including cross-fade region.
     output->PushBackInterleaved(rtc::ArrayView<const int16_t>(
         input, (unmodified_length + peak_index) * num_channels_));
-    // Copy the last |peak_index| samples up to 15 ms to |temp_vector|.
+    // Copy the last `peak_index` samples up to 15 ms to `temp_vector`.
     AudioMultiVector temp_vector(num_channels_);
     temp_vector.PushBackInterleaved(rtc::ArrayView<const int16_t>(
         &input[(unmodified_length - peak_index) * num_channels_],
         peak_index * num_channels_));
-    // Cross-fade |temp_vector| onto the end of |output|.
+    // Cross-fade `temp_vector` onto the end of `output`.
     output->CrossFade(temp_vector, peak_index);
     // Copy the last unmodified part, 15 ms + pitch period until the end.
     output->PushBackInterleaved(rtc::ArrayView<const int16_t>(

@@ -74,7 +74,4 @@ static base::android::ScopedJavaLocalRef<jobject> Java_WrappedNativeI420Buffer_C
 }  // namespace jni
 }  // namespace  webrtc
 
-// Step 4: Generated test functions (optional).
-
-
 #endif  // org_webrtc_WrappedNativeI420Buffer_JNI

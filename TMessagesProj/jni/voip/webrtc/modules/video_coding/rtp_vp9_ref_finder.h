@@ -69,7 +69,7 @@ class RtpVp9RefFinder {
   std::deque<std::unique_ptr<RtpFrameObject>> stashed_frames_;
 
   // Where the current scalability structure is in the
-  // |scalability_structures_| array.
+  // `scalability_structures_` array.
   uint8_t current_ss_idx_ = 0;
 
   // Holds received scalability structures.

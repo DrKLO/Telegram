@@ -18,7 +18,7 @@
 namespace webrtc {
 
 // Returns the proper length of the output buffer that you should use for the
-// given |in_length| and decimation |odd_sequence|.
+// given `in_length` and decimation `odd_sequence`.
 // Return -1 on error.
 inline size_t GetOutLengthToDyadicDecimate(size_t in_length,
                                            bool odd_sequence) {
@@ -34,10 +34,10 @@ inline size_t GetOutLengthToDyadicDecimate(size_t in_length,
 // Performs a dyadic decimation: removes every odd/even member of a sequence
 // halving its overall length.
 // Arguments:
-//    in: array of |in_length|.
+//    in: array of `in_length`.
 //    odd_sequence: If false, the odd members will be removed (1, 3, 5, ...);
 //                  if true, the even members will be removed (0, 2, 4, ...).
-//    out: array of |out_length|. |out_length| must be large enough to
+//    out: array of `out_length`. `out_length` must be large enough to
 //         hold the decimated output. The necessary length can be provided by
 //         GetOutLengthToDyadicDecimate().
 //         Must be previously allocated.

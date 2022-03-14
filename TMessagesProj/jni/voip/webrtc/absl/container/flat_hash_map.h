@@ -36,6 +36,7 @@
 #include <utility>
 
 #include "absl/algorithm/container.h"
+#include "absl/base/macros.h"
 #include "absl/container/internal/container_memory.h"
 #include "absl/container/internal/hash_function_defaults.h"  // IWYU pragma: export
 #include "absl/container/internal/raw_hash_map.h"  // IWYU pragma: export
@@ -234,7 +235,8 @@ class flat_hash_map : public absl::container_internal::raw_hash_map<
   //
   // size_type erase(const key_type& key):
   //
-  //   Erases the element with the matching key, if it exists.
+  //   Erases the element with the matching key, if it exists, returning the
+  //   number of elements erased (0 or 1).
   using Base::erase;
 
   // flat_hash_map::insert()
@@ -383,6 +385,11 @@ class flat_hash_map : public absl::container_internal::raw_hash_map<
   //   key value and returns a node handle owning that extracted data. If the
   //   `flat_hash_map` does not contain an element with a matching key, this
   //   function returns an empty node handle.
+  //
+  // NOTE: when compiled in an earlier version of C++ than C++17,
+  // `node_type::key()` returns a const reference to the key instead of a
+  // mutable reference. We cannot safely return a mutable reference without
+  // std::launder (which is not available before C++17).
   using Base::extract;
 
   // flat_hash_map::merge()
@@ -535,10 +542,12 @@ class flat_hash_map : public absl::container_internal::raw_hash_map<
 // erase_if(flat_hash_map<>, Pred)
 //
 // Erases all elements that satisfy the predicate `pred` from the container `c`.
+// Returns the number of erased elements.
 template <typename K, typename V, typename H, typename E, typename A,
           typename Predicate>
-void erase_if(flat_hash_map<K, V, H, E, A>& c, Predicate pred) {
-  container_internal::EraseIf(pred, &c);
+typename flat_hash_map<K, V, H, E, A>::size_type erase_if(
+    flat_hash_map<K, V, H, E, A>& c, Predicate pred) {
+  return container_internal::EraseIf(pred, &c);
 }
 
 namespace container_internal {

@@ -80,7 +80,4 @@ JNI_GENERATOR_EXPORT jbyteArray Java_org_webrtc_CallSessionFileRotatingLogSink_n
 }  // namespace jni
 }  // namespace  webrtc
 
-// Step 4: Generated test functions (optional).
-
-
 #endif  // org_webrtc_CallSessionFileRotatingLogSink_JNI

@@ -42,7 +42,7 @@ class TestAudioDeviceModule : public AudioDeviceModule {
     virtual int SamplingFrequency() const = 0;
     // Returns the number of channels of captured audio data.
     virtual int NumChannels() const = 0;
-    // Replaces the contents of |buffer| with 10ms of captured audio data
+    // Replaces the contents of `buffer` with 10ms of captured audio data
     // (see TestAudioDeviceModule::SamplesPerFrame). Returns true if the
     // capturer can keep producing data, or false when the capture finishes.
     virtual bool Capture(rtc::BufferT<int16_t>* buffer) = 0;
@@ -73,10 +73,10 @@ class TestAudioDeviceModule : public AudioDeviceModule {
   ~TestAudioDeviceModule() override {}
 
   // Creates a new TestAudioDeviceModule. When capturing or playing, 10 ms audio
-  // frames will be processed every 10ms / |speed|.
-  // |capturer| is an object that produces audio data. Can be nullptr if this
+  // frames will be processed every 10ms / `speed`.
+  // `capturer` is an object that produces audio data. Can be nullptr if this
   // device is never used for recording.
-  // |renderer| is an object that receives audio data that would have been
+  // `renderer` is an object that receives audio data that would have been
   // played out. Can be nullptr if this device is never used for playing.
   // Use one of the Create... functions to get these instances.
   static rtc::scoped_refptr<TestAudioDeviceModule> Create(
@@ -85,9 +85,9 @@ class TestAudioDeviceModule : public AudioDeviceModule {
       std::unique_ptr<Renderer> renderer,
       float speed = 1);
 
-  // Returns a Capturer instance that generates a signal of |num_channels|
+  // Returns a Capturer instance that generates a signal of `num_channels`
   // channels where every second frame is zero and every second frame is evenly
-  // distributed random noise with max amplitude |max_amplitude|.
+  // distributed random noise with max amplitude `max_amplitude`.
   static std::unique_ptr<PulsedNoiseCapturer> CreatePulsedNoiseCapturer(
       int16_t max_amplitude,
       int sampling_frequency_in_hz,
@@ -109,7 +109,7 @@ class TestAudioDeviceModule : public AudioDeviceModule {
 
   // Returns a Capturer instance that gets its data from a file.
   // Automatically detects sample rate and num of channels.
-  // |repeat| - if true, the file will be replayed from the start when we reach
+  // `repeat` - if true, the file will be replayed from the start when we reach
   // the end of file.
   static std::unique_ptr<Capturer> CreateWavFileReader(std::string filename,
                                                        bool repeat = false);
@@ -140,10 +140,10 @@ class TestAudioDeviceModule : public AudioDeviceModule {
   bool Recording() const override = 0;
 
   // Blocks until the Renderer refuses to receive data.
-  // Returns false if |timeout_ms| passes before that happens.
+  // Returns false if `timeout_ms` passes before that happens.
   virtual bool WaitForPlayoutEnd(int timeout_ms = rtc::Event::kForever) = 0;
   // Blocks until the Recorder stops producing data.
-  // Returns false if |timeout_ms| passes before that happens.
+  // Returns false if `timeout_ms` passes before that happens.
   virtual bool WaitForRecordingEnd(int timeout_ms = rtc::Event::kForever) = 0;
 };
 

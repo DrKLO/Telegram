@@ -56,10 +56,11 @@ class MockDcSctpSocketCallbacks : public DcSctpSocketCallbacks {
       : log_prefix_(name.empty() ? "" : std::string(name) + ": "),
         random_(internal::GetUniqueSeed()),
         timeout_manager_([this]() { return now_; }) {
-    ON_CALL(*this, SendPacket)
+    ON_CALL(*this, SendPacketWithStatus)
         .WillByDefault([this](rtc::ArrayView<const uint8_t> data) {
           sent_packets_.emplace_back(
               std::vector<uint8_t>(data.begin(), data.end()));
+          return SendPacketStatus::kSuccess;
         });
     ON_CALL(*this, OnMessageReceived)
         .WillByDefault([this](DcSctpMessage message) {
@@ -80,8 +81,9 @@ class MockDcSctpSocketCallbacks : public DcSctpSocketCallbacks {
         });
     ON_CALL(*this, TimeMillis).WillByDefault([this]() { return now_; });
   }
-  MOCK_METHOD(void,
-              SendPacket,
+
+  MOCK_METHOD(SendPacketStatus,
+              SendPacketWithStatus,
               (rtc::ArrayView<const uint8_t> data),
               (override));
 
@@ -93,7 +95,6 @@ class MockDcSctpSocketCallbacks : public DcSctpSocketCallbacks {
   uint32_t GetRandomInt(uint32_t low, uint32_t high) override {
     return random_.Rand(low, high);
   }
-  MOCK_METHOD(void, NotifyOutgoingMessageBufferEmpty, (), (override));
 
   MOCK_METHOD(void, OnMessageReceived, (DcSctpMessage message), (override));
   MOCK_METHOD(void,
@@ -120,6 +121,8 @@ class MockDcSctpSocketCallbacks : public DcSctpSocketCallbacks {
               OnIncomingStreamsReset,
               (rtc::ArrayView<const StreamID> incoming_streams),
               (override));
+  MOCK_METHOD(void, OnBufferedAmountLow, (StreamID stream_id), (override));
+  MOCK_METHOD(void, OnTotalBufferedAmountLow, (), (override));
 
   bool HasPacket() const { return !sent_packets_.empty(); }
 
@@ -145,6 +148,12 @@ class MockDcSctpSocketCallbacks : public DcSctpSocketCallbacks {
 
   absl::optional<TimeoutID> GetNextExpiredTimeout() {
     return timeout_manager_.GetNextExpiredTimeout();
+  }
+
+  void Reset() {
+    sent_packets_.clear();
+    received_messages_.clear();
+    timeout_manager_.Reset();
   }
 
  private:

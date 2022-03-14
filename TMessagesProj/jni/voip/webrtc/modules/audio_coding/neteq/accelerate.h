@@ -34,10 +34,10 @@ class Accelerate : public TimeStretch {
       : TimeStretch(sample_rate_hz, num_channels, background_noise) {}
 
   // This method performs the actual Accelerate operation. The samples are
-  // read from |input|, of length |input_length| elements, and are written to
-  // |output|. The number of samples removed through time-stretching is
-  // is provided in the output |length_change_samples|. The method returns
-  // the outcome of the operation as an enumerator value. If |fast_accelerate|
+  // read from `input`, of length `input_length` elements, and are written to
+  // `output`. The number of samples removed through time-stretching is
+  // is provided in the output `length_change_samples`. The method returns
+  // the outcome of the operation as an enumerator value. If `fast_accelerate`
   // is true, the algorithm will relax the requirements on finding strong
   // correlations, and may remove multiple pitch periods if possible.
   ReturnCodes Process(const int16_t* input,
@@ -47,7 +47,7 @@ class Accelerate : public TimeStretch {
                       size_t* length_change_samples);
 
  protected:
-  // Sets the parameters |best_correlation| and |peak_index| to suitable
+  // Sets the parameters `best_correlation` and `peak_index` to suitable
   // values when the signal contains no active speech.
   void SetParametersForPassiveSpeech(size_t len,
                                      int16_t* best_correlation,

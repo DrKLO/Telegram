@@ -54,7 +54,7 @@ class TransportFeedback : public Rtpfb {
 
   TransportFeedback();
 
-  // If |include_timestamps| is set to false, the created packet will not
+  // If `include_timestamps` is set to false, the created packet will not
   // contain the receive delta block.
   explicit TransportFeedback(bool include_timestamps,
                              bool include_lost = false);
@@ -80,7 +80,7 @@ class TransportFeedback : public Rtpfb {
   int64_t GetBaseTimeUs() const;
   TimeDelta GetBaseTime() const;
 
-  // Get the unwrapped delta between current base time and |prev_timestamp_us|.
+  // Get the unwrapped delta between current base time and `prev_timestamp_us`.
   int64_t GetBaseDeltaUs(int64_t prev_timestamp_us) const;
   TimeDelta GetBaseDelta(TimeDelta prev_timestamp) const;
 
@@ -116,9 +116,9 @@ class TransportFeedback : public Rtpfb {
     bool Empty() const;
     void Clear();
     // Return if delta sizes still can be encoded into single chunk with added
-    // |delta_size|.
+    // `delta_size`.
     bool CanAdd(DeltaSize delta_size) const;
-    // Add |delta_size|, assumes |CanAdd(delta_size)|,
+    // Add `delta_size`, assumes `CanAdd(delta_size)`,
     void Add(DeltaSize delta_size);
 
     // Encode chunk as large as possible removing encoded delta sizes.
@@ -127,9 +127,9 @@ class TransportFeedback : public Rtpfb {
     // Encode all stored delta_sizes into single chunk, pad with 0s if needed.
     uint16_t EncodeLast() const;
 
-    // Decode up to |max_size| delta sizes from |chunk|.
+    // Decode up to `max_size` delta sizes from `chunk`.
     void Decode(uint16_t chunk, size_t max_size);
-    // Appends content of the Lastchunk to |deltas|.
+    // Appends content of the Lastchunk to `deltas`.
     void AppendTo(std::vector<DeltaSize>* deltas) const;
 
    private:

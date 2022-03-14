@@ -133,6 +133,7 @@ class NetEqImpl : public webrtc::NetEq {
   int GetAudio(
       AudioFrame* audio_frame,
       bool* muted,
+      int* current_sample_rate_hz = nullptr,
       absl::optional<Operation> action_override = absl::nullopt) override;
 
   void SetCodecs(const std::map<int, SdpAudioFormat>& codecs) override;
@@ -140,7 +141,7 @@ class NetEqImpl : public webrtc::NetEq {
   bool RegisterPayloadType(int rtp_payload_type,
                            const SdpAudioFormat& audio_format) override;
 
-  // Removes |rtp_payload_type| from the codec database. Returns 0 on success,
+  // Removes `rtp_payload_type` from the codec database. Returns 0 on success,
   // -1 on failure.
   int RemovePayloadType(uint8_t rtp_payload_type) override;
 
@@ -158,7 +159,7 @@ class NetEqImpl : public webrtc::NetEq {
 
   int FilteredCurrentDelayMs() const override;
 
-  // Writes the current network statistics to |stats|. The statistics are reset
+  // Writes the current network statistics to `stats`. The statistics are reset
   // after the call.
   int NetworkStatistics(NetEqNetworkStatistics* stats) override;
 
@@ -214,7 +215,7 @@ class NetEqImpl : public webrtc::NetEq {
                            rtc::ArrayView<const uint8_t> payload)
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
-  // Delivers 10 ms of audio data. The data is written to |audio_frame|.
+  // Delivers 10 ms of audio data. The data is written to `audio_frame`.
   // Returns 0 on success, otherwise an error code.
   int GetAudioInternal(AudioFrame* audio_frame,
                        bool* muted,
@@ -222,9 +223,9 @@ class NetEqImpl : public webrtc::NetEq {
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   // Provides a decision to the GetAudioInternal method. The decision what to
-  // do is written to |operation|. Packets to decode are written to
-  // |packet_list|, and a DTMF event to play is written to |dtmf_event|. When
-  // DTMF should be played, |play_dtmf| is set to true by the method.
+  // do is written to `operation`. Packets to decode are written to
+  // `packet_list`, and a DTMF event to play is written to `dtmf_event`. When
+  // DTMF should be played, `play_dtmf` is set to true by the method.
   // Returns 0 on success, otherwise an error code.
   int GetDecision(Operation* operation,
                   PacketList* packet_list,
@@ -233,11 +234,11 @@ class NetEqImpl : public webrtc::NetEq {
                   absl::optional<Operation> action_override)
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
-  // Decodes the speech packets in |packet_list|, and writes the results to
-  // |decoded_buffer|, which is allocated to hold |decoded_buffer_length|
-  // elements. The length of the decoded data is written to |decoded_length|.
+  // Decodes the speech packets in `packet_list`, and writes the results to
+  // `decoded_buffer`, which is allocated to hold `decoded_buffer_length`
+  // elements. The length of the decoded data is written to `decoded_length`.
   // The speech type -- speech or (codec-internal) comfort noise -- is written
-  // to |speech_type|. If |packet_list| contains any SID frames for RFC 3389
+  // to `speech_type`. If `packet_list` contains any SID frames for RFC 3389
   // comfort noise, those are not decoded.
   int Decode(PacketList* packet_list,
              Operation* operation,
@@ -292,7 +293,7 @@ class NetEqImpl : public webrtc::NetEq {
                          bool play_dtmf) RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   // Sub-method which calls the ComfortNoise class to generate RFC 3389 comfort
-  // noise. |packet_list| can either contain one SID frame to update the
+  // noise. `packet_list` can either contain one SID frame to update the
   // noise parameters, or no payload at all, in which case the previously
   // received parameters are used.
   int DoRfc3389Cng(PacketList* packet_list, bool play_dtmf)
@@ -307,20 +308,20 @@ class NetEqImpl : public webrtc::NetEq {
   int DoDtmf(const DtmfEvent& dtmf_event, bool* play_dtmf)
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
-  // Overdub DTMF on top of |output|.
+  // Overdub DTMF on top of `output`.
   int DtmfOverdub(const DtmfEvent& dtmf_event,
                   size_t num_channels,
                   int16_t* output) const RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
-  // Extracts packets from |packet_buffer_| to produce at least
-  // |required_samples| samples. The packets are inserted into |packet_list|.
+  // Extracts packets from `packet_buffer_` to produce at least
+  // `required_samples` samples. The packets are inserted into `packet_list`.
   // Returns the number of samples that the packets in the list will produce, or
   // -1 in case of an error.
   int ExtractPackets(size_t required_samples, PacketList* packet_list)
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   // Resets various variables and objects to new values based on the sample rate
-  // |fs_hz| and |channels| number audio channels.
+  // `fs_hz` and `channels` number audio channels.
   void SetSampleRateAndChannels(int fs_hz, size_t channels)
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
@@ -398,23 +399,6 @@ class NetEqImpl : public webrtc::NetEq {
   ExpandUmaLogger speech_expand_uma_logger_ RTC_GUARDED_BY(mutex_);
   bool no_time_stretching_ RTC_GUARDED_BY(mutex_);  // Only used for test.
   rtc::BufferT<int16_t> concealment_audio_ RTC_GUARDED_BY(mutex_);
-  const bool enable_rtx_handling_ RTC_GUARDED_BY(mutex_);
-  // Data members used for adding extra delay to the output of NetEq.
-  // The delay in ms (which is 10 times the number of elements in
-  // output_delay_chain_).
-  const int output_delay_chain_ms_ RTC_GUARDED_BY(mutex_);
-  // Vector of AudioFrames which contains the delayed audio. Accessed as a
-  // circular buffer.
-  std::vector<AudioFrame> output_delay_chain_ RTC_GUARDED_BY(mutex_);
-  // Index into output_delay_chain_.
-  size_t output_delay_chain_ix_ RTC_GUARDED_BY(mutex_) = 0;
-  // Did output_delay_chain_ get populated yet?
-  bool output_delay_chain_empty_ RTC_GUARDED_BY(mutex_) = true;
-  // Contains the sample rate of the AudioFrame last emitted from the delay
-  // chain. If the extra output delay chain is not used, or if no audio has been
-  // emitted yet, the variable is empty.
-  absl::optional<int> delayed_last_output_sample_rate_hz_
-      RTC_GUARDED_BY(mutex_);
 
  private:
   RTC_DISALLOW_COPY_AND_ASSIGN(NetEqImpl);

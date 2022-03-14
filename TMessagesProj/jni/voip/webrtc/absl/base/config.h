@@ -66,6 +66,35 @@
 #include "absl/base/options.h"
 #include "absl/base/policy_checks.h"
 
+// Abseil long-term support (LTS) releases will define
+// `ABSL_LTS_RELEASE_VERSION` to the integer representing the date string of the
+// LTS release version, and will define `ABSL_LTS_RELEASE_PATCH_LEVEL` to the
+// integer representing the patch-level for that release.
+//
+// For example, for LTS release version "20300401.2", this would give us
+// ABSL_LTS_RELEASE_VERSION == 20300401 && ABSL_LTS_RELEASE_PATCH_LEVEL == 2
+//
+// These symbols will not be defined in non-LTS code.
+//
+// Abseil recommends that clients live-at-head. Therefore, if you are using
+// these symbols to assert a minimum version requirement, we recommend you do it
+// as
+//
+// #if defined(ABSL_LTS_RELEASE_VERSION) && ABSL_LTS_RELEASE_VERSION < 20300401
+// #error Project foo requires Abseil LTS version >= 20300401
+// #endif
+//
+// The `defined(ABSL_LTS_RELEASE_VERSION)` part of the check excludes
+// live-at-head clients from the minimum version assertion.
+//
+// See https://abseil.io/about/releases for more information on Abseil release
+// management.
+//
+// LTS releases can be obtained from
+// https://github.com/abseil/abseil-cpp/releases.
+#undef ABSL_LTS_RELEASE_VERSION
+#undef ABSL_LTS_RELEASE_PATCH_LEVEL
+
 // Helper macro to convert a CPP variable to a string literal.
 #define ABSL_INTERNAL_DO_TOKEN_STR(x) #x
 #define ABSL_INTERNAL_TOKEN_STR(x) ABSL_INTERNAL_DO_TOKEN_STR(x)
@@ -121,10 +150,16 @@ static_assert(ABSL_INTERNAL_INLINE_NAMESPACE_STR[0] != 'h' ||
 #if ABSL_OPTION_USE_INLINE_NAMESPACE == 0
 #define ABSL_NAMESPACE_BEGIN
 #define ABSL_NAMESPACE_END
+#define ABSL_INTERNAL_C_SYMBOL(x) x
 #elif ABSL_OPTION_USE_INLINE_NAMESPACE == 1
 #define ABSL_NAMESPACE_BEGIN \
   inline namespace ABSL_OPTION_INLINE_NAMESPACE_NAME {
 #define ABSL_NAMESPACE_END }
+#define ABSL_INTERNAL_C_SYMBOL_HELPER_2(x, v) x##_##v
+#define ABSL_INTERNAL_C_SYMBOL_HELPER_1(x, v) \
+  ABSL_INTERNAL_C_SYMBOL_HELPER_2(x, v)
+#define ABSL_INTERNAL_C_SYMBOL(x) \
+  ABSL_INTERNAL_C_SYMBOL_HELPER_1(x, ABSL_OPTION_INLINE_NAMESPACE_NAME)
 #else
 #error options.h is misconfigured.
 #endif
@@ -154,6 +189,28 @@ static_assert(ABSL_INTERNAL_INLINE_NAMESPACE_STR[0] != 'h' ||
 #define ABSL_INTERNAL_HAS_KEYWORD(x) 0
 #endif
 
+#ifdef __has_feature
+#define ABSL_HAVE_FEATURE(f) __has_feature(f)
+#else
+#define ABSL_HAVE_FEATURE(f) 0
+#endif
+
+// Portable check for GCC minimum version:
+// https://gcc.gnu.org/onlinedocs/cpp/Common-Predefined-Macros.html
+#if defined(__GNUC__) && defined(__GNUC_MINOR__)
+#define ABSL_INTERNAL_HAVE_MIN_GNUC_VERSION(x, y) \
+  (__GNUC__ > (x) || __GNUC__ == (x) && __GNUC_MINOR__ >= (y))
+#else
+#define ABSL_INTERNAL_HAVE_MIN_GNUC_VERSION(x, y) 0
+#endif
+
+#if defined(__clang__) && defined(__clang_major__) && defined(__clang_minor__)
+#define ABSL_INTERNAL_HAVE_MIN_CLANG_VERSION(x, y) \
+  (__clang_major__ > (x) || __clang_major__ == (x) && __clang_minor__ >= (y))
+#else
+#define ABSL_INTERNAL_HAVE_MIN_CLANG_VERSION(x, y) 0
+#endif
+
 // ABSL_HAVE_TLS is defined to 1 when __thread should be supported.
 // We assume __thread is supported on Linux when compiled with Clang or compiled
 // against libstdc++ with _GLIBCXX_HAVE_TLS defined.
@@ -171,10 +228,9 @@ static_assert(ABSL_INTERNAL_INLINE_NAMESPACE_STR[0] != 'h' ||
 // gcc >= 4.8.1 using libstdc++, and Visual Studio.
 #ifdef ABSL_HAVE_STD_IS_TRIVIALLY_DESTRUCTIBLE
 #error ABSL_HAVE_STD_IS_TRIVIALLY_DESTRUCTIBLE cannot be directly set
-#elif defined(_LIBCPP_VERSION) ||                                        \
-    (!defined(__clang__) && defined(__GNUC__) && defined(__GLIBCXX__) && \
-     (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8))) ||        \
-    defined(_MSC_VER)
+#elif defined(_LIBCPP_VERSION) || defined(_MSC_VER) || \
+    (!defined(__clang__) && defined(__GLIBCXX__) &&    \
+     ABSL_INTERNAL_HAVE_MIN_GNUC_VERSION(4, 8))
 #define ABSL_HAVE_STD_IS_TRIVIALLY_DESTRUCTIBLE 1
 #endif
 
@@ -187,16 +243,17 @@ static_assert(ABSL_INTERNAL_INLINE_NAMESPACE_STR[0] != 'h' ||
 //
 // Checks whether `std::is_trivially_copy_assignable<T>` is supported.
 
-// Notes: Clang with libc++ supports these features, as does gcc >= 5.1 with
-// either libc++ or libstdc++, and Visual Studio (but not NVCC).
+// Notes: Clang with libc++ supports these features, as does gcc >= 7.4 with
+// libstdc++, or gcc >= 8.2 with libc++, and Visual Studio (but not NVCC).
 #if defined(ABSL_HAVE_STD_IS_TRIVIALLY_CONSTRUCTIBLE)
 #error ABSL_HAVE_STD_IS_TRIVIALLY_CONSTRUCTIBLE cannot be directly set
 #elif defined(ABSL_HAVE_STD_IS_TRIVIALLY_ASSIGNABLE)
 #error ABSL_HAVE_STD_IS_TRIVIALLY_ASSIGNABLE cannot directly set
-#elif (defined(__clang__) && defined(_LIBCPP_VERSION)) ||        \
-    (!defined(__clang__) && defined(__GNUC__) &&                 \
-     (__GNUC__ > 7 || (__GNUC__ == 7 && __GNUC_MINOR__ >= 4)) && \
-     (defined(_LIBCPP_VERSION) || defined(__GLIBCXX__))) ||      \
+#elif (defined(__clang__) && defined(_LIBCPP_VERSION)) ||                    \
+    (!defined(__clang__) &&                                                  \
+     ((ABSL_INTERNAL_HAVE_MIN_GNUC_VERSION(7, 4) && defined(__GLIBCXX__)) || \
+      (ABSL_INTERNAL_HAVE_MIN_GNUC_VERSION(8, 2) &&                          \
+       defined(_LIBCPP_VERSION)))) ||                                        \
     (defined(_MSC_VER) && !defined(__NVCC__))
 #define ABSL_HAVE_STD_IS_TRIVIALLY_CONSTRUCTIBLE 1
 #define ABSL_HAVE_STD_IS_TRIVIALLY_ASSIGNABLE 1
@@ -209,6 +266,8 @@ static_assert(ABSL_INTERNAL_INLINE_NAMESPACE_STR[0] != 'h' ||
 #ifndef ABSL_HAVE_SOURCE_LOCATION_CURRENT
 #if ABSL_INTERNAL_HAS_KEYWORD(__builtin_LINE) && \
     ABSL_INTERNAL_HAS_KEYWORD(__builtin_FILE)
+#define ABSL_HAVE_SOURCE_LOCATION_CURRENT 1
+#elif ABSL_INTERNAL_HAVE_MIN_GNUC_VERSION(5, 0)
 #define ABSL_HAVE_SOURCE_LOCATION_CURRENT 1
 #endif
 #endif
@@ -226,11 +285,9 @@ static_assert(ABSL_INTERNAL_INLINE_NAMESPACE_STR[0] != 'h' ||
 // * Xcode 9.3 started disallowing `thread_local` for 32-bit iOS simulator
 //   targeting iOS 9.x.
 // * Xcode 10 moves the deployment target check for iOS < 9.0 to link time
-//   making __has_feature unreliable there.
+//   making ABSL_HAVE_FEATURE unreliable there.
 //
-// Otherwise, `__has_feature` is only supported by Clang so it has be inside
-// `defined(__APPLE__)` check.
-#if __has_feature(cxx_thread_local) && \
+#if ABSL_HAVE_FEATURE(cxx_thread_local) && \
     !(TARGET_OS_IPHONE && __IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_9_0)
 #define ABSL_HAVE_THREAD_LOCAL 1
 #endif
@@ -307,25 +364,21 @@ static_assert(ABSL_INTERNAL_INLINE_NAMESPACE_STR[0] != 'h' ||
 // For further details, consult the compiler's documentation.
 #ifdef ABSL_HAVE_EXCEPTIONS
 #error ABSL_HAVE_EXCEPTIONS cannot be directly set.
-
-#elif defined(__clang__)
-
-#if __clang_major__ > 3 || (__clang_major__ == 3 && __clang_minor__ >= 6)
+#elif ABSL_INTERNAL_HAVE_MIN_CLANG_VERSION(3, 6)
 // Clang >= 3.6
-#if __has_feature(cxx_exceptions)
-//#define ABSL_HAVE_EXCEPTIONS 1
-#endif  // __has_feature(cxx_exceptions)
-#else
+#if ABSL_HAVE_FEATURE(cxx_exceptions)
+#define ABSL_HAVE_EXCEPTIONS 1
+#endif  // ABSL_HAVE_FEATURE(cxx_exceptions)
+#elif defined(__clang__)
 // Clang < 3.6
 // http://releases.llvm.org/3.6.0/tools/clang/docs/ReleaseNotes.html#the-exceptions-macro
-#if defined(__EXCEPTIONS) && __has_feature(cxx_exceptions)
-//#define ABSL_HAVE_EXCEPTIONS 1
-#endif  // defined(__EXCEPTIONS) && __has_feature(cxx_exceptions)
-#endif  // __clang_major__ > 3 || (__clang_major__ == 3 && __clang_minor__ >= 6)
-
+#if defined(__EXCEPTIONS) && ABSL_HAVE_FEATURE(cxx_exceptions)
+#define ABSL_HAVE_EXCEPTIONS 1
+#endif  // defined(__EXCEPTIONS) && ABSL_HAVE_FEATURE(cxx_exceptions)
 // Handle remaining special cases and default to exceptions being supported.
-#elif !(defined(__GNUC__) && (__GNUC__ < 5) && !defined(__EXCEPTIONS)) &&    \
-    !(defined(__GNUC__) && (__GNUC__ >= 5) && !defined(__cpp_exceptions)) && \
+#elif !(defined(__GNUC__) && (__GNUC__ < 5) && !defined(__EXCEPTIONS)) && \
+    !(ABSL_INTERNAL_HAVE_MIN_GNUC_VERSION(5, 0) &&                        \
+      !defined(__cpp_exceptions)) &&                                      \
     !(defined(_MSC_VER) && !defined(_CPPUNWIND))
 #define ABSL_HAVE_EXCEPTIONS 1
 #endif
@@ -357,10 +410,11 @@ static_assert(ABSL_INTERNAL_INLINE_NAMESPACE_STR[0] != 'h' ||
 // POSIX.1-2001.
 #ifdef ABSL_HAVE_MMAP
 #error ABSL_HAVE_MMAP cannot be directly set
-#elif defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) ||   \
-    defined(__ros__) || defined(__native_client__) || defined(__asmjs__) || \
-    defined(__wasm__) || defined(__Fuchsia__) || defined(__sun) || \
-    defined(__ASYLO__)
+#elif defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) || \
+    defined(_AIX) || defined(__ros__) || defined(__native_client__) ||    \
+    defined(__asmjs__) || defined(__wasm__) || defined(__Fuchsia__) ||    \
+    defined(__sun) || defined(__ASYLO__) || defined(__myriad2__) ||       \
+    defined(__HAIKU__)
 #define ABSL_HAVE_MMAP 1
 #endif
 
@@ -371,8 +425,17 @@ static_assert(ABSL_INTERNAL_INLINE_NAMESPACE_STR[0] != 'h' ||
 #ifdef ABSL_HAVE_PTHREAD_GETSCHEDPARAM
 #error ABSL_HAVE_PTHREAD_GETSCHEDPARAM cannot be directly set
 #elif defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) || \
-    defined(__ros__)
+    defined(_AIX) || defined(__ros__)
 #define ABSL_HAVE_PTHREAD_GETSCHEDPARAM 1
+#endif
+
+// ABSL_HAVE_SCHED_GETCPU
+//
+// Checks whether sched_getcpu is available.
+#ifdef ABSL_HAVE_SCHED_GETCPU
+#error ABSL_HAVE_SCHED_GETCPU cannot be directly set
+#elif defined(__linux__)
+#define ABSL_HAVE_SCHED_GETCPU 1
 #endif
 
 // ABSL_HAVE_SCHED_YIELD
@@ -457,22 +520,41 @@ static_assert(ABSL_INTERNAL_INLINE_NAMESPACE_STR[0] != 'h' ||
 #error "absl endian detection needs to be set up for your compiler"
 #endif
 
-// macOS 10.13 and iOS 10.11 don't let you use <any>, <optional>, or <variant>
-// even though the headers exist and are publicly noted to work.  See
-// https://github.com/abseil/abseil-cpp/issues/207 and
+// macOS < 10.13 and iOS < 11 don't let you use <any>, <optional>, or <variant>
+// even though the headers exist and are publicly noted to work, because the
+// libc++ shared library shipped on the system doesn't have the requisite
+// exported symbols.  See https://github.com/abseil/abseil-cpp/issues/207 and
 // https://developer.apple.com/documentation/xcode_release_notes/xcode_10_release_notes
+//
 // libc++ spells out the availability requirements in the file
 // llvm-project/libcxx/include/__config via the #define
 // _LIBCPP_AVAILABILITY_BAD_OPTIONAL_ACCESS.
-#if defined(__APPLE__) && defined(_LIBCPP_VERSION) && \
-  ((defined(__ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__) && \
-   __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ < 101400) || \
-  (defined(__ENVIRONMENT_IPHONE_OS_VERSION_MIN_REQUIRED__) && \
-   __ENVIRONMENT_IPHONE_OS_VERSION_MIN_REQUIRED__ < 120000) || \
-  (defined(__ENVIRONMENT_WATCH_OS_VERSION_MIN_REQUIRED__) && \
-   __ENVIRONMENT_WATCH_OS_VERSION_MIN_REQUIRED__ < 120000) || \
-  (defined(__ENVIRONMENT_TV_OS_VERSION_MIN_REQUIRED__) && \
-   __ENVIRONMENT_TV_OS_VERSION_MIN_REQUIRED__ < 50000))
+//
+// Unfortunately, Apple initially mis-stated the requirements as macOS < 10.14
+// and iOS < 12 in the libc++ headers. This was corrected by
+// https://github.com/llvm/llvm-project/commit/7fb40e1569dd66292b647f4501b85517e9247953
+// which subsequently made it into the XCode 12.5 release. We need to match the
+// old (incorrect) conditions when built with old XCode, but can use the
+// corrected earlier versions with new XCode.
+#if defined(__APPLE__) && defined(_LIBCPP_VERSION) &&               \
+    ((_LIBCPP_VERSION >= 11000 && /* XCode 12.5 or later: */        \
+      ((defined(__ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__) &&   \
+        __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ < 101300) ||  \
+       (defined(__ENVIRONMENT_IPHONE_OS_VERSION_MIN_REQUIRED__) &&  \
+        __ENVIRONMENT_IPHONE_OS_VERSION_MIN_REQUIRED__ < 110000) || \
+       (defined(__ENVIRONMENT_WATCH_OS_VERSION_MIN_REQUIRED__) &&   \
+        __ENVIRONMENT_WATCH_OS_VERSION_MIN_REQUIRED__ < 40000) ||   \
+       (defined(__ENVIRONMENT_TV_OS_VERSION_MIN_REQUIRED__) &&      \
+        __ENVIRONMENT_TV_OS_VERSION_MIN_REQUIRED__ < 110000))) ||   \
+     (_LIBCPP_VERSION < 11000 && /* Pre-XCode 12.5: */              \
+      ((defined(__ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__) &&   \
+        __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ < 101400) ||  \
+       (defined(__ENVIRONMENT_IPHONE_OS_VERSION_MIN_REQUIRED__) &&  \
+        __ENVIRONMENT_IPHONE_OS_VERSION_MIN_REQUIRED__ < 120000) || \
+       (defined(__ENVIRONMENT_WATCH_OS_VERSION_MIN_REQUIRED__) &&   \
+        __ENVIRONMENT_WATCH_OS_VERSION_MIN_REQUIRED__ < 50000) ||   \
+       (defined(__ENVIRONMENT_TV_OS_VERSION_MIN_REQUIRED__) &&      \
+        __ENVIRONMENT_TV_OS_VERSION_MIN_REQUIRED__ < 120000))))
 #define ABSL_INTERNAL_APPLE_CXX17_TYPES_UNAVAILABLE 1
 #else
 #define ABSL_INTERNAL_APPLE_CXX17_TYPES_UNAVAILABLE 0
@@ -486,7 +568,7 @@ static_assert(ABSL_INTERNAL_INLINE_NAMESPACE_STR[0] != 'h' ||
 #endif
 
 #ifdef __has_include
-#if __has_include(<any>) && __cplusplus >= 201703L && \
+#if __has_include(<any>) && defined(__cplusplus) && __cplusplus >= 201703L && \
     !ABSL_INTERNAL_APPLE_CXX17_TYPES_UNAVAILABLE
 #define ABSL_HAVE_STD_ANY 1
 #endif
@@ -500,8 +582,8 @@ static_assert(ABSL_INTERNAL_INLINE_NAMESPACE_STR[0] != 'h' ||
 #endif
 
 #ifdef __has_include
-#if __has_include(<optional>) && __cplusplus >= 201703L && \
-    !ABSL_INTERNAL_APPLE_CXX17_TYPES_UNAVAILABLE
+#if __has_include(<optional>) && defined(__cplusplus) && \
+    __cplusplus >= 201703L && !ABSL_INTERNAL_APPLE_CXX17_TYPES_UNAVAILABLE
 #define ABSL_HAVE_STD_OPTIONAL 1
 #endif
 #endif
@@ -514,8 +596,8 @@ static_assert(ABSL_INTERNAL_INLINE_NAMESPACE_STR[0] != 'h' ||
 #endif
 
 #ifdef __has_include
-#if __has_include(<variant>) && __cplusplus >= 201703L && \
-    !ABSL_INTERNAL_APPLE_CXX17_TYPES_UNAVAILABLE
+#if __has_include(<variant>) && defined(__cplusplus) && \
+    __cplusplus >= 201703L && !ABSL_INTERNAL_APPLE_CXX17_TYPES_UNAVAILABLE
 #define ABSL_HAVE_STD_VARIANT 1
 #endif
 #endif
@@ -528,7 +610,8 @@ static_assert(ABSL_INTERNAL_INLINE_NAMESPACE_STR[0] != 'h' ||
 #endif
 
 #ifdef __has_include
-#if __has_include(<string_view>) && __cplusplus >= 201703L
+#if __has_include(<string_view>) && defined(__cplusplus) && \
+    __cplusplus >= 201703L
 #define ABSL_HAVE_STD_STRING_VIEW 1
 #endif
 #endif
@@ -540,8 +623,9 @@ static_assert(ABSL_INTERNAL_INLINE_NAMESPACE_STR[0] != 'h' ||
 // not correctly set by MSVC, so we use `_MSVC_LANG` to check the language
 // version.
 // TODO(zhangxy): fix tests before enabling aliasing for `std::any`.
-#if defined(_MSC_VER) && _MSC_VER >= 1910 && \
-    ((defined(_MSVC_LANG) && _MSVC_LANG > 201402) || __cplusplus > 201402)
+#if defined(_MSC_VER) && _MSC_VER >= 1910 &&         \
+    ((defined(_MSVC_LANG) && _MSVC_LANG > 201402) || \
+     (defined(__cplusplus) && __cplusplus > 201402))
 // #define ABSL_HAVE_STD_ANY 1
 #define ABSL_HAVE_STD_OPTIONAL 1
 #define ABSL_HAVE_STD_VARIANT 1
@@ -660,5 +744,76 @@ static_assert(ABSL_INTERNAL_INLINE_NAMESPACE_STR[0] != 'h' ||
 #else
 #define ABSL_DLL
 #endif  // defined(_MSC_VER)
+
+// ABSL_HAVE_MEMORY_SANITIZER
+//
+// MemorySanitizer (MSan) is a detector of uninitialized reads. It consists of
+// a compiler instrumentation module and a run-time library.
+#ifdef ABSL_HAVE_MEMORY_SANITIZER
+#error "ABSL_HAVE_MEMORY_SANITIZER cannot be directly set."
+#elif !defined(__native_client__) && ABSL_HAVE_FEATURE(memory_sanitizer)
+#define ABSL_HAVE_MEMORY_SANITIZER 1
+#endif
+
+// ABSL_HAVE_THREAD_SANITIZER
+//
+// ThreadSanitizer (TSan) is a fast data race detector.
+#ifdef ABSL_HAVE_THREAD_SANITIZER
+#error "ABSL_HAVE_THREAD_SANITIZER cannot be directly set."
+#elif defined(__SANITIZE_THREAD__)
+#define ABSL_HAVE_THREAD_SANITIZER 1
+#elif ABSL_HAVE_FEATURE(thread_sanitizer)
+#define ABSL_HAVE_THREAD_SANITIZER 1
+#endif
+
+// ABSL_HAVE_ADDRESS_SANITIZER
+//
+// AddressSanitizer (ASan) is a fast memory error detector.
+#ifdef ABSL_HAVE_ADDRESS_SANITIZER
+#error "ABSL_HAVE_ADDRESS_SANITIZER cannot be directly set."
+#elif defined(__SANITIZE_ADDRESS__)
+#define ABSL_HAVE_ADDRESS_SANITIZER 1
+#elif ABSL_HAVE_FEATURE(address_sanitizer)
+#define ABSL_HAVE_ADDRESS_SANITIZER 1
+#endif
+
+// ABSL_HAVE_HWADDRESS_SANITIZER
+//
+// Hardware-Assisted AddressSanitizer (or HWASAN) is even faster than asan
+// memory error detector which can use CPU features like ARM TBI, Intel LAM or
+// AMD UAI.
+#ifdef ABSL_HAVE_HWADDRESS_SANITIZER
+#error "ABSL_HAVE_HWADDRESS_SANITIZER cannot be directly set."
+#elif defined(__SANITIZE_HWADDRESS__)
+#define ABSL_HAVE_HWADDRESS_SANITIZER 1
+#elif ABSL_HAVE_FEATURE(hwaddress_sanitizer)
+#define ABSL_HAVE_HWADDRESS_SANITIZER 1
+#endif
+
+// ABSL_HAVE_LEAK_SANITIZER
+//
+// LeakSanitizer (or lsan) is a detector of memory leaks.
+#ifdef ABSL_HAVE_LEAK_SANITIZER
+#error "ABSL_HAVE_LEAK_SANITIZER cannot be directly set."
+#elif ABSL_HAVE_FEATURE(leak_sanitizer)
+#define ABSL_HAVE_LEAK_SANITIZER 1
+#endif
+
+// ABSL_HAVE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION
+//
+// Class template argument deduction is a language feature added in C++17.
+#ifdef ABSL_HAVE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION
+#error "ABSL_HAVE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION cannot be directly set."
+#elif defined(__cpp_deduction_guides)
+#define ABSL_HAVE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION 1
+#endif
+
+// `ABSL_INTERNAL_HAS_RTTI` determines whether abseil is being compiled with
+// RTTI support.
+#ifdef ABSL_INTERNAL_HAS_RTTI
+#error ABSL_INTERNAL_HAS_RTTI cannot be directly set
+#elif !defined(__GNUC__) || defined(__GXX_RTTI)
+#define ABSL_INTERNAL_HAS_RTTI 1
+#endif  // !defined(__GNUC__) || defined(__GXX_RTTI)
 
 #endif  // ABSL_BASE_CONFIG_H_

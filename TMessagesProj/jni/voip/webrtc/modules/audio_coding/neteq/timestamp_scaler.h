@@ -37,15 +37,15 @@ class TimestampScaler {
   // Start over.
   virtual void Reset();
 
-  // Scale the timestamp in |packet| from external to internal.
+  // Scale the timestamp in `packet` from external to internal.
   virtual void ToInternal(Packet* packet);
 
-  // Scale the timestamp for all packets in |packet_list| from external to
+  // Scale the timestamp for all packets in `packet_list` from external to
   // internal.
   virtual void ToInternal(PacketList* packet_list);
 
-  // Returns the internal equivalent of |external_timestamp|, given the
-  // RTP payload type |rtp_payload_type|.
+  // Returns the internal equivalent of `external_timestamp`, given the
+  // RTP payload type `rtp_payload_type`.
   virtual uint32_t ToInternal(uint32_t external_timestamp,
                               uint8_t rtp_payload_type);
 

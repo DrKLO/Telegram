@@ -7,10 +7,10 @@ import android.graphics.RectF;
 import android.view.View;
 import android.view.animation.DecelerateInterpolator;
 
+import androidx.viewpager.widget.ViewPager;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
-
-import androidx.viewpager.widget.ViewPager;
 
 public class BottomPagesView extends View {
 
@@ -55,7 +55,7 @@ public class BottomPagesView extends View {
         if (colorKey != null) {
             paint.setColor((Theme.getColor(colorKey) & 0x00ffffff) | 0xb4000000);
         } else {
-            paint.setColor(0xffbbbbbb);
+            paint.setColor(Theme.getCurrentTheme().isDark() ? 0xff555555 : 0xffbbbbbb);
         }
         int x;
         currentPage = viewPager.getCurrentItem();

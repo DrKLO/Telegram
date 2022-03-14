@@ -39,8 +39,8 @@ namespace JNI_LinkedHashMap {
 
 
 static std::atomic<jmethodID> g_java_util_LinkedHashMap_containsValue(nullptr);
-static jboolean Java_LinkedHashMap_containsValue(JNIEnv* env, const base::android::JavaRef<jobject>&
-    obj, const base::android::JavaRef<jobject>& p0) __attribute__ ((unused));
+[[maybe_unused]] static jboolean Java_LinkedHashMap_containsValue(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobject>& p0);
 static jboolean Java_LinkedHashMap_containsValue(JNIEnv* env, const base::android::JavaRef<jobject>&
     obj, const base::android::JavaRef<jobject>& p0) {
   jclass clazz = java_util_LinkedHashMap_clazz(env);
@@ -63,9 +63,8 @@ static jboolean Java_LinkedHashMap_containsValue(JNIEnv* env, const base::androi
 }
 
 static std::atomic<jmethodID> g_java_util_LinkedHashMap_get(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_LinkedHashMap_get(JNIEnv* env, const
-    base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobject>& p0) __attribute__
-    ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject> Java_LinkedHashMap_get(JNIEnv*
+    env, const base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobject>& p0);
 static base::android::ScopedJavaLocalRef<jobject> Java_LinkedHashMap_get(JNIEnv* env, const
     base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobject>& p0) {
   jclass clazz = java_util_LinkedHashMap_clazz(env);
@@ -88,9 +87,10 @@ static base::android::ScopedJavaLocalRef<jobject> Java_LinkedHashMap_get(JNIEnv*
 }
 
 static std::atomic<jmethodID> g_java_util_LinkedHashMap_getOrDefault(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_LinkedHashMap_getOrDefault(JNIEnv* env, const
-    base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobject>& p0,
-    const base::android::JavaRef<jobject>& p1) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject>
+    Java_LinkedHashMap_getOrDefault(JNIEnv* env, const base::android::JavaRef<jobject>& obj, const
+    base::android::JavaRef<jobject>& p0,
+    const base::android::JavaRef<jobject>& p1);
 static base::android::ScopedJavaLocalRef<jobject> Java_LinkedHashMap_getOrDefault(JNIEnv* env, const
     base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobject>& p0,
     const base::android::JavaRef<jobject>& p1) {
@@ -114,8 +114,8 @@ static base::android::ScopedJavaLocalRef<jobject> Java_LinkedHashMap_getOrDefaul
 }
 
 static std::atomic<jmethodID> g_java_util_LinkedHashMap_clear(nullptr);
-static void Java_LinkedHashMap_clear(JNIEnv* env, const base::android::JavaRef<jobject>& obj)
-    __attribute__ ((unused));
+[[maybe_unused]] static void Java_LinkedHashMap_clear(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj);
 static void Java_LinkedHashMap_clear(JNIEnv* env, const base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_util_LinkedHashMap_clazz(env);
   CHECK_CLAZZ(env, obj.obj(),
@@ -135,9 +135,8 @@ static void Java_LinkedHashMap_clear(JNIEnv* env, const base::android::JavaRef<j
 }
 
 static std::atomic<jmethodID> g_java_util_LinkedHashMap_removeEldestEntry(nullptr);
-static jboolean Java_LinkedHashMap_removeEldestEntry(JNIEnv* env, const
-    base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobject>& p0) __attribute__
-    ((unused));
+[[maybe_unused]] static jboolean Java_LinkedHashMap_removeEldestEntry(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobject>& p0);
 static jboolean Java_LinkedHashMap_removeEldestEntry(JNIEnv* env, const
     base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobject>& p0) {
   jclass clazz = java_util_LinkedHashMap_clazz(env);
@@ -160,8 +159,8 @@ static jboolean Java_LinkedHashMap_removeEldestEntry(JNIEnv* env, const
 }
 
 static std::atomic<jmethodID> g_java_util_LinkedHashMap_keySet(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_LinkedHashMap_keySet(JNIEnv* env, const
-    base::android::JavaRef<jobject>& obj) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject> Java_LinkedHashMap_keySet(JNIEnv*
+    env, const base::android::JavaRef<jobject>& obj);
 static base::android::ScopedJavaLocalRef<jobject> Java_LinkedHashMap_keySet(JNIEnv* env, const
     base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_util_LinkedHashMap_clazz(env);
@@ -184,8 +183,8 @@ static base::android::ScopedJavaLocalRef<jobject> Java_LinkedHashMap_keySet(JNIE
 }
 
 static std::atomic<jmethodID> g_java_util_LinkedHashMap_values(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_LinkedHashMap_values(JNIEnv* env, const
-    base::android::JavaRef<jobject>& obj) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject> Java_LinkedHashMap_values(JNIEnv*
+    env, const base::android::JavaRef<jobject>& obj);
 static base::android::ScopedJavaLocalRef<jobject> Java_LinkedHashMap_values(JNIEnv* env, const
     base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_util_LinkedHashMap_clazz(env);
@@ -208,8 +207,8 @@ static base::android::ScopedJavaLocalRef<jobject> Java_LinkedHashMap_values(JNIE
 }
 
 static std::atomic<jmethodID> g_java_util_LinkedHashMap_entrySet(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_LinkedHashMap_entrySet(JNIEnv* env, const
-    base::android::JavaRef<jobject>& obj) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject>
+    Java_LinkedHashMap_entrySet(JNIEnv* env, const base::android::JavaRef<jobject>& obj);
 static base::android::ScopedJavaLocalRef<jobject> Java_LinkedHashMap_entrySet(JNIEnv* env, const
     base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_util_LinkedHashMap_clazz(env);
@@ -232,8 +231,8 @@ static base::android::ScopedJavaLocalRef<jobject> Java_LinkedHashMap_entrySet(JN
 }
 
 static std::atomic<jmethodID> g_java_util_LinkedHashMap_forEach(nullptr);
-static void Java_LinkedHashMap_forEach(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
-    const base::android::JavaRef<jobject>& p0) __attribute__ ((unused));
+[[maybe_unused]] static void Java_LinkedHashMap_forEach(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobject>& p0);
 static void Java_LinkedHashMap_forEach(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
     const base::android::JavaRef<jobject>& p0) {
   jclass clazz = java_util_LinkedHashMap_clazz(env);
@@ -254,8 +253,8 @@ static void Java_LinkedHashMap_forEach(JNIEnv* env, const base::android::JavaRef
 }
 
 static std::atomic<jmethodID> g_java_util_LinkedHashMap_replaceAll(nullptr);
-static void Java_LinkedHashMap_replaceAll(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
-    const base::android::JavaRef<jobject>& p0) __attribute__ ((unused));
+[[maybe_unused]] static void Java_LinkedHashMap_replaceAll(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobject>& p0);
 static void Java_LinkedHashMap_replaceAll(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
     const base::android::JavaRef<jobject>& p0) {
   jclass clazz = java_util_LinkedHashMap_clazz(env);
@@ -276,9 +275,9 @@ static void Java_LinkedHashMap_replaceAll(JNIEnv* env, const base::android::Java
 }
 
 static std::atomic<jmethodID> g_java_util_LinkedHashMap_ConstructorJULIHM_I_F(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_LinkedHashMap_ConstructorJULIHM_I_F(JNIEnv*
-    env, JniIntWrapper p0,
-    jfloat p1) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject>
+    Java_LinkedHashMap_ConstructorJULIHM_I_F(JNIEnv* env, JniIntWrapper p0,
+    jfloat p1);
 static base::android::ScopedJavaLocalRef<jobject> Java_LinkedHashMap_ConstructorJULIHM_I_F(JNIEnv*
     env, JniIntWrapper p0,
     jfloat p1) {
@@ -302,8 +301,8 @@ static base::android::ScopedJavaLocalRef<jobject> Java_LinkedHashMap_Constructor
 }
 
 static std::atomic<jmethodID> g_java_util_LinkedHashMap_ConstructorJULIHM_I(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_LinkedHashMap_ConstructorJULIHM_I(JNIEnv*
-    env, JniIntWrapper p0) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject>
+    Java_LinkedHashMap_ConstructorJULIHM_I(JNIEnv* env, JniIntWrapper p0);
 static base::android::ScopedJavaLocalRef<jobject> Java_LinkedHashMap_ConstructorJULIHM_I(JNIEnv*
     env, JniIntWrapper p0) {
   jclass clazz = java_util_LinkedHashMap_clazz(env);
@@ -326,8 +325,8 @@ static base::android::ScopedJavaLocalRef<jobject> Java_LinkedHashMap_Constructor
 }
 
 static std::atomic<jmethodID> g_java_util_LinkedHashMap_ConstructorJULIHM(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_LinkedHashMap_ConstructorJULIHM(JNIEnv* env)
-    __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject>
+    Java_LinkedHashMap_ConstructorJULIHM(JNIEnv* env);
 static base::android::ScopedJavaLocalRef<jobject> Java_LinkedHashMap_ConstructorJULIHM(JNIEnv* env)
     {
   jclass clazz = java_util_LinkedHashMap_clazz(env);
@@ -350,8 +349,9 @@ static base::android::ScopedJavaLocalRef<jobject> Java_LinkedHashMap_Constructor
 }
 
 static std::atomic<jmethodID> g_java_util_LinkedHashMap_ConstructorJULIHM_JUM(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_LinkedHashMap_ConstructorJULIHM_JUM(JNIEnv*
-    env, const base::android::JavaRef<jobject>& p0) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject>
+    Java_LinkedHashMap_ConstructorJULIHM_JUM(JNIEnv* env, const base::android::JavaRef<jobject>&
+    p0);
 static base::android::ScopedJavaLocalRef<jobject> Java_LinkedHashMap_ConstructorJULIHM_JUM(JNIEnv*
     env, const base::android::JavaRef<jobject>& p0) {
   jclass clazz = java_util_LinkedHashMap_clazz(env);
@@ -374,10 +374,10 @@ static base::android::ScopedJavaLocalRef<jobject> Java_LinkedHashMap_Constructor
 }
 
 static std::atomic<jmethodID> g_java_util_LinkedHashMap_ConstructorJULIHM_I_F_Z(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_LinkedHashMap_ConstructorJULIHM_I_F_Z(JNIEnv*
-    env, JniIntWrapper p0,
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject>
+    Java_LinkedHashMap_ConstructorJULIHM_I_F_Z(JNIEnv* env, JniIntWrapper p0,
     jfloat p1,
-    jboolean p2) __attribute__ ((unused));
+    jboolean p2);
 static base::android::ScopedJavaLocalRef<jobject> Java_LinkedHashMap_ConstructorJULIHM_I_F_Z(JNIEnv*
     env, JniIntWrapper p0,
     jfloat p1,
@@ -402,8 +402,5 @@ static base::android::ScopedJavaLocalRef<jobject> Java_LinkedHashMap_Constructor
 }
 
 }  // namespace JNI_LinkedHashMap
-
-// Step 4: Generated test functions (optional).
-
 
 #endif  // java_util_LinkedHashMap_JNI

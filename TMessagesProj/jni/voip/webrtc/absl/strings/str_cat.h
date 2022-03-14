@@ -214,23 +214,29 @@ class AlphaNum {
   // A bool ctor would also convert incoming pointers (bletch).
 
   AlphaNum(int x)  // NOLINT(runtime/explicit)
-      : piece_(digits_,
-               numbers_internal::FastIntToBuffer(x, digits_) - &digits_[0]) {}
+      : piece_(digits_, static_cast<size_t>(
+                            numbers_internal::FastIntToBuffer(x, digits_) -
+                            &digits_[0])) {}
   AlphaNum(unsigned int x)  // NOLINT(runtime/explicit)
-      : piece_(digits_,
-               numbers_internal::FastIntToBuffer(x, digits_) - &digits_[0]) {}
+      : piece_(digits_, static_cast<size_t>(
+                            numbers_internal::FastIntToBuffer(x, digits_) -
+                            &digits_[0])) {}
   AlphaNum(long x)  // NOLINT(*)
-      : piece_(digits_,
-               numbers_internal::FastIntToBuffer(x, digits_) - &digits_[0]) {}
+      : piece_(digits_, static_cast<size_t>(
+                            numbers_internal::FastIntToBuffer(x, digits_) -
+                            &digits_[0])) {}
   AlphaNum(unsigned long x)  // NOLINT(*)
-      : piece_(digits_,
-               numbers_internal::FastIntToBuffer(x, digits_) - &digits_[0]) {}
+      : piece_(digits_, static_cast<size_t>(
+                            numbers_internal::FastIntToBuffer(x, digits_) -
+                            &digits_[0])) {}
   AlphaNum(long long x)  // NOLINT(*)
-      : piece_(digits_,
-               numbers_internal::FastIntToBuffer(x, digits_) - &digits_[0]) {}
+      : piece_(digits_, static_cast<size_t>(
+                            numbers_internal::FastIntToBuffer(x, digits_) -
+                            &digits_[0])) {}
   AlphaNum(unsigned long long x)  // NOLINT(*)
-      : piece_(digits_,
-               numbers_internal::FastIntToBuffer(x, digits_) - &digits_[0]) {}
+      : piece_(digits_, static_cast<size_t>(
+                            numbers_internal::FastIntToBuffer(x, digits_) -
+                            &digits_[0])) {}
 
   AlphaNum(float f)  // NOLINT(runtime/explicit)
       : piece_(digits_, numbers_internal::SixDigitsToBuffer(f, digits_)) {}

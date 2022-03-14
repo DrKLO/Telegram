@@ -638,7 +638,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
     }
 
     @Override
-    void onShow() {
+    void onShow(ChatAttachAlert.AttachAlertLayout previousLayout) {
         if (quizOnly == 1) {
             parentAlert.actionBar.setTitle(LocaleController.getString("NewQuiz", R.string.NewQuiz));
         } else {

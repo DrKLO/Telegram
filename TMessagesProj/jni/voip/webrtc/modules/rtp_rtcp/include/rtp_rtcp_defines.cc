@@ -25,6 +25,9 @@ namespace {
 constexpr size_t kMidRsidMaxSize = 16;
 
 // Check if passed character is a "token-char" from RFC 4566.
+// https://datatracker.ietf.org/doc/html/rfc4566#section-9
+//    token-char =          %x21 / %x23-27 / %x2A-2B / %x2D-2E / %x30-39
+//                         / %x41-5A / %x5E-7E
 bool IsTokenChar(char ch) {
   return ch == 0x21 || (ch >= 0x23 && ch <= 0x27) || ch == 0x2a || ch == 0x2b ||
          ch == 0x2d || ch == 0x2e || (ch >= 0x30 && ch <= 0x39) ||

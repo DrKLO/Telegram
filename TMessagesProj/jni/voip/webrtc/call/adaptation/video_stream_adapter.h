@@ -39,8 +39,8 @@ class VideoSourceRestrictionsListener {
  public:
   virtual ~VideoSourceRestrictionsListener();
 
-  // The |restrictions| are filtered by degradation preference but not the
-  // |adaptation_counters|, which are currently only reported for legacy stats
+  // The `restrictions` are filtered by degradation preference but not the
+  // `adaptation_counters`, which are currently only reported for legacy stats
   // calculation purposes.
   virtual void OnVideoSourceRestrictionsUpdated(
       VideoSourceRestrictions restrictions,

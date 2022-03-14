@@ -38,7 +38,7 @@ class VCMProtectionCallback {
 // FecController calculates how much of the allocated network
 // capacity that can be used by an encoder and how much that
 // is needed for redundant packets such as FEC and NACK. It uses an
-// implementation of |VCMProtectionCallback| to set new FEC parameters and get
+// implementation of `VCMProtectionCallback` to set new FEC parameters and get
 // the bitrate currently used for FEC and NACK.
 // Usage:
 // Setup by calling SetProtectionMethod and SetEncodingData.

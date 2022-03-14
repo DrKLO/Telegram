@@ -44,12 +44,12 @@ static const size_t kMinimumRecvSize = 128;
 
 static const int kListenBacklog = 5;
 
-// Binds and connects |socket|
-AsyncSocket* AsyncTCPSocketBase::ConnectSocket(
-    rtc::AsyncSocket* socket,
+// Binds and connects `socket`
+Socket* AsyncTCPSocketBase::ConnectSocket(
+    rtc::Socket* socket,
     const rtc::SocketAddress& bind_address,
     const rtc::SocketAddress& remote_address) {
-  std::unique_ptr<rtc::AsyncSocket> owned_socket(socket);
+  std::unique_ptr<rtc::Socket> owned_socket(socket);
   if (socket->Bind(bind_address) < 0) {
     RTC_LOG(LS_ERROR) << "Bind() failed with error " << socket->GetError();
     return nullptr;
@@ -61,17 +61,12 @@ AsyncSocket* AsyncTCPSocketBase::ConnectSocket(
   return owned_socket.release();
 }
 
-AsyncTCPSocketBase::AsyncTCPSocketBase(AsyncSocket* socket,
-                                       bool listen,
+AsyncTCPSocketBase::AsyncTCPSocketBase(Socket* socket,
                                        size_t max_packet_size)
     : socket_(socket),
-      listen_(listen),
       max_insize_(max_packet_size),
       max_outsize_(max_packet_size) {
-  if (!listen_) {
-    // Listening sockets don't send/receive data, so they don't need buffers.
-    inbuf_.EnsureCapacity(kMinimumRecvSize);
-  }
+  inbuf_.EnsureCapacity(kMinimumRecvSize);
 
   RTC_DCHECK(socket_.get() != nullptr);
   socket_->SignalConnectEvent.connect(this,
@@ -79,12 +74,6 @@ AsyncTCPSocketBase::AsyncTCPSocketBase(AsyncSocket* socket,
   socket_->SignalReadEvent.connect(this, &AsyncTCPSocketBase::OnReadEvent);
   socket_->SignalWriteEvent.connect(this, &AsyncTCPSocketBase::OnWriteEvent);
   socket_->SignalCloseEvent.connect(this, &AsyncTCPSocketBase::OnCloseEvent);
-
-  if (listen_) {
-    if (socket_->Listen(kListenBacklog) < 0) {
-      RTC_LOG(LS_ERROR) << "Listen() failed with error " << socket_->GetError();
-    }
-  }
 }
 
 AsyncTCPSocketBase::~AsyncTCPSocketBase() {}
@@ -106,15 +95,11 @@ AsyncTCPSocket::State AsyncTCPSocketBase::GetState() const {
     case Socket::CS_CLOSED:
       return STATE_CLOSED;
     case Socket::CS_CONNECTING:
-      if (listen_) {
-        return STATE_BOUND;
-      } else {
-        return STATE_CONNECTING;
-      }
+      return STATE_CONNECTING;
     case Socket::CS_CONNECTED:
       return STATE_CONNECTED;
     default:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
       return STATE_CLOSED;
   }
 }
@@ -149,7 +134,6 @@ int AsyncTCPSocketBase::SendTo(const void* pv,
 }
 
 int AsyncTCPSocketBase::FlushOutBuffer() {
-  RTC_DCHECK(!listen_);
   RTC_DCHECK_GT(outbuf_.size(), 0);
   rtc::ArrayView<uint8_t> view = outbuf_;
   int res;
@@ -159,7 +143,7 @@ int AsyncTCPSocketBase::FlushOutBuffer() {
       break;
     }
     if (static_cast<size_t>(res) > view.size()) {
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
       res = -1;
       break;
     }
@@ -189,77 +173,58 @@ int AsyncTCPSocketBase::FlushOutBuffer() {
 
 void AsyncTCPSocketBase::AppendToOutBuffer(const void* pv, size_t cb) {
   RTC_DCHECK(outbuf_.size() + cb <= max_outsize_);
-  RTC_DCHECK(!listen_);
   outbuf_.AppendData(static_cast<const uint8_t*>(pv), cb);
 }
 
-void AsyncTCPSocketBase::OnConnectEvent(AsyncSocket* socket) {
+void AsyncTCPSocketBase::OnConnectEvent(Socket* socket) {
   SignalConnect(this);
 }
 
-void AsyncTCPSocketBase::OnReadEvent(AsyncSocket* socket) {
+void AsyncTCPSocketBase::OnReadEvent(Socket* socket) {
   RTC_DCHECK(socket_.get() == socket);
 
-  if (listen_) {
-    rtc::SocketAddress address;
-    rtc::AsyncSocket* new_socket = socket->Accept(&address);
-    if (!new_socket) {
-      // TODO(stefan): Do something better like forwarding the error
-      // to the user.
-      RTC_LOG(LS_ERROR) << "TCP accept failed with error "
-                        << socket_->GetError();
-      return;
+  size_t total_recv = 0;
+  while (true) {
+    size_t free_size = inbuf_.capacity() - inbuf_.size();
+    if (free_size < kMinimumRecvSize && inbuf_.capacity() < max_insize_) {
+      inbuf_.EnsureCapacity(std::min(max_insize_, inbuf_.capacity() * 2));
+      free_size = inbuf_.capacity() - inbuf_.size();
     }
 
-    HandleIncomingConnection(new_socket);
+    int len = socket_->Recv(inbuf_.data() + inbuf_.size(), free_size, nullptr);
+    if (len < 0) {
+      // TODO(stefan): Do something better like forwarding the error to the
+      // user.
+      if (!socket_->IsBlocking()) {
+        RTC_LOG(LS_ERROR) << "Recv() returned error: " << socket_->GetError();
+      }
+      break;
+    }
 
-    // Prime a read event in case data is waiting.
-    new_socket->SignalReadEvent(new_socket);
+    total_recv += len;
+    inbuf_.SetSize(inbuf_.size() + len);
+    if (!len || static_cast<size_t>(len) < free_size) {
+      break;
+    }
+  }
+
+  if (!total_recv) {
+    return;
+  }
+
+  size_t size = inbuf_.size();
+  ProcessInput(inbuf_.data<char>(), &size);
+
+  if (size > inbuf_.size()) {
+    RTC_LOG(LS_ERROR) << "input buffer overflow";
+    RTC_DCHECK_NOTREACHED();
+    inbuf_.Clear();
   } else {
-    size_t total_recv = 0;
-    while (true) {
-      size_t free_size = inbuf_.capacity() - inbuf_.size();
-      if (free_size < kMinimumRecvSize && inbuf_.capacity() < max_insize_) {
-        inbuf_.EnsureCapacity(std::min(max_insize_, inbuf_.capacity() * 2));
-        free_size = inbuf_.capacity() - inbuf_.size();
-      }
-
-      int len =
-          socket_->Recv(inbuf_.data() + inbuf_.size(), free_size, nullptr);
-      if (len < 0) {
-        // TODO(stefan): Do something better like forwarding the error to the
-        // user.
-        if (!socket_->IsBlocking()) {
-          RTC_LOG(LS_ERROR) << "Recv() returned error: " << socket_->GetError();
-        }
-        break;
-      }
-
-      total_recv += len;
-      inbuf_.SetSize(inbuf_.size() + len);
-      if (!len || static_cast<size_t>(len) < free_size) {
-        break;
-      }
-    }
-
-    if (!total_recv) {
-      return;
-    }
-
-    size_t size = inbuf_.size();
-    ProcessInput(inbuf_.data<char>(), &size);
-
-    if (size > inbuf_.size()) {
-      RTC_LOG(LS_ERROR) << "input buffer overflow";
-      RTC_NOTREACHED();
-      inbuf_.Clear();
-    } else {
-      inbuf_.SetSize(size);
-    }
+    inbuf_.SetSize(size);
   }
 }
 
-void AsyncTCPSocketBase::OnWriteEvent(AsyncSocket* socket) {
+void AsyncTCPSocketBase::OnWriteEvent(Socket* socket) {
   RTC_DCHECK(socket_.get() == socket);
 
   if (outbuf_.size() > 0) {
@@ -271,24 +236,23 @@ void AsyncTCPSocketBase::OnWriteEvent(AsyncSocket* socket) {
   }
 }
 
-void AsyncTCPSocketBase::OnCloseEvent(AsyncSocket* socket, int error) {
+void AsyncTCPSocketBase::OnCloseEvent(Socket* socket, int error) {
   SignalClose(this, error);
 }
 
 // AsyncTCPSocket
-// Binds and connects |socket| and creates AsyncTCPSocket for
-// it. Takes ownership of |socket|. Returns null if bind() or
-// connect() fail (|socket| is destroyed in that case).
-AsyncTCPSocket* AsyncTCPSocket::Create(AsyncSocket* socket,
+// Binds and connects `socket` and creates AsyncTCPSocket for
+// it. Takes ownership of `socket`. Returns null if bind() or
+// connect() fail (`socket` is destroyed in that case).
+AsyncTCPSocket* AsyncTCPSocket::Create(Socket* socket,
                                        const SocketAddress& bind_address,
                                        const SocketAddress& remote_address) {
   return new AsyncTCPSocket(
-      AsyncTCPSocketBase::ConnectSocket(socket, bind_address, remote_address),
-      false);
+      AsyncTCPSocketBase::ConnectSocket(socket, bind_address, remote_address));
 }
 
-AsyncTCPSocket::AsyncTCPSocket(AsyncSocket* socket, bool listen)
-    : AsyncTCPSocketBase(socket, listen, kBufSize) {}
+AsyncTCPSocket::AsyncTCPSocket(Socket* socket)
+    : AsyncTCPSocketBase(socket, kBufSize) {}
 
 int AsyncTCPSocket::Send(const void* pv,
                          size_t cb,
@@ -343,8 +307,51 @@ void AsyncTCPSocket::ProcessInput(char* data, size_t* len) {
   }
 }
 
-void AsyncTCPSocket::HandleIncomingConnection(AsyncSocket* socket) {
-  SignalNewConnection(this, new AsyncTCPSocket(socket, false));
+AsyncTcpListenSocket::AsyncTcpListenSocket(std::unique_ptr<Socket> socket)
+    : socket_(std::move(socket)) {
+  RTC_DCHECK(socket_.get() != nullptr);
+  socket_->SignalReadEvent.connect(this, &AsyncTcpListenSocket::OnReadEvent);
+  if (socket_->Listen(kListenBacklog) < 0) {
+    RTC_LOG(LS_ERROR) << "Listen() failed with error " << socket_->GetError();
+  }
+}
+
+AsyncTcpListenSocket::State AsyncTcpListenSocket::GetState() const {
+  switch (socket_->GetState()) {
+    case Socket::CS_CLOSED:
+      return State::kClosed;
+    case Socket::CS_CONNECTING:
+      return State::kBound;
+    default:
+      RTC_DCHECK_NOTREACHED();
+      return State::kClosed;
+  }
+}
+
+SocketAddress AsyncTcpListenSocket::GetLocalAddress() const {
+  return socket_->GetLocalAddress();
+}
+
+void AsyncTcpListenSocket::OnReadEvent(Socket* socket) {
+  RTC_DCHECK(socket_.get() == socket);
+
+  rtc::SocketAddress address;
+  rtc::Socket* new_socket = socket->Accept(&address);
+  if (!new_socket) {
+    // TODO(stefan): Do something better like forwarding the error
+    // to the user.
+    RTC_LOG(LS_ERROR) << "TCP accept failed with error " << socket_->GetError();
+    return;
+  }
+
+  HandleIncomingConnection(new_socket);
+
+  // Prime a read event in case data is waiting.
+  new_socket->SignalReadEvent(new_socket);
+}
+
+void AsyncTcpListenSocket::HandleIncomingConnection(Socket* socket) {
+  SignalNewConnection(this, new AsyncTCPSocket(socket));
 }
 
 }  // namespace rtc

@@ -574,8 +574,8 @@ void WebRtcOpus_DecoderInit(OpusDecInst* inst) {
 
 /* For decoder to determine if it is to output speech or comfort noise. */
 static int16_t DetermineAudioType(OpusDecInst* inst, size_t encoded_bytes) {
-  // Audio type becomes comfort noise if |encoded_byte| is 1 and keeps
-  // to be so if the following |encoded_byte| are 0 or 1.
+  // Audio type becomes comfort noise if `encoded_byte` is 1 and keeps
+  // to be so if the following `encoded_byte` are 0 or 1.
   if (encoded_bytes == 0 && inst->in_dtx_mode) {
     return 2;  // Comfort noise.
   } else if (encoded_bytes == 1 || encoded_bytes == 2) {
@@ -595,7 +595,7 @@ static int16_t DetermineAudioType(OpusDecInst* inst, size_t encoded_bytes) {
   }
 }
 
-/* |frame_size| is set to maximum Opus frame size in the normal case, and
+/* `frame_size` is set to maximum Opus frame size in the normal case, and
  * is set to the number of samples needed for PLC in case of losses.
  * It is up to the caller to make sure the value is correct. */
 static int DecodeNative(OpusDecInst* inst,
@@ -632,9 +632,9 @@ static int DecodePlc(OpusDecInst* inst, int16_t* decoded) {
       FrameSizePerChannel(kWebRtcOpusPlcFrameSizeMs, inst->sample_rate_hz);
 
   if (inst->plc_use_prev_decoded_samples) {
-    /* The number of samples we ask for is |number_of_lost_frames| times
-     * |prev_decoded_samples_|. Limit the number of samples to maximum
-     * |MaxFrameSizePerChannel()|. */
+    /* The number of samples we ask for is `number_of_lost_frames` times
+     * `prev_decoded_samples_`. Limit the number of samples to maximum
+     * `MaxFrameSizePerChannel()`. */
     plc_samples = inst->prev_decoded_samples;
     const int max_samples_per_channel =
         MaxFrameSizePerChannel(inst->sample_rate_hz);
@@ -729,9 +729,9 @@ int WebRtcOpus_DurationEst(OpusDecInst* inst,
 
 int WebRtcOpus_PlcDuration(OpusDecInst* inst) {
   if (inst->plc_use_prev_decoded_samples) {
-    /* The number of samples we ask for is |number_of_lost_frames| times
-     * |prev_decoded_samples_|. Limit the number of samples to maximum
-     * |MaxFrameSizePerChannel()|. */
+    /* The number of samples we ask for is `number_of_lost_frames` times
+     * `prev_decoded_samples_`. Limit the number of samples to maximum
+     * `MaxFrameSizePerChannel()`. */
     const int plc_samples = inst->prev_decoded_samples;
     const int max_samples_per_channel =
         MaxFrameSizePerChannel(inst->sample_rate_hz);
@@ -826,8 +826,8 @@ int WebRtcOpus_PacketHasFec(const uint8_t* payload,
   // as binary values with uniform probability, they can be extracted directly
   // from the most significant bits of the first byte of compressed data.
   for (int n = 0; n < channels; n++) {
-    // The LBRR bit for channel 1 is on the (|silk_frames| + 1)-th bit, and
-    // that of channel 2 is on the |(|silk_frames| + 1) * 2 + 1|-th bit.
+    // The LBRR bit for channel 1 is on the (`silk_frames` + 1)-th bit, and
+    // that of channel 2 is on the |(`silk_frames` + 1) * 2 + 1|-th bit.
     if (frame_data[0][0] & (0x80 >> ((n + 1) * (silk_frames + 1) - 1)))
       return 1;
   }

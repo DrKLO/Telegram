@@ -87,7 +87,7 @@ void CpuOveruseTest::RunTestAndCheckForAdaptation(
         case DegradationPreference::BALANCED:
           if (wants.max_pixel_count == std::numeric_limits<int>::max() &&
               wants.max_framerate_fps == std::numeric_limits<int>::max()) {
-            // |adapt_counters_| map in VideoStreamEncoder is reset when
+            // `adapt_counters_` map in VideoStreamEncoder is reset when
             // balanced mode is set.
             break;
           }
@@ -96,7 +96,7 @@ void CpuOveruseTest::RunTestAndCheckForAdaptation(
           observation_complete_.Set();
           break;
         default:
-          RTC_NOTREACHED();
+          RTC_DCHECK_NOTREACHED();
       }
     }
 

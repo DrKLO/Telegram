@@ -30,13 +30,7 @@ void NullSocketServer::WakeUp() {
 }
 
 rtc::Socket* NullSocketServer::CreateSocket(int /* family */, int /* type */) {
-  RTC_NOTREACHED();
-  return nullptr;
-}
-
-rtc::AsyncSocket* NullSocketServer::CreateAsyncSocket(int /* family */,
-                                                      int /* type */) {
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return nullptr;
 }
 

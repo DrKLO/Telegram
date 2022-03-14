@@ -35,7 +35,7 @@ class Module {
   virtual void Process() = 0;
 
   // This method is called when the module is attached to a *running* process
-  // thread or detached from one.  In the case of detaching, |process_thread|
+  // thread or detached from one.  In the case of detaching, `process_thread`
   // will be nullptr.
   //
   // This method will be called in the following cases:

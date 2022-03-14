@@ -18,7 +18,7 @@
 namespace cricket {
 
 // Delayable is used by user code through ApplyConstraints algorithm. Its
-// methods must take precendence over similar functional in |syncable.h|.
+// methods must take precendence over similar functional in `syncable.h`.
 class Delayable {
  public:
   virtual ~Delayable() {}

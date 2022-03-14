@@ -77,8 +77,8 @@ srtp_err_status_t external_hmac_alloc(srtp_auth_t** a,
 
   // Set pointers
   *a = reinterpret_cast<srtp_auth_t*>(pointer);
-  // |external_hmac| is const and libsrtp expects |type| to be non-const.
-  // const conversion is required. |external_hmac| is constant because we don't
+  // `external_hmac` is const and libsrtp expects `type` to be non-const.
+  // const conversion is required. `external_hmac` is constant because we don't
   // want to increase global count in Chrome.
   (*a)->type = const_cast<srtp_auth_type_t*>(&external_hmac);
   (*a)->state = pointer + sizeof(srtp_auth_t);
@@ -130,7 +130,7 @@ srtp_err_status_t external_hmac_compute(void* /*state*/,
 }
 
 srtp_err_status_t external_crypto_init() {
-  // |external_hmac| is const. const_cast is required as libsrtp expects
+  // `external_hmac` is const. const_cast is required as libsrtp expects
   // non-const.
   srtp_err_status_t status = srtp_replace_auth_type(
       const_cast<srtp_auth_type_t*>(&external_hmac), EXTERNAL_HMAC_SHA1);

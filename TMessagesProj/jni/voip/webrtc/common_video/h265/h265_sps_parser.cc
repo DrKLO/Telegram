@@ -13,6 +13,7 @@
 
 #include "common_video/h265/h265_common.h"
 #include "common_video/h265/h265_sps_parser.h"
+#include "common_video/h265/legacy_bit_buffer.h"
 #include "rtc_base/bit_buffer.h"
 #include "rtc_base/logging.h"
 
@@ -63,22 +64,22 @@ bool H265SpsParser::ParseScalingListData(rtc::BitBuffer* buffer) {
   for (int size_id = 0; size_id < 4; size_id++) {
     for (int matrix_id = 0; matrix_id < 6; matrix_id += (size_id == 3) ? 3 : 1) {
       // scaling_list_pred_mode_flag: u(1)
-      RETURN_FALSE_ON_FAIL(buffer->ReadBits(1, scaling_list_pred_mode_flag[size_id][matrix_id]));
+      RETURN_FALSE_ON_FAIL(buffer->ReadBits(&scaling_list_pred_mode_flag[size_id][matrix_id], 1));
       if (!scaling_list_pred_mode_flag[size_id][matrix_id]) {
         // scaling_list_pred_matrix_id_delta: ue(v)
-        RETURN_FALSE_ON_FAIL(buffer->ReadExponentialGolomb(scaling_list_pred_matrix_id_delta[size_id][matrix_id]));
+        RETURN_FALSE_ON_FAIL(buffer->ReadExponentialGolomb(&scaling_list_pred_matrix_id_delta[size_id][matrix_id]));
       } else {
         int32_t next_coef = 8;
         uint32_t coef_num = std::min(64, 1 << (4 + (size_id << 1)));
         if (size_id > 1) {
           // scaling_list_dc_coef_minus8: se(v)
-          RETURN_FALSE_ON_FAIL(buffer->ReadSignedExponentialGolomb(scaling_list_dc_coef_minus8[size_id - 2][matrix_id]));
+          RETURN_FALSE_ON_FAIL(buffer->ReadSignedExponentialGolomb(&scaling_list_dc_coef_minus8[size_id - 2][matrix_id]));
           next_coef = scaling_list_dc_coef_minus8[size_id - 2][matrix_id];
         }
         for (uint32_t i = 0; i < coef_num; i++) {
           // scaling_list_delta_coef: se(v)
           int32_t scaling_list_delta_coef = 0;
-          RETURN_FALSE_ON_FAIL(buffer->ReadSignedExponentialGolomb(scaling_list_delta_coef));
+          RETURN_FALSE_ON_FAIL(buffer->ReadSignedExponentialGolomb(&scaling_list_delta_coef));
           next_coef = (next_coef + scaling_list_delta_coef + 256) % 256;
           scaling_list[size_id][matrix_id][i] = next_coef;
         }
@@ -97,20 +98,20 @@ absl::optional<H265SpsParser::ShortTermRefPicSet> H265SpsParser::ParseShortTermR
   uint32_t inter_ref_pic_set_prediction_flag = 0;
   if (st_rps_idx != 0) {
     // inter_ref_pic_set_prediction_flag: u(1)
-    RETURN_EMPTY2_ON_FAIL(buffer->ReadBits(1, inter_ref_pic_set_prediction_flag));
+    RETURN_EMPTY2_ON_FAIL(buffer->ReadBits(&inter_ref_pic_set_prediction_flag, 1));
   }
   if (inter_ref_pic_set_prediction_flag) {
     uint32_t delta_idx_minus1 = 0;
     if (st_rps_idx == num_short_term_ref_pic_sets) {
       // delta_idx_minus1: ue(v)
-      RETURN_EMPTY2_ON_FAIL(buffer->ReadExponentialGolomb(delta_idx_minus1));
+      RETURN_EMPTY2_ON_FAIL(buffer->ReadExponentialGolomb(&delta_idx_minus1));
     }
     // delta_rps_sign: u(1)
     uint32_t delta_rps_sign = 0;
-    RETURN_EMPTY2_ON_FAIL(buffer->ReadBits(1, delta_rps_sign));
+    RETURN_EMPTY2_ON_FAIL(buffer->ReadBits(&delta_rps_sign, 1));
     // abs_delta_rps_minus1: ue(v)
     uint32_t abs_delta_rps_minus1 = 0;
-    RETURN_EMPTY2_ON_FAIL(buffer->ReadExponentialGolomb(abs_delta_rps_minus1));
+    RETURN_EMPTY2_ON_FAIL(buffer->ReadExponentialGolomb(&abs_delta_rps_minus1));
     uint32_t ref_rps_idx = st_rps_idx - (delta_idx_minus1 + 1);
     uint32_t num_delta_pocs = 0;
     if (short_term_ref_pic_set[ref_rps_idx].inter_ref_pic_set_prediction_flag) {
@@ -131,33 +132,33 @@ absl::optional<H265SpsParser::ShortTermRefPicSet> H265SpsParser::ParseShortTermR
     ref_pic_set.use_delta_flag.resize(num_delta_pocs + 1, 1);
     for (uint32_t j = 0; j <= num_delta_pocs; j++) {
       // used_by_curr_pic_flag: u(1)
-      RETURN_EMPTY2_ON_FAIL(buffer->ReadBits(1, ref_pic_set.used_by_curr_pic_flag[j]));
+      RETURN_EMPTY2_ON_FAIL(buffer->ReadBits(&ref_pic_set.used_by_curr_pic_flag[j], 1));
       if (!ref_pic_set.used_by_curr_pic_flag[j]) {
         // use_delta_flag: u(1)
-        RETURN_EMPTY2_ON_FAIL(buffer->ReadBits(1, ref_pic_set.use_delta_flag[j]));
+        RETURN_EMPTY2_ON_FAIL(buffer->ReadBits(&ref_pic_set.use_delta_flag[j], 1));
       }
     }
   } else {
     // num_negative_pics: ue(v)
-    RETURN_EMPTY2_ON_FAIL(buffer->ReadExponentialGolomb(ref_pic_set.num_negative_pics));
+    RETURN_EMPTY2_ON_FAIL(buffer->ReadExponentialGolomb(&ref_pic_set.num_negative_pics));
     // num_positive_pics: ue(v)
-    RETURN_EMPTY2_ON_FAIL(buffer->ReadExponentialGolomb(ref_pic_set.num_positive_pics));
+    RETURN_EMPTY2_ON_FAIL(buffer->ReadExponentialGolomb(&ref_pic_set.num_positive_pics));
 
     ref_pic_set.delta_poc_s0_minus1.resize(ref_pic_set.num_negative_pics, 0);
     ref_pic_set.used_by_curr_pic_s0_flag.resize(ref_pic_set.num_negative_pics, 0);
     for (uint32_t i = 0; i < ref_pic_set.num_negative_pics; i++) {
       // delta_poc_s0_minus1: ue(v)
-      RETURN_EMPTY2_ON_FAIL(buffer->ReadExponentialGolomb(ref_pic_set.delta_poc_s0_minus1[i]));
+      RETURN_EMPTY2_ON_FAIL(buffer->ReadExponentialGolomb(&ref_pic_set.delta_poc_s0_minus1[i]));
       // used_by_curr_pic_s0_flag: u(1)
-      RETURN_EMPTY2_ON_FAIL(buffer->ReadBits(1, ref_pic_set.used_by_curr_pic_s0_flag[i]));
+      RETURN_EMPTY2_ON_FAIL(buffer->ReadBits(&ref_pic_set.used_by_curr_pic_s0_flag[i], 1));
     }
     ref_pic_set.delta_poc_s1_minus1.resize(ref_pic_set.num_positive_pics, 0);
     ref_pic_set.used_by_curr_pic_s1_flag.resize(ref_pic_set.num_positive_pics, 0);
     for (uint32_t i = 0; i < ref_pic_set.num_positive_pics; i++) {
       // delta_poc_s1_minus1: ue(v)
-      RETURN_EMPTY2_ON_FAIL(buffer->ReadExponentialGolomb(ref_pic_set.delta_poc_s1_minus1[i]));
+      RETURN_EMPTY2_ON_FAIL(buffer->ReadExponentialGolomb(&ref_pic_set.delta_poc_s1_minus1[i]));
       // used_by_curr_pic_s1_flag: u(1)
-      RETURN_EMPTY2_ON_FAIL(buffer->ReadBits(1, ref_pic_set.used_by_curr_pic_s1_flag[i]));
+      RETURN_EMPTY2_ON_FAIL(buffer->ReadBits(&ref_pic_set.used_by_curr_pic_s1_flag[i], 1));
     }
   }
 
@@ -184,10 +185,10 @@ absl::optional<H265SpsParser::SpsState> H265SpsParser::ParseSpsInternal(
 
   // sps_video_parameter_set_id: u(4)
   uint32_t sps_video_parameter_set_id = 0;
-  RETURN_EMPTY_ON_FAIL(buffer->ReadBits(4, sps_video_parameter_set_id));
+  RETURN_EMPTY_ON_FAIL(buffer->ReadBits(&sps_video_parameter_set_id, 4));
   // sps_max_sub_layers_minus1: u(3)
   uint32_t sps_max_sub_layers_minus1 = 0;
-  RETURN_EMPTY_ON_FAIL(buffer->ReadBits(3, sps_max_sub_layers_minus1));
+  RETURN_EMPTY_ON_FAIL(buffer->ReadBits(&sps_max_sub_layers_minus1, 3));
   sps.sps_max_sub_layers_minus1 = sps_max_sub_layers_minus1;
   sps.sps_max_dec_pic_buffering_minus1.resize(sps_max_sub_layers_minus1 + 1, 0);
   // sps_temporal_id_nesting_flag: u(1)
@@ -214,8 +215,8 @@ absl::optional<H265SpsParser::SpsState> H265SpsParser::ParseSpsInternal(
   uint32_t sub_layer_level_present = 0;
   for (uint32_t i = 0; i < sps_max_sub_layers_minus1; i++) {
     // sublayer_profile_present_flag and sublayer_level_presnet_flag:  u(2)
-    RETURN_EMPTY_ON_FAIL(buffer->ReadBits(1, sub_layer_profile_present));
-    RETURN_EMPTY_ON_FAIL(buffer->ReadBits(1, sub_layer_level_present));
+    RETURN_EMPTY_ON_FAIL(buffer->ReadBits(&sub_layer_profile_present, 1));
+    RETURN_EMPTY_ON_FAIL(buffer->ReadBits(&sub_layer_level_present, 1));
     sub_layer_profile_present_flags.push_back(sub_layer_profile_present);
     sub_layer_level_present_flags.push_back(sub_layer_level_present);
   }
@@ -246,24 +247,24 @@ absl::optional<H265SpsParser::SpsState> H265SpsParser::ParseSpsInternal(
     }
   }
   // sps_seq_parameter_set_id: ue(v)
-  RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(sps.id));
+  RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(&sps.id));
   // chrome_format_idc: ue(v)
-  RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(sps.chroma_format_idc));
+  RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(&sps.chroma_format_idc));
   if (sps.chroma_format_idc == 3) {
     // seperate_colour_plane_flag: u(1)
-    RETURN_EMPTY_ON_FAIL(buffer->ReadBits(1, sps.separate_colour_plane_flag));
+    RETURN_EMPTY_ON_FAIL(buffer->ReadBits(&sps.separate_colour_plane_flag, 1));
   }
   uint32_t pic_width_in_luma_samples = 0;
   uint32_t pic_height_in_luma_samples = 0;
   // pic_width_in_luma_samples: ue(v)
   RETURN_EMPTY_ON_FAIL(
-      buffer->ReadExponentialGolomb(pic_width_in_luma_samples));
+      buffer->ReadExponentialGolomb(&pic_width_in_luma_samples));
   // pic_height_in_luma_samples: ue(v)
   RETURN_EMPTY_ON_FAIL(
-      buffer->ReadExponentialGolomb(pic_height_in_luma_samples));
+      buffer->ReadExponentialGolomb(&pic_height_in_luma_samples));
   // conformance_window_flag: u(1)
   uint32_t conformance_window_flag = 0;
-  RETURN_EMPTY_ON_FAIL(buffer->ReadBits(1, conformance_window_flag));
+  RETURN_EMPTY_ON_FAIL(buffer->ReadBits(&conformance_window_flag, 1));
 
   uint32_t conf_win_left_offset = 0;
   uint32_t conf_win_right_offset = 0;
@@ -271,53 +272,53 @@ absl::optional<H265SpsParser::SpsState> H265SpsParser::ParseSpsInternal(
   uint32_t conf_win_bottom_offset = 0;
   if (conformance_window_flag) {
     // conf_win_left_offset: ue(v)
-    RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(conf_win_left_offset));
+    RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(&conf_win_left_offset));
     // conf_win_right_offset: ue(v)
-    RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(conf_win_right_offset));
+    RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(&conf_win_right_offset));
     // conf_win_top_offset: ue(v)
-    RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(conf_win_top_offset));
+    RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(&conf_win_top_offset));
     // conf_win_bottom_offset: ue(v)
     RETURN_EMPTY_ON_FAIL(
-        buffer->ReadExponentialGolomb(conf_win_bottom_offset));
+        buffer->ReadExponentialGolomb(&conf_win_bottom_offset));
   }
 
   // bit_depth_luma_minus8: ue(v)
-  RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(golomb_ignored));
+  RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(&golomb_ignored));
   // bit_depth_chroma_minus8: ue(v)
-  RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(golomb_ignored));
+  RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(&golomb_ignored));
   // log2_max_pic_order_cnt_lsb_minus4: ue(v)
-  RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(sps.log2_max_pic_order_cnt_lsb_minus4));
+  RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(&sps.log2_max_pic_order_cnt_lsb_minus4));
   uint32_t sps_sub_layer_ordering_info_present_flag = 0;
   // sps_sub_layer_ordering_info_present_flag: u(1)
-  RETURN_EMPTY_ON_FAIL(buffer->ReadBits(1, sps_sub_layer_ordering_info_present_flag));
+  RETURN_EMPTY_ON_FAIL(buffer->ReadBits(&sps_sub_layer_ordering_info_present_flag, 1));
   for (uint32_t i = (sps_sub_layer_ordering_info_present_flag != 0) ? 0 : sps_max_sub_layers_minus1;
        i <= sps_max_sub_layers_minus1; i++) {
     // sps_max_dec_pic_buffering_minus1: ue(v)
-    RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(sps.sps_max_dec_pic_buffering_minus1[i]));
+    RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(&sps.sps_max_dec_pic_buffering_minus1[i]));
     // sps_max_num_reorder_pics: ue(v)
-    RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(golomb_ignored));
+    RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(&golomb_ignored));
     // sps_max_latency_increase_plus1: ue(v)
-    RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(golomb_ignored));
+    RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(&golomb_ignored));
   }
   // log2_min_luma_coding_block_size_minus3: ue(v)
-  RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(sps.log2_min_luma_coding_block_size_minus3));
+  RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(&sps.log2_min_luma_coding_block_size_minus3));
   // log2_diff_max_min_luma_coding_block_size: ue(v)
-  RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(sps.log2_diff_max_min_luma_coding_block_size));
+  RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(&sps.log2_diff_max_min_luma_coding_block_size));
   // log2_min_luma_transform_block_size_minus2: ue(v)
-  RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(golomb_ignored));
+  RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(&golomb_ignored));
   // log2_diff_max_min_luma_transform_block_size: ue(v)
-  RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(golomb_ignored));
+  RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(&golomb_ignored));
   // max_transform_hierarchy_depth_inter: ue(v)
-  RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(golomb_ignored));
+  RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(&golomb_ignored));
   // max_transform_hierarchy_depth_intra: ue(v)
-  RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(golomb_ignored));
+  RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(&golomb_ignored));
   // scaling_list_enabled_flag: u(1)
   uint32_t scaling_list_enabled_flag = 0;
-  RETURN_EMPTY_ON_FAIL(buffer->ReadBits(1, scaling_list_enabled_flag));
+  RETURN_EMPTY_ON_FAIL(buffer->ReadBits(&scaling_list_enabled_flag, 1));
   if (scaling_list_enabled_flag) {
     // sps_scaling_list_data_present_flag: u(1)
     uint32_t sps_scaling_list_data_present_flag = 0;
-    RETURN_EMPTY_ON_FAIL(buffer->ReadBits(1, sps_scaling_list_data_present_flag));
+    RETURN_EMPTY_ON_FAIL(buffer->ReadBits(&sps_scaling_list_data_present_flag, 1));
     if (sps_scaling_list_data_present_flag) {
       // scaling_list_data()
       if (!ParseScalingListData(buffer)) {
@@ -329,25 +330,25 @@ absl::optional<H265SpsParser::SpsState> H265SpsParser::ParseSpsInternal(
   // amp_enabled_flag: u(1)
   RETURN_EMPTY_ON_FAIL(buffer->ConsumeBits(1));
   // sample_adaptive_offset_enabled_flag: u(1)
-  RETURN_EMPTY_ON_FAIL(buffer->ReadBits(1, sps.sample_adaptive_offset_enabled_flag));
+  RETURN_EMPTY_ON_FAIL(buffer->ReadBits(&sps.sample_adaptive_offset_enabled_flag, 1));
   // pcm_enabled_flag: u(1)
   uint32_t pcm_enabled_flag = 0;
-  RETURN_EMPTY_ON_FAIL(buffer->ReadBits(1, pcm_enabled_flag));
+  RETURN_EMPTY_ON_FAIL(buffer->ReadBits(&pcm_enabled_flag, 1));
   if (pcm_enabled_flag) {
     // pcm_sample_bit_depth_luma_minus1: u(4)
     RETURN_EMPTY_ON_FAIL(buffer->ConsumeBits(4));
     // pcm_sample_bit_depth_chroma_minus1: u(4)
     RETURN_EMPTY_ON_FAIL(buffer->ConsumeBits(4));
     // log2_min_pcm_luma_coding_block_size_minus3: ue(v)
-    RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(golomb_ignored));
+    RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(&golomb_ignored));
     // log2_diff_max_min_pcm_luma_coding_block_size: ue(v)
-    RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(golomb_ignored));
+    RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(&golomb_ignored));
     // pcm_loop_filter_disabled_flag: u(1)
     RETURN_EMPTY_ON_FAIL(buffer->ConsumeBits(1));
   }
 
   // num_short_term_ref_pic_sets: ue(v)
-  RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(sps.num_short_term_ref_pic_sets));
+  RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(&sps.num_short_term_ref_pic_sets));
   sps.short_term_ref_pic_set.resize(sps.num_short_term_ref_pic_sets);
   for (uint32_t st_rps_idx = 0; st_rps_idx < sps.num_short_term_ref_pic_sets; st_rps_idx++) {
     // st_ref_pic_set()
@@ -361,22 +362,22 @@ absl::optional<H265SpsParser::SpsState> H265SpsParser::ParseSpsInternal(
   }
 
   // long_term_ref_pics_present_flag: u(1)
-  RETURN_EMPTY_ON_FAIL(buffer->ReadBits(1, sps.long_term_ref_pics_present_flag));
+  RETURN_EMPTY_ON_FAIL(buffer->ReadBits(&sps.long_term_ref_pics_present_flag, 1));
   if (sps.long_term_ref_pics_present_flag) {
     // num_long_term_ref_pics_sps: ue(v)
-    RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(sps.num_long_term_ref_pics_sps));
+    RETURN_EMPTY_ON_FAIL(buffer->ReadExponentialGolomb(&sps.num_long_term_ref_pics_sps));
     sps.used_by_curr_pic_lt_sps_flag.resize(sps.num_long_term_ref_pics_sps, 0);
     for (uint32_t i = 0; i < sps.num_long_term_ref_pics_sps; i++) {
       // lt_ref_pic_poc_lsb_sps: u(v)
       uint32_t lt_ref_pic_poc_lsb_sps_bits = sps.log2_max_pic_order_cnt_lsb_minus4 + 4;
       RETURN_EMPTY_ON_FAIL(buffer->ConsumeBits(lt_ref_pic_poc_lsb_sps_bits));
       // used_by_curr_pic_lt_sps_flag: u(1)
-      RETURN_EMPTY_ON_FAIL(buffer->ReadBits(1, sps.used_by_curr_pic_lt_sps_flag[i]));
+      RETURN_EMPTY_ON_FAIL(buffer->ReadBits(&sps.used_by_curr_pic_lt_sps_flag[i], 1));
     }
   }
 
   // sps_temporal_mvp_enabled_flag: u(1)
-  RETURN_EMPTY_ON_FAIL(buffer->ReadBits(1, sps.sps_temporal_mvp_enabled_flag));
+  RETURN_EMPTY_ON_FAIL(buffer->ReadBits(&sps.sps_temporal_mvp_enabled_flag, 1));
 
   // Far enough! We don't use the rest of the SPS.
 

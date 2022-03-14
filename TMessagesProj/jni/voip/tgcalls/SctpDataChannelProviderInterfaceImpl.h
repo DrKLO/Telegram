@@ -5,6 +5,7 @@
 #include "api/turn_customizer.h"
 #include "api/data_channel_interface.h"
 #include "pc/sctp_data_channel.h"
+#include "media/sctp/sctp_transport_factory.h"
 #include "pc/sctp_transport.h"
 
 #include "StaticThreads.h"
@@ -32,7 +33,11 @@ public:
 
     virtual void OnStateChange() override;
     virtual void OnMessage(const webrtc::DataBuffer& buffer) override;
-    virtual bool SendData(int sid, const webrtc::SendDataParams& params, const rtc::CopyOnWriteBuffer& payload, cricket::SendDataResult* result = nullptr) override;
+    virtual bool SendData(
+        int sid,
+        const webrtc::SendDataParams& params,
+        const rtc::CopyOnWriteBuffer& payload,
+        cricket::SendDataResult* result) override;
     virtual bool ConnectDataChannel(webrtc::SctpDataChannel *data_channel) override;
     virtual void DisconnectDataChannel(webrtc::SctpDataChannel* data_channel) override;
     virtual void AddSctpDataStream(int sid) override;
@@ -41,7 +46,7 @@ public:
 
 private:
     void sctpReadyToSendData();
-    void sctpClosedAbruptly();
+    void sctpClosedAbruptly(webrtc::RTCError error);
     void sctpDataReceived(const cricket::ReceiveDataParams& params, const rtc::CopyOnWriteBuffer& buffer);
 
 private:

@@ -38,7 +38,7 @@ constexpr int kMinProbeDurationMs = 15;
 // the measured results back.
 constexpr int64_t kMaxWaitingTimeForProbingResultMs = 1000;
 
-// Value of |min_bitrate_to_probe_further_bps_| that indicates
+// Value of `min_bitrate_to_probe_further_bps_` that indicates
 // further probing is disabled.
 constexpr int kExponentialProbingDisabled = 0;
 
@@ -46,16 +46,16 @@ constexpr int kExponentialProbingDisabled = 0;
 // specify max bitrate.
 constexpr int64_t kDefaultMaxProbingBitrateBps = 5000000;
 
-// If the bitrate drops to a factor |kBitrateDropThreshold| or lower
-// and we recover within |kBitrateDropTimeoutMs|, then we'll send
-// a probe at a fraction |kProbeFractionAfterDrop| of the original bitrate.
+// If the bitrate drops to a factor `kBitrateDropThreshold` or lower
+// and we recover within `kBitrateDropTimeoutMs`, then we'll send
+// a probe at a fraction `kProbeFractionAfterDrop` of the original bitrate.
 constexpr double kBitrateDropThreshold = 0.66;
 constexpr int kBitrateDropTimeoutMs = 5000;
 constexpr double kProbeFractionAfterDrop = 0.85;
 
 // Timeout for probing after leaving ALR. If the bitrate drops significantly,
 // (as determined by the delay based estimator) and we leave ALR, then we will
-// send a probe if we recover within |kLeftAlrTimeoutMs| ms.
+// send a probe if we recover within `kLeftAlrTimeoutMs` ms.
 constexpr int kAlrEndedTimeoutMs = 3000;
 
 // The expected uncertainty of probe result (as a fraction of the target probe
@@ -155,8 +155,8 @@ std::vector<ProbeClusterConfig> ProbeController::SetBitrates(
     start_bitrate_bps_ = min_bitrate_bps;
   }
 
-  // The reason we use the variable |old_max_bitrate_pbs| is because we
-  // need to set |max_bitrate_bps_| before we call InitiateProbing.
+  // The reason we use the variable `old_max_bitrate_pbs` is because we
+  // need to set `max_bitrate_bps_` before we call InitiateProbing.
   int64_t old_max_bitrate_bps = max_bitrate_bps_;
   max_bitrate_bps_ = max_bitrate_bps;
 

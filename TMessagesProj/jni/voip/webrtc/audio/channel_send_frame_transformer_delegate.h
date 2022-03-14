@@ -23,8 +23,8 @@
 namespace webrtc {
 
 // Delegates calls to FrameTransformerInterface to transform frames, and to
-// ChannelSend to send the transformed frames using |send_frame_callback_| on
-// the |encoder_queue_|.
+// ChannelSend to send the transformed frames using `send_frame_callback_` on
+// the `encoder_queue_`.
 // OnTransformedFrame() can be called from any thread, the delegate ensures
 // thread-safe access to the ChannelSend callback.
 class ChannelSendFrameTransformerDelegate : public TransformedFrameCallback {
@@ -40,12 +40,12 @@ class ChannelSendFrameTransformerDelegate : public TransformedFrameCallback {
       rtc::scoped_refptr<FrameTransformerInterface> frame_transformer,
       rtc::TaskQueue* encoder_queue);
 
-  // Registers |this| as callback for |frame_transformer_|, to get the
+  // Registers `this` as callback for `frame_transformer_`, to get the
   // transformed frames.
   void Init();
 
-  // Unregisters and releases the |frame_transformer_| reference, and resets
-  // |send_frame_callback_| under lock. Called from ChannelSend destructor to
+  // Unregisters and releases the `frame_transformer_` reference, and resets
+  // `send_frame_callback_` under lock. Called from ChannelSend destructor to
   // prevent running the callback on a dangling channel.
   void Reset();
 
@@ -64,8 +64,8 @@ class ChannelSendFrameTransformerDelegate : public TransformedFrameCallback {
   void OnTransformedFrame(
       std::unique_ptr<TransformableFrameInterface> frame) override;
 
-  // Delegates the call to ChannelSend::SendRtpAudio on the |encoder_queue_|,
-  // by calling |send_audio_callback_|.
+  // Delegates the call to ChannelSend::SendRtpAudio on the `encoder_queue_`,
+  // by calling `send_audio_callback_`.
   void SendFrame(std::unique_ptr<TransformableFrameInterface> frame) const;
 
  protected:

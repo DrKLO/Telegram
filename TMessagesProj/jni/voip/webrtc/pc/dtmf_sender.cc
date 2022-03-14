@@ -192,9 +192,9 @@ void DtmfSender::DoInsertDtmf() {
   } else {
     char tone = tones_[first_tone_pos];
     if (!GetDtmfCode(tone, &code)) {
-      // The find_first_of(kDtmfValidTones) should have guarantee |tone| is
+      // The find_first_of(kDtmfValidTones) should have guarantee `tone` is
       // a valid DTMF tone.
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
     }
   }
 
@@ -216,7 +216,7 @@ void DtmfSender::DoInsertDtmf() {
       RTC_LOG(LS_ERROR) << "The DtmfProvider can no longer send DTMF.";
       return;
     }
-    // Wait for the number of milliseconds specified by |duration_|.
+    // Wait for the number of milliseconds specified by `duration_`.
     tone_gap += duration_;
   }
 

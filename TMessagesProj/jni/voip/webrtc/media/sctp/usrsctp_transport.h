@@ -68,10 +68,10 @@ struct SctpInboundPacket;
 class UsrsctpTransport : public SctpTransportInternal,
                          public sigslot::has_slots<> {
  public:
-  // |network_thread| is where packets will be processed and callbacks from
+  // `network_thread` is where packets will be processed and callbacks from
   // this transport will be posted, and is the only thread on which public
   // methods can be called.
-  // |transport| is not required (can be null).
+  // `transport` is not required (can be null).
   UsrsctpTransport(rtc::Thread* network_thread,
                    rtc::PacketTransportInternal* transport);
   ~UsrsctpTransport() override;
@@ -163,7 +163,7 @@ class UsrsctpTransport : public SctpTransportInternal,
   // buffered message was accepted by the sctp lib.
   bool SendBufferedMessage();
 
-  // Tries to send the |payload| on the usrsctp lib. The message will be
+  // Tries to send the `payload` on the usrsctp lib. The message will be
   // advanced by the amount that was sent.
   SendDataResult SendMessageInternal(OutgoingMessage* message);
 
@@ -180,7 +180,7 @@ class UsrsctpTransport : public SctpTransportInternal,
   void OnSendThresholdCallback();
   sockaddr_conn GetSctpSockAddr(int port);
 
-  // Called using |invoker_| to send packet on the network.
+  // Called using `invoker_` to send packet on the network.
   void OnPacketFromSctpToNetwork(const rtc::CopyOnWriteBuffer& buffer);
 
   // Called on the network thread.
@@ -189,10 +189,10 @@ class UsrsctpTransport : public SctpTransportInternal,
                                     size_t length,
                                     struct sctp_rcvinfo rcv,
                                     int flags);
-  // Called using |invoker_| to decide what to do with the data.
+  // Called using `invoker_` to decide what to do with the data.
   void OnDataFromSctpToTransport(const ReceiveDataParams& params,
                                  const rtc::CopyOnWriteBuffer& buffer);
-  // Called using |invoker_| to decide what to do with the notification.
+  // Called using `invoker_` to decide what to do with the notification.
   void OnNotificationFromSctp(const rtc::CopyOnWriteBuffer& buffer);
   void OnNotificationAssocChange(const sctp_assoc_change& change);
 
@@ -226,7 +226,7 @@ class UsrsctpTransport : public SctpTransportInternal,
   // Has Start been called? Don't create SCTP socket until it has.
   bool started_ = false;
   // Are we ready to queue data (SCTP socket created, and not blocked due to
-  // congestion control)? Different than |transport_|'s "ready to send".
+  // congestion control)? Different than `transport_`'s "ready to send".
   bool ready_to_send_data_ = false;
 
   // Used to keep track of the status of each stream (or rather, each pair of
@@ -268,7 +268,7 @@ class UsrsctpTransport : public SctpTransportInternal,
     }
   };
 
-  // Entries should only be removed from this map if |reset_complete| is
+  // Entries should only be removed from this map if `reset_complete` is
   // true.
   std::map<uint32_t, StreamStatus> stream_status_by_sid_;
 

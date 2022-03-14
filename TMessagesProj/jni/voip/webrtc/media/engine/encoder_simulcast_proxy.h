@@ -35,10 +35,6 @@ class RTC_EXPORT EncoderSimulcastProxy : public VideoEncoder {
  public:
   EncoderSimulcastProxy(VideoEncoderFactory* factory,
                         const SdpVideoFormat& format);
-  // Deprecated. Remove once all clients use constructor with both factory and
-  // SdpVideoFormat;
-  explicit EncoderSimulcastProxy(VideoEncoderFactory* factory);
-
   ~EncoderSimulcastProxy() override;
 
   // Implements VideoEncoder.

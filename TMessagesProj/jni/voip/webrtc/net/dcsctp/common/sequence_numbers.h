@@ -26,7 +26,7 @@ namespace dcsctp {
 // need to be unwrapped in order, as long as the difference to the previous one
 // is not larger than half the range of the wrapped sequence number.
 //
-// The WrappedType must be a StrongAlias type.
+// The WrappedType must be a webrtc::StrongAlias type.
 template <typename WrappedType>
 class UnwrappedSequenceNumber {
  public:

@@ -72,7 +72,4 @@ JNI_GENERATOR_EXPORT jlong
 }  // namespace jni
 }  // namespace  webrtc
 
-// Step 4: Generated test functions (optional).
-
-
 #endif  // org_webrtc_audio_JavaAudioDeviceModule_JNI

@@ -108,9 +108,11 @@ struct RTC_EXPORT EchoCanceller3Config {
   struct EpStrength {
     float default_gain = 1.f;
     float default_len = 0.83f;
+    float nearend_len = 0.83f;
     bool echo_can_saturate = true;
     bool bounded_erl = false;
     bool erle_onset_compensation_in_dominant_nearend = false;
+    bool use_conservative_tail_frequency_response = false;
   } ep_strength;
 
   struct EchoAudibility {
@@ -194,6 +196,12 @@ struct RTC_EXPORT EchoCanceller3Config {
                                    2.0f,
                                    0.25f);
 
+    bool lf_smoothing_during_initial_phase = true;
+    int last_permanent_lf_smoothing_band = 0;
+    int last_lf_smoothing_band = 5;
+    int last_lf_band = 5;
+    int first_hf_band = 8;
+
     struct DominantNearendDetection {
       float enr_threshold = .25f;
       float enr_exit_threshold = 10.f;
@@ -201,6 +209,7 @@ struct RTC_EXPORT EchoCanceller3Config {
       int hold_duration = 50;
       int trigger_threshold = 12;
       bool use_during_initial_phase = true;
+      bool use_unbounded_echo_spectrum = true;
     } dominant_nearend_detection;
 
     struct SubbandNearendDetection {

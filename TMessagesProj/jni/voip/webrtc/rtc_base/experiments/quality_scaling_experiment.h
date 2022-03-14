@@ -25,9 +25,9 @@ class QualityScalingExperiment {
     int h264_high;     // H264: high QP threshold.
     int generic_low;   // Generic: low QP threshold.
     int generic_high;  // Generic: high QP threshold.
-    float alpha_high;  // |alpha_| for ExpFilter used when checking high QP.
-    float alpha_low;   // |alpha_| for ExpFilter used when checking low QP.
-    int drop;          // >0 sets |use_all_drop_reasons| to true.
+    float alpha_high;  // `alpha_` for ExpFilter used when checking high QP.
+    float alpha_low;   // `alpha_` for ExpFilter used when checking low QP.
+    int drop;          // >0 sets `use_all_drop_reasons` to true.
   };
 
   // Used by QualityScaler.
@@ -45,7 +45,7 @@ class QualityScalingExperiment {
   // Returns settings from field trial.
   static absl::optional<Settings> ParseSettings();
 
-  // Returns QpThresholds for the |codec_type|.
+  // Returns QpThresholds for the `codec_type`.
   static absl::optional<VideoEncoder::QpThresholds> GetQpThresholds(
       VideoCodecType codec_type);
 

@@ -25,8 +25,8 @@ namespace webrtc {
 class FecControllerPlrBased final : public Controller {
  public:
   struct Config {
-    // |fec_enabling_threshold| defines a curve, above which FEC should be
-    // enabled. |fec_disabling_threshold| defines a curve, under which FEC
+    // `fec_enabling_threshold` defines a curve, above which FEC should be
+    // enabled. `fec_disabling_threshold` defines a curve, under which FEC
     // should be disabled. See below
     //
     // packet-loss ^   |  |

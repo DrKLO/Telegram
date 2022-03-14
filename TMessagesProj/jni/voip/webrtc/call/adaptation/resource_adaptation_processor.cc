@@ -129,7 +129,7 @@ void ResourceAdaptationProcessor::AddResource(
     resources_.push_back(resource);
   }
   resource->SetResourceListener(resource_listener_delegate_);
-  RTC_LOG(INFO) << "Registered resource \"" << resource->Name() << "\".";
+  RTC_LOG(LS_INFO) << "Registered resource \"" << resource->Name() << "\".";
 }
 
 std::vector<rtc::scoped_refptr<Resource>>
@@ -141,7 +141,7 @@ ResourceAdaptationProcessor::GetResources() const {
 void ResourceAdaptationProcessor::RemoveResource(
     rtc::scoped_refptr<Resource> resource) {
   RTC_DCHECK(resource);
-  RTC_LOG(INFO) << "Removing resource \"" << resource->Name() << "\".";
+  RTC_LOG(LS_INFO) << "Removing resource \"" << resource->Name() << "\".";
   resource->SetResourceListener(nullptr);
   {
     MutexLock crit(&resources_lock_);
@@ -188,10 +188,11 @@ void ResourceAdaptationProcessor::RemoveLimitationsImposedByResource(
     RTC_DCHECK_EQ(adapt_to.status(), Adaptation::Status::kValid);
     stream_adapter_->ApplyAdaptation(adapt_to, nullptr);
 
-    RTC_LOG(INFO) << "Most limited resource removed. Restoring restrictions to "
-                     "next most limited restrictions: "
-                  << most_limited.restrictions.ToString() << " with counters "
-                  << most_limited.counters.ToString();
+    RTC_LOG(LS_INFO)
+        << "Most limited resource removed. Restoring restrictions to "
+           "next most limited restrictions: "
+        << most_limited.restrictions.ToString() << " with counters "
+        << most_limited.counters.ToString();
   }
 }
 
@@ -200,12 +201,12 @@ void ResourceAdaptationProcessor::OnResourceUsageStateMeasured(
     ResourceUsageState usage_state) {
   RTC_DCHECK_RUN_ON(task_queue_);
   RTC_DCHECK(resource);
-  // |resource| could have been removed after signalling.
+  // `resource` could have been removed after signalling.
   {
     MutexLock crit(&resources_lock_);
     if (absl::c_find(resources_, resource) == resources_.end()) {
-      RTC_LOG(INFO) << "Ignoring signal from removed resource \""
-                    << resource->Name() << "\".";
+      RTC_LOG(LS_INFO) << "Ignoring signal from removed resource \""
+                       << resource->Name() << "\".";
       return;
     }
   }
@@ -226,9 +227,9 @@ void ResourceAdaptationProcessor::OnResourceUsageStateMeasured(
     // successfully adapted since - don't log to avoid spam.
     return;
   }
-  RTC_LOG(INFO) << "Resource \"" << resource->Name() << "\" signalled "
-                << ResourceUsageStateToString(usage_state) << ". "
-                << result_and_message.message;
+  RTC_LOG(LS_INFO) << "Resource \"" << resource->Name() << "\" signalled "
+                   << ResourceUsageStateToString(usage_state) << ". "
+                   << result_and_message.message;
   if (result_and_message.result == MitigationResult::kAdaptationApplied) {
     previous_mitigation_results_.clear();
   } else {
@@ -261,7 +262,7 @@ ResourceAdaptationProcessor::OnResourceUnderuse(
   if (!most_limited_resources.empty() &&
       most_limited_restrictions.counters.Total() >=
           stream_adapter_->adaptation_counters().Total()) {
-    // If |reason_resource| is not one of the most limiting resources then abort
+    // If `reason_resource` is not one of the most limiting resources then abort
     // adaptation.
     if (absl::c_find(most_limited_resources, reason_resource) ==
         most_limited_resources.end()) {

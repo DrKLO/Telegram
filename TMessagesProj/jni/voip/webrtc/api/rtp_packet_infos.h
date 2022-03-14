@@ -26,8 +26,8 @@ namespace webrtc {
 // an audio or video frame. Uses internal reference counting to make it very
 // cheap to copy.
 //
-// We should ideally just use |std::vector<RtpPacketInfo>| and have it
-// |std::move()|-ed as the per-packet information is transferred from one object
+// We should ideally just use `std::vector<RtpPacketInfo>` and have it
+// `std::move()`-ed as the per-packet information is transferred from one object
 // to another. But moving the info, instead of copying it, is not easily done
 // for the current video code.
 class RTC_EXPORT RtpPacketInfos {

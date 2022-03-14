@@ -87,15 +87,14 @@ bool IvfFileWriter::WriteHeader() {
       ivf_header[10] = '6';
       ivf_header[11] = '4';
       break;
-    case kVideoCodecH265:
-      ivf_header[8] = 'H';
-      ivf_header[9] = '2';
-      ivf_header[10] = '6';
-      ivf_header[11] = '5';
-      break;
     default:
-      RTC_LOG(LS_ERROR) << "Unknown CODEC type: " << codec_type_;
-      return false;
+      // For unknown codec type use **** code. You can specify actual payload
+      // format when playing the video with ffplay: ffplay -f H263 file.ivf
+      ivf_header[8] = '*';
+      ivf_header[9] = '*';
+      ivf_header[10] = '*';
+      ivf_header[11] = '*';
+      break;
   }
 
   ByteWriter<uint16_t>::WriteLittleEndian(&ivf_header[12], width_);

@@ -1446,7 +1446,7 @@ void WebRtcIsac_EncodeRc(int16_t* RCQ15, Bitstr* streamdata) {
     index[k] = WebRtcIsac_kQArRcInitIndex[k];
     // The safe-guards in following while conditions are to suppress gcc 4.8.3
     // warnings, Issue 2888. Otherwise, first and last elements of
-    // |WebRtcIsac_kQArBoundaryLevels| are such that the following search
+    // `WebRtcIsac_kQArBoundaryLevels` are such that the following search
     // *never* cause an out-of-boundary read.
     if (RCQ15[k] > WebRtcIsac_kQArBoundaryLevels[index[k]]) {
       while (index[k] + 1 < NUM_AR_RC_QUANT_BAUNDARY &&

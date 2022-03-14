@@ -38,7 +38,7 @@ class MediaPacketGenerator {
                        Random* random);
   ~MediaPacketGenerator();
 
-  // Construct the media packets, up to |num_media_packets| packets.
+  // Construct the media packets, up to `num_media_packets` packets.
   ForwardErrorCorrection::PacketList ConstructMediaPackets(
       int num_media_packets,
       uint16_t start_seq_num);
@@ -72,7 +72,7 @@ class AugmentedPacketGenerator {
   std::unique_ptr<AugmentedPacket> NextPacket(size_t offset, size_t length);
 
  protected:
-  // Given |header|, writes the appropriate RTP header fields in |data|.
+  // Given `header`, writes the appropriate RTP header fields in `data`.
   static void WriteRtpHeader(const RTPHeader& header, uint8_t* data);
 
   // Number of packets left to generate, in the current frame.
@@ -113,7 +113,7 @@ class UlpfecPacketGenerator : public AugmentedPacketGenerator {
   // Creates a new RtpPacket with FEC payload and RED header. Does this by
   // creating a new fake media AugmentedPacket, clears the marker bit and adds a
   // RED header. Finally replaces the payload with the content of
-  // |packet->data|.
+  // `packet->data`.
   RtpPacketReceived BuildUlpfecRedPacket(
       const ForwardErrorCorrection::Packet& packet);
 };

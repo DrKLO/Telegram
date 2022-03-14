@@ -36,14 +36,24 @@ bool IsDisabled(absl::string_view name,
 }  // namespace
 
 DEPRECATED_RtpSenderEgress::NonPacedPacketSender::NonPacedPacketSender(
-    DEPRECATED_RtpSenderEgress* sender)
-    : transport_sequence_number_(0), sender_(sender) {}
+    DEPRECATED_RtpSenderEgress* sender,
+    PacketSequencer* sequence_number_assigner)
+    : transport_sequence_number_(0),
+      sender_(sender),
+      sequence_number_assigner_(sequence_number_assigner) {
+  RTC_DCHECK(sequence_number_assigner_);
+}
 DEPRECATED_RtpSenderEgress::NonPacedPacketSender::~NonPacedPacketSender() =
     default;
 
 void DEPRECATED_RtpSenderEgress::NonPacedPacketSender::EnqueuePackets(
     std::vector<std::unique_ptr<RtpPacketToSend>> packets) {
   for (auto& packet : packets) {
+    // Assign sequence numbers, but not for flexfec which is already running on
+    // an internally maintained sequence number series.
+    if (packet->Ssrc() != sender_->FlexFecSsrc()) {
+      sequence_number_assigner_->Sequence(*packet);
+    }
     if (!packet->SetExtension<TransportSequenceNumber>(
             ++transport_sequence_number_)) {
       --transport_sequence_number_;
@@ -313,7 +323,7 @@ void DEPRECATED_RtpSenderEgress::AddPacketToTransportFeedback(
     }
 
     RtpPacketSendInfo packet_info;
-    packet_info.ssrc = ssrc_;
+    packet_info.media_ssrc = ssrc_;
     packet_info.transport_sequence_number = packet_id;
     packet_info.rtp_sequence_number = packet.SequenceNumber();
     packet_info.length = packet_size;

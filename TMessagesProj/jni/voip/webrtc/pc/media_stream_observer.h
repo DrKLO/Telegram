@@ -11,9 +11,10 @@
 #ifndef PC_MEDIA_STREAM_OBSERVER_H_
 #define PC_MEDIA_STREAM_OBSERVER_H_
 
+#include <functional>
+
 #include "api/media_stream_interface.h"
 #include "api/scoped_refptr.h"
-#include "rtc_base/third_party/sigslot/sigslot.h"
 
 namespace webrtc {
 
@@ -21,26 +22,34 @@ namespace webrtc {
 // corresponding signals.
 class MediaStreamObserver : public ObserverInterface {
  public:
-  explicit MediaStreamObserver(MediaStreamInterface* stream);
+  explicit MediaStreamObserver(
+      MediaStreamInterface* stream,
+      std::function<void(AudioTrackInterface*, MediaStreamInterface*)>
+          audio_track_added_callback,
+      std::function<void(AudioTrackInterface*, MediaStreamInterface*)>
+          audio_track_removed_callback,
+      std::function<void(VideoTrackInterface*, MediaStreamInterface*)>
+          video_track_added_callback,
+      std::function<void(VideoTrackInterface*, MediaStreamInterface*)>
+          video_track_removed_callback);
   ~MediaStreamObserver() override;
 
   const MediaStreamInterface* stream() const { return stream_; }
 
   void OnChanged() override;
 
-  sigslot::signal2<AudioTrackInterface*, MediaStreamInterface*>
-      SignalAudioTrackAdded;
-  sigslot::signal2<AudioTrackInterface*, MediaStreamInterface*>
-      SignalAudioTrackRemoved;
-  sigslot::signal2<VideoTrackInterface*, MediaStreamInterface*>
-      SignalVideoTrackAdded;
-  sigslot::signal2<VideoTrackInterface*, MediaStreamInterface*>
-      SignalVideoTrackRemoved;
-
  private:
   rtc::scoped_refptr<MediaStreamInterface> stream_;
   AudioTrackVector cached_audio_tracks_;
   VideoTrackVector cached_video_tracks_;
+  const std::function<void(AudioTrackInterface*, MediaStreamInterface*)>
+      audio_track_added_callback_;
+  const std::function<void(AudioTrackInterface*, MediaStreamInterface*)>
+      audio_track_removed_callback_;
+  const std::function<void(VideoTrackInterface*, MediaStreamInterface*)>
+      video_track_added_callback_;
+  const std::function<void(VideoTrackInterface*, MediaStreamInterface*)>
+      video_track_removed_callback_;
 };
 
 }  // namespace webrtc

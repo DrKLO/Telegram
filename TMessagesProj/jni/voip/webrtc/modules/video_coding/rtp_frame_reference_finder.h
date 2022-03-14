@@ -20,47 +20,38 @@ namespace internal {
 class RtpFrameReferenceFinderImpl;
 }  // namespace internal
 
-// A complete frame is a frame which has received all its packets and all its
-// references are known.
-class OnCompleteFrameCallback {
- public:
-  virtual ~OnCompleteFrameCallback() {}
-  virtual void OnCompleteFrame(std::unique_ptr<EncodedFrame> frame) = 0;
-};
-
 class RtpFrameReferenceFinder {
  public:
   using ReturnVector = absl::InlinedVector<std::unique_ptr<RtpFrameObject>, 3>;
 
-  explicit RtpFrameReferenceFinder(OnCompleteFrameCallback* frame_callback);
-  explicit RtpFrameReferenceFinder(OnCompleteFrameCallback* frame_callback,
-                                   int64_t picture_id_offset);
+  RtpFrameReferenceFinder();
+  explicit RtpFrameReferenceFinder(int64_t picture_id_offset);
   ~RtpFrameReferenceFinder();
 
-  // Manage this frame until:
-  //  - We have all information needed to determine its references, after
-  //    which |frame_callback_| is called with the completed frame, or
-  //  - We have too many stashed frames (determined by |kMaxStashedFrames|)
-  //    so we drop this frame, or
-  //  - It gets cleared by ClearTo, which also means we drop it.
-  void ManageFrame(std::unique_ptr<RtpFrameObject> frame);
+  // The RtpFrameReferenceFinder will hold onto the frame until:
+  //  - the required information to determine its references has been received,
+  //    in which case it (and possibly other) frames are returned, or
+  //  - There are too many stashed frames (determined by `kMaxStashedFrames`),
+  //    in which case it gets dropped, or
+  //  - It gets cleared by ClearTo, in which case its dropped.
+  //  - The frame is old, in which case it also gets dropped.
+  ReturnVector ManageFrame(std::unique_ptr<RtpFrameObject> frame);
 
   // Notifies that padding has been received, which the reference finder
   // might need to calculate the references of a frame.
-  void PaddingReceived(uint16_t seq_num);
+  ReturnVector PaddingReceived(uint16_t seq_num);
 
-  // Clear all stashed frames that include packets older than |seq_num|.
+  // Clear all stashed frames that include packets older than `seq_num`.
   void ClearTo(uint16_t seq_num);
 
  private:
-  void HandOffFrames(ReturnVector frames);
+  void AddPictureIdOffset(ReturnVector& frames);
 
   // How far frames have been cleared out of the buffer by RTP sequence number.
   // A frame will be cleared if it contains a packet with a sequence number
-  // older than |cleared_to_seq_num_|.
+  // older than `cleared_to_seq_num_`.
   int cleared_to_seq_num_ = -1;
   const int64_t picture_id_offset_;
-  OnCompleteFrameCallback* frame_callback_;
   std::unique_ptr<internal::RtpFrameReferenceFinderImpl> impl_;
 };
 

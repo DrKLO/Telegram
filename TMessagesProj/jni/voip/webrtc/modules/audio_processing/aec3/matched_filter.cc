@@ -437,7 +437,7 @@ void MatchedFilter::Update(const DownsampledRenderBuffer& render_buffer,
         data_dumper_->DumpRaw("aec3_correlator_9_h", filters_[9]);
         break;
       default:
-        RTC_NOTREACHED();
+        RTC_DCHECK_NOTREACHED();
     }
 
     alignment_shift += filter_intra_lag_shift_;

@@ -31,7 +31,7 @@ class MockSendQueue : public SendQueue {
               Produce,
               (TimeMs now, size_t max_size),
               (override));
-  MOCK_METHOD(void,
+  MOCK_METHOD(bool,
               Discard,
               (IsUnordered unordered, StreamID stream_id, MID message_id),
               (override));
@@ -43,6 +43,16 @@ class MockSendQueue : public SendQueue {
   MOCK_METHOD(void, CommitResetStreams, (), (override));
   MOCK_METHOD(void, RollbackResetStreams, (), (override));
   MOCK_METHOD(void, Reset, (), (override));
+  MOCK_METHOD(size_t, buffered_amount, (StreamID stream_id), (const, override));
+  MOCK_METHOD(size_t, total_buffered_amount, (), (const, override));
+  MOCK_METHOD(size_t,
+              buffered_amount_low_threshold,
+              (StreamID stream_id),
+              (const, override));
+  MOCK_METHOD(void,
+              SetBufferedAmountLowThreshold,
+              (StreamID stream_id, size_t bytes),
+              (override));
 };
 
 }  // namespace dcsctp

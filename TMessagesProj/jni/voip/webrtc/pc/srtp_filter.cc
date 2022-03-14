@@ -200,7 +200,7 @@ bool SrtpFilter::ApplySendParams(const CryptoParams& send_params) {
   }
 
   send_cipher_suite_ = rtc::SrtpCryptoSuiteFromName(send_params.cipher_suite);
-  if (send_cipher_suite_ == rtc::SRTP_INVALID_CRYPTO_SUITE) {
+  if (send_cipher_suite_ == rtc::kSrtpInvalidCryptoSuite) {
     RTC_LOG(LS_WARNING) << "Unknown crypto suite(s) received:"
                            " send cipher_suite "
                         << send_params.cipher_suite;
@@ -231,7 +231,7 @@ bool SrtpFilter::ApplyRecvParams(const CryptoParams& recv_params) {
   }
 
   recv_cipher_suite_ = rtc::SrtpCryptoSuiteFromName(recv_params.cipher_suite);
-  if (recv_cipher_suite_ == rtc::SRTP_INVALID_CRYPTO_SUITE) {
+  if (recv_cipher_suite_ == rtc::kSrtpInvalidCryptoSuite) {
     RTC_LOG(LS_WARNING) << "Unknown crypto suite(s) received:"
                            " recv cipher_suite "
                         << recv_params.cipher_suite;

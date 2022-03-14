@@ -16,8 +16,10 @@
 #include <utility>
 
 #include "absl/memory/memory.h"
+#include "logging/rtc_event_log/encoder/bit_writer.h"
 #include "logging/rtc_event_log/encoder/var_int.h"
 #include "rtc_base/bit_buffer.h"
+#include "rtc_base/bitstream_reader.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/constructor_magic.h"
 #include "rtc_base/logging.h"
@@ -71,8 +73,8 @@ uint64_t MaxUnsignedValueOfBitWidth(uint64_t bit_width) {
                            : ((static_cast<uint64_t>(1) << bit_width) - 1);
 }
 
-// Computes the delta between |previous| and |current|, under the assumption
-// that wrap-around occurs after |width| is exceeded.
+// Computes the delta between `previous` and `current`, under the assumption
+// that wrap-around occurs after `width` is exceeded.
 uint64_t UnsignedDelta(uint64_t previous, uint64_t current, uint64_t bit_mask) {
   return (current - previous) & bit_mask;
 }
@@ -105,58 +107,6 @@ static_assert(static_cast<size_t>(EncodingType::kNumberOfEncodingTypes) <=
 constexpr bool kDefaultSignedDeltas = false;
 constexpr bool kDefaultValuesOptional = false;
 constexpr uint64_t kDefaultValueWidthBits = 64;
-
-// Wrap BitBufferWriter and extend its functionality by (1) keeping track of
-// the number of bits written and (2) owning its buffer.
-class BitWriter final {
- public:
-  explicit BitWriter(size_t byte_count)
-      : buffer_(byte_count, '\0'),
-        bit_writer_(reinterpret_cast<uint8_t*>(&buffer_[0]), buffer_.size()),
-        written_bits_(0),
-        valid_(true) {
-    RTC_DCHECK_GT(byte_count, 0);
-  }
-
-  void WriteBits(uint64_t val, size_t bit_count) {
-    RTC_DCHECK(valid_);
-    const bool success = bit_writer_.WriteBits(val, bit_count);
-    RTC_DCHECK(success);
-    written_bits_ += bit_count;
-  }
-
-  void WriteBits(const std::string& input) {
-    RTC_DCHECK(valid_);
-    for (std::string::value_type c : input) {
-      WriteBits(c, 8 * sizeof(std::string::value_type));
-    }
-  }
-
-  // Returns everything that was written so far.
-  // Nothing more may be written after this is called.
-  std::string GetString() {
-    RTC_DCHECK(valid_);
-    valid_ = false;
-
-    buffer_.resize(BitsToBytes(written_bits_));
-    written_bits_ = 0;
-
-    std::string result;
-    std::swap(buffer_, result);
-    return result;
-  }
-
- private:
-  std::string buffer_;
-  rtc::BitBufferWriter bit_writer_;
-  // Note: Counting bits instead of bytes wraps around earlier than it has to,
-  // which means the maximum length is lower than it could be. We don't expect
-  // to go anywhere near the limit, though, so this is good enough.
-  size_t written_bits_;
-  bool valid_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(BitWriter);
-};
 
 // Parameters for fixed-size delta-encoding/decoding.
 // These are tailored for the sequence which will be encoded (e.g. widths).
@@ -258,7 +208,7 @@ class FixedLengthDeltaEncoder final {
   // released by it before it returns. They're mostly a convenient way to
   // avoid having to pass a lot of state between different functions.
   // Therefore, it was deemed acceptable to let them have a reference to
-  // |values|, whose lifetime must exceed the lifetime of |this|.
+  // `values`, whose lifetime must exceed the lifetime of `this`.
   FixedLengthDeltaEncoder(const FixedLengthEncodingParameters& params,
                           absl::optional<uint64_t> base,
                           const std::vector<absl::optional<uint64_t>>& values,
@@ -287,7 +237,7 @@ class FixedLengthDeltaEncoder final {
 
   // The encoding scheme assumes that at least one value is transmitted OOB,
   // so that the first value can be encoded as a delta from that OOB value,
-  // which is |base_|.
+  // which is `base_`.
   const absl::optional<uint64_t> base_;
 
   // The values to be encoded.
@@ -606,10 +556,10 @@ class FixedLengthDeltaDecoder final {
   // will fail to decode this input, though.
   static bool IsSuitableDecoderFor(const std::string& input);
 
-  // Assuming that |input| is the result of fixed-size delta-encoding
-  // that took place with the same value to |base| and over |num_of_deltas|
+  // Assuming that `input` is the result of fixed-size delta-encoding
+  // that took place with the same value to `base` and over `num_of_deltas`
   // original values, this will return the sequence of original values.
-  // If an error occurs (can happen if |input| is corrupt), an empty
+  // If an error occurs (can happen if `input` is corrupt), an empty
   // vector will be returned.
   static std::vector<absl::optional<uint64_t>> DecodeDeltas(
       const std::string& input,
@@ -617,9 +567,9 @@ class FixedLengthDeltaDecoder final {
       size_t num_of_deltas);
 
  private:
-  // Reads the encoding header in |input| and returns a FixedLengthDeltaDecoder
+  // Reads the encoding header in `input` and returns a FixedLengthDeltaDecoder
   // with the corresponding configuration, that can be used to decode the
-  // values in |input|.
+  // values in `input`.
   // If the encoding header is corrupt (contains an illegal configuration),
   // nullptr will be returned.
   // When a valid FixedLengthDeltaDecoder is returned, this does not mean that
@@ -633,10 +583,10 @@ class FixedLengthDeltaDecoder final {
   // FixedLengthDeltaDecoder objects are to be created by DecodeDeltas() and
   // released by it before it returns. They're mostly a convenient way to
   // avoid having to pass a lot of state between different functions.
-  // Therefore, it was deemed acceptable that |reader| does not own the buffer
-  // it reads, meaning the lifetime of |this| must not exceed the lifetime
-  // of |reader|'s underlying buffer.
-  FixedLengthDeltaDecoder(std::unique_ptr<rtc::BitBuffer> reader,
+  // Therefore, it was deemed acceptable that `reader` does not own the buffer
+  // it reads, meaning the lifetime of `this` must not exceed the lifetime
+  // of `reader`'s underlying buffer.
+  FixedLengthDeltaDecoder(BitstreamReader reader,
                           const FixedLengthEncodingParameters& params,
                           absl::optional<uint64_t> base,
                           size_t num_of_deltas);
@@ -644,17 +594,7 @@ class FixedLengthDeltaDecoder final {
   // Perform the decoding using the parameters given to the ctor.
   std::vector<absl::optional<uint64_t>> Decode();
 
-  // Decode a varint and write it to |output|. Return value indicates success
-  // or failure. In case of failure, no guarantees are made about the contents
-  // of |output| or the results of additional reads.
-  bool ParseVarInt(uint64_t* output);
-
-  // Attempt to parse a delta from the input reader.
-  // Returns true/false for success/failure.
-  // Writes the delta into |delta| if successful.
-  bool ParseDelta(uint64_t* delta);
-
-  // Add |delta| to |base| to produce the next value in a sequence.
+  // Add `delta` to `base` to produce the next value in a sequence.
   // The delta is applied as signed/unsigned depending on the parameters
   // given to the ctor. Wrap-around is taken into account according to the
   // values' width, as specified by the aforementioned encoding parameters.
@@ -666,7 +606,7 @@ class FixedLengthDeltaDecoder final {
 
   // Reader of the input stream to be decoded. Does not own that buffer.
   // See comment above ctor for details.
-  const std::unique_ptr<rtc::BitBuffer> reader_;
+  BitstreamReader reader_;
 
   // The parameters according to which encoding will be done (width of
   // fields, whether signed deltas should be used, etc.)
@@ -674,7 +614,7 @@ class FixedLengthDeltaDecoder final {
 
   // The encoding scheme assumes that at least one value is transmitted OOB,
   // so that the first value can be encoded as a delta from that OOB value,
-  // which is |base_|.
+  // which is `base_`.
   const absl::optional<uint64_t> base_;
 
   // The number of values to be known to be decoded.
@@ -684,17 +624,11 @@ class FixedLengthDeltaDecoder final {
 };
 
 bool FixedLengthDeltaDecoder::IsSuitableDecoderFor(const std::string& input) {
-  if (input.length() < kBitsInHeaderForEncodingType) {
+  BitstreamReader reader(input);
+  uint64_t encoding_type_bits = reader.ReadBits(kBitsInHeaderForEncodingType);
+  if (!reader.Ok()) {
     return false;
   }
-
-  rtc::BitBuffer reader(reinterpret_cast<const uint8_t*>(&input[0]),
-                        kBitsInHeaderForEncodingType);
-
-  uint32_t encoding_type_bits;
-  const bool result =
-      reader.ReadBits(kBitsInHeaderForEncodingType, encoding_type_bits);
-  RTC_DCHECK(result);
 
   const auto encoding_type = static_cast<EncodingType>(encoding_type_bits);
   return encoding_type ==
@@ -719,18 +653,13 @@ std::unique_ptr<FixedLengthDeltaDecoder> FixedLengthDeltaDecoder::Create(
     const std::string& input,
     absl::optional<uint64_t> base,
     size_t num_of_deltas) {
-  if (input.length() < kBitsInHeaderForEncodingType) {
+  BitstreamReader reader(input);
+  // Encoding type
+  uint32_t encoding_type_bits = reader.ReadBits(kBitsInHeaderForEncodingType);
+  if (!reader.Ok()) {
     return nullptr;
   }
 
-  auto reader = std::make_unique<rtc::BitBuffer>(
-      reinterpret_cast<const uint8_t*>(&input[0]), input.length());
-
-  // Encoding type
-  uint32_t encoding_type_bits;
-  const bool result =
-      reader->ReadBits(kBitsInHeaderForEncodingType, encoding_type_bits);
-  RTC_DCHECK(result);
   const EncodingType encoding = static_cast<EncodingType>(encoding_type_bits);
   if (encoding != EncodingType::kFixedSizeUnsignedDeltasNoEarlyWrapNoOpt &&
       encoding !=
@@ -739,15 +668,10 @@ std::unique_ptr<FixedLengthDeltaDecoder> FixedLengthDeltaDecoder::Create(
     return nullptr;
   }
 
-  uint32_t read_buffer;
-
-  // delta_width_bits
-  if (!reader->ReadBits(kBitsInHeaderForDeltaWidthBits, read_buffer)) {
-    return nullptr;
-  }
-  RTC_DCHECK_LE(read_buffer, 64 - 1);  // See encoding for -1's rationale.
+  // See encoding for +1's rationale.
   const uint64_t delta_width_bits =
-      read_buffer + 1;  // See encoding for +1's rationale.
+      reader.ReadBits(kBitsInHeaderForDeltaWidthBits) + 1;
+  RTC_DCHECK_LE(delta_width_bits, 64);
 
   // signed_deltas, values_optional, value_width_bits
   bool signed_deltas;
@@ -758,25 +682,15 @@ std::unique_ptr<FixedLengthDeltaDecoder> FixedLengthDeltaDecoder::Create(
     values_optional = kDefaultValuesOptional;
     value_width_bits = kDefaultValueWidthBits;
   } else {
-    // signed_deltas
-    if (!reader->ReadBits(kBitsInHeaderForSignedDeltas, read_buffer)) {
-      return nullptr;
-    }
-    signed_deltas = rtc::dchecked_cast<bool>(read_buffer);
+    signed_deltas = reader.Read<bool>();
+    values_optional = reader.Read<bool>();
+    // See encoding for +1's rationale.
+    value_width_bits = reader.ReadBits(kBitsInHeaderForValueWidthBits) + 1;
+    RTC_DCHECK_LE(value_width_bits, 64);
+  }
 
-    // values_optional
-    if (!reader->ReadBits(kBitsInHeaderForValuesOptional, read_buffer)) {
-      return nullptr;
-    }
-    RTC_DCHECK_LE(read_buffer, 1);
-    values_optional = rtc::dchecked_cast<bool>(read_buffer);
-
-    // value_width_bits
-    if (!reader->ReadBits(kBitsInHeaderForValueWidthBits, read_buffer)) {
-      return nullptr;
-    }
-    RTC_DCHECK_LE(read_buffer, 64 - 1);  // See encoding for -1's rationale.
-    value_width_bits = read_buffer + 1;  // See encoding for +1's rationale.
+  if (!reader.Ok()) {
+    return nullptr;
   }
 
   // Note: Because of the way the parameters are read, it is not possible
@@ -790,35 +704,28 @@ std::unique_ptr<FixedLengthDeltaDecoder> FixedLengthDeltaDecoder::Create(
 
   FixedLengthEncodingParameters params(delta_width_bits, signed_deltas,
                                        values_optional, value_width_bits);
-  return absl::WrapUnique(new FixedLengthDeltaDecoder(std::move(reader), params,
-                                                      base, num_of_deltas));
+  return absl::WrapUnique(
+      new FixedLengthDeltaDecoder(reader, params, base, num_of_deltas));
 }
 
 FixedLengthDeltaDecoder::FixedLengthDeltaDecoder(
-    std::unique_ptr<rtc::BitBuffer> reader,
+    BitstreamReader reader,
     const FixedLengthEncodingParameters& params,
     absl::optional<uint64_t> base,
     size_t num_of_deltas)
-    : reader_(std::move(reader)),
+    : reader_(reader),
       params_(params),
       base_(base),
       num_of_deltas_(num_of_deltas) {
-  RTC_DCHECK(reader_);
+  RTC_DCHECK(reader_.Ok());
 }
 
 std::vector<absl::optional<uint64_t>> FixedLengthDeltaDecoder::Decode() {
-  RTC_DCHECK(reader_);
-
+  RTC_DCHECK(reader_.Ok());
   std::vector<bool> existing_values(num_of_deltas_);
   if (params_.values_optional()) {
     for (size_t i = 0; i < num_of_deltas_; ++i) {
-      uint32_t exists;
-      if (!reader_->ReadBits(1u, exists)) {
-        RTC_LOG(LS_WARNING) << "Failed to read existence-indicating bit.";
-        return std::vector<absl::optional<uint64_t>>();
-      }
-      RTC_DCHECK_LE(exists, 1u);
-      existing_values[i] = (exists == 1);
+      existing_values[i] = reader_.Read<bool>();
     }
   } else {
     std::fill(existing_values.begin(), existing_values.end(), true);
@@ -837,64 +744,20 @@ std::vector<absl::optional<uint64_t>> FixedLengthDeltaDecoder::Decode() {
       // If the base is non-existent, the first existent value is encoded as
       // a varint, rather than as a delta.
       RTC_DCHECK(!base_.has_value());
-      uint64_t first_value;
-      if (!ParseVarInt(&first_value)) {
-        RTC_LOG(LS_WARNING) << "Failed to read first value.";
-        return std::vector<absl::optional<uint64_t>>();
-      }
-      values[i] = first_value;
+      values[i] = DecodeVarInt(reader_);
     } else {
-      uint64_t delta;
-      if (!ParseDelta(&delta)) {
-        return std::vector<absl::optional<uint64_t>>();
-      }
-      values[i] = ApplyDelta(previous.value(), delta);
+      uint64_t delta = reader_.ReadBits(params_.delta_width_bits());
+      values[i] = ApplyDelta(*previous, delta);
     }
 
     previous = values[i];
   }
 
+  if (!reader_.Ok()) {
+    values = {};
+  }
+
   return values;
-}
-
-bool FixedLengthDeltaDecoder::ParseVarInt(uint64_t* output) {
-  RTC_DCHECK(reader_);
-  return DecodeVarInt(reader_.get(), output) != 0;
-}
-
-bool FixedLengthDeltaDecoder::ParseDelta(uint64_t* delta) {
-  RTC_DCHECK(reader_);
-
-  // BitBuffer and BitBufferWriter read/write higher bits before lower bits.
-
-  const size_t lower_bit_count =
-      std::min<uint64_t>(params_.delta_width_bits(), 32u);
-  const size_t higher_bit_count = (params_.delta_width_bits() <= 32u)
-                                      ? 0
-                                      : params_.delta_width_bits() - 32u;
-
-  uint32_t lower_bits;
-  uint32_t higher_bits;
-
-  if (higher_bit_count > 0) {
-    if (!reader_->ReadBits(higher_bit_count, higher_bits)) {
-      RTC_LOG(LS_WARNING) << "Failed to read higher half of delta.";
-      return false;
-    }
-  } else {
-    higher_bits = 0;
-  }
-
-  if (!reader_->ReadBits(lower_bit_count, lower_bits)) {
-    RTC_LOG(LS_WARNING) << "Failed to read lower half of delta.";
-    return false;
-  }
-
-  const uint64_t lower_bits_64 = static_cast<uint64_t>(lower_bits);
-  const uint64_t higher_bits_64 = static_cast<uint64_t>(higher_bits);
-
-  *delta = (higher_bits_64 << 32) | lower_bits_64;
-  return true;
 }
 
 uint64_t FixedLengthDeltaDecoder::ApplyDelta(uint64_t base,

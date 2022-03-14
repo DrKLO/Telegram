@@ -75,7 +75,8 @@ void SubstituteAndAppendArray(std::string* output, absl::string_view format,
 
   // Build the string.
   size_t original_size = output->size();
-  strings_internal::STLStringResizeUninitialized(output, original_size + size);
+  strings_internal::STLStringResizeUninitializedAmortized(output,
+                                                          original_size + size);
   char* target = &(*output)[original_size];
   for (size_t i = 0; i < format.size(); i++) {
     if (format[i] == '$') {

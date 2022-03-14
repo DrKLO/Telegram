@@ -51,7 +51,7 @@ class Pffft {
   // TODO(https://crbug.com/webrtc/9577): Consider adding a factory and making
   // the ctor private.
   // static std::unique_ptr<Pffft> Create(size_t fft_size,
-  // FftType fft_type); Ctor. |fft_size| must be a supported size (see
+  // FftType fft_type); Ctor. `fft_size` must be a supported size (see
   // Pffft::IsValidFftSize()). If not supported, the code will crash.
   Pffft(size_t fft_size, FftType fft_type);
   Pffft(const Pffft&) = delete;
@@ -73,9 +73,9 @@ class Pffft {
   // Computes the backward fast Fourier transform.
   void BackwardTransform(const FloatBuffer& in, FloatBuffer* out, bool ordered);
 
-  // Multiplies the frequency components of |fft_x| and |fft_y| and accumulates
-  // them into |out|. The arrays must have been obtained with
-  // ForwardTransform(..., /*ordered=*/false) - i.e., |fft_x| and |fft_y| must
+  // Multiplies the frequency components of `fft_x` and `fft_y` and accumulates
+  // them into `out`. The arrays must have been obtained with
+  // ForwardTransform(..., /*ordered=*/false) - i.e., `fft_x` and `fft_y` must
   // not be ordered.
   void FrequencyDomainConvolve(const FloatBuffer& fft_x,
                                const FloatBuffer& fft_y,

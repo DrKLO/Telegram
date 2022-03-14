@@ -12,32 +12,36 @@
 
 #include "absl/memory/memory.h"
 #include "rtc_base/logging.h"
+#include "rtc_base/task_utils/pending_task_safety_flag.h"
 #include "rtc_base/task_utils/to_queued_task.h"
 #include "rtc_base/time_utils.h"
 
 namespace webrtc {
 namespace webrtc_repeating_task_impl {
 
-RepeatingTaskBase::RepeatingTaskBase(TaskQueueBase* task_queue,
-                                     TimeDelta first_delay,
-                                     Clock* clock)
+RepeatingTaskBase::RepeatingTaskBase(
+    TaskQueueBase* task_queue,
+    TimeDelta first_delay,
+    Clock* clock,
+    rtc::scoped_refptr<PendingTaskSafetyFlag> alive_flag)
     : task_queue_(task_queue),
       clock_(clock),
-      next_run_time_(clock_->CurrentTime() + first_delay) {}
+      next_run_time_(clock_->CurrentTime() + first_delay),
+      alive_flag_(std::move(alive_flag)) {}
 
 RepeatingTaskBase::~RepeatingTaskBase() = default;
 
 bool RepeatingTaskBase::Run() {
   RTC_DCHECK_RUN_ON(task_queue_);
   // Return true to tell the TaskQueue to destruct this object.
-  if (next_run_time_.IsPlusInfinity())
+  if (!alive_flag_->alive())
     return true;
 
   TimeDelta delay = RunClosure();
 
   // The closure might have stopped this task, in which case we return true to
   // destruct this object.
-  if (next_run_time_.IsPlusInfinity())
+  if (!alive_flag_->alive())
     return true;
 
   RTC_DCHECK(delay.IsFinite());
@@ -53,33 +57,11 @@ bool RepeatingTaskBase::Run() {
   return false;
 }
 
-void RepeatingTaskBase::Stop() {
-  RTC_DCHECK_RUN_ON(task_queue_);
-  RTC_DCHECK(next_run_time_.IsFinite());
-  next_run_time_ = Timestamp::PlusInfinity();
-}
-
 }  // namespace webrtc_repeating_task_impl
-
-RepeatingTaskHandle::RepeatingTaskHandle(RepeatingTaskHandle&& other)
-    : repeating_task_(other.repeating_task_) {
-  other.repeating_task_ = nullptr;
-}
-
-RepeatingTaskHandle& RepeatingTaskHandle::operator=(
-    RepeatingTaskHandle&& other) {
-  repeating_task_ = other.repeating_task_;
-  other.repeating_task_ = nullptr;
-  return *this;
-}
-
-RepeatingTaskHandle::RepeatingTaskHandle(
-    webrtc_repeating_task_impl::RepeatingTaskBase* repeating_task)
-    : repeating_task_(repeating_task) {}
 
 void RepeatingTaskHandle::Stop() {
   if (repeating_task_) {
-    repeating_task_->Stop();
+    repeating_task_->SetNotAlive();
     repeating_task_ = nullptr;
   }
 }
@@ -88,4 +70,11 @@ bool RepeatingTaskHandle::Running() const {
   return repeating_task_ != nullptr;
 }
 
+namespace webrtc_repeating_task_impl {
+// These methods are empty, but can be externally equipped with actions using
+// dtrace.
+void RepeatingTaskHandleDTraceProbeStart() {}
+void RepeatingTaskHandleDTraceProbeDelayedStart() {}
+void RepeatingTaskImplDTraceProbeRun() {}
+}  // namespace webrtc_repeating_task_impl
 }  // namespace webrtc

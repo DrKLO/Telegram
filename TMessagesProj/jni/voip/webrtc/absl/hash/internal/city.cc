@@ -200,10 +200,6 @@ static uint64_t Rotate(uint64_t val, int shift) {
 
 static uint64_t ShiftMix(uint64_t val) { return val ^ (val >> 47); }
 
-static uint64_t HashLen16(uint64_t u, uint64_t v) {
-  return Hash128to64(uint128(u, v));
-}
-
 static uint64_t HashLen16(uint64_t u, uint64_t v, uint64_t mul) {
   // Murmur-inspired hashing.
   uint64_t a = (u ^ v) * mul;
@@ -212,6 +208,11 @@ static uint64_t HashLen16(uint64_t u, uint64_t v, uint64_t mul) {
   b ^= (b >> 47);
   b *= mul;
   return b;
+}
+
+static uint64_t HashLen16(uint64_t u, uint64_t v) {
+  const uint64_t kMul = 0x9ddfea08eb382d69ULL;
+  return HashLen16(u, v, kMul);
 }
 
 static uint64_t HashLen0to16(const char *s, size_t len) {
@@ -253,9 +254,8 @@ static uint64_t HashLen17to32(const char *s, size_t len) {
 
 // Return a 16-byte hash for 48 bytes.  Quick and dirty.
 // Callers do best to use "random-looking" values for a and b.
-static std::pair<uint64_t, uint64_t> WeakHashLen32WithSeeds(uint64_t w, uint64_t x,
-                                                        uint64_t y, uint64_t z,
-                                                        uint64_t a, uint64_t b) {
+static std::pair<uint64_t, uint64_t> WeakHashLen32WithSeeds(
+    uint64_t w, uint64_t x, uint64_t y, uint64_t z, uint64_t a, uint64_t b) {
   a += w;
   b = Rotate(b + a + z, 21);
   uint64_t c = a;
@@ -266,8 +266,9 @@ static std::pair<uint64_t, uint64_t> WeakHashLen32WithSeeds(uint64_t w, uint64_t
 }
 
 // Return a 16-byte hash for s[0] ... s[31], a, and b.  Quick and dirty.
-static std::pair<uint64_t, uint64_t> WeakHashLen32WithSeeds(const char *s, uint64_t a,
-                                                        uint64_t b) {
+static std::pair<uint64_t, uint64_t> WeakHashLen32WithSeeds(const char *s,
+                                                            uint64_t a,
+                                                            uint64_t b) {
   return WeakHashLen32WithSeeds(Fetch64(s), Fetch64(s + 8), Fetch64(s + 16),
                                 Fetch64(s + 24), a, b);
 }
@@ -310,8 +311,10 @@ uint64_t CityHash64(const char *s, size_t len) {
   uint64_t x = Fetch64(s + len - 40);
   uint64_t y = Fetch64(s + len - 16) + Fetch64(s + len - 56);
   uint64_t z = HashLen16(Fetch64(s + len - 48) + len, Fetch64(s + len - 24));
-  std::pair<uint64_t, uint64_t> v = WeakHashLen32WithSeeds(s + len - 64, len, z);
-  std::pair<uint64_t, uint64_t> w = WeakHashLen32WithSeeds(s + len - 32, y + k1, x);
+  std::pair<uint64_t, uint64_t> v =
+      WeakHashLen32WithSeeds(s + len - 64, len, z);
+  std::pair<uint64_t, uint64_t> w =
+      WeakHashLen32WithSeeds(s + len - 32, y + k1, x);
   x = x * k1 + Fetch64(s);
 
   // Decrease len to the nearest multiple of 64, and operate on 64-byte chunks.
@@ -337,7 +340,7 @@ uint64_t CityHash64WithSeed(const char *s, size_t len, uint64_t seed) {
 }
 
 uint64_t CityHash64WithSeeds(const char *s, size_t len, uint64_t seed0,
-                           uint64_t seed1) {
+                             uint64_t seed1) {
   return HashLen16(CityHash64(s, len) - seed0, seed1);
 }
 

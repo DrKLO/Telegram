@@ -102,7 +102,7 @@ H264SpsPpsTracker::FixedBitstream H264SpsPpsTracker::CopyAndFixBitstream(
           video_header->height = sps->second.height;
 
           // If the SPS/PPS was supplied out of band then we will have saved
-          // the actual bitstream in |data|.
+          // the actual bitstream in `data`.
           if (sps->second.data && pps->second.data) {
             RTC_DCHECK_GT(sps->second.size, 0);
             RTC_DCHECK_GT(pps->second.size, 0);

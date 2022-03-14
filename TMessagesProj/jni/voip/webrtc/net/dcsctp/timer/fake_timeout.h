@@ -14,13 +14,13 @@
 #include <functional>
 #include <limits>
 #include <memory>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
 #include "absl/types/optional.h"
 #include "net/dcsctp/public/timeout.h"
 #include "rtc_base/checks.h"
+#include "rtc_base/containers/flat_set.h"
 
 namespace dcsctp {
 
@@ -91,9 +91,11 @@ class FakeTimeoutManager {
     return absl::nullopt;
   }
 
+  void Reset() { timers_.clear(); }
+
  private:
   const std::function<TimeMs()> get_time_;
-  std::unordered_set<FakeTimeout*> timers_;
+  webrtc::flat_set<FakeTimeout*> timers_;
 };
 
 }  // namespace dcsctp

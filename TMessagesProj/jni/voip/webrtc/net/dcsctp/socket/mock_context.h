@@ -42,7 +42,7 @@ class MockContext : public Context {
     ON_CALL(*this, callbacks).WillByDefault(testing::ReturnRef(callbacks_));
     ON_CALL(*this, current_rto).WillByDefault(testing::Return(DurationMs(123)));
     ON_CALL(*this, Send).WillByDefault([this](SctpPacket::Builder& builder) {
-      callbacks_.SendPacket(builder.Build());
+      callbacks_.SendPacketWithStatus(builder.Build());
     });
   }
 

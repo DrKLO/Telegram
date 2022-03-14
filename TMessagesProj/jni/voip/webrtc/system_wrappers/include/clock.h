@@ -39,8 +39,18 @@ class RTC_EXPORT Clock {
   int64_t TimeInMicroseconds() { return CurrentTime().us(); }
 
   // Retrieve an NTP absolute timestamp (with an epoch of Jan 1, 1900).
-  virtual NtpTime CurrentNtpTime() = 0;
+  // TODO(bugs.webrtc.org/11327): Make this non-virtual once
+  // "WebRTC-SystemIndependentNtpTimeKillSwitch" is removed.
+  virtual NtpTime CurrentNtpTime() {
+    return ConvertTimestampToNtpTime(CurrentTime());
+  }
   int64_t CurrentNtpInMilliseconds() { return CurrentNtpTime().ToMs(); }
+
+  // Converts between a relative timestamp returned by this clock, to NTP time.
+  virtual NtpTime ConvertTimestampToNtpTime(Timestamp timestamp) = 0;
+  int64_t ConvertTimestampToNtpTimeInMilliseconds(int64_t timestamp_ms) {
+    return ConvertTimestampToNtpTime(Timestamp::Millis(timestamp_ms)).ToMs();
+  }
 
   // Returns an instance of the real-time system clock implementation.
   static Clock* GetRealTimeClock();
@@ -56,7 +66,7 @@ class SimulatedClock : public Clock {
   // Return a timestamp with an epoch of Jan 1, 1970.
   Timestamp CurrentTime() override;
 
-  NtpTime CurrentNtpTime() override;
+  NtpTime ConvertTimestampToNtpTime(Timestamp timestamp) override;
 
   // Advance the simulated clock with a given number of milliseconds or
   // microseconds.

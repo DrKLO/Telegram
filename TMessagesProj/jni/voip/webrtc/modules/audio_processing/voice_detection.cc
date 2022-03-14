@@ -54,7 +54,7 @@ VoiceDetection::VoiceDetection(int sample_rate_hz, Likelihood likelihood)
       mode = 0;
       break;
     default:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
       break;
   }
   int error = WebRtcVad_set_mode(vad_->state(), mode);

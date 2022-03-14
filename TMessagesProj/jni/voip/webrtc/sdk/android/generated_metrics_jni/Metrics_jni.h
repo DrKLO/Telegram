@@ -157,7 +157,4 @@ static void Java_Metrics_add(JNIEnv* env, const base::android::JavaRef<jobject>&
 }  // namespace jni
 }  // namespace  webrtc
 
-// Step 4: Generated test functions (optional).
-
-
 #endif  // org_webrtc_Metrics_JNI

@@ -24,7 +24,7 @@ namespace dcsctp {
 class AnyDataChunk : public Chunk {
  public:
   // Represents the "immediate ack" flag on DATA/I-DATA, from RFC7053.
-  using ImmediateAckFlag = StrongAlias<class ImmediateAckFlagTag, bool>;
+  using ImmediateAckFlag = webrtc::StrongAlias<class ImmediateAckFlagTag, bool>;
 
   // Data chunk options.
   // See https://tools.ietf.org/html/rfc4960#section-3.3.1

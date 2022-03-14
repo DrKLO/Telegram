@@ -143,14 +143,14 @@ std::string OpenSSLKeyPair::PrivateKeyToPEMString() const {
   BIO* temp_memory_bio = BIO_new(BIO_s_mem());
   if (!temp_memory_bio) {
     RTC_LOG_F(LS_ERROR) << "Failed to allocate temporary memory bio";
-    RTC_NOTREACHED();
+    RTC_DCHECK_NOTREACHED();
     return "";
   }
   if (!PEM_write_bio_PrivateKey(temp_memory_bio, pkey_, nullptr, nullptr, 0,
                                 nullptr, nullptr)) {
     RTC_LOG_F(LS_ERROR) << "Failed to write private key";
     BIO_free(temp_memory_bio);
-    RTC_NOTREACHED();
+    RTC_DCHECK_NOTREACHED();
     return "";
   }
   char* buffer;
@@ -164,13 +164,13 @@ std::string OpenSSLKeyPair::PublicKeyToPEMString() const {
   BIO* temp_memory_bio = BIO_new(BIO_s_mem());
   if (!temp_memory_bio) {
     RTC_LOG_F(LS_ERROR) << "Failed to allocate temporary memory bio";
-    RTC_NOTREACHED();
+    RTC_DCHECK_NOTREACHED();
     return "";
   }
   if (!PEM_write_bio_PUBKEY(temp_memory_bio, pkey_)) {
     RTC_LOG_F(LS_ERROR) << "Failed to write public key";
     BIO_free(temp_memory_bio);
-    RTC_NOTREACHED();
+    RTC_DCHECK_NOTREACHED();
     return "";
   }
   BIO_write(temp_memory_bio, "\0", 1);

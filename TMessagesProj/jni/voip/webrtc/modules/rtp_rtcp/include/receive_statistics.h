@@ -29,7 +29,7 @@ class ReceiveStatisticsProvider {
  public:
   virtual ~ReceiveStatisticsProvider() = default;
   // Collects receive statistic in a form of rtcp report blocks.
-  // Returns at most |max_blocks| report blocks.
+  // Returns at most `max_blocks` report blocks.
   virtual std::vector<rtcp::ReportBlock> RtcpReportBlocks(
       size_t max_blocks) = 0;
 };

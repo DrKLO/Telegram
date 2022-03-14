@@ -204,9 +204,9 @@ class EmulatedNetworkStats {
 class EmulatedEndpoint : public EmulatedNetworkReceiverInterface {
  public:
   // Send packet into network.
-  // |from| will be used to set source address for the packet in destination
+  // `from` will be used to set source address for the packet in destination
   // socket.
-  // |to| will be used for routing verification and picking right socket by port
+  // `to` will be used for routing verification and picking right socket by port
   // on destination endpoint.
   virtual void SendPacket(const rtc::SocketAddress& from,
                           const rtc::SocketAddress& to,
@@ -214,12 +214,12 @@ class EmulatedEndpoint : public EmulatedNetworkReceiverInterface {
                           uint16_t application_overhead = 0) = 0;
 
   // Binds receiver to this endpoint to send and receive data.
-  // |desired_port| is a port that should be used. If it is equal to 0,
+  // `desired_port` is a port that should be used. If it is equal to 0,
   // endpoint will pick the first available port starting from
-  // |kFirstEphemeralPort|.
+  // `kFirstEphemeralPort`.
   //
   // Returns the port, that should be used (it will be equals to desired, if
-  // |desired_port| != 0 and is free or will be the one, selected by endpoint)
+  // `desired_port` != 0 and is free or will be the one, selected by endpoint)
   // or absl::nullopt if desired_port in used. Also fails if there are no more
   // free ports to bind to.
   //
@@ -256,7 +256,7 @@ class EmulatedEndpoint : public EmulatedNetworkReceiverInterface {
 // they are guranteed to be delivered eventually, even on lossy networks.
 class TcpMessageRoute {
  public:
-  // Sends a TCP message of the given |size| over the route, |on_received| is
+  // Sends a TCP message of the given `size` over the route, `on_received` is
   // called when the message has been delivered. Note that the connection
   // parameters are reset iff there's no currently pending message on the route.
   virtual void SendMessage(size_t size, std::function<void()> on_received) = 0;

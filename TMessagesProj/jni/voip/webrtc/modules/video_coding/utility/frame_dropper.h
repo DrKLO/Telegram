@@ -44,7 +44,7 @@ class FrameDropper {
   // Input:
   //          - framesize_bytes    : The size of the latest frame returned
   //                                 from the encoder.
-  //          - delta_frame        : True if the encoder returned a key frame.
+  //          - delta_frame        : True if the encoder returned a delta frame.
   void Fill(size_t framesize_bytes, bool delta_frame);
 
   void Leak(uint32_t input_framerate);
@@ -67,13 +67,13 @@ class FrameDropper {
   // drops on the following packets that may be much smaller. Instead these
   // large frames are accumulated over several frames when the bucket leaks.
 
-  // |large_frame_accumulation_spread_| represents the number of frames over
+  // `large_frame_accumulation_spread_` represents the number of frames over
   // which a large frame is accumulated.
   float large_frame_accumulation_spread_;
-  // |large_frame_accumulation_count_| represents the number of frames left
+  // `large_frame_accumulation_count_` represents the number of frames left
   // to finish accumulating a large frame.
   int large_frame_accumulation_count_;
-  // |large_frame_accumulation_chunk_size_| represents the size of a single
+  // `large_frame_accumulation_chunk_size_` represents the size of a single
   // chunk for large frame accumulation.
   float large_frame_accumulation_chunk_size_;
 

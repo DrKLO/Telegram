@@ -56,7 +56,7 @@ void GetAudioAndVideoTrackBySsrc(
     if (!track) {
       continue;
     }
-    // TODO(deadbeef): |ssrc| should be removed in favor of |GetParameters|.
+    // TODO(deadbeef): `ssrc` should be removed in favor of `GetParameters`.
     uint32_t ssrc = rtp_sender->ssrc();
     if (ssrc != 0) {
       if (media_type == cricket::MEDIA_TYPE_AUDIO) {

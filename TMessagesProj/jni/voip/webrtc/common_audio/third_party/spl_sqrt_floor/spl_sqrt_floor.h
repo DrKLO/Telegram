@@ -13,9 +13,9 @@
 //
 // WebRtcSpl_SqrtFloor(...)
 //
-// Returns the square root of the input value |value|. The precision of this
+// Returns the square root of the input value `value`. The precision of this
 // function is rounding down integer precision, i.e., sqrt(8) gives 2 as answer.
-// If |value| is a negative number then 0 is returned.
+// If `value` is a negative number then 0 is returned.
 //
 // Algorithm:
 //

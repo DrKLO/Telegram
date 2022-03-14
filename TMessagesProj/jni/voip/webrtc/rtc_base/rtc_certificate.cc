@@ -46,11 +46,6 @@ const SSLCertificate& RTCCertificate::GetSSLCertificate() const {
   return identity_->certificate();
 }
 
-// Deprecated: TODO(benwright) - Remove once chromium is updated.
-const SSLCertificate& RTCCertificate::ssl_certificate() const {
-  return identity_->certificate();
-}
-
 const SSLCertChain& RTCCertificate::GetSSLCertificateChain() const {
   return identity_->cert_chain();
 }

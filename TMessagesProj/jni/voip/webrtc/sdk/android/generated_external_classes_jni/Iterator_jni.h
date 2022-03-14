@@ -39,8 +39,8 @@ namespace JNI_Iterator {
 
 
 static std::atomic<jmethodID> g_java_util_Iterator_hasNext(nullptr);
-static jboolean Java_Iterator_hasNext(JNIEnv* env, const base::android::JavaRef<jobject>& obj)
-    __attribute__ ((unused));
+[[maybe_unused]] static jboolean Java_Iterator_hasNext(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj);
 static jboolean Java_Iterator_hasNext(JNIEnv* env, const base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_util_Iterator_clazz(env);
   CHECK_CLAZZ(env, obj.obj(),
@@ -62,8 +62,8 @@ static jboolean Java_Iterator_hasNext(JNIEnv* env, const base::android::JavaRef<
 }
 
 static std::atomic<jmethodID> g_java_util_Iterator_next(nullptr);
-static base::android::ScopedJavaLocalRef<jobject> Java_Iterator_next(JNIEnv* env, const
-    base::android::JavaRef<jobject>& obj) __attribute__ ((unused));
+[[maybe_unused]] static base::android::ScopedJavaLocalRef<jobject> Java_Iterator_next(JNIEnv* env,
+    const base::android::JavaRef<jobject>& obj);
 static base::android::ScopedJavaLocalRef<jobject> Java_Iterator_next(JNIEnv* env, const
     base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_util_Iterator_clazz(env);
@@ -86,8 +86,8 @@ static base::android::ScopedJavaLocalRef<jobject> Java_Iterator_next(JNIEnv* env
 }
 
 static std::atomic<jmethodID> g_java_util_Iterator_remove(nullptr);
-static void Java_Iterator_remove(JNIEnv* env, const base::android::JavaRef<jobject>& obj)
-    __attribute__ ((unused));
+[[maybe_unused]] static void Java_Iterator_remove(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj);
 static void Java_Iterator_remove(JNIEnv* env, const base::android::JavaRef<jobject>& obj) {
   jclass clazz = java_util_Iterator_clazz(env);
   CHECK_CLAZZ(env, obj.obj(),
@@ -107,8 +107,8 @@ static void Java_Iterator_remove(JNIEnv* env, const base::android::JavaRef<jobje
 }
 
 static std::atomic<jmethodID> g_java_util_Iterator_forEachRemaining(nullptr);
-static void Java_Iterator_forEachRemaining(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
-    const base::android::JavaRef<jobject>& p0) __attribute__ ((unused));
+[[maybe_unused]] static void Java_Iterator_forEachRemaining(JNIEnv* env, const
+    base::android::JavaRef<jobject>& obj, const base::android::JavaRef<jobject>& p0);
 static void Java_Iterator_forEachRemaining(JNIEnv* env, const base::android::JavaRef<jobject>& obj,
     const base::android::JavaRef<jobject>& p0) {
   jclass clazz = java_util_Iterator_clazz(env);
@@ -129,8 +129,5 @@ static void Java_Iterator_forEachRemaining(JNIEnv* env, const base::android::Jav
 }
 
 }  // namespace JNI_Iterator
-
-// Step 4: Generated test functions (optional).
-
 
 #endif  // java_util_Iterator_JNI

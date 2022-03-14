@@ -117,8 +117,7 @@ class RTC_EXPORT AsyncPacketSocket : public sigslot::has_slots<> {
 
   // Emitted after address for the socket is allocated, i.e. binding
   // is finished. State of the socket is changed from BINDING to BOUND
-  // (for UDP and server TCP sockets) or CONNECTING (for client TCP
-  // sockets).
+  // (for UDP sockets).
   sigslot::signal2<AsyncPacketSocket*, const SocketAddress&> SignalAddressReady;
 
   // Emitted for client TCP sockets when state is changed from
@@ -129,11 +128,26 @@ class RTC_EXPORT AsyncPacketSocket : public sigslot::has_slots<> {
   // CONNECTED to CLOSED.
   sigslot::signal2<AsyncPacketSocket*, int> SignalClose;
 
-  // Used only for listening TCP sockets.
-  sigslot::signal2<AsyncPacketSocket*, AsyncPacketSocket*> SignalNewConnection;
-
  private:
   RTC_DISALLOW_COPY_AND_ASSIGN(AsyncPacketSocket);
+};
+
+// Listen socket, producing an AsyncPacketSocket when a peer connects.
+class RTC_EXPORT AsyncListenSocket : public sigslot::has_slots<> {
+ public:
+  enum class State {
+    kClosed,
+    kBound,
+  };
+
+  // Returns current state of the socket.
+  virtual State GetState() const = 0;
+
+  // Returns current local address. Address may be set to null if the
+  // socket is not bound yet (GetState() returns kBinding).
+  virtual SocketAddress GetLocalAddress() const = 0;
+
+  sigslot::signal2<AsyncListenSocket*, AsyncPacketSocket*> SignalNewConnection;
 };
 
 void CopySocketInformationToPacketInfo(size_t packet_size_bytes,

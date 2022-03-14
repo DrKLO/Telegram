@@ -90,7 +90,7 @@ void ChannelMixer::Transform(AudioFrame* frame) {
   frame->num_channels_ = output_channels_;
   frame->channel_layout_ = output_layout_;
 
-  // Copy the output result to the audio frame in |frame|.
+  // Copy the output result to the audio frame in `frame`.
   memcpy(
       frame->mutable_data(), out_audio,
       sizeof(int16_t) * frame->samples_per_channel() * frame->num_channels());

@@ -15,6 +15,7 @@
 #ifndef ABSL_HASH_INTERNAL_SPY_HASH_STATE_H_
 #define ABSL_HASH_INTERNAL_SPY_HASH_STATE_H_
 
+#include <algorithm>
 #include <ostream>
 #include <string>
 #include <vector>
@@ -167,6 +168,24 @@ class SpyHashStateImpl : public HashStateBase<SpyHashStateImpl<T>> {
 
   using SpyHashStateImpl::HashStateBase::combine_contiguous;
 
+  template <typename CombinerT>
+  static SpyHashStateImpl RunCombineUnordered(SpyHashStateImpl state,
+                                              CombinerT combiner) {
+    UnorderedCombinerCallback cb;
+
+    combiner(SpyHashStateImpl<void>{}, std::ref(cb));
+
+    std::sort(cb.element_hash_representations.begin(),
+              cb.element_hash_representations.end());
+    state.hash_representation_.insert(state.hash_representation_.end(),
+                                      cb.element_hash_representations.begin(),
+                                      cb.element_hash_representations.end());
+    if (cb.error && cb.error->has_value()) {
+      state.error_ = std::move(cb.error);
+    }
+    return state;
+  }
+
   absl::optional<std::string> error() const {
     if (moved_from_) {
       return "Returned a moved-from instance of the hash state object.";
@@ -177,6 +196,22 @@ class SpyHashStateImpl : public HashStateBase<SpyHashStateImpl<T>> {
  private:
   template <typename U>
   friend class SpyHashStateImpl;
+
+  struct UnorderedCombinerCallback {
+    std::vector<std::string> element_hash_representations;
+    std::shared_ptr<absl::optional<std::string>> error;
+
+    // The inner spy can have a different type.
+    template <typename U>
+    void operator()(SpyHashStateImpl<U>& inner) {
+      element_hash_representations.push_back(
+          absl::StrJoin(inner.hash_representation_, ""));
+      if (inner.error_->has_value()) {
+        error = std::move(inner.error_);
+      }
+      inner = SpyHashStateImpl<void>{};
+    }
+  };
 
   // This is true if SpyHashStateImpl<T> has been passed to a call of
   // AbslHashValue with the wrong type. This detects that the user called

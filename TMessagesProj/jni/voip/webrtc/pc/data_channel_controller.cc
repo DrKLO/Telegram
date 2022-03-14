@@ -21,7 +21,6 @@
 #include "pc/sctp_utils.h"
 #include "rtc_base/location.h"
 #include "rtc_base/logging.h"
-#include "rtc_base/string_encode.h"
 #include "rtc_base/task_utils/to_queued_task.h"
 
 namespace webrtc {
@@ -162,13 +161,13 @@ void DataChannelController::OnReadyToSend() {
       }));
 }
 
-void DataChannelController::OnTransportClosed() {
+void DataChannelController::OnTransportClosed(RTCError error) {
   RTC_DCHECK_RUN_ON(network_thread());
   signaling_thread()->PostTask(
-      ToQueuedTask([self = weak_factory_.GetWeakPtr()] {
+      ToQueuedTask([self = weak_factory_.GetWeakPtr(), error] {
         if (self) {
           RTC_DCHECK_RUN_ON(self->signaling_thread());
-          self->OnTransportChannelClosed();
+          self->OnTransportChannelClosed(error);
         }
       }));
 }
@@ -177,7 +176,7 @@ void DataChannelController::SetupDataChannelTransport_n() {
   RTC_DCHECK_RUN_ON(network_thread());
 
   // There's a new data channel transport.  This needs to be signaled to the
-  // |sctp_data_channels_| so that they can reopen and reconnect.  This is
+  // `sctp_data_channels_` so that they can reopen and reconnect.  This is
   // necessary when bundling is applied.
   NotifyDataChannelsOfTransportCreated();
 }
@@ -195,7 +194,7 @@ void DataChannelController::OnTransportChanged(
   RTC_DCHECK_RUN_ON(network_thread());
   if (data_channel_transport() &&
       data_channel_transport() != new_data_channel_transport) {
-    // Changed which data channel transport is used for |sctp_mid_| (eg. now
+    // Changed which data channel transport is used for `sctp_mid_` (eg. now
     // it's bundled).
     data_channel_transport()->SetDataSink(nullptr);
     set_data_channel_transport(new_data_channel_transport);
@@ -203,7 +202,7 @@ void DataChannelController::OnTransportChanged(
       new_data_channel_transport->SetDataSink(this);
 
       // There's a new data channel transport.  This needs to be signaled to the
-      // |sctp_data_channels_| so that they can reopen and reconnect.  This is
+      // `sctp_data_channels_` so that they can reopen and reconnect.  This is
       // necessary when bundling is applied.
       NotifyDataChannelsOfTransportCreated();
     }
@@ -351,14 +350,14 @@ void DataChannelController::OnSctpDataChannelClosed(SctpDataChannel* channel) {
   }
 }
 
-void DataChannelController::OnTransportChannelClosed() {
+void DataChannelController::OnTransportChannelClosed(RTCError error) {
   RTC_DCHECK_RUN_ON(signaling_thread());
   // Use a temporary copy of the SCTP DataChannel list because the
   // DataChannel may callback to us and try to modify the list.
   std::vector<rtc::scoped_refptr<SctpDataChannel>> temp_sctp_dcs;
   temp_sctp_dcs.swap(sctp_data_channels_);
   for (const auto& channel : temp_sctp_dcs) {
-    channel->OnTransportChannelClosed();
+    channel->OnTransportChannelClosed(error);
   }
 }
 

@@ -99,7 +99,7 @@ class BaseChannel : public ChannelInterface,
                     public MediaChannel::NetworkInterface,
                     public webrtc::RtpPacketSinkInterface {
  public:
-  // If |srtp_required| is true, the channel will not send or receive any
+  // If `srtp_required` is true, the channel will not send or receive any
   // RTP/RTCP packets without using SRTP (either using SDES or DTLS-SRTP).
   // The BaseChannel does not own the UniqueRandomIdGenerator so it is the
   // responsibility of the user to ensure it outlives this object.
@@ -141,7 +141,7 @@ class BaseChannel : public ChannelInterface,
   // Set an RTP level transport which could be an RtpTransport without
   // encryption, an SrtpTransport for SDES or a DtlsSrtpTransport for DTLS-SRTP.
   // This can be called from any thread and it hops to the network thread
-  // internally. It would replace the |SetTransports| and its variants.
+  // internally. It would replace the `SetTransports` and its variants.
   bool SetRtpTransport(webrtc::RtpTransportInternal* rtp_transport) override;
 
   webrtc::RtpTransportInternal* rtp_transport() const {
@@ -272,13 +272,14 @@ class BaseChannel : public ChannelInterface,
                                   webrtc::SdpType type,
                                   std::string* error_desc)
       RTC_RUN_ON(worker_thread()) = 0;
-  // Return a list of RTP header extensions with the non-encrypted extensions
-  // removed depending on the current crypto_options_ and only if both the
-  // non-encrypted and encrypted extension is present for the same URI.
-  RtpHeaderExtensions GetFilteredRtpHeaderExtensions(
+
+  // Returns a list of RTP header extensions where any extension URI is unique.
+  // Encrypted extensions will be either preferred or discarded, depending on
+  // the current crypto_options_.
+  RtpHeaderExtensions GetDeduplicatedRtpHeaderExtensions(
       const RtpHeaderExtensions& extensions);
 
-  // Add |payload_type| to |demuxer_criteria_| if payload type demuxing is
+  // Add `payload_type` to `demuxer_criteria_` if payload type demuxing is
   // enabled.
   void MaybeAddHandledPayloadType(int payload_type) RTC_RUN_ON(worker_thread());
 
@@ -349,7 +350,7 @@ class BaseChannel : public ChannelInterface,
   // MediaChannel related members that should be accessed from the worker
   // thread.
   const std::unique_ptr<MediaChannel> media_channel_;
-  // Currently the |enabled_| flag is accessed from the signaling thread as
+  // Currently the `enabled_` flag is accessed from the signaling thread as
   // well, but it can be changed only when signaling thread does a synchronous
   // call to the worker thread, so it should be safe.
   bool enabled_ RTC_GUARDED_BY(worker_thread()) = false;

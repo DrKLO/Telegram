@@ -286,9 +286,9 @@ bool GetDoubleFromJsonObject(const Json::Value& in,
 }
 
 std::string JsonValueToString(const Json::Value& json) {
-  Json::FastWriter w;
-  std::string value = w.write(json);
-  return value.substr(0, value.size() - 1);  // trim trailing newline
+  Json::StreamWriterBuilder builder;
+  std::string output = Json::writeString(builder, json);
+  return output.substr(0, output.size() - 1);  // trim trailing newline
 }
 
 }  // namespace rtc

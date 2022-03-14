@@ -321,7 +321,7 @@ public class MessagesController extends BaseController implements NotificationCe
     public Set<String> exportGroupUri;
     public Set<String> exportPrivateUri;
     public boolean autoarchiveAvailable;
-    public int groipCallVideoMaxParticipants;
+    public int groupCallVideoMaxParticipants;
     public boolean suggestStickersApiOnly;
     public ArrayList<String> gifSearchEmojies = new ArrayList<>();
     public HashSet<String> diceEmojies;
@@ -331,6 +331,7 @@ public class MessagesController extends BaseController implements NotificationCe
     public HashMap<String, DiceFrameSuccess> diceSuccess = new HashMap<>();
     public HashMap<String, EmojiSound> emojiSounds = new HashMap<>();
     public HashMap<Long, ArrayList<TLRPC.TL_sendMessageEmojiInteraction>> emojiInteractions = new HashMap<>();
+    public boolean remoteConfigLoaded;
 
     private SharedPreferences notificationsPreferences;
     private SharedPreferences mainPreferences;
@@ -781,6 +782,7 @@ public class MessagesController extends BaseController implements NotificationCe
         }
 
         enableJoined = notificationsPreferences.getBoolean("EnableContactJoined", true);
+        remoteConfigLoaded = mainPreferences.getBoolean("remoteConfigLoaded", false);
         secretWebpagePreview = mainPreferences.getInt("secretWebpage2", 2);
         maxGroupCount = mainPreferences.getInt("maxGroupCount", 200);
         maxMegagroupCount = mainPreferences.getInt("maxMegagroupCount", 10000);
@@ -830,7 +832,7 @@ public class MessagesController extends BaseController implements NotificationCe
         filtersEnabled = mainPreferences.getBoolean("filtersEnabled", false);
         showFiltersTooltip = mainPreferences.getBoolean("showFiltersTooltip", false);
         autoarchiveAvailable = mainPreferences.getBoolean("autoarchiveAvailable", false);
-        groipCallVideoMaxParticipants = mainPreferences.getInt("groipCallVideoMaxParticipants", 30);
+        groupCallVideoMaxParticipants = mainPreferences.getInt("groipCallVideoMaxParticipants", 30);
         chatReadMarkSizeThreshold = mainPreferences.getInt("chatReadMarkSizeThreshold", 50);
         chatReadMarkExpirePeriod = mainPreferences.getInt("chatReadMarkExpirePeriod", 7 * 86400);
         suggestStickersApiOnly = mainPreferences.getBoolean("suggestStickersApiOnly", false);
@@ -1667,9 +1669,9 @@ public class MessagesController extends BaseController implements NotificationCe
                         case "groupcall_video_participants_max": {
                             if (value.value instanceof TLRPC.TL_jsonNumber) {
                                 TLRPC.TL_jsonNumber number = (TLRPC.TL_jsonNumber) value.value;
-                                if (number.value != groipCallVideoMaxParticipants) {
-                                    groipCallVideoMaxParticipants = (int) number.value;
-                                    editor.putInt("groipCallVideoMaxParticipants", groipCallVideoMaxParticipants);
+                                if (number.value != groupCallVideoMaxParticipants) {
+                                    groupCallVideoMaxParticipants = (int) number.value;
+                                    editor.putInt("groipCallVideoMaxParticipants", groupCallVideoMaxParticipants);
                                     changed = true;
                                 }
                             }
@@ -1943,6 +1945,7 @@ public class MessagesController extends BaseController implements NotificationCe
         AndroidUtilities.runOnUIThread(() -> {
             getDownloadController().loadAutoDownloadConfig(false);
             loadAppConfig();
+            remoteConfigLoaded = true;
             maxMegagroupCount = config.megagroup_size_max;
             maxGroupCount = config.chat_size_max;
             maxEditTime = config.edit_time_limit;
@@ -1983,9 +1986,12 @@ public class MessagesController extends BaseController implements NotificationCe
             blockedCountry = config.blocked_mode;
             dcDomainName = config.dc_txt_domain_name;
             webFileDatacenterId = config.webfile_dc_id;
-            if (config.suggested_lang_code != null && (suggestedLangCode == null || !suggestedLangCode.equals(config.suggested_lang_code))) {
+            if (config.suggested_lang_code != null) {
+                boolean loadRemote = suggestedLangCode == null || !suggestedLangCode.equals(config.suggested_lang_code);
                 suggestedLangCode = config.suggested_lang_code;
-                LocaleController.getInstance().loadRemoteLanguages(currentAccount);
+                if (loadRemote) {
+                    LocaleController.getInstance().loadRemoteLanguages(currentAccount);
+                }
             }
             Theme.loadRemoteThemes(currentAccount, false);
             Theme.checkCurrentRemoteTheme(false);
@@ -2034,6 +2040,7 @@ public class MessagesController extends BaseController implements NotificationCe
             }
 
             SharedPreferences.Editor editor = mainPreferences.edit();
+            editor.putBoolean("remoteConfigLoaded", remoteConfigLoaded);
             editor.putInt("maxGroupCount", maxGroupCount);
             editor.putInt("maxMegagroupCount", maxMegagroupCount);
             editor.putInt("maxEditTime", maxEditTime);
@@ -2780,9 +2787,11 @@ public class MessagesController extends BaseController implements NotificationCe
         }
 
         addSupportUser();
-        getNotificationCenter().postNotificationName(NotificationCenter.suggestedFiltersLoaded);
-        getNotificationCenter().postNotificationName(NotificationCenter.dialogFiltersUpdated);
-        getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
+        AndroidUtilities.runOnUIThread(()->{
+            getNotificationCenter().postNotificationName(NotificationCenter.suggestedFiltersLoaded);
+            getNotificationCenter().postNotificationName(NotificationCenter.dialogFiltersUpdated);
+            getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
+        });
     }
 
     public boolean isChatNoForwards(TLRPC.Chat chat) {
@@ -4824,6 +4833,11 @@ public class MessagesController extends BaseController implements NotificationCe
         return allDialogs;
     }
 
+    public void putDialogsEndReachedAfterRegistration() {
+        dialogsEndReached.put(0, true);
+        serverDialogsEndReached.put(0, true);
+    }
+
     public boolean isDialogsEndReached(int folderId) {
         return dialogsEndReached.get(folderId);
     }
@@ -4846,6 +4860,17 @@ public class MessagesController extends BaseController implements NotificationCe
             return new ArrayList<>();
         }
         return dialogs;
+    }
+
+    public int getAllFoldersDialogsCount() {
+        int count = 0;
+        for (int i = 0; i < dialogsByFolder.size(); i++) {
+            List<TLRPC.Dialog> dialogs = dialogsByFolder.get(dialogsByFolder.keyAt(i));
+            if (dialogs != null) {
+                count += dialogs.size();
+            }
+        }
+        return count;
     }
 
     public int getTotalDialogsCount() {

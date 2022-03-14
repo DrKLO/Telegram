@@ -41,7 +41,7 @@ class UniqueNumberGenerator {
 
   // Generates a number that this generator has never produced before.
   // If there are no available numbers to generate, this method will fail
-  // with an |RTC_CHECK|.
+  // with an `RTC_CHECK`.
   TIntegral GenerateNumber();
   TIntegral operator()() { return GenerateNumber(); }
 

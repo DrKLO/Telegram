@@ -47,11 +47,11 @@ scoped_refptr<RTCCertificate> RTCCertificateGenerator::GenerateCertificate(
     uint64_t expires_s = *expires_ms / 1000;
     // Limit the expiration time to something reasonable (a year). This was
     // somewhat arbitrarily chosen. It also ensures that the value is not too
-    // large for the unspecified |time_t|.
+    // large for the unspecified `time_t`.
     expires_s = std::min(expires_s, kYearInSeconds);
-    // TODO(torbjorng): Stop using |time_t|, its type is unspecified. It it safe
+    // TODO(torbjorng): Stop using `time_t`, its type is unspecified. It it safe
     // to assume it can hold up to a year's worth of seconds (and more), but
-    // |SSLIdentity::Create| should stop relying on |time_t|.
+    // `SSLIdentity::Create` should stop relying on `time_t`.
     // See bugs.webrtc.org/5720.
     time_t cert_lifetime_s = static_cast<time_t>(expires_s);
     identity = SSLIdentity::Create(kIdentityName, key_params, cert_lifetime_s);
@@ -76,9 +76,9 @@ void RTCCertificateGenerator::GenerateCertificateAsync(
   RTC_DCHECK(signaling_thread_->IsCurrent());
   RTC_DCHECK(callback);
 
-  // Create a new |RTCCertificateGenerationTask| for this generation request. It
+  // Create a new `RTCCertificateGenerationTask` for this generation request. It
   // is reference counted and referenced by the message data, ensuring it lives
-  // until the task has completed (independent of |RTCCertificateGenerator|).
+  // until the task has completed (independent of `RTCCertificateGenerator`).
   worker_thread_->PostTask(RTC_FROM_HERE, [key_params, expires_ms,
                                            signaling_thread = signaling_thread_,
                                            cb = callback]() {

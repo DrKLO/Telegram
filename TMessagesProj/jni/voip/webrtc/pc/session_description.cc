@@ -85,6 +85,18 @@ bool ContentGroup::RemoveContentName(const std::string& content_name) {
   return true;
 }
 
+std::string ContentGroup::ToString() const {
+  rtc::StringBuilder acc;
+  acc << semantics_ << "(";
+  if (!content_names_.empty()) {
+    for (const auto& name : content_names_) {
+      acc << name << " ";
+    }
+  }
+  acc << ")";
+  return acc.Release();
+}
+
 SessionDescription::SessionDescription() = default;
 SessionDescription::SessionDescription(const SessionDescription&) = default;
 

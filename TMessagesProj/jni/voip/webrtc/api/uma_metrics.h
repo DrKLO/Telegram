@@ -202,6 +202,17 @@ enum BundlePolicyUsage {
   kBundlePolicyUsageMax
 };
 
+// Metrics for provisional answers as described in
+// https://datatracker.ietf.org/doc/html/rfc8829#section-4.1.10.1
+// These values are persisted to logs. Entries should not be renumbered and
+// numeric values should never be reused.
+enum ProvisionalAnswerUsage {
+  kProvisionalAnswerNotUsed = 0,
+  kProvisionalAnswerLocal = 1,
+  kProvisionalAnswerRemote = 2,
+  kProvisionalAnswerMax
+};
+
 // When adding new metrics please consider using the style described in
 // https://chromium.googlesource.com/chromium/src.git/+/HEAD/tools/metrics/histograms/README.md#usage
 // instead of the legacy enums used above.

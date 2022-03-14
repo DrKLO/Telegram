@@ -20,7 +20,7 @@ class FIRFilter;
 // Creates a filter with the given coefficients. All initial state values will
 // be zeros.
 // The length of the chunks fed to the filter should never be greater than
-// |max_input_length|. This is needed because, when vectorizing it is
+// `max_input_length`. This is needed because, when vectorizing it is
 // necessary to concatenate the input after the state, and resizing this array
 // dynamically is expensive.
 FIRFilter* CreateFirFilter(const float* coefficients,

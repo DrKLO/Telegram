@@ -42,13 +42,16 @@ class RtpPayloadParams final {
                                    const CodecSpecificInfo* codec_specific_info,
                                    int64_t shared_frame_id);
 
-  // Returns structure that aligns with simulated generic info for VP9.
-  // The templates allow to produce valid dependency descriptor for any vp9
-  // stream with up to 4 temporal layers. The set of the templates is not tuned
-  // for any paricular structure thus dependency descriptor would use more bytes
-  // on the wire than with tuned templates.
-  static FrameDependencyStructure MinimalisticVp9Structure(
-      const CodecSpecificInfoVP9& vp9);
+  // Returns structure that aligns with simulated generic info. The templates
+  // allow to produce valid dependency descriptor for any stream where
+  // `num_spatial_layers` * `num_temporal_layers` <= 32 (limited by
+  // https://aomediacodec.github.io/av1-rtp-spec/#a82-syntax, see
+  // template_fdiffs()). The set of the templates is not tuned for any paricular
+  // structure thus dependency descriptor would use more bytes on the wire than
+  // with tuned templates.
+  static FrameDependencyStructure MinimalisticStructure(
+      int num_spatial_layers,
+      int num_temporal_layers);
 
   uint32_t ssrc() const;
 
@@ -133,7 +136,6 @@ class RtpPayloadParams final {
   RtpPayloadState state_;
 
   const bool generic_picture_id_experiment_;
-  const bool simulate_generic_vp9_;
 };
 }  // namespace webrtc
 #endif  // CALL_RTP_PAYLOAD_PARAMS_H_

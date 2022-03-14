@@ -58,7 +58,7 @@ class MockIceTransport : public IceTransportInternal {
   int component() const override { return 0; }
   void SetIceRole(IceRole role) override {}
   void SetIceTiebreaker(uint64_t tiebreaker) override {}
-  // The ufrag and pwd in |ice_params| must be set
+  // The ufrag and pwd in `ice_params` must be set
   // before candidate gathering can start.
   void SetIceParameters(const IceParameters& ice_params) override {}
   void SetRemoteIceParameters(const IceParameters& ice_params) override {}

@@ -19,7 +19,7 @@
 #include "common_video/include/video_frame_buffer_pool.h"
 #include "modules/video_coding/codecs/vp9/include/vp9.h"
 #include "modules/video_coding/codecs/vp9/vp9_frame_buffer_pool.h"
-#include <libvpx/vp8cx.h>
+#include "libvpx/vp8cx.h"
 
 namespace webrtc {
 
@@ -30,7 +30,7 @@ class LibvpxVp9Decoder : public VP9Decoder {
 
   virtual ~LibvpxVp9Decoder();
 
-  int InitDecode(const VideoCodec* inst, int number_of_cores) override;
+  bool Configure(const Settings& settings) override;
 
   int Decode(const EncodedImage& input_image,
              bool missing_frames,
@@ -57,8 +57,7 @@ class LibvpxVp9Decoder : public VP9Decoder {
   bool inited_;
   vpx_codec_ctx_t* decoder_;
   bool key_frame_required_;
-  VideoCodec current_codec_;
-  int num_cores_;
+  Settings current_settings_;
 
   // Decoder should produce this format if possible.
   const VideoFrameBuffer::Type preferred_output_format_;

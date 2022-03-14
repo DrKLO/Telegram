@@ -48,6 +48,12 @@ class RTPSender {
             RtpPacketHistory* packet_history,
             RtpPacketSender* packet_sender);
 
+  ABSL_DEPRECATED("bugs.webrtc.org/11340")
+  RTPSender(const RtpRtcpInterface::Configuration& config,
+            RtpPacketHistory* packet_history,
+            RtpPacketSender* packet_sender,
+            PacketSequencer* packet_sequencer);
+
   RTPSender() = delete;
   RTPSender(const RTPSender&) = delete;
   RTPSender& operator=(const RTPSender&) = delete;
@@ -82,8 +88,6 @@ class RTPSender {
       RTC_LOCKS_EXCLUDED(send_mutex_);
   bool IsRtpHeaderExtensionRegistered(RTPExtensionType type) const
       RTC_LOCKS_EXCLUDED(send_mutex_);
-  int32_t DeregisterRtpHeaderExtension(RTPExtensionType type)
-      RTC_LOCKS_EXCLUDED(send_mutex_);
   void DeregisterRtpHeaderExtension(absl::string_view uri)
       RTC_LOCKS_EXCLUDED(send_mutex_);
 
@@ -92,7 +96,8 @@ class RTPSender {
 
   std::vector<std::unique_ptr<RtpPacketToSend>> GeneratePadding(
       size_t target_size_bytes,
-      bool media_has_been_sent) RTC_LOCKS_EXCLUDED(send_mutex_);
+      bool media_has_been_sent,
+      bool can_send_padding_on_media_ssrc) RTC_LOCKS_EXCLUDED(send_mutex_);
 
   // NACK.
   void OnReceivedNack(const std::vector<uint16_t>& nack_sequence_numbers,
@@ -132,16 +137,6 @@ class RTPSender {
   // extensions RtpSender updates before sending.
   std::unique_ptr<RtpPacketToSend> AllocatePacket() const
       RTC_LOCKS_EXCLUDED(send_mutex_);
-  // Allocate sequence number for provided packet.
-  // Save packet's fields to generate padding that doesn't break media stream.
-  // Return false if sending was turned off.
-  bool AssignSequenceNumber(RtpPacketToSend* packet)
-      RTC_LOCKS_EXCLUDED(send_mutex_);
-  // Same as AssignSequenceNumber(), but applies sequence numbers atomically to
-  // a batch of packets.
-  bool AssignSequenceNumbersAndStoreLastPacketState(
-      rtc::ArrayView<std::unique_ptr<RtpPacketToSend>> packets)
-      RTC_LOCKS_EXCLUDED(send_mutex_);
   // Maximum header overhead per fec/padding packet.
   size_t FecOrPaddingPacketMaxRtpHeaderLength() const
       RTC_LOCKS_EXCLUDED(send_mutex_);
@@ -156,7 +151,7 @@ class RTPSender {
     return flexfec_ssrc_;
   }
 
-  // Sends packet to |transport_| or to the pacer, depending on configuration.
+  // Sends packet to `transport_` or to the pacer, depending on configuration.
   // TODO(bugs.webrtc.org/XXX): Remove in favor of EnqueuePackets().
   bool SendToNetwork(std::unique_ptr<RtpPacketToSend> packet)
       RTC_LOCKS_EXCLUDED(send_mutex_);
@@ -192,7 +187,7 @@ class RTPSender {
   const absl::optional<uint32_t> rtx_ssrc_;
   const absl::optional<uint32_t> flexfec_ssrc_;
   // Limits GeneratePadding() outcome to <=
-  //  |max_padding_size_factor_| * |target_size_bytes|
+  //  `max_padding_size_factor_` * `target_size_bytes`
   const double max_padding_size_factor_;
 
   RtpPacketHistory* const packet_history_;
@@ -209,7 +204,6 @@ class RTPSender {
 
   // RTP variables
   uint32_t timestamp_offset_ RTC_GUARDED_BY(send_mutex_);
-  PacketSequencer sequencer_ RTC_GUARDED_BY(send_mutex_);
   // RID value to send in the RID or RepairedRID header extension.
   std::string rid_ RTC_GUARDED_BY(send_mutex_);
   // MID value to send in the MID header extension.

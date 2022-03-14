@@ -22,6 +22,19 @@ CallConfig::CallConfig(RtcEventLog* event_log,
 
 CallConfig::CallConfig(const CallConfig& config) = default;
 
+RtpTransportConfig CallConfig::ExtractTransportConfig() const {
+  RtpTransportConfig transportConfig;
+  transportConfig.bitrate_config = bitrate_config;
+  transportConfig.event_log = event_log;
+  transportConfig.network_controller_factory = network_controller_factory;
+  transportConfig.network_state_predictor_factory =
+      network_state_predictor_factory;
+  transportConfig.task_queue_factory = task_queue_factory;
+  transportConfig.trials = trials;
+
+  return transportConfig;
+}
+
 CallConfig::~CallConfig() = default;
 
 }  // namespace webrtc

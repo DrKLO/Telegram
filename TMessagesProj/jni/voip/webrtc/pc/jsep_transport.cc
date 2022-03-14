@@ -13,8 +13,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <functional>
 #include <memory>
-#include <utility>  // for std::pair
+#include <utility>
 
 #include "api/array_view.h"
 #include "api/candidate.h"
@@ -26,6 +27,7 @@
 #include "rtc_base/logging.h"
 #include "rtc_base/ref_counted_object.h"
 #include "rtc_base/strings/string_builder.h"
+#include "rtc_base/trace_event.h"
 
 using webrtc::SdpType;
 
@@ -79,7 +81,8 @@ JsepTransport::JsepTransport(
     std::unique_ptr<webrtc::DtlsSrtpTransport> dtls_srtp_transport,
     std::unique_ptr<DtlsTransportInternal> rtp_dtls_transport,
     std::unique_ptr<DtlsTransportInternal> rtcp_dtls_transport,
-    std::unique_ptr<SctpTransportInternal> sctp_transport)
+    std::unique_ptr<SctpTransportInternal> sctp_transport,
+    std::function<void()> rtcp_mux_active_callback)
     : network_thread_(rtc::Thread::Current()),
       mid_(mid),
       local_certificate_(local_certificate),
@@ -103,10 +106,12 @@ JsepTransport::JsepTransport(
       sctp_transport_(sctp_transport
                           ? rtc::make_ref_counted<webrtc::SctpTransport>(
                                 std::move(sctp_transport))
-                          : nullptr) {
+                          : nullptr),
+      rtcp_mux_active_callback_(std::move(rtcp_mux_active_callback)) {
+  TRACE_EVENT0("webrtc", "JsepTransport::JsepTransport");
   RTC_DCHECK(ice_transport_);
   RTC_DCHECK(rtp_dtls_transport_);
-  // |rtcp_ice_transport_| must be present iff |rtcp_dtls_transport_| is
+  // `rtcp_ice_transport_` must be present iff `rtcp_dtls_transport_` is
   // present.
   RTC_DCHECK_EQ((rtcp_ice_transport_ != nullptr),
                 (rtcp_dtls_transport_ != nullptr));
@@ -129,6 +134,7 @@ JsepTransport::JsepTransport(
 }
 
 JsepTransport::~JsepTransport() {
+  TRACE_EVENT0("webrtc", "JsepTransport::~JsepTransport");
   if (sctp_transport_) {
     sctp_transport_->Clear();
   }
@@ -147,7 +153,7 @@ webrtc::RTCError JsepTransport::SetLocalJsepTransportDescription(
     const JsepTransportDescription& jsep_description,
     SdpType type) {
   webrtc::RTCError error;
-
+  TRACE_EVENT0("webrtc", "JsepTransport::SetLocalJsepTransportDescription");
   RTC_DCHECK_RUN_ON(network_thread_);
 
   IceParameters ice_parameters =
@@ -233,6 +239,7 @@ webrtc::RTCError JsepTransport::SetLocalJsepTransportDescription(
 webrtc::RTCError JsepTransport::SetRemoteJsepTransportDescription(
     const JsepTransportDescription& jsep_description,
     webrtc::SdpType type) {
+  TRACE_EVENT0("webrtc", "JsepTransport::SetLocalJsepTransportDescription");
   webrtc::RTCError error;
 
   RTC_DCHECK_RUN_ON(network_thread_);
@@ -344,6 +351,7 @@ absl::optional<rtc::SSLRole> JsepTransport::GetDtlsRole() const {
 }
 
 bool JsepTransport::GetStats(TransportStats* stats) {
+  TRACE_EVENT0("webrtc", "JsepTransport::GetStats");
   RTC_DCHECK_RUN_ON(network_thread_);
   stats->transport_name = mid();
   stats->channel_stats.clear();
@@ -362,6 +370,7 @@ bool JsepTransport::GetStats(TransportStats* stats) {
 webrtc::RTCError JsepTransport::VerifyCertificateFingerprint(
     const rtc::RTCCertificate* certificate,
     const rtc::SSLFingerprint* fingerprint) const {
+  TRACE_EVENT0("webrtc", "JsepTransport::VerifyCertificateFingerprint");
   RTC_DCHECK_RUN_ON(network_thread_);
   if (!fingerprint) {
     return webrtc::RTCError(webrtc::RTCErrorType::INVALID_PARAMETER,
@@ -390,7 +399,7 @@ webrtc::RTCError JsepTransport::VerifyCertificateFingerprint(
 void JsepTransport::SetActiveResetSrtpParams(bool active_reset_srtp_params) {
   RTC_DCHECK_RUN_ON(network_thread_);
   if (dtls_srtp_transport_) {
-    RTC_LOG(INFO)
+    RTC_LOG(LS_INFO)
         << "Setting active_reset_srtp_params of DtlsSrtpTransport to: "
         << active_reset_srtp_params;
     dtls_srtp_transport_->SetActiveResetSrtpParams(active_reset_srtp_params);
@@ -400,6 +409,7 @@ void JsepTransport::SetActiveResetSrtpParams(bool active_reset_srtp_params) {
 void JsepTransport::SetRemoteIceParameters(
     const IceParameters& ice_parameters,
     IceTransportInternal* ice_transport) {
+  TRACE_EVENT0("webrtc", "JsepTransport::SetRemoteIceParameters");
   RTC_DCHECK_RUN_ON(network_thread_);
   RTC_DCHECK(ice_transport);
   RTC_DCHECK(remote_description_);
@@ -450,7 +460,7 @@ bool JsepTransport::SetRtcpMux(bool enable,
       }
       break;
     default:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
   }
 
   if (!ret) {
@@ -480,7 +490,7 @@ void JsepTransport::ActivateRtcpMux() {
   }
   rtcp_dtls_transport_ = nullptr;  // Destroy this reference.
   // Notify the JsepTransportController to update the aggregate states.
-  SignalRtcpMuxActive();
+  rtcp_mux_active_callback_();
 }
 
 bool JsepTransport::SetSdes(const std::vector<CryptoParams>& cryptos,
@@ -518,9 +528,9 @@ bool JsepTransport::SetSdes(const std::vector<CryptoParams>& cryptos,
     } else {
       RTC_LOG(LS_INFO) << "No crypto keys are provided for SDES.";
       if (type == SdpType::kAnswer) {
-        // Explicitly reset the |sdes_transport_| if no crypto param is
-        // provided in the answer. No need to call |ResetParams()| for
-        // |sdes_negotiator_| because it resets the params inside |SetAnswer|.
+        // Explicitly reset the `sdes_transport_` if no crypto param is
+        // provided in the answer. No need to call `ResetParams()` for
+        // `sdes_negotiator_` because it resets the params inside `SetAnswer`.
         sdes_transport_->ResetParams();
       }
     }
@@ -609,6 +619,9 @@ webrtc::RTCError JsepTransport::NegotiateDtlsRole(
   // ClientHello over each flow (host/port quartet).
   // IOW - actpass and passive modes should be treated as server and
   // active as client.
+  // RFC 8842 section 5.3 updates this text, so that it is mandated
+  // for the responder to handle offers with "active" and "passive"
+  // as well as "actpass"
   bool is_remote_server = false;
   if (local_description_type == SdpType::kOffer) {
     if (local_connection_role != CONNECTIONROLE_ACTPASS) {
@@ -639,15 +652,37 @@ webrtc::RTCError JsepTransport::NegotiateDtlsRole(
       // See https://datatracker.ietf.org/doc/html/draft-ietf-mmusic-dtls-sdp,
       // section 5.5.
       auto current_dtls_role = GetDtlsRole();
-      if (!current_dtls_role ||
-          (*current_dtls_role == rtc::SSL_CLIENT &&
-           remote_connection_role == CONNECTIONROLE_ACTIVE) ||
-          (*current_dtls_role == rtc::SSL_SERVER &&
-           remote_connection_role == CONNECTIONROLE_PASSIVE)) {
-        return webrtc::RTCError(
-            webrtc::RTCErrorType::INVALID_PARAMETER,
-            "Offerer must use actpass value or current negotiated role for "
-            "setup attribute.");
+      if (!current_dtls_role) {
+        // Role not assigned yet. Verify that local role fits with remote role.
+        switch (remote_connection_role) {
+          case CONNECTIONROLE_ACTIVE:
+            if (local_connection_role != CONNECTIONROLE_PASSIVE) {
+              return webrtc::RTCError(
+                  webrtc::RTCErrorType::INVALID_PARAMETER,
+                  "Answerer must be passive when offerer is active");
+            }
+            break;
+          case CONNECTIONROLE_PASSIVE:
+            if (local_connection_role != CONNECTIONROLE_ACTIVE) {
+              return webrtc::RTCError(
+                  webrtc::RTCErrorType::INVALID_PARAMETER,
+                  "Answerer must be active when offerer is passive");
+            }
+            break;
+          default:
+            RTC_DCHECK_NOTREACHED();
+            break;
+        }
+      } else {
+        if ((*current_dtls_role == rtc::SSL_CLIENT &&
+             remote_connection_role == CONNECTIONROLE_ACTIVE) ||
+            (*current_dtls_role == rtc::SSL_SERVER &&
+             remote_connection_role == CONNECTIONROLE_PASSIVE)) {
+          return webrtc::RTCError(
+              webrtc::RTCErrorType::INVALID_PARAMETER,
+              "Offerer must use current negotiated role for "
+              "setup attribute.");
+        }
       }
     }
 

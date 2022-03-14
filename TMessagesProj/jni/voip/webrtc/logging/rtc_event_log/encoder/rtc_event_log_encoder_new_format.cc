@@ -86,9 +86,9 @@ rtclog2::DelayBasedBweUpdates::DetectorState ConvertToProtoFormat(
     case BandwidthUsage::kBwOverusing:
       return rtclog2::DelayBasedBweUpdates::BWE_OVERUSING;
     case BandwidthUsage::kLast:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return rtclog2::DelayBasedBweUpdates::BWE_UNKNOWN_STATE;
 }
 
@@ -110,7 +110,7 @@ rtclog2::FrameDecodedEvents::Codec ConvertToProtoFormat(VideoCodecType codec) {
       // This codec type is afaik not used.
       return rtclog2::FrameDecodedEvents::CODEC_UNKNOWN;
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return rtclog2::FrameDecodedEvents::CODEC_UNKNOWN;
 }
 
@@ -124,16 +124,16 @@ rtclog2::BweProbeResultFailure::FailureReason ConvertToProtoFormat(
     case ProbeFailureReason::kTimeout:
       return rtclog2::BweProbeResultFailure::TIMEOUT;
     case ProbeFailureReason::kLast:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return rtclog2::BweProbeResultFailure::UNKNOWN;
 }
 
 // Returns true if there are recognized extensions that we should log
 // and false if there are no extensions or all extensions are types we don't
 // log. The protobuf representation of the header configs is written to
-// |proto_config|.
+// `proto_config`.
 bool ConvertToProtoFormat(const std::vector<RtpExtension>& extensions,
                           rtclog2::RtpHeaderExtensionConfig* proto_config) {
   size_t unknown_extensions = 0;
@@ -169,9 +169,9 @@ rtclog2::DtlsTransportStateEvent::DtlsTransportState ConvertToProtoFormat(
     case webrtc::DtlsTransportState::kFailed:
       return rtclog2::DtlsTransportStateEvent::DTLS_TRANSPORT_FAILED;
     case webrtc::DtlsTransportState::kNumValues:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return rtclog2::DtlsTransportStateEvent::UNKNOWN_DTLS_TRANSPORT_STATE;
 }
 
@@ -187,9 +187,9 @@ ConvertToProtoFormat(IceCandidatePairConfigType type) {
     case IceCandidatePairConfigType::kSelected:
       return rtclog2::IceCandidatePairConfig::SELECTED;
     case IceCandidatePairConfigType::kNumValues:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return rtclog2::IceCandidatePairConfig::UNKNOWN_CONFIG_TYPE;
 }
 
@@ -207,9 +207,9 @@ rtclog2::IceCandidatePairConfig::IceCandidateType ConvertToProtoFormat(
     case IceCandidateType::kRelay:
       return rtclog2::IceCandidatePairConfig::RELAY;
     case IceCandidateType::kNumValues:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return rtclog2::IceCandidatePairConfig::UNKNOWN_CANDIDATE_TYPE;
 }
 
@@ -227,9 +227,9 @@ rtclog2::IceCandidatePairConfig::Protocol ConvertToProtoFormat(
     case IceCandidatePairProtocol::kTls:
       return rtclog2::IceCandidatePairConfig::TLS;
     case IceCandidatePairProtocol::kNumValues:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return rtclog2::IceCandidatePairConfig::UNKNOWN_PROTOCOL;
 }
 
@@ -243,9 +243,9 @@ rtclog2::IceCandidatePairConfig::AddressFamily ConvertToProtoFormat(
     case IceCandidatePairAddressFamily::kIpv6:
       return rtclog2::IceCandidatePairConfig::IPV6;
     case IceCandidatePairAddressFamily::kNumValues:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return rtclog2::IceCandidatePairConfig::UNKNOWN_ADDRESS_FAMILY;
 }
 
@@ -265,9 +265,9 @@ rtclog2::IceCandidatePairConfig::NetworkType ConvertToProtoFormat(
     case IceCandidateNetworkType::kCellular:
       return rtclog2::IceCandidatePairConfig::CELLULAR;
     case IceCandidateNetworkType::kNumValues:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return rtclog2::IceCandidatePairConfig::UNKNOWN_NETWORK_TYPE;
 }
 
@@ -283,14 +283,14 @@ rtclog2::IceCandidatePairEvent::IceCandidatePairEventType ConvertToProtoFormat(
     case IceCandidatePairEventType::kCheckResponseReceived:
       return rtclog2::IceCandidatePairEvent::CHECK_RESPONSE_RECEIVED;
     case IceCandidatePairEventType::kNumValues:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return rtclog2::IceCandidatePairEvent::UNKNOWN_CHECK_TYPE;
 }
 
-// Copies all RTCP blocks except APP, SDES and unknown from |packet| to
-// |buffer|. |buffer| must have space for at least |packet.size()| bytes.
+// Copies all RTCP blocks except APP, SDES and unknown from `packet` to
+// `buffer`. `buffer` must have space for at least `packet.size()` bytes.
 size_t RemoveNonAllowlistedRtcpBlocks(const rtc::Buffer& packet,
                                       uint8_t* buffer) {
   RTC_DCHECK(buffer != nullptr);
@@ -958,7 +958,7 @@ void RtcEventLogEncoderNewFormat::EncodeAudioNetworkAdaptation(
     proto_batch->set_enable_fec(base_event->config().enable_fec.value());
   if (base_event->config().enable_dtx.has_value())
     proto_batch->set_enable_dtx(base_event->config().enable_dtx.value());
-  // Note that |num_channels_deltas| encodes N as N-1, to keep deltas smaller,
+  // Note that `num_channels_deltas` encodes N as N-1, to keep deltas smaller,
   // but there's no reason to do the same for the base event's value, since
   // no bits will be spared.
   if (base_event->config().num_channels.has_value())

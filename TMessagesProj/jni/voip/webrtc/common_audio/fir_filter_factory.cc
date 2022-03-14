@@ -28,7 +28,7 @@ FIRFilter* CreateFirFilter(const float* coefficients,
                            size_t coefficients_length,
                            size_t max_input_length) {
   if (!coefficients || coefficients_length <= 0 || max_input_length <= 0) {
-    RTC_NOTREACHED();
+    RTC_DCHECK_NOTREACHED();
     return nullptr;
   }
 

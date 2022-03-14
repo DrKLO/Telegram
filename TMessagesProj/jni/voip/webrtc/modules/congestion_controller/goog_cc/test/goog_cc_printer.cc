@@ -87,7 +87,7 @@ std::deque<FieldLogger*> GoogCcStatePrinter::CreateLoggers() {
   };
   auto loss_cont = [&] {
     return &controller_->bandwidth_estimation_
-                ->loss_based_bandwidth_estimation_;
+                ->loss_based_bandwidth_estimator_v1_;
   };
   std::deque<FieldLogger*> loggers({
       Log("time", [=] { return target_.at_time; }),

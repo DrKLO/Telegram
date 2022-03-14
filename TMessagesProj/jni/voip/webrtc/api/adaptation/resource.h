@@ -57,7 +57,7 @@ class RTC_EXPORT Resource : public rtc::RefCountInterface {
   ~Resource() override;
 
   virtual std::string Name() const = 0;
-  // The |listener| may be informed of resource usage measurements on any task
+  // The `listener` may be informed of resource usage measurements on any task
   // queue, but not after this method is invoked with the null argument.
   virtual void SetResourceListener(ResourceListener* listener) = 0;
 };

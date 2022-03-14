@@ -23,7 +23,7 @@ class StatsObserverInterface {
   virtual ~StatsObserverInterface() = default;
 
   // Method called when stats reports are available for the PeerConnection
-  // identified by |pc_label|.
+  // identified by `pc_label`.
   virtual void OnStatsReports(
       absl::string_view pc_label,
       const rtc::scoped_refptr<const RTCStatsReport>& report) = 0;

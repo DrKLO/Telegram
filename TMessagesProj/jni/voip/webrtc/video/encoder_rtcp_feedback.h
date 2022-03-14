@@ -10,12 +10,16 @@
 #ifndef VIDEO_ENCODER_RTCP_FEEDBACK_H_
 #define VIDEO_ENCODER_RTCP_FEEDBACK_H_
 
+#include <functional>
 #include <vector>
 
+#include "api/sequence_checker.h"
+#include "api/units/time_delta.h"
+#include "api/units/timestamp.h"
 #include "api/video/video_stream_encoder_interface.h"
 #include "call/rtp_video_sender_interface.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
-#include "rtc_base/synchronization/mutex.h"
+#include "rtc_base/system/no_unique_address.h"
 #include "system_wrappers/include/clock.h"
 
 namespace webrtc {
@@ -27,12 +31,14 @@ class VideoStreamEncoderInterface;
 class EncoderRtcpFeedback : public RtcpIntraFrameObserver,
                             public RtcpLossNotificationObserver {
  public:
-  EncoderRtcpFeedback(Clock* clock,
-                      const std::vector<uint32_t>& ssrcs,
-                      VideoStreamEncoderInterface* encoder);
+  EncoderRtcpFeedback(
+      Clock* clock,
+      const std::vector<uint32_t>& ssrcs,
+      VideoStreamEncoderInterface* encoder,
+      std::function<std::vector<RtpSequenceNumberMap::Info>(
+          uint32_t ssrc,
+          const std::vector<uint16_t>& seq_nums)> get_packet_infos);
   ~EncoderRtcpFeedback() override = default;
-
-  void SetRtpVideoSender(const RtpVideoSenderInterface* rtp_video_sender);
 
   void OnReceivedIntraFrameRequest(uint32_t ssrc) override;
 
@@ -43,17 +49,19 @@ class EncoderRtcpFeedback : public RtcpIntraFrameObserver,
                                   bool decodability_flag) override;
 
  private:
-  bool HasSsrc(uint32_t ssrc);
-
   Clock* const clock_;
   const std::vector<uint32_t> ssrcs_;
-  const RtpVideoSenderInterface* rtp_video_sender_;
+  const std::function<std::vector<RtpSequenceNumberMap::Info>(
+      uint32_t ssrc,
+      const std::vector<uint16_t>& seq_nums)>
+      get_packet_infos_;
   VideoStreamEncoderInterface* const video_stream_encoder_;
 
-  Mutex mutex_;
-  int64_t time_last_intra_request_ms_ RTC_GUARDED_BY(mutex_);
+  RTC_NO_UNIQUE_ADDRESS SequenceChecker packet_delivery_queue_;
+  Timestamp time_last_packet_delivery_queue_
+      RTC_GUARDED_BY(packet_delivery_queue_);
 
-  const int min_keyframe_send_interval_ms_;
+  const TimeDelta min_keyframe_send_interval_;
 };
 
 }  // namespace webrtc

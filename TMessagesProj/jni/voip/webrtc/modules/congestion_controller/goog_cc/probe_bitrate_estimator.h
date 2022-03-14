@@ -45,7 +45,7 @@ class ProbeBitrateEstimator {
     DataSize size_total = DataSize::Zero();
   };
 
-  // Erases old cluster data that was seen before |timestamp|.
+  // Erases old cluster data that was seen before `timestamp`.
   void EraseOldClusters(Timestamp timestamp);
 
   std::map<int, AggregatedCluster> clusters_;

@@ -229,13 +229,13 @@ class BufferT {
     SetData(w.data(), w.size());
   }
 
-  // Replaces the data in the buffer with at most |max_elements| of data, using
-  // the function |setter|, which should have the following signature:
+  // Replaces the data in the buffer with at most `max_elements` of data, using
+  // the function `setter`, which should have the following signature:
   //
   //   size_t setter(ArrayView<U> view)
   //
-  // |setter| is given an appropriately typed ArrayView of length exactly
-  // |max_elements| that describes the area where it should write the data; it
+  // `setter` is given an appropriately typed ArrayView of length exactly
+  // `max_elements` that describes the area where it should write the data; it
   // should return the number of elements actually written. (If it doesn't fill
   // the whole ArrayView, it should leave the unused space at the end.)
   template <typename U = T,
@@ -290,13 +290,13 @@ class BufferT {
     AppendData(&item, 1);
   }
 
-  // Appends at most |max_elements| to the end of the buffer, using the function
-  // |setter|, which should have the following signature:
+  // Appends at most `max_elements` to the end of the buffer, using the function
+  // `setter`, which should have the following signature:
   //
   //   size_t setter(ArrayView<U> view)
   //
-  // |setter| is given an appropriately typed ArrayView of length exactly
-  // |max_elements| that describes the area where it should write the data; it
+  // `setter` is given an appropriately typed ArrayView of length exactly
+  // `max_elements` that describes the area where it should write the data; it
   // should return the number of elements actually written. (If it doesn't fill
   // the whole ArrayView, it should leave the unused space at the end.)
   template <typename U = T,

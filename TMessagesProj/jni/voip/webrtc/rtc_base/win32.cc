@@ -154,7 +154,7 @@ const char* inet_ntop_v6(const void* src, char* dst, socklen_t size) {
 }
 
 // Helper function for inet_pton for IPv4 addresses.
-// |src| points to a character string containing an IPv4 network address in
+// `src` points to a character string containing an IPv4 network address in
 // dotted-decimal format, "ddd.ddd.ddd.ddd", where ddd is a decimal number
 // of up to three digits in the range 0 to 255.
 // The address is converted and copied to dst,
@@ -310,29 +310,5 @@ int inet_pton_v6(const char* src, void* dst) {
   memcpy(dst, &an_addr, sizeof(an_addr));
   return 1;
 }
-
-// Windows UWP applications cannot obtain versioning information from
-// the sandbox with intention (as behehaviour based on OS versioning rather
-// than feature discovery / compilation flags is discoraged and Windows
-// 10 is living continously updated version unlike previous versions
-// of Windows).
-#if !defined(WINUWP)
-
-bool GetOsVersion(int* major, int* minor, int* build) {
-  OSVERSIONINFO info = {0};
-  info.dwOSVersionInfoSize = sizeof(info);
-  if (GetVersionEx(&info)) {
-    if (major)
-      *major = info.dwMajorVersion;
-    if (minor)
-      *minor = info.dwMinorVersion;
-    if (build)
-      *build = info.dwBuildNumber;
-    return true;
-  }
-  return false;
-}
-
-#endif  // !defined(WINUWP)
 
 }  // namespace rtc

@@ -46,7 +46,6 @@
 #include "user_atomic.h"
 #include "netinet/sctp_pcb.h"
 
-struct mbstat mbstat;
 #define KIPC_MAX_LINKHDR        4       /* int: max length of link header (see sys/sysclt.h) */
 #define KIPC_MAX_PROTOHDR	5	/* int: max length of network header (see sys/sysclt.h)*/
 int max_linkhdr = KIPC_MAX_LINKHDR;
@@ -81,8 +80,6 @@ static void	mb_dtor_clust(void *, void *);
 static int mbuf_constructor_dup(struct mbuf *m, int pkthdr, short type)
 {
 	int flags = pkthdr;
-	if (type == MT_NOINIT)
-		return (0);
 
 	m->m_next = NULL;
 	m->m_nextpkt = NULL;
@@ -272,9 +269,9 @@ m_clget(struct mbuf *m, int how)
 		mclust_ret = SCTP_ZONE_GET(zone_clust, char);
 #endif
 		/*mclust_ret = umem_cache_alloc(zone_clust, UMEM_DEFAULT);*/
-		if (NULL == mclust_ret) {
-			SCTPDBG(SCTP_DEBUG_USR, "Memory allocation failure in %s\n", __func__);
-		}
+		/* if (NULL == mclust_ret) { */
+		SCTPDBG(SCTP_DEBUG_USR, "Memory allocation failure in %s\n", __func__);
+		/* } */
 	}
 
 #if USING_MBUF_CONSTRUCTOR
@@ -290,7 +287,7 @@ struct mbuf *
 m_getm2(struct mbuf *m, int len, int how, short type, int flags, int allonebuf)
 {
 	struct mbuf *mb, *nm = NULL, *mtail = NULL;
-	int size = 0, mbuf_threshold, space_needed = len;
+	int size, mbuf_threshold, space_needed = len;
 
 	KASSERT(len >= 0, ("%s: len is < 0", __func__));
 
@@ -473,7 +470,7 @@ m_tag_free(struct m_tag *t)
  * XXX probably should be called m_tag_init, but that was already taken.
  */
 static __inline void
-m_tag_setup(struct m_tag *t, u_int32_t cookie, int type, int len)
+m_tag_setup(struct m_tag *t, uint32_t cookie, int type, int len)
 {
 
 	t->m_tag_id = type;
@@ -507,7 +504,7 @@ mbuf_initialize(void *dummy)
 #else
 	zone_mbuf = umem_cache_create(MBUF_MEM_NAME, MSIZE, 0,
 	                              mb_ctor_mbuf, mb_dtor_mbuf, NULL,
-	                              NUULL,
+	                              NULL,
 	                              NULL, 0);
 #endif
 	/*zone_ext_refcnt = umem_cache_create(MBUF_EXTREFCNT_MEM_NAME, sizeof(u_int), 0,
@@ -535,26 +532,6 @@ mbuf_initialize(void *dummy)
 	/* __Userspace__ Add umem_reap here for low memory situation?
 	 *
 	 */
-
-
-	/*
-	 * [Re]set counters and local statistics knobs.
-	 *
-	 */
-
-	mbstat.m_mbufs = 0;
-	mbstat.m_mclusts = 0;
-	mbstat.m_drain = 0;
-	mbstat.m_msize = MSIZE;
-	mbstat.m_mclbytes = MCLBYTES;
-	mbstat.m_minclsize = MINCLSIZE;
-	mbstat.m_mlen = MLEN;
-	mbstat.m_mhlen = MHLEN;
-	mbstat.m_numtypes = MT_NTYPES;
-
-	mbstat.m_mcfail = mbstat.m_mpfail = 0;
-	mbstat.sf_iocnt = 0;
-	mbstat.sf_allocwait = mbstat.sf_allocfail = 0;
 
 }
 
@@ -597,13 +574,6 @@ mb_ctor_mbuf(void *mem, void *arg, int flgs)
 	args = (struct mb_args *)arg;
 	flags = args->flags;
 	type = args->type;
-
-	/*
-	 * The mbuf is initialized later.
-	 *
-	 */
-	if (type == MT_NOINIT)
-		return (0);
 
 	m->m_next = NULL;
 	m->m_nextpkt = NULL;
@@ -909,7 +879,6 @@ m_pullup(struct mbuf *n, int len)
 	return (m);
 bad:
 	m_freem(n);
-	mbstat.m_mpfail++;	/* XXX: No consistency. */
 	return (NULL);
 }
 
@@ -1045,16 +1014,14 @@ m_pulldown(struct mbuf *m, int off, int len, int *offp)
 	 * easy cases first.
 	 * we need to use m_copydata() to get data from <n->m_next, 0>.
 	 */
-	if ((off == 0 || offp) && M_TRAILINGSPACE(n) >= tlen
-	    && writable) {
+	if ((off == 0 || offp) && (M_TRAILINGSPACE(n) >= tlen) && writable) {
 		m_copydata(n->m_next, 0, tlen, mtod(n, caddr_t) + n->m_len);
 		n->m_len += tlen;
 		m_adj(n->m_next, tlen);
 		goto ok;
 	}
 
-	if ((off == 0 || offp) && M_LEADINGSPACE(n->m_next) >= hlen
-	    && writable) {
+	if ((off == 0 || offp) && (M_LEADINGSPACE(n->m_next) >= hlen) && writable) {
 		n->m_next->m_data -= hlen;
 		n->m_next->m_len += hlen;
 		memcpy( mtod(n->m_next, caddr_t), mtod(n, caddr_t) + off,hlen);
@@ -1198,13 +1165,10 @@ m_copym(struct mbuf *m, int off0, int len, int wait)
 		m = m->m_next;
 		np = &n->m_next;
 	}
-	if (top == NULL)
-		mbstat.m_mcfail++;	/* XXX: No consistency. */
 
 	return (top);
 nospace:
 	m_freem(top);
-	mbstat.m_mcfail++;	/* XXX: No consistency. */
 	return (NULL);
 }
 
@@ -1266,7 +1230,7 @@ m_tag_copy(struct m_tag *t, int how)
 
 /* Get a packet tag structure along with specified data following. */
 struct m_tag *
-m_tag_alloc(u_int32_t cookie, int type, int len, int wait)
+m_tag_alloc(uint32_t cookie, int type, int len, int wait)
 {
 	struct m_tag *t;
 

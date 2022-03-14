@@ -14,30 +14,23 @@
 
 #include <string>
 
+#include "absl/memory/memory.h"
+#include "api/async_dns_resolver.h"
+#include "api/wrapping_async_dns_resolver.h"
 #include "p2p/base/async_stun_tcp_socket.h"
-#include "rtc_base/async_resolver.h"
 #include "rtc_base/async_tcp_socket.h"
 #include "rtc_base/async_udp_socket.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
-#include "rtc_base/net_helpers.h"
 #include "rtc_base/socket.h"
 #include "rtc_base/socket_adapters.h"
-#include "rtc_base/socket_server.h"
 #include "rtc_base/ssl_adapter.h"
-#include "rtc_base/thread.h"
 
 namespace rtc {
 
-BasicPacketSocketFactory::BasicPacketSocketFactory()
-    : thread_(Thread::Current()), socket_factory_(NULL) {}
-
-BasicPacketSocketFactory::BasicPacketSocketFactory(Thread* thread)
-    : thread_(thread), socket_factory_(NULL) {}
-
 BasicPacketSocketFactory::BasicPacketSocketFactory(
     SocketFactory* socket_factory)
-    : thread_(NULL), socket_factory_(socket_factory) {}
+    : socket_factory_(socket_factory) {}
 
 BasicPacketSocketFactory::~BasicPacketSocketFactory() {}
 
@@ -46,8 +39,7 @@ AsyncPacketSocket* BasicPacketSocketFactory::CreateUdpSocket(
     uint16_t min_port,
     uint16_t max_port) {
   // UDP sockets are simple.
-  AsyncSocket* socket =
-      socket_factory()->CreateAsyncSocket(address.family(), SOCK_DGRAM);
+  Socket* socket = socket_factory_->CreateSocket(address.family(), SOCK_DGRAM);
   if (!socket) {
     return NULL;
   }
@@ -59,7 +51,7 @@ AsyncPacketSocket* BasicPacketSocketFactory::CreateUdpSocket(
   return new AsyncUDPSocket(socket);
 }
 
-AsyncPacketSocket* BasicPacketSocketFactory::CreateServerTcpSocket(
+AsyncListenSocket* BasicPacketSocketFactory::CreateServerTcpSocket(
     const SocketAddress& local_address,
     uint16_t min_port,
     uint16_t max_port,
@@ -70,8 +62,12 @@ AsyncPacketSocket* BasicPacketSocketFactory::CreateServerTcpSocket(
     return NULL;
   }
 
-  AsyncSocket* socket =
-      socket_factory()->CreateAsyncSocket(local_address.family(), SOCK_STREAM);
+  if (opts & PacketSocketFactory::OPT_TLS_FAKE) {
+    RTC_LOG(LS_ERROR) << "Fake TLS not supported.";
+    return NULL;
+  }
+  Socket* socket =
+      socket_factory_->CreateSocket(local_address.family(), SOCK_STREAM);
   if (!socket) {
     return NULL;
   }
@@ -82,24 +78,9 @@ AsyncPacketSocket* BasicPacketSocketFactory::CreateServerTcpSocket(
     return NULL;
   }
 
-  // Set TCP_NODELAY (via OPT_NODELAY) for improved performance; this causes
-  // small media packets to be sent immediately rather than being buffered up,
-  // reducing latency.
-  if (socket->SetOption(Socket::OPT_NODELAY, 1) != 0) {
-    RTC_LOG(LS_ERROR) << "Setting TCP_NODELAY option failed with error "
-                      << socket->GetError();
-  }
+  RTC_CHECK(!(opts & PacketSocketFactory::OPT_STUN));
 
-  // If using fake TLS, wrap the TCP socket in a pseudo-SSL socket.
-  if (opts & PacketSocketFactory::OPT_TLS_FAKE) {
-    RTC_DCHECK(!(opts & PacketSocketFactory::OPT_TLS));
-    socket = new AsyncSSLSocket(socket);
-  }
-
-  if (opts & PacketSocketFactory::OPT_STUN)
-    return new cricket::AsyncStunTCPSocket(socket, true);
-
-  return new AsyncTCPSocket(socket, true);
+  return new AsyncTcpListenSocket(absl::WrapUnique(socket));
 }
 
 AsyncPacketSocket* BasicPacketSocketFactory::CreateClientTcpSocket(
@@ -108,8 +89,8 @@ AsyncPacketSocket* BasicPacketSocketFactory::CreateClientTcpSocket(
     const ProxyInfo& proxy_info,
     const std::string& user_agent,
     const PacketSocketTcpOptions& tcp_options) {
-  AsyncSocket* socket =
-      socket_factory()->CreateAsyncSocket(local_address.family(), SOCK_STREAM);
+  Socket* socket =
+      socket_factory_->CreateSocket(local_address.family(), SOCK_STREAM);
   if (!socket) {
     return NULL;
   }
@@ -191,9 +172,9 @@ AsyncPacketSocket* BasicPacketSocketFactory::CreateClientTcpSocket(
   // Finally, wrap that socket in a TCP or STUN TCP packet socket.
   AsyncPacketSocket* tcp_socket;
   if (tcp_options.opts & PacketSocketFactory::OPT_STUN) {
-    tcp_socket = new cricket::AsyncStunTCPSocket(socket, false);
+    tcp_socket = new cricket::AsyncStunTCPSocket(socket);
   } else {
-    tcp_socket = new AsyncTCPSocket(socket, false);
+    tcp_socket = new AsyncTCPSocket(socket);
   }
 
   return tcp_socket;
@@ -203,7 +184,13 @@ AsyncResolverInterface* BasicPacketSocketFactory::CreateAsyncResolver() {
   return new AsyncResolver();
 }
 
-int BasicPacketSocketFactory::BindSocket(AsyncSocket* socket,
+std::unique_ptr<webrtc::AsyncDnsResolverInterface>
+BasicPacketSocketFactory::CreateAsyncDnsResolver() {
+  return std::make_unique<webrtc::WrappingAsyncDnsResolver>(
+      new AsyncResolver());
+}
+
+int BasicPacketSocketFactory::BindSocket(Socket* socket,
                                          const SocketAddress& local_address,
                                          uint16_t min_port,
                                          uint16_t max_port) {
@@ -218,15 +205,6 @@ int BasicPacketSocketFactory::BindSocket(AsyncSocket* socket,
     }
   }
   return ret;
-}
-
-SocketFactory* BasicPacketSocketFactory::socket_factory() {
-  if (thread_) {
-    RTC_DCHECK(thread_ == Thread::Current());
-    return thread_->socketserver();
-  } else {
-    return socket_factory_;
-  }
 }
 
 }  // namespace rtc

@@ -28,7 +28,7 @@ namespace webrtc {
 //     format without knowing about the SDP attribute details (a=simulcast:)
 // Usage:
 //     Consider the SDP attribute for simulcast a=simulcast:<configuration>.
-//     The SDP serializtion code (webrtcsdp.h) should use |SdpSerializer| to
+//     The SDP serializtion code (webrtcsdp.h) should use `SdpSerializer` to
 //     serialize and deserialize the <configuration> section.
 // This class will allow testing the serialization of components without
 // having to serialize the entire SDP while hiding implementation details

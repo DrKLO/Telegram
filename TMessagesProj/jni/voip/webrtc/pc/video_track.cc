@@ -11,6 +11,7 @@
 #include "pc/video_track.h"
 
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "api/notifier.h"
@@ -28,10 +29,16 @@ VideoTrack::VideoTrack(const std::string& label,
       worker_thread_(worker_thread),
       video_source_(video_source),
       content_hint_(ContentHint::kNone) {
+  RTC_DCHECK_RUN_ON(&signaling_thread_);
+  // Detach the thread checker for VideoSourceBaseGuarded since we'll make calls
+  // to VideoSourceBaseGuarded on the worker thread, but we're currently on the
+  // signaling thread.
+  source_sequence_.Detach();
   video_source_->RegisterObserver(this);
 }
 
 VideoTrack::~VideoTrack() {
+  RTC_DCHECK_RUN_ON(&signaling_thread_);
   video_source_->UnregisterObserver(this);
 }
 
@@ -43,26 +50,31 @@ std::string VideoTrack::kind() const {
 // thread.
 void VideoTrack::AddOrUpdateSink(rtc::VideoSinkInterface<VideoFrame>* sink,
                                  const rtc::VideoSinkWants& wants) {
-  RTC_DCHECK(worker_thread_->IsCurrent());
-  VideoSourceBase::AddOrUpdateSink(sink, wants);
+  RTC_DCHECK_RUN_ON(worker_thread_);
+  VideoSourceBaseGuarded::AddOrUpdateSink(sink, wants);
   rtc::VideoSinkWants modified_wants = wants;
   modified_wants.black_frames = !enabled();
   video_source_->AddOrUpdateSink(sink, modified_wants);
 }
 
 void VideoTrack::RemoveSink(rtc::VideoSinkInterface<VideoFrame>* sink) {
-  RTC_DCHECK(worker_thread_->IsCurrent());
-  VideoSourceBase::RemoveSink(sink);
+  RTC_DCHECK_RUN_ON(worker_thread_);
+  VideoSourceBaseGuarded::RemoveSink(sink);
   video_source_->RemoveSink(sink);
 }
 
+VideoTrackSourceInterface* VideoTrack::GetSource() const {
+  // Callable from any thread.
+  return video_source_.get();
+}
+
 VideoTrackInterface::ContentHint VideoTrack::content_hint() const {
-  RTC_DCHECK_RUN_ON(&signaling_thread_checker_);
+  RTC_DCHECK_RUN_ON(worker_thread_);
   return content_hint_;
 }
 
 void VideoTrack::set_content_hint(ContentHint hint) {
-  RTC_DCHECK_RUN_ON(&signaling_thread_checker_);
+  RTC_DCHECK_RUN_ON(worker_thread_);
   if (content_hint_ == hint)
     return;
   content_hint_ = hint;
@@ -70,25 +82,36 @@ void VideoTrack::set_content_hint(ContentHint hint) {
 }
 
 bool VideoTrack::set_enabled(bool enable) {
-  RTC_DCHECK(signaling_thread_checker_.IsCurrent());
-  worker_thread_->Invoke<void>(RTC_FROM_HERE, [enable, this] {
-    RTC_DCHECK(worker_thread_->IsCurrent());
-    for (auto& sink_pair : sink_pairs()) {
-      rtc::VideoSinkWants modified_wants = sink_pair.wants;
-      modified_wants.black_frames = !enable;
-      video_source_->AddOrUpdateSink(sink_pair.sink, modified_wants);
-    }
-  });
+  RTC_DCHECK_RUN_ON(worker_thread_);
+  for (auto& sink_pair : sink_pairs()) {
+    rtc::VideoSinkWants modified_wants = sink_pair.wants;
+    modified_wants.black_frames = !enable;
+    video_source_->AddOrUpdateSink(sink_pair.sink, modified_wants);
+  }
   return MediaStreamTrack<VideoTrackInterface>::set_enabled(enable);
 }
 
+bool VideoTrack::enabled() const {
+  RTC_DCHECK_RUN_ON(worker_thread_);
+  return MediaStreamTrack<VideoTrackInterface>::enabled();
+}
+
+MediaStreamTrackInterface::TrackState VideoTrack::state() const {
+  RTC_DCHECK_RUN_ON(worker_thread_);
+  return MediaStreamTrack<VideoTrackInterface>::state();
+}
+
 void VideoTrack::OnChanged() {
-  RTC_DCHECK(signaling_thread_checker_.IsCurrent());
-  if (video_source_->state() == MediaSourceInterface::kEnded) {
-    set_state(kEnded);
-  } else {
-    set_state(kLive);
-  }
+  RTC_DCHECK_RUN_ON(&signaling_thread_);
+  worker_thread_->Invoke<void>(
+      RTC_FROM_HERE, [this, state = video_source_->state()]() {
+        // TODO(tommi): Calling set_state() this way isn't ideal since we're
+        // currently blocking the signaling thread and set_state() may
+        // internally fire notifications via `FireOnChanged()` which may further
+        // amplify the blocking effect on the signaling thread.
+        rtc::Thread::ScopedDisallowBlockingCalls no_blocking_calls;
+        set_state(state == MediaSourceInterface::kEnded ? kEnded : kLive);
+      });
 }
 
 rtc::scoped_refptr<VideoTrack> VideoTrack::Create(

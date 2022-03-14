@@ -38,7 +38,7 @@ class RTC_EXPORT AdaptedVideoTrackSource
   ~AdaptedVideoTrackSource() override;
 
  protected:
-  // Allows derived classes to initialize |video_adapter_| with a custom
+  // Allows derived classes to initialize `video_adapter_` with a custom
   // alignment.
   explicit AdaptedVideoTrackSource(int required_alignment);
   // Checks the apply_rotation() flag. If the frame needs rotation, and it is a
@@ -86,6 +86,8 @@ class RTC_EXPORT AdaptedVideoTrackSource
       rtc::VideoSinkInterface<webrtc::RecordableEncodedFrame>* sink) override {}
   void RemoveEncodedSink(
       rtc::VideoSinkInterface<webrtc::RecordableEncodedFrame>* sink) override {}
+  void ProcessConstraints(
+      const webrtc::VideoTrackSourceConstraints& constraints) override;
 
   cricket::VideoAdapter video_adapter_;
 

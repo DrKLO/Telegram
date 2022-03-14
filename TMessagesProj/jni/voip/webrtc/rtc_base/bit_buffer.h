@@ -14,21 +14,18 @@
 #include <stddef.h>  // For size_t.
 #include <stdint.h>  // For integer types.
 
-#include "absl/base/attributes.h"
 #include "rtc_base/constructor_magic.h"
 
 namespace rtc {
 
-// A class, similar to ByteBuffer, that can parse bit-sized data out of a set of
-// bytes. Has a similar API to ByteBuffer, plus methods for reading bit-sized
-// and exponential golomb encoded data. For a writable version, use
-// BitBufferWriter. Unlike ByteBuffer, this class doesn't make a copy of the
-// source bytes, so it can be used on read-only data.
+// A BitBuffer API for write operations. Supports symmetric write APIs to the
+// reading APIs of BitstreamReader.
 // Sizes/counts specify bits/bytes, for clarity.
 // Byte order is assumed big-endian/network.
-class BitBuffer {
+class BitBufferWriter {
  public:
-  BitBuffer(const uint8_t* bytes, size_t byte_count);
+  // Constructs a bit buffer for the writable buffer of `bytes`.
+  BitBufferWriter(uint8_t* bytes, size_t byte_count);
 
   // Gets the current offset, in bytes/bits, from the start of the buffer. The
   // bit offset is the offset into the current byte, in the range [0,7].
@@ -105,36 +102,16 @@ class BitBuffer {
     return val ? ReadSignedExponentialGolomb(*val) : false;
   }
 
-  // Moves current position |byte_count| bytes forward. Returns false if
+  // Moves current position `byte_count` bytes forward. Returns false if
   // there aren't enough bytes left in the buffer.
   bool ConsumeBytes(size_t byte_count);
-  // Moves current position |bit_count| bits forward. Returns false if
+  // Moves current position `bit_count` bits forward. Returns false if
   // there aren't enough bits left in the buffer.
   bool ConsumeBits(size_t bit_count);
 
   // Sets the current offset to the provied byte/bit offsets. The bit
   // offset is from the given byte, in the range [0,7].
   bool Seek(size_t byte_offset, size_t bit_offset);
-
- protected:
-  const uint8_t* const bytes_;
-  // The total size of |bytes_|.
-  size_t byte_count_;
-  // The current offset, in bytes, from the start of |bytes_|.
-  size_t byte_offset_;
-  // The current offset, in bits, into the current byte.
-  size_t bit_offset_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(BitBuffer);
-};
-
-// A BitBuffer API for write operations. Supports symmetric write APIs to the
-// reading APIs of BitBuffer. Note that the read/write offset is shared with the
-// BitBuffer API, so both reading and writing will consume bytes/bits.
-class BitBufferWriter : public BitBuffer {
- public:
-  // Constructs a bit buffer for the writable buffer of |bytes|.
-  BitBufferWriter(uint8_t* bytes, size_t byte_count);
 
   // Writes byte-sized values from the buffer. Returns false if there isn't
   // enough data left for the specified type.
@@ -151,7 +128,7 @@ class BitBufferWriter : public BitBuffer {
   // Call SizeNonSymmetricBits to get number of bits needed to store the value.
   // Returns false if there isn't enough room left for the value.
   bool WriteNonSymmetric(uint32_t val, uint32_t num_values);
-  // Returns number of bits required to store |val| with NonSymmetric encoding.
+  // Returns number of bits required to store `val` with NonSymmetric encoding.
   static size_t SizeNonSymmetricBits(uint32_t val, uint32_t num_values);
 
   // Writes the exponential golomb encoded version of the supplied value.
@@ -165,6 +142,12 @@ class BitBufferWriter : public BitBuffer {
  private:
   // The buffer, as a writable array.
   uint8_t* const writable_bytes_;
+  // The total size of `bytes_`.
+  const size_t byte_count_;
+  // The current offset, in bytes, from the start of `bytes_`.
+  size_t byte_offset_;
+  // The current offset, in bits, into the current byte.
+  size_t bit_offset_;
 
   RTC_DISALLOW_COPY_AND_ASSIGN(BitBufferWriter);
 };

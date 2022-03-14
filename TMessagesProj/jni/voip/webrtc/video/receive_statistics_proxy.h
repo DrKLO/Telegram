@@ -42,8 +42,7 @@ class ReceiveStatisticsProxy : public VCMReceiveStatisticsCallback,
                                public RtcpPacketTypeCounterObserver,
                                public CallStatsObserver {
  public:
-  ReceiveStatisticsProxy(const VideoReceiveStream::Config* config,
-                         Clock* clock);
+  ReceiveStatisticsProxy(uint32_t remote_ssrc, Clock* clock);
   ~ReceiveStatisticsProxy() = default;
 
   VideoReceiveStream::Stats GetStats() const;
@@ -139,14 +138,6 @@ class ReceiveStatisticsProxy : public VCMReceiveStatisticsCallback,
       int64_t now_ms) const RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   Clock* const clock_;
-  // Ownership of this object lies with the owner of the ReceiveStatisticsProxy
-  // instance.  Lifetime is guaranteed to outlive |this|.
-  // TODO(tommi): In practice the config_ reference is only used for accessing
-  // config_.rtp.ulpfec.ulpfec_payload_type.  Instead of holding a pointer back,
-  // we could just store the value of ulpfec_payload_type and change the
-  // ReceiveStatisticsProxy() ctor to accept a const& of Config (since we'll
-  // then no longer store a pointer to the object).
-  const VideoReceiveStream::Config& config_;
   const int64_t start_ms_;
   const bool enable_decode_time_histograms_;
 
@@ -158,7 +149,7 @@ class ReceiveStatisticsProxy : public VCMReceiveStatisticsCallback,
   rtc::SampleCounter qp_sample_ RTC_GUARDED_BY(mutex_);
   int num_bad_states_ RTC_GUARDED_BY(mutex_);
   int num_certain_states_ RTC_GUARDED_BY(mutex_);
-  // Note: The |stats_.rtp_stats| member is not used or populated by this class.
+  // Note: The `stats_.rtp_stats` member is not used or populated by this class.
   mutable VideoReceiveStream::Stats stats_ RTC_GUARDED_BY(mutex_);
   RateStatistics decode_fps_estimator_ RTC_GUARDED_BY(mutex_);
   RateStatistics renders_fps_estimator_ RTC_GUARDED_BY(mutex_);

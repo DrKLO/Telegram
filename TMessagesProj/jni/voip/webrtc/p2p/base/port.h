@@ -99,14 +99,24 @@ class StunStats {
 // Stats that we can return about a candidate.
 class CandidateStats {
  public:
-  CandidateStats();
-  explicit CandidateStats(Candidate candidate);
-  CandidateStats(const CandidateStats&);
-  ~CandidateStats();
+  CandidateStats() = default;
+  CandidateStats(const CandidateStats&) = default;
+  CandidateStats(CandidateStats&&) = default;
+  CandidateStats(Candidate candidate,
+                 absl::optional<StunStats> stats = absl::nullopt)
+      : candidate_(std::move(candidate)), stun_stats_(std::move(stats)) {}
+  ~CandidateStats() = default;
 
-  Candidate candidate;
+  CandidateStats& operator=(const CandidateStats& other) = default;
+
+  const Candidate& candidate() const { return candidate_; }
+
+  const absl::optional<StunStats>& stun_stats() const { return stun_stats_; }
+
+ private:
+  Candidate candidate_;
   // STUN port stats if this candidate is a STUN candidate.
-  absl::optional<StunStats> stun_stats;
+  absl::optional<StunStats> stun_stats_;
 };
 
 typedef std::vector<CandidateStats> CandidateStatsList;
@@ -282,7 +292,7 @@ class Port : public PortInterface,
   sigslot::signal2<Port*, Connection*> SignalConnectionCreated;
 
   // In a shared socket mode each port which shares the socket will decide
-  // to accept the packet based on the |remote_addr|. Currently only UDP
+  // to accept the packet based on the `remote_addr`. Currently only UDP
   // port implemented this method.
   // TODO(mallinath) - Make it pure virtual.
   virtual bool HandleIncomingPacket(rtc::AsyncPacketSocket* socket,
@@ -291,7 +301,7 @@ class Port : public PortInterface,
                                     const rtc::SocketAddress& remote_addr,
                                     int64_t packet_time_us);
 
-  // Shall the port handle packet from this |remote_addr|.
+  // Shall the port handle packet from this `remote_addr`.
   // This method is overridden by TurnPort.
   virtual bool CanHandleIncomingPacketsFrom(
       const rtc::SocketAddress& remote_addr) const;
@@ -457,7 +467,7 @@ class Port : public PortInterface,
   // PortAllocatorSession will provide these username_fragment and password.
   //
   // Note: we should always use username_fragment() instead of using
-  // |ice_username_fragment_| directly. For the details see the comment on
+  // `ice_username_fragment_` directly. For the details see the comment on
   // username_fragment().
   std::string ice_username_fragment_;
   std::string password_;

@@ -229,35 +229,4 @@ void I420Buffer::ScaleFrom(const I420BufferInterface& src) {
   CropAndScaleFrom(src, 0, 0, src.width(), src.height());
 }
 
-void I420Buffer::PasteFrom(const I420BufferInterface& picture,
-                           int offset_col,
-                           int offset_row) {
-  RTC_CHECK_LE(picture.width() + offset_col, width());
-  RTC_CHECK_LE(picture.height() + offset_row, height());
-  RTC_CHECK_GE(offset_col, 0);
-  RTC_CHECK_GE(offset_row, 0);
-
-  // Pasted picture has to be aligned so subsumpled UV plane isn't corrupted.
-  RTC_CHECK(offset_col % 2 == 0);
-  RTC_CHECK(offset_row % 2 == 0);
-  RTC_CHECK(picture.width() % 2 == 0 ||
-            picture.width() + offset_col == width());
-  RTC_CHECK(picture.height() % 2 == 0 ||
-            picture.height() + offset_row == height());
-
-  libyuv::CopyPlane(picture.DataY(), picture.StrideY(),
-                    MutableDataY() + StrideY() * offset_row + offset_col,
-                    StrideY(), picture.width(), picture.height());
-
-  libyuv::CopyPlane(
-      picture.DataU(), picture.StrideU(),
-      MutableDataU() + StrideU() * offset_row / 2 + offset_col / 2, StrideU(),
-      picture.width() / 2, picture.height() / 2);
-
-  libyuv::CopyPlane(
-      picture.DataV(), picture.StrideV(),
-      MutableDataV() + StrideV() * offset_row / 2 + offset_col / 2, StrideV(),
-      picture.width() / 2, picture.height() / 2);
-}
-
 }  // namespace webrtc

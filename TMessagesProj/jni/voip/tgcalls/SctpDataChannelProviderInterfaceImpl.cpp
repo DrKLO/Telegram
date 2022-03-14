@@ -103,7 +103,7 @@ void SctpDataChannelProviderInterfaceImpl::sctpReadyToSendData() {
     _dataChannel->OnTransportReady(true);
 }
 
-void SctpDataChannelProviderInterfaceImpl::sctpClosedAbruptly() {
+void SctpDataChannelProviderInterfaceImpl::sctpClosedAbruptly(webrtc::RTCError error) {
     assert(_threads->getNetworkThread()->IsCurrent());
 
     if (_onTerminated) {
@@ -117,10 +117,15 @@ void SctpDataChannelProviderInterfaceImpl::sctpDataReceived(const cricket::Recei
     _dataChannel->OnDataReceived(params, buffer);
 }
 
-bool SctpDataChannelProviderInterfaceImpl::SendData(int sid, const webrtc::SendDataParams& params, const rtc::CopyOnWriteBuffer& payload, cricket::SendDataResult* result) {
+bool SctpDataChannelProviderInterfaceImpl::SendData(
+    int sid,
+    const webrtc::SendDataParams& params,
+    const rtc::CopyOnWriteBuffer& payload,
+    cricket::SendDataResult* result
+) {
     assert(_threads->getNetworkThread()->IsCurrent());
 
-    return _sctpTransport->SendData(sid, params, payload);
+    return _sctpTransport->SendData(sid, params, payload, result);
 }
 
 bool SctpDataChannelProviderInterfaceImpl::ConnectDataChannel(webrtc::SctpDataChannel *data_channel) {

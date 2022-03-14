@@ -30,7 +30,7 @@ int GetCPUInfoNoASM(CPUFeature feature) {
 
 #if defined(WEBRTC_ENABLE_AVX2)
 // xgetbv returns the value of an Intel Extended Control Register (XCR).
-// Currently only XCR0 is defined by Intel so |xcr| should always be zero.
+// Currently only XCR0 is defined by Intel so `xcr` should always be zero.
 static uint64_t xgetbv(uint32_t xcr) {
 #if defined(_MSC_VER)
   return _xgetbv(xcr);

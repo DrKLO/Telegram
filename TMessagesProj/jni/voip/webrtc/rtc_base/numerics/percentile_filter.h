@@ -26,14 +26,14 @@ namespace webrtc {
 template <typename T>
 class PercentileFilter {
  public:
-  // Construct filter. |percentile| should be between 0 and 1.
+  // Construct filter. `percentile` should be between 0 and 1.
   explicit PercentileFilter(float percentile);
 
   // Insert one observation. The complexity of this operation is logarithmic in
   // the size of the container.
   void Insert(const T& value);
 
-  // Remove one observation or return false if |value| doesn't exist in the
+  // Remove one observation or return false if `value` doesn't exist in the
   // container. The complexity of this operation is logarithmic in the size of
   // the container.
   bool Erase(const T& value);
@@ -73,7 +73,7 @@ void PercentileFilter<T>::Insert(const T& value) {
     percentile_it_ = set_.begin();
     percentile_index_ = 0;
   } else if (value < *percentile_it_) {
-    // If new element is before us, increment |percentile_index_|.
+    // If new element is before us, increment `percentile_index_`.
     ++percentile_index_;
   }
   UpdatePercentileIterator();
@@ -91,7 +91,7 @@ bool PercentileFilter<T>::Erase(const T& value) {
     percentile_it_ = set_.erase(it);
   } else {
     set_.erase(it);
-    // If erased element was before us, decrement |percentile_index_|.
+    // If erased element was before us, decrement `percentile_index_`.
     if (value <= *percentile_it_)
       --percentile_index_;
   }
