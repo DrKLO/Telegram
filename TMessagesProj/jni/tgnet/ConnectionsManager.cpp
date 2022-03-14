@@ -135,18 +135,8 @@ ConnectionsManager::~ConnectionsManager() {
 }
 
 ConnectionsManager& ConnectionsManager::getInstance(int32_t instanceNum) {
-    switch (instanceNum) {
-        case 0:
-            static ConnectionsManager instance0(0);
-            return instance0;
-        case 1:
-            static ConnectionsManager instance1(1);
-            return instance1;
-        case 2:
-        default:
-            static ConnectionsManager instance2(2);
-            return instance2;
-    }
+    static ConnectionsManager instance(instanceNum);
+    return instance;
 }
 
 int ConnectionsManager::callEvents(int64_t now) {
