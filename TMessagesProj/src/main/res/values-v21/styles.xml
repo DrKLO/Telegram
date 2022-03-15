@@ -12,9 +12,9 @@
     <!--THEMES-->
 
     <style name="Theme.TMessages.Start" parent="@android:style/Theme.Material">
-        <item name="android:actionBarStyle">@style/ActionBar.Transparent.TMessages.Start</item>
-        <item name="android:colorBackground">@android:color/black</item>
-        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:actionBarStyle">@style/ActionBar.DurovMyEyezz</item>
+        <item name="android:colorBackground">@color/durov_my_eyezz</item>
+        <item name="android:windowBackground">@color/durov_my_eyezz</item>
         <item name="android:windowContentOverlay">@null</item>
         <item name="android:colorPrimaryDark">#426482</item>
         <item name="android:colorPrimary">#527da3</item>
