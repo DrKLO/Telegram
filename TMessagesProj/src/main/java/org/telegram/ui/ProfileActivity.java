@@ -81,6 +81,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.PagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 
+import com.evildayz.code.telegraher.TelegraherSettingsActivity;
+
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
@@ -389,6 +391,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private int privacyRow;
     private int dataRow;
     private int chatRow;
+    private int telegraherRow;
     private int filtersRow;
     private int devicesRow;
     private int devicesSectionRow;
@@ -2752,6 +2755,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 presentFragment(new DataSettingsActivity());
             } else if (position == chatRow) {
                 presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_BASIC));
+            } else if (position == telegraherRow) {
+                presentFragment(new TelegraherSettingsActivity());
             } else if (position == filtersRow) {
                 presentFragment(new FiltersSetupActivity());
             } else if (position == devicesRow) {
@@ -5639,6 +5644,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         privacyRow = -1;
         dataRow = -1;
         chatRow = -1;
+        telegraherRow = -1;
         filtersRow = -1;
         devicesRow = -1;
         devicesSectionRow = -1;
@@ -5738,6 +5744,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     filtersRow = rowCount++;
                 }
                 devicesRow = rowCount++;
+                telegraherRow = rowCount++;
                 languageRow = rowCount++;
                 devicesSectionRow = rowCount++;
                 helpHeaderRow = rowCount++;
@@ -7380,6 +7387,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         textCell.setTextAndIcon(LocaleController.getString("DataSettings", R.string.DataSettings), R.drawable.menu_data, true);
                     } else if (position == chatRow) {
                         textCell.setTextAndIcon(LocaleController.getString("ChatSettings", R.string.ChatSettings), R.drawable.menu_chats, true);
+                    } else if (position == telegraherRow) {
+                        textCell.setTextAndIcon("\uD83C\uDCCF \uD83D\uDD1E \uD83D\uDC6F", R.drawable.msg_report_xxx, true);
                     } else if (position == filtersRow) {
                         textCell.setTextAndIcon(LocaleController.getString("Filters", R.string.Filters), R.drawable.menu_folders, true);
                     } else if (position == questionRow) {
@@ -7547,6 +7556,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         position == languageRow || position == setUsernameRow || position == bioRow ||
                         position == versionRow || position == dataRow || position == chatRow ||
                         position == questionRow || position == devicesRow || position == filtersRow ||
+                        position == telegraherRow ||
                         position == faqRow || position == policyRow || position == sendLogsRow || position == sendLastLogsRow ||
                         position == clearLogsRow || position == switchBackendRow || position == setAvatarRow;
             }
@@ -7587,6 +7597,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     position == addMemberRow || position == joinRow || position == unblockRow ||
                     position == sendMessageRow || position == notificationRow || position == privacyRow ||
                     position == languageRow || position == dataRow || position == chatRow ||
+                    position == telegraherRow ||
                     position == questionRow || position == devicesRow || position == filtersRow ||
                     position == faqRow || position == policyRow || position == sendLogsRow || position == sendLastLogsRow ||
                     position == clearLogsRow || position == switchBackendRow || position == setAvatarRow) {
@@ -8557,6 +8568,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             put(++pointer, chatRow, sparseIntArray);
             put(++pointer, filtersRow, sparseIntArray);
             put(++pointer, devicesRow, sparseIntArray);
+            put(++pointer, telegraherRow, sparseIntArray);
             put(++pointer, devicesSectionRow, sparseIntArray);
             put(++pointer, helpHeaderRow, sparseIntArray);
             put(++pointer, questionRow, sparseIntArray);
