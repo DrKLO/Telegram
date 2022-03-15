@@ -219,8 +219,8 @@ static int writeOggPage(ogg_page *page, FILE *os) {
     return written;
 }
 
-const opus_int32 bitrate = 30 * 1024;
-const opus_int32 frame_size = 960;
+//const opus_int32 bitrate = 30 * 1024;
+//const opus_int32 frame_size = 960;
 const int with_cvbr = 1;
 const int max_ogg_delay = 0;
 const int comment_padding = 512;
@@ -283,7 +283,7 @@ void cleanupRecorder() {
     memset(&og, 0, sizeof(ogg_page));
 }
 
-int initRecorder(const char *path, opus_int32 sampleRate) {
+int initRecorder(const char *path, opus_int32 sampleRate, opus_int32 bitrate) {
     cleanupRecorder();
 
     coding_rate = sampleRate;
@@ -413,7 +413,7 @@ int initRecorder(const char *path, opus_int32 sampleRate) {
     
     return 1;
 }
-int writeFrame(uint8_t *framePcmBytes, uint32_t frameByteCount) {
+int writeFrame(uint8_t *framePcmBytes, uint32_t frameByteCount, uint32_t frame_size) {
     size_t cur_frame_size = frame_size;
     _packetId++;
     
@@ -496,10 +496,10 @@ int writeFrame(uint8_t *framePcmBytes, uint32_t frameByteCount) {
     return 1;
 }
 
-JNIEXPORT jint Java_org_telegram_messenger_MediaController_startRecord(JNIEnv *env, jclass class, jstring path, jint sampleRate) {
+JNIEXPORT jint Java_org_telegram_messenger_MediaController_startRecord(JNIEnv *env, jclass class, jstring path, jint sampleRate, jint bitrate) {
     const char *pathStr = (*env)->GetStringUTFChars(env, path, 0);
 
-    int32_t result = initRecorder(pathStr, sampleRate);
+    int32_t result = initRecorder(pathStr, sampleRate, bitrate);
     
     if (pathStr != 0) {
         (*env)->ReleaseStringUTFChars(env, path, pathStr);
@@ -508,9 +508,9 @@ JNIEXPORT jint Java_org_telegram_messenger_MediaController_startRecord(JNIEnv *e
     return result;
 }
 
-JNIEXPORT jint Java_org_telegram_messenger_MediaController_writeFrame(JNIEnv *env, jclass class, jobject frame, jint len) {
+JNIEXPORT jint Java_org_telegram_messenger_MediaController_writeFrame(JNIEnv *env, jclass class, jobject frame, jint len, jint frame_size) {
     jbyte *frameBytes = (*env)->GetDirectBufferAddress(env, frame);
-    return writeFrame((uint8_t *) frameBytes, (uint32_t) len);
+    return writeFrame((uint8_t *) frameBytes, (uint32_t) len, (uint32_t) frame_size);
 }
 
 JNIEXPORT void Java_org_telegram_messenger_MediaController_stopRecord(JNIEnv *env, jclass class) {
