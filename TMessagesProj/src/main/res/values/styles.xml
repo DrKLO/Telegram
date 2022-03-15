@@ -4,9 +4,9 @@
     <!--THEMES-->
 
     <style name="Theme.TMessages.Start" parent="@android:style/Theme.Holo.Light">
-        <item name="android:actionBarStyle">@style/ActionBar.Transparent.TMessages.Start</item>
-        <item name="android:colorBackground">@android:color/black</item>
-        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:actionBarStyle">@style/ActionBar.DurovMyEyezz</item>
+        <item name="android:colorBackground">@color/durov_my_eyezz</item>
+        <item name="android:windowBackground">@color/durov_my_eyezz</item>
         <item name="android:windowContentOverlay">@null</item>
         <item name="android:textViewStyle">@style/MyTextViewStyle</item>
     </style>
@@ -95,6 +95,10 @@
         <item name="android:background">#ff527da3</item>
         <item name="android:logo">@drawable/transparent</item>
         <item name="android:title">""</item>
+    </style>
+
+    <style name="ActionBar.DurovMyEyezz" parent="ActionBar.Transparent.TMessages.Start">
+        <item name="android:background">#ff212D3B</item>
     </style>
 
     <!--ACTION BAR ITEMS-->
