@@ -124,12 +124,14 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                 SharedPreferences.Editor editor = preferences.edit();
                 enabled = preferences.getBoolean("EnableVoiceHD", false);
                 editor.putBoolean("EnableVoiceHD", !enabled);
+                if (enabled) editor.putBoolean("EnableVoiceBadman", false);
                 editor.commit();
             } else if (position == voiceBadmanRow) {
                 SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
                 SharedPreferences.Editor editor = preferences.edit();
                 enabled = preferences.getBoolean("EnableVoiceBadman", false);
-                editor.putBoolean("EnableVoiceBadman", !enabled);
+                editor.putBoolean("EnableVoiceBadman", preferences.getBoolean("EnableVoiceHD", false) && !enabled);
+                if (!preferences.getBoolean("EnableVoiceHD", false)) enabled = true;
                 editor.commit();
             } else if (position == voipHDRow) {
                 SharedPreferences preferences = MessagesController.getTelegraherSettings(currentAccount);
