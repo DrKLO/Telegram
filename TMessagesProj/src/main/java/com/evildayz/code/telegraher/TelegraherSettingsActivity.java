@@ -242,7 +242,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                     } else if (position == voiceHDRow) {
                         checkCell.setTextAndCheck("* HD Voice", globalPreps.getBoolean("EnableVoiceHD", false), false);
                     } else if (position == voiceBadmanRow) {
-                        checkCell.setTextAndCheck("* \uD83E\uDD87 Voice", globalPreps.getBoolean("EnableVoiceBadman", false), true);
+                        checkCell.setTextAndCheck("* \uD83E\uDD87 Voice (slow)", globalPreps.getBoolean("EnableVoiceBadman", false), true);
                     } else if (position == voipHDRow) {
                         checkCell.setTextAndCheck("HD calls", localPreps.getBoolean("EnableVoIPHD", false), true);
                     }
