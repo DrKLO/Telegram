@@ -342,6 +342,7 @@ public class MessagesController extends BaseController implements NotificationCe
     private SharedPreferences notificationsPreferences;
     private SharedPreferences mainPreferences;
     private SharedPreferences emojiPreferences;
+    private SharedPreferences telegraherSettings;
 
     public volatile boolean ignoreSetOnline;
 
@@ -737,6 +738,14 @@ public class MessagesController extends BaseController implements NotificationCe
         return localInstance;
     }
 
+    public static SharedPreferences getTelegraherSettings(int account) {
+        return getInstance(account).telegraherSettings;
+    }
+
+    public static SharedPreferences getGlobalTelegraherSettings() {
+        return getInstance(0).telegraherSettings;
+    }
+
     public static SharedPreferences getNotificationsSettings(int account) {
         return getInstance(account).notificationsPreferences;
     }
@@ -781,10 +790,12 @@ public class MessagesController extends BaseController implements NotificationCe
             notificationsPreferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
             mainPreferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
             emojiPreferences = ApplicationLoader.applicationContext.getSharedPreferences("emoji", Activity.MODE_PRIVATE);
+            telegraherSettings = ApplicationLoader.applicationContext.getSharedPreferences("TelegraherSettings", Activity.MODE_PRIVATE);
         } else {
             notificationsPreferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications" + currentAccount, Activity.MODE_PRIVATE);
             mainPreferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig" + currentAccount, Activity.MODE_PRIVATE);
             emojiPreferences = ApplicationLoader.applicationContext.getSharedPreferences("emoji" + currentAccount, Activity.MODE_PRIVATE);
+            telegraherSettings = ApplicationLoader.applicationContext.getSharedPreferences("TelegraherSettings" + currentAccount, Activity.MODE_PRIVATE);
         }
 
         enableJoined = notificationsPreferences.getBoolean("EnableContactJoined", true);
@@ -2621,6 +2632,8 @@ public class MessagesController extends BaseController implements NotificationCe
         editor.putLong("lastGifLoadTime", 0).putLong("lastStickersLoadTime", 0).putLong("lastStickersLoadTimeMask", 0).putLong("lastStickersLoadTimeFavs", 0).commit();
         editor = mainPreferences.edit();
         editor.remove("archivehint").remove("proximityhint").remove("archivehint_l").remove("gifhint").remove("reminderhint").remove("soundHint").remove("dcDomainName2").remove("webFileDatacenterId").remove("themehint").remove("showFiltersTooltip").commit();
+        editor = telegraherSettings.edit();
+        editor.clear().commit();
 
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("shortcut_widget", Activity.MODE_PRIVATE);
         SharedPreferences.Editor widgetEditor = null;

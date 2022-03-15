@@ -59,6 +59,7 @@ public class NotificationCenter {
     public static final int folderBecomeEmpty = totalEvents++;
     public static final int removeAllMessagesFromDialog = totalEvents++;
     public static final int notificationsSettingsUpdated = totalEvents++;
+    public static final int telegraherSettingsUpdated = totalEvents++;
     public static final int blockedUsersDidLoad = totalEvents++;
     public static final int openedChatChanged = totalEvents++;
     public static final int didCreatedNewDeleteTask = totalEvents++;
