@@ -148,6 +148,8 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 	public static final int STATE_WAITING_INCOMING = 15;
 	public static final int STATE_RINGING = 16;
 	public static final int STATE_BUSY = 17;
+	public static int AudioBitrate = 48000;
+	private static int currentStreamType;
 
 	public static final int STATE_WAIT_INIT = Instance.STATE_WAIT_INIT;
 	public static final int STATE_WAIT_INIT_ACK = Instance.STATE_WAIT_INIT_ACK;
@@ -3404,7 +3406,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				int outFramesPerBuffer = Integer.parseInt(am.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER));
 				Instance.setBufferSize(outFramesPerBuffer);
 			} else {
-				Instance.setBufferSize(AudioTrack.getMinBufferSize(48000, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT) / 2);
+				Instance.setBufferSize(AudioTrack.getMinBufferSize(AudioBitrate, AudioFormat.CHANNEL_OUT_STEREO, AudioFormat.ENCODING_PCM_16BIT) / 2);
 			}
 
 			cpuWakelock = ((PowerManager) getSystemService(POWER_SERVICE)).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "telegram-voip");
@@ -3475,11 +3477,15 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 	}
 
 	private void loadResources() {
-		if (Build.VERSION.SDK_INT >= 21) {
-			WebRtcAudioTrack.setAudioTrackUsageAttribute(AudioAttributes.USAGE_VOICE_COMMUNICATION);
+		if (chat != null) {
+			currentStreamType = AudioManager.STREAM_MUSIC;
+			if (Build.VERSION.SDK_INT >= 21) {
+				WebRtcAudioTrack.setAudioTrackUsageAttribute(AudioAttributes.USAGE_MEDIA);
+			}
 		}
+		WebRtcAudioTrack.setAudioStreamType(currentStreamType);
 		Utilities.globalQueue.postRunnable(() -> {
-			soundPool = new SoundPool(1, AudioManager.STREAM_VOICE_CALL, 0);
+			soundPool = new SoundPool(1, currentStreamType, AudioBitrate);
 			spConnectingId = soundPool.load(this, R.raw.voip_connecting, 1);
 			spRingbackID = soundPool.load(this, R.raw.voip_ringback, 1);
 			spFailedID = soundPool.load(this, R.raw.voip_failed, 1);
@@ -3537,15 +3543,16 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		}
 		needPlayEndSound = true;
 		AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+		int streamType = AudioManager.STREAM_MUSIC;
 		if (!USE_CONNECTION_SERVICE) {
 			Utilities.globalQueue.postRunnable(() -> {
 				try {
-					am.setMode(AudioManager.MODE_IN_COMMUNICATION);
+					am.setMode(AudioManager.MODE_IN_CALL);
 				} catch (Exception e) {
 					FileLog.e(e);
 				}
 				AndroidUtilities.runOnUIThread(() -> {
-					am.requestAudioFocus(VoIPService.this, AudioManager.STREAM_VOICE_CALL, AudioManager.AUDIOFOCUS_GAIN);
+					am.requestAudioFocus(VoIPService.this, streamType, AudioManager.AUDIOFOCUS_GAIN);
 					if (isBluetoothHeadsetConnected() && hasEarpiece()) {
 						switch (audioRouteToSet) {
 							case AUDIO_ROUTE_BLUETOOTH:
