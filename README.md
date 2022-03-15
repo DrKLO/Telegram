@@ -179,17 +179,17 @@ It's very simple
 * **sdk23** mean for android 6+, the other are working from 4.1+
     * so if you have android 6 or higher, you should download **sdk23** version
 * arm64-v8a (new devices)
-    * `x`  [Telegraher.8.6.1r1.arm64_v8a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r1_arm64_v8a/Telegraher.8.6.1r1.arm64_v8a.apk)
-    * `x`  [Telegraher.8.6.1r1.arm64_v8a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r1_arm64_v8a/Telegraher.8.6.1r1.arm64_v8a_sdk23.apk)
+    * `x`  [Telegraher.8.6.1r2.arm64_v8a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r2_arm64_v8a/Telegraher.8.6.1r2.arm64_v8a.apk)
+    * `x`  [Telegraher.8.6.1r2.arm64_v8a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r2_arm64_v8a/Telegraher.8.6.1r2.arm64_v8a_sdk23.apk)
 * armeabi-v7a (old devices)
-    * `x`  [Telegraher.8.6.1r1.armeabi_v7a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r1_armeabi_v7a/Telegraher.8.6.1r1.armeabi_v7a.apk)
-    * `x`  [Telegraher.8.6.1r1.armeabi_v7a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r1_armeabi_v7a/Telegraher.8.6.1r1.armeabi_v7a_sdk23.apk)
+    * `x`  [Telegraher.8.6.1r2.armeabi_v7a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r2_armeabi_v7a/Telegraher.8.6.1r2.armeabi_v7a.apk)
+    * `x`  [Telegraher.8.6.1r2.armeabi_v7a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r2_armeabi_v7a/Telegraher.8.6.1r2.armeabi_v7a_sdk23.apk)
 * PC x86, 32 bits (for an emulator for example)
-    * `x`  [Telegraher.8.6.1r1.x86.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r1_x86/Telegraher.8.6.1r1.x86.apk)
-    * `x`  [Telegraher.8.6.1r1.x86_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r1_x86/Telegraher.8.6.1r1.x86_sdk23.apk)
+    * `x`  [Telegraher.8.6.1r2.x86.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r2_x86/Telegraher.8.6.1r2.x86.apk)
+    * `x`  [Telegraher.8.6.1r2.x86_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r2_x86/Telegraher.8.6.1r2.x86_sdk23.apk)
 * PC x86, 64 bits (for 64 bits CPU)
-    * `x`  [Telegraher.8.6.1r1.x86_64.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r1_x86_64/Telegraher.8.6.1r1.x86_64.apk)
-    * `x`  [Telegraher.8.6.1r1.x86_64_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r1_x86_64/Telegraher.8.6.1r1.x86_64_sdk23.apk)
+    * `x`  [Telegraher.8.6.1r2.x86_64.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r2_x86_64/Telegraher.8.6.1r2.x86_64.apk)
+    * `x`  [Telegraher.8.6.1r2.x86_64_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r2_x86_64/Telegraher.8.6.1r2.x86_64_sdk23.apk)
 
 ### Issues/Wishlist
 
@@ -198,6 +198,11 @@ Probably it's a good thing 😃
 
 ### Changes
 
+* noshit_8.6.1_release2
+    * added HD voices (48kHz)
+        * added slow badman voice, just for fun :)
+    * test correction for getMinTabletSide to see if it will solve waste space issue on some tablets
+        * in my case (emulator phone/tablets) and phone all is fine
 * noshit_8.6.1_release1
     * TG vanilla 8.6.0 & 8.6.1
     * enable/disable link previews for classic chats
