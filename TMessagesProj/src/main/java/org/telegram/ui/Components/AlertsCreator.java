@@ -4270,6 +4270,7 @@ public class AlertsCreator {
         boolean canDeleteInbox = encryptedChat == null && user != null && canRevokeInbox && revokeTimeLimit == 0x7fffffff;
         if (chat != null && chat.megagroup && !scheduled) {
             boolean canBan = ChatObject.canBlockUsers(chat);
+            boolean canDelete = ChatObject.canDeleteMessages(chat);
             if (selectedMessage != null) {
                 if (selectedMessage.messageOwner.action == null || selectedMessage.messageOwner.action instanceof TLRPC.TL_messageActionEmpty ||
                         selectedMessage.messageOwner.action instanceof TLRPC.TL_messageActionChatDeleteUser ||
@@ -4366,10 +4367,13 @@ public class AlertsCreator {
                     }
                     String cellText = null;
                     if (a == 0) {
+                        if (actionUser.id == banFromId) continue;
                         cellText = LocaleController.getString("DeleteBanUser", R.string.DeleteBanUser);
-                    } else if (a == 1 && actionUser.id != banFromId) {
+                    } else if (a == 1) {
+                        if (actionUser.id == banFromId) continue;
                         cellText = LocaleController.getString("DeleteReportSpam", R.string.DeleteReportSpam);
                     } else if (a == 2) {
+                        if (!canDelete) continue;
                         cellText = LocaleController.formatString("DeleteAllFrom", R.string.DeleteAllFrom, name);
                     }
 
