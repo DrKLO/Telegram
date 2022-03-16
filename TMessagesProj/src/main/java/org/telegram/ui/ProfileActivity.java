@@ -5694,6 +5694,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         visibleChatParticipants.clear();
         visibleSortedUsers.clear();
 
+        SharedPreferences localPreps = MessagesController.getTelegraherSettings(currentAccount);
+
         boolean hasMedia = false;
         if (sharedMediaPreloader != null) {
             int[] lastMediaCount = sharedMediaPreloader.getLastMediaCount();
@@ -5776,14 +5778,14 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (user != null && !TextUtils.isEmpty(user.username)) {
                     usernameRow = rowCount++;
                 }
-                userIdRow = rowCount++;
+                if (localPreps.getBoolean("EnableProfileUIDRow", true)) userIdRow = rowCount++;
 //                if (phoneRow != -1 || userInfoRow != -1 || usernameRow != -1) {
                 if (phoneRow != -1 || userInfoRow != -1 || usernameRow != -1 || userIdRow != -1) {
                     notificationsDividerRow = rowCount++;
                 }
                 if (userId != getUserConfig().getClientUserId()) {
                     notificationsRow = rowCount++;
-                    shadowBanRow = rowCount++;
+                    if (localPreps.getBoolean("EnableProfileSBRow", true)) shadowBanRow = rowCount++;
                 }
                 infoSectionRow = rowCount++;
 
@@ -5825,13 +5827,13 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (!TextUtils.isEmpty(currentChat.username)) {
                     usernameRow = rowCount++;
                 }
-                userIdRow = rowCount++;
+                if (localPreps.getBoolean("EnableProfileUIDRow", true)) userIdRow = rowCount++;
             }
             if (infoHeaderRow != -1) {
                 notificationsDividerRow = rowCount++;
             }
             notificationsRow = rowCount++;
-            shadowBanRow = rowCount++;
+            if (localPreps.getBoolean("EnableProfileSBRow", true)) shadowBanRow = rowCount++;
             infoSectionRow = rowCount++;
 
             if (ChatObject.isChannel(currentChat) && !currentChat.megagroup) {
