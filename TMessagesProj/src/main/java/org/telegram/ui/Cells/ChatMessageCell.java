@@ -10199,14 +10199,14 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             edited = false;
         } else if (currentPosition == null || currentMessagesGroup == null || currentMessagesGroup.messages.isEmpty()) {
             edited = (messageObject.messageOwner.flags & TLRPC.MESSAGE_FLAG_EDITED) != 0 || messageObject.isEditing();
-            deleted = messageObject.messageOwner.isDeleted;
+            deleted = messageObject.messageOwner.isDeleted && MessagesController.getTelegraherSettings(currentAccount).getBoolean("EnableChatDeleteMark", true);
         } else {
             edited = false;
             hasReplies = currentMessagesGroup.messages.get(0).hasReplies();
             if (!currentMessagesGroup.messages.get(0).messageOwner.edit_hide) {
                 for (int a = 0, size = currentMessagesGroup.messages.size(); a < size; a++) {
                     MessageObject object = currentMessagesGroup.messages.get(a);
-                    deleted = object.messageOwner.isDeleted;
+                    deleted = object.messageOwner.isDeleted && MessagesController.getTelegraherSettings(currentAccount).getBoolean("EnableChatDeleteMark", true);
                     if ((object.messageOwner.flags & TLRPC.MESSAGE_FLAG_EDITED) != 0 || object.isEditing()) {
                         edited = true;
                         break;
