@@ -6077,7 +6077,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
             if (UserObject.isUserSelf(user) && getMessagesController().configThisDc > 0) {
                 userDcLine = String.format("DC: %d|WFDC: %d|TXT: %s"
-                        , user.photo.dc_id
+                        , getMessagesController().configThisDc
                         , getMessagesController().configWebfileDcId
                         , getMessagesController().configDcTxtDomainName
                 );
