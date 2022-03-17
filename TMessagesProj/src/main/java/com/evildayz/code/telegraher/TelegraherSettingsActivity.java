@@ -28,6 +28,7 @@ import android.widget.FrameLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -57,8 +58,17 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
     private int voiceLabelRow;
     private int voiceHDRow;
     private int voiceBadmanRow;
+
     private int voipLabelRow;
     private int voipHDRow;
+
+    private int profileLabelRow;
+    private int profileUIDRow;
+    private int profileDCIDRow;
+    private int profileSBRow;
+
+    private int chatLabelRow;
+    private int chatDeleteMarkRow;
 
     private int rowCount = 0;
 
@@ -70,6 +80,14 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
 
 //        voipLabelRow = rowCount++;
 //        voipHDRow = rowCount++;
+
+        profileLabelRow = rowCount++;
+        profileUIDRow = rowCount++;
+        profileDCIDRow = rowCount++;
+        profileSBRow = rowCount++;
+
+        chatLabelRow = rowCount++;
+        chatDeleteMarkRow = rowCount++;
 
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.telegraherSettingsUpdated);
 
@@ -138,6 +156,30 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                 SharedPreferences.Editor editor = preferences.edit();
                 enabled = preferences.getBoolean("EnableVoIPHD", false);
                 editor.putBoolean("EnableVoIPHD", !enabled);
+                editor.commit();
+            } else if (position == profileUIDRow) {
+                SharedPreferences preferences = MessagesController.getTelegraherSettings(currentAccount);
+                SharedPreferences.Editor editor = preferences.edit();
+                enabled = preferences.getBoolean("EnableProfileUID", true);
+                editor.putBoolean("EnableProfileUID", !enabled);
+                editor.commit();
+            } else if (position == profileDCIDRow) {
+                SharedPreferences preferences = MessagesController.getTelegraherSettings(currentAccount);
+                SharedPreferences.Editor editor = preferences.edit();
+                enabled = preferences.getBoolean("EnableProfileDCID", true);
+                editor.putBoolean("EnableProfileDCID", !enabled);
+                editor.commit();
+            } else if (position == profileSBRow) {
+                SharedPreferences preferences = MessagesController.getTelegraherSettings(currentAccount);
+                SharedPreferences.Editor editor = preferences.edit();
+                enabled = preferences.getBoolean("EnableProfileSB", true);
+                editor.putBoolean("EnableProfileSB", !enabled);
+                editor.commit();
+            } else if (position == chatDeleteMarkRow) {
+                SharedPreferences preferences = MessagesController.getTelegraherSettings(currentAccount);
+                SharedPreferences.Editor editor = preferences.edit();
+                enabled = preferences.getBoolean("EnableChatDeleteMark", true);
+                editor.putBoolean("EnableChatDeleteMark", !enabled);
                 editor.commit();
             }
             if (view instanceof TextCheckCell) {
@@ -230,6 +272,10 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         headerCell.setText("Voice message section");
                     } else if (position == voipLabelRow) {
                         headerCell.setText("VoIP calls section");
+                    } else if (position == profileLabelRow) {
+                        headerCell.setText("Profile section");
+                    } else if (position == chatLabelRow) {
+                        headerCell.setText("Chat section");
                     }
                     break;
                 }
@@ -245,6 +291,14 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         checkCell.setTextAndCheck("* \uD83E\uDD87 Voice (slow)", globalPreps.getBoolean("EnableVoiceBadman", false), true);
                     } else if (position == voipHDRow) {
                         checkCell.setTextAndCheck("HD calls", localPreps.getBoolean("EnableVoIPHD", false), true);
+                    } else if (position == profileUIDRow) {
+                        checkCell.setTextAndCheck("Show numeric ID", localPreps.getBoolean("EnableProfileUID", true), true);
+                    } else if (position == profileDCIDRow) {
+                        checkCell.setTextAndCheck("Show DC ID", localPreps.getBoolean("EnableProfileDCID", true), true);
+                    } else if (position == profileSBRow) {
+                        checkCell.setTextAndCheck("Show Shadowban", localPreps.getBoolean("EnableProfileSB", true), true);
+                    } else if (position == chatDeleteMarkRow) {
+                        checkCell.setTextAndCheck(String.format("Show `%s`", LocaleController.getString("DeletedMessage", R.string.DeletedMessage)), localPreps.getBoolean("EnableChatDeleteMark", true), true);
                     }
                     break;
                 }
@@ -253,11 +307,16 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
 
         @Override
         public int getItemViewType(int position) {
-            if (position == voiceLabelRow || position == voipLabelRow
+            if (
+                    position == voiceLabelRow || position == voipLabelRow
+                            || position == profileLabelRow
+                            || position == chatLabelRow
             ) {
                 return 0;
             } else if (
                     position == voiceHDRow || position == voiceBadmanRow || position == voipHDRow
+                            || position == profileUIDRow || position == profileDCIDRow || position == profileSBRow
+                            || position == chatDeleteMarkRow
             ) {
                 return 1;
             } else {
