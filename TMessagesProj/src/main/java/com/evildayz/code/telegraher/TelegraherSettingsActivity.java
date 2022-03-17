@@ -28,6 +28,7 @@ import android.widget.FrameLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -66,6 +67,9 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
     private int profileDCIDRow;
     private int profileSBRow;
 
+    private int chatLabelRow;
+    private int chatDeleteMarkRow;
+
     private int rowCount = 0;
 
     @Override
@@ -81,6 +85,9 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         profileUIDRow = rowCount++;
         profileDCIDRow = rowCount++;
         profileSBRow = rowCount++;
+
+        chatLabelRow = rowCount++;
+        chatDeleteMarkRow = rowCount++;
 
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.telegraherSettingsUpdated);
 
@@ -167,6 +174,12 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                 SharedPreferences.Editor editor = preferences.edit();
                 enabled = preferences.getBoolean("EnableProfileSB", true);
                 editor.putBoolean("EnableProfileSB", !enabled);
+                editor.commit();
+            } else if (position == chatDeleteMarkRow) {
+                SharedPreferences preferences = MessagesController.getTelegraherSettings(currentAccount);
+                SharedPreferences.Editor editor = preferences.edit();
+                enabled = preferences.getBoolean("EnableChatDeleteMark", true);
+                editor.putBoolean("EnableChatDeleteMark", !enabled);
                 editor.commit();
             }
             if (view instanceof TextCheckCell) {
@@ -261,6 +274,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         headerCell.setText("VoIP calls section");
                     } else if (position == profileLabelRow) {
                         headerCell.setText("Profile section");
+                    } else if (position == chatLabelRow) {
+                        headerCell.setText("Chat section");
                     }
                     break;
                 }
@@ -281,7 +296,9 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                     } else if (position == profileDCIDRow) {
                         checkCell.setTextAndCheck("Show DC ID", localPreps.getBoolean("EnableProfileDCID", true), true);
                     } else if (position == profileSBRow) {
-                        checkCell.setTextAndCheck("Show Shadowban", localPreps.getBoolean("EnableProfileSBRow", true), true);
+                        checkCell.setTextAndCheck("Show Shadowban", localPreps.getBoolean("EnableProfileSB", true), true);
+                    } else if (position == chatDeleteMarkRow) {
+                        checkCell.setTextAndCheck(String.format("Show `%s`", LocaleController.getString("DeletedMessage", R.string.DeletedMessage)), localPreps.getBoolean("EnableChatDeleteMark", true), true);
                     }
                     break;
                 }
@@ -293,11 +310,13 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
             if (
                     position == voiceLabelRow || position == voipLabelRow
                             || position == profileLabelRow
+                            || position == chatLabelRow
             ) {
                 return 0;
             } else if (
                     position == voiceHDRow || position == voiceBadmanRow || position == voipHDRow
                             || position == profileUIDRow || position == profileDCIDRow || position == profileSBRow
+                            || position == chatDeleteMarkRow
             ) {
                 return 1;
             } else {
