@@ -52,7 +52,7 @@ public class QRCodeBottomSheet extends BottomSheet {
     private final TextView buttonTextView;
     int imageSize;
     RLottieImageView iconImage;
-    
+
     public QRCodeBottomSheet(Context context, String link, String helpMessage) {
         super(context, false);
 
@@ -122,7 +122,7 @@ public class QRCodeBottomSheet extends BottomSheet {
         buttonTextView.setText(LocaleController.getString("ShareQrCode", R.string.ShareQrCode));
         buttonTextView.setOnClickListener(view -> {
 
-            Uri uri = getImageUri(qrCode);
+            Uri uri = AndroidUtilities.getBitmapShareUri(qrCode, "qr_tmp.png", Bitmap.CompressFormat.PNG);
             if (uri != null) {
                 Intent i = new Intent(Intent.ACTION_SEND);
 
@@ -144,37 +144,13 @@ public class QRCodeBottomSheet extends BottomSheet {
         setCustomView(scrollView);
     }
 
-    public Uri getImageUri(Bitmap inImage) {
-        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-        inImage.compress(Bitmap.CompressFormat.JPEG, 100, bytes);
-
-        File cachePath = AndroidUtilities.getCacheDir();
-        if (!cachePath.isDirectory()) {
-            try {
-                cachePath.mkdirs();
-            } catch (Exception e) {
-                FileLog.e(e);
-                return null;
-            }
-        }
-        File file = new File(cachePath, "qr_tmp.png");
-        try (FileOutputStream out = new FileOutputStream(file)) {
-            inImage.compress(Bitmap.CompressFormat.PNG, 100, out);
-            out.close();
-            return FileProvider.getUriForFile(ApplicationLoader.applicationContext, BuildConfig.APPLICATION_ID + ".provider", file);
-        } catch (IOException e) {
-            FileLog.e(e);
-        }
-        return null;
-    }
-
     public Bitmap createQR(Context context, String key, Bitmap oldBitmap) {
         try {
             HashMap<EncodeHintType, Object> hints = new HashMap<>();
             hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.M);
             hints.put(EncodeHintType.MARGIN, 0);
             QRCodeWriter writer = new QRCodeWriter();
-            Bitmap bitmap = writer.encode(key, BarcodeFormat.QR_CODE, 768, 768, hints, oldBitmap, context);
+            Bitmap bitmap = writer.encode(key, 768, 768, hints, oldBitmap);
             imageSize = writer.getImageSize();
             return bitmap;
         } catch (Exception e) {

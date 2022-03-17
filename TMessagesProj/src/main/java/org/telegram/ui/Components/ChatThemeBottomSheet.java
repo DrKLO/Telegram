@@ -5,6 +5,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -131,7 +132,7 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
             }
             setupLightDarkTheme(!forceDark);
         });
-        rootLayout.addView(darkThemeView, LayoutHelper.createFrame(44, 44, Gravity.TOP | Gravity.END, 0, 0, 7, 0));
+        rootLayout.addView(darkThemeView, LayoutHelper.createFrame(44, 44, Gravity.TOP | Gravity.END, 0, -2, 7, 0));
         forceDark = !Theme.getActiveTheme().isDark();
         setForceDark(Theme.getActiveTheme().isDark(), false);
 
@@ -883,6 +884,7 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
         public int themeIndex;
         public boolean isSelected;
         public float animationProgress = 1f;
+        public Bitmap icon;
 
         public ChatThemeItem(EmojiThemes chatTheme) {
             this.chatTheme = chatTheme;

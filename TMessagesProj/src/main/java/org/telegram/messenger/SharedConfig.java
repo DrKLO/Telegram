@@ -20,20 +20,23 @@ import android.text.TextUtils;
 import android.util.Base64;
 import android.util.SparseArray;
 
+import androidx.annotation.IntDef;
+import androidx.core.content.pm.ShortcutManagerCompat;
+
 import org.json.JSONObject;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.SerializedData;
-import org.telegram.ui.Components.SharedMediaLayout;
-import org.telegram.ui.Components.SwipeGestureSettingsView;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.Components.SwipeGestureSettingsView;
 
 import java.io.File;
 import java.io.RandomAccessFile;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-
-import androidx.core.content.pm.ShortcutManagerCompat;
+import java.util.Locale;
 
 public class SharedConfig {
 
@@ -91,7 +94,7 @@ public class SharedConfig {
     public static boolean chatBubbles = Build.VERSION.SDK_INT >= 30;
     public static boolean autoplayGifs = true;
     public static boolean autoplayVideo = true;
-    public static boolean raiseToSpeak = true;
+    public static boolean raiseToSpeak = false;
     public static boolean customTabs = true;
     public static boolean directShare = true;
     public static boolean inappCamera = true;
@@ -103,6 +106,7 @@ public class SharedConfig {
     public static boolean saveStreamMedia = true;
     public static boolean smoothKeyboard = true;
     public static boolean pauseMusicOnRecord = true;
+    public static boolean chatBlur = true;
     public static boolean noiseSupression;
     public static boolean noStatusBar;
     public static boolean sortContactsByName;
@@ -327,7 +331,7 @@ public class SharedConfig {
             autoplayGifs = preferences.getBoolean("autoplay_gif", true);
             autoplayVideo = preferences.getBoolean("autoplay_video", true);
             mapPreviewType = preferences.getInt("mapPreviewType", 2);
-            raiseToSpeak = preferences.getBoolean("raise_to_speak", true);
+            raiseToSpeak = preferences.getBoolean("raise_to_speak", false);
             customTabs = preferences.getBoolean("custom_tabs", true);
             directShare = preferences.getBoolean("direct_share", true);
             shuffleMusic = preferences.getBoolean("shuffleMusic", false);
@@ -345,6 +349,7 @@ public class SharedConfig {
             saveStreamMedia = preferences.getBoolean("saveStreamMedia", true);
             smoothKeyboard = preferences.getBoolean("smoothKeyboard2", true);
             pauseMusicOnRecord = preferences.getBoolean("pauseMusicOnRecord", false);
+            chatBlur = preferences.getBoolean("chatBlur", true);
             streamAllVideo = preferences.getBoolean("streamAllVideo", BuildVars.DEBUG_VERSION);
             streamMkv = preferences.getBoolean("streamMkv", false);
             suggestStickers = preferences.getInt("suggestStickers", 0);
@@ -928,6 +933,14 @@ public class SharedConfig {
         editor.commit();
     }
 
+    public static void toggleChatBlur() {
+        chatBlur = !chatBlur;
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean("chatBlur", chatBlur);
+        editor.commit();
+    }
+
     public static void toggleInappCamera() {
         inappCamera = !inappCamera;
         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
@@ -1119,25 +1132,38 @@ public class SharedConfig {
     public final static int PERFORMANCE_CLASS_AVERAGE = 1;
     public final static int PERFORMANCE_CLASS_HIGH = 2;
 
+    @Retention(RetentionPolicy.SOURCE)
+    @IntDef({
+            PERFORMANCE_CLASS_LOW,
+            PERFORMANCE_CLASS_AVERAGE,
+            PERFORMANCE_CLASS_HIGH
+    })
+    public @interface PerformanceClass {}
+
+    @PerformanceClass
     public static int getDevicePerformanceClass() {
         if (devicePerformanceClass == -1) {
-            int maxCpuFreq = -1;
-            try {
-                RandomAccessFile reader = new RandomAccessFile("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq", "r");
-                String line = reader.readLine();
-                if (line != null) {
-                    maxCpuFreq = Utilities.parseInt(line) / 1000;
-                }
-                reader.close();
-            } catch (Throwable ignore) {
-
-            }
             int androidVersion = Build.VERSION.SDK_INT;
             int cpuCount = ConnectionsManager.CPU_COUNT;
             int memoryClass = ((ActivityManager) ApplicationLoader.applicationContext.getSystemService(Context.ACTIVITY_SERVICE)).getMemoryClass();
+            int totalCpuFreq = 0;
+            int freqResolved = 0;
+            for (int i = 0; i < cpuCount; i++) {
+                try {
+                    RandomAccessFile reader = new RandomAccessFile(String.format(Locale.ENGLISH, "/sys/devices/system/cpu/cpu%d/cpufreq/cpuinfo_max_freq", i), "r");
+                    String line = reader.readLine();
+                    if (line != null) {
+                        totalCpuFreq += Utilities.parseInt(line) / 1000;
+                        freqResolved++;
+                    }
+                    reader.close();
+                } catch (Throwable ignore) {}
+            }
+            int maxCpuFreq = freqResolved == 0 ? -1 : (int) Math.ceil(totalCpuFreq / (float) freqResolved);
+
             if (androidVersion < 21 || cpuCount <= 2 || memoryClass <= 100 || cpuCount <= 4 && maxCpuFreq != -1 && maxCpuFreq <= 1250 || cpuCount <= 4 && maxCpuFreq <= 1600 && memoryClass <= 128 && androidVersion <= 21 || cpuCount <= 4 && maxCpuFreq <= 1300 && memoryClass <= 128 && androidVersion <= 24) {
                 devicePerformanceClass = PERFORMANCE_CLASS_LOW;
-            } else if (cpuCount < 8 || memoryClass <= 160 || maxCpuFreq != -1 && maxCpuFreq <= 1650 || maxCpuFreq == -1 && cpuCount == 8 && androidVersion <= 23) {
+            } else if (cpuCount < 8 || memoryClass <= 160 || maxCpuFreq != -1 && maxCpuFreq <= 2050 || maxCpuFreq == -1 && cpuCount == 8 && androidVersion <= 23) {
                 devicePerformanceClass = PERFORMANCE_CLASS_AVERAGE;
             } else {
                 devicePerformanceClass = PERFORMANCE_CLASS_HIGH;
@@ -1167,5 +1193,12 @@ public class SharedConfig {
     public static void setDontAskManageStorage(boolean b) {
         dontAskManageStorage = b;
         ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE).edit().putBoolean("dontAskManageStorage", dontAskManageStorage).apply();
+    }
+
+    public static boolean canBlurChat() {
+        return BuildVars.DEBUG_VERSION && getDevicePerformanceClass() == PERFORMANCE_CLASS_HIGH;
+    }
+    public static boolean chatBlurEnabled() {
+        return canBlurChat() && chatBlur;
     }
 }

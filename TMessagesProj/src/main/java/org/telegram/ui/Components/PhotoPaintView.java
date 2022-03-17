@@ -920,6 +920,9 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
 
                 int w = view.getMeasuredWidth();
                 int h = view.getMeasuredHeight();
+                if (w == 0 || h == 0) {
+                    return;
+                }
                 int tr = currentCropState.transformRotation;
                 int fw = w, rotatedW = w;
                 int fh = h, rotatedH = h;

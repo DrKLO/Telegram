@@ -20,21 +20,21 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DocumentObject;
-import org.telegram.messenger.ImageReceiver;
-import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
+import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessagesHelper;
+import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.messenger.SvgHelper;
 
 public class StickerEmojiCell extends FrameLayout {
 
@@ -136,7 +136,8 @@ public class StickerEmojiCell extends FrameLayout {
         } else if (document != null) {
             sticker = document;
             parentObject = parent;
-            TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90);
+            boolean isVideoSticker = MessageObject.isVideoSticker(document);
+            TLRPC.PhotoSize thumb = (isVideoSticker && MessageObject.canAutoplayAnimatedSticker(document)) ? null : FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90);
             SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(document, fromEmojiPanel ? Theme.key_emptyListPlaceholder : Theme.key_windowBackgroundGray, fromEmojiPanel ? 0.2f : 1.0f);
             if (MessageObject.canAutoplayAnimatedSticker(document)) {
                 if (svgThumb != null) {
@@ -149,14 +150,14 @@ public class StickerEmojiCell extends FrameLayout {
             } else {
                 if (svgThumb != null) {
                     if (thumb != null) {
-                        imageView.setImage(ImageLocation.getForDocument(thumb, document), null, "webp", svgThumb, parentObject);
+                        imageView.setImage(ImageLocation.getForDocument(thumb, document), "66_66", "webp", svgThumb, parentObject);
                     } else {
-                        imageView.setImage(ImageLocation.getForDocument(document), null, "webp", svgThumb, parentObject);
+                        imageView.setImage(ImageLocation.getForDocument(document), "66_66", "webp", svgThumb, parentObject);
                     }
                 } else if (thumb != null) {
-                    imageView.setImage(ImageLocation.getForDocument(thumb, document), null, "webp", null, parentObject);
+                    imageView.setImage(ImageLocation.getForDocument(thumb, document), "66_66", "webp", null, parentObject);
                 } else {
-                    imageView.setImage(ImageLocation.getForDocument(document), null, "webp", null, parentObject);
+                    imageView.setImage(ImageLocation.getForDocument(document), "66_66", "webp", null, parentObject);
                 }
             }
 
@@ -231,7 +232,7 @@ public class StickerEmojiCell extends FrameLayout {
                 if (time > 1050) {
                     time = 1050;
                 }
-                alpha = 0.5f + interpolator.getInterpolation(time / 1050.0f) * 0.5f;
+                alpha = 0.5f + interpolator.getInterpolation(time / 150.0f) * 0.5f;
                 if (alpha >= 1.0f) {
                     changingAlpha = false;
                     alpha = 1.0f;

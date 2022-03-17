@@ -8,6 +8,11 @@
 
 package org.telegram.ui;
 
+import static org.telegram.messenger.MessageObject.POSITION_FLAG_BOTTOM;
+import static org.telegram.messenger.MessageObject.POSITION_FLAG_LEFT;
+import static org.telegram.messenger.MessageObject.POSITION_FLAG_RIGHT;
+import static org.telegram.messenger.MessageObject.POSITION_FLAG_TOP;
+
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
@@ -158,6 +163,7 @@ import org.telegram.ui.Components.TextPaintMarkSpan;
 import org.telegram.ui.Components.TextPaintSpan;
 import org.telegram.ui.Components.TextPaintUrlSpan;
 import org.telegram.ui.Components.TextPaintWebpageUrlSpan;
+import org.telegram.ui.Components.TranslateAlert;
 import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.Components.WebPlayerView;
 
@@ -168,11 +174,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-
-import static org.telegram.messenger.MessageObject.POSITION_FLAG_BOTTOM;
-import static org.telegram.messenger.MessageObject.POSITION_FLAG_LEFT;
-import static org.telegram.messenger.MessageObject.POSITION_FLAG_RIGHT;
-import static org.telegram.messenger.MessageObject.POSITION_FLAG_TOP;
 
 public class ArticleViewer implements NotificationCenter.NotificationCenterDelegate {
 
@@ -1145,13 +1146,16 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         float lightness = (0.2126f * Color.red(color2) + 0.7152f * Color.green(color2) + 0.0722f * Color.blue(color2)) / 255.0f;
         webpageSearchPaint.setColor(lightness <= 0.705f ? 0xffd1982e : 0xffffe669);
         webpageUrlPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkSelection) & 0x33ffffff);
+        webpageUrlPaint.setPathEffect(LinkPath.roundedEffect);
         urlPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkSelection) & 0x33ffffff);
+        urlPaint.setPathEffect(LinkPath.roundedEffect);
         tableHalfLinePaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteInputField));
         tableLinePaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteInputField));
 
         photoBackgroundPaint.setColor(0x0f000000);
         dividerPaint.setColor(Theme.getColor(Theme.key_divider));
         webpageMarkPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkSelection) & 0x33ffffff);
+        webpageMarkPaint.setPathEffect(LinkPath.roundedEffect);
 
         int color = Theme.getColor(Theme.key_switchTrack);
         int r = Color.red(color);
@@ -1264,7 +1268,9 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             deleteView.setOnClickListener(v -> {
                 if (pressedLinkOwnerLayout != null) {
                     AndroidUtilities.addToClipboard(pressedLinkOwnerLayout.getText());
-                    Toast.makeText(parentActivity, LocaleController.getString("TextCopied", R.string.TextCopied), Toast.LENGTH_SHORT).show();
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+                        Toast.makeText(parentActivity, LocaleController.getString("TextCopied", R.string.TextCopied), Toast.LENGTH_SHORT).show();
+                    }
                 }
                 if (popupWindow != null && popupWindow.isShowing()) {
                     popupWindow.dismiss(true);
@@ -3648,6 +3654,11 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
 
         textSelectionHelper = new TextSelectionHelper.ArticleTextSelectionHelper();
         textSelectionHelper.setParentView(listView[0]);
+        if (MessagesController.getGlobalMainSettings().getBoolean("translate_button", false)) {
+            textSelectionHelper.setOnTranslate((text, fromLang, toLang, onAlertDismiss) -> {
+                TranslateAlert.showAlert(parentActivity, parentFragment, fromLang, toLang, text, false, null, onAlertDismiss);
+            });
+        }
         textSelectionHelper.layoutManager = layoutManager[0];
         textSelectionHelper.setCallback(new TextSelectionHelper.Callback() {
             @Override
@@ -3659,7 +3670,9 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
 
             @Override
             public void onTextCopied() {
-                BulletinFactory.of(containerView, null).createCopyBulletin(LocaleController.getString("TextCopied", R.string.TextCopied)).show();
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+                    BulletinFactory.of(containerView, null).createCopyBulletin(LocaleController.getString("TextCopied", R.string.TextCopied)).show();
+                }
             }
         });
         containerView.addView(textSelectionHelper.getOverlayView(activity));
@@ -5954,7 +5967,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             currentBlock = block;
             parentBlock = null;
             currentDocument = parentAdapter.getDocumentWithId(currentBlock.video_id);
-            isGif = MessageObject.isGifDocument(currentDocument)/* && currentBlock.autoplay*/;
+            isGif = MessageObject.isVideoDocument(currentDocument) || MessageObject.isGifDocument(currentDocument)/* && currentBlock.autoplay*/;
             isFirst = first;
             channelCell.setVisibility(INVISIBLE);
             updateButtonState(false);
@@ -6090,7 +6103,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                         File path = FileLoader.getPathToAttach(currentDocument, true);
                         if (autoDownload || path.exists()) {
                             imageView.setStrippedLocation(null);
-                            imageView.setImage(ImageLocation.getForDocument(currentDocument), null, null, null, ImageLocation.getForDocument(thumb, currentDocument), "80_80_b", null, currentDocument.size, null, parentAdapter.currentPage, 1);
+                            imageView.setImage(ImageLocation.getForDocument(currentDocument), ImageLoader.AUTOPLAY_FILTER, null, null, ImageLocation.getForDocument(thumb, currentDocument), "80_80_b", null, currentDocument.size, null, parentAdapter.currentPage, 1);
                         } else {
                             imageView.setStrippedLocation(ImageLocation.getForDocument(currentDocument));
                             imageView.setImage(null, null, null, null, ImageLocation.getForDocument(thumb, currentDocument), "80_80_b", null, currentDocument.size, null, parentAdapter.currentPage, 1);

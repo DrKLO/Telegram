@@ -444,7 +444,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
 
     @Override
     int getCurrentItemTop() {
-        if (listView.getChildCount() <= 0) {
+        if (listView.getChildCount() <= 1) {
             return Integer.MAX_VALUE;
         }
         View child = listView.getChildAt(1);
@@ -454,7 +454,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
         RecyclerListView.Holder holder = (RecyclerListView.Holder) listView.findContainingViewHolder(child);
         int top = (int) child.getY() - AndroidUtilities.dp(8);
         int newOffset = top > 0 && holder != null && holder.getAdapterPosition() == 1 ? top : 0;
-        if (top >= 0 && holder != null && holder.getAdapterPosition() == 0) {
+        if (top >= 0 && holder != null && holder.getAdapterPosition() == 1) {
             newOffset = top;
         }
         return newOffset + AndroidUtilities.dp(25);
@@ -810,6 +810,10 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
                         checkCell.setTextAndCheck(LocaleController.getString("PollQuiz", R.string.PollQuiz), quizPoll, false);
                         checkCell.setEnabled(quizOnly == 0, null);
                     }
+                }
+                case 9: {
+                    View view = (View) holder.itemView;
+                    view.requestLayout();
                 }
             }
         }

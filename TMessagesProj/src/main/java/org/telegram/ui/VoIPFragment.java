@@ -1,5 +1,7 @@
 package org.telegram.ui;
 
+import static org.telegram.ui.GroupCallActivity.TRANSITION_DURATION;
+
 import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -66,6 +68,7 @@ import org.telegram.messenger.voip.Instance;
 import org.telegram.messenger.voip.VideoCapturerDevice;
 import org.telegram.messenger.voip.VoIPService;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.DarkAlertDialog;
 import org.telegram.ui.ActionBar.Theme;
@@ -128,6 +131,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
     LinearLayout statusLayout;
     private VoIPFloatingLayout currentUserCameraFloatingLayout;
     private VoIPFloatingLayout callingUserMiniFloatingLayout;
+    private boolean currentUserCameraIsFullscreen;
 
     private TextureViewRenderer callingUserMiniTextureRenderer;
     private VoIPTextureView callingUserTextureView;
@@ -209,6 +213,25 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
     private boolean lockOnScreen;
     private boolean screenWasWakeup;
     private boolean isVideoCall;
+
+    /* === pinch to zoom === */
+    private float pinchStartCenterX;
+    private float pinchStartCenterY;
+    private float pinchStartDistance;
+    private float pinchTranslationX;
+    private float pinchTranslationY;
+    private boolean isInPinchToZoomTouchMode;
+
+    private float pinchCenterX;
+    private float pinchCenterY;
+
+    private int pointerId1, pointerId2;
+
+    float pinchScale = 1f;
+    private boolean zoomStarted;
+    private boolean canZoomGesture;
+    ValueAnimator zoomBackAnimator;
+    /* === pinch to zoom === */
 
     public static void show(Activity activity, int account) {
         show(activity, false, account);
@@ -316,6 +339,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         if (callingUserIsVideo && currentUserIsVideo && cameraForceExpanded) {
             cameraForceExpanded = false;
             currentUserCameraFloatingLayout.setRelativePosition(callingUserMiniFloatingLayout);
+            currentUserCameraIsFullscreen = false;
             previousState = currentState;
             updateViewState();
             return;
@@ -507,11 +531,93 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             long pressedTime;
 
             @Override
-            public boolean onTouchEvent(MotionEvent event) {
-                switch (event.getAction()) {
+            public boolean onTouchEvent(MotionEvent ev) {
+                /* === pinch to zoom === */
+                if (!canZoomGesture && !isInPinchToZoomTouchMode && !zoomStarted && ev.getActionMasked() != MotionEvent.ACTION_DOWN) {
+                    finishZoom();
+                    return false;
+                }
+                if (ev.getActionMasked() == MotionEvent.ACTION_DOWN) {
+                    canZoomGesture = false;
+                    isInPinchToZoomTouchMode = false;
+                    zoomStarted = false;
+                }
+                VoIPTextureView currentTextureView = getFullscreenTextureView();
+
+                if (ev.getActionMasked() == MotionEvent.ACTION_DOWN || ev.getActionMasked() == MotionEvent.ACTION_POINTER_DOWN) {
+                    if (ev.getActionMasked() == MotionEvent.ACTION_DOWN) {
+                        AndroidUtilities.rectTmp.set(currentTextureView.getX(), currentTextureView.getY(), currentTextureView.getX() + currentTextureView.getMeasuredWidth(), currentTextureView.getY() + currentTextureView.getMeasuredHeight());
+                        AndroidUtilities.rectTmp.inset((currentTextureView.getMeasuredHeight() * currentTextureView.scaleTextureToFill - currentTextureView.getMeasuredHeight()) / 2, (currentTextureView.getMeasuredWidth() * currentTextureView.scaleTextureToFill - currentTextureView.getMeasuredWidth()) / 2);
+                        if (!GroupCallActivity.isLandscapeMode) {
+                            AndroidUtilities.rectTmp.top = Math.max(AndroidUtilities.rectTmp.top, ActionBar.getCurrentActionBarHeight());
+                            AndroidUtilities.rectTmp.bottom = Math.min(AndroidUtilities.rectTmp.bottom, currentTextureView.getMeasuredHeight() - AndroidUtilities.dp(90));
+                        } else {
+                            AndroidUtilities.rectTmp.top = Math.max(AndroidUtilities.rectTmp.top, ActionBar.getCurrentActionBarHeight());
+                            AndroidUtilities.rectTmp.right = Math.min(AndroidUtilities.rectTmp.right, currentTextureView.getMeasuredWidth() - AndroidUtilities.dp(90));
+                        }
+                        canZoomGesture = AndroidUtilities.rectTmp.contains(ev.getX(), ev.getY());
+                        if (!canZoomGesture) {
+                            finishZoom();
+//                            return maybeSwipeToBackGesture;
+                        }
+                    }
+                    if (!isInPinchToZoomTouchMode && ev.getPointerCount() == 2) {
+                        pinchStartDistance = (float) Math.hypot(ev.getX(1) - ev.getX(0), ev.getY(1) - ev.getY(0));
+                        pinchStartCenterX = pinchCenterX = (ev.getX(0) + ev.getX(1)) / 2.0f;
+                        pinchStartCenterY = pinchCenterY = (ev.getY(0) + ev.getY(1)) / 2.0f;
+                        pinchScale = 1f;
+
+                        pointerId1 = ev.getPointerId(0);
+                        pointerId2 = ev.getPointerId(1);
+                        isInPinchToZoomTouchMode = true;
+                    }
+                } else if (ev.getActionMasked() == MotionEvent.ACTION_MOVE && isInPinchToZoomTouchMode) {
+                    int index1 = -1;
+                    int index2 = -1;
+                    for (int i = 0; i < ev.getPointerCount(); i++) {
+                        if (pointerId1 == ev.getPointerId(i)) {
+                            index1 = i;
+                        }
+                        if (pointerId2 == ev.getPointerId(i)) {
+                            index2 = i;
+                        }
+                    }
+                    if (index1 == -1 || index2 == -1) {
+                        getParent().requestDisallowInterceptTouchEvent(false);
+                        finishZoom();
+//                        return maybeSwipeToBackGesture;
+                    }
+                    pinchScale = (float) Math.hypot(ev.getX(index2) - ev.getX(index1), ev.getY(index2) - ev.getY(index1)) / pinchStartDistance;
+                    if (pinchScale > 1.005f && !zoomStarted) {
+                        pinchStartDistance = (float) Math.hypot(ev.getX(index2) - ev.getX(index1), ev.getY(index2) - ev.getY(index1));
+                        pinchStartCenterX = pinchCenterX = (ev.getX(index1) + ev.getX(index2)) / 2.0f;
+                        pinchStartCenterY = pinchCenterY = (ev.getY(index1) + ev.getY(index2)) / 2.0f;
+                        pinchScale = 1f;
+                        pinchTranslationX = 0f;
+                        pinchTranslationY = 0f;
+                        getParent().requestDisallowInterceptTouchEvent(true);
+                        zoomStarted = true;//
+                        isInPinchToZoomTouchMode = true;
+                    }
+
+                    float newPinchCenterX = (ev.getX(index1) + ev.getX(index2)) / 2.0f;
+                    float newPinchCenterY = (ev.getY(index1) + ev.getY(index2)) / 2.0f;
+
+                    float moveDx = pinchStartCenterX - newPinchCenterX;
+                    float moveDy = pinchStartCenterY - newPinchCenterY;
+                    pinchTranslationX = -moveDx / pinchScale;
+                    pinchTranslationY = -moveDy / pinchScale;
+                    invalidate();
+                } else if ((ev.getActionMasked() == MotionEvent.ACTION_UP || (ev.getActionMasked() == MotionEvent.ACTION_POINTER_UP && checkPointerIds(ev)) || ev.getActionMasked() == MotionEvent.ACTION_CANCEL)) {
+                    getParent().requestDisallowInterceptTouchEvent(false);
+                    finishZoom();
+                }
+                fragmentView.invalidate();
+
+                switch (ev.getAction()) {
                     case MotionEvent.ACTION_DOWN:
-                        pressedX = event.getX();
-                        pressedY = event.getY();
+                        pressedX = ev.getX();
+                        pressedY = ev.getY();
                         check = true;
                         pressedTime = System.currentTimeMillis();
                         break;
@@ -520,8 +626,8 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                         break;
                     case MotionEvent.ACTION_UP:
                         if (check) {
-                            float dx = event.getX() - pressedX;
-                            float dy = event.getY() - pressedY;
+                            float dx = ev.getX() - pressedX;
+                            float dy = ev.getY() - pressedY;
                             long currentTime = System.currentTimeMillis();
                             if (dx * dx + dy * dy < touchSlop * touchSlop && currentTime - pressedTime < 300 && currentTime - lastContentTapTime > 300) {
                                 lastContentTapTime = System.currentTimeMillis();
@@ -537,11 +643,34 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                         }
                         break;
                 }
-                return check;
+                return canZoomGesture || check;
+            }
+
+            @Override
+            protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
+                if (child == callingUserPhotoView && (currentUserIsVideo || callingUserIsVideo)) {
+                    return false;
+                }
+                if (
+                    child == callingUserPhotoView ||
+                    child == callingUserTextureView ||
+                    (child == currentUserCameraFloatingLayout && currentUserCameraIsFullscreen)
+                ) {
+                    if (zoomStarted || zoomBackAnimator != null) {
+                        canvas.save();
+                        canvas.scale(pinchScale, pinchScale, pinchCenterX, pinchCenterY);
+                        canvas.translate(pinchTranslationX, pinchTranslationY);
+                        boolean b = super.drawChild(canvas, child, drawingTime);
+                        canvas.restore();
+                        return b;
+                    }
+                }
+                return super.drawChild(canvas, child, drawingTime);
             }
         };
         frameLayout.setClipToPadding(false);
         frameLayout.setClipChildren(false);
+        frameLayout.setBackgroundColor(0xff000000);
         updateSystemBarColors();
         fragmentView = frameLayout;
         frameLayout.setFitsSystemWindows(true);
@@ -558,7 +687,8 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         callingUserTextureView = new VoIPTextureView(context, false, true, false, false);
         callingUserTextureView.renderer.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FIT);
         callingUserTextureView.renderer.setEnableHardwareScaler(true);
-        callingUserTextureView.scaleType = VoIPTextureView.SCALE_TYPE_NONE;
+        callingUserTextureView.renderer.setRotateTextureWithScreen(true);
+        callingUserTextureView.scaleType = VoIPTextureView.SCALE_TYPE_FIT;
    //     callingUserTextureView.attachBackgroundRenderer();
 
         frameLayout.addView(callingUserPhotoView);
@@ -588,6 +718,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         currentUserCameraFloatingLayout = new VoIPFloatingLayout(context);
         currentUserCameraFloatingLayout.setDelegate((progress, value) -> currentUserTextureView.setScreenshareMiniProgress(progress, value));
         currentUserCameraFloatingLayout.setRelativePosition(1f, 1f);
+        currentUserCameraIsFullscreen = true;
         currentUserTextureView = new VoIPTextureView(context, true, false);
         currentUserTextureView.renderer.setIsCamera(true);
         currentUserTextureView.renderer.setUseCameraRotation(true);
@@ -597,6 +728,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                 hideUiRunnableWaiting = false;
                 lastContentTapTime = System.currentTimeMillis();
                 callingUserMiniFloatingLayout.setRelativePosition(currentUserCameraFloatingLayout);
+                currentUserCameraIsFullscreen = true;
                 cameraForceExpanded = true;
                 previousState = currentState;
                 updateViewState();
@@ -624,6 +756,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                 hideUiRunnableWaiting = false;
                 lastContentTapTime = System.currentTimeMillis();
                 currentUserCameraFloatingLayout.setRelativePosition(callingUserMiniFloatingLayout);
+                currentUserCameraIsFullscreen = false;
                 cameraForceExpanded = false;
                 previousState = currentState;
                 updateViewState();
@@ -772,7 +905,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             }
 
             @Override
-            public void onDicline() {
+            public void onDecline() {
                 if (currentState == VoIPService.STATE_BUSY) {
                     windowView.finish();
                 } else {
@@ -853,6 +986,60 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         }
 
         return frameLayout;
+    }
+
+    private boolean checkPointerIds(MotionEvent ev) {
+        if (ev.getPointerCount() < 2) {
+            return false;
+        }
+        if (pointerId1 == ev.getPointerId(0) && pointerId2 == ev.getPointerId(1)) {
+            return true;
+        }
+        if (pointerId1 == ev.getPointerId(1) && pointerId2 == ev.getPointerId(0)) {
+            return true;
+        }
+        return false;
+    }
+
+    private VoIPTextureView getFullscreenTextureView() {
+        if (callingUserIsVideo) {
+            return callingUserTextureView;
+        }
+        return currentUserTextureView;
+    }
+
+    private void finishZoom() {
+        if (zoomStarted) {
+            zoomStarted = false;
+            zoomBackAnimator = ValueAnimator.ofFloat(1f, 0);
+
+            float fromScale = pinchScale;
+            float fromTranslateX = pinchTranslationX;
+            float fromTranslateY = pinchTranslationY;
+            zoomBackAnimator.addUpdateListener(valueAnimator -> {
+                float v = (float) valueAnimator.getAnimatedValue();
+                pinchScale = fromScale * v + 1f * (1f - v);
+                pinchTranslationX = fromTranslateX * v;
+                pinchTranslationY = fromTranslateY * v;
+                fragmentView.invalidate();
+            });
+
+            zoomBackAnimator.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    zoomBackAnimator = null;
+                    pinchScale = 1f;
+                    pinchTranslationX = 0;
+                    pinchTranslationY = 0;
+                    fragmentView.invalidate();
+                }
+            });
+            zoomBackAnimator.setDuration(TRANSITION_DURATION);
+            zoomBackAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
+            zoomBackAnimator.start();
+        }
+        canZoomGesture = false;
+        isInPinchToZoomTouchMode = false;
     }
 
     private void initRenderers() {
@@ -1323,8 +1510,8 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         }
 
         if (animated) {
-            currentUserCameraFloatingLayout.saveRelatedPosition();
-            callingUserMiniFloatingLayout.saveRelatedPosition();
+            currentUserCameraFloatingLayout.saveRelativePosition();
+            callingUserMiniFloatingLayout.saveRelativePosition();
         }
 
         if (callingUserIsVideo) {
@@ -1620,9 +1807,9 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                 currentUserCameraFloatingLayout.setVisibility(View.GONE);
             }
         } else {
-            boolean swtichToFloatAnimated = animated;
+            boolean switchToFloatAnimated = animated;
             if (currentUserCameraFloatingLayout.getTag() == null || (int) currentUserCameraFloatingLayout.getTag() == STATE_GONE) {
-                swtichToFloatAnimated = false;
+                switchToFloatAnimated = false;
             }
             if (animated) {
                 if (currentUserCameraFloatingLayout.getTag() != null && (int) currentUserCameraFloatingLayout.getTag() == STATE_GONE) {
@@ -1650,8 +1837,10 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             }
             if ((currentUserCameraFloatingLayout.getTag() == null || (int) currentUserCameraFloatingLayout.getTag() != STATE_FLOATING) && currentUserCameraFloatingLayout.relativePositionToSetX < 0) {
                 currentUserCameraFloatingLayout.setRelativePosition(1f, 1f);
+                currentUserCameraIsFullscreen = true;
             }
-            currentUserCameraFloatingLayout.setFloatingMode(state == STATE_FLOATING, swtichToFloatAnimated);
+            currentUserCameraFloatingLayout.setFloatingMode(state == STATE_FLOATING, switchToFloatAnimated);
+            currentUserCameraIsFullscreen = state != STATE_FLOATING;
         }
         currentUserCameraFloatingLayout.setTag(state);
     }
@@ -1698,7 +1887,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             buf.write(service.getGA());
             auth_key = buf.toByteArray();
         } catch (Exception checkedExceptionsAreBad) {
-            FileLog.e(checkedExceptionsAreBad);
+            FileLog.e(checkedExceptionsAreBad, false);
         }
         if (auth_key == null) {
             return;

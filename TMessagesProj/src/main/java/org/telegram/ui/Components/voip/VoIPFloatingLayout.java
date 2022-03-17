@@ -534,7 +534,7 @@ public class VoIPFloatingLayout extends FrameLayout {
         active = b;
     }
 
-    public void saveRelatedPosition() {
+    public void saveRelativePosition() {
         if (getMeasuredWidth() > 0 && relativePositionToSetX < 0) {
             ViewParent parent = getParent();
             if (parent == null) {

@@ -1,5 +1,9 @@
 package org.telegram.ui.Cells;
 
+import static com.google.zxing.common.detector.MathUtils.distance;
+import static org.telegram.ui.ActionBar.FloatingToolbar.STYLE_THEME;
+import static org.telegram.ui.ActionBar.Theme.key_chat_inTextSelectionHighlight;
+
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
@@ -37,6 +41,9 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.FileLog;
+import org.telegram.messenger.LanguageDetector;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
@@ -47,12 +54,9 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ArticleViewer;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.RestrictedLanguagesSelectActivity;
 
 import java.util.ArrayList;
-
-import static com.google.zxing.common.detector.MathUtils.distance;
-import static org.telegram.ui.ActionBar.FloatingToolbar.STYLE_THEME;
-import static org.telegram.ui.ActionBar.Theme.key_chat_inTextSelectionHighlight;
 
 public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.SelectableView> {
 
@@ -254,6 +258,14 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
     public TextSelectionHelper() {
         longpressDelay = ViewConfiguration.getLongPressTimeout();
         touchSlop = ViewConfiguration.get(ApplicationLoader.applicationContext).getScaledTouchSlop();
+    }
+
+    public interface OnTranslateListener {
+        public void run(CharSequence text, String fromLang, String toLang, Runnable onAlertDismiss);
+    }
+    private OnTranslateListener onTranslateListener = null;
+    public void setOnTranslate(OnTranslateListener listener) {
+        onTranslateListener = listener;
     }
 
     public void setParentView(ViewGroup view) {
@@ -1212,12 +1224,14 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
         }
     }
 
+    private static final int TRANSLATE = 3;
     private ActionMode.Callback createActionCallback() {
         final ActionMode.Callback callback = new ActionMode.Callback() {
             @Override
             public boolean onCreateActionMode(ActionMode mode, Menu menu) {
                 menu.add(Menu.NONE, android.R.id.copy, 0, android.R.string.copy);
                 menu.add(Menu.NONE, android.R.id.selectAll, 1, android.R.string.selectAll);
+                menu.add(Menu.NONE, TRANSLATE, 2, LocaleController.getString("TranslateMessage", R.string.TranslateMessage));
                 return true;
             }
 
@@ -1231,7 +1245,35 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                         menu.getItem(1).setVisible(true);
                     }
                 }
+                if (onTranslateListener != null && LanguageDetector.hasSupport() && getSelectedText() != null) {
+                    LanguageDetector.detectLanguage(getSelectedText().toString(), lng -> {
+                        translateFromLanguage = lng;
+                        updateTranslateButton(menu);
+                    }, err -> {
+                        FileLog.e("mlkit: failed to detect language in selection");
+                        FileLog.e(err);
+                        translateFromLanguage = null;
+                        updateTranslateButton(menu);
+                    });
+                } else {
+                    translateFromLanguage = null;
+                    updateTranslateButton(menu);
+                }
                 return true;
+            }
+
+            private String translateFromLanguage = null;
+            private void updateTranslateButton(Menu menu) {
+                String translateToLanguage = LocaleController.getInstance().getCurrentLocale().getLanguage();
+                menu.getItem(2).setVisible(
+                    onTranslateListener != null && (
+                        (
+                            translateFromLanguage != null &&
+                            (!translateFromLanguage.equals(translateToLanguage) || translateFromLanguage.equals("und")) &&
+                            !RestrictedLanguagesSelectActivity.getRestrictedLanguages().contains(translateFromLanguage)
+                        ) || !LanguageDetector.hasSupport()
+                    )
+                );
             }
 
             @Override
@@ -1253,6 +1295,13 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                         hideActions();
                         invalidate();
                         showActions();
+                        return true;
+                    case TRANSLATE:
+                        if (onTranslateListener != null) {
+                            String translateToLanguage = LocaleController.getInstance().getCurrentLocale().getLanguage();
+                            onTranslateListener.run(getSelectedText(), translateFromLanguage, translateToLanguage, () -> showActions());
+                        }
+                        hideActions();
                         return true;
                     default:
                         clear();
@@ -1311,7 +1360,6 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                     if (selectedView != null) {
                         int[] coords = offsetToCord(selectionEnd);
                         x2 = coords[0] + textX;
-
                     }
                     outRect.set(
                             Math.min(x1, x2), y1,
@@ -1328,7 +1376,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
         if (!isSelectionMode()) {
             return;
         }
-        CharSequence str = getTextForCopy();
+        CharSequence str = getSelectedText();
         if (str == null) {
             return;
         }
@@ -1342,7 +1390,17 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
         }
     }
 
-    protected CharSequence getTextForCopy() {
+    private void translateText() {
+        if (!isSelectionMode()) {
+            return;
+        }
+        CharSequence str = getSelectedText();
+        if (str == null) {
+            return;
+        }
+    }
+
+    protected CharSequence getSelectedText() {
         CharSequence text = getText(selectedView, false);
         if (text != null) {
             return text.subSequence(selectionStart, selectionEnd);
@@ -2375,7 +2433,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
         }
 
         @Override
-        protected CharSequence getTextForCopy() {
+        protected CharSequence getSelectedText() {
             SpannableStringBuilder stringBuilder = new SpannableStringBuilder();
             for (int i = startViewPosition; i <= endViewPosition; i++) {
                 if (i == startViewPosition) {

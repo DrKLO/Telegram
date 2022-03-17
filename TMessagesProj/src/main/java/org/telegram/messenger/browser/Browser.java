@@ -172,10 +172,21 @@ public class Browser {
     }
 
     public static boolean isTelegraphUrl(String url, boolean equals) {
+        return isTelegraphUrl(url, equals, false);
+    }
+    public static boolean isTelegraphUrl(String url, boolean equals, boolean forceHttps) {
         if (equals) {
             return url.equals("telegra.ph") || url.equals("te.legra.ph") || url.equals("graph.org");
         }
-        return url.contains("telegra.ph") || url.contains("te.legra.ph") || url.contains("graph.org");
+        return url.matches("^(https" + (forceHttps ? "" : "?") + "://)?(te\\.?legra\\.ph|graph\\.org).*"); // telegra.ph, te.legra.ph, graph.org
+    }
+
+    public static boolean urlMustNotHaveConfirmation(String url) {
+        return (
+            isTelegraphUrl(url, false, true) ||
+            url.matches("^(https://)?t\\.me/iv\\??.*") || // t.me/iv?
+            url.matches("^(https://)?telegram\\.org/(blog|tour)/?.*") // telegram.org/blog, telegram.org/tour
+        );
     }
 
     public static void openUrl(final Context context, Uri uri, final boolean allowCustom, boolean tryTelegraph) {

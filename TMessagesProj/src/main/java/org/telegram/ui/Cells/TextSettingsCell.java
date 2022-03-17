@@ -12,7 +12,6 @@ import android.animation.Animator;
 import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -28,6 +27,7 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
 
 import java.util.ArrayList;
@@ -36,6 +36,7 @@ public class TextSettingsCell extends FrameLayout {
 
     private TextView textView;
     private TextView valueTextView;
+    private BackupImageView valueBackupImageView;
     private ImageView valueImageView;
     private boolean needDivider;
     private boolean canDisable;
@@ -94,6 +95,10 @@ public class TextSettingsCell extends FrameLayout {
         int width = availableWidth / 2;
         if (valueImageView.getVisibility() == VISIBLE) {
             valueImageView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.EXACTLY));
+        }
+
+        if (valueBackupImageView != null) {
+            valueBackupImageView.measure(MeasureSpec.makeMeasureSpec(valueBackupImageView.getLayoutParams().height, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(valueBackupImageView.getLayoutParams().width, MeasureSpec.EXACTLY));
         }
         if (valueTextView.getVisibility() == VISIBLE) {
             valueTextView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.EXACTLY));
@@ -272,5 +277,13 @@ public class TextSettingsCell extends FrameLayout {
             measureDelay = true;
         }
         invalidate();
+    }
+
+    public BackupImageView getValueBackupImageView() {
+        if (valueBackupImageView == null) {
+            valueBackupImageView = new BackupImageView(getContext());
+            addView(valueBackupImageView, LayoutHelper.createFrame(24, 24, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, padding, 0, padding, 0));
+        }
+        return valueBackupImageView;
     }
 }

@@ -1,5 +1,32 @@
 #!/bin/bash
 
+# instructions for build
+# used
+# ffmpeg 4.3.3
+# lib vpx 1.10.9
+# NDK for compile libvpx. Last successful build with 21.1.6352462
+# NDK r10e for compile ffmpeg
+#
+# 1) download ffmpeg
+# 2) set NDK_r10e and NDK variables
+# 3) download lib vpx
+# 4) copy libvpx to vpx-android folder and rename as libvpx
+# 5) copy build_ffmpeg foleder in ffmepg directory
+# 6) run build_ffmpeg.sh
+# 7) see compiled library in build_ffmpeg/adnroid folder
+
+NDK="/opt/android/ndk/android-ndk-r21e"
+NDK_r10e="/opt/android/ndk/android-ndk-r10e"
+
+#build vpx
+cd ./vpx-android
+export ANDROID_NDK=$NDK
+sh build-vpx.sh
+cd ../..
+
+
+NDK=$NDK_r10e
+
 function build_one {
 
 echo "Cleaning..."
@@ -7,6 +34,9 @@ rm config.h
 make clean
 
 echo "Configuring..."
+
+INCLUDES=" -I${PREFIX}/include"
+LIBS=" -L${PREFIX}/lib"
 
 ./configure \
 --cc=$CC \
@@ -24,8 +54,8 @@ echo "Configuring..."
 --enable-inline-asm \
 --cross-prefix=$CROSS_PREFIX \
 --sysroot=$PLATFORM \
---extra-cflags="-Wl,-Bsymbolic -Os -DCONFIG_LINUX_PERF=0 -DANDROID $OPTIMIZE_CFLAGS -fPIE -pie --static -fPIC" \
---extra-ldflags="-Wl,-Bsymbolic -Wl,-rpath-link=$PLATFORM/usr/lib -L$PLATFORM/usr/lib -nostdlib -lc -lm -ldl -fPIC" \
+--extra-cflags="${INCLUDES} -Wl,-Bsymbolic -Os -DCONFIG_LINUX_PERF=0 -DANDROID $OPTIMIZE_CFLAGS -fPIE -pie --static -fPIC" \
+--extra-ldflags="${LIBS} -Wl,-Bsymbolic -Wl,-rpath-link=$PLATFORM/usr/lib -L$PLATFORM/usr/lib -nostdlib -lc -lm -ldl -fPIC" \
 --extra-libs="-lgcc" \
 \
 --enable-version3 \
@@ -44,6 +74,8 @@ echo "Configuring..."
 --disable-programs \
 --disable-network \
 \
+--enable-libvpx \
+--enable-decoder=libvpx_vp9 \
 --enable-runtime-cpudetect \
 --enable-pthreads \
 --enable-avresample \
@@ -54,9 +86,11 @@ echo "Configuring..."
 --enable-decoder=mjpeg \
 --enable-decoder=gif \
 --enable-decoder=alac \
+--enable-decoder=opus \
 --enable-demuxer=mov \
 --enable-demuxer=gif \
 --enable-demuxer=ogg \
+--enable-demuxer=matroska \
 --enable-hwaccels \
 --enable-runtime-cpudetect \
 $ADDITIONAL_CONFIGURE_FLAG
@@ -66,8 +100,6 @@ $ADDITIONAL_CONFIGURE_FLAG
 make -j8 install
 
 }
-
-NDK=path_to_ndk
 
 #x86_64
 PREBUILT=$NDK/toolchains/x86_64-4.9/prebuilt/darwin-x86_64
@@ -80,7 +112,7 @@ CC=$PREBUILT/bin/x86_64-linux-android-gcc
 CROSS_PREFIX=$PREBUILT/bin/x86_64-linux-android-
 ARCH=x86_64
 CPU=x86_64
-PREFIX=./android/$CPU
+PREFIX=./android/x86_64
 ADDITIONAL_CONFIGURE_FLAG="--disable-mmx --disable-inline-asm"
 build_one
 
@@ -96,7 +128,7 @@ CROSS_PREFIX=$PREBUILT/bin/aarch64-linux-android-
 ARCH=arm64
 CPU=arm64-v8a
 OPTIMIZE_CFLAGS=
-PREFIX=./android/$CPU
+PREFIX=./android/arm64-v8a
 ADDITIONAL_CONFIGURE_FLAG="--enable-neon --enable-optimizations"
 build_one
 
@@ -112,7 +144,7 @@ CROSS_PREFIX=$PREBUILT/bin/arm-linux-androideabi-
 ARCH=arm
 CPU=armv7-a
 OPTIMIZE_CFLAGS="-marm -march=$CPU"
-PREFIX=./android/$CPU
+PREFIX=./android/armeabi-v7a
 ADDITIONAL_CONFIGURE_FLAG=--enable-neon
 build_one
 
@@ -128,8 +160,14 @@ CROSS_PREFIX=$PREBUILT/bin/i686-linux-android-
 ARCH=x86
 CPU=i686
 OPTIMIZE_CFLAGS="-march=$CPU"
-PREFIX=./android/$CPU
+PREFIX=./android/x86
 ADDITIONAL_CONFIGURE_FLAG="--disable-mmx --disable-yasm"
 build_one
+
+  if [[ -e ./build_ffmpeg/android ]]; then
+      rm -rf ./build_ffmpeg/android
+  fi
+
+mv ./android ./build_ffmpeg/
 
 

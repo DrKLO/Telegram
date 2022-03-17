@@ -35,14 +35,6 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
-
-import androidx.collection.LongSparseArray;
-import androidx.recyclerview.widget.DefaultItemAnimator;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-import androidx.viewpager.widget.PagerAdapter;
-import androidx.viewpager.widget.ViewPager;
-
 import android.os.SystemClock;
 import android.text.TextPaint;
 import android.text.TextUtils;
@@ -59,7 +51,12 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.google.android.exoplayer2.util.Log;
+import androidx.collection.LongSparseArray;
+import androidx.recyclerview.widget.DefaultItemAnimator;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.viewpager.widget.PagerAdapter;
+import androidx.viewpager.widget.ViewPager;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -326,21 +323,23 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
 
         if (screenType == SCREEN_TYPE_ACCENT_COLOR) {
             accent = applyingTheme.getAccent(!edit);
-            useDefaultThemeForButtons = false;
-            backupAccentColor = accent.accentColor;
-            backupAccentColor2 = accent.accentColor2;
-            backupMyMessagesAccentColor = accent.myMessagesAccentColor;
-            backupMyMessagesGradientAccentColor1 = accent.myMessagesGradientAccentColor1;
-            backupMyMessagesGradientAccentColor2 = accent.myMessagesGradientAccentColor2;
-            backupMyMessagesGradientAccentColor3 = accent.myMessagesGradientAccentColor3;
-            backupMyMessagesAnimated = accent.myMessagesAnimated;
-            backupBackgroundOverrideColor = accent.backgroundOverrideColor;
-            backupBackgroundGradientOverrideColor1 = accent.backgroundGradientOverrideColor1;
-            backupBackgroundGradientOverrideColor2 = accent.backgroundGradientOverrideColor2;
-            backupBackgroundGradientOverrideColor3 = accent.backgroundGradientOverrideColor3;
-            backupIntensity = accent.patternIntensity;
-            backupSlug = accent.patternSlug;
-            backupBackgroundRotation = accent.backgroundRotation;
+            if (accent != null) {
+                useDefaultThemeForButtons = false;
+                backupAccentColor = accent.accentColor;
+                backupAccentColor2 = accent.accentColor2;
+                backupMyMessagesAccentColor = accent.myMessagesAccentColor;
+                backupMyMessagesGradientAccentColor1 = accent.myMessagesGradientAccentColor1;
+                backupMyMessagesGradientAccentColor2 = accent.myMessagesGradientAccentColor2;
+                backupMyMessagesGradientAccentColor3 = accent.myMessagesGradientAccentColor3;
+                backupMyMessagesAnimated = accent.myMessagesAnimated;
+                backupBackgroundOverrideColor = accent.backgroundOverrideColor;
+                backupBackgroundGradientOverrideColor1 = accent.backgroundGradientOverrideColor1;
+                backupBackgroundGradientOverrideColor2 = accent.backgroundGradientOverrideColor2;
+                backupBackgroundGradientOverrideColor3 = accent.backgroundGradientOverrideColor3;
+                backupIntensity = accent.patternIntensity;
+                backupSlug = accent.patternSlug;
+                backupBackgroundRotation = accent.backgroundRotation;
+            }
         } else {
             if (screenType == SCREEN_TYPE_PREVIEW) {
                 useDefaultThemeForButtons = false;

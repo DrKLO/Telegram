@@ -13,7 +13,6 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
 import android.graphics.drawable.Drawable;
@@ -26,7 +25,6 @@ import android.transition.TransitionManager;
 import android.transition.TransitionSet;
 import android.transition.TransitionValues;
 import android.util.SparseArray;
-import android.util.SparseIntArray;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
@@ -52,10 +50,7 @@ import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Locale;
 
 public class ScrollSlidingTabStrip extends HorizontalScrollView {
 
@@ -648,7 +643,7 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
                     }
                     if (sticker instanceof TLRPC.Document) {
                       //  String.format(Locale.US, "%d_%d_nr_%s" + messageObject.emojiAnimatedStickerColor, w, h, messageObject.toString());
-                        tabView.imageView.setImage(ImageLocation.getForDocument((TLRPC.Document) sticker), "36_36", thumbDrawable, null);
+                        tabView.imageView.setImage(ImageLocation.getForDocument((TLRPC.Document) sticker), "36_36_nolimit", thumbDrawable, null);
                     } else {
                         tabView.imageView.setImageDrawable(thumbDrawable);
                     }
@@ -681,7 +676,13 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
                     tabView.inited = true;
                     SvgHelper.SvgDrawable svgThumb = tabView.svgThumb;
                     BackupImageView imageView = tabView.imageView;
-                    if (object instanceof TLRPC.Document && MessageObject.isAnimatedStickerDocument(sticker, true)) {
+                    if (object instanceof TLRPC.Document && MessageObject.isVideoSticker(sticker)) {
+                        if (svgThumb != null) {
+                            imageView.setImage(ImageLocation.getForDocument(sticker), "40_40", svgThumb, 0, parentObject);
+                        } else {
+                            imageView.setImage(ImageLocation.getForDocument(sticker), "40_40", imageLocation, null, 0, parentObject);
+                        }
+                    } else if (object instanceof TLRPC.Document && MessageObject.isAnimatedStickerDocument(sticker, true)) {
                         if (svgThumb != null) {
                             imageView.setImage(ImageLocation.getForDocument(sticker), "40_40", svgThumb, 0, parentObject);
                         } else {

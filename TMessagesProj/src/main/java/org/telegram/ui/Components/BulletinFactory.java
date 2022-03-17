@@ -1,6 +1,7 @@
 package org.telegram.ui.Components;
 
 import android.content.Context;
+import android.os.Build;
 import android.widget.FrameLayout;
 
 import androidx.annotation.CheckResult;
@@ -43,7 +44,8 @@ public final class BulletinFactory {
         PHOTO_TO_DOWNLOADS("PhotoSavedToDownloadsHint", R.string.PhotoSavedToDownloadsHint, Icon.SAVED_TO_DOWNLOADS),
         VIDEO_TO_DOWNLOADS("VideoSavedToDownloadsHint", R.string.VideoSavedToDownloadsHint, Icon.SAVED_TO_DOWNLOADS),
 
-        GIF("GifSavedToDownloadsHint", Icon.SAVED_TO_DOWNLOADS),
+        GIF("GifSavedHint", R.string.GifSavedHint, Icon.SAVED_TO_GIFS),
+        GIF_TO_DOWNLOADS("GifSavedToDownloadsHint", R.string.GifSavedToDownloadsHint, Icon.SAVED_TO_DOWNLOADS),
 
         AUDIO("AudioSavedHint", R.string.AudioSavedHint, Icon.SAVED_TO_MUSIC),
         AUDIOS("AudiosSavedHint", Icon.SAVED_TO_MUSIC),
@@ -86,7 +88,8 @@ public final class BulletinFactory {
 
             SAVED_TO_DOWNLOADS(R.raw.ic_download, 2, "Box", "Arrow"),
             SAVED_TO_GALLERY(R.raw.ic_save_to_gallery, 0, "Box", "Arrow", "Mask", "Arrow 2", "Splash"),
-            SAVED_TO_MUSIC(R.raw.ic_save_to_music, 2, "Box", "Arrow");
+            SAVED_TO_MUSIC(R.raw.ic_save_to_music, 2, "Box", "Arrow"),
+            SAVED_TO_GIFS(R.raw.ic_save_to_gifs, 0, "gif");
 
             private final int resId;
             private final String[] layers;
@@ -188,6 +191,9 @@ public final class BulletinFactory {
 
     @CheckResult
     public Bulletin createCopyBulletin(String message) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            return new Bulletin.EmptyBulletin();
+        }
         final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), null);
         layout.setAnimation(R.raw.copy, 36, 36, "NULL ROTATION", "Back", "Front");
         layout.textView.setText(message);
@@ -196,6 +202,9 @@ public final class BulletinFactory {
 
     @CheckResult
     public Bulletin createCopyLinkBulletin(boolean isPrivate, Theme.ResourcesProvider resourcesProvider) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            return new Bulletin.EmptyBulletin();
+        }
         if (isPrivate) {
             final Bulletin.TwoLineLottieLayout layout = new Bulletin.TwoLineLottieLayout(getContext(), resourcesProvider);
             layout.setAnimation(R.raw.voip_invite, 36, 36, "Wibe", "Circle");

@@ -355,6 +355,8 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                             delegate.searchStateChanged(waitingResponseCount > 0, true);
                             delegate.runResultsEnterAnimation();
                         }
+                        globalSearchCollapsed = true;
+                        phoneCollapsed = true;
                         notifyDataSetChanged();
                     }
                 }
@@ -697,6 +699,8 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
             searchWas = false;
             lastSearchId = 0;
             waitingResponseCount = 0;
+            globalSearchCollapsed = true;
+            phoneCollapsed = true;
             if (delegate != null) {
                 delegate.searchStateChanged(false, true);
             }
@@ -717,6 +721,8 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                     for (int a = 0; a < hashtags.size(); a++) {
                         searchResultHashtags.add(hashtags.get(a).hashtag);
                     }
+                    globalSearchCollapsed = true;
+                    phoneCollapsed = true;
                     waitingResponseCount = 0;
                     notifyDataSetChanged();
                     if (delegate != null) {
@@ -729,6 +735,8 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
 
             final int searchId = ++lastSearchId;
             waitingResponseCount = 3;
+            globalSearchCollapsed = true;
+            phoneCollapsed = true;
             notifyDataSetChanged();
             if (delegate != null) {
                 delegate.searchStateChanged(true, false);
@@ -773,7 +781,13 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
         count += searchResult.size();
         int localServerCount = searchAdapterHelper.getLocalServerSearch().size();
         int globalCount = searchAdapterHelper.getGlobalSearch().size();
+        if (globalCount > 3 && globalSearchCollapsed) {
+            globalCount = 3;
+        }
         int phoneCount = searchAdapterHelper.getPhoneSearch().size();
+        if (phoneCount > 3 && phoneCollapsed) {
+            phoneCount = 3;
+        }
         int messagesCount = searchResultMessages.size();
         count += localServerCount;
         if (globalCount != 0) {
@@ -822,7 +836,13 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
         int localCount = searchResult.size();
         int localServerCount = localServerSearch.size();
         int phoneCount = phoneSearch.size();
+        if (phoneCount > 3 && phoneCollapsed) {
+            phoneCount = 3;
+        }
         int globalCount = globalSearch.isEmpty() ? 0 : globalSearch.size() + 1;
+        if (globalCount > 4 && globalSearchCollapsed) {
+            globalCount = 4;
+        }
         int messagesCount = searchResultMessages.isEmpty() ? 0 : searchResultMessages.size() + 1;
         if (i >= 0 && i < localCount) {
             return searchResult.get(i);
@@ -862,7 +882,13 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
         int localCount = searchResult.size();
         int localServerCount = localServerSearch.size();
         int phoneCount = searchAdapterHelper.getPhoneSearch().size();
+        if (phoneCount > 3 && phoneCollapsed) {
+            phoneCount = 3;
+        }
         int globalCount = globalSearch.isEmpty() ? 0 : globalSearch.size() + 1;
+        if (globalCount > 4 && globalSearchCollapsed) {
+            globalCount = 4;
+        }
         int messagesCount = searchResultMessages.isEmpty() ? 0 : searchResultMessages.size() + 1;
 
         if (i >= 0 && i < localCount) {
@@ -934,6 +960,8 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                         return super.onInterceptTouchEvent(e);
                     }
                 };
+                horizontalListView.setSelectorRadius(AndroidUtilities.dp(4));
+                horizontalListView.setSelectorDrawableColor(Theme.getColor(Theme.key_listSelector));
                 horizontalListView.setTag(9);
                 horizontalListView.setItemAnimator(null);
                 horizontalListView.setLayoutAnimation(null);
@@ -1013,11 +1041,17 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                     int localCount = searchResult.size();
                     int localServerCount = searchAdapterHelper.getLocalServerSearch().size();
                     int phoneCount = phoneSearch.size();
+                    if (phoneCount > 3 && phoneCollapsed) {
+                        phoneCount = 3;
+                    }
                     int phoneCount2 = phoneCount;
                     if (phoneCount > 0 && phoneSearch.get(phoneCount - 1) instanceof String) {
                         phoneCount2 -= 2;
                     }
                     int globalCount = globalSearch.isEmpty() ? 0 : globalSearch.size() + 1;
+                    if (globalCount > 4 && globalSearchCollapsed) {
+                        globalCount = 4;
+                    }
                     cell.useSeparator = (position != getItemCount() - 1 && position != localCount + phoneCount2 + localServerCount - 1 && position != localCount + globalCount + phoneCount + localServerCount - 1);
                     if (position < searchResult.size()) {
                         name = searchResultNames.get(position);
@@ -1117,18 +1151,48 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                     int localCount = searchResult.size();
                     int localServerCount = searchAdapterHelper.getLocalServerSearch().size();
                     int phoneCount = searchAdapterHelper.getPhoneSearch().size();
+                    if (phoneCount > 3 && phoneCollapsed) {
+                        phoneCount = 3;
+                    }
                     int globalCount = globalSearch.isEmpty() ? 0 : globalSearch.size() + 1;
+                    if (globalCount > 4 && globalSearchCollapsed) {
+                        globalCount = 4;
+                    }
                     int messagesCount = searchResultMessages.isEmpty() ? 0 : searchResultMessages.size() + 1;
                     position -= localCount + localServerCount;
+                    String title;
+                    boolean showMore = false;
+                    Runnable onClick = null;
                     if (position >= 0 && position < phoneCount) {
-                        cell.setText(LocaleController.getString("PhoneNumberSearch", R.string.PhoneNumberSearch));
+                        title = LocaleController.getString("PhoneNumberSearch", R.string.PhoneNumberSearch);
+                        if (searchAdapterHelper.getPhoneSearch().size() > 3) {
+                            showMore = phoneCollapsed;
+                            onClick = () -> {
+                                phoneCollapsed = !phoneCollapsed;
+                                notifyDataSetChanged();
+                            };
+                        }
                     } else {
                         position -= phoneCount;
                         if (position >= 0 && position < globalCount) {
-                            cell.setText(LocaleController.getString("GlobalSearch", R.string.GlobalSearch));
+                            title = LocaleController.getString("GlobalSearch", R.string.GlobalSearch);
+                            if (searchAdapterHelper.getGlobalSearch().size() > 3) {
+                                showMore = globalSearchCollapsed;
+                                onClick = () -> {
+                                    globalSearchCollapsed = !globalSearchCollapsed;
+                                    notifyDataSetChanged();
+                                };
+                            }
                         } else {
-                            cell.setText(LocaleController.getString("SearchMessages", R.string.SearchMessages));
+                            title = LocaleController.getString("SearchMessages", R.string.SearchMessages);
                         }
+                    }
+
+                    if (onClick == null) {
+                        cell.setText(title);
+                    } else {
+                        final Runnable finalOnClick = onClick;
+                        cell.setText(title, showMore ? LocaleController.getString("ShowMore", R.string.ShowMore) : LocaleController.getString("ShowLess", R.string.ShowLess), e -> finalOnClick.run());
                     }
                 }
                 break;
@@ -1161,6 +1225,9 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
         }
     }
 
+    boolean globalSearchCollapsed = true;
+    boolean phoneCollapsed = true;
+
     @Override
     public int getItemViewType(int i) {
         if (isRecentSearchDisplayed()) {
@@ -1180,7 +1247,13 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
         int localCount = searchResult.size();
         int localServerCount = searchAdapterHelper.getLocalServerSearch().size();
         int phoneCount = searchAdapterHelper.getPhoneSearch().size();
+        if (phoneCount > 3 && phoneCollapsed) {
+            phoneCount = 3;
+        }
         int globalCount = globalSearch.isEmpty() ? 0 : globalSearch.size() + 1;
+        if (globalCount > 4 && globalSearchCollapsed) {
+            globalCount = 4;
+        }
         int messagesCount = searchResultMessages.isEmpty() ? 0 : searchResultMessages.size() + 1;
 
         if (i >= 0 && i < localCount) {

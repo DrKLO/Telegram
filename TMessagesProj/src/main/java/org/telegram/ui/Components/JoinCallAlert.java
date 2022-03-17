@@ -437,6 +437,7 @@ public class JoinCallAlert extends BottomSheet {
         listView.setVerticalScrollBarEnabled(false);
         listView.setClipToPadding(false);
         listView.setEnabled(true);
+        listView.setSelectorDrawableColor(0);
         listView.setGlowColor(Theme.getColor(Theme.key_dialogScrollGlow));
         listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override

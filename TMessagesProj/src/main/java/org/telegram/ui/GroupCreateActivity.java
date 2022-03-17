@@ -354,7 +354,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         addToGroup = args.getBoolean("addToGroup", false);
         chatAddType = args.getInt("chatAddType", 0);
         chatId = args.getLong("chatId");
-        channelId = args.getInt("channelId");
+        channelId = args.getLong("channelId");
         if (isAlwaysShare || isNeverShare || addToGroup) {
             maxCount = 0;
         } else {

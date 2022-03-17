@@ -5,7 +5,6 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
-import android.os.Build;
 import android.view.View;
 import android.view.ViewPropertyAnimator;
 import android.view.animation.Interpolator;
@@ -103,7 +102,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
         ValueAnimator valueAnimator = ValueAnimator.ofFloat(0, 1f);
         valueAnimator.addUpdateListener(animation -> {
             if (activity != null) {
-                activity.onListItemAniamtorTick();
+                activity.onListItemAnimatorTick();
             } else {
                 recyclerListView.invalidate();
             }
@@ -428,6 +427,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                     view.setTranslationX(-deltaX);
                 }
                 mPendingMoves.add(moveInfo);
+                checkIsRunning();
                 return true;
             }
 
@@ -495,8 +495,9 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 
                 if (group == null && params.wasDraw) {
                     boolean isOut = chatMessageCell.getMessageObject().isOutOwner();
-                    if ((isOut && params.lastDrawingBackgroundRect.left != chatMessageCell.getBackgroundDrawableLeft()) ||
-                            (!isOut && params.lastDrawingBackgroundRect.right != chatMessageCell.getBackgroundDrawableRight()) ||
+                    boolean widthChanged = (isOut && params.lastDrawingBackgroundRect.left != chatMessageCell.getBackgroundDrawableLeft()) ||
+                            (!isOut && params.lastDrawingBackgroundRect.right != chatMessageCell.getBackgroundDrawableRight());
+                    if (widthChanged ||
                             params.lastDrawingBackgroundRect.top != chatMessageCell.getBackgroundDrawableTop() ||
                             params.lastDrawingBackgroundRect.bottom != chatMessageCell.getBackgroundDrawableBottom()) {
                         moveInfo.deltaBottom = chatMessageCell.getBackgroundDrawableBottom() - params.lastDrawingBackgroundRect.bottom;
@@ -509,6 +510,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                         moveInfo.animateBackgroundOnly = true;
 
                         params.animateBackgroundBoundsInner = true;
+                        params.animateBackgroundWidth = widthChanged;
                         params.deltaLeft = -moveInfo.deltaLeft;
                         params.deltaRight = -moveInfo.deltaRight;
                         params.deltaTop = -moveInfo.deltaTop;
@@ -654,6 +656,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
         }
 
         mPendingMoves.add(moveInfo);
+        checkIsRunning();
         return true;
     }
 
@@ -925,6 +928,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
             newHolder.itemView.setAlpha(0);
         }
         mPendingChanges.add(new ChangeInfo(oldHolder, newHolder, fromX, fromY, toX, toY));
+        checkIsRunning();
         return true;
     }
 
@@ -1208,6 +1212,9 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
     }
 
     public void groupWillChanged(MessageObject.GroupedMessages groupedMessages) {
+        if (groupedMessages == null) {
+            return;
+        }
         if (groupedMessages.messages.size() == 0) {
             groupedMessages.transitionParams.drawBackgroundForDeletedItems = true;
         } else {

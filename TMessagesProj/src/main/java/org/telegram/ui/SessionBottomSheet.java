@@ -6,6 +6,7 @@ import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -81,7 +82,7 @@ public class SessionBottomSheet extends BottomSheet {
         if ((session.flags & 1) != 0) {
             timeText = LocaleController.getString("Online", R.string.Online);
         } else {
-            timeText = LocaleController.stringForMessageListDate(session.date_active);
+            timeText = LocaleController.formatDateTime(session.date_active);
         }
         timeView.setText(timeText);
 
@@ -384,13 +385,13 @@ public class SessionBottomSheet extends BottomSheet {
             valueText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
             valueText.setGravity(Gravity.LEFT);
             valueText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-            linearLayout.addView(valueText, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 0, 0));
+            linearLayout.addView(valueText, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, needSwitch ? 46 : 0, 0));
 
             descriptionText = new TextView(context);
             descriptionText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
             descriptionText.setGravity(Gravity.LEFT);
             descriptionText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
-            linearLayout.addView(descriptionText, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 4, 0, 0));
+            linearLayout.addView(descriptionText, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 4, needSwitch ? 46 : 0, 0));
             setPadding(0, AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4));
 
             if (needSwitch) {

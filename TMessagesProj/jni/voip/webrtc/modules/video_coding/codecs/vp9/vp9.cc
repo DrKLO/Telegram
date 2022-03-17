@@ -18,9 +18,9 @@
 #include "modules/video_coding/codecs/vp9/libvpx_vp9_decoder.h"
 #include "modules/video_coding/codecs/vp9/libvpx_vp9_encoder.h"
 #include "rtc_base/checks.h"
-#include "vpx/vp8cx.h"
-#include "vpx/vp8dx.h"
-#include "vpx/vpx_codec.h"
+#include <libvpx/vp8cx.h>
+#include <libvpx/vp8dx.h>
+#include <libvpx/vpx_codec.h>
 
 namespace webrtc {
 

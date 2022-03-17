@@ -30,6 +30,7 @@ public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdap
         void didLoadSearchResult(ArrayList<TLRPC.TL_messageMediaVenue> places);
     }
 
+    protected boolean searched = false;
     protected boolean searching;
     protected ArrayList<TLRPC.TL_messageMediaVenue> places = new ArrayList<>();
     protected ArrayList<String> iconUrls = new ArrayList<>();
@@ -109,6 +110,24 @@ public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdap
         searchPlacesWithQuery(query, coordinate, searchUser, false);
     }
 
+    protected void notifyStartSearch(boolean wasSearching, int oldItemCount, boolean animated) {
+        if (animated && Build.VERSION.SDK_INT >= 19) {
+            if (places.isEmpty() || wasSearching) {
+                if (!wasSearching) {
+                    int fromIndex = Math.max(0, getItemCount() - 4);
+                    notifyItemRangeRemoved(fromIndex, getItemCount() - fromIndex);
+                }
+            } else {
+                int placesCount = places.size() + 3;
+                int offset = oldItemCount - placesCount;
+                notifyItemInserted(offset);
+                notifyItemRangeRemoved(offset, placesCount);
+            }
+        } else {
+            notifyDataSetChanged();
+        }
+    }
+
     public void searchPlacesWithQuery(final String query, final Location coordinate, boolean searchUser, boolean animated) {
         if (coordinate == null || lastSearchLocation != null && coordinate.distanceTo(lastSearchLocation) < 200) {
             return;
@@ -125,6 +144,8 @@ public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdap
         int oldItemCount = getItemCount();
         boolean wasSearching = searching;
         searching = true;
+        boolean wasSearched = searched;
+        searched = true;
 
         TLObject object = MessagesController.getInstance(currentAccount).getUserOrChat(MessagesController.getInstance(currentAccount).venueSearchBot);
         if (!(object instanceof TLRPC.User)) {
@@ -152,14 +173,14 @@ public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdap
         }
 
         currentRequestNum = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-            currentRequestNum = 0;
-            searching = false;
-            places.clear();
-            iconUrls.clear();
-            searchInProgress = false;
-            lastFoundQuery = query;
-
             if (error == null) {
+                currentRequestNum = 0;
+                searching = false;
+                places.clear();
+                iconUrls.clear();
+                searchInProgress = false;
+                lastFoundQuery = query;
+
                 TLRPC.messages_BotResults res = (TLRPC.messages_BotResults) response;
                 for (int a = 0, size = res.results.size(); a < size; a++) {
                     TLRPC.BotInlineResult result = res.results.get(a);
@@ -183,19 +204,8 @@ public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdap
             }
             notifyDataSetChanged();
         }));
-        if (animated && Build.VERSION.SDK_INT >= 19) {
-            if (places.isEmpty() || wasSearching) {
-                if (!wasSearching) {
-                    notifyItemChanged(getItemCount() - 1);
-                }
-            } else {
-                int placesCount = places.size() + 1;
-                int offset = oldItemCount - placesCount;
-                notifyItemInserted(offset);
-                notifyItemRangeRemoved(offset, placesCount);
-            }
-        } else {
-            notifyDataSetChanged();
-        }
+
+        notifyDataSetChanged();
+//        notifyStartSearch(wasSearched, wasSearching, oldItemCount, animated);
     }
 }

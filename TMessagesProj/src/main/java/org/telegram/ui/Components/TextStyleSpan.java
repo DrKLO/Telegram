@@ -15,6 +15,7 @@ import android.text.style.MetricAffectingSpan;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.Theme;
 
 public class TextStyleSpan extends MetricAffectingSpan {
 
@@ -67,6 +68,10 @@ public class TextStyleSpan extends MetricAffectingSpan {
             } else {
                 p.setFlags(p.getFlags() &~ Paint.STRIKE_THRU_TEXT_FLAG);
             }
+
+            if ((flags & FLAG_STYLE_SPOILER_REVEALED) != 0) {
+                p.bgColor = Theme.getColor(Theme.key_chats_archivePullDownBackground);
+            }
         }
 
         public Typeface getTypeface() {
@@ -92,6 +97,9 @@ public class TextStyleSpan extends MetricAffectingSpan {
     public final static int FLAG_STYLE_QUOTE = 32;
     public final static int FLAG_STYLE_MENTION = 64;
     public final static int FLAG_STYLE_URL = 128;
+    public final static int FLAG_STYLE_SPOILER = 256;
+    public final static int FLAG_STYLE_SPOILER_REVEALED = 512;
+
 
     public TextStyleSpan(TextStyleRun run) {
         this(run, 0, 0);
@@ -123,6 +131,16 @@ public class TextStyleSpan extends MetricAffectingSpan {
 
     public void setColor(int value) {
         color = value;
+    }
+
+    public boolean isSpoiler() {
+        return (style.flags & FLAG_STYLE_SPOILER) > 0;
+    }
+
+    public void setSpoilerRevealed(boolean b) {
+        if (b)
+            style.flags |= FLAG_STYLE_SPOILER_REVEALED;
+        else style.flags &= ~FLAG_STYLE_SPOILER_REVEALED;
     }
 
     public boolean isMono() {

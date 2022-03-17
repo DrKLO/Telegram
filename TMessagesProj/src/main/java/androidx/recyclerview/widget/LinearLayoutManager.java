@@ -80,6 +80,7 @@ public class LinearLayoutManager extends RecyclerView.LayoutManager implements
      * helps {@link LinearLayoutManager} make those decisions.
      */
     OrientationHelper mOrientationHelper;
+    public boolean mIgnoreTopPadding = false;
 
     /**
      * We need to track this so that we can ignore current position when it changes.
@@ -1883,7 +1884,7 @@ public class LinearLayoutManager extends RecyclerView.LayoutManager implements
         ensureLayoutState();
         View invalidMatch = null;
         View outOfBoundsMatch = null;
-        final int boundsStart = mOrientationHelper.getStartAfterPadding();
+        final int boundsStart = mIgnoreTopPadding ? 0 : mOrientationHelper.getStartAfterPadding();
         final int boundsEnd = mOrientationHelper.getEndAfterPadding();
         final int diff = end > start ? 1 : -1;
         for (int i = start; i != end; i += diff) {

@@ -330,9 +330,13 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
         return archiveHintCell != null ? archiveHintCell.getViewPager() : null;
     }
 
+    public void updateHasHints() {
+        hasHints = folderId == 0 && dialogsType == 0 && !isOnlySelect && !MessagesController.getInstance(currentAccount).hintDialogs.isEmpty();
+    }
+
     @Override
     public void notifyDataSetChanged() {
-        hasHints = folderId == 0 && dialogsType == 0 && !isOnlySelect && !MessagesController.getInstance(currentAccount).hintDialogs.isEmpty();
+        updateHasHints();
         super.notifyDataSetChanged();
     }
 
@@ -496,6 +500,19 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
         return new RecyclerListView.Holder(view);
     }
 
+    public int lastDialogsEmptyType = -1;
+    public int dialogsEmptyType() {
+        if (dialogsType == 7 || dialogsType == 8) {
+            if (MessagesController.getInstance(currentAccount).isDialogsEndReached(folderId)) {
+                return 2;
+            } else {
+                return 3;
+            }
+        } else {
+            return onlineContacts != null ? 1 : 0;
+        }
+    }
+
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int i) {
         switch (holder.getItemViewType()) {
@@ -519,15 +536,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
             }
             case 5: {
                 DialogsEmptyCell cell = (DialogsEmptyCell) holder.itemView;
-                if (dialogsType == 7 || dialogsType == 8) {
-                    if (MessagesController.getInstance(currentAccount).isDialogsEndReached(folderId)) {
-                        cell.setType(2);
-                    } else {
-                        cell.setType(3);
-                    }
-                } else {
-                    cell.setType(onlineContacts != null ? 1 : 0);
-                }
+                cell.setType(lastDialogsEmptyType = dialogsEmptyType());
                 break;
             }
             case 4: {

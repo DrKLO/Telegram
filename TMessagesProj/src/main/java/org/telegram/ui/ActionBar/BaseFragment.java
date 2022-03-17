@@ -28,6 +28,8 @@ import android.view.Window;
 import android.view.accessibility.AccessibilityManager;
 import android.widget.FrameLayout;
 
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -696,7 +698,7 @@ public abstract class BaseFragment {
     }
 
     public int getThemedColor(String key) {
-        return Theme.getColor(key);
+        return Theme.getColor(key, getResourceProvider());
     }
 
     public Drawable getThemedDrawable(String key) {

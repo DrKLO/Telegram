@@ -17,6 +17,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.Paint;
@@ -27,9 +28,6 @@ import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.os.Build;
 import android.os.Bundle;
-
-import androidx.annotation.Keep;
-
 import android.os.SystemClock;
 import android.text.Layout;
 import android.text.SpannableStringBuilder;
@@ -48,6 +46,8 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
+
+import androidx.annotation.Keep;
 
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
@@ -89,6 +89,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
     private AudioPlayerAlert.ClippingTextViewSwitcher subtitleTextView;
     private AnimatorSet animatorSet;
     private BaseFragment fragment;
+    private ChatActivity chatActivity;
     private View applyingView;
     private FrameLayout frameLayout;
     private View shadow;
@@ -215,6 +216,9 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         this.resourcesProvider = resourcesProvider;
 
         fragment = parentFragment;
+        if (fragment instanceof ChatActivity) {
+            chatActivity = (ChatActivity) fragment;
+        }
         applyingView = paddingView;
         visible = true;
         isLocation = location;
@@ -223,7 +227,8 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         }
 
         setTag(1);
-        frameLayout = new FrameLayout(context) {
+        frameLayout = new ChatBlurredFrameLayout(context, chatActivity) {
+
             @Override
             public void invalidate() {
                 super.invalidate();
@@ -928,6 +933,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
             muteDrawable.setCurrentFrame(muteDrawable.getCustomEndFrame() - 1, false, true);
             muteButton.invalidate();
             frameLayout.setBackground(null);
+            frameLayout.setBackgroundColor(Color.TRANSPARENT);
             importingImageView.setVisibility(GONE);
             importingImageView.stopAnimation();
             Theme.getFragmentContextViewWavesDrawable().addParent(this);
@@ -1037,6 +1043,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
             } else if (fragment instanceof ChatActivity && ((ChatActivity) fragment).getGroupCall() != null && ((ChatActivity) fragment).getGroupCall().shouldShowPanel() && !GroupCallPip.isShowing() && !isPlayingVoice()) {
                 checkCall(true);
             } else {
+                checkCall(true);
                 checkPlayer(true);
                 updatePlaybackButton();
             }
@@ -1773,6 +1780,10 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 visible = false;
                 setVisibility(GONE);
             }
+
+            if (create && fragment instanceof ChatActivity && ((ChatActivity) fragment).openedWithLivestream() && !GroupCallPip.isShowing()) {
+                BulletinFactory.of(fragment).createSimpleBulletin(R.raw.linkbroken, LocaleController.getString("InviteExpired", R.string.InviteExpired)).show();
+            }
         } else {
             int newStyle;
             if (groupActive) {
@@ -1860,7 +1871,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                     frameLayout.invalidate();
                 }
 
-                updateAvatars(avatars.wasDraw && updateAnimated);
+                updateAvatars(avatars.avatarsDarawable.wasDraw && updateAnimated);
             } else {
                 if (voIPService != null && voIPService.groupCall != null) {
                     updateAvatars(currentStyle == 3);
@@ -1919,14 +1930,14 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
 
     private void updateAvatars(boolean animated) {
         if (!animated) {
-            if (avatars.transitionProgressAnimator != null) {
-                avatars.transitionProgressAnimator.cancel();
-                avatars.transitionProgressAnimator = null;
+            if (avatars.avatarsDarawable.transitionProgressAnimator != null) {
+                avatars.avatarsDarawable.transitionProgressAnimator.cancel();
+                avatars.avatarsDarawable.transitionProgressAnimator = null;
             }
         }
         ChatObject.Call call;
         TLRPC.User userCall;
-        if (avatars.transitionProgressAnimator == null) {
+        if (avatars.avatarsDarawable.transitionProgressAnimator == null) {
             int currentAccount;
             if (currentStyle == 4) {
                 if (fragment instanceof ChatActivity) {

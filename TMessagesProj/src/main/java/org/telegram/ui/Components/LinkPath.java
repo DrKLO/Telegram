@@ -8,13 +8,15 @@
 
 package org.telegram.ui.Components;
 
+import android.graphics.CornerPathEffect;
 import android.graphics.Path;
 import android.graphics.RectF;
 import android.os.Build;
 import android.text.Layout;
-import android.text.StaticLayout;
 
 import org.telegram.messenger.AndroidUtilities;
+
+import java.util.ArrayList;
 
 public class LinkPath extends Path {
 
@@ -23,10 +25,13 @@ public class LinkPath extends Path {
     private float lastTop = -1;
     private float heightOffset;
     private boolean useRoundRect;
-    private RectF rect;
     private boolean allowReset = true;
     private int baselineShift;
     private int lineHeight;
+
+    private static final int radius = AndroidUtilities.dp(4);
+    private static final int halfRadius = radius >> 1;
+    public static final CornerPathEffect roundedEffect = new CornerPathEffect(radius);
 
     public LinkPath() {
         super();
@@ -103,11 +108,7 @@ public class LinkPath extends Path {
             y += baselineShift;
         }
         if (useRoundRect) {
-            if (rect == null) {
-                rect = new RectF();
-            }
-            rect.set(left - AndroidUtilities.dp(4), y, right + AndroidUtilities.dp(4), y2);
-            super.addRoundRect(rect, AndroidUtilities.dp(4), AndroidUtilities.dp(4), dir);
+            super.addRect(left - halfRadius, y, right + halfRadius, y2, dir);
         } else {
             super.addRect(left, y, right, y2, dir);
         }
