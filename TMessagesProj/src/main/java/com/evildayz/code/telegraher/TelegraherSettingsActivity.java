@@ -79,7 +79,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
 
         profileLabelRow = rowCount++;
         profileUIDRow = rowCount++;
-//        profileDCIDRow = rowCount++;
+        profileDCIDRow = rowCount++;
         profileSBRow = rowCount++;
 
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.telegraherSettingsUpdated);
