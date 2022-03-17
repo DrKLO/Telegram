@@ -82,6 +82,7 @@ import androidx.viewpager.widget.PagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 
 import com.evildayz.code.telegraher.TelegraherSettingsActivity;
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
@@ -6076,13 +6077,14 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             }
 
             if (UserObject.isUserSelf(user) && getMessagesController().configThisDc > 0) {
-                userDcLine = String.format("DC: %d|WFDC: %d|TXT: %s"
+                userDcLine = String.format("DC: %d, WFDC: %d, TXT: %s, %s"
                         , getMessagesController().configThisDc
                         , getMessagesController().configWebfileDcId
                         , getMessagesController().configDcTxtDomainName
+                        , ThePenisMightierThanTheSword.getDCGeoDummy(getMessagesController().configThisDc)
                 );
             } else if (user.photo != null && user.photo.dc_id > 0) {
-                userDcLine = String.format("DC: %d", user.photo.dc_id);
+                userDcLine = String.format("DC: %d, %s", user.photo.dc_id, ThePenisMightierThanTheSword.getDCGeoDummy(user.photo.dc_id));
             }
             avatarImage.getImageReceiver().setVisible(!PhotoViewer.isShowingImage(photoBig), false);
         } else if (chatId != 0) {
@@ -6094,7 +6096,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             }
 
             if (chat.photo != null && chat.photo.dc_id > 0) {
-                userDcLine = String.format("DC: %d", chat.photo.dc_id);
+                userDcLine = String.format("DC: %d, %s", chat.photo.dc_id, ThePenisMightierThanTheSword.getDCGeoDummy(chat.photo.dc_id));
             }
 
             String statusString;
