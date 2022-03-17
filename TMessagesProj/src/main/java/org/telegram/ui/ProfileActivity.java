@@ -5730,8 +5730,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 setUsernameRow = rowCount++;
                 bioRow = rowCount++;
 
-                if (localPreps.getBoolean("EnableProfileUIDRow", true)) userIdRow = rowCount++;
-                if (userDcLine != null && localPreps.getBoolean("EnableProfileDCIDRow", true)) userDcRow = rowCount++;
+                if (localPreps.getBoolean("EnableProfileUID", true)) userIdRow = rowCount++;
+                if (userDcLine != null && localPreps.getBoolean("EnableProfileDCID", true)) userDcRow = rowCount++;
 
                 settingsSectionRow = rowCount++;
 
@@ -5788,14 +5788,14 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (user != null && !TextUtils.isEmpty(user.username)) {
                     usernameRow = rowCount++;
                 }
-                if (localPreps.getBoolean("EnableProfileUIDRow", true)) userIdRow = rowCount++;
-                if (userDcLine != null && localPreps.getBoolean("EnableProfileDCIDRow", true)) userDcRow = rowCount++;
+                if (localPreps.getBoolean("EnableProfileUID", true)) userIdRow = rowCount++;
+                if (userDcLine != null && localPreps.getBoolean("EnableProfileDCID", true)) userDcRow = rowCount++;
                 if (phoneRow != -1 || userInfoRow != -1 || usernameRow != -1 || userIdRow != -1 || userDcRow != -1) {
                     notificationsDividerRow = rowCount++;
                 }
                 if (userId != getUserConfig().getClientUserId()) {
                     notificationsRow = rowCount++;
-                    if (localPreps.getBoolean("EnableProfileSBRow", true)) shadowBanRow = rowCount++;
+                    if (localPreps.getBoolean("EnableProfileSB", true)) shadowBanRow = rowCount++;
                 }
                 infoSectionRow = rowCount++;
 
@@ -5838,14 +5838,14 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     usernameRow = rowCount++;
                 }
             }
-            if (localPreps.getBoolean("EnableProfileUIDRow", true)) userIdRow = rowCount++;
-            if (userDcLine != null && localPreps.getBoolean("EnableProfileDCIDRow", true)) userDcRow = rowCount++;
+            if (localPreps.getBoolean("EnableProfileUID", true)) userIdRow = rowCount++;
+            if (userDcLine != null && localPreps.getBoolean("EnableProfileDCID", true)) userDcRow = rowCount++;
 
             if (infoHeaderRow != -1) {
                 notificationsDividerRow = rowCount++;
             }
             notificationsRow = rowCount++;
-            if (localPreps.getBoolean("EnableProfileSBRow", true)) shadowBanRow = rowCount++;
+            if (localPreps.getBoolean("EnableProfileSB", true)) shadowBanRow = rowCount++;
             infoSectionRow = rowCount++;
 
             if (ChatObject.isChannel(currentChat) && !currentChat.megagroup) {
