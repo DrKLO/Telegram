@@ -69,6 +69,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
 
     private int chatLabelRow;
     private int chatDeleteMarkRow;
+    private int chatSBFullRow;
 
     private int rowCount = 0;
 
@@ -88,6 +89,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
 
         chatLabelRow = rowCount++;
         chatDeleteMarkRow = rowCount++;
+        chatSBFullRow = rowCount++;
 
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.telegraherSettingsUpdated);
 
@@ -180,6 +182,12 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                 SharedPreferences.Editor editor = preferences.edit();
                 enabled = preferences.getBoolean("EnableChatDeleteMark", true);
                 editor.putBoolean("EnableChatDeleteMark", !enabled);
+                editor.commit();
+            } else if (position == chatSBFullRow) {
+                SharedPreferences preferences = MessagesController.getTelegraherSettings(currentAccount);
+                SharedPreferences.Editor editor = preferences.edit();
+                enabled = preferences.getBoolean("EnableChatSBFull", false);
+                editor.putBoolean("EnableChatSBFull", !enabled);
                 editor.commit();
             }
             if (view instanceof TextCheckCell) {
@@ -298,7 +306,9 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                     } else if (position == profileSBRow) {
                         checkCell.setTextAndCheck("Show Shadowban", localPreps.getBoolean("EnableProfileSB", true), true);
                     } else if (position == chatDeleteMarkRow) {
-                        checkCell.setTextAndCheck(String.format("Show `%s`", LocaleController.getString("DeletedMessage", R.string.DeletedMessage)), localPreps.getBoolean("EnableChatDeleteMark", true), true);
+                        checkCell.setTextAndCheck(String.format("Show `%s` mark", LocaleController.getString("DeletedMessage", R.string.DeletedMessage)), localPreps.getBoolean("EnableChatDeleteMark", true), true);
+                    } else if (position == chatSBFullRow) {
+                        checkCell.setTextAndCheck("Full ShadowBan \uD83D\uDE48", localPreps.getBoolean("EnableChatSBFull", false), true);
                     }
                     break;
                 }
@@ -316,7 +326,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
             } else if (
                     position == voiceHDRow || position == voiceBadmanRow || position == voipHDRow
                             || position == profileUIDRow || position == profileDCIDRow || position == profileSBRow
-                            || position == chatDeleteMarkRow
+                            || position == chatDeleteMarkRow || position == chatSBFullRow
             ) {
                 return 1;
             } else {
