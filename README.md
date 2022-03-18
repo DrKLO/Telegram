@@ -179,17 +179,17 @@ It's very simple
 * **sdk23** mean for android 6+, the other are working from 4.1+
     * so if you have android 6 or higher, you should download **sdk23** version
 * arm64-v8a (new devices)
-    * `x`  [Telegraher.8.6.1r4.arm64_v8a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r4_arm64_v8a/Telegraher.8.6.1r4.arm64_v8a.apk)
-    * `x`  [Telegraher.8.6.1r4.arm64_v8a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r4_arm64_v8a/Telegraher.8.6.1r4.arm64_v8a_sdk23.apk)
+    * `x`  [Telegraher.8.6.1r5.arm64_v8a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r5_arm64_v8a/Telegraher.8.6.1r5.arm64_v8a.apk)
+    * `x`  [Telegraher.8.6.1r5.arm64_v8a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r5_arm64_v8a/Telegraher.8.6.1r5.arm64_v8a_sdk23.apk)
 * armeabi-v7a (old devices)
-    * `x`  [Telegraher.8.6.1r4.armeabi_v7a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r4_armeabi_v7a/Telegraher.8.6.1r4.armeabi_v7a.apk)
-    * `x`  [Telegraher.8.6.1r4.armeabi_v7a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r4_armeabi_v7a/Telegraher.8.6.1r4.armeabi_v7a_sdk23.apk)
+    * `x`  [Telegraher.8.6.1r5.armeabi_v7a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r5_armeabi_v7a/Telegraher.8.6.1r5.armeabi_v7a.apk)
+    * `x`  [Telegraher.8.6.1r5.armeabi_v7a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r5_armeabi_v7a/Telegraher.8.6.1r5.armeabi_v7a_sdk23.apk)
 * PC x86, 32 bits (for an emulator for example)
-    * `x`  [Telegraher.8.6.1r4.x86.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r4_x86/Telegraher.8.6.1r4.x86.apk)
-    * `x`  [Telegraher.8.6.1r4.x86_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r4_x86/Telegraher.8.6.1r4.x86_sdk23.apk)
+    * `x`  [Telegraher.8.6.1r5.x86.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r5_x86/Telegraher.8.6.1r5.x86.apk)
+    * `x`  [Telegraher.8.6.1r5.x86_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r5_x86/Telegraher.8.6.1r5.x86_sdk23.apk)
 * PC x86, 64 bits (for 64 bits CPU)
-    * `x`  [Telegraher.8.6.1r4.x86_64.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r4_x86_64/Telegraher.8.6.1r4.x86_64.apk)
-    * `x`  [Telegraher.8.6.1r4.x86_64_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r4_x86_64/Telegraher.8.6.1r4.x86_64_sdk23.apk)
+    * `x`  [Telegraher.8.6.1r5.x86_64.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r5_x86_64/Telegraher.8.6.1r5.x86_64.apk)
+    * `x`  [Telegraher.8.6.1r5.x86_64_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r5_x86_64/Telegraher.8.6.1r5.x86_64_sdk23.apk)
 
 ### Issues/Wishlist
 
@@ -198,6 +198,12 @@ Probably it's a good thing 😃
 
 ### Changes
 
+* noshit_8.6.1_release5
+    * added full shadowban mode, read
+      details [here](https://github.com/nikitasius/Telegraher/commit/bab6fe99ec1897532b9136f9391983bafd0c921b)
+    * "on create a 2nd+ account" sync contacts checkbox is disabled, but you can always sync them
+      via vanilla menu
+    * fixed but #22 which caused white squared sometimes in the channels and rarely in groups.
 * noshit_8.6.1_release4
     * th settings, show/hide
         * numeric id, datacenter, shadowban, deletion marks
