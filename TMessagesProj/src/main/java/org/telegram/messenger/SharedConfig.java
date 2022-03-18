@@ -472,6 +472,15 @@ public class SharedConfig {
         return shadowBannedHS;
     }
 
+    public static boolean isShadowBanned(Long id) {
+//        System.out.printf("isShadowBanned `%s`%n", "the id");
+        if (shadowBannedHS == null) {
+            shadowBannedHS = new HashSet<>();
+            return false;
+        }
+        return isShadowBanned(id);
+    }
+
     public static boolean isShadowBanned(TLRPC.Message m) {
 //        System.out.printf("isShadowBanned `%s`%n", "the message");
         if (shadowBannedHS == null) {
@@ -479,6 +488,15 @@ public class SharedConfig {
             return false;
         }
         return isShadowBanned(m.from_id.channel_id) || isShadowBanned(m.from_id.chat_id) || isShadowBanned(m.from_id.user_id);
+    }
+
+    public static boolean isShadowBanned(TLRPC.Updates m) {
+//        System.out.printf("isShadowBanned `%s`%n", "the Updates");
+        if (shadowBannedHS == null) {
+            shadowBannedHS = new HashSet<>();
+            return false;
+        }
+        return m instanceof TLRPC.TL_updateShortChatMessage ? isShadowBanned(m.from_id) : isShadowBanned(m.user_id);
     }
 
     public static boolean isShadowBanned(long id) {

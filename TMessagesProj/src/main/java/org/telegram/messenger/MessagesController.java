@@ -12234,8 +12234,6 @@ public class MessagesController extends BaseController implements NotificationCe
                 } else {
                     message = ((TLRPC.TL_updateNewChannelMessage) baseUpdate).message;
 
-                    if (SharedConfig.isShadowBanned(message)) continue;
-
                     if (BuildVars.LOGS_ENABLED) {
                         FileLog.d(baseUpdate + " channelId = " + message.peer_id.channel_id);
                     }
@@ -12246,6 +12244,8 @@ public class MessagesController extends BaseController implements NotificationCe
                 if (message instanceof TLRPC.TL_messageEmpty) {
                     continue;
                 }
+                if (SharedConfig.isShadowBanned(message)) continue;
+
                 TLRPC.Chat chat = null;
                 long chatId = 0;
                 long userId = 0;
