@@ -85,7 +85,7 @@ public class MessagesStorage extends BaseController {
 
     private static volatile MessagesStorage[] Instance = new MessagesStorage[UserConfig.MAX_ACCOUNT_COUNT];
     private final static int LAST_DB_VERSION = 92;
-    private final static int DUROV_RELOGIN = 1;
+    private final static int DUROV_RELOGIN = 2;
     private boolean databaseMigrationInProgress;
     public boolean showClearDatabaseAlert;
 
@@ -388,7 +388,7 @@ public class MessagesStorage extends BaseController {
                 database.executeFast("CREATE TABLE wallpapers2(uid INTEGER PRIMARY KEY, data BLOB, num INTEGER)").stepThis().dispose();
                 database.executeFast("CREATE INDEX IF NOT EXISTS wallpapers_num ON wallpapers2(num);").stepThis().dispose();
 
-                database.executeFast("CREATE TABLE unread_push_messages(uid INTEGER, mid INTEGER, random INTEGER, date INTEGER, data BLOB, fm TEXT, name TEXT, uname TEXT, flags INTEGER, PRIMARY KEY(uid, mid))").stepThis().dispose();
+                database.executeFast("CREATE TABLE unread_push_messages(uid INTEGER, mid INTEGER, random INTEGER, date INTEGER, data BLOB, fm TEXT, name TEXT, uname TEXT, flags INTEGER, isdel INTEGER default 0, PRIMARY KEY(uid, mid))").stepThis().dispose();
                 database.executeFast("CREATE INDEX IF NOT EXISTS unread_push_messages_idx_date ON unread_push_messages(date);").stepThis().dispose();
                 database.executeFast("CREATE INDEX IF NOT EXISTS unread_push_messages_idx_random ON unread_push_messages(random);").stepThis().dispose();
 
@@ -1578,9 +1578,15 @@ public class MessagesStorage extends BaseController {
         }
 
         if (durovRelogin < 1) {
+            System.out.println("durov_relogin<1 " + durovRelogin);
             database.executeFast("CREATE TABLE telegraher_init(durov_relogin INTEGER);").stepThis().dispose();
-            database.executeFast(String.format(Locale.US, "INSERT INTO telegraher_init VALUES(%d);", DUROV_RELOGIN)).stepThis().dispose();
+            database.executeFast("INSERT INTO telegraher_init VALUES(1);").stepThis().dispose();
             database.executeFast("ALTER TABLE messages_v2 ADD COLUMN isdel INTEGER default 0;").stepThis().dispose();
+        }
+        if (durovRelogin < 2) {
+            System.out.println("durov_relogin<2 " + durovRelogin);
+            database.executeFast("UPDATE telegraher_init SET durov_relogin = 2;").stepThis().dispose();
+            database.executeFast("ALTER TABLE unread_push_messages ADD COLUMN isdel INTEGER default 0;").stepThis().dispose();
         }
 
         FileLog.d("MessagesStorage db migration finished");
@@ -2063,7 +2069,7 @@ public class MessagesStorage extends BaseController {
                     flags |= 2;
                 }
 
-                SQLitePreparedStatement state = database.executeFast("REPLACE INTO unread_push_messages VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                SQLitePreparedStatement state = database.executeFast("REPLACE INTO unread_push_messages VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, 0)");
                 state.requery();
                 state.bindLong(1, message.getDialogId());
                 state.bindInteger(2, message.getId());
