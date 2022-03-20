@@ -603,7 +603,7 @@ public class FileLoader extends BaseController {
         }
 
         if (document != null && parentObject instanceof MessageObject && ((MessageObject) parentObject).putInDownloadsStore) {
-            getMessagesStorage().startDownloadFile(document, (MessageObject) parentObject);
+            getDownloadController().startDownloadFile(document, (MessageObject) parentObject);
         }
 
         FileLoadOperation operation = loadOperationPaths.get(fileName);
@@ -708,7 +708,7 @@ public class FileLoader extends BaseController {
                     return;
                 }
                 if (document != null && parentObject instanceof MessageObject) {
-                    getMessagesStorage().onDownloadComplete((MessageObject) parentObject);
+                    getDownloadController().onDownloadComplete((MessageObject) parentObject);
                 }
 
                 if (!operation.isPreloadVideoOperation()) {
@@ -727,6 +727,10 @@ public class FileLoader extends BaseController {
                 checkDownloadQueue(operation.getDatacenterId(), queueType, fileName);
                 if (delegate != null) {
                     delegate.fileDidFailedLoad(fileName, reason);
+                }
+
+                if (document != null && parentObject instanceof MessageObject && reason == 0) {
+                    getDownloadController().onDownloadFail((MessageObject) parentObject, reason);
                 }
             }
 
@@ -1122,6 +1126,9 @@ public class FileLoader extends BaseController {
     }
 
     public static String getDocumentFileName(TLRPC.Document document) {
+        if (document == null) {
+            return null;
+        }
         if (document.file_name_fixed != null) {
             return document.file_name_fixed;
         }
@@ -1395,7 +1402,7 @@ public class FileLoader extends BaseController {
 
     public void getCurrentLoadingFiles(ArrayList<MessageObject> currentLoadingFiles) {
         currentLoadingFiles.clear();
-        currentLoadingFiles.addAll(getMessagesStorage().downloadingFiles);
+        currentLoadingFiles.addAll(getDownloadController().downloadingFiles);
         for (int i = 0; i < currentLoadingFiles.size(); i++) {
             currentLoadingFiles.get(i).isDownloadingFile = true;
         }
@@ -1403,7 +1410,7 @@ public class FileLoader extends BaseController {
 
     public void getRecentLoadingFiles(ArrayList<MessageObject> recentLoadingFiles) {
         recentLoadingFiles.clear();
-        recentLoadingFiles.addAll(getMessagesStorage().recentDownloadingFiles);
+        recentLoadingFiles.addAll(getDownloadController().recentDownloadingFiles);
         for (int i = 0; i < recentLoadingFiles.size(); i++) {
             recentLoadingFiles.get(i).isDownloadingFile = true;
         }
@@ -1411,7 +1418,7 @@ public class FileLoader extends BaseController {
 
     public void checkCurrentDownloadsFiles() {
         ArrayList<MessageObject> messagesToRemove = new ArrayList<>();
-        ArrayList<MessageObject> messageObjects = new ArrayList<>(getMessagesStorage().recentDownloadingFiles);
+        ArrayList<MessageObject> messageObjects = new ArrayList<>(getDownloadController().recentDownloadingFiles);
         for (int i = 0 ; i < messageObjects.size(); i++) {
             messageObjects.get(i).checkMediaExistance();
             if (messageObjects.get(i).mediaExists) {
@@ -1420,15 +1427,14 @@ public class FileLoader extends BaseController {
         }
         if (!messagesToRemove.isEmpty()) {
             AndroidUtilities.runOnUIThread(() -> {
-                getMessagesStorage().recentDownloadingFiles.removeAll(messagesToRemove);
+                getDownloadController().recentDownloadingFiles.removeAll(messagesToRemove);
                 getNotificationCenter().postNotificationName(NotificationCenter.onDownloadingFilesChanged);
             });
         }
 
     }
 
-
     public void clearRecentDownloadedFiles() {
-        getMessagesStorage().clearRecentDownloadedFiles();
+        getDownloadController().clearRecentDownloadedFiles();
     }
 }

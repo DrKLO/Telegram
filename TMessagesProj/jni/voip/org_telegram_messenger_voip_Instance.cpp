@@ -23,11 +23,13 @@
 #include "libtgvoip/os/android/AudioInputOpenSLES.h"
 #include "libtgvoip/os/android/JNIUtilities.h"
 #include "tgcalls/VideoCaptureInterface.h"
+#include "tgcalls/v2/InstanceV2Impl.h"
 
 using namespace tgcalls;
 
 const auto RegisterTag = Register<InstanceImpl>();
 const auto RegisterTagLegacy = Register<InstanceImplLegacy>();
+const auto RegisterTagV2 = Register<InstanceV2Impl>();
 
 jclass TrafficStatsClass;
 jclass FingerprintClass;

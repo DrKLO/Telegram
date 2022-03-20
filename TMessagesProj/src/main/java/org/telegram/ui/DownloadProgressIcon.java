@@ -132,15 +132,15 @@ public class DownloadProgressIcon extends View implements NotificationCenter.Not
 
 
     private void updateDownloadingListeners() {
-        MessagesStorage messagesStorage = MessagesStorage.getInstance(currentAccount);
+        DownloadController downloadController = DownloadController.getInstance(currentAccount);
         HashMap<String, ProgressObserver> observerHashMap = new HashMap<>();
         for (int i = 0; i < currentListeners.size(); i++) {
             observerHashMap.put(currentListeners.get(i).fileName, currentListeners.get(i));
             DownloadController.getInstance(currentAccount).removeLoadingFileObserver(currentListeners.get(i));
         }
         currentListeners.clear();
-        for (int i = 0; i < messagesStorage.downloadingFiles.size(); i++) {
-            String filename = messagesStorage.downloadingFiles.get(i).getFileName();
+        for (int i = 0; i < downloadController.downloadingFiles.size(); i++) {
+            String filename = downloadController.downloadingFiles.get(i).getFileName();
             if (FileLoader.getInstance(currentAccount).isLoadingFile(filename)) {
                 ProgressObserver progressObserver = observerHashMap.get(filename);
                 if (progressObserver == null) {

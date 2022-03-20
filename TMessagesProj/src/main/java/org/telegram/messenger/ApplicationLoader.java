@@ -95,7 +95,7 @@ public class ApplicationLoader extends Application {
     }
 
     public static void postInitApplication() {
-        if (applicationInited) {
+        if (applicationInited || applicationContext == null) {
             return;
         }
         applicationInited = true;

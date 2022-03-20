@@ -1,5 +1,8 @@
 package org.telegram.ui;
 
+import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
+import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
+
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
@@ -84,9 +87,6 @@ import org.telegram.ui.Components.RecyclerListView;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Locale;
-
-import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
-import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 
 public class StatisticActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -2695,5 +2695,11 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
             AlertDialog alertDialog = builder.create();
             fragment.showDialog(alertDialog);
         }
+    }
+
+    @Override
+    public boolean isLightStatusBar() {
+        int color = Theme.getColor(Theme.key_windowBackgroundWhite);
+        return ColorUtils.calculateLuminance(color) > 0.7f;
     }
 }

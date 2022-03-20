@@ -623,7 +623,7 @@ public abstract class BaseFragment {
         return getAccountInstance().getSecretChatHelper();
     }
 
-    protected DownloadController getDownloadController() {
+    public DownloadController getDownloadController() {
         return getAccountInstance().getDownloadController();
     }
 

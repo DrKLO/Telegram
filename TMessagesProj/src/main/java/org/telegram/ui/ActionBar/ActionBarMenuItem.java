@@ -1347,8 +1347,12 @@ public class ActionBarMenuItem extends FrameLayout {
                     }
                 }
             };
-            clearButton.setImageDrawable(progressDrawable = new CloseProgressDrawable2());
-            clearButton.setColorFilter(new PorterDuffColorFilter(parentMenu.parentActionBar.itemsColor, PorterDuff.Mode.MULTIPLY));
+            clearButton.setImageDrawable(progressDrawable = new CloseProgressDrawable2() {
+                @Override
+                public int getCurrentColor() {
+                    return parentMenu.parentActionBar.itemsColor;
+                }
+            });
             clearButton.setScaleType(ImageView.ScaleType.CENTER);
             clearButton.setAlpha(0.0f);
             clearButton.setRotation(45);

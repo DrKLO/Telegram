@@ -89,6 +89,7 @@ import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
+import org.telegram.ui.Adapters.FiltersView;
 import org.telegram.ui.Cells.AudioPlayerCell;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.DialogsActivity;
@@ -595,14 +596,14 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                     if (parentActivity.getActionBarLayout().getLastFragment() instanceof DialogsActivity) {
                         DialogsActivity dialogsActivity = (DialogsActivity) parentActivity.getActionBarLayout().getLastFragment();
                         if (!dialogsActivity.onlyDialogsAdapter()) {
-                            dialogsActivity.setShowSearch(query, 4);
+                            dialogsActivity.setShowSearch(query, FiltersView.FILTER_INDEX_MUSIC);
                             dismiss();
                             return;
                         }
                     }
                     DialogsActivity fragment = new DialogsActivity(null);
                     fragment.setSearchString(query);
-                    fragment.setInitialSearchType(4);
+                    fragment.setInitialSearchType(FiltersView.FILTER_INDEX_MUSIC);
                     parentActivity.presentFragment(fragment, false, false);
                     dismiss();
                 });

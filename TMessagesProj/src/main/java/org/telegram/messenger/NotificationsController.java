@@ -1225,8 +1225,9 @@ public class NotificationsController extends BaseController {
                     if (controller.showBadgeMessages) {
                         if (controller.showBadgeMuted) {
                             try {
-                                for (int i = 0, N = MessagesController.getInstance(a).allDialogs.size(); i < N; i++) {
-                                    TLRPC.Dialog dialog = MessagesController.getInstance(a).allDialogs.get(i);
+                                final ArrayList<TLRPC.Dialog> dialogs = new ArrayList<>(MessagesController.getInstance(a).allDialogs);
+                                for (int i = 0, N = dialogs.size(); i < N; i++) {
+                                    TLRPC.Dialog dialog = dialogs.get(i);
                                     if (dialog != null && DialogObject.isChatDialog(dialog.id)) {
                                         TLRPC.Chat chat = getMessagesController().getChat(-dialog.id);
                                         if (ChatObject.isNotInChat(chat)) {

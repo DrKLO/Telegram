@@ -27,8 +27,10 @@ public class CellFlickerDrawable {
 
     Matrix matrix = new Matrix();
 
+    public boolean repeatEnabled = true;
     public boolean drawFrame = true;
     public float repeatProgress = 1.2f;
+    public float animationSpeedScale = 1f;
 
     public CellFlickerDrawable() {
         this(64, 204);
@@ -43,12 +45,23 @@ public class CellFlickerDrawable {
         paintOutline.setStrokeWidth(AndroidUtilities.dp(2));
     }
 
+    public float getProgress() {
+        return progress;
+    }
+
+    public void setProgress(float progress) {
+        this.progress = progress;
+    }
+
     public void draw(Canvas canvas, RectF rectF, float rad) {
+        if (progress > 1f && !repeatEnabled) {
+            return;
+        }
         long currentTime = System.currentTimeMillis();
         if (lastUpdateTime != 0) {
             long dt = currentTime - lastUpdateTime;
             if (dt > 10) {
-                progress += dt / 1200f;
+                progress += (dt / 1200f) * animationSpeedScale;
                 if (progress > repeatProgress) {
                     progress = 0;
                 }

@@ -3034,7 +3034,15 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
                                                 AndroidUtilities.runOnUIThread(()->{
                                                     if (livestream != null) {
                                                         AccountInstance accountInstance = AccountInstance.getInstance(currentAccount);
-                                                        VoIPHelper.startCall(accountInstance.getMessagesController().getChat(-dialog_id), accountInstance.getMessagesController().getInputPeer(dialog_id), null, false, LaunchActivity.this, fragment, accountInstance);
+                                                        ChatObject.Call cachedCall = accountInstance.getMessagesController().getGroupCall(-dialog_id, false);
+                                                        if (cachedCall != null) {
+                                                            VoIPHelper.startCall(accountInstance.getMessagesController().getChat(-dialog_id), accountInstance.getMessagesController().getInputPeer(dialog_id), null, false, cachedCall == null || !cachedCall.call.rtmp_stream, LaunchActivity.this, fragment, accountInstance);
+                                                        } else {
+                                                            accountInstance.getMessagesController().getGroupCall(-dialog_id, true, () -> AndroidUtilities.runOnUIThread(() -> {
+                                                                ChatObject.Call call = accountInstance.getMessagesController().getGroupCall(-dialog_id, false);
+                                                                VoIPHelper.startCall(accountInstance.getMessagesController().getChat(-dialog_id), accountInstance.getMessagesController().getInputPeer(dialog_id), null, false, call == null || !call.call.rtmp_stream, LaunchActivity.this, fragment, accountInstance);
+                                                            }));
+                                                        }
                                                     }
                                                 }, 150);
                                             }
@@ -4001,8 +4009,13 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
                     if (fragment != null) {
                         actionBarLayout.presentFragment(fragment, true, false, true, false);
                     }
+                    AccountInstance accountInstance = AccountInstance.getInstance(UserConfig.selectedAccount);
                     for (int i = 0; i < dids.size(); i++) {
-                        SendMessagesHelper.getInstance(account).sendMessage(user, dids.get(i), null, null, null, null, notify2, scheduleDate);
+                        long did = dids.get(i);
+                        SendMessagesHelper.getInstance(account).sendMessage(user, did, null, null, null, null, notify2, scheduleDate);
+                        if (!TextUtils.isEmpty(message)) {
+                            SendMessagesHelper.prepareSendingText(accountInstance, message.toString(), did, notify, 0);
+                        }
                     }
                 });
                 mainFragmentsStack.get(mainFragmentsStack.size() - 1).showDialog(alert);
@@ -4012,12 +4025,13 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
                     final long did = dids.get(i);
 
                     AccountInstance accountInstance = AccountInstance.getInstance(UserConfig.selectedAccount);
-                    boolean photosEditorOpened = false;
+                    boolean photosEditorOpened = false, videoEditorOpened = false;
                     if (fragment != null) {
                         boolean withoutAnimation = dialogsFragment == null || (videoPath != null || (photoPathsArray != null && photoPathsArray.size() > 0));
                         actionBarLayout.presentFragment(fragment, dialogsFragment != null, withoutAnimation, true, false);
                         if (videoPath != null) {
                             fragment.openVideoEditor(videoPath, sendingText);
+                            videoEditorOpened = true;
                             sendingText = null;
                         } else if (photoPathsArray != null && photoPathsArray.size() > 0) {
                             photosEditorOpened = fragment.openPhotosEditor(photoPathsArray, message == null || message.length() == 0 ? sendingText : message);
@@ -4059,7 +4073,7 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
                             SendMessagesHelper.getInstance(account).sendMessage(user, did, null, null, null, null, notify, 0);
                         }
                     }
-                    if (!TextUtils.isEmpty(message)) {
+                    if (!TextUtils.isEmpty(message) && !videoEditorOpened && !photosEditorOpened) {
                         SendMessagesHelper.prepareSendingText(accountInstance, message.toString(), did, notify, 0);
                     }
                 }

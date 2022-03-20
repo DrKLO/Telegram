@@ -1480,71 +1480,75 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                     maxTextSize = Math.max(maxTextSize, textSizes[a]);
                 }
 
-                messagesPlayAnimationView = new FrameLayout(context) {
+                if (accent != null) {
+                    messagesPlayAnimationView = new FrameLayout(context) {
 
-                    private RectF rect = new RectF();
+                        private RectF rect = new RectF();
 
-                    @Override
-                    protected void onDraw(Canvas canvas) {
-                        rect.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
-                        Theme.applyServiceShaderMatrixForView(messagesPlayAnimationView, backgroundImage);
-                        canvas.drawRoundRect(rect, getMeasuredHeight() / 2, getMeasuredHeight() / 2, Theme.chat_actionBackgroundPaint);
-                        if (Theme.hasGradientService()) {
-                            canvas.drawRoundRect(rect, getMeasuredHeight() / 2, getMeasuredHeight() / 2, Theme.chat_actionBackgroundGradientDarkenPaint);
-                        }
-                    }
-                };
-                messagesPlayAnimationView.setWillNotDraw(false);
-                messagesPlayAnimationView.setVisibility(accent.myMessagesGradientAccentColor1 != 0 ? View.VISIBLE : View.INVISIBLE);
-                messagesPlayAnimationView.setScaleX(accent.myMessagesGradientAccentColor1 != 0 ? 1.0f : 0.1f);
-                messagesPlayAnimationView.setScaleY(accent.myMessagesGradientAccentColor1 != 0 ? 1.0f : 0.1f);
-                messagesPlayAnimationView.setAlpha(accent.myMessagesGradientAccentColor1 != 0 ? 1.0f : 0.0f);
-                messagesButtonsContainer.addView(messagesPlayAnimationView, LayoutHelper.createFrame(48, 48, Gravity.CENTER));
-                messagesPlayAnimationView.setOnClickListener(new View.OnClickListener() {
-
-                    int rotation = 0;
-
-                    @Override
-                    public void onClick(View v) {
-                        messagesPlayAnimationImageView.setRotation(rotation);
-                        rotation -= 45;
-                        messagesPlayAnimationImageView.animate().rotationBy(-45).setDuration(300).setInterpolator(CubicBezierInterpolator.EASE_OUT).start();
-                        if (accent.myMessagesAnimated) {
-                            if (msgOutDrawable.getMotionBackgroundDrawable() != null) {
-                                msgOutDrawable.getMotionBackgroundDrawable().switchToNextPosition();
+                        @Override
+                        protected void onDraw(Canvas canvas) {
+                            rect.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
+                            Theme.applyServiceShaderMatrixForView(messagesPlayAnimationView, backgroundImage);
+                            canvas.drawRoundRect(rect, getMeasuredHeight() / 2, getMeasuredHeight() / 2, Theme.chat_actionBackgroundPaint);
+                            if (Theme.hasGradientService()) {
+                                canvas.drawRoundRect(rect, getMeasuredHeight() / 2, getMeasuredHeight() / 2, Theme.chat_actionBackgroundGradientDarkenPaint);
                             }
-                        } else {
-                            int temp;
-                            if (accent.myMessagesGradientAccentColor3 != 0) {
-                                temp = accent.myMessagesAccentColor != 0 ? accent.myMessagesAccentColor : accent.accentColor;
-                                accent.myMessagesAccentColor = accent.myMessagesGradientAccentColor1;
-                                accent.myMessagesGradientAccentColor1 = accent.myMessagesGradientAccentColor2;
-                                accent.myMessagesGradientAccentColor2 = accent.myMessagesGradientAccentColor3;
-                                accent.myMessagesGradientAccentColor3 = temp;
+                        }
+                    };
+                    messagesPlayAnimationView.setWillNotDraw(false);
+
+                    messagesPlayAnimationView.setVisibility(accent.myMessagesGradientAccentColor1 != 0 ? View.VISIBLE : View.INVISIBLE);
+                    messagesPlayAnimationView.setScaleX(accent.myMessagesGradientAccentColor1 != 0 ? 1.0f : 0.1f);
+                    messagesPlayAnimationView.setScaleY(accent.myMessagesGradientAccentColor1 != 0 ? 1.0f : 0.1f);
+                    messagesPlayAnimationView.setAlpha(accent.myMessagesGradientAccentColor1 != 0 ? 1.0f : 0.0f);
+                    messagesButtonsContainer.addView(messagesPlayAnimationView, LayoutHelper.createFrame(48, 48, Gravity.CENTER));
+                    messagesPlayAnimationView.setOnClickListener(new View.OnClickListener() {
+
+                        int rotation = 0;
+
+                        @Override
+                        public void onClick(View v) {
+                            messagesPlayAnimationImageView.setRotation(rotation);
+                            rotation -= 45;
+                            messagesPlayAnimationImageView.animate().rotationBy(-45).setDuration(300).setInterpolator(CubicBezierInterpolator.EASE_OUT).start();
+                            if (accent.myMessagesAnimated) {
+                                if (msgOutDrawable.getMotionBackgroundDrawable() != null) {
+                                    msgOutDrawable.getMotionBackgroundDrawable().switchToNextPosition();
+                                }
                             } else {
-                                temp = accent.myMessagesAccentColor != 0 ? accent.myMessagesAccentColor : accent.accentColor;
-                                accent.myMessagesAccentColor = accent.myMessagesGradientAccentColor1;
-                                accent.myMessagesGradientAccentColor1 = accent.myMessagesGradientAccentColor2;
-                                accent.myMessagesGradientAccentColor2 = temp;
+                                int temp;
+                                if (accent.myMessagesGradientAccentColor3 != 0) {
+                                    temp = accent.myMessagesAccentColor != 0 ? accent.myMessagesAccentColor : accent.accentColor;
+                                    accent.myMessagesAccentColor = accent.myMessagesGradientAccentColor1;
+                                    accent.myMessagesGradientAccentColor1 = accent.myMessagesGradientAccentColor2;
+                                    accent.myMessagesGradientAccentColor2 = accent.myMessagesGradientAccentColor3;
+                                    accent.myMessagesGradientAccentColor3 = temp;
+                                } else {
+                                    temp = accent.myMessagesAccentColor != 0 ? accent.myMessagesAccentColor : accent.accentColor;
+                                    accent.myMessagesAccentColor = accent.myMessagesGradientAccentColor1;
+                                    accent.myMessagesGradientAccentColor1 = accent.myMessagesGradientAccentColor2;
+                                    accent.myMessagesGradientAccentColor2 = temp;
+                                }
+                                colorPicker.setColor(accent.myMessagesGradientAccentColor3, 3);
+                                colorPicker.setColor(accent.myMessagesGradientAccentColor2, 2);
+                                colorPicker.setColor(accent.myMessagesGradientAccentColor1, 1);
+                                colorPicker.setColor(accent.myMessagesAccentColor != 0 ? accent.myMessagesAccentColor : accent.accentColor, 0);
+                                messagesCheckBoxView[1].setColor(0, accent.myMessagesAccentColor);
+                                messagesCheckBoxView[1].setColor(1, accent.myMessagesGradientAccentColor1);
+                                messagesCheckBoxView[1].setColor(2, accent.myMessagesGradientAccentColor2);
+                                messagesCheckBoxView[1].setColor(3, accent.myMessagesGradientAccentColor3);
+                                Theme.refreshThemeColors(true, true);
+                                listView2.invalidateViews();
                             }
-                            colorPicker.setColor(accent.myMessagesGradientAccentColor3, 3);
-                            colorPicker.setColor(accent.myMessagesGradientAccentColor2, 2);
-                            colorPicker.setColor(accent.myMessagesGradientAccentColor1, 1);
-                            colorPicker.setColor(accent.myMessagesAccentColor != 0 ? accent.myMessagesAccentColor : accent.accentColor, 0);
-                            messagesCheckBoxView[1].setColor(0, accent.myMessagesAccentColor);
-                            messagesCheckBoxView[1].setColor(1, accent.myMessagesGradientAccentColor1);
-                            messagesCheckBoxView[1].setColor(2, accent.myMessagesGradientAccentColor2);
-                            messagesCheckBoxView[1].setColor(3, accent.myMessagesGradientAccentColor3);
-                            Theme.refreshThemeColors(true, true);
-                            listView2.invalidateViews();
                         }
-                    }
-                });
+                    });
 
-                messagesPlayAnimationImageView = new ImageView(context);
-                messagesPlayAnimationImageView.setScaleType(ImageView.ScaleType.CENTER);
-                messagesPlayAnimationImageView.setImageResource(R.drawable.bg_rotate_large);
-                messagesPlayAnimationView.addView(messagesPlayAnimationImageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
+                    messagesPlayAnimationImageView = new ImageView(context);
+                    messagesPlayAnimationImageView.setScaleType(ImageView.ScaleType.CENTER);
+                    messagesPlayAnimationImageView.setImageResource(R.drawable.bg_rotate_large);
+                    messagesPlayAnimationView.addView(messagesPlayAnimationImageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
+                }
+
 
                 for (int a = 0; a < 2; a++) {
                     final int num = a;

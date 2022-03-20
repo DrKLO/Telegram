@@ -228,7 +228,7 @@ public class StickerEmptyView extends FrameLayout implements NotificationCenter.
             if (set == null) {
                 set = MediaDataController.getInstance(currentAccount).getStickerSetByEmojiOrName(AndroidUtilities.STICKERS_PLACEHOLDER_PACK_NAME);
             }
-            if (set != null && set.documents.size() >= 2) {
+            if (set != null && stickerType >= 0 && stickerType < set.documents.size() ) {
                 document = set.documents.get(stickerType);
             }
             imageFilter = "130_130";

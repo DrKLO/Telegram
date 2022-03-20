@@ -12,6 +12,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
@@ -34,6 +35,7 @@ import android.view.MotionEvent;
 import android.view.TextureView;
 import android.view.VelocityTracker;
 import android.view.View;
+import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.view.animation.DecelerateInterpolator;
@@ -58,6 +60,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimationProperties;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Scroller;
 import org.telegram.ui.Components.TimerParticles;
@@ -650,7 +653,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         windowLayoutParams.width = WindowManager.LayoutParams.MATCH_PARENT;
         windowLayoutParams.gravity = Gravity.TOP;
         windowLayoutParams.type = WindowManager.LayoutParams.LAST_APPLICATION_WINDOW;
-        if (Build.VERSION.SDK_INT >= 21) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             windowLayoutParams.flags = WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
                     WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR |
                     WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
@@ -662,6 +665,9 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         centerImage.setParentView(containerView);
         centerImage.setForceCrossfade(true);
     }
+
+    private int wasNavigationBarColor;
+    private boolean wasLightNavigationBar;
 
     public void openMedia(MessageObject messageObject, PhotoViewer.PhotoViewerProvider provider, Runnable onOpen) {
         if (parentActivity == null || messageObject == null || !messageObject.needDrawBluredPreview() || provider == null) {
@@ -807,6 +813,14 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         wm.addView(windowView, windowLayoutParams);
         secretDeleteTimer.invalidate();
         isVisible = true;
+
+        final Window window = parentActivity.getWindow();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            wasNavigationBarColor = window.getNavigationBarColor();
+            wasLightNavigationBar = AndroidUtilities.getLightNavigationBar(window);
+            AndroidUtilities.setLightNavigationBar(window, false);
+            AndroidUtilities.setNavigationBarColor(window, 0xff000000);
+        }
 
         imageMoveAnimation = new AnimatorSet();
         imageMoveAnimation.playTogether(
@@ -1117,6 +1131,12 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
             return false;
         }
 
+        if (parentActivity != null) {
+            final Window window = parentActivity.getWindow();
+            AndroidUtilities.setLightNavigationBar(window, wasLightNavigationBar);
+            AndroidUtilities.setNavigationBarColor(window, wasNavigationBarColor);
+        }
+
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagesDeleted);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.updateMessageMedia);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.didCreatedNewDeleteTask);
@@ -1137,6 +1157,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         if (videoPlayer != null) {
             videoPlayer.pause();
         }
+
         if (animated) {
             photoAnimationInProgress = 3;
             containerView.invalidate();

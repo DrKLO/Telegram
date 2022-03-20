@@ -9,12 +9,15 @@
 package org.telegram.ui.Components;
 
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.view.animation.DecelerateInterpolator;
+
+import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 
@@ -27,6 +30,8 @@ public class CloseProgressDrawable2 extends Drawable {
     private float angle;
     private boolean animating;
     private int side;
+    private int globalColorAlpha = 255;
+    private int currentColor;
 
     public CloseProgressDrawable2() {
         super();
@@ -51,8 +56,12 @@ public class CloseProgressDrawable2 extends Drawable {
         return animating;
     }
 
-    public void setColor(int value) {
-        paint.setColor(value);
+    private void setColor(int value) {
+        if (currentColor != value) {
+            globalColorAlpha = Color.alpha(value);
+            value = ColorUtils.setAlphaComponent(value, 255);
+            paint.setColor(value);
+        }
     }
 
     public void setSide(int value) {
@@ -62,7 +71,7 @@ public class CloseProgressDrawable2 extends Drawable {
     @Override
     public void draw(Canvas canvas) {
         long newTime = System.currentTimeMillis();
-        boolean invalidate = false;
+        setColor(getCurrentColor());
         if (lastFrameTime != 0) {
             long dt = (newTime - lastFrameTime);
             if (animating || angle != 0) {
@@ -76,7 +85,11 @@ public class CloseProgressDrawable2 extends Drawable {
             }
         }
 
-        canvas.save();
+        if (globalColorAlpha == 255 || getBounds() == null || getBounds().isEmpty()) {
+            canvas.save();
+        } else {
+            canvas.saveLayerAlpha(getBounds().left, getBounds().top, getBounds().right, getBounds().bottom, globalColorAlpha, Canvas.ALL_SAVE_FLAG);
+        }
         canvas.translate(getIntrinsicWidth() / 2, getIntrinsicHeight() / 2);
         canvas.rotate(-45);
         float progress1 = 1.0f;
@@ -137,7 +150,7 @@ public class CloseProgressDrawable2 extends Drawable {
 
     @Override
     public void setColorFilter(ColorFilter cf) {
-        paint.setColorFilter(cf);
+
     }
 
     @Override
@@ -153,5 +166,9 @@ public class CloseProgressDrawable2 extends Drawable {
     @Override
     public int getIntrinsicHeight() {
         return AndroidUtilities.dp(24);
+    }
+
+    protected int getCurrentColor() {
+        return Color.WHITE;
     }
 }

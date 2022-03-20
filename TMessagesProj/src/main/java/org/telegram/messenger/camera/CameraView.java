@@ -42,6 +42,7 @@ import android.os.Looper;
 import android.os.Message;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.Surface;
@@ -128,24 +129,24 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
     private float[] mSTMatrix = new float[16];
     private float[] moldSTMatrix = new float[16];
     private static final String VERTEX_SHADER =
-            "uniform mat4 uMVPMatrix;\n" +
-                    "uniform mat4 uSTMatrix;\n" +
-                    "attribute vec4 aPosition;\n" +
-                    "attribute vec4 aTextureCoord;\n" +
-                    "varying vec2 vTextureCoord;\n" +
-                    "void main() {\n" +
-                    "   gl_Position = uMVPMatrix * aPosition;\n" +
-                    "   vTextureCoord = (uSTMatrix * aTextureCoord).xy;\n" +
-                    "}\n";
+        "uniform mat4 uMVPMatrix;\n" +
+        "uniform mat4 uSTMatrix;\n" +
+        "attribute vec4 aPosition;\n" +
+        "attribute vec4 aTextureCoord;\n" +
+        "varying vec2 vTextureCoord;\n" +
+        "void main() {\n" +
+        "   gl_Position = uMVPMatrix * aPosition;\n" +
+        "   vTextureCoord = (uSTMatrix * aTextureCoord).xy;\n" +
+        "}\n";
 
     private static final String FRAGMENT_SCREEN_SHADER =
-            "#extension GL_OES_EGL_image_external : require\n" +
-                    "precision lowp float;\n" +
-                    "varying vec2 vTextureCoord;\n" +
-                    "uniform samplerExternalOES sTexture;\n" +
-                    "void main() {\n" +
-                    "   gl_FragColor = texture2D(sTexture, vTextureCoord);\n" +
-                    "}\n";
+        "#extension GL_OES_EGL_image_external : require\n" +
+        "precision lowp float;\n" +
+        "varying vec2 vTextureCoord;\n" +
+        "uniform samplerExternalOES sTexture;\n" +
+        "void main() {\n" +
+        "   gl_FragColor = texture2D(sTexture, vTextureCoord);\n" +
+        "}\n";
 
     private FloatBuffer vertexBuffer;
     private FloatBuffer textureBuffer;
@@ -272,11 +273,24 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
         }
     }
 
+    private int measurementsCount = 0;
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        measurementsCount = 0;
+    }
+
+    private int lastWidth = -1, lastHeight = -1;
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        int width = MeasureSpec.getSize(widthMeasureSpec),
+            height = MeasureSpec.getSize(heightMeasureSpec);
         if (previewSize != null && cameraSession != null) {
             int frameWidth, frameHeight;
-            cameraSession.updateRotation();
+            if ((lastWidth != width || lastHeight != height) && measurementsCount > 1) {
+                cameraSession.updateRotation();
+            }
+            measurementsCount++;
             if (cameraSession.getWorldAngle() == 90 || cameraSession.getWorldAngle() == 270) {
                 frameWidth = previewSize.getWidth();
                 frameHeight = previewSize.getHeight();
@@ -290,6 +304,8 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
         }
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         checkPreviewMatrix();
+        lastWidth = width;
+        lastHeight = height;
     }
 
     public float getTextureHeight(float width, float height) {
@@ -371,7 +387,6 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
             cameraThread = new CameraGLThread(surface);
             checkPreviewMatrix();
         }
-
     }
 
     private void updateCameraInfoSize() {
@@ -447,7 +462,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
     public boolean onSurfaceTextureDestroyed(SurfaceTexture surfaceTexture) {
         if (cameraThread != null) {
             cameraThread.shutdown(0);
-            cameraThread = null;
+            cameraThread.postRunnable(() -> this.cameraThread = null);
         }
         if (cameraSession != null) {
             CameraController.getInstance().close(cameraSession, null, null);
@@ -473,6 +488,17 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
         clipBottom = value;
     }
 
+    private final Runnable updateRotationMatrix = () -> {
+        final CameraGLThread cameraThread = this.cameraThread;
+        if (cameraThread != null && cameraThread.currentSession != null) {
+            int rotationAngle = cameraThread.currentSession.getWorldAngle();
+            android.opengl.Matrix.setIdentityM(mMVPMatrix, 0);
+            if (rotationAngle != 0) {
+                android.opengl.Matrix.rotateM(mMVPMatrix, 0, rotationAngle, 0, 0, 1);
+            }
+        }
+    };
+
     private void checkPreviewMatrix() {
         if (previewSize == null) {
             return;
@@ -490,16 +516,11 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
         matrix.invert(this.matrix);
 
         if (cameraThread != null) {
-            cameraThread.postRunnable(() -> {
-                final  CameraGLThread cameraThread = this.cameraThread;
-                if (cameraThread != null && cameraThread.currentSession != null) {
-                    int rotationAngle = cameraThread.currentSession.getWorldAngle();
-                    android.opengl.Matrix.setIdentityM(mMVPMatrix, 0);
-                    if (rotationAngle != 0) {
-                        android.opengl.Matrix.rotateM(mMVPMatrix, 0, rotationAngle, 0, 0, 1);
-                    }
-                }
-            });
+            if (!cameraThread.isReady()) {
+                updateRotationMatrix.run();
+            } else {
+                cameraThread.postRunnable(updateRotationMatrix);
+            }
         }
     }
 
@@ -1034,7 +1055,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
                 }
                 case DO_SETSESSION_MESSAGE: {
                     if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("CameraView " + "set gl rednderer session");
+                        FileLog.d("CameraView " + "set gl renderer session");
                     }
                     CameraSession newSession = (CameraSession) inputMessage.obj;
                     if (currentSession != newSession) {
@@ -1539,7 +1560,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
                 if (currentTimestamp != 0) {
                     dt = (System.currentTimeMillis() - lastCommitedFrameTime) * 1000000;
                 } else {
-                     dt = 0;
+                    dt = 0;
                 }
             } else {
                 dt = (timestampNanos - lastTimestamp);

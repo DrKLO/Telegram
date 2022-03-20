@@ -614,7 +614,7 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
             canvas.restore();
         }
 
-        textPaint2.setAlpha(oldAlpha);
+        textPaint2.setAlpha(oldAlphaText);
         composeBackgroundPaint.setAlpha(oldAlpha);
     }
 

@@ -32,6 +32,7 @@ import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.Emoji;
 import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.Components.EmptyStubSpan;
 import org.telegram.ui.Components.StaticLayoutEx;
@@ -100,6 +101,7 @@ public class SimpleTextView extends View implements Drawable.Callback {
     private List<SpoilerEffect> spoilers = new ArrayList<>();
     private Stack<SpoilerEffect> spoilersPool = new Stack<>();
     private Path path = new Path();
+    private boolean usaAlphaForEmoji;
 
     public SimpleTextView(Context context) {
         super(context);
@@ -648,6 +650,7 @@ public class SimpleTextView extends View implements Drawable.Callback {
         }
 
         if (layout != null) {
+            Emoji.emojiDrawingUseAlpha = usaAlphaForEmoji;
             if (wrapBackgroundDrawable != null) {
                 int cx = (int) (offsetX + textOffsetX - scrollingOffset) + textWidth / 2;
                 int w = Math.max(textWidth + getPaddingLeft() + getPaddingRight(), minWidth);
@@ -712,6 +715,7 @@ public class SimpleTextView extends View implements Drawable.Callback {
                 canvas.restore();
             }
             updateScrollAnimation();
+            Emoji.emojiDrawingUseAlpha = true;
         }
         if (fade) {
             canvas.restoreToCount(restore);

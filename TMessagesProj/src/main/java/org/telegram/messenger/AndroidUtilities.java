@@ -12,6 +12,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.KeyguardManager;
@@ -119,6 +120,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.TextDetailSettingsCell;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.BackgroundGradientDrawable;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.ForegroundColorSpanThemable;
 import org.telegram.ui.Components.ForegroundDetector;
 import org.telegram.ui.Components.HideViewAfterAnimation;
@@ -2663,12 +2665,16 @@ public class AndroidUtilities {
         return generateVideoPath(false);
     }
 
+    private static SimpleDateFormat generatingVideoPathFormat;
     public static File generateVideoPath(boolean secretChat) {
         try {
             File storageDir = getAlbumDir(secretChat);
             Date date = new Date();
             date.setTime(System.currentTimeMillis() + Utilities.random.nextInt(1000) + 1);
-            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss_SSS", Locale.US).format(date);
+            if (generatingVideoPathFormat == null) {
+                generatingVideoPathFormat = new SimpleDateFormat("yyyyMMdd_HHmmss_SSS", Locale.US);
+            }
+            String timeStamp = generatingVideoPathFormat.format(date);
             return new File(storageDir, "VID_" + timeStamp + ".mp4");
         } catch (Exception e) {
             FileLog.e(e);
@@ -3826,7 +3832,7 @@ public class AndroidUtilities {
             final boolean value = flagSecureReasons.containsKey(window) && flagSecureReasons.get(window).size() > 0;
             try {
                 if (value) {
-                    window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
+                    window.addFlags(WindowManager.LayoutParams.FLAG_SECURE);
                 } else {
                     window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
                 }
@@ -3958,6 +3964,46 @@ public class AndroidUtilities {
                 flags &= ~View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
             }
             decorView.setSystemUiVisibility(flags);
+        }
+    }
+
+    private static HashMap<Window, ValueAnimator> navigationBarColorAnimators;
+
+    public static void setNavigationBarColor(Window window, int color) {
+        setNavigationBarColor(window, color, true);
+    }
+
+    public static void setNavigationBarColor(Window window, int color, boolean animated) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            if (navigationBarColorAnimators != null) {
+                ValueAnimator animator = navigationBarColorAnimators.get(window);
+                if (animator != null) {
+                    animator.cancel();
+                    navigationBarColorAnimators.remove(window);
+                }
+            }
+
+            if (!animated) {
+                window.setNavigationBarColor(color);
+            } else {
+                ValueAnimator animator = ValueAnimator.ofArgb(window.getNavigationBarColor(), color);
+                animator.addUpdateListener(a -> window.setNavigationBarColor((int) a.getAnimatedValue()));
+                animator.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        if (navigationBarColorAnimators != null) {
+                            navigationBarColorAnimators.remove(window);
+                        }
+                    }
+                });
+                animator.setDuration(200);
+                animator.setInterpolator(CubicBezierInterpolator.DEFAULT);
+                animator.start();
+                if (navigationBarColorAnimators == null) {
+                    navigationBarColorAnimators = new HashMap<>();
+                }
+                navigationBarColorAnimators.put(window, animator);
+            }
         }
     }
 

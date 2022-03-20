@@ -1039,11 +1039,11 @@ public class QrActivity extends BaseFragment {
 
             int drawableColor = fragment.getThemedColor(Theme.key_featuredStickers_addButton);
             int drawableSize = AndroidUtilities.dp(28);
-            darkThemeDrawable = new RLottieDrawable(R.raw.sun_outline, "" + R.raw.sun_outline, drawableSize, drawableSize, true, null);
+            darkThemeDrawable = new RLottieDrawable(R.raw.sun_outline, "" + R.raw.sun_outline, drawableSize, drawableSize, false, null);
+            forceDark = !Theme.getActiveTheme().isDark();
+            setForceDark(Theme.getActiveTheme().isDark(), false);
             darkThemeDrawable.setPlayInDirectionOfCustomEndFrame(true);
-            darkThemeDrawable.beginApplyLayerColors();
-            setDarkButtonColor(drawableColor);
-            darkThemeDrawable.commitApplyLayerColors();
+            darkThemeDrawable.setColorFilter(new PorterDuffColorFilter(drawableColor, PorterDuff.Mode.MULTIPLY));
 
             darkThemeView = new RLottieImageView(context);
             darkThemeView.setAnimation(darkThemeDrawable);
@@ -1057,8 +1057,7 @@ public class QrActivity extends BaseFragment {
             darkThemeView.setAlpha(0f);
             darkThemeView.setVisibility(View.INVISIBLE);
             rootLayout.addView(darkThemeView, LayoutHelper.createFrame(44, 44, Gravity.TOP | Gravity.END, 0, -2, 7, 0));
-            forceDark = !Theme.getActiveTheme().isDark();
-            setForceDark(Theme.getActiveTheme().isDark(), false);
+
 
             progressView = new FlickerLoadingView(context, fragment.getResourceProvider());
             progressView.setVisibility(View.VISIBLE);
@@ -1283,20 +1282,19 @@ public class QrActivity extends BaseFragment {
                 return;
             }
             forceDark = isDark;
+            int frame = isDark ? darkThemeDrawable.getFramesCount() - 1 : 0;
             if (playAnimation) {
-                darkThemeDrawable.setCustomEndFrame(isDark ? darkThemeDrawable.getFramesCount() : 0);
-                darkThemeView.playAnimation();
+                darkThemeDrawable.setCustomEndFrame(frame);
+                if (darkThemeView != null) {
+                    darkThemeView.playAnimation();
+                }
             } else {
-                darkThemeDrawable.setCurrentFrame(isDark ? darkThemeDrawable.getFramesCount() - 1 : 0, false, true);
-                darkThemeView.invalidate();
+                darkThemeDrawable.setCustomEndFrame(frame);
+                darkThemeDrawable.setCurrentFrame(frame, false, true);
+                if (darkThemeView != null) {
+                    darkThemeView.invalidate();
+                }
             }
-        }
-
-        public void setDarkButtonColor(int color) {
-            darkThemeDrawable.setLayerColor("Sunny.**", color);
-            darkThemeDrawable.setLayerColor("Path.**", color);
-            darkThemeDrawable.setLayerColor("Path 10.**", color);
-            darkThemeDrawable.setLayerColor("Path 11.**", color);
         }
 
         private LinearLayoutManager getLayoutManager(boolean isPortrait) {
@@ -1337,7 +1335,7 @@ public class QrActivity extends BaseFragment {
                         onAnimationStart();
                         isAnimationStarted = true;
                     }
-                    setDarkButtonColor(fragment.getThemedColor(Theme.key_featuredStickers_addButton));
+                    darkThemeDrawable.setColorFilter(new PorterDuffColorFilter(fragment.getThemedColor(Theme.key_featuredStickers_addButton), PorterDuff.Mode.MULTIPLY));
                     if (isLightDarkChangeAnimation) {
                         setItemsAnimationProgress(progress);
                     }

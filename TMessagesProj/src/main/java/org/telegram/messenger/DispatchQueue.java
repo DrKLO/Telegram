@@ -118,4 +118,8 @@ public class DispatchQueue extends Thread {
         syncLatch.countDown();
         Looper.loop();
     }
+
+    public boolean isReady() {
+        return syncLatch.getCount() == 0;
+    }
 }

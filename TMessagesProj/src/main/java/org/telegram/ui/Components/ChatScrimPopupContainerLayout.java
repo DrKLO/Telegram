@@ -2,6 +2,7 @@ package org.telegram.ui.Components;
 
 import android.content.Context;
 import android.view.View;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -9,8 +10,9 @@ import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 
 public class ChatScrimPopupContainerLayout extends LinearLayout {
 
-    public ReactionsContainerLayout reactionsLayout;
-    public ActionBarPopupWindow.ActionBarPopupWindowLayout popupWindowLayout;
+    private ReactionsContainerLayout reactionsLayout;
+    private ActionBarPopupWindow.ActionBarPopupWindowLayout popupWindowLayout;
+    private View bottomView;
 
     public ChatScrimPopupContainerLayout(Context context) {
         super(context);
@@ -38,10 +40,47 @@ public class ChatScrimPopupContainerLayout extends LinearLayout {
             if (popupWindowLayout.getSwipeBack() != null) {
                 widthDiff = popupWindowLayout.getSwipeBack().getMeasuredWidth() - popupWindowLayout.getSwipeBack().getChildAt(0).getMeasuredWidth();
             }
-            ((LayoutParams)reactionsLayout.getLayoutParams()).rightMargin = widthDiff;
+            ((LayoutParams) reactionsLayout.getLayoutParams()).rightMargin = widthDiff;
+            if (bottomView != null) {
+                if (popupWindowLayout.getSwipeBack() != null) {
+                    ((LayoutParams) bottomView.getLayoutParams()).rightMargin = widthDiff + AndroidUtilities.dp(36);
+                } else {
+                    ((LayoutParams) bottomView.getLayoutParams()).rightMargin = AndroidUtilities.dp(36);
+                }
+            }
             super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         } else {
             super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        }
+    }
+
+    public void applyViewBottom(FrameLayout bottomView) {
+        this.bottomView = bottomView;
+    }
+
+    public void setReactionsLayout(ReactionsContainerLayout reactionsLayout) {
+        this.reactionsLayout = reactionsLayout;
+    }
+
+    public void setPopupWindowLayout(ActionBarPopupWindow.ActionBarPopupWindowLayout popupWindowLayout) {
+        this.popupWindowLayout = popupWindowLayout;
+        popupWindowLayout.setOnSizeChangedListener(new ActionBarPopupWindow.onSizeChangedListener() {
+            @Override
+            public void onSizeChanged() {
+                if (bottomView != null) {
+                    bottomView.setTranslationY(popupWindowLayout.getVisibleHeight() - popupWindowLayout.getMeasuredHeight());
+                }
+            }
+        });
+        if (popupWindowLayout.getSwipeBack() != null) {
+            popupWindowLayout.getSwipeBack().addOnSwipeBackProgressListener(new PopupSwipeBackLayout.OnSwipeBackProgressListener() {
+                @Override
+                public void onSwipeBackProgress(PopupSwipeBackLayout layout, float toProgress, float progress) {
+                    if (bottomView != null) {
+                        bottomView.setAlpha(1f - progress);
+                    }
+                }
+            });
         }
     }
 }

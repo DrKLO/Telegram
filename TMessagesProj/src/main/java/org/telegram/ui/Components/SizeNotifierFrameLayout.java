@@ -83,6 +83,8 @@ public class SizeNotifierFrameLayout extends FrameLayout {
     public Paint blurPaintTop2 = new Paint();
     public Paint blurPaintBottom = new Paint();
     public Paint blurPaintBottom2 = new Paint();
+    private Paint selectedBlurPaint;
+    private Paint selectedBlurPaint2;
     float saturation;
 
     public float blurCrossfadeProgress;
@@ -682,58 +684,90 @@ public class SizeNotifierFrameLayout extends FrameLayout {
         blurIsRunning = false;
     }
 
-    public void drawBlur(Canvas canvas, float y, Rect rectTmp, Paint blurScrimPaint, boolean top) {
+    public void drawBlurRect(Canvas canvas, float y, Rect rectTmp, Paint blurScrimPaint, boolean top) {
         int blurAlpha = Color.alpha(Theme.getColor(Theme.key_chat_BlurAlpha));
         if (currentBitmap == null || !SharedConfig.chatBlurEnabled()) {
             canvas.drawRect(rectTmp, blurScrimPaint);
             return;
         }
-        Paint blurPaint = top ? blurPaintTop : blurPaintBottom;
-        Paint blurPaint2 = top ? blurPaintTop2 : blurPaintBottom2;
-
-        if (blurPaint.getShader() != null) {
-            matrix.reset();
-            matrix2.reset();
-            if (!top) {
-                float y1 = -y + currentBitmap.bottomOffset - currentBitmap.pixelFixOffset - TOP_CLIP_OFFSET - (currentBitmap.drawnLisetTranslationY - (getBottomOffset() + getListTranslationY()));
-                matrix.setTranslate(0, y1);
-                matrix.preScale(currentBitmap.bottomScaleX, currentBitmap.bottomScaleY);
-
-                if (prevBitmap != null) {
-                    y1 = -y + prevBitmap.bottomOffset - prevBitmap.pixelFixOffset - TOP_CLIP_OFFSET - (prevBitmap.drawnLisetTranslationY - (getBottomOffset() + getListTranslationY()));
-                    matrix2.setTranslate(0, y1);
-                    matrix2.preScale(prevBitmap.bottomScaleX, prevBitmap.bottomScaleY);
-                }
-            } else {
-                matrix.setTranslate(0, -y - currentBitmap.pixelFixOffset - TOP_CLIP_OFFSET);
-                matrix.preScale(currentBitmap.topScaleX, currentBitmap.topScaleY);
-
-                if (prevBitmap != null) {
-                    matrix2.setTranslate(0, -y - prevBitmap.pixelFixOffset - TOP_CLIP_OFFSET);
-                    matrix2.preScale(prevBitmap.topScaleX, prevBitmap.topScaleY);
-                }
-            }
-
-            blurPaint.getShader().setLocalMatrix(matrix);
-            if (blurPaint2.getShader() != null) {
-                blurPaint2.getShader().setLocalMatrix(matrix);
-            }
-        }
+        updateBlurShaderPosition(y, top);
         blurScrimPaint.setAlpha(255);
-        if (blurCrossfadeProgress != 1f && blurPaint2.getShader() != null) {
+        if (blurCrossfadeProgress != 1f && selectedBlurPaint2.getShader() != null) {
             canvas.drawRect(rectTmp, blurScrimPaint);
-            canvas.drawRect(rectTmp, blurPaint2);
+            canvas.drawRect(rectTmp, selectedBlurPaint2);
             canvas.saveLayerAlpha(rectTmp.left, rectTmp.top, rectTmp.right, rectTmp.bottom, (int) (blurCrossfadeProgress * 255), Canvas.ALL_SAVE_FLAG);
             canvas.drawRect(rectTmp, blurScrimPaint);
-            canvas.drawRect(rectTmp, blurPaint);
+            canvas.drawRect(rectTmp, selectedBlurPaint);
             canvas.restore();
         } else {
             canvas.drawRect(rectTmp, blurScrimPaint);
-            canvas.drawRect(rectTmp, blurPaint);
+            canvas.drawRect(rectTmp, selectedBlurPaint);
         }
 
         blurScrimPaint.setAlpha(blurAlpha);
         canvas.drawRect(rectTmp, blurScrimPaint);
+    }
+
+    public void drawBlurCircle(Canvas canvas, float viewY, float cx, float cy, float radius, Paint blurScrimPaint, boolean top) {
+        int blurAlpha = Color.alpha(Theme.getColor(Theme.key_chat_BlurAlpha));
+        if (currentBitmap == null || !SharedConfig.chatBlurEnabled()) {
+            canvas.drawCircle(cx, cy, radius, blurScrimPaint);
+            return;
+        }
+        updateBlurShaderPosition(viewY, top);
+        blurScrimPaint.setAlpha(255);
+        if (blurCrossfadeProgress != 1f && selectedBlurPaint2.getShader() != null) {
+            canvas.drawCircle(cx, cy, radius, blurScrimPaint);
+            canvas.drawCircle(cx, cy, radius, selectedBlurPaint2);
+            canvas.saveLayerAlpha(cx - radius, cy - radius, cx + radius, cy + radius, (int) (blurCrossfadeProgress * 255), Canvas.ALL_SAVE_FLAG);
+            canvas.drawCircle(cx, cy, radius, blurScrimPaint);
+            canvas.drawCircle(cx, cy, radius, selectedBlurPaint);
+            canvas.restore();
+        } else {
+            canvas.drawCircle(cx, cy, radius, blurScrimPaint);
+            canvas.drawCircle(cx, cy, radius, selectedBlurPaint);
+        }
+
+        blurScrimPaint.setAlpha(blurAlpha);
+        canvas.drawCircle(cx, cy, radius, blurScrimPaint);
+    }
+
+    private void updateBlurShaderPosition(float viewY, boolean top) {
+        selectedBlurPaint = top ? blurPaintTop : blurPaintBottom;
+        selectedBlurPaint2 = top ? blurPaintTop2 : blurPaintBottom2;
+
+        if (top) {
+            viewY += getTranslationY();
+        }
+
+        if (selectedBlurPaint.getShader() != null) {
+            matrix.reset();
+            matrix2.reset();
+            if (!top) {
+                float y1 = -viewY + currentBitmap.bottomOffset - currentBitmap.pixelFixOffset - TOP_CLIP_OFFSET - (currentBitmap.drawnLisetTranslationY - (getBottomOffset() + getListTranslationY()));
+                matrix.setTranslate(0, y1);
+                matrix.preScale(currentBitmap.bottomScaleX, currentBitmap.bottomScaleY);
+
+                if (prevBitmap != null) {
+                    y1 = -viewY + prevBitmap.bottomOffset - prevBitmap.pixelFixOffset - TOP_CLIP_OFFSET - (prevBitmap.drawnLisetTranslationY - (getBottomOffset() + getListTranslationY()));
+                    matrix2.setTranslate(0, y1);
+                    matrix2.preScale(prevBitmap.bottomScaleX, prevBitmap.bottomScaleY);
+                }
+            } else {
+                matrix.setTranslate(0, -viewY - currentBitmap.pixelFixOffset - TOP_CLIP_OFFSET);
+                matrix.preScale(currentBitmap.topScaleX, currentBitmap.topScaleY);
+
+                if (prevBitmap != null) {
+                    matrix2.setTranslate(0, -viewY - prevBitmap.pixelFixOffset - TOP_CLIP_OFFSET);
+                    matrix2.preScale(prevBitmap.topScaleX, prevBitmap.topScaleY);
+                }
+            }
+
+            selectedBlurPaint.getShader().setLocalMatrix(matrix);
+            if (selectedBlurPaint2.getShader() != null) {
+                selectedBlurPaint2.getShader().setLocalMatrix(matrix);
+            }
+        }
     }
 
     protected float getBottomTranslation() {
