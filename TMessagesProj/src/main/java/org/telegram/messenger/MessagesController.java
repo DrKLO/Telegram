@@ -336,6 +336,9 @@ public class MessagesController extends BaseController implements NotificationCe
     public HashMap<String, EmojiSound> emojiSounds = new HashMap<>();
     public HashMap<Long, ArrayList<TLRPC.TL_sendMessageEmojiInteraction>> emojiInteractions = new HashMap<>();
     public boolean remoteConfigLoaded;
+    public int configThisDc;
+    public int configWebfileDcId;
+    public String configDcTxtDomainName;
 
     private SharedPreferences notificationsPreferences;
     private SharedPreferences mainPreferences;
@@ -1962,6 +1965,9 @@ public class MessagesController extends BaseController implements NotificationCe
             getDownloadController().loadAutoDownloadConfig(false);
             loadAppConfig();
             remoteConfigLoaded = true;
+            configThisDc = config.this_dc;
+            configWebfileDcId = config.webfile_dc_id;
+            configDcTxtDomainName = config.dc_txt_domain_name;
             maxMegagroupCount = config.megagroup_size_max;
             maxGroupCount = config.chat_size_max;
             maxEditTime = config.edit_time_limit;

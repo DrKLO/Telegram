@@ -79,7 +79,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
 
         profileLabelRow = rowCount++;
         profileUIDRow = rowCount++;
-//        profileDCIDRow = rowCount++;
+        profileDCIDRow = rowCount++;
         profileSBRow = rowCount++;
 
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.telegraherSettingsUpdated);
@@ -153,20 +153,20 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
             } else if (position == profileUIDRow) {
                 SharedPreferences preferences = MessagesController.getTelegraherSettings(currentAccount);
                 SharedPreferences.Editor editor = preferences.edit();
-                enabled = preferences.getBoolean("EnableProfileUIDRow", true);
-                editor.putBoolean("EnableProfileUIDRow", !enabled);
+                enabled = preferences.getBoolean("EnableProfileUID", true);
+                editor.putBoolean("EnableProfileUID", !enabled);
                 editor.commit();
             } else if (position == profileDCIDRow) {
                 SharedPreferences preferences = MessagesController.getTelegraherSettings(currentAccount);
                 SharedPreferences.Editor editor = preferences.edit();
-                enabled = preferences.getBoolean("EnableProfileDCIDRow", true);
-                editor.putBoolean("EnableProfileDCIDRow", !enabled);
+                enabled = preferences.getBoolean("EnableProfileDCID", true);
+                editor.putBoolean("EnableProfileDCID", !enabled);
                 editor.commit();
             } else if (position == profileSBRow) {
                 SharedPreferences preferences = MessagesController.getTelegraherSettings(currentAccount);
                 SharedPreferences.Editor editor = preferences.edit();
-                enabled = preferences.getBoolean("EnableProfileSBRow", true);
-                editor.putBoolean("EnableProfileSBRow", !enabled);
+                enabled = preferences.getBoolean("EnableProfileSB", true);
+                editor.putBoolean("EnableProfileSB", !enabled);
                 editor.commit();
             }
             if (view instanceof TextCheckCell) {
@@ -277,9 +277,9 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                     } else if (position == voipHDRow) {
                         checkCell.setTextAndCheck("HD calls", localPreps.getBoolean("EnableVoIPHD", false), true);
                     } else if (position == profileUIDRow) {
-                        checkCell.setTextAndCheck("Show numeric ID", localPreps.getBoolean("EnableProfileUIDRow", true), true);
+                        checkCell.setTextAndCheck("Show numeric ID", localPreps.getBoolean("EnableProfileUID", true), true);
                     } else if (position == profileDCIDRow) {
-                        checkCell.setTextAndCheck("Show DC ID", localPreps.getBoolean("EnableProfileDCIDRow", true), true);
+                        checkCell.setTextAndCheck("Show DC ID", localPreps.getBoolean("EnableProfileDCID", true), true);
                     } else if (position == profileSBRow) {
                         checkCell.setTextAndCheck("Show Shadowban", localPreps.getBoolean("EnableProfileSBRow", true), true);
                     }
