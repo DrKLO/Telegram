@@ -1582,6 +1582,10 @@ public class ChatObject {
         return canUserDoAction(chat, ACTION_BLOCK_USERS);
     }
 
+    public static boolean canDeleteMessages(TLRPC.Chat chat) {
+        return canUserDoAction(chat, ACTION_DELETE_MESSAGES);
+    }
+
     public static boolean canManageCalls(TLRPC.Chat chat) {
         return canUserDoAction(chat, ACTION_MANAGE_CALLS);
     }
