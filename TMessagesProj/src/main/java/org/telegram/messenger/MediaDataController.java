@@ -3958,7 +3958,8 @@ public class MediaDataController extends BaseController {
 
             long selfUserId = getUserConfig().clientUserId;
 
-            SQLiteCursor cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, mid, date FROM messages_v2 WHERE mid IN (%s) AND uid = %d", longIds, dialogId));
+//            SQLiteCursor cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, mid, date FROM messages_v2 WHERE mid IN (%s) AND uid = %d", longIds, dialogId));
+            SQLiteCursor cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, mid, date, isdel FROM messages_v2 WHERE mid IN (%s) AND uid = %d", longIds, dialogId));
             while (cursor.next()) {
                 NativeByteBuffer data = cursor.byteBufferValue(0);
                 if (data != null) {
@@ -3966,6 +3967,7 @@ public class MediaDataController extends BaseController {
                     if (!(result.action instanceof TLRPC.TL_messageActionHistoryClear)) {
                         result.readAttachPath(data, selfUserId);
                         result.id = cursor.intValue(1);
+                        result.isDeleted = cursor.intValue(3) == 1;
                         result.date = cursor.intValue(2);
                         result.dialog_id = dialogId;
                         MessagesStorage.addUsersAndChatsFromMessage(result, usersToLoad, chatsToLoad);
@@ -4177,7 +4179,8 @@ public class MediaDataController extends BaseController {
             getMessagesStorage().getStorageQueue().postRunnable(() -> {
                 try {
                     ArrayList<MessageObject> loadedMessages = new ArrayList<>();
-                    SQLiteCursor cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT m.data, m.mid, m.date, r.random_id FROM randoms_v2 as r INNER JOIN messages_v2 as m ON r.mid = m.mid AND r.uid = m.uid WHERE r.random_id IN(%s)", TextUtils.join(",", replyMessages)));
+//                    SQLiteCursor cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT m.data, m.mid, m.date, r.random_id FROM randoms_v2 as r INNER JOIN messages_v2 as m ON r.mid = m.mid AND r.uid = m.uid WHERE r.random_id IN(%s)", TextUtils.join(",", replyMessages)));
+                    SQLiteCursor cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT m.data, m.mid, m.date, r.random_id, m.isdel FROM randoms_v2 as r INNER JOIN messages_v2 as m ON r.mid = m.mid AND r.uid = m.uid WHERE r.random_id IN(%s)", TextUtils.join(",", replyMessages)));
                     while (cursor.next()) {
                         NativeByteBuffer data = cursor.byteBufferValue(0);
                         if (data != null) {
@@ -4185,6 +4188,7 @@ public class MediaDataController extends BaseController {
                             message.readAttachPath(data, getUserConfig().clientUserId);
                             data.reuse();
                             message.id = cursor.intValue(1);
+                            message.isDeleted = cursor.intValue(4) == 1;
                             message.date = cursor.intValue(2);
                             message.dialog_id = dialogId;
 
@@ -4294,7 +4298,8 @@ public class MediaDataController extends BaseController {
                         if (ids == null) {
                             continue;
                         }
-                        SQLiteCursor cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, mid, date, uid FROM messages_v2 WHERE mid IN(%s) AND uid = %d", TextUtils.join(",", ids), dialogId));
+//                        SQLiteCursor cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, mid, date, uid FROM messages_v2 WHERE mid IN(%s) AND uid = %d", TextUtils.join(",", ids), dialogId));
+                        SQLiteCursor cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, mid, date, uid, isdel FROM messages_v2 WHERE mid IN(%s) AND uid = %d", TextUtils.join(",", ids), dialogId));
                         while (cursor.next()) {
                             NativeByteBuffer data = cursor.byteBufferValue(0);
                             if (data != null) {
@@ -4302,6 +4307,7 @@ public class MediaDataController extends BaseController {
                                 message.readAttachPath(data, getUserConfig().clientUserId);
                                 data.reuse();
                                 message.id = cursor.intValue(1);
+                                message.isDeleted = cursor.intValue(4) == 1;
                                 message.date = cursor.intValue(2);
                                 message.dialog_id = dialogId;
                                 MessagesStorage.addUsersAndChatsFromMessage(message, usersToLoad, chatsToLoad);
