@@ -1,45 +1,23 @@
 package org.telegram.messenger.video;
 
 import android.annotation.TargetApi;
-import android.graphics.Matrix;
-import android.graphics.SurfaceTexture;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
-import android.opengl.EGL14;
-import android.opengl.GLES11Ext;
-import android.opengl.GLES20;
 import android.os.Build;
-import android.view.Surface;
 
 import com.google.android.exoplayer2.util.Log;
 
-import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.NotificationsController;
-import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.Utilities;
 import org.telegram.messenger.VideoEditedInfo;
-import org.telegram.ui.Components.Bulletin;
-import org.telegram.ui.Components.BulletinFactory;
-import org.telegram.ui.LaunchActivity;
 
 import java.io.File;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.FloatBuffer;
 import java.util.ArrayList;
-
-import javax.microedition.khronos.egl.EGL10;
-import javax.microedition.khronos.egl.EGLConfig;
-import javax.microedition.khronos.egl.EGLContext;
-import javax.microedition.khronos.egl.EGLDisplay;
-import javax.microedition.khronos.egl.EGLSurface;
 
 public class MediaCodecVideoConvertor {
 
@@ -166,7 +144,7 @@ public class MediaCodecVideoConvertor {
                     inputSurface.makeCurrent();
                     encoder.start();
 
-                    outputSurface = new OutputSurface(savedFilterState, videoPath, paintPath, mediaEntities, null, resultWidth, resultHeight, rotationValue, framerate, true);
+                    outputSurface = new OutputSurface(savedFilterState, videoPath, paintPath, mediaEntities, null, resultWidth, resultHeight, originalWidth, originalHeight, rotationValue, framerate, true);
 
                     ByteBuffer[] encoderOutputBuffers = null;
                     ByteBuffer[] encoderInputBuffers = null;
@@ -337,6 +315,7 @@ public class MediaCodecVideoConvertor {
                     AudioRecoder audioRecoder = null;
                     ByteBuffer audioBuffer = null;
                     boolean copyAudioBuffer = true;
+                    long lastFramePts = -1;
 
                     if (videoIndex >= 0) {
                         MediaCodec decoder = null;
@@ -421,8 +400,8 @@ public class MediaCodecVideoConvertor {
                             encoder.start();
 
                             decoder = MediaCodec.createDecoderByType(videoFormat.getString(MediaFormat.KEY_MIME));
-                            outputSurface = new OutputSurface(savedFilterState, null, paintPath, mediaEntities, cropState, resultWidth, resultHeight, rotationValue, framerate, false);
-                            outputSurface.changeFragmentShader(createFragmentShader(originalWidth, originalHeight, resultWidth, resultHeight));
+                            outputSurface = new OutputSurface(savedFilterState, null, paintPath, mediaEntities, cropState, resultWidth, resultHeight, originalWidth, originalHeight, rotationValue, framerate, false);
+                            outputSurface.changeFragmentShader(createFragmentShader(originalWidth, originalHeight, resultWidth, resultHeight, true), createFragmentShader(originalWidth, originalHeight, resultWidth, resultHeight, false));
                             decoder.configure(videoFormat, outputSurface.getSurface(), null, 0);
                             decoder.start();
 
@@ -702,6 +681,9 @@ public class MediaCodecVideoConvertor {
                                                 decoder.flush();
                                                 flushed = true;
                                             }
+                                            if (lastFramePts > 0 && info.presentationTimeUs - lastFramePts < frameDelta && (info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) == 0) {
+                                                doRender = false;
+                                            }
                                             trueStartTime = avatarStartTime >= 0 ? avatarStartTime : startTime;
                                             if (trueStartTime > 0 && videoTime == -1) {
                                                 if (originalPresentationTime < trueStartTime) {
@@ -725,6 +707,7 @@ public class MediaCodecVideoConvertor {
                                                 decoder.releaseOutputBuffer(decoderStatus, doRender);
                                             }
                                             if (doRender) {
+                                                lastFramePts = info.presentationTimeUs;
                                                 if (avatarStartTime >= 0) {
                                                     minPresentationTime = Math.max(minPresentationTime, info.presentationTimeUs);
                                                 }
@@ -983,41 +966,52 @@ public class MediaCodecVideoConvertor {
             final int srcWidth,
             final int srcHeight,
             final int dstWidth,
-            final int dstHeight) {
-        final float kernelSizeX = Math.max(2f, (float) srcWidth / (float) dstWidth);
-        final float kernelSizeY = Math.max(2f, (float) srcHeight / (float) dstHeight);
+            final int dstHeight, boolean external) {
 
-        final String shader;
-
-        final int kernelRadiusX = (int) Math.ceil(kernelSizeX - .1f) / 2;
-        final int kernelRadiusY = (int) Math.ceil(kernelSizeY - .1f) / 2;
-        final float stepX = kernelSizeX / (1 + 2 * kernelRadiusX) * (1f / srcWidth);
-        final float stepY = kernelSizeY / (1 + 2 * kernelRadiusY) * (1f / srcHeight);
-        final float sum = (1 + 2 * kernelRadiusX) * (1 + 2 * kernelRadiusY);
-        final StringBuilder colorLoop = new StringBuilder();
-        for (int i = -kernelRadiusX; i <= kernelRadiusX; i++) {
-            for (int j = -kernelRadiusY; j <= kernelRadiusY; j++) {
-                if (i != 0 || j != 0) {
-                    colorLoop.append("      + texture2D(sTexture, vTextureCoord.xy + vec2(")
-                            .append(i * stepX).append(", ").append(j * stepY).append("))\n");
-                }
-            }
+        final float kernelSize = Utilities.clamp((float) (Math.max(srcWidth, srcHeight) / (float) Math.max(dstHeight, dstWidth)) * 0.8f, 2f, 1f);
+        final int kernelRadius = (int) kernelSize;
+        FileLog.d("source size " + srcWidth + "x" + srcHeight + "    dest size " + dstWidth + dstHeight + "   kernelRadius " + kernelRadius);
+        if (external) {
+            return "#extension GL_OES_EGL_image_external : require\n" +
+                    "precision mediump float;\n" +
+                    "varying vec2 vTextureCoord;\n" +
+                    "const float kernel = " + kernelRadius + ".0;\n" +
+                    "const float pixelSizeX = 1.0 / " + srcWidth + ".0;\n" +
+                    "const float pixelSizeY = 1.0 / " + srcHeight + ".0;\n" +
+                    "uniform samplerExternalOES sTexture;\n" +
+                    "void main() {\n" +
+                    "vec3 accumulation = vec3(0);\n" +
+                    "vec3 weightsum = vec3(0);\n" +
+                    "for (float x = -kernel; x <= kernel; x++){\n" +
+                    "   for (float y = -kernel; y <= kernel; y++){\n" +
+                    "       accumulation += texture2D(sTexture, vTextureCoord + vec2(x * pixelSizeX, y * pixelSizeY)).xyz;\n" +
+                    "       weightsum += 1.0;\n" +
+                    "   }\n" +
+                    "}\n" +
+                    "gl_FragColor = vec4(accumulation / weightsum, 1.0);\n" +
+                    "}\n";
+        } else {
+            return "precision mediump float;\n" +
+                    "varying vec2 vTextureCoord;\n" +
+                    "const float kernel = " + kernelRadius + ".0;\n" +
+                    "const float pixelSizeX = 1.0 / " + srcHeight + ".0;\n" +
+                    "const float pixelSizeY = 1.0 / " + srcWidth + ".0;\n" +
+                    "uniform sampler2D sTexture;\n" +
+                    "void main() {\n" +
+                    "vec3 accumulation = vec3(0);\n" +
+                    "vec3 weightsum = vec3(0);\n" +
+                    "for (float x = -kernel; x <= kernel; x++){\n" +
+                    "   for (float y = -kernel; y <= kernel; y++){\n" +
+                    "       accumulation += texture2D(sTexture, vTextureCoord + vec2(x * pixelSizeX, y * pixelSizeY)).xyz;\n" +
+                    "       weightsum += 1.0;\n" +
+                    "   }\n" +
+                    "}\n" +
+                    "gl_FragColor = vec4(accumulation / weightsum, 1.0);\n" +
+                    "}\n";
         }
-        shader =
-                "#extension GL_OES_EGL_image_external : require\n" +
-                        "precision mediump float;\n" +      // highp here doesn't seem to matter
-                        "varying vec2 vTextureCoord;\n" +
-                        "uniform samplerExternalOES sTexture;\n" +
-                        "void main() {\n" +
-                        "    gl_FragColor = (texture2D(sTexture, vTextureCoord)\n" +
-                        colorLoop.toString() +
-                        "    ) / " + sum + ";\n" +
-                        "}\n";
-
-        return shader;
     }
 
-    public class ConversionCanceledException extends RuntimeException{
+    public class ConversionCanceledException extends RuntimeException {
 
         public ConversionCanceledException() {
             super("canceled conversion");

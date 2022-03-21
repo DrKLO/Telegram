@@ -103,6 +103,7 @@ public class ActionBarPopupWindow extends PopupWindow {
         private int gapStartY = -1000000;
         private int gapEndY = -1000000;
         private Rect bgPaddings = new Rect();
+        private onSizeChangedListener onSizeChangedListener;
 
         private PopupSwipeBackLayout swipeBackLayout;
         private ScrollView scrollView;
@@ -250,50 +251,61 @@ public class ActionBarPopupWindow extends PopupWindow {
 
         @Keep
         public void setBackScaleX(float value) {
-            backScaleX = value;
-            invalidate();
+            if (backScaleY != value) {
+                backScaleY = value;
+                backScaleX = value;
+                invalidate();
+                if (onSizeChangedListener != null) {
+                    onSizeChangedListener.onSizeChanged();
+                }
+            }
         }
 
         @Keep
         public void setBackScaleY(float value) {
-            backScaleY = value;
-            if (animationEnabled) {
-                int height = getMeasuredHeight() - AndroidUtilities.dp(16);
-                if (shownFromBotton) {
-                    for (int a = lastStartedChild; a >= 0; a--) {
-                        View child = getItemAt(a);
-                        if (child.getVisibility() != VISIBLE) {
-                            continue;
+            if (backScaleY != value) {
+                backScaleY = value;
+                if (animationEnabled) {
+                    int height = getMeasuredHeight() - AndroidUtilities.dp(16);
+                    if (shownFromBotton) {
+                        for (int a = lastStartedChild; a >= 0; a--) {
+                            View child = getItemAt(a);
+                            if (child.getVisibility() != VISIBLE) {
+                                continue;
+                            }
+                            Integer position = positions.get(child);
+                            if (position != null && height - (position * AndroidUtilities.dp(48) + AndroidUtilities.dp(32)) > value * height) {
+                                break;
+                            }
+                            lastStartedChild = a - 1;
+                            startChildAnimation(child);
                         }
-                        Integer position = positions.get(child);
-                        if (position != null && height - (position * AndroidUtilities.dp(48) + AndroidUtilities.dp(32)) > value * height) {
-                            break;
+                    } else {
+                        int count = getItemsCount();
+                        int h = 0;
+                        for (int a = 0; a < count; a++) {
+                            View child = getItemAt(a);
+                            if (child.getVisibility() != VISIBLE) {
+                                continue;
+                            }
+                            h += child.getMeasuredHeight();
+                            if (a < lastStartedChild) {
+                                continue;
+                            }
+                            Integer position = positions.get(child);
+                            if (position != null && h - AndroidUtilities.dp(24) > value * height) {
+                                break;
+                            }
+                            lastStartedChild = a + 1;
+                            startChildAnimation(child);
                         }
-                        lastStartedChild = a - 1;
-                        startChildAnimation(child);
-                    }
-                } else {
-                    int count = getItemsCount();
-                    int h = 0;
-                    for (int a = 0; a < count; a++) {
-                        View child = getItemAt(a);
-                        if (child.getVisibility() != VISIBLE) {
-                            continue;
-                        }
-                        h += child.getMeasuredHeight();
-                        if (a < lastStartedChild) {
-                            continue;
-                        }
-                        Integer position = positions.get(child);
-                        if (position != null && h - AndroidUtilities.dp(24) > value * height) {
-                            break;
-                        }
-                        lastStartedChild = a + 1;
-                        startChildAnimation(child);
                     }
                 }
+                invalidate();
+                if (onSizeChangedListener != null) {
+                    onSizeChangedListener.onSizeChanged();
+                }
             }
-            invalidate();
         }
 
         public void setBackgroundDrawable(Drawable drawable) {
@@ -464,6 +476,14 @@ public class ActionBarPopupWindow extends PopupWindow {
         private int getThemedColor(String key) {
             Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
             return color != null ? color : Theme.getColor(key);
+        }
+
+        public void setOnSizeChangedListener(ActionBarPopupWindow.onSizeChangedListener onSizeChangedListener) {
+            this.onSizeChangedListener = onSizeChangedListener;
+        }
+
+        public int getVisibleHeight() {
+            return (int) (getMeasuredHeight() * backScaleY);
         }
     }
 
@@ -741,5 +761,9 @@ public class ActionBarPopupWindow extends PopupWindow {
 
     public void setEmptyOutAnimation(long time) {
         outEmptyTime = time;
+    }
+
+    public interface onSizeChangedListener {
+        void onSizeChanged();
     }
 }

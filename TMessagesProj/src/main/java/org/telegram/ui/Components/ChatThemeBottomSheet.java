@@ -5,12 +5,12 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
@@ -117,11 +117,12 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
 
         int drawableColor = getThemedColor(Theme.key_featuredStickers_addButton);
         int drawableSize = AndroidUtilities.dp(28);
-        darkThemeDrawable = new RLottieDrawable(R.raw.sun_outline, "" + R.raw.sun_outline, drawableSize, drawableSize, true, null);
+        darkThemeDrawable = new RLottieDrawable(R.raw.sun_outline, "" + R.raw.sun_outline, drawableSize, drawableSize, false, null);
+        forceDark = !Theme.getActiveTheme().isDark();
+        setForceDark(Theme.getActiveTheme().isDark(), false);
+        darkThemeDrawable.setAllowDecodeSingleFrame(true);
         darkThemeDrawable.setPlayInDirectionOfCustomEndFrame(true);
-        darkThemeDrawable.beginApplyLayerColors();
-        setDarkButtonColor(drawableColor);
-        darkThemeDrawable.commitApplyLayerColors();
+        darkThemeDrawable.setColorFilter(new PorterDuffColorFilter(drawableColor, PorterDuff.Mode.MULTIPLY));
 
         darkThemeView = new RLottieImageView(getContext());
         darkThemeView.setAnimation(darkThemeDrawable);
@@ -133,8 +134,6 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
             setupLightDarkTheme(!forceDark);
         });
         rootLayout.addView(darkThemeView, LayoutHelper.createFrame(44, 44, Gravity.TOP | Gravity.END, 0, -2, 7, 0));
-        forceDark = !Theme.getActiveTheme().isDark();
-        setForceDark(Theme.getActiveTheme().isDark(), false);
 
         scroller = new LinearSmoothScroller(getContext()) {
             @Override
@@ -333,7 +332,7 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
                     onAnimationStart();
                     isAnimationStarted = true;
                 }
-                setDarkButtonColor(getThemedColor(Theme.key_featuredStickers_addButton));
+                darkThemeDrawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_featuredStickers_addButton), PorterDuff.Mode.MULTIPLY));
                 setOverlayNavBarColor(getThemedColor(Theme.key_dialogBackground));
                 if (isLightDarkChangeAnimation) {
                     setItemsAnimationProgress(progress);
@@ -572,10 +571,16 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
         forceDark = isDark;
         if (playAnimation) {
             darkThemeDrawable.setCustomEndFrame(isDark ? darkThemeDrawable.getFramesCount() : 0);
-            darkThemeView.playAnimation();
+            if (darkThemeView != null) {
+                darkThemeView.playAnimation();
+            }
         } else {
-            darkThemeDrawable.setCurrentFrame(isDark ? darkThemeDrawable.getFramesCount() - 1 : 0, false, true);
-            darkThemeView.invalidate();
+            int frame = isDark ? darkThemeDrawable.getFramesCount() - 1 : 0;
+            darkThemeDrawable.setCurrentFrame(frame, false, true);
+            darkThemeDrawable.setCustomEndFrame(frame);
+            if (darkThemeView != null) {
+                darkThemeView.invalidate();
+            }
         }
     }
 

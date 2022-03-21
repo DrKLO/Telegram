@@ -131,7 +131,7 @@ public class TextureRenderer {
 
     private boolean firstFrame = true;
 
-    public TextureRenderer(MediaController.SavedFilterState savedFilterState, String image, String paint, ArrayList<VideoEditedInfo.MediaEntity> entities, MediaController.CropState cropState, int w, int h, int rotation, float fps, boolean photo) {
+    public TextureRenderer(MediaController.SavedFilterState savedFilterState, String image, String paint, ArrayList<VideoEditedInfo.MediaEntity> entities, MediaController.CropState cropState, int w, int h, int originalWidth, int originalHeight, int rotation, float fps, boolean photo) {
         isPhoto = photo;
 
         float[] texData = {
@@ -164,8 +164,10 @@ public class TextureRenderer {
             filterShaders = new FilterShaders(true);
             filterShaders.setDelegate(FilterShaders.getFilterShadersDelegate(savedFilterState));
         }
-        transformedWidth = originalWidth = w;
-        transformedHeight = originalHeight = h;
+        transformedWidth = w;
+        transformedHeight = h;
+        this.originalWidth = originalWidth;
+        this.originalHeight = originalHeight;
         imagePath = image;
         paintPath = paint;
         mediaEntities = entities;
@@ -715,8 +717,12 @@ public class TextureRenderer {
         }
     }
 
-    public void changeFragmentShader(String fragmentShader) {
+    public void changeFragmentShader(String fragmentExternalShader, String fragmentShader) {
         GLES20.glDeleteProgram(mProgram[0]);
-        mProgram[0] = createProgram(VERTEX_SHADER, fragmentShader);
+        mProgram[0] = createProgram(VERTEX_SHADER, fragmentExternalShader);
+        if (mProgram.length > 1) {
+            mProgram[1] = createProgram(VERTEX_SHADER, fragmentShader);
+        }
+
     }
 }

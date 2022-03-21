@@ -62,6 +62,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
         this.activity = activity;
         this.recyclerListView = listView;
         translationInterpolator = DEFAULT_INTERPOLATOR;
+        alwaysCreateMoveAnimationIfPossible = true;
         setSupportsChangeAnimations(false);
     }
 

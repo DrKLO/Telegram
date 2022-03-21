@@ -74,6 +74,8 @@ public class GroupCallRenderersContainer extends FrameLayout {
     ValueAnimator fullscreenAnimator;
     public boolean inLayout;
 
+    public ImageView pipView;
+
     private LongSparseIntArray attachedPeerIds = new LongSparseIntArray();
 
     int animationIndex;
@@ -111,7 +113,6 @@ public class GroupCallRenderersContainer extends FrameLayout {
     TextView pinTextView;
     TextView unpinTextView;
     View pinContainer;
-    ImageView pipView;
 
     boolean hideUiRunnableIsScheduled;
     Runnable hideUiRunnable = new Runnable() {

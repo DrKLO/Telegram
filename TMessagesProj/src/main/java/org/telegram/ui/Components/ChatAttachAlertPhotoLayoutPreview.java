@@ -13,10 +13,11 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.media.MediaMetadataRetriever;
+import android.os.Build;
 import android.os.SystemClock;
 import android.text.TextPaint;
 import android.text.TextUtils;
@@ -32,6 +33,7 @@ import android.view.animation.Interpolator;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.exifinterface.media.ExifInterface;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -58,7 +60,7 @@ import java.util.Map;
 
 public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAlertLayout {
 
-    private final long durationMultiplier = 1; // 10; // 10 times slower for animation debugging
+    private final long durationMultiplier = 1;
 
     public float getPreviewScale() {
         // preview is 80% of real message size
@@ -67,7 +69,6 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
 
     private ChatActivity.ThemeDelegate themeDelegate;
 
-//    public ScrollView scrollView;
     public RecyclerListView listView;
     private LinearLayoutManager layoutManager;
     public PaddingBox paddingView;
@@ -75,22 +76,13 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
     private UndoView undoView;
     private TextView header;
 
-    int scrollY = 0;
-
     private float draggingCellTouchX = 0, draggingCellTouchY = 0;
     private float draggingCellTop = 0, draggingCellLeft = 0;
     private float draggingCellFromWidth = 0, draggingCellFromHeight = 0;
-    private float draggingT = 0, fromDraggingT = 0;
-    private float draggingOutX = 0, draggingOutY = 0;
 
-    private boolean scrolling = false;
-    private boolean currentlyScrolling = false, currentlyTouching = false;
-
-    private PreviewGroupsView.PreviewGroupCell.MediaCell draggingToCell = null;
     private PreviewGroupsView.PreviewGroupCell.MediaCell draggingCell = null;
     private boolean draggingCellHiding = false;
     private ValueAnimator draggingAnimator;
-    private PreviewGroupsView.PreviewGroupCell draggingFromGroupCell;
     private float draggingCellGroupY = 0;
 
     private Drawable videoPlayImage;
@@ -279,6 +271,9 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
     @Override
     void onHidden() {
         draggingCell = null;
+        if (undoView != null) {
+            undoView.hide(false, 0);
+        }
     }
 
     @Override
@@ -298,7 +293,9 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
         }
     }
 
+    private static HashMap<MediaController.PhotoEntry, Boolean> photoRotate = new HashMap<>();
     private class GroupCalculator {
+
         public ArrayList<MessageObject.GroupedMessagePosition> posArray = new ArrayList<>();
         public HashMap<MediaController.PhotoEntry, MessageObject.GroupedMessagePosition> positions = new HashMap<>();
 
@@ -351,6 +348,8 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
             int firstSpanAdditionalSize = 200;
 
             int count = photos.size();
+            posArray.clear();
+            positions.clear();
             if (count == 0) {
                 width = 0;
                 height = 0;
@@ -358,9 +357,7 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
                 maxY = 0;
                 return;
             }
-            posArray.clear();
             posArray.ensureCapacity(count);
-            positions.clear();
 
             final float maxSizeHeight = 814.0f;
             char[] proportionsArray = new char[count];
@@ -371,7 +368,43 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
                 MediaController.PhotoEntry photo = photos.get(a);
                 MessageObject.GroupedMessagePosition position = new MessageObject.GroupedMessagePosition();
                 position.last = a == count - 1;
-                position.aspectRatio = photo.width / (float) photo.height; // that's the only endpoint where messages/photos get used, everything else can be reused
+
+                int w = photo.width, h = photo.height;
+                boolean rotate;
+                if (photoRotate.containsKey(photo)) {
+                    rotate = photoRotate.get(photo);
+                } else {
+                    rotate = false;
+                    try {
+                        if (photo.isVideo) {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                                MediaMetadataRetriever m = new MediaMetadataRetriever();
+                                m.setDataSource(photo.path);
+                                String rotation = m.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION);
+                                rotate = rotation != null && (rotation.equals("90") || rotation.equals("270"));
+                            }
+                        } else {
+                            ExifInterface exif = new ExifInterface(photo.path);
+                            int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+                            switch (orientation) {
+                                case ExifInterface.ORIENTATION_ROTATE_90:
+                                case ExifInterface.ORIENTATION_ROTATE_270:
+                                    rotate = true;
+                                    break;
+                                case ExifInterface.ORIENTATION_ROTATE_180:
+                                default:
+                                    break;
+                            }
+                        }
+                    } catch (Exception ignore) {}
+                    photoRotate.put(photo, rotate);
+                }
+                if (rotate) {
+                    int wasW = w;
+                    w = h;
+                    h = wasW;
+                }
+                position.aspectRatio = w / (float) h;
 
                 proportionsArray[a] = (
                     position.aspectRatio > 1.2f ? 'w' : (
@@ -399,13 +432,13 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
 
             float minH = AndroidUtilities.dp(100) / maxSizeHeight;
 
-            if (!forceCalc && (count == 2 || count == 3 || count == 4) || count == 1) {
-                if (count == 1) {
-                    MessageObject.GroupedMessagePosition position1 = posArray.get(0);
-                    int widthPx = AndroidUtilities.displaySize.x - parentAlert.getBackgroundPaddingLeft() * 2;
-                    float maxHeight = Math.max(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * .5f;
-                    position1.set(0, 0, 0, 0, 800, (widthPx * .8f) / position1.aspectRatio / maxHeight, POSITION_FLAG_LEFT | POSITION_FLAG_RIGHT | POSITION_FLAG_TOP | POSITION_FLAG_BOTTOM);
-                } else if (count == 2) {
+            if (count == 1) {
+                MessageObject.GroupedMessagePosition position1 = posArray.get(0);
+                int widthPx = AndroidUtilities.displaySize.x - parentAlert.getBackgroundPaddingLeft() * 2;
+                float maxHeight = Math.max(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * .5f;
+                position1.set(0, 0, 0, 0, 800, (widthPx * .8f) / position1.aspectRatio / maxHeight, POSITION_FLAG_LEFT | POSITION_FLAG_RIGHT | POSITION_FLAG_TOP | POSITION_FLAG_BOTTOM);
+            } else if (!forceCalc && (count == 2 || count == 3 || count == 4)) {
+                if (count == 2) {
                     MessageObject.GroupedMessagePosition position1 = posArray.get(0);
                     MessageObject.GroupedMessagePosition position2 = posArray.get(1);
                     if (proportions.equals("ww") && averageAspectRatio > 1.4 * maxAspectRatio && position1.aspectRatio - position2.aspectRatio < 0.2) {
@@ -835,7 +868,7 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
                 paddingTop = Math.max(0, paddingTop);
                 canvas.save();
                 canvas.clipRect(0, paddingTop, getWidth(), getHeight());
-                chatBackgroundDrawable.setBounds(0, 0, getWidth(), AndroidUtilities.displaySize.y);
+                chatBackgroundDrawable.setBounds(0, paddingTop, getWidth(), AndroidUtilities.displaySize.y);
                 chatBackgroundDrawable.draw(canvas);
                 restore = true;
             }
@@ -863,6 +896,15 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
         }
     }
 
+    @Override
+    void onSelectedItemsCountChanged(int count) {
+        if (count > 1) {
+            parentAlert.selectedMenuItem.showSubItem(ChatAttachAlertPhotoLayout.group);
+        } else {
+            parentAlert.selectedMenuItem.hideSubItem(ChatAttachAlertPhotoLayout.group);
+        }
+    }
+
     private class PreviewGroupsView extends ViewGroup {
 
         private ChatActionCell hintView;
@@ -871,7 +913,7 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
             super(context);
             setWillNotDraw(false);
 
-            hintView = new ChatActionCell(context, false, themeDelegate);
+            hintView = new ChatActionCell(context, true, themeDelegate);
             hintView.setCustomText(LocaleController.getString("AttachMediaDragHint", R.string.AttachMediaDragHint));
             addView(hintView);
         }
@@ -1013,7 +1055,8 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
         private int paddingTop = AndroidUtilities.dp(8 + 8);
         private int paddingBottom = AndroidUtilities.dp(32 + 32);
         private int lastMeasuredHeight = 0;
-        private int measureHeight() {
+
+        private int measurePureHeight() {
             int height = paddingTop + paddingBottom;
             final int groupCellsCount = groupCells.size();
             for (int i = 0; i < groupCellsCount; ++i) {
@@ -1026,7 +1069,10 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
                 );
             }
             height += hintView.getMeasuredHeight();
-            return Math.max(AndroidUtilities.displaySize.y - ActionBar.getCurrentActionBarHeight() - AndroidUtilities.dp(8 + 46 - 9), height);
+            return height;
+        }
+        private int measureHeight() {
+            return Math.max(measurePureHeight(), AndroidUtilities.displaySize.y - ActionBar.getCurrentActionBarHeight() - AndroidUtilities.dp(8 + 46 - 9));
         }
 
         @Override
@@ -1133,25 +1179,17 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
                 y += height;
                 i += groupCell.group.photos.size();
             }
+            hintView.setVisiblePart(y, hintView.getMeasuredHeight());
+            if (hintView.hasGradientService()) {
+                hintView.drawBackground(canvas, true);
+            }
             hintView.draw(canvas);
             canvas.restore();
 
             if (draggingCell != null) {
                 canvas.save();
-                RectF drawingRect = draggingCell.rect();
-                RectF finalDrawingRect = draggingCell.rect(1f);
-                canvas.translate(
-                    AndroidUtilities.lerp(
-                        finalDrawingRect.left + drawingRect.width() / 2f,
-                        draggingCellTouchX - (draggingCellLeft - .5f) * draggingCellFromWidth,
-                        draggingT
-                    ),
-                    AndroidUtilities.lerp(
-                        draggingCell.groupCell.y + finalDrawingRect.top + drawingRect.height() / 2f,
-                        draggingCellGroupY + draggingCellTouchY - (draggingCellTop - .5f) * draggingCellFromHeight,
-                        draggingT
-                    )
-                );
+                Point point = dragTranslate();
+                canvas.translate(point.x, point.y);
                 if (draggingCell.draw(canvas, true)) {
                     invalidate();
                 }
@@ -1165,12 +1203,59 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
         PreviewGroupCell tapGroupCell = null;
         PreviewGroupCell.MediaCell tapMediaCell = null;
 
+        private float draggingT = 0;
+        private float savedDragFromX, savedDragFromY, savedDraggingT;
+        private final Point tmpPoint = new Point();
+        Point dragTranslate() {
+            if (draggingCell == null) {
+                tmpPoint.x = 0;
+                tmpPoint.y = 0;
+                return tmpPoint;
+            }
+            if (!draggingCellHiding) {
+                RectF drawingRect = draggingCell.rect();
+                RectF finalDrawingRect = draggingCell.rect(1f);
+                tmpPoint.x = AndroidUtilities.lerp(
+                    finalDrawingRect.left + drawingRect.width() / 2f,
+                    draggingCellTouchX - (draggingCellLeft - .5f) * draggingCellFromWidth,
+                    draggingT
+                );
+                tmpPoint.y = AndroidUtilities.lerp(
+                    draggingCell.groupCell.y + finalDrawingRect.top + drawingRect.height() / 2f,
+                    draggingCellTouchY - (draggingCellTop - .5f) * draggingCellFromHeight + draggingCellGroupY,
+                    draggingT
+                );
+            } else {
+                RectF drawingRect = draggingCell.rect();
+                RectF finalDrawingRect = draggingCell.rect(1f);
+                tmpPoint.x = AndroidUtilities.lerp(
+                    finalDrawingRect.left + drawingRect.width() / 2f,
+                    savedDragFromX,
+                    draggingT / savedDraggingT
+                );
+                tmpPoint.y = AndroidUtilities.lerp(
+                    draggingCell.groupCell.y + finalDrawingRect.top + drawingRect.height() / 2f,
+                    savedDragFromY,
+                    draggingT / savedDraggingT
+                );
+            }
+
+            return tmpPoint;
+        }
+
         void stopDragging() {
             if (draggingAnimator != null) {
                 draggingAnimator.cancel();
             }
+
+            Point dragTranslate = dragTranslate();
+            savedDraggingT = draggingT;
+            savedDragFromX = dragTranslate.x;
+            savedDragFromY = dragTranslate.y;
+
             draggingCellHiding = true;
-            draggingAnimator = ValueAnimator.ofFloat(draggingT, 0f);
+
+            draggingAnimator = ValueAnimator.ofFloat(savedDraggingT, 0f);
             draggingAnimator.addUpdateListener(a -> {
                 draggingT = (float) a.getAnimatedValue();
                 invalidate();
@@ -1179,21 +1264,20 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
                 @Override
                 public void onAnimationEnd(Animator animation) {
                     draggingCell = null;
-                    draggingFromGroupCell = null;
                     draggingCellHiding = false;
                     invalidate();
                 }
             });
-            draggingAnimator.setDuration((long) (180 * durationMultiplier * Math.abs(draggingT)));
+            draggingAnimator.setDuration((long) (200 * durationMultiplier));
             draggingAnimator.start();
             invalidate();
         }
         void startDragging(PreviewGroupCell.MediaCell cell) {
             draggingCell = cell;
-            draggingFromGroupCell = draggingCell.groupCell;
             draggingCellGroupY = draggingCell.groupCell.y;
             draggingCellHiding = false;
             draggingT = 0;
+
             invalidate();
             if (draggingAnimator != null) {
                 draggingAnimator.cancel();
@@ -1203,7 +1287,7 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
                 draggingT = (float) a.getAnimatedValue();
                 invalidate();
             });
-            draggingAnimator.setDuration((long) (180 * durationMultiplier * Math.abs(1f - draggingT)));
+            draggingAnimator.setDuration((long) (200 * durationMultiplier));
             draggingAnimator.start();
         }
 
@@ -1216,6 +1300,9 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
                 }
 
                 int scrollY = listView.computeVerticalScrollOffset();
+
+                boolean atBottom = scrollY + listView.computeVerticalScrollExtent() >= (measurePureHeight() - paddingBottom + paddingTop);
+
                 float top = Math.max(0, draggingCellTouchY - Math.max(0, scrollY - getListTopPadding()) - AndroidUtilities.dp(52));
                 float bottom = Math.max(0, (listView.getMeasuredHeight() - (draggingCellTouchY - scrollY) - getListTopPadding()) - AndroidUtilities.dp(52 + 32));
 
@@ -1227,7 +1314,7 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
                     dy = (1f - bottom / r) * (float) AndroidUtilities.dp(6);
                 }
 
-                if (Math.abs((int) dy) > 0 && listView.canScrollVertically((int) dy)) {
+                if (Math.abs((int) dy) > 0 && listView.canScrollVertically((int) dy) && !(dy > 0 && atBottom)) {
                     draggingCellTouchY += dy;
                     listView.scrollBy(0, (int) dy);
                     invalidate();
@@ -1276,18 +1363,9 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
             if (draggingCell != null) {
                 groupY = 0;
                 RectF drawingRect = draggingCell.rect();
-                RectF finalDrawingRect = draggingCell.rect(1f);
+                Point dragPoint = dragTranslate();
                 RectF draggingCellXY = new RectF();
-                float   cx = AndroidUtilities.lerp(
-                            finalDrawingRect.left + drawingRect.width() / 2f,
-                            draggingCellTouchX - (draggingCellLeft - .5f) * draggingCellFromWidth,
-                            draggingT
-                        ),
-                        cy = AndroidUtilities.lerp(
-                            draggingCell.groupCell.y + finalDrawingRect.top + drawingRect.height() / 2f,
-                            draggingCellGroupY + draggingCellTouchY - (draggingCellTop - .5f) * draggingCellFromHeight,
-                            draggingT
-                        );
+                float cx = dragPoint.x, cy = dragPoint.y;
                 draggingCellXY.set(
                     cx - drawingRect.width() / 2,
                     cy - drawingRect.height() / 2,
@@ -1313,14 +1391,26 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
                     final int mediaCount = draggingOverGroupCell.media.size();
                     for (int i = 0; i < mediaCount; ++i) {
                         PreviewGroupCell.MediaCell mediaCell = draggingOverGroupCell.media.get(i);
-                        if (mediaCell != null && mediaCell != draggingCell) {
+                        if (mediaCell != null && mediaCell != draggingCell && draggingOverGroupCell.group.photos.contains(mediaCell.photoEntry)) {
                             RectF mediaCellRect = mediaCell.drawingRect();
+                            if ((mediaCell.positionFlags & POSITION_FLAG_TOP) > 0) {
+                                mediaCellRect.top = 0;
+                            }
+                            if ((mediaCell.positionFlags & POSITION_FLAG_LEFT) > 0) {
+                                mediaCellRect.left = 0;
+                            }
+                            if ((mediaCell.positionFlags & POSITION_FLAG_RIGHT) > 0) {
+                                mediaCellRect.right = getWidth();
+                            }
+                            if ((mediaCell.positionFlags & POSITION_FLAG_BOTTOM) > 0) {
+                                mediaCellRect.bottom = draggingOverGroupCell.height;
+                            }
                             if (RectF.intersects(draggingCellXY, mediaCellRect)) {
                                 float area = (
                                     (Math.min(mediaCellRect.right, draggingCellXY.right) - Math.max(mediaCellRect.left, draggingCellXY.left)) *
                                     (Math.min(mediaCellRect.bottom, draggingCellXY.bottom) - Math.max(mediaCellRect.top, draggingCellXY.top))
-                                ) / (mediaCellRect.width() * mediaCellRect.height());
-                                if (area > maxArea) {
+                                ) / (draggingCellXY.width() * draggingCellXY.height());
+                                if (area > 0.15f && area > maxArea) {
                                     draggingOverMediaCell = mediaCell;
                                     maxArea = area;
                                 }
@@ -1331,13 +1421,12 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
             }
 
             int action = event.getAction();
-            if (action == MotionEvent.ACTION_DOWN && draggingCell == null && !listView.scrollingByUser && (draggingAnimator == null || !draggingAnimator.isRunning()) && touchGroupCell != null && touchMediaCell != null) {
+            if (action == MotionEvent.ACTION_DOWN && draggingCell == null && !listView.scrollingByUser && (draggingAnimator == null || !draggingAnimator.isRunning()) && touchGroupCell != null && touchMediaCell != null && touchGroupCell.group != null && touchGroupCell.group.photos.contains(touchMediaCell.photoEntry)) {
                 tapGroupCell = touchGroupCell;
                 tapMediaCell = touchMediaCell;
                 draggingCellTouchX = touchX;
                 draggingCellTouchY = touchY;
                 draggingCell = null;
-                draggingFromGroupCell = null;
 
                 final long wasTapTime = tapTime = SystemClock.elapsedRealtime();
                 final PreviewGroupCell.MediaCell wasTapMediaCell = tapMediaCell;
@@ -1348,7 +1437,7 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
                     startDragging(tapMediaCell);
                     RectF draggingCellRect = draggingCell.rect();
                     RectF draggingCellDrawingRect = draggingCell.drawingRect();
-                    draggingCellLeft = (draggingCellTouchX - draggingCellRect.left) / (float) draggingCellRect.width();
+                    draggingCellLeft = (.5f + (draggingCellTouchX - draggingCellRect.left) / (float) draggingCellRect.width()) / 2;
                     draggingCellTop = (draggingCellTouchY - draggingCellRect.top) / (float) draggingCellRect.height();
                     draggingCellFromWidth = draggingCellDrawingRect.width();
                     draggingCellFromHeight = draggingCellDrawingRect.height();
@@ -1373,15 +1462,14 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
             } else if (action == MotionEvent.ACTION_UP && draggingCell != null) {
                 PreviewGroupCell replaceGroupCell = null;
                 PreviewGroupCell.MediaCell replaceMediaCell = null;
-//                if (touchGroupCell != null && touchMediaCell != null && touchMediaCell != draggingCell) {
-//                    replaceGroupCell = touchGroupCell;
-//                    replaceMediaCell = touchMediaCell;
-//                } else
-                if (draggingOverGroupCell != null && draggingOverMediaCell != null && draggingOverMediaCell != draggingCell) {
+                if (touchGroupCell != null && touchMediaCell != null && touchMediaCell != draggingCell) {
+                    replaceGroupCell = touchGroupCell;
+                    replaceMediaCell = touchMediaCell;
+                } else if (draggingOverGroupCell != null && draggingOverMediaCell != null && draggingOverMediaCell != draggingCell && draggingOverMediaCell.photoEntry != draggingCell.photoEntry) {
                     replaceGroupCell = draggingOverGroupCell;
                     replaceMediaCell = draggingOverMediaCell;
                 }
-                if (replaceGroupCell != null && replaceMediaCell != null) {
+                if (replaceGroupCell != null && replaceMediaCell != null && replaceMediaCell != draggingCell) {
                     int draggingIndex = draggingCell.groupCell.group.photos.indexOf(draggingCell.photoEntry);
                     int tapIndex = replaceGroupCell.group.photos.indexOf(replaceMediaCell.photoEntry);
                     if (draggingIndex >= 0) {
@@ -1410,7 +1498,7 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
                                 remeasure();
                                 newDraggingCell.layoutFrom(draggingCell);
                                 draggingCell = newDraggingCell;
-                                newDraggingCell.groupCell = draggingFromGroupCell = replaceGroupCell;
+                                newDraggingCell.groupCell = replaceGroupCell;
                                 newDraggingCell.scale = draggingCell.fromScale = 1f;
                                 remeasure();
                             }
@@ -1484,7 +1572,7 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
         }
 
         private void pushToGroup(PreviewGroupCell groupCell, MediaController.PhotoEntry photoEntry, int index) {
-            groupCell.group.photos.add(index, photoEntry);
+            groupCell.group.photos.add(Math.min(groupCell.group.photos.size(), index), photoEntry);
             if (groupCell.group.photos.size() == 11) {
                 MediaController.PhotoEntry jumpPhoto = groupCell.group.photos.get(10);
                 groupCell.group.photos.remove(10);
@@ -1619,15 +1707,13 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
                     this.lastUpdate = SystemClock.elapsedRealtime();
                 }
 
-                private boolean firstLayout = true;
                 private void layout(GroupCalculator group, MessageObject.GroupedMessagePosition pos, boolean animated) {
                     if (group == null || pos == null) {
                         if (animated) {
                             final long now = SystemClock.elapsedRealtime();
-                            final float t = interpolator.getInterpolation(Math.min(1, (now - lastUpdate) / (float) updateDuration));
-                            fromScale = AndroidUtilities.lerp(fromScale, scale, t);
+                            fromScale = AndroidUtilities.lerp(fromScale, scale, getT());
                             if (fromRect != null) {
-                                AndroidUtilities.lerp(fromRect, rect, t, fromRect);
+                                AndroidUtilities.lerp(fromRect, rect, getT(), fromRect);
                             }
                             scale = 0f;
                             lastUpdate = now;
@@ -1638,8 +1724,7 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
                     }
                     positionFlags = pos.flags;
                     if (animated) {
-                        final long now = SystemClock.elapsedRealtime();
-                        final float t = interpolator.getInterpolation(Math.min(1, (now - lastUpdate) / (float) updateDuration));
+                        final float t = getT();
                         if (fromRect != null) {
                             AndroidUtilities.lerp(fromRect, rect, t, fromRect);
                         }
@@ -1647,7 +1732,7 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
                             AndroidUtilities.lerp(fromRoundRadiuses, roundRadiuses, t, fromRoundRadiuses);
                         }
                         fromScale = AndroidUtilities.lerp(fromScale, scale, t);
-                        lastUpdate = now;
+                        lastUpdate = SystemClock.elapsedRealtime();
                     }
                     float x = pos.left / group.width,
                           y = pos.top / group.height,
@@ -1697,9 +1782,9 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
                         return tempRect;
                     }
                     float x = left + rect.left * width,
-                            y = top + rect.top * height,
-                            w = rect.width() * width,
-                            h = rect.height() * height;
+                          y = top + rect.top * height,
+                          w = rect.width() * width,
+                          h = rect.height() * height;
                     if (t < 1f && fromRect != null) {
                         x = AndroidUtilities.lerp(left + fromRect.left * width, x, t);
                         y = AndroidUtilities.lerp(top + fromRect.top * height, y, t);
@@ -1867,9 +1952,6 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
                         return false;
                     }
                     RectF drawingRect = this.drawingRect();
-//                    if (!ignoreBounds && !isSeen(drawingRect.top, drawingRect.bottom)) {
-//                        return false;
-//                    }
                     float R = AndroidUtilities.dp(SharedConfig.bubbleRadius - 1);
                     float tl = roundRadiuses.left, tr = roundRadiuses.top, br = roundRadiuses.right, bl = roundRadiuses.bottom;
                     if (t < 1f && fromRoundRadiuses != null) {
@@ -1886,13 +1968,10 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
                         canvas.save();
                         canvas.translate(-drawingRect.centerX(), -drawingRect.centerY());
                     }
-//                    canvas.save();
-//                    canvas.clipPath(roundedRect(drawingRect, tl, tr, br, bl));
                     image.setRoundRadius((int) tl, (int) tr, (int) br, (int) bl);
                     image.setImageCoords(drawingRect.left, drawingRect.top, drawingRect.width(), drawingRect.height());
                     image.setAlpha(scale);
                     image.draw(canvas);
-//                    canvas.restore();
 
                     int index = indexStart + group.photos.indexOf(photoEntry);
                     String indexText = index >= 0 ? (index + 1) + "" : null;
@@ -1910,12 +1989,11 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
             private Interpolator interpolator = CubicBezierInterpolator.EASE_BOTH;
             private GroupCalculator group;
             private void setGroup(GroupCalculator group, boolean animated) {
-                group.calculate();
                 this.group = group;
                 if (group == null) {
                     return;
                 }
-
+                group.calculate();
                 final long now = SystemClock.elapsedRealtime();
                 if (now - lastMediaUpdate < updateDuration) {
                     final float t = (now - lastMediaUpdate) / (float) updateDuration;
@@ -2045,18 +2123,6 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
                     }
                 }
                 return update;
-            }
-
-            private float[] tempRadii = new float[8];
-            private Path tempPath = new Path();
-            Path roundedRect(RectF rect, float topleft, float topright, float bottomright, float bottomleft) {
-                tempPath.reset();
-                tempRadii[0] = tempRadii[1] = topleft;
-                tempRadii[2] = tempRadii[3] = topright;
-                tempRadii[4] = tempRadii[5] = bottomright;
-                tempRadii[6] = tempRadii[7] = bottomleft;
-                tempPath.addRoundRect(rect, tempRadii, Path.Direction.CW);
-                return tempPath;
             }
         }
     }

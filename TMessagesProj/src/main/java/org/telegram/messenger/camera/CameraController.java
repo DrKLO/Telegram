@@ -63,7 +63,6 @@ public class CameraController implements MediaRecorder.OnInfoListener {
     private VideoTakeCallback onVideoTakeCallback;
     private boolean cameraInitied;
     private boolean loadingCameras;
-    private boolean previewStarted = false;
 
     private ArrayList<Runnable> onFinishCameraInitRunnables = new ArrayList<>();
     CameraView recordingCurrentCameraView;
@@ -474,7 +473,6 @@ public class CameraController implements MediaRecorder.OnInfoListener {
                     camera = session.cameraInfo.camera = Camera.open(session.cameraInfo.cameraId);
                 }
                 camera.startPreview();
-                session.previewStarted = true;
             } catch (Exception e) {
                 session.cameraInfo.camera = null;
                 if (camera != null) {
@@ -496,7 +494,6 @@ public class CameraController implements MediaRecorder.OnInfoListener {
                     camera = session.cameraInfo.camera = Camera.open(session.cameraInfo.cameraId);
                 }
                 camera.stopPreview();
-                session.previewStarted = false;
             } catch (Exception e) {
                 session.cameraInfo.camera = null;
                 if (camera != null) {
@@ -505,10 +502,6 @@ public class CameraController implements MediaRecorder.OnInfoListener {
                 FileLog.e(e);
             }
         });
-    }
-
-    public boolean isPreviewRunning(final CameraSession session) {
-        return session != null && session.previewStarted;
     }
 
 
@@ -819,8 +812,8 @@ public class CameraController implements MediaRecorder.OnInfoListener {
     }
 
     public static Size chooseOptimalSize(List<Size> choices, int width, int height, Size aspectRatio) {
-        List<Size> bigEnoughWithAspectRatio = new ArrayList<>();
-        List<Size> bigEnough = new ArrayList<>();
+        List<Size> bigEnoughWithAspectRatio = new ArrayList<>(choices.size());
+        List<Size> bigEnough = new ArrayList<>(choices.size());
         int w = aspectRatio.getWidth();
         int h = aspectRatio.getHeight();
         for (int a = 0; a < choices.size(); a++) {

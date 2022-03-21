@@ -11,6 +11,7 @@ package org.telegram.messenger.camera;
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.ImageFormat;
 import android.graphics.Rect;
 import android.hardware.Camera;
 import android.media.CamcorderProfile;
@@ -51,8 +52,8 @@ public class CameraSession {
     private boolean useTorch;
     private boolean isRound;
     private boolean destroyed;
-    public boolean previewStarted = false;
 
+    private int infoCameraId = -1;
     Camera.CameraInfo info = new Camera.CameraInfo();
 
     public static final int ORIENTATION_HYSTERESIS = 5;
@@ -100,6 +101,12 @@ public class CameraSession {
         } else {
             orientationEventListener.disable();
             orientationEventListener = null;
+        }
+    }
+
+    private void updateCameraInfo() {
+        if (infoCameraId != cameraInfo.getCameraId()) {
+            Camera.getCameraInfo(infoCameraId = cameraInfo.getCameraId(), this.info);
         }
     }
 
@@ -209,7 +216,7 @@ public class CameraSession {
                     FileLog.e(e);
                 }
 
-                Camera.getCameraInfo(cameraInfo.getCameraId(), info);
+                updateCameraInfo();
                 updateRotation();
 
                 if (params != null) {
@@ -278,12 +285,12 @@ public class CameraSession {
         }
 
         try {
-            Camera.getCameraInfo(cameraInfo.getCameraId(), info);
+            updateCameraInfo();
         } catch (Throwable throwable) {
             FileLog.e(throwable);
             return;
         }
-        Camera camera = (cameraInfo == null || destroyed) ? null : cameraInfo.camera;
+        Camera camera = destroyed ? null : cameraInfo.camera;
 
         displayOrientation = getDisplayOrientation(info, true);
         int cameraDisplayOrientation;
@@ -322,10 +329,7 @@ public class CameraSession {
         if (camera != null) {
             try {
                 camera.setDisplayOrientation(currentOrientation);
-            } catch (Throwable ignore) {
-
-            }
-
+            } catch (Throwable ignore) {}
         }
         diffOrientation = currentOrientation - displayOrientation;
         if (diffOrientation < 0) {
@@ -344,8 +348,7 @@ public class CameraSession {
                     FileLog.e(e);
                 }
 
-                Camera.getCameraInfo(cameraInfo.getCameraId(), info);
-
+                updateCameraInfo();
                 updateRotation();
 
                 diffOrientation = currentOrientation - displayOrientation;
@@ -468,7 +471,7 @@ public class CameraSession {
     }
 
     protected void configureRecorder(int quality, MediaRecorder recorder) {
-        Camera.getCameraInfo(cameraInfo.cameraId, info);
+        updateCameraInfo();
 
         int outputOrientation = 0;
         if (jpegOrientation != OrientationEventListener.ORIENTATION_UNKNOWN) {
@@ -547,7 +550,7 @@ public class CameraSession {
 
     public int getDisplayOrientation() {
         try {
-            Camera.getCameraInfo(cameraInfo.getCameraId(), info);
+            updateCameraInfo();
             return getDisplayOrientation(info, true);
         } catch (Exception e) {
             FileLog.e(e);

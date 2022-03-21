@@ -59,12 +59,16 @@ public class SearchField extends FrameLayout {
 
         clearSearchImageView = new ImageView(context);
         clearSearchImageView.setScaleType(ImageView.ScaleType.CENTER);
-        clearSearchImageView.setImageDrawable(progressDrawable = new CloseProgressDrawable2());
+        clearSearchImageView.setImageDrawable(progressDrawable = new CloseProgressDrawable2() {
+            @Override
+            protected int getCurrentColor() {
+                return getThemedColor(Theme.key_dialogSearchIcon);
+            }
+        });
         progressDrawable.setSide(AndroidUtilities.dp(7));
         clearSearchImageView.setScaleX(0.1f);
         clearSearchImageView.setScaleY(0.1f);
         clearSearchImageView.setAlpha(0.0f);
-        clearSearchImageView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_dialogSearchIcon), PorterDuff.Mode.MULTIPLY));
         if (supportRtl) {
             lp = LayoutHelper.createFrameRelatively(36, 36, Gravity.END | Gravity.TOP, 14, 11, 14, 0);
         } else {

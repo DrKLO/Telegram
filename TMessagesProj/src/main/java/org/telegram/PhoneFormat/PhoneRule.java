@@ -83,7 +83,7 @@ public class PhoneRule {
             }
         }
         if (intlPrefix != null && !hadC) {
-            res.insert(0, String.format("%s ", intlPrefix));
+            res.insert(0, intlPrefix + " ");
         } else if (trunkPrefix != null && !hadN) {
             res.insert(0, trunkPrefix);
         }

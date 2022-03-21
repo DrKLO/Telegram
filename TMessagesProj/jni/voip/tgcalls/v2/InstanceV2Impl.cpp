@@ -1191,7 +1191,8 @@ public:
     _createAudioDeviceModule(descriptor.createAudioDeviceModule),
     _eventLog(std::make_unique<webrtc::RtcEventLogNull>()),
     _taskQueueFactory(webrtc::CreateDefaultTaskQueueFactory()),
-    _videoCapture(descriptor.videoCapture) {
+    _videoCapture(descriptor.videoCapture),
+    _platformContext(descriptor.platformContext) {
     }
 
     ~InstanceV2ImplInternal() {
@@ -1293,8 +1294,8 @@ public:
             mediaDeps.audio_encoder_factory = webrtc::CreateAudioEncoderFactory<webrtc::AudioEncoderOpus, webrtc::AudioEncoderL16>();
             mediaDeps.audio_decoder_factory = webrtc::CreateAudioDecoderFactory<webrtc::AudioDecoderOpus, webrtc::AudioDecoderL16>();
 
-            mediaDeps.video_encoder_factory = PlatformInterface::SharedInstance()->makeVideoEncoderFactory(true);
-            mediaDeps.video_decoder_factory = PlatformInterface::SharedInstance()->makeVideoDecoderFactory();
+            mediaDeps.video_encoder_factory = PlatformInterface::SharedInstance()->makeVideoEncoderFactory(_platformContext, true);
+            mediaDeps.video_decoder_factory = PlatformInterface::SharedInstance()->makeVideoDecoderFactory(_platformContext);
 
             _audioDeviceModule = createAudioDeviceModule();
             /*if (!_audioDeviceModule) {
@@ -1964,7 +1965,7 @@ public:
         }
     }
 
-    void setIncomingVideoOutput(std::weak_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink) {
+    void setIncomingVideoOutput(std::shared_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink) {
         _currentSink = sink;
         if (_incomingVideoChannel) {
             _incomingVideoChannel->addSink(sink);
@@ -2095,6 +2096,7 @@ private:
 
     std::shared_ptr<VideoCaptureInterface> _videoCapture;
     std::shared_ptr<VideoCaptureInterface> _screencastCapture;
+    std::shared_ptr<PlatformContext> _platformContext;
 };
 
 InstanceV2Impl::InstanceV2Impl(Descriptor &&descriptor) {
@@ -2150,7 +2152,7 @@ void InstanceV2Impl::setMuteMicrophone(bool muteMicrophone) {
     });
 }
 
-void InstanceV2Impl::setIncomingVideoOutput(std::weak_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink) {
+void InstanceV2Impl::setIncomingVideoOutput(std::shared_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink) {
     _internal->perform(RTC_FROM_HERE, [sink](InstanceV2ImplInternal *internal) {
         internal->setIncomingVideoOutput(sink);
     });

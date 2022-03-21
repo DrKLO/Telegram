@@ -147,7 +147,8 @@ public class VoIPHelper {
 
 		if (Build.VERSION.SDK_INT >= 23) {
 			ArrayList<String> permissions = new ArrayList<>();
-			if (activity.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+			ChatObject.Call call = accountInstance.getMessagesController().getGroupCall(chat.id, false);
+			if (activity.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED && !(call != null && call.call.rtmp_stream)) {
 				permissions.add(Manifest.permission.RECORD_AUDIO);
 			}
 			if (permissions.isEmpty()) {

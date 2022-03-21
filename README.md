@@ -179,17 +179,17 @@ It's very simple
 * **sdk23** mean for android 6+, the other are working from 4.1+
     * so if you have android 6 or higher, you should download **sdk23** version
 * arm64-v8a (new devices)
-    * `x`  [Telegraher.8.6.1r5.arm64_v8a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r5_arm64_v8a/Telegraher.8.6.1r5.arm64_v8a.apk)
-    * `x`  [Telegraher.8.6.1r5.arm64_v8a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r5_arm64_v8a/Telegraher.8.6.1r5.arm64_v8a_sdk23.apk)
+    * `x`  [Telegraher.8.6.2r1.arm64_v8a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r1_arm64_v8a/Telegraher.8.6.2r1.arm64_v8a.apk)
+    * `x`  [Telegraher.8.6.2r1.arm64_v8a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r1_arm64_v8a/Telegraher.8.6.2r1.arm64_v8a_sdk23.apk)
 * armeabi-v7a (old devices)
-    * `x`  [Telegraher.8.6.1r5.armeabi_v7a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r5_armeabi_v7a/Telegraher.8.6.1r5.armeabi_v7a.apk)
-    * `x`  [Telegraher.8.6.1r5.armeabi_v7a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r5_armeabi_v7a/Telegraher.8.6.1r5.armeabi_v7a_sdk23.apk)
+    * `x`  [Telegraher.8.6.2r1.armeabi_v7a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r1_armeabi_v7a/Telegraher.8.6.2r1.armeabi_v7a.apk)
+    * `x`  [Telegraher.8.6.2r1.armeabi_v7a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r1_armeabi_v7a/Telegraher.8.6.2r1.armeabi_v7a_sdk23.apk)
 * PC x86, 32 bits (for an emulator for example)
-    * `x`  [Telegraher.8.6.1r5.x86.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r5_x86/Telegraher.8.6.1r5.x86.apk)
-    * `x`  [Telegraher.8.6.1r5.x86_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r5_x86/Telegraher.8.6.1r5.x86_sdk23.apk)
+    * `x`  [Telegraher.8.6.2r1.x86.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r1_x86/Telegraher.8.6.2r1.x86.apk)
+    * `x`  [Telegraher.8.6.2r1.x86_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r1_x86/Telegraher.8.6.2r1.x86_sdk23.apk)
 * PC x86, 64 bits (for 64 bits CPU)
-    * `x`  [Telegraher.8.6.1r5.x86_64.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r5_x86_64/Telegraher.8.6.1r5.x86_64.apk)
-    * `x`  [Telegraher.8.6.1r5.x86_64_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.1_r5_x86_64/Telegraher.8.6.1r5.x86_64_sdk23.apk)
+    * `x`  [Telegraher.8.6.2r1.x86_64.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r1_x86_64/Telegraher.8.6.2r1.x86_64.apk)
+    * `x`  [Telegraher.8.6.2r1.x86_64_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r1_x86_64/Telegraher.8.6.2r1.x86_64_sdk23.apk)
 
 ### Issues/Wishlist
 
@@ -198,6 +198,12 @@ Probably it's a good thing 😃
 
 ### Changes
 
+* noshit_8.6.2_release1
+    * update to vanilla TG 8.6.2
+    * video compression and quality as before
+        * cause TG reduced max bitrate and added fps limiter, so i removed it
+    * renamed some strings from Telegram to Telegraher
+    * changed "promo" texts which user see on start
 * noshit_8.6.1_release5
     * added full shadowban mode, read
       details [here](https://github.com/nikitasius/Telegraher/commit/bab6fe99ec1897532b9136f9391983bafd0c921b)

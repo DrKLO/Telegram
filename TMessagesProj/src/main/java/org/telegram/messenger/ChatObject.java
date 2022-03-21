@@ -13,6 +13,7 @@ import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.SparseArray;
 
+import androidx.annotation.IntDef;
 import androidx.collection.LongSparseArray;
 
 import com.google.android.exoplayer2.util.Log;
@@ -22,6 +23,8 @@ import org.telegram.messenger.voip.VoIPService;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.GroupCallActivity;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -59,6 +62,18 @@ public class ChatObject {
     private static final int MAX_PARTICIPANTS_COUNT = 5000;
 
     public static class Call {
+        public final static int RECORD_TYPE_AUDIO = 0,
+            RECORD_TYPE_VIDEO_PORTAIT = 1,
+            RECORD_TYPE_VIDEO_LANDSCAPE = 2;
+
+        @Retention(RetentionPolicy.SOURCE)
+        @IntDef({
+                RECORD_TYPE_AUDIO,
+                RECORD_TYPE_VIDEO_PORTAIT,
+                RECORD_TYPE_VIDEO_LANDSCAPE
+        })
+        public @interface RecordType {}
+
         public TLRPC.GroupCall call;
         public long chatId;
         public LongSparseArray<TLRPC.TL_groupCallParticipant> participants = new LongSparseArray<>();
@@ -1333,7 +1348,7 @@ public class ChatObject {
             }
         }
 
-        public void toggleRecord(String title, int type) {
+        public void toggleRecord(String title, @RecordType int type) {
             recording = !recording;
             TLRPC.TL_phone_toggleGroupCallRecord req = new TLRPC.TL_phone_toggleGroupCallRecord();
             req.call = getInputGroupCall();
@@ -1342,10 +1357,10 @@ public class ChatObject {
                 req.title = title;
                 req.flags |= 2;
             }
-            if (type == 1 || type == 2) {
+            if (type == RECORD_TYPE_VIDEO_PORTAIT || type == RECORD_TYPE_VIDEO_LANDSCAPE) {
                 req.flags |= 4;
                 req.video = true;
-                req.video_portrait = type == 1;
+                req.video_portrait = type == RECORD_TYPE_VIDEO_PORTAIT;
             }
             currentAccount.getConnectionsManager().sendRequest(req, (response, error) -> {
                 if (response != null) {

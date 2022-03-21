@@ -219,6 +219,10 @@ public class FilterShaders {
         return shaderString.toString();
     }
 
+    public void drawBoxBlur() {
+
+    }
+
     private static class BlurProgram {
 
         private String vertexShaderCode;
@@ -1005,9 +1009,9 @@ public class FilterShaders {
     private int renderBufferWidth;
     private int renderBufferHeight;
 
-    private FloatBuffer vertexBuffer;
-    private FloatBuffer textureBuffer;
-    private FloatBuffer vertexInvertBuffer;
+    public FloatBuffer vertexBuffer;
+    public FloatBuffer textureBuffer;
+    public FloatBuffer vertexInvertBuffer;
 
     private ByteBuffer hsvBuffer;
     private ByteBuffer cdtBuffer;

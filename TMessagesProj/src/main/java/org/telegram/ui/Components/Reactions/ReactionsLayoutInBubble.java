@@ -158,7 +158,7 @@ public class ReactionsLayoutInBubble {
         isEmpty = reactionButtons.isEmpty();
     }
 
-    public void measure(int availableWidth) {
+    public void measure(int availableWidth, int gravity) {
         height = 0;
         width = 0;
         positionOffsetY = 0;
@@ -199,10 +199,33 @@ public class ReactionsLayoutInBubble {
             if (currentX > maxWidth) {
                 maxWidth = currentX;
             }
-
+        }
+        if (gravity == Gravity.RIGHT && !reactionButtons.isEmpty()) {
+            int fromP = 0;
+            int startY = reactionButtons.get(0).y;
+            for (int i = 0; i < reactionButtons.size(); i++) {
+                if (reactionButtons.get(i).y != startY) {
+                    int lineOffset = availableWidth - reactionButtons.get(i - 1).x + reactionButtons.get(i - 1).width;
+                    for (int k = fromP; k < i; k++) {
+                        reactionButtons.get(k).x += lineOffset;
+                    }
+                    fromP = i;
+                }
+            }
+            int last = reactionButtons.size() - 1;
+            if (fromP != last) {
+                int lineOffset = availableWidth - (reactionButtons.get(last).x + reactionButtons.get(last).width);
+                for (int k = fromP; k <= last; k++) {
+                    reactionButtons.get(k).x += lineOffset;
+                }
+            }
         }
         lastLineX = currentX;
-        width = maxWidth;
+        if (gravity == Gravity.RIGHT) {
+            width = availableWidth;
+        } else {
+            width = maxWidth;
+        }
         height = currentY + (reactionButtons.size() == 0 ? 0 : AndroidUtilities.dp(26));
         drawServiceShaderBackground = false;
     }
@@ -304,7 +327,7 @@ public class ReactionsLayoutInBubble {
                         if (lastButton.avatarsDarawable == null) {
                             lastButton.setUsers(new ArrayList<>());
                         }
-                        button.avatarsDarawable.animateFromState(lastButton.avatarsDarawable, currentAccount);
+                        button.avatarsDarawable.animateFromState(lastButton.avatarsDarawable, currentAccount, false);
                     }
                     changed = true;
                 } else {
@@ -437,9 +460,8 @@ public class ReactionsLayoutInBubble {
                 TLRPC.TL_availableReaction r = MediaDataController.getInstance(currentAccount).getReactionsMap().get(reaction);
                 if (r != null) {
                     SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(r.static_icon, Theme.key_windowBackgroundGray, 1.0f);
-                    imageReceiver.setImage(ImageLocation.getForDocument(r.static_icon), "40_40", svgThumb, "webp", r, 1);
-                    //TODO uncomment when fixed ImageLoader
-                    //imageReceiver.setImage(ImageLocation.getForDocument(r.center_icon), "40_40_firstframe", svgThumb, "webp", r, 1);
+                    //imageReceiver.setImage(ImageLocation.getForDocument(r.static_icon), "40_40", svgThumb, "webp", r, 1);
+                    imageReceiver.setImage(ImageLocation.getForDocument(r.center_icon), "40_40_lastframe", svgThumb, "webp", r, 1);
                 }
             }
 
@@ -510,6 +532,7 @@ public class ReactionsLayoutInBubble {
                 canvas.save();
                 canvas.translate(AndroidUtilities.dp(10) + AndroidUtilities.dp(20) + AndroidUtilities.dp(2), 0);
                 avatarsDarawable.setAlpha(alpha);
+                avatarsDarawable.setTransitionProgress(progress);
                 avatarsDarawable.onDraw(canvas);
                 canvas.restore();
             }

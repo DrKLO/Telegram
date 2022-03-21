@@ -62,6 +62,12 @@ public class FiltersView extends RecyclerListView {
     public final static int FILTER_TYPE_DATE = 6;
     public final static int FILTER_TYPE_ARCHIVE = 7;
 
+    public final static int FILTER_INDEX_MEDIA = 0;
+    public final static int FILTER_INDEX_LINKS = 1;
+    public final static int FILTER_INDEX_FILES = 2;
+    public final static int FILTER_INDEX_MUSIC = 3;
+    public final static int FILTER_INDEX_VOICE = 4;
+
     public final static MediaFilterData[] filters = new MediaFilterData[]{
             new MediaFilterData(R.drawable.search_media, R.drawable.search_media_filled, LocaleController.getString("SharedMediaTab2", R.string.SharedMediaTab2), new TLRPC.TL_inputMessagesFilterPhotoVideo(), FILTER_TYPE_MEDIA),
             new MediaFilterData(R.drawable.search_links, R.drawable.search_links_filled, LocaleController.getString("SharedLinksTab2", R.string.SharedLinksTab2), new TLRPC.TL_inputMessagesFilterUrl(), FILTER_TYPE_LINKS),

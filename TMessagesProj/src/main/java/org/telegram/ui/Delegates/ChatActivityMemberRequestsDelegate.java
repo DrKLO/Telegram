@@ -243,7 +243,6 @@ public class ChatActivityMemberRequestsDelegate {
     }
 
     public interface Callback {
-
         void onEnterOffsetChanged();
     }
 }
