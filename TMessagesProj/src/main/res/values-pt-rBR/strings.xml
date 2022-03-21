@@ -1030,6 +1030,7 @@
     <string name="PreviousPinnedMessage">Mensagem anterior</string>
     <string name="PinnedPoll">Enquete fixada</string>
     <string name="EditedMessage">editada</string>
+    <string name="DeletedMessage">deletada</string>
     <string name="EditMessage">Editar Mensagem</string>
     <string name="EditCaption">Editar Legenda</string>
     <string name="EditMessageMedia">Toque para editar a mídia</string>
