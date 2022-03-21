@@ -21296,6 +21296,19 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 }
             }
 
+            if (!(options.contains(4) || options.contains(7))
+                    && (selectedObject.isSecretMedia() || selectedObject.isGif() || selectedObject.isNewGif() || selectedObject.isPhoto() || selectedObject.isRoundVideo() || selectedObject.isVideo())) {
+                items.add(LocaleController.getString("SaveToGallery", R.string.SaveToGallery));
+                options.add(4);
+                icons.add(R.drawable.msg_gallery);
+            }
+            if (!options.contains(10)
+                    && (selectedObject.isSecretMedia() || selectedObject.isGif() || selectedObject.isNewGif() || selectedObject.isRoundVideo() || selectedObject.isVideo() || selectedObject.isDocument() || selectedObject.isMusic() || selectedObject.isVoice())) {
+                items.add(LocaleController.getString("SaveToDownloads", R.string.SaveToDownloads));
+                options.add(10);
+                icons.add(R.drawable.msg_download);
+            }
+
             if (options.isEmpty()) {
                 return;
             }
