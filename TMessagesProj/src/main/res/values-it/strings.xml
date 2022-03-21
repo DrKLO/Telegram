@@ -3377,12 +3377,12 @@
     <string name="Page4Title">Sicuro</string>
     <string name="Page5Title">Potente</string>
     <string name="Page6Title">Basato sul cloud</string>
-    <string name="Page1Message">L\'app di messaggi **più veloce** al mondo.\nÈ **gratuita** e **sicura**.</string>
-    <string name="Page2Message">**Telegram** consegna i messaggi più\nvelocemente di qualsiasi altra app.</string>
-    <string name="Page3Message">**Telegram** sarà sempre gratuito.\nNessuna pubblicità. Nessun abbonamento.</string>
-    <string name="Page4Message">**Telegram** protegge i tuoi messaggi\ndagli attacchi degli hacker.</string>
-    <string name="Page5Message">**Telegram** non ha limiti di dimensione\nper le tue chat e i file multimediali.</string>
-    <string name="Page6Message">**Telegram** ti consente di accedere\nai tuoi messaggi da più dispositivi.</string>
+    <string name="Page1Message">Remember, that Telegram\'s nodes aren\'t open-source.</string>
+    <string name="Page2Message">Remember, that Telegram have access to all your messages except the GREEN CHATS.</string>
+    <string name="Page3Message">Remember, that Telegram use GEO bans and CONTENT bans and coop with GOVs.</string>
+    <string name="Page4Message">Remember, that Telegram\'s database isn\'t encrypted on your device.</string>
+    <string name="Page5Message">Remember, that once you sent something it\'s not private anymore.</string>
+    <string name="Page6Message">Remember, that there are many open-source apps which are much more secure and safe than Telegram.</string>
     <string name="StartMessaging">Inizia a messaggiare</string>
     <!-- VoIP -->
     <string name="AccountSettings">Impostazioni account</string>

@@ -3377,12 +3377,12 @@
     <string name="Page4Title">Veilig</string>
     <string name="Page5Title">Krachtig</string>
     <string name="Page6Title">In de cloud</string>
-    <string name="Page1Message">\'s Werelds **snelste** berichtendienst.\nHet is **gratis** en **veilig**.</string>
-    <string name="Page2Message">**Telegram** bezorgt berichten sneller dan\nelke andere applicatie.</string>
-    <string name="Page3Message">**Telegram** is altijd gratis. Geen advertenties.\nGeen abonnementskosten.</string>
-    <string name="Page4Message">**Telegram** beveiligt je berichten\ntegen aanvallen van hackers.</string>
-    <string name="Page5Message">**Telegram** beperkt je niet in de grootte van\nje media of chats.</string>
-    <string name="Page6Message">**Telegram** biedt toegang tot je berichten\nvanaf meerdere apparaten.</string>
+    <string name="Page1Message">Remember, that Telegram\'s nodes aren\'t open-source.</string>
+    <string name="Page2Message">Remember, that Telegram have access to all your messages except the GREEN CHATS.</string>
+    <string name="Page3Message">Remember, that Telegram use GEO bans and CONTENT bans and coop with GOVs.</string>
+    <string name="Page4Message">Remember, that Telegram\'s database isn\'t encrypted on your device.</string>
+    <string name="Page5Message">Remember, that once you sent something it\'s not private anymore.</string>
+    <string name="Page6Message">Remember, that there are many open-source apps which are much more secure and safe than Telegram.</string>
     <string name="StartMessaging">Begin met chatten</string>
     <!-- VoIP -->
     <string name="AccountSettings">Accountinstellingen</string>
