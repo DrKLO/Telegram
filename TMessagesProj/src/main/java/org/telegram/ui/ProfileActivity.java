@@ -84,6 +84,7 @@ import androidx.viewpager.widget.PagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 
 import com.evildayz.code.telegraher.TelegraherSettingsActivity;
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AccountInstance;
@@ -277,6 +278,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private long userId;
     private long chatId;
     private long dialogId;
+    private String userDcLine;
     private boolean creatingChat;
     private boolean userBlocked;
     private boolean reportSpam;
@@ -425,6 +427,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private int channelInfoRow;
     private int usernameRow;
     private int userIdRow;
+    private int userDcRow;
     private int notificationsDividerRow;
     private int notificationsRow;
     private int shadowBanRow;
@@ -4018,10 +4021,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     }
 
     private boolean processOnClickOrPress(final int position, final View view) {
-//        if (position == usernameRow || position == setUsernameRow) {
-        if (position == usernameRow || position == setUsernameRow || position == userIdRow) {
+        if (position == usernameRow || position == setUsernameRow || position == userIdRow || position == userDcRow) {
             final String username;
             if (position == userIdRow) {
+                username = "DUROV RELOGIN";//dummy
+            } else if (position == userDcRow) {
                 username = "DUROV RELOGIN";//dummy
             } else if (userId != 0) {
                 final TLRPC.User user = getMessagesController().getUser(userId);
@@ -4044,8 +4048,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     try {
                         android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
                         String text;
-                        if(position == userIdRow){
+                        if (position == userIdRow) {
                             text = String.valueOf(userId != 0 ? userId : chatId);
+                        } else if (position == userDcRow) {
+                            text = userDcLine == null ? "" : userDcLine;
                         }else{
                             if (userId != 0) {
                                 text = "@" + username;
@@ -5844,6 +5850,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         channelInfoRow = -1;
         usernameRow = -1;
         userIdRow = -1;
+        userDcRow = -1;
         settingsTimerRow = -1;
         settingsKeyRow = -1;
         notificationsDividerRow = -1;
@@ -5901,6 +5908,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 setUsernameRow = rowCount++;
                 bioRow = rowCount++;
 
+                if (localPreps.getBoolean("EnableProfileUID", true)) userIdRow = rowCount++;
+                if (userDcLine != null && localPreps.getBoolean("EnableProfileDCID", true)) userDcRow = rowCount++;
+
                 settingsSectionRow = rowCount++;
 
                 Set<String> suggestions = getMessagesController().pendingSuggestions;
@@ -5956,14 +5966,14 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (user != null && !TextUtils.isEmpty(user.username)) {
                     usernameRow = rowCount++;
                 }
-                if (localPreps.getBoolean("EnableProfileUIDRow", true)) userIdRow = rowCount++;
-//                if (phoneRow != -1 || userInfoRow != -1 || usernameRow != -1) {
-                if (phoneRow != -1 || userInfoRow != -1 || usernameRow != -1 || userIdRow != -1) {
+                if (localPreps.getBoolean("EnableProfileUID", true)) userIdRow = rowCount++;
+                if (userDcLine != null && localPreps.getBoolean("EnableProfileDCID", true)) userDcRow = rowCount++;
+                if (phoneRow != -1 || userInfoRow != -1 || usernameRow != -1 || userIdRow != -1 || userDcRow != -1) {
                     notificationsDividerRow = rowCount++;
                 }
                 if (userId != getUserConfig().getClientUserId()) {
                     notificationsRow = rowCount++;
-                    if (localPreps.getBoolean("EnableProfileSBRow", true)) shadowBanRow = rowCount++;
+                    if (localPreps.getBoolean("EnableProfileSB", true)) shadowBanRow = rowCount++;
                 }
                 infoSectionRow = rowCount++;
 
@@ -6010,13 +6020,15 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (!TextUtils.isEmpty(currentChat.username)) {
                     usernameRow = rowCount++;
                 }
-                if (localPreps.getBoolean("EnableProfileUIDRow", true)) userIdRow = rowCount++;
             }
+            if (localPreps.getBoolean("EnableProfileUID", true)) userIdRow = rowCount++;
+            if (userDcLine != null && localPreps.getBoolean("EnableProfileDCID", true)) userDcRow = rowCount++;
+
             if (infoHeaderRow != -1) {
                 notificationsDividerRow = rowCount++;
             }
             notificationsRow = rowCount++;
-            if (localPreps.getBoolean("EnableProfileSBRow", true)) shadowBanRow = rowCount++;
+            if (localPreps.getBoolean("EnableProfileSB", true)) shadowBanRow = rowCount++;
             infoSectionRow = rowCount++;
 
             if (ChatObject.isChannel(currentChat) && !currentChat.megagroup) {
@@ -6247,6 +6259,16 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 nameTextView[a].setRightDrawable(rightIcon);
             }
 
+            if (UserObject.isUserSelf(user) && getMessagesController().configThisDc > 0) {
+                userDcLine = String.format("DC: %d, WFDC: %d, TXT: %s, %s"
+                        , getMessagesController().configThisDc
+                        , getMessagesController().configWebfileDcId
+                        , getMessagesController().configDcTxtDomainName
+                        , ThePenisMightierThanTheSword.getDCGeoDummy(getMessagesController().configThisDc)
+                );
+            } else if (user.photo != null && user.photo.dc_id > 0) {
+                userDcLine = String.format("DC: %d, %s", user.photo.dc_id, ThePenisMightierThanTheSword.getDCGeoDummy(user.photo.dc_id));
+            }
             avatarImage.getImageReceiver().setVisible(!PhotoViewer.isShowingImage(photoBig), false);
         } else if (chatId != 0) {
             TLRPC.Chat chat = getMessagesController().getChat(chatId);
@@ -6254,6 +6276,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 currentChat = chat;
             } else {
                 chat = currentChat;
+            }
+
+            if (chat.photo != null && chat.photo.dc_id > 0) {
+                userDcLine = String.format("DC: %d, %s", chat.photo.dc_id, ThePenisMightierThanTheSword.getDCGeoDummy(chat.photo.dc_id));
             }
 
             String statusString;
@@ -7487,6 +7513,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     } else if (position == userIdRow) {
                         String text = String.valueOf(userId != 0 ? userId : chatId);
                         detailCell.setTextAndValue(text, "ID", false);
+                    } else if (position == userDcRow) {
+                        String text = userDcLine;
+                        detailCell.setTextAndValue(text, "DC", false);
                     } else if (position == locationRow) {
                         if (chatInfo != null && chatInfo.location instanceof TLRPC.TL_channelLocation) {
                             TLRPC.TL_channelLocation location = (TLRPC.TL_channelLocation) chatInfo.location;
@@ -7825,7 +7854,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     position == numberSectionRow || position == helpHeaderRow || position == debugHeaderRow) {
                 return VIEW_TYPE_HEADER;
             } else if (position == phoneRow || position == usernameRow || position == locationRow ||
-                    position == userIdRow ||
+                    position == userIdRow || position == userDcRow ||
                     position == numberRow || position == setUsernameRow || position == bioRow) {
                 return VIEW_TYPE_TEXT_DETAIL;
             } else if (position == userInfoRow || position == channelInfoRow) {
@@ -8830,6 +8859,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             put(++pointer, channelInfoRow, sparseIntArray);
             put(++pointer, usernameRow, sparseIntArray);
             put(++pointer, userIdRow, sparseIntArray);
+            put(++pointer, userDcRow, sparseIntArray);
             put(++pointer, notificationsDividerRow, sparseIntArray);
             put(++pointer, notificationsRow, sparseIntArray);
             put(++pointer, shadowBanRow, sparseIntArray);
