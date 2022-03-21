@@ -414,6 +414,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private int userIdRow;
     private int notificationsDividerRow;
     private int notificationsRow;
+    private int shadowBanRow;
     private int infoSectionRow;
     private int sendMessageRow;
     private int reportRow;
@@ -2663,6 +2664,19 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     return;
                 }
                 AlertsCreator.showCustomNotificationsDialog(ProfileActivity.this, did, -1, null, currentAccount, param -> listAdapter.notifyItemChanged(notificationsRow));
+            } else if (position == shadowBanRow) {
+                NotificationsCheckCell checkCell = (NotificationsCheckCell) view;
+                boolean checked = !checkCell.isChecked();
+                checkCell.setChecked(checked);
+                if (checked) {
+                    SharedConfig.addShadowBanned(did);
+                } else {
+                    SharedConfig.delShadowBanned(did);
+                }
+                RecyclerListView.Holder holder = (RecyclerListView.Holder) listView.findViewHolderForPosition(shadowBanRow);
+                if (holder != null) {
+                    listAdapter.onBindViewHolder(holder, shadowBanRow);
+                }
             } else if (position == unblockRow) {
                 getMessagesController().unblockPeer(userId);
                 if (BulletinFactory.canShowBulletin(ProfileActivity.this)) {
@@ -5651,6 +5665,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         settingsKeyRow = -1;
         notificationsDividerRow = -1;
         notificationsRow = -1;
+        shadowBanRow = -1;
         infoSectionRow = -1;
         secretSettingsSectionRow = -1;
         bottomPaddingRow = -1;
@@ -5760,6 +5775,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 }
                 if (userId != getUserConfig().getClientUserId()) {
                     notificationsRow = rowCount++;
+                    shadowBanRow = rowCount++;
                 }
                 infoSectionRow = rowCount++;
 
@@ -5807,6 +5823,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 notificationsDividerRow = rowCount++;
             }
             notificationsRow = rowCount++;
+            shadowBanRow = rowCount++;
             infoSectionRow = rowCount++;
 
             if (ChatObject.isChannel(currentChat) && !currentChat.megagroup) {
@@ -7445,6 +7462,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                             val = LocaleController.getString("NotificationsOff", R.string.NotificationsOff);
                         }
                         checkCell.setTextAndValueAndCheck(LocaleController.getString("Notifications", R.string.Notifications), val, enabled, false);
+                    } else if (position == shadowBanRow) {
+//                        System.out.printf("d `%s`|u `%d`|c `%d`%n", dialogId, userId, chatId);
+                        boolean enabled = SharedConfig.isShadowBanned(dialogId != 0L ? dialogId : userId != 0L ? userId : chatId != 0 ? chatId : 0L);
+                        checkCell.setTextAndValueAndCheck("ShadowBan", enabled ? LocaleController.getString("NotificationsOn", R.string.NotificationsOn) : LocaleController.getString("NotificationsOff", R.string.NotificationsOff), enabled, false);
                     }
                     break;
                 case VIEW_TYPE_SHADOW:
@@ -7517,9 +7538,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
-            if (notificationRow != -1) {
+            if (notificationRow != -1 || shadowBanRow != -1) {
                 int position = holder.getAdapterPosition();
-                return position == notificationRow || position == numberRow || position == privacyRow ||
+                return position == notificationRow || position == shadowBanRow || position == numberRow || position == privacyRow ||
                         position == languageRow || position == setUsernameRow || position == bioRow ||
                         position == versionRow || position == dataRow || position == chatRow ||
                         position == questionRow || position == devicesRow || position == filtersRow ||
@@ -7569,7 +7590,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 return VIEW_TYPE_TEXT;
             } else if (position == notificationsDividerRow) {
                 return VIEW_TYPE_DIVIDER;
-            } else if (position == notificationsRow) {
+            } else if (position == notificationsRow || position == shadowBanRow) {
                 return VIEW_TYPE_NOTIFICATIONS_CHECK;
             } else if (position == infoSectionRow || position == lastSectionRow || position == membersSectionRow ||
                     position == secretSettingsSectionRow || position == settingsSectionRow || position == devicesSectionRow ||
@@ -8556,6 +8577,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             put(++pointer, userIdRow, sparseIntArray);
             put(++pointer, notificationsDividerRow, sparseIntArray);
             put(++pointer, notificationsRow, sparseIntArray);
+            put(++pointer, shadowBanRow, sparseIntArray);
             put(++pointer, infoSectionRow, sparseIntArray);
             put(++pointer, sendMessageRow, sparseIntArray);
             put(++pointer, reportRow, sparseIntArray);
