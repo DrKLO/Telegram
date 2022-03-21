@@ -23,7 +23,7 @@
     <!--code enter view-->
     <string name="YourCode">Verificación</string>
     <string name="SentSmsCode">Enviamos un SMS con un código de activación a tu teléfono **%1$s**.</string>
-    <string name="SentAppCode">Enviamos el código a la app de **Telegram** en tu otro dispositivo.</string>
+    <string name="SentAppCode">Enviamos el código a la app de **Telegraher** en tu otro dispositivo.</string>
     <string name="SentAppCodeTitle">Revisa tus mensajes en Telegram</string>
     <string name="SentSmsCodeTitle">Pon el código</string>
     <string name="SentCallCode">Estamos llamando al número **%1$s**.\n\nNo contestes. Telegram hará todo el proceso automáticamente.</string>
@@ -199,7 +199,7 @@
     <string name="DisappearingPhoto">Foto secreta</string>
     <string name="DisappearingVideo">Video temporal</string>
     <string name="DisappearingGif">GIF secreto</string>
-    <string name="CompatibilityChat">%1$s usa una versión antigua de Telegram, así que las fotos secretas serán mostradas en un modo de compatibilidad.\n\nCuando %2$s actualice Telegram, las fotos con autodestrucción de 1 minuto o menos funcionarán con el modo “Mantén pulsado para ver”, y te notificaremos siempre que la otra parte haga una captura de pantalla.</string>
+    <string name="CompatibilityChat">%1$s usa una versión antigua de Telegraher, así que las fotos secretas serán mostradas en un modo de compatibilidad.\n\nCuando %2$s actualice Telegram, las fotos con autodestrucción de 1 minuto o menos funcionarán con el modo “Mantén pulsado para ver”, y te notificaremos siempre que la otra parte haga una captura de pantalla.</string>
     <string name="SearchMessages">Mensajes</string>
     <string name="Search">Buscar</string>
     <string name="MuteNotifications">Silenciar</string>
@@ -237,7 +237,7 @@
     <string name="Strike">Tachado</string>
     <string name="Underline">Subrayar</string>
     <string name="Regular">Borrar formato</string>
-    <string name="ContactsPermissionAlert">**Telegram** necesita acceso a tus contactos para que puedas comunicarte con tus amigos en todos tus dispositivos. Tus contactos se sincronizarán continuamente con los servidores en la nube fuertemente cifrados de Telegram.</string>
+    <string name="ContactsPermissionAlert">**Telegraher** necesita acceso a tus contactos para que puedas comunicarte con tus amigos en todos tus dispositivos. Tus contactos se sincronizarán continuamente con los servidores en la nube fuertemente cifrados de Telegram.</string>
     <string name="ContactsPermissionAlertNotNow">AHORA NO</string>
     <string name="ContactsPermissionAlertContinue">CONTINUAR</string>
     <string name="YourContacts">Tus contactos en Telegram</string>
@@ -297,7 +297,7 @@
     <string name="ImportedInfo">Este mensaje fue importado desde otra app. No podemos garantizar que sea real.</string>
     <string name="ImportUploading">Importando mensajes y multimedia… **%d%%**</string>
     <string name="ImportImportingTitle">Importando chat</string>
-    <string name="ImportImportingInfo">Mantén Telegram abierto\nhasta completar la importación.</string>
+    <string name="ImportImportingInfo">Mantén Telegraher abierto\nhasta completar la importación.</string>
     <string name="ImportCount">%1$s de %2$s</string>
     <string name="ImportDone">Listo</string>
     <string name="ImportDoneTitle">¡Chat importado satisfactoriamente!</string>
@@ -1276,8 +1276,8 @@
     <string name="NotificationGroupFew">%1$s envió %3$s al grupo %2$s</string>
     <string name="NotificationGroupAlbum">%1$s envió un álbum al grupo %2$s</string>
     <string name="NotificationGroupForwardedFew">%1$s reenvió %3$s al grupo %2$s</string>
-    <string name="NotificationHiddenName">Telegram</string>
-    <string name="NotificationHiddenChatName">Telegram</string>
+    <string name="NotificationHiddenName">Telegraher</string>
+    <string name="NotificationHiddenChatName">Telegraher</string>
     <string name="NotificationHiddenChatUserName">Usuario</string>
     <string name="NotificationHiddenMessage">Mensaje nuevo</string>
     <string name="Reply">Responder</string>
@@ -1342,7 +1342,7 @@
     <string name="NotificationActionPinnedGeoLiveUser">%1$s fijó una ubicación en tiempo real</string>
     <string name="NotificationActionPinnedGifUser">%1$s fijó un GIF</string>
     <string name="NotificationActionPinnedMusicUser">%1$s fijó un audio</string>
-    <string name="SecretChatName">Telegram</string>
+    <string name="SecretChatName">Telegraher</string>
     <!--contacts view-->
     <string name="SelectContact">Elige un contacto</string>
     <string name="SelectContacts">Elige los contactos</string>
@@ -2030,7 +2030,7 @@
     <string name="Emoji">Emoji</string>
     <string name="LargeEmoji">Emojis grandes</string>
     <string name="EmojiUseDefault">Usar emoji predeterminado</string>
-    <string name="TelegramVersion">Telegram para Android %1$s</string>
+    <string name="TelegramVersion">Telegraher para Android %1$s</string>
     <string name="DebugMenu">Menú de depuración</string>
     <string name="DebugSendLogs">Enviar registros</string>
     <string name="DebugSendLastLogs">Enviar últimos registros</string>
