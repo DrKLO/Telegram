@@ -326,8 +326,8 @@ public class SharedConfig {
                     String updateVersionString = null;
                     try {
                         PackageInfo packageInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
-                        updateVersion = packageInfo.versionCode;
-                        updateVersionString = packageInfo.versionName;
+                        updateVersion = packageInfo.versionCode / 100;
+                        updateVersionString = BuildVars.BUILD_VERSION_STRING;
                     } catch (Exception e) {
                         FileLog.e(e);
                     }
@@ -490,7 +490,7 @@ public class SharedConfig {
         int currentVersion;
         try {
             PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
-            currentVersion = pInfo.versionCode;
+            currentVersion = pInfo.versionCode / 100;
         } catch (Exception e) {
             FileLog.e(e);
             currentVersion = BuildVars.BUILD_VERSION;
@@ -503,8 +503,8 @@ public class SharedConfig {
         int versionCode = 0;
         try {
             PackageInfo packageInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
-            versionCode = packageInfo.versionCode;
-            updateVersionString = packageInfo.versionName;
+            versionCode = packageInfo.versionCode / 100;
+            updateVersionString = BuildVars.BUILD_VERSION_STRING;
         } catch (Exception e) {
             FileLog.e(e);
         }

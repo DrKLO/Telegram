@@ -86,6 +86,7 @@ import org.checkerframework.checker.initialization.qual.UnknownInitialization;
 import org.checkerframework.checker.nullness.compatqual.NullableType;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.telegram.messenger.BuildVars;
 
 /**
  * Miscellaneous utility methods.
@@ -1290,7 +1291,7 @@ public final class Util {
     try {
       String packageName = "org.telegram.messenger";
       PackageInfo info = context.getPackageManager().getPackageInfo(packageName, 0);
-      versionName = info.versionName;
+      versionName = BuildVars.BUILD_VERSION_STRING;
     } catch (NameNotFoundException e) {
       versionName = "?";
     }

@@ -7494,9 +7494,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     cell.getTextView().setMovementMethod(null);
                     try {
                         PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
-                        int code = pInfo.versionCode / 10;
+                        int code = pInfo.versionCode / 1000;
                         String abi = "";
-                        switch (pInfo.versionCode % 10) {
+                        switch ((pInfo.versionCode / 100) % 10) {
                             case 1:
                             case 2:
                                 abi = "store bundled " + Build.CPU_ABI + " " + Build.CPU_ABI2;
