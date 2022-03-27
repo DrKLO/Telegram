@@ -1534,11 +1534,16 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         if (ChatObject.canManageCalls(currentChat)) {
             leaveItem.setVisibility(View.VISIBLE);
             editTitleItem.setVisibility(View.VISIBLE);
-            if (call.isScheduled() || isRtmpStream()) {
-                recordItem.setVisibility(View.GONE);
+            if (isRtmpStream()) {
+                recordItem.setVisibility(View.VISIBLE);
                 screenItem.setVisibility(View.GONE);
             } else {
-                recordItem.setVisibility(View.VISIBLE);
+                if (call.isScheduled()) {
+                    recordItem.setVisibility(View.GONE);
+                    screenItem.setVisibility(View.GONE);
+                } else {
+                    recordItem.setVisibility(View.VISIBLE);
+                }
             }
             if (!call.canRecordVideo() || call.isScheduled() || Build.VERSION.SDK_INT < 21 || isRtmpStream()) {
                 screenItem.setVisibility(View.GONE);
@@ -1596,7 +1601,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         } else {
             permissionItem.setVisibility(View.GONE);
         }
-        soundItem.setVisibility(View.VISIBLE);
+        soundItem.setVisibility(isRtmpStream() ? View.GONE : View.VISIBLE);
         if (editTitleItem.getVisibility() == View.VISIBLE || permissionItem.getVisibility() == View.VISIBLE || inviteItem.getVisibility() == View.VISIBLE ||
                 screenItem.getVisibility() == View.VISIBLE || recordItem.getVisibility() == View.VISIBLE || leaveItem.getVisibility() == View.VISIBLE) {
             soundItemDivider.setVisibility(View.VISIBLE);
@@ -1623,7 +1628,11 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             accountGap.setVisibility(View.GONE);
         }
 
-        otherItem.setVisibility(View.VISIBLE);
+        if (currentChat != null && !ChatObject.isChannelOrGiga(currentChat) && isRtmpStream() && inviteItem.getVisibility() == View.GONE) {
+            otherItem.setVisibility(View.GONE);
+        } else {
+            otherItem.setVisibility(View.VISIBLE);
+        }
 
         FrameLayout.LayoutParams layoutParams = ((FrameLayout.LayoutParams) titleTextView.getLayoutParams());
         if (layoutParams.rightMargin != AndroidUtilities.dp(margin)) {
@@ -1880,19 +1889,19 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                     } else {
                         GroupCallRecordAlert alert = new GroupCallRecordAlert(getContext(), currentChat, hasVideo) {
                             @Override
-                            protected void onStartRecord(int type) {
+                            public void onStartRecord(@ChatObject.Call.RecordType int type) {
                                 AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
                                 builder.setDialogButtonColorKey(Theme.key_voipgroup_listeningText);
 
                                 enterEventSent = false;
                                 builder.setTitle(LocaleController.getString("VoipGroupStartRecordingTitle", R.string.VoipGroupStartRecordingTitle));
                                 if (type == 0) {
-                                    builder.setMessage(LocaleController.getString("VoipGroupStartRecordingText", R.string.VoipGroupStartRecordingText));
+                                    builder.setMessage(LocaleController.getString(call.call.rtmp_stream ? R.string.VoipGroupStartRecordingRtmpText : R.string.VoipGroupStartRecordingText));
                                 } else {
                                     if (ChatObject.isChannelOrGiga(currentChat)) {
-                                        builder.setMessage(LocaleController.getString("VoipChannelStartRecordingVideoText", R.string.VoipChannelStartRecordingVideoText));
+                                        builder.setMessage(LocaleController.getString(call.call.rtmp_stream ? R.string.VoipGroupStartRecordingRtmpVideoText : R.string.VoipChannelStartRecordingVideoText));
                                     } else {
-                                        builder.setMessage(LocaleController.getString("VoipGroupStartRecordingVideoText", R.string.VoipGroupStartRecordingVideoText));
+                                        builder.setMessage(LocaleController.getString(call.call.rtmp_stream ? R.string.VoipGroupStartRecordingRtmpVideoText : R.string.VoipGroupStartRecordingVideoText));
                                     }
                                 }
                                 builder.setCheckFocusable(false);
@@ -1933,7 +1942,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                                 builder.setPositiveButton(LocaleController.getString("Start", R.string.Start), (dialogInterface, i) -> {
                                     call.toggleRecord(editText.getText().toString(), type);
                                     AndroidUtilities.hideKeyboard(editText);
-                                    getUndoView().showWithAction(0, type == 0 ? UndoView.ACTION_VOIP_RECORDING_STARTED : UndoView.ACTION_VOIP_VIDEO_RECORDING_STARTED, null);
+                                    getUndoView().showWithAction(0, type == ChatObject.Call.RECORD_TYPE_AUDIO ? UndoView.ACTION_VOIP_RECORDING_STARTED : UndoView.ACTION_VOIP_VIDEO_RECORDING_STARTED, null);
                                     if (VoIPService.getSharedInstance() != null) {
                                         VoIPService.getSharedInstance().playStartRecordSound();
                                     }
@@ -1948,7 +1957,11 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                                 }
                             }
                         };
-                        alert.show();
+                        if (isRtmpStream()) {
+                            alert.onStartRecord(ChatObject.Call.RECORD_TYPE_VIDEO_LANDSCAPE);
+                        } else {
+                            alert.show();
+                        }
                     }
                 } else if (id == permission_item) {
                     changingPermissions = true;
@@ -5701,7 +5714,9 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
 
         VoIPService.audioLevelsCallback = null;
         GroupCallPip.updateVisibility(getContext());
-        call.clearVideFramesInfo();
+        if (call != null) {
+            call.clearVideFramesInfo();
+        }
         if (VoIPService.getSharedInstance() != null) {
             VoIPService.getSharedInstance().clearRemoteSinks();
         }
@@ -6118,6 +6133,8 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                 }
             });
             actionBarAnimation.start();
+
+            renderersContainer.pipView.setClickable(!show || isLandscapeMode);
         }
         if (scrollOffsetY != minY) {
             setScrollOffsetY(minY);
@@ -6641,6 +6658,10 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                     showView.setScaleY(multiplier);
                     hideView.setAlpha(0f);
                 }
+            } else {
+                muteButton.setAlpha(1f);
+                expandButton.setAlpha(0f);
+                minimizeButton.setAlpha(0f);
             }
 
             if (changed) {
@@ -6686,6 +6707,20 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             muteButtonState = state;
             bigMicDrawable.setCurrentFrame(bigMicDrawable.getCustomEndFrame() - 1, false, true);
             muteLabel[0].setText(newText);
+
+            if (isRtmpStream() && !call.isScheduled()) {
+                muteButton.setAlpha(0f);
+                boolean isExpanded = renderersContainer != null && renderersContainer.inFullscreenMode && (AndroidUtilities.isTablet() || isLandscapeMode == isRtmpLandscapeMode());
+                View hideView = isExpanded ? expandButton : minimizeButton;
+                View showView = isExpanded ? minimizeButton : expandButton;
+
+                showView.setAlpha(1f);
+                hideView.setAlpha(0f);
+            } else {
+                muteButton.setAlpha(1f);
+                expandButton.setAlpha(0f);
+                minimizeButton.setAlpha(0f);
+            }
         }
         updateMuteButtonState(animated);
     }

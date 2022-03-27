@@ -2549,6 +2549,9 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                     }
 
                     AndroidUtilities.runOnUIThread(()->{
+                        if (senderSelectPopupWindow == null) {
+                            return;
+                        }
                         Dialog d = new Dialog(getContext(), R.style.TransparentDialogNoAnimation);
                         FrameLayout aFrame = new FrameLayout(getContext());
                         aFrame.addView(avatar, LayoutHelper.createFrame(SenderSelectPopup.AVATAR_SIZE_DP, SenderSelectPopup.AVATAR_SIZE_DP, Gravity.LEFT));
@@ -3108,9 +3111,13 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
         cancelBotButton = new ImageView(context);
         cancelBotButton.setVisibility(INVISIBLE);
         cancelBotButton.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-        cancelBotButton.setImageDrawable(progressDrawable = new CloseProgressDrawable2());
+        cancelBotButton.setImageDrawable(progressDrawable = new CloseProgressDrawable2() {
+            @Override
+            protected int getCurrentColor() {
+                return Theme.getColor(Theme.key_chat_messagePanelCancelInlineBot);
+            }
+        });
         cancelBotButton.setContentDescription(LocaleController.getString("Cancel", R.string.Cancel));
-        progressDrawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_messagePanelCancelInlineBot), PorterDuff.Mode.MULTIPLY));
         cancelBotButton.setSoundEffectsEnabled(false);
         cancelBotButton.setScaleX(0.1f);
         cancelBotButton.setScaleY(0.1f);
@@ -3441,7 +3448,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
             backgroundPaint.setColor(getThemedColor(Theme.key_chat_messagePanelBackground));
             if (SharedConfig.chatBlurEnabled() && sizeNotifierLayout != null) {
                 AndroidUtilities.rectTmp2.set(0, bottom, getWidth(), getHeight());
-                sizeNotifierLayout.drawBlur(canvas, getTop(), AndroidUtilities.rectTmp2, backgroundPaint, false);
+                sizeNotifierLayout.drawBlurRect(canvas, getTop(), AndroidUtilities.rectTmp2, backgroundPaint, false);
             } else {
                 canvas.drawRect(0, bottom, getWidth(), getHeight(), backgroundPaint);
             }
@@ -6651,7 +6658,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
             }
         }
         boolean wasVisible = senderSelectView.getVisibility() == View.VISIBLE;
-        boolean isVisible = delegate.getSendAsPeers() != null && defPeer != null && delegate.getSendAsPeers().peers.size() > 1 &&
+        boolean isVisible = defPeer != null && (delegate.getSendAsPeers() == null || delegate.getSendAsPeers().peers.size() > 1) &&
                 !isEditingMessage() && !isRecordingAudioVideo() && recordedAudioPanel.getVisibility() != View.VISIBLE;
         int pad = AndroidUtilities.dp(2);
         MarginLayoutParams params = (MarginLayoutParams) senderSelectView.getLayoutParams();

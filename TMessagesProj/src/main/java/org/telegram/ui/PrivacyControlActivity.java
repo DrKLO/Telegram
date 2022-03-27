@@ -1009,9 +1009,10 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                     if (position == detailRow) {
                         if (rulesType == PRIVACY_RULES_TYPE_PHONE) {
                             if (prevSubtypeContacts = (currentType == TYPE_NOBODY && currentSubType == 1)) {
+                                privacyCell.setText(LocaleController.getString("PrivacyPhoneInfo3", R.string.PrivacyPhoneInfo3));
+                            } else {
                                 SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
-
-                                String phoneLinkStr = String.format(Locale.ENGLISH, "https//t.me/+%s", getUserConfig().getClientPhone());
+                                String phoneLinkStr = String.format(Locale.ENGLISH, "https://t.me/+%s", getUserConfig().getClientPhone());
                                 SpannableString phoneLink = new SpannableString(phoneLinkStr);
                                 phoneLink.setSpan(new ClickableSpan() {
                                     @Override
@@ -1025,15 +1026,13 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                                     }
                                 }, 0, phoneLinkStr.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
 
-                                spannableStringBuilder.append(LocaleController.getString("PrivacyPhoneInfo3", R.string.PrivacyPhoneInfo3))
+                                spannableStringBuilder.append(LocaleController.getString("PrivacyPhoneInfo", R.string.PrivacyPhoneInfo))
                                         .append("\n\n")
                                         .append(LocaleController.getString("PrivacyPhoneInfo4", R.string.PrivacyPhoneInfo4))
                                         .append("\n")
                                         .append(phoneLink);
 
                                 privacyCell.setText(spannableStringBuilder);
-                            } else {
-                                privacyCell.setText(LocaleController.getString("PrivacyPhoneInfo", R.string.PrivacyPhoneInfo));
                             }
                         } else if (rulesType == PRIVACY_RULES_TYPE_FORWARDS) {
                             privacyCell.setText(LocaleController.getString("PrivacyForwardsInfo", R.string.PrivacyForwardsInfo));

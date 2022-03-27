@@ -1350,7 +1350,7 @@ public class DialogCell extends BaseCell {
                     } else {
                         drawMention = false;
                     }
-                    if (reactionMentionCount != 0) {
+                    if (reactionMentionCount > 0) {
                         drawReactionMention = true;
                     } else {
                         drawReactionMention = false;

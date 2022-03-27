@@ -332,6 +332,8 @@
     <string name="ImporImportingStickersService">Importing stickers...</string>
     <string name="ImportHeader">Import messages and media to...</string>
     <string name="ImportHeaderContacts">Or choose one of your contacts</string>
+    <string name="DiscardSelectionAlertTitle">Discard selection?</string>
+    <string name="DiscardSelectionAlertMessage">Are you sure you want to discard the selection?</string>
     <!--widgets-->
     <string name="EditWidget">Edit Widget</string>
     <string name="EditWidgetContactsInfo">Display shortcuts to your most important chats for quick access.\n\nIf nobody is selected, your most frequent contacts will be shown in this widget.</string>
@@ -3796,8 +3798,11 @@
     <string name="VoipChannelStopRecordingText">Do you want to stop recording this live stream?</string>
     <string name="VoipGroupStartRecordingTitle">Start recording</string>
     <string name="VoipGroupStartRecordingText">Do you want to start recording this chat and save the result into an audio file?\n\nOther members will see that the chat is being recorded.</string>
+    <string name="VoipGroupStartRecordingRtmpText">Do you want to start recording this chat and save the result into an audio file?</string>
     <string name="VoipGroupStartRecordingVideoText">Do you want to start recording this chat and save the result into a video file?\n\nOther members will see that the chat is being recorded.</string>
     <string name="VoipChannelStartRecordingVideoText">Do you want to start recording this live stream and save the result into a video file?\n\nOther members will see that the stream is being recorded.</string>
+    <string name="VoipGroupStartRecordingRtmpVideoText">Do you want to start recording this chat and save the result into a video file?</string>
+    <string name="VoipChannelStartRecordingRtmpVideoText">Do you want to start recording this live stream and save the result into a video file?</string>
     <string name="VoipGroupSaveFileHint">Recording Title</string>
     <string name="VoipGroupAudioRecordSaved">Audio saved to **Saved Messages**.</string>
     <string name="VoipGroupVideoRecordSaved">Video saved to **Saved Messages**.</string>
@@ -5066,6 +5071,8 @@
 
     <string name="AllowBackgroundActivity">Allow background activity</string>
     <string name="AllowBackgroundActivityInfo">This will improve reliability for incoming notifications and Telegram calls.</string>
+    <string name="AllowBackgroundActivityInfoOneUIBelowS">This will improve reliability for incoming notifications and Telegram calls. Tap Settings -> Battery and turn **Allow background activity** on.</string>
+    <string name="AllowBackgroundActivityInfoOneUIAboveS">This will improve reliability for incoming notifications and Telegram calls. Please select **Optimised** or **Unrestricted** in Settings > Battery.</string>
     <string name="SetNewPassword">Set a new password</string>
     <string name="ReadAllReactions">Read all reactions</string>
     <string name="ReadAllMentions">Read all mentions</string>
@@ -5080,8 +5087,7 @@
     <string name="ResumeAll">Resume all</string>
     <string name="DownloadedFiles">Downloaded files</string>
     <string name="ManageDeviceStorage">Manage Device Storage</string>
-    <string name="RemoveDocumentsMessage">They will be deleted from your disk, but will remain accessible in the cloud.</string>
-
+    <string name="RemoveDocumentsAlertMessage">They will be deleted from your disk, but will remain accessible in the cloud.</string>
 
     <string name="DownloadedFilesMessage">Telegram lets you store all documents you send and receive in the cloud and save storage space on your device.</string>
     <string name="ClearDownloadsList">Clear Download List</string>

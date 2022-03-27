@@ -22,11 +22,11 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
@@ -37,6 +37,7 @@ import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.CacheControlActivity;
 import org.telegram.ui.Cells.GraySectionCell;
+import org.telegram.ui.Cells.SharedAudioCell;
 import org.telegram.ui.Cells.SharedDocumentCell;
 import org.telegram.ui.FilteredSearchView;
 import org.telegram.ui.PhotoViewer;
@@ -86,7 +87,7 @@ public class SearchDownloadsContainer extends FrameLayout implements Notificatio
         recyclerListView.setLayoutManager(new LinearLayoutManager(fragment.getParentActivity()) {
             @Override
             public boolean supportsPredictiveItemAnimations() {
-                return false;
+                return true;
             }
         });
         recyclerListView.setAdapter(adapter);
@@ -104,16 +105,21 @@ public class SearchDownloadsContainer extends FrameLayout implements Notificatio
         recyclerListView.setItemAnimator(defaultItemAnimator);
 
         recyclerListView.setOnItemClickListener((view, position) -> {
+            MessageObject messageObject = adapter.getMessage(position);
+            if (messageObject == null) {
+                return;
+            }
+            if (uiCallback.actionModeShowing()) {
+                uiCallback.toggleItemSelection(messageObject, view, 0);
+                messageHashIdTmp.set(messageObject.getId(), messageObject.getDialogId());
+                adapter.notifyItemChanged(position);
+                return;
+            }
+
             if (view instanceof Cell) {
                 SharedDocumentCell cell = ((Cell) view).sharedDocumentCell;
                 MessageObject message = cell.getMessage();
                 TLRPC.Document document = message.getDocument();
-                if (uiCallback.actionModeShowing()) {
-                    uiCallback.toggleItemSelection(cell.getMessage(), view, 0);
-                    messageHashIdTmp.set(cell.getMessage().getId(), cell.getMessage().getDialogId());
-                    cell.setChecked(uiCallback.isSelected(messageHashIdTmp), true);
-                    return;
-                };
                 if (cell.isLoaded()) {
                     if (message.isRoundVideo() || message.isVoice()) {
                         MediaController.getInstance().playMessage(message);
@@ -126,13 +132,10 @@ public class SearchDownloadsContainer extends FrameLayout implements Notificatio
                         documents.add(message);
                         PhotoViewer.getInstance().setParentActivity(parentActivity);
                         PhotoViewer.getInstance().openPhoto(documents, 0, 0, 0, new PhotoViewer.EmptyPhotoViewerProvider());
-                        //  photoViewerClassGuid = PhotoViewer.getInstance().getClassGuid();
-
                         return;
                     }
                     AndroidUtilities.openDocument(message, parentActivity, parentFragment);
                 } else if (!cell.isLoading()) {
-                    MessageObject messageObject = cell.getMessage();
                     messageObject.putInDownloadsStore = true;
                     AccountInstance.getInstance(UserConfig.selectedAccount).getFileLoader().loadFile(document, messageObject, 0, 0);
                     cell.updateFileExistIcon(true);
@@ -142,17 +145,21 @@ public class SearchDownloadsContainer extends FrameLayout implements Notificatio
                 }
                 update(true);
             }
+            if (view instanceof SharedAudioCell) {
+                SharedAudioCell cell = (SharedAudioCell) view;
+                cell.didPressedButton();
+            }
         });
         recyclerListView.setOnItemLongClickListener((view, position) -> {
-            if (view instanceof Cell) {
-                SharedDocumentCell cell = ((Cell) view).sharedDocumentCell;
+            MessageObject messageObject = adapter.getMessage(position);
+            if (messageObject != null) {
                 if (!uiCallback.actionModeShowing()) {
                     uiCallback.showActionMode();
                 }
                 if (uiCallback.actionModeShowing()) {
-                    uiCallback.toggleItemSelection(cell.getMessage(), view, 0);
-                    messageHashIdTmp.set(cell.getMessage().getId(), cell.getMessage().getDialogId());
-                    cell.setChecked(uiCallback.isSelected(messageHashIdTmp), true);
+                    uiCallback.toggleItemSelection(messageObject, view, 0);
+                    messageHashIdTmp.set(messageObject.getId(), messageObject.getDialogId());
+                    adapter.notifyItemChanged(position);
                 }
                 return true;
             }
@@ -257,7 +264,7 @@ public class SearchDownloadsContainer extends FrameLayout implements Notificatio
     }
 
     private boolean isEmptyDownloads() {
-        return MessagesStorage.getInstance(currentAccount).downloadingFiles.isEmpty() && MessagesStorage.getInstance(currentAccount).recentDownloadingFiles.isEmpty();
+        return DownloadController.getInstance(currentAccount).downloadingFiles.isEmpty() && DownloadController.getInstance(currentAccount).recentDownloadingFiles.isEmpty();
     }
 
     private void updateListInternal(boolean animated, ArrayList<MessageObject> currentLoadingFilesTmp, ArrayList<MessageObject> recentLoadingFilesTmp) {
@@ -397,9 +404,17 @@ public class SearchDownloadsContainer extends FrameLayout implements Notificatio
             View view;
             if (viewType == 0) {
                 view = new GraySectionCell(parent.getContext());
-            } else {
+            } else if (viewType == 1){
                 Cell sharedDocumentCell = new Cell(parent.getContext());
                 view = sharedDocumentCell;
+            } else {
+                SharedAudioCell sharedAudioCell = new SharedAudioCell(parent.getContext()) {
+                    @Override
+                    public boolean needPlayMessage(MessageObject messageObject) {
+                        return MediaController.getInstance().playMessage(messageObject);
+                    }
+                };
+                view = sharedAudioCell;
             }
             view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
             return new RecyclerListView.Holder(view);
@@ -435,18 +450,22 @@ public class SearchDownloadsContainer extends FrameLayout implements Notificatio
                     });
                 }
             } else {
-                Cell view = (Cell) holder.itemView;
-                view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-                if (position >= downloadingFilesStartRow && position < downloadingFilesEndRow) {
-                    // currentLoadingFiles.get(position - downloadingFilesStartRow).checkMediaExistance();
-                    view.sharedDocumentCell.setDocument(currentLoadingFiles.get(position - downloadingFilesStartRow), true);
-                } else if (position >= recentFilesStartRow && position < recentFilesEndRow) {
-                    //  recentLoadingFiles.get(position - recentFilesStartRow).checkMediaExistance();
-                    view.sharedDocumentCell.setDocument(recentLoadingFiles.get(position - recentFilesStartRow), true);
+                MessageObject messageObject = getMessage(position);
+                if (messageObject != null) {
+                    if (type == 1) {
+                        Cell view = (Cell) holder.itemView;
+                        view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                        int oldId = view.sharedDocumentCell.getMessage() == null ? 0 : view.sharedDocumentCell.getMessage().getId();
+                        view.sharedDocumentCell.setDocument(messageObject, true);
+                        messageHashIdTmp.set(view.sharedDocumentCell.getMessage().getId(), view.sharedDocumentCell.getMessage().getDialogId());
+                        view.sharedDocumentCell.setChecked(uiCallback.isSelected(messageHashIdTmp), oldId == messageObject.getId());
+                    } else if (type == 2) {
+                        SharedAudioCell sharedAudioCell = (SharedAudioCell) holder.itemView;
+                        sharedAudioCell.setMessageObject(messageObject, true);
+                        int oldId = sharedAudioCell.getMessage() == null ? 0 : sharedAudioCell.getMessage().getId();
+                        sharedAudioCell.setChecked(uiCallback.isSelected(messageHashIdTmp), oldId == messageObject.getId());
+                    }
                 }
-
-                messageHashIdTmp.set(view.sharedDocumentCell.getMessage().getId(), view.sharedDocumentCell.getMessage().getDialogId());
-                view.sharedDocumentCell.setChecked(uiCallback.isSelected(messageHashIdTmp), false);
             }
         }
 
@@ -455,7 +474,23 @@ public class SearchDownloadsContainer extends FrameLayout implements Notificatio
             if (position == downloadingFilesHeader || position == recentFilesHeader) {
                 return 0;
             }
+            MessageObject messageObject = getMessage(position);
+            if (messageObject == null) {
+                return 1;
+            }
+            if (messageObject.isMusic()) {
+                return 2;
+            }
             return 1;
+        }
+
+        private MessageObject getMessage(int position) {
+            if (position >= downloadingFilesStartRow && position < downloadingFilesEndRow) {;
+                return currentLoadingFiles.get(position - downloadingFilesStartRow);
+            } else if (position >= recentFilesStartRow && position < recentFilesEndRow) {
+                return recentLoadingFiles.get(position - recentFilesStartRow);
+            }
+            return null;
         }
 
         @Override
@@ -465,7 +500,7 @@ public class SearchDownloadsContainer extends FrameLayout implements Notificatio
 
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
-            return holder.getItemViewType() == 1;
+            return holder.getItemViewType() == 1 || holder.getItemViewType() == 2;
         }
     }
 
@@ -536,7 +571,7 @@ public class SearchDownloadsContainer extends FrameLayout implements Notificatio
         });
         buttonTextView2.setOnClickListener(view -> {
             bottomSheet.dismiss();
-            MessagesStorage.getInstance(currentAccount).clearRecentDownloadedFiles();
+            DownloadController.getInstance(currentAccount).clearRecentDownloadedFiles();
         });
         //parentFragment.showDialog(bottomSheet);
     }
@@ -546,7 +581,7 @@ public class SearchDownloadsContainer extends FrameLayout implements Notificatio
         super.onAttachedToWindow();
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.onDownloadingFilesChanged);
         if (getVisibility() == View.VISIBLE) {
-            MessagesStorage.getInstance(currentAccount).clearUnviewedDownloads();
+            DownloadController.getInstance(currentAccount).clearUnviewedDownloads();
         }
     }
 
@@ -561,7 +596,7 @@ public class SearchDownloadsContainer extends FrameLayout implements Notificatio
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.onDownloadingFilesChanged) {
             if (getVisibility() == View.VISIBLE) {
-                MessagesStorage.getInstance(currentAccount).clearUnviewedDownloads();
+                DownloadController.getInstance(currentAccount).clearUnviewedDownloads();
             }
             update(true);
         }

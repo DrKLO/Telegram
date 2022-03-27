@@ -22,6 +22,10 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.core.graphics.ColorUtils;
+import androidx.viewpager.widget.PagerAdapter;
+import androidx.viewpager.widget.ViewPager;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.LocaleController;
@@ -30,10 +34,6 @@ import org.telegram.messenger.SvgHelper;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
-
-import androidx.core.graphics.ColorUtils;
-import androidx.viewpager.widget.PagerAdapter;
-import androidx.viewpager.widget.ViewPager;
 
 public class GroupCallRecordAlert extends BottomSheet {
 
@@ -275,7 +275,7 @@ public class GroupCallRecordAlert extends BottomSheet {
         positiveButton.invalidate();
     }
 
-    protected void onStartRecord(int type) {
+    public void onStartRecord(@ChatObject.Call.RecordType int type) {
 
     }
 

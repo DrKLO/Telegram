@@ -3466,8 +3466,12 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 }
             }
         };
-        clearButton.setImageDrawable(new CloseProgressDrawable2());
-        clearButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.MULTIPLY));
+        clearButton.setImageDrawable(new CloseProgressDrawable2() {
+            @Override
+            protected int getCurrentColor() {
+                return Theme.getColor(Theme.key_windowBackgroundWhiteBlackText);
+            }
+        });
         clearButton.setScaleType(ImageView.ScaleType.CENTER);
         clearButton.setAlpha(0.0f);
         clearButton.setRotation(45);

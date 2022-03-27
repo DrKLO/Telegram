@@ -82,6 +82,7 @@ import androidx.viewpager.widget.PagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 
 import org.telegram.PhoneFormat.PhoneFormat;
+import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildConfig;
@@ -103,6 +104,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
@@ -669,7 +671,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             if (y1 != 0) {
                 if (previousTransitionFragment != null) {
                     AndroidUtilities.rectTmp2.set(0, 0, getMeasuredWidth(), y1);
-                    previousTransitionFragment.contentView.drawBlur(canvas, getY(), AndroidUtilities.rectTmp2, previousTransitionFragment.getActionBar().blurScrimPaint, true);
+                    previousTransitionFragment.contentView.drawBlurRect(canvas, getY(), AndroidUtilities.rectTmp2, previousTransitionFragment.getActionBar().blurScrimPaint, true);
                 }
                 paint.setColor(currentColor);
                 canvas.drawRect(0, 0, getMeasuredWidth(), y1, paint);
@@ -678,7 +680,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 int color = Theme.getColor(Theme.key_windowBackgroundWhite);
                 paint.setColor(color);
                 AndroidUtilities.rectTmp2.set(0, y1, getMeasuredWidth(), (int) v);
-                contentView.drawBlur(canvas, getY(), AndroidUtilities.rectTmp2, paint, true);
+                contentView.drawBlurRect(canvas, getY(), AndroidUtilities.rectTmp2, paint, true);
             }
 
             if (parentLayout != null) {
@@ -2326,7 +2328,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
             @Override
             protected void drawBackgroundWithBlur(Canvas canvas, float y, Rect rectTmp2, Paint backgroundPaint) {
-                contentView.drawBlur(canvas, listView.getY() + getY() + y, rectTmp2, backgroundPaint, true);
+                contentView.drawBlurRect(canvas, listView.getY() + getY() + y, rectTmp2, backgroundPaint, true);
             }
 
             @Override
@@ -3495,7 +3497,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         avatarsViewPager.setPinchToZoomHelper(pinchToZoomHelper);
         scrimPaint.setAlpha(0);
         actionBarBackgroundPaint.setColor(Theme.getColor(Theme.key_listSelector));
-        contentView.blurBehindViews.add(sharedMediaLayout.scrollSlidingTextTabStrip);
+        contentView.blurBehindViews.add(sharedMediaLayout);
         return fragmentView;
     }
 
@@ -6423,6 +6425,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         removeSelfFromStack();
         TLRPC.User user = getMessagesController().getUser(userId);
         getSendMessagesHelper().sendMessage(user, did, null, null, null, null, true, 0);
+        if (!TextUtils.isEmpty(message)) {
+            AccountInstance accountInstance = AccountInstance.getInstance(currentAccount);
+            SendMessagesHelper.prepareSendingText(accountInstance, message.toString(), did, true, 0);
+        }
     }
 
     @Override

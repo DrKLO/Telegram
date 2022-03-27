@@ -178,12 +178,16 @@ public class ThemeEditorView {
                 clearSearchImageView = new ImageView(context);
                 clearSearchImageView.setScaleType(ImageView.ScaleType.CENTER);
                 CloseProgressDrawable2 progressDrawable;
-                clearSearchImageView.setImageDrawable(progressDrawable = new CloseProgressDrawable2());
+                clearSearchImageView.setImageDrawable(progressDrawable = new CloseProgressDrawable2() {
+                    @Override
+                    public int getCurrentColor() {
+                        return 0xffa1a8af;
+                    }
+                });
                 progressDrawable.setSide(AndroidUtilities.dp(7));
                 clearSearchImageView.setScaleX(0.1f);
                 clearSearchImageView.setScaleY(0.1f);
                 clearSearchImageView.setAlpha(0.0f);
-                clearSearchImageView.setColorFilter(new PorterDuffColorFilter(0xffa1a8af, PorterDuff.Mode.MULTIPLY));
                 addView(clearSearchImageView, LayoutHelper.createFrame(36, 36, Gravity.RIGHT | Gravity.TOP, 14, 11, 14, 0));
                 clearSearchImageView.setOnClickListener(v -> {
                     searchEditText.setText("");

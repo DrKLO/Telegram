@@ -401,4 +401,8 @@ public class Utilities {
         }
         return null;
     }
+
+    public static float clamp(float value, float top, float bottom) {
+        return Math.max(Math.min(value, top), bottom);
+    }
 }

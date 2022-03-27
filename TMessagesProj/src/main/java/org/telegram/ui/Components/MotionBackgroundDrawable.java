@@ -324,6 +324,9 @@ public class MotionBackgroundDrawable extends Drawable {
         } else {
             gradientDrawable = null;
         }
+        if (colors[0] == c1 || colors[1] == c2 || colors[2] == c3 || colors[3] == c4) {
+            return;
+        }
         colors[0] = c1;
         colors[1] = c2;
         colors[2] = c3;

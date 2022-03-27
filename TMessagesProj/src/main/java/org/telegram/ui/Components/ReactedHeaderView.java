@@ -182,9 +182,11 @@ public class ReactedHeaderView extends FrameLayout {
     private void loadReactions() {
         MessagesController ctrl = MessagesController.getInstance(currentAccount);
         TLRPC.TL_messages_getMessageReactionsList getList = new TLRPC.TL_messages_getMessageReactionsList();
-        getList.peer = ctrl.getInputPeer(dialogId);
+        getList.peer = ctrl.getInputPeer(message.getDialogId());
         getList.id = message.getId();
         getList.limit = 3;
+        getList.reaction = null;
+        getList.offset = null;
         ConnectionsManager.getInstance(currentAccount).sendRequest(getList, (response, error) -> {
             if (response instanceof TLRPC.TL_messages_messageReactionsList) {
                 TLRPC.TL_messages_messageReactionsList list = (TLRPC.TL_messages_messageReactionsList) response;

@@ -503,7 +503,7 @@ public class ActionBar extends FrameLayout {
                 if (blurredBackground && drawBlur) {
                     rectTmp.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
                     blurScrimPaint.setColor(actionModeColor);
-                    contentView.drawBlur(canvas, 0, rectTmp, blurScrimPaint, true);
+                    contentView.drawBlurRect(canvas, 0, rectTmp, blurScrimPaint, true);
                 }
                 super.dispatchDraw(canvas);
             }
@@ -1589,7 +1589,7 @@ public class ActionBar extends FrameLayout {
         if (blurredBackground && actionBarColor != Color.TRANSPARENT) {
             rectTmp.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
             blurScrimPaint.setColor(actionBarColor);
-            contentView.drawBlur(canvas, 0, rectTmp, blurScrimPaint, true);
+            contentView.drawBlurRect(canvas, getY(), rectTmp, blurScrimPaint, true);
         }
         super.dispatchDraw(canvas);
     }

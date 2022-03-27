@@ -398,7 +398,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
                         didSelectPhotos(media);
 
                         if (button != 8) {
-                            chatAttachAlert.dismiss();
+                            chatAttachAlert.dismiss(true);
                         }
                         return;
                     } else {
@@ -562,11 +562,13 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
     }
 
     public void onRequestPermissionsResultFragment(int requestCode, String[] permissions, int[] grantResults) {
-        if (requestCode == 17 && chatAttachAlert != null) {
-            chatAttachAlert.getPhotoLayout().checkCamera(false);
-            chatAttachAlert.getPhotoLayout().checkStorage();
-        } else if (requestCode == BasePermissionsActivity.REQUEST_CODE_EXTERNAL_STORAGE) {
-            chatAttachAlert.getPhotoLayout().checkStorage();
+        if (chatAttachAlert != null) {
+            if (requestCode == 17) {
+                chatAttachAlert.getPhotoLayout().checkCamera(false);
+                chatAttachAlert.getPhotoLayout().checkStorage();
+            } else if (requestCode == BasePermissionsActivity.REQUEST_CODE_EXTERNAL_STORAGE) {
+                chatAttachAlert.getPhotoLayout().checkStorage();
+            }
         }
     }
 

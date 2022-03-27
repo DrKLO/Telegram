@@ -28,11 +28,14 @@ import android.graphics.drawable.RippleDrawable;
 import android.os.Build;
 import androidx.annotation.Keep;
 import android.util.StateSet;
+import android.view.HapticFeedbackConstants;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
+
+import java.lang.reflect.Method;
 
 public class Switch extends View {
 
@@ -219,7 +222,7 @@ public class Switch extends View {
 
     private void animateToCheckedState(boolean newCheckedState) {
         checkAnimator = ObjectAnimator.ofFloat(this, "progress", newCheckedState ? 1 : 0);
-        checkAnimator.setDuration(250);
+        checkAnimator.setDuration(semHaptics ? 150 : 250);
         checkAnimator.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
@@ -231,7 +234,7 @@ public class Switch extends View {
 
     private void animateIcon(boolean newCheckedState) {
         iconAnimator = ObjectAnimator.ofFloat(this, "iconProgress", newCheckedState ? 1 : 0);
-        iconAnimator.setDuration(250);
+        iconAnimator.setDuration(semHaptics ? 150 : 250);
         iconAnimator.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
@@ -265,6 +268,7 @@ public class Switch extends View {
         if (checked != isChecked) {
             isChecked = checked;
             if (attachedToWindow && animated) {
+                vibrateChecked();
                 animateToCheckedState(checked);
             } else {
                 cancelCheckAnimator();
@@ -524,5 +528,27 @@ public class Switch extends View {
         info.setCheckable(true);
         info.setChecked(isChecked);
         //info.setContentDescription(isChecked ? LocaleController.getString("NotificationsOn", R.string.NotificationsOn) : LocaleController.getString("NotificationsOff", R.string.NotificationsOff));
+    }
+
+    private boolean semHaptics = false;
+
+    private void vibrateChecked() {
+        try {
+            Integer hapticIndex = null;
+            Method method = null;
+            if (Build.VERSION.SDK_INT >= 29) {
+                method = HapticFeedbackConstants.class.getDeclaredMethod("hidden_semGetVibrationIndex", Integer.TYPE);
+            } else if (Build.VERSION.SDK_INT >= 28) {
+                method = HapticFeedbackConstants.class.getMethod("semGetVibrationIndex", Integer.TYPE);
+            }
+            if (method != null) {
+                method.setAccessible(true);
+                hapticIndex = (Integer) method.invoke(null, 27);
+            }
+            if (hapticIndex != null) {
+                performHapticFeedback(hapticIndex);
+                semHaptics = true;
+            }
+        } catch (Exception ignore) {}
     }
 }

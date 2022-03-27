@@ -161,7 +161,7 @@ public class Theme {
         private RectF rect = new RectF();
         private Matrix matrix = new Matrix();
         private int currentType;
-        private boolean isSelected;
+        public boolean isSelected;
         private Path path;
 
         private Rect backupRect = new Rect();
@@ -1531,10 +1531,7 @@ public class Theme {
 
             if (info != null && info.emoticon != null && !isDarkTheme) {
                 currentColors.remove(key_chat_selectedBackground);
-                int gradientAverageColor = 0;
-                if (gradientAverageColor == 0) {
-                    gradientAverageColor = averageColor(currentColors, key_chat_wallpaper_gradient_to1, key_chat_wallpaper_gradient_to2, key_chat_wallpaper_gradient_to3);
-                }
+                int gradientAverageColor = averageColor(currentColors, key_chat_wallpaper_gradient_to1, key_chat_wallpaper_gradient_to2, key_chat_wallpaper_gradient_to3);
                 if (gradientAverageColor == 0) {
                     gradientAverageColor = averageColor(currentColors, key_chat_wallpaper);
                 }
@@ -1546,13 +1543,18 @@ public class Theme {
                 if (outBubble == null) {
                     outBubble = getColor(key_chat_outBubble);
                 }
-                currentColors.put(key_chat_outBubbleSelectedOverlay, bubbleSelectedOverlay(outBubble, gradientAverageColor));
+                int outOverlay = bubbleSelectedOverlay(outBubble, gradientAverageColor);
+                currentColors.put(key_chat_outBubbleSelectedOverlay, outOverlay);
+                currentColors.put(key_chat_outBubbleGradientSelectedOverlay, outOverlay);
+                currentColors.put(key_chat_outBubbleSelected, Theme.blendOver(outBubble, outOverlay));
 
                 Integer inBubble = currentColors.get(key_chat_inBubble);
                 if (inBubble == null) {
                     inBubble = getColor(key_chat_inBubble);
                 }
-                currentColors.put(key_chat_inBubbleSelectedOverlay, bubbleSelectedOverlay(inBubble, accentColor));
+                int inOverlay = bubbleSelectedOverlay(inBubble, accentColor);
+                currentColors.put(key_chat_inBubbleSelectedOverlay, inOverlay);
+                currentColors.put(key_chat_inBubbleSelected, Theme.blendOver(inBubble, inOverlay));
             }
 
             return !isMyMessagesGradientColorsNear;
@@ -1684,6 +1686,21 @@ public class Theme {
             }
             return path;
         }
+    }
+
+    public static int blendOver(int y, int x) {
+        // over operator: https://en.wikipedia.org/wiki/Alpha_compositing#Description
+        float ax = Color.alpha(x) / 255f,
+              ay = Color.alpha(y) / 255f,
+              az = (ax + ay * (1 - ax));
+        if (az == 0f)
+            return 0;
+        return Color.argb(
+            (int) (az * 255),
+            (int) ((Color.red(x) * ax + Color.red(y) * ay * (1 - ax)) / az),
+            (int) ((Color.green(x) * ax + Color.green(y) * ay * (1 - ax)) / az),
+            (int) ((Color.blue(x) * ax + Color.blue(y) * ay * (1 - ax)) / az)
+        );
     }
 
     public static class OverrideWallpaperInfo {
