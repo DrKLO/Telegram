@@ -1,0 +1,40 @@
+From 6a841e89875400f2e2989f39b628dc9fa9654966 Mon Sep 17 00:00:00 2001
+From: thermatk <thermatk@thermatk.com>
+Date: Sat, 18 May 2019 22:39:24 +0200
+Subject: [PATCH] Compilation magic
+
+---
+ libavformat/isom.h | 11 +----------
+ 1 file changed, 1 insertion(+), 10 deletions(-)
+
+diff --git a/libavformat/isom.h b/libavformat/isom.h
+index 69452cae8e..51fd2a917f 100644
+--- a/libavformat/isom.h
++++ b/libavformat/isom.h
+@@ -241,7 +241,7 @@ typedef struct MOVStreamContext {
+ } MOVStreamContext;
+ 
+ typedef struct MOVContext {
+-    const AVClass *class; ///< class for private options
++    const AVClass *clazz; ///< class for private options
+     AVFormatContext *fc;
+     int time_scale;
+     int64_t duration;     ///< duration of the longest track
+@@ -367,14 +367,5 @@ void ff_mov_write_chan(AVIOContext *pb, int64_t channel_layout);
+  * Compute codec id for 'lpcm' tag.
+  * See CoreAudioTypes and AudioStreamBasicDescription at Apple.
+  */
+-static inline enum AVCodecID ff_mov_get_lpcm_codec_id(int bps, int flags)
+-{
+-    /* lpcm flags:
+-     * 0x1 = float
+-     * 0x2 = big-endian
+-     * 0x4 = signed
+-     */
+-    return ff_get_pcm_codec_id(bps, flags & 1, flags & 2, flags & 4 ? -1 : 0);
+-}
+ 
+ #endif /* AVFORMAT_ISOM_H */
+-- 
+2.21.0
+
