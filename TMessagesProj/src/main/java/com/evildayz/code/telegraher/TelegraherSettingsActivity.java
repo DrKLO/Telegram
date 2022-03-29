@@ -45,6 +45,7 @@ import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.SlideChooseView;
 
 import java.util.ArrayList;
 
@@ -54,6 +55,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
     private TelegraherSettingsActivity.ListAdapter adapter;
     @SuppressWarnings("FieldCanBeLocal")
     private LinearLayoutManager layoutManager;
+
+    private int showTelegraherMenuRow;
 
     private int voiceLabelRow;
     private int voiceHDRow;
@@ -71,16 +74,25 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
     private int chatDeleteMarkRow;
     private int chatSBFullRow;
 
+    private int videoLabelRoundBitrateRow;
+    private int videoRoundBitrateMultRow;
+    private int videoLabelRoundSizeRow;
+    private int videoRoundSizeMultRow;
+
+    private int accountLabelRow;
+    private int accountExtendVanillaRow;
+
     private int rowCount = 0;
 
     @Override
     public boolean onFragmentCreate() {
+        showTelegraherMenuRow = rowCount++;
         voiceLabelRow = rowCount++;
         voiceHDRow = rowCount++;
         voiceBadmanRow = rowCount++;
 
-//        voipLabelRow = rowCount++;
-//        voipHDRow = rowCount++;
+        voipLabelRow = -1;
+        voipHDRow = -1;
 
         profileLabelRow = rowCount++;
         profileUIDRow = rowCount++;
@@ -90,6 +102,14 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         chatLabelRow = rowCount++;
         chatDeleteMarkRow = rowCount++;
         chatSBFullRow = rowCount++;
+
+        accountLabelRow = rowCount++;
+        accountExtendVanillaRow = rowCount++;
+
+        videoLabelRoundBitrateRow = rowCount++;
+        videoRoundBitrateMultRow = rowCount++;
+        videoLabelRoundSizeRow = rowCount++;
+        videoRoundSizeMultRow = rowCount++;
 
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.telegraherSettingsUpdated);
 
@@ -189,6 +209,18 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                 enabled = preferences.getBoolean("EnableChatSBFull", false);
                 editor.putBoolean("EnableChatSBFull", !enabled);
                 editor.commit();
+            } else if (position == accountExtendVanillaRow) {
+                SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
+                SharedPreferences.Editor editor = preferences.edit();
+                enabled = preferences.getBoolean("EnableExtendVanillaRow", false);
+                editor.putBoolean("EnableExtendVanillaRow", !enabled);
+                editor.commit();
+            } else if (position == showTelegraherMenuRow) {
+                SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
+                SharedPreferences.Editor editor = preferences.edit();
+                enabled = preferences.getBoolean("ShowTelegraherMenu", false);
+                editor.putBoolean("ShowTelegraherMenu", !enabled);
+                editor.commit();
             }
             if (view instanceof TextCheckCell) {
                 ((TextCheckCell) view).setChecked(!enabled);
@@ -208,7 +240,9 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.telegraherSettingsUpdated) {
+        if (false) {
+            //durov relogin!
+        } else if (id == NotificationCenter.telegraherSettingsUpdated) {
             adapter.notifyDataSetChanged();
         }
     }
@@ -261,6 +295,9 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
                 case 6:
+                    view = new SlideChooseView(mContext);
+                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    break;
                 default:
                     view = new TextInfoPrivacyCell(mContext);
                     view.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
@@ -284,6 +321,12 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         headerCell.setText("Profile section");
                     } else if (position == chatLabelRow) {
                         headerCell.setText("Chat section");
+                    } else if (position == videoLabelRoundBitrateRow) {
+                        headerCell.setText("* Round video bitrate");
+                    } else if (position == videoLabelRoundSizeRow) {
+                        headerCell.setText("* Round video size");
+                    } else if (position == accountLabelRow) {
+                        headerCell.setText("Account section");
                     }
                     break;
                 }
@@ -307,10 +350,62 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         checkCell.setTextAndCheck("Show Shadowban", localPreps.getBoolean("EnableProfileSB", true), true);
                     } else if (position == chatDeleteMarkRow) {
                         checkCell.setTextAndCheck(String.format("Show `%s` mark", LocaleController.getString("DeletedMessage", R.string.DeletedMessage)), localPreps.getBoolean("EnableChatDeleteMark", true), true);
+                    } else if (position == accountExtendVanillaRow) {
+                        checkCell.setTextAndCheck("* 3+", globalPreps.getBoolean("EnableExtendVanillaRow", false), true);
                     } else if (position == chatSBFullRow) {
                         checkCell.setTextAndCheck("Full ShadowBan \uD83D\uDE48", localPreps.getBoolean("EnableChatSBFull", false), true);
+                    } else if (position == showTelegraherMenuRow) {
+                        checkCell.setTextAndCheck("* Show Telegraher menu", globalPreps.getBoolean("ShowTelegraherMenu", false), true);
                     }
                     break;
+                }
+                case 6: {
+                    SlideChooseView slideChooseView = (SlideChooseView) holder.itemView;
+                    if (false) {
+                        //durov relogin!
+                    } else if (position == videoRoundBitrateMultRow) {
+                        String[] strings = new String[]{"x0.5", "x1", "x2", "x4"};
+                        slideChooseView.setOptions(MessagesController.getTelegraherSettings(currentAccount).getInt("VideoRoundBitrateMult", 1), strings);
+                        slideChooseView.setCallback(new SlideChooseView.Callback() {
+                            @Override
+                            public void onOptionSelected(int index) {
+                                SharedPreferences localTh = MessagesController.getTelegraherSettings(currentAccount);
+                                SharedPreferences localMain = MessagesController.getMainSettings(currentAccount);
+                                SharedPreferences.Editor editor = localTh.edit();
+                                editor.putInt("VideoRoundBitrateMult", index);
+                                editor.commit();
+                                editor = localMain.edit();
+                                editor.putInt("roundVideoBitrate", (int) (1000 * ThePenisMightierThanTheSword.getVideoRoundMult(index)));
+                                editor.putInt("roundAudioBitrate", (int) (64 * ThePenisMightierThanTheSword.getVideoRoundMult(index)));
+                                editor.commit();
+                                MessagesController.getInstance(currentAccount).roundVideoBitrate = MessagesController.getMainSettings(currentAccount).getInt("roundVideoBitrate", 1000);
+                                MessagesController.getInstance(currentAccount).roundAudioBitrate = MessagesController.getMainSettings(currentAccount).getInt("roundAudioBitrate", 64);
+                                System.out.printf("HEY %d %d %d%n", MessagesController.getMainSettings(currentAccount).getInt("roundVideoSize", 384)
+                                        , MessagesController.getMainSettings(currentAccount).getInt("roundVideoBitrate", 1000)
+                                        , MessagesController.getMainSettings(currentAccount).getInt("roundAudioBitrate", 64));
+                            }
+                        });
+                    } else if (position == videoRoundSizeMultRow) {
+                        String[] strings = new String[]{"x0.5", "x1", "x2"};
+                        slideChooseView.setOptions(MessagesController.getTelegraherSettings(currentAccount).getInt("VideoRoundSizeMult", 1), strings);
+                        slideChooseView.setCallback(new SlideChooseView.Callback() {
+                            @Override
+                            public void onOptionSelected(int index) {
+                                SharedPreferences localTh = MessagesController.getTelegraherSettings(currentAccount);
+                                SharedPreferences localMain = MessagesController.getMainSettings(currentAccount);
+                                SharedPreferences.Editor editor = localTh.edit();
+                                editor.putInt("VideoRoundSizeMult", index);
+                                editor.commit();
+                                editor = localMain.edit();
+                                editor.putInt("roundVideoSize", ThePenisMightierThanTheSword.getVideoRoundSize(index));
+                                editor.commit();
+                                MessagesController.getInstance(currentAccount).roundVideoSize = MessagesController.getMainSettings(currentAccount).getInt("roundVideoSize", 384);
+                                System.out.printf("HEY %d %d %d%n", MessagesController.getMainSettings(currentAccount).getInt("roundVideoSize", 384)
+                                        , MessagesController.getMainSettings(currentAccount).getInt("roundVideoBitrate", 1000)
+                                        , MessagesController.getMainSettings(currentAccount).getInt("roundAudioBitrate", 64));
+                            }
+                        });
+                    }
                 }
             }
         }
@@ -321,17 +416,22 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                     position == voiceLabelRow || position == voipLabelRow
                             || position == profileLabelRow
                             || position == chatLabelRow
+                            || position == accountLabelRow
+                            || position == videoLabelRoundBitrateRow
+                            || position == videoLabelRoundSizeRow
             ) {
                 return 0;
             } else if (
-                    position == voiceHDRow || position == voiceBadmanRow || position == voipHDRow
+                    position == showTelegraherMenuRow
+                            || position == voiceHDRow || position == voiceBadmanRow || position == voipHDRow
                             || position == profileUIDRow || position == profileDCIDRow || position == profileSBRow
-                            || position == chatDeleteMarkRow || position == chatSBFullRow
+                            || position == chatDeleteMarkRow || position == accountExtendVanillaRow || position == chatSBFullRow
             ) {
                 return 1;
-            } else {
-                return 2;
-            }
+            } else if (position == videoRoundBitrateMultRow || position == videoRoundSizeMultRow) {
+                return 6;
+            } else
+                return 1337;
         }
     }
 
