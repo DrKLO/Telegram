@@ -1737,7 +1737,7 @@ public class MessagesController extends BaseController implements NotificationCe
                             }
                             break;
                         }
-                        case "round_video_encoding": {
+                        case "round_video_encoding_:P": {
                             if (value.value instanceof TLRPC.TL_jsonObject) {
                                 TLRPC.TL_jsonObject jsonObject = (TLRPC.TL_jsonObject) value.value;
                                 for (int b = 0, N2 = jsonObject.value.size(); b < N2; b++) {
