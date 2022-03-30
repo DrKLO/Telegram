@@ -130,12 +130,12 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
                 LocaleController.getString("Page6Title", R.string.Page6Title)
         };
         messages = new String[]{
-                LocaleController.getString(R.string.Page1Message),
-                LocaleController.getString(R.string.Page2Message),
-                LocaleController.getString(R.string.Page3Message),
-                LocaleController.getString(R.string.Page5Message),
-                LocaleController.getString(R.string.Page4Message),
-                LocaleController.getString(R.string.Page6Message)
+                LocaleController.getLocalString(R.string.Page1Message),
+                LocaleController.getLocalString(R.string.Page2Message),
+                LocaleController.getLocalString(R.string.Page3Message),
+                LocaleController.getLocalString(R.string.Page5Message),
+                LocaleController.getLocalString(R.string.Page4Message),
+                LocaleController.getLocalString(R.string.Page6Message)
         };
         return true;
     }

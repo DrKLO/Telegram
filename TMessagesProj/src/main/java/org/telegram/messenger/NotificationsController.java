@@ -3295,7 +3295,7 @@ public class NotificationsController extends BaseController {
             } else {
                 channelId = currentAccount + "channel_" + dialogId + "_" + Utilities.random.nextLong();
             }
-            NotificationChannel notificationChannel = new NotificationChannel(channelId, secretChat ? LocaleController.getString("SecretChatName", R.string.SecretChatName) : name, importance);
+            NotificationChannel notificationChannel = new NotificationChannel(channelId, secretChat ? LocaleController.getStringNew("SecretChatName", R.string.SecretChatName) : name, importance);
             notificationChannel.setGroup(groupId);
             if (ledColor != 0) {
                 notificationChannel.enableLights(true);
@@ -3399,12 +3399,12 @@ public class NotificationsController extends BaseController {
             if (DialogObject.isEncryptedDialog(dialog_id) || pushDialogs.size() > 1 || passcode) {
                 if (passcode) {
                     if (chatId != 0) {
-                        name = LocaleController.getString("NotificationHiddenChatName", R.string.NotificationHiddenChatName);
+                        name = LocaleController.getStringNew("NotificationHiddenChatName", R.string.NotificationHiddenChatName);
                     } else {
-                        name = LocaleController.getString("NotificationHiddenName", R.string.NotificationHiddenName);
+                        name = LocaleController.getStringNew("NotificationHiddenName", R.string.NotificationHiddenName);
                     }
                 } else {
-                    name = LocaleController.getString("AppName", R.string.AppName);
+                    name = LocaleController.getStringNew("AppName", R.string.AppName);
                 }
                 replace = false;
             } else {
@@ -4089,15 +4089,15 @@ public class NotificationsController extends BaseController {
                         continue;
                     }
                 }
-                name = LocaleController.getString("SecretChatName", R.string.SecretChatName);
+                name = LocaleController.getStringNew("SecretChatName", R.string.SecretChatName);
                 photoPath = null;
             }
 
             if (waitingForPasscode) {
                 if (DialogObject.isChatDialog(dialogId)) {
-                    name = LocaleController.getString("NotificationHiddenChatName", R.string.NotificationHiddenChatName);
+                    name = LocaleController.getStringNew("NotificationHiddenChatName", R.string.NotificationHiddenChatName);
                 } else {
-                    name = LocaleController.getString("NotificationHiddenName", R.string.NotificationHiddenName);
+                    name = LocaleController.getStringNew("NotificationHiddenName", R.string.NotificationHiddenName);
                 }
                 photoPath = null;
                 canReply = false;
@@ -4248,13 +4248,13 @@ public class NotificationsController extends BaseController {
                         if (DialogObject.isChatDialog(dialogId)) {
                             if (isChannel) {
                                 if (Build.VERSION.SDK_INT > Build.VERSION_CODES.O_MR1) {
-                                    personName = LocaleController.getString("NotificationHiddenChatName", R.string.NotificationHiddenChatName);
+                                    personName = LocaleController.getStringNew("NotificationHiddenChatName", R.string.NotificationHiddenChatName);
                                 }
                             } else {
                                 personName = LocaleController.getString("NotificationHiddenChatUserName", R.string.NotificationHiddenChatUserName);
                             }
                         } else if (Build.VERSION.SDK_INT > Build.VERSION_CODES.O_MR1) {
-                            personName = LocaleController.getString("NotificationHiddenName", R.string.NotificationHiddenName);
+                            personName = LocaleController.getStringNew("NotificationHiddenName", R.string.NotificationHiddenName);
                         }
                     }
                 } else {

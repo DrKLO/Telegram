@@ -1005,7 +1005,7 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                         }
                                         case "ENCRYPTED_MESSAGE": {
                                             messageText = LocaleController.getString("YouHaveNewMessage", R.string.YouHaveNewMessage);
-                                            name = LocaleController.getString("SecretChatName", R.string.SecretChatName);
+                                            name = LocaleController.getStringNew("SecretChatName", R.string.SecretChatName);
                                             localMessage = true;
                                             break;
                                         }
