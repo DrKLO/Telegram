@@ -146,7 +146,7 @@ public class ConnectionsManager extends BaseController {
     private static HashMap<String, ResolvedDomain> dnsCache = new HashMap<>();
 
     private static int lastClassGuid = 1;
-    
+
     private static volatile ConnectionsManager[] Instance = new ConnectionsManager[UserConfig.MAX_ACCOUNT_COUNT];
     public static ConnectionsManager getInstance(int num) {
         ConnectionsManager localInstance = Instance[num];
@@ -719,6 +719,7 @@ public class ConnectionsManager extends BaseController {
             secret = "";
         }
 
+        int ac = 0;
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
             if (enabled && !TextUtils.isEmpty(address)) {
                 native_setProxySettings(a, address, port, username, password, secret);
@@ -726,7 +727,9 @@ public class ConnectionsManager extends BaseController {
                 native_setProxySettings(a, "", 1080, "", "", "");
             }
             AccountInstance accountInstance = AccountInstance.getInstance(a);
-            if (accountInstance.getUserConfig().isClientActivated()) {
+            if (accountInstance.getUserConfig().isClientActivated() || ac < UserConfig.ACC_TO_INIT) {
+                ac++;
+                if (UserConfig.TDBG) System.out.printf("HEY ConnectionsManager setProxySettings [%d]%n", a);
                 accountInstance.getMessagesController().checkPromoInfo(true);
             }
         }
