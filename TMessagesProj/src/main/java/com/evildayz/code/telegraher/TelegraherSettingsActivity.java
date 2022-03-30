@@ -212,8 +212,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
             } else if (position == accountExtendVanillaRow) {
                 SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
                 SharedPreferences.Editor editor = preferences.edit();
-                enabled = preferences.getBoolean("EnableExtendVanillaRow", false);
-                editor.putBoolean("EnableExtendVanillaRow", !enabled);
+                enabled = preferences.getBoolean("EnableAccountExtendVanilla", false);
+                editor.putBoolean("EnableAccountExtendVanilla", !enabled);
                 editor.commit();
             } else if (position == showTelegraherMenuRow) {
                 SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
@@ -351,7 +351,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                     } else if (position == chatDeleteMarkRow) {
                         checkCell.setTextAndCheck(String.format("Show `%s` mark", LocaleController.getString("DeletedMessage", R.string.DeletedMessage)), localPreps.getBoolean("EnableChatDeleteMark", true), true);
                     } else if (position == accountExtendVanillaRow) {
-                        checkCell.setTextAndCheck("* 3+", globalPreps.getBoolean("EnableExtendVanillaRow", false), true);
+                        checkCell.setTextAndCheck("* 3+", globalPreps.getBoolean("EnableAccountExtendVanilla", false), true);
                     } else if (position == chatSBFullRow) {
                         checkCell.setTextAndCheck("Full ShadowBan \uD83D\uDE48", localPreps.getBoolean("EnableChatSBFull", false), true);
                     } else if (position == showTelegraherMenuRow) {
