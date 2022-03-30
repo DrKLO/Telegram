@@ -67,7 +67,10 @@ public class LogoutActivity extends BaseFragment {
 
         rowCount = 0;
         alternativeHeaderRow = rowCount++;
-        if (UserConfig.getActivatedAccountsCount() < UserConfig.MAX_ACCOUNT_COUNT) {
+        if (
+                (UserConfig.isTh("EnableAccountExtendVanilla") && UserConfig.getActivatedAccountsCount() < UserConfig.MAX_ACCOUNT_COUNT)
+                        || (!UserConfig.isTh("EnableAccountExtendVanilla") && UserConfig.getActivatedAccountsCount() < UserConfig.getHsAccs().size())
+        ) {
             addAccountRow = rowCount++;
         } else {
             addAccountRow = -1;
