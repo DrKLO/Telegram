@@ -181,6 +181,8 @@ public class SharingLocationsAlert extends BottomSheet implements NotificationCe
         pickerBottomLayout.cancelButton.setText(LocaleController.getString("StopAllLocationSharings", R.string.StopAllLocationSharings));
         pickerBottomLayout.cancelButton.setOnClickListener(view -> {
             for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                if (!UserConfig.existsInHsAccs(a)) continue;
+                if (UserConfig.TDBG) System.out.printf("HEY SharingLocationsAlert SharingLocationsAlert [%d]%n", a);
                 LocationController.getInstance(a).removeAllLocationSharings();
             }
             dismiss();
@@ -229,6 +231,8 @@ public class SharingLocationsAlert extends BottomSheet implements NotificationCe
 
     private LocationController.SharingLocationInfo getLocation(int position) {
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+            if (!UserConfig.existsInHsAccs(a)) continue;
+            if (UserConfig.TDBG) System.out.printf("HEY SharingLocationsAlert getLocation [%d]%n", a);
             ArrayList<LocationController.SharingLocationInfo> infos = LocationController.getInstance(a).sharingLocationsUI;
             if (position >= infos.size()) {
                 position -= infos.size();

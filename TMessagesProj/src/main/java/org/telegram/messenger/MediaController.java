@@ -942,6 +942,12 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
         AndroidUtilities.runOnUIThread(() -> {
             for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                if (a == 0) {
+                    UserConfig.saveHsAccs();
+                }
+                if (UserConfig.TDBG) System.out.printf("HEY UserConfig.getInstance(a).isClientActivated() %d - %b%n", a, UserConfig.getInstance(a).isClientActivated());
+                if (!UserConfig.existsInHsAccs(a)) continue;
+                if (UserConfig.TDBG) System.out.printf("HEY MediaController MediaController [%d]%n", a);
                 NotificationCenter.getInstance(a).addObserver(MediaController.this, NotificationCenter.fileLoaded);
                 NotificationCenter.getInstance(a).addObserver(MediaController.this, NotificationCenter.httpFileDidLoad);
                 NotificationCenter.getInstance(a).addObserver(MediaController.this, NotificationCenter.didReceiveNewMessages);
@@ -1124,6 +1130,8 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         audioInfo = null;
         playMusicAgain = false;
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+            if (!UserConfig.existsInHsAccs(a)) continue;
+            if (UserConfig.TDBG) System.out.printf("HEY MediaController cleanup [%d]%n", a);
             DownloadController.getInstance(a).cleanup();
         }
         videoConvertQueue.clear();
