@@ -87,7 +87,7 @@ public class ConnectionsManager extends BaseController {
     public final static byte USE_IPV6_ONLY = 1;
     public final static byte USE_IPV4_IPV6_RANDOM = 2;
 
-    public final static byte IP_STRATEGY_BYTE = getIpStrategy();
+    protected final static byte IP_STRATEGY_BYTE = getIpStrategy();
 
     private static int accountsCounter = 0;
     private static int accountsExists = 0;
@@ -385,7 +385,7 @@ public class ConnectionsManager extends BaseController {
     }
 
     public void checkConnection() {
-        native_setIpStrategy(currentAccount, getIpStrategy());
+        native_setIpStrategy(currentAccount, IP_STRATEGY_BYTE);
         native_setNetworkAvailable(currentAccount, ApplicationLoader.isNetworkOnline(), ApplicationLoader.getCurrentNetworkType(), ApplicationLoader.isConnectionSlow());
     }
 
