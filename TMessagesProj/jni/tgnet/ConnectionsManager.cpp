@@ -19,6 +19,8 @@
 #include <memory>
 #include <string>
 #include <cinttypes>
+#include <map>
+#include <iostream>
 #include "ConnectionsManager.h"
 #include "FileLog.h"
 #include "EventObject.h"
@@ -42,6 +44,7 @@ jmethodID jclass_ByteBuffer_allocateDirect = nullptr;
 #endif
 
 static bool done = false;
+static std::map<std::int32_t, ConnectionsManager*> mInstances;
 
 ConnectionsManager::ConnectionsManager(int32_t instance) {
     instanceNum = instance;
@@ -134,28 +137,13 @@ ConnectionsManager::~ConnectionsManager() {
     pthread_mutex_destroy(&mutex);
 }
 
-ConnectionsManager& ConnectionsManager::getInstance(int32_t instanceNum) {
-    switch (instanceNum) {
-        case 0:
-            static ConnectionsManager instance0(0);
-            return instance0;
-        case 1:
-            static ConnectionsManager instance1(1);
-            return instance1;
-        case 2:
-            static ConnectionsManager instance2(2);
-            return instance2;
-        case 3:
-            static ConnectionsManager instance3(3);
-            return instance3;
-        case 4:
-            static ConnectionsManager instance4(4);
-            return instance4;
-        case 5:
-        default:
-            static ConnectionsManager instance5(5);
-            return instance5;
-    }
+ConnectionsManager &ConnectionsManager::getInstance(int32_t instanceNum) {
+    static std::mutex the_mutex;
+    the_mutex.lock();
+    if (mInstances.find(instanceNum) == mInstances.end())
+        mInstances[instanceNum] = new ConnectionsManager(instanceNum);
+    the_mutex.unlock();
+    return *mInstances[instanceNum];
 }
 
 int ConnectionsManager::callEvents(int64_t now) {
