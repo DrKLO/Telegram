@@ -21,6 +21,7 @@ package com.evildayz.code.telegraher;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -82,6 +83,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
     private int accountLabelRow;
     private int accountExtendVanillaRow;
 
+    private int killMeLabelRow;
+
     private int rowCount = 0;
 
     @Override
@@ -110,6 +113,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         videoRoundBitrateMultRow = rowCount++;
         videoLabelRoundSizeRow = rowCount++;
         videoRoundSizeMultRow = rowCount++;
+
+        killMeLabelRow = rowCount++;
 
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.telegraherSettingsUpdated);
 
@@ -221,6 +226,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                 enabled = preferences.getBoolean("ShowTelegraherMenu", false);
                 editor.putBoolean("ShowTelegraherMenu", !enabled);
                 editor.commit();
+            } else if (position == killMeLabelRow) {
+                killThatApp();
             }
             if (view instanceof TextCheckCell) {
                 ((TextCheckCell) view).setChecked(!enabled);
@@ -359,6 +366,17 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                     }
                     break;
                 }
+                case 5: {
+                    TextSettingsCell textSettingsCell = (TextSettingsCell) holder.itemView;
+                    if (false) {
+                        //durov relogin!
+                    } else if (position == killMeLabelRow) {
+                        textSettingsCell.setCanDisable(false);
+                        textSettingsCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText));
+                        textSettingsCell.setText("Kill the APP", false);
+                    }
+                    break;
+                }
                 case 6: {
                     SlideChooseView slideChooseView = (SlideChooseView) holder.itemView;
                     if (false) {
@@ -406,6 +424,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                             }
                         });
                     }
+                    break;
                 }
             }
         }
@@ -428,11 +447,22 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                             || position == chatDeleteMarkRow || position == accountExtendVanillaRow || position == chatSBFullRow
             ) {
                 return 1;
+            } else if (position == killMeLabelRow) {
+                return 5;
             } else if (position == videoRoundBitrateMultRow || position == videoRoundSizeMultRow) {
                 return 6;
             } else
                 return 1337;
         }
+    }
+
+    private void killThatApp() {
+        if (Build.VERSION.SDK_INT >= 21) {
+            getParentActivity().finishAndRemoveTask();
+        } else if (Build.VERSION.SDK_INT >= 16) {
+            getParentActivity().finishAffinity();
+        }
+        System.exit(0);
     }
 
     @Override
