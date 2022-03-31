@@ -11,6 +11,7 @@ package org.telegram.messenger;
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.SystemClock;
 import android.util.Base64;
 
@@ -22,6 +23,7 @@ import org.telegram.tgnet.TLRPC;
 
 import java.lang.reflect.Type;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 
 public class UserConfig extends BaseController {
@@ -76,6 +78,7 @@ public class UserConfig extends BaseController {
     private static HashSet<Integer> hsAccs;
     private static boolean hsAccsInit=false;
     private static boolean hsAccsSaved=false;
+    private static HashMap<Integer, String[]> hmDevices;
 
     synchronized public static void initHsAccs() {
         if (hsAccsInit) return;
@@ -88,6 +91,75 @@ public class UserConfig extends BaseController {
             hsAccs = new Gson().fromJson(telegraherSettings.getString("accountsHS", "[0,1,2]"), lhs);
         } else
             hsAccs = new Gson().fromJson("[0,1,2]", lhs);
+        initHmDevices();
+    }
+
+    synchronized public static void initHmDevices() {
+        if (!hsAccsInit) return;
+        Type lhm = new TypeToken<HashMap<Integer, String[]>>() {}.getType();
+        if (telegraherSettings != null) hmDevices = new Gson().fromJson(telegraherSettings.getString("devicesHM", null), lhm);
+        if (hmDevices == null) resetHmDevices();
+    }
+
+    synchronized public static void resetHmDevices() {
+        String deviceBrand = Build.MANUFACTURER;
+        String deviceModel = Build.MODEL;
+        String deviceOS = Integer.valueOf(Build.VERSION.SDK_INT).toString();
+        if (hmDevices == null) hmDevices = new HashMap<>();
+        hmDevices.put(-1, new String[]{deviceBrand, deviceModel, deviceOS});
+    }
+
+    synchronized public static void cloneHmDevice(int i) {
+        cloneHmDevice(i,true);
+    }
+    synchronized public static void cloneHmDevice(int i, boolean save) {
+        hmDevices.put(i, hmDevices.get(-1));
+        if (save) MessagesController.getGlobalTelegraherSettings().edit().putString("devicesHM", new Gson().toJson(hmDevices)).commit();
+    }
+
+    public static String hmGetBrand(int i) {
+        return hmGetI(i, 0);
+    }
+
+    public static String hmGetModel(int i) {
+        return hmGetI(i, 1);
+    }
+
+    public static String hmGetOS(int i) {
+        return hmGetI(i, 2);
+    }
+
+    public static String hmGetI(int i, int j) {
+        initHsAccs();
+        if (TDBG) System.out.printf("HEY hmGetI[%d][%d] telegraherSettings is null %b%n", i, j, telegraherSettings == null);
+        if (!hmDevices.containsKey(i)) {
+            cloneHmDevice(i);
+            if (TDBG) System.out.printf("HEY hmGetI[%d][%d] cloneHmDevices %n%s%n", i, j, new Gson().toJson(hmDevices));
+            return hmDevices.get(-1)[j];
+        }
+        return hmDevices.get(i)[j];
+    }
+
+    synchronized public static void hmSetI(int j, String v) {
+        hmSetI(-1, j, v);
+    }
+
+    synchronized public static void hmSetI(int i, int j, String v) {
+        initHsAccs();
+        if (TDBG) System.out.printf("HEY hmSetI[%d][%d] telegraherSettings is null %b%n", i, j, telegraherSettings == null);
+        if (!hmDevices.containsKey(i)) {
+            cloneHmDevice(i);
+            if (TDBG) System.out.printf("HEY hmSetI[%d][%d] cloneHmDevices %n%s%n", i, j, new Gson().toJson(hmDevices));
+        }
+        String[] arr = hmDevices.get(i);
+        arr[j] = v;
+        hmDevices.put(i, arr);
+    }
+
+    synchronized public static void syncHmDevices() {
+        for (int i = 0; i < hsAccs.size(); i++)
+            if (!UserConfig.getInstance(i).isClientActivated()) cloneHmDevice(i, false);
+        MessagesController.getGlobalTelegraherSettings().edit().putString("devicesHM", new Gson().toJson(hmDevices)).commit();
     }
 
     public static boolean isTh(String key) {
@@ -127,7 +199,10 @@ public class UserConfig extends BaseController {
         if (hsAccsSaved) return false;
         if (TDBG) System.out.printf("HEY saveHsAccs%n");
 
-        MessagesController.getGlobalTelegraherSettings().edit().putString("accountsHS", new Gson().toJson(hsAccs)).commit();
+        MessagesController.getGlobalTelegraherSettings().edit()
+                .putString("accountsHS", new Gson().toJson(hsAccs))
+                .putString("devicesHM",new Gson().toJson(hmDevices))
+                .commit();
         hsAccsSaved = true;
         MessagesController.refreshGlobalTelegraherSettings();
         return true;
