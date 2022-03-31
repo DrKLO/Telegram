@@ -22,6 +22,7 @@ package com.evildayz.code.telegraher;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
+import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -29,10 +30,15 @@ import android.widget.FrameLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.evildayz.code.telegraher.devicespoofing.DSBrandActivity;
+import com.evildayz.code.telegraher.devicespoofing.DSModelActivity;
+import com.evildayz.code.telegraher.devicespoofing.DSOSActivity;
+
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
@@ -41,12 +47,14 @@ import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.NotificationsCheckCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.TextCheckCell;
+import org.telegram.ui.Cells.TextDetailCell;
 import org.telegram.ui.Cells.TextDetailSettingsCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SlideChooseView;
+import org.telegram.ui.QrActivity;
 
 import java.util.ArrayList;
 
@@ -83,6 +91,11 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
     private int accountLabelRow;
     private int accountExtendVanillaRow;
 
+    private int deviceSpoofingLabelRow;
+    private int deviceSpoofingBrand;
+    private int deviceSpoofingModel;
+    private int deviceSpoofingOS;
+
     private int killMeLabelRow;
 
     private int rowCount = 0;
@@ -113,6 +126,11 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         videoRoundBitrateMultRow = rowCount++;
         videoLabelRoundSizeRow = rowCount++;
         videoRoundSizeMultRow = rowCount++;
+
+        deviceSpoofingLabelRow = rowCount++;
+        deviceSpoofingBrand = rowCount++;
+        deviceSpoofingModel = rowCount++;
+        deviceSpoofingOS = rowCount++;
 
         killMeLabelRow = rowCount++;
 
@@ -228,6 +246,12 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                 editor.commit();
             } else if (position == killMeLabelRow) {
                 killThatApp();
+            } else if (position == deviceSpoofingBrand) {
+                presentFragment(new DSBrandActivity());
+            } else if (position == deviceSpoofingModel) {
+                presentFragment(new DSModelActivity());
+            } else if (position == deviceSpoofingOS) {
+                presentFragment(new DSOSActivity());
             }
             if (view instanceof TextCheckCell) {
                 ((TextCheckCell) view).setChecked(!enabled);
@@ -305,6 +329,10 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                     view = new SlideChooseView(mContext);
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
+                case 7:
+                    view = new TextDetailCell(mContext);
+                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    break;
                 default:
                     view = new TextInfoPrivacyCell(mContext);
                     view.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
@@ -334,6 +362,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         headerCell.setText("* Round video size");
                     } else if (position == accountLabelRow) {
                         headerCell.setText("Account section");
+                    } else if (position == deviceSpoofingLabelRow) {
+                        headerCell.setText("Device spoofing section");
                     }
                     break;
                 }
@@ -426,6 +456,25 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                     }
                     break;
                 }
+                case 7: {
+                    TextDetailCell textDetailCell = (TextDetailCell) holder.itemView;
+                    if (false) {
+                        //durov relogin!
+                    } else if (position == deviceSpoofingBrand) {
+                        textDetailCell.setContentDescriptionValueFirst(true);
+                        textDetailCell.setImageClickListener(TelegraherSettingsActivity.this::onTextDetailCellImageClicked);
+                        textDetailCell.setTextAndValue(UserConfig.hmGetBrand(currentAccount), "Device Brand", false);
+                    } else if (position == deviceSpoofingModel) {
+                        textDetailCell.setContentDescriptionValueFirst(true);
+                        textDetailCell.setImageClickListener(TelegraherSettingsActivity.this::onTextDetailCellImageClicked);
+                        textDetailCell.setTextAndValue(UserConfig.hmGetModel(currentAccount), "Device Model", false);
+                    } else if (position == deviceSpoofingOS) {
+                        textDetailCell.setContentDescriptionValueFirst(true);
+                        textDetailCell.setImageClickListener(TelegraherSettingsActivity.this::onTextDetailCellImageClicked);
+                        textDetailCell.setTextAndValue(UserConfig.hmGetOS(currentAccount), "Device OS", false);
+                    }
+                    break;
+                }
             }
         }
 
@@ -436,6 +485,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                             || position == profileLabelRow
                             || position == chatLabelRow
                             || position == accountLabelRow
+                            || position == deviceSpoofingLabelRow
                             || position == videoLabelRoundBitrateRow
                             || position == videoLabelRoundSizeRow
             ) {
@@ -451,8 +501,18 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                 return 5;
             } else if (position == videoRoundBitrateMultRow || position == videoRoundSizeMultRow) {
                 return 6;
+            } else if (position == deviceSpoofingBrand || position == deviceSpoofingModel || position == deviceSpoofingOS) {
+                return 7;
             } else
                 return 1337;
+        }
+    }
+
+    private void onTextDetailCellImageClicked(View view) {
+        View parent = (View) view.getParent();
+        if (parent.getTag() != null && ((int) parent.getTag()) == 1337) {
+            Bundle args = new Bundle();
+            presentFragment(new QrActivity(args));
         }
     }
 
@@ -493,6 +553,9 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCheckCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCheckCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrack));
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCheckCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrackChecked));
+
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextDetailCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextDetailCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
 
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextSettingsCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextSettingsCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteValueText));
