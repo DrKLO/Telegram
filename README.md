@@ -179,17 +179,17 @@ It's very simple
 * **sdk23** mean for android 6+, the other are working from 4.1+
     * so if you have android 6 or higher, you should download **sdk23** version
 * arm64-v8a (new devices)
-    * `x`  [Telegraher.8.6.2r1.arm64_v8a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r1_arm64_v8a/Telegraher.8.6.2r1.arm64_v8a.apk)
-    * `x`  [Telegraher.8.6.2r1.arm64_v8a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r1_arm64_v8a/Telegraher.8.6.2r1.arm64_v8a_sdk23.apk)
+    * `x`  [Telegraher.8.6.2r2.arm64_v8a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r2_arm64_v8a/Telegraher.8.6.2r2.arm64_v8a.apk)
+    * `x`  [Telegraher.8.6.2r2.arm64_v8a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r2_arm64_v8a/Telegraher.8.6.2r2.arm64_v8a_sdk23.apk)
 * armeabi-v7a (old devices)
-    * `x`  [Telegraher.8.6.2r1.armeabi_v7a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r1_armeabi_v7a/Telegraher.8.6.2r1.armeabi_v7a.apk)
-    * `x`  [Telegraher.8.6.2r1.armeabi_v7a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r1_armeabi_v7a/Telegraher.8.6.2r1.armeabi_v7a_sdk23.apk)
+    * `x`  [Telegraher.8.6.2r2.armeabi_v7a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r2_armeabi_v7a/Telegraher.8.6.2r2.armeabi_v7a.apk)
+    * `x`  [Telegraher.8.6.2r2.armeabi_v7a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r2_armeabi_v7a/Telegraher.8.6.2r2.armeabi_v7a_sdk23.apk)
 * PC x86, 32 bits (for an emulator for example)
-    * `x`  [Telegraher.8.6.2r1.x86.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r1_x86/Telegraher.8.6.2r1.x86.apk)
-    * `x`  [Telegraher.8.6.2r1.x86_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r1_x86/Telegraher.8.6.2r1.x86_sdk23.apk)
+    * `x`  [Telegraher.8.6.2r2.x86.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r2_x86/Telegraher.8.6.2r2.x86.apk)
+    * `x`  [Telegraher.8.6.2r2.x86_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r2_x86/Telegraher.8.6.2r2.x86_sdk23.apk)
 * PC x86, 64 bits (for 64 bits CPU)
-    * `x`  [Telegraher.8.6.2r1.x86_64.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r1_x86_64/Telegraher.8.6.2r1.x86_64.apk)
-    * `x`  [Telegraher.8.6.2r1.x86_64_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r1_x86_64/Telegraher.8.6.2r1.x86_64_sdk23.apk)
+    * `x`  [Telegraher.8.6.2r2.x86_64.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r2_x86_64/Telegraher.8.6.2r2.x86_64.apk)
+    * `x`  [Telegraher.8.6.2r2.x86_64_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r2_x86_64/Telegraher.8.6.2r2.x86_64_sdk23.apk)
 
 ### Issues/Wishlist
 
@@ -198,6 +198,30 @@ Probably it's a good thing 😃
 
 ### Changes
 
+* noshit_8.6.2_release2
+    * device spoofing
+        * Well folks here is it. The device spoofing. You can setup the brand, the model and the Sdk
+          number (os). These values will be used for all NEW connections. Once you registered an
+          account it will be setup with the data you used for. To do this you need to access our
+          menu and override params. Them you click the RED button "kill the app" cause app need to
+          be STARTED to get new params to init. Use it wisely. For example:
+            * 9 accounts, 3 different virtual devices = 3 "real" devices :)
+            * By default it will use the vanilla data.
+    * fixed SHORTCUT_SHARE
+    * added `IP_STRATEGY_BYTE` byte
+    * corrected `files` folder (when TG fuckups to create the one)
+    * Fork don't create and don't use system accounts anymore
+        * but remains fully compatible with the contacts made in vanilla TG
+    * You can setup size and round bitrate for round videos
+        * round videos with the size !=x1 are doesn't considered as round btw
+    * new C++ code for accounts and new account system.
+        * actually upto 32, by default it's disabled, you have to enable "3+"
+        * if you had >3 accounts you need to enable this option and restart the app.
+    * new code in LocaleController to replace some CLOUD values by our local ones
+    * button to "Kill the app"
+    * (!) our menu by default NOW in Settings/Data and Storage/Storage Usage section
+        * to bring it to where it's usually you need to checkbox "* Show Telegraher menu"
+    * added vanilla fingerprint from 8.6.2 store, it's the same btw as before.
 * noshit_8.6.2_release1
     * update to vanilla TG 8.6.2
     * video compression and quality as before
