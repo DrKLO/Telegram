@@ -1,0 +1,10 @@
+apparently support for libtgvoip has been discontinued and it will no longer be developed and used?
+
+noticed that all third party clients
+that use libtgvoip can't make voice calls to latest versions of android apps versions 8.6.0, 8.6.1, 8.6.2.
+
+seems Telegram removed support libtgvoip recently judging by the removal of legacy code
+
+TelegramMessenger/tgcalls@6250a8d
+
+can you confirm that now only the webrtc implementation remains working?
