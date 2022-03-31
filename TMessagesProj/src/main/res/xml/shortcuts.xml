@@ -2,6 +2,6 @@
 <shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
     <share-target android:targetClass="org.telegram.ui.LaunchActivity">
         <data android:mimeType="*/*" />
-        <category android:name="org.telegram.messenger.SHORTCUT_SHARE" />
+        <category android:name="com.evildayz.code.telegraher.SHORTCUT_SHARE" />
     </share-target>
 </shortcuts>

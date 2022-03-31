@@ -40,6 +40,8 @@ public class LocationSharingService extends Service implements NotificationCente
             handler.postDelayed(runnable, 1000);
             Utilities.stageQueue.postRunnable(() -> {
                 for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                    if (!UserConfig.existsInHsAccs(a)) continue;
+                    if (UserConfig.TDBG) System.out.printf("HEY LocationSharingService onCreate [%d]%n", a);
                     LocationController.getInstance(a).update();
                 }
             });
@@ -80,6 +82,8 @@ public class LocationSharingService extends Service implements NotificationCente
     private ArrayList<LocationController.SharingLocationInfo> getInfos() {
         ArrayList<LocationController.SharingLocationInfo> infos = new ArrayList<>();
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+            if (!UserConfig.existsInHsAccs(a)) continue;
+            if (UserConfig.TDBG) System.out.printf("HEY LocationSharingService getInfos [%d]%n", a);
             ArrayList<LocationController.SharingLocationInfo> arrayList = LocationController.getInstance(a).sharingLocationsUI;
             if (!arrayList.isEmpty()) {
                 infos.addAll(arrayList);
@@ -140,7 +144,7 @@ public class LocationSharingService extends Service implements NotificationCente
             builder.setContentIntent(contentIntent);
             NotificationsController.checkOtherNotificationsChannel();
             builder.setChannelId(NotificationsController.OTHER_NOTIFICATIONS_CHANNEL);
-            builder.setContentTitle(LocaleController.getString("AppName", R.string.AppName));
+            builder.setContentTitle(LocaleController.getStringNew("AppName", R.string.AppName));
             Intent stopIntent = new Intent(ApplicationLoader.applicationContext, StopLiveLocationReceiver.class);
             builder.addAction(0, LocaleController.getString("StopLiveLocation", R.string.StopLiveLocation), PendingIntent.getBroadcast(ApplicationLoader.applicationContext, 2, stopIntent, PendingIntent.FLAG_UPDATE_CURRENT));
         }

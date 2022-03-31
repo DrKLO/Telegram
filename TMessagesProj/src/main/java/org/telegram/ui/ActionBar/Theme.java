@@ -5081,6 +5081,8 @@ public class Theme {
         int appRemoteThemesVersion = 1;
         if (remoteVersion == appRemoteThemesVersion) {
             for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                if (!UserConfig.existsInHsAccs(a)) continue;
+                if (UserConfig.TDBG) System.out.printf("HEY Theme static [%d]%n", a);
                 remoteThemesHash[a] = themeConfig.getLong("2remoteThemesHash" + (a != 0 ? a : ""), 0);
                 lastLoadingThemesTime[a] = themeConfig.getInt("lastLoadingThemesTime" + (a != 0 ? a : ""), 0);
             }
@@ -6748,6 +6750,8 @@ public class Theme {
             editor.putString("themes2", array.toString());
         }
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+            if (!UserConfig.existsInHsAccs(a)) continue;
+            if (UserConfig.TDBG) System.out.printf("HEY Theme saveOtherThemes [%d]%n", a);
             editor.putLong("2remoteThemesHash" + (a != 0 ? a : ""), remoteThemesHash[a]);
             editor.putInt("lastLoadingThemesTime" + (a != 0 ? a : ""), lastLoadingThemesTime[a]);
         }

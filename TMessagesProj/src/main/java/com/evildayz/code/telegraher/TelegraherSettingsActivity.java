@@ -21,6 +21,8 @@ package com.evildayz.code.telegraher;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Build;
+import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -28,10 +30,15 @@ import android.widget.FrameLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.evildayz.code.telegraher.devicespoofing.DSBrandActivity;
+import com.evildayz.code.telegraher.devicespoofing.DSModelActivity;
+import com.evildayz.code.telegraher.devicespoofing.DSOSActivity;
+
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
@@ -40,11 +47,14 @@ import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.NotificationsCheckCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.TextCheckCell;
+import org.telegram.ui.Cells.TextDetailCell;
 import org.telegram.ui.Cells.TextDetailSettingsCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.SlideChooseView;
+import org.telegram.ui.QrActivity;
 
 import java.util.ArrayList;
 
@@ -54,6 +64,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
     private TelegraherSettingsActivity.ListAdapter adapter;
     @SuppressWarnings("FieldCanBeLocal")
     private LinearLayoutManager layoutManager;
+
+    private int showTelegraherMenuRow;
 
     private int voiceLabelRow;
     private int voiceHDRow;
@@ -71,16 +83,32 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
     private int chatDeleteMarkRow;
     private int chatSBFullRow;
 
+    private int videoLabelRoundBitrateRow;
+    private int videoRoundBitrateMultRow;
+    private int videoLabelRoundSizeRow;
+    private int videoRoundSizeMultRow;
+
+    private int accountLabelRow;
+    private int accountExtendVanillaRow;
+
+    private int deviceSpoofingLabelRow;
+    private int deviceSpoofingBrand;
+    private int deviceSpoofingModel;
+    private int deviceSpoofingOS;
+
+    private int killMeLabelRow;
+
     private int rowCount = 0;
 
     @Override
     public boolean onFragmentCreate() {
+        showTelegraherMenuRow = rowCount++;
         voiceLabelRow = rowCount++;
         voiceHDRow = rowCount++;
         voiceBadmanRow = rowCount++;
 
-//        voipLabelRow = rowCount++;
-//        voipHDRow = rowCount++;
+        voipLabelRow = -1;
+        voipHDRow = -1;
 
         profileLabelRow = rowCount++;
         profileUIDRow = rowCount++;
@@ -90,6 +118,21 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         chatLabelRow = rowCount++;
         chatDeleteMarkRow = rowCount++;
         chatSBFullRow = rowCount++;
+
+        accountLabelRow = rowCount++;
+        accountExtendVanillaRow = rowCount++;
+
+        videoLabelRoundBitrateRow = rowCount++;
+        videoRoundBitrateMultRow = rowCount++;
+        videoLabelRoundSizeRow = rowCount++;
+        videoRoundSizeMultRow = rowCount++;
+
+        deviceSpoofingLabelRow = rowCount++;
+        deviceSpoofingBrand = rowCount++;
+        deviceSpoofingModel = rowCount++;
+        deviceSpoofingOS = rowCount++;
+
+        killMeLabelRow = rowCount++;
 
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.telegraherSettingsUpdated);
 
@@ -189,6 +232,26 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                 enabled = preferences.getBoolean("EnableChatSBFull", false);
                 editor.putBoolean("EnableChatSBFull", !enabled);
                 editor.commit();
+            } else if (position == accountExtendVanillaRow) {
+                SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
+                SharedPreferences.Editor editor = preferences.edit();
+                enabled = preferences.getBoolean("EnableAccountExtendVanilla", false);
+                editor.putBoolean("EnableAccountExtendVanilla", !enabled);
+                editor.commit();
+            } else if (position == showTelegraherMenuRow) {
+                SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
+                SharedPreferences.Editor editor = preferences.edit();
+                enabled = preferences.getBoolean("ShowTelegraherMenu", false);
+                editor.putBoolean("ShowTelegraherMenu", !enabled);
+                editor.commit();
+            } else if (position == killMeLabelRow) {
+                killThatApp();
+            } else if (position == deviceSpoofingBrand) {
+                presentFragment(new DSBrandActivity());
+            } else if (position == deviceSpoofingModel) {
+                presentFragment(new DSModelActivity());
+            } else if (position == deviceSpoofingOS) {
+                presentFragment(new DSOSActivity());
             }
             if (view instanceof TextCheckCell) {
                 ((TextCheckCell) view).setChecked(!enabled);
@@ -208,7 +271,9 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.telegraherSettingsUpdated) {
+        if (false) {
+            //durov relogin!
+        } else if (id == NotificationCenter.telegraherSettingsUpdated) {
             adapter.notifyDataSetChanged();
         }
     }
@@ -261,6 +326,13 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
                 case 6:
+                    view = new SlideChooseView(mContext);
+                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    break;
+                case 7:
+                    view = new TextDetailCell(mContext);
+                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    break;
                 default:
                     view = new TextInfoPrivacyCell(mContext);
                     view.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
@@ -284,6 +356,14 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         headerCell.setText("Profile section");
                     } else if (position == chatLabelRow) {
                         headerCell.setText("Chat section");
+                    } else if (position == videoLabelRoundBitrateRow) {
+                        headerCell.setText("* Round video bitrate");
+                    } else if (position == videoLabelRoundSizeRow) {
+                        headerCell.setText("* Round video size");
+                    } else if (position == accountLabelRow) {
+                        headerCell.setText("Account section");
+                    } else if (position == deviceSpoofingLabelRow) {
+                        headerCell.setText("Device spoofing section");
                     }
                     break;
                 }
@@ -307,8 +387,91 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         checkCell.setTextAndCheck("Show Shadowban", localPreps.getBoolean("EnableProfileSB", true), true);
                     } else if (position == chatDeleteMarkRow) {
                         checkCell.setTextAndCheck(String.format("Show `%s` mark", LocaleController.getString("DeletedMessage", R.string.DeletedMessage)), localPreps.getBoolean("EnableChatDeleteMark", true), true);
+                    } else if (position == accountExtendVanillaRow) {
+                        checkCell.setTextAndCheck("* 3+", globalPreps.getBoolean("EnableAccountExtendVanilla", false), true);
                     } else if (position == chatSBFullRow) {
                         checkCell.setTextAndCheck("Full ShadowBan \uD83D\uDE48", localPreps.getBoolean("EnableChatSBFull", false), true);
+                    } else if (position == showTelegraherMenuRow) {
+                        checkCell.setTextAndCheck("* Show Telegraher menu", globalPreps.getBoolean("ShowTelegraherMenu", false), true);
+                    }
+                    break;
+                }
+                case 5: {
+                    TextSettingsCell textSettingsCell = (TextSettingsCell) holder.itemView;
+                    if (false) {
+                        //durov relogin!
+                    } else if (position == killMeLabelRow) {
+                        textSettingsCell.setCanDisable(false);
+                        textSettingsCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText));
+                        textSettingsCell.setText("Kill the APP", false);
+                    }
+                    break;
+                }
+                case 6: {
+                    SlideChooseView slideChooseView = (SlideChooseView) holder.itemView;
+                    if (false) {
+                        //durov relogin!
+                    } else if (position == videoRoundBitrateMultRow) {
+                        String[] strings = new String[]{"x0.5", "x1", "x2", "x4"};
+                        slideChooseView.setOptions(MessagesController.getTelegraherSettings(currentAccount).getInt("VideoRoundBitrateMult", 1), strings);
+                        slideChooseView.setCallback(new SlideChooseView.Callback() {
+                            @Override
+                            public void onOptionSelected(int index) {
+                                SharedPreferences localTh = MessagesController.getTelegraherSettings(currentAccount);
+                                SharedPreferences localMain = MessagesController.getMainSettings(currentAccount);
+                                SharedPreferences.Editor editor = localTh.edit();
+                                editor.putInt("VideoRoundBitrateMult", index);
+                                editor.commit();
+                                editor = localMain.edit();
+                                editor.putInt("roundVideoBitrate", (int) (1000 * ThePenisMightierThanTheSword.getVideoRoundMult(index)));
+                                editor.putInt("roundAudioBitrate", (int) (64 * ThePenisMightierThanTheSword.getVideoRoundMult(index)));
+                                editor.commit();
+                                MessagesController.getInstance(currentAccount).roundVideoBitrate = MessagesController.getMainSettings(currentAccount).getInt("roundVideoBitrate", 1000);
+                                MessagesController.getInstance(currentAccount).roundAudioBitrate = MessagesController.getMainSettings(currentAccount).getInt("roundAudioBitrate", 64);
+                                System.out.printf("HEY %d %d %d%n", MessagesController.getMainSettings(currentAccount).getInt("roundVideoSize", 384)
+                                        , MessagesController.getMainSettings(currentAccount).getInt("roundVideoBitrate", 1000)
+                                        , MessagesController.getMainSettings(currentAccount).getInt("roundAudioBitrate", 64));
+                            }
+                        });
+                    } else if (position == videoRoundSizeMultRow) {
+                        String[] strings = new String[]{"x0.5", "x1", "x2"};
+                        slideChooseView.setOptions(MessagesController.getTelegraherSettings(currentAccount).getInt("VideoRoundSizeMult", 1), strings);
+                        slideChooseView.setCallback(new SlideChooseView.Callback() {
+                            @Override
+                            public void onOptionSelected(int index) {
+                                SharedPreferences localTh = MessagesController.getTelegraherSettings(currentAccount);
+                                SharedPreferences localMain = MessagesController.getMainSettings(currentAccount);
+                                SharedPreferences.Editor editor = localTh.edit();
+                                editor.putInt("VideoRoundSizeMult", index);
+                                editor.commit();
+                                editor = localMain.edit();
+                                editor.putInt("roundVideoSize", ThePenisMightierThanTheSword.getVideoRoundSize(index));
+                                editor.commit();
+                                MessagesController.getInstance(currentAccount).roundVideoSize = MessagesController.getMainSettings(currentAccount).getInt("roundVideoSize", 384);
+                                System.out.printf("HEY %d %d %d%n", MessagesController.getMainSettings(currentAccount).getInt("roundVideoSize", 384)
+                                        , MessagesController.getMainSettings(currentAccount).getInt("roundVideoBitrate", 1000)
+                                        , MessagesController.getMainSettings(currentAccount).getInt("roundAudioBitrate", 64));
+                            }
+                        });
+                    }
+                    break;
+                }
+                case 7: {
+                    TextDetailCell textDetailCell = (TextDetailCell) holder.itemView;
+                    if (false) {
+                        //durov relogin!
+                    } else if (position == deviceSpoofingBrand) {
+                        textDetailCell.setContentDescriptionValueFirst(true);
+                        textDetailCell.setImageClickListener(TelegraherSettingsActivity.this::onTextDetailCellImageClicked);
+                        textDetailCell.setTextAndValue(UserConfig.hmGetBrand(currentAccount), "Device Brand", false);
+                    } else if (position == deviceSpoofingModel) {
+                        textDetailCell.setContentDescriptionValueFirst(true);
+                        textDetailCell.setImageClickListener(TelegraherSettingsActivity.this::onTextDetailCellImageClicked);
+                        textDetailCell.setTextAndValue(UserConfig.hmGetModel(currentAccount), "Device Model", false);
+                    } else if (position == deviceSpoofingOS) {
+                        textDetailCell.setContentDescriptionValueFirst(true);
+                        textDetailCell.setImageClickListener(TelegraherSettingsActivity.this::onTextDetailCellImageClicked);
+                        textDetailCell.setTextAndValue(UserConfig.hmGetOS(currentAccount), "Device OS", false);
                     }
                     break;
                 }
@@ -321,18 +484,45 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                     position == voiceLabelRow || position == voipLabelRow
                             || position == profileLabelRow
                             || position == chatLabelRow
+                            || position == accountLabelRow
+                            || position == deviceSpoofingLabelRow
+                            || position == videoLabelRoundBitrateRow
+                            || position == videoLabelRoundSizeRow
             ) {
                 return 0;
             } else if (
-                    position == voiceHDRow || position == voiceBadmanRow || position == voipHDRow
+                    position == showTelegraherMenuRow
+                            || position == voiceHDRow || position == voiceBadmanRow || position == voipHDRow
                             || position == profileUIDRow || position == profileDCIDRow || position == profileSBRow
-                            || position == chatDeleteMarkRow || position == chatSBFullRow
+                            || position == chatDeleteMarkRow || position == accountExtendVanillaRow || position == chatSBFullRow
             ) {
                 return 1;
-            } else {
-                return 2;
-            }
+            } else if (position == killMeLabelRow) {
+                return 5;
+            } else if (position == videoRoundBitrateMultRow || position == videoRoundSizeMultRow) {
+                return 6;
+            } else if (position == deviceSpoofingBrand || position == deviceSpoofingModel || position == deviceSpoofingOS) {
+                return 7;
+            } else
+                return 1337;
         }
+    }
+
+    private void onTextDetailCellImageClicked(View view) {
+        View parent = (View) view.getParent();
+        if (parent.getTag() != null && ((int) parent.getTag()) == 1337) {
+            Bundle args = new Bundle();
+            presentFragment(new QrActivity(args));
+        }
+    }
+
+    private void killThatApp() {
+        if (Build.VERSION.SDK_INT >= 21) {
+            getParentActivity().finishAndRemoveTask();
+        } else if (Build.VERSION.SDK_INT >= 16) {
+            getParentActivity().finishAffinity();
+        }
+        System.exit(0);
     }
 
     @Override
@@ -363,6 +553,9 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCheckCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCheckCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrack));
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCheckCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrackChecked));
+
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextDetailCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextDetailCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
 
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextSettingsCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextSettingsCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteValueText));

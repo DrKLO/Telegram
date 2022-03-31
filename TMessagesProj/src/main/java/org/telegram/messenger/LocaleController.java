@@ -974,6 +974,14 @@ public class LocaleController {
         return getStringInternal(key, null, res);
     }
 
+    private String getStringInternalNew(String key, int res) {
+        return getStringInternalNew(key, null, res);
+    }
+
+    public static String getLocalString(int key){
+        return ApplicationLoader.applicationContext.getString(key);
+    }
+
     private String getStringInternal(String key, String fallback, int res) {
         String value = BuildVars.USE_CLOUD_STRINGS ? localeValues.get(key) : null;
         if (value == null) {
@@ -988,6 +996,25 @@ public class LocaleController {
                 }
             }
         }
+        if (value == null) {
+            value = "LOC_ERR:" + key;
+        }
+        return value;
+    }
+
+    private String getStringInternalNew(String key, String fallback, int res) {
+        String value = "";
+        try {
+            value = ApplicationLoader.applicationContext.getString(res);
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        if (value == null && BuildVars.USE_CLOUD_STRINGS) value = localeValues.get(key);
+
+        if (value == null && BuildVars.USE_CLOUD_STRINGS && fallback != null) {
+            value = localeValues.get(fallback);
+        }
+
         if (value == null) {
             value = "LOC_ERR:" + key;
         }
@@ -1015,6 +1042,10 @@ public class LocaleController {
 
     public static String getString(String key, int res) {
         return getInstance().getStringInternal(key, res);
+    }
+
+    public static String getStringNew(String key, int res) {
+        return getInstance().getStringInternalNew(key, res);
     }
 
     public static String getString(String key, String fallback, int res) {
@@ -1089,6 +1120,10 @@ public class LocaleController {
         return formatString(key, null, res, args);
     }
 
+    public static String formatStringNew(String key, int res, Object... args) {
+        return formatStringNew(key, null, res, args);
+    }
+
     public static String formatString(String key, String fallback, int res, Object... args) {
         try {
             String value = BuildVars.USE_CLOUD_STRINGS ? getInstance().localeValues.get(key) : null;
@@ -1101,6 +1136,26 @@ public class LocaleController {
                 }
             }
 
+            if (getInstance().currentLocale != null) {
+                return String.format(getInstance().currentLocale, value, args);
+            } else {
+                return String.format(value, args);
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+            return "LOC_ERR: " + key;
+        }
+    }
+
+    public static String formatStringNew(String key, String fallback, int res, Object... args) {
+        try {
+            String value = ApplicationLoader.applicationContext.getString(res);
+            if (value == null && BuildVars.USE_CLOUD_STRINGS) {
+                value = getInstance().localeValues.get(key);
+            }
+            if (value == null && BuildVars.USE_CLOUD_STRINGS && fallback != null) {
+                value = getInstance().localeValues.get(fallback);
+            }
             if (getInstance().currentLocale != null) {
                 return String.format(getInstance().currentLocale, value, args);
             } else {
@@ -2220,6 +2275,8 @@ public class LocaleController {
                 }, ConnectionsManager.RequestFlagWithoutLogin);
             } else {
                 for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                    if (!UserConfig.existsInHsAccs(a)) continue;
+                    if (UserConfig.TDBG) System.out.printf("HEY LocaleController ImportingService [%d]%n", a);
                     ConnectionsManager.setLangCode(localeInfo.getLangCode());
                 }
                 TLRPC.TL_langpack_getLangPack req = new TLRPC.TL_langpack_getLangPack();

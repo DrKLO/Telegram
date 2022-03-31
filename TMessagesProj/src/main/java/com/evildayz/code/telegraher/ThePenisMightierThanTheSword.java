@@ -47,4 +47,28 @@ public class ThePenisMightierThanTheSword {
                 return "UNK, unknown";
         }
     }
+
+    public static float getVideoRoundMult(int id) {
+        switch (id) {
+            case 0:
+                return 0.5f;
+            case 2:
+                return 2f;
+            case 3:
+                return 4f;
+            default:
+                return 1f;
+        }
+    }
+
+    public static int getVideoRoundSize(int id) {
+        switch (id) {
+            case 0:
+                return 192;
+            case 2:
+                return 768;
+            default:
+                return 384;
+        }
+    }
 }
