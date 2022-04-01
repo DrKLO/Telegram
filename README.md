@@ -39,7 +39,7 @@ It gives us `telegram` -> `master` -> `master_8.3.1` -> `noshit_8.3.1`
 So **all the code changes** are in `noshit_8.3.1` (when this project started, actual version is
 different)
 
-### Detailed summary / noshit_8.6.1
+### Detailed summary / noshit_8.6.2
 
 * DISABLED ADS
     * YES!!1
@@ -50,12 +50,13 @@ different)
     * ~~messages are elements too, you still can click but cannot save them into downloads~~ fixed
         * ~~however i do not recomment this~~
     * use it wisely
-* 6 accounts instead of 3
-    * client support upto 6 accounts
+* ~~6 accounts instead of 3~~ 32 accounts
+    * to enbale more than 3 you need to activate "3+" option
+    * ~~client support upto 6 accounts~~
         * ~~on the 1st run when you type phone number and continue it can throw an API error~~
-            * error was only on the version with 16 accounts
-                * to get more accounts w/o having problems with TGs api need to change the App's
-                  flow
+            * ~~error was only on the version with 16 accounts~~
+                * ~~to get more accounts w/o having problems with TGs api need to change the App's
+                  flow~~
             * in case of an error close the error by clicking OK and let it relax for 5 minutes
             * continue and log in
 * DISABLED REMOTE DELETIONS
@@ -144,6 +145,8 @@ different)
 * KABOOM, new features in Storage management, which allow you to wipe the app's data (include the
   accs, confirmation is required) from the Srttings/Data/Storage or from Android's app menu/Storage
   management
+* Device spoofing
+* Our menu NOW near the Kaboom button (but you can bring it back!)
 * Admins now can delete all own messages in a group chat
 * Bring it back and there are no vanilla links. ~~APP do not manage APKs anymore~~
     * because some folks have issues to install APKs from TG fork on Android10 and/or MIUI
