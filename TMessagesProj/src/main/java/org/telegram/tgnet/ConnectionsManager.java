@@ -182,7 +182,7 @@ public class ConnectionsManager extends BaseController {
         try {
             systemLangCode = LocaleController.getSystemLocaleStringIso639().toLowerCase();
             langCode = LocaleController.getLocaleStringIso639().toLowerCase();
-            deviceModel = UserConfig.hmGetBrand(instance) + UserConfig.hmGetModel(instance);
+            deviceModel = Build.MANUFACTURER + Build.MODEL;
             PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
             appVersion = pInfo.versionName + " (" + pInfo.versionCode + ")";
             if (BuildVars.DEBUG_PRIVATE_VERSION) {
@@ -190,13 +190,13 @@ public class ConnectionsManager extends BaseController {
             } else if (BuildVars.DEBUG_VERSION) {
                 appVersion += " beta";
             }
-            systemVersion = "SDK " + UserConfig.hmGetOS(instance);
+            systemVersion = "SDK " + Build.VERSION.SDK_INT;
         } catch (Exception e) {
             systemLangCode = "en";
             langCode = "";
             deviceModel = "Android unknown";
             appVersion = "App version unknown";
-            systemVersion = "SDK " + UserConfig.hmGetOS(instance);
+            systemVersion = "SDK " + Build.VERSION.SDK_INT;
         }
         if (systemLangCode.trim().length() == 0) {
             systemLangCode = "en";
@@ -211,7 +211,8 @@ public class ConnectionsManager extends BaseController {
             systemVersion = "SDK Unknown";
         }
         getUserConfig().loadConfig();
-
+        deviceModel = UserConfig.hmGetBrand(instance) + UserConfig.hmGetModel(instance);
+        systemVersion = "SDK " + UserConfig.hmGetOS(instance);
         if (getUserConfig().getClientUserId() != 0) {
             accountsExists++;
             if (
