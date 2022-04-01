@@ -98,6 +98,7 @@ public class UserConfig extends BaseController {
         if (!hsAccsInit) return;
         Type lhm = new TypeToken<HashMap<Integer, String[]>>() {}.getType();
         if (telegraherSettings != null) hmDevices = new Gson().fromJson(telegraherSettings.getString("devicesHM", null), lhm);
+        if (TDBG) System.out.printf("HEY initHmDevices hmDevices is null %b%n", hmDevices == null);
         if (hmDevices == null) resetHmDevices();
     }
 
@@ -110,11 +111,16 @@ public class UserConfig extends BaseController {
     }
 
     synchronized public static void cloneHmDevice(int i) {
-        cloneHmDevice(i,true);
+        cloneHmDevice(i, true);
     }
+
     synchronized public static void cloneHmDevice(int i, boolean save) {
-        hmDevices.put(i, hmDevices.get(-1));
-        if (save) MessagesController.getGlobalTelegraherSettings().edit().putString("devicesHM", new Gson().toJson(hmDevices)).commit();
+        if (!UserConfig.getInstance(i).isClientActivated())
+            hmDevices.put(i, Arrays.copyOf(hmDevices.get(-1), 3));
+        else
+            hmDevices.put(i, new String[]{Build.MANUFACTURER, Build.MODEL, Integer.valueOf(Build.VERSION.SDK_INT).toString()});
+        if (save)
+            MessagesController.getGlobalTelegraherSettings().edit().putString("devicesHM", new Gson().toJson(hmDevices)).commit();
     }
 
     public static String hmGetBrand(int i) {
@@ -135,7 +141,6 @@ public class UserConfig extends BaseController {
         if (!hmDevices.containsKey(i)) {
             cloneHmDevice(i);
             if (TDBG) System.out.printf("HEY hmGetI[%d][%d] cloneHmDevices %n%s%n", i, j, new Gson().toJson(hmDevices));
-            return hmDevices.get(-1)[j];
         }
         return hmDevices.get(i)[j];
     }
@@ -151,7 +156,7 @@ public class UserConfig extends BaseController {
             cloneHmDevice(i);
             if (TDBG) System.out.printf("HEY hmSetI[%d][%d] cloneHmDevices %n%s%n", i, j, new Gson().toJson(hmDevices));
         }
-        String[] arr = hmDevices.get(i);
+        String[] arr = Arrays.copyOf(hmDevices.get(-1), 3);
         arr[j] = v;
         hmDevices.put(i, arr);
     }
@@ -159,6 +164,10 @@ public class UserConfig extends BaseController {
     synchronized public static void syncHmDevices() {
         for (int i = 0; i < hsAccs.size(); i++)
             if (!UserConfig.getInstance(i).isClientActivated()) cloneHmDevice(i, false);
+        saveHmDevices();
+    }
+
+    synchronized public static void saveHmDevices() {
         MessagesController.getGlobalTelegraherSettings().edit().putString("devicesHM", new Gson().toJson(hmDevices)).commit();
     }
 
@@ -173,7 +182,7 @@ public class UserConfig extends BaseController {
         return telegraherSettings.getBoolean(key, def);
     }
 
-    public static HashSet<Integer> getHsAccs(){
+    public static HashSet<Integer> getHsAccs() {
         initHsAccs();
         return hsAccs;
     }
@@ -198,10 +207,10 @@ public class UserConfig extends BaseController {
         initHsAccs();
         if (hsAccsSaved) return false;
         if (TDBG) System.out.printf("HEY saveHsAccs%n");
-
+        syncHmDevices();
         MessagesController.getGlobalTelegraherSettings().edit()
                 .putString("accountsHS", new Gson().toJson(hsAccs))
-                .putString("devicesHM",new Gson().toJson(hmDevices))
+                .putString("devicesHM", new Gson().toJson(hmDevices))
                 .commit();
         hsAccsSaved = true;
         MessagesController.refreshGlobalTelegraherSettings();
