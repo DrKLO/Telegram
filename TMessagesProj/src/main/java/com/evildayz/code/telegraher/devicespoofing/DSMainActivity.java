@@ -53,22 +53,37 @@ import org.telegram.ui.Components.NumberTextView;
 
 import java.util.ArrayList;
 
-public class DSBrandActivity extends BaseFragment {
+public class DSMainActivity extends BaseFragment {
     private EditTextBoldCursor textField;
     private View doneButton;
     private NumberTextView checkTextView;
     private TextView helpTextView;
-    private final String DS_LABEL = "Device Brand";
-    private final String DS_HINT = "You can override actual device brand here";
-    private final int DS_J = 0;
+    public final static String[] DS_LABEL = {
+            "Brand"
+            , "Model"
+            , "OS"
+    };
+    public final static String[] DS_HINT = {
+            "You can override global device %s here"
+            , "You can override currect account device %s here"
+    };
+    int labelId;
+    int hintId;
+    int dsJ;
 
     private final static int done_button = 1;
+
+    public DSMainActivity(int labelId, int hintId, int dsJ) {
+        this.labelId = labelId;
+        this.hintId = hintId;
+        this.dsJ = dsJ;
+    }
 
     @Override
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
-        actionBar.setTitle(DS_LABEL);
+        actionBar.setTitle(String.format("Device %s", DS_LABEL[labelId]));
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
@@ -125,7 +140,7 @@ public class DSBrandActivity extends BaseFragment {
         };
         textField.setFilters(inputFilters);
         textField.setMinHeight(AndroidUtilities.dp(36));
-        textField.setHint(DS_LABEL);
+        textField.setHint(String.format("Device %s", DS_LABEL[labelId]));
         textField.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         textField.setCursorSize(AndroidUtilities.dp(20));
         textField.setCursorWidth(1.5f);
@@ -168,10 +183,10 @@ public class DSBrandActivity extends BaseFragment {
         helpTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         helpTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText8));
         helpTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-        helpTextView.setText(DS_HINT);
+        helpTextView.setText(String.format(DS_HINT[hintId], DS_LABEL[labelId]));
         linearLayout.addView(helpTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 24, 10, 24, 0));
 
-        textField.setText(UserConfig.hmGetBrand(currentAccount));
+        textField.setText(UserConfig.hmGetI(hintId == 0 ? -1 : currentAccount, labelId));
         textField.setSelection(textField.length());
 
         return fragmentView;
@@ -189,10 +204,15 @@ public class DSBrandActivity extends BaseFragment {
     }
 
     private void updateDS() {
-        UserConfig.hmSetI(DS_J, textField.getText().toString().replace("\n", ""));
-        if (!UserConfig.getInstance(currentAccount).isClientActivated())
-            UserConfig.hmSetI(currentAccount, DS_J, textField.getText().toString().replace("\n", ""));
-        UserConfig.syncHmDevices();
+        if (UserConfig.TDBG) System.out.printf("HEY DSMainActivity updateDS [%d][%d]%n", labelId, hintId);
+        if (hintId == 0) {
+            UserConfig.hmSetI(-1, dsJ, textField.getText().toString().replace("\n", ""));
+            UserConfig.syncHmDevices();
+        } else {
+            UserConfig.hmSetI(currentAccount, dsJ, textField.getText().toString().replace("\n", ""));
+            UserConfig.saveHmDevices();
+        }
+        MessagesController.refreshGlobalTelegraherSettings();
         finishFragment();
     }
 

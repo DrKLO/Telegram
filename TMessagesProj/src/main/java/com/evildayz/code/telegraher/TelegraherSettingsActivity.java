@@ -20,19 +20,19 @@
 package com.evildayz.code.telegraher;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.TextView;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.evildayz.code.telegraher.devicespoofing.DSBrandActivity;
-import com.evildayz.code.telegraher.devicespoofing.DSModelActivity;
-import com.evildayz.code.telegraher.devicespoofing.DSOSActivity;
+import com.evildayz.code.telegraher.devicespoofing.DSMainActivity;
 
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -40,6 +40,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
@@ -95,6 +96,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
     private int deviceSpoofingBrand;
     private int deviceSpoofingModel;
     private int deviceSpoofingOS;
+    private int deviceSpoofingResetGlobalLabelRow;
 
     private int killMeLabelRow;
 
@@ -131,6 +133,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         deviceSpoofingBrand = rowCount++;
         deviceSpoofingModel = rowCount++;
         deviceSpoofingOS = rowCount++;
+        deviceSpoofingResetGlobalLabelRow = rowCount++;
 
         killMeLabelRow = rowCount++;
 
@@ -247,11 +250,13 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
             } else if (position == killMeLabelRow) {
                 killThatApp();
             } else if (position == deviceSpoofingBrand) {
-                presentFragment(new DSBrandActivity());
+                showDSAlert(0);
             } else if (position == deviceSpoofingModel) {
-                presentFragment(new DSModelActivity());
+                showDSAlert(1);
             } else if (position == deviceSpoofingOS) {
-                presentFragment(new DSOSActivity());
+                showDSAlert(2);
+            } else if (position == deviceSpoofingResetGlobalLabelRow) {
+                showDSResetGlobalAlert();
             }
             if (view instanceof TextCheckCell) {
                 ((TextCheckCell) view).setChecked(!enabled);
@@ -364,6 +369,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         headerCell.setText("Account section");
                     } else if (position == deviceSpoofingLabelRow) {
                         headerCell.setText("Device spoofing section");
+                    } else if (position == deviceSpoofingResetGlobalLabelRow) {
+                        headerCell.setText("Reset global spoofing values");
                     }
                     break;
                 }
@@ -462,16 +469,15 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         //durov relogin!
                     } else if (position == deviceSpoofingBrand) {
                         textDetailCell.setContentDescriptionValueFirst(true);
-                        textDetailCell.setImageClickListener(TelegraherSettingsActivity.this::onTextDetailCellImageClicked);
-                        textDetailCell.setTextAndValue(UserConfig.hmGetBrand(currentAccount), "Device Brand", false);
+                        textDetailCell.setTextAndValue(UserConfig.hmGetBrand(-1), String.format("Device Brand for current account is `%s`", UserConfig.hmGetBrand(currentAccount)), false);
                     } else if (position == deviceSpoofingModel) {
                         textDetailCell.setContentDescriptionValueFirst(true);
                         textDetailCell.setImageClickListener(TelegraherSettingsActivity.this::onTextDetailCellImageClicked);
-                        textDetailCell.setTextAndValue(UserConfig.hmGetModel(currentAccount), "Device Model", false);
+                        textDetailCell.setTextAndValue(UserConfig.hmGetModel(-1), String.format("Device Model for current account is `%s`", UserConfig.hmGetModel(currentAccount)), false);
                     } else if (position == deviceSpoofingOS) {
                         textDetailCell.setContentDescriptionValueFirst(true);
                         textDetailCell.setImageClickListener(TelegraherSettingsActivity.this::onTextDetailCellImageClicked);
-                        textDetailCell.setTextAndValue(UserConfig.hmGetOS(currentAccount), "Device OS", false);
+                        textDetailCell.setTextAndValue(UserConfig.hmGetOS(-1), String.format("Device OS for current account is `%s`", UserConfig.hmGetOS(currentAccount)), false);
                     }
                     break;
                 }
@@ -486,6 +492,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                             || position == chatLabelRow
                             || position == accountLabelRow
                             || position == deviceSpoofingLabelRow
+                            || position == deviceSpoofingResetGlobalLabelRow
                             || position == videoLabelRoundBitrateRow
                             || position == videoLabelRoundSizeRow
             ) {
@@ -523,6 +530,59 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
             getParentActivity().finishAffinity();
         }
         System.exit(0);
+    }
+
+    private void showDSAlert(int labelId) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+        builder.setTitle("Device spoofing");
+        builder.setMessage(String.format("Override Device %s?", DSMainActivity.DS_LABEL[labelId]));
+        builder.setNeutralButton("Global", (dialogInterface, i) -> {
+            try {
+                presentFragment(new DSMainActivity(labelId, 0, labelId));
+            } catch (Exception durovrelogin) {
+                durovrelogin.printStackTrace();
+            }
+        });
+        builder.setPositiveButton("Currect account", (dialogInterface, i) -> {
+            try {
+                presentFragment(new DSMainActivity(labelId, 1, labelId));
+            } catch (Exception durovrelogin) {
+                durovrelogin.printStackTrace();
+            }
+        });
+        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+        AlertDialog dialog = builder.create();
+        showDialog(dialog);
+        TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
+        if (button != null) {
+            button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+        }
+        button = (TextView) dialog.getButton(DialogInterface.BUTTON_NEUTRAL);
+        if (button != null) {
+            button.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        }
+    }
+
+    private void showDSResetGlobalAlert() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+        builder.setTitle("Device spoofing");
+        builder.setMessage("Reset global values to the vanilla ones?");
+        builder.setPositiveButton("Yes!", (dialogInterface, i) -> {
+            try {
+                UserConfig.resetHmDevices();
+                UserConfig.syncHmDevices();
+                MessagesController.refreshGlobalTelegraherSettings();
+            } catch (Exception durovrelogin) {
+                durovrelogin.printStackTrace();
+            }
+        });
+        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+        AlertDialog dialog = builder.create();
+        showDialog(dialog);
+        TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
+        if (button != null) {
+            button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+        }
     }
 
     @Override
