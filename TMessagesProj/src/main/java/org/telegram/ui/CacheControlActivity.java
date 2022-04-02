@@ -218,7 +218,12 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
         cacheInfoRow = rowCount++;
         databaseRow = rowCount++;
         kaboomButton = rowCount++;
-        if (!MessagesController.getGlobalTelegraherSettings().getBoolean("ShowTelegraherMenu", false)) telegraherRow = rowCount++;
+        switch (MessagesController.getTelegraherSettings(currentAccount).getInt("ShowTelegraherMenu2", 0)) {
+            case 0:
+            case 2:
+                telegraherRow = rowCount++;
+                break;
+        }
         databaseInfoRow = rowCount++;
     }
 
