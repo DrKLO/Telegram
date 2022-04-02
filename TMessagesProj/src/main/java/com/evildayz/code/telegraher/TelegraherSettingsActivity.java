@@ -457,7 +457,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                             }
                         });
                     } else if (position == showTelegraherMenuRow) {
-                        String[] strings = new String[]{"Both", "Settings", "Storage Usage"};
+                        String[] strings = new String[]{"Both", "Settings", "Storage Usage", "The Void"};
                         slideChooseView.setOptions(MessagesController.getGlobalTelegraherSettings().getInt("ShowTelegraherMenu2", 0), strings);
                         slideChooseView.setCallback(new SlideChooseView.Callback() {
                             @Override
