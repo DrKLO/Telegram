@@ -66,6 +66,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
     @SuppressWarnings("FieldCanBeLocal")
     private LinearLayoutManager layoutManager;
 
+    private int showLabelTelegraherMenuRow;
     private int showTelegraherMenuRow;
 
     private int voiceLabelRow;
@@ -104,6 +105,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
 
     @Override
     public boolean onFragmentCreate() {
+        showLabelTelegraherMenuRow = rowCount++;
         showTelegraherMenuRow = rowCount++;
         voiceLabelRow = rowCount++;
         voiceHDRow = rowCount++;
@@ -241,12 +243,6 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                 enabled = preferences.getBoolean("EnableAccountExtendVanilla", false);
                 editor.putBoolean("EnableAccountExtendVanilla", !enabled);
                 editor.commit();
-            } else if (position == showTelegraherMenuRow) {
-                SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
-                SharedPreferences.Editor editor = preferences.edit();
-                enabled = preferences.getBoolean("ShowTelegraherMenu", false);
-                editor.putBoolean("ShowTelegraherMenu", !enabled);
-                editor.commit();
             } else if (position == killMeLabelRow) {
                 killThatApp();
             } else if (position == deviceSpoofingBrand) {
@@ -371,6 +367,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         headerCell.setText("Device spoofing section");
                     } else if (position == deviceSpoofingResetGlobalLabelRow) {
                         headerCell.setText("Reset global spoofing values");
+                    } else if (position == showLabelTelegraherMenuRow) {
+                        headerCell.setText("* Show Telegraher menu");
                     }
                     break;
                 }
@@ -398,8 +396,6 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         checkCell.setTextAndCheck("* 3+", globalPreps.getBoolean("EnableAccountExtendVanilla", false), true);
                     } else if (position == chatSBFullRow) {
                         checkCell.setTextAndCheck("Full ShadowBan \uD83D\uDE48", localPreps.getBoolean("EnableChatSBFull", false), true);
-                    } else if (position == showTelegraherMenuRow) {
-                        checkCell.setTextAndCheck("* Show Telegraher menu", globalPreps.getBoolean("ShowTelegraherMenu", false), true);
                     }
                     break;
                 }
@@ -460,6 +456,18 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                                         , MessagesController.getMainSettings(currentAccount).getInt("roundAudioBitrate", 64));
                             }
                         });
+                    } else if (position == showTelegraherMenuRow) {
+                        String[] strings = new String[]{"Both", "Settings", "Storage Usage"};
+                        slideChooseView.setOptions(MessagesController.getGlobalTelegraherSettings().getInt("ShowTelegraherMenu2", 0), strings);
+                        slideChooseView.setCallback(new SlideChooseView.Callback() {
+                            @Override
+                            public void onOptionSelected(int index) {
+                                SharedPreferences globalTh = MessagesController.getGlobalTelegraherSettings();
+                                SharedPreferences.Editor editor = globalTh.edit();
+                                editor.putInt("ShowTelegraherMenu2", index);
+                                editor.commit();
+                            }
+                        });
                     }
                     break;
                 }
@@ -487,7 +495,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         @Override
         public int getItemViewType(int position) {
             if (
-                    position == voiceLabelRow || position == voipLabelRow
+                    position == showLabelTelegraherMenuRow
+                            || position == voiceLabelRow || position == voipLabelRow
                             || position == profileLabelRow
                             || position == chatLabelRow
                             || position == accountLabelRow
@@ -498,15 +507,16 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
             ) {
                 return 0;
             } else if (
-                    position == showTelegraherMenuRow
-                            || position == voiceHDRow || position == voiceBadmanRow || position == voipHDRow
+                    position == voiceHDRow || position == voiceBadmanRow || position == voipHDRow
                             || position == profileUIDRow || position == profileDCIDRow || position == profileSBRow
                             || position == chatDeleteMarkRow || position == accountExtendVanillaRow || position == chatSBFullRow
             ) {
                 return 1;
             } else if (position == killMeLabelRow) {
                 return 5;
-            } else if (position == videoRoundBitrateMultRow || position == videoRoundSizeMultRow) {
+            } else if (
+                    position == showTelegraherMenuRow
+                            || position == videoRoundBitrateMultRow || position == videoRoundSizeMultRow) {
                 return 6;
             } else if (position == deviceSpoofingBrand || position == deviceSpoofingModel || position == deviceSpoofingOS) {
                 return 7;
