@@ -41,8 +41,10 @@ class RandomDeviceSeedSeq {
 }  // namespace
 
 std::mt19937_64* GetSharedRng() {
-  RandomDeviceSeedSeq seed_seq;
-  static auto* rng = new std::mt19937_64(seed_seq);
+  static auto* rng = [] {
+    RandomDeviceSeedSeq seed_seq;
+    return new std::mt19937_64(seed_seq);
+  }();
   return rng;
 }
 

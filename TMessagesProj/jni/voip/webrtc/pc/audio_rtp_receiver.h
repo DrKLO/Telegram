@@ -21,7 +21,6 @@
 #include "api/dtls_transport_interface.h"
 #include "api/frame_transformer_interface.h"
 #include "api/media_stream_interface.h"
-#include "api/media_stream_track_proxy.h"
 #include "api/media_types.h"
 #include "api/rtp_parameters.h"
 #include "api/rtp_receiver_interface.h"
@@ -31,6 +30,7 @@
 #include "media/base/media_channel.h"
 #include "pc/audio_track.h"
 #include "pc/jitter_buffer_delay.h"
+#include "pc/media_stream_track_proxy.h"
 #include "pc/remote_audio_source.h"
 #include "pc/rtp_receiver.h"
 #include "rtc_base/ref_counted_object.h"
@@ -144,7 +144,7 @@ class AudioRtpReceiver : public ObserverInterface,
   rtc::scoped_refptr<DtlsTransportInterface> dtls_transport_
       RTC_GUARDED_BY(&signaling_thread_checker_);
   // Stores and updates the playout delay. Handles caching cases if
-  // |SetJitterBufferMinimumDelay| is called before start.
+  // `SetJitterBufferMinimumDelay` is called before start.
   JitterBufferDelay delay_ RTC_GUARDED_BY(worker_thread_);
   rtc::scoped_refptr<FrameTransformerInterface> frame_transformer_
       RTC_GUARDED_BY(worker_thread_);

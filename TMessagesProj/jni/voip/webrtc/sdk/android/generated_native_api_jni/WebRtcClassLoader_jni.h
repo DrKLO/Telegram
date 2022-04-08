@@ -64,7 +64,4 @@ static base::android::ScopedJavaLocalRef<jobject> Java_WebRtcClassLoader_getClas
 }  // namespace jni
 }  // namespace  webrtc
 
-// Step 4: Generated test functions (optional).
-
-
 #endif  // org_webrtc_WebRtcClassLoader_JNI

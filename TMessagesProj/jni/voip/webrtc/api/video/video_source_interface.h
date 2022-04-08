@@ -54,7 +54,7 @@ struct RTC_EXPORT VideoSinkWants {
   int max_framerate_fps = std::numeric_limits<int>::max();
 
   // Tells the source that the sink wants width and height of the video frames
-  // to be divisible by |resolution_alignment|.
+  // to be divisible by `resolution_alignment`.
   // For example: With I420, this value would be a multiple of 2.
   // Note that this field is unrelated to any horizontal or vertical stride
   // requirements the encoder has on the incoming video frame buffers.
@@ -71,13 +71,13 @@ struct RTC_EXPORT VideoSinkWants {
   // to scaleResolutionDownBy or turning off simulcast or SVC layers.
   //
   // For example, we may capture at 720p and due to adaptation (e.g. applying
-  // |max_pixel_count| constraints) create webrtc::VideoFrames of size 480p, but
+  // `max_pixel_count` constraints) create webrtc::VideoFrames of size 480p, but
   // if we do scaleResolutionDownBy:2 then the only resolution we end up
   // encoding is 240p. In this case we still need to provide webrtc::VideoFrames
   // of size 480p but we can optimize internal buffers for 240p, avoiding
   // downsampling to 480p if possible.
   //
-  // Note that the |resolutions| can change while frames are in flight and
+  // Note that the `resolutions` can change while frames are in flight and
   // should only be used as a hint when constructing the webrtc::VideoFrame.
   std::vector<FrameSize> resolutions;
 };

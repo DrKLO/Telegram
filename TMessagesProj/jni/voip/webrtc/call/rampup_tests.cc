@@ -182,20 +182,16 @@ void RampUpTester::ModifyVideoConfigs(
 
   send_config->rtp.extensions.clear();
 
-  bool remb;
   bool transport_cc;
   if (extension_type_ == RtpExtension::kAbsSendTimeUri) {
-    remb = true;
     transport_cc = false;
     send_config->rtp.extensions.push_back(
         RtpExtension(extension_type_.c_str(), kAbsSendTimeExtensionId));
   } else if (extension_type_ == RtpExtension::kTransportSequenceNumberUri) {
-    remb = false;
     transport_cc = true;
     send_config->rtp.extensions.push_back(RtpExtension(
         extension_type_.c_str(), kTransportSequenceNumberExtensionId));
   } else {
-    remb = true;
     transport_cc = false;
     send_config->rtp.extensions.push_back(RtpExtension(
         extension_type_.c_str(), kTransmissionTimeOffsetExtensionId));
@@ -295,16 +291,16 @@ void RampUpTester::ModifyFlexfecConfigs(
     return;
   RTC_DCHECK_EQ(1, num_flexfec_streams_);
   (*receive_configs)[0].payload_type = test::CallTest::kFlexfecPayloadType;
-  (*receive_configs)[0].remote_ssrc = test::CallTest::kFlexfecSendSsrc;
+  (*receive_configs)[0].rtp.remote_ssrc = test::CallTest::kFlexfecSendSsrc;
   (*receive_configs)[0].protected_media_ssrcs = {video_ssrcs_[0]};
-  (*receive_configs)[0].local_ssrc = video_ssrcs_[0];
+  (*receive_configs)[0].rtp.local_ssrc = video_ssrcs_[0];
   if (extension_type_ == RtpExtension::kAbsSendTimeUri) {
-    (*receive_configs)[0].transport_cc = false;
-    (*receive_configs)[0].rtp_header_extensions.push_back(
+    (*receive_configs)[0].rtp.transport_cc = false;
+    (*receive_configs)[0].rtp.extensions.push_back(
         RtpExtension(extension_type_.c_str(), kAbsSendTimeExtensionId));
   } else if (extension_type_ == RtpExtension::kTransportSequenceNumberUri) {
-    (*receive_configs)[0].transport_cc = true;
-    (*receive_configs)[0].rtp_header_extensions.push_back(RtpExtension(
+    (*receive_configs)[0].rtp.transport_cc = true;
+    (*receive_configs)[0].rtp.extensions.push_back(RtpExtension(
         extension_type_.c_str(), kTransportSequenceNumberExtensionId));
   }
 }

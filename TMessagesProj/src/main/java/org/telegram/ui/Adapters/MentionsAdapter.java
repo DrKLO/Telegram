@@ -58,6 +58,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Objects;
 
 import androidx.collection.LongSparseArray;
 import androidx.recyclerview.widget.RecyclerView;
@@ -166,6 +167,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
     };
 
     public MentionsAdapter(Context context, boolean darkTheme, long did, int threadMessageId, MentionsAdapterDelegate mentionsAdapterDelegate, Theme.ResourcesProvider resourcesProvider) {
+//        setHasStableIds(true);
         this.resourcesProvider = resourcesProvider;
         mContext = context;
         delegate = mentionsAdapterDelegate;
@@ -249,6 +251,41 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
             stickersMap.put(key, document);
         }
     }
+
+//    public long getItemIdInternal(int position) {
+//        try {
+//            if (stickers != null) {
+//                return stickers.get(position).sticker.id;
+//            } else if (foundContextBot != null && !inlineMediaEnabled) {
+//                return foundContextBot.id;
+//            } else if (searchResultBotContext != null) {
+//                if (position == 0 && searchResultBotContextSwitch != null) {
+//                    return -1;
+//                }
+//                return searchResultBotContext.get(position - (searchResultBotContextSwitch != null ? 1 : 0)).query_id;
+//            } else if (searchResultUsernames != null) {
+//                TLObject obj = searchResultUsernames.get(position);
+//                if (obj instanceof TLRPC.User) {
+//                    return ((TLRPC.User) obj).id;
+//                } else if (obj instanceof TLRPC.Chat) {
+//                    return ((TLRPC.Chat) obj).id;
+//                }
+//                return obj.hashCode();
+//            } else if (searchResultHashtags != null) {
+//                return searchResultHashtags.get(position).hashCode();
+//            } else if (searchResultCommands != null) {
+//                return searchResultCommands.get(position).hashCode();
+//            } else if (searchResultSuggestions != null) {
+//                return searchResultSuggestions.get(position).emoji.hashCode();
+//            }
+//        } catch (Exception ignore) {}
+//        return 0;
+//    }
+//
+//    @Override
+//    public long getItemId(int position) {
+//        return Objects.hash(getItemIdInternal(position), getItemCount() < 5 ? getItemCount() - position : position);
+//    }
 
     private boolean checkStickerFilesExistAndDownload() {
         if (stickers == null) {

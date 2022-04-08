@@ -44,6 +44,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.SvgHelper;
+import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 
@@ -247,7 +248,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
 
         if (pressedReaction != null) {
             if (pressedProgress != 1f) {
-                pressedProgress += 16f / 2000f;
+                pressedProgress += 16f / 1500f;
                 if (pressedProgress >= 1f) {
                     pressedProgress = 1f;
                 }
@@ -323,11 +324,13 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         super.dispatchDraw(canvas);
 
         if (leftShadowPaint != null) {
-            leftShadowPaint.setAlpha((int) (leftAlpha * transitionProgress * 0xFF));
+            float p = Utilities.clamp(leftAlpha * transitionProgress, 1f, 0f);
+            leftShadowPaint.setAlpha((int) (p * 0xFF));
             canvas.drawRect(rect, leftShadowPaint);
         }
         if (rightShadowPaint != null) {
-            rightShadowPaint.setAlpha((int) (rightAlpha * transitionProgress * 0xFF));
+            float p = Utilities.clamp(rightAlpha * transitionProgress, 1f, 0f);
+            rightShadowPaint.setAlpha((int) (p * 0xFF));
             canvas.drawRect(rect, rightShadowPaint);
         }
         canvas.restoreToCount(s);

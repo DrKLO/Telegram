@@ -11,6 +11,7 @@
 #ifndef P2P_BASE_STUN_PORT_H_
 #define P2P_BASE_STUN_PORT_H_
 
+#include <functional>
 #include <map>
 #include <memory>
 #include <string>
@@ -19,8 +20,7 @@
 #include "p2p/base/port.h"
 #include "p2p/base/stun_request.h"
 #include "rtc_base/async_packet_socket.h"
-
-// TODO(mallinath) - Rename stunport.cc|h to udpport.cc|h.
+#include "rtc_base/task_utils/pending_task_safety_flag.h"
 
 namespace cricket {
 
@@ -39,13 +39,12 @@ class UDPPort : public Port {
       rtc::AsyncPacketSocket* socket,
       const std::string& username,
       const std::string& password,
-      const std::string& origin,
       bool emit_local_for_anyaddress,
       absl::optional<int> stun_keepalive_interval) {
     // Using `new` to access a non-public constructor.
-    auto port = absl::WrapUnique(new UDPPort(thread, factory, network, socket,
-                                             username, password, origin,
-                                             emit_local_for_anyaddress));
+    auto port =
+        absl::WrapUnique(new UDPPort(thread, factory, network, socket, username,
+                                     password, emit_local_for_anyaddress));
     port->set_stun_keepalive_delay(stun_keepalive_interval);
     if (!port->Init()) {
       return nullptr;
@@ -61,13 +60,12 @@ class UDPPort : public Port {
       uint16_t max_port,
       const std::string& username,
       const std::string& password,
-      const std::string& origin,
       bool emit_local_for_anyaddress,
       absl::optional<int> stun_keepalive_interval) {
     // Using `new` to access a non-public constructor.
-    auto port = absl::WrapUnique(
-        new UDPPort(thread, factory, network, min_port, max_port, username,
-                    password, origin, emit_local_for_anyaddress));
+    auto port = absl::WrapUnique(new UDPPort(thread, factory, network, min_port,
+                                             max_port, username, password,
+                                             emit_local_for_anyaddress));
     port->set_stun_keepalive_delay(stun_keepalive_interval);
     if (!port->Init()) {
       return nullptr;
@@ -113,7 +111,7 @@ class UDPPort : public Port {
   void set_stun_keepalive_lifetime(int lifetime) {
     stun_keepalive_lifetime_ = lifetime;
   }
-  // Returns true if there is a pending request with type |msg_type|.
+  // Returns true if there is a pending request with type `msg_type`.
   bool HasPendingRequest(int msg_type) {
     return requests_.HasRequest(msg_type);
   }
@@ -126,7 +124,6 @@ class UDPPort : public Port {
           uint16_t max_port,
           const std::string& username,
           const std::string& password,
-          const std::string& origin,
           bool emit_local_for_anyaddress);
 
   UDPPort(rtc::Thread* thread,
@@ -135,7 +132,6 @@ class UDPPort : public Port {
           rtc::AsyncPacketSocket* socket,
           const std::string& username,
           const std::string& password,
-          const std::string& origin,
           bool emit_local_for_anyaddress);
 
   bool Init();
@@ -171,38 +167,39 @@ class UDPPort : public Port {
 
   void SendStunBindingRequests();
 
-  // Helper function which will set |addr|'s IP to the default local address if
-  // |addr| is the "any" address and |emit_local_for_anyaddress_| is true. When
+  // Helper function which will set `addr`'s IP to the default local address if
+  // `addr` is the "any" address and `emit_local_for_anyaddress_` is true. When
   // returning false, it indicates that the operation has failed and the
   // address shouldn't be used by any candidate.
   bool MaybeSetDefaultLocalAddress(rtc::SocketAddress* addr) const;
 
  private:
   // A helper class which can be called repeatedly to resolve multiple
-  // addresses, as opposed to rtc::AsyncResolverInterface, which can only
+  // addresses, as opposed to rtc::AsyncDnsResolverInterface, which can only
   // resolve one address per instance.
-  class AddressResolver : public sigslot::has_slots<> {
+  class AddressResolver {
    public:
-    explicit AddressResolver(rtc::PacketSocketFactory* factory);
-    ~AddressResolver() override;
+    explicit AddressResolver(
+        rtc::PacketSocketFactory* factory,
+        std::function<void(const rtc::SocketAddress&, int)> done_callback);
 
     void Resolve(const rtc::SocketAddress& address);
     bool GetResolvedAddress(const rtc::SocketAddress& input,
                             int family,
                             rtc::SocketAddress* output) const;
 
-    // The signal is sent when resolving the specified address is finished. The
-    // first argument is the input address, the second argument is the error
-    // or 0 if it succeeded.
-    sigslot::signal2<const rtc::SocketAddress&, int> SignalDone;
-
    private:
-    typedef std::map<rtc::SocketAddress, rtc::AsyncResolverInterface*>
+    typedef std::map<rtc::SocketAddress,
+                     std::unique_ptr<webrtc::AsyncDnsResolverInterface>>
         ResolverMap;
 
-    void OnResolveResult(rtc::AsyncResolverInterface* resolver);
-
     rtc::PacketSocketFactory* socket_factory_;
+    // The function is called when resolving the specified address is finished.
+    // The first argument is the input address, the second argument is the error
+    // or 0 if it succeeded.
+    std::function<void(const rtc::SocketAddress&, int)> done_;
+    // Resolver may fire callbacks that refer to done_, so ensure
+    // that all resolvers are destroyed first.
     ResolverMap resolvers_;
   };
 
@@ -273,7 +270,6 @@ class StunPort : public UDPPort {
       const std::string& username,
       const std::string& password,
       const ServerAddresses& servers,
-      const std::string& origin,
       absl::optional<int> stun_keepalive_interval);
 
   void PrepareAddress() override;
@@ -286,8 +282,7 @@ class StunPort : public UDPPort {
            uint16_t max_port,
            const std::string& username,
            const std::string& password,
-           const ServerAddresses& servers,
-           const std::string& origin);
+           const ServerAddresses& servers);
 };
 
 }  // namespace cricket

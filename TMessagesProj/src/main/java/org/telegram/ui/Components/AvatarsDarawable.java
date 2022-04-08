@@ -60,8 +60,25 @@ public class AvatarsDarawable {
     private float overrideAlpha = 1f;
     public long transitionDuration = 220;
     public Interpolator transitionInterpolator = CubicBezierInterpolator.DEFAULT;
+    private boolean transitionInProgress;
 
     public void commitTransition(boolean animated) {
+        commitTransition(animated, true);
+    }
+
+    public void setTransitionProgress(float transitionProgress) {
+        if (transitionInProgress) {
+            if (this.transitionProgress != transitionProgress) {
+                this.transitionProgress = transitionProgress;
+                if (transitionProgress == 1f) {
+                    swapStates();
+                    transitionInProgress = false;
+                }
+            }
+        }
+    }
+
+    public void commitTransition(boolean animated, boolean createAnimator) {
         if (!wasDraw || !animated) {
             transitionProgress = 1f;
             swapStates();
@@ -112,33 +129,41 @@ public class AvatarsDarawable {
         }
         if (transitionProgressAnimator != null) {
             transitionProgressAnimator.cancel();
+            if (transitionInProgress) {
+                swapStates();
+                transitionInProgress = false;
+            }
         }
         transitionProgress = 0;
-        transitionProgressAnimator = ValueAnimator.ofFloat(0, 1f);
-        transitionProgressAnimator.addUpdateListener(valueAnimator -> {
-            transitionProgress = (float) valueAnimator.getAnimatedValue();
-            invalidate();
-        });
-        transitionProgressAnimator.addListener(new AnimatorListenerAdapter() {
-            @Override
-            public void onAnimationEnd(Animator animation) {
-                if (transitionProgressAnimator != null) {
-                    transitionProgress = 1f;
-                    swapStates();
-                    if (updateAfterTransition) {
-                        updateAfterTransition = false;
-                        if (updateDelegate != null) {
-                            updateDelegate.run();
+        if (createAnimator) {
+            transitionProgressAnimator = ValueAnimator.ofFloat(0, 1f);
+            transitionProgressAnimator.addUpdateListener(valueAnimator -> {
+                transitionProgress = (float) valueAnimator.getAnimatedValue();
+                invalidate();
+            });
+            transitionProgressAnimator.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    if (transitionProgressAnimator != null) {
+                        transitionProgress = 1f;
+                        swapStates();
+                        if (updateAfterTransition) {
+                            updateAfterTransition = false;
+                            if (updateDelegate != null) {
+                                updateDelegate.run();
+                            }
                         }
+                        invalidate();
                     }
-                    invalidate();
+                    transitionProgressAnimator = null;
                 }
-                transitionProgressAnimator = null;
-            }
-        });
-        transitionProgressAnimator.setDuration(transitionDuration);
-        transitionProgressAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
-        transitionProgressAnimator.start();
+            });
+            transitionProgressAnimator.setDuration(transitionDuration);
+            transitionProgressAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
+            transitionProgressAnimator.start();
+        } else {
+            transitionInProgress = true;
+        }
         invalidate();
     }
 
@@ -173,7 +198,14 @@ public class AvatarsDarawable {
         overrideSize = size;
     }
 
-    public void animateFromState(AvatarsDarawable avatarsDarawable, int currentAccount) {
+    public void animateFromState(AvatarsDarawable avatarsDarawable, int currentAccount, boolean createAnimator) {
+        if (avatarsDarawable.transitionProgressAnimator != null) {
+            avatarsDarawable.transitionProgressAnimator.cancel();
+            if (transitionInProgress) {
+                transitionInProgress = false;
+                swapStates();
+            }
+        }
         TLObject[] objects = new TLObject[3];
         for (int i = 0; i < 3; i++) {
             objects[i] = currentStates[i].object;
@@ -184,7 +216,7 @@ public class AvatarsDarawable {
             setObject(i, currentAccount, objects[i]);
         }
         wasDraw = true;
-        commitTransition(true);
+        commitTransition(true, createAnimator);
     }
 
     public void setAlpha(float alpha) {
@@ -218,13 +250,13 @@ public class AvatarsDarawable {
         this.parent = parent;
         for (int a = 0; a < 3; a++) {
             currentStates[a] = new DrawingState();
-            currentStates[a].imageReceiver = new ImageReceiver();
+            currentStates[a].imageReceiver = new ImageReceiver(parent);
             currentStates[a].imageReceiver.setRoundRadius(AndroidUtilities.dp(12));
             currentStates[a].avatarDrawable = new AvatarDrawable();
             currentStates[a].avatarDrawable.setTextSize(AndroidUtilities.dp(12));
 
             animatingStates[a] = new DrawingState();
-            animatingStates[a].imageReceiver = new ImageReceiver();
+            animatingStates[a].imageReceiver = new ImageReceiver(parent);
             animatingStates[a].imageReceiver.setRoundRadius(AndroidUtilities.dp(12));
             animatingStates[a].avatarDrawable = new AvatarDrawable();
             animatingStates[a].avatarDrawable.setTextSize(AndroidUtilities.dp(12));

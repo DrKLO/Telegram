@@ -16,6 +16,7 @@
 #include "absl/container/inlined_vector.h"
 #include "absl/types/optional.h"
 #include "absl/types/variant.h"
+#include "api/rtp_headers.h"
 #include "api/transport/rtp/dependency_descriptor.h"
 #include "api/video/color_space.h"
 #include "api/video/video_codec_type.h"
@@ -93,6 +94,11 @@ struct RTPVideoHeader {
   // carries the webrtc::VideoFrame id field from the sender to the receiver.
   absl::optional<uint16_t> video_frame_tracking_id;
   RTPVideoTypeHeader video_type_header;
+
+  // When provided, is sent as is as an RTP header extension according to
+  // http://www.webrtc.org/experiments/rtp-hdrext/abs-capture-time.
+  // Otherwise, it is derived from other relevant information.
+  absl::optional<AbsoluteCaptureTime> absolute_capture_time;
 };
 
 }  // namespace webrtc

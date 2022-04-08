@@ -17,7 +17,6 @@
 #include <string>
 
 #include "absl/strings/string_view.h"
-#include "absl/types/optional.h"
 #include "api/video/video_bitrate_allocation.h"
 #include "api/video/video_codec_type.h"
 #include "api/video_codecs/spatial_layer.h"
@@ -154,12 +153,6 @@ class RTC_EXPORT VideoCodec {
 
   VideoCodecMode mode;
   bool expect_encode_from_texture;
-
-  // The size of pool which is used to store video frame buffers inside decoder.
-  // If value isn't present some codec-default value will be used.
-  // If value is present and decoder doesn't have buffer pool the
-  // value will be ignored.
-  absl::optional<int> buffer_pool_size;
 
   // Timing frames configuration. There is delay of delay_ms between two
   // consequent timing frames, excluding outliers. Frame is always made a

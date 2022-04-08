@@ -11,7 +11,6 @@
 #ifndef MODULES_AUDIO_CODING_NETEQ_TIME_STRETCH_H_
 #define MODULES_AUDIO_CODING_NETEQ_TIME_STRETCH_H_
 
-#include <assert.h>
 #include <string.h>  // memset, size_t
 
 #include "modules/audio_coding/neteq/audio_multi_vector.h"
@@ -42,9 +41,9 @@ class TimeStretch {
         num_channels_(num_channels),
         background_noise_(background_noise),
         max_input_value_(0) {
-    assert(sample_rate_hz_ == 8000 || sample_rate_hz_ == 16000 ||
-           sample_rate_hz_ == 32000 || sample_rate_hz_ == 48000);
-    assert(num_channels_ > 0);
+    RTC_DCHECK(sample_rate_hz_ == 8000 || sample_rate_hz_ == 16000 ||
+               sample_rate_hz_ == 32000 || sample_rate_hz_ == 48000);
+    RTC_DCHECK_GT(num_channels_, 0);
     memset(auto_correlation_, 0, sizeof(auto_correlation_));
   }
 
@@ -59,7 +58,7 @@ class TimeStretch {
                       size_t* length_change_samples);
 
  protected:
-  // Sets the parameters |best_correlation| and |peak_index| to suitable
+  // Sets the parameters `best_correlation` and `peak_index` to suitable
   // values when the signal contains no active speech. This method must be
   // implemented by the sub-classes.
   virtual void SetParametersForPassiveSpeech(size_t input_length,
@@ -92,13 +91,13 @@ class TimeStretch {
   const BackgroundNoise& background_noise_;
   int16_t max_input_value_;
   int16_t downsampled_input_[kDownsampledLen];
-  // Adding 1 to the size of |auto_correlation_| because of how it is used
+  // Adding 1 to the size of `auto_correlation_` because of how it is used
   // by the peak-detection algorithm.
   int16_t auto_correlation_[kCorrelationLen + 1];
 
  private:
-  // Calculates the auto-correlation of |downsampled_input_| and writes the
-  // result to |auto_correlation_|.
+  // Calculates the auto-correlation of `downsampled_input_` and writes the
+  // result to `auto_correlation_`.
   void AutoCorrelation();
 
   // Performs a simple voice-activity detection based on the input parameters.

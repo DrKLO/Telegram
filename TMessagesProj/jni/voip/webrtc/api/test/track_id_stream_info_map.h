@@ -16,7 +16,7 @@
 namespace webrtc {
 namespace webrtc_pc_e2e {
 
-// Instances of |TrackIdStreamInfoMap| provide bookkeeping capabilities that
+// Instances of `TrackIdStreamInfoMap` provide bookkeeping capabilities that
 // are useful to associate stats reports track_ids to the remote stream info.
 class TrackIdStreamInfoMap {
  public:
@@ -26,12 +26,12 @@ class TrackIdStreamInfoMap {
   // StatsObserverInterface::OnStatsReports is invoked.
 
   // Returns a reference to a stream label owned by the TrackIdStreamInfoMap.
-  // Precondition: |track_id| must be already mapped to stream label.
+  // Precondition: `track_id` must be already mapped to stream label.
   virtual absl::string_view GetStreamLabelFromTrackId(
       absl::string_view track_id) const = 0;
 
   // Returns a reference to a sync group name owned by the TrackIdStreamInfoMap.
-  // Precondition: |track_id| must be already mapped to sync group.
+  // Precondition: `track_id` must be already mapped to sync group.
   virtual absl::string_view GetSyncGroupLabelFromTrackId(
       absl::string_view track_id) const = 0;
 };

@@ -606,7 +606,7 @@ int WebRtcIsac_DecodeRcu(ISACStruct* ISAC_main_inst,
                          int16_t* decoded,
                          int16_t* speechType);
 
-/* If |inst| is a decoder but not an encoder: tell it what sample rate the
+/* If `inst` is a decoder but not an encoder: tell it what sample rate the
    encoder is using, for bandwidth estimation purposes. */
 void WebRtcIsac_SetEncSampRateInDecoder(ISACStruct* inst, int sample_rate_hz);
 

@@ -69,7 +69,6 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
-import org.telegram.ui.Cells.SettingsSuggestionCell;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.HintEditText;
@@ -252,7 +251,7 @@ public class ChangePhoneActivity extends BaseFragment {
             return;
         }
         progressDialog = new AlertDialog(getParentActivity(), 3);
-        progressDialog.setCanCacnel(false);
+        progressDialog.setCanCancel(false);
         progressDialog.show();
     }
 
@@ -409,7 +408,8 @@ public class ChangePhoneActivity extends BaseFragment {
             codeField.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             codeField.setCursorSize(AndroidUtilities.dp(20));
             codeField.setCursorWidth(1.5f);
-            codeField.setBackgroundDrawable(Theme.createEditTextDrawable(context, false));
+            codeField.setBackgroundDrawable(null);
+            codeField.setLineColors(getThemedColor(Theme.key_windowBackgroundWhiteInputField), getThemedColor(Theme.key_windowBackgroundWhiteInputFieldActivated), getThemedColor(Theme.key_windowBackgroundWhiteRedText3));
             codeField.setPadding(AndroidUtilities.dp(10), 0, 0, 0);
             codeField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             codeField.setMaxLines(1);
@@ -508,7 +508,8 @@ public class ChangePhoneActivity extends BaseFragment {
             phoneField.setInputType(InputType.TYPE_CLASS_PHONE);
             phoneField.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             phoneField.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
-            phoneField.setBackgroundDrawable(Theme.createEditTextDrawable(context, false));
+            phoneField.setBackgroundDrawable(null);
+            phoneField.setLineColors(getThemedColor(Theme.key_windowBackgroundWhiteInputField), getThemedColor(Theme.key_windowBackgroundWhiteInputFieldActivated), getThemedColor(Theme.key_windowBackgroundWhiteRedText3));
             phoneField.setPadding(0, 0, 0, 0);
             phoneField.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             phoneField.setCursorSize(AndroidUtilities.dp(20));

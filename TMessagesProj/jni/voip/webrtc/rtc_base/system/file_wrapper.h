@@ -32,7 +32,7 @@ class FileWrapper final {
  public:
   // Opens a file, in read or write mode. Use the is_open() method on the
   // returned object to check if the open operation was successful. On failure,
-  // and if |error| is non-null, the system errno value is stored at |*error|.
+  // and if `error` is non-null, the system errno value is stored at |*error|.
   // The file is closed by the destructor.
   static FileWrapper OpenReadOnly(const char* file_name_utf8);
   static FileWrapper OpenReadOnly(const std::string& file_name_utf8);
@@ -43,8 +43,8 @@ class FileWrapper final {
 
   FileWrapper() = default;
 
-  // Takes over ownership of |file|, closing it on destruction. Calling with
-  // null |file| is allowed, and results in a FileWrapper with is_open() false.
+  // Takes over ownership of `file`, closing it on destruction. Calling with
+  // null `file` is allowed, and results in a FileWrapper with is_open() false.
   explicit FileWrapper(FILE* file) : file_(file) {}
   ~FileWrapper() { Close(); }
 

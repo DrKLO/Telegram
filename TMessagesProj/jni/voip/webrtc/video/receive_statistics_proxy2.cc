@@ -29,7 +29,7 @@
 namespace webrtc {
 namespace internal {
 namespace {
-// Periodic time interval for processing samples for |freq_offset_counter_|.
+// Periodic time interval for processing samples for `freq_offset_counter_`.
 const int64_t kFreqOffsetProcessIntervalMs = 40000;
 
 // Configuration for bad call detection.
@@ -98,10 +98,9 @@ bool IsCurrentTaskQueueOrThread(TaskQueueBase* task_queue) {
 
 }  // namespace
 
-ReceiveStatisticsProxy::ReceiveStatisticsProxy(
-    const VideoReceiveStream::Config* config,
-    Clock* clock,
-    TaskQueueBase* worker_thread)
+ReceiveStatisticsProxy::ReceiveStatisticsProxy(uint32_t remote_ssrc,
+                                               Clock* clock,
+                                               TaskQueueBase* worker_thread)
     : clock_(clock),
       start_ms_(clock->TimeInMilliseconds()),
       enable_decode_time_histograms_(
@@ -121,7 +120,7 @@ ReceiveStatisticsProxy::ReceiveStatisticsProxy(
                           kNumMeasurementsVariance),
       num_bad_states_(0),
       num_certain_states_(0),
-      remote_ssrc_(config->rtp.remote_ssrc),
+      remote_ssrc_(remote_ssrc),
       // 1000ms window, scale 1000 for ms to s.
       decode_fps_estimator_(1000, 1000),
       renders_fps_estimator_(1000, 1000),
@@ -139,7 +138,7 @@ ReceiveStatisticsProxy::ReceiveStatisticsProxy(
   RTC_DCHECK(worker_thread);
   decode_queue_.Detach();
   incoming_render_queue_.Detach();
-  stats_.ssrc = config->rtp.remote_ssrc;
+  stats_.ssrc = remote_ssrc_;
 }
 
 ReceiveStatisticsProxy::~ReceiveStatisticsProxy() {
@@ -676,7 +675,7 @@ VideoReceiveStream::Stats ReceiveStatisticsProxy::GetStats() const {
         interframe_delay_max_moving_.Max(*last_decoded_frame_time_ms_)
             .value_or(-1);
   } else {
-    // We're paused. Avoid changing the state of |interframe_delay_max_moving_|.
+    // We're paused. Avoid changing the state of `interframe_delay_max_moving_`.
     stats_.interframe_delay_max_ms = -1;
   }
 
@@ -790,8 +789,8 @@ void ReceiveStatisticsProxy::RtcpPacketTypesCounterUpdated(
     // [main] worker thread.
     // So until the sender implementation has been updated, we work around this
     // here by posting the update to the expected thread. We make a by value
-    // copy of the |task_safety_| to handle the case if the queued task
-    // runs after the |ReceiveStatisticsProxy| has been deleted. In such a
+    // copy of the `task_safety_` to handle the case if the queued task
+    // runs after the `ReceiveStatisticsProxy` has been deleted. In such a
     // case the packet_counter update won't be recorded.
     worker_thread_->PostTask(
         ToQueuedTask(task_safety_, [ssrc, packet_counter, this]() {
@@ -946,26 +945,21 @@ void ReceiveStatisticsProxy::OnRenderedFrame(
 void ReceiveStatisticsProxy::OnSyncOffsetUpdated(int64_t video_playout_ntp_ms,
                                                  int64_t sync_offset_ms,
                                                  double estimated_freq_khz) {
-  RTC_DCHECK_RUN_ON(&incoming_render_queue_);
-  int64_t now_ms = clock_->TimeInMilliseconds();
-  worker_thread_->PostTask(
-      ToQueuedTask(task_safety_, [video_playout_ntp_ms, sync_offset_ms,
-                                  estimated_freq_khz, now_ms, this]() {
-        RTC_DCHECK_RUN_ON(&main_thread_);
-        sync_offset_counter_.Add(std::abs(sync_offset_ms));
-        stats_.sync_offset_ms = sync_offset_ms;
-        last_estimated_playout_ntp_timestamp_ms_ = video_playout_ntp_ms;
-        last_estimated_playout_time_ms_ = now_ms;
+  RTC_DCHECK_RUN_ON(&main_thread_);
 
-        const double kMaxFreqKhz = 10000.0;
-        int offset_khz = kMaxFreqKhz;
-        // Should not be zero or negative. If so, report max.
-        if (estimated_freq_khz < kMaxFreqKhz && estimated_freq_khz > 0.0)
-          offset_khz =
-              static_cast<int>(std::fabs(estimated_freq_khz - 90.0) + 0.5);
+  const int64_t now_ms = clock_->TimeInMilliseconds();
+  sync_offset_counter_.Add(std::abs(sync_offset_ms));
+  stats_.sync_offset_ms = sync_offset_ms;
+  last_estimated_playout_ntp_timestamp_ms_ = video_playout_ntp_ms;
+  last_estimated_playout_time_ms_ = now_ms;
 
-        freq_offset_counter_.Add(offset_khz);
-      }));
+  const double kMaxFreqKhz = 10000.0;
+  int offset_khz = kMaxFreqKhz;
+  // Should not be zero or negative. If so, report max.
+  if (estimated_freq_khz < kMaxFreqKhz && estimated_freq_khz > 0.0)
+    offset_khz = static_cast<int>(std::fabs(estimated_freq_khz - 90.0) + 0.5);
+
+  freq_offset_counter_.Add(offset_khz);
 }
 
 void ReceiveStatisticsProxy::OnCompleteFrame(bool is_keyframe,

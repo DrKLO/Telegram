@@ -54,7 +54,7 @@ int32_t VideoReceiver2::RegisterReceiveCallback(
 
 // Register an externally defined decoder object. This may be called on either
 // the construction sequence or the decoder sequence to allow for lazy creation
-// of video decoders. If called on the decoder sequence |externalDecoder| cannot
+// of video decoders. If called on the decoder sequence `externalDecoder` cannot
 // be a nullptr. It's the responsibility of the caller to make sure that the
 // access from the two sequences are mutually exclusive.
 void VideoReceiver2::RegisterExternalDecoder(VideoDecoder* externalDecoder,
@@ -71,7 +71,7 @@ void VideoReceiver2::RegisterExternalDecoder(VideoDecoder* externalDecoder,
     codecDataBase_.DeregisterExternalDecoder(payloadType);
     return;
   }
-  codecDataBase_.RegisterExternalDecoder(externalDecoder, payloadType);
+  codecDataBase_.RegisterExternalDecoder(payloadType, externalDecoder);
 }
 
 bool VideoReceiver2::IsExternalDecoderRegistered(uint8_t payloadType) const {
@@ -110,19 +110,12 @@ int32_t VideoReceiver2::Decode(const VCMEncodedFrame* frame) {
 }
 
 // Register possible receive codecs, can be called multiple times
-int32_t VideoReceiver2::RegisterReceiveCodec(uint8_t payload_type,
-                                             const VideoCodec* receiveCodec,
-                                             int32_t numberOfCores) {
+void VideoReceiver2::RegisterReceiveCodec(
+    uint8_t payload_type,
+    const VideoDecoder::Settings& settings) {
   RTC_DCHECK_RUN_ON(&construction_sequence_checker_);
   RTC_DCHECK(!IsDecoderThreadRunning());
-  if (receiveCodec == nullptr) {
-    return VCM_PARAMETER_ERROR;
-  }
-  if (!codecDataBase_.RegisterReceiveCodec(payload_type, receiveCodec,
-                                           numberOfCores)) {
-    return -1;
-  }
-  return 0;
+  codecDataBase_.RegisterReceiveCodec(payload_type, settings);
 }
 
 bool VideoReceiver2::IsDecoderThreadRunning() {

@@ -94,7 +94,7 @@ class ProbeController {
   void SetMaxBitrate(int64_t max_bitrate_bps);
 
   // Resets the ProbeController to a state equivalent to as if it was just
-  // created EXCEPT for |enable_periodic_alr_probing_|.
+  // created EXCEPT for `enable_periodic_alr_probing_`.
   void Reset(int64_t at_time_ms);
 
   ABSL_MUST_USE_RESULT std::vector<ProbeClusterConfig> Process(

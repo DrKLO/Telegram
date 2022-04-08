@@ -50,7 +50,7 @@ class CallStats {
   void RegisterStatsObserver(CallStatsObserver* observer);
   void DeregisterStatsObserver(CallStatsObserver* observer);
 
-  // Expose |LastProcessedRtt()| from RtcpRttStats to the public interface, as
+  // Expose `LastProcessedRtt()` from RtcpRttStats to the public interface, as
   // it is the part of the API that is needed by direct users of CallStats.
   int64_t LastProcessedRtt() const;
 
@@ -93,7 +93,7 @@ class CallStats {
       // propagating the rtt from the RtpRtcp module, which does not call
       // LastProcessedRtt(). Down the line we should consider removing
       // LastProcessedRtt() and use the interface for event notifications only.
-      RTC_NOTREACHED() << "Legacy call path";
+      RTC_DCHECK_NOTREACHED() << "Legacy call path";
       return 0;
     }
 

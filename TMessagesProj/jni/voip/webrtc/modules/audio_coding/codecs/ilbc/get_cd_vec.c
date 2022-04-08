@@ -99,7 +99,7 @@ bool WebRtcIlbcfix_GetCbVec(
         // We're going to fill in cbveclen + 5 elements of tempbuff2 in
         // WebRtcSpl_FilterMAFastQ12, less than the SUBL + 5 elements we'll be
         // using in WebRtcIlbcfix_CreateAugmentedVec. This error is caused by
-        // bad values in |index| (which come from the encoded stream). Tell the
+        // bad values in `index` (which come from the encoded stream). Tell the
         // caller that things went south, and that the decoder state is now
         // corrupt (because it's half-way through an update that we can't
         // complete).

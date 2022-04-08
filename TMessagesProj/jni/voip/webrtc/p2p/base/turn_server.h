@@ -23,6 +23,7 @@
 #include "p2p/base/port_interface.h"
 #include "rtc_base/async_packet_socket.h"
 #include "rtc_base/socket_address.h"
+#include "rtc_base/ssl_adapter.h"
 #include "rtc_base/third_party/sigslot/sigslot.h"
 #include "rtc_base/thread.h"
 
@@ -79,7 +80,6 @@ class TurnServerAllocation : public rtc::MessageHandlerAutoCleanup,
   const std::string& key() const { return key_; }
   const std::string& transaction_id() const { return transaction_id_; }
   const std::string& username() const { return username_; }
-  const std::string& origin() const { return origin_; }
   const std::string& last_nonce() const { return last_nonce_; }
   void set_last_nonce(const std::string& nonce) { last_nonce_ = nonce; }
 
@@ -135,7 +135,6 @@ class TurnServerAllocation : public rtc::MessageHandlerAutoCleanup,
   std::string key_;
   std::string transaction_id_;
   std::string username_;
-  std::string origin_;
   std::string last_nonce_;
   PermissionList perms_;
   ChannelList channels_;
@@ -237,7 +236,10 @@ class TurnServer : public sigslot::has_slots<> {
   // Starts listening for the connections on this socket. When someone tries
   // to connect, the connection will be accepted and a new internal socket
   // will be added.
-  void AddInternalServerSocket(rtc::AsyncSocket* socket, ProtocolType proto);
+  void AddInternalServerSocket(
+      rtc::Socket* socket,
+      ProtocolType proto,
+      std::unique_ptr<rtc::SSLAdapterFactory> ssl_adapter_factory = nullptr);
   // Specifies the factory to use for creating external sockets.
   void SetExternalSocketFactory(rtc::PacketSocketFactory* factory,
                                 const rtc::SocketAddress& address);
@@ -265,10 +267,10 @@ class TurnServer : public sigslot::has_slots<> {
                         const rtc::SocketAddress& address,
                         const int64_t& packet_time_us);
 
-  void OnNewInternalConnection(rtc::AsyncSocket* socket);
+  void OnNewInternalConnection(rtc::Socket* socket);
 
   // Accept connections on this server socket.
-  void AcceptConnection(rtc::AsyncSocket* server_socket) RTC_RUN_ON(thread_);
+  void AcceptConnection(rtc::Socket* server_socket) RTC_RUN_ON(thread_);
   void OnInternalSocketClose(rtc::AsyncPacketSocket* socket, int err);
 
   void HandleStunMessage(TurnServerConnection* conn,
@@ -320,7 +322,12 @@ class TurnServer : public sigslot::has_slots<> {
       RTC_RUN_ON(thread_);
 
   typedef std::map<rtc::AsyncPacketSocket*, ProtocolType> InternalSocketMap;
-  typedef std::map<rtc::AsyncSocket*, ProtocolType> ServerSocketMap;
+  struct ServerSocketInfo {
+    ProtocolType proto;
+    // If non-null, used to wrap accepted sockets.
+    std::unique_ptr<rtc::SSLAdapterFactory> ssl_adapter_factory;
+  };
+  typedef std::map<rtc::Socket*, ServerSocketInfo> ServerSocketMap;
 
   rtc::Thread* const thread_;
   const std::string nonce_key_;

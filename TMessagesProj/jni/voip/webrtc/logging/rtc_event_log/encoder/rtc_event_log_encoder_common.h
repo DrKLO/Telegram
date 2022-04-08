@@ -55,7 +55,7 @@ uint64_t ToUnsigned(T y) {
   }
 }
 
-// Assuming x = ToUnsigned(y), return |y|.
+// Assuming x = ToUnsigned(y), return `y`.
 // Note: static_cast<T>(x) would work on most platforms and compilers, but
 // involves undefined behavior. This function is well-defined, and can be
 // optimized to a noop for 64 bit types, or a few arithmetic
@@ -74,7 +74,7 @@ bool ToSigned(uint64_t x, T* y) {
   using UNSIGNED_T = typename std::make_unsigned<T>::type;
   constexpr auto MAX_UNSIGNED_T = std::numeric_limits<UNSIGNED_T>::max();
   if (x > static_cast<uint64_t>(MAX_UNSIGNED_T)) {
-    return false;  // |x| cannot be represented using a T.
+    return false;  // `x` cannot be represented using a T.
   }
 
   if (x <= static_cast<uint64_t>(MAX_T)) {

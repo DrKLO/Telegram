@@ -139,13 +139,11 @@ RtpPayloadParams::RtpPayloadParams(const uint32_t ssrc,
     : ssrc_(ssrc),
       generic_picture_id_experiment_(
           absl::StartsWith(trials.Lookup("WebRTC-GenericPictureId"),
-                           "Enabled")),
-      simulate_generic_vp9_(
-          absl::StartsWith(trials.Lookup("WebRTC-Vp9DependencyDescriptor"),
                            "Enabled")) {
   for (auto& spatial_layer : last_shared_frame_id_)
     spatial_layer.fill(-1);
 
+  chain_last_frame_id_.fill(-1);
   buffer_id_to_frame_id_.fill(-1);
 
   Random random(rtc::TimeMicros());
@@ -288,7 +286,7 @@ void RtpPayloadParams::SetGeneric(const CodecSpecificInfo* codec_specific_info,
       }
       return;
     case VideoCodecType::kVideoCodecVP9:
-      if (simulate_generic_vp9_ && codec_specific_info != nullptr) {
+      if (codec_specific_info != nullptr) {
         Vp9ToGeneric(codec_specific_info->codecSpecific.VP9, frame_id,
                      *rtp_video_header);
       }
@@ -308,7 +306,7 @@ void RtpPayloadParams::SetGeneric(const CodecSpecificInfo* codec_specific_info,
     case VideoCodecType::kVideoCodecMultiplex:
       return;
   }
-  RTC_NOTREACHED() << "Unsupported codec.";
+  RTC_DCHECK_NOTREACHED() << "Unsupported codec.";
 }
 
 void RtpPayloadParams::GenericToGeneric(int64_t shared_frame_id,
@@ -318,13 +316,16 @@ void RtpPayloadParams::GenericToGeneric(int64_t shared_frame_id,
       rtp_video_header->generic.emplace();
 
   generic.frame_id = shared_frame_id;
+  generic.decode_target_indications.push_back(DecodeTargetIndication::kSwitch);
 
   if (is_keyframe) {
+    generic.chain_diffs.push_back(0);
     last_shared_frame_id_[0].fill(-1);
   } else {
     int64_t frame_id = last_shared_frame_id_[0][0];
     RTC_DCHECK_NE(frame_id, -1);
     RTC_DCHECK_LT(frame_id, shared_frame_id);
+    generic.chain_diffs.push_back(shared_frame_id - frame_id);
     generic.dependencies.push_back(frame_id);
   }
 
@@ -418,10 +419,10 @@ void RtpPayloadParams::Vp8ToGeneric(const CodecSpecificInfoVP8& vp8_info,
   }
 }
 
-FrameDependencyStructure RtpPayloadParams::MinimalisticVp9Structure(
-    const CodecSpecificInfoVP9& vp9) {
-  const int num_spatial_layers = vp9.num_spatial_layers;
-  const int num_temporal_layers = kMaxTemporalStreams;
+FrameDependencyStructure RtpPayloadParams::MinimalisticStructure(
+    int num_spatial_layers,
+    int num_temporal_layers) {
+  RTC_DCHECK_LE(num_spatial_layers * num_temporal_layers, 32);
   FrameDependencyStructure structure;
   structure.num_decode_targets = num_spatial_layers * num_temporal_layers;
   structure.num_chains = num_spatial_layers;
@@ -433,10 +434,10 @@ FrameDependencyStructure RtpPayloadParams::MinimalisticVp9Structure(
       a_template.temporal_id = tid;
       for (int s = 0; s < num_spatial_layers; ++s) {
         for (int t = 0; t < num_temporal_layers; ++t) {
-          // Prefer kSwitch for indication frame is part of the decode target
-          // because RtpPayloadParams::Vp9ToGeneric uses that indication more
-          // often that kRequired, increasing chance custom dti need not to
-          // use more bits in dependency descriptor on the wire.
+          // Prefer kSwitch indication for frames that is part of the decode
+          // target because dependency descriptor information generated in this
+          // class use kSwitch indications more often that kRequired, increasing
+          // the chance of a good (or complete) template match.
           a_template.decode_target_indications.push_back(
               sid <= s && tid <= t ? DecodeTargetIndication::kSwitch
                                    : DecodeTargetIndication::kNotPresent);
@@ -449,9 +450,6 @@ FrameDependencyStructure RtpPayloadParams::MinimalisticVp9Structure(
       structure.templates.push_back(a_template);
 
       structure.decode_target_protected_by_chain.push_back(sid);
-    }
-    if (vp9.ss_data_available && vp9.spatial_layer_resolution_present) {
-      structure.resolutions.emplace_back(vp9.width[sid], vp9.height[sid]);
     }
   }
   return structure;

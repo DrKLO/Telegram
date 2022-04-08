@@ -15,6 +15,7 @@
 
 #include "api/dtls_transport_interface.h"
 #include "api/rtc_event_log/rtc_event.h"
+#include "api/units/timestamp.h"
 
 namespace webrtc {
 
@@ -41,10 +42,10 @@ class RtcEventDtlsTransportState : public RtcEvent {
 };
 
 struct LoggedDtlsTransportState {
-  int64_t log_time_us() const { return timestamp_us; }
-  int64_t log_time_ms() const { return timestamp_us / 1000; }
+  int64_t log_time_us() const { return timestamp.us(); }
+  int64_t log_time_ms() const { return timestamp.ms(); }
 
-  int64_t timestamp_us;
+  Timestamp timestamp = Timestamp::MinusInfinity();
   DtlsTransportState dtls_transport_state;
 };
 

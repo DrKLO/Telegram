@@ -116,7 +116,7 @@ ThreadManager* ThreadManager::Instance() {
 
 ThreadManager::~ThreadManager() {
   // By above RTC_DEFINE_STATIC_LOCAL.
-  RTC_NOTREACHED() << "ThreadManager should never be destructed.";
+  RTC_DCHECK_NOTREACHED() << "ThreadManager should never be destructed.";
 }
 
 // static
@@ -929,6 +929,7 @@ void Thread::Send(const Location& posted_from,
   msg.pdata = pdata;
   if (IsCurrent()) {
 #if RTC_DCHECK_IS_ON
+    RTC_DCHECK(this->IsInvokeToThreadAllowed(this));
     RTC_DCHECK_RUN_ON(this);
     could_be_blocking_call_count_++;
 #endif
@@ -1031,7 +1032,7 @@ void Thread::ClearCurrentTaskQueue() {
 void Thread::QueuedTaskHandler::OnMessage(Message* msg) {
   RTC_DCHECK(msg);
   auto* data = static_cast<ScopedMessageData<webrtc::QueuedTask>*>(msg->pdata);
-  std::unique_ptr<webrtc::QueuedTask> task = std::move(data->data());
+  std::unique_ptr<webrtc::QueuedTask> task(data->Release());
   // Thread expects handler to own Message::pdata when OnMessage is called
   // Since MessageData is no longer needed, delete it.
   delete data;
@@ -1043,7 +1044,7 @@ void Thread::QueuedTaskHandler::OnMessage(Message* msg) {
 }
 
 void Thread::AllowInvokesToThread(Thread* thread) {
-#if (!defined(NDEBUG) || defined(DCHECK_ALWAYS_ON))
+#if (!defined(NDEBUG) || RTC_DCHECK_IS_ON)
   if (!IsCurrent()) {
     PostTask(webrtc::ToQueuedTask(
         [thread, this]() { AllowInvokesToThread(thread); }));
@@ -1056,7 +1057,7 @@ void Thread::AllowInvokesToThread(Thread* thread) {
 }
 
 void Thread::DisallowAllInvokes() {
-#if (!defined(NDEBUG) || defined(DCHECK_ALWAYS_ON))
+#if (!defined(NDEBUG) || RTC_DCHECK_IS_ON)
   if (!IsCurrent()) {
     PostTask(webrtc::ToQueuedTask([this]() { DisallowAllInvokes(); }));
     return;
@@ -1079,9 +1080,9 @@ uint32_t Thread::GetCouldBeBlockingCallCount() const {
 #endif
 
 // Returns true if no policies added or if there is at least one policy
-// that permits invocation to |target| thread.
+// that permits invocation to `target` thread.
 bool Thread::IsInvokeToThreadAllowed(rtc::Thread* target) {
-#if (!defined(NDEBUG) || defined(DCHECK_ALWAYS_ON))
+#if (!defined(NDEBUG) || RTC_DCHECK_IS_ON)
   RTC_DCHECK_RUN_ON(this);
   if (!invoke_policy_enabled_) {
     return true;

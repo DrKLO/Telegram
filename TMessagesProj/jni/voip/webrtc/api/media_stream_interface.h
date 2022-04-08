@@ -28,6 +28,7 @@
 #include "api/video/video_frame.h"
 #include "api/video/video_sink_interface.h"
 #include "api/video/video_source_interface.h"
+#include "api/video_track_source_constraints.h"
 #include "modules/audio_processing/include/audio_processing_statistics.h"
 #include "rtc_base/ref_count.h"
 #include "rtc_base/system/rtc_export.h"
@@ -146,14 +147,19 @@ class VideoTrackSourceInterface : public MediaSourceInterface,
   // Add an encoded video sink to the source and additionally cause
   // a key frame to be generated from the source. The sink will be
   // invoked from a decoder queue.
-  // TODO(bugs.webrtc.org/11114): make pure virtual once downstream project
-  // adapts.
   virtual void AddEncodedSink(
       rtc::VideoSinkInterface<RecordableEncodedFrame>* sink) = 0;
 
   // Removes an encoded video sink from the source.
   virtual void RemoveEncodedSink(
       rtc::VideoSinkInterface<RecordableEncodedFrame>* sink) = 0;
+
+  // Notify about constraints set on the source. The information eventually gets
+  // routed to attached sinks via VideoSinkInterface<>::OnConstraintsChanged.
+  // The call is expected to happen on the network thread.
+  // TODO(crbug/1255737): make pure virtual once downstream project adapts.
+  virtual void ProcessConstraints(
+      const webrtc::VideoTrackSourceConstraints& constraints) {}
 
  protected:
   ~VideoTrackSourceInterface() override = default;
@@ -197,10 +203,10 @@ class AudioTrackSinkInterface {
                       int sample_rate,
                       size_t number_of_channels,
                       size_t number_of_frames) {
-    RTC_NOTREACHED() << "This method must be overridden, or not used.";
+    RTC_DCHECK_NOTREACHED() << "This method must be overridden, or not used.";
   }
 
-  // In this method, |absolute_capture_timestamp_ms|, when available, is
+  // In this method, `absolute_capture_timestamp_ms`, when available, is
   // supposed to deliver the timestamp when this audio frame was originally
   // captured. This timestamp MUST be based on the same clock as
   // rtc::TimeMillis().
@@ -240,7 +246,7 @@ class RTC_EXPORT AudioSourceInterface : public MediaSourceInterface {
   // TODO(deadbeef): Makes all the interfaces pure virtual after they're
   // implemented in chromium.
 
-  // Sets the volume of the source. |volume| is in  the range of [0, 10].
+  // Sets the volume of the source. `volume` is in  the range of [0, 10].
   // TODO(tommi): This method should be on the track and ideally volume should
   // be applied in the track in a way that does not affect clones of the track.
   virtual void SetVolume(double volume) {}
@@ -268,7 +274,7 @@ class AudioProcessorInterface : public rtc::RefCountInterface {
     AudioProcessingStats apm_statistics;
   };
 
-  // Get audio processor statistics. The |has_remote_tracks| argument should be
+  // Get audio processor statistics. The `has_remote_tracks` argument should be
   // set if there are active remote tracks (this would usually be true during
   // a call). If there are no remote tracks some of the stats will not be set by
   // the AudioProcessor, because they only make sense if there is at least one

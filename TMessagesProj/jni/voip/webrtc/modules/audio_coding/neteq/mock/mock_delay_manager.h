@@ -11,9 +11,6 @@
 #ifndef MODULES_AUDIO_CODING_NETEQ_MOCK_MOCK_DELAY_MANAGER_H_
 #define MODULES_AUDIO_CODING_NETEQ_MOCK_MOCK_DELAY_MANAGER_H_
 
-#include <memory>
-#include <utility>
-
 #include "api/neteq/tick_timer.h"
 #include "modules/audio_coding/neteq/delay_manager.h"
 #include "test/gmock.h"
@@ -22,20 +19,9 @@ namespace webrtc {
 
 class MockDelayManager : public DelayManager {
  public:
-  MockDelayManager(size_t max_packets_in_buffer,
-                   int base_minimum_delay_ms,
-                   int histogram_quantile,
-                   absl::optional<int> resample_interval_ms,
-                   int max_history_ms,
-                   const TickTimer* tick_timer,
-                   std::unique_ptr<Histogram> histogram)
-      : DelayManager(max_packets_in_buffer,
-                     base_minimum_delay_ms,
-                     histogram_quantile,
-                     resample_interval_ms,
-                     max_history_ms,
-                     tick_timer,
-                     std::move(histogram)) {}
+  MockDelayManager(const MockDelayManager::Config& config,
+                   const TickTimer* tick_timer)
+      : DelayManager(config, tick_timer) {}
   MOCK_METHOD(int, TargetDelayMs, (), (const));
 };
 

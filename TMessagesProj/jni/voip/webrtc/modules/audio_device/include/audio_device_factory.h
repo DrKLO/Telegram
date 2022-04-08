@@ -20,7 +20,7 @@ namespace webrtc {
 
 // Creates an AudioDeviceModule (ADM) for Windows based on the Core Audio API.
 // The creating thread must be a COM thread; otherwise nullptr will be returned.
-// By default |automatic_restart| is set to true and it results in support for
+// By default `automatic_restart` is set to true and it results in support for
 // automatic restart of audio if e.g. the existing device is removed. If set to
 // false, no attempt to restart audio is performed under these conditions.
 //

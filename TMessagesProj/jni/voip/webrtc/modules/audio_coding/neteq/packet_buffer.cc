@@ -33,7 +33,7 @@
 namespace webrtc {
 namespace {
 // Predicate used when inserting packets in the buffer list.
-// Operator() returns true when |packet| goes before |new_packet|.
+// Operator() returns true when `packet` goes before `new_packet`.
 class NewTimestampIsLarger {
  public:
   explicit NewTimestampIsLarger(const Packet& new_packet)
@@ -183,16 +183,16 @@ int PacketBuffer::InsertPacket(Packet&& packet,
   PacketList::reverse_iterator rit = std::find_if(
       buffer_.rbegin(), buffer_.rend(), NewTimestampIsLarger(packet));
 
-  // The new packet is to be inserted to the right of |rit|. If it has the same
-  // timestamp as |rit|, which has a higher priority, do not insert the new
+  // The new packet is to be inserted to the right of `rit`. If it has the same
+  // timestamp as `rit`, which has a higher priority, do not insert the new
   // packet to list.
   if (rit != buffer_.rend() && packet.timestamp == rit->timestamp) {
     LogPacketDiscarded(packet.priority.codec_level, stats);
     return return_val;
   }
 
-  // The new packet is to be inserted to the left of |it|. If it has the same
-  // timestamp as |it|, which has a lower priority, replace |it| with the new
+  // The new packet is to be inserted to the left of `it`. If it has the same
+  // timestamp as `it`, which has a lower priority, replace `it` with the new
   // packet.
   PacketList::iterator it = rit.base();
   if (it != buffer_.end() && packet.timestamp == it->timestamp) {

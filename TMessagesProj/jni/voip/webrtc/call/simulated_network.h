@@ -98,7 +98,7 @@ class SimulatedNetwork : public SimulatedNetworkInterface {
 
   mutable Mutex config_lock_;
 
-  // |process_checker_| guards the data structures involved in delay and loss
+  // `process_checker_` guards the data structures involved in delay and loss
   // processes, such as the packet queues.
   rtc::RaceChecker process_checker_;
   CoDelSimulation codel_controller_ RTC_GUARDED_BY(process_checker_);

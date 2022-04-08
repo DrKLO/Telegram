@@ -75,6 +75,12 @@ class AecState {
     return erle_estimator_.Erle(onset_compensated);
   }
 
+  // Returns the non-capped ERLE.
+  rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> ErleUnbounded()
+      const {
+    return erle_estimator_.ErleUnbounded();
+  }
+
   // Returns the fullband ERLE estimate in log2 units.
   float FullBandErleLog2() const { return erle_estimator_.FullbandErleLog2(); }
 
@@ -110,8 +116,12 @@ class AecState {
   // Takes appropriate action at an echo path change.
   void HandleEchoPathChange(const EchoPathVariability& echo_path_variability);
 
-  // Returns the decay factor for the echo reverberation.
-  float ReverbDecay() const { return reverb_model_estimator_.ReverbDecay(); }
+  // Returns the decay factor for the echo reverberation. The parameter `mild`
+  // indicates which exponential decay to return. The default one or a milder
+  // one that can be used during nearend regions.
+  float ReverbDecay(bool mild) const {
+    return reverb_model_estimator_.ReverbDecay(mild);
+  }
 
   // Return the frequency response of the reverberant echo.
   rtc::ArrayView<const float> GetReverbFrequencyResponse() const {

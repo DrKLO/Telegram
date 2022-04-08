@@ -45,11 +45,13 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.AvatarsDarawable;
 import org.telegram.ui.Components.AvatarsImageView;
 import org.telegram.ui.Components.CrossOutDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.GroupCallFullscreenAdapter;
+import org.telegram.ui.Components.GroupCallPip;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.Components.UndoView;
@@ -71,6 +73,8 @@ public class GroupCallRenderersContainer extends FrameLayout {
     public int listWidth;
     ValueAnimator fullscreenAnimator;
     public boolean inLayout;
+
+    public ImageView pipView;
 
     private LongSparseIntArray attachedPeerIds = new LongSparseIntArray();
 
@@ -104,7 +108,7 @@ public class GroupCallRenderersContainer extends FrameLayout {
 
     float progressToHideUi;
 
-    Drawable topShadowDrawable;
+    Drawable topShadowDrawable, rightShadowDrawable;
     CrossOutDrawable pinDrawable;
     TextView pinTextView;
     TextView unpinTextView;
@@ -129,6 +133,7 @@ public class GroupCallRenderersContainer extends FrameLayout {
     private final ImageView backButton;
     private final ImageView pinButton;
     private final View topShadowView;
+    private final View rightShadowView;
 
     private float pinchStartCenterX;
     private float pinchStartCenterY;
@@ -182,8 +187,14 @@ public class GroupCallRenderersContainer extends FrameLayout {
         backButton.setBackground(Theme.createSelectorDrawable(ColorUtils.setAlphaComponent(Color.WHITE, 55)));
         topShadowView = new View(context);
         topShadowDrawable = new GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP, new int[]{Color.TRANSPARENT, ColorUtils.setAlphaComponent(Color.BLACK, (int) (255 * 0.45f))});
-        topShadowView.setBackgroundDrawable(topShadowDrawable);
+        topShadowView.setBackground(topShadowDrawable);
         addView(topShadowView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 120));
+
+        rightShadowView = new View(context);
+        rightShadowDrawable = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[]{Color.TRANSPARENT, ColorUtils.setAlphaComponent(Color.BLACK, (int) (255 * 0.45f))});
+        rightShadowView.setBackground(rightShadowDrawable);
+        rightShadowView.setVisibility((call != null && isRtmpStream()) ? VISIBLE : GONE);
+        addView(rightShadowView, LayoutHelper.createFrame(160, LayoutHelper.MATCH_PARENT, Gravity.RIGHT));
 
         addView(backButton, LayoutHelper.createFrame(56, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP));
         backButton.setOnClickListener(view -> onBackPressed());
@@ -266,6 +277,33 @@ public class GroupCallRenderersContainer extends FrameLayout {
         addView(pinTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP));
         addView(unpinTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP));
 
+        pipView = new ImageView(context);
+        pipView.setVisibility(INVISIBLE);
+        pipView.setAlpha(0f);
+        pipView.setImageResource(R.drawable.ic_goinline);
+        pipView.setContentDescription(LocaleController.getString(R.string.AccDescrPipMode));
+        int padding = AndroidUtilities.dp(4);
+        pipView.setPadding(padding, padding, padding, padding);
+        pipView.setBackground(Theme.createSelectorDrawable(ColorUtils.setAlphaComponent(Color.WHITE, 55)));
+        pipView.setOnClickListener(v -> {
+            if (isRtmpStream()) {
+                if (AndroidUtilities.checkInlinePermissions(groupCallActivity.getParentActivity())) {
+                    RTMPStreamPipOverlay.show();
+                    groupCallActivity.dismiss();
+                } else {
+                    AlertsCreator.createDrawOverlayPermissionDialog(groupCallActivity.getParentActivity(), null).show();
+                }
+                return;
+            }
+            if (AndroidUtilities.checkInlinePermissions(groupCallActivity.getParentActivity())) {
+                GroupCallPip.clearForce();
+                groupCallActivity.dismiss();
+            } else {
+                AlertsCreator.createDrawOverlayGroupCallPermissionDialog(getContext()).show();
+            }
+        });
+        addView(pipView, LayoutHelper.createFrame(32, 32, Gravity.RIGHT | Gravity.TOP, 12, 12, 12, 12));
+
         Drawable toastBackgroundDrawable = Theme.createRoundRectDrawable(AndroidUtilities.dp(18), ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_voipgroup_listViewBackground), (int) (255 * 0.8f)));
         speakingMembersToast = new FrameLayout(context) {
             @Override
@@ -323,6 +361,10 @@ public class GroupCallRenderersContainer extends FrameLayout {
 
         pinContainer.setVisibility(View.GONE);
         setIsTablet(GroupCallActivity.isTabletMode);
+    }
+
+    private boolean isRtmpStream() {
+        return call != null && call.call.rtmp_stream;
     }
 
     protected void onBackPressed() {
@@ -435,7 +477,7 @@ public class GroupCallRenderersContainer extends FrameLayout {
                     canvas.save();
                 }
                 boolean swipeToBack = swipeToBackGesture || swipeToBackAnimator != null;
-                if (swipeToBack) {
+                if (swipeToBack && !isRtmpStream()) {
                     canvas.clipRect(0, 0, getMeasuredWidth(), getMeasuredHeight() - ((isLandscapeMode || GroupCallActivity.isTabletMode) ? 0 : AndroidUtilities.dp(90)));
                 }
                 canvas.translate(fullscreenTextureView.getX(), fullscreenTextureView.getY());
@@ -480,14 +522,35 @@ public class GroupCallRenderersContainer extends FrameLayout {
                 shadowAlpha = 0;
             }
             topShadowDrawable.setAlpha((int) (255 * shadowAlpha));
+            rightShadowDrawable.setAlpha((int) (255 * shadowAlpha));
         } else if (fullscreenTextureView != null) {
             topShadowDrawable.setAlpha((int) (255 * a * (1f - fullscreenTextureView.progressToNoVideoStub)));
+            rightShadowDrawable.setAlpha((int) (255 * a * (1f - fullscreenTextureView.progressToNoVideoStub)));
         } else {
             topShadowDrawable.setAlpha((int) (255 * a));
+            rightShadowDrawable.setAlpha((int) (255 * a));
         }
 
         backButton.setAlpha(a);
-        pinButton.setAlpha(a);
+
+        if (isRtmpStream()) {
+            pinButton.setAlpha(0f);
+            pinButton.setVisibility(INVISIBLE);
+
+            pipView.setAlpha(a);
+            pipView.setVisibility(VISIBLE);
+            if (isLandscapeMode) {
+                pipView.setTranslationX(-AndroidUtilities.dp(72) * (1f - progressToHideUi));
+            } else {
+                pipView.setTranslationX(0);
+            }
+        } else {
+            pinButton.setAlpha(a);
+            pinButton.setVisibility(VISIBLE);
+
+            pipView.setAlpha(0f);
+            pipView.setVisibility(INVISIBLE);
+        }
 
         float x1 = getMeasuredWidth() - pinTextView.getMeasuredWidth();
         float x2 = getMeasuredWidth() - unpinTextView.getMeasuredWidth();
@@ -508,9 +571,15 @@ public class GroupCallRenderersContainer extends FrameLayout {
 
         pinButton.setTranslationX(pinX - AndroidUtilities.dp(44f));
 
-        pinTextView.setAlpha(a * (1f - pinDrawable.getProgress()));
-        unpinTextView.setAlpha(a * pinDrawable.getProgress());
-        pinContainer.setAlpha(a);
+        if (isRtmpStream()) {
+            pinTextView.setAlpha(0f);
+            unpinTextView.setAlpha(0f);
+            pinContainer.setAlpha(0f);
+        } else {
+            pinTextView.setAlpha(a * (1f - pinDrawable.getProgress()));
+            unpinTextView.setAlpha(a * pinDrawable.getProgress());
+            pinContainer.setAlpha(a);
+        }
 
         if (speakingMembersToastChangeProgress != 1) {
             speakingMembersToastChangeProgress += 16 / 220f;
@@ -878,6 +947,9 @@ public class GroupCallRenderersContainer extends FrameLayout {
             fullscreenAnimator = ValueAnimator.ofFloat(progressToFullscreenMode, inFullscreenMode ? 1f : 0);
             fullscreenAnimator.addUpdateListener(valueAnimator -> {
                 progressToFullscreenMode = (float) valueAnimator.getAnimatedValue();
+                groupCallActivity.getMenuItemsContainer().setAlpha(1f - progressToFullscreenMode);
+                groupCallActivity.invalidateActionBarAlpha();
+                groupCallActivity.invalidateScrollOffsetY();
                 update();
             });
             GroupCallMiniTextureView textureViewFinal = fullscreenTextureView;
@@ -1217,11 +1289,23 @@ public class GroupCallRenderersContainer extends FrameLayout {
         return false;
     }
 
+    public void hideUi() {
+        if (canHideUI()) {
+            if (hideUiRunnableIsScheduled) {
+                AndroidUtilities.cancelRunOnUIThread(hideUiRunnable);
+                hideUiRunnableIsScheduled = false;
+            }
+
+            setUiVisible(false);
+        }
+    }
+
     public void delayHideUi() {
         if (hideUiRunnableIsScheduled) {
             AndroidUtilities.cancelRunOnUIThread(hideUiRunnable);
-            AndroidUtilities.runOnUIThread(hideUiRunnable, 3000);
         }
+        AndroidUtilities.runOnUIThread(hideUiRunnable, 3000);
+        hideUiRunnableIsScheduled = true;
     }
 
     public boolean isUiVisible() {
@@ -1255,10 +1339,11 @@ public class GroupCallRenderersContainer extends FrameLayout {
         if (GroupCallActivity.isTabletMode) {
             ((MarginLayoutParams) topShadowView.getLayoutParams()).rightMargin = AndroidUtilities.dp(GroupCallActivity.TABLET_LIST_SIZE + 8);
         } else if (GroupCallActivity.isLandscapeMode) {
-            ((MarginLayoutParams) topShadowView.getLayoutParams()).rightMargin = AndroidUtilities.dp(90);
+            ((MarginLayoutParams) topShadowView.getLayoutParams()).rightMargin = isRtmpStream() ? 0 : AndroidUtilities.dp(90);
         } else {
             ((MarginLayoutParams) topShadowView.getLayoutParams()).rightMargin = 0;
         }
+        rightShadowView.setVisibility(GroupCallActivity.isLandscapeMode && !GroupCallActivity.isTabletMode ? VISIBLE : GONE);
 
         pinContainer.getLayoutParams().height = AndroidUtilities.dp(40);
         pinTextView.measure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.UNSPECIFIED), heightMeasureSpec);

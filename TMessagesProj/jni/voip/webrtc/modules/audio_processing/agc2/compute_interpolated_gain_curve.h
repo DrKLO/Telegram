@@ -29,8 +29,8 @@ namespace test {
 
 // Knee and beyond-knee regions approximation parameters.
 // The gain curve is approximated as a piece-wise linear function.
-// |approx_params_x_| are the boundaries between adjacent linear pieces,
-// |approx_params_m_| and |approx_params_q_| are the slope and the y-intercept
+// `approx_params_x_` are the boundaries between adjacent linear pieces,
+// `approx_params_m_` and `approx_params_q_` are the slope and the y-intercept
 // values of each piece.
 struct InterpolatedParameters {
   std::array<float, kInterpolatedGainCurveTotalPoints>

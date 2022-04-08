@@ -61,7 +61,7 @@ class VideoCaptureImpl : public VideoCaptureModule {
 
   const char* CurrentDeviceName() const override;
 
-  // |capture_time| must be specified in NTP time format in milliseconds.
+  // `capture_time` must be specified in NTP time format in milliseconds.
   int32_t IncomingFrame(uint8_t* videoFrame,
                         size_t videoFrameLength,
                         const VideoCaptureCapability& frameInfo,

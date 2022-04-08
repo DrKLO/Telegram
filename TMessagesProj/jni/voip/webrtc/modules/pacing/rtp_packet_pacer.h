@@ -56,7 +56,7 @@ class RtpPacketPacer {
 
   // Set the average upper bound on pacer queuing delay. The pacer may send at
   // a higher rate than what was configured via SetPacingRates() in order to
-  // keep ExpectedQueueTimeMs() below |limit_ms| on average.
+  // keep ExpectedQueueTimeMs() below `limit_ms` on average.
   virtual void SetQueueTimeLimit(TimeDelta limit) = 0;
 
   // Currently audio traffic is not accounted by pacer and passed through.

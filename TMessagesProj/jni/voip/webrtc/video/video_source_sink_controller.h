@@ -74,8 +74,8 @@ class VideoSourceSinkController {
   // Pixel and frame rate restrictions.
   VideoSourceRestrictions restrictions_ RTC_GUARDED_BY(&sequence_checker_);
   // Ensures that even if we are not restricted, the sink is never configured
-  // above this limit. Example: We are not CPU limited (no |restrictions_|) but
-  // our encoder is capped at 30 fps (= |frame_rate_upper_limit_|).
+  // above this limit. Example: We are not CPU limited (no `restrictions_`) but
+  // our encoder is capped at 30 fps (= `frame_rate_upper_limit_`).
   absl::optional<size_t> pixels_per_frame_upper_limit_
       RTC_GUARDED_BY(&sequence_checker_);
   absl::optional<double> frame_rate_upper_limit_

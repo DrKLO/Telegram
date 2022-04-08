@@ -244,7 +244,7 @@ public class CameraController implements MediaRecorder.OnInfoListener {
                     onFinishCameraInitRunnables.clear();
                     loadingCameras = false;
                     cameraInitied = false;
-                    if (!withDelay && "APP_PAUSED".equals(e.getMessage())) {
+                    if (!withDelay && "APP_PAUSED".equals(e.getMessage()) && onInitRunnable != null) {
                         AndroidUtilities.runOnUIThread(() -> initCamera(onInitRunnable, true), 1000);
                     }
                 });
@@ -504,6 +504,7 @@ public class CameraController implements MediaRecorder.OnInfoListener {
         });
     }
 
+
     public void openRound(final CameraSession session, final SurfaceTexture texture, final Runnable callback, final Runnable configureCallback) {
         if (session == null || texture == null) {
             if (BuildVars.LOGS_ENABLED) {
@@ -637,7 +638,7 @@ public class CameraController implements MediaRecorder.OnInfoListener {
                         FileLog.e(e);
                     }
                     camera.unlock();
-                    //camera.stopPreview();
+//                    camera.stopPreview();
                     try {
                         mirrorRecorderVideo = mirror;
                         recorder = new MediaRecorder();
@@ -811,8 +812,8 @@ public class CameraController implements MediaRecorder.OnInfoListener {
     }
 
     public static Size chooseOptimalSize(List<Size> choices, int width, int height, Size aspectRatio) {
-        List<Size> bigEnoughWithAspectRatio = new ArrayList<>();
-        List<Size> bigEnough = new ArrayList<>();
+        List<Size> bigEnoughWithAspectRatio = new ArrayList<>(choices.size());
+        List<Size> bigEnough = new ArrayList<>(choices.size());
         int w = aspectRatio.getWidth();
         int h = aspectRatio.getHeight();
         for (int a = 0; a < choices.size(); a++) {

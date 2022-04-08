@@ -663,7 +663,7 @@ void WebRtcIsacfix_GetLpcCoef(int16_t *inLoQ0,
     /* less noise for lower frequencies, by filtering/scaling autocorrelation sequences */
 
     /* Calculate corrlo2[0] = tmpQQlo * corrlo[0] - 2.0*tmpQQlo * corrlo[1];*/
-    // |corrlo2QQ| in Q(QdomLO-5).
+    // `corrlo2QQ` in Q(QdomLO-5).
     corrlo2QQ[0] = (WEBRTC_SPL_MUL_16_32_RSFT16(tmpQQlo, corrloQQ[0]) >> 1) -
         (WEBRTC_SPL_MUL_16_32_RSFT16(aaQ14, corrloQQ[1]) >> 2);
 
@@ -721,12 +721,12 @@ void WebRtcIsacfix_GetLpcCoef(int16_t *inLoQ0,
           tmp = WEBRTC_SPL_MUL_16_32_RSFT15(alpha, tmp);
         } else if ((sh-shMem)<7){
           tmp = WEBRTC_SPL_SHIFT_W32(maskdata->CorrBufLoQQ[n], shMem); // Shift up CorrBufLoQQ as much as possible
-          // Shift |alpha| the number of times required to get |tmp| in QdomLO.
+          // Shift `alpha` the number of times required to get `tmp` in QdomLO.
           tmp = WEBRTC_SPL_MUL_16_32_RSFT15(alpha << (sh - shMem), tmp);
         } else {
           tmp = WEBRTC_SPL_SHIFT_W32(maskdata->CorrBufLoQQ[n], shMem); // Shift up CorrBufHiQQ as much as possible
-          // Shift |alpha| as much as possible without overflow the number of
-          // times required to get |tmp| in QdomLO.
+          // Shift `alpha` as much as possible without overflow the number of
+          // times required to get `tmp` in QdomLO.
           tmp = WEBRTC_SPL_MUL_16_32_RSFT15(alpha << 6, tmp);
           tmpCorr = corrloQQ[n] >> (sh - shMem - 6);
           tmp = tmp + tmpCorr;
@@ -774,7 +774,7 @@ void WebRtcIsacfix_GetLpcCoef(int16_t *inLoQ0,
           maskdata->CorrBufHiQdom[n] = QdomHI;
         } else if ((sh-shMem)<7) {
           tmp = WEBRTC_SPL_SHIFT_W32(maskdata->CorrBufHiQQ[n], shMem); // Shift up CorrBufHiQQ as much as possible
-          // Shift |alpha| the number of times required to get |tmp| in QdomHI.
+          // Shift `alpha` the number of times required to get `tmp` in QdomHI.
           tmp = WEBRTC_SPL_MUL_16_32_RSFT15(alpha << (sh - shMem), tmp);
           tmpCorr = corrhiQQ[n];
           tmp = tmp + tmpCorr;
@@ -782,8 +782,8 @@ void WebRtcIsacfix_GetLpcCoef(int16_t *inLoQ0,
           maskdata->CorrBufHiQdom[n] = QdomHI;
         } else {
           tmp = WEBRTC_SPL_SHIFT_W32(maskdata->CorrBufHiQQ[n], shMem); // Shift up CorrBufHiQQ as much as possible
-          // Shift |alpha| as much as possible without overflow the number of
-          // times required to get |tmp| in QdomHI.
+          // Shift `alpha` as much as possible without overflow the number of
+          // times required to get `tmp` in QdomHI.
           tmp = WEBRTC_SPL_MUL_16_32_RSFT15(alpha << 6, tmp);
           tmpCorr = corrhiQQ[n] >> (sh - shMem - 6);
           tmp = tmp + tmpCorr;
@@ -919,7 +919,7 @@ void WebRtcIsacfix_GetLpcCoef(int16_t *inLoQ0,
 
       tmp32a = varscaleQ14 >> 1;  // H_T_HQ19=65536 (16-17=-1)
 
-      ssh = sh_hi >> 1;  // |sqrt_nrg| is in Qssh.
+      ssh = sh_hi >> 1;  // `sqrt_nrg` is in Qssh.
       sh = ssh - 14;
       tmp32b = WEBRTC_SPL_SHIFT_W32(tmp32a, sh); // Q14->Qssh
       tmp32c = sqrt_nrg + tmp32b;  // Qssh  (denominator)

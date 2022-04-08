@@ -102,7 +102,7 @@ rtc::StringBuilder& operator<<(rtc::StringBuilder& builder,
 // rid-id       = 1*(alpha-numeric / "-" / "_") ; see: I-D.ietf-mmusic-rid
 RTCErrorOr<SimulcastLayerList> ParseSimulcastLayerList(const std::string& str) {
   std::vector<std::string> tokens;
-  rtc::tokenize_with_empty_tokens(str, kDelimiterSemicolonChar, &tokens);
+  rtc::split(str, kDelimiterSemicolonChar, &tokens);
   if (tokens.empty()) {
     return ParseError("Layer list cannot be empty.");
   }
@@ -114,7 +114,7 @@ RTCErrorOr<SimulcastLayerList> ParseSimulcastLayerList(const std::string& str) {
     }
 
     std::vector<std::string> rid_tokens;
-    rtc::tokenize_with_empty_tokens(token, kDelimiterCommaChar, &rid_tokens);
+    rtc::split(token, kDelimiterCommaChar, &rid_tokens);
 
     if (rid_tokens.empty()) {
       return ParseError("Simulcast alternative layer list is malformed.");
@@ -249,7 +249,7 @@ RTCErrorOr<SimulcastDescription> SdpSerializer::DeserializeSimulcastDescription(
 
   // Set the layers according to which pair is send and which is recv
   // At this point if the simulcast is unidirectional then
-  // either |list1| or |list2| will be in 'error' state indicating that
+  // either `list1` or `list2` will be in 'error' state indicating that
   // the value should not be used.
   SimulcastDescription simulcast;
   if (list1.ok()) {
@@ -362,8 +362,8 @@ RTCErrorOr<RidDescription> SdpSerializer::DeserializeRidDescription(
         return ParseError("Invalid format for restriction: " + restriction);
       }
 
-      // |parts| contains at least one value and it does not contain a space.
-      // Note: |parts| and other values might still contain tab, newline,
+      // `parts` contains at least one value and it does not contain a space.
+      // Note: `parts` and other values might still contain tab, newline,
       // unprintable characters, etc. which will not generate errors here but
       // will (most-likely) be ignored by components down stream.
       if (parts[0] == kPayloadType) {
@@ -376,7 +376,7 @@ RTCErrorOr<RidDescription> SdpSerializer::DeserializeRidDescription(
         continue;
       }
 
-      // Parse |parts| as a key=value pair which allows unspecified values.
+      // Parse `parts` as a key=value pair which allows unspecified values.
       if (rid_description.restrictions.find(parts[0]) !=
           rid_description.restrictions.end()) {
         return ParseError("Duplicate restriction specified: " + parts[0]);

@@ -57,7 +57,7 @@ class PacedSender : public Module,
   // overshoots from the encoder.
   static const float kDefaultPaceMultiplier;
 
-  // TODO(bugs.webrtc.org/10937): Make the |process_thread| argument be non
+  // TODO(bugs.webrtc.org/10937): Make the `process_thread` argument be non
   // optional once all callers have been updated.
   PacedSender(Clock* clock,
               PacketRouter* packet_router,

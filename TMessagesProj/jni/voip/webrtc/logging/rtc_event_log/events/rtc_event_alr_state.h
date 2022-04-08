@@ -14,6 +14,7 @@
 #include <memory>
 
 #include "api/rtc_event_log/rtc_event.h"
+#include "api/units/timestamp.h"
 
 namespace webrtc {
 
@@ -39,13 +40,13 @@ class RtcEventAlrState final : public RtcEvent {
 
 struct LoggedAlrStateEvent {
   LoggedAlrStateEvent() = default;
-  LoggedAlrStateEvent(int64_t timestamp_us, bool in_alr)
-      : timestamp_us(timestamp_us), in_alr(in_alr) {}
+  LoggedAlrStateEvent(Timestamp timestamp, bool in_alr)
+      : timestamp(timestamp), in_alr(in_alr) {}
 
-  int64_t log_time_us() const { return timestamp_us; }
-  int64_t log_time_ms() const { return timestamp_us / 1000; }
+  int64_t log_time_us() const { return timestamp.us(); }
+  int64_t log_time_ms() const { return timestamp.ms(); }
 
-  int64_t timestamp_us;
+  Timestamp timestamp = Timestamp::MinusInfinity();
   bool in_alr;
 };
 

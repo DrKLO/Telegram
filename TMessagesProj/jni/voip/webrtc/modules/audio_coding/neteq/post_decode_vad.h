@@ -40,8 +40,8 @@ class PostDecodeVad {
   // Initializes post-decode VAD.
   void Init();
 
-  // Updates post-decode VAD with the audio data in |signal| having |length|
-  // samples. The data is of type |speech_type|, at the sample rate |fs_hz|.
+  // Updates post-decode VAD with the audio data in `signal` having `length`
+  // samples. The data is of type `speech_type`, at the sample rate `fs_hz`.
   void Update(int16_t* signal,
               size_t length,
               AudioDecoder::SpeechType speech_type,

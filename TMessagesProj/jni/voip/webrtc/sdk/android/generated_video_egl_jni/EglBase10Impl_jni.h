@@ -50,7 +50,4 @@ JNI_GENERATOR_EXPORT jlong Java_org_webrtc_EglBase10Impl_nativeGetCurrentNativeE
 }  // namespace jni
 }  // namespace  webrtc
 
-// Step 4: Generated test functions (optional).
-
-
 #endif  // org_webrtc_EglBase10Impl_JNI

@@ -9,7 +9,7 @@ import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.Region;
 import android.text.Layout;
-import android.text.Spannable;
+import android.text.Spanned;
 import android.view.MotionEvent;
 import android.widget.TextView;
 
@@ -131,7 +131,7 @@ public class SpoilersTextView extends TextView {
         }
 
         Layout layout = getLayout();
-        if (layout != null && getText() instanceof Spannable) {
+        if (layout != null && getText() instanceof Spanned) {
             SpoilerEffect.addSpoilers(this, spoilersPool, spoilers);
         }
         invalidate();

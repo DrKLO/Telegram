@@ -71,7 +71,7 @@ class RtpTransportInternal : public sigslot::has_slots<> {
 
   virtual bool IsWritable(bool rtcp) const = 0;
 
-  // TODO(zhihuang): Pass the |packet| by copy so that the original data
+  // TODO(zhihuang): Pass the `packet` by copy so that the original data
   // wouldn't be modified.
   virtual bool SendRtpPacket(rtc::CopyOnWriteBuffer* packet,
                              const rtc::PacketOptions& options,

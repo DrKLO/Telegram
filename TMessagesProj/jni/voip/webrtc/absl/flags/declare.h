@@ -26,7 +26,6 @@
 #define ABSL_FLAGS_DECLARE_H_
 
 #include "absl/base/config.h"
-#include "absl/strings/string_view.h"
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
@@ -61,6 +60,10 @@ ABSL_NAMESPACE_END
 // The ABSL_DECLARE_FLAG(type, name) macro expands to:
 //
 //   extern absl::Flag<type> FLAGS_name;
-#define ABSL_DECLARE_FLAG(type, name) extern ::absl::Flag<type> FLAGS_##name
+#define ABSL_DECLARE_FLAG(type, name)                        \
+  extern absl::Flag<type> FLAGS_##name;                      \
+  namespace absl /* block flags in namespaces */ {}          \
+  /* second redeclaration is to allow applying attributes */ \
+  extern absl::Flag<type> FLAGS_##name
 
 #endif  // ABSL_FLAGS_DECLARE_H_

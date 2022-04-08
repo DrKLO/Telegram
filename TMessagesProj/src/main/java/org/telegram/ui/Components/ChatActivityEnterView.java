@@ -36,7 +36,6 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.RectF;
-import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
 import android.net.Uri;
@@ -88,6 +87,7 @@ import androidx.annotation.Nullable;
 import androidx.collection.LongSparseArray;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
+import androidx.core.math.MathUtils;
 import androidx.core.os.BuildCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
@@ -95,9 +95,11 @@ import androidx.core.view.inputmethod.EditorInfoCompat;
 import androidx.core.view.inputmethod.InputConnectionCompat;
 import androidx.core.view.inputmethod.InputContentInfoCompat;
 import androidx.customview.widget.ExploreByTouchHelper;
+import androidx.dynamicanimation.animation.DynamicAnimation;
+import androidx.dynamicanimation.animation.SpringAnimation;
+import androidx.dynamicanimation.animation.SpringForce;
 import androidx.recyclerview.widget.ChatListItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
@@ -130,6 +132,7 @@ import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.BasePermissionsActivity;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.GroupStickersActivity;
@@ -145,9 +148,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.atomic.AtomicReference;
 
-public class ChatActivityEnterView extends ChatBlurredFrameLayout implements NotificationCenter.NotificationCenterDelegate, SizeNotifierFrameLayout.SizeNotifierFrameLayoutDelegate, StickersAlert.StickersAlertDelegate {
+public class ChatActivityEnterView extends BlurredFrameLayout implements NotificationCenter.NotificationCenterDelegate, SizeNotifierFrameLayout.SizeNotifierFrameLayoutDelegate, StickersAlert.StickersAlertDelegate {
 
     public interface ChatActivityEnterViewDelegate {
         void onMessageSend(CharSequence message, boolean notify, int scheduleDate);
@@ -276,7 +278,7 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
 
     // Send as... stuff
     private SenderSelectView senderSelectView;
-    private ActionBarPopupWindow senderSelectPopupWindow;
+    private SenderSelectPopup senderSelectPopupWindow;
     private Runnable onEmojiSearchClosed;
     private int popupX, popupY;
     private Runnable onKeyboardClosed;
@@ -629,7 +631,7 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
                         } else {
                             permissions[0] = Manifest.permission.CAMERA;
                         }
-                        parentActivity.requestPermissions(permissions, 3);
+                        parentActivity.requestPermissions(permissions, BasePermissionsActivity.REQUEST_CODE_VIDEO_MESSAGE);
                         return;
                     }
                 }
@@ -1680,7 +1682,7 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
 
     @SuppressLint("ClickableViewAccessibility")
     public ChatActivityEnterView(Activity context, SizeNotifierFrameLayout parent, ChatActivity fragment, final boolean isChat, Theme.ResourcesProvider resourcesProvider) {
-        super(context, fragment);
+        super(context, fragment == null ? null : fragment.contentView);
         this.resourcesProvider = resourcesProvider;
         this.backgroundColor = getThemedColor(Theme.key_chat_messagePanelBackground);
         this.drawBlur = false;
@@ -2496,9 +2498,12 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
                 }
             }
             if (delegate.getSendAsPeers() != null) {
+                try {
+                    v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                } catch (Exception ignored) {}
                 if (senderSelectPopupWindow != null) {
                     senderSelectPopupWindow.setPauseNotifications(false);
-                    senderSelectPopupWindow.dismiss();
+                    senderSelectPopupWindow.startDismissAnimation();
                     return;
                 }
                 MessagesController controller = MessagesController.getInstance(currentAccount);
@@ -2507,149 +2512,10 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
                     return;
                 }
 
-                List<TLRPC.Peer> peers = delegate.getSendAsPeers().peers;
-
                 ViewGroup fl = parentFragment.getParentLayout();
-                FrameLayout scrimPopupContainerLayout = new FrameLayout(getContext()) {
-                    @Override
-                    public boolean dispatchKeyEvent(KeyEvent event) {
-                        if (event.getKeyCode() == KeyEvent.KEYCODE_BACK && event.getRepeatCount() == 0 && senderSelectPopupWindow != null && senderSelectPopupWindow.isShowing()) {
-                            senderSelectPopupWindow.dismiss();
-                        }
-                        return super.dispatchKeyEvent(event);
-                    }
-                };
-                scrimPopupContainerLayout.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
-                Drawable shadowDrawable2 = ContextCompat.getDrawable(getContext(), R.drawable.popup_fixed_alert).mutate();
-                shadowDrawable2.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground), PorterDuff.Mode.MULTIPLY));
-                scrimPopupContainerLayout.setBackground(shadowDrawable2);
 
-                View dim = new View(getContext());
-                dim.setBackgroundColor(0x33000000);
-
-                int maxHeight = AndroidUtilities.dp(450);
-                LinearLayout rc = new LinearLayout(getContext()) {
-                    @Override
-                    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(Math.min(MeasureSpec.getSize(heightMeasureSpec), maxHeight), MeasureSpec.getMode(heightMeasureSpec)));
-                    }
-                };
-                rc.setOrientation(LinearLayout.VERTICAL);
-                TextView headerText = new TextView(parent.getContext());
-                headerText.setTextColor(Theme.getColor(Theme.key_dialogTextBlue));
-                headerText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-                headerText.setText(LocaleController.getString("SendMessageAsTitle", R.string.SendMessageAsTitle));
-                headerText.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"), Typeface.BOLD);
-                int dp = AndroidUtilities.dp(18);
-                headerText.setPadding(dp, AndroidUtilities.dp(13), dp, AndroidUtilities.dp(13));
-                rc.addView(headerText);
-
-                View shadow = new View(getContext());
-                shadow.setAlpha(0);
-                FrameLayout rfl = new FrameLayout(getContext());
-                RecyclerListView rv = new RecyclerListView(getContext());
-                LinearLayoutManager llm = new LinearLayoutManager(getContext());
-                AtomicReference<ValueAnimator.AnimatorUpdateListener> animatorUpdateListenerRef = new AtomicReference<>();
-                AtomicReference<Animator.AnimatorListener> animatorListenerRef = new AtomicReference<>();
-                AtomicReference<Animator> animatorForSetRef = new AtomicReference<>();
-                rv.setLayoutManager(llm);
-                rv.setAdapter(new RecyclerListView.SelectionAdapter() {
-                    @Override
-                    public boolean isEnabled(RecyclerView.ViewHolder holder) {
-                        return true;
-                    }
-
-                    final Object avatar = new Object(), title = new Object(), subtitle = new Object();
-
-
-                    @NonNull
-                    @Override
-                    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-                        FrameLayout fl = new FrameLayout(parent.getContext());
-                        LinearLayout ll = new LinearLayout(parent.getContext());
-                        ll.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-                        ll.setOrientation(LinearLayout.HORIZONTAL);
-                        ll.setGravity(Gravity.CENTER_VERTICAL);
-                        int dp = AndroidUtilities.dp(14);
-                        ll.setPadding(dp, dp / 2, dp, dp / 2);
-
-                        SimpleAvatarView avatar = new SimpleAvatarView(parent.getContext());
-                        avatar.setTag(this.avatar);
-                        ll.addView(avatar, LayoutHelper.createLinear(44, 44));
-
-                        LinearLayout ll2 = new LinearLayout(ll.getContext());
-                        ll2.setOrientation(LinearLayout.VERTICAL);
-
-                        TextView title = new TextView(parent.getContext());
-                        title.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem));
-                        title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-                        title.setTag(this.title);
-                        title.setMaxLines(1);
-                        title.setEllipsize(TextUtils.TruncateAt.END);
-                        ll2.addView(title);
-
-                        TextView subtitle = new TextView(parent.getContext());
-                        subtitle.setTextColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem), 0x66));
-                        subtitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-                        subtitle.setTag(this.subtitle);
-                        subtitle.setMaxLines(1);
-                        subtitle.setEllipsize(TextUtils.TruncateAt.END);
-                        ll2.addView(subtitle);
-
-                        ll.addView(ll2, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1f, 12, 0, 0, 0));
-
-                        View v = new View(parent.getContext());
-                        fl.addView(ll);
-                        fl.addView(v);
-
-                        return new RecyclerListView.Holder(fl);
-                    }
-
-                    @SuppressLint("SetTextI18n")
-                    @Override
-                    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-                        TLRPC.Peer peer = peers.get(position);
-                        long peerId = 0;
-
-                        if (peer.channel_id != 0)  {
-                            peerId = -peer.channel_id;
-                        }
-                        if (peerId == 0 && peer.user_id != 0)  {
-                            peerId = peer.user_id;
-                        }
-
-                        SimpleAvatarView avatar = holder.itemView.findViewWithTag(this.avatar);
-                        TextView title = holder.itemView.findViewWithTag(this.title);
-                        TextView subtitle = holder.itemView.findViewWithTag(this.subtitle);
-
-                        if (peerId < 0) {
-                            TLRPC.Chat chat = controller.getChat(-peerId);
-                            if (chat != null) {
-                                title.setText(chat.title);
-                                subtitle.setText(LocaleController.formatPluralString(ChatObject.isChannel(chat) && !chat.megagroup ? "Subscribers" : "Members", chat.participants_count));
-                                avatar.setAvatar(chat);
-                            }
-                            avatar.setSelected(chatFull.default_send_as != null && chatFull.default_send_as.channel_id == peer.channel_id, false);
-                        } else {
-                            TLRPC.User user = controller.getUser(peerId);
-                            if (user != null) {
-                                title.setText(user.first_name + (user.last_name != null ? " " + user.last_name : ""));
-                                subtitle.setText(LocaleController.getString("VoipGroupPersonalAccount", R.string.VoipGroupPersonalAccount));
-                                avatar.setAvatar(user);
-                            }
-                            avatar.setSelected(chatFull.default_send_as != null && chatFull.default_send_as.user_id == peer.user_id, false);
-                        }
-                    }
-
-                    @Override
-                    public int getItemCount() {
-                        return peers.size();
-                    }
-                });
-                rv.setOnItemClickListener((view, position) -> {
-                    if (senderSelectPopupWindow == null)
-                        return;
-                    TLRPC.Peer peer = peers.get(position);
+                senderSelectPopupWindow = new SenderSelectPopup(context, parentFragment, controller, chatFull, delegate.getSendAsPeers(), (recyclerView, senderView, peer) -> {
+                    if (senderSelectPopupWindow == null) return;
                     if (chatFull != null) {
                         chatFull.default_send_as = peer;
                         updateSendAsButton();
@@ -2658,10 +2524,9 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
                     parentFragment.getMessagesController().setDefaultSendAs(dialog_id, peer.user_id != 0 ? peer.user_id : -peer.channel_id);
 
                     int[] loc = new int[2];
-                    SimpleAvatarView sAvatar = (SimpleAvatarView) ((ViewGroup)((ViewGroup) view).getChildAt(0)).getChildAt(0);
-                    boolean wasSelected = sAvatar.isSelected();
-                    sAvatar.getLocationInWindow(loc);
-                    sAvatar.setSelected(true, true);
+                    boolean wasSelected = senderView.avatar.isSelected();
+                    senderView.avatar.getLocationInWindow(loc);
+                    senderView.avatar.setSelected(true, true);
 
                     SimpleAvatarView avatar = new SimpleAvatarView(getContext());
                     if (peer.channel_id != 0) {
@@ -2675,223 +2540,188 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
                             avatar.setAvatar(user);
                         }
                     }
-                    for (int i = 0; i < rv.getChildCount(); i++) {
-                        View ch = rv.getChildAt(i);
-                        if (i != position) {
-                            ((SimpleAvatarView) ((ViewGroup)((ViewGroup) ch).getChildAt(0)).getChildAt(0)).setSelected(false, true);
+                    for (int i = 0; i < recyclerView.getChildCount(); i++) {
+                        View ch = recyclerView.getChildAt(i);
+                        if (ch instanceof SenderSelectPopup.SenderView && ch != senderView) {
+                            SenderSelectPopup.SenderView childSenderView = (SenderSelectPopup.SenderView) ch;
+                            childSenderView.avatar.setSelected(false, true);
                         }
                     }
 
-                    Dialog d = new Dialog(getContext(), R.style.TransparentDialogNoAnimation);
-                    FrameLayout aFrame = new FrameLayout(getContext());
-                    aFrame.addView(avatar, LayoutHelper.createFrame(44, 44, Gravity.LEFT));
-                    d.setContentView(aFrame);
-                    d.getWindow().setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT);
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                        d.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-                        d.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-                        d.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
-                        d.getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-                        d.getWindow().addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
-                        d.getWindow().addFlags(WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM);
-                        d.getWindow().getAttributes().windowAnimations = 0;
-                        d.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
-                        d.getWindow().setStatusBarColor(0);
-                        d.getWindow().setNavigationBarColor(0);
-
-                        int color = Theme.getColor(Theme.key_actionBarDefault, null, true);
-                        AndroidUtilities.setLightStatusBar(d.getWindow(), color == Color.WHITE);
-
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            int color2 = Theme.getColor(Theme.key_windowBackgroundGray, null, true);
-                            float brightness = AndroidUtilities.computePerceivedBrightness(color2);
-                            AndroidUtilities.setLightNavigationBar(d.getWindow(), brightness >= 0.721f);
+                    AndroidUtilities.runOnUIThread(()->{
+                        if (senderSelectPopupWindow == null) {
+                            return;
                         }
-                    }
-                    float offX = 0, offY = 0;
-                    if (AndroidUtilities.isTablet()) {
-                        parentFragment.getFragmentView().getLocationInWindow(location);
-                        popupX += location[0];
-                    }
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                        WindowInsets wi = getRootWindowInsets();
-                        popupX += wi.getSystemWindowInsetLeft();
-                    }
+                        Dialog d = new Dialog(getContext(), R.style.TransparentDialogNoAnimation);
+                        FrameLayout aFrame = new FrameLayout(getContext());
+                        aFrame.addView(avatar, LayoutHelper.createFrame(SenderSelectPopup.AVATAR_SIZE_DP, SenderSelectPopup.AVATAR_SIZE_DP, Gravity.LEFT));
+                        d.setContentView(aFrame);
+                        d.getWindow().setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT);
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                            d.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+                            d.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+                            d.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
+                            d.getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+                            d.getWindow().addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+                            d.getWindow().addFlags(WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM);
+                            d.getWindow().getAttributes().windowAnimations = 0;
+                            d.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
+                            d.getWindow().setStatusBarColor(0);
+                            d.getWindow().setNavigationBarColor(0);
 
-                    senderSelectView.getLocationInWindow(location);
-                    float eX = location[0], eY = location[1];
+                            int color = Theme.getColor(Theme.key_actionBarDefault, null, true);
+                            AndroidUtilities.setLightStatusBar(d.getWindow(), color == Color.WHITE);
 
-                    float off = wasSelected ? AndroidUtilities.dp(5) : 0;
-                    float sX = loc[0] + popupX + off + AndroidUtilities.dp(4) + offX, sY = loc[1] + popupY + off + offY;
-                    avatar.setTranslationX(sX);
-                    avatar.setTranslationY(sY);
-
-                    float sSc = wasSelected ? 34f / 44f : 1, eSc = senderSelectView.getLayoutParams().width / (float)AndroidUtilities.dp(44);
-                    avatar.setPivotX(0);
-                    avatar.setPivotY(0);
-                    avatar.setScaleX(sSc);
-                    avatar.setScaleY(sSc);
-
-                    animatorListenerRef.set(new AnimatorListenerAdapter() {
-                        @Override
-                        public void onAnimationStart(Animator animation) {
-                            avatar.getViewTreeObserver().addOnDrawListener(new ViewTreeObserver.OnDrawListener() {
-                                @Override
-                                public void onDraw() {
-                                    avatar.post(()->{
-                                        avatar.getViewTreeObserver().removeOnDrawListener(this);
-                                        sAvatar.setHideAvatar(true);
-                                    });
-                                }
-                            });
-                            d.show();
-                        }
-
-                        @Override
-                        public void onAnimationEnd(Animator animation) {
-                            senderSelectView.setProgress(0, false);
-                            senderSelectView.setScaleX(1);
-                            senderSelectView.setScaleY(1);
-                            senderSelectView.setAlpha(1);
-                            senderSelectView.getViewTreeObserver().addOnDrawListener(new ViewTreeObserver.OnDrawListener() {
-                                @Override
-                                public void onDraw() {
-                                    senderSelectView.post(()->{
-                                        senderSelectView.getViewTreeObserver().removeOnDrawListener(this);
-                                        d.dismiss();
-                                    });
-                                }
-                            });
-                        }
-
-                        @Override
-                        public void onAnimationCancel(Animator animation) {
-                            onAnimationEnd(animation);
-                        }
-                    });
-                    animatorUpdateListenerRef.set(animation -> {
-                        float f = (float) animation.getAnimatedValue();
-
-                        float selSc = 0.5f + f * 0.5f;
-                        senderSelectView.setScaleX(selSc);
-                        senderSelectView.setScaleY(selSc);
-                        senderSelectView.setAlpha(f);
-                    });
-                    ValueAnimator anim = ValueAnimator.ofFloat(0, 1).setDuration(350);
-                    float pos = (rv.getY() + rv.getMeasuredHeight() - loc[1]) / (float)AndroidUtilities.dp(58);
-                    float mAmplitude = 0.18f - pos * 0.009f,
-                            mFrequency = 5.7f - pos * 0.325f;
-                    anim.setInterpolator(time -> (float) (-1 * Math.pow(Math.E, -time / mAmplitude) *
-                            Math.cos(mFrequency * time) + 1));
-                    anim.addUpdateListener(animation -> {
-                        float val = (float) animation.getAnimatedValue();
-                        avatar.setTranslationX(sX + (eX - sX) * val);
-                        avatar.setTranslationY(sY + (eY - sY) * val);
-                        float sc = sSc + (eSc - sSc) * val;
-                        avatar.setScaleX(sc);
-                        avatar.setScaleY(sc);
-                    });
-                    animatorForSetRef.set(anim);
-
-                    senderSelectPopupWindow.dismiss();
-                });
-                int shadowDuration = 150;
-                rv.addOnScrollListener(new RecyclerView.OnScrollListener() {
-                    Boolean isVisible;
-
-                    @Override
-                    public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
-                        boolean v = llm.findFirstCompletelyVisibleItemPosition() == 0;
-                        if (isVisible == null || v != isVisible) {
-                            shadow.animate().cancel();
-                            if (v) {
-                                shadow.animate().alpha(0).setDuration(shadowDuration).start();
-                            } else {
-                                shadow.animate().alpha(1).setDuration(shadowDuration).start();
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                int color2 = Theme.getColor(Theme.key_windowBackgroundGray, null, true);
+                                float brightness = AndroidUtilities.computePerceivedBrightness(color2);
+                                AndroidUtilities.setLightNavigationBar(d.getWindow(), brightness >= 0.721f);
                             }
-                            isVisible = v;
                         }
-                    }
-                });
-                rv.setOverScrollMode(OVER_SCROLL_NEVER);
-                rfl.addView(rv);
+                        float offX = 0, offY = 0;
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                            WindowInsets wi = getRootWindowInsets();
+                            popupX += wi.getSystemWindowInsetLeft();
+                        }
 
-                Drawable d = Theme.getThemedDrawable(getContext(), R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow);
-                shadow.setBackground(d);
-                rfl.addView(shadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 4));
+                        senderSelectView.getLocationInWindow(location);
+                        float endX = location[0], endY = location[1];
 
-                rc.addView(rfl, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-                scrimPopupContainerLayout.addView(rc);
+                        float off = AndroidUtilities.dp(5);
+                        float startX = loc[0] + popupX + off + AndroidUtilities.dp(4) + offX, startY = loc[1] + popupY + off + offY;
+                        avatar.setTranslationX(startX);
+                        avatar.setTranslationY(startY);
 
-                senderSelectPopupWindow = new ActionBarPopupWindow(scrimPopupContainerLayout, LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT) {
-                    private void dismissSuper() {
-                        super.dismiss();
-                    }
+                        float startScale = (float) (SenderSelectPopup.AVATAR_SIZE_DP - 10) / SenderSelectPopup.AVATAR_SIZE_DP, endScale = senderSelectView.getLayoutParams().width / (float)AndroidUtilities.dp(SenderSelectPopup.AVATAR_SIZE_DP);
+                        avatar.setPivotX(0);
+                        avatar.setPivotY(0);
+                        avatar.setScaleX(startScale);
+                        avatar.setScaleY(startScale);
 
+                        avatar.getViewTreeObserver().addOnDrawListener(new ViewTreeObserver.OnDrawListener() {
+                            @Override
+                            public void onDraw() {
+                                avatar.post(()->{
+                                    avatar.getViewTreeObserver().removeOnDrawListener(this);
+                                    senderView.avatar.setHideAvatar(true);
+                                });
+                            }
+                        });
+                        d.show();
+
+                        senderSelectView.setScaleX(1f);
+                        senderSelectView.setScaleY(1f);
+                        senderSelectView.setAlpha(1f);
+
+                        float translationStiffness = 700f;
+                        senderSelectPopupWindow.startDismissAnimation(
+                                new SpringAnimation(senderSelectView, DynamicAnimation.SCALE_X)
+                                        .setSpring(new SpringForce(0.5f)
+                                                .setStiffness(SenderSelectPopup.SPRING_STIFFNESS)
+                                                .setDampingRatio(SpringForce.DAMPING_RATIO_NO_BOUNCY)),
+                                new SpringAnimation(senderSelectView, DynamicAnimation.SCALE_Y)
+                                        .setSpring(new SpringForce(0.5f)
+                                                .setStiffness(SenderSelectPopup.SPRING_STIFFNESS)
+                                                .setDampingRatio(SpringForce.DAMPING_RATIO_NO_BOUNCY)),
+                                new SpringAnimation(senderSelectView, DynamicAnimation.ALPHA)
+                                        .setSpring(new SpringForce(0f)
+                                                .setStiffness(SenderSelectPopup.SPRING_STIFFNESS)
+                                                .setDampingRatio(SpringForce.DAMPING_RATIO_NO_BOUNCY))
+                                        .addEndListener((animation, canceled, value, velocity) -> {
+                                            if (d.isShowing()) {
+                                                avatar.setTranslationX(endX);
+                                                avatar.setTranslationY(endY);
+
+                                                senderSelectView.setProgress(0, false);
+                                                senderSelectView.setScaleX(1);
+                                                senderSelectView.setScaleY(1);
+                                                senderSelectView.setAlpha(1);
+
+                                                senderSelectView.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+                                                    @Override
+                                                    public boolean onPreDraw() {
+                                                        senderSelectView.getViewTreeObserver().removeOnPreDrawListener(this);
+                                                        senderSelectView.postDelayed(d::dismiss, 100);
+                                                        return true;
+                                                    }
+                                                });
+                                            }
+                                        }),
+                                new SpringAnimation(avatar, DynamicAnimation.TRANSLATION_X)
+                                        .setStartValue(MathUtils.clamp(startX, endX - AndroidUtilities.dp(6), startX))
+                                        .setSpring(new SpringForce(endX)
+                                                .setStiffness(translationStiffness)
+                                                .setDampingRatio(SpringForce.DAMPING_RATIO_LOW_BOUNCY))
+                                        .setMinValue(endX - AndroidUtilities.dp(6)),
+                                new SpringAnimation(avatar, DynamicAnimation.TRANSLATION_Y)
+                                        .setStartValue(MathUtils.clamp(startY, startY, endY + AndroidUtilities.dp(6)))
+                                        .setSpring(new SpringForce(endY)
+                                                .setStiffness(translationStiffness)
+                                                .setDampingRatio(SpringForce.DAMPING_RATIO_LOW_BOUNCY))
+                                        .setMaxValue(endY + AndroidUtilities.dp(6))
+                                        .addUpdateListener(new DynamicAnimation.OnAnimationUpdateListener() {
+                                            boolean performedHapticFeedback = false;
+
+                                            @Override
+                                            public void onAnimationUpdate(DynamicAnimation animation, float value, float velocity) {
+                                                if (!performedHapticFeedback && value >= endY) {
+                                                    performedHapticFeedback = true;
+                                                    try {
+                                                        avatar.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                                                    } catch (Exception ignored) {}
+                                                }
+                                            }
+                                        })
+                                        .addEndListener((animation, canceled, value, velocity) -> {
+                                            if (d.isShowing()) {
+                                                avatar.setTranslationX(endX);
+                                                avatar.setTranslationY(endY);
+
+                                                senderSelectView.setProgress(0, false);
+                                                senderSelectView.setScaleX(1);
+                                                senderSelectView.setScaleY(1);
+                                                senderSelectView.setAlpha(1);
+
+                                                senderSelectView.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+                                                    @Override
+                                                    public boolean onPreDraw() {
+                                                        senderSelectView.getViewTreeObserver().removeOnPreDrawListener(this);
+                                                        senderSelectView.postDelayed(d::dismiss, 100);
+                                                        return true;
+                                                    }
+                                                });
+                                            }
+                                        }),
+                                new SpringAnimation(avatar, DynamicAnimation.SCALE_X)
+                                        .setSpring(new SpringForce(endScale)
+                                                .setStiffness(1000f)
+                                                .setDampingRatio(SpringForce.DAMPING_RATIO_NO_BOUNCY)),
+                                new SpringAnimation(avatar, DynamicAnimation.SCALE_Y)
+                                        .setSpring(new SpringForce(endScale)
+                                                .setStiffness(1000f)
+                                                .setDampingRatio(SpringForce.DAMPING_RATIO_NO_BOUNCY)));
+                    }, wasSelected ? 0 : SimpleAvatarView.SELECT_ANIMATION_DURATION);
+                }) {
                     @Override
                     public void dismiss() {
                         if (senderSelectPopupWindow != this) {
-                            fl.removeView(dim);
+                            fl.removeView(dimView);
                             super.dismiss();
                             return;
                         }
 
-                        float scStart = 0.25f;
-
-                        scrimPopupContainerLayout.setPivotX(AndroidUtilities.dp(8));
-                        scrimPopupContainerLayout.setPivotY(scrimPopupContainerLayout.getMeasuredHeight() - AndroidUtilities.dp(8));
-                        rc.setPivotX(0);
-                        rc.setPivotY(0);
-
-                        scrimPopupContainerLayout.setScaleX(1);
-                        scrimPopupContainerLayout.setScaleY(1);
-                        rc.setAlpha(1);
-
-                        dim.setAlpha(1);
-                        AnimatorSet animatorSet = new AnimatorSet();
-                        ValueAnimator anim = ValueAnimator.ofFloat(1, 0).setDuration(220);
-                        anim.setInterpolator(CubicBezierInterpolator.EASE_OUT);
-                        anim.addUpdateListener(animation -> {
-                            float val = (float) animation.getAnimatedValue();
-                            float sc = scStart + (1f - scStart) * val;
-                            scrimPopupContainerLayout.setScaleX(sc);
-                            scrimPopupContainerLayout.setScaleY(sc);
-                            scrimPopupContainerLayout.setAlpha(val);
-                            rc.setScaleX(1f / sc);
-                            rc.setScaleY(1f / sc);
-                            rc.setAlpha(sc);
-
-                            dim.setAlpha(val);
-                        });
-                        animatorSet.addListener(new AnimatorListenerAdapter() {
-                            @Override
-                            public void onAnimationEnd(Animator animation) {
-                                fl.removeView(dim);
-                                dismissSuper();
-                            }
-                        });
-
-                        ValueAnimator anim2 = ValueAnimator.ofFloat(1, 0).setDuration(350);
-                        anim2.setInterpolator(Easings.easeOutSine);
-                        ValueAnimator.AnimatorUpdateListener l = animatorUpdateListenerRef.get();
-                        if (l != null) {
-                            anim2.addUpdateListener(l);
-                        }
-                        Animator.AnimatorListener l2 = animatorListenerRef.get();
-                        if (l2 != null) {
-                            anim2.addListener(l2);
-                        }
-
-                        animatorSet.playTogether(anim, anim2);
-
                         senderSelectPopupWindow = null;
-                        if (l == null && l2 == null) senderSelectView.setProgress(0);
 
-                        Animator secAnim = animatorForSetRef.get();
-                        if (secAnim != null) {
-                            animatorSet.playTogether(secAnim);
+                        if (!runningCustomSprings) {
+                            startDismissAnimation();
+                            senderSelectView.setProgress(0, true, true);
+                        } else {
+                            for (SpringAnimation springAnimation : springAnimations) {
+                                springAnimation.cancel();
+                            }
+                            springAnimations.clear();
+                            super.dismiss();
                         }
-                        animatorSet.start();
                     }
                 };
                 senderSelectPopupWindow.setPauseNotifications(true);
@@ -2899,34 +2729,11 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
                 senderSelectPopupWindow.setOutsideTouchable(true);
                 senderSelectPopupWindow.setClippingEnabled(true);
                 senderSelectPopupWindow.setFocusable(true);
-                scrimPopupContainerLayout.measure(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), View.MeasureSpec.AT_MOST));
+                senderSelectPopupWindow.getContentView().measure(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), View.MeasureSpec.AT_MOST));
                 senderSelectPopupWindow.setInputMethodMode(ActionBarPopupWindow.INPUT_METHOD_NOT_NEEDED);
                 senderSelectPopupWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED);
                 senderSelectPopupWindow.getContentView().setFocusableInTouchMode(true);
                 senderSelectPopupWindow.setAnimationEnabled(false);
-
-                TLRPC.Peer defPeer = chatFull.default_send_as != null ? chatFull.default_send_as : null;
-                if (defPeer != null) {
-                    int itemHeight = AndroidUtilities.dp(14 + 44);
-                    int totalRecyclerHeight = peers.size() * itemHeight;
-                    for (int i = 0; i < peers.size(); i++) {
-                        TLRPC.Peer p = peers.get(i);
-                        if (p.channel_id != 0 && p.channel_id == defPeer.channel_id || p.user_id != 0 && p.user_id == defPeer.user_id ||
-                                p.chat_id != 0 && p.chat_id == defPeer.chat_id) {
-                            int off = 0;
-                            if (i != peers.size() - 1 && rv.getMeasuredHeight() < totalRecyclerHeight) {
-                                off = rv.getMeasuredHeight() % itemHeight;
-                            }
-
-                            llm.scrollToPositionWithOffset(i, off + AndroidUtilities.dp(7) + (totalRecyclerHeight - (peers.size() - 2) * itemHeight));
-                            if (rv.computeVerticalScrollOffset() > 0) {
-                                shadow.animate().cancel();
-                                shadow.animate().alpha(1).setDuration(shadowDuration).start();
-                            }
-                            break;
-                        }
-                    }
-                }
 
                 int pad = -AndroidUtilities.dp(4);
                 int[] location = new int[2];
@@ -2936,7 +2743,7 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
                     popupX += location[0];
                 }
                 int totalHeight = delegate.getContentViewHeight();
-                int height = scrimPopupContainerLayout.getMeasuredHeight();
+                int height = senderSelectPopupWindow.getContentView().getMeasuredHeight();
                 int keyboard = delegate.measureKeyboardHeight();
                 if (keyboard <= AndroidUtilities.dp(20)) {
                     totalHeight += keyboard;
@@ -2947,44 +2754,18 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
 
                 int shadowPad = AndroidUtilities.dp(1);
                 int popupY;
-                if (height < totalHeight + pad * 2 - (parentFragment.isInBubbleMode() ? 0 : AndroidUtilities.statusBarHeight) - headerText.getMeasuredHeight()) {
+                if (height < totalHeight + pad * 2 - (parentFragment.isInBubbleMode() ? 0 : AndroidUtilities.statusBarHeight) - senderSelectPopupWindow.headerText.getMeasuredHeight()) {
                     ChatActivityEnterView.this.getLocationInWindow(location);
                     popupY = location[1] - height - pad - AndroidUtilities.dp(2);
-                    fl.addView(dim, new FrameLayout.LayoutParams(LayoutHelper.MATCH_PARENT, popupY + pad + height + shadowPad + AndroidUtilities.dp(2)));
+                    fl.addView(senderSelectPopupWindow.dimView, new FrameLayout.LayoutParams(LayoutHelper.MATCH_PARENT, popupY + pad + height + shadowPad + AndroidUtilities.dp(2)));
                 } else {
                     popupY = parentFragment.isInBubbleMode() ? 0 : AndroidUtilities.statusBarHeight;
                     int off = AndroidUtilities.dp(14);
-                    rc.getLayoutParams().height = totalHeight - popupY - off - getHeightWithTopView();
-                    fl.addView(dim, new FrameLayout.LayoutParams(LayoutHelper.MATCH_PARENT, off + popupY + rc.getLayoutParams().height + shadowPad));
+                    senderSelectPopupWindow.recyclerContainer.getLayoutParams().height = totalHeight - popupY - off - getHeightWithTopView();
+                    fl.addView(senderSelectPopupWindow.dimView, new FrameLayout.LayoutParams(LayoutHelper.MATCH_PARENT, off + popupY + senderSelectPopupWindow.recyclerContainer.getLayoutParams().height + shadowPad));
                 }
 
-                float scStart = 0.25f;
-
-                scrimPopupContainerLayout.setPivotX(AndroidUtilities.dp(8));
-                scrimPopupContainerLayout.setPivotY(scrimPopupContainerLayout.getMeasuredHeight() - AndroidUtilities.dp(8));
-                rc.setPivotX(0);
-                rc.setPivotY(0);
-
-                scrimPopupContainerLayout.setScaleX(scStart);
-                scrimPopupContainerLayout.setScaleY(scStart);
-                rc.setAlpha(scStart);
-
-                dim.setAlpha(0);
-
-                ValueAnimator anim = ValueAnimator.ofFloat(0, 1).setDuration(220);
-                anim.setInterpolator(CubicBezierInterpolator.EASE_OUT);
-                anim.addUpdateListener(animation -> {
-                    float val = (float) animation.getAnimatedValue();
-                    float sc = scStart + (1f - scStart) * val;
-                    scrimPopupContainerLayout.setScaleX(sc);
-                    scrimPopupContainerLayout.setScaleY(sc);
-                    rc.setScaleX(1f / sc);
-                    rc.setScaleY(1f / sc);
-                    rc.setAlpha(sc);
-
-                    dim.setAlpha(val);
-                });
-                anim.start();
+                senderSelectPopupWindow.startShowAnimation();
 
                 senderSelectPopupWindow.showAtLocation(v, Gravity.LEFT | Gravity.TOP, this.popupX = popupX, this.popupY = popupY);
                 senderSelectView.setProgress(1);
@@ -3330,9 +3111,13 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
         cancelBotButton = new ImageView(context);
         cancelBotButton.setVisibility(INVISIBLE);
         cancelBotButton.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-        cancelBotButton.setImageDrawable(progressDrawable = new CloseProgressDrawable2());
+        cancelBotButton.setImageDrawable(progressDrawable = new CloseProgressDrawable2() {
+            @Override
+            protected int getCurrentColor() {
+                return Theme.getColor(Theme.key_chat_messagePanelCancelInlineBot);
+            }
+        });
         cancelBotButton.setContentDescription(LocaleController.getString("Cancel", R.string.Cancel));
-        progressDrawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_messagePanelCancelInlineBot), PorterDuff.Mode.MULTIPLY));
         cancelBotButton.setSoundEffectsEnabled(false);
         cancelBotButton.setScaleX(0.1f);
         cancelBotButton.setScaleY(0.1f);
@@ -3647,6 +3432,7 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
         return result;
     }
 
+    public boolean allowBlur = true;
     Paint backgroundPaint = new Paint();
     @Override
     protected void onDraw(Canvas canvas) {
@@ -3658,12 +3444,16 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
 
         Theme.chat_composeShadowDrawable.setBounds(0, top, getMeasuredWidth(), bottom);
         Theme.chat_composeShadowDrawable.draw(canvas);
-        backgroundPaint.setColor(getThemedColor(Theme.key_chat_messagePanelBackground));
-        if (SharedConfig.chatBlurEnabled() && chatActivity != null) {
-            AndroidUtilities.rectTmp2.set(0, bottom, getWidth(), getHeight());
-            chatActivity.contentView.drawBlur(canvas, getY(), AndroidUtilities.rectTmp2, backgroundPaint, false);
+        if (allowBlur) {
+            backgroundPaint.setColor(getThemedColor(Theme.key_chat_messagePanelBackground));
+            if (SharedConfig.chatBlurEnabled() && sizeNotifierLayout != null) {
+                AndroidUtilities.rectTmp2.set(0, bottom, getWidth(), getHeight());
+                sizeNotifierLayout.drawBlurRect(canvas, getTop(), AndroidUtilities.rectTmp2, backgroundPaint, false);
+            } else {
+                canvas.drawRect(0, bottom, getWidth(), getHeight(), backgroundPaint);
+            }
         } else {
-            canvas.drawRect(0, bottom, getWidth(), getHeight(), backgroundPaint);
+            canvas.drawRect(0, bottom, getWidth(), getHeight(), getThemedPaint(Theme.key_paint_chatComposeBackground));
         }
     }
 
@@ -6868,43 +6658,47 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
             }
         }
         boolean wasVisible = senderSelectView.getVisibility() == View.VISIBLE;
-        boolean isVisible = delegate.getSendAsPeers() != null && defPeer != null && delegate.getSendAsPeers().peers.size() > 1 && !isEditingMessage() && !isRecordingAudioVideo() && recordedAudioPanel.getVisibility() != View.VISIBLE;
+        boolean isVisible = defPeer != null && (delegate.getSendAsPeers() == null || delegate.getSendAsPeers().peers.size() > 1) &&
+                !isEditingMessage() && !isRecordingAudioVideo() && recordedAudioPanel.getVisibility() != View.VISIBLE;
         int pad = AndroidUtilities.dp(2);
         MarginLayoutParams params = (MarginLayoutParams) senderSelectView.getLayoutParams();
-        float sA = isVisible ? 0 : 1;
-        float sX = isVisible ? -senderSelectView.getLayoutParams().width - params.leftMargin - pad : 0;
-        float eA = isVisible ? 1 : 0;
-        float eX = isVisible ? 0 : -senderSelectView.getLayoutParams().width - params.leftMargin - pad;
+        float startAlpha = isVisible ? 0 : 1;
+        float startX = isVisible ? -senderSelectView.getLayoutParams().width - params.leftMargin - pad : 0;
+        float endAlpha = isVisible ? 1 : 0;
+        float endX = isVisible ? 0 : -senderSelectView.getLayoutParams().width - params.leftMargin - pad;
 
         if (wasVisible != isVisible) {
-            ValueAnimator a = (ValueAnimator) senderSelectView.getTag();
-            if (a != null) {
-                a.cancel();
+            ValueAnimator animator = (ValueAnimator) senderSelectView.getTag();
+            if (animator != null) {
+                animator.cancel();
                 senderSelectView.setTag(null);
             }
 
             if (parentFragment.getOtherSameChatsDiff() == 0 && parentFragment.fragmentOpened) {
                 ValueAnimator anim = ValueAnimator.ofFloat(0, 1).setDuration(150);
-                senderSelectView.setTranslationX(sX);
+                senderSelectView.setTranslationX(startX);
                 messageEditText.setTranslationX(senderSelectView.getTranslationX());
                 anim.addUpdateListener(animation -> {
                     float val = (float) animation.getAnimatedValue();
 
-                    senderSelectView.setAlpha(sA + (eA - sA) * val);
-                    senderSelectView.setTranslationX(sX + (eX - sX) * val);
-                    for (ImageView emoji : emojiButton)
+                    senderSelectView.setAlpha(startAlpha + (endAlpha - startAlpha) * val);
+                    senderSelectView.setTranslationX(startX + (endX - startX) * val);
+                    for (ImageView emoji : emojiButton) {
                         emoji.setTranslationX(senderSelectView.getTranslationX());
+                    }
                     messageEditText.setTranslationX(senderSelectView.getTranslationX());
                 });
                 anim.addListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationStart(Animator animation) {
-                        if (isVisible)
+                        if (isVisible) {
                             senderSelectView.setVisibility(VISIBLE);
-                        senderSelectView.setAlpha(sA);
-                        senderSelectView.setTranslationX(sX);
-                        for (ImageView emoji : emojiButton)
+                        }
+                        senderSelectView.setAlpha(startAlpha);
+                        senderSelectView.setTranslationX(startX);
+                        for (ImageView emoji : emojiButton) {
                             emoji.setTranslationX(senderSelectView.getTranslationX());
+                        }
                         messageEditText.setTranslationX(senderSelectView.getTranslationX());
 
                         if (botCommandsMenuButton.getTag() == null) {
@@ -6916,8 +6710,9 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
                     public void onAnimationEnd(Animator animation) {
                         if (!isVisible) {
                             senderSelectView.setVisibility(GONE);
-                            for (ImageView emoji : emojiButton)
+                            for (ImageView emoji : emojiButton) {
                                 emoji.setTranslationX(0);
+                            }
                             messageEditText.setTranslationX(0);
                         }
                     }
@@ -6929,10 +6724,11 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
                         } else {
                             senderSelectView.setVisibility(GONE);
                         }
-                        senderSelectView.setAlpha(eA);
-                        senderSelectView.setTranslationX(eX);
-                        for (ImageView emoji : emojiButton)
+                        senderSelectView.setAlpha(endAlpha);
+                        senderSelectView.setTranslationX(endX);
+                        for (ImageView emoji : emojiButton) {
                             emoji.setTranslationX(senderSelectView.getTranslationX());
+                        }
                         messageEditText.setTranslationX(senderSelectView.getTranslationX());
 
                         requestLayout();
@@ -6942,11 +6738,12 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
                 senderSelectView.setTag(anim);
             } else {
                 senderSelectView.setVisibility(isVisible ? VISIBLE : GONE);
-                senderSelectView.setTranslationX(eX);
-                for (ImageView emoji : emojiButton)
-                    emoji.setTranslationX(eX);
-                messageEditText.setTranslationX(eX);
-                senderSelectView.setAlpha(eA);
+                senderSelectView.setTranslationX(endX);
+                for (ImageView emoji : emojiButton) {
+                    emoji.setTranslationX(endX);
+                }
+                messageEditText.setTranslationX(endX);
+                senderSelectView.setAlpha(endAlpha);
                 senderSelectView.setTag(null);
             }
         }
@@ -7440,13 +7237,13 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
                             if (trendingStickersAlert == this) {
                                 trendingStickersAlert = null;
                             }
-                            if (delegate != null) {
-                                delegate.onTrendingStickersShowed(false);
+                            if (ChatActivityEnterView.this.delegate != null) {
+                                ChatActivityEnterView.this.delegate.onTrendingStickersShowed(false);
                             }
                         }
                     };
-                    if (delegate != null) {
-                        delegate.onTrendingStickersShowed(true);
+                    if (ChatActivityEnterView.this.delegate != null) {
+                        ChatActivityEnterView.this.delegate.onTrendingStickersShowed(true);
                     }
                     trendingStickersAlert.show();
                 }
@@ -8609,7 +8406,7 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
         return adjustPanLayoutHelper;
     }
 
-    public boolean pannelAniamationInProgress() {
+    public boolean panelAnimationInProgress() {
         return panelAnimation != null;
     }
 
@@ -9159,11 +8956,12 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
             }
             ((MarginLayoutParams) messageEditText.getLayoutParams()).leftMargin = AndroidUtilities.dp(57) + botCommandsMenuButton.getMeasuredWidth();
         } else if (senderSelectView != null && senderSelectView.getVisibility() == View.VISIBLE) {
-            senderSelectView.measure(widthMeasureSpec, heightMeasureSpec);
+            int width = senderSelectView.getLayoutParams().width, height = senderSelectView.getLayoutParams().height;
+            senderSelectView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
             for (int i = 0; i < emojiButton.length; i++) {
-                ((MarginLayoutParams) emojiButton[i].getLayoutParams()).leftMargin = AndroidUtilities.dp(16) + senderSelectView.getLayoutParams().width;
+                ((MarginLayoutParams) emojiButton[i].getLayoutParams()).leftMargin = AndroidUtilities.dp(16) + width;
             }
-            ((MarginLayoutParams) messageEditText.getLayoutParams()).leftMargin = AndroidUtilities.dp(63) + senderSelectView.getLayoutParams().width;
+            ((MarginLayoutParams) messageEditText.getLayoutParams()).leftMargin = AndroidUtilities.dp(63) + width;
         } else {
             for (int i = 0; i < emojiButton.length; i++) {
                 ((MarginLayoutParams) emojiButton[i].getLayoutParams()).leftMargin = AndroidUtilities.dp(3);

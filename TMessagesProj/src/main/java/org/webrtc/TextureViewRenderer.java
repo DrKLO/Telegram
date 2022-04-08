@@ -9,6 +9,7 @@ import android.view.TextureView;
 import android.view.View;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.voip.VoIPService;
@@ -52,8 +53,13 @@ public class TextureViewRenderer extends TextureView
 
     Runnable updateScreenRunnable;
 
-    public void setBackgroundRenderer(TextureView backgroundRenderer) {
+    public void setBackgroundRenderer(@Nullable TextureView backgroundRenderer) {
         this.backgroundRenderer = backgroundRenderer;
+        if (backgroundRenderer == null) {
+            ThreadUtils.checkIsOnMainThread();
+            eglRenderer.releaseEglSurface(null, true);
+            return;
+        }
         backgroundRenderer.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
             @Override
             public void onSurfaceTextureAvailable(@NonNull SurfaceTexture surfaceTexture, int i, int i1) {

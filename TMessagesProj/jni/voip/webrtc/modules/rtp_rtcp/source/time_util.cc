@@ -17,48 +17,6 @@
 #include "rtc_base/time_utils.h"
 
 namespace webrtc {
-namespace {
-
-int64_t NtpOffsetMsCalledOnce() {
-  constexpr int64_t kNtpJan1970Sec = 2208988800;
-  int64_t clock_time = rtc::TimeMillis();
-  int64_t utc_time = rtc::TimeUTCMillis();
-  return utc_time - clock_time + kNtpJan1970Sec * rtc::kNumMillisecsPerSec;
-}
-
-}  // namespace
-
-int64_t NtpOffsetMs() {
-  // Calculate the offset once.
-  static int64_t ntp_offset_ms = NtpOffsetMsCalledOnce();
-  return ntp_offset_ms;
-}
-
-NtpTime TimeMicrosToNtp(int64_t time_us) {
-  // Since this doesn't return a wallclock time, but only NTP representation
-  // of rtc::TimeMillis() clock, the exact offset doesn't matter.
-  // To simplify conversions between NTP and RTP time, this offset is
-  // limited to milliseconds in resolution.
-  int64_t time_ntp_us = time_us + NtpOffsetMs() * 1000;
-  RTC_DCHECK_GE(time_ntp_us, 0);  // Time before year 1900 is unsupported.
-
-  // TODO(danilchap): Convert both seconds and fraction together using int128
-  // when that type is easily available.
-  // Currently conversion is done separetly for seconds and fraction of a second
-  // to avoid overflow.
-
-  // Convert seconds to uint32 through uint64 for well-defined cast.
-  // Wrap around (will happen in 2036) is expected for ntp time.
-  uint32_t ntp_seconds =
-      static_cast<uint64_t>(time_ntp_us / rtc::kNumMicrosecsPerSec);
-
-  // Scale fractions of the second to ntp resolution.
-  constexpr int64_t kNtpInSecond = 1LL << 32;
-  int64_t us_fractions = time_ntp_us % rtc::kNumMicrosecsPerSec;
-  uint32_t ntp_fractions =
-      us_fractions * kNtpInSecond / rtc::kNumMicrosecsPerSec;
-  return NtpTime(ntp_seconds, ntp_fractions);
-}
 
 uint32_t SaturatedUsToCompactNtp(int64_t us) {
   constexpr uint32_t kMaxCompactNtp = 0xFFFFFFFF;

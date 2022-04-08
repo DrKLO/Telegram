@@ -108,7 +108,7 @@ class QualityScaler::CheckQpTask {
           switch (quality_scaler_->CheckQp()) {
             case QualityScaler::CheckQpResult::kInsufficientSamples: {
               result_.observed_enough_frames = false;
-              // After this line, |this| may be deleted.
+              // After this line, `this` may be deleted.
               break;
             }
             case QualityScaler::CheckQpResult::kNormalQp: {
@@ -133,7 +133,7 @@ class QualityScaler::CheckQpTask {
           }
           state_ = State::kCompleted;
           // Starting the next task deletes the pending task. After this line,
-          // |this| has been deleted.
+          // `this` has been deleted.
           quality_scaler_->StartNextCheckQpTask();
         }),
         GetCheckingQpDelayMs());

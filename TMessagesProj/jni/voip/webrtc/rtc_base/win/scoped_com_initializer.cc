@@ -16,13 +16,13 @@
 namespace webrtc {
 
 ScopedCOMInitializer::ScopedCOMInitializer() {
-  RTC_DLOG(INFO) << "Single-Threaded Apartment (STA) COM thread";
+  RTC_DLOG(LS_INFO) << "Single-Threaded Apartment (STA) COM thread";
   Initialize(COINIT_APARTMENTTHREADED);
 }
 
 // Constructor for MTA initialization.
 ScopedCOMInitializer::ScopedCOMInitializer(SelectMTA mta) {
-  RTC_DLOG(INFO) << "Multi-Threaded Apartment (MTA) COM thread";
+  RTC_DLOG(LS_INFO) << "Multi-Threaded Apartment (MTA) COM thread";
   Initialize(COINIT_MULTITHREADED);
 }
 
@@ -46,10 +46,10 @@ void ScopedCOMInitializer::Initialize(COINIT init) {
   // successful call to CoInitializeEx, including any call that returns
   // S_FALSE, must be balanced by a corresponding call to CoUninitialize.
   if (hr_ == S_OK) {
-    RTC_DLOG(INFO)
+    RTC_DLOG(LS_INFO)
         << "The COM library was initialized successfully on this thread";
   } else if (hr_ == S_FALSE) {
-    RTC_DLOG(WARNING)
+    RTC_DLOG(LS_WARNING)
         << "The COM library is already initialized on this thread";
   }
 }

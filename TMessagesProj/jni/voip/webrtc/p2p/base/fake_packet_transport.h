@@ -36,8 +36,8 @@ class FakePacketTransport : public PacketTransportInternal {
   void SetReceiving(bool receiving) { set_receiving(receiving); }
 
   // Simulates the two transports connecting to each other.
-  // If |asymmetric| is true this method only affects this FakePacketTransport.
-  // If false, it affects |dest| as well.
+  // If `asymmetric` is true this method only affects this FakePacketTransport.
+  // If false, it affects `dest` as well.
   void SetDestination(FakePacketTransport* dest, bool asymmetric) {
     if (dest) {
       dest_ = dest;

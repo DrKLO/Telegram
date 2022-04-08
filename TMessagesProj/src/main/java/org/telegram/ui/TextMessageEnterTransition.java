@@ -449,7 +449,7 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
         Theme.MessageDrawable drawable = messageView.getCurrentBackgroundDrawable(true);
 
         if (drawable != null) {
-            messageView.setBackgroundTopY(listView.getTop() - container.getTop());
+            messageView.setBackgroundTopY(container.getTop() - listView.getTop());
             Drawable shadowDrawable = drawable.getShadowDrawable();
 
             if (alphaProgress != 1f && fromMessageDrawable != null) {
@@ -472,7 +472,6 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
             drawable.setAlpha(255);
         }
         canvas.restore();
-
 
         canvas.save();
         if (currentMessageObject.isOutOwner()) {

@@ -20,7 +20,7 @@
 
 extern "C" {
 
-ABSL_ATTRIBUTE_WEAK void AbslInternalSpinLockDelay(
+ABSL_ATTRIBUTE_WEAK void ABSL_INTERNAL_C_SYMBOL(AbslInternalSpinLockDelay)(
     std::atomic<uint32_t>* /* lock_word */, uint32_t /* value */,
     int /* loop */, absl::base_internal::SchedulingMode /* mode */) {
   // In Akaros, one must take care not to call anything that could cause a
@@ -29,7 +29,7 @@ ABSL_ATTRIBUTE_WEAK void AbslInternalSpinLockDelay(
   // arbitrary code.
 }
 
-ABSL_ATTRIBUTE_WEAK void AbslInternalSpinLockWake(
+ABSL_ATTRIBUTE_WEAK void ABSL_INTERNAL_C_SYMBOL(AbslInternalSpinLockWake)(
     std::atomic<uint32_t>* /* lock_word */, bool /* all */) {}
 
 }  // extern "C"

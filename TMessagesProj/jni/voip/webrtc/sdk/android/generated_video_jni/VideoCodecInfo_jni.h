@@ -109,7 +109,4 @@ static base::android::ScopedJavaLocalRef<jobject> Java_VideoCodecInfo_getParams(
 }  // namespace jni
 }  // namespace  webrtc
 
-// Step 4: Generated test functions (optional).
-
-
 #endif  // org_webrtc_VideoCodecInfo_JNI

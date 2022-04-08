@@ -40,7 +40,7 @@ namespace webrtc {
 namespace {
 
 struct SenderReportTimes {
-  int64_t local_received_time_us;
+  Timestamp local_received_time;
   NtpTime remote_sent_time;
 };
 
@@ -92,9 +92,7 @@ RtcpTransceiverImpl::RtcpTransceiverImpl(const RtcpTransceiverConfig& config)
     : config_(config), ready_to_send_(config.initial_ready_to_send) {
   RTC_CHECK(config_.Validate());
   if (ready_to_send_ && config_.schedule_periodic_compound_packets) {
-    config_.task_queue->PostTask(ToQueuedTask([this] {
-      SchedulePeriodicCompoundPackets(config_.initial_report_delay_ms);
-    }));
+    SchedulePeriodicCompoundPackets(config_.initial_report_delay_ms);
   }
 }
 
@@ -133,16 +131,22 @@ void RtcpTransceiverImpl::SetReadyToSend(bool ready) {
 }
 
 void RtcpTransceiverImpl::ReceivePacket(rtc::ArrayView<const uint8_t> packet,
-                                        int64_t now_us) {
+                                        Timestamp now) {
+  // Report blocks may be spread across multiple sender and receiver reports.
+  std::vector<rtcp::ReportBlock> report_blocks;
+
   while (!packet.empty()) {
     rtcp::CommonHeader rtcp_block;
     if (!rtcp_block.Parse(packet.data(), packet.size()))
-      return;
+      break;
 
-    HandleReceivedPacket(rtcp_block, now_us);
+    HandleReceivedPacket(rtcp_block, now, report_blocks);
 
-    // TODO(danilchap): Use packet.remove_prefix() when that function exists.
     packet = packet.subview(rtcp_block.packet_size());
+  }
+
+  if (!report_blocks.empty()) {
+    ProcessReportBlocks(now, report_blocks);
   }
 }
 
@@ -228,16 +232,26 @@ void RtcpTransceiverImpl::SendFullIntraRequest(
 
 void RtcpTransceiverImpl::HandleReceivedPacket(
     const rtcp::CommonHeader& rtcp_packet_header,
-    int64_t now_us) {
+    Timestamp now,
+    std::vector<rtcp::ReportBlock>& report_blocks) {
   switch (rtcp_packet_header.type()) {
     case rtcp::Bye::kPacketType:
       HandleBye(rtcp_packet_header);
       break;
     case rtcp::SenderReport::kPacketType:
-      HandleSenderReport(rtcp_packet_header, now_us);
+      HandleSenderReport(rtcp_packet_header, now, report_blocks);
+      break;
+    case rtcp::ReceiverReport::kPacketType:
+      HandleReceiverReport(rtcp_packet_header, report_blocks);
       break;
     case rtcp::ExtendedReports::kPacketType:
-      HandleExtendedReports(rtcp_packet_header, now_us);
+      HandleExtendedReports(rtcp_packet_header, now);
+      break;
+    case rtcp::Psfb::kPacketType:
+      HandlePayloadSpecificFeedback(rtcp_packet_header, now);
+      break;
+    case rtcp::Rtpfb::kPacketType:
+      HandleRtpFeedback(rtcp_packet_header, now);
       break;
   }
 }
@@ -256,52 +270,129 @@ void RtcpTransceiverImpl::HandleBye(
 
 void RtcpTransceiverImpl::HandleSenderReport(
     const rtcp::CommonHeader& rtcp_packet_header,
-    int64_t now_us) {
+    Timestamp now,
+    std::vector<rtcp::ReportBlock>& report_blocks) {
   rtcp::SenderReport sender_report;
   if (!sender_report.Parse(rtcp_packet_header))
     return;
   RemoteSenderState& remote_sender =
       remote_senders_[sender_report.sender_ssrc()];
-  absl::optional<SenderReportTimes>& last =
-      remote_sender.last_received_sender_report;
-  last.emplace();
-  last->local_received_time_us = now_us;
-  last->remote_sent_time = sender_report.ntp();
+  remote_sender.last_received_sender_report = {{now, sender_report.ntp()}};
+  const auto& received_report_blocks = sender_report.report_blocks();
+  report_blocks.insert(report_blocks.end(), received_report_blocks.begin(),
+                       received_report_blocks.end());
 
   for (MediaReceiverRtcpObserver* observer : remote_sender.observers)
     observer->OnSenderReport(sender_report.sender_ssrc(), sender_report.ntp(),
                              sender_report.rtp_timestamp());
 }
 
+void RtcpTransceiverImpl::HandleReceiverReport(
+    const rtcp::CommonHeader& rtcp_packet_header,
+    std::vector<rtcp::ReportBlock>& report_blocks) {
+  rtcp::ReceiverReport receiver_report;
+  if (!receiver_report.Parse(rtcp_packet_header)) {
+    return;
+  }
+  const auto& received_report_blocks = receiver_report.report_blocks();
+  report_blocks.insert(report_blocks.end(), received_report_blocks.begin(),
+                       received_report_blocks.end());
+}
+
+void RtcpTransceiverImpl::HandlePayloadSpecificFeedback(
+    const rtcp::CommonHeader& rtcp_packet_header,
+    Timestamp now) {
+  // Remb is the only payload specific message handled right now.
+  if (rtcp_packet_header.fmt() != rtcp::Psfb::kAfbMessageType ||
+      config_.network_link_observer == nullptr) {
+    return;
+  }
+  rtcp::Remb remb;
+  if (remb.Parse(rtcp_packet_header)) {
+    config_.network_link_observer->OnReceiverEstimatedMaxBitrate(
+        now, DataRate::BitsPerSec(remb.bitrate_bps()));
+  }
+}
+
+void RtcpTransceiverImpl::HandleRtpFeedback(
+    const rtcp::CommonHeader& rtcp_packet_header,
+    Timestamp now) {
+  // Transport feedback is the only message handled right now.
+  if (rtcp_packet_header.fmt() !=
+          rtcp::TransportFeedback::kFeedbackMessageType ||
+      config_.network_link_observer == nullptr) {
+    return;
+  }
+  rtcp::TransportFeedback feedback;
+  if (feedback.Parse(rtcp_packet_header)) {
+    config_.network_link_observer->OnTransportFeedback(now, feedback);
+  }
+}
+
 void RtcpTransceiverImpl::HandleExtendedReports(
     const rtcp::CommonHeader& rtcp_packet_header,
-    int64_t now_us) {
+    Timestamp now) {
   rtcp::ExtendedReports extended_reports;
   if (!extended_reports.Parse(rtcp_packet_header))
     return;
 
   if (extended_reports.dlrr())
-    HandleDlrr(extended_reports.dlrr(), now_us);
+    HandleDlrr(extended_reports.dlrr(), now);
 
   if (extended_reports.target_bitrate())
     HandleTargetBitrate(*extended_reports.target_bitrate(),
                         extended_reports.sender_ssrc());
 }
 
-void RtcpTransceiverImpl::HandleDlrr(const rtcp::Dlrr& dlrr, int64_t now_us) {
-  if (!config_.non_sender_rtt_measurement || config_.rtt_observer == nullptr)
+void RtcpTransceiverImpl::HandleDlrr(const rtcp::Dlrr& dlrr, Timestamp now) {
+  if (!config_.non_sender_rtt_measurement ||
+      config_.network_link_observer == nullptr) {
     return;
+  }
 
   // Delay and last_rr are transferred using 32bit compact ntp resolution.
   // Convert packet arrival time to same format through 64bit ntp format.
-  uint32_t receive_time_ntp = CompactNtp(TimeMicrosToNtp(now_us));
+  uint32_t receive_time_ntp =
+      CompactNtp(config_.clock->ConvertTimestampToNtpTime(now));
   for (const rtcp::ReceiveTimeInfo& rti : dlrr.sub_blocks()) {
     if (rti.ssrc != config_.feedback_ssrc)
       continue;
     uint32_t rtt_ntp = receive_time_ntp - rti.delay_since_last_rr - rti.last_rr;
     int64_t rtt_ms = CompactNtpRttToMs(rtt_ntp);
-    config_.rtt_observer->OnRttUpdate(rtt_ms);
+    config_.network_link_observer->OnRttUpdate(now, TimeDelta::Millis(rtt_ms));
   }
+}
+
+void RtcpTransceiverImpl::ProcessReportBlocks(
+    Timestamp now,
+    rtc::ArrayView<const rtcp::ReportBlock> report_blocks) {
+  RTC_DCHECK(!report_blocks.empty());
+  if (config_.network_link_observer == nullptr) {
+    return;
+  }
+  // Round trip time calculated from different report blocks suppose to be about
+  // the same, as those blocks should be generated by the same remote sender.
+  // To avoid too many callbacks, this code accumulate multiple rtts into one.
+  TimeDelta rtt_sum = TimeDelta::Zero();
+  size_t num_rtts = 0;
+  uint32_t receive_time_ntp =
+      CompactNtp(config_.clock->ConvertTimestampToNtpTime(now));
+  for (const rtcp::ReportBlock& report_block : report_blocks) {
+    if (report_block.last_sr() == 0) {
+      continue;
+    }
+
+    uint32_t rtt_ntp = receive_time_ntp - report_block.delay_since_last_sr() -
+                       report_block.last_sr();
+    rtt_sum += TimeDelta::Millis(CompactNtpRttToMs(rtt_ntp));
+    ++num_rtts;
+  }
+  // For backward compatibility, do not report rtt based on report blocks to the
+  // `config_.rtt_observer`
+  if (num_rtts > 0) {
+    config_.network_link_observer->OnRttUpdate(now, rtt_sum / num_rtts);
+  }
+  config_.network_link_observer->OnReportBlocks(now, report_blocks);
 }
 
 void RtcpTransceiverImpl::HandleTargetBitrate(
@@ -353,13 +444,16 @@ void RtcpTransceiverImpl::SchedulePeriodicCompoundPackets(int64_t delay_ms) {
 void RtcpTransceiverImpl::CreateCompoundPacket(PacketSender* sender) {
   RTC_DCHECK(sender->IsEmpty());
   const uint32_t sender_ssrc = config_.feedback_ssrc;
-  int64_t now_us = rtc::TimeMicros();
+  Timestamp now = config_.clock->CurrentTime();
   rtcp::ReceiverReport receiver_report;
   receiver_report.SetSenderSsrc(sender_ssrc);
-  receiver_report.SetReportBlocks(CreateReportBlocks(now_us));
-  sender->AppendPacket(receiver_report);
+  receiver_report.SetReportBlocks(CreateReportBlocks(now));
+  if (config_.rtcp_mode == RtcpMode::kCompound ||
+      !receiver_report.report_blocks().empty()) {
+    sender->AppendPacket(receiver_report);
+  }
 
-  if (!config_.cname.empty()) {
+  if (!config_.cname.empty() && !sender->IsEmpty()) {
     rtcp::Sdes sdes;
     bool added = sdes.AddCName(config_.feedback_ssrc, config_.cname);
     RTC_DCHECK(added) << "Failed to add cname " << config_.cname
@@ -377,7 +471,7 @@ void RtcpTransceiverImpl::CreateCompoundPacket(PacketSender* sender) {
     rtcp::ExtendedReports xr;
 
     rtcp::Rrtr rrtr;
-    rrtr.SetNtp(TimeMicrosToNtp(now_us));
+    rrtr.SetNtp(config_.clock->ConvertTimestampToNtpTime(now));
     xr.SetRrtr(rrtr);
 
     xr.SetSenderSsrc(sender_ssrc);
@@ -428,11 +522,11 @@ void RtcpTransceiverImpl::SendImmediateFeedback(
 }
 
 std::vector<rtcp::ReportBlock> RtcpTransceiverImpl::CreateReportBlocks(
-    int64_t now_us) {
+    Timestamp now) {
   if (!config_.receive_statistics)
     return {};
   // TODO(danilchap): Support sending more than
-  // |ReceiverReport::kMaxNumberOfReportBlocks| per compound rtcp packet.
+  // `ReceiverReport::kMaxNumberOfReportBlocks` per compound rtcp packet.
   std::vector<rtcp::ReportBlock> report_blocks =
       config_.receive_statistics->RtcpReportBlocks(
           rtcp::ReceiverReport::kMaxNumberOfReportBlocks);
@@ -448,7 +542,7 @@ std::vector<rtcp::ReportBlock> RtcpTransceiverImpl::CreateReportBlocks(
         *it->second.last_received_sender_report;
     last_sr = CompactNtp(last_sender_report.remote_sent_time);
     last_delay = SaturatedUsToCompactNtp(
-        now_us - last_sender_report.local_received_time_us);
+        now.us() - last_sender_report.local_received_time.us());
     report_block.SetLastSr(last_sr);
     report_block.SetDelayLastSr(last_delay);
   }

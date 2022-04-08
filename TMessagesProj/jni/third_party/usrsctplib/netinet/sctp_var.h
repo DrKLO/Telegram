@@ -32,9 +32,9 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) && !defined(__Userspace__)
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD: head/sys/netinet/sctp_var.h 317457 2017-04-26 19:26:40Z tuexen $");
+__FBSDID("$FreeBSD: head/sys/netinet/sctp_var.h 365071 2020-09-01 21:19:14Z mjg $");
 #endif
 
 #ifndef _NETINET_SCTP_VAR_H_
@@ -44,10 +44,9 @@ __FBSDID("$FreeBSD: head/sys/netinet/sctp_var.h 317457 2017-04-26 19:26:40Z tuex
 
 #if defined(_KERNEL) || defined(__Userspace__)
 
-#if defined(__FreeBSD__) || defined(__APPLE__) || defined(__Windows__)
+#if !defined(__Userspace__)
 extern struct pr_usrreqs sctp_usrreqs;
 #endif
-
 
 #define sctp_feature_on(inp, feature)  (inp->sctp_features |= feature)
 #define sctp_feature_off(inp, feature) (inp->sctp_features &= ~feature)
@@ -186,18 +185,11 @@ extern struct pr_usrreqs sctp_usrreqs;
 	} \
 }
 
-#if defined(__FreeBSD__) && __FreeBSD_version > 500000
-
+#if defined(__FreeBSD__) && !defined(__Userspace__)
 #define sctp_free_remote_addr(__net) { \
 	if ((__net)) {  \
 		if (SCTP_DECREMENT_AND_CHECK_REFCOUNT(&(__net)->ref_count)) { \
-			(void)SCTP_OS_TIMER_STOP(&(__net)->rxt_timer.timer); \
-			(void)SCTP_OS_TIMER_STOP(&(__net)->pmtu_timer.timer); \
-			(void)SCTP_OS_TIMER_STOP(&(__net)->hb_timer.timer); \
-			if ((__net)->ro.ro_rt) { \
-				RTFREE((__net)->ro.ro_rt); \
-				(__net)->ro.ro_rt = NULL; \
-			} \
+			RO_NHFREE(&(__net)->ro); \
 			if ((__net)->src_addr_selected) { \
 				sctp_free_ifa((__net)->ro._s_addr); \
 				(__net)->ro._s_addr = NULL; \
@@ -233,15 +225,10 @@ extern struct pr_usrreqs sctp_usrreqs;
 	    SCTP_BUF_TYPE(m) != MT_OOBDATA) \
 		atomic_add_int(&(sb)->sb_ctl,SCTP_BUF_LEN((m))); \
 }
-
 #else				/* FreeBSD Version <= 500000 or non-FreeBSD */
-
 #define sctp_free_remote_addr(__net) { \
 	if ((__net)) { \
 		if (SCTP_DECREMENT_AND_CHECK_REFCOUNT(&(__net)->ref_count)) { \
-			(void)SCTP_OS_TIMER_STOP(&(__net)->rxt_timer.timer); \
-			(void)SCTP_OS_TIMER_STOP(&(__net)->pmtu_timer.timer); \
-			(void)SCTP_OS_TIMER_STOP(&(__net)->hb_timer.timer); \
 			if ((__net)->ro.ro_rt) { \
 				RTFREE((__net)->ro.ro_rt); \
 				(__net)->ro.ro_rt = NULL; \
@@ -257,31 +244,6 @@ extern struct pr_usrreqs sctp_usrreqs;
 		} \
 	} \
 }
-
-#if defined(__Panda__)
-#define sctp_sbfree(ctl, stcb, sb, m) { \
-	if ((sb)->sb_cc >= (uint32_t)SCTP_BUF_LEN((m))) { \
-		atomic_subtract_int(&(sb)->sb_cc, SCTP_BUF_LEN((m))); \
-	} else { \
-		(sb)->sb_cc = 0; \
-	} \
-	if (((ctl)->do_not_ref_stcb == 0) && stcb) { \
-		if ((stcb)->asoc.sb_cc >= (uint32_t)SCTP_BUF_LEN((m))) { \
-			atomic_subtract_int(&(stcb)->asoc.sb_cc, SCTP_BUF_LEN((m))); \
-		} else { \
-			(stcb)->asoc.sb_cc = 0; \
-		} \
-	} \
-}
-
-#define sctp_sballoc(stcb, sb, m) { \
-	atomic_add_int(&(sb)->sb_cc, SCTP_BUF_LEN((m))); \
-	if (stcb) { \
-		atomic_add_int(&(stcb)->asoc.sb_cc, SCTP_BUF_LEN((m))); \
-	} \
-}
-
-#else
 
 #define sctp_sbfree(ctl, stcb, sb, m) { \
 	SCTP_SAVE_ATOMIC_DECREMENT(&(sb)->sb_cc, SCTP_BUF_LEN((m))); \
@@ -300,7 +262,6 @@ extern struct pr_usrreqs sctp_usrreqs;
 		atomic_add_int(&(stcb)->asoc.my_rwnd_control_len, MSIZE); \
 	} \
 }
-#endif
 #endif
 
 #define sctp_ucount_incr(val) { \
@@ -402,23 +363,13 @@ struct sctp_inpcb;
 struct sctp_tcb;
 struct sctphdr;
 
-
-#if (defined(__FreeBSD__) && __FreeBSD_version > 690000) || defined(__Windows__) || defined(__Userspace__)
+#if defined(__FreeBSD__) || defined(_WIN32) || defined(__Userspace__)
 void sctp_close(struct socket *so);
 #else
 int sctp_detach(struct socket *so);
 #endif
 int sctp_disconnect(struct socket *so);
-#if defined(__FreeBSD__) || defined(__APPLE__) || defined(__Windows__)
-#if defined(__FreeBSD__) && __FreeBSD_version < 902000
-void sctp_ctlinput __P((int, struct sockaddr *, void *));
-int sctp_ctloutput __P((struct socket *, struct sockopt *));
-#ifdef INET
-void sctp_input_with_port __P((struct mbuf *, int, uint16_t));
-void sctp_input __P((struct mbuf *, int));
-#endif
-void sctp_pathmtu_adjustment __P((struct sctp_tcb *, uint16_t));
-#else
+#if !defined(__Userspace__)
 #if defined(__APPLE__) && !defined(APPLE_LEOPARD) && !defined(APPLE_SNOWLEOPARD) && !defined(APPLE_LION) && !defined(APPLE_MOUNTAINLION) && !defined(APPLE_ELCAPITAN)
 void sctp_ctlinput(int, struct sockaddr *, void *, struct ifnet * SCTP_UNUSED);
 #else
@@ -427,18 +378,15 @@ void sctp_ctlinput(int, struct sockaddr *, void *);
 int sctp_ctloutput(struct socket *, struct sockopt *);
 #ifdef INET
 void sctp_input_with_port(struct mbuf *, int, uint16_t);
-#if defined(__FreeBSD__) && __FreeBSD_version >= 1100020
+#if defined(__FreeBSD__) && !defined(__Userspace__)
 int sctp_input(struct mbuf **, int *, int);
 #else
 void sctp_input(struct mbuf *, int);
 #endif
 #endif
 void sctp_pathmtu_adjustment(struct sctp_tcb *, uint16_t);
-#endif
 #else
-#if defined(__Panda__)
-void sctp_input(pakhandle_type i_pak);
-#elif defined(__Userspace__)
+#if defined(__Userspace__)
 void sctp_pathmtu_adjustment(struct sctp_tcb *, uint16_t);
 #else
 void sctp_input(struct mbuf *,...);
@@ -446,17 +394,11 @@ void sctp_input(struct mbuf *,...);
 void *sctp_ctlinput(int, struct sockaddr *, void *);
 int sctp_ctloutput(int, struct socket *, int, int, struct mbuf **);
 #endif
-#if defined(__FreeBSD__) && __FreeBSD_version < 902000
-void sctp_drain __P((void));
-#else
 void sctp_drain(void);
-#endif
 #if defined(__Userspace__)
 void sctp_init(uint16_t,
                int (*)(void *addr, void *buffer, size_t length, uint8_t tos, uint8_t set_df),
                void (*)(const char *, ...), int start_threads);
-#elif defined(__FreeBSD__) && __FreeBSD_version < 902000
-void sctp_init __P((void));
 #elif defined(__APPLE__) && (!defined(APPLE_LEOPARD) && !defined(APPLE_SNOWLEOPARD) &&!defined(APPLE_LION) && !defined(APPLE_MOUNTAINLION))
 void sctp_init(struct protosw *pp, struct domain *dp);
 #else
@@ -464,55 +406,37 @@ void sctp_init(void);
 void sctp_notify(struct sctp_inpcb *, struct sctp_tcb *, struct sctp_nets *,
     uint8_t, uint8_t, uint16_t, uint32_t);
 #endif
-#if !defined(__FreeBSD__)
+#if !defined(__FreeBSD__) && !defined(__Userspace__)
 void sctp_finish(void);
 #endif
-#if defined(__FreeBSD__) || defined(__Windows__) || defined(__Userspace__)
+#if defined(__FreeBSD__) || defined(_WIN32) || defined(__Userspace__)
 int sctp_flush(struct socket *, int);
 #endif
-#if defined(__FreeBSD__) && __FreeBSD_version < 902000
-int sctp_shutdown __P((struct socket *));
-#else
 int sctp_shutdown(struct socket *);
-#endif
 int sctp_bindx(struct socket *, int, struct sockaddr_storage *,
 	int, int, struct proc *);
 /* can't use sctp_assoc_t here */
 int sctp_peeloff(struct socket *, struct socket *, int, caddr_t, int *);
-#if defined(__FreeBSD__) || defined(__APPLE__) || defined(__Windows__)
+#if !defined(__Userspace__)
 int sctp_ingetaddr(struct socket *, struct sockaddr **);
-#elif defined(__Panda__)
-int sctp_ingetaddr(struct socket *, struct sockaddr *);
 #else
 int sctp_ingetaddr(struct socket *, struct mbuf *);
 #endif
-#if defined(__FreeBSD__) || defined(__APPLE__) || defined(__Windows__)
+#if !defined(__Userspace__)
 int sctp_peeraddr(struct socket *, struct sockaddr **);
-#elif defined(__Panda__)
-int sctp_peeraddr(struct socket *, struct sockaddr *);
 #else
 int sctp_peeraddr(struct socket *, struct mbuf *);
 #endif
-#if defined(__FreeBSD__) && __FreeBSD_version >= 500000
-#if __FreeBSD_version >= 700000
+#if defined(__FreeBSD__) && !defined(__Userspace__)
 int sctp_listen(struct socket *, int, struct thread *);
-#else
-int sctp_listen(struct socket *, struct thread *);
-#endif
-#elif defined(__Windows__)
+#elif defined(_WIN32) && !defined(__Userspace__)
 int sctp_listen(struct socket *, int, PKTHREAD);
 #elif defined(__Userspace__)
 int sctp_listen(struct socket *, int, struct proc *);
 #else
 int sctp_listen(struct socket *, struct proc *);
 #endif
-#if defined(__FreeBSD__) || defined(__APPLE__) || defined(__Windows__) || defined(__Userspace__)
 int sctp_accept(struct socket *, struct sockaddr **);
-#elif defined(__Panda__)
-int sctp_accept(struct socket *, struct sockaddr *, int *, void *, int *);
-#else
-int sctp_accept(struct socket *, struct mbuf *);
-#endif
 
 #endif /* _KERNEL */
 

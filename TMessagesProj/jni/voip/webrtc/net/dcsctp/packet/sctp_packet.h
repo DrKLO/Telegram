@@ -77,7 +77,6 @@ class SctpPacket {
     std::vector<uint8_t> Build();
 
    private:
-    void WritePacketHeader();
     VerificationTag verification_tag_;
     uint16_t source_port_;
     uint16_t dest_port_;

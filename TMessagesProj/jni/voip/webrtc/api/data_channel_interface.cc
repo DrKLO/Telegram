@@ -40,4 +40,8 @@ bool DataChannelInterface::negotiated() const {
   return false;
 }
 
+uint64_t DataChannelInterface::MaxSendQueueSize() {
+  return 16 * 1024 * 1024;  // 16 MiB
+}
+
 }  // namespace webrtc

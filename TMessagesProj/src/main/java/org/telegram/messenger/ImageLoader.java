@@ -16,6 +16,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
@@ -81,6 +82,7 @@ import java.util.zip.GZIPInputStream;
  * isc - ignore cache for small images
  * b - need blur image
  * g - autoplay
+ * lastframe - return firstframe for Lottie animation
  */
 public class ImageLoader {
 
@@ -841,6 +843,7 @@ public class ImageLoader {
                 int h = Math.min(512, AndroidUtilities.dp(170.6f));
                 boolean precache = false;
                 boolean limitFps = false;
+                boolean lastFrameBitmap = false;
                 int autoRepeat = 1;
                 int[] colors = null;
                 String diceEmoji = null;
@@ -861,6 +864,10 @@ public class ImageLoader {
                             precache = true;
                         } else {
                             precache = !cacheImage.filter.contains("nolimit") && SharedConfig.getDevicePerformanceClass() != SharedConfig.PERFORMANCE_CLASS_HIGH;
+                        }
+
+                        if (cacheImage.filter.contains("lastframe")) {
+                            lastFrameBitmap = true;
                         }
                     }
 
@@ -887,6 +894,8 @@ public class ImageLoader {
                             fitzModifier = 6;
                         }
                     }
+
+
                 }
                 RLottieDrawable lottieDrawable;
                 if (diceEmoji != null) {
@@ -922,14 +931,21 @@ public class ImageLoader {
                             }
                         }
                     }
+                    if (lastFrameBitmap) {
+                        precache = false;
+                    }
                     if (compressed) {
                         lottieDrawable = new RLottieDrawable(cacheImage.finalFilePath, decompressGzip(cacheImage.finalFilePath), w, h, precache, limitFps, null, fitzModifier);
                     } else {
                         lottieDrawable = new RLottieDrawable(cacheImage.finalFilePath, w, h, precache, limitFps, null, fitzModifier);
                     }
                 }
-                lottieDrawable.setAutoRepeat(autoRepeat);
-                onPostExecute(lottieDrawable);
+                if (lastFrameBitmap) {
+                    loadLastFrame(lottieDrawable, h, w);
+                } else {
+                    lottieDrawable.setAutoRepeat(autoRepeat);
+                    onPostExecute(lottieDrawable);
+                }
             } else if (cacheImage.imageType == FileLoader.IMAGE_TYPE_ANIMATION) {
                 AnimatedFileDrawable fileDrawable;
                 long seekTo;
@@ -1440,6 +1456,27 @@ public class ImageLoader {
                     onPostExecute(image != null ? new BitmapDrawable(image) : null);
                 }
             }
+        }
+
+        private void loadLastFrame(RLottieDrawable lottieDrawable, int w, int h) {
+            Bitmap bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(bitmap);
+            canvas.scale(2f, 2f, w / 2f, h / 2f);
+
+            AndroidUtilities.runOnUIThread(() -> {
+                lottieDrawable.setOnFrameReadyRunnable(() -> {
+                    lottieDrawable.setOnFrameReadyRunnable(null);
+                    BitmapDrawable bitmapDrawable = null;
+                    if (lottieDrawable.getBackgroundBitmap() != null || lottieDrawable.getRenderingBitmap() != null) {
+                        Bitmap currentBitmap = lottieDrawable.getBackgroundBitmap() != null ? lottieDrawable.getBackgroundBitmap() : lottieDrawable.getRenderingBitmap();
+                        canvas.drawBitmap(currentBitmap, 0, 0, null);
+                        bitmapDrawable = new BitmapDrawable(bitmap);
+                    }
+                    onPostExecute(bitmapDrawable);
+                    lottieDrawable.recycle();
+                });
+                lottieDrawable.setCurrentFrame(lottieDrawable.getFramesCount() - 1, true, true);
+            });
         }
 
         private void onPostExecute(final Drawable drawable) {
@@ -2805,10 +2842,11 @@ public class ImageLoader {
         String imageKey = imageReceiver.getImageKey();
         if (!imageSet && imageKey != null) {
             ImageLocation imageLocation = imageReceiver.getImageLocation();
-            Drawable drawable;
+            Drawable drawable = null;
             if (useLottieMemChache(imageLocation)) {
                 drawable = getFromLottieCahce(imageKey);
-            } else {
+            }
+            if (drawable == null) {
                 drawable = memCache.get(imageKey);
                 if (drawable != null) {
                     memCache.moveToFront(imageKey);

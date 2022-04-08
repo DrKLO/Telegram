@@ -32,7 +32,7 @@ struct AudioEncoderRuntimeConfig {
   absl::optional<bool> enable_dtx;
 
   // Some encoders can encode fewer channels than the actual input to make
-  // better use of the bandwidth. |num_channels| sets the number of channels
+  // better use of the bandwidth. `num_channels` sets the number of channels
   // to encode.
   absl::optional<size_t> num_channels;
 

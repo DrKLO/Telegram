@@ -82,8 +82,8 @@ size_t SctpPacket::Builder::bytes_remaining() const {
     // The packet header (CommonHeader) hasn't been written yet:
     return max_packet_size_ - kHeaderSize;
   } else if (out_.size() > max_packet_size_) {
-    RTC_DCHECK(false) << "Exceeded max size, data=" << out_.size()
-                      << ", max_size=" << max_packet_size_;
+    RTC_DCHECK_NOTREACHED() << "Exceeded max size, data=" << out_.size()
+                            << ", max_size=" << max_packet_size_;
     return 0;
   }
   return max_packet_size_ - out_.size();

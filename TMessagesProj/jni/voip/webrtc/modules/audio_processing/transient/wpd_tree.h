@@ -65,7 +65,7 @@ class WPDTree {
   // If level or index are out of bounds the function will return NULL.
   WPDNode* NodeAt(int level, int index);
 
-  // Updates all the nodes of the tree with the new data. |data_length| must be
+  // Updates all the nodes of the tree with the new data. `data_length` must be
   // teh same that was used for the creation of the tree.
   // Returns 0 if correct, and -1 otherwise.
   int Update(const float* data, size_t data_length);

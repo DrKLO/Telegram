@@ -16,13 +16,13 @@
 
 namespace rtc {
 
-AsyncProxyServerSocket::AsyncProxyServerSocket(AsyncSocket* socket,
+AsyncProxyServerSocket::AsyncProxyServerSocket(Socket* socket,
                                                size_t buffer_size)
     : BufferedReadAdapter(socket, buffer_size) {}
 
 AsyncProxyServerSocket::~AsyncProxyServerSocket() = default;
 
-AsyncSSLServerSocket::AsyncSSLServerSocket(AsyncSocket* socket)
+AsyncSSLServerSocket::AsyncSSLServerSocket(Socket* socket)
     : BufferedReadAdapter(socket, 1024) {
   BufferInput(true);
 }
@@ -55,7 +55,7 @@ void AsyncSSLServerSocket::ProcessInput(char* data, size_t* len) {
   BufferInput(false);
 }
 
-AsyncSocksProxyServerSocket::AsyncSocksProxyServerSocket(AsyncSocket* socket)
+AsyncSocksProxyServerSocket::AsyncSocksProxyServerSocket(Socket* socket)
     : AsyncProxyServerSocket(socket, kBufferSize), state_(SS_HELLO) {
   BufferInput(true);
 }

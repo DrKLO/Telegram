@@ -75,7 +75,7 @@ class VideoRtpTrackSource : public VideoTrackSource {
 
  private:
   RTC_NO_UNIQUE_ADDRESS SequenceChecker worker_sequence_checker_;
-  // |broadcaster_| is needed since the decoder can only handle one sink.
+  // `broadcaster_` is needed since the decoder can only handle one sink.
   // It might be better if the decoder can handle multiple sinks and consider
   // the VideoSinkWants.
   rtc::VideoBroadcaster broadcaster_;

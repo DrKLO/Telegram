@@ -13,17 +13,19 @@
 #include <memory>
 
 #include "modules/remote_bitrate_estimator/tools/bwe_rtp.h"
+#include "modules/rtp_rtcp/include/rtp_header_extension_map.h"
+#include "modules/rtp_rtcp/source/rtp_header_extensions.h"
+#include "modules/rtp_rtcp/source/rtp_packet.h"
 #include "rtc_base/format_macros.h"
 #include "rtc_base/strings/string_builder.h"
 #include "test/rtp_file_reader.h"
-#include "test/rtp_header_parser.h"
 
 int main(int argc, char* argv[]) {
   std::unique_ptr<webrtc::test::RtpFileReader> reader;
-  std::unique_ptr<webrtc::RtpHeaderParser> parser(ParseArgsAndSetupEstimator(
-      argc, argv, nullptr, nullptr, &reader, nullptr, nullptr));
-  if (!parser)
+  webrtc::RtpHeaderExtensionMap rtp_header_extensions;
+  if (!ParseArgsAndSetupRtpReader(argc, argv, reader, rtp_header_extensions)) {
     return -1;
+  }
 
   bool arrival_time_only = (argc >= 5 && strncmp(argv[4], "-t", 2) == 0);
 
@@ -35,11 +37,15 @@ int main(int argc, char* argv[]) {
   int non_zero_ts_offsets = 0;
   webrtc::test::RtpPacket packet;
   while (reader->NextPacket(&packet)) {
-    webrtc::RTPHeader header;
-    parser->Parse(packet.data, packet.length, &header);
-    if (header.extension.absoluteSendTime != 0)
+    webrtc::RtpPacket header(&rtp_header_extensions);
+    header.Parse(packet.data, packet.length);
+    uint32_t abs_send_time = 0;
+    if (header.GetExtension<webrtc::AbsoluteSendTime>(&abs_send_time) &&
+        abs_send_time != 0)
       ++non_zero_abs_send_time;
-    if (header.extension.transmissionTimeOffset != 0)
+    int32_t toffset = 0;
+    if (header.GetExtension<webrtc::TransmissionOffset>(&toffset) &&
+        toffset != 0)
       ++non_zero_ts_offsets;
     if (arrival_time_only) {
       rtc::StringBuilder ss;
@@ -47,11 +53,9 @@ int main(int argc, char* argv[]) {
       fprintf(stdout, "%s\n", ss.str().c_str());
     } else {
       fprintf(stdout, "%u %u %d %u %u %d %u %" RTC_PRIuS " %" RTC_PRIuS "\n",
-              header.sequenceNumber, header.timestamp,
-              header.extension.transmissionTimeOffset,
-              header.extension.absoluteSendTime, packet.time_ms,
-              header.markerBit, header.ssrc, packet.length,
-              packet.original_length);
+              header.SequenceNumber(), header.Timestamp(), toffset,
+              abs_send_time, packet.time_ms, header.Marker(), header.Ssrc(),
+              packet.length, packet.original_length);
     }
     ++packet_counter;
   }

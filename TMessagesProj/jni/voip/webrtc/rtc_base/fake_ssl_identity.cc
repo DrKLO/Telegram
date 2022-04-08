@@ -103,17 +103,17 @@ const SSLCertChain& FakeSSLIdentity::cert_chain() const {
 }
 
 std::string FakeSSLIdentity::PrivateKeyToPEMString() const {
-  RTC_NOTREACHED();  // Not implemented.
+  RTC_DCHECK_NOTREACHED();  // Not implemented.
   return "";
 }
 
 std::string FakeSSLIdentity::PublicKeyToPEMString() const {
-  RTC_NOTREACHED();  // Not implemented.
+  RTC_DCHECK_NOTREACHED();  // Not implemented.
   return "";
 }
 
 bool FakeSSLIdentity::operator==(const SSLIdentity& other) const {
-  RTC_NOTREACHED();  // Not implemented.
+  RTC_DCHECK_NOTREACHED();  // Not implemented.
   return false;
 }
 

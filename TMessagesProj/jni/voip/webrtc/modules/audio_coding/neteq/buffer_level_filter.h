@@ -24,8 +24,8 @@ class BufferLevelFilter {
   virtual ~BufferLevelFilter() {}
   virtual void Reset();
 
-  // Updates the filter. Current buffer size is |buffer_size_samples|.
-  // |time_stretched_samples| is subtracted from the filtered value (thus
+  // Updates the filter. Current buffer size is `buffer_size_samples`.
+  // `time_stretched_samples` is subtracted from the filtered value (thus
   // bypassing the filter operation).
   virtual void Update(size_t buffer_size_samples, int time_stretched_samples);
 

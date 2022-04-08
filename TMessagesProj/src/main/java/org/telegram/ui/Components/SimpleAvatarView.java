@@ -5,6 +5,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.util.AttributeSet;
 import android.view.View;
@@ -17,6 +18,8 @@ import org.telegram.tgnet.TLObject;
 import org.telegram.ui.ActionBar.Theme;
 
 public class SimpleAvatarView extends View {
+    public final static int SELECT_ANIMATION_DURATION = 200;
+
     private ImageReceiver avatarImage = new ImageReceiver(this);
     private AvatarDrawable avatarDrawable = new AvatarDrawable();
     private Paint selectPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -60,8 +63,16 @@ public class SimpleAvatarView extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
+        canvas.save();
+        float scale = 0.9f + selectProgress * 0.1f;
+        canvas.scale(scale, scale);
         selectPaint.setColor(Theme.getColor(Theme.key_dialogTextBlue));
-        canvas.drawCircle(getWidth() / 2f, getHeight() / 2f, Math.min(getWidth(), getHeight()) / 2f - selectPaint.getStrokeWidth(), selectPaint);
+        selectPaint.setAlpha((int) (Color.alpha(selectPaint.getColor()) * selectProgress));
+        float stroke = selectPaint.getStrokeWidth();
+        AndroidUtilities.rectTmp.set(stroke, stroke, getWidth() - stroke, getHeight() - stroke);
+        canvas.drawArc(AndroidUtilities.rectTmp, -90, selectProgress * 360, false, selectPaint);
+        canvas.restore();
+
         if (!isAvatarHidden) {
             float pad = selectPaint.getStrokeWidth() * 2.5f * selectProgress;
             avatarImage.setImageCoords(pad, pad, getWidth() - pad * 2, getHeight() - pad * 2);
@@ -91,12 +102,13 @@ public class SimpleAvatarView extends View {
      * @param animate If we should animate status change
      */
     public void setSelected(boolean s, boolean animate) {
+        if (animator != null) {
+            animator.cancel();
+        }
         if (animate) {
-            if (animator != null)
-                animator.cancel();
             float to = s ? 1 : 0;
-            ValueAnimator anim = ValueAnimator.ofFloat(selectProgress, to).setDuration((long) (350 * Math.abs(to - selectProgress)));
-            anim.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+            ValueAnimator anim = ValueAnimator.ofFloat(selectProgress, to).setDuration(SELECT_ANIMATION_DURATION);
+            anim.setInterpolator(CubicBezierInterpolator.DEFAULT);
             anim.addUpdateListener(animation -> {
                 selectProgress = (float) animation.getAnimatedValue();
                 invalidate();
@@ -104,8 +116,9 @@ public class SimpleAvatarView extends View {
             anim.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
-                    if (animator == animation)
+                    if (animator == animation) {
                         animator = null;
+                    }
                 }
             });
             anim.start();

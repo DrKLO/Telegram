@@ -31,7 +31,6 @@ namespace cricket {
 namespace {
 
 const int k127Utf8CharactersLengthInBytes = 508;
-const int kDefaultMaxAttributeLength = 508;
 const int kMessageIntegrityAttributeLength = 20;
 const int kTheoreticalMaximumAttributeLength = 65535;
 
@@ -68,12 +67,6 @@ bool LengthValid(int type, int length) {
     case STUN_ATTR_SOFTWARE:
       return length <=
              k127Utf8CharactersLengthInBytes;  // RFC 8489 section 14.14
-    case STUN_ATTR_ORIGIN:
-      // 0x802F is unassigned by IANA.
-      // RESPONSE-ORIGIN is defined in RFC 5780 section 7.3, but does not
-      // specify a maximum length. It's an URL, so return an arbitrary
-      // restriction.
-      return length <= kDefaultMaxAttributeLength;
     case STUN_ATTR_DATA:
       // No length restriction in RFC; it's the content of an UDP datagram,
       // which in theory can be up to 65.535 bytes.
@@ -83,7 +76,7 @@ bool LengthValid(int type, int length) {
       // Return an arbitrary restriction for all other types.
       return length <= kTheoreticalMaximumAttributeLength;
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return true;
 }
 
@@ -94,7 +87,6 @@ const char STUN_ERROR_REASON_BAD_REQUEST[] = "Bad Request";
 const char STUN_ERROR_REASON_UNAUTHORIZED[] = "Unauthorized";
 const char STUN_ERROR_REASON_UNKNOWN_ATTRIBUTE[] = "Unknown Attribute";
 const char STUN_ERROR_REASON_FORBIDDEN[] = "Forbidden";
-const char STUN_ERROR_REASON_STALE_CREDENTIALS[] = "Stale Credentials";
 const char STUN_ERROR_REASON_ALLOCATION_MISMATCH[] = "Allocation Mismatch";
 const char STUN_ERROR_REASON_STALE_NONCE[] = "Stale Nonce";
 const char STUN_ERROR_REASON_WRONG_CREDENTIALS[] = "Wrong Credentials";
@@ -621,8 +613,6 @@ StunAttributeValueType StunMessage::GetAttributeValueType(int type) const {
       return STUN_VALUE_ADDRESS;
     case STUN_ATTR_FINGERPRINT:
       return STUN_VALUE_UINT32;
-    case STUN_ATTR_ORIGIN:
-      return STUN_VALUE_BYTE_STRING;
     case STUN_ATTR_RETRANSMIT_COUNT:
       return STUN_VALUE_UINT32;
     case STUN_ATTR_GOOG_LAST_ICE_CHECK_RECEIVED:

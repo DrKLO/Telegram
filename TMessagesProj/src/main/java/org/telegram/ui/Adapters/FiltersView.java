@@ -5,7 +5,6 @@ import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Rect;
-import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -62,6 +61,12 @@ public class FiltersView extends RecyclerListView {
     public final static int FILTER_TYPE_VOICE = 5;
     public final static int FILTER_TYPE_DATE = 6;
     public final static int FILTER_TYPE_ARCHIVE = 7;
+
+    public final static int FILTER_INDEX_MEDIA = 0;
+    public final static int FILTER_INDEX_LINKS = 1;
+    public final static int FILTER_INDEX_FILES = 2;
+    public final static int FILTER_INDEX_MUSIC = 3;
+    public final static int FILTER_INDEX_VOICE = 4;
 
     public final static MediaFilterData[] filters = new MediaFilterData[]{
             new MediaFilterData(R.drawable.search_media, R.drawable.search_media_filled, LocaleController.getString("SharedMediaTab2", R.string.SharedMediaTab2), new TLRPC.TL_inputMessagesFilterPhotoVideo(), FILTER_TYPE_MEDIA),

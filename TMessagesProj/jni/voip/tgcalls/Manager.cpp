@@ -62,7 +62,7 @@ void dumpStatsLog(const FilePath &path, const CallStats &stats) {
 
 } // namespace
 
-bool Manager::ResolvedNetworkStatus::operator==(const ResolvedNetworkStatus &rhs) {
+bool Manager::ResolvedNetworkStatus::operator==(const ResolvedNetworkStatus &rhs) const {
     if (rhs.isLowCost != isLowCost) {
         return false;
     }
@@ -72,7 +72,7 @@ bool Manager::ResolvedNetworkStatus::operator==(const ResolvedNetworkStatus &rhs
     return true;
 }
 
-bool Manager::ResolvedNetworkStatus::operator!=(const ResolvedNetworkStatus &rhs) {
+bool Manager::ResolvedNetworkStatus::operator!=(const ResolvedNetworkStatus &rhs) const {
     return !(*this == rhs);
 }
 
@@ -334,7 +334,7 @@ void Manager::setMuteOutgoingAudio(bool mute) {
 	});
 }
 
-void Manager::setIncomingVideoOutput(std::shared_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink) {
+void Manager::setIncomingVideoOutput(std::weak_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink) {
 	_mediaManager->perform(RTC_FROM_HERE, [sink](MediaManager *mediaManager) {
 		mediaManager->setIncomingVideoOutput(sink);
 	});

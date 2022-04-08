@@ -179,7 +179,7 @@ void RemoteEstimatorProxy::SetSendPeriodicFeedback(
 }
 
 void RemoteEstimatorProxy::SendPeriodicFeedbacks() {
-  // |periodic_window_start_seq_| is the first sequence number to include in
+  // `periodic_window_start_seq_` is the first sequence number to include in
   // the current feedback packet. Some older may still be in the map, in case
   // a reordering happens and we need to retransmit them.
   if (!periodic_window_start_seq_)

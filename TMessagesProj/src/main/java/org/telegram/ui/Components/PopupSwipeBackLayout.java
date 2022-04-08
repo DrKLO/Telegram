@@ -27,6 +27,8 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.Theme;
 
+import java.util.ArrayList;
+
 public class PopupSwipeBackLayout extends FrameLayout {
     private final static int DURATION = 300;
 
@@ -43,7 +45,7 @@ public class PopupSwipeBackLayout extends FrameLayout {
     private Path mPath = new Path();
     private RectF mRect = new RectF();
 
-    private OnSwipeBackProgressListener onSwipeBackProgressListener;
+    private ArrayList<OnSwipeBackProgressListener> onSwipeBackProgressListeners = new ArrayList<>();
     private boolean isSwipeBackDisallowed;
 
     private float overrideForegroundHeight;
@@ -113,12 +115,12 @@ public class PopupSwipeBackLayout extends FrameLayout {
     }
 
     /**
-     * Sets new swipeback listener
+     * add new swipeback listener
      *
      * @param onSwipeBackProgressListener New progress listener
      */
-    public void setOnSwipeBackProgressListener(OnSwipeBackProgressListener onSwipeBackProgressListener) {
-        this.onSwipeBackProgressListener = onSwipeBackProgressListener;
+    public void addOnSwipeBackProgressListener(OnSwipeBackProgressListener onSwipeBackProgressListener) {
+        onSwipeBackProgressListeners.add(onSwipeBackProgressListener);
     }
 
     @Override
@@ -143,8 +145,10 @@ public class PopupSwipeBackLayout extends FrameLayout {
      */
     private void invalidateTransforms() {
 
-        if (onSwipeBackProgressListener != null) {
-            onSwipeBackProgressListener.onSwipeBackProgress(this, toProgress, transitionProgress);
+        if (!onSwipeBackProgressListeners.isEmpty()) {
+            for (int i = 0; i < onSwipeBackProgressListeners.size(); i++) {
+                onSwipeBackProgressListeners.get(i).onSwipeBackProgress(this, toProgress, transitionProgress);
+            }
         }
 
         View bg = getChildAt(0);

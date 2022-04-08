@@ -35,7 +35,7 @@ class RingBuffer {
   ~RingBuffer() = default;
   // Set the ring buffer values to zero.
   void Reset() { buffer_.fill(0); }
-  // Replace the least recently pushed array in the buffer with |new_values|.
+  // Replace the least recently pushed array in the buffer with `new_values`.
   void Push(rtc::ArrayView<const T, S> new_values) {
     std::memcpy(buffer_.data() + S * tail_, new_values.data(), S * sizeof(T));
     tail_ += 1;
@@ -43,7 +43,7 @@ class RingBuffer {
       tail_ = 0;
   }
   // Return an array view onto the array with a given delay. A view on the last
-  // and least recently push array is returned when |delay| is 0 and N - 1
+  // and least recently push array is returned when `delay` is 0 and N - 1
   // respectively.
   rtc::ArrayView<const T, S> GetArrayView(int delay) const {
     RTC_DCHECK_LE(0, delay);

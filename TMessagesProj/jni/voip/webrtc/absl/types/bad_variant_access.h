@@ -70,8 +70,8 @@ class bad_variant_access : public std::exception {
 
 namespace variant_internal {
 
-[[noreturn]] void ThrowBadVariantAccess();
-[[noreturn]] void Rethrow();
+[[noreturn]] ABSL_DLL void ThrowBadVariantAccess();
+[[noreturn]] ABSL_DLL void Rethrow();
 
 }  // namespace variant_internal
 ABSL_NAMESPACE_END

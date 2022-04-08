@@ -33,8 +33,8 @@ namespace rtc {
 //////////////////////////////////////////////////////////////////////
 
 namespace {
-// Read |n| bytes from ASN1 number string at *|pp| and return the numeric value.
-// Update *|pp| and *|np| to reflect number of read bytes.
+// Read `n` bytes from ASN1 number string at *`pp` and return the numeric value.
+// Update *`pp` and *`np` to reflect number of read bytes.
 // TODO(bugs.webrtc.org/9860) - Remove this code.
 inline int ASN1ReadInt(const unsigned char** pp, size_t* np, size_t n) {
   const unsigned char* p = *pp;
@@ -87,7 +87,7 @@ int64_t ASN1TimeToSec(const unsigned char* s, size_t length, bool long_format) {
     }
   }
 
-  // Read out remaining ASN1 time data and store it in |tm| in documented
+  // Read out remaining ASN1 time data and store it in `tm` in documented
   // std::tm format.
   tm tm;
   tm.tm_year = year;
@@ -121,7 +121,7 @@ KeyParams::KeyParams(KeyType key_type) {
     params_.rsa.mod_size = kRsaDefaultModSize;
     params_.rsa.pub_exp = kRsaDefaultExponent;
   } else {
-    RTC_NOTREACHED();
+    RTC_DCHECK_NOTREACHED();
   }
 }
 

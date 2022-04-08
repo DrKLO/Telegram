@@ -62,7 +62,7 @@ bool VCMTimestampMap::IsEmpty() const {
 }
 
 size_t VCMTimestampMap::Size() const {
-  // The maximum number of elements in the list is |capacity_| - 1. The list is
+  // The maximum number of elements in the list is `capacity_` - 1. The list is
   // empty if the add and pop indices are equal.
   return next_add_idx_ >= next_pop_idx_
              ? next_add_idx_ - next_pop_idx_

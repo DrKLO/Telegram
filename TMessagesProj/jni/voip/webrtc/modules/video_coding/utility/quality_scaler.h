@@ -38,7 +38,7 @@ class QualityScalerQpUsageHandlerInterface;
 // video stream down or up).
 class QualityScaler {
  public:
-  // Construct a QualityScaler with given |thresholds| and |handler|.
+  // Construct a QualityScaler with given `thresholds` and `handler`.
   // This starts the quality scaler periodically checking what the average QP
   // has been recently.
   QualityScaler(QualityScalerQpUsageHandlerInterface* handler,

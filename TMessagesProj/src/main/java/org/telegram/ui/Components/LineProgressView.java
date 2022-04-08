@@ -16,6 +16,7 @@ import android.view.View;
 import android.view.animation.DecelerateInterpolator;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.Components.voip.CellFlickerDrawable;
 
 public class LineProgressView extends View {
 
@@ -33,6 +34,8 @@ public class LineProgressView extends View {
     private static Paint progressPaint;
 
     private RectF rect = new RectF();
+
+    CellFlickerDrawable cellFlickerDrawable;
 
     public LineProgressView(Context context) {
         super(context);
@@ -108,13 +111,26 @@ public class LineProgressView extends View {
             progressPaint.setAlpha((int) (255 * animatedAlphaValue));
             int start = (int) (getWidth() * animatedProgressValue);
             rect.set(0, 0, getWidth(), getHeight());
-            canvas.drawRoundRect(rect, getHeight() / 2, getHeight() / 2, progressPaint);
+            canvas.drawRoundRect(rect, getHeight() / 2f, getHeight() / 2f, progressPaint);
         }
 
         progressPaint.setColor(progressColor);
         progressPaint.setAlpha((int) (255 * animatedAlphaValue));
         rect.set(0, 0, getWidth() * animatedProgressValue, getHeight());
-        canvas.drawRoundRect(rect, getHeight() / 2, getHeight() / 2, progressPaint);
+        canvas.drawRoundRect(rect, getHeight() / 2f, getHeight() / 2f, progressPaint);
+
+        if (animatedAlphaValue > 0) {
+            if (cellFlickerDrawable == null) {
+                cellFlickerDrawable = new CellFlickerDrawable(160, 0);
+                cellFlickerDrawable.drawFrame = false;
+                cellFlickerDrawable.animationSpeedScale = 0.8f;
+                cellFlickerDrawable.repeatProgress = 1.2f;
+            }
+            cellFlickerDrawable.setParentWidth(getMeasuredWidth());
+            cellFlickerDrawable.draw(canvas, rect, getHeight() / 2f);
+            invalidate();
+        }
+
         updateAnimation();
     }
 }

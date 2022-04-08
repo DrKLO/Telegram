@@ -448,7 +448,4 @@ static jlong Java_DataChannel_getNativeDataChannel(JNIEnv* env, const
 }  // namespace jni
 }  // namespace  webrtc
 
-// Step 4: Generated test functions (optional).
-
-
 #endif  // org_webrtc_DataChannel_JNI

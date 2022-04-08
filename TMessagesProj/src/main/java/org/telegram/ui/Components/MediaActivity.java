@@ -2,7 +2,9 @@ package org.telegram.ui.Components;
 
 import android.content.Context;
 import android.content.res.Configuration;
-import android.graphics.PorterDuff;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Rect;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -14,11 +16,11 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
+import androidx.core.graphics.ColorUtils;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
-import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
@@ -33,7 +35,6 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
-import org.telegram.ui.Cells.UserCell;
 import org.telegram.ui.ProfileActivity;
 
 import java.util.ArrayList;
@@ -78,7 +79,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
             }
         });
         FrameLayout avatarContainer = new FrameLayout(context);
-        FrameLayout fragmentView = new FrameLayout(context) {
+        SizeNotifierFrameLayout fragmentView = new SizeNotifierFrameLayout(context) {
 
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
@@ -112,7 +113,13 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
                 }
                 return super.dispatchTouchEvent(ev);
             }
+
+            @Override
+            protected void drawList(Canvas blurCanvas, boolean top) {
+                sharedMediaLayout.drawListForBlur(blurCanvas);
+            }
         };
+        fragmentView.needBlur = true;
         this.fragmentView = fragmentView;
 
         nameTextView = new SimpleTextView(context);
@@ -198,6 +205,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
             public void updateSelectedMediaTabText() {
                 updateMediaCount();
             }
+
         }, SharedMediaLayout.VIEW_TYPE_MEDIA_ACTIVITY) {
             @Override
             protected void onSelectedTabChanged() {
@@ -212,6 +220,15 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
                 AndroidUtilities.updateViewVisibilityAnimated(avatarContainer, !expanded, 0.95f, true);
             }
 
+            @Override
+            protected void drawBackgroundWithBlur(Canvas canvas, float y, Rect rectTmp2, Paint backgroundPaint) {
+                fragmentView.drawBlurRect(canvas, getY() + y, rectTmp2, backgroundPaint, true);
+            }
+
+            @Override
+            protected void invalidateBlur() {
+                fragmentView.invalidateBlur();
+            }
         };
         sharedMediaLayout.setPinnedToTop(true);
         sharedMediaLayout.getSearchItem().setTranslationY(0);
@@ -220,6 +237,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
         fragmentView.addView(sharedMediaLayout);
         fragmentView.addView(actionBar);
         fragmentView.addView(avatarContainer);
+        fragmentView.blurBehindViews.add(sharedMediaLayout);
 
         TLObject avatarObject = null;
         if (DialogObject.isEncryptedDialog(dialogId)) {
@@ -272,6 +290,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
             sharedMediaLayout.photoVideoOptionsItem.setVisibility(View.INVISIBLE);
         }
 
+        actionBar.setDrawBlurBackground(fragmentView);
         AndroidUtilities.updateViewVisibilityAnimated(avatarContainer, true, 1, false);
         updateMediaCount();
         updateColors();
@@ -341,5 +360,14 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
         arrayList.add(new ThemeDescription(null, 0, null, null, null, themeDelegate, Theme.key_windowBackgroundWhiteBlackText));
         arrayList.addAll(sharedMediaLayout.getThemeDescriptions());
         return arrayList;
+    }
+
+    @Override
+    public boolean isLightStatusBar() {
+        int color = Theme.getColor(Theme.key_windowBackgroundWhite);
+        if (actionBar.isActionModeShowed()) {
+            color = Theme.getColor(Theme.key_actionBarActionModeDefault);
+        }
+        return ColorUtils.calculateLuminance(color) > 0.7f;
     }
 }

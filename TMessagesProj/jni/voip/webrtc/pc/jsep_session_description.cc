@@ -102,9 +102,9 @@ void UpdateConnectionAddress(
     // (draft-ietf-mmusic-trickle-ice-sip), and in particular 0.0.0.0 has been
     // widely deployed for this use without outstanding compatibility issues.
     // Combining the above considerations, we use 0.0.0.0 with port 9 to
-    // populate the c= and the m= lines. See |BuildMediaDescription| in
+    // populate the c= and the m= lines. See `BuildMediaDescription` in
     // webrtc_sdp.cc for the SDP generation with
-    // |media_desc->connection_address()|.
+    // `media_desc->connection_address()`.
     connection_addr = rtc::SocketAddress(kDummyAddress, kDummyPort);
   }
   media_desc->set_connection_address(connection_addr);
@@ -220,7 +220,9 @@ std::unique_ptr<SessionDescriptionInterface> JsepSessionDescription::Clone()
   auto new_description = std::make_unique<JsepSessionDescription>(type_);
   new_description->session_id_ = session_id_;
   new_description->session_version_ = session_version_;
-  new_description->description_ = description_->Clone();
+  if (description_) {
+    new_description->description_ = description_->Clone();
+  }
   for (const auto& collection : candidate_collection_) {
     new_description->candidate_collection_.push_back(collection.Clone());
   }

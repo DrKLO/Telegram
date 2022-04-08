@@ -49,7 +49,7 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
 
     private FrameLayout frameLayout;
     private RecyclerListView listView;
-    private LinearLayoutManager layoutManager;
+    private FillLastLinearLayoutManager layoutManager;
     private ShareAdapter listAdapter;
     private ShareSearchAdapter searchAdapter;
     private EmptyTextProgressView emptyView;
@@ -78,6 +78,8 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
 
         private CharSequence currentName;
         private CharSequence currentStatus;
+        private TLRPC.User formattedPhoneNumberUser;
+        private CharSequence formattedPhoneNumber;
 
         private String lastName;
         private int lastStatus;
@@ -132,9 +134,48 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
             update(0);
         }
 
+        public interface CharSequenceCallback {
+            CharSequence run();
+        }
+
+        public void setData(TLRPC.User user, CharSequence name, CharSequenceCallback status, boolean divider) {
+            setData(user, name, (CharSequence) null, divider);
+            Utilities.globalQueue.postRunnable(() -> {
+                final CharSequence newCurrentStatus = status.run();
+                AndroidUtilities.runOnUIThread(() -> {
+                    setStatus(newCurrentStatus);
+                });
+            });
+        }
+
+        public void setStatus(CharSequence status) {
+            currentStatus = status;
+            if (currentStatus != null) {
+                statusTextView.setText(currentStatus);
+            } else if (currentUser != null) {
+                if (TextUtils.isEmpty(currentUser.phone)) {
+                    statusTextView.setText(LocaleController.getString("NumberUnknown", R.string.NumberUnknown));
+                } else {
+                    if (formattedPhoneNumberUser != currentUser && formattedPhoneNumber != null) {
+                        statusTextView.setText(formattedPhoneNumber);
+                    } else {
+                        statusTextView.setText("");
+                        Utilities.globalQueue.postRunnable(() -> {
+                            formattedPhoneNumber = PhoneFormat.getInstance().format("+" + currentUser.phone);
+                            formattedPhoneNumberUser = currentUser;
+                            AndroidUtilities.runOnUIThread(() -> statusTextView.setText(formattedPhoneNumber));
+                        });
+                    }
+                }
+            }
+        }
+
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-            super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(64) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY));
+            super.onMeasure(
+                MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY),
+                MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(64) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY)
+            );
         }
 
         public void update(int mask) {
@@ -197,15 +238,8 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
                 }
                 nameTextView.setText(lastName);
             }
-            if (currentStatus != null) {
-                statusTextView.setText(currentStatus);
-            } else if (currentUser != null) {
-                if (TextUtils.isEmpty(currentUser.phone)) {
-                    statusTextView.setText(LocaleController.getString("NumberUnknown", R.string.NumberUnknown));
-                } else {
-                    statusTextView.setText(PhoneFormat.getInstance().format("+" + currentUser.phone));
-                }
-            }
+
+            setStatus(currentStatus);
 
             lastAvatar = photo;
             if (currentUser != null) {
@@ -319,6 +353,7 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
                 startSmoothScroll(linearSmoothScroller);
             }
         });
+        layoutManager.setBind(false);
         listView.setHorizontalScrollBarEnabled(false);
         listView.setVerticalScrollBarEnabled(false);
         addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, 0, 0, 0, 0));
@@ -522,7 +557,7 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
     }
 
     @Override
-    void onShow() {
+    void onShow(ChatAttachAlert.AttachAlertLayout previousLayout) {
         layoutManager.scrollToPositionWithOffset(0, 0);
     }
 
@@ -645,13 +680,14 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
                         user = contact.user;
                     } else {
                         userCell.setCurrentId(contact.contact_id);
-                        userCell.setData(null, ContactsController.formatName(contact.first_name, contact.last_name), contact.phones.isEmpty() ? "" : PhoneFormat.getInstance().format(contact.phones.get(0)), divider);
+                        userCell.setData(null, ContactsController.formatName(contact.first_name, contact.last_name), () -> contact.phones.isEmpty() ? "" : PhoneFormat.getInstance().format(contact.phones.get(0)), divider);
                     }
                 } else {
                     user = (TLRPC.User) object;
                 }
                 if (user != null) {
-                    userCell.setData(user, null, PhoneFormat.getInstance().format("+" + user.phone), divider);
+                    final TLRPC.User finalUser = user;
+                    userCell.setData(user, null, () -> PhoneFormat.getInstance().format("+" + finalUser.phone), divider);
                 }
             }
         }
@@ -877,13 +913,14 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
                         user = contact.user;
                     } else {
                         userCell.setCurrentId(contact.contact_id);
-                        userCell.setData(null, searchResultNames.get(position - 1), contact.phones.isEmpty() ? "" : PhoneFormat.getInstance().format(contact.phones.get(0)), divider);
+                        userCell.setData(null, searchResultNames.get(position - 1), () -> contact.phones.isEmpty() ? "" : PhoneFormat.getInstance().format(contact.phones.get(0)), divider);
                     }
                 } else {
                     user = (TLRPC.User) object;
                 }
                 if (user != null) {
-                    userCell.setData(user, searchResultNames.get(position - 1), PhoneFormat.getInstance().format("+" + user.phone), divider);
+                    final TLRPC.User finalUser = user;
+                    userCell.setData(user, searchResultNames.get(position - 1), () -> PhoneFormat.getInstance().format("+" + finalUser.phone), divider);
                 }
             }
         }

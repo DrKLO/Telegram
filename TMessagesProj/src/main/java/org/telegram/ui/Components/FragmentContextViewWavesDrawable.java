@@ -10,8 +10,6 @@ import android.graphics.Shader;
 import android.os.SystemClock;
 import android.view.View;
 
-import com.google.android.exoplayer2.util.Log;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.Utilities;
@@ -299,7 +297,7 @@ public class FragmentContextViewWavesDrawable {
             } else {
                 if (voIPService.groupCall != null) {
                     TLRPC.TL_groupCallParticipant participant = voIPService.groupCall.participants.get(voIPService.getSelfId());
-                    if (participant != null && !participant.can_self_unmute && participant.muted && !ChatObject.canManageCalls(voIPService.getChat())) {
+                    if (participant != null && !participant.can_self_unmute && participant.muted && !ChatObject.canManageCalls(voIPService.getChat()) || voIPService.groupCall.call.rtmp_stream) {
                         voIPService.setMicMute(true, false, false);
                         setState(FragmentContextViewWavesDrawable.MUTE_BUTTON_STATE_MUTED_BY_ADMIN, animated);
                     } else {

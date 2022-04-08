@@ -33,7 +33,7 @@ class FeaturesExtractor {
   void Reset();
   // Analyzes the samples, computes the feature vector and returns true if
   // silence is detected (false if not). When silence is detected,
-  // |feature_vector| is partially written and therefore must not be used to
+  // `feature_vector` is partially written and therefore must not be used to
   // feed the VAD RNN.
   bool CheckSilenceComputeFeatures(
       rtc::ArrayView<const float, kFrameSize10ms24kHz> samples,

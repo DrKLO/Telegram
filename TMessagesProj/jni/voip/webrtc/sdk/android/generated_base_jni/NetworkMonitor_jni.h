@@ -207,7 +207,4 @@ static jint Java_NetworkMonitor_androidSdkInt(JNIEnv* env) {
 }  // namespace jni
 }  // namespace  webrtc
 
-// Step 4: Generated test functions (optional).
-
-
 #endif  // org_webrtc_NetworkMonitor_JNI

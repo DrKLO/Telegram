@@ -111,7 +111,7 @@ class ControllerManagerImpl final : public ControllerManager {
 
   std::vector<Controller*> sorted_controllers_;
 
-  // |scoring_points_| saves the scoring points of various
+  // `scoring_points_` saves the scoring points of various
   // controllers.
   std::map<const Controller*, ScoringPoint> controller_scoring_points_;
 

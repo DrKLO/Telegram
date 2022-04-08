@@ -1,9 +1,18 @@
-// Copyright 2011 and onwards Google Inc.
-// All rights reserved.
+// Copyright 2017 The Abseil Authors.
 //
-// Author: Doug Kwan
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // This is inspired by Craig Silverstein's PowerPC stacktrace code.
-//
 
 #ifndef ABSL_DEBUGGING_INTERNAL_STACKTRACE_ARM_INL_H_
 #define ABSL_DEBUGGING_INTERNAL_STACKTRACE_ARM_INL_H_
@@ -103,11 +112,16 @@ static int UnwindImpl(void** result, int* sizes, int max_depth, int skip_count,
     // Implementation detail: we clamp the max of frames we are willing to
     // count, so as not to spend too much time in the loop below.
     const int kMaxUnwind = 200;
-    int j = 0;
-    for (; sp != nullptr && j < kMaxUnwind; j++) {
+    int num_dropped_frames = 0;
+    for (int j = 0; sp != nullptr && j < kMaxUnwind; j++) {
+      if (skip_count > 0) {
+        skip_count--;
+      } else {
+        num_dropped_frames++;
+      }
       sp = NextStackFrame<!IS_STACK_FRAMES>(sp);
     }
-    *min_dropped_frames = j;
+    *min_dropped_frames = num_dropped_frames;
   }
   return n;
 }

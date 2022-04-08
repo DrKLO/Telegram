@@ -320,12 +320,16 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
 
             clearSearchImageView = new ImageView(context);
             clearSearchImageView.setScaleType(ImageView.ScaleType.CENTER);
-            clearSearchImageView.setImageDrawable(progressDrawable = new CloseProgressDrawable2());
+            clearSearchImageView.setImageDrawable(progressDrawable = new CloseProgressDrawable2() {
+                @Override
+                protected int getCurrentColor() {
+                    return getThemedColor(darkTheme ? Theme.key_voipgroup_searchPlaceholder : Theme.key_dialogSearchIcon);
+                }
+            });
             progressDrawable.setSide(AndroidUtilities.dp(7));
             clearSearchImageView.setScaleX(0.1f);
             clearSearchImageView.setScaleY(0.1f);
             clearSearchImageView.setAlpha(0.0f);
-            clearSearchImageView.setColorFilter(new PorterDuffColorFilter(getThemedColor(darkTheme ? Theme.key_voipgroup_searchPlaceholder : Theme.key_dialogSearchIcon), PorterDuff.Mode.MULTIPLY));
             addView(clearSearchImageView, LayoutHelper.createFrame(36, 36, Gravity.RIGHT | Gravity.TOP, 14, 11, 14, 0));
             clearSearchImageView.setOnClickListener(v -> {
                 updateSearchAdapter = true;

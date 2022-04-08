@@ -178,12 +178,16 @@ public class ThemeEditorView {
                 clearSearchImageView = new ImageView(context);
                 clearSearchImageView.setScaleType(ImageView.ScaleType.CENTER);
                 CloseProgressDrawable2 progressDrawable;
-                clearSearchImageView.setImageDrawable(progressDrawable = new CloseProgressDrawable2());
+                clearSearchImageView.setImageDrawable(progressDrawable = new CloseProgressDrawable2() {
+                    @Override
+                    public int getCurrentColor() {
+                        return 0xffa1a8af;
+                    }
+                });
                 progressDrawable.setSide(AndroidUtilities.dp(7));
                 clearSearchImageView.setScaleX(0.1f);
                 clearSearchImageView.setScaleY(0.1f);
                 clearSearchImageView.setAlpha(0.0f);
-                clearSearchImageView.setColorFilter(new PorterDuffColorFilter(0xffa1a8af, PorterDuff.Mode.MULTIPLY));
                 addView(clearSearchImageView, LayoutHelper.createFrame(36, 36, Gravity.RIGHT | Gravity.TOP, 14, 11, 14, 0));
                 clearSearchImageView.setOnClickListener(v -> {
                     searchEditText.setText("");
@@ -338,7 +342,8 @@ public class ThemeEditorView {
                     colorEditText[a].setCursorSize(AndroidUtilities.dp(20));
                     colorEditText[a].setCursorWidth(1.5f);
                     colorEditText[a].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
-                    colorEditText[a].setBackgroundDrawable(Theme.createEditTextDrawable(context, true));
+                    colorEditText[a].setBackground(null);
+                    colorEditText[a].setLineColors(Theme.getColor(Theme.key_dialogInputField), Theme.getColor(Theme.key_dialogInputFieldActivated), Theme.getColor(Theme.key_dialogTextRed2));
                     colorEditText[a].setMaxLines(1);
                     colorEditText[a].setTag(a);
                     colorEditText[a].setGravity(Gravity.CENTER);

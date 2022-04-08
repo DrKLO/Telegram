@@ -307,7 +307,7 @@ void FakeNetworkPipe::Process() {
             delivery_info.receive_time_us - packet.send_time();
         packet.IncrementArrivalTime(added_delay_us);
         packets_to_deliver.emplace(std::move(packet));
-        // |time_now_us| might be later than when the packet should have
+        // `time_now_us` might be later than when the packet should have
         // arrived, due to NetworkProcess being called too late. For stats, use
         // the time it should have been on the link.
         total_packet_delay_us_ += added_delay_us;

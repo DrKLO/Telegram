@@ -117,8 +117,8 @@ static std::vector<DataRate> SplitBitrate(size_t num_layers,
   return bitrates;
 }
 
-// Returns the minimum bitrate needed for |num_active_layers| spatial layers to
-// become active using the configuration specified by |codec|.
+// Returns the minimum bitrate needed for `num_active_layers` spatial layers to
+// become active using the configuration specified by `codec`.
 DataRate FindLayerTogglingThreshold(const VideoCodec& codec,
                                     size_t first_active_layer,
                                     size_t num_active_layers) {
@@ -142,7 +142,7 @@ DataRate FindLayerTogglingThreshold(const VideoCodec& codec,
             .minBitrate);
 
     // Do a binary search until upper and lower bound is the highest bitrate for
-    // |num_active_layers| - 1 layers and lowest bitrate for |num_active_layers|
+    // `num_active_layers` - 1 layers and lowest bitrate for `num_active_layers`
     // layers respectively.
     while (upper_bound - lower_bound > DataRate::BitsPerSec(1)) {
       DataRate try_rate = (lower_bound + upper_bound) / 2;

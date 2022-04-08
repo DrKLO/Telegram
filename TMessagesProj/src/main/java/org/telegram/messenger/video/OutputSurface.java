@@ -36,8 +36,8 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
     private boolean mFrameAvailable;
     private TextureRenderer mTextureRender;
 
-    public OutputSurface(MediaController.SavedFilterState savedFilterState, String imagePath, String paintPath, ArrayList<VideoEditedInfo.MediaEntity> mediaEntities, MediaController.CropState cropState, int w, int h, int rotation, float fps, boolean photo) {
-        mTextureRender = new TextureRenderer(savedFilterState, imagePath, paintPath, mediaEntities, cropState, w, h, rotation, fps, photo);
+    public OutputSurface(MediaController.SavedFilterState savedFilterState, String imagePath, String paintPath, ArrayList<VideoEditedInfo.MediaEntity> mediaEntities, MediaController.CropState cropState, int w, int h, int originalW, int originalH, int rotation, float fps, boolean photo) {
+        mTextureRender = new TextureRenderer(savedFilterState, imagePath, paintPath, mediaEntities, cropState, w, h, originalW, originalH, rotation, fps, photo);
         mTextureRender.surfaceCreated();
         mSurfaceTexture = new SurfaceTexture(mTextureRender.getTextureId());
         mSurfaceTexture.setOnFrameAvailableListener(this);
@@ -166,7 +166,7 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
         }
     }
 
-    public void changeFragmentShader(String fragmentShader) {
-        mTextureRender.changeFragmentShader(fragmentShader);
+    public void changeFragmentShader(String fragmentExternalShader, String fragmentShader) {
+        mTextureRender.changeFragmentShader(fragmentExternalShader, fragmentShader);
     }
 }

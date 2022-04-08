@@ -38,10 +38,9 @@ namespace webrtc {
 
 // This class implements a leaky-bucket packet pacing algorithm. It handles the
 // logic of determining which packets to send when, but the actual timing of
-// the processing is done externally (e.g. PacedSender). Furthermore, the
+// the processing is done externally (e.g. RtpPacketPacer). Furthermore, the
 // forwarding of packets when they are ready to be sent is also handled
-// externally, via the PacedSendingController::PacketSender interface.
-//
+// externally, via the PacingController::PacketSender interface.
 class PacingController {
  public:
   // Periodic mode uses the IntervalBudget class for tracking bitrate
@@ -73,7 +72,7 @@ class PacingController {
   // Increasing this factor will result in lower delays in cases of bitrate
   // overshoots from the encoder.
   static const float kDefaultPaceMultiplier;
-  // If no media or paused, wake up at least every |kPausedProcessIntervalMs| in
+  // If no media or paused, wake up at least every `kPausedProcessIntervalMs` in
   // order to send a keep-alive packet so we don't get stuck in a bad state due
   // to lack of feedback.
   static const TimeDelta kPausedProcessInterval;
@@ -103,6 +102,7 @@ class PacingController {
 
   // Sets the pacing rates. Must be called once before packets can be sent.
   void SetPacingRates(DataRate pacing_rate, DataRate padding_rate);
+  DataRate pacing_rate() const { return pacing_bitrate_; }
 
   // Currently audio traffic is not accounted by pacer and passed through.
   // With the introduction of audio BWE audio traffic will be accounted for
@@ -113,8 +113,8 @@ class PacingController {
 
   void SetTransportOverhead(DataSize overhead_per_packet);
 
-  // Returns the time since the oldest queued packet was enqueued.
-  TimeDelta OldestPacketWaitTime() const;
+  // Returns the time when the oldest packet was queued.
+  Timestamp OldestPacketEnqueueTime() const;
 
   // Number of packets in the pacer queue.
   size_t QueueSizePackets() const;
@@ -124,7 +124,7 @@ class PacingController {
   // Current buffer level, i.e. max of media and padding debt.
   DataSize CurrentBufferLevel() const;
 
-  // Returns the time when the first packet was sent;
+  // Returns the time when the first packet was sent.
   absl::optional<Timestamp> FirstSentPacketTime() const;
 
   // Returns the number of milliseconds it will take to send the current
@@ -192,13 +192,14 @@ class PacingController {
   DataSize transport_overhead_per_packet_;
 
   // TODO(webrtc:9716): Remove this when we are certain clocks are monotonic.
-  // The last millisecond timestamp returned by |clock_|.
+  // The last millisecond timestamp returned by `clock_`.
   mutable Timestamp last_timestamp_;
   bool paused_;
 
-  // If |use_interval_budget_| is true, |media_budget_| and |padding_budget_|
-  // will be used to track when packets can be sent. Otherwise the media and
-  // padding debt counters will be used together with the target rates.
+  // In dynamic mode, `media_budget_` and `padding_budget_` will be used to
+  // track when packets can be sent.
+  // In periodic mode, `media_debt_` and `padding_debt_` will be used together
+  // with the target rates.
 
   // This is the media budget, keeping track of how many bits of media
   // we can pace out during the current interval.

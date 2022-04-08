@@ -45,20 +45,20 @@ class VoipDtmf {
   // type has been negotiated with remote.
   // Returns following VoipResult;
   //  kOk - telephone event type is registered as provided.
-  //  kInvalidArgument - |channel_id| is invalid.
+  //  kInvalidArgument - `channel_id` is invalid.
   virtual VoipResult RegisterTelephoneEventType(ChannelId channel_id,
                                                 int rtp_payload_type,
                                                 int sample_rate_hz) = 0;
 
   // Send DTMF named event as specified by
   // https://tools.ietf.org/html/rfc4733#section-3.2
-  // |duration_ms| specifies the duration of DTMF packets that will be emitted
+  // `duration_ms` specifies the duration of DTMF packets that will be emitted
   // in place of real RTP packets instead.
   // Must be called after RegisterTelephoneEventType and VoipBase::StartSend
   // have been called.
   // Returns following VoipResult;
   //  kOk - requested DTMF event is successfully scheduled.
-  //  kInvalidArgument - |channel_id| is invalid.
+  //  kInvalidArgument - `channel_id` is invalid.
   //  kFailedPrecondition - Missing prerequisite on RegisterTelephoneEventType
   //   or sending state.
   virtual VoipResult SendDtmfEvent(ChannelId channel_id,

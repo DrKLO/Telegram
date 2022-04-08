@@ -30,15 +30,15 @@ class RedPayloadSplitter {
 
   virtual ~RedPayloadSplitter() {}
 
-  // Splits each packet in |packet_list| into its separate RED payloads. Each
+  // Splits each packet in `packet_list` into its separate RED payloads. Each
   // RED payload is packetized into a Packet. The original elements in
-  // |packet_list| are properly deleted, and replaced by the new packets.
-  // Note that all packets in |packet_list| must be RED payloads, i.e., have
+  // `packet_list` are properly deleted, and replaced by the new packets.
+  // Note that all packets in `packet_list` must be RED payloads, i.e., have
   // RED headers according to RFC 2198 at the very beginning of the payload.
   // Returns kOK or an error.
   virtual bool SplitRed(PacketList* packet_list);
 
-  // Checks all packets in |packet_list|. Packets that are DTMF events or
+  // Checks all packets in `packet_list`. Packets that are DTMF events or
   // comfort noise payloads are kept. Except that, only one single payload type
   // is accepted. Any packet with another payload type is discarded.
   virtual void CheckRedPayloads(PacketList* packet_list,

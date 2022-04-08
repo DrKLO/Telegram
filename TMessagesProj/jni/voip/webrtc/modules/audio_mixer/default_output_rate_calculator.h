@@ -24,8 +24,8 @@ class DefaultOutputRateCalculator : public OutputRateCalculator {
 
   // Produces the least native rate greater or equal to the preferred
   // sample rates. A native rate is one in
-  // AudioProcessing::NativeRate. If |preferred_sample_rates| is
-  // empty, returns |kDefaultFrequency|.
+  // AudioProcessing::NativeRate. If `preferred_sample_rates` is
+  // empty, returns `kDefaultFrequency`.
   int CalculateOutputRateFromRange(
       rtc::ArrayView<const int> preferred_sample_rates) override;
   ~DefaultOutputRateCalculator() override {}

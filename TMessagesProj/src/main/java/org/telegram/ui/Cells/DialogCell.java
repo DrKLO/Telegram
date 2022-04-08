@@ -84,6 +84,7 @@ import java.util.Stack;
 
 public class DialogCell extends BaseCell {
 
+    public boolean drawingForBlur;
     boolean moving;
     private RLottieDrawable lastDrawTranslationDrawable;
     private int lastDrawSwipeMessageStringId;
@@ -1349,7 +1350,7 @@ public class DialogCell extends BaseCell {
                     } else {
                         drawMention = false;
                     }
-                    if (reactionMentionCount != 0) {
+                    if (reactionMentionCount > 0) {
                         drawReactionMention = true;
                     } else {
                         drawReactionMention = false;
@@ -2392,10 +2393,12 @@ public class DialogCell extends BaseCell {
         boolean needInvalidate = false;
 
         if (currentDialogFolderId != 0 && archivedChatsDrawable != null && archivedChatsDrawable.outProgress == 0.0f && translationX == 0.0f) {
-            canvas.save();
-            canvas.clipRect(0, 0, getMeasuredWidth(), getMeasuredHeight());
-            archivedChatsDrawable.draw(canvas);
-            canvas.restore();
+            if (!drawingForBlur) {
+                canvas.save();
+                canvas.clipRect(0, 0, getMeasuredWidth(), getMeasuredHeight());
+                archivedChatsDrawable.draw(canvas);
+                canvas.restore();
+            }
             return;
         }
 
@@ -2411,10 +2414,10 @@ public class DialogCell extends BaseCell {
             canvas.clipRect(0, topClip * clipProgress, getMeasuredWidth(), getMeasuredHeight() - (int) (bottomClip * clipProgress));
         }
 
+        int backgroundColor = 0;
         if (translationX != 0 || cornerProgress != 0.0f) {
             canvas.save();
             String swipeMessage;
-            int backgroundColor;
             int revealBackgroundColor;
             int swipeMessageStringId;
             if (currentDialogFolderId != 0) {
@@ -2585,8 +2588,10 @@ public class DialogCell extends BaseCell {
             canvas.translate(translationX, 0);
         }
 
+        float cornersRadius = AndroidUtilities.dp(8) * cornerProgress;
         if (isSelected) {
-            canvas.drawRect(0, 0, getMeasuredWidth(), getMeasuredHeight(), Theme.dialogs_tabletSeletedPaint);
+            rect.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
+            canvas.drawRoundRect(rect, cornersRadius, cornersRadius, Theme.dialogs_tabletSeletedPaint);
         }
         if (currentDialogFolderId != 0 && (!SharedConfig.archiveHidden || archiveBackgroundProgress != 0)) {
             Theme.dialogs_pinnedPaint.setColor(AndroidUtilities.getOffsetColor(0, Theme.getColor(Theme.key_chats_pinnedOverlay, resourcesProvider), archiveBackgroundProgress, 1.0f));
@@ -2601,14 +2606,18 @@ public class DialogCell extends BaseCell {
 
             Theme.dialogs_pinnedPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
             rect.set(getMeasuredWidth() - AndroidUtilities.dp(64), 0, getMeasuredWidth(), getMeasuredHeight());
-            canvas.drawRoundRect(rect, AndroidUtilities.dp(8) * cornerProgress, AndroidUtilities.dp(8) * cornerProgress, Theme.dialogs_pinnedPaint);
+            canvas.drawRoundRect(rect, cornersRadius, cornersRadius, Theme.dialogs_pinnedPaint);
+
+            if (isSelected) {
+                canvas.drawRoundRect(rect, cornersRadius, cornersRadius, Theme.dialogs_tabletSeletedPaint);
+            }
 
             if (currentDialogFolderId != 0 && (!SharedConfig.archiveHidden || archiveBackgroundProgress != 0)) {
                 Theme.dialogs_pinnedPaint.setColor(AndroidUtilities.getOffsetColor(0, Theme.getColor(Theme.key_chats_pinnedOverlay, resourcesProvider), archiveBackgroundProgress, 1.0f));
-                canvas.drawRoundRect(rect, AndroidUtilities.dp(8) * cornerProgress, AndroidUtilities.dp(8) * cornerProgress, Theme.dialogs_pinnedPaint);
+                canvas.drawRoundRect(rect, cornersRadius, cornersRadius, Theme.dialogs_pinnedPaint);
             } else if (drawPin || drawPinBackground) {
                 Theme.dialogs_pinnedPaint.setColor(Theme.getColor(Theme.key_chats_pinnedOverlay, resourcesProvider));
-                canvas.drawRoundRect(rect, AndroidUtilities.dp(8) * cornerProgress, AndroidUtilities.dp(8) * cornerProgress, Theme.dialogs_pinnedPaint);
+                canvas.drawRoundRect(rect, cornersRadius, cornersRadius, Theme.dialogs_pinnedPaint);
             }
             canvas.restore();
         }
@@ -2694,18 +2703,23 @@ public class DialogCell extends BaseCell {
             }
             canvas.save();
             canvas.translate(messageLeft, messageTop);
-            try {
-                canvas.save();
-                SpoilerEffect.clipOutCanvas(canvas, spoilers);
-                messageLayout.draw(canvas);
-                canvas.restore();
+            if (!spoilers.isEmpty()) {
+                try {
+                    canvas.save();
+                    SpoilerEffect.clipOutCanvas(canvas, spoilers);
+                    messageLayout.draw(canvas);
+                    canvas.restore();
 
-                for (SpoilerEffect eff : spoilers) {
-                    eff.setColor(messageLayout.getPaint().getColor());
-                    eff.draw(canvas);
+                    for (int i = 0; i < spoilers.size(); i++) {
+                        SpoilerEffect eff = spoilers.get(i);
+                        eff.setColor(messageLayout.getPaint().getColor());
+                        eff.draw(canvas);
+                    }
+                } catch (Exception e) {
+                    FileLog.e(e);
                 }
-            } catch (Exception e) {
-                FileLog.e(e);
+            } else {
+                messageLayout.draw(canvas);
             }
             canvas.restore();
 

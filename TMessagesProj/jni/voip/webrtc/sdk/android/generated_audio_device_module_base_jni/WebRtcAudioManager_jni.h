@@ -138,7 +138,4 @@ static jint Java_WebRtcAudioManager_getSampleRate(JNIEnv* env, const
 }  // namespace jni
 }  // namespace  webrtc
 
-// Step 4: Generated test functions (optional).
-
-
 #endif  // org_webrtc_audio_WebRtcAudioManager_JNI

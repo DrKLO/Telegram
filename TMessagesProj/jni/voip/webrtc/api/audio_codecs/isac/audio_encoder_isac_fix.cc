@@ -30,6 +30,10 @@ absl::optional<AudioEncoderIsacFix::Config> AudioEncoderIsacFix::SdpToConfig(
         config.frame_size_ms = 60;
       }
     }
+    if (!config.IsOk()) {
+      RTC_DCHECK_NOTREACHED();
+      return absl::nullopt;
+    }
     return config;
   } else {
     return absl::nullopt;
@@ -53,11 +57,14 @@ std::unique_ptr<AudioEncoder> AudioEncoderIsacFix::MakeAudioEncoder(
     AudioEncoderIsacFix::Config config,
     int payload_type,
     absl::optional<AudioCodecPairId> /*codec_pair_id*/) {
-  RTC_DCHECK(config.IsOk());
   AudioEncoderIsacFixImpl::Config c;
   c.frame_size_ms = config.frame_size_ms;
   c.bit_rate = config.bit_rate;
   c.payload_type = payload_type;
+  if (!config.IsOk()) {
+    RTC_DCHECK_NOTREACHED();
+    return nullptr;
+  }
   return std::make_unique<AudioEncoderIsacFixImpl>(c);
 }
 

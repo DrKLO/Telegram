@@ -20,11 +20,10 @@
 #define NOMINMAX
 #endif
 
-// clang-format off
-// clang formating would change include order.
-#include <winsock2.h> // must come first
+#include <winsock2.h>
+
+// Must be after winsock2.h.
 #include <windows.h>
-// clang-format on
 
 typedef int socklen_t;
 
@@ -39,65 +38,10 @@ typedef struct _TOKEN_MANDATORY_LABEL {
 
 #undef SetPort
 
-#include <string>
-
 namespace rtc {
 
 const char* win32_inet_ntop(int af, const void* src, char* dst, socklen_t size);
 int win32_inet_pton(int af, const char* src, void* dst);
-
-enum WindowsMajorVersions {
-  kWindows2000 = 5,
-  kWindowsVista = 6,
-  kWindows10 = 10,
-};
-
-#if !defined(WINUWP)
-bool GetOsVersion(int* major, int* minor, int* build);
-
-inline bool IsWindowsVistaOrLater() {
-  int major;
-  return (GetOsVersion(&major, nullptr, nullptr) && major >= kWindowsVista);
-}
-
-inline bool IsWindowsXpOrLater() {
-  int major, minor;
-  return (GetOsVersion(&major, &minor, nullptr) &&
-          (major >= kWindowsVista || (major == kWindows2000 && minor >= 1)));
-}
-
-inline bool IsWindows8OrLater() {
-  int major, minor;
-  return (GetOsVersion(&major, &minor, nullptr) &&
-          (major > kWindowsVista || (major == kWindowsVista && minor >= 2)));
-}
-
-inline bool IsWindows10OrLater() {
-  int major;
-  return (GetOsVersion(&major, nullptr, nullptr) && (major >= kWindows10));
-}
-
-#else
-
-// When targetting WinUWP the OS must be Windows 10 (or greater) as lesser
-// Windows OS targets are not supported.
-inline bool IsWindowsVistaOrLater() {
-  return true;
-}
-
-inline bool IsWindowsXpOrLater() {
-  return true;
-}
-
-inline bool IsWindows8OrLater() {
-  return true;
-}
-
-inline bool IsWindows10OrLater() {
-  return true;
-}
-
-#endif  // !defined(WINUWP)
 
 }  // namespace rtc
 

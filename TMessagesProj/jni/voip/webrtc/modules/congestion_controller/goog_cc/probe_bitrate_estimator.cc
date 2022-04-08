@@ -119,14 +119,14 @@ absl::optional<DataRate> ProbeBitrateEstimator::HandleProbeAndEstimateBitrate(
     }
     return absl::nullopt;
   }
-  // Since the |send_interval| does not include the time it takes to actually
+  // Since the `send_interval` does not include the time it takes to actually
   // send the last packet the size of the last sent packet should not be
   // included when calculating the send bitrate.
   RTC_DCHECK_GT(cluster->size_total, cluster->size_last_send);
   DataSize send_size = cluster->size_total - cluster->size_last_send;
   DataRate send_rate = send_size / send_interval;
 
-  // Since the |receive_interval| does not include the time it takes to
+  // Since the `receive_interval` does not include the time it takes to
   // actually receive the first packet the size of the first received packet
   // should not be included when calculating the receive bitrate.
   RTC_DCHECK_GT(cluster->size_total, cluster->size_first_receive);

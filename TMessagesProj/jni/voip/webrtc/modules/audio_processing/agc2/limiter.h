@@ -24,14 +24,14 @@ class ApmDataDumper;
 
 class Limiter {
  public:
-  Limiter(size_t sample_rate_hz,
+  Limiter(int sample_rate_hz,
           ApmDataDumper* apm_data_dumper,
           const std::string& histogram_name_prefix);
   Limiter(const Limiter& limiter) = delete;
   Limiter& operator=(const Limiter& limiter) = delete;
   ~Limiter();
 
-  // Applies limiter and hard-clipping to |signal|.
+  // Applies limiter and hard-clipping to `signal`.
   void Process(AudioFrameView<float> signal);
   InterpolatedGainCurve::Stats GetGainCurveStats() const;
 
@@ -40,7 +40,7 @@ class Limiter {
   // * below kMaximalNumberOfSamplesPerChannel*1000/kFrameDurationMs
   //   so that samples_per_channel fit in the
   //   per_sample_scaling_factors_ array.
-  void SetSampleRate(size_t sample_rate_hz);
+  void SetSampleRate(int sample_rate_hz);
 
   // Resets the internal state.
   void Reset();

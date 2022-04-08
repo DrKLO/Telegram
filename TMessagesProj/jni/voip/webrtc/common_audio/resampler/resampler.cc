@@ -916,7 +916,6 @@ int Resampler::Push(const int16_t* samplesIn,
       outLen = (lengthIn * 8) / 11;
       free(tmp_mem);
       return 0;
-      break;
   }
   return 0;
 }

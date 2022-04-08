@@ -11,7 +11,6 @@
 #ifndef RTC_BASE_NULL_SOCKET_SERVER_H_
 #define RTC_BASE_NULL_SOCKET_SERVER_H_
 
-#include "rtc_base/async_socket.h"
 #include "rtc_base/event.h"
 #include "rtc_base/socket.h"
 #include "rtc_base/socket_server.h"
@@ -28,7 +27,6 @@ class RTC_EXPORT NullSocketServer : public SocketServer {
   void WakeUp() override;
 
   Socket* CreateSocket(int family, int type) override;
-  AsyncSocket* CreateAsyncSocket(int family, int type) override;
 
  private:
   Event event_;

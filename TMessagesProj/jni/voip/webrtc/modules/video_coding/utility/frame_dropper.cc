@@ -33,7 +33,7 @@ const float kDefaultTargetBitrateKbps = 300.0f;
 const float kDefaultIncomingFrameRate = 30;
 const float kLeakyBucketSizeSeconds = 0.5f;
 
-// A delta frame that is bigger than |kLargeDeltaFactor| times the average
+// A delta frame that is bigger than `kLargeDeltaFactor` times the average
 // delta frame is a large frame that is spread out for accumulation.
 const int kLargeDeltaFactor = 3;
 

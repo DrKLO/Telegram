@@ -71,16 +71,16 @@ struct SimulcastFormat {
   int width;
   int height;
   // The maximum number of simulcast layers can be used for
-  // resolutions at |widthxheight| for legacy applications.
+  // resolutions at `widthxheight` for legacy applications.
   size_t max_layers;
-  // The maximum bitrate for encoding stream at |widthxheight|, when we are
+  // The maximum bitrate for encoding stream at `widthxheight`, when we are
   // not sending the next higher spatial stream.
   webrtc::DataRate max_bitrate;
-  // The target bitrate for encoding stream at |widthxheight|, when this layer
+  // The target bitrate for encoding stream at `widthxheight`, when this layer
   // is not the highest layer (i.e., when we are sending another higher spatial
   // stream).
   webrtc::DataRate target_bitrate;
-  // The minimum bitrate needed for encoding stream at |widthxheight|.
+  // The minimum bitrate needed for encoding stream at `widthxheight`.
   webrtc::DataRate min_bitrate;
 };
 
@@ -175,7 +175,7 @@ int FindSimulcastFormatIndex(int width,
       return i;
     }
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return -1;
 }
 
@@ -210,7 +210,7 @@ SimulcastFormat InterpolateSimulcastFormat(
   const float rate = (total_pixels_up - total_pixels) /
                      static_cast<float>(total_pixels_up - total_pixels_down);
 
-  // Use upper resolution if |rate| is below the configured threshold.
+  // Use upper resolution if `rate` is below the configured threshold.
   size_t max_layers = (rate < max_roundup_rate.value_or(kDefaultMaxRoundupRate))
                           ? formats[index - 1].max_layers
                           : formats[index].max_layers;
@@ -296,7 +296,7 @@ size_t LimitSimulcastLayerCount(int width,
                         "Disabled")) {
     // Max layers from one higher resolution in kSimulcastFormats will be used
     // if the ratio (pixels_up - pixels) / (pixels_up - pixels_down) is less
-    // than configured |max_ratio|. pixels_down is the selected index in
+    // than configured `max_ratio`. pixels_down is the selected index in
     // kSimulcastFormats based on pixels.
     webrtc::FieldTrialOptional<double> max_ratio("max_ratio");
     webrtc::ParseFieldTrial({&max_ratio},
@@ -369,8 +369,8 @@ std::vector<webrtc::VideoStream> GetNormalSimulcastLayers(
   // 1|.
   width = NormalizeSimulcastSize(width, layer_count);
   height = NormalizeSimulcastSize(height, layer_count);
-  // Add simulcast streams, from highest resolution (|s| = num_simulcast_layers
-  // -1) to lowest resolution at |s| = 0.
+  // Add simulcast streams, from highest resolution (`s` = num_simulcast_layers
+  // -1) to lowest resolution at `s` = 0.
   for (size_t s = layer_count - 1;; --s) {
     layers[s].width = width;
     layers[s].height = height;

@@ -103,7 +103,7 @@ AudioTrackJni::AudioTrackJni(AudioManager* audio_manager)
       initialized_(false),
       playing_(false),
       audio_device_buffer_(nullptr) {
-  RTC_LOG(INFO) << "ctor";
+  RTC_LOG(LS_INFO) << "ctor";
   RTC_DCHECK(audio_parameters_.is_valid());
   RTC_CHECK(j_environment_);
   JNINativeMethod native_methods[] = {
@@ -125,26 +125,26 @@ AudioTrackJni::AudioTrackJni(AudioManager* audio_manager)
 }
 
 AudioTrackJni::~AudioTrackJni() {
-  RTC_LOG(INFO) << "dtor";
+  RTC_LOG(LS_INFO) << "dtor";
   RTC_DCHECK(thread_checker_.IsCurrent());
   Terminate();
 }
 
 int32_t AudioTrackJni::Init() {
-  RTC_LOG(INFO) << "Init";
+  RTC_LOG(LS_INFO) << "Init";
   RTC_DCHECK(thread_checker_.IsCurrent());
   return 0;
 }
 
 int32_t AudioTrackJni::Terminate() {
-  RTC_LOG(INFO) << "Terminate";
+  RTC_LOG(LS_INFO) << "Terminate";
   RTC_DCHECK(thread_checker_.IsCurrent());
   StopPlayout();
   return 0;
 }
 
 int32_t AudioTrackJni::InitPlayout() {
-  RTC_LOG(INFO) << "InitPlayout";
+  RTC_LOG(LS_INFO) << "InitPlayout";
   RTC_DCHECK(thread_checker_.IsCurrent());
   RTC_DCHECK(!initialized_);
   RTC_DCHECK(!playing_);
@@ -158,7 +158,7 @@ int32_t AudioTrackJni::InitPlayout() {
 }
 
 int32_t AudioTrackJni::StartPlayout() {
-  RTC_LOG(INFO) << "StartPlayout";
+  RTC_LOG(LS_INFO) << "StartPlayout";
   RTC_DCHECK(thread_checker_.IsCurrent());
   RTC_DCHECK(!playing_);
   if (!initialized_) {
@@ -175,7 +175,7 @@ int32_t AudioTrackJni::StartPlayout() {
 }
 
 int32_t AudioTrackJni::StopPlayout() {
-  RTC_LOG(INFO) << "StopPlayout";
+  RTC_LOG(LS_INFO) << "StopPlayout";
   RTC_DCHECK(thread_checker_.IsCurrent());
   if (!initialized_ || !playing_) {
     return 0;
@@ -200,7 +200,7 @@ int AudioTrackJni::SpeakerVolumeIsAvailable(bool& available) {
 }
 
 int AudioTrackJni::SetSpeakerVolume(uint32_t volume) {
-  RTC_LOG(INFO) << "SetSpeakerVolume(" << volume << ")";
+  RTC_LOG(LS_INFO) << "SetSpeakerVolume(" << volume << ")";
   RTC_DCHECK(thread_checker_.IsCurrent());
   return j_audio_track_->SetStreamVolume(volume) ? 0 : -1;
 }
@@ -220,20 +220,20 @@ int AudioTrackJni::MinSpeakerVolume(uint32_t& min_volume) const {
 int AudioTrackJni::SpeakerVolume(uint32_t& volume) const {
   RTC_DCHECK(thread_checker_.IsCurrent());
   volume = j_audio_track_->GetStreamVolume();
-  RTC_LOG(INFO) << "SpeakerVolume: " << volume;
+  RTC_LOG(LS_INFO) << "SpeakerVolume: " << volume;
   return 0;
 }
 
 // TODO(henrika): possibly add stereo support.
 void AudioTrackJni::AttachAudioBuffer(AudioDeviceBuffer* audioBuffer) {
-  RTC_LOG(INFO) << "AttachAudioBuffer";
+  RTC_LOG(LS_INFO) << "AttachAudioBuffer";
   RTC_DCHECK(thread_checker_.IsCurrent());
   audio_device_buffer_ = audioBuffer;
   const int sample_rate_hz = audio_parameters_.sample_rate();
-  RTC_LOG(INFO) << "SetPlayoutSampleRate(" << sample_rate_hz << ")";
+  RTC_LOG(LS_INFO) << "SetPlayoutSampleRate(" << sample_rate_hz << ")";
   audio_device_buffer_->SetPlayoutSampleRate(sample_rate_hz);
   const size_t channels = audio_parameters_.channels();
-  RTC_LOG(INFO) << "SetPlayoutChannels(" << channels << ")";
+  RTC_LOG(LS_INFO) << "SetPlayoutChannels(" << channels << ")";
   audio_device_buffer_->SetPlayoutChannels(channels);
 }
 
@@ -249,16 +249,16 @@ void JNICALL AudioTrackJni::CacheDirectBufferAddress(JNIEnv* env,
 
 void AudioTrackJni::OnCacheDirectBufferAddress(JNIEnv* env,
                                                jobject byte_buffer) {
-  RTC_LOG(INFO) << "OnCacheDirectBufferAddress";
+  RTC_LOG(LS_INFO) << "OnCacheDirectBufferAddress";
   RTC_DCHECK(thread_checker_.IsCurrent());
   RTC_DCHECK(!direct_buffer_address_);
   direct_buffer_address_ = env->GetDirectBufferAddress(byte_buffer);
   jlong capacity = env->GetDirectBufferCapacity(byte_buffer);
-  RTC_LOG(INFO) << "direct buffer capacity: " << capacity;
+  RTC_LOG(LS_INFO) << "direct buffer capacity: " << capacity;
   direct_buffer_capacity_in_bytes_ = static_cast<size_t>(capacity);
   const size_t bytes_per_frame = audio_parameters_.channels() * sizeof(int16_t);
   frames_per_buffer_ = direct_buffer_capacity_in_bytes_ / bytes_per_frame;
-  RTC_LOG(INFO) << "frames_per_buffer: " << frames_per_buffer_;
+  RTC_LOG(LS_INFO) << "frames_per_buffer: " << frames_per_buffer_;
 }
 
 JNI_FUNCTION_ALIGN

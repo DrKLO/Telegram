@@ -25,7 +25,7 @@ class VideoRtpDepacketizerVp8 : public VideoRtpDepacketizer {
  public:
   VideoRtpDepacketizerVp8() = default;
   VideoRtpDepacketizerVp8(const VideoRtpDepacketizerVp8&) = delete;
-  VideoRtpDepacketizerVp8& operator=(VideoRtpDepacketizerVp8&) = delete;
+  VideoRtpDepacketizerVp8& operator=(const VideoRtpDepacketizerVp8&) = delete;
   ~VideoRtpDepacketizerVp8() override = default;
 
   // Parses vp8 rtp payload descriptor.

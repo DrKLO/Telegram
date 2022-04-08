@@ -21,7 +21,7 @@ namespace webrtc {
 // the observer to examine the effects of the operation without delay.
 class SetLocalDescriptionObserverInterface : public rtc::RefCountInterface {
  public:
-  // On success, |error.ok()| is true.
+  // On success, `error.ok()` is true.
   virtual void OnSetLocalDescriptionComplete(RTCError error) = 0;
 };
 

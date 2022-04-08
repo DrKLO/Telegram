@@ -32,7 +32,7 @@ void DtmfBuffer::Flush() {
   buffer_.clear();
 }
 
-// The ParseEvent method parses 4 bytes from |payload| according to this format
+// The ParseEvent method parses 4 bytes from `payload` according to this format
 // from RFC 4733:
 //
 //  0                   1                   2                   3
@@ -119,8 +119,8 @@ int DtmfBuffer::InsertEvent(const DtmfEvent& event) {
 bool DtmfBuffer::GetEvent(uint32_t current_timestamp, DtmfEvent* event) {
   DtmfList::iterator it = buffer_.begin();
   while (it != buffer_.end()) {
-    // |event_end| is an estimate of where the current event ends. If the end
-    // bit is set, we know that the event ends at |timestamp| + |duration|.
+    // `event_end` is an estimate of where the current event ends. If the end
+    // bit is set, we know that the event ends at `timestamp` + `duration`.
     uint32_t event_end = it->timestamp + it->duration;
 #ifdef LEGACY_BITEXACT
     bool next_available = false;
@@ -226,7 +226,7 @@ bool DtmfBuffer::MergeEvents(DtmfList::iterator it, const DtmfEvent& event) {
   }
 }
 
-// Returns true if |a| goes before |b| in the sorting order ("|a| < |b|").
+// Returns true if `a` goes before `b` in the sorting order ("`a` < `b`").
 // The events are ranked using their start timestamp (taking wrap-around into
 // account). In the unlikely situation that two events share the same start
 // timestamp, the event number is used to rank the two. Note that packets

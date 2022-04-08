@@ -538,7 +538,7 @@ void AudioRtpSender::SetSend() {
   }
 #endif
 
-  // |track_->enabled()| hops to the signaling thread, so call it before we hop
+  // `track_->enabled()` hops to the signaling thread, so call it before we hop
   // to the worker thread or else it will deadlock.
   bool track_enabled = track_->enabled();
   bool success = worker_thread_->Invoke<bool>(RTC_FROM_HERE, [&] {
@@ -642,7 +642,7 @@ void VideoRtpSender::ClearSend() {
     RTC_LOG(LS_WARNING) << "SetVideoSend: No video channel exists.";
     return;
   }
-  // Allow SetVideoSend to fail since |enable| is false and |source| is null.
+  // Allow SetVideoSend to fail since `enable` is false and `source` is null.
   // This the normal case when the underlying media channel has already been
   // deleted.
   worker_thread_->Invoke<bool>(RTC_FROM_HERE, [&] {

@@ -116,7 +116,6 @@ VideoEncoder::EncoderInfo::EncoderInfo()
       implementation_name("unknown"),
       has_trusted_rate_controller(false),
       is_hardware_accelerated(true),
-      has_internal_source(false),
       fps_allocation{absl::InlinedVector<uint8_t, kMaxTemporalStreams>(
           1,
           kMaxFramerateFraction)},
@@ -150,10 +149,18 @@ std::string VideoEncoder::EncoderInfo::ToString() const {
          ", has_trusted_rate_controller = "
       << has_trusted_rate_controller
       << ", is_hardware_accelerated = " << is_hardware_accelerated
-      << ", has_internal_source = " << has_internal_source
       << ", fps_allocation = [";
+  size_t num_spatial_layer_with_fps_allocation = 0;
+  for (size_t i = 0; i < kMaxSpatialLayers; ++i) {
+    if (!fps_allocation[i].empty()) {
+      num_spatial_layer_with_fps_allocation = i + 1;
+    }
+  }
   bool first = true;
-  for (size_t i = 0; i < fps_allocation->size(); ++i) {
+  for (size_t i = 0; i < num_spatial_layer_with_fps_allocation; ++i) {
+    if (fps_allocation[i].empty()) {
+      break;
+    }
     if (!first) {
       oss << ", ";
     }
@@ -195,6 +202,9 @@ std::string VideoEncoder::EncoderInfo::ToString() const {
     oss << VideoFrameBufferTypeToString(preferred_pixel_formats.at(i));
   }
   oss << "]";
+  if (is_qp_trusted.has_value()) {
+    oss << ", is_qp_trusted = " << is_qp_trusted.value();
+  }
   oss << "}";
   return oss.str();
 }
@@ -219,8 +229,7 @@ bool VideoEncoder::EncoderInfo::operator==(const EncoderInfo& rhs) const {
   if (supports_native_handle != rhs.supports_native_handle ||
       implementation_name != rhs.implementation_name ||
       has_trusted_rate_controller != rhs.has_trusted_rate_controller ||
-      is_hardware_accelerated != rhs.is_hardware_accelerated ||
-      has_internal_source != rhs.has_internal_source) {
+      is_hardware_accelerated != rhs.is_hardware_accelerated) {
     return false;
   }
 

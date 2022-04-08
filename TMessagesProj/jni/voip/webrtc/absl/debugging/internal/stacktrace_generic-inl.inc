@@ -1,7 +1,16 @@
-// Copyright 2000 - 2007 Google Inc.
-// All rights reserved.
+// Copyright 2017 The Abseil Authors.
 //
-// Author: Sanjay Ghemawat
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 //
 // Portable implementation - just use glibc
 //
@@ -34,17 +43,6 @@ static __thread int recursive = 0;
 // glibc implementation itself will trigger malloc the first time it is called.
 // As such, we suppress usage of backtrace during this early stage of execution.
 static std::atomic<bool> disable_stacktraces(true);  // Disabled until healthy.
-// Waiting until static initializers run seems to be late enough.
-// This file is included into stacktrace.cc so this will only run once.
-ABSL_ATTRIBUTE_UNUSED static int stacktraces_enabler = []() {
-  void* unused_stack[1];
-  // Force the first backtrace to happen early to get the one-time shared lib
-  // loading (allocation) out of the way. After the first call it is much safer
-  // to use backtrace from a signal handler if we crash somewhere later.
-  backtrace(unused_stack, 1);
-  disable_stacktraces.store(false, std::memory_order_relaxed);
-  return 0;
-}();
 
 template <bool IS_STACK_FRAMES, bool IS_WITH_CONTEXT>
 static int UnwindImpl(void** result, int* sizes, int max_depth, int skip_count,
@@ -90,7 +88,7 @@ namespace absl {
 ABSL_NAMESPACE_BEGIN
 namespace debugging_internal {
 bool StackTraceWorksForTest() {
-  return true;
+  return false;
 }
 }  // namespace debugging_internal
 ABSL_NAMESPACE_END

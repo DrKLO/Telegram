@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.6.0)
 
+set(CMAKE_CXX_FLAGS "-std=c++17 -DANDROID -g")
 
 #tgvoip
 add_library(tgvoip STATIC
@@ -289,9 +290,7 @@ add_library(tgcalls_tp STATIC
         third_party/usrsctplib/user_mbuf.c
         third_party/usrsctplib/user_recv_thread.c
         third_party/usrsctplib/user_socket.c
-        voip/webrtc/absl/base/dynamic_annotations.cc
         voip/webrtc/absl/base/internal/cycleclock.cc
-        voip/webrtc/absl/base/internal/exception_safety_testing.cc
         voip/webrtc/absl/base/internal/exponential_biased.cc
         voip/webrtc/absl/base/internal/low_level_alloc.cc
         voip/webrtc/absl/base/internal/periodic_sampler.cc
@@ -326,8 +325,6 @@ add_library(tgcalls_tp STATIC
         voip/webrtc/absl/flags/internal/commandlineflag.cc
         voip/webrtc/absl/flags/internal/flag.cc
         voip/webrtc/absl/flags/internal/program_name.cc
-        voip/webrtc/absl/flags/internal/registry.cc
-        voip/webrtc/absl/flags/internal/type_erased.cc
         voip/webrtc/absl/flags/internal/usage.cc
         voip/webrtc/absl/flags/marshalling.cc
         voip/webrtc/absl/flags/parse.cc
@@ -446,16 +443,21 @@ add_library(tgcalls STATIC
         voip/tgcalls/AudioDeviceHelper.cpp
         voip/tgcalls/SctpDataChannelProviderInterfaceImpl.cpp
         voip/tgcalls/TurnCustomizerImpl.cpp
-        voip/tgcalls/reference/InstanceImplReference.cpp
         voip/tgcalls/legacy/InstanceImplLegacy.cpp
         voip/tgcalls/group/GroupNetworkManager.cpp
         voip/tgcalls/group/GroupInstanceCustomImpl.cpp
         voip/tgcalls/group/GroupJoinPayloadInternal.cpp
         voip/tgcalls/group/AudioStreamingPart.cpp
-        voip/tgcalls/group/VideoStreamingPart.cpp
+        voip/tgcalls/group/AudioStreamingPartInternal.cpp
+        voip/tgcalls/group/AudioStreamingPartPersistentDecoder.cpp
+        voip/tgcalls/group/AVIOContextImpl.cpp
         voip/tgcalls/group/StreamingMediaContext.cpp
-        voip/tgcalls/third-party/json11.cpp
-
+        voip/tgcalls/group/VideoStreamingPart.cpp
+        voip/tgcalls/v2/InstanceV2Impl.cpp
+        voip/tgcalls/v2/NativeNetworkingImpl.cpp
+        voip/tgcalls/v2/Signaling.cpp
+        voip/tgcalls/v2/SignalingEncryption.cpp
+        voip/webrtc/rtc_base/bitstream_reader.cc
         voip/webrtc/rtc_base/async_invoker.cc
         voip/webrtc/rtc_base/system_time.cc
         voip/webrtc/rtc_base/async_resolver.cc
@@ -478,6 +480,7 @@ add_library(tgcalls STATIC
         voip/webrtc/rtc_base/boringssl_identity.cc
         voip/webrtc/rtc_base/experiments/alr_experiment.cc
         voip/webrtc/rtc_base/experiments/balanced_degradation_settings.cc
+        voip/webrtc/rtc_base/experiments/bandwidth_quality_scaler_settings.cc
         voip/webrtc/rtc_base/experiments/cpu_speed_experiment.cc
         voip/webrtc/rtc_base/experiments/encoder_info_settings.cc
         voip/webrtc/rtc_base/experiments/field_trial_list.cc
@@ -490,10 +493,12 @@ add_library(tgcalls STATIC
         voip/webrtc/rtc_base/experiments/quality_rampup_experiment.cc
         voip/webrtc/rtc_base/experiments/quality_scaler_settings.cc
         voip/webrtc/rtc_base/experiments/quality_scaling_experiment.cc
+        voip/webrtc/rtc_base/experiments/quality_rampup_experiment.cc
         voip/webrtc/rtc_base/experiments/rate_control_settings.cc
         voip/webrtc/rtc_base/experiments/rtt_mult_experiment.cc
         voip/webrtc/rtc_base/experiments/stable_target_rate_experiment.cc
         voip/webrtc/rtc_base/experiments/struct_parameters_parser.cc
+        voip/webrtc/rtc_base/experiments/bandwidth_quality_scaler_settings.cc
         voip/webrtc/rtc_base/file_rotating_stream.cc
         voip/webrtc/rtc_base/helpers.cc
         voip/webrtc/rtc_base/http_common.cc
@@ -583,6 +588,7 @@ add_library(tgcalls STATIC
         voip/webrtc/rtc_base/callback_list.cc
         voip/webrtc/rtc_base/deprecated/recursive_critical_section.cc
         voip/webrtc/rtc_base/internal/default_socket_server.cc
+        voip/webrtc/api/adaptation/resource.cc
         voip/webrtc/api/audio/audio_frame.cc
         voip/webrtc/api/audio/channel_layout.cc
         voip/webrtc/api/audio/echo_canceller3_config.cc
@@ -629,8 +635,8 @@ add_library(tgcalls STATIC
         voip/webrtc/api/neteq/default_neteq_controller_factory.cc
         voip/webrtc/api/neteq/neteq.cc
         voip/webrtc/api/neteq/tick_timer.cc
+        voip/webrtc/api/numerics/samples_stats_counter.cc
         voip/webrtc/api/peer_connection_interface.cc
-        voip/webrtc/api/proxy.cc
         voip/webrtc/api/rtc_error.cc
         voip/webrtc/api/rtc_event_log/rtc_event.cc
         voip/webrtc/api/rtc_event_log/rtc_event_log.cc
@@ -655,7 +661,9 @@ add_library(tgcalls STATIC
         voip/webrtc/api/video/video_adaptation_counters.cc
         voip/webrtc/api/video/video_frame_metadata.cc
         voip/webrtc/api/voip/voip_engine_factory.cc
+        voip/webrtc/api/video/rtp_video_frame_assembler.cc
         voip/webrtc/api/numerics/samples_stats_counter.cc
+        voip/webrtc/api/wrapping_async_dns_resolver.cc
         voip/webrtc/call/adaptation/adaptation_constraint.cc
         voip/webrtc/call/adaptation/broadcast_resource_listener.cc
         voip/webrtc/call/adaptation/degradation_preference_provider.cc
@@ -721,6 +729,7 @@ add_library(tgcalls STATIC
         voip/webrtc/pc/jsep_ice_candidate.cc
         voip/webrtc/pc/jsep_session_description.cc
         voip/webrtc/pc/jsep_transport.cc
+        voip/webrtc/pc/jsep_transport_collection.cc
         voip/webrtc/pc/jsep_transport_controller.cc
         voip/webrtc/pc/local_audio_source.cc
         voip/webrtc/pc/media_protocol_names.cc
@@ -757,6 +766,7 @@ add_library(tgcalls STATIC
         voip/webrtc/pc/video_rtp_track_source.cc
         voip/webrtc/pc/video_track.cc
         voip/webrtc/pc/video_track_source.cc
+        voip/webrtc/pc/video_track_source_proxy.cc
         voip/webrtc/pc/webrtc_sdp.cc
         voip/webrtc/pc/webrtc_session_description_factory.cc
         voip/webrtc/pc/connection_context.cc
@@ -768,7 +778,6 @@ add_library(tgcalls STATIC
         voip/webrtc/sdk/android/src/jni/pc/add_ice_candidate_observer.cc
         voip/webrtc/media/base/adapted_video_track_source.cc
         voip/webrtc/media/base/codec.cc
-        voip/webrtc/media/base/h264_profile_level_id.cc
         voip/webrtc/media/base/media_channel.cc
         voip/webrtc/media/base/media_constants.cc
         voip/webrtc/media/base/media_engine.cc
@@ -804,6 +813,7 @@ add_library(tgcalls STATIC
         voip/webrtc/system_wrappers/source/metrics.cc
         voip/webrtc/system_wrappers/source/rtp_to_ntp_estimator.cc
         voip/webrtc/system_wrappers/source/sleep.cc
+        voip/webrtc/system_wrappers/source/denormal_disabler.cc
         voip/webrtc/modules/audio_coding/acm2/acm_receiver.cc
         voip/webrtc/modules/audio_coding/acm2/acm_remixing.cc
         voip/webrtc/modules/audio_coding/acm2/acm_resampler.cc
@@ -1007,6 +1017,9 @@ add_library(tgcalls STATIC
         voip/webrtc/modules/audio_coding/neteq/sync_buffer.cc
         voip/webrtc/modules/audio_coding/neteq/time_stretch.cc
         voip/webrtc/modules/audio_coding/neteq/timestamp_scaler.cc
+        voip/webrtc/modules/audio_coding/neteq/reorder_optimizer.cc
+        voip/webrtc/modules/audio_coding/neteq/underrun_optimizer.cc
+        voip/webrtc/modules/audio_coding/neteq/relative_arrival_delay_tracker.cc
         voip/webrtc/modules/audio_device/audio_device_buffer.cc
         voip/webrtc/modules/audio_device/audio_device_data_observer.cc
         voip/webrtc/modules/audio_device/audio_device_generic.cc
@@ -1088,24 +1101,25 @@ add_library(tgcalls STATIC
         voip/webrtc/modules/audio_processing/agc/legacy/digital_agc.cc
         voip/webrtc/modules/audio_processing/agc/loudness_histogram.cc
         voip/webrtc/modules/audio_processing/agc/utility.cc
-        voip/webrtc/modules/audio_processing/agc2/adaptive_agc.cc
+        voip/webrtc/modules/audio_processing/agc/clipping_predictor.cc
+        voip/webrtc/modules/audio_processing/agc/clipping_predictor_evaluator.cc
+        voip/webrtc/modules/audio_processing/agc/clipping_predictor_level_buffer.cc
+        voip/webrtc/modules/audio_processing/agc/analog_gain_stats_reporter.cc
+        voip/webrtc/modules/audio_processing/agc2/adaptive_digital_gain_controller.cc
+        voip/webrtc/modules/audio_processing/agc2/vad_wrapper.cc
         voip/webrtc/modules/audio_processing/agc2/cpu_features.cc
         voip/webrtc/modules/audio_processing/agc2/adaptive_digital_gain_applier.cc
         voip/webrtc/modules/audio_processing/agc2/adaptive_mode_level_estimator.cc
         voip/webrtc/modules/audio_processing/agc2/agc2_testing_common.cc
         voip/webrtc/modules/audio_processing/agc2/biquad_filter.cc
         voip/webrtc/modules/audio_processing/agc2/compute_interpolated_gain_curve.cc
-        voip/webrtc/modules/audio_processing/agc2/down_sampler.cc
         voip/webrtc/modules/audio_processing/agc2/fixed_digital_level_estimator.cc
         voip/webrtc/modules/audio_processing/agc2/gain_applier.cc
         voip/webrtc/modules/audio_processing/agc2/interpolated_gain_curve.cc
         voip/webrtc/modules/audio_processing/agc2/limiter.cc
         voip/webrtc/modules/audio_processing/agc2/limiter_db_gain_curve.cc
         voip/webrtc/modules/audio_processing/agc2/noise_level_estimator.cc
-        voip/webrtc/modules/audio_processing/agc2/noise_spectrum_estimator.cc
         voip/webrtc/modules/audio_processing/agc2/saturation_protector.cc
-        voip/webrtc/modules/audio_processing/agc2/signal_classifier.cc
-        voip/webrtc/modules/audio_processing/agc2/vad_with_level.cc
         voip/webrtc/modules/audio_processing/agc2/vector_float_frame.cc
         voip/webrtc/modules/audio_processing/agc2/saturation_protector_buffer.cc
         voip/webrtc/modules/audio_processing/agc2/rnn_vad/auto_correlation.cc
@@ -1133,8 +1147,6 @@ add_library(tgcalls STATIC
         voip/webrtc/modules/audio_processing/include/audio_frame_proxies.cc
         voip/webrtc/modules/audio_processing/include/audio_processing.cc
         voip/webrtc/modules/audio_processing/include/audio_processing_statistics.cc
-        voip/webrtc/modules/audio_processing/include/config.cc
-        voip/webrtc/modules/audio_processing/level_estimator.cc
         voip/webrtc/modules/audio_processing/logging/apm_data_dumper.cc
         voip/webrtc/modules/audio_processing/ns/fast_math.cc
         voip/webrtc/modules/audio_processing/ns/histograms.cc
@@ -1202,6 +1214,8 @@ add_library(tgcalls STATIC
         voip/webrtc/modules/congestion_controller/goog_cc/send_side_bandwidth_estimation.cc
         voip/webrtc/modules/congestion_controller/goog_cc/trendline_estimator.cc
         voip/webrtc/modules/congestion_controller/goog_cc/inter_arrival_delta.cc
+        voip/webrtc/modules/congestion_controller/goog_cc/loss_based_bandwidth_estimation.cc
+        voip/webrtc/modules/congestion_controller/goog_cc/loss_based_bwe_v2.cc
         voip/webrtc/modules/pacing/bitrate_prober.cc
         voip/webrtc/modules/pacing/interval_budget.cc
         voip/webrtc/modules/pacing/paced_sender.cc
@@ -1214,7 +1228,6 @@ add_library(tgcalls STATIC
         voip/webrtc/modules/rtp_rtcp/source/absolute_capture_time_interpolator.cc
         voip/webrtc/modules/rtp_rtcp/source/capture_clock_offset_updater.cc
         voip/webrtc/modules/rtp_rtcp/source/active_decode_targets_helper.cc
-        voip/webrtc/modules/rtp_rtcp/source/absolute_capture_time_receiver.cc
         voip/webrtc/modules/rtp_rtcp/source/absolute_capture_time_sender.cc
         voip/webrtc/modules/rtp_rtcp/source/create_video_rtp_depacketizer.cc
         voip/webrtc/modules/rtp_rtcp/source/dtmf_queue.cc
@@ -1288,7 +1301,6 @@ add_library(tgcalls STATIC
         voip/webrtc/modules/rtp_rtcp/source/rtp_sender_video.cc
         voip/webrtc/modules/rtp_rtcp/source/rtp_sender_video_frame_transformer_delegate.cc
         voip/webrtc/modules/rtp_rtcp/source/rtp_sequence_number_map.cc
-        voip/webrtc/modules/rtp_rtcp/source/rtp_utility.cc
         voip/webrtc/modules/rtp_rtcp/source/rtp_video_header.cc
         voip/webrtc/modules/rtp_rtcp/source/source_tracker.cc
         voip/webrtc/modules/rtp_rtcp/source/time_util.cc
@@ -1308,6 +1320,7 @@ add_library(tgcalls STATIC
         voip/webrtc/modules/rtp_rtcp/source/deprecated/deprecated_rtp_sender_egress.cc
         voip/webrtc/modules/rtp_rtcp/source/rtp_video_layers_allocation_extension.cc
         voip/webrtc/modules/rtp_rtcp/source/packet_sequencer.cc
+        voip/webrtc/modules/rtp_rtcp/source/rtp_util.cc
         voip/webrtc/modules/utility/source/helpers_android.cc
         voip/webrtc/modules/utility/source/jvm_android.cc
         voip/webrtc/modules/utility/source/process_thread_impl.cc
@@ -1360,7 +1373,6 @@ add_library(tgcalls STATIC
         voip/webrtc/modules/video_coding/utility/decoded_frames_history.cc
         voip/webrtc/modules/video_coding/utility/qp_parser.cc
         voip/webrtc/modules/video_coding/utility/frame_dropper.cc
-        voip/webrtc/modules/video_coding/utility/framerate_controller.cc
         voip/webrtc/modules/video_coding/utility/ivf_file_reader.cc
         voip/webrtc/modules/video_coding/utility/ivf_file_writer.cc
         voip/webrtc/modules/video_coding/utility/quality_scaler.cc
@@ -1368,6 +1380,8 @@ add_library(tgcalls STATIC
         voip/webrtc/modules/video_coding/utility/simulcast_utility.cc
         voip/webrtc/modules/video_coding/utility/vp8_header_parser.cc
         voip/webrtc/modules/video_coding/utility/vp9_uncompressed_header_parser.cc
+        voip/webrtc/modules/video_coding/utility/bandwidth_quality_scaler.cc
+        voip/webrtc/modules/video_coding/utility/framerate_controller_deprecated.cc
         voip/webrtc/modules/video_coding/video_codec_initializer.cc
         voip/webrtc/modules/video_coding/video_coding_defines.cc
         voip/webrtc/modules/video_coding/video_coding_impl.cc
@@ -1397,6 +1411,9 @@ add_library(tgcalls STATIC
         voip/webrtc/modules/video_coding/rtp_vp9_ref_finder.cc
         voip/webrtc/modules/video_coding/rtp_generic_ref_finder.cc
         voip/webrtc/modules/video_coding/codecs/av1/av1_svc_config.cc
+        voip/webrtc/modules/video_coding/nack_requester.cc
+        voip/webrtc/modules/video_coding/frame_buffer3.cc
+        voip/webrtc/modules/video_coding/h264_packet_buffer.cc
         voip/webrtc/modules/video_processing/util/denoiser_filter.cc
         voip/webrtc/modules/video_processing/util/denoiser_filter_c.cc
         voip/webrtc/modules/video_processing/util/noise_estimation.cc
@@ -1496,6 +1513,7 @@ add_library(tgcalls STATIC
         voip/webrtc/common_video/h264/sps_vui_rewriter.cc
         voip/webrtc/common_video/h265/h265_bitstream_parser.cc
         voip/webrtc/common_video/h265/h265_common.cc
+        voip/webrtc/common_video/h265/legacy_bit_buffer.cc
         voip/webrtc/common_video/h265/h265_pps_parser.cc
         voip/webrtc/common_video/h265/h265_sps_parser.cc
         voip/webrtc/common_video/h265/h265_vps_parser.cc
@@ -1504,6 +1522,7 @@ add_library(tgcalls STATIC
         voip/webrtc/common_video/video_frame_buffer.cc
         voip/webrtc/common_video/video_render_frames.cc
         voip/webrtc/common_video/video_frame_buffer_pool.cc
+        voip/webrtc/common_video/framerate_controller.cc
         voip/webrtc/p2p/base/async_stun_tcp_socket.cc
         voip/webrtc/p2p/base/basic_async_resolver_factory.cc
         voip/webrtc/p2p/base/basic_ice_controller.cc
@@ -1536,9 +1555,7 @@ add_library(tgcalls STATIC
         voip/webrtc/p2p/client/basic_port_allocator.cc
         voip/webrtc/p2p/client/turn_port_factory.cc
         voip/webrtc/p2p/stunprober/stun_prober.cc
-        voip/webrtc/video/adaptation/quality_rampup_experiment_helper.cc
         voip/webrtc/modules/video_coding/deprecated/nack_module.cc
-        voip/webrtc/modules/video_coding/nack_module2.cc
         voip/webrtc/modules/async_audio_processing/async_audio_processing.cc
         voip/webrtc/logging/rtc_event_log/encoder/blob_encoding.cc
         voip/webrtc/logging/rtc_event_log/encoder/delta_encoding.cc
@@ -1568,6 +1585,10 @@ add_library(tgcalls STATIC
         voip/webrtc/logging/rtc_event_log/events/rtc_event_rtp_packet_outgoing.cc
         voip/webrtc/logging/rtc_event_log/events/rtc_event_video_receive_stream_config.cc
         voip/webrtc/logging/rtc_event_log/events/rtc_event_video_send_stream_config.cc
+        voip/webrtc/logging/rtc_event_log/events/fixed_length_encoding_parameters_v3.cc
+        voip/webrtc/logging/rtc_event_log/events/rtc_event_field_encoding.cc
+        voip/webrtc/logging/rtc_event_log/events/rtc_event_field_encoding_parser.cc
+        voip/webrtc/logging/rtc_event_log/events/rtc_event_field_extraction.cc
         voip/webrtc/logging/rtc_event_log/fake_rtc_event_log.cc
         voip/webrtc/logging/rtc_event_log/fake_rtc_event_log_factory.cc
         voip/webrtc/logging/rtc_event_log/ice_logger.cc
@@ -1581,6 +1602,8 @@ add_library(tgcalls STATIC
         voip/webrtc/video/adaptation/balanced_constraint.cc
         voip/webrtc/video/adaptation/bitrate_constraint.cc
         voip/webrtc/video/adaptation/pixel_limit_resource.cc
+        voip/webrtc/video/adaptation/quality_rampup_experiment_helper.cc
+        voip/webrtc/video/adaptation/bandwidth_quality_scaler_resource.cc
         voip/webrtc/video/buffered_frame_decryptor.cc
         voip/webrtc/video/call_stats.cc
         voip/webrtc/video/encoder_bitrate_adjuster.cc
@@ -1601,7 +1624,6 @@ add_library(tgcalls STATIC
         voip/webrtc/video/stream_synchronization.cc
         voip/webrtc/video/transport_adapter.cc
         voip/webrtc/video/video_quality_observer.cc
-        voip/webrtc/video/video_receive_stream.cc
         voip/webrtc/video/video_send_stream.cc
         voip/webrtc/video/video_send_stream_impl.cc
         voip/webrtc/video/video_source_sink_controller.cc
@@ -1616,6 +1638,7 @@ add_library(tgcalls STATIC
         voip/webrtc/video/receive_statistics_proxy2.cc
         voip/webrtc/video/call_stats2.cc
         voip/webrtc/video/alignment_adjuster.cc
+        voip/webrtc/video/frame_cadence_adapter.cc
         voip/webrtc/audio/audio_level.cc
         voip/webrtc/audio/audio_receive_stream.cc
         voip/webrtc/audio/audio_send_stream.cc

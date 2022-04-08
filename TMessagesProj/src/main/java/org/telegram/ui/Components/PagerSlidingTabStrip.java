@@ -64,10 +64,12 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
     private int dividerPadding = AndroidUtilities.dp(12);
     private int tabPadding = AndroidUtilities.dp(24);
 
+    private Theme.ResourcesProvider resourcesProvider;
     private int lastScrollX = 0;
 
-    public PagerSlidingTabStrip(Context context) {
+    public PagerSlidingTabStrip(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
 
         setFillViewport(true);
         setWillNotDraw(false);
@@ -138,14 +140,14 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
                 super.setSelected(selected);
                 Drawable background = getBackground();
                 if (Build.VERSION.SDK_INT >= 21 && background != null) {
-                    int color = Theme.getColor(selected ? Theme.key_chat_emojiPanelIconSelected : Theme.key_chat_emojiBottomPanelIcon);
+                    int color = getThemedColor(selected ? Theme.key_chat_emojiPanelIconSelected : Theme.key_chat_emojiBottomPanelIcon);
                     Theme.setSelectorDrawableColor(background, Color.argb(30, Color.red(color), Color.green(color), Color.blue(color)), true);
                 }
             }
         };
         tab.setFocusable(true);
         if (Build.VERSION.SDK_INT >= 21) {
-            RippleDrawable rippleDrawable = (RippleDrawable) Theme.createSelectorDrawable(Theme.getColor(Theme.key_chat_emojiBottomPanelIcon));
+            RippleDrawable rippleDrawable = (RippleDrawable) Theme.createSelectorDrawable(getThemedColor(Theme.key_chat_emojiBottomPanelIcon));
             Theme.setRippleDrawableForceSoftware(rippleDrawable);
             tab.setBackground(rippleDrawable);
         }
@@ -267,6 +269,11 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
                 tabsContainer.getChildAt(a).setSelected(a == position);
             }
         }
+    }
+
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
     }
 
     public void onSizeChanged(int paramInt1, int paramInt2, int paramInt3, int paramInt4) {

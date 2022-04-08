@@ -40,7 +40,7 @@ AutoCorrelationCalculator::~AutoCorrelationCalculator() = default;
 //         [ y_{m-1} ]
 // x and y are sub-array of equal length; x is never moved, whereas y slides.
 // The cross-correlation between y_0 and x corresponds to the auto-correlation
-// for the maximum pitch period. Hence, the first value in |auto_corr| has an
+// for the maximum pitch period. Hence, the first value in `auto_corr` has an
 // inverted lag equal to 0 that corresponds to a lag equal to the maximum
 // pitch period.
 void AutoCorrelationCalculator::ComputeOnPitchBuffer(

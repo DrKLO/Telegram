@@ -17,18 +17,18 @@
 namespace webrtc {
 // Generate codec parameters that will be used as answer in an SDP negotiation
 // based on local supported parameters and remote offered parameters. Both
-// |local_supported_params|, |remote_offered_params|, and |answer_params|
+// `local_supported_params`, `remote_offered_params`, and `answer_params`
 // represent sendrecv media descriptions, i.e they are a mix of both encode and
-// decode capabilities. In theory, when the profile in |local_supported_params|
-// represent a strict superset of the profile in |remote_offered_params|, we
-// could limit the profile in |answer_params| to the profile in
-// |remote_offered_params|. However, to simplify the code, each supported H264
+// decode capabilities. In theory, when the profile in `local_supported_params`
+// represent a strict superset of the profile in `remote_offered_params`, we
+// could limit the profile in `answer_params` to the profile in
+// `remote_offered_params`. However, to simplify the code, each supported H264
 // profile should be listed explicitly in the list of local supported codecs,
 // even if they are redundant. Then each local codec in the list should be
 // tested one at a time against the remote codec, and only when the profiles are
 // equal should this function be called. Therefore, this function does not need
-// to handle profile intersection, and the profile of |local_supported_params|
-// and |remote_offered_params| must be equal before calling this function. The
+// to handle profile intersection, and the profile of `local_supported_params`
+// and `remote_offered_params` must be equal before calling this function. The
 // parameters that are used when negotiating are the level part of
 // profile-level-id and level-asymmetry-allowed.
 void H264GenerateProfileLevelIdForAnswer(

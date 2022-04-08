@@ -40,7 +40,7 @@ class RtpPacketizerH264 : public RtpPacketizer {
   size_t NumPackets() const override;
 
   // Get the next payload with H264 payload header.
-  // Write payload and set marker bit of the |packet|.
+  // Write payload and set marker bit of the `packet`.
   // Returns true on success, false otherwise.
   bool NextPacket(RtpPacketToSend* rtp_packet) override;
 

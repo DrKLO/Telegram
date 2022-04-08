@@ -20,6 +20,7 @@ import org.telegram.ui.Components.RLottieDrawable;
 
 public class ActionBarMenu extends LinearLayout {
 
+    public boolean drawBlur = true;
     protected ActionBar parentActionBar;
     protected boolean isActionMode;
 
@@ -211,6 +212,20 @@ public class ActionBarMenu extends LinearLayout {
         }
     }
 
+    public void setSearchCursorColor(int color) {
+        int count = getChildCount();
+        for (int a = 0; a < count; a++) {
+            View view = getChildAt(a);
+            if (view instanceof ActionBarMenuItem) {
+                ActionBarMenuItem item = (ActionBarMenuItem) view;
+                if (item.isSearchField()) {
+                    item.getSearchField().setCursorColor(color);
+                    break;
+                }
+            }
+        }
+    }
+
     public void setSearchTextColor(int color, boolean placeholder) {
         int count = getChildCount();
         for (int a = 0; a < count; a++) {
@@ -256,7 +271,7 @@ public class ActionBarMenu extends LinearLayout {
         }
     }
 
-    public void openSearchField(boolean toggle, String text, boolean animated) {
+    public void openSearchField(boolean toggle, boolean showKeyboard, String text, boolean animated) {
         int count = getChildCount();
         for (int a = 0; a < count; a++) {
             View view = getChildAt(a);
@@ -264,7 +279,7 @@ public class ActionBarMenu extends LinearLayout {
                 ActionBarMenuItem item = (ActionBarMenuItem) view;
                 if (item.isSearchField()) {
                     if (toggle) {
-                        parentActionBar.onSearchFieldVisibilityChanged(item.toggleSearch(true));
+                        parentActionBar.onSearchFieldVisibilityChanged(item.toggleSearch(showKeyboard));
                     }
                     item.setSearchFieldText(text, animated);
                     item.getSearchField().setSelection(text.length());

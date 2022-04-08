@@ -14,34 +14,33 @@
 #include <stddef.h>
 
 #include "rtc_base/async_packet_socket.h"
-#include "rtc_base/async_socket.h"
 #include "rtc_base/async_tcp_socket.h"
 #include "rtc_base/constructor_magic.h"
+#include "rtc_base/socket.h"
 #include "rtc_base/socket_address.h"
 
 namespace cricket {
 
 class AsyncStunTCPSocket : public rtc::AsyncTCPSocketBase {
  public:
-  // Binds and connects |socket| and creates AsyncTCPSocket for
-  // it. Takes ownership of |socket|. Returns NULL if bind() or
-  // connect() fail (|socket| is destroyed in that case).
-  static AsyncStunTCPSocket* Create(rtc::AsyncSocket* socket,
+  // Binds and connects `socket` and creates AsyncTCPSocket for
+  // it. Takes ownership of `socket`. Returns NULL if bind() or
+  // connect() fail (`socket` is destroyed in that case).
+  static AsyncStunTCPSocket* Create(rtc::Socket* socket,
                                     const rtc::SocketAddress& bind_address,
                                     const rtc::SocketAddress& remote_address);
 
-  AsyncStunTCPSocket(rtc::AsyncSocket* socket, bool listen);
+  explicit AsyncStunTCPSocket(rtc::Socket* socket);
 
   int Send(const void* pv,
            size_t cb,
            const rtc::PacketOptions& options) override;
   void ProcessInput(char* data, size_t* len) override;
-  void HandleIncomingConnection(rtc::AsyncSocket* socket) override;
 
  private:
   // This method returns the message hdr + length written in the header.
   // This method also returns the number of padding bytes needed/added to the
-  // turn message. |pad_bytes| should be used only when |is_turn| is true.
+  // turn message. `pad_bytes` should be used only when `is_turn` is true.
   size_t GetExpectedLength(const void* data, size_t len, int* pad_bytes);
 
   RTC_DISALLOW_COPY_AND_ASSIGN(AsyncStunTCPSocket);

@@ -129,7 +129,7 @@ void PeerConnectionMessageHandler::OnMessage(rtc::Message* msg) {
       break;
     }
     default:
-      RTC_NOTREACHED() << "Not implemented";
+      RTC_DCHECK_NOTREACHED() << "Not implemented";
       break;
   }
 }

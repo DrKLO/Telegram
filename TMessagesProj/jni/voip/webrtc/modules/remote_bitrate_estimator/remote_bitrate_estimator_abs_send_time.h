@@ -21,6 +21,10 @@
 
 #include "api/rtp_headers.h"
 #include "api/transport/field_trial_based_config.h"
+#include "api/units/data_rate.h"
+#include "api/units/data_size.h"
+#include "api/units/time_delta.h"
+#include "api/units/timestamp.h"
 #include "modules/remote_bitrate_estimator/aimd_rate_control.h"
 #include "modules/remote_bitrate_estimator/include/remote_bitrate_estimator.h"
 #include "modules/remote_bitrate_estimator/inter_arrival.h"
@@ -34,42 +38,6 @@
 #include "system_wrappers/include/clock.h"
 
 namespace webrtc {
-
-struct Probe {
-  Probe(int64_t send_time_ms, int64_t recv_time_ms, size_t payload_size)
-      : send_time_ms(send_time_ms),
-        recv_time_ms(recv_time_ms),
-        payload_size(payload_size) {}
-  int64_t send_time_ms;
-  int64_t recv_time_ms;
-  size_t payload_size;
-};
-
-struct Cluster {
-  Cluster()
-      : send_mean_ms(0.0f),
-        recv_mean_ms(0.0f),
-        mean_size(0),
-        count(0),
-        num_above_min_delta(0) {}
-
-  int GetSendBitrateBps() const {
-    RTC_CHECK_GT(send_mean_ms, 0.0f);
-    return mean_size * 8 * 1000 / send_mean_ms;
-  }
-
-  int GetRecvBitrateBps() const {
-    RTC_CHECK_GT(recv_mean_ms, 0.0f);
-    return mean_size * 8 * 1000 / recv_mean_ms;
-  }
-
-  float send_mean_ms;
-  float recv_mean_ms;
-  // TODO(holmer): Add some variance metric as well?
-  size_t mean_size;
-  int count;
-  int num_above_min_delta;
-};
 
 class RemoteBitrateEstimatorAbsSendTime : public RemoteBitrateEstimator {
  public:
@@ -100,32 +68,54 @@ class RemoteBitrateEstimatorAbsSendTime : public RemoteBitrateEstimator {
   void SetMinBitrate(int min_bitrate_bps) override;
 
  private:
-  typedef std::map<uint32_t, int64_t> Ssrcs;
+  struct Probe {
+    Probe(Timestamp send_time, Timestamp recv_time, DataSize payload_size)
+        : send_time(send_time),
+          recv_time(recv_time),
+          payload_size(payload_size) {}
+
+    Timestamp send_time;
+    Timestamp recv_time;
+    DataSize payload_size;
+  };
+
+  struct Cluster {
+    DataRate SendBitrate() const { return mean_size / send_mean; }
+    DataRate RecvBitrate() const { return mean_size / recv_mean; }
+
+    TimeDelta send_mean = TimeDelta::Zero();
+    TimeDelta recv_mean = TimeDelta::Zero();
+    // TODO(holmer): Add some variance metric as well?
+    DataSize mean_size = DataSize::Zero();
+    int count = 0;
+    int num_above_min_delta = 0;
+  };
+
   enum class ProbeResult { kBitrateUpdated, kNoUpdate };
 
-  static bool IsWithinClusterBounds(int send_delta_ms,
+  static bool IsWithinClusterBounds(TimeDelta send_delta,
                                     const Cluster& cluster_aggregate);
 
-  static void AddCluster(std::list<Cluster>* clusters, Cluster* cluster);
+  static void MaybeAddCluster(const Cluster& cluster_aggregate,
+                              std::list<Cluster>& clusters);
 
-  void IncomingPacketInfo(int64_t arrival_time_ms,
+  void IncomingPacketInfo(Timestamp arrival_time,
                           uint32_t send_time_24bits,
-                          size_t payload_size,
+                          DataSize payload_size,
                           uint32_t ssrc);
 
-  void ComputeClusters(std::list<Cluster>* clusters) const;
+  std::list<Cluster> ComputeClusters() const;
 
-  std::list<Cluster>::const_iterator FindBestProbe(
-      const std::list<Cluster>& clusters) const;
+  const Cluster* FindBestProbe(const std::list<Cluster>& clusters) const;
 
   // Returns true if a probe which changed the estimate was detected.
-  ProbeResult ProcessClusters(int64_t now_ms)
+  ProbeResult ProcessClusters(Timestamp now)
       RTC_EXCLUSIVE_LOCKS_REQUIRED(&mutex_);
 
-  bool IsBitrateImproving(int probe_bitrate_bps) const
+  bool IsBitrateImproving(DataRate probe_bitrate) const
       RTC_EXCLUSIVE_LOCKS_REQUIRED(&mutex_);
 
-  void TimeoutStreams(int64_t now_ms) RTC_EXCLUSIVE_LOCKS_REQUIRED(&mutex_);
+  void TimeoutStreams(Timestamp now) RTC_EXCLUSIVE_LOCKS_REQUIRED(&mutex_);
 
   rtc::RaceChecker network_race_;
   Clock* const clock_;
@@ -134,18 +124,16 @@ class RemoteBitrateEstimatorAbsSendTime : public RemoteBitrateEstimator {
   std::unique_ptr<InterArrival> inter_arrival_;
   std::unique_ptr<OveruseEstimator> estimator_;
   OveruseDetector detector_;
-  RateStatistics incoming_bitrate_;
-  bool incoming_bitrate_initialized_;
-  std::vector<int> recent_propagation_delta_ms_;
-  std::vector<int64_t> recent_update_time_ms_;
+  RateStatistics incoming_bitrate_{kBitrateWindowMs, 8000};
+  bool incoming_bitrate_initialized_ = false;
   std::list<Probe> probes_;
-  size_t total_probes_received_;
-  int64_t first_packet_time_ms_;
-  int64_t last_update_ms_;
-  bool uma_recorded_;
+  size_t total_probes_received_ = 0;
+  Timestamp first_packet_time_ = Timestamp::MinusInfinity();
+  Timestamp last_update_ = Timestamp::MinusInfinity();
+  bool uma_recorded_ = false;
 
   mutable Mutex mutex_;
-  Ssrcs ssrcs_ RTC_GUARDED_BY(&mutex_);
+  std::map<uint32_t, Timestamp> ssrcs_ RTC_GUARDED_BY(&mutex_);
   AimdRateControl remote_rate_ RTC_GUARDED_BY(&mutex_);
 };
 

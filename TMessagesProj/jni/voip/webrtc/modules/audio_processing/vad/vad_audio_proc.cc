@@ -132,7 +132,7 @@ void VadAudioProc::SubframeCorrelation(double* corr,
                       kNumSubframeSamples + kNumPastSignalSamples, kLpcOrder);
 }
 
-// Compute |kNum10msSubframes| sets of LPC coefficients, one per 10 ms input.
+// Compute `kNum10msSubframes` sets of LPC coefficients, one per 10 ms input.
 // The analysis window is 15 ms long and it is centered on the first half of
 // each 10ms sub-frame. This is equivalent to computing LPC coefficients for the
 // first half of each 10 ms subframe.
@@ -169,7 +169,7 @@ static float QuadraticInterpolation(float prev_val,
   return fractional_index;
 }
 
-// 1 / A(z), where A(z) is defined by |lpc| is a model of the spectral envelope
+// 1 / A(z), where A(z) is defined by `lpc` is a model of the spectral envelope
 // of the input signal. The local maximum of the spectral envelope corresponds
 // with the local minimum of A(z). It saves complexity, as we save one
 // inversion. Furthermore, we find the first local maximum of magnitude squared,

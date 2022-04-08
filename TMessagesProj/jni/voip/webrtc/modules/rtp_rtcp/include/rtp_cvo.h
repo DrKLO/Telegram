@@ -30,7 +30,7 @@ inline uint8_t ConvertVideoRotationToCVOByte(VideoRotation rotation) {
     case kVideoRotation_270:
       return 3;
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return 0;
 }
 
@@ -47,7 +47,7 @@ inline VideoRotation ConvertCVOByteToVideoRotation(uint8_t cvo_byte) {
     case 3:
       return kVideoRotation_270;
     default:
-      RTC_NOTREACHED();
+      RTC_DCHECK_NOTREACHED();
       return kVideoRotation_0;
   }
 }

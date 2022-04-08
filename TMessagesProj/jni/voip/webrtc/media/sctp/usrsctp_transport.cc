@@ -53,6 +53,7 @@ constexpr int kSctpErrorReturn = 0;
 #include "rtc_base/thread_annotations.h"
 #include "rtc_base/trace_event.h"
 
+namespace cricket {
 namespace {
 
 // The biggest SCTP packet. Starting from a 'safe' wire MTU value of 1280,
@@ -236,9 +237,39 @@ sctp_sendv_spa CreateSctpSendParams(int sid,
   }
   return spa;
 }
-}  // namespace
 
-namespace cricket {
+std::string SctpErrorCauseCodeToString(SctpErrorCauseCode code) {
+  switch (code) {
+    case SctpErrorCauseCode::kInvalidStreamIdentifier:
+      return "Invalid Stream Identifier";
+    case SctpErrorCauseCode::kMissingMandatoryParameter:
+      return "Missing Mandatory Parameter";
+    case SctpErrorCauseCode::kStaleCookieError:
+      return "Stale Cookie Error";
+    case SctpErrorCauseCode::kOutOfResource:
+      return "Out of Resource";
+    case SctpErrorCauseCode::kUnresolvableAddress:
+      return "Unresolvable Address";
+    case SctpErrorCauseCode::kUnrecognizedChunkType:
+      return "Unrecognized Chunk Type";
+    case SctpErrorCauseCode::kInvalidMandatoryParameter:
+      return "Invalid Mandatory Parameter";
+    case SctpErrorCauseCode::kUnrecognizedParameters:
+      return "Unrecognized Parameters";
+    case SctpErrorCauseCode::kNoUserData:
+      return "No User Data";
+    case SctpErrorCauseCode::kCookieReceivedWhileShuttingDown:
+      return "Cookie Received Whilte Shutting Down";
+    case SctpErrorCauseCode::kRestartWithNewAddresses:
+      return "Restart With New Addresses";
+    case SctpErrorCauseCode::kUserInitiatedAbort:
+      return "User Initiated Abort";
+    case SctpErrorCauseCode::kProtocolViolation:
+      return "Protocol Violation";
+  }
+  return "Unknown error";
+}
+}  // namespace
 
 // Maps SCTP transport ID to UsrsctpTransport object, necessary in send
 // threshold callback and outgoing packet callback. It also provides a facility
@@ -273,7 +304,7 @@ class UsrsctpTransportMap {
     return map_.erase(id) > 0;
   }
 
-  // Posts |action| to the network thread of the transport identified by |id|
+  // Posts `action` to the network thread of the transport identified by `id`
   // and returns true if found, all while holding a lock to protect against the
   // transport being simultaneously deleted/deregistered, or returns false if
   // not found.
@@ -459,86 +490,30 @@ class UsrsctpTransport::UsrSctpWrapper {
                                  void* ulp_info) {
     AutoFreedPointer owned_data(data);
 
-    absl::optional<uintptr_t> id = GetTransportIdFromSocket(sock);
-    if (!id) {
-      RTC_LOG(LS_ERROR)
-          << "OnSctpInboundPacket: Failed to get transport ID from socket "
-          << sock;
-      return kSctpErrorReturn;
-    }
-
     if (!g_transport_map_) {
       RTC_LOG(LS_ERROR)
           << "OnSctpInboundPacket called after usrsctp uninitialized?";
       return kSctpErrorReturn;
     }
+
+    uintptr_t id = reinterpret_cast<uintptr_t>(ulp_info);
+
     // PostsToTransportThread protects against the transport being
     // simultaneously deregistered/deleted, since this callback may come from
     // the SCTP timer thread and thus race with the network thread.
     bool found = g_transport_map_->PostToTransportThread(
-        *id, [owned_data{std::move(owned_data)}, length, rcv,
-              flags](UsrsctpTransport* transport) {
+        id, [owned_data{std::move(owned_data)}, length, rcv,
+             flags](UsrsctpTransport* transport) {
           transport->OnDataOrNotificationFromSctp(owned_data.get(), length, rcv,
                                                   flags);
         });
     if (!found) {
       RTC_LOG(LS_ERROR)
-          << "OnSctpInboundPacket: Failed to get transport for socket ID "
-          << *id << "; possibly was already destroyed.";
+          << "OnSctpInboundPacket: Failed to get transport for socket ID " << id
+          << "; possibly was already destroyed.";
       return kSctpErrorReturn;
     }
     return kSctpSuccessReturn;
-  }
-
-  static absl::optional<uintptr_t> GetTransportIdFromSocket(
-      struct socket* sock) {
-    absl::optional<uintptr_t> ret;
-    struct sockaddr* addrs = nullptr;
-    int naddrs = usrsctp_getladdrs(sock, 0, &addrs);
-    if (naddrs <= 0 || addrs[0].sa_family != AF_CONN) {
-      return ret;
-    }
-    // usrsctp_getladdrs() returns the addresses bound to this socket, which
-    // contains the UsrsctpTransport id as sconn_addr.  Read the id,
-    // then free the list of addresses once we have the pointer.  We only open
-    // AF_CONN sockets, and they should all have the sconn_addr set to the
-    // id of the transport that created them, so [0] is as good as any other.
-    struct sockaddr_conn* sconn =
-        reinterpret_cast<struct sockaddr_conn*>(&addrs[0]);
-    ret = reinterpret_cast<uintptr_t>(sconn->sconn_addr);
-    usrsctp_freeladdrs(addrs);
-
-    return ret;
-  }
-
-  // TODO(crbug.com/webrtc/11899): This is a legacy callback signature, remove
-  // when usrsctp is updated.
-  static int SendThresholdCallback(struct socket* sock, uint32_t sb_free) {
-    // Fired on our I/O thread. UsrsctpTransport::OnPacketReceived() gets
-    // a packet containing acknowledgments, which goes into usrsctp_conninput,
-    // and then back here.
-    absl::optional<uintptr_t> id = GetTransportIdFromSocket(sock);
-    if (!id) {
-      RTC_LOG(LS_ERROR)
-          << "SendThresholdCallback: Failed to get transport ID from socket "
-          << sock;
-      return 0;
-    }
-    if (!g_transport_map_) {
-      RTC_LOG(LS_ERROR)
-          << "SendThresholdCallback called after usrsctp uninitialized?";
-      return 0;
-    }
-    bool found = g_transport_map_->PostToTransportThread(
-        *id, [](UsrsctpTransport* transport) {
-          transport->OnSendThresholdCallback();
-        });
-    if (!found) {
-      RTC_LOG(LS_ERROR)
-          << "SendThresholdCallback: Failed to get transport for socket ID "
-          << *id << "; possibly was already destroyed.";
-    }
-    return 0;
   }
 
   static int SendThresholdCallback(struct socket* sock,
@@ -547,26 +522,22 @@ class UsrsctpTransport::UsrSctpWrapper {
     // Fired on our I/O thread. UsrsctpTransport::OnPacketReceived() gets
     // a packet containing acknowledgments, which goes into usrsctp_conninput,
     // and then back here.
-    absl::optional<uintptr_t> id = GetTransportIdFromSocket(sock);
-    if (!id) {
-      RTC_LOG(LS_ERROR)
-          << "SendThresholdCallback: Failed to get transport ID from socket "
-          << sock;
-      return 0;
-    }
     if (!g_transport_map_) {
       RTC_LOG(LS_ERROR)
           << "SendThresholdCallback called after usrsctp uninitialized?";
       return 0;
     }
+
+    uintptr_t id = reinterpret_cast<uintptr_t>(ulp_info);
+
     bool found = g_transport_map_->PostToTransportThread(
-        *id, [](UsrsctpTransport* transport) {
+        id, [](UsrsctpTransport* transport) {
           transport->OnSendThresholdCallback();
         });
     if (!found) {
       RTC_LOG(LS_ERROR)
           << "SendThresholdCallback: Failed to get transport for socket ID "
-          << *id << "; possibly was already destroyed.";
+          << id << "; possibly was already destroyed.";
     }
     return 0;
   }
@@ -817,8 +788,8 @@ SendDataResult UsrsctpTransport::SendMessageInternal(OutgoingMessage* message) {
   if (send_res < 0) {
     if (errno == SCTP_EWOULDBLOCK) {
       ready_to_send_data_ = false;
-      RTC_LOG(LS_INFO) << debug_name_
-                       << "->SendMessageInternal(...): EWOULDBLOCK returned";
+      RTC_LOG(LS_VERBOSE) << debug_name_
+                          << "->SendMessageInternal(...): EWOULDBLOCK returned";
       return SDR_BLOCK;
     }
 
@@ -946,7 +917,7 @@ bool UsrsctpTransport::OpenSctpSocket() {
 
   sock_ = usrsctp_socket(
       AF_CONN, SOCK_STREAM, IPPROTO_SCTP, &UsrSctpWrapper::OnSctpInboundPacket,
-      &UsrSctpWrapper::SendThresholdCallback, kSendThreshold, this);
+      &UsrSctpWrapper::SendThresholdCallback, kSendThreshold, nullptr);
   if (!sock_) {
     RTC_LOG_ERRNO(LS_ERROR) << debug_name_
                             << "->OpenSctpSocket(): "
@@ -962,6 +933,7 @@ bool UsrsctpTransport::OpenSctpSocket() {
     return false;
   }
   id_ = g_transport_map_->Register(this);
+  usrsctp_set_ulpinfo(sock_, reinterpret_cast<void*>(id_));
   // Register our id as an address for usrsctp. This is used by SCTP to
   // direct the packets received (by the created socket) to this class.
   usrsctp_register_address(reinterpret_cast<void*>(id_));
@@ -1200,8 +1172,8 @@ void UsrsctpTransport::OnPacketRead(rtc::PacketTransportInternal* transport,
   // packet will have called connect, and a connection will be established.
   if (sock_) {
     // Pass received packet to SCTP stack. Once processed by usrsctp, the data
-    // will be will be given to the global OnSctpInboundData, and then,
-    // marshalled by the AsyncInvoker.
+    // will be will be given to the global OnSctpInboundPacket callback and
+    // posted to the transport thread.
     VerboseLogPacket(data, len, SCTP_DUMP_INBOUND);
     usrsctp_conninput(reinterpret_cast<void*>(id_), data, len, 0);
   } else {
@@ -1211,7 +1183,11 @@ void UsrsctpTransport::OnPacketRead(rtc::PacketTransportInternal* transport,
 }
 
 void UsrsctpTransport::OnClosed(rtc::PacketTransportInternal* transport) {
-  SignalClosedAbruptly();
+  webrtc::RTCError error =
+      webrtc::RTCError(webrtc::RTCErrorType::OPERATION_ERROR_WITH_DATA,
+                       "Transport channel closed");
+  error.set_error_detail(webrtc::RTCErrorDetailType::SCTP_FAILURE);
+  SignalClosedAbruptly(error);
 }
 
 void UsrsctpTransport::OnSendThresholdCallback() {
@@ -1497,9 +1473,17 @@ void UsrsctpTransport::OnNotificationAssocChange(
       // came up, send any queued resets.
       SendQueuedStreamResets();
       break;
-    case SCTP_COMM_LOST:
+    case SCTP_COMM_LOST: {
       RTC_LOG(LS_INFO) << "Association change SCTP_COMM_LOST";
+      webrtc::RTCError error = webrtc::RTCError(
+          webrtc::RTCErrorType::OPERATION_ERROR_WITH_DATA,
+          SctpErrorCauseCodeToString(
+              static_cast<SctpErrorCauseCode>(change.sac_error)));
+      error.set_error_detail(webrtc::RTCErrorDetailType::SCTP_FAILURE);
+      error.set_sctp_cause_code(change.sac_error);
+      SignalClosedAbruptly(error);
       break;
+    }
     case SCTP_RESTART:
       RTC_LOG(LS_INFO) << "Association change SCTP_RESTART";
       break;

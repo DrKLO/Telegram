@@ -16,7 +16,6 @@
 #include <iterator>
 #include <map>
 #include <numeric>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -78,6 +77,30 @@ absl::optional<std::map<UnwrappedTSN, Data>::iterator> FindEnd(
   }
 }
 }  // namespace
+
+TraditionalReassemblyStreams::TraditionalReassemblyStreams(
+    absl::string_view log_prefix,
+    OnAssembledMessage on_assembled_message,
+    const DcSctpSocketHandoverState* handover_state)
+    : log_prefix_(log_prefix),
+      on_assembled_message_(std::move(on_assembled_message)) {
+  if (handover_state) {
+    for (const DcSctpSocketHandoverState::OrderedStream& state_stream :
+         handover_state->rx.ordered_streams) {
+      ordered_streams_.emplace(
+          std::piecewise_construct,
+          std::forward_as_tuple(StreamID(state_stream.id)),
+          std::forward_as_tuple(this, SSN(state_stream.next_ssn)));
+    }
+    for (const DcSctpSocketHandoverState::UnorderedStream& state_stream :
+         handover_state->rx.unordered_streams) {
+      unordered_streams_.emplace(
+          std::piecewise_construct,
+          std::forward_as_tuple(StreamID(state_stream.id)),
+          std::forward_as_tuple(this));
+    }
+  }
+}
 
 int TraditionalReassemblyStreams::UnorderedStream::Add(UnwrappedTSN tsn,
                                                        Data data) {
@@ -250,7 +273,7 @@ size_t TraditionalReassemblyStreams::HandleForwardTsn(
     UnwrappedTSN new_cumulative_ack_tsn,
     rtc::ArrayView<const AnyForwardTsnChunk::SkippedStream> skipped_streams) {
   size_t bytes_removed = 0;
-  // The `skipped_streams` only over ordered messages - need to
+  // The `skipped_streams` only cover ordered messages - need to
   // iterate all unordered streams manually to remove those chunks.
   for (auto& entry : unordered_streams_) {
     bytes_removed += entry.second.EraseTo(new_cumulative_ack_tsn);
@@ -287,4 +310,39 @@ void TraditionalReassemblyStreams::ResetStreams(
     }
   }
 }
+
+HandoverReadinessStatus TraditionalReassemblyStreams::GetHandoverReadiness()
+    const {
+  HandoverReadinessStatus status;
+  for (const auto& entry : ordered_streams_) {
+    if (entry.second.has_unassembled_chunks()) {
+      status.Add(HandoverUnreadinessReason::kOrderedStreamHasUnassembledChunks);
+      break;
+    }
+  }
+  for (const auto& entry : unordered_streams_) {
+    if (entry.second.has_unassembled_chunks()) {
+      status.Add(
+          HandoverUnreadinessReason::kUnorderedStreamHasUnassembledChunks);
+      break;
+    }
+  }
+  return status;
+}
+
+void TraditionalReassemblyStreams::AddHandoverState(
+    DcSctpSocketHandoverState& state) {
+  for (const auto& entry : ordered_streams_) {
+    DcSctpSocketHandoverState::OrderedStream state_stream;
+    state_stream.id = entry.first.value();
+    state_stream.next_ssn = entry.second.next_ssn().value();
+    state.rx.ordered_streams.push_back(std::move(state_stream));
+  }
+  for (const auto& entry : unordered_streams_) {
+    DcSctpSocketHandoverState::UnorderedStream state_stream;
+    state_stream.id = entry.first.value();
+    state.rx.unordered_streams.push_back(std::move(state_stream));
+  }
+}
+
 }  // namespace dcsctp

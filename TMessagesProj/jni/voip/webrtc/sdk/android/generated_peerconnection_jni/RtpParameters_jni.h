@@ -885,7 +885,4 @@ static base::android::ScopedJavaLocalRef<jobject> Java_RtpParameters_getCodecs(J
 }  // namespace jni
 }  // namespace  webrtc
 
-// Step 4: Generated test functions (optional).
-
-
 #endif  // org_webrtc_RtpParameters_JNI

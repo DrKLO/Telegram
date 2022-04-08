@@ -94,8 +94,25 @@ ScopedJavaLocalRef<jobject> MemberToJava(
     case RTCStatsMemberInterface::kSequenceString:
       return NativeToJavaStringArray(
           env, *member.cast_to<RTCStatsMember<std::vector<std::string>>>());
+
+    case RTCStatsMemberInterface::kMapStringUint64:
+      return NativeToJavaMap(
+          env,
+          *member.cast_to<RTCStatsMember<std::map<std::string, uint64_t>>>(),
+          [](JNIEnv* env, const auto& entry) {
+            return std::make_pair(NativeToJavaString(env, entry.first),
+                                  NativeToJavaBigInteger(env, entry.second));
+          });
+
+    case RTCStatsMemberInterface::kMapStringDouble:
+      return NativeToJavaMap(
+          env, *member.cast_to<RTCStatsMember<std::map<std::string, double>>>(),
+          [](JNIEnv* env, const auto& entry) {
+            return std::make_pair(NativeToJavaString(env, entry.first),
+                                  NativeToJavaDouble(env, entry.second));
+          });
   }
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return nullptr;
 }
 

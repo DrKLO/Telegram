@@ -75,7 +75,7 @@ static void AllpassFilterForDec32(int16_t         *InOut16, //Q0
       a = WEBRTC_SPL_MUL_16_32_RSFT16(InOut16[n], APSectionFactors[j]); //Q0*Q31=Q31 shifted 16 gives Q15
       a <<= 1;  // Q15 -> Q16
       b = WebRtcSpl_AddSatW32(a, FilterState[j]);  //Q16+Q16=Q16
-      // |a| in Q15 (Q0*Q31=Q31 shifted 16 gives Q15).
+      // `a` in Q15 (Q0*Q31=Q31 shifted 16 gives Q15).
       a = WEBRTC_SPL_MUL_16_32_RSFT16(b >> 16, -APSectionFactors[j]);
       // FilterState[j]: Q15<<1 + Q0<<16 = Q16 + Q16 = Q16
       FilterState[j] = WebRtcSpl_AddSatW32(a << 1, (uint32_t)InOut16[n] << 16);

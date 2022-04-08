@@ -45,7 +45,7 @@ int Normal::Process(const int16_t* input,
   const int fs_mult = fs_hz_ / 8000;
   RTC_DCHECK_GT(fs_mult, 0);
   // fs_shift = log2(fs_mult), rounded down.
-  // Note that |fs_shift| is not "exact" for 48 kHz.
+  // Note that `fs_shift` is not "exact" for 48 kHz.
   // TODO(hlundin): Investigate this further.
   const int fs_shift = 30 - WebRtcSpl_NormW32(fs_mult);
 
@@ -83,7 +83,7 @@ int Normal::Process(const int16_t* input,
       size_t energy_length =
           std::min(static_cast<size_t>(fs_mult * 64), length_per_channel);
       int scaling = 6 + fs_shift - WebRtcSpl_NormW32(decoded_max * decoded_max);
-      scaling = std::max(scaling, 0);  // |scaling| should always be >= 0.
+      scaling = std::max(scaling, 0);  // `scaling` should always be >= 0.
       int32_t energy = WebRtcSpl_DotProductWithScale(signal.get(), signal.get(),
                                                      energy_length, scaling);
       int32_t scaled_energy_length =

@@ -14,6 +14,7 @@
 #include <memory>
 
 #include "api/rtc_event_log/rtc_event.h"
+#include "api/units/timestamp.h"
 
 namespace webrtc {
 
@@ -45,17 +46,17 @@ class RtcEventGenericPacketReceived final : public RtcEvent {
 
 struct LoggedGenericPacketReceived {
   LoggedGenericPacketReceived() = default;
-  LoggedGenericPacketReceived(int64_t timestamp_us,
+  LoggedGenericPacketReceived(Timestamp timestamp,
                               int64_t packet_number,
                               int packet_length)
-      : timestamp_us(timestamp_us),
+      : timestamp(timestamp),
         packet_number(packet_number),
         packet_length(packet_length) {}
 
-  int64_t log_time_us() const { return timestamp_us; }
-  int64_t log_time_ms() const { return timestamp_us / 1000; }
+  int64_t log_time_us() const { return timestamp.us(); }
+  int64_t log_time_ms() const { return timestamp.ms(); }
 
-  int64_t timestamp_us;
+  Timestamp timestamp = Timestamp::MinusInfinity();
   int64_t packet_number;
   int packet_length;
 };

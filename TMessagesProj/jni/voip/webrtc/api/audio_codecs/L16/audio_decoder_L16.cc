@@ -24,9 +24,10 @@ absl::optional<AudioDecoderL16::Config> AudioDecoderL16::SdpToConfig(
   Config config;
   config.sample_rate_hz = format.clockrate_hz;
   config.num_channels = rtc::checked_cast<int>(format.num_channels);
-  return absl::EqualsIgnoreCase(format.name, "L16") && config.IsOk()
-             ? absl::optional<Config>(config)
-             : absl::nullopt;
+  if (absl::EqualsIgnoreCase(format.name, "L16") && config.IsOk()) {
+    return config;
+  }
+  return absl::nullopt;
 }
 
 void AudioDecoderL16::AppendSupportedDecoders(
@@ -37,9 +38,11 @@ void AudioDecoderL16::AppendSupportedDecoders(
 std::unique_ptr<AudioDecoder> AudioDecoderL16::MakeAudioDecoder(
     const Config& config,
     absl::optional<AudioCodecPairId> /*codec_pair_id*/) {
-  return config.IsOk() ? std::make_unique<AudioDecoderPcm16B>(
-                             config.sample_rate_hz, config.num_channels)
-                       : nullptr;
+  if (!config.IsOk()) {
+    return nullptr;
+  }
+  return std::make_unique<AudioDecoderPcm16B>(config.sample_rate_hz,
+                                              config.num_channels);
 }
 
 }  // namespace webrtc

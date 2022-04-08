@@ -23,7 +23,7 @@ public:
 
     void stop();
     
-    void setConnectionMode(GroupConnectionMode connectionMode, bool keepBroadcastIfWasEnabled);
+    void setConnectionMode(GroupConnectionMode connectionMode, bool keepBroadcastIfWasEnabled, bool isUnifiedBroadcast);
 
     void emitJoinPayload(std::function<void(GroupJoinPayload const &)> completion);
     void setJoinResponsePayload(std::string const &payload);
@@ -38,6 +38,7 @@ public:
     void setAudioInputDevice(std::string id);
     void addExternalAudioSamples(std::vector<uint8_t> &&samples);
     
+    void addOutgoingVideoOutput(std::weak_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink);
     void addIncomingVideoOutput(std::string const &endpointId, std::weak_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink);
     
     void setVolume(uint32_t ssrc, double volume);

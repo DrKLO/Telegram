@@ -2,6 +2,7 @@ package org.telegram.ui.Components.voip;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
+import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.annotation.TargetApi;
 import android.content.Context;
@@ -590,6 +591,34 @@ public class VoIPTextureView extends FrameLayout {
 
     public void setThumb(Bitmap thumb) {
         this.thumb = thumb;
+    }
+
+    public void detachBackgroundRenderer() {
+        if (blurRenderer == null) return;
+        ObjectAnimator animator = ObjectAnimator.ofFloat(blurRenderer, View.ALPHA, 0f).setDuration(150);
+        animator.addListener(new AnimatorListenerAdapter() {
+            private boolean isCanceled;
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+                isCanceled = true;
+            }
+
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                if (!isCanceled) {
+                    renderer.setBackgroundRenderer(null);
+                }
+            }
+        });
+        animator.start();
+    }
+
+    public void reattachBackgroundRenderer() {
+        if (blurRenderer != null) {
+            renderer.setBackgroundRenderer(blurRenderer);
+            ObjectAnimator.ofFloat(blurRenderer, View.ALPHA, 1f).setDuration(150).start();
+        }
     }
 
     public void attachBackgroundRenderer() {

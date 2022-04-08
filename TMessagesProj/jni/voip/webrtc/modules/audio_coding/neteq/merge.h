@@ -37,10 +37,10 @@ class Merge {
   virtual ~Merge();
 
   // The main method to produce the audio data. The decoded data is supplied in
-  // |input|, having |input_length| samples in total for all channels
-  // (interleaved). The result is written to |output|. The number of channels
-  // allocated in |output| defines the number of channels that will be used when
-  // de-interleaving |input|.
+  // `input`, having `input_length` samples in total for all channels
+  // (interleaved). The result is written to `output`. The number of channels
+  // allocated in `output` defines the number of channels that will be used when
+  // de-interleaving `input`.
   virtual size_t Process(int16_t* input,
                          size_t input_length,
                          AudioMultiVector* output);
@@ -57,29 +57,29 @@ class Merge {
   static const size_t kInputDownsampLength = 40;
   static const size_t kMaxCorrelationLength = 60;
 
-  // Calls |expand_| to get more expansion data to merge with. The data is
-  // written to |expanded_signal_|. Returns the length of the expanded data,
-  // while |expand_period| will be the number of samples in one expansion period
-  // (typically one pitch period). The value of |old_length| will be the number
-  // of samples that were taken from the |sync_buffer_|.
+  // Calls `expand_` to get more expansion data to merge with. The data is
+  // written to `expanded_signal_`. Returns the length of the expanded data,
+  // while `expand_period` will be the number of samples in one expansion period
+  // (typically one pitch period). The value of `old_length` will be the number
+  // of samples that were taken from the `sync_buffer_`.
   size_t GetExpandedSignal(size_t* old_length, size_t* expand_period);
 
-  // Analyzes |input| and |expanded_signal| and returns muting factor (Q14) to
+  // Analyzes `input` and `expanded_signal` and returns muting factor (Q14) to
   // be used on the new data.
   int16_t SignalScaling(const int16_t* input,
                         size_t input_length,
                         const int16_t* expanded_signal) const;
 
-  // Downsamples |input| (|input_length| samples) and |expanded_signal| to
+  // Downsamples `input` (`input_length` samples) and `expanded_signal` to
   // 4 kHz sample rate. The downsampled signals are written to
-  // |input_downsampled_| and |expanded_downsampled_|, respectively.
+  // `input_downsampled_` and `expanded_downsampled_`, respectively.
   void Downsample(const int16_t* input,
                   size_t input_length,
                   const int16_t* expanded_signal,
                   size_t expanded_length);
 
-  // Calculates cross-correlation between |input_downsampled_| and
-  // |expanded_downsampled_|, and finds the correlation maximum. The maximizing
+  // Calculates cross-correlation between `input_downsampled_` and
+  // `expanded_downsampled_`, and finds the correlation maximum. The maximizing
   // lag is returned.
   size_t CorrelateAndPeakSearch(size_t start_position,
                                 size_t input_length,

@@ -17,6 +17,7 @@
 #include "absl/types/optional.h"
 #include "api/video_codecs/sdp_video_format.h"
 #include "media/base/media_constants.h"
+#include "rtc_base/trace_event.h"
 
 #if defined(WEBRTC_USE_H264)
 #include "modules/video_coding/codecs/h264/h264_decoder_impl.h"
@@ -43,6 +44,8 @@ bool IsH264CodecSupported() {
 #endif
 }
 
+constexpr absl::string_view kSupportedScalabilityModes[] = {"L1T2", "L1T3"};
+
 }  // namespace
 
 SdpVideoFormat CreateH264Format(H264Profile profile,
@@ -65,6 +68,7 @@ void DisableRtcUseH264() {
 }
 
 std::vector<SdpVideoFormat> SupportedH264Codecs() {
+  TRACE_EVENT0("webrtc", __func__);
   if (!IsH264CodecSupported())
     return std::vector<SdpVideoFormat>();
   // We only support encoding Constrained Baseline Profile (CBP), but the
@@ -83,6 +87,10 @@ std::vector<SdpVideoFormat> SupportedH264Codecs() {
           CreateH264Format(H264Profile::kProfileConstrainedBaseline,
                            H264Level::kLevel3_1, "1"),
           CreateH264Format(H264Profile::kProfileConstrainedBaseline,
+                           H264Level::kLevel3_1, "0"),
+          CreateH264Format(H264Profile::kProfileMain,
+                           H264Level::kLevel3_1, "1"),
+          CreateH264Format(H264Profile::kProfileMain,
                            H264Level::kLevel3_1, "0")};
 }
 
@@ -94,13 +102,22 @@ std::unique_ptr<H264Encoder> H264Encoder::Create(
   RTC_LOG(LS_INFO) << "Creating H264EncoderImpl.";
   return std::make_unique<H264EncoderImpl>(codec);
 #else
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return nullptr;
 #endif
 }
 
 bool H264Encoder::IsSupported() {
   return IsH264CodecSupported();
+}
+
+bool H264Encoder::SupportsScalabilityMode(absl::string_view scalability_mode) {
+  for (const auto& entry : kSupportedScalabilityModes) {
+    if (entry == scalability_mode) {
+      return true;
+    }
+  }
+  return false;
 }
 
 std::unique_ptr<H264Decoder> H264Decoder::Create() {
@@ -110,7 +127,7 @@ std::unique_ptr<H264Decoder> H264Decoder::Create() {
   RTC_LOG(LS_INFO) << "Creating H264DecoderImpl.";
   return std::make_unique<H264DecoderImpl>();
 #else
-  RTC_NOTREACHED();
+  RTC_DCHECK_NOTREACHED();
   return nullptr;
 #endif
 }

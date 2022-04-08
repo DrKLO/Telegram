@@ -41,9 +41,10 @@
 #include <utility>
 
 #include "absl/algorithm/container.h"
+#include "absl/base/macros.h"
 #include "absl/container/internal/container_memory.h"
 #include "absl/container/internal/hash_function_defaults.h"  // IWYU pragma: export
-#include "absl/container/internal/node_hash_policy.h"
+#include "absl/container/internal/node_slot_policy.h"
 #include "absl/container/internal/raw_hash_map.h"  // IWYU pragma: export
 #include "absl/memory/memory.h"
 
@@ -225,7 +226,8 @@ class node_hash_map
   //
   // size_type erase(const key_type& key):
   //
-  //   Erases the element with the matching key, if it exists.
+  //   Erases the element with the matching key, if it exists, returning the
+  //   number of elements erased (0 or 1).
   using Base::erase;
 
   // node_hash_map::insert()
@@ -374,6 +376,11 @@ class node_hash_map
   //   key value and returns a node handle owning that extracted data. If the
   //   `node_hash_map` does not contain an element with a matching key, this
   //   function returns an empty node handle.
+  //
+  // NOTE: when compiled in an earlier version of C++ than C++17,
+  // `node_type::key()` returns a const reference to the key instead of a
+  // mutable reference. We cannot safely return a mutable reference without
+  // std::launder (which is not available before C++17).
   using Base::extract;
 
   // node_hash_map::merge()
@@ -514,28 +521,24 @@ class node_hash_map
   //
   // Returns the function used for comparing keys equality.
   using Base::key_eq;
-
-  ABSL_DEPRECATED("Call `hash_function()` instead.")
-  typename Base::hasher hash_funct() { return this->hash_function(); }
-
-  ABSL_DEPRECATED("Call `rehash()` instead.")
-  void resize(typename Base::size_type hint) { this->rehash(hint); }
 };
 
 // erase_if(node_hash_map<>, Pred)
 //
 // Erases all elements that satisfy the predicate `pred` from the container `c`.
+// Returns the number of erased elements.
 template <typename K, typename V, typename H, typename E, typename A,
           typename Predicate>
-void erase_if(node_hash_map<K, V, H, E, A>& c, Predicate pred) {
-  container_internal::EraseIf(pred, &c);
+typename node_hash_map<K, V, H, E, A>::size_type erase_if(
+    node_hash_map<K, V, H, E, A>& c, Predicate pred) {
+  return container_internal::EraseIf(pred, &c);
 }
 
 namespace container_internal {
 
 template <class Key, class Value>
 class NodeHashMapPolicy
-    : public absl::container_internal::node_hash_policy<
+    : public absl::container_internal::node_slot_policy<
           std::pair<const Key, Value>&, NodeHashMapPolicy<Key, Value>> {
   using value_type = std::pair<const Key, Value>;
 

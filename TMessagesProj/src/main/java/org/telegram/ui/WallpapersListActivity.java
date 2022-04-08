@@ -497,7 +497,7 @@ public class WallpapersListActivity extends BaseFragment implements Notification
                     builder.setMessage(LocaleController.formatString("DeleteChatBackgroundsAlert", R.string.DeleteChatBackgroundsAlert));
                     builder.setPositiveButton(LocaleController.getString("Delete", R.string.Delete), (dialogInterface, i) -> {
                         progressDialog = new AlertDialog(getParentActivity(), 3);
-                        progressDialog.setCanCacnel(false);
+                        progressDialog.setCanCancel(false);
                         progressDialog.show();
 
                         ArrayList<Integer> ids = new ArrayList<>();
@@ -754,7 +754,7 @@ public class WallpapersListActivity extends BaseFragment implements Notification
                         updateRowsSelection();
                     }
                     progressDialog = new AlertDialog(getParentActivity(), 3);
-                    progressDialog.setCanCacnel(false);
+                    progressDialog.setCanCancel(false);
                     progressDialog.show();
                     TLRPC.TL_account_resetWallPapers req = new TLRPC.TL_account_resetWallPapers();
                     ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> loadWallpapers(false)));

@@ -11,7 +11,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.Cells.ChatMessageCell;
 
 import java.util.ArrayList;
@@ -241,7 +240,7 @@ public class RecyclerAnimationScrollHelper {
                         recyclerView.setScrollEnabled(true);
                         recyclerView.setVerticalScrollBarEnabled(true);
 
-                        if (BuildVars.DEBUG_VERSION) {
+                        if (BuildVars.DEBUG_PRIVATE_VERSION) {
                             if (recyclerView.mChildHelper.getChildCount() != recyclerView.getChildCount()) {
                                 throw new RuntimeException("views count in child helper must be quals views count in recycler view");
                             }

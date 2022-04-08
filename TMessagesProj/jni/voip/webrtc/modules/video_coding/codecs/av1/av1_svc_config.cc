@@ -24,17 +24,19 @@ namespace webrtc {
 bool SetAv1SvcConfig(VideoCodec& video_codec) {
   RTC_DCHECK_EQ(video_codec.codecType, kVideoCodecAV1);
 
-  if (video_codec.ScalabilityMode().empty()) {
-    RTC_LOG(LS_INFO) << "No scalability mode set.";
-    return false;
+  absl::string_view scalability_mode = video_codec.ScalabilityMode();
+  if (scalability_mode.empty()) {
+    RTC_LOG(LS_WARNING) << "Scalability mode is not set, using 'NONE'.";
+    scalability_mode = "NONE";
   }
+
   std::unique_ptr<ScalableVideoController> structure =
-      CreateScalabilityStructure(video_codec.ScalabilityMode());
+      CreateScalabilityStructure(scalability_mode);
   if (structure == nullptr) {
-    RTC_LOG(LS_INFO) << "Failed to create structure "
-                     << video_codec.ScalabilityMode();
+    RTC_LOG(LS_WARNING) << "Failed to create structure " << scalability_mode;
     return false;
   }
+
   ScalableVideoController::StreamLayersConfig info = structure->StreamConfig();
   for (int sl_idx = 0; sl_idx < info.num_spatial_layers; ++sl_idx) {
     SpatialLayer& spatial_layer = video_codec.spatialLayers[sl_idx];

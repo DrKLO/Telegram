@@ -32,8 +32,7 @@ class VideoDecoderWrapper : public VideoDecoder {
   VideoDecoderWrapper(JNIEnv* jni, const JavaRef<jobject>& decoder);
   ~VideoDecoderWrapper() override;
 
-  int32_t InitDecode(const VideoCodec* codec_settings,
-                     int32_t number_of_cores) override;
+  bool Configure(const Settings& settings) override;
 
   int32_t Decode(const EncodedImage& input_image,
                  bool missing_frames,
@@ -68,7 +67,7 @@ class VideoDecoderWrapper : public VideoDecoder {
     ~FrameExtraInfo();
   };
 
-  int32_t InitDecodeInternal(JNIEnv* jni) RTC_RUN_ON(decoder_thread_checker_);
+  bool ConfigureInternal(JNIEnv* jni) RTC_RUN_ON(decoder_thread_checker_);
 
   // Takes Java VideoCodecStatus, handles it and returns WEBRTC_VIDEO_CODEC_*
   // status code.
@@ -88,9 +87,9 @@ class VideoDecoderWrapper : public VideoDecoder {
   // own this thread so a thread checker cannot be used.
   rtc::RaceChecker callback_race_checker_;
 
-  // Initialized on InitDecode and immutable after that.
-  VideoCodec codec_settings_ RTC_GUARDED_BY(decoder_thread_checker_);
-  int32_t number_of_cores_ RTC_GUARDED_BY(decoder_thread_checker_);
+  // Initialized on Configure and immutable after that.
+  VideoDecoder::Settings decoder_settings_
+      RTC_GUARDED_BY(decoder_thread_checker_);
 
   bool initialized_ RTC_GUARDED_BY(decoder_thread_checker_);
   H264BitstreamParser h264_bitstream_parser_

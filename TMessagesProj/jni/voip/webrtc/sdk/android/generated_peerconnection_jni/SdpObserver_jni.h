@@ -121,7 +121,4 @@ static void Java_SdpObserver_onSetFailure(JNIEnv* env, const base::android::Java
 }  // namespace jni
 }  // namespace  webrtc
 
-// Step 4: Generated test functions (optional).
-
-
 #endif  // org_webrtc_SdpObserver_JNI

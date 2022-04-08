@@ -30,7 +30,7 @@
 #include "rtc_base/checks.h"
 #include "sdk/android/native_api/jni/scoped_java_ref.h"
 
-// Abort the process if |jni| has a Java exception pending.
+// Abort the process if `jni` has a Java exception pending.
 // This macros uses the comma operator to execute ExceptionDescribe
 // and ExceptionClear ignoring their return values and sending ""
 // to the error stream.
@@ -57,6 +57,9 @@ class Iterable {
 
   ~Iterable();
 
+  Iterable(const Iterable&) = delete;
+  Iterable& operator=(const Iterable&) = delete;
+
   class Iterator {
    public:
     // Creates an iterator representing the end of any collection.
@@ -70,6 +73,9 @@ class Iterable {
     Iterator(Iterator&& other);
 
     ~Iterator();
+
+    Iterator(const Iterator&) = delete;
+    Iterator& operator=(const Iterator&) = delete;
 
     // Move assignment should not be used.
     Iterator& operator=(Iterator&&) = delete;
@@ -96,8 +102,6 @@ class Iterable {
     ScopedJavaLocalRef<jobject> iterator_;
     ScopedJavaLocalRef<jobject> value_;
     SequenceChecker thread_checker_;
-
-    RTC_DISALLOW_COPY_AND_ASSIGN(Iterator);
   };
 
   Iterable::Iterator begin() { return Iterable::Iterator(jni_, iterable_); }
@@ -106,11 +110,9 @@ class Iterable {
  private:
   JNIEnv* jni_;
   ScopedJavaLocalRef<jobject> iterable_;
-
-  RTC_DISALLOW_COPY_AND_ASSIGN(Iterable);
 };
 
-// Returns true if |obj| == null in Java.
+// Returns true if `obj` == null in Java.
 bool IsNull(JNIEnv* jni, const JavaRef<jobject>& obj);
 
 // Returns the name of a Java enum.
@@ -319,7 +321,7 @@ ScopedJavaLocalRef<jobject> NativeToJavaStringMap(JNIEnv* env,
   return builder.GetJavaMap();
 }
 
-// Return a |jlong| that will correctly convert back to |ptr|.  This is needed
+// Return a `jlong` that will correctly convert back to `ptr`.  This is needed
 // because the alternative (of silently passing a 32-bit pointer to a vararg
 // function expecting a 64-bit param) picks up garbage in the high 32 bits.
 jlong NativeToJavaPointer(void* ptr);

@@ -16,21 +16,32 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.os.Build;
 import android.os.Bundle;
+import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.style.ClickableSpan;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.DefaultItemAnimator;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.ConnectionsManager;
@@ -48,6 +59,7 @@ import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.BackgroundGradientDrawable;
+import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.HintView;
 import org.telegram.ui.Components.LayoutHelper;
@@ -56,10 +68,7 @@ import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
 import java.util.Collections;
-
-import androidx.recyclerview.widget.DefaultItemAnimator;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
+import java.util.Locale;
 
 public class PrivacyControlActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -538,7 +547,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
         AlertDialog progressDialog = null;
         if (getParentActivity() != null) {
             progressDialog = new AlertDialog(getParentActivity(), 3);
-            progressDialog.setCanCacnel(false);
+            progressDialog.setCanCancel(false);
             progressDialog.show();
         }
         final AlertDialog progressDialogFinal = progressDialog;
@@ -1002,7 +1011,28 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                             if (prevSubtypeContacts = (currentType == TYPE_NOBODY && currentSubType == 1)) {
                                 privacyCell.setText(LocaleController.getString("PrivacyPhoneInfo3", R.string.PrivacyPhoneInfo3));
                             } else {
-                                privacyCell.setText(LocaleController.getString("PrivacyPhoneInfo", R.string.PrivacyPhoneInfo));
+                                SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
+                                String phoneLinkStr = String.format(Locale.ENGLISH, "https://t.me/+%s", getUserConfig().getClientPhone());
+                                SpannableString phoneLink = new SpannableString(phoneLinkStr);
+                                phoneLink.setSpan(new ClickableSpan() {
+                                    @Override
+                                    public void onClick(@NonNull View view) {
+                                        android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
+                                        android.content.ClipData clip = android.content.ClipData.newPlainText("label", phoneLinkStr);
+                                        clipboard.setPrimaryClip(clip);
+                                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+                                            BulletinFactory.of(PrivacyControlActivity.this).createCopyBulletin(LocaleController.getString("PhoneCopied", R.string.PhoneCopied)).show();
+                                        }
+                                    }
+                                }, 0, phoneLinkStr.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+                                spannableStringBuilder.append(LocaleController.getString("PrivacyPhoneInfo", R.string.PrivacyPhoneInfo))
+                                        .append("\n\n")
+                                        .append(LocaleController.getString("PrivacyPhoneInfo4", R.string.PrivacyPhoneInfo4))
+                                        .append("\n")
+                                        .append(phoneLink);
+
+                                privacyCell.setText(spannableStringBuilder);
                             }
                         } else if (rulesType == PRIVACY_RULES_TYPE_FORWARDS) {
                             privacyCell.setText(LocaleController.getString("PrivacyForwardsInfo", R.string.PrivacyForwardsInfo));

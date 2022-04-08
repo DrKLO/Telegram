@@ -34,17 +34,19 @@ void RtpTransceiverInterface::Stop() {
 }
 
 RTCError RtpTransceiverInterface::StopStandard() {
-  RTC_NOTREACHED() << "DEBUG: RtpTransceiverInterface::StopStandard called";
+  RTC_DCHECK_NOTREACHED()
+      << "DEBUG: RtpTransceiverInterface::StopStandard called";
   return RTCError::OK();
 }
 
 void RtpTransceiverInterface::StopInternal() {
-  RTC_NOTREACHED() << "DEBUG: RtpTransceiverInterface::StopInternal called";
+  RTC_DCHECK_NOTREACHED()
+      << "DEBUG: RtpTransceiverInterface::StopInternal called";
 }
 
 RTCError RtpTransceiverInterface::SetCodecPreferences(
     rtc::ArrayView<RtpCodecCapability>) {
-  RTC_NOTREACHED() << "Not implemented";
+  RTC_DCHECK_NOTREACHED() << "Not implemented";
   return {};
 }
 
@@ -78,7 +80,7 @@ void RtpTransceiverInterface::SetDirection(
 
 RTCError RtpTransceiverInterface::SetDirectionWithError(
     RtpTransceiverDirection new_direction) {
-  RTC_NOTREACHED() << "Default implementation called";
+  RTC_DCHECK_NOTREACHED() << "Default implementation called";
   return RTCError::OK();
 }
 

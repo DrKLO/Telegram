@@ -148,9 +148,9 @@ class RTC_EXPORT P2PTransportChannel : public IceTransportInternal {
   void RemoveRemoteCandidate(const Candidate& candidate) override;
   void RemoveAllRemoteCandidates() override;
   // Sets the parameters in IceConfig. We do not set them blindly. Instead, we
-  // only update the parameter if it is considered set in |config|. For example,
+  // only update the parameter if it is considered set in `config`. For example,
   // a negative value of receiving_timeout will be considered "not set" and we
-  // will not use it to update the respective parameter in |config_|.
+  // will not use it to update the respective parameter in `config_`.
   // TODO(deadbeef): Use absl::optional instead of negative values.
   void SetIceConfig(const IceConfig& config) override;
   const IceConfig& config() const;
@@ -182,7 +182,7 @@ class RTC_EXPORT P2PTransportChannel : public IceTransportInternal {
   }
 
   // Note: These are only for testing purpose.
-  // |ports_| and |pruned_ports| should not be changed from outside.
+  // `ports_` and `pruned_ports` should not be changed from outside.
   const std::vector<PortInterface*>& ports() {
     RTC_DCHECK_RUN_ON(network_thread_);
     return ports_;
@@ -254,7 +254,7 @@ class RTC_EXPORT P2PTransportChannel : public IceTransportInternal {
     return allocator_session()->IsGettingPorts();
   }
 
-  // Returns true if it's possible to send packets on |connection|.
+  // Returns true if it's possible to send packets on `connection`.
   bool ReadyToSend(Connection* connection) const;
   bool PresumedWritable(const Connection* conn) const;
   void UpdateConnectionStates();
@@ -311,11 +311,11 @@ class RTC_EXPORT P2PTransportChannel : public IceTransportInternal {
                         bool port_muxed);
   void OnCandidateFilterChanged(uint32_t prev_filter, uint32_t cur_filter);
 
-  // When a port is destroyed, remove it from both lists |ports_|
-  // and |pruned_ports_|.
+  // When a port is destroyed, remove it from both lists `ports_`
+  // and `pruned_ports_`.
   void OnPortDestroyed(PortInterface* port);
-  // When pruning a port, move it from |ports_| to |pruned_ports_|.
-  // Returns true if the port is found and removed from |ports_|.
+  // When pruning a port, move it from `ports_` to `pruned_ports_`.
+  // Returns true if the port is found and removed from `ports_`.
   bool PrunePort(PortInterface* port);
   void OnRoleConflict(PortInterface* port);
 
@@ -353,7 +353,7 @@ class RTC_EXPORT P2PTransportChannel : public IceTransportInternal {
     return remote_ice_parameters_.empty() ? nullptr
                                           : &remote_ice_parameters_.back();
   }
-  // Returns the remote IceParameters and generation that match |ufrag|
+  // Returns the remote IceParameters and generation that match `ufrag`
   // if found, and returns nullptr otherwise.
   const IceParameters* FindRemoteIceFromUfrag(const std::string& ufrag,
                                               uint32_t* generation);
@@ -378,7 +378,7 @@ class RTC_EXPORT P2PTransportChannel : public IceTransportInternal {
   void SetReceiving(bool receiving);
   // Clears the address and the related address fields of a local candidate to
   // avoid IP leakage. This is applicable in several scenarios as commented in
-  // |PortAllocator::SanitizeCandidate|.
+  // `PortAllocator::SanitizeCandidate`.
   Candidate SanitizeLocalCandidate(const Candidate& c) const;
   // Clears the address field of a remote candidate to avoid IP leakage. This is
   // applicable in the following scenarios:
@@ -412,10 +412,10 @@ class RTC_EXPORT P2PTransportChannel : public IceTransportInternal {
   int error_ RTC_GUARDED_BY(network_thread_);
   std::vector<std::unique_ptr<PortAllocatorSession>> allocator_sessions_
       RTC_GUARDED_BY(network_thread_);
-  // |ports_| contains ports that are used to form new connections when
+  // `ports_` contains ports that are used to form new connections when
   // new remote candidates are added.
   std::vector<PortInterface*> ports_ RTC_GUARDED_BY(network_thread_);
-  // |pruned_ports_| contains ports that have been removed from |ports_| and
+  // `pruned_ports_` contains ports that have been removed from `ports_` and
   // are not being used to form new connections, but that aren't yet destroyed.
   // They may have existing connections, and they still fire signals such as
   // SignalUnknownAddress.

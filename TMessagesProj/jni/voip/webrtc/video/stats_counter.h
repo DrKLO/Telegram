@@ -22,7 +22,7 @@ class AggregatedCounter;
 class Clock;
 class Samples;
 
-// |StatsCounterObserver| is called periodically when a metric is updated.
+// `StatsCounterObserver` is called periodically when a metric is updated.
 class StatsCounterObserver {
  public:
   virtual void OnMetricUpdated(int sample) = 0;
@@ -43,13 +43,13 @@ struct AggregatedStats {
 
 // Classes which periodically computes a metric.
 //
-// During a period, |kProcessIntervalMs|, different metrics can be computed e.g:
-// - |AvgCounter|: average of samples
-// - |PercentCounter|: percentage of samples
-// - |PermilleCounter|: permille of samples
+// During a period, `kProcessIntervalMs`, different metrics can be computed e.g:
+// - `AvgCounter`: average of samples
+// - `PercentCounter`: percentage of samples
+// - `PermilleCounter`: permille of samples
 //
 // Each periodic metric can be either:
-// - reported to an |observer| each period
+// - reported to an `observer` each period
 // - aggregated during the call (e.g. min, max, average)
 //
 //                 periodically computed
@@ -76,7 +76,7 @@ struct AggregatedStats {
 // stats: {min:4, max:15, avg:8}
 //
 
-// Note: StatsCounter takes ownership of |observer|.
+// Note: StatsCounter takes ownership of `observer`.
 
 class StatsCounter {
  public:
@@ -145,7 +145,7 @@ class StatsCounter {
 //           | Add(5) Add(1) Add(6) | Add(5)      Add(5)  |
 // GetMetric | (5 + 1 + 6) / 3      | (5 + 5) / 2         |
 //
-// |include_empty_intervals|: If set, intervals without samples will be included
+// `include_empty_intervals`: If set, intervals without samples will be included
 //                            in the stats. The value for an interval is
 //                            determined by GetValueForEmptyInterval().
 //
@@ -236,7 +236,7 @@ class PermilleCounter : public StatsCounter {
 //           |<------ 2 sec ------->|                     |
 // GetMetric | (5 + 1 + 6) / 2      | (5 + 5) / 2         |
 //
-// |include_empty_intervals|: If set, intervals without samples will be included
+// `include_empty_intervals`: If set, intervals without samples will be included
 //                            in the stats. The value for an interval is
 //                            determined by GetValueForEmptyInterval().
 //
@@ -263,7 +263,7 @@ class RateCounter : public StatsCounter {
 //           |<------ 2 sec ------->|                     |
 // GetMetric | (8 - 0) / 2          | (13 - 8) / 2        |
 //
-// |include_empty_intervals|: If set, intervals without samples will be included
+// `include_empty_intervals`: If set, intervals without samples will be included
 //                            in the stats. The value for an interval is
 //                            determined by GetValueForEmptyInterval().
 //

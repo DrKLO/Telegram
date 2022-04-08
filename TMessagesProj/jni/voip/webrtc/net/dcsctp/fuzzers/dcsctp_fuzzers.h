@@ -77,7 +77,6 @@ class FuzzerCallbacks : public DcSctpSocketCallbacks {
       rtc::ArrayView<const StreamID> outgoing_streams) override {}
   void OnIncomingStreamsReset(
       rtc::ArrayView<const StreamID> incoming_streams) override {}
-  void NotifyOutgoingMessageBufferEmpty() override {}
 
   std::vector<uint8_t> ConsumeSentPacket() {
     if (sent_packets_.empty()) {

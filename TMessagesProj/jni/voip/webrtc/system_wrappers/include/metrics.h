@@ -163,7 +163,7 @@ void NoOp(const Ts&...) {}
   RTC_HISTOGRAM_ENUMERATION_SPARSE(name, sample, 2)
 
 // Histogram for enumerators (evenly spaced buckets).
-// |boundary| should be above the max enumerator sample.
+// `boundary` should be above the max enumerator sample.
 //
 // TODO(qingsi): Refactor the default implementation given by RtcHistogram,
 // which is already sparse, and remove the boundary argument from the macro.
@@ -181,7 +181,7 @@ void NoOp(const Ts&...) {}
   RTC_HISTOGRAM_ENUMERATION(name, sample, 2)
 
 // Histogram for enumerators (evenly spaced buckets).
-// |boundary| should be above the max enumerator sample.
+// `boundary` should be above the max enumerator sample.
 #define RTC_HISTOGRAM_ENUMERATION(name, sample, boundary) \
   RTC_HISTOGRAM_COMMON_BLOCK_SLOW(                        \
       name, sample,                                       \
@@ -223,7 +223,7 @@ void NoOp(const Ts&...) {}
 // Helper macros.
 // Macros for calling a histogram with varying name (e.g. when using a metric
 // in different modes such as real-time vs screenshare). Fast, because pointer
-// is cached. |index| should be different for different names. Allowed |index|
+// is cached. `index` should be different for different names. Allowed `index`
 // values are 0, 1, and 2.
 #define RTC_HISTOGRAMS_COUNTS_100(index, name, sample) \
   RTC_HISTOGRAMS_COMMON(index, name, sample,           \
@@ -270,7 +270,7 @@ void NoOp(const Ts&...) {}
         macro_invocation;                                            \
         break;                                                       \
       default:                                                       \
-        RTC_NOTREACHED();                                            \
+        RTC_DCHECK_NOTREACHED();                                     \
     }                                                                \
   } while (0)
 
@@ -383,16 +383,16 @@ Histogram* HistogramFactoryGetCountsLinear(const std::string& name,
                                            int bucket_count);
 
 // Get histogram for enumerators.
-// |boundary| should be above the max enumerator sample.
+// `boundary` should be above the max enumerator sample.
 Histogram* HistogramFactoryGetEnumeration(const std::string& name,
                                           int boundary);
 
 // Get sparse histogram for enumerators.
-// |boundary| should be above the max enumerator sample.
+// `boundary` should be above the max enumerator sample.
 Histogram* SparseHistogramFactoryGetEnumeration(const std::string& name,
                                                 int boundary);
 
-// Function for adding a |sample| to a histogram.
+// Function for adding a `sample` to a histogram.
 void HistogramAdd(Histogram* histogram_pointer, int sample);
 
 struct SampleInfo {
@@ -419,7 +419,7 @@ void GetAndReset(
 // Clears all samples.
 void Reset();
 
-// Returns the number of times the |sample| has been added to the histogram.
+// Returns the number of times the `sample` has been added to the histogram.
 int NumEvents(const std::string& name, int sample);
 
 // Returns the total number of added samples to the histogram.

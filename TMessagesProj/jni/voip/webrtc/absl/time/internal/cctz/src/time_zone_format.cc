@@ -67,6 +67,48 @@ char* strptime(const char* s, const char* fmt, std::tm* tm) {
 }
 #endif
 
+// Convert a cctz::weekday to a tm_wday value (0-6, Sunday = 0).
+int ToTmWday(weekday wd) {
+  switch (wd) {
+    case weekday::sunday:
+      return 0;
+    case weekday::monday:
+      return 1;
+    case weekday::tuesday:
+      return 2;
+    case weekday::wednesday:
+      return 3;
+    case weekday::thursday:
+      return 4;
+    case weekday::friday:
+      return 5;
+    case weekday::saturday:
+      return 6;
+  }
+  return 0; /*NOTREACHED*/
+}
+
+// Convert a tm_wday value (0-6, Sunday = 0) to a cctz::weekday.
+weekday FromTmWday(int tm_wday) {
+  switch (tm_wday) {
+    case 0:
+      return weekday::sunday;
+    case 1:
+      return weekday::monday;
+    case 2:
+      return weekday::tuesday;
+    case 3:
+      return weekday::wednesday;
+    case 4:
+      return weekday::thursday;
+    case 5:
+      return weekday::friday;
+    case 6:
+      return weekday::saturday;
+  }
+  return weekday::sunday; /*NOTREACHED*/
+}
+
 std::tm ToTM(const time_zone::absolute_lookup& al) {
   std::tm tm{};
   tm.tm_sec = al.cs.second();
@@ -84,32 +126,17 @@ std::tm ToTM(const time_zone::absolute_lookup& al) {
     tm.tm_year = static_cast<int>(al.cs.year() - 1900);
   }
 
-  switch (get_weekday(al.cs)) {
-    case weekday::sunday:
-      tm.tm_wday = 0;
-      break;
-    case weekday::monday:
-      tm.tm_wday = 1;
-      break;
-    case weekday::tuesday:
-      tm.tm_wday = 2;
-      break;
-    case weekday::wednesday:
-      tm.tm_wday = 3;
-      break;
-    case weekday::thursday:
-      tm.tm_wday = 4;
-      break;
-    case weekday::friday:
-      tm.tm_wday = 5;
-      break;
-    case weekday::saturday:
-      tm.tm_wday = 6;
-      break;
-  }
+  tm.tm_wday = ToTmWday(get_weekday(al.cs));
   tm.tm_yday = get_yearday(al.cs) - 1;
   tm.tm_isdst = al.is_dst ? 1 : 0;
   return tm;
+}
+
+// Returns the week of the year [0:53] given a civil day and the day on
+// which weeks are defined to start.
+int ToWeek(const civil_day& cd, weekday week_start) {
+  const civil_day d(cd.year() % 400, cd.month(), cd.day());
+  return static_cast<int>((d - prev_weekday(civil_year(d), week_start)) / 7);
 }
 
 const char kDigits[] = "0123456789";
@@ -290,6 +317,7 @@ const std::int_fast64_t kExp10[kDigits10_64 + 1] = {
 //   - %E#S - Seconds with # digits of fractional precision
 //   - %E*S - Seconds with full fractional precision (a literal '*')
 //   - %E4Y - Four-character years (-999 ... -001, 0000, 0001 ... 9999)
+//   - %ET  - The RFC3339 "date-time" separator "T"
 //
 // The standard specifiers from RFC3339_* (%Y, %m, %d, %H, %M, and %S) are
 // handled internally for performance reasons.  strftime(3) is slow due to
@@ -354,7 +382,7 @@ std::string format(const std::string& format, const time_point<seconds>& tp,
     if (cur == end || (cur - percent) % 2 == 0) continue;
 
     // Simple specifiers that we handle ourselves.
-    if (strchr("YmdeHMSzZs%", *cur)) {
+    if (strchr("YmdeUuWwHMSzZs%", *cur)) {
       if (cur - 1 != pending) {
         FormatTM(&result, std::string(pending, cur - 1), tm);
       }
@@ -373,6 +401,22 @@ std::string format(const std::string& format, const time_point<seconds>& tp,
         case 'e':
           bp = Format02d(ep, al.cs.day());
           if (*cur == 'e' && *bp == '0') *bp = ' ';  // for Windows
+          result.append(bp, static_cast<std::size_t>(ep - bp));
+          break;
+        case 'U':
+          bp = Format02d(ep, ToWeek(civil_day(al.cs), weekday::sunday));
+          result.append(bp, static_cast<std::size_t>(ep - bp));
+          break;
+        case 'u':
+          bp = Format64(ep, 0, tm.tm_wday ? tm.tm_wday : 7);
+          result.append(bp, static_cast<std::size_t>(ep - bp));
+          break;
+        case 'W':
+          bp = Format02d(ep, ToWeek(civil_day(al.cs), weekday::monday));
+          result.append(bp, static_cast<std::size_t>(ep - bp));
+          break;
+        case 'w':
+          bp = Format64(ep, 0, tm.tm_wday);
           result.append(bp, static_cast<std::size_t>(ep - bp));
           break;
         case 'H':
@@ -448,7 +492,14 @@ std::string format(const std::string& format, const time_point<seconds>& tp,
     if (*cur != 'E' || ++cur == end) continue;
 
     // Format our extensions.
-    if (*cur == 'z') {
+    if (*cur == 'T') {
+      // Formats %ET.
+      if (cur - 2 != pending) {
+        FormatTM(&result, std::string(pending, cur - 2), tm);
+      }
+      result.append("T");
+      pending = ++cur;
+    } else if (*cur == 'z') {
       // Formats %Ez.
       if (cur - 2 != pending) {
         FormatTM(&result, std::string(pending, cur - 2), tm);
@@ -551,7 +602,7 @@ const char* ParseOffset(const char* dp, const char* mode, int* offset) {
       } else {
         dp = nullptr;
       }
-    } else if (first == 'Z') {  // Zulu
+    } else if (first == 'Z' || first == 'z') {  // Zulu
       *offset = 0;
     } else {
       dp = nullptr;
@@ -602,12 +653,32 @@ const char* ParseTM(const char* dp, const char* fmt, std::tm* tm) {
   return dp;
 }
 
+// Sets year, tm_mon and tm_mday given the year, week_num, and tm_wday,
+// and the day on which weeks are defined to start.  Returns false if year
+// would need to move outside its bounds.
+bool FromWeek(int week_num, weekday week_start, year_t* year, std::tm* tm) {
+  const civil_year y(*year % 400);
+  civil_day cd = prev_weekday(y, week_start);  // week 0
+  cd = next_weekday(cd - 1, FromTmWday(tm->tm_wday)) + (week_num * 7);
+  if (const year_t shift = cd.year() - y.year()) {
+    if (shift > 0) {
+      if (*year > std::numeric_limits<year_t>::max() - shift) return false;
+    } else {
+      if (*year < std::numeric_limits<year_t>::min() - shift) return false;
+    }
+    *year += shift;
+  }
+  tm->tm_mon = cd.month() - 1;
+  tm->tm_mday = cd.day();
+  return true;
+}
+
 }  // namespace
 
 // Uses strptime(3) to parse the given input.  Supports the same extended
 // format specifiers as format(), although %E#S and %E*S are treated
 // identically (and similarly for %E#f and %E*f).  %Ez and %E*z also accept
-// the same inputs.
+// the same inputs. %ET accepts either 'T' or 't'.
 //
 // The standard specifiers from RFC3339_* (%Y, %m, %d, %H, %M, and %S) are
 // handled internally so that we can normally avoid strptime() altogether
@@ -651,6 +722,8 @@ bool parse(const std::string& format, const std::string& input,
   const char* fmt = format.c_str();  // NUL terminated
   bool twelve_hour = false;
   bool afternoon = false;
+  int week_num = -1;
+  weekday week_start = weekday::sunday;
 
   bool saw_percent_s = false;
   std::int_fast64_t percent_s = 0;
@@ -689,10 +762,27 @@ bool parse(const std::string& format, const std::string& input,
       case 'm':
         data = ParseInt(data, 2, 1, 12, &tm.tm_mon);
         if (data != nullptr) tm.tm_mon -= 1;
+        week_num = -1;
         continue;
       case 'd':
       case 'e':
         data = ParseInt(data, 2, 1, 31, &tm.tm_mday);
+        week_num = -1;
+        continue;
+      case 'U':
+        data = ParseInt(data, 0, 0, 53, &week_num);
+        week_start = weekday::sunday;
+        continue;
+      case 'W':
+        data = ParseInt(data, 0, 0, 53, &week_num);
+        week_start = weekday::monday;
+        continue;
+      case 'u':
+        data = ParseInt(data, 0, 1, 7, &tm.tm_wday);
+        if (data != nullptr) tm.tm_wday %= 7;
+        continue;
+      case 'w':
+        data = ParseInt(data, 0, 0, 6, &tm.tm_wday);
         continue;
       case 'H':
         data = ParseInt(data, 2, 0, 23, &tm.tm_hour);
@@ -742,6 +832,15 @@ bool parse(const std::string& format, const std::string& input,
         data = (*data == '%' ? data + 1 : nullptr);
         continue;
       case 'E':
+        if (fmt[0] == 'T') {
+          if (*data == 'T' || *data == 't') {
+            ++data;
+            ++fmt;
+          } else {
+            data = nullptr;
+          }
+          continue;
+        }
         if (fmt[0] == 'z' || (fmt[0] == '*' && fmt[1] == 'z')) {
           data = ParseOffset(data, ":", &offset);
           if (data != nullptr) saw_offset = true;
@@ -872,6 +971,14 @@ bool parse(const std::string& format, const std::string& input,
       return false;
     }
     year += 1900;
+  }
+
+  // Compute year, tm.tm_mon and tm.tm_mday if we parsed a week number.
+  if (week_num != -1) {
+    if (!FromWeek(week_num, week_start, &year, &tm)) {
+      if (err != nullptr) *err = "Out-of-range field";
+      return false;
+    }
   }
 
   const int month = tm.tm_mon + 1;

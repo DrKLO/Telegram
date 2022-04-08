@@ -23,9 +23,9 @@
 namespace webrtc {
 
 //
-// Structure to hold information about a received |RtpPacket|. It is primarily
+// Structure to hold information about a received `RtpPacket`. It is primarily
 // used to carry per-packet information from when a packet is received until
-// the information is passed to |SourceTracker|.
+// the information is passed to `SourceTracker`.
 //
 class RTC_EXPORT RtpPacketInfo {
  public:
@@ -102,8 +102,8 @@ class RTC_EXPORT RtpPacketInfo {
 
   // Fields from the Absolute Capture Time header extension:
   // http://www.webrtc.org/experiments/rtp-hdrext/abs-capture-time
-  // To not be confused with |local_capture_clock_offset_|, the
-  // |estimated_capture_clock_offset| in |absolute_capture_time_| should
+  // To not be confused with `local_capture_clock_offset_`, the
+  // `estimated_capture_clock_offset` in `absolute_capture_time_` should
   // represent the clock offset between a remote sender and the capturer, and
   // thus equals to the corresponding values in the received RTP packets,
   // subjected to possible interpolations.
@@ -113,7 +113,7 @@ class RTC_EXPORT RtpPacketInfo {
   // capture clock offset defined in the Absolute Capture Time header extension.
   absl::optional<int64_t> local_capture_clock_offset_;
 
-  // Local |webrtc::Clock|-based timestamp of when the packet was received.
+  // Local `webrtc::Clock`-based timestamp of when the packet was received.
   Timestamp receive_time_;
 };
 

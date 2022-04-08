@@ -34,11 +34,11 @@ namespace dcsctp {
 struct Data {
   // Indicates if a chunk is the first in a fragmented message and maps to the
   // "beginning" flag in DATA/I-DATA chunk.
-  using IsBeginning = StrongAlias<class IsBeginningTag, bool>;
+  using IsBeginning = webrtc::StrongAlias<class IsBeginningTag, bool>;
 
   // Indicates if a chunk is the last in a fragmented message  and maps to the
   // "end" flag in DATA/I-DATA chunk.
-  using IsEnd = StrongAlias<class IsEndTag, bool>;
+  using IsEnd = webrtc::StrongAlias<class IsEndTag, bool>;
 
   Data(StreamID stream_id,
        SSN ssn,

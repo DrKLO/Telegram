@@ -67,7 +67,7 @@ class RTPSenderVideo {
     Config(const Config&) = delete;
     Config(Config&&) = default;
 
-    // All members of this struct, with the exception of |field_trials|, are
+    // All members of this struct, with the exception of `field_trials`, are
     // expected to outlive the RTPSenderVideo object they are passed to.
     Clock* clock = nullptr;
     RTPSender* rtp_sender = nullptr;
@@ -89,20 +89,15 @@ class RTPSenderVideo {
   virtual ~RTPSenderVideo();
 
   // expected_retransmission_time_ms.has_value() -> retransmission allowed.
-  // Calls to this method is assumed to be externally serialized.
-  // |estimated_capture_clock_offset_ms| is an estimated clock offset between
-  // this sender and the original capturer, for this video packet. See
-  // http://www.webrtc.org/experiments/rtp-hdrext/abs-capture-time for more
-  // details. If the sender and the capture has the same clock, it is supposed
-  // to be zero valued, which is given as the default.
+  // `capture_time_ms` and `clock::CurrentTime` should be using the same epoch.
+  // Calls to this method are assumed to be externally serialized.
   bool SendVideo(int payload_type,
                  absl::optional<VideoCodecType> codec_type,
                  uint32_t rtp_timestamp,
                  int64_t capture_time_ms,
                  rtc::ArrayView<const uint8_t> payload,
                  RTPVideoHeader video_header,
-                 absl::optional<int64_t> expected_retransmission_time_ms,
-                 absl::optional<int64_t> estimated_capture_clock_offset_ms = 0);
+                 absl::optional<int64_t> expected_retransmission_time_ms);
 
   bool SendEncodedImage(
       int payload_type,
@@ -169,12 +164,10 @@ class RTPSenderVideo {
       const FrameDependencyStructure* video_structure);
   void SetVideoLayersAllocationInternal(VideoLayersAllocation allocation);
 
-  void AddRtpHeaderExtensions(
-      const RTPVideoHeader& video_header,
-      const absl::optional<AbsoluteCaptureTime>& absolute_capture_time,
-      bool first_packet,
-      bool last_packet,
-      RtpPacketToSend* packet) const
+  void AddRtpHeaderExtensions(const RTPVideoHeader& video_header,
+                              bool first_packet,
+                              bool last_packet,
+                              RtpPacketToSend* packet) const
       RTC_EXCLUSIVE_LOCKS_REQUIRED(send_checker_);
 
   size_t FecPacketOverhead() const RTC_EXCLUSIVE_LOCKS_REQUIRED(send_checker_);
@@ -207,12 +200,14 @@ class RTPSenderVideo {
       RTC_GUARDED_BY(send_checker_);
   absl::optional<VideoLayersAllocation> allocation_
       RTC_GUARDED_BY(send_checker_);
-  // Flag indicating if we should send |allocation_|.
+  // Flag indicating if we should send `allocation_`.
   SendVideoLayersAllocation send_allocation_ RTC_GUARDED_BY(send_checker_);
+  absl::optional<VideoLayersAllocation> last_full_sent_allocation_
+      RTC_GUARDED_BY(send_checker_);
 
   // Current target playout delay.
   VideoPlayoutDelay current_playout_delay_ RTC_GUARDED_BY(send_checker_);
-  // Flag indicating if we need to send |current_playout_delay_| in order
+  // Flag indicating if we need to send `current_playout_delay_` in order
   // to guarantee it gets delivered.
   bool playout_delay_pending_;
   // Set by the field trial WebRTC-ForceSendPlayoutDelay to override the playout

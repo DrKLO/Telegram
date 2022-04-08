@@ -38,7 +38,7 @@ class RTC_LOCKABLE RTC_EXPORT TaskQueueBase {
   virtual void Delete() = 0;
 
   // Schedules a task to execute. Tasks are executed in FIFO order.
-  // If |task->Run()| returns true, task is deleted on the task queue
+  // If `task->Run()` returns true, task is deleted on the task queue
   // before next QueuedTask starts executing.
   // When a TaskQueue is deleted, pending tasks will not be executed but they
   // will be deleted. The deletion of tasks may happen synchronously on the

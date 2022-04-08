@@ -13,6 +13,9 @@ import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.SparseArray;
 
+import androidx.annotation.IntDef;
+import androidx.collection.LongSparseArray;
+
 import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.messenger.voip.Instance;
@@ -20,13 +23,14 @@ import org.telegram.messenger.voip.VoIPService;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.GroupCallActivity;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-
-import androidx.collection.LongSparseArray;
+import java.util.List;
 
 public class ChatObject {
 
@@ -58,6 +62,18 @@ public class ChatObject {
     private static final int MAX_PARTICIPANTS_COUNT = 5000;
 
     public static class Call {
+        public final static int RECORD_TYPE_AUDIO = 0,
+            RECORD_TYPE_VIDEO_PORTAIT = 1,
+            RECORD_TYPE_VIDEO_LANDSCAPE = 2;
+
+        @Retention(RetentionPolicy.SOURCE)
+        @IntDef({
+                RECORD_TYPE_AUDIO,
+                RECORD_TYPE_VIDEO_PORTAIT,
+                RECORD_TYPE_VIDEO_LANDSCAPE
+        })
+        public @interface RecordType {}
+
         public TLRPC.GroupCall call;
         public long chatId;
         public LongSparseArray<TLRPC.TL_groupCallParticipant> participants = new LongSparseArray<>();
@@ -80,6 +96,8 @@ public class ChatObject {
         public boolean canStreamVideo;
         public int activeVideos;
         public VideoParticipant videoNotAvailableParticipant;
+        public VideoParticipant rtmpStreamParticipant;
+        public boolean loadedRtmpStreamParticipant;
         public AccountInstance currentAccount;
         public int speakingMembersCount;
         private Runnable typingUpdateRunnable = () -> {
@@ -156,6 +174,46 @@ public class ChatObject {
             loadMembers(true);
 
             createNoVideoParticipant();
+            if (call.rtmp_stream) {
+                createRtmpStreamParticipant(Collections.emptyList());
+            }
+        }
+
+//        public void loadRtmpStreamChannels() {
+//            if (call == null || loadedRtmpStreamParticipant) {
+//                return;
+//            }
+//            TLRPC.TL_phone_getGroupCallStreamChannels getGroupCallStreamChannels = new TLRPC.TL_phone_getGroupCallStreamChannels();
+//            getGroupCallStreamChannels.call = getInputGroupCall();
+//            currentAccount.getConnectionsManager().sendRequest(getGroupCallStreamChannels, (response, error, timestamp) -> {
+//                if (response instanceof TLRPC.TL_phone_groupCallStreamChannels) {
+//                    TLRPC.TL_phone_groupCallStreamChannels streamChannels = (TLRPC.TL_phone_groupCallStreamChannels) response;
+//                    createRtmpStreamParticipant(streamChannels.channels);
+//                    loadedRtmpStreamParticipant = true;
+//                }
+//            }, ConnectionsManager.RequestFlagFailOnServerErrors, ConnectionsManager.ConnectionTypeDownload, call.stream_dc_id);
+//        }
+
+        public void createRtmpStreamParticipant(List<TLRPC.TL_groupCallStreamChannel> channels) {
+            if (loadedRtmpStreamParticipant && rtmpStreamParticipant != null) {
+                return;
+            }
+            TLRPC.TL_groupCallParticipant participant = rtmpStreamParticipant != null ? rtmpStreamParticipant.participant : new TLRPC.TL_groupCallParticipant();
+            participant.peer = new TLRPC.TL_peerChat();
+            participant.peer.channel_id = chatId;
+            participant.video = new TLRPC.TL_groupCallParticipantVideo();
+            TLRPC.TL_groupCallParticipantVideoSourceGroup sourceGroup = new TLRPC.TL_groupCallParticipantVideoSourceGroup();
+            sourceGroup.semantics = "SIM";
+            for (TLRPC.TL_groupCallStreamChannel channel : channels) {
+                sourceGroup.sources.add(channel.channel);
+            }
+            participant.video.source_groups.add(sourceGroup);
+            participant.video.endpoint = "unified";
+            participant.videoEndpoint = "unified";
+            rtmpStreamParticipant = new VideoParticipant(participant, false, false);
+
+            sortParticipants();
+            AndroidUtilities.runOnUIThread(()-> currentAccount.getNotificationCenter().postNotificationName(NotificationCenter.groupCallUpdated, chatId, call.id, false));
         }
 
         public void createNoVideoParticipant() {
@@ -217,7 +275,7 @@ public class ChatObject {
         }
 
         public boolean shouldShowPanel() {
-            return call.participants_count > 0 || isScheduled();
+            return call.participants_count > 0 || call.rtmp_stream || isScheduled();
         }
 
         public boolean isScheduled() {
@@ -1057,7 +1115,7 @@ public class ChatObject {
             if (participant.self) {
                 return service.getVideoState(presentation) == Instance.VIDEO_STATE_ACTIVE;
             } else {
-                if (call.videoNotAvailableParticipant != null && call.videoNotAvailableParticipant.participant == participant || call.participants.get(MessageObject.getPeerId(participant.peer)) != null) {
+                if (call.rtmpStreamParticipant != null && call.rtmpStreamParticipant.participant == participant || call.videoNotAvailableParticipant != null && call.videoNotAvailableParticipant.participant == participant || call.participants.get(MessageObject.getPeerId(participant.peer)) != null) {
                     if (presentation) {
                         return participant.presentation != null;// && participant.hasPresentationFrame == 2;
                     } else {
@@ -1074,6 +1132,10 @@ public class ChatObject {
             visibleParticipants.clear();
             TLRPC.Chat chat = currentAccount.getMessagesController().getChat(chatId);
             boolean isAdmin = ChatObject.canManageCalls(chat);
+
+            if (rtmpStreamParticipant != null) {
+                visibleVideoParticipants.add(rtmpStreamParticipant);
+            }
 
             long selfId = getSelfId();
             VoIPService service = VoIPService.getSharedInstance();
@@ -1286,7 +1348,7 @@ public class ChatObject {
             }
         }
 
-        public void toggleRecord(String title, int type) {
+        public void toggleRecord(String title, @RecordType int type) {
             recording = !recording;
             TLRPC.TL_phone_toggleGroupCallRecord req = new TLRPC.TL_phone_toggleGroupCallRecord();
             req.call = getInputGroupCall();
@@ -1295,10 +1357,10 @@ public class ChatObject {
                 req.title = title;
                 req.flags |= 2;
             }
-            if (type == 1 || type == 2) {
+            if (type == RECORD_TYPE_VIDEO_PORTAIT || type == RECORD_TYPE_VIDEO_LANDSCAPE) {
                 req.flags |= 4;
                 req.video = true;
-                req.video_portrait = type == 1;
+                req.video_portrait = type == RECORD_TYPE_VIDEO_PORTAIT;
             }
             currentAccount.getConnectionsManager().sendRequest(req, (response, error) -> {
                 if (response != null) {
@@ -1638,6 +1700,8 @@ public class ChatObject {
         public boolean presentation;
         public boolean hasSame;
         public float aspectRatio;// w / h
+        public int aspectRatioFromWidth;
+        public int aspectRatioFromHeight;
 
         public VideoParticipant(TLRPC.TL_groupCallParticipant participant, boolean presentation, boolean hasSame) {
             this.participant = participant;
@@ -1657,7 +1721,13 @@ public class ChatObject {
             return presentation == that.presentation && MessageObject.getPeerId(participant.peer) == MessageObject.getPeerId(that.participant.peer);
         }
 
-        public void setAspectRatio(float aspectRatio, Call call) {
+        public void setAspectRatio(int width, int height, Call call) {
+            aspectRatioFromWidth = width;
+            aspectRatioFromHeight = height;
+            setAspectRatio(width / (float) height, call);
+        }
+
+        private void setAspectRatio(float aspectRatio, Call call) {
             if (this.aspectRatio != aspectRatio) {
                 this.aspectRatio = aspectRatio;
                 if (!GroupCallActivity.isLandscapeMode && call.visibleVideoParticipants.size() % 2 == 1) {

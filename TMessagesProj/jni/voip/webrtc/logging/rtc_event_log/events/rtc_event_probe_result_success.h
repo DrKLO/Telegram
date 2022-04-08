@@ -16,6 +16,7 @@
 #include <memory>
 
 #include "api/rtc_event_log/rtc_event.h"
+#include "api/units/timestamp.h"
 
 namespace webrtc {
 
@@ -43,15 +44,15 @@ class RtcEventProbeResultSuccess final : public RtcEvent {
 
 struct LoggedBweProbeSuccessEvent {
   LoggedBweProbeSuccessEvent() = default;
-  LoggedBweProbeSuccessEvent(int64_t timestamp_us,
+  LoggedBweProbeSuccessEvent(Timestamp timestamp,
                              int32_t id,
                              int32_t bitrate_bps)
-      : timestamp_us(timestamp_us), id(id), bitrate_bps(bitrate_bps) {}
+      : timestamp(timestamp), id(id), bitrate_bps(bitrate_bps) {}
 
-  int64_t log_time_us() const { return timestamp_us; }
-  int64_t log_time_ms() const { return timestamp_us / 1000; }
+  int64_t log_time_us() const { return timestamp.us(); }
+  int64_t log_time_ms() const { return timestamp.ms(); }
 
-  int64_t timestamp_us;
+  Timestamp timestamp = Timestamp::MinusInfinity();
   int32_t id;
   int32_t bitrate_bps;
 };

@@ -52,7 +52,7 @@ void FIRFilterAVX2::Filter(const float* in, size_t length, float* out) {
 
   memcpy(&state_[state_length_], in, length * sizeof(*in));
 
-  // Convolves the input signal |in| with the filter kernel |coefficients_|
+  // Convolves the input signal `in` with the filter kernel `coefficients_`
   // taking into account the previous state.
   for (size_t i = 0; i < length; ++i) {
     float* in_ptr = &state_[i];

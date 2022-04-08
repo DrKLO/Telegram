@@ -102,8 +102,8 @@ bool InterArrivalDelta::ComputeDeltas(Timestamp send_time,
   return calculated_deltas;
 }
 
-// Assumes that |timestamp| is not reordered compared to
-// |current_timestamp_group_|.
+// Assumes that `timestamp` is not reordered compared to
+// `current_timestamp_group_`.
 bool InterArrivalDelta::NewTimestampGroup(Timestamp arrival_time,
                                           Timestamp send_time) const {
   if (current_timestamp_group_.IsFirstPacket()) {

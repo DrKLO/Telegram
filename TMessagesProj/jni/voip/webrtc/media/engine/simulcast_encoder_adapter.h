@@ -25,8 +25,8 @@
 #include "api/video_codecs/sdp_video_format.h"
 #include "api/video_codecs/video_encoder.h"
 #include "api/video_codecs/video_encoder_factory.h"
+#include "common_video/framerate_controller.h"
 #include "modules/video_coding/include/video_codec_interface.h"
-#include "modules/video_coding/utility/framerate_controller.h"
 #include "rtc_base/atomic_ops.h"
 #include "rtc_base/experiments/encoder_info_settings.h"
 #include "rtc_base/system/no_unique_address.h"
@@ -43,8 +43,8 @@ class RTC_EXPORT SimulcastEncoderAdapter : public VideoEncoder {
   // TODO(bugs.webrtc.org/11000): Remove when downstream usage is gone.
   SimulcastEncoderAdapter(VideoEncoderFactory* primarty_factory,
                           const SdpVideoFormat& format);
-  // |primary_factory| produces the first-choice encoders to use.
-  // |fallback_factory|, if non-null, is used to create fallback encoder that
+  // `primary_factory` produces the first-choice encoders to use.
+  // `fallback_factory`, if non-null, is used to create fallback encoder that
   // will be used if InitEncode() fails for the primary encoder.
   SimulcastEncoderAdapter(VideoEncoderFactory* primary_factory,
                           VideoEncoderFactory* fallback_factory,
@@ -71,16 +71,24 @@ class RTC_EXPORT SimulcastEncoderAdapter : public VideoEncoder {
   class EncoderContext {
    public:
     EncoderContext(std::unique_ptr<VideoEncoder> encoder,
-                   bool prefer_temporal_support);
+                   bool prefer_temporal_support,
+                   VideoEncoder::EncoderInfo primary_info,
+                   VideoEncoder::EncoderInfo fallback_info);
     EncoderContext& operator=(EncoderContext&&) = delete;
 
     VideoEncoder& encoder() { return *encoder_; }
     bool prefer_temporal_support() { return prefer_temporal_support_; }
     void Release();
 
+    const VideoEncoder::EncoderInfo& PrimaryInfo() { return primary_info_; }
+
+    const VideoEncoder::EncoderInfo& FallbackInfo() { return fallback_info_; }
+
    private:
     std::unique_ptr<VideoEncoder> encoder_;
     bool prefer_temporal_support_;
+    const VideoEncoder::EncoderInfo primary_info_;
+    const VideoEncoder::EncoderInfo fallback_info_;
   };
 
   class StreamContext : public EncodedImageCallback {
@@ -112,11 +120,11 @@ class RTC_EXPORT SimulcastEncoderAdapter : public VideoEncoder {
     void set_is_keyframe_needed() { is_keyframe_needed_ = true; }
     bool is_paused() const { return is_paused_; }
     void set_is_paused(bool is_paused) { is_paused_ = is_paused; }
-    absl::optional<float> target_fps() const {
+    absl::optional<double> target_fps() const {
       return framerate_controller_ == nullptr
                  ? absl::nullopt
-                 : absl::optional<float>(
-                       framerate_controller_->GetTargetRate());
+                 : absl::optional<double>(
+                       framerate_controller_->GetMaxFramerate());
     }
 
     std::unique_ptr<EncoderContext> ReleaseEncoderContext() &&;
@@ -138,8 +146,11 @@ class RTC_EXPORT SimulcastEncoderAdapter : public VideoEncoder {
 
   void DestroyStoredEncoders();
 
+  // This method creates encoder. May reuse previously created encoders from
+  // `cached_encoder_contexts_`. It's const because it's used from
+  // const GetEncoderInfo().
   std::unique_ptr<EncoderContext> FetchOrCreateEncoderContext(
-      bool is_lowest_quality_stream);
+      bool is_lowest_quality_stream) const;
 
   webrtc::VideoCodec MakeStreamCodec(const webrtc::VideoCodec& codec,
                                      int stream_idx,
@@ -169,9 +180,11 @@ class RTC_EXPORT SimulcastEncoderAdapter : public VideoEncoder {
   // Used for checking the single-threaded access of the encoder interface.
   RTC_NO_UNIQUE_ADDRESS SequenceChecker encoder_queue_;
 
-  // Store encoders in between calls to Release and InitEncode, so they don't
-  // have to be recreated. Remaining encoders are destroyed by the destructor.
-  std::list<std::unique_ptr<EncoderContext>> cached_encoder_contexts_;
+  // Store previously created and released encoders , so they don't have to be
+  // recreated. Remaining encoders are destroyed by the destructor.
+  // Marked as `mutable` becuase we may need to temporarily create encoder in
+  // GetEncoderInfo(), which is const.
+  mutable std::list<std::unique_ptr<EncoderContext>> cached_encoder_contexts_;
 
   const absl::optional<unsigned int> experimental_boosted_screenshare_qp_;
   const bool boost_base_layer_quality_;

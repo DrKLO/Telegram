@@ -24,6 +24,8 @@ namespace webrtc {
 class RTC_EXPORT InternalDecoderFactory : public VideoDecoderFactory {
  public:
   std::vector<SdpVideoFormat> GetSupportedFormats() const override;
+  CodecSupport QueryCodecSupport(const SdpVideoFormat& format,
+                                 bool reference_scaling) const override;
   std::unique_ptr<VideoDecoder> CreateVideoDecoder(
       const SdpVideoFormat& format) override;
 };

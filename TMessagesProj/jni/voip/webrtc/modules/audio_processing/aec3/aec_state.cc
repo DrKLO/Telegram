@@ -229,8 +229,9 @@ void AecState::Update(
   std::array<float, kFftLengthBy2Plus1> avg_render_spectrum_with_reverb;
 
   ComputeAvgRenderReverb(render_buffer.GetSpectrumBuffer(),
-                         delay_state_.MinDirectPathFilterDelay(), ReverbDecay(),
-                         &avg_render_reverb_, avg_render_spectrum_with_reverb);
+                         delay_state_.MinDirectPathFilterDelay(),
+                         ReverbDecay(/*mild=*/false), &avg_render_reverb_,
+                         avg_render_spectrum_with_reverb);
 
   if (config_.echo_audibility.use_stationarity_properties) {
     // Update the echo audibility evaluator.

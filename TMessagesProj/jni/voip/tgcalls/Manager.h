@@ -16,8 +16,8 @@ private:
         bool isLowCost = false;
         bool isLowDataRequested = false;
 
-        bool operator==(const ResolvedNetworkStatus &rhs);
-        bool operator!=(const ResolvedNetworkStatus &rhs);
+        bool operator==(const ResolvedNetworkStatus &rhs) const;
+        bool operator!=(const ResolvedNetworkStatus &rhs) const;
     };
 
 public:
@@ -32,7 +32,7 @@ public:
     void sendVideoDeviceUpdated();
     void setRequestedVideoAspect(float aspect);
     void setMuteOutgoingAudio(bool mute);
-	void setIncomingVideoOutput(std::shared_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink);
+	void setIncomingVideoOutput(std::weak_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink);
     void setIsLowBatteryLevel(bool isLowBatteryLevel);
     void setIsLocalNetworkLowCost(bool isLocalNetworkLowCost);
     void getNetworkStats(std::function<void(TrafficStats, CallStats)> completion);

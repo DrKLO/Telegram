@@ -24,7 +24,7 @@ class NetEqFactory {
  public:
   virtual ~NetEqFactory() = default;
 
-  // Creates a new NetEq object, with parameters set in |config|. The |config|
+  // Creates a new NetEq object, with parameters set in `config`. The `config`
   // object will only have to be valid for the duration of the call to this
   // method.
   virtual std::unique_ptr<NetEq> CreateNetEq(

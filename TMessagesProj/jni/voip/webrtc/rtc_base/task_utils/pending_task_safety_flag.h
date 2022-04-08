@@ -30,8 +30,8 @@ namespace webrtc {
 
 // Typical usage:
 // When posting a task, post a copy (capture by-value in a lambda) of the flag
-// reference and before performing the work, check the |alive()| state. Abort if
-// alive() returns |false|:
+// reference and before performing the work, check the `alive()` state. Abort if
+// alive() returns `false`:
 //
 // class ExampleClass {
 // ....

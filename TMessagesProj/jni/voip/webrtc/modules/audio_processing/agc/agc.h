@@ -24,13 +24,13 @@ class Agc {
   Agc();
   virtual ~Agc();
 
-  // |audio| must be mono; in a multi-channel stream, provide the first (usually
+  // `audio` must be mono; in a multi-channel stream, provide the first (usually
   // left) channel.
   virtual void Process(const int16_t* audio, size_t length, int sample_rate_hz);
 
   // Retrieves the difference between the target RMS level and the current
   // signal RMS level in dB. Returns true if an update is available and false
-  // otherwise, in which case |error| should be ignored and no action taken.
+  // otherwise, in which case `error` should be ignored and no action taken.
   virtual bool GetRmsErrorDb(int* error);
   virtual void Reset();
 

@@ -49,6 +49,7 @@ SubbandErleEstimator::SubbandErleEstimator(const EchoCanceller3Config& config,
       accum_spectra_(num_capture_channels),
       erle_(num_capture_channels),
       erle_onset_compensated_(num_capture_channels),
+      erle_unbounded_(num_capture_channels),
       erle_during_onsets_(num_capture_channels),
       coming_onset_(num_capture_channels),
       hold_counters_(num_capture_channels) {
@@ -62,6 +63,7 @@ void SubbandErleEstimator::Reset() {
   for (size_t ch = 0; ch < num_capture_channels; ++ch) {
     erle_[ch].fill(min_erle_);
     erle_onset_compensated_[ch].fill(min_erle_);
+    erle_unbounded_[ch].fill(min_erle_);
     erle_during_onsets_[ch].fill(min_erle_);
     coming_onset_[ch].fill(true);
     hold_counters_[ch].fill(0);
@@ -90,6 +92,10 @@ void SubbandErleEstimator::Update(
     auto& erle_oc = erle_onset_compensated_[ch];
     erle_oc[0] = erle_oc[1];
     erle_oc[kFftLengthBy2] = erle_oc[kFftLengthBy2 - 1];
+
+    auto& erle_u = erle_unbounded_[ch];
+    erle_u[0] = erle_u[1];
+    erle_u[kFftLengthBy2] = erle_u[kFftLengthBy2 - 1];
   }
 }
 
@@ -163,6 +169,11 @@ void SubbandErleEstimator::UpdateBands(
           update_erle_band(erle_onset_compensated_[ch][k], new_erle[k],
                            low_render_energy, min_erle_, max_erle_[k]);
         }
+
+        // Virtually unbounded ERLE.
+        constexpr float kUnboundedErleMax = 100000.0f;
+        update_erle_band(erle_unbounded_[ch][k], new_erle[k], low_render_energy,
+                         min_erle_, kUnboundedErleMax);
       }
     }
   }

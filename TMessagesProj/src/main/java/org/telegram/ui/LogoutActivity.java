@@ -18,6 +18,9 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.LocaleController;
@@ -40,9 +43,6 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
-
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 public class LogoutActivity extends BaseFragment {
 
@@ -128,7 +128,7 @@ public class LogoutActivity extends BaseFragment {
                     presentFragment(new LoginActivity(freeAccount));
                 }
             } else if (position == passcodeRow) {
-                presentFragment(new PasscodeActivity(0));
+                presentFragment(PasscodeActivity.determineOpenFragment());
             } else if (position == cacheRow) {
                 presentFragment(new CacheControlActivity());
             } else if (position == phoneRow) {

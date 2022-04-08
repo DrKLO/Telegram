@@ -30,8 +30,15 @@ void VideoBroadcaster::AddOrUpdateSink(
   RTC_DCHECK(sink != nullptr);
   webrtc::MutexLock lock(&sinks_and_wants_lock_);
   if (!FindSinkPair(sink)) {
-    // |Sink| is a new sink, which didn't receive previous frame.
+    // `Sink` is a new sink, which didn't receive previous frame.
     previous_frame_sent_to_all_sinks_ = false;
+
+    if (last_constraints_.has_value()) {
+      RTC_LOG(LS_INFO) << __func__ << " forwarding stored constraints min_fps "
+                       << last_constraints_->min_fps.value_or(-1) << " max_fps "
+                       << last_constraints_->max_fps.value_or(-1);
+      sink->OnConstraintsChanged(*last_constraints_);
+    }
   }
   VideoSourceBase::AddOrUpdateSink(sink, wants);
   UpdateWants();
@@ -98,6 +105,18 @@ void VideoBroadcaster::OnDiscardedFrame() {
   for (auto& sink_pair : sink_pairs()) {
     sink_pair.sink->OnDiscardedFrame();
   }
+}
+
+void VideoBroadcaster::ProcessConstraints(
+    const webrtc::VideoTrackSourceConstraints& constraints) {
+  webrtc::MutexLock lock(&sinks_and_wants_lock_);
+  RTC_LOG(LS_INFO) << __func__ << " min_fps "
+                   << constraints.min_fps.value_or(-1) << " max_fps "
+                   << constraints.max_fps.value_or(-1) << " broadcasting to "
+                   << sink_pairs().size() << " sinks.";
+  last_constraints_ = constraints;
+  for (auto& sink_pair : sink_pairs())
+    sink_pair.sink->OnConstraintsChanged(constraints);
 }
 
 void VideoBroadcaster::UpdateWants() {

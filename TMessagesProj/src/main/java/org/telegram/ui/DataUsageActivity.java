@@ -462,7 +462,7 @@ public class DataUsageActivity extends BaseFragment {
             viewPages[a].listView.setScrollingTouchSlop(RecyclerView.TOUCH_SLOP_PAGING);
             viewPages[a].listView.setItemAnimator(null);
             viewPages[a].listView.setClipToPadding(false);
-            viewPages[a].listView.setSectionsType(2);
+            viewPages[a].listView.setSectionsType(RecyclerListView.SECTIONS_TYPE_DATE);
             viewPages[a].listView.setLayoutManager(layoutManager);
             viewPages[a].addView(viewPages[a].listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
             viewPages[a].listView.setOnItemClickListener((view, position) -> {

@@ -15,10 +15,10 @@
 #include <vector>
 
 #include "absl/memory/memory.h"
-#include "rtc_base/async_socket.h"
 #include "rtc_base/constructor_magic.h"
 #include "rtc_base/memory/fifo_buffer.h"
 #include "rtc_base/server_socket_adapters.h"
+#include "rtc_base/socket.h"
 #include "rtc_base/socket_address.h"
 
 namespace rtc {
@@ -34,28 +34,28 @@ class SocketFactory;
 
 class ProxyBinding : public sigslot::has_slots<> {
  public:
-  ProxyBinding(AsyncProxyServerSocket* in_socket, AsyncSocket* out_socket);
+  ProxyBinding(AsyncProxyServerSocket* in_socket, Socket* out_socket);
   ~ProxyBinding() override;
   sigslot::signal1<ProxyBinding*> SignalDestroyed;
 
  private:
   void OnConnectRequest(AsyncProxyServerSocket* socket,
                         const SocketAddress& addr);
-  void OnInternalRead(AsyncSocket* socket);
-  void OnInternalWrite(AsyncSocket* socket);
-  void OnInternalClose(AsyncSocket* socket, int err);
-  void OnExternalConnect(AsyncSocket* socket);
-  void OnExternalRead(AsyncSocket* socket);
-  void OnExternalWrite(AsyncSocket* socket);
-  void OnExternalClose(AsyncSocket* socket, int err);
+  void OnInternalRead(Socket* socket);
+  void OnInternalWrite(Socket* socket);
+  void OnInternalClose(Socket* socket, int err);
+  void OnExternalConnect(Socket* socket);
+  void OnExternalRead(Socket* socket);
+  void OnExternalWrite(Socket* socket);
+  void OnExternalClose(Socket* socket, int err);
 
-  static void Read(AsyncSocket* socket, FifoBuffer* buffer);
-  static void Write(AsyncSocket* socket, FifoBuffer* buffer);
+  static void Read(Socket* socket, FifoBuffer* buffer);
+  static void Write(Socket* socket, FifoBuffer* buffer);
   void Destroy();
 
   static const int kBufferSize = 4096;
   std::unique_ptr<AsyncProxyServerSocket> int_socket_;
-  std::unique_ptr<AsyncSocket> ext_socket_;
+  std::unique_ptr<Socket> ext_socket_;
   bool connected_;
   FifoBuffer out_buffer_;
   FifoBuffer in_buffer_;
@@ -74,13 +74,13 @@ class ProxyServer : public sigslot::has_slots<> {
   SocketAddress GetServerAddress();
 
  protected:
-  void OnAcceptEvent(AsyncSocket* socket);
-  virtual AsyncProxyServerSocket* WrapSocket(AsyncSocket* socket) = 0;
+  void OnAcceptEvent(Socket* socket);
+  virtual AsyncProxyServerSocket* WrapSocket(Socket* socket) = 0;
 
  private:
   SocketFactory* ext_factory_;
   SocketAddress ext_ip_;
-  std::unique_ptr<AsyncSocket> server_socket_;
+  std::unique_ptr<Socket> server_socket_;
   std::vector<std::unique_ptr<ProxyBinding>> bindings_;
   RTC_DISALLOW_COPY_AND_ASSIGN(ProxyServer);
 };
@@ -95,7 +95,7 @@ class SocksProxyServer : public ProxyServer {
       : ProxyServer(int_factory, int_addr, ext_factory, ext_ip) {}
 
  protected:
-  AsyncProxyServerSocket* WrapSocket(AsyncSocket* socket) override;
+  AsyncProxyServerSocket* WrapSocket(Socket* socket) override;
   RTC_DISALLOW_COPY_AND_ASSIGN(SocksProxyServer);
 };
 

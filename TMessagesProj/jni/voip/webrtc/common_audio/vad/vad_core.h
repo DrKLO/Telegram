@@ -30,14 +30,14 @@ typedef struct VadInstT_ {
   int16_t speech_means[kTableSize];
   int16_t noise_stds[kTableSize];
   int16_t speech_stds[kTableSize];
-  // TODO(bjornv): Change to |frame_count|.
+  // TODO(bjornv): Change to `frame_count`.
   int32_t frame_counter;
   int16_t over_hang;  // Over Hang
   int16_t num_of_speech;
-  // TODO(bjornv): Change to |age_vector|.
+  // TODO(bjornv): Change to `age_vector`.
   int16_t index_vector[16 * kNumChannels];
   int16_t low_value_vector[16 * kNumChannels];
-  // TODO(bjornv): Change to |median|.
+  // TODO(bjornv): Change to `median`.
   int16_t mean_value[kNumChannels];
   int16_t upper_state[5];
   int16_t lower_state[5];
@@ -51,7 +51,7 @@ typedef struct VadInstT_ {
 } VadInstT;
 
 // Initializes the core VAD component. The default aggressiveness mode is
-// controlled by |kDefaultMode| in vad_core.c.
+// controlled by `kDefaultMode` in vad_core.c.
 //
 // - self [i/o] : Instance that should be initialized
 //

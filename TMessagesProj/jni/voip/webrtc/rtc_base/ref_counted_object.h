@@ -73,10 +73,12 @@ class FinalRefCountedObject final : public T {
   FinalRefCountedObject& operator=(const FinalRefCountedObject&) = delete;
 
   void AddRef() const { ref_count_.IncRef(); }
-  void Release() const {
-    if (ref_count_.DecRef() == RefCountReleaseStatus::kDroppedLastRef) {
+  RefCountReleaseStatus Release() const {
+    const auto status = ref_count_.DecRef();
+    if (status == RefCountReleaseStatus::kDroppedLastRef) {
       delete this;
     }
+    return status;
   }
   bool HasOneRef() const { return ref_count_.HasOneRef(); }
 

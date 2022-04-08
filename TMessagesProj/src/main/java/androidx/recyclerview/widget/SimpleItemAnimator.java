@@ -39,6 +39,7 @@ public abstract class SimpleItemAnimator extends RecyclerView.ItemAnimator {
     private static final String TAG = "SimpleItemAnimator";
 
     boolean mSupportsChangeAnimations = true;
+    protected boolean alwaysCreateMoveAnimationIfPossible;
 
     /**
      * Returns whether this ItemAnimator supports animations of change events.
@@ -113,8 +114,8 @@ public abstract class SimpleItemAnimator extends RecyclerView.ItemAnimator {
     @Override
     public boolean animateAppearance(@NonNull RecyclerView.ViewHolder viewHolder,
             @Nullable ItemHolderInfo preLayoutInfo, @NonNull ItemHolderInfo postLayoutInfo) {
-        if (preLayoutInfo != null && (preLayoutInfo.left != postLayoutInfo.left
-                || preLayoutInfo.top != postLayoutInfo.top)) {
+        if (preLayoutInfo != null && ((preLayoutInfo.left != postLayoutInfo.left
+                || preLayoutInfo.top != postLayoutInfo.top) || alwaysCreateMoveAnimationIfPossible)) {
             // slide items in if before/after locations differ
             if (DEBUG) {
                 Log.d(TAG, "APPEARING: " + viewHolder + " with view " + viewHolder);

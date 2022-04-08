@@ -13,11 +13,11 @@
 #include <algorithm>
 #include <cstdlib>
 #include <iterator>
+#include <memory>
 #include <queue>
 #include <utility>
 #include <vector>
 
-#include "absl/memory/memory.h"
 #include "api/video/encoded_image.h"
 #include "api/video/video_timing.h"
 #include "modules/video_coding/include/video_coding_defines.h"
@@ -37,6 +37,10 @@ namespace video_coding {
 namespace {
 // Max number of frames the buffer will hold.
 constexpr size_t kMaxFramesBuffered = 800;
+
+// Default value for the maximum decode queue size that is used when the
+// low-latency renderer is used.
+constexpr size_t kZeroPlayoutDelayDefaultMaxDecodeQueueSize = 8;
 
 // Max number of decoded frame info that will be saved.
 constexpr int kMaxFramesHistory = 1 << 13;
@@ -61,9 +65,12 @@ FrameBuffer::FrameBuffer(Clock* clock,
       protection_mode_(kProtectionNack),
       stats_callback_(stats_callback),
       last_log_non_decoded_ms_(-kLogNonDecodedIntervalMs),
-      add_rtt_to_playout_delay_(
-          webrtc::field_trial::IsEnabled("WebRTC-AddRttToPlayoutDelay")),
-      rtt_mult_settings_(RttMultExperiment::GetRttMultValue()) {
+      rtt_mult_settings_(RttMultExperiment::GetRttMultValue()),
+      zero_playout_delay_max_decode_queue_size_(
+          "max_decode_queue_size",
+          kZeroPlayoutDelayDefaultMaxDecodeQueueSize) {
+  ParseFieldTrial({&zero_playout_delay_max_decode_queue_size_},
+                  field_trial::FindFullName("WebRTC-ZeroPlayoutDelay"));
   callback_checker_.Detach();
 }
 
@@ -71,11 +78,10 @@ FrameBuffer::~FrameBuffer() {
   RTC_DCHECK_RUN_ON(&construction_checker_);
 }
 
-void FrameBuffer::NextFrame(
-    int64_t max_wait_time_ms,
-    bool keyframe_required,
-    rtc::TaskQueue* callback_queue,
-    std::function<void(std::unique_ptr<EncodedFrame>, ReturnReason)> handler) {
+void FrameBuffer::NextFrame(int64_t max_wait_time_ms,
+                            bool keyframe_required,
+                            rtc::TaskQueue* callback_queue,
+                            NextFrameCallback handler) {
   RTC_DCHECK_RUN_ON(&callback_checker_);
   RTC_DCHECK(callback_queue->IsCurrent());
   TRACE_EVENT0("webrtc", "FrameBuffer::NextFrame");
@@ -103,13 +109,14 @@ void FrameBuffer::StartWaitForNextFrameOnQueue() {
         // If this task has not been cancelled, we did not get any new frames
         // while waiting. Continue with frame delivery.
         std::unique_ptr<EncodedFrame> frame;
-        std::function<void(std::unique_ptr<EncodedFrame>, ReturnReason)>
-            frame_handler;
+        NextFrameCallback frame_handler;
         {
           MutexLock lock(&mutex_);
           if (!frames_to_decode_.empty()) {
             // We have frames, deliver!
-            frame = absl::WrapUnique(GetNextFrame());
+            frame = GetNextFrame();
+            timing_->SetLastDecodeScheduledTimestamp(
+                clock_->TimeInMilliseconds());
           } else if (clock_->TimeInMilliseconds() < latest_return_time_ms_) {
             // If there's no frames to decode and there is still time left, it
             // means that the frame buffer was cleared between creation and
@@ -121,8 +128,7 @@ void FrameBuffer::StartWaitForNextFrameOnQueue() {
           CancelCallback();
         }
         // Deliver frame, if any. Otherwise signal timeout.
-        ReturnReason reason = frame ? kFrameFound : kTimeout;
-        frame_handler(std::move(frame), reason);
+        frame_handler(std::move(frame));
         return TimeDelta::Zero();  // Ignored.
       });
 }
@@ -131,7 +137,7 @@ int64_t FrameBuffer::FindNextFrame(int64_t now_ms) {
   int64_t wait_ms = latest_return_time_ms_ - now_ms;
   frames_to_decode_.clear();
 
-  // |last_continuous_frame_| may be empty below, but nullopt is smaller
+  // `last_continuous_frame_` may be empty below, but nullopt is smaller
   // than everything else and loop will immediately terminate as expected.
   for (auto frame_it = frames_.begin();
        frame_it != frames_.end() && frame_it->first <= last_continuous_frame_;
@@ -210,7 +216,11 @@ int64_t FrameBuffer::FindNextFrame(int64_t now_ms) {
     if (frame->RenderTime() == -1) {
       frame->SetRenderTime(timing_->RenderTimeMs(frame->Timestamp(), now_ms));
     }
-    wait_ms = timing_->MaxWaitingTime(frame->RenderTime(), now_ms);
+    bool too_many_frames_queued =
+        frames_.size() > zero_playout_delay_max_decode_queue_size_ ? true
+                                                                   : false;
+    wait_ms = timing_->MaxWaitingTime(frame->RenderTime(), now_ms,
+                                      too_many_frames_queued);
 
     // This will cause the frame buffer to prefer high framerate rather
     // than high resolution in the case of the decoder not decoding fast
@@ -227,28 +237,28 @@ int64_t FrameBuffer::FindNextFrame(int64_t now_ms) {
   return wait_ms;
 }
 
-EncodedFrame* FrameBuffer::GetNextFrame() {
+std::unique_ptr<EncodedFrame> FrameBuffer::GetNextFrame() {
   RTC_DCHECK_RUN_ON(&callback_checker_);
   int64_t now_ms = clock_->TimeInMilliseconds();
-  // TODO(ilnik): remove |frames_out| use frames_to_decode_ directly.
-  std::vector<EncodedFrame*> frames_out;
+  // TODO(ilnik): remove `frames_out` use frames_to_decode_ directly.
+  std::vector<std::unique_ptr<EncodedFrame>> frames_out;
 
   RTC_DCHECK(!frames_to_decode_.empty());
   bool superframe_delayed_by_retransmission = false;
   size_t superframe_size = 0;
-  EncodedFrame* first_frame = frames_to_decode_[0]->second.frame.get();
-  int64_t render_time_ms = first_frame->RenderTime();
-  int64_t receive_time_ms = first_frame->ReceivedTime();
+  const EncodedFrame& first_frame = *frames_to_decode_[0]->second.frame;
+  int64_t render_time_ms = first_frame.RenderTime();
+  int64_t receive_time_ms = first_frame.ReceivedTime();
   // Gracefully handle bad RTP timestamps and render time issues.
-  if (HasBadRenderTiming(*first_frame, now_ms)) {
+  if (HasBadRenderTiming(first_frame, now_ms)) {
     jitter_estimator_.Reset();
     timing_->Reset();
-    render_time_ms = timing_->RenderTimeMs(first_frame->Timestamp(), now_ms);
+    render_time_ms = timing_->RenderTimeMs(first_frame.Timestamp(), now_ms);
   }
 
   for (FrameMap::iterator& frame_it : frames_to_decode_) {
     RTC_DCHECK(frame_it != frames_.end());
-    EncodedFrame* frame = frame_it->second.frame.release();
+    std::unique_ptr<EncodedFrame> frame = std::move(frame_it->second.frame);
 
     frame->SetRenderTime(render_time_ms);
 
@@ -273,14 +283,14 @@ EncodedFrame* FrameBuffer::GetNextFrame() {
 
     frames_.erase(frames_.begin(), ++frame_it);
 
-    frames_out.push_back(frame);
+    frames_out.emplace_back(std::move(frame));
   }
 
   if (!superframe_delayed_by_retransmission) {
     int64_t frame_delay;
 
-    if (inter_frame_delay_.CalculateDelay(first_frame->Timestamp(),
-                                          &frame_delay, receive_time_ms)) {
+    if (inter_frame_delay_.CalculateDelay(first_frame.Timestamp(), &frame_delay,
+                                          receive_time_ms)) {
       jitter_estimator_.UpdateEstimate(frame_delay, superframe_size);
     }
 
@@ -294,7 +304,7 @@ EncodedFrame* FrameBuffer::GetNextFrame() {
         jitter_estimator_.GetJitterEstimate(rtt_mult, rtt_mult_add_cap_ms));
     timing_->UpdateCurrentDelay(render_time_ms, now_ms);
   } else {
-    if (RttMultExperiment::RttMultEnabled() || add_rtt_to_playout_delay_)
+    if (RttMultExperiment::RttMultEnabled())
       jitter_estimator_.FrameNacked();
   }
 
@@ -302,9 +312,9 @@ EncodedFrame* FrameBuffer::GetNextFrame() {
   UpdateTimingFrameInfo();
 
   if (frames_out.size() == 1) {
-    return frames_out[0];
+    return std::move(frames_out[0]);
   } else {
-    return CombineAndDeleteFrames(frames_out);
+    return CombineAndDeleteFrames(std::move(frames_out));
   }
 }
 
@@ -547,13 +557,13 @@ bool FrameBuffer::UpdateFrameInfoWithIncomingFrame(const EncodedFrame& frame,
   auto last_decoded_frame = decoded_frames_history_.GetLastDecodedFrameId();
   RTC_DCHECK(!last_decoded_frame || *last_decoded_frame < info->first);
 
-  // In this function we determine how many missing dependencies this |frame|
-  // has to become continuous/decodable. If a frame that this |frame| depend
+  // In this function we determine how many missing dependencies this `frame`
+  // has to become continuous/decodable. If a frame that this `frame` depend
   // on has already been decoded then we can ignore that dependency since it has
   // already been fulfilled.
   //
-  // For all other frames we will register a backwards reference to this |frame|
-  // so that |num_missing_continuous| and |num_missing_decodable| can be
+  // For all other frames we will register a backwards reference to this `frame`
+  // so that `num_missing_continuous` and `num_missing_decodable` can be
   // decremented as frames become continuous/are decoded.
   struct Dependency {
     int64_t frame_id;
@@ -563,9 +573,9 @@ bool FrameBuffer::UpdateFrameInfoWithIncomingFrame(const EncodedFrame& frame,
 
   // Find all dependencies that have not yet been fulfilled.
   for (size_t i = 0; i < frame.num_references; ++i) {
-    // Does |frame| depend on a frame earlier than the last decoded one?
+    // Does `frame` depend on a frame earlier than the last decoded one?
     if (last_decoded_frame && frame.references[i] <= *last_decoded_frame) {
-      // Was that frame decoded? If not, this |frame| will never become
+      // Was that frame decoded? If not, this `frame` will never become
       // decodable.
       if (!decoded_frames_history_.WasDecoded(frame.references[i])) {
         int64_t now_ms = clock_->TimeInMilliseconds();
@@ -647,15 +657,15 @@ void FrameBuffer::ClearFramesAndHistory() {
 
 // TODO(philipel): Avoid the concatenation of frames here, by replacing
 // NextFrame and GetNextFrame with methods returning multiple frames.
-EncodedFrame* FrameBuffer::CombineAndDeleteFrames(
-    const std::vector<EncodedFrame*>& frames) const {
+std::unique_ptr<EncodedFrame> FrameBuffer::CombineAndDeleteFrames(
+    std::vector<std::unique_ptr<EncodedFrame>> frames) const {
   RTC_DCHECK(!frames.empty());
-  EncodedFrame* first_frame = frames[0];
-  EncodedFrame* last_frame = frames.back();
   size_t total_length = 0;
-  for (size_t i = 0; i < frames.size(); ++i) {
-    total_length += frames[i]->size();
+  for (const auto& frame : frames) {
+    total_length += frame->size();
   }
+  const EncodedFrame& last_frame = *frames.back();
+  std::unique_ptr<EncodedFrame> first_frame = std::move(frames[0]);
   auto encoded_image_buffer = EncodedImageBuffer::Create(total_length);
   uint8_t* buffer = encoded_image_buffer->data();
   first_frame->SetSpatialLayerFrameSize(first_frame->SpatialIndex().value_or(0),
@@ -665,21 +675,21 @@ EncodedFrame* FrameBuffer::CombineAndDeleteFrames(
 
   // Spatial index of combined frame is set equal to spatial index of its top
   // spatial layer.
-  first_frame->SetSpatialIndex(last_frame->SpatialIndex().value_or(0));
+  first_frame->SetSpatialIndex(last_frame.SpatialIndex().value_or(0));
 
   first_frame->video_timing_mutable()->network2_timestamp_ms =
-      last_frame->video_timing().network2_timestamp_ms;
+      last_frame.video_timing().network2_timestamp_ms;
   first_frame->video_timing_mutable()->receive_finish_ms =
-      last_frame->video_timing().receive_finish_ms;
+      last_frame.video_timing().receive_finish_ms;
 
   // Append all remaining frames to the first one.
   for (size_t i = 1; i < frames.size(); ++i) {
-    EncodedFrame* next_frame = frames[i];
+    // Let |next_frame| fall out of scope so it is deleted after copying.
+    std::unique_ptr<EncodedFrame> next_frame = std::move(frames[i]);
     first_frame->SetSpatialLayerFrameSize(
         next_frame->SpatialIndex().value_or(0), next_frame->size());
     memcpy(buffer, next_frame->data(), next_frame->size());
     buffer += next_frame->size();
-    delete next_frame;
   }
   first_frame->SetEncodedData(encoded_image_buffer);
   return first_frame;

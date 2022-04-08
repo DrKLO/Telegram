@@ -69,7 +69,7 @@ size_t UnpackAddressFromNAT(const char* buf,
 }
 
 // NATSocket
-class NATSocket : public AsyncSocket, public sigslot::has_slots<> {
+class NATSocket : public Socket, public sigslot::has_slots<> {
  public:
   explicit NATSocket(NATInternalSocketFactory* sf, int family, int type)
       : sf_(sf),
@@ -103,7 +103,7 @@ class NATSocket : public AsyncSocket, public sigslot::has_slots<> {
 
   int Connect(const SocketAddress& addr) override {
     int result = 0;
-    // If we're not already bound (meaning |socket_| is null), bind to ANY
+    // If we're not already bound (meaning `socket_` is null), bind to ANY
     // address.
     if (!socket_) {
       result = BindInternal(SocketAddress(GetAnyIP(family_), 0));
@@ -213,7 +213,7 @@ class NATSocket : public AsyncSocket, public sigslot::has_slots<> {
   }
 
   int Listen(int backlog) override { return socket_->Listen(backlog); }
-  AsyncSocket* Accept(SocketAddress* paddr) override {
+  Socket* Accept(SocketAddress* paddr) override {
     return socket_->Accept(paddr);
   }
   int GetError() const override {
@@ -236,7 +236,7 @@ class NATSocket : public AsyncSocket, public sigslot::has_slots<> {
     return socket_ ? socket_->SetOption(opt, value) : -1;
   }
 
-  void OnConnectEvent(AsyncSocket* socket) {
+  void OnConnectEvent(Socket* socket) {
     // If we're NATed, we need to send a message with the real addr to use.
     RTC_DCHECK(socket == socket_);
     if (server_addr_.IsNil()) {
@@ -246,7 +246,7 @@ class NATSocket : public AsyncSocket, public sigslot::has_slots<> {
       SendConnectRequest();
     }
   }
-  void OnReadEvent(AsyncSocket* socket) {
+  void OnReadEvent(Socket* socket) {
     // If we're NATed, we need to process the connect reply.
     RTC_DCHECK(socket == socket_);
     if (type_ == SOCK_STREAM && !server_addr_.IsNil() && !connected_) {
@@ -255,11 +255,11 @@ class NATSocket : public AsyncSocket, public sigslot::has_slots<> {
       SignalReadEvent(this);
     }
   }
-  void OnWriteEvent(AsyncSocket* socket) {
+  void OnWriteEvent(Socket* socket) {
     RTC_DCHECK(socket == socket_);
     SignalWriteEvent(this);
   }
-  void OnCloseEvent(AsyncSocket* socket, int error) {
+  void OnCloseEvent(Socket* socket, int error) {
     RTC_DCHECK(socket == socket_);
     SignalCloseEvent(this, error);
   }
@@ -320,7 +320,7 @@ class NATSocket : public AsyncSocket, public sigslot::has_slots<> {
   bool connected_;
   SocketAddress remote_addr_;
   SocketAddress server_addr_;  // address of the NAT server
-  AsyncSocket* socket_;
+  Socket* socket_;
   // Need to hold error in case it occurs before the socket is created.
   int error_ = 0;
   char* buf_;
@@ -339,21 +339,16 @@ Socket* NATSocketFactory::CreateSocket(int family, int type) {
   return new NATSocket(this, family, type);
 }
 
-AsyncSocket* NATSocketFactory::CreateAsyncSocket(int family, int type) {
-  return new NATSocket(this, family, type);
-}
-
-AsyncSocket* NATSocketFactory::CreateInternalSocket(
-    int family,
-    int type,
-    const SocketAddress& local_addr,
-    SocketAddress* nat_addr) {
+Socket* NATSocketFactory::CreateInternalSocket(int family,
+                                               int type,
+                                               const SocketAddress& local_addr,
+                                               SocketAddress* nat_addr) {
   if (type == SOCK_STREAM) {
     *nat_addr = nat_tcp_addr_;
   } else {
     *nat_addr = nat_udp_addr_;
   }
-  return factory_->CreateAsyncSocket(family, type);
+  return factory_->CreateSocket(family, type);
 }
 
 // NATSocketServer
@@ -384,10 +379,6 @@ Socket* NATSocketServer::CreateSocket(int family, int type) {
   return new NATSocket(this, family, type);
 }
 
-AsyncSocket* NATSocketServer::CreateAsyncSocket(int family, int type) {
-  return new NATSocket(this, family, type);
-}
-
 void NATSocketServer::SetMessageQueue(Thread* queue) {
   msg_queue_ = queue;
   server_->SetMessageQueue(queue);
@@ -401,19 +392,18 @@ void NATSocketServer::WakeUp() {
   server_->WakeUp();
 }
 
-AsyncSocket* NATSocketServer::CreateInternalSocket(
-    int family,
-    int type,
-    const SocketAddress& local_addr,
-    SocketAddress* nat_addr) {
-  AsyncSocket* socket = nullptr;
+Socket* NATSocketServer::CreateInternalSocket(int family,
+                                              int type,
+                                              const SocketAddress& local_addr,
+                                              SocketAddress* nat_addr) {
+  Socket* socket = nullptr;
   Translator* nat = nats_.FindClient(local_addr);
   if (nat) {
-    socket = nat->internal_factory()->CreateAsyncSocket(family, type);
+    socket = nat->internal_factory()->CreateSocket(family, type);
     *nat_addr = (type == SOCK_STREAM) ? nat->internal_tcp_address()
                                       : nat->internal_udp_address();
   } else {
-    socket = server_->CreateAsyncSocket(family, type);
+    socket = server_->CreateSocket(family, type);
   }
   return socket;
 }

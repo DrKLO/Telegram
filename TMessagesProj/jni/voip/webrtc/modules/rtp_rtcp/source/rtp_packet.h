@@ -26,9 +26,9 @@ class RtpPacket {
   using ExtensionType = RTPExtensionType;
   using ExtensionManager = RtpHeaderExtensionMap;
 
-  // |extensions| required for SetExtension/ReserveExtension functions during
+  // `extensions` required for SetExtension/ReserveExtension functions during
   // packet creating and used if available in Parse function.
-  // Adding and getting extensions will fail until |extensions| is
+  // Adding and getting extensions will fail until `extensions` is
   // provided via constructor or IdentifyExtensions function.
   // |*extensions| is only accessed during construction; the pointer is not
   // stored.
@@ -51,7 +51,7 @@ class RtpPacket {
   bool Parse(rtc::CopyOnWriteBuffer packet);
 
   // Maps extensions id to their types.
-  void IdentifyExtensions(const ExtensionManager& extensions);
+  void IdentifyExtensions(ExtensionManager extensions);
 
   // Header.
   bool Marker() const { return marker_; }
@@ -65,6 +65,7 @@ class RtpPacket {
 
   // Payload.
   size_t payload_size() const { return payload_size_; }
+  bool has_padding() const { return buffer_[0] & 0x20; }
   size_t padding_size() const { return padding_size_; }
   rtc::ArrayView<const uint8_t> payload() const {
     return rtc::MakeArrayView(data() + payload_offset_, payload_size_);
@@ -98,7 +99,7 @@ class RtpPacket {
   // which are modified after FEC protection is generated.
   void ZeroMutableExtensions();
 
-  // Removes extension of given |type|, returns false is extension was not
+  // Removes extension of given `type`, returns false is extension was not
   // registered in packet's extension map or not present in the packet. Only
   // extension that should be removed must be registered, other extensions may
   // not be registered and will be preserved as is.
@@ -113,6 +114,11 @@ class RtpPacket {
   template <typename Extension>
   bool HasExtension() const;
   bool HasExtension(ExtensionType type) const;
+
+  // Returns whether there is an associated id for the extension and thus it is
+  // possible to set the extension.
+  template <typename Extension>
+  bool IsRegistered() const;
 
   template <typename Extension, typename FirstValue, typename... Values>
   bool GetExtension(FirstValue, Values...) const;
@@ -130,11 +136,11 @@ class RtpPacket {
   template <typename Extension>
   bool ReserveExtension();
 
-  // Find or allocate an extension |type|. Returns view of size |length|
+  // Find or allocate an extension `type`. Returns view of size `length`
   // to write raw extension to or an empty view on failure.
   rtc::ArrayView<uint8_t> AllocateExtension(ExtensionType type, size_t length);
 
-  // Find an extension |type|.
+  // Find an extension `type`.
   // Returns view of the raw extension or empty view on failure.
   rtc::ArrayView<const uint8_t> FindExtension(ExtensionType type) const;
 
@@ -205,6 +211,11 @@ class RtpPacket {
 template <typename Extension>
 bool RtpPacket::HasExtension() const {
   return HasExtension(Extension::kId);
+}
+
+template <typename Extension>
+bool RtpPacket::IsRegistered() const {
+  return extensions_.IsRegistered(Extension::kId);
 }
 
 template <typename Extension, typename FirstValue, typename... Values>

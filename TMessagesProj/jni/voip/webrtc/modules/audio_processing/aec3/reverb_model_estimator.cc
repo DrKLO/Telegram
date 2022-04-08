@@ -15,7 +15,10 @@ namespace webrtc {
 ReverbModelEstimator::ReverbModelEstimator(const EchoCanceller3Config& config,
                                            size_t num_capture_channels)
     : reverb_decay_estimators_(num_capture_channels),
-      reverb_frequency_responses_(num_capture_channels) {
+      reverb_frequency_responses_(
+          num_capture_channels,
+          ReverbFrequencyResponse(
+              config.ep_strength.use_conservative_tail_frequency_response)) {
   for (size_t ch = 0; ch < reverb_decay_estimators_.size(); ++ch) {
     reverb_decay_estimators_[ch] =
         std::make_unique<ReverbDecayEstimator>(config);

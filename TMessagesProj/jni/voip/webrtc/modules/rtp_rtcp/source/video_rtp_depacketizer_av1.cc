@@ -191,14 +191,15 @@ VectorObuInfo ParseObus(
         reinterpret_cast<const char*>(rtp_payload.data()), rtp_payload.size());
     uint8_t aggregation_header;
     if (!payload.ReadUInt8(&aggregation_header)) {
-      RTC_DLOG(WARNING) << "Failed to find aggregation header in the packet.";
+      RTC_DLOG(LS_WARNING)
+          << "Failed to find aggregation header in the packet.";
       return {};
     }
     // Z-bit: 1 if the first OBU contained in the packet is a continuation of a
     // previous OBU.
     bool continues_obu = RtpStartsWithFragment(aggregation_header);
     if (continues_obu != expect_continues_obu) {
-      RTC_DLOG(WARNING) << "Unexpected Z-bit " << continues_obu;
+      RTC_DLOG(LS_WARNING) << "Unexpected Z-bit " << continues_obu;
       return {};
     }
     int num_expected_obus = RtpNumObus(aggregation_header);
@@ -206,7 +207,8 @@ VectorObuInfo ParseObus(
       // rtp packet has just the aggregation header. That may be valid only when
       // there is exactly one fragment in the packet of size 0.
       if (num_expected_obus != 1) {
-        RTC_DLOG(WARNING) << "Invalid packet with just an aggregation header.";
+        RTC_DLOG(LS_WARNING)
+            << "Invalid packet with just an aggregation header.";
         return {};
       }
       if (!continues_obu) {
@@ -228,16 +230,16 @@ VectorObuInfo ParseObus(
       bool has_fragment_size = (obu_index != num_expected_obus);
       if (has_fragment_size) {
         if (!payload.ReadUVarint(&fragment_size)) {
-          RTC_DLOG(WARNING) << "Failed to read fragment size for obu #"
-                            << obu_index << "/" << num_expected_obus;
+          RTC_DLOG(LS_WARNING) << "Failed to read fragment size for obu #"
+                               << obu_index << "/" << num_expected_obus;
           return {};
         }
         if (fragment_size > payload.Length()) {
           // Malformed input: written size is larger than remaining buffer.
-          RTC_DLOG(WARNING) << "Malformed fragment size " << fragment_size
-                            << " is larger than remaining size "
-                            << payload.Length() << " while reading obu #"
-                            << obu_index << "/" << num_expected_obus;
+          RTC_DLOG(LS_WARNING) << "Malformed fragment size " << fragment_size
+                               << " is larger than remaining size "
+                               << payload.Length() << " while reading obu #"
+                               << obu_index << "/" << num_expected_obus;
           return {};
         }
       } else {
@@ -254,7 +256,7 @@ VectorObuInfo ParseObus(
     expect_continues_obu = RtpEndsWithFragment(aggregation_header);
   }
   if (expect_continues_obu) {
-    RTC_DLOG(WARNING) << "Last packet shouldn't have last obu fragmented.";
+    RTC_DLOG(LS_WARNING) << "Last packet shouldn't have last obu fragmented.";
     return {};
   }
   return obu_infos;
@@ -278,7 +280,7 @@ int WriteLeb128(uint32_t value, uint8_t* buffer) {
 // Returns false if obu found to be misformed.
 bool CalculateObuSizes(ObuInfo* obu_info) {
   if (obu_info->data.empty()) {
-    RTC_DLOG(WARNING) << "Invalid bitstream: empty obu provided.";
+    RTC_DLOG(LS_WARNING) << "Invalid bitstream: empty obu provided.";
     return false;
   }
   auto it = obu_info->data.begin();
@@ -305,7 +307,7 @@ bool CalculateObuSizes(ObuInfo* obu_info) {
     uint8_t leb128_byte;
     do {
       if (it == obu_info->data.end() || size_of_obu_size_bytes >= 8) {
-        RTC_DLOG(WARNING)
+        RTC_DLOG(LS_WARNING)
             << "Failed to read obu_size. obu_size field is too long: "
             << size_of_obu_size_bytes << " bytes processed.";
         return false;
@@ -321,8 +323,9 @@ bool CalculateObuSizes(ObuInfo* obu_info) {
         obu_info->data.size() - obu_info->prefix_size - size_of_obu_size_bytes;
     if (obu_size_bytes != obu_info->payload_size) {
       // obu_size was present in the bitstream and mismatches calculated size.
-      RTC_DLOG(WARNING) << "Mismatch in obu_size. signaled: " << obu_size_bytes
-                        << ", actual: " << obu_info->payload_size;
+      RTC_DLOG(LS_WARNING) << "Mismatch in obu_size. signaled: "
+                           << obu_size_bytes
+                           << ", actual: " << obu_info->payload_size;
       return false;
     }
   }

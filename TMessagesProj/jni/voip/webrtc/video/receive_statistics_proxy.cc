@@ -25,7 +25,7 @@
 
 namespace webrtc {
 namespace {
-// Periodic time interval for processing samples for |freq_offset_counter_|.
+// Periodic time interval for processing samples for `freq_offset_counter_`.
 const int64_t kFreqOffsetProcessIntervalMs = 40000;
 
 // Configuration for bad call detection.
@@ -80,11 +80,9 @@ std::string UmaSuffixForContentType(VideoContentType content_type) {
 
 }  // namespace
 
-ReceiveStatisticsProxy::ReceiveStatisticsProxy(
-    const VideoReceiveStream::Config* config,
-    Clock* clock)
+ReceiveStatisticsProxy::ReceiveStatisticsProxy(uint32_t remote_ssrc,
+                                               Clock* clock)
     : clock_(clock),
-      config_(*config),
       start_ms_(clock->TimeInMilliseconds()),
       enable_decode_time_histograms_(
           !field_trial::IsEnabled("WebRTC-DecodeTimeHistogramsKillSwitch")),
@@ -120,7 +118,7 @@ ReceiveStatisticsProxy::ReceiveStatisticsProxy(
       timing_frame_info_counter_(kMovingMaxWindowMs) {
   decode_thread_.Detach();
   network_thread_.Detach();
-  stats_.ssrc = config_.rtp.remote_ssrc;
+  stats_.ssrc = remote_ssrc;
 }
 
 void ReceiveStatisticsProxy::UpdateHistograms(
@@ -129,7 +127,7 @@ void ReceiveStatisticsProxy::UpdateHistograms(
     const StreamDataCounters* rtx_stats) {
   // Not actually running on the decoder thread, but must be called after
   // DecoderThreadStopped, which detaches the thread checker. It is therefore
-  // safe to access |qp_counters_|, which were updated on the decode thread
+  // safe to access `qp_counters_`, which were updated on the decode thread
   // earlier.
   RTC_DCHECK_RUN_ON(&decode_thread_);
 
@@ -381,12 +379,12 @@ void ReceiveStatisticsProxy::UpdateHistograms(
                    << " " << media_bitrate_kbps << '\n';
       }
 
-      int num_total_frames =
+      int num_total_frames2 =
           stats.frame_counts.key_frames + stats.frame_counts.delta_frames;
-      if (num_total_frames >= kMinRequiredSamples) {
+      if (num_total_frames2 >= kMinRequiredSamples) {
         int num_key_frames = stats.frame_counts.key_frames;
         int key_frames_permille =
-            (num_key_frames * 1000 + num_total_frames / 2) / num_total_frames;
+            (num_key_frames * 1000 + num_total_frames2 / 2) / num_total_frames2;
         RTC_HISTOGRAM_COUNTS_SPARSE_1000(
             uma_prefix + ".KeyFramesReceivedInPermille" + uma_suffix,
             key_frames_permille);
@@ -394,12 +392,12 @@ void ReceiveStatisticsProxy::UpdateHistograms(
                    << " " << key_frames_permille << '\n';
       }
 
-      absl::optional<int> qp = stats.qp_counter.Avg(kMinRequiredSamples);
-      if (qp) {
+      absl::optional<int> qp2 = stats.qp_counter.Avg(kMinRequiredSamples);
+      if (qp2) {
         RTC_HISTOGRAM_COUNTS_SPARSE_200(
-            uma_prefix + ".Decoded.Vp8.Qp" + uma_suffix, *qp);
+            uma_prefix + ".Decoded.Vp8.Qp" + uma_suffix, *qp2);
         log_stream << uma_prefix << ".Decoded.Vp8.Qp" << uma_suffix << " "
-                   << *qp << '\n';
+                   << *qp2 << '\n';
       }
     }
   }

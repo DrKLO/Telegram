@@ -41,7 +41,7 @@ const char kCallSessionLogPrefix[] = "webrtc_log";
 
 std::string AddTrailingPathDelimiterIfNeeded(std::string directory);
 
-// |dir| must have a trailing delimiter. |prefix| must not include wild card
+// `dir` must have a trailing delimiter. `prefix` must not include wild card
 // characters.
 std::vector<std::string> GetFilesWithPrefix(const std::string& directory,
                                             const std::string& prefix);
@@ -291,7 +291,7 @@ void FileRotatingStream::CloseCurrentFile() {
 
 void FileRotatingStream::RotateFiles() {
   CloseCurrentFile();
-  // Rotates the files by deleting the file at |rotation_index_|, which is the
+  // Rotates the files by deleting the file at `rotation_index_`, which is the
   // oldest file and then renaming the newer files to have an incremented index.
   // See header file comments for example.
   RTC_DCHECK_LT(rotation_index_, file_names_.size());

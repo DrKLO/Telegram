@@ -37,7 +37,7 @@ class EventWrapper {
   // be released. It is possible that multiple (random) threads are released
   // Depending on timing.
   //
-  // |max_time_ms| is the maximum time to wait in milliseconds.
+  // `max_time_ms` is the maximum time to wait in milliseconds.
   virtual EventTypeWrapper Wait(int max_time_ms) = 0;
 };
 

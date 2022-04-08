@@ -22,7 +22,7 @@ namespace webrtc {
 // operation.
 class SetRemoteDescriptionObserverInterface : public rtc::RefCountInterface {
  public:
-  // On success, |error.ok()| is true.
+  // On success, `error.ok()` is true.
   virtual void OnSetRemoteDescriptionComplete(RTCError error) = 0;
 };
 

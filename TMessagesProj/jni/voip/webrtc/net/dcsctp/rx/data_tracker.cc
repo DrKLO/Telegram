@@ -9,6 +9,7 @@
  */
 #include "net/dcsctp/rx/data_tracker.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <iterator>
 #include <set>
@@ -16,6 +17,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "net/dcsctp/common/sequence_numbers.h"
@@ -25,6 +27,86 @@
 #include "rtc_base/strings/string_builder.h"
 
 namespace dcsctp {
+
+constexpr size_t DataTracker::kMaxDuplicateTsnReported;
+constexpr size_t DataTracker::kMaxGapAckBlocksReported;
+
+bool DataTracker::AdditionalTsnBlocks::Add(UnwrappedTSN tsn) {
+  // Find any block to expand. It will look for any block that includes (also
+  // when expanded) the provided `tsn`. It will return the block that is greater
+  // than, or equal to `tsn`.
+  auto it = absl::c_lower_bound(
+      blocks_, tsn, [&](const TsnRange& elem, const UnwrappedTSN& t) {
+        return elem.last.next_value() < t;
+      });
+
+  if (it == blocks_.end()) {
+    // No matching block found. There is no greater than, or equal block - which
+    // means that this TSN is greater than any block. It can then be inserted at
+    // the end.
+    blocks_.emplace_back(tsn, tsn);
+    return true;
+  }
+
+  if (tsn >= it->first && tsn <= it->last) {
+    // It's already in this block.
+    return false;
+  }
+
+  if (it->last.next_value() == tsn) {
+    // This block can be expanded to the right, or merged with the next.
+    auto next_it = it + 1;
+    if (next_it != blocks_.end() && tsn.next_value() == next_it->first) {
+      // Expanding it would make it adjacent to next block - merge those.
+      it->last = next_it->last;
+      blocks_.erase(next_it);
+      return true;
+    }
+
+    // Expand to the right
+    it->last = tsn;
+    return true;
+  }
+
+  if (it->first == tsn.next_value()) {
+    // This block can be expanded to the left. Merging to the left would've been
+    // covered by the above "merge to the right". Both blocks (expand a
+    // right-most block to the left and expand a left-most block to the right)
+    // would match, but the left-most would be returned by std::lower_bound.
+    RTC_DCHECK(it == blocks_.begin() || (it - 1)->last.next_value() != tsn);
+
+    // Expand to the left.
+    it->first = tsn;
+    return true;
+  }
+
+  // Need to create a new block in the middle.
+  blocks_.emplace(it, tsn, tsn);
+  return true;
+}
+
+void DataTracker::AdditionalTsnBlocks::EraseTo(UnwrappedTSN tsn) {
+  // Find the block that is greater than or equals `tsn`.
+  auto it = absl::c_lower_bound(
+      blocks_, tsn, [&](const TsnRange& elem, const UnwrappedTSN& t) {
+        return elem.last < t;
+      });
+
+  // The block that is found is greater or equal (or possibly ::end, when no
+  // block is greater or equal). All blocks before this block can be safely
+  // removed. the TSN might be within this block, so possibly truncate it.
+  bool tsn_is_within_block = it != blocks_.end() && tsn >= it->first;
+  blocks_.erase(blocks_.begin(), it);
+
+  if (tsn_is_within_block) {
+    blocks_.front().first = tsn.next_value();
+  }
+}
+
+void DataTracker::AdditionalTsnBlocks::PopFront() {
+  RTC_DCHECK(!blocks_.empty());
+  blocks_.erase(blocks_.begin());
+}
 
 bool DataTracker::IsTSNValid(TSN tsn) const {
   UnwrappedTSN unwrapped_tsn = tsn_unwrapper_.PeekUnwrap(tsn);
@@ -52,24 +134,40 @@ void DataTracker::Observe(TSN tsn,
 
   // Old chunk already seen before?
   if (unwrapped_tsn <= last_cumulative_acked_tsn_) {
-    duplicate_tsns_.insert(unwrapped_tsn.Wrap());
-    return;
-  }
-
-  if (unwrapped_tsn == last_cumulative_acked_tsn_.next_value()) {
-    last_cumulative_acked_tsn_ = unwrapped_tsn;
-    // The cumulative acked tsn may be moved even further, if a gap was filled.
-    while (!additional_tsns_.empty() &&
-           *additional_tsns_.begin() ==
-               last_cumulative_acked_tsn_.next_value()) {
-      last_cumulative_acked_tsn_.Increment();
-      additional_tsns_.erase(additional_tsns_.begin());
-    }
-  } else {
-    bool inserted = additional_tsns_.insert(unwrapped_tsn).second;
-    if (!inserted) {
-      // Already seen before.
+    if (duplicate_tsns_.size() < kMaxDuplicateTsnReported) {
       duplicate_tsns_.insert(unwrapped_tsn.Wrap());
+    }
+    // https://datatracker.ietf.org/doc/html/rfc4960#section-6.2
+    // "When a packet arrives with duplicate DATA chunk(s) and with no new DATA
+    // chunk(s), the endpoint MUST immediately send a SACK with no delay. If a
+    // packet arrives with duplicate DATA chunk(s) bundled with new DATA chunks,
+    // the endpoint MAY immediately send a SACK."
+    UpdateAckState(AckState::kImmediate, "duplicate data");
+  } else {
+    if (unwrapped_tsn == last_cumulative_acked_tsn_.next_value()) {
+      last_cumulative_acked_tsn_ = unwrapped_tsn;
+      // The cumulative acked tsn may be moved even further, if a gap was
+      // filled.
+      if (!additional_tsn_blocks_.empty() &&
+          additional_tsn_blocks_.front().first ==
+              last_cumulative_acked_tsn_.next_value()) {
+        last_cumulative_acked_tsn_ = additional_tsn_blocks_.front().last;
+        additional_tsn_blocks_.PopFront();
+      }
+    } else {
+      bool inserted = additional_tsn_blocks_.Add(unwrapped_tsn);
+      if (!inserted) {
+        // Already seen before.
+        if (duplicate_tsns_.size() < kMaxDuplicateTsnReported) {
+          duplicate_tsns_.insert(unwrapped_tsn.Wrap());
+        }
+        // https://datatracker.ietf.org/doc/html/rfc4960#section-6.2
+        // "When a packet arrives with duplicate DATA chunk(s) and with no new
+        // DATA chunk(s), the endpoint MUST immediately send a SACK with no
+        // delay. If a packet arrives with duplicate DATA chunk(s) bundled with
+        // new DATA chunks, the endpoint MAY immediately send a SACK."
+        // No need to do this. SACKs are sent immediately on packet loss below.
+      }
     }
   }
 
@@ -79,7 +177,7 @@ void DataTracker::Observe(TSN tsn,
   // the received DATA chunk sequence, it SHOULD send a SACK with Gap Ack
   // Blocks immediately.  The data receiver continues sending a SACK after
   // receipt of each SCTP packet that doesn't fill the gap."
-  if (!additional_tsns_.empty()) {
+  if (!additional_tsn_blocks_.empty()) {
     UpdateAckState(AckState::kImmediate, "packet loss");
   }
 
@@ -143,24 +241,20 @@ void DataTracker::HandleForwardTsn(TSN new_cumulative_ack) {
   // `last_cumulative_acked_tsn_`, and if there have been prior "gaps" that are
   // now overlapping with the new value, remove them.
   last_cumulative_acked_tsn_ = unwrapped_tsn;
-  int erased_additional_tsns = std::distance(
-      additional_tsns_.begin(), additional_tsns_.upper_bound(unwrapped_tsn));
-  additional_tsns_.erase(additional_tsns_.begin(),
-                         additional_tsns_.upper_bound(unwrapped_tsn));
+  additional_tsn_blocks_.EraseTo(unwrapped_tsn);
 
   // See if the `last_cumulative_acked_tsn_` can be moved even further:
-  while (!additional_tsns_.empty() &&
-         *additional_tsns_.begin() == last_cumulative_acked_tsn_.next_value()) {
-    last_cumulative_acked_tsn_.Increment();
-    additional_tsns_.erase(additional_tsns_.begin());
-    ++erased_additional_tsns;
+  if (!additional_tsn_blocks_.empty() &&
+      additional_tsn_blocks_.front().first ==
+          last_cumulative_acked_tsn_.next_value()) {
+    last_cumulative_acked_tsn_ = additional_tsn_blocks_.front().last;
+    additional_tsn_blocks_.PopFront();
   }
 
   RTC_DLOG(LS_VERBOSE) << log_prefix_ << "FORWARD_TSN, cum_ack_tsn="
                        << *prev_last_cum_ack_tsn.Wrap() << "->"
                        << *new_cumulative_ack << "->"
-                       << *last_cumulative_acked_tsn_.Wrap() << ", removed "
-                       << erased_additional_tsns << " additional TSNs";
+                       << *last_cumulative_acked_tsn_.Wrap();
 
   // https://tools.ietf.org/html/rfc3758#section-3.6
   // "Any time a FORWARD TSN chunk arrives, for the purposes of sending a
@@ -190,39 +284,18 @@ SackChunk DataTracker::CreateSelectiveAck(size_t a_rwnd) {
 }
 
 std::vector<SackChunk::GapAckBlock> DataTracker::CreateGapAckBlocks() const {
-  // This method will calculate the gaps between blocks of contiguous values in
-  // `additional_tsns_`, in the same format as the SACK chunk expects it;
-  // offsets from the "cumulative ack TSN value".
+  const auto& blocks = additional_tsn_blocks_.blocks();
   std::vector<SackChunk::GapAckBlock> gap_ack_blocks;
-
-  absl::optional<UnwrappedTSN> first_tsn_in_block = absl::nullopt;
-  absl::optional<UnwrappedTSN> last_tsn_in_block = absl::nullopt;
-
-  auto flush = [&]() {
-    if (first_tsn_in_block.has_value()) {
-      auto start_diff = UnwrappedTSN::Difference(*first_tsn_in_block,
-                                                 last_cumulative_acked_tsn_);
-      auto end_diff = UnwrappedTSN::Difference(*last_tsn_in_block,
-                                               last_cumulative_acked_tsn_);
-      gap_ack_blocks.emplace_back(static_cast<uint16_t>(start_diff),
-                                  static_cast<uint16_t>(end_diff));
-      first_tsn_in_block = absl::nullopt;
-      last_tsn_in_block = absl::nullopt;
-    }
-  };
-  for (UnwrappedTSN tsn : additional_tsns_) {
-    if (last_tsn_in_block.has_value() &&
-        last_tsn_in_block->next_value() == tsn) {
-      // Continuing the same block.
-      last_tsn_in_block = tsn;
-    } else {
-      // New block, or a gap from the old block's last value.
-      flush();
-      first_tsn_in_block = tsn;
-      last_tsn_in_block = tsn;
-    }
+  gap_ack_blocks.reserve(std::min(blocks.size(), kMaxGapAckBlocksReported));
+  for (size_t i = 0; i < blocks.size() && i < kMaxGapAckBlocksReported; ++i) {
+    auto start_diff =
+        UnwrappedTSN::Difference(blocks[i].first, last_cumulative_acked_tsn_);
+    auto end_diff =
+        UnwrappedTSN::Difference(blocks[i].last, last_cumulative_acked_tsn_);
+    gap_ack_blocks.emplace_back(static_cast<uint16_t>(start_diff),
+                                static_cast<uint16_t>(end_diff));
   }
-  flush();
+
   return gap_ack_blocks;
 }
 
@@ -281,6 +354,19 @@ absl::string_view DataTracker::ToString(AckState ack_state) {
     case AckState::kImmediate:
       return "IMMEDIATE";
   }
+}
+
+HandoverReadinessStatus DataTracker::GetHandoverReadiness() const {
+  HandoverReadinessStatus status;
+  if (!additional_tsn_blocks_.empty()) {
+    status.Add(HandoverUnreadinessReason::kDataTrackerTsnBlocksPending);
+  }
+  return status;
+}
+
+void DataTracker::AddHandoverState(DcSctpSocketHandoverState& state) {
+  state.rx.last_cumulative_acked_tsn = last_cumulative_acked_tsn().value();
+  state.rx.seen_packet = seen_packet_;
 }
 
 }  // namespace dcsctp

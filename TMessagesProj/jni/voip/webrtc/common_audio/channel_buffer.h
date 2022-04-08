@@ -29,15 +29,15 @@ namespace webrtc {
 //
 // The buffer structure is showed below for a 2 channel and 2 bands case:
 //
-// |data_|:
+// `data_`:
 // { [ --- b1ch1 --- ] [ --- b2ch1 --- ] [ --- b1ch2 --- ] [ --- b2ch2 --- ] }
 //
 // The pointer arrays for the same example are as follows:
 //
-// |channels_|:
+// `channels_`:
 // { [ b1ch1* ] [ b1ch2* ] [ b2ch1* ] [ b2ch2* ] }
 //
-// |bands_|:
+// `bands_`:
 // { [ b1ch1* ] [ b2ch1* ] [ b1ch2* ] [ b2ch2* ] }
 template <typename T>
 class ChannelBuffer {
@@ -81,15 +81,15 @@ class ChannelBuffer {
   // If band is explicitly specificed, the channels for a specific band are
   // returned and the usage becomes: channels(band)[channel][sample].
   // Where:
-  // 0 <= band < |num_bands_|
-  // 0 <= channel < |num_allocated_channels_|
-  // 0 <= sample < |num_frames_per_band_|
+  // 0 <= band < `num_bands_`
+  // 0 <= channel < `num_allocated_channels_`
+  // 0 <= sample < `num_frames_per_band_`
 
   // If band is not explicitly specified, the full-band channels (or lower band
   // channels) are returned and the usage becomes: channels()[channel][sample].
   // Where:
-  // 0 <= channel < |num_allocated_channels_|
-  // 0 <= sample < |num_frames_|
+  // 0 <= channel < `num_allocated_channels_`
+  // 0 <= sample < `num_frames_`
   const T* const* channels(size_t band = 0) const {
     RTC_DCHECK_LT(band, num_bands_);
     return &channels_[band * num_allocated_channels_];
@@ -109,9 +109,9 @@ class ChannelBuffer {
   // Usage:
   // bands(channel)[band][sample].
   // Where:
-  // 0 <= channel < |num_channels_|
-  // 0 <= band < |num_bands_|
-  // 0 <= sample < |num_frames_per_band_|
+  // 0 <= channel < `num_channels_`
+  // 0 <= band < `num_bands_`
+  // 0 <= sample < `num_frames_per_band_`
   const T* const* bands(size_t channel) const {
     RTC_DCHECK_LT(channel, num_channels_);
     RTC_DCHECK_GE(channel, 0);
@@ -129,8 +129,8 @@ class ChannelBuffer {
     return bands_view_[channel];
   }
 
-  // Sets the |slice| pointers to the |start_frame| position for each channel.
-  // Returns |slice| for convenience.
+  // Sets the `slice` pointers to the `start_frame` position for each channel.
+  // Returns `slice` for convenience.
   const T* const* Slice(T** slice, size_t start_frame) const {
     RTC_DCHECK_LT(start_frame, num_frames_);
     for (size_t i = 0; i < num_channels_; ++i)

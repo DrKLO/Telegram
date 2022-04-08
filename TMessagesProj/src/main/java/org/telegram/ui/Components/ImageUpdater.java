@@ -18,7 +18,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
-import androidx.exifinterface.media.ExifInterface;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -26,32 +25,34 @@ import android.provider.MediaStore;
 import android.view.View;
 
 import androidx.core.content.FileProvider;
+import androidx.exifinterface.media.ExifInterface;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildConfig;
+import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.UserConfig;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.BasePermissionsActivity;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PhotoAlbumPickerActivity;
 import org.telegram.ui.PhotoCropActivity;
-import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.PhotoPickerActivity;
 import org.telegram.ui.PhotoViewer;
 
@@ -60,6 +61,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class ImageUpdater implements NotificationCenter.NotificationCenterDelegate, PhotoCropActivity.PhotoEditActivityDelegate {
+    private final static int ID_TAKE_PHOTO = 0,
+            ID_UPLOAD_FROM_GALLERY = 1,
+            ID_SEARCH_WEB = 2,
+            ID_REMOVE_PHOTO = 3,
+            ID_RECORD_VIDEO = 4;
 
     public BaseFragment parentFragment;
     private ImageUpdaterDelegate delegate;
@@ -156,27 +162,27 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
 
         items.add(LocaleController.getString("ChooseTakePhoto", R.string.ChooseTakePhoto));
         icons.add(R.drawable.menu_camera);
-        ids.add(0);
+        ids.add(ID_TAKE_PHOTO);
 
         if (canSelectVideo) {
             items.add(LocaleController.getString("ChooseRecordVideo", R.string.ChooseRecordVideo));
             icons.add(R.drawable.msg_video);
-            ids.add(4);
+            ids.add(ID_RECORD_VIDEO);
         }
 
         items.add(LocaleController.getString("ChooseFromGallery", R.string.ChooseFromGallery));
         icons.add(R.drawable.profile_photos);
-        ids.add(1);
+        ids.add(ID_UPLOAD_FROM_GALLERY);
 
         if (searchAvailable) {
             items.add(LocaleController.getString("ChooseFromSearch", R.string.ChooseFromSearch));
             icons.add(R.drawable.menu_search);
-            ids.add(2);
+            ids.add(ID_SEARCH_WEB);
         }
         if (hasAvatar) {
             items.add(LocaleController.getString("DeletePhoto", R.string.DeletePhoto));
             icons.add(R.drawable.chats_delete);
-            ids.add(3);
+            ids.add(ID_REMOVE_PHOTO);
         }
 
         int[] iconsRes = new int[icons.size()];
@@ -186,16 +192,22 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
 
         builder.setItems(items.toArray(new CharSequence[0]), iconsRes, (dialogInterface, i) -> {
             int id = ids.get(i);
-            if (id == 0) {
-                openCamera();
-            } else if (id == 1) {
-                openGallery();
-            } else if (id == 2) {
-                openSearch();
-            } else if (id == 3) {
-                onDeleteAvatar.run();
-            } else if (id == 4) {
-                openVideoCamera();
+            switch (id) {
+                case ID_TAKE_PHOTO:
+                    openCamera();
+                    break;
+                case ID_UPLOAD_FROM_GALLERY:
+                    openGallery();
+                    break;
+                case ID_SEARCH_WEB:
+                    openSearch();
+                    break;
+                case ID_REMOVE_PHOTO:
+                    onDeleteAvatar.run();
+                    break;
+                case ID_RECORD_VIDEO:
+                    openVideoCamera();
+                    break;
             }
         });
         BottomSheet sheet = builder.create();
@@ -386,7 +398,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
                         didSelectPhotos(media);
 
                         if (button != 8) {
-                            chatAttachAlert.dismiss();
+                            chatAttachAlert.dismiss(true);
                         }
                         return;
                     } else {
@@ -497,7 +509,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
         }
         try {
             if (Build.VERSION.SDK_INT >= 23 && parentFragment.getParentActivity().checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-                parentFragment.getParentActivity().requestPermissions(new String[]{Manifest.permission.CAMERA}, 20);
+                parentFragment.getParentActivity().requestPermissions(new String[]{Manifest.permission.CAMERA}, BasePermissionsActivity.REQUEST_CODE_OPEN_CAMERA);
                 return;
             }
             Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
@@ -550,8 +562,13 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
     }
 
     public void onRequestPermissionsResultFragment(int requestCode, String[] permissions, int[] grantResults) {
-        if (requestCode == 17 && chatAttachAlert != null) {
-            chatAttachAlert.getPhotoLayout().checkCamera(false);
+        if (chatAttachAlert != null) {
+            if (requestCode == 17) {
+                chatAttachAlert.getPhotoLayout().checkCamera(false);
+                chatAttachAlert.getPhotoLayout().checkStorage();
+            } else if (requestCode == BasePermissionsActivity.REQUEST_CODE_EXTERNAL_STORAGE) {
+                chatAttachAlert.getPhotoLayout().checkStorage();
+            }
         }
     }
 
@@ -561,7 +578,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
         }
         if (Build.VERSION.SDK_INT >= 23 && parentFragment.getParentActivity() != null) {
             if (parentFragment.getParentActivity().checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                parentFragment.getParentActivity().requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 4);
+                parentFragment.getParentActivity().requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, BasePermissionsActivity.REQUEST_CODE_EXTERNAL_STORAGE_FOR_AVATAR);
                 return;
             }
         }
@@ -668,6 +685,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
                 }
                 currentPicturePath = null;
             } else if (requestCode == 13) {
+                parentFragment.getParentActivity().overridePendingTransition(R.anim.alpha_in, R.anim.alpha_out);
                 PhotoViewer.getInstance().setParentActivity(parentFragment.getParentActivity());
                 int orientation = 0;
                 try {

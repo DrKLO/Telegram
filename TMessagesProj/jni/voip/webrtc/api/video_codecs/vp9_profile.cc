@@ -47,7 +47,6 @@ absl::optional<VP9Profile> StringToVP9Profile(const std::string& str) {
     default:
       return absl::nullopt;
   }
-  return absl::nullopt;
 }
 
 absl::optional<VP9Profile> ParseSdpForVP9Profile(

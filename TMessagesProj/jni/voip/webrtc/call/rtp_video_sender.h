@@ -35,7 +35,6 @@
 #include "modules/rtp_rtcp/source/rtp_sender_video.h"
 #include "modules/rtp_rtcp/source/rtp_sequence_number_map.h"
 #include "modules/rtp_rtcp/source/rtp_video_header.h"
-#include "modules/utility/include/process_thread.h"
 #include "rtc_base/constructor_magic.h"
 #include "rtc_base/rate_limiter.h"
 #include "rtc_base/synchronization/mutex.h"
@@ -75,7 +74,7 @@ class RtpVideoSender : public RtpVideoSenderInterface,
   // Rtp modules are assumed to be sorted in simulcast index order.
   RtpVideoSender(
       Clock* clock,
-      std::map<uint32_t, RtpState> suspended_ssrcs,
+      const std::map<uint32_t, RtpState>& suspended_ssrcs,
       const std::map<uint32_t, RtpPayloadState>& states,
       const RtpConfig& rtp_config,
       int rtcp_report_interval_ms,
@@ -89,15 +88,6 @@ class RtpVideoSender : public RtpVideoSenderInterface,
       const CryptoOptions& crypto_options,  // move inside RtpTransport
       rtc::scoped_refptr<FrameTransformerInterface> frame_transformer);
   ~RtpVideoSender() override;
-
-  // RegisterProcessThread register |module_process_thread| with those objects
-  // that use it. Registration has to happen on the thread were
-  // |module_process_thread| was created (libjingle's worker thread).
-  // TODO(perkj): Replace the use of |module_process_thread| with a TaskQueue,
-  // maybe |worker_queue|.
-  void RegisterProcessThread(ProcessThread* module_process_thread)
-      RTC_LOCKS_EXCLUDED(mutex_) override;
-  void DeRegisterProcessThread() RTC_LOCKS_EXCLUDED(mutex_) override;
 
   // RtpVideoSender will only route packets if being active, all packets will be
   // dropped otherwise.
@@ -165,7 +155,7 @@ class RtpVideoSender : public RtpVideoSenderInterface,
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   void UpdateModuleSendingState() RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   void ConfigureProtection();
-  void ConfigureSsrcs();
+  void ConfigureSsrcs(const std::map<uint32_t, RtpState>& suspended_ssrcs);
   void ConfigureRids();
   bool NackEnabled() const;
   uint32_t GetPacketizationOverheadRate() const;
@@ -178,16 +168,12 @@ class RtpVideoSender : public RtpVideoSenderInterface,
   const bool send_side_bwe_with_overhead_;
   const bool use_frame_rate_for_overhead_;
   const bool has_packet_feedback_;
-  const bool simulate_vp9_structure_;
+  const bool simulate_generic_structure_;
 
   // TODO(holmer): Remove mutex_ once RtpVideoSender runs on the
   // transport task queue.
   mutable Mutex mutex_;
   bool active_ RTC_GUARDED_BY(mutex_);
-
-  ProcessThread* module_process_thread_;
-  SequenceChecker module_process_thread_checker_;
-  std::map<uint32_t, RtpState> suspended_ssrcs_;
 
   const std::unique_ptr<FecController> fec_controller_;
   bool fec_allowed_ RTC_GUARDED_BY(mutex_);
@@ -201,7 +187,7 @@ class RtpVideoSender : public RtpVideoSenderInterface,
 
   // When using the generic descriptor we want all simulcast streams to share
   // one frame id space (so that the SFU can switch stream without having to
-  // rewrite the frame id), therefore |shared_frame_id| has to live in a place
+  // rewrite the frame id), therefore `shared_frame_id` has to live in a place
   // where we are aware of all the different streams.
   int64_t shared_frame_id_ = 0;
   std::vector<RtpPayloadParams> params_ RTC_GUARDED_BY(mutex_);

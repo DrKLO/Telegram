@@ -101,7 +101,7 @@ public class ReactionsEffectOverlay {
             if (cell.getMessageObject().messageOwner.reactions != null) {
                 recentReactions = cell.getMessageObject().messageOwner.reactions.recent_reactions;
             }
-            if (recentReactions != null) {
+            if (recentReactions != null && chatActivity != null && chatActivity.getDialogId() < 0) {
                 for (int i = 0; i < recentReactions.size(); i++) {
                     if (reaction.equals(recentReactions.get(i).reaction) && recentReactions.get(i).unread) {
                         TLRPC.User user;

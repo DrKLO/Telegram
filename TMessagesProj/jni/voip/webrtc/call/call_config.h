@@ -19,6 +19,8 @@
 #include "api/transport/network_control.h"
 #include "api/transport/webrtc_key_value_config.h"
 #include "call/audio_state.h"
+#include "call/rtp_transport_config.h"
+#include "call/rtp_transport_controller_send_factory_interface.h"
 
 namespace webrtc {
 
@@ -26,12 +28,13 @@ class AudioProcessing;
 class RtcEventLog;
 
 struct CallConfig {
-  // If |network_task_queue| is set to nullptr, Call will assume that network
+  // If `network_task_queue` is set to nullptr, Call will assume that network
   // related callbacks will be made on the same TQ as the Call instance was
   // constructed on.
   explicit CallConfig(RtcEventLog* event_log,
                       TaskQueueBase* network_task_queue = nullptr);
   CallConfig(const CallConfig&);
+  RtpTransportConfig ExtractTransportConfig() const;
   ~CallConfig();
 
   // Bitrate config used until valid bitrate estimates are calculated. Also
@@ -69,6 +72,9 @@ struct CallConfig {
   const WebRtcKeyValueConfig* trials = nullptr;
 
   TaskQueueBase* const network_task_queue_ = nullptr;
+  // RtpTransportControllerSend to use for this call.
+  RtpTransportControllerSendFactoryInterface*
+      rtp_transport_controller_send_factory = nullptr;
 };
 
 }  // namespace webrtc

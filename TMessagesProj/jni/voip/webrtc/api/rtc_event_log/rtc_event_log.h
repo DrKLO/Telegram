@@ -42,7 +42,7 @@ class RtcEventLog {
   // which it would be permissible to read and/or modify it.
   virtual void StopLogging() = 0;
 
-  // Stops logging to file and calls |callback| when the file has been closed.
+  // Stops logging to file and calls `callback` when the file has been closed.
   // Note that it is not safe to call any other members, including the
   // destructor, until the callback has been called.
   // TODO(srte): Remove default implementation when it's safe to do so.

@@ -41,18 +41,12 @@ VoipCore::VoipCore(rtc::scoped_refptr<AudioEncoderFactory> encoder_factory,
                    rtc::scoped_refptr<AudioDecoderFactory> decoder_factory,
                    std::unique_ptr<TaskQueueFactory> task_queue_factory,
                    rtc::scoped_refptr<AudioDeviceModule> audio_device_module,
-                   rtc::scoped_refptr<AudioProcessing> audio_processing,
-                   std::unique_ptr<ProcessThread> process_thread) {
+                   rtc::scoped_refptr<AudioProcessing> audio_processing) {
   encoder_factory_ = std::move(encoder_factory);
   decoder_factory_ = std::move(decoder_factory);
   task_queue_factory_ = std::move(task_queue_factory);
   audio_device_module_ = std::move(audio_device_module);
   audio_processing_ = std::move(audio_processing);
-  process_thread_ = std::move(process_thread);
-
-  if (!process_thread_) {
-    process_thread_ = ProcessThread::Create("ModuleProcessThread");
-  }
   audio_mixer_ = AudioMixerImpl::Create();
 
   // AudioTransportImpl depends on audio mixer and audio processing instances.
@@ -61,7 +55,7 @@ VoipCore::VoipCore(rtc::scoped_refptr<AudioEncoderFactory> encoder_factory,
 }
 
 bool VoipCore::InitializeIfNeeded() {
-  // |audio_device_module_| internally owns a lock and the whole logic here
+  // `audio_device_module_` internally owns a lock and the whole logic here
   // needs to be executed atomically once using another lock in VoipCore.
   // Further changes in this method will need to make sure that no deadlock is
   // introduced in the future.
@@ -138,18 +132,12 @@ ChannelId VoipCore::CreateChannel(Transport* transport,
   }
 
   rtc::scoped_refptr<AudioChannel> channel =
-      rtc::make_ref_counted<AudioChannel>(
-          transport, local_ssrc.value(), task_queue_factory_.get(),
-          process_thread_.get(), audio_mixer_.get(), decoder_factory_);
-
-  // Check if we need to start the process thread.
-  bool start_process_thread = false;
+      rtc::make_ref_counted<AudioChannel>(transport, local_ssrc.value(),
+                                          task_queue_factory_.get(),
+                                          audio_mixer_.get(), decoder_factory_);
 
   {
     MutexLock lock(&lock_);
-
-    // Start process thread if the channel is the first one.
-    start_process_thread = channels_.empty();
 
     channel_id = static_cast<ChannelId>(next_channel_id_);
     channels_[channel_id] = channel;
@@ -161,10 +149,6 @@ ChannelId VoipCore::CreateChannel(Transport* transport,
 
   // Set ChannelId in audio channel for logging/debugging purpose.
   channel->SetId(channel_id);
-
-  if (start_process_thread) {
-    process_thread_->Start();
-  }
 
   return channel_id;
 }
@@ -194,9 +178,9 @@ VoipResult VoipCore::ReleaseChannel(ChannelId channel_id) {
   }
 
   if (no_channels_after_release) {
-    // Release audio channel first to have it DeRegisterModule first.
+    // TODO(bugs.webrtc.org/11581): unclear if we still need to clear `channel`
+    // here.
     channel = nullptr;
-    process_thread_->Stop();
 
     // Make sure to stop playout on ADM if it is playing.
     if (audio_device_module_->Playing()) {

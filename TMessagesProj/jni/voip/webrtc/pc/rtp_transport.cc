@@ -73,6 +73,8 @@ void RtpTransport::SetRtpPacketTransport(
                                                    &RtpTransport::OnSentPacket);
     // Set the network route for the new transport.
     SignalNetworkRouteChanged(new_packet_transport->network_route());
+  } else {
+    RTC_LOG(LS_WARNING) << "set empty packet";
   }
 
   rtp_packet_transport_ = new_packet_transport;

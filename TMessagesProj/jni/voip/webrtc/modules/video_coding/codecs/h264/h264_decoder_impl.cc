@@ -54,14 +54,24 @@ enum H264DecoderImplEvent {
   kH264DecoderEventMax = 16,
 };
 
+struct ScopedPtrAVFreePacket {
+  void operator()(AVPacket* packet) { av_packet_free(&packet); }
+};
+typedef std::unique_ptr<AVPacket, ScopedPtrAVFreePacket> ScopedAVPacket;
+
+ScopedAVPacket MakeScopedAVPacket() {
+  ScopedAVPacket packet(av_packet_alloc());
+  return packet;
+}
+
 }  // namespace
 
 int H264DecoderImpl::AVGetBuffer2(AVCodecContext* context,
                                   AVFrame* av_frame,
                                   int flags) {
-  // Set in |InitDecode|.
+  // Set in `Configure`.
   H264DecoderImpl* decoder = static_cast<H264DecoderImpl*>(context->opaque);
-  // DCHECK values set in |InitDecode|.
+  // DCHECK values set in `Configure`.
   RTC_DCHECK(decoder);
   // Necessary capability to be allowed to provide our own buffers.
   RTC_DCHECK(context->codec->capabilities | AV_CODEC_CAP_DR1);
@@ -70,17 +80,17 @@ int H264DecoderImpl::AVGetBuffer2(AVCodecContext* context,
   RTC_CHECK(context->pix_fmt == kPixelFormatDefault ||
             context->pix_fmt == kPixelFormatFullRange);
 
-  // |av_frame->width| and |av_frame->height| are set by FFmpeg. These are the
-  // actual image's dimensions and may be different from |context->width| and
-  // |context->coded_width| due to reordering.
+  // `av_frame->width` and `av_frame->height` are set by FFmpeg. These are the
+  // actual image's dimensions and may be different from `context->width` and
+  // `context->coded_width` due to reordering.
   int width = av_frame->width;
   int height = av_frame->height;
-  // See |lowres|, if used the decoder scales the image by 1/2^(lowres). This
+  // See `lowres`, if used the decoder scales the image by 1/2^(lowres). This
   // has implications on which resolutions are valid, but we don't use it.
   RTC_CHECK_EQ(context->lowres, 0);
-  // Adjust the |width| and |height| to values acceptable by the decoder.
-  // Without this, FFmpeg may overflow the buffer. If modified, |width| and/or
-  // |height| are larger than the actual image and the image has to be cropped
+  // Adjust the `width` and `height` to values acceptable by the decoder.
+  // Without this, FFmpeg may overflow the buffer. If modified, `width` and/or
+  // `height` are larger than the actual image and the image has to be cropped
   // (top-left corner) after decoding to avoid visible borders to the right and
   // bottom of the actual image.
   avcodec_align_dimensions(context, &width, &height);
@@ -95,8 +105,8 @@ int H264DecoderImpl::AVGetBuffer2(AVCodecContext* context,
     return ret;
   }
 
-  // The video frame is stored in |frame_buffer|. |av_frame| is FFmpeg's version
-  // of a video frame and will be set up to reference |frame_buffer|'s data.
+  // The video frame is stored in `frame_buffer`. `av_frame` is FFmpeg's version
+  // of a video frame and will be set up to reference `frame_buffer`'s data.
 
   // FFmpeg expects the initial allocation to be zero-initialized according to
   // http://crbug.com/390941. Our pool is set up to zero-initialize new buffers.
@@ -115,7 +125,7 @@ int H264DecoderImpl::AVGetBuffer2(AVCodecContext* context,
   av_frame->format = context->pix_fmt;
   av_frame->reordered_opaque = context->reordered_opaque;
 
-  // Set |av_frame| members as required by FFmpeg.
+  // Set `av_frame` members as required by FFmpeg.
   av_frame->data[kYPlaneIndex] = frame_buffer->MutableDataY();
   av_frame->linesize[kYPlaneIndex] = frame_buffer->StrideY();
   av_frame->data[kUPlaneIndex] = frame_buffer->MutableDataU();
@@ -142,8 +152,8 @@ int H264DecoderImpl::AVGetBuffer2(AVCodecContext* context,
 }
 
 void H264DecoderImpl::AVFreeBuffer2(void* opaque, uint8_t* data) {
-  // The buffer pool recycles the buffer used by |video_frame| when there are no
-  // more references to it. |video_frame| is a thin buffer holder and is not
+  // The buffer pool recycles the buffer used by `video_frame` when there are no
+  // more references to it. `video_frame` is a thin buffer holder and is not
   // recycled.
   VideoFrame* video_frame = static_cast<VideoFrame*>(opaque);
   delete video_frame;
@@ -162,19 +172,18 @@ H264DecoderImpl::~H264DecoderImpl() {
   Release();
 }
 
-int32_t H264DecoderImpl::InitDecode(const VideoCodec* codec_settings,
-                                    int32_t number_of_cores) {
+bool H264DecoderImpl::Configure(const Settings& settings) {
   ReportInit();
-  if (codec_settings && codec_settings->codecType != kVideoCodecH264) {
+  if (settings.codec_type() != kVideoCodecH264) {
     ReportError();
-    return WEBRTC_VIDEO_CODEC_ERR_PARAMETER;
+    return false;
   }
 
   // Release necessary in case of re-initializing.
   int32_t ret = Release();
   if (ret != WEBRTC_VIDEO_CODEC_OK) {
     ReportError();
-    return ret;
+    return false;
   }
   RTC_DCHECK(!av_context_);
 
@@ -183,51 +192,52 @@ int32_t H264DecoderImpl::InitDecode(const VideoCodec* codec_settings,
 
   av_context_->codec_type = AVMEDIA_TYPE_VIDEO;
   av_context_->codec_id = AV_CODEC_ID_H264;
-  if (codec_settings) {
-    av_context_->coded_width = codec_settings->width;
-    av_context_->coded_height = codec_settings->height;
+  const RenderResolution& resolution = settings.max_render_resolution();
+  if (resolution.Valid()) {
+    av_context_->coded_width = resolution.Width();
+    av_context_->coded_height = resolution.Height();
   }
   av_context_->pix_fmt = kPixelFormatDefault;
   av_context_->extradata = nullptr;
   av_context_->extradata_size = 0;
 
-  // If this is ever increased, look at |av_context_->thread_safe_callbacks| and
+  // If this is ever increased, look at `av_context_->thread_safe_callbacks` and
   // make it possible to disable the thread checker in the frame buffer pool.
   av_context_->thread_count = 1;
   av_context_->thread_type = FF_THREAD_SLICE;
 
   // Function used by FFmpeg to get buffers to store decoded frames in.
   av_context_->get_buffer2 = AVGetBuffer2;
-  // |get_buffer2| is called with the context, there |opaque| can be used to get
-  // a pointer |this|.
+  // `get_buffer2` is called with the context, there `opaque` can be used to get
+  // a pointer `this`.
   av_context_->opaque = this;
 
-  AVCodec* codec = avcodec_find_decoder(av_context_->codec_id);
+  const AVCodec* codec = avcodec_find_decoder(av_context_->codec_id);
   if (!codec) {
     // This is an indication that FFmpeg has not been initialized or it has not
     // been compiled/initialized with the correct set of codecs.
     RTC_LOG(LS_ERROR) << "FFmpeg H.264 decoder not found.";
     Release();
     ReportError();
-    return WEBRTC_VIDEO_CODEC_ERROR;
+    return false;
   }
   int res = avcodec_open2(av_context_.get(), codec, nullptr);
   if (res < 0) {
     RTC_LOG(LS_ERROR) << "avcodec_open2 error: " << res;
     Release();
     ReportError();
-    return WEBRTC_VIDEO_CODEC_ERROR;
+    return false;
   }
 
   av_frame_.reset(av_frame_alloc());
 
-  if (codec_settings && codec_settings->buffer_pool_size) {
-    if (!ffmpeg_buffer_pool_.Resize(*codec_settings->buffer_pool_size) ||
-        !output_buffer_pool_.Resize(*codec_settings->buffer_pool_size)) {
-      return WEBRTC_VIDEO_CODEC_UNINITIALIZED;
+  if (absl::optional<int> buffer_pool_size = settings.buffer_pool_size()) {
+    if (!ffmpeg_buffer_pool_.Resize(*buffer_pool_size) ||
+        !output_buffer_pool_.Resize(*buffer_pool_size)) {
+      return false;
     }
   }
-  return WEBRTC_VIDEO_CODEC_OK;
+  return true;
 }
 
 int32_t H264DecoderImpl::Release() {
@@ -251,7 +261,7 @@ int32_t H264DecoderImpl::Decode(const EncodedImage& input_image,
   }
   if (!decoded_image_callback_) {
     RTC_LOG(LS_WARNING)
-        << "InitDecode() has been called, but a callback function "
+        << "Configure() has been called, but a callback function "
            "has not been set with RegisterDecodeCompleteCallback()";
     ReportError();
     return WEBRTC_VIDEO_CODEC_UNINITIALIZED;
@@ -261,21 +271,25 @@ int32_t H264DecoderImpl::Decode(const EncodedImage& input_image,
     return WEBRTC_VIDEO_CODEC_ERR_PARAMETER;
   }
 
-  AVPacket packet;
-  av_init_packet(&packet);
+  ScopedAVPacket packet = MakeScopedAVPacket();
+  if (!packet) {
+    ReportError();
+    return WEBRTC_VIDEO_CODEC_ERROR;
+  }
   // packet.data has a non-const type, but isn't modified by
   // avcodec_send_packet.
-  packet.data = const_cast<uint8_t*>(input_image.data());
+  packet->data = const_cast<uint8_t*>(input_image.data());
   if (input_image.size() >
       static_cast<size_t>(std::numeric_limits<int>::max())) {
     ReportError();
     return WEBRTC_VIDEO_CODEC_ERROR;
   }
-  packet.size = static_cast<int>(input_image.size());
+  packet->size = static_cast<int>(input_image.size());
   int64_t frame_timestamp_us = input_image.ntp_time_ms_ * 1000;  // ms -> μs
   av_context_->reordered_opaque = frame_timestamp_us;
 
-  int result = avcodec_send_packet(av_context_.get(), &packet);
+  int result = avcodec_send_packet(av_context_.get(), packet.get());
+
   if (result < 0) {
     RTC_LOG(LS_ERROR) << "avcodec_send_packet error: " << result;
     ReportError();
@@ -289,7 +303,7 @@ int32_t H264DecoderImpl::Decode(const EncodedImage& input_image,
     return WEBRTC_VIDEO_CODEC_ERROR;
   }
 
-  // We don't expect reordering. Decoded frame tamestamp should match
+  // We don't expect reordering. Decoded frame timestamp should match
   // the input one.
   RTC_DCHECK_EQ(av_frame_->reordered_opaque, frame_timestamp_us);
 
@@ -297,7 +311,7 @@ int32_t H264DecoderImpl::Decode(const EncodedImage& input_image,
   h264_bitstream_parser_.ParseBitstream(input_image);
   absl::optional<int> qp = h264_bitstream_parser_.GetLastSliceQp();
 
-  // Obtain the |video_frame| containing the decoded image.
+  // Obtain the `video_frame` containing the decoded image.
   VideoFrame* input_frame =
       static_cast<VideoFrame*>(av_buffer_get_opaque(av_frame_->buf[0]));
   RTC_DCHECK(input_frame);
@@ -363,7 +377,7 @@ int32_t H264DecoderImpl::Decode(const EncodedImage& input_image,
   // interface to pass a VideoFrameBuffer instead of a VideoFrame?
   decoded_image_callback_->Decoded(decoded_frame, absl::nullopt, qp);
 
-  // Stop referencing it, possibly freeing |input_frame|.
+  // Stop referencing it, possibly freeing `input_frame`.
   av_frame_unref(av_frame_.get());
   input_frame = nullptr;
 

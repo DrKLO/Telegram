@@ -38,6 +38,10 @@ const int64_t kNanosecsPerFiletime = 100;
 namespace rtc {
 
 int64_t GetProcessCpuTimeNanos() {
+#if defined(WEBRTC_FUCHSIA)
+  RTC_LOG_ERR(LS_ERROR) << "GetProcessCpuTimeNanos() not implemented";
+  return 0;
+#else
 #if defined(WEBRTC_LINUX)
   struct timespec ts;
   if (clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts) == 0) {
@@ -66,18 +70,20 @@ int64_t GetProcessCpuTimeNanos() {
   } else {
     RTC_LOG_ERR(LS_ERROR) << "GetProcessTimes() failed.";
   }
-#elif defined(WEBRTC_FUCHSIA)
-  RTC_LOG_ERR(LS_ERROR) << "GetProcessCpuTimeNanos() not implemented";
-  return 0;
 #else
   // Not implemented yet.
   static_assert(
       false, "GetProcessCpuTimeNanos() platform support not yet implemented.");
 #endif
   return -1;
+#endif  // defined(WEBRTC_FUCHSIA)
 }
 
 int64_t GetThreadCpuTimeNanos() {
+#if defined(WEBRTC_FUCHSIA)
+  RTC_LOG_ERR(LS_ERROR) << "GetThreadCpuTimeNanos() not implemented";
+  return 0;
+#else
 #if defined(WEBRTC_LINUX)
   struct timespec ts;
   if (clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts) == 0) {
@@ -111,15 +117,13 @@ int64_t GetThreadCpuTimeNanos() {
   } else {
     RTC_LOG_ERR(LS_ERROR) << "GetThreadTimes() failed.";
   }
-#elif defined(WEBRTC_FUCHSIA)
-  RTC_LOG_ERR(LS_ERROR) << "GetThreadCpuTimeNanos() not implemented";
-  return 0;
 #else
   // Not implemented yet.
   static_assert(
       false, "GetThreadCpuTimeNanos() platform support not yet implemented.");
 #endif
   return -1;
+#endif  // defined(WEBRTC_FUCHSIA)
 }
 
 }  // namespace rtc

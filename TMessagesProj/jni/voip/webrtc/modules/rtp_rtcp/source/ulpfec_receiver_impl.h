@@ -41,9 +41,11 @@ class UlpfecReceiverImpl : public UlpfecReceiver {
 
   FecPacketCounter GetPacketCounter() const override;
 
+  void SetRtpExtensions(rtc::ArrayView<const RtpExtension> extensions) override;
+
  private:
   const uint32_t ssrc_;
-  const RtpHeaderExtensionMap extensions_;
+  RtpHeaderExtensionMap extensions_ RTC_GUARDED_BY(&sequence_checker_);
 
   RTC_NO_UNIQUE_ADDRESS SequenceChecker sequence_checker_;
   RecoveredPacketReceiver* const recovered_packet_callback_;

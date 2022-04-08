@@ -18,7 +18,6 @@ import java.util.ArrayList;
 
 public class CameraInfo {
 
-
     protected int cameraId;
     protected Camera camera;
     protected ArrayList<Size> pictureSizes = new ArrayList<>();
@@ -29,7 +28,6 @@ public class CameraInfo {
     CameraCharacteristics cameraCharacteristics;
     CaptureRequest.Builder captureRequestBuilder;
     public CameraCaptureSession cameraCaptureSession;
-
 
     public CameraInfo(int id, int frontFace) {
         cameraId = id;

@@ -489,12 +489,16 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
 
             clearSearchImageView = new ImageView(context);
             clearSearchImageView.setScaleType(ImageView.ScaleType.CENTER);
-            clearSearchImageView.setImageDrawable(progressDrawable = new CloseProgressDrawable2());
+            clearSearchImageView.setImageDrawable(progressDrawable = new CloseProgressDrawable2() {
+                @Override
+                protected int getCurrentColor() {
+                    return getThemedColor(Theme.key_chat_emojiSearchIcon);
+                }
+            });
             progressDrawable.setSide(AndroidUtilities.dp(7));
             clearSearchImageView.setScaleX(0.1f);
             clearSearchImageView.setScaleY(0.1f);
             clearSearchImageView.setAlpha(0.0f);
-            clearSearchImageView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_emojiSearchIcon), PorterDuff.Mode.MULTIPLY));
             addView(clearSearchImageView, LayoutHelper.createFrame(36, 36, Gravity.RIGHT | Gravity.TOP, 14, 14, 14, 0));
             clearSearchImageView.setOnClickListener(v -> {
                 searchEditText.setText("");
@@ -830,6 +834,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         public ImageViewEmoji(Context context) {
             super(context);
             setScaleType(ImageView.ScaleType.CENTER);
+            setBackground(Theme.createRadSelectorDrawable(getThemedColor(Theme.key_listSelector), AndroidUtilities.dp(2), AndroidUtilities.dp(2)));
         }
 
         private void sendEmoji(String override) {
@@ -1264,6 +1269,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         emojiGridView.setBottomGlowOffset(AndroidUtilities.dp(48));
         emojiGridView.setPadding(0, AndroidUtilities.dp(38), 0, AndroidUtilities.dp(44));
         emojiGridView.setGlowColor(getThemedColor(Theme.key_chat_emojiPanelBackground));
+        emojiGridView.setSelectorDrawableColor(0);
         emojiGridView.setClipToPadding(false);
         emojiLayoutManager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
             @Override
@@ -2017,7 +2023,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                 }
             });
 
-            typeTabs = new PagerSlidingTabStrip(context);
+            typeTabs = new PagerSlidingTabStrip(context, resourcesProvider);
             typeTabs.setViewPager(pager);
             typeTabs.setShouldExpand(false);
             typeTabs.setIndicatorHeight(0);
@@ -4263,7 +4269,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                         }
                     };
                     horizontalListView.setSelectorRadius(AndroidUtilities.dp(4));
-                    horizontalListView.setSelectorDrawableColor(Theme.getColor(Theme.key_listSelector));
+                    horizontalListView.setSelectorDrawableColor(getThemedColor(Theme.key_listSelector));
                     horizontalListView.setTag(9);
                     horizontalListView.setItemAnimator(null);
                     horizontalListView.setLayoutAnimation(null);

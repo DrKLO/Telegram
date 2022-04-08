@@ -36,16 +36,16 @@ public class MemberRequestCell extends FrameLayout {
         super(context);
 
         avatarImageView.setRoundRadius(AndroidUtilities.dp(23));
-        addView(avatarImageView, LayoutHelper.createFrame(46, 46, Gravity.START, 12, 8, 12, 0));
+        addView(avatarImageView, LayoutHelper.createFrame(46, 46, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 12, 8, 12, 0));
 
-        nameTextView.setGravity(Gravity.START);
+        nameTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         nameTextView.setMaxLines(1);
         nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         nameTextView.setTextSize(17);
         nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, LocaleController.isRTL ? 12 : 74, 12, LocaleController.isRTL ? 74 : 12, 0));
 
-        statusTextView.setGravity(Gravity.START);
+        statusTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         statusTextView.setMaxLines(1);
         statusTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
         statusTextView.setTextSize(14);
@@ -66,7 +66,7 @@ public class MemberRequestCell extends FrameLayout {
                 clickListener.onAddClicked(importer);
             }
         });
-        addView(addButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 32, Gravity.START, LocaleController.isRTL ? 0 : 73, 62, LocaleController.isRTL ? 73 : 0, 0));
+        addView(addButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 32, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, LocaleController.isRTL ? 0 : 73, 62, LocaleController.isRTL ? 73 : 0, 0));
 
         float addButtonWidth = addButton.getPaint().measureText(addButton.getText().toString()) + btnPadding * 2;
         TextView dismissButton = new TextView(getContext());
@@ -83,7 +83,7 @@ public class MemberRequestCell extends FrameLayout {
                 clickListener.onDismissClicked(importer);
             }
         });
-        FrameLayout.LayoutParams dismissLayoutParams = new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, AndroidUtilities.dp(32));
+        FrameLayout.LayoutParams dismissLayoutParams = new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, AndroidUtilities.dp(32), LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         dismissLayoutParams.topMargin = AndroidUtilities.dp(62);
         dismissLayoutParams.leftMargin = LocaleController.isRTL ? 0 : (int)(addButtonWidth + AndroidUtilities.dp(73 + 6));
         dismissLayoutParams.rightMargin = LocaleController.isRTL ? (int)(addButtonWidth + AndroidUtilities.dp(73 + 6)) : 0;

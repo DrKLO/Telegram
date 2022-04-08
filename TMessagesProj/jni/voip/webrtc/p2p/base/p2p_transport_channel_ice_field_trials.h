@@ -45,7 +45,7 @@ struct IceFieldTrials {
 
   // Sending a PING directly after a switch on ICE_CONTROLLING-side.
   // TODO(jonaso) : Deprecate this in favor of
-  // |send_ping_on_selected_ice_controlling|.
+  // `send_ping_on_selected_ice_controlling`.
   bool send_ping_on_switch_ice_controlling = false;
 
   // Sending a PING directly after selecting a connection

@@ -15,7 +15,7 @@ import java.util.List;
 
 public final class Instance {
 
-    public static final List<String> AVAILABLE_VERSIONS = Build.VERSION.SDK_INT >= 18 ? Arrays.asList("3.0.0", "2.7.7", "2.4.4") : Arrays.asList("2.4.4");
+    public static final List<String> AVAILABLE_VERSIONS = Build.VERSION.SDK_INT >= 18 ? Arrays.asList("4.0.0", "3.0.0", "2.7.7", "2.4.4") : Arrays.asList("2.4.4");
 
     public static final int AUDIO_STATE_MUTED = 0;
     public static final int AUDIO_STATE_ACTIVE = 1;

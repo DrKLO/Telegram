@@ -41,7 +41,7 @@ struct VideoSendTiming {
   uint16_t pacer_exit_delta_ms;
   uint16_t network_timestamp_delta_ms;
   uint16_t network2_timestamp_delta_ms;
-  uint8_t flags;
+  uint8_t flags = TimingFrameFlags::kInvalid;
 };
 
 // Used to report precise timings of a 'timing frames'. Contains all important
@@ -55,7 +55,7 @@ struct TimingFrameInfo {
   // synchronized, -1 otherwise.
   int64_t EndToEndDelay() const;
 
-  // Returns true if current frame took longer to process than |other| frame.
+  // Returns true if current frame took longer to process than `other` frame.
   // If other frame's clocks are not synchronized, current frame is always
   // preferred.
   bool IsLongerThan(const TimingFrameInfo& other) const;

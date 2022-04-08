@@ -111,7 +111,7 @@ StreamParams& StreamParams::operator=(const StreamParams&) = default;
 StreamParams& StreamParams::operator=(StreamParams&&) = default;
 
 bool StreamParams::operator==(const StreamParams& other) const {
-  return (groupid == other.groupid && id == other.id && ssrcs == other.ssrcs &&
+  return (id == other.id && ssrcs == other.ssrcs &&
           ssrc_groups == other.ssrc_groups && cname == other.cname &&
           stream_ids_ == other.stream_ids_ &&
           // RIDs are not required to be in the same order for equality.
@@ -122,9 +122,6 @@ std::string StreamParams::ToString() const {
   char buf[2 * 1024];
   rtc::SimpleStringBuilder sb(buf);
   sb << "{";
-  if (!groupid.empty()) {
-    sb << "groupid:" << groupid << ";";
-  }
   if (!id.empty()) {
     sb << "id:" << id << ";";
   }

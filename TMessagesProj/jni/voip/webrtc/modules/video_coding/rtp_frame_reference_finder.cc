@@ -142,31 +142,34 @@ T& RtpFrameReferenceFinderImpl::GetRefFinderAs() {
 
 }  // namespace internal
 
-RtpFrameReferenceFinder::RtpFrameReferenceFinder(
-    OnCompleteFrameCallback* frame_callback)
-    : RtpFrameReferenceFinder(frame_callback, 0) {}
+RtpFrameReferenceFinder::RtpFrameReferenceFinder()
+    : RtpFrameReferenceFinder(0) {}
 
 RtpFrameReferenceFinder::RtpFrameReferenceFinder(
-    OnCompleteFrameCallback* frame_callback,
     int64_t picture_id_offset)
     : picture_id_offset_(picture_id_offset),
-      frame_callback_(frame_callback),
       impl_(std::make_unique<internal::RtpFrameReferenceFinderImpl>()) {}
 
 RtpFrameReferenceFinder::~RtpFrameReferenceFinder() = default;
 
-void RtpFrameReferenceFinder::ManageFrame(
+RtpFrameReferenceFinder::ReturnVector RtpFrameReferenceFinder::ManageFrame(
     std::unique_ptr<RtpFrameObject> frame) {
   // If we have cleared past this frame, drop it.
   if (cleared_to_seq_num_ != -1 &&
       AheadOf<uint16_t>(cleared_to_seq_num_, frame->first_seq_num())) {
-    return;
+    return {};
   }
-  HandOffFrames(impl_->ManageFrame(std::move(frame)));
+
+  auto frames = impl_->ManageFrame(std::move(frame));
+  AddPictureIdOffset(frames);
+  return frames;
 }
 
-void RtpFrameReferenceFinder::PaddingReceived(uint16_t seq_num) {
-  HandOffFrames(impl_->PaddingReceived(seq_num));
+RtpFrameReferenceFinder::ReturnVector RtpFrameReferenceFinder::PaddingReceived(
+    uint16_t seq_num) {
+  auto frames = impl_->PaddingReceived(seq_num);
+  AddPictureIdOffset(frames);
+  return frames;
 }
 
 void RtpFrameReferenceFinder::ClearTo(uint16_t seq_num) {
@@ -174,14 +177,12 @@ void RtpFrameReferenceFinder::ClearTo(uint16_t seq_num) {
   impl_->ClearTo(seq_num);
 }
 
-void RtpFrameReferenceFinder::HandOffFrames(ReturnVector frames) {
+void RtpFrameReferenceFinder::AddPictureIdOffset(ReturnVector& frames) {
   for (auto& frame : frames) {
     frame->SetId(frame->Id() + picture_id_offset_);
     for (size_t i = 0; i < frame->num_references; ++i) {
       frame->references[i] += picture_id_offset_;
     }
-
-    frame_callback_->OnCompleteFrame(std::move(frame));
   }
 }
 

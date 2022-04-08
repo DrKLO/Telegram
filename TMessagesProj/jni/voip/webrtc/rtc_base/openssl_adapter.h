@@ -19,7 +19,6 @@
 #include <string>
 #include <vector>
 
-#include "rtc_base/async_socket.h"
 #include "rtc_base/buffer.h"
 #include "rtc_base/message_handler.h"
 #ifdef OPENSSL_IS_BORINGSSL
@@ -49,7 +48,7 @@ class OpenSSLAdapter final : public SSLAdapter,
   // SSLCertificateVerifier which can override any existing trusted roots to
   // validate a peer certificate. The cache and verifier are effectively
   // immutable after the the SSL connection starts.
-  explicit OpenSSLAdapter(AsyncSocket* socket,
+  explicit OpenSSLAdapter(Socket* socket,
                           OpenSSLSessionCache* ssl_session_cache = nullptr,
                           SSLCertificateVerifier* ssl_cert_verifier = nullptr);
   ~OpenSSLAdapter() override;
@@ -61,7 +60,6 @@ class OpenSSLAdapter final : public SSLAdapter,
   void SetCertVerifier(SSLCertificateVerifier* ssl_cert_verifier) override;
   void SetIdentity(std::unique_ptr<SSLIdentity> identity) override;
   void SetRole(SSLRole role) override;
-  AsyncSocket* Accept(SocketAddress* paddr) override;
   int StartSSL(const char* hostname) override;
   int Send(const void* pv, size_t cb) override;
   int SendTo(const void* pv, size_t cb, const SocketAddress& addr) override;
@@ -75,7 +73,7 @@ class OpenSSLAdapter final : public SSLAdapter,
   ConnState GetState() const override;
   bool IsResumedSession() override;
   // Creates a new SSL_CTX object, configured for client-to-server usage
-  // with SSLMode |mode|, and if |enable_cache| is true, with support for
+  // with SSLMode `mode`, and if `enable_cache` is true, with support for
   // storing successful sessions so that they can be later resumed.
   // OpenSSLAdapterFactory will call this method to create its own internal
   // SSL_CTX, and OpenSSLAdapter will also call this when used without a
@@ -83,12 +81,22 @@ class OpenSSLAdapter final : public SSLAdapter,
   static SSL_CTX* CreateContext(SSLMode mode, bool enable_cache);
 
  protected:
-  void OnConnectEvent(AsyncSocket* socket) override;
-  void OnReadEvent(AsyncSocket* socket) override;
-  void OnWriteEvent(AsyncSocket* socket) override;
-  void OnCloseEvent(AsyncSocket* socket, int err) override;
+  void OnConnectEvent(Socket* socket) override;
+  void OnReadEvent(Socket* socket) override;
+  void OnWriteEvent(Socket* socket) override;
+  void OnCloseEvent(Socket* socket, int err) override;
 
  private:
+  class EarlyExitCatcher {
+   public:
+    EarlyExitCatcher(OpenSSLAdapter& adapter_ptr);
+    void disable();
+    ~EarlyExitCatcher();
+
+   private:
+    bool disabled_ = false;
+    OpenSSLAdapter& adapter_ptr_;
+  };
   enum SSLState {
     SSL_NONE,
     SSL_WAIT,
@@ -104,7 +112,7 @@ class OpenSSLAdapter final : public SSLAdapter,
   void Error(const char* context, int err, bool signal = true);
   void Cleanup();
 
-  // Return value and arguments have the same meanings as for Send; |error| is
+  // Return value and arguments have the same meanings as for Send; `error` is
   // an output parameter filled with the result of SSL_get_error.
   int DoSslWrite(const void* pv, size_t cb, int* error);
   void OnMessage(Message* msg) override;
@@ -122,11 +130,13 @@ class OpenSSLAdapter final : public SSLAdapter,
   enum ssl_verify_result_t SSLVerifyInternal(SSL* ssl, uint8_t* out_alert);
 #else
   static int SSLVerifyCallback(int ok, X509_STORE_CTX* store);
-  int SSLVerifyInternal(int ok, SSL* ssl, X509_STORE_CTX* store);
+  // Call a custom verifier, if installed.
+  // Returns 1 on success, `status_on_error` on error or verification failure.
+  int SSLVerifyInternal(int status_on_error, SSL* ssl, X509_STORE_CTX* store);
 #endif
   friend class OpenSSLStreamAdapter;  // for custom_verify_callback_;
 
-  // If the SSL_CTX was created with |enable_cache| set to true, this callback
+  // If the SSL_CTX was created with `enable_cache` set to true, this callback
   // will be called when a SSL session has been successfully established,
   // to allow its SSL_SESSION* to be cached for later resumption.
   static int NewSSLSessionCallback(SSL* ssl, SSL_SESSION* session);
@@ -180,18 +190,34 @@ class OpenSSLAdapterFactory : public SSLAdapterFactory {
   // the first adapter is created with the factory. If it is called after it
   // will DCHECK.
   void SetMode(SSLMode mode) override;
+
   // Set a custom certificate verifier to be passed down to each instance
   // created with this factory. This should only ever be set before the first
   // call to the factory and cannot be changed after the fact.
   void SetCertVerifier(SSLCertificateVerifier* ssl_cert_verifier) override;
+
+  void SetIdentity(std::unique_ptr<SSLIdentity> identity) override;
+
+  // Choose whether the socket acts as a server socket or client socket.
+  void SetRole(SSLRole role) override;
+
+  // Methods that control server certificate verification, used in unit tests.
+  // Do not call these methods in production code.
+  void SetIgnoreBadCert(bool ignore) override;
+
   // Constructs a new socket using the shared OpenSSLSessionCache. This means
   // existing SSLSessions already in the cache will be reused instead of
   // re-created for improved performance.
-  OpenSSLAdapter* CreateAdapter(AsyncSocket* socket) override;
+  OpenSSLAdapter* CreateAdapter(Socket* socket) override;
 
  private:
   // Holds the SSLMode (DTLS,TLS) that will be used to set the session cache.
   SSLMode ssl_mode_ = SSL_MODE_TLS;
+  SSLRole ssl_role_ = SSL_CLIENT;
+  bool ignore_bad_cert_ = false;
+
+  std::unique_ptr<SSLIdentity> identity_;
+
   // Holds a cache of existing SSL Sessions.
   std::unique_ptr<OpenSSLSessionCache> ssl_session_cache_;
   // Provides an optional custom callback for verifying SSL certificates, this
@@ -201,6 +227,10 @@ class OpenSSLAdapterFactory : public SSLAdapterFactory {
   // Hold a friend class to the OpenSSLAdapter to retrieve the context.
   friend class OpenSSLAdapter;
 };
+
+// The EarlyExitCatcher is responsible for calling OpenSSLAdapter::Cleanup on
+// destruction. By doing this we have scoped cleanup which can be disabled if
+// there were no errors, aka early exits.
 
 std::string TransformAlpnProtocols(const std::vector<std::string>& protos);
 
