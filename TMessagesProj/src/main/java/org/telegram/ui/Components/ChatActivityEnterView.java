@@ -6922,7 +6922,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                 return true;
             }
             if (button.same_peer) {
-                long uid = messageObject.messageOwner.from_id.user_id;
+                long uid = messageObject.messageOwner.peer_id.user_id;
                 if (messageObject.messageOwner.via_bot_id != 0) {
                     uid = messageObject.messageOwner.via_bot_id;
                 }
