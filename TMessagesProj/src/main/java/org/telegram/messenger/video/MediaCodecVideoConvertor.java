@@ -35,8 +35,8 @@ public class MediaCodecVideoConvertor {
     private final static int PROCESSOR_TYPE_SEC = 4;
     private final static int PROCESSOR_TYPE_TI = 5;
 
-    private static final int MEDIACODEC_TIMEOUT_DEFAULT = 2500;
-    private static final int MEDIACODEC_TIMEOUT_INCREASED = 22000;
+    private static final int MEDIACODEC_TIMEOUT_DEFAULT = 5000;
+    private static final int MEDIACODEC_TIMEOUT_INCREASED = 44000;
 
     public boolean convertVideo(String videoPath, File cacheFile,
                                 int rotationValue, boolean isSecret,
@@ -317,7 +317,7 @@ public class MediaCodecVideoConvertor {
                     AudioRecoder audioRecoder = null;
                     ByteBuffer audioBuffer = null;
                     boolean copyAudioBuffer = true;
-                    long lastFramePts = -1;
+//                    long lastFramePts = -1; //fuckoff
 
                     if (videoIndex >= 0) {
                         MediaCodec decoder = null;
@@ -395,9 +395,9 @@ public class MediaCodecVideoConvertor {
                             outputFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 2);
 
                             if (Build.VERSION.SDK_INT < 23 && Math.min(h, w) <= 480) {
-                                if (bitrate > 921600) {
-                                    bitrate = 921600;
-                                }
+//                                if (bitrate > 921600) {
+//                                    bitrate = 921600;
+//                                }
                                 outputFormat.setInteger(MediaFormat.KEY_BIT_RATE, bitrate);
                             }
 
@@ -691,9 +691,9 @@ public class MediaCodecVideoConvertor {
                                                 decoder.flush();
                                                 flushed = true;
                                             }
-                                            if (lastFramePts > 0 && info.presentationTimeUs - lastFramePts < frameDeltaFroSkipFrames && (info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) == 0) {
-                                                doRender = false;
-                                            }
+//                                            if (lastFramePts > 0 && info.presentationTimeUs - lastFramePts < frameDelta && (info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) == 0) { //fuckoff
+//                                                doRender = false;
+//                                            }
                                             trueStartTime = avatarStartTime >= 0 ? avatarStartTime : startTime;
                                             if (trueStartTime > 0 && videoTime == -1) {
                                                 if (originalPresentationTime < trueStartTime) {
@@ -717,7 +717,7 @@ public class MediaCodecVideoConvertor {
                                                 decoder.releaseOutputBuffer(decoderStatus, doRender);
                                             }
                                             if (doRender) {
-                                                lastFramePts = info.presentationTimeUs;
+//                                                lastFramePts = info.presentationTimeUs; //fuckoff
                                                 if (avatarStartTime >= 0) {
                                                     minPresentationTime = Math.max(minPresentationTime, info.presentationTimeUs);
                                                 }

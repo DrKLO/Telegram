@@ -4959,15 +4959,16 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         float compressFactor;
         float minCompressFactor;
         int maxBitrate;
-        if (Math.min(height, width) >= 4320) {
+        int videoMaxResolution = MessagesController.getGlobalTelegraherSettings().getInt("VideoMaxResolution", 0);
+        if (Math.min(height, width) >= 4320 && videoMaxResolution > 2) {
             maxBitrate = 186_000_000;
             compressFactor = 1f;
             minCompressFactor = 1f;
-        } else if (Math.min(height, width) >= 2160) {
+        } else if (Math.min(height, width) >= 2160 && videoMaxResolution > 1) {
             maxBitrate = 62_000_000;
             compressFactor = 1f;
             minCompressFactor = 1f;
-        } else if (Math.min(height, width) >= 1440) {
+        } else if (Math.min(height, width) >= 1440 && videoMaxResolution > 0) {
             maxBitrate = 24_000_000;
             compressFactor = 1f;
             minCompressFactor = 1f;
@@ -4983,15 +4984,12 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             maxBitrate = 4_000_000;
             compressFactor = 0.8f;
             minCompressFactor = 0.9f;
-        } else if (Math.min(height, width) >= 360) {
-            maxBitrate = 1_500_000;
-            compressFactor = 0.7f;
-            minCompressFactor = 0.8f;
         } else {
             maxBitrate = 750_000;
             compressFactor = 0.6f;
             minCompressFactor = 0.7f;
         }
+        if (UserConfig.TDBG) System.out.printf("HEY MediaController makeVideoBitrate maxBitrate %d%n", maxBitrate);
         int remeasuredBitrate = (int) (originalBitrate / (Math.min(originalHeight / (float) (height), originalWidth / (float) (width))));
         remeasuredBitrate *= compressFactor;
         int minBitrate = (int) (getVideoBitrateWithFactor(minCompressFactor) / (1280f * 720f / (width * height)));
@@ -5001,6 +4999,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         if (remeasuredBitrate > maxBitrate) {
             return maxBitrate;
         }
+        if (UserConfig.TDBG) System.out.printf("HEY MediaController makeVideoBitrate Math.max(remeasuredBitrate, minBitrate) %d%n", Math.max(remeasuredBitrate, minBitrate));
         return Math.max(remeasuredBitrate, minBitrate);
     }
 

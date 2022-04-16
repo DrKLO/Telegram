@@ -90,6 +90,12 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
     private int videoLabelRoundSizeRow;
     private int videoRoundSizeMultRow;
 
+    private int videoLabelMaxResolutionRow;
+    private int videoMaxResolutionRow;
+
+    private int gifLabelHDRow;
+    private int gifHDRow;
+
     private int accountLabelRow;
     private int accountExtendVanillaRow;
 
@@ -126,6 +132,11 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         accountLabelRow = rowCount++;
         accountExtendVanillaRow = rowCount++;
 
+        gifLabelHDRow = rowCount++;
+        gifHDRow = rowCount++;
+
+        videoLabelMaxResolutionRow = rowCount++;
+        videoMaxResolutionRow = rowCount++;
         videoLabelRoundBitrateRow = rowCount++;
         videoRoundBitrateMultRow = rowCount++;
         videoLabelRoundSizeRow = rowCount++;
@@ -243,6 +254,12 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                 enabled = preferences.getBoolean("EnableAccountExtendVanilla", false);
                 editor.putBoolean("EnableAccountExtendVanilla", !enabled);
                 editor.commit();
+            } else if (position == gifHDRow) {
+                SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
+                SharedPreferences.Editor editor = preferences.edit();
+                enabled = preferences.getBoolean("EnableGifHD", false);
+                editor.putBoolean("EnableGifHD", !enabled);
+                editor.commit();
             } else if (position == killMeLabelRow) {
                 killThatApp();
             } else if (position == deviceSpoofingBrand) {
@@ -357,6 +374,10 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         headerCell.setText("Profile section");
                     } else if (position == chatLabelRow) {
                         headerCell.setText("Chat section");
+                    } else if (position == gifLabelHDRow) {
+                        headerCell.setText("GIF section");
+                    } else if (position == videoLabelMaxResolutionRow) {
+                        headerCell.setText("* Maximum video resolution");
                     } else if (position == videoLabelRoundBitrateRow) {
                         headerCell.setText("* Round video bitrate");
                     } else if (position == videoLabelRoundSizeRow) {
@@ -396,6 +417,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         checkCell.setTextAndCheck("* 3+", globalPreps.getBoolean("EnableAccountExtendVanilla", false), true);
                     } else if (position == chatSBFullRow) {
                         checkCell.setTextAndCheck("Full ShadowBan \uD83D\uDE48", localPreps.getBoolean("EnableChatSBFull", false), true);
+                    } else if (position == gifHDRow) {
+                        checkCell.setTextAndCheck("* Enable HD gifs", localPreps.getBoolean("EnableGifHD", false), true);
                     }
                     break;
                 }
@@ -468,6 +491,18 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                                 editor.commit();
                             }
                         });
+                    } else if (position == videoMaxResolutionRow) {
+                        String[] strings = new String[]{"FullHD", "2k", "4k", "8k"};
+                        slideChooseView.setOptions(MessagesController.getGlobalTelegraherSettings().getInt("VideoMaxResolution", 0), strings);
+                        slideChooseView.setCallback(new SlideChooseView.Callback() {
+                            @Override
+                            public void onOptionSelected(int index) {
+                                SharedPreferences globalTh = MessagesController.getGlobalTelegraherSettings();
+                                SharedPreferences.Editor editor = globalTh.edit();
+                                editor.putInt("VideoMaxResolution", index);
+                                editor.commit();
+                            }
+                        });
                     }
                     break;
                 }
@@ -499,9 +534,11 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                             || position == voiceLabelRow || position == voipLabelRow
                             || position == profileLabelRow
                             || position == chatLabelRow
+                            || position == gifLabelHDRow
                             || position == accountLabelRow
                             || position == deviceSpoofingLabelRow
                             || position == deviceSpoofingResetGlobalLabelRow
+                            || position == videoLabelMaxResolutionRow
                             || position == videoLabelRoundBitrateRow
                             || position == videoLabelRoundSizeRow
             ) {
@@ -510,13 +547,16 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                     position == voiceHDRow || position == voiceBadmanRow || position == voipHDRow
                             || position == profileUIDRow || position == profileDCIDRow || position == profileSBRow
                             || position == chatDeleteMarkRow || position == accountExtendVanillaRow || position == chatSBFullRow
+                            || position == gifHDRow
             ) {
                 return 1;
             } else if (position == killMeLabelRow) {
                 return 5;
             } else if (
                     position == showTelegraherMenuRow
-                            || position == videoRoundBitrateMultRow || position == videoRoundSizeMultRow) {
+                            || position == videoRoundBitrateMultRow || position == videoRoundSizeMultRow
+                            || position == videoMaxResolutionRow
+            ) {
                 return 6;
             } else if (position == deviceSpoofingBrand || position == deviceSpoofingModel || position == deviceSpoofingOS) {
                 return 7;

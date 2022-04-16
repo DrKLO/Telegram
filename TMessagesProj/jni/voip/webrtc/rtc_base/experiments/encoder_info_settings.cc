@@ -76,7 +76,11 @@ EncoderInfoSettings::GetDefaultSinglecastBitrateLimitsWhenQpIsUntrusted() {
           {640 * 360, 500000, 30000, 800000},
           {960 * 540, 800000, 30000, 1500000},
           {1280 * 720, 1500000, 30000, 2500000},
-          {1920 * 1080, 2500000, 30000, 4000000}};
+          {1920 * 1080, 2500000, 30000, 4000000},
+          {2560 * 1440, 2500000, 30000, 6000000},
+          {3840 * 2160, 2500000, 30000, 9000000},
+          {7680 * 4320, 2500000, 30000, 13000000},
+  };
 }
 
 // Through linear interpolation, return the bitrate limit corresponding to the
