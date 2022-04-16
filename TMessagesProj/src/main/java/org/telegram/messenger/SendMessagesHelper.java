@@ -7763,7 +7763,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             MediaMetadataRetriever retriever = new MediaMetadataRetriever();
             try {
                 retriever.setDataSource(filePath);
-                bitmap = retriever.getFrameAtTime(time, MediaMetadataRetriever.OPTION_NEXT_SYNC);
+                bitmap = retriever.getFrameAtTime(time, MediaMetadataRetriever.OPTION_CLOSEST_SYNC);
                 if (bitmap == null) {
                     bitmap = retriever.getFrameAtTime(time, MediaMetadataRetriever.OPTION_CLOSEST);
                 }
@@ -7800,6 +7800,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         long videoFramesSize = params[AnimatedFileDrawable.PARAM_NUM_VIDEO_FRAME_SIZE];
         long audioFramesSize = params[AnimatedFileDrawable.PARAM_NUM_AUDIO_FRAME_SIZE];
         int videoFramerate = params[AnimatedFileDrawable.PARAM_NUM_FRAMERATE];
+        if (UserConfig.TDBG) System.out.printf("HEY SendMessagesHelper createCompressionSettings videoFramerate `%d`%n", videoFramerate);
 
 
         if (Build.VERSION.SDK_INT < 18) {
@@ -7851,8 +7852,14 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
 
         int compressionsCount;
 
-        float maxSize = Math.max(videoEditedInfo.originalWidth, videoEditedInfo.originalHeight);
-        if (maxSize > 1280) {
+        int maxSize = Math.max(videoEditedInfo.originalWidth, videoEditedInfo.originalHeight);
+       if (maxSize > 3840) {
+            compressionsCount = 7;
+        } else if (maxSize > 2560) {
+            compressionsCount = 6;
+        } else if (maxSize > 1920) {
+            compressionsCount = 5;
+        } else if (maxSize > 1280) {
             compressionsCount = 4;
         } else if (maxSize > 854) {
             compressionsCount = 3;
@@ -7864,27 +7871,39 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
 
         int selectedCompression = Math.round(DownloadController.getInstance(UserConfig.selectedAccount).getMaxVideoBitrate() / (100f / compressionsCount));
 
+        if (UserConfig.TDBG) System.out.printf("HEY SendMessagesHelper createCompressionSettings selectedCompression `%d`%n", selectedCompression);
+
         if (selectedCompression > compressionsCount) {
             selectedCompression = compressionsCount;
         }
         boolean needCompress = false;
-        if (selectedCompression != compressionsCount - 1 || Math.max(videoEditedInfo.originalWidth, videoEditedInfo.originalHeight) > 1280) {
+        if (selectedCompression != compressionsCount - 1) {
             needCompress = true;
             switch (selectedCompression) {
                 case 1:
-                    maxSize = 432.0f;
+                    maxSize = 432;
                     break;
                 case 2:
-                    maxSize = 640.0f;
+                    maxSize = 640;
                     break;
                 case 3:
-                    maxSize = 848.0f;
+                    maxSize = 848;
                     break;
+                case 4:
+                    maxSize = 1280;
+                    break;
+                case 5:
+                    maxSize = 1920;
+                    break;
+                case 6:
+                    maxSize = 2560;
+                    break;
+                case 7:
                 default:
-                    maxSize = 1280.0f;
+                    maxSize = 3840;
                     break;
             }
-            float scale = videoEditedInfo.originalWidth > videoEditedInfo.originalHeight ? maxSize / videoEditedInfo.originalWidth : maxSize / videoEditedInfo.originalHeight;
+            float scale = videoEditedInfo.originalWidth > videoEditedInfo.originalHeight ? Float.valueOf(maxSize) / videoEditedInfo.originalWidth : Float.valueOf(maxSize) / videoEditedInfo.originalHeight;
             videoEditedInfo.resultWidth = Math.round(videoEditedInfo.originalWidth * scale / 2) * 2;
             videoEditedInfo.resultHeight = Math.round(videoEditedInfo.originalHeight * scale / 2) * 2;
         }

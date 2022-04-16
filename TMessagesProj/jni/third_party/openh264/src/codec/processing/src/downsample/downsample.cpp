@@ -35,8 +35,8 @@
 #include <assert.h>
 
 WELSVP_NAMESPACE_BEGIN
-#define MAX_SAMPLE_WIDTH 1920
-#define MAX_SAMPLE_HEIGHT 1088
+#define MAX_SAMPLE_WIDTH 7680
+#define MAX_SAMPLE_HEIGHT 4320
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

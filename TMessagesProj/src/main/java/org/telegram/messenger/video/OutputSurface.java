@@ -128,7 +128,7 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
     }
 
     public void awaitNewImage() {
-        final int TIMEOUT_MS = 2500;
+        final int TIMEOUT_MS = 5000;
         synchronized (mFrameSyncObject) {
             while (!mFrameAvailable) {
                 try {

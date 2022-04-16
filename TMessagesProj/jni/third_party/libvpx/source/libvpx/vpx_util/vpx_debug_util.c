@@ -76,9 +76,9 @@ void bitstream_queue_push(int result, const int prob) {
 #if CONFIG_MISMATCH_DEBUG
 static int frame_buf_idx_r = 0;
 static int frame_buf_idx_w = 0;
-#define MAX_FRAME_BUF_NUM 20
-#define MAX_FRAME_STRIDE 1920
-#define MAX_FRAME_HEIGHT 1080
+#define MAX_FRAME_BUF_NUM 60
+#define MAX_FRAME_STRIDE 7680
+#define MAX_FRAME_HEIGHT 4320
 static uint16_t
     frame_pre[MAX_FRAME_BUF_NUM][3]
              [MAX_FRAME_STRIDE * MAX_FRAME_HEIGHT];  // prediction only

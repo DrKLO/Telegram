@@ -5459,7 +5459,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         } else if (selectedCompression == 2) {
             compressItem.setImageResource(R.drawable.video_quality2);
         } else {
-            selectedCompression = compressionsCount - 1;
+//            selectedCompression = compressionsCount - 1;
             compressItem.setImageResource(R.drawable.video_quality3);
         }
         compressItem.setContentDescription(LocaleController.getString("AccDescrVideoQuality", R.string.AccDescrVideoQuality));
@@ -14967,7 +14967,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             compressItem.setImageResource(R.drawable.video_quality1);
         } else if (selectedCompression == 2) {
             compressItem.setImageResource(R.drawable.video_quality2);
-        } else if (selectedCompression == 3) {
+        } else if (selectedCompression >= 3) {
             compressItem.setImageResource(R.drawable.video_quality3);
         }
         itemsLayout.requestLayout();
@@ -14976,7 +14976,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
         int width;
         int height;
-
+        boolean enableGifHD = MessagesController.getGlobalTelegraherSettings().getBoolean("EnableGifHD", false);
         if (muteVideo) {
             width = rotationValue == 90 || rotationValue == 270 ? resultHeight : resultWidth;
             height = rotationValue == 90 || rotationValue == 270 ? resultWidth : resultHeight;
@@ -14990,7 +14990,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     bitrate = 1560000;
                 }
             } else {
-                bitrate = 921600;
+                if (enableGifHD) {
+                    bitrate = MediaController.makeVideoBitrate(originalHeight, originalWidth, originalBitrate, resultHeight, resultWidth);
+                } else bitrate = 921600;
             }
             estimatedSize = (long) (bitrate / 8 * (estimatedDuration / 1000.0f));
             estimatedSize += estimatedSize / (32 * 1024) * 16;
@@ -15112,23 +15114,35 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             resultWidth = Math.round(originalWidth * scale / 2) * 2;
             resultHeight = Math.round(originalHeight * scale / 2) * 2;
         } else {
-            float maxSize;
+            int maxSize;
             switch (selectedCompression) {
                 case 0:
-                    maxSize = 480.0f;
+                    maxSize = 480;
                     break;
                 case 1:
-                    maxSize = 854.0f;
+                    maxSize = 854;
                     break;
                 case 2:
-                    maxSize = 1280.0f;
+                    maxSize = 1280;
                     break;
                 case 3:
+                    maxSize = 1920;
+                    break;
+                case 4:
+                    maxSize = 2560;
+                    break;
+                case 5:
+                    maxSize = 3840;
+                    break;
+                case 6:
                 default:
-                    maxSize = 1920.0f;
+                    maxSize = 7680;
                     break;
             }
-            float scale = originalWidth > originalHeight ? maxSize / originalWidth : maxSize / originalHeight;
+            if (UserConfig.TDBG) System.out.printf("HEY PhotoViewer updateWidthHeightBitrateForCompression maxSize %d%n", maxSize);
+            float scale = originalWidth > originalHeight ? Float.valueOf(maxSize) / originalWidth : Float.valueOf(maxSize) / originalHeight;
+            if (UserConfig.TDBG) System.out.printf("HEY PhotoViewer updateWidthHeightBitrateForCompression originalWidth %d%n", originalWidth);
+            if (UserConfig.TDBG) System.out.printf("HEY PhotoViewer updateWidthHeightBitrateForCompression scale %f%n", scale);
             if (selectedCompression == compressionsCount - 1 && scale >= 1f) {
                 resultWidth = originalWidth;
                 resultHeight = originalHeight;
@@ -15338,11 +15352,13 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     }
 
     private int selectCompression() {
+        if (true) return 99;
         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         int compressionsCount = this.compressionsCount;
         int maxCompression = 2;
         while (compressionsCount < 5) {
             int selectedCompression = preferences.getInt(String.format(Locale.US, "compress_video_%d", compressionsCount), -1);
+            if (UserConfig.TDBG) System.out.printf("HEY PhotoViewer selectCompression selectedCompression `%d`%n", selectedCompression);
             if (selectedCompression >= 0) {
                 return Math.min(selectedCompression, maxCompression);
             }
@@ -15350,10 +15366,17 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         }
         return Math.min(maxCompression, Math.round(DownloadController.getInstance(currentAccount).getMaxVideoBitrate() / (100f / compressionsCount)) - 1);
     }
-
     private void updateCompressionsCount(int h, int w) {
         int maxSize = Math.max(h, w);
-        if (maxSize > 1280) {
+        int videoMaxResolution = MessagesController.getGlobalTelegraherSettings().getInt("VideoMaxResolution", 0);
+
+        if (maxSize > 3840 && videoMaxResolution > 2) {
+            compressionsCount = 7;
+        } else if (maxSize > 2560 && videoMaxResolution > 1) {
+            compressionsCount = 6;
+        } else if (maxSize > 1920 && videoMaxResolution > 0) {
+            compressionsCount = 5;
+        } else if (maxSize > 1280) {
             compressionsCount = 4;
         } else if (maxSize > 854) {
             compressionsCount = 3;
