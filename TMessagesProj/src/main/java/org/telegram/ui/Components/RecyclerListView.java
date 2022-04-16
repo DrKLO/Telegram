@@ -1243,13 +1243,20 @@ public class RecyclerListView extends RecyclerView {
         interceptedByChild = false;
     }
 
+    private boolean resetSelectorOnChanged = true;
+    public void setResetSelectorOnChanged(boolean value) {
+        resetSelectorOnChanged = value;
+    }
+
     private AdapterDataObserver observer = new AdapterDataObserver() {
         @Override
         public void onChanged() {
             checkIfEmpty(true);
-            currentFirst = -1;
-            if (removeHighlighSelectionRunnable == null) {
-                selectorRect.setEmpty();
+            if (resetSelectorOnChanged) {
+                currentFirst = -1;
+                if (removeHighlighSelectionRunnable == null) {
+                    selectorRect.setEmpty();
+                }
             }
             invalidate();
         }
@@ -1418,7 +1425,9 @@ public class RecyclerListView extends RecyclerView {
         if (selectorDrawable != null) {
             selectorDrawable.setCallback(null);
         }
-        if (topBottomSelectorRadius > 0) {
+        if (selectorType == 8) {
+            selectorDrawable = Theme.createRadSelectorDrawable(color, selectorRadius, 0);
+        } else if (topBottomSelectorRadius > 0) {
             selectorDrawable = Theme.createRadSelectorDrawable(color, topBottomSelectorRadius, topBottomSelectorRadius);
         } else if (selectorRadius > 0) {
             selectorDrawable = Theme.createSimpleSelectorRoundRectDrawable(selectorRadius, 0, color, 0xff000000);
@@ -1972,7 +1981,9 @@ public class RecyclerListView extends RecyclerView {
         if (position != NO_POSITION) {
             selectorPosition = position;
         }
-        if (topBottomSelectorRadius > 0 && getAdapter() != null) {
+        if (selectorType == 8) {
+            Theme.setMaskDrawableRad(selectorDrawable, selectorRadius, 0);
+        } else if (topBottomSelectorRadius > 0 && getAdapter() != null) {
             Theme.setMaskDrawableRad(selectorDrawable, position == 0 ? topBottomSelectorRadius : 0, position == getAdapter().getItemCount() - 2 ? topBottomSelectorRadius : 0);
         }
         selectorRect.set(sel.getLeft(), sel.getTop(), sel.getRight(), sel.getBottom() - bottomPadding);

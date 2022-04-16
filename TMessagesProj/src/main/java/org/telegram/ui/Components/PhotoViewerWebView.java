@@ -36,7 +36,6 @@ import java.util.Locale;
 public class PhotoViewerWebView extends FrameLayout {
 
     private int currentAccount = UserConfig.selectedAccount;
-    private PipVideoView pipVideoView;
 
     private WebView webView;
     private View progressBarBlackBackground;
@@ -253,18 +252,24 @@ public class PhotoViewerWebView extends FrameLayout {
         return progressBar.getVisibility() != View.VISIBLE;
     }
 
-    public PipVideoView openInPip() {
+    public boolean openInPip() {
         boolean inAppOnly = isYouTube && "inapp".equals(MessagesController.getInstance(currentAccount).youtubePipType);
         if (!inAppOnly && !checkInlinePermissions()) {
-            return null;
+            return false;
         }
         if (progressBar.getVisibility() == View.VISIBLE) {
-            return null;
+            return false;
         }
-        boolean animated = false;
-        pipVideoView = new PipVideoView(inAppOnly);
-        pipVideoView.show((Activity) getContext(), PhotoViewer.getInstance(), currentWebpage.embed_width != 0 && currentWebpage.embed_height != 0 ? currentWebpage.embed_width / (float) currentWebpage.embed_height : 1.0f, 0, webView);
-        return pipVideoView;
+        if (PipVideoOverlay.isVisible()) {
+            PipVideoOverlay.dismiss();
+            AndroidUtilities.runOnUIThread(this::openInPip, 300);
+            return true;
+        }
+
+        if (PipVideoOverlay.show(inAppOnly, (Activity) getContext(), webView, currentWebpage.embed_width, currentWebpage.embed_height)) {
+            PipVideoOverlay.setPhotoViewer(PhotoViewer.getInstance());
+        }
+        return true;
     }
 
     public void setPlaybackSpeed(float speed) {
@@ -349,7 +354,7 @@ public class PhotoViewerWebView extends FrameLayout {
     }
 
     public void exitFromPip() {
-        if (webView == null || pipVideoView == null) {
+        if (webView == null) {
             return;
         }
         if (ApplicationLoader.mainInterfacePaused) {
@@ -364,8 +369,7 @@ public class PhotoViewerWebView extends FrameLayout {
             parent.removeView(webView);
         }
         addView(webView, 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
-        pipVideoView.close();
-        pipVideoView = null;
+        PipVideoOverlay.dismiss();
     }
 
     public void release() {

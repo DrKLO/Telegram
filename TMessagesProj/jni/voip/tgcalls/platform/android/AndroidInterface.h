@@ -9,7 +9,7 @@ namespace tgcalls {
 
 class AndroidInterface : public PlatformInterface {
 public:
-    void configurePlatformAudio() override;
+    void configurePlatformAudio(int numChannels = 1) override;
 	std::unique_ptr<webrtc::VideoEncoderFactory> makeVideoEncoderFactory(std::shared_ptr<PlatformContext> platformContext,  bool preferHardwareEncoding = false, bool isScreencast = false) override;
 	std::unique_ptr<webrtc::VideoDecoderFactory> makeVideoDecoderFactory(std::shared_ptr<PlatformContext> platformContext) override;
 	bool supportsEncoding(const std::string &codecName, std::shared_ptr<PlatformContext> platformContext) override;

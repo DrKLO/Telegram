@@ -1547,39 +1547,39 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                     messagesPlayAnimationImageView.setScaleType(ImageView.ScaleType.CENTER);
                     messagesPlayAnimationImageView.setImageResource(R.drawable.bg_rotate_large);
                     messagesPlayAnimationView.addView(messagesPlayAnimationImageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
+
+                    for (int a = 0; a < 2; a++) {
+                        final int num = a;
+                        messagesCheckBoxView[a] = new WallpaperCheckBoxView(context, a == 0, backgroundImage);
+                        messagesCheckBoxView[a].setText(texts[a], textSizes[a], maxTextSize);
+
+                        if (a == 0) {
+                            messagesCheckBoxView[a].setChecked(accent.myMessagesAnimated, false);
+                        }
+                        int width = maxTextSize + AndroidUtilities.dp(14 * 2 + 28);
+                        FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(width, ViewGroup.LayoutParams.WRAP_CONTENT);
+                        layoutParams.gravity = Gravity.CENTER;
+                        if (a == 1) {
+                            layoutParams.leftMargin = width / 2 + AndroidUtilities.dp(10);
+                        } else {
+                            layoutParams.rightMargin = width / 2 + AndroidUtilities.dp(10);
+                        }
+                        messagesButtonsContainer.addView(messagesCheckBoxView[a], layoutParams);
+                        WallpaperCheckBoxView view = messagesCheckBoxView[a];
+                        messagesCheckBoxView[a].setOnClickListener(v -> {
+                            if (messagesButtonsContainer.getAlpha() != 1.0f) {
+                                return;
+                            }
+                            if (num == 0) {
+                                view.setChecked(!view.isChecked(), true);
+                                accent.myMessagesAnimated = view.isChecked();
+                                Theme.refreshThemeColors(true, true);
+                                listView2.invalidateViews();
+                            }
+                        });
+                    }
                 }
 
-
-                for (int a = 0; a < 2; a++) {
-                    final int num = a;
-                    messagesCheckBoxView[a] = new WallpaperCheckBoxView(context, a == 0, backgroundImage);
-                    messagesCheckBoxView[a].setText(texts[a], textSizes[a], maxTextSize);
-
-                    if (a == 0) {
-                        messagesCheckBoxView[a].setChecked(accent.myMessagesAnimated, false);
-                    }
-                    int width = maxTextSize + AndroidUtilities.dp(14 * 2 + 28);
-                    FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(width, ViewGroup.LayoutParams.WRAP_CONTENT);
-                    layoutParams.gravity = Gravity.CENTER;
-                    if (a == 1) {
-                        layoutParams.leftMargin = width / 2 + AndroidUtilities.dp(10);
-                    } else {
-                        layoutParams.rightMargin = width / 2 + AndroidUtilities.dp(10);
-                    }
-                    messagesButtonsContainer.addView(messagesCheckBoxView[a], layoutParams);
-                    WallpaperCheckBoxView view = messagesCheckBoxView[a];
-                    messagesCheckBoxView[a].setOnClickListener(v -> {
-                        if (messagesButtonsContainer.getAlpha() != 1.0f) {
-                            return;
-                        }
-                        if (num == 0) {
-                            view.setChecked(!view.isChecked(), true);
-                            accent.myMessagesAnimated = view.isChecked();
-                            Theme.refreshThemeColors(true, true);
-                            listView2.invalidateViews();
-                        }
-                    });
-                }
             }
 
             if (screenType == SCREEN_TYPE_ACCENT_COLOR || currentWallpaper instanceof WallpapersListActivity.ColorWallpaper) {

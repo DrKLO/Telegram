@@ -423,6 +423,27 @@ public:
                     
                     if (numChannels == 1) {
                         frameOut.UpdateFrame(0, audioChannels[0].pcmData.data(), audioChannels[0].pcmData.size(), 48000, webrtc::AudioFrame::SpeechType::kNormalSpeech, webrtc::AudioFrame::VADActivity::kVadActive, numChannels);
+                    } else if (numChannels == _audioRingBufferNumChannels) {
+                        bool skipFrame = false;
+                        int numSamples = (int)audioChannels[0].pcmData.size();
+                        for (int i = 1; i < numChannels; i++) {
+                            if (audioChannels[i].pcmData.size() != numSamples) {
+                                skipFrame = true;
+                                break;
+                            }
+                        }
+                        if (skipFrame) {
+                            break;
+                        }
+                        if (_stereoShuffleBuffer.size() < numChannels * numSamples) {
+                            _stereoShuffleBuffer.resize(numChannels * numSamples);
+                        }
+                        for (int i = 0; i < numSamples; i++) {
+                            for (int j = 0; j < numChannels; j++) {
+                                _stereoShuffleBuffer[i * numChannels + j] = audioChannels[j].pcmData[i];
+                            }
+                        }
+                        frameOut.UpdateFrame(0, _stereoShuffleBuffer.data(), numSamples, 48000, webrtc::AudioFrame::SpeechType::kNormalSpeech, webrtc::AudioFrame::VADActivity::kVadActive, numChannels);
                     } else {
                         bool skipFrame = false;
                         int numSamples = (int)audioChannels[0].pcmData.size();
@@ -482,6 +503,9 @@ public:
                     if (segment->video[0]->part->getActiveEndpointId()) {
                         RTC_LOG(LS_INFO) << "render: discarding video frames at the end of a segment (displayed " << segment->video[0]->_displayedFrames << " frames)";
                     }
+                }
+                if (!segment->unified.empty() && segment->unified[0]->videoPart->hasRemainingFrames()) {
+                    RTC_LOG(LS_INFO) << "render: discarding video frames at the end of a segment (displayed " << segment->unified[0]->_displayedFrames << " frames)";
                 }
 
                 _availableSegments.erase(_availableSegments.begin());

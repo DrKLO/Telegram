@@ -55,7 +55,6 @@ import org.telegram.ui.ActionBar.FloatingToolbar;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ArticleViewer;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.LinkPath;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.RestrictedLanguagesSelectActivity;
 
@@ -1473,7 +1472,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
         }
         canvas.drawPath(selectionPath, selectionPaint);
 
-        final int R = (int) (cornerRadius * 1.66f);
+        final float R = cornerRadius * 1.9f;
         float startLeft = layout.getPrimaryHorizontal(selectionStart),
                 endLeft = layout.getPrimaryHorizontal(selectionEnd);
         float x, b;

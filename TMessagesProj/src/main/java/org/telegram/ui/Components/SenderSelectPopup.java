@@ -12,6 +12,7 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -65,6 +66,7 @@ public class SenderSelectPopup extends ActionBarPopupWindow {
     private boolean clicked;
 
     protected List<SpringAnimation> springAnimations = new ArrayList<>();
+    private boolean dismissed;
 
     public SenderSelectPopup(Context context, ChatActivity parentFragment, MessagesController messagesController, TLRPC.ChatFull chatFull, TLRPC.TL_channels_sendAsPeers sendAsPeers, OnSelectCallback selectCallback) {
         super(context);
@@ -75,6 +77,9 @@ public class SenderSelectPopup extends ActionBarPopupWindow {
         scrimPopupContainerLayout = new BackButtonFrameLayout(context);
         scrimPopupContainerLayout.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
         setContentView(scrimPopupContainerLayout);
+
+        setWidth(WindowManager.LayoutParams.WRAP_CONTENT);
+        setHeight(WindowManager.LayoutParams.WRAP_CONTENT);
 
         setBackgroundDrawable(null);
 
@@ -196,6 +201,15 @@ public class SenderSelectPopup extends ActionBarPopupWindow {
 
         recyclerContainer.addView(recyclerFrameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         scrimPopupContainerLayout.addView(recyclerContainer);
+    }
+
+    @Override
+    public void dismiss() {
+        if (dismissed) {
+            return;
+        }
+        dismissed = true;
+        super.dismiss();
     }
 
     public void startShowAnimation() {

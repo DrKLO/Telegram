@@ -448,9 +448,15 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
     @Override
     public void setEnabled(boolean enabled) {
         super.setEnabled(enabled);
-        stickersSearchField.searchEditText.setEnabled(enabled);
-        gifSearchField.searchEditText.setEnabled(enabled);
-        emojiSearchField.searchEditText.setEnabled(enabled);
+        if (stickersSearchField != null) {
+            stickersSearchField.searchEditText.setEnabled(enabled);
+        }
+        if (gifSearchField != null) {
+            gifSearchField.searchEditText.setEnabled(enabled);
+        }
+        if (emojiSearchField != null) {
+            emojiSearchField.searchEditText.setEnabled(enabled);
+        }
     }
 
     private class SearchField extends FrameLayout {

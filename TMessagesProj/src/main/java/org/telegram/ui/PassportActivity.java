@@ -6862,29 +6862,10 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 }
 
                 @Override
-                public View getRevealView() {
-                    return null;
-                }
-
-                @Override
-                public void didSelectBot(TLRPC.User user) {
-
-                }
-
-                @Override
                 public void onCameraOpened() {
                     AndroidUtilities.hideKeyboard(fragmentView.findFocus());
                 }
 
-                @Override
-                public boolean needEnterComment() {
-                    return false;
-                }
-
-                @Override
-                public void doOnIdle(Runnable runnable) {
-                    runnable.run();
-                }
             });
         }
     }

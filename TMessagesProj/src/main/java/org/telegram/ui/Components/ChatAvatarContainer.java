@@ -40,6 +40,7 @@ import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
@@ -70,6 +71,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
     private int currentConnectionState;
     private CharSequence lastSubtitle;
     private String lastSubtitleColorKey;
+    private Integer overrideSubtitleColor;
 
     private SharedMediaLayout.SharedMediaPreloader sharedMediaPreloader;
     private Theme.ResourcesProvider resourcesProvider;
@@ -134,7 +136,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             timeItem.setScaleY(0.0f);
             timeItem.setScaleX(0.0f);
             timeItem.setVisibility(GONE);
-            timeItem.setImageDrawable(timerDrawable = new TimerDrawable(context));
+            timeItem.setImageDrawable(timerDrawable = new TimerDrawable(context, resourcesProvider));
             addView(timeItem);
             secretChatTimer = needTime;
 
@@ -170,6 +172,10 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         }
     }
 
+    public void setOverrideSubtitleColor(Integer overrideSubtitleColor) {
+        this.overrideSubtitleColor = overrideSubtitleColor;
+    }
+
     public boolean openSetTimer() {
         if (parentFragment.getParentActivity() == null) {
             return false;
@@ -181,19 +187,60 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             }
             return false;
         }
-        ClearHistoryAlert alert = new ClearHistoryAlert(parentFragment.getParentActivity(), parentFragment.getCurrentUser(), parentFragment.getCurrentChat(), false, null);
-        alert.setDelegate(new ClearHistoryAlert.ClearHistoryAlertDelegate() {
+        TLRPC.ChatFull chatInfo = parentFragment.getCurrentChatInfo();
+        TLRPC.UserFull userInfo = parentFragment.getCurrentUserInfo();
+        int ttl = 0;
+        if (userInfo != null) {
+            ttl = userInfo.ttl_period;
+        } else if (chatInfo != null) {
+            ttl = chatInfo.ttl_period;
+        }
+
+        ActionBarPopupWindow[] scrimPopupWindow = new ActionBarPopupWindow[1];
+        AutoDeletePopupWrapper autoDeletePopupWrapper = new AutoDeletePopupWrapper(getContext(), null, new AutoDeletePopupWrapper.Callback() {
             @Override
-            public void onAutoDeleteHistory(int ttl, int action) {
-                parentFragment.getMessagesController().setDialogHistoryTTL(parentFragment.getDialogId(), ttl);
+            public void dismiss() {
+                if (scrimPopupWindow[0] != null) {
+                    scrimPopupWindow[0].dismiss();
+                }
+            }
+
+            @Override
+            public void setAutoDeleteHistory(int time, int action) {
+                if (parentFragment == null) {
+                    return;
+                }
+                parentFragment.getMessagesController().setDialogHistoryTTL(parentFragment.getDialogId(), time);
                 TLRPC.ChatFull chatInfo = parentFragment.getCurrentChatInfo();
                 TLRPC.UserFull userInfo = parentFragment.getCurrentUserInfo();
                 if (userInfo != null || chatInfo != null) {
                     parentFragment.getUndoView().showWithAction(parentFragment.getDialogId(), action, parentFragment.getCurrentUser(), userInfo != null ? userInfo.ttl_period : chatInfo.ttl_period, null, null);
                 }
+
             }
-        });
-        parentFragment.showDialog(alert);
+        }, true, resourcesProvider);
+        autoDeletePopupWrapper.updateItems(ttl);
+
+        scrimPopupWindow[0] = new ActionBarPopupWindow(autoDeletePopupWrapper.windowLayout, LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT) {
+            @Override
+            public void dismiss() {
+                super.dismiss();
+                if (parentFragment != null) {
+                    parentFragment.dimBehindView(false);
+                }
+            }
+        };
+        scrimPopupWindow[0].setPauseNotifications(true);
+        scrimPopupWindow[0].setDismissAnimationDuration(220);
+        scrimPopupWindow[0].setOutsideTouchable(true);
+        scrimPopupWindow[0].setClippingEnabled(true);
+        scrimPopupWindow[0].setAnimationStyle(R.style.PopupContextAnimation);
+        scrimPopupWindow[0].setFocusable(true);
+        autoDeletePopupWrapper.windowLayout.measure(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), View.MeasureSpec.AT_MOST));
+        scrimPopupWindow[0].setInputMethodMode(ActionBarPopupWindow.INPUT_METHOD_NOT_NEEDED);
+        scrimPopupWindow[0].getContentView().setFocusableInTouchMode(true);
+        scrimPopupWindow[0].showAtLocation(avatarImageView, 0, (int) (avatarImageView.getX() + getX()), (int) avatarImageView.getY());
+        parentFragment.dimBehindView(true);
         return true;
     }
 
@@ -289,7 +336,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
     }
 
     public void showTimeItem(boolean animated) {
-        if (timeItem == null || timeItem.getTag() != null) {
+        if (timeItem == null || timeItem.getTag() != null || avatarImageView.getVisibility() != View.VISIBLE) {
             return;
         }
         timeItem.clearAnimation();
@@ -326,14 +373,21 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         }
     }
 
-    public void setTime(int value) {
+    public void setTime(int value, boolean animated) {
         if (timerDrawable == null) {
             return;
         }
+        boolean show = true;
         if (value == 0 && !secretChatTimer) {
+            show = false;
             return;
         }
-        timerDrawable.setTime(value);
+        if (show) {
+            showTimeItem(animated);
+            timerDrawable.setTime(value);
+        } else {
+            hideTimeItem(animated);
+        }
     }
 
     public void setTitleIcons(Drawable leftIcon, Drawable rightIcon) {
@@ -601,8 +655,12 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         lastSubtitleColorKey = useOnlineColor ? Theme.key_chat_status : Theme.key_actionBarDefaultSubtitle;
         if (lastSubtitle == null) {
             subtitleTextView.setText(newSubtitle);
-            subtitleTextView.setTextColor(getThemedColor(lastSubtitleColorKey));
-            subtitleTextView.setTag(lastSubtitleColorKey);
+            if (overrideSubtitleColor == null) {
+                subtitleTextView.setTextColor(getThemedColor(lastSubtitleColorKey));
+                subtitleTextView.setTag(lastSubtitleColorKey);
+            } else {
+                subtitleTextView.setTextColor(overrideSubtitleColor);
+            }
         } else {
             lastSubtitle = newSubtitle;
         }
@@ -742,7 +800,9 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             if (lastSubtitle != null) {
                 subtitleTextView.setText(lastSubtitle);
                 lastSubtitle = null;
-                if (lastSubtitleColorKey != null) {
+                if (overrideSubtitleColor != null) {
+                    subtitleTextView.setTextColor(overrideSubtitleColor);
+                } else if (lastSubtitleColorKey != null) {
                     subtitleTextView.setTextColor(getThemedColor(lastSubtitleColorKey));
                     subtitleTextView.setTag(lastSubtitleColorKey);
                 }
@@ -752,8 +812,12 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                 lastSubtitle = subtitleTextView.getText();
             }
             subtitleTextView.setText(title);
-            subtitleTextView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubtitle));
-            subtitleTextView.setTag(Theme.key_actionBarDefaultSubtitle);
+            if (overrideSubtitleColor != null) {
+                subtitleTextView.setTextColor(overrideSubtitleColor);
+            } else {
+                subtitleTextView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubtitle));
+                subtitleTextView.setTag(Theme.key_actionBarDefaultSubtitle);
+            }
         }
     }
 

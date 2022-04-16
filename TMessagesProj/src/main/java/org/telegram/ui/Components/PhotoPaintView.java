@@ -485,8 +485,10 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
         lcm = BigInteger.ONE;
         if (bitmap != null && entitiesView.entitiesCount() > 0) {
             Canvas canvas = null;
+            Canvas thumbCanvas = null;
             int count = entitiesView.getChildCount();
             for (int i = 0; i < count; i++) {
+                boolean skipDrawToBitmap = false;
                 View v = entitiesView.getChildAt(i);
                 if (!(v instanceof EntityView)) {
                     continue;
@@ -517,13 +519,20 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
                         mediaEntity.parentObject = stickerView.getParentObject();
                         TLRPC.Document document = stickerView.getSticker();
                         mediaEntity.text = FileLoader.getPathToAttach(document, true).getAbsolutePath();
-                        if (MessageObject.isAnimatedStickerDocument(document, true)) {
-                            mediaEntity.subType |= 1;
-                            long duration = stickerView.getDuration();
+                        if (MessageObject.isAnimatedStickerDocument(document, true) || MessageObject.isVideoStickerDocument(document)) {
+                            boolean isAnimatedSticker = MessageObject.isAnimatedStickerDocument(document, true);
+                            mediaEntity.subType |=  isAnimatedSticker ? 1 : 4;
+                            long duration;
+                            if (isAnimatedSticker) {
+                                duration = stickerView.getDuration();
+                            } else {
+                                duration = 5000;
+                            }
                             if (duration != 0) {
                                 BigInteger x = BigInteger.valueOf(duration);
                                 lcm = lcm.multiply(x).divide(lcm.gcd(x));
                             }
+                            skipDrawToBitmap = true;
                         }
                         if (stickerView.isMirrored()) {
                             mediaEntity.subType |= 2;
@@ -552,33 +561,37 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
 
                     if (thumbBitmap[0] == null) {
                         thumbBitmap[0] = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), bitmap.getConfig());
-                        canvas = new Canvas(thumbBitmap[0]);
-                        canvas.drawBitmap(bitmap, 0, 0, null);
+                        thumbCanvas = new Canvas(thumbBitmap[0]);
+                        thumbCanvas.drawBitmap(bitmap, 0, 0, null);
                     }
                 }
-                if (canvas == null) {
-                    canvas = new Canvas(bitmap);
-                }
-                canvas.save();
-                canvas.translate(position.x, position.y);
-                canvas.scale(v.getScaleX(), v.getScaleY());
-                canvas.rotate(v.getRotation());
-                canvas.translate(-entity.getWidth() / 2, -entity.getHeight() / 2);
-                if (v instanceof TextPaintView) {
-                    Bitmap b = Bitmaps.createBitmap(v.getWidth(), v.getHeight(), Bitmap.Config.ARGB_8888);
-                    Canvas c = new Canvas(b);
-                    v.draw(c);
-                    canvas.drawBitmap(b, null, new Rect(0, 0, b.getWidth(), b.getHeight()), null);
-                    try {
-                        c.setBitmap(null);
-                    } catch (Exception e) {
-                        FileLog.e(e);
+                canvas = new Canvas(bitmap);
+                for (int k = 0; k < 2; k++) {
+                    Canvas currentCanvas = k == 0 ? canvas : thumbCanvas;
+                    if (currentCanvas == null || (k == 0 && skipDrawToBitmap)) {
+                        continue;
                     }
-                    b.recycle();
-                } else {
-                    v.draw(canvas);
+                    currentCanvas.save();
+                    currentCanvas.translate(position.x, position.y);
+                    currentCanvas.scale(v.getScaleX(), v.getScaleY());
+                    currentCanvas.rotate(v.getRotation());
+                    currentCanvas.translate(-entity.getWidth() / 2, -entity.getHeight() / 2);
+                    if (v instanceof TextPaintView) {
+                        Bitmap b = Bitmaps.createBitmap(v.getWidth(), v.getHeight(), Bitmap.Config.ARGB_8888);
+                        Canvas c = new Canvas(b);
+                        v.draw(c);
+                        currentCanvas.drawBitmap(b, null, new Rect(0, 0, b.getWidth(), b.getHeight()), null);
+                        try {
+                            c.setBitmap(null);
+                        } catch (Exception e) {
+                            FileLog.e(e);
+                        }
+                        b.recycle();
+                    } else {
+                        v.draw(currentCanvas);
+                    }
+                    currentCanvas.restore();
                 }
-                canvas.restore();
             }
         }
         return bitmap;

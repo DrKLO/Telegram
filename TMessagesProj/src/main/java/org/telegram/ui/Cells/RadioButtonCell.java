@@ -26,7 +26,7 @@ import org.telegram.ui.Components.RadioButton;
 public class RadioButtonCell extends FrameLayout {
 
     private TextView textView;
-    private TextView valueTextView;
+    public TextView valueTextView;
     private RadioButton radioButton;
     private boolean needDivider;
 

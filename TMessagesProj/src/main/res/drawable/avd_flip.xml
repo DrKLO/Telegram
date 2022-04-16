@@ -1,0 +1,136 @@
+<animated-vector
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt">
+    <aapt:attr name="android:drawable">
+        <vector
+            android:name="vector"
+            android:width="36dp"
+            android:height="36dp"
+            android:viewportWidth="36"
+            android:viewportHeight="36">
+            <group
+                android:name="group"
+                android:pivotX="18"
+                android:pivotY="18">
+                <path
+                    android:name="path_3"
+                    android:pathData="M 25.778 13.05 L 25.778 7.393 L 31.435 7.393 M 10.222 22.95 L 10.222 28.607 L 4.565 28.607 M 13.84 30.319 C 18.373 31.846 23.581 30.804 27.192 27.192 C 32.269 22.116 32.269 13.884 27.192 8.808 M 22.163 5.681 C 17.629 4.153 12.42 5.195 8.808 8.808 C 3.731 13.884 3.731 22.116 8.808 27.192"
+                    android:fillAlpha="0"
+                    android:strokeColor="#000000"
+                    android:strokeAlpha="0.2"
+                    android:strokeWidth="2.66"
+                    android:strokeLineCap="round"
+                    android:strokeLineJoin="round"/>
+                <path
+                    android:name="path"
+                    android:pathData="M 25.778 13.05 L 25.778 7.393 L 31.435 7.393 M 10.222 22.95 L 10.222 28.607 L 4.565 28.607"
+                    android:fillAlpha="0"
+                    android:strokeColor="#ffffff"
+                    android:strokeWidth="2"
+                    android:strokeLineCap="round"
+                    android:strokeLineJoin="round"/>
+                <path
+                    android:name="path_1"
+                    android:pathData="M 13.84 30.319 C 18.373 31.846 23.581 30.804 27.192 27.192 C 32.269 22.116 32.269 13.884 27.192 8.808 M 22.163 5.681 C 17.629 4.153 12.42 5.195 8.808 8.808 C 3.731 13.884 3.731 22.116 8.808 27.192"
+                    android:strokeColor="#ffffff"
+                    android:strokeWidth="2"
+                    android:strokeLineCap="round"/>
+                <group
+                    android:name="group_1"
+                    android:pivotX="18"
+                    android:pivotY="18">
+                    <path
+                        android:name="path_4"
+                        android:pathData="M 14.818 21.182 C 16.575 22.939 19.425 22.939 21.182 21.182 C 22.939 19.425 22.939 16.575 21.182 14.818 C 19.425 13.061 16.575 13.061 14.818 14.818 C 13.061 16.575 13.061 19.425 14.818 21.182 Z"
+                        android:fillAlpha="0"
+                        android:strokeColor="#000000"
+                        android:strokeAlpha="0.2"
+                        android:strokeWidth="2.66"/>
+                    <path
+                        android:name="path_2"
+                        android:pathData="M 14.818 21.182 C 16.575 22.939 19.425 22.939 21.182 21.182 C 22.939 19.425 22.939 16.575 21.182 14.818 C 19.425 13.061 16.575 13.061 14.818 14.818 C 13.061 16.575 13.061 19.425 14.818 21.182 Z"
+                        android:strokeColor="#ffffff"
+                        android:strokeWidth="2"/>
+                </group>
+            </group>
+        </vector>
+    </aapt:attr>
+    <target android:name="path_2">
+        <aapt:attr name="android:animation">
+            <set>
+                <objectAnimator
+                    android:propertyName="pathData"
+                    android:duration="300"
+                    android:valueFrom="M 14.818 21.182 C 16.575 22.939 19.425 22.939 21.182 21.182 C 22.939 19.425 22.939 16.575 21.182 14.818 C 19.425 13.061 16.575 13.061 14.818 14.818 C 13.061 16.575 13.061 19.425 14.818 21.182 Z"
+                    android:valueTo="M 21.182 21.182 C 19.425 22.939 16.575 22.939 14.818 21.182 C 13.061 19.425 13.061 16.575 14.818 14.818 C 16.575 13.061 19.425 13.061 21.182 14.818 C 22.939 16.575 22.939 19.425 21.182 21.182 Z"
+                    android:valueType="pathType"
+                    android:interpolator="@android:anim/accelerate_decelerate_interpolator"/>
+                <objectAnimator
+                    android:propertyName="strokeWidth"
+                    android:duration="150"
+                    android:valueFrom="2"
+                    android:valueTo="4"
+                    android:valueType="floatType"
+                    android:interpolator="@android:anim/accelerate_interpolator"/>
+                <objectAnimator
+                    android:propertyName="strokeWidth"
+                    android:startOffset="150"
+                    android:duration="150"
+                    android:valueFrom="4"
+                    android:valueTo="2"
+                    android:valueType="floatType"
+                    android:interpolator="@android:anim/accelerate_interpolator"/>
+            </set>
+        </aapt:attr>
+    </target>
+    <target android:name="path_4">
+        <aapt:attr name="android:animation">
+            <set>
+                <objectAnimator
+                    android:propertyName="pathData"
+                    android:duration="300"
+                    android:valueFrom="M 14.818 21.182 C 16.575 22.939 19.425 22.939 21.182 21.182 C 22.939 19.425 22.939 16.575 21.182 14.818 C 19.425 13.061 16.575 13.061 14.818 14.818 C 13.061 16.575 13.061 19.425 14.818 21.182 Z"
+                    android:valueTo="M 21.182 21.182 C 19.425 22.939 16.575 22.939 14.818 21.182 C 13.061 19.425 13.061 16.575 14.818 14.818 C 16.575 13.061 19.425 13.061 21.182 14.818 C 22.939 16.575 22.939 19.425 21.182 21.182 Z"
+                    android:valueType="pathType"
+                    android:interpolator="@android:anim/accelerate_decelerate_interpolator"/>
+                <objectAnimator
+                    android:propertyName="strokeWidth"
+                    android:duration="150"
+                    android:valueFrom="2.66"
+                    android:valueTo="4.66"
+                    android:valueType="floatType"
+                    android:interpolator="@android:anim/accelerate_interpolator"/>
+                <objectAnimator
+                    android:propertyName="strokeWidth"
+                    android:startOffset="150"
+                    android:duration="150"
+                    android:valueFrom="4.66"
+                    android:valueTo="2.66"
+                    android:valueType="floatType"
+                    android:interpolator="@android:anim/accelerate_interpolator"/>
+            </set>
+        </aapt:attr>
+    </target>
+    <target android:name="group_1">
+        <aapt:attr name="android:animation">
+            <objectAnimator
+                android:propertyName="rotation"
+                android:duration="300"
+                android:valueFrom="0"
+                android:valueTo="180"
+                android:valueType="floatType"
+                android:interpolator="@android:anim/accelerate_decelerate_interpolator"/>
+        </aapt:attr>
+    </target>
+    <target android:name="group">
+        <aapt:attr name="android:animation">
+            <objectAnimator
+                android:propertyName="rotation"
+                android:duration="300"
+                android:valueFrom="0"
+                android:valueTo="-180"
+                android:valueType="floatType"
+                android:interpolator="@android:anim/accelerate_decelerate_interpolator"/>
+        </aapt:attr>
+    </target>
+</animated-vector>

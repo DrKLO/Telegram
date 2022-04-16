@@ -136,18 +136,6 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
 
     private static ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(8, new ThreadPoolExecutor.DiscardPolicy());
 
-    protected final Runnable mInvalidateTask = () -> {
-        invalidateTaskIsRunning = false;
-        if (!secondParentViews.isEmpty()) {
-            for (int a = 0, N = secondParentViews.size(); a < N; a++) {
-                secondParentViews.get(a).invalidate();
-            }
-        }
-        if ((secondParentViews.isEmpty() || invalidateParentViewWithSecond) && parentView != null) {
-            parentView.invalidate();
-        }
-    };
-
     private Runnable uiRunnableNoFrame = new Runnable() {
         @Override
         public void run() {
@@ -831,5 +819,13 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
 
     public boolean isRecycled() {
         return isRecycled;
+    }
+
+    public Bitmap getNextFrame() {
+        if (backgroundBitmap == null) {
+            backgroundBitmap = Bitmap.createBitmap((int) (metaData[0] * scaleFactor), (int) (metaData[1] * scaleFactor), Bitmap.Config.ARGB_8888);
+        }
+        getVideoFrame(nativePtr, backgroundBitmap, metaData, backgroundBitmap.getRowBytes(), false, startTime, endTime) ;
+        return backgroundBitmap;
     }
 }

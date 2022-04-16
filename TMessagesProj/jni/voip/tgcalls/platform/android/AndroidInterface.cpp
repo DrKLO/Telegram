@@ -23,7 +23,7 @@
 
 namespace tgcalls {
 
-void AndroidInterface::configurePlatformAudio() {
+void AndroidInterface::configurePlatformAudio(int numChannels) {
 
 }
 

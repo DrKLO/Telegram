@@ -12,6 +12,7 @@ import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.Components.AnimatedFileDrawable;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Point;
 import org.telegram.ui.Components.RLottieDrawable;
@@ -144,11 +145,16 @@ public class StickerView extends EntityView {
     }
 
     public long getDuration() {
-        RLottieDrawable drawable = centerImage.getLottieAnimation();
-        if (drawable == null) {
-            return 0;
+        RLottieDrawable rLottieDrawable = centerImage.getLottieAnimation();
+        if (rLottieDrawable != null) {
+            return rLottieDrawable.getDuration();
         }
-        return drawable.getDuration();
+        AnimatedFileDrawable animatedFileDrawable = centerImage.getAnimation();
+        if (animatedFileDrawable != null) {
+            return animatedFileDrawable.getDurationMs();
+        }
+        return 0;
+
     }
 
     @Override

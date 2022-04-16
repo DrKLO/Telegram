@@ -18,11 +18,17 @@ import org.telegram.tgnet.TLObject;
 
 public class URLSpanNoUnderline extends URLSpan {
 
+    private boolean forceNoUnderline = false;
     private TextStyleSpan.TextStyleRun style;
     private TLObject object;
 
     public URLSpanNoUnderline(String url) {
         this(url, null);
+    }
+
+    public URLSpanNoUnderline(String url, boolean forceNoUnderline) {
+        this(url, null);
+        this.forceNoUnderline = forceNoUnderline;
     }
 
     public URLSpanNoUnderline(String url, TextStyleSpan.TextStyleRun run) {
@@ -49,7 +55,7 @@ public class URLSpanNoUnderline extends URLSpan {
         if (style != null) {
             style.applyStyle(p);
         }
-        p.setUnderlineText(l == c);
+        p.setUnderlineText(l == c && !forceNoUnderline);
     }
 
     public void setObject(TLObject spanObject) {

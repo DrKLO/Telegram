@@ -8,14 +8,6 @@
 
 package org.telegram.messenger.video;
 
-import java.io.File;
-import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.FloatBuffer;
-import java.nio.channels.FileChannel;
-import java.util.ArrayList;
-
 import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -35,22 +27,32 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 
+import androidx.annotation.RequiresApi;
+import androidx.exifinterface.media.ExifInterface;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.Bitmaps;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MediaController;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.VideoEditedInfo;
+import org.telegram.ui.Components.AnimatedFileDrawable;
 import org.telegram.ui.Components.FilterShaders;
 import org.telegram.ui.Components.Paint.Views.EditTextOutline;
 import org.telegram.ui.Components.RLottieDrawable;
 
-import javax.microedition.khronos.opengles.GL10;
+import java.io.File;
+import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
+import java.nio.channels.FileChannel;
+import java.util.ArrayList;
 
-import androidx.annotation.RequiresApi;
-import androidx.exifinterface.media.ExifInterface;
+import javax.microedition.khronos.opengles.GL10;
 
 public class TextureRenderer {
 
@@ -121,6 +123,7 @@ public class TextureRenderer {
     private int[] paintTexture;
     private int[] stickerTexture;
     private Bitmap stickerBitmap;
+    private Canvas stickerCanvas;
     private float videoFps;
 
     private int imageOrientation;
@@ -398,10 +401,31 @@ public class TextureRenderer {
                         entity.currentFrame = 0;
                     }
                     drawTexture(false, stickerTexture[0], entity.x, entity.y, entity.width, entity.height, entity.rotation, (entity.subType & 2) != 0);
-                } else if (entity.bitmap != null) {
-                    GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, stickerTexture[0]);
-                    GLUtils.texImage2D(GL10.GL_TEXTURE_2D, 0, entity.bitmap, 0);
-                    drawTexture(false, stickerTexture[0], entity.x, entity.y, entity.width, entity.height, entity.rotation, (entity.subType & 2) != 0);
+                } else if (entity.animatedFileDrawable != null) {
+                    int lastFrame = (int) entity.currentFrame;
+                    entity.currentFrame += entity.framesPerDraw;
+                    int currentFrame = (int) entity.currentFrame;
+                    while (lastFrame != currentFrame) {
+                        entity.animatedFileDrawable.getNextFrame();
+                        currentFrame--;
+                    }
+                    Bitmap frameBitmap = entity.animatedFileDrawable.getBackgroundBitmap();
+                    if (stickerCanvas == null && stickerBitmap != null) {
+                        stickerCanvas = new Canvas(stickerBitmap);
+                    }
+                    if (stickerBitmap != null && frameBitmap != null) {
+                        stickerBitmap.eraseColor(Color.TRANSPARENT);
+                        stickerCanvas.drawBitmap(frameBitmap, 0, 0, null);
+                        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, stickerTexture[0]);
+                        GLUtils.texImage2D(GL10.GL_TEXTURE_2D, 0, stickerBitmap, 0);
+                        drawTexture(false, stickerTexture[0], entity.x, entity.y, entity.width, entity.height, entity.rotation, (entity.subType & 2) != 0);
+                    }
+                } else {
+                    if (entity.bitmap != null) {
+                        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, stickerTexture[0]);
+                        GLUtils.texImage2D(GL10.GL_TEXTURE_2D, 0, entity.bitmap, 0);
+                        drawTexture(false, stickerTexture[0], entity.x, entity.y, entity.width, entity.height, entity.rotation, (entity.subType & 2) != 0);
+                    }
                 }
             }
         }
@@ -608,6 +632,10 @@ public class TextureRenderer {
                             entity.metadata = new int[3];
                             entity.ptr = RLottieDrawable.create(entity.text, null, 512, 512, entity.metadata, false, null, false, 0);
                             entity.framesPerDraw = entity.metadata[1] / videoFps;
+                        } else if ((entity.subType & 4) != 0) {
+                            entity.animatedFileDrawable = new AnimatedFileDrawable(new File(entity.text), true, 0, null, null, null, 0, UserConfig.selectedAccount, true, 512, 512);
+                            entity.framesPerDraw = videoFps / 30f;
+                            entity.currentFrame = 0;
                         } else {
                             if (Build.VERSION.SDK_INT >= 19) {
                                 entity.bitmap = BitmapFactory.decodeFile(entity.text);
@@ -712,6 +740,9 @@ public class TextureRenderer {
                 VideoEditedInfo.MediaEntity entity = mediaEntities.get(a);
                 if (entity.ptr != 0) {
                     RLottieDrawable.destroy(entity.ptr);
+                }
+                if (entity.animatedFileDrawable != null) {
+                    entity.animatedFileDrawable.recycle();
                 }
             }
         }

@@ -17,17 +17,22 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.database.Cursor;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.media.MediaMetadataRetriever;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.os.StatFs;
+import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.util.SparseArray;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
+import android.webkit.MimeTypeMap;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 
@@ -44,11 +49,13 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.messenger.ringtone.RingtoneDataStore;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -81,13 +88,23 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
 
     public interface DocumentSelectActivityDelegate {
         void didSelectFiles(ArrayList<String> files, String caption, ArrayList<MessageObject> fmessages, boolean notify, int scheduleDate);
-        void didSelectPhotos(ArrayList<SendMessagesHelper.SendingMediaInfo> photos, boolean notify, int scheduleDate);
+        default void didSelectPhotos(ArrayList<SendMessagesHelper.SendingMediaInfo> photos, boolean notify, int scheduleDate) {
 
-        void startDocumentSelectActivity();
+        }
+
+        default void startDocumentSelectActivity() {
+
+        }
 
         default void startMusicSelectActivity() {
         }
     }
+
+    public final static int TYPE_DEFAULT = 0;
+    public final static int TYPE_MUSIC = 1;
+    public final static int TYPE_RINGTONE = 2;
+
+    private int type;
 
     private RecyclerListView listView;
     private ListAdapter listAdapter;
@@ -129,6 +146,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
 
     private final static int search_button = 0;
     private final static int sort_button = 6;
+    public boolean isSoundPicker;
 
     private static class ListItem {
         public int icon;
@@ -168,9 +186,10 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
         }
     };
 
-    public ChatAttachAlertDocumentLayout(ChatAttachAlert alert, Context context, boolean music, Theme.ResourcesProvider resourcesProvider) {
+    public ChatAttachAlertDocumentLayout(ChatAttachAlert alert, Context context, int type, Theme.ResourcesProvider resourcesProvider) {
         super(alert, context, resourcesProvider);
-        allowMusic = music;
+        allowMusic = type == TYPE_MUSIC;
+        isSoundPicker = type == TYPE_RINGTONE;
         sortByName = SharedConfig.sortFilesByName;
         loadRecentFiles();
 
@@ -371,7 +390,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
                         });
                         fragment.setMaxSelectedPhotos(maxSelectedFiles, false);
                         parentAlert.baseFragment.presentFragment(fragment);
-                        parentAlert.dismiss();
+                        parentAlert.dismiss(true);
                     } else if (item.icon == R.drawable.files_music) {
                         if (delegate != null) {
                             delegate.startMusicSelectActivity();
@@ -565,7 +584,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
         ArrayList<String> files = new ArrayList<>(selectedFilesOrder);
         delegate.didSelectFiles(files, parentAlert.commentTextView.getText().toString(), fmessages, notify, scheduleDate);
 
-        parentAlert.dismiss();
+        parentAlert.dismiss(true);
     }
 
     private boolean onItemClick(View view, Object object) {
@@ -595,6 +614,9 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
                 }
                 if (maxSelectedFiles >= 0 && selectedFiles.size() >= maxSelectedFiles) {
                     showErrorBox(LocaleController.formatString("PassportUploadMaxReached", R.string.PassportUploadMaxReached, LocaleController.formatPluralString("Files", maxSelectedFiles)));
+                    return false;
+                }
+                if (isSoundPicker && !isRingtone(item.file)) {
                     return false;
                 }
                 if (item.file.length() == 0) {
@@ -628,12 +650,45 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
         return true;
     }
 
+    public boolean isRingtone(File file) {
+        String mimeType = null;
+        String extension = FileLoader.getFileExtension(file);
+        if (extension != null) {
+            mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
+        }
+        if (file.length() == 0 || mimeType == null || !RingtoneDataStore.ringtoneSupportedMimeType.contains(mimeType)) {
+            BulletinFactory.of(parentAlert.getContainer(), null).createErrorBulletinSubtitle(LocaleController.formatString("InvalidFormatError", R.string.InvalidFormatError), LocaleController.formatString("ErrorInvalidRingtone", R.string.ErrorRingtoneInvalidFormat), null).show();
+            return false;
+        }
+        if (file.length() > MessagesController.getInstance(UserConfig.selectedAccount).ringtoneSizeMax) {
+            BulletinFactory.of(parentAlert.getContainer(), null).createErrorBulletinSubtitle(LocaleController.formatString("TooLargeError", R.string.TooLargeError), LocaleController.formatString("ErrorRingtoneSizeTooBig", R.string.ErrorRingtoneSizeTooBig, (MessagesController.getInstance(UserConfig.selectedAccount).ringtoneSizeMax / 1024)), null).show();
+            return false;
+        }
+
+        int millSecond;
+        try {
+            MediaMetadataRetriever mmr = new MediaMetadataRetriever();
+            mmr.setDataSource(ApplicationLoader.applicationContext, Uri.fromFile(file));
+            String durationStr = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
+            millSecond = Integer.parseInt(durationStr);
+        } catch (Exception e) {
+            millSecond = Integer.MAX_VALUE;
+        }
+
+        if (millSecond > MessagesController.getInstance(UserConfig.selectedAccount).ringtoneDurationMax * 1000) {
+            BulletinFactory.of(parentAlert.getContainer(), null).createErrorBulletinSubtitle(LocaleController.formatString("TooLongError", R.string.TooLongError), LocaleController.formatString("ErrorRingtoneDurationTooLong", R.string.ErrorRingtoneDurationTooLong, MessagesController.getInstance(UserConfig.selectedAccount).ringtoneDurationMax), null).show();
+            return false;
+        }
+
+        return true;
+    }
+
     public void setMaxSelectedFiles(int value) {
         maxSelectedFiles = value;
     }
 
     public void setCanSelectOnlyImageFiles(boolean value) {
-        canSelectOnlyImageFiles = true;
+        canSelectOnlyImageFiles = value;
     }
 
     private void sendSelectedPhotos(HashMap<Object, Object> photos, ArrayList<Object> order, boolean notify, int scheduleDate) {
@@ -667,30 +722,72 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
 
     public void loadRecentFiles() {
         try {
-            File[] files = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).listFiles();
-            if (files != null) {
-                for (int a = 0; a < files.length; a++) {
-                    File file = files[a];
-                    if (file.isDirectory()) {
-                        continue;
+            if (isSoundPicker) {
+                String[] projection = {
+                        MediaStore.Audio.Media._ID,
+                        MediaStore.Audio.Media.DATA,
+                        MediaStore.Audio.Media.DURATION,
+                        MediaStore.Audio.Media.SIZE,
+                        MediaStore.Audio.Media.MIME_TYPE
+                };
+                try (Cursor cursor = ApplicationLoader.applicationContext.getContentResolver().query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, projection, MediaStore.Audio.Media.IS_MUSIC + " != 0", null, MediaStore.Audio.Media.DATE_ADDED + " DESC")) {
+                    while (cursor.moveToNext()) {
+                        File file = new File(cursor.getString(1));
+                        long duration = cursor.getLong(2);
+                        long fileSize = cursor.getLong(3);
+                        String mimeType = cursor.getString(4);
+
+                        if (duration > MessagesController.getInstance(UserConfig.selectedAccount).ringtoneDurationMax * 1000 || fileSize > MessagesController.getInstance(UserConfig.selectedAccount).ringtoneSizeMax || (!TextUtils.isEmpty(mimeType) && !("audio/mpeg".equals(mimeType) || !"audio/mpeg4".equals(mimeType)))) {
+                            continue;
+                        }
+                        
+                        ListItem item = new ListItem();
+                        item.title = file.getName();
+                        item.file = file;
+                        String fname = file.getName();
+                        String[] sp = fname.split("\\.");
+                        item.ext = sp.length > 1 ? sp[sp.length - 1] : "?";
+                        item.subtitle = AndroidUtilities.formatFileSize(file.length());
+                        fname = fname.toLowerCase();
+                        if (fname.endsWith(".jpg") || fname.endsWith(".png") || fname.endsWith(".gif") || fname.endsWith(".jpeg")) {
+                            item.thumb = file.getAbsolutePath();
+                        }
+                        recentItems.add(item);
                     }
-                    ListItem item = new ListItem();
-                    item.title = file.getName();
-                    item.file = file;
-                    String fname = file.getName();
-                    String[] sp = fname.split("\\.");
-                    item.ext = sp.length > 1 ? sp[sp.length - 1] : "?";
-                    item.subtitle = AndroidUtilities.formatFileSize(file.length());
-                    fname = fname.toLowerCase();
-                    if (fname.endsWith(".jpg") || fname.endsWith(".png") || fname.endsWith(".gif") || fname.endsWith(".jpeg")) {
-                        item.thumb = file.getAbsolutePath();
-                    }
-                    recentItems.add(item);
+                } catch (Exception e) {
+                    FileLog.e(e);
                 }
+            } else {
+                checkDirectory(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS));
+                sortRecentItems();
             }
-            sortRecentItems();
         } catch (Exception e) {
             FileLog.e(e);
+        }
+    }
+
+    private void checkDirectory(File rootDir) {
+        File[] files = rootDir.listFiles();
+        if (files != null) {
+            for (int a = 0; a < files.length; a++) {
+                File file = files[a];
+                if (file.isDirectory() && file.getName().equals("Telegram")) {
+                    checkDirectory(file);
+                    continue;
+                }
+                ListItem item = new ListItem();
+                item.title = file.getName();
+                item.file = file;
+                String fname = file.getName();
+                String[] sp = fname.split("\\.");
+                item.ext = sp.length > 1 ? sp[sp.length - 1] : "?";
+                item.subtitle = AndroidUtilities.formatFileSize(file.length());
+                fname = fname.toLowerCase();
+                if (fname.endsWith(".jpg") || fname.endsWith(".png") || fname.endsWith(".gif") || fname.endsWith(".jpeg")) {
+                    item.thumb = file.getAbsolutePath();
+                }
+                recentItems.add(item);
+            }
         }
     }
 
@@ -1049,12 +1146,14 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
             FileLog.e(e);
         }
 
-        fs = new ListItem();
-        fs.title = LocaleController.getString("Gallery", R.string.Gallery);
-        fs.subtitle = LocaleController.getString("GalleryInfo", R.string.GalleryInfo);
-        fs.icon = R.drawable.files_gallery;
-        fs.file = null;
-        items.add(fs);
+        if (!isSoundPicker) {
+            fs = new ListItem();
+            fs.title = LocaleController.getString("Gallery", R.string.Gallery);
+            fs.subtitle = LocaleController.getString("GalleryInfo", R.string.GalleryInfo);
+            fs.icon = R.drawable.files_gallery;
+            fs.file = null;
+            items.add(fs);
+        }
 
         if (allowMusic) {
             fs = new ListItem();

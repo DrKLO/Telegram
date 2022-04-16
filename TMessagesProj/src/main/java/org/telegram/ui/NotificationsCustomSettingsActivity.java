@@ -30,6 +30,9 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
@@ -68,10 +71,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
-public class NotificationsCustomSettingsActivity extends BaseFragment {
+public class NotificationsCustomSettingsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
     private RecyclerListView listView;
     private ListAdapter adapter;
@@ -435,39 +435,42 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                     return;
                 }
                 try {
-                    SharedPreferences preferences = getNotificationsSettings();
-                    Intent tmpIntent = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
-                    tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION);
-                    tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true);
-                    tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, true);
-                    tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_DEFAULT_URI, RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION));
-                    Uri currentSound = null;
-
-                    String defaultPath = null;
-                    Uri defaultUri = Settings.System.DEFAULT_NOTIFICATION_URI;
-                    if (defaultUri != null) {
-                        defaultPath = defaultUri.getPath();
-                    }
-
-                    String path;
-                    if (currentType == NotificationsController.TYPE_PRIVATE) {
-                        path = preferences.getString("GlobalSoundPath", defaultPath);
-                    } else if (currentType == NotificationsController.TYPE_GROUP) {
-                        path = preferences.getString("GroupSoundPath", defaultPath);
-                    } else {
-                        path = preferences.getString("ChannelSoundPath", defaultPath);
-                    }
-
-                    if (path != null && !path.equals("NoSound")) {
-                        if (path.equals(defaultPath)) {
-                            currentSound = defaultUri;
-                        } else {
-                            currentSound = Uri.parse(path);
-                        }
-                    }
-
-                    tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, currentSound);
-                    startActivityForResult(tmpIntent, position);
+                    Bundle bundle = new Bundle();
+                    bundle.putInt("type", currentType);
+                    presentFragment(new NotificationsSoundActivity(bundle));
+//                    SharedPreferences preferences = getNotificationsSettings();
+//                    Intent tmpIntent = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
+//                    tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION);
+//                    tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true);
+//                    tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, true);
+//                    tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_DEFAULT_URI, RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION));
+//                    Uri currentSound = null;
+//
+//                    String defaultPath = null;
+//                    Uri defaultUri = Settings.System.DEFAULT_NOTIFICATION_URI;
+//                    if (defaultUri != null) {
+//                        defaultPath = defaultUri.getPath();
+//                    }
+//
+//                    String path;
+//                    if (currentType == NotificationsController.TYPE_PRIVATE) {
+//                        path = preferences.getString("GlobalSoundPath", defaultPath);
+//                    } else if (currentType == NotificationsController.TYPE_GROUP) {
+//                        path = preferences.getString("GroupSoundPath", defaultPath);
+//                    } else {
+//                        path = preferences.getString("ChannelSoundPath", defaultPath);
+//                    }
+//
+//                    if (path != null && !path.equals("NoSound")) {
+//                        if (path.equals(defaultPath)) {
+//                            currentSound = defaultUri;
+//                        } else {
+//                            currentSound = Uri.parse(path);
+//                        }
+//                    }
+//
+//                    tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, currentSound);
+//                    startActivityForResult(tmpIntent, position);
                 } catch (Exception e) {
                     FileLog.e(e);
                 }
@@ -863,6 +866,22 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
         if (adapter != null) {
             adapter.notifyDataSetChanged();
         }
+        getNotificationCenter().addObserver(this, NotificationCenter.notificationsSettingsUpdated);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        getNotificationCenter().removeObserver(this, NotificationCenter.notificationsSettingsUpdated);
+    }
+
+    @Override
+    public void didReceivedNotification(int id, int account, Object... args) {
+        if (id == NotificationCenter.notificationsSettingsUpdated) {
+            if (adapter != null) {
+                adapter.notifyDataSetChanged();
+            }
+        }
     }
 
     private class SearchAdapter extends RecyclerListView.SelectionAdapter {
@@ -1215,15 +1234,24 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                     SharedPreferences preferences = getNotificationsSettings();
                     if (position == messageSoundRow) {
                         String value;
+                        long documentId;
                         if (currentType == NotificationsController.TYPE_PRIVATE) {
                             value = preferences.getString("GlobalSound", LocaleController.getString("SoundDefault", R.string.SoundDefault));
+                            documentId = preferences.getLong("GlobalSoundDocId", 0);
                         } else if (currentType == NotificationsController.TYPE_GROUP) {
                             value = preferences.getString("GroupSound", LocaleController.getString("SoundDefault", R.string.SoundDefault));
+                            documentId = preferences.getLong("GroupSoundDocId", 0);
                         } else {
                             value = preferences.getString("ChannelSound", LocaleController.getString("SoundDefault", R.string.SoundDefault));
+                            documentId = preferences.getLong("ChannelDocId", 0);
                         }
-                        if (value.equals("NoSound")) {
+                        if (documentId != 0) {
+                            TLRPC.Document document = getMediaDataController().ringtoneDataStore.getDocument(documentId);
+                            value = NotificationsSoundActivity.trimTitle(document, document.file_name_fixed);
+                        } else if (value.equals("NoSound")) {
                             value = LocaleController.getString("NoSound", R.string.NoSound);
+                        } else if (value.equals("Default")) {
+                            value = LocaleController.getString("SoundDefault", R.string.SoundDefault);
                         }
                         textCell.setTextAndValue(LocaleController.getString("Sound", R.string.Sound), value, true);
                     } else if (position == messageVibrateRow) {

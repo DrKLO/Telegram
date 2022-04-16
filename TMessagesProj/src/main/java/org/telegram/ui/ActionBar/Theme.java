@@ -1529,6 +1529,14 @@ public class Theme {
                 currentColors.put(key_chat_wallpaper_gradient_rotation, backgroundRotation);
             }
 
+            Integer outBubble = currentColors.get(key_chat_outBubble);
+            if (outBubble == null) {
+                outBubble = getColor(key_chat_outBubble);
+            }
+            Integer inBubble = currentColors.get(key_chat_inBubble);
+            if (inBubble == null) {
+                inBubble = getColor(key_chat_inBubble);
+            }
             if (info != null && info.emoticon != null && !isDarkTheme) {
                 currentColors.remove(key_chat_selectedBackground);
                 int gradientAverageColor = averageColor(currentColors, key_chat_wallpaper_gradient_to1, key_chat_wallpaper_gradient_to2, key_chat_wallpaper_gradient_to3);
@@ -1539,23 +1547,26 @@ public class Theme {
                     gradientAverageColor = accentColor;
                 }
 
-                Integer outBubble = currentColors.get(key_chat_outBubble);
-                if (outBubble == null) {
-                    outBubble = getColor(key_chat_outBubble);
-                }
                 int outOverlay = bubbleSelectedOverlay(outBubble, gradientAverageColor);
                 currentColors.put(key_chat_outBubbleSelectedOverlay, outOverlay);
                 currentColors.put(key_chat_outBubbleGradientSelectedOverlay, outOverlay);
                 currentColors.put(key_chat_outBubbleSelected, Theme.blendOver(outBubble, outOverlay));
 
-                Integer inBubble = currentColors.get(key_chat_inBubble);
-                if (inBubble == null) {
-                    inBubble = getColor(key_chat_inBubble);
-                }
                 int inOverlay = bubbleSelectedOverlay(inBubble, accentColor);
                 currentColors.put(key_chat_inBubbleSelectedOverlay, inOverlay);
                 currentColors.put(key_chat_inBubbleSelected, Theme.blendOver(inBubble, inOverlay));
             }
+
+            Integer inMsgLink = currentColors.get(key_chat_messageLinkIn);
+            if (inMsgLink == null) {
+                inMsgLink = getColor(key_chat_messageLinkIn);
+            }
+            Integer outMsgLink = currentColors.get(key_chat_messageLinkOut);
+            if (outMsgLink == null) {
+                outMsgLink = getColor(key_chat_messageLinkOut);
+            }
+            currentColors.put(key_chat_linkSelectBackground, linkSelectionBackground(inMsgLink, inBubble, isDarkTheme));
+            currentColors.put(key_chat_outLinkSelectBackground, linkSelectionBackground(outMsgLink, outBubble, isDarkTheme));
 
             return !isMyMessagesGradientColorsNear;
         }
@@ -1571,6 +1582,12 @@ public class Theme {
             tempHSV[1] = Math.max(0, Math.min(1, tempHSV[1] + .6f));
             tempHSV[2] = Math.max(0, Math.min(1, tempHSV[2] - .05f));
             return Color.HSVToColor(30, tempHSV);
+        }
+        private int linkSelectionBackground(int linkColor, int bgColor, boolean isDarkTheme) {
+            Color.colorToHSV(ColorUtils.blendARGB(linkColor, bgColor, .25f), tempHSV);
+            tempHSV[1] = Math.max(0, Math.min(1, tempHSV[1] - .1f));
+            tempHSV[2] = Math.max(0, Math.min(1, tempHSV[2] + (isDarkTheme ? .1f : 0)));
+            return Color.HSVToColor(0x33, tempHSV);
         }
         private int averageColor(HashMap<String, Integer> colors, String ...keys) {
             int r = 0, g = 0, b = 0, c = 0;
@@ -2817,6 +2834,7 @@ public class Theme {
     public static Paint chat_deleteProgressPaint;
     public static Paint chat_botProgressPaint;
     public static Paint chat_urlPaint;
+    public static Paint chat_outUrlPaint;
     public static Paint chat_textSearchSelectionPaint;
     public static Paint chat_instantViewRectPaint;
     public static Paint chat_pollTimerPaint;
@@ -2936,9 +2954,11 @@ public class Theme {
     public static Drawable chat_shareIconDrawable;
     public static Drawable chat_replyIconDrawable;
     public static Drawable chat_goIconDrawable;
-    public static Drawable chat_botLinkDrawalbe;
-    public static Drawable chat_botCardDrawalbe;
+    public static Drawable chat_botLinkDrawable;
+    public static Drawable chat_botCardDrawable;
     public static Drawable chat_botInlineDrawable;
+    public static Drawable chat_botWebViewDrawable;
+    public static Drawable chat_botInviteDrawable;
     public static Drawable chat_commentDrawable;
     public static Drawable chat_commentStickerDrawable;
     public static Drawable chat_commentArrowDrawable;
@@ -3432,6 +3452,7 @@ public class Theme {
     public static final String key_chat_outVenueInfoSelectedText = "chat_outVenueInfoSelectedText";
     public static final String key_chat_mediaInfoText = "chat_mediaInfoText";
     public static final String key_chat_linkSelectBackground = "chat_linkSelectBackground";
+    public static final String key_chat_outLinkSelectBackground = "chat_outLinkSelectBackground";
     public static final String key_chat_textSelectBackground = "chat_textSelectBackground";
     public static final String key_chat_wallpaper = "chat_wallpaper";
     public static final String key_chat_wallpaper_gradient_to1 = "chat_wallpaper_gradient_to";
@@ -3782,6 +3803,8 @@ public class Theme {
 
     public static final String key_drawable_botInline = "drawableBotInline";
     public static final String key_drawable_botLink = "drawableBotLink";
+    public static final String key_drawable_botWebView = "drawableBotWebView";
+    public static final String key_drawable_botInvite = "drawable_botInvite";
     public static final String key_drawable_commentSticker = "drawableCommentSticker";
     public static final String key_drawable_goIcon = "drawableGoIcon";
     public static final String key_drawable_msgError = "drawableMsgError";
@@ -4289,6 +4312,7 @@ public class Theme {
         defaultColors.put(key_chat_outVenueInfoSelectedText, 0xff65b05b);
         defaultColors.put(key_chat_mediaInfoText, 0xffffffff);
         defaultColors.put(key_chat_linkSelectBackground, 0x3362a9e3);
+        defaultColors.put(key_chat_outLinkSelectBackground, 0x3362a9e3);
         defaultColors.put(key_chat_textSelectBackground, 0x6662a9e3);
         defaultColors.put(key_chat_emojiPanelBackground, 0xfff0f2f5);
         defaultColors.put(key_chat_emojiPanelBadgeBackground, 0xff4da6ea);
@@ -4729,6 +4753,7 @@ public class Theme {
         fallbackKeys.put(key_actionBarTabSelector, key_actionBarDefaultSelector);
         fallbackKeys.put(key_profile_status, key_avatar_subtitleInProfileBlue);
         fallbackKeys.put(key_chats_menuTopBackgroundCats, key_avatar_backgroundActionBarBlue);
+        fallbackKeys.put(key_chat_outLinkSelectBackground, key_chat_linkSelectBackground);
         //fallbackKeys.put(key_chat_attachActiveTab, 0xff33a7f5);
         //fallbackKeys.put(key_chat_attachUnactiveTab, 0xff92999e);
         fallbackKeys.put(key_chat_attachPermissionImage, key_dialogTextBlack);
@@ -5771,6 +5796,12 @@ public class Theme {
         return defaultDrawable;
     }
 
+    public static Drawable createRoundRectDrawable(int topRad, int bottomRad, int defaultColor) {
+        ShapeDrawable defaultDrawable = new ShapeDrawable(new RoundRectShape(new float[]{topRad, topRad, topRad, topRad, bottomRad, bottomRad, bottomRad, bottomRad}, null, null));
+        defaultDrawable.getPaint().setColor(defaultColor);
+        return defaultDrawable;
+    }
+
     public static Drawable createServiceDrawable(int rad, View view, View containerView) {
         return createServiceDrawable(rad, view, containerView, chat_actionBackgroundPaint);
     }
@@ -5857,6 +5888,23 @@ public class Theme {
             stateListDrawable.addState(new int[]{android.R.attr.state_pressed}, createRoundRectDrawable(corners, (color & 0x00ffffff) | 0x19000000));
             stateListDrawable.addState(new int[]{android.R.attr.state_selected}, createRoundRectDrawable(corners, (color & 0x00ffffff) | 0x19000000));
             stateListDrawable.addState(StateSet.WILD_CARD, new ColorDrawable(0x00000000));
+            return stateListDrawable;
+        }
+    }
+
+    public static Drawable getRoundRectSelectorWithBackgroundDrawable(int corners, int bgColor, int color) {
+        if (Build.VERSION.SDK_INT >= 21) {
+            Drawable maskDrawable = createRoundRectDrawable(corners, 0xffffffff);
+            ColorStateList colorStateList = new ColorStateList(
+                    new int[][]{StateSet.WILD_CARD},
+                    new int[]{color}
+            );
+            return new RippleDrawable(colorStateList, createRoundRectDrawable(corners, bgColor), maskDrawable);
+        } else {
+            StateListDrawable stateListDrawable = new StateListDrawable();
+            stateListDrawable.addState(new int[]{android.R.attr.state_pressed}, createRoundRectDrawable(corners, color));
+            stateListDrawable.addState(new int[]{android.R.attr.state_selected}, createRoundRectDrawable(corners, color));
+            stateListDrawable.addState(StateSet.WILD_CARD, new ColorDrawable(bgColor));
             return stateListDrawable;
         }
     }
@@ -6034,8 +6082,8 @@ public class Theme {
 
     public static class RippleRadMaskDrawable extends Drawable {
         private Path path = new Path();
-        private RectF rect = new RectF();
         private float[] radii = new float[8];
+        boolean invalidatePath = true;
 
         public RippleRadMaskDrawable(float top, float bottom) {
             radii[0] = radii[1] = radii[2] = radii[3] = AndroidUtilities.dp(top);
@@ -6051,6 +6099,7 @@ public class Theme {
         public void setRadius(float top, float bottom) {
             radii[0] = radii[1] = radii[2] = radii[3] = AndroidUtilities.dp(top);
             radii[4] = radii[5] = radii[6] = radii[7] = AndroidUtilities.dp(bottom);
+            invalidatePath = true;
             invalidateSelf();
         }
         public void setRadius(float topLeft, float topRight, float bottomRight, float bottomLeft) {
@@ -6058,13 +6107,23 @@ public class Theme {
             radii[2] = radii[3] = AndroidUtilities.dp(topRight);
             radii[4] = radii[5] = AndroidUtilities.dp(bottomRight);
             radii[6] = radii[7] = AndroidUtilities.dp(bottomLeft);
+            invalidatePath = true;
             invalidateSelf();
         }
 
         @Override
+        protected void onBoundsChange(Rect bounds) {
+            invalidatePath = true;
+        }
+
+        @Override
         public void draw(Canvas canvas) {
-            rect.set(getBounds());
-            path.addRoundRect(rect, radii, Path.Direction.CW);
+            if (invalidatePath) {
+                invalidatePath = false;
+                path.reset();
+                AndroidUtilities.rectTmp.set(getBounds());
+                path.addRoundRect(AndroidUtilities.rectTmp, radii, Path.Direction.CW);
+            }
             canvas.drawPath(path, maskPaint);
         }
 
@@ -8046,7 +8105,7 @@ public class Theme {
             checkboxSquare_backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
             linkSelectionPaint = new Paint();
-            linkSelectionPaint.setPathEffect(LinkPath.roundedEffect);
+            linkSelectionPaint.setPathEffect(LinkPath.getRoundedEffect());
 
             Resources resources = context.getResources();
 
@@ -8368,9 +8427,11 @@ public class Theme {
             chat_locationTitlePaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             chat_locationAddressPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             chat_urlPaint = new Paint();
-            chat_urlPaint.setPathEffect(LinkPath.roundedEffect);
+            chat_urlPaint.setPathEffect(LinkPath.getRoundedEffect());
+            chat_outUrlPaint = new Paint();
+            chat_outUrlPaint.setPathEffect(LinkPath.getRoundedEffect());
             chat_textSearchSelectionPaint = new Paint();
-            chat_textSearchSelectionPaint.setPathEffect(LinkPath.roundedEffect);
+            chat_textSearchSelectionPaint.setPathEffect(LinkPath.getRoundedEffect());
             chat_radialProgressPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             chat_radialProgressPaint.setStrokeCap(Paint.Cap.ROUND);
             chat_radialProgressPaint.setStyle(Paint.Style.STROKE);
@@ -8540,9 +8601,11 @@ public class Theme {
             chat_inlineResultLocation = resources.getDrawable(R.drawable.bot_location);
             chat_redLocationIcon = resources.getDrawable(R.drawable.map_pin).mutate();
 
-            chat_botLinkDrawalbe = resources.getDrawable(R.drawable.bot_link);
+            chat_botLinkDrawable = resources.getDrawable(R.drawable.bot_link);
             chat_botInlineDrawable = resources.getDrawable(R.drawable.bot_lines);
-            chat_botCardDrawalbe = resources.getDrawable(R.drawable.bot_card);
+            chat_botCardDrawable = resources.getDrawable(R.drawable.bot_card);
+            chat_botWebViewDrawable = resources.getDrawable(R.drawable.bot_webview);
+            chat_botInviteDrawable = resources.getDrawable(R.drawable.bot_invite);
 
             chat_commentDrawable = resources.getDrawable(R.drawable.msg_msgbubble);
             chat_commentStickerDrawable = resources.getDrawable(R.drawable.msg_msgbubble2);
@@ -8685,7 +8748,9 @@ public class Theme {
             defaultChatDrawableColorKeys.clear();
 
             addChatDrawable(key_drawable_botInline, chat_botInlineDrawable, key_chat_serviceIcon);
-            addChatDrawable(key_drawable_botLink, chat_botLinkDrawalbe, key_chat_serviceIcon);
+            addChatDrawable(key_drawable_botWebView, chat_botWebViewDrawable, key_chat_serviceIcon);
+            addChatDrawable(key_drawable_botLink, chat_botLinkDrawable, key_chat_serviceIcon);
+            addChatDrawable(key_drawable_botInvite, chat_botInviteDrawable, key_chat_serviceIcon);
             addChatDrawable(key_drawable_goIcon, chat_goIconDrawable, key_chat_serviceIcon);
             addChatDrawable(key_drawable_commentSticker, chat_commentStickerDrawable, key_chat_serviceIcon);
             addChatDrawable(key_drawable_msgError, chat_msgErrorDrawable, key_chat_sentErrorIcon);
@@ -8808,6 +8873,7 @@ public class Theme {
             chat_durationPaint.setColor(getColor(key_chat_previewDurationText));
             chat_botButtonPaint.setColor(getColor(key_chat_botButtonText));
             chat_urlPaint.setColor(getColor(key_chat_linkSelectBackground));
+            chat_outUrlPaint.setColor(getColor(key_chat_outLinkSelectBackground));
             chat_botProgressPaint.setColor(getColor(key_chat_botProgress));
             chat_deleteProgressPaint.setColor(getColor(key_chat_secretTimeText));
             chat_textSearchSelectionPaint.setColor(getColor(key_chat_textSelectBackground));
@@ -8841,7 +8907,9 @@ public class Theme {
             setDrawableColorByKey(chat_replyIconDrawable, key_chat_serviceIcon);
             setDrawableColorByKey(chat_goIconDrawable, key_chat_serviceIcon);
             setDrawableColorByKey(chat_botInlineDrawable, key_chat_serviceIcon);
-            setDrawableColorByKey(chat_botLinkDrawalbe, key_chat_serviceIcon);
+            setDrawableColorByKey(chat_botWebViewDrawable, key_chat_serviceIcon);
+            setDrawableColorByKey(chat_botInviteDrawable, key_chat_serviceIcon);
+            setDrawableColorByKey(chat_botLinkDrawable, key_chat_serviceIcon);
             setDrawableColorByKey(chat_msgInViewsDrawable, key_chat_inViews);
             setDrawableColorByKey(chat_msgInViewsSelectedDrawable, key_chat_inViewsSelected);
             setDrawableColorByKey(chat_msgOutViewsDrawable, key_chat_outViews);
@@ -9084,7 +9152,9 @@ public class Theme {
             setDrawableColor(chat_replyIconDrawable, 0xffffffff);
             setDrawableColor(chat_goIconDrawable, 0xffffffff);
             setDrawableColor(chat_botInlineDrawable, 0xffffffff);
-            setDrawableColor(chat_botLinkDrawalbe, 0xffffffff);
+            setDrawableColor(chat_botWebViewDrawable, 0xffffffff);
+            setDrawableColor(chat_botInviteDrawable, 0xffffffff);
+            setDrawableColor(chat_botLinkDrawable, 0xffffffff);
         } else {
             serviceBitmap = null;
             serviceBitmapShader = null;
@@ -9101,7 +9171,9 @@ public class Theme {
             setDrawableColorByKey(chat_replyIconDrawable, key_chat_serviceIcon);
             setDrawableColorByKey(chat_goIconDrawable, key_chat_serviceIcon);
             setDrawableColorByKey(chat_botInlineDrawable, key_chat_serviceIcon);
-            setDrawableColorByKey(chat_botLinkDrawalbe, key_chat_serviceIcon);
+            setDrawableColorByKey(chat_botWebViewDrawable, key_chat_serviceIcon);
+            setDrawableColorByKey(chat_botInviteDrawable, key_chat_serviceIcon);
+            setDrawableColorByKey(chat_botLinkDrawable, key_chat_serviceIcon);
             chat_botButtonPaint.setColor(getColor(key_chat_botButtonText));
         }
 
