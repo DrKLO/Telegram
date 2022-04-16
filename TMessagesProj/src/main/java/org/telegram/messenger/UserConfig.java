@@ -156,7 +156,7 @@ public class UserConfig extends BaseController {
             cloneHmDevice(i);
             if (TDBG) System.out.printf("HEY hmSetI[%d][%d] cloneHmDevices %n%s%n", i, j, new Gson().toJson(hmDevices));
         }
-        String[] arr = Arrays.copyOf(hmDevices.get(-1), 3);
+        String[] arr = Arrays.copyOf(hmDevices.get(i), 3);
         arr[j] = v;
         hmDevices.put(i, arr);
     }
