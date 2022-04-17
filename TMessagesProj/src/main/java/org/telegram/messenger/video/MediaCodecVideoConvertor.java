@@ -12,6 +12,8 @@ import com.google.android.exoplayer2.util.Log;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MediaController;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.VideoEditedInfo;
 
@@ -79,6 +81,7 @@ public class MediaCodecVideoConvertor {
         boolean error = false;
         boolean repeatWithIncreasedTimeout = false;
         int videoTrackIndex = -5;
+        boolean enableGifHD = MessagesController.getGlobalTelegraherSettings().getBoolean("EnableGifHD", false);
 
         try {
             MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
@@ -112,6 +115,7 @@ public class MediaCodecVideoConvertor {
                             bitrate = 1560000;
                         }
                     } else if (bitrate <= 0) {
+                        if (UserConfig.TDBG) System.out.printf("HEY MediaCodecVideoConvertor convertVideoInternal bitrate1 %d%n", bitrate);
                         bitrate = 921600;
                     }
 
@@ -344,8 +348,12 @@ public class MediaCodecVideoConvertor {
                                 }
                                 avatarStartTime = 0;
                             } else if (bitrate <= 0) {
-                                bitrate = 921600;
+                                if (UserConfig.TDBG) System.out.printf("HEY MediaCodecVideoConvertor convertVideoInternal bitrate2.1 %d%n", bitrate);
+                                if (UserConfig.TDBG) System.out.printf("HEY MediaCodecVideoConvertor convertVideoInternal originalHeight %d originalWidth %d originalBitrate %d resultHeight %d resultWidth %d%n", originalHeight, originalWidth, originalBitrate, resultHeight, resultWidth);
+                                bitrate = enableGifHD ? MediaController.makeVideoBitrate(originalHeight, originalWidth, originalBitrate, resultHeight, resultWidth) : 921600;
+                                if (UserConfig.TDBG) System.out.printf("HEY MediaCodecVideoConvertor convertVideoInternal bitrate2.2 %d%n", bitrate);
                             }
+                            if (UserConfig.TDBG) System.out.printf("HEY MediaCodecVideoConvertor convertVideoInternal bitrate/originalBitrate %d/%d%n", bitrate, originalBitrate);
                             if (originalBitrate > 0) {
                                 bitrate = Math.min(originalBitrate, bitrate);
                             }

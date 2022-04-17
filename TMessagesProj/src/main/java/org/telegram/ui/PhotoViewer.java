@@ -6667,6 +6667,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     }
 
     private VideoEditedInfo getCurrentVideoEditedInfo() {
+        boolean enableGifHD = MessagesController.getGlobalTelegraherSettings().getBoolean("EnableGifHD", false);
         if (!isCurrentVideo && hasAnimatedMediaEntities() && centerImage.getBitmapWidth() > 0) {
             float maxSize = sendPhotoType == SELECT_TYPE_AVATAR ? 800 : 854;
             VideoEditedInfo videoEditedInfo = new VideoEditedInfo();
@@ -6755,7 +6756,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             videoEditedInfo.resultHeight = originalHeight;
             videoEditedInfo.bitrate = muteVideo ? -1 : originalBitrate;
         } else {
-            if (muteVideo || sendPhotoType == SELECT_TYPE_AVATAR) {
+            if (muteVideo && !enableGifHD || sendPhotoType == SELECT_TYPE_AVATAR) {
                 selectedCompression = 1;
                 updateWidthHeightBitrateForCompression();
             }
@@ -14899,6 +14900,10 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     }
 
     public void updateMuteButton() {
+        boolean enableGifHD = MessagesController.getGlobalTelegraherSettings().getBoolean("EnableGifHD", false);
+        if (UserConfig.TDBG) System.out.printf("HEY PhotoViewer updateMuteButton enableGifHD %b%n", enableGifHD);
+        if (UserConfig.TDBG) System.out.printf("HEY PhotoViewer updateMuteButton enableGifHD muteVideo %b%n", muteVideo);
+        if (UserConfig.TDBG) System.out.printf("HEY PhotoViewer updateMuteButton enableGifHD bitrate %d%n", bitrate);
         if (videoPlayer != null) {
             videoPlayer.setMute(muteVideo);
         }
@@ -14916,7 +14921,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 muteItem.setImageResource(R.drawable.video_send_mute);
                 if (compressItem.getTag() != null) {
                     compressItem.setAlpha(0.5f);
-                    compressItem.setEnabled(false);
+                    compressItem.setEnabled(enableGifHD);
                 }
                 if (sendPhotoType == SELECT_TYPE_AVATAR) {
                     videoTimelineView.setMaxProgressDiff(9600.0f / videoDuration);
@@ -14992,6 +14997,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             } else {
                 if (enableGifHD) {
                     bitrate = MediaController.makeVideoBitrate(originalHeight, originalWidth, originalBitrate, resultHeight, resultWidth);
+                    if (UserConfig.TDBG) System.out.printf("HEY PhotoViewer updateWidthHeightBitrateForCompression enableGifHD bitrate %d%n", bitrate);
                 } else bitrate = 921600;
             }
             estimatedSize = (long) (bitrate / 8 * (estimatedDuration / 1000.0f));

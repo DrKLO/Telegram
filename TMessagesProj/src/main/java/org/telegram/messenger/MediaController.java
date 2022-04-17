@@ -4963,6 +4963,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         }
         if (UserConfig.TDBG) System.out.printf("HEY MediaController makeVideoBitrate maxBitrate %d%n", maxBitrate);
         int remeasuredBitrate = (int) (originalBitrate / (Math.min(originalHeight / (float) (height), originalWidth / (float) (width))));
+        if (remeasuredBitrate == 0) remeasuredBitrate = maxBitrate;
         remeasuredBitrate *= compressFactor;
         int minBitrate = (int) (getVideoBitrateWithFactor(minCompressFactor) / (1280f * 720f / (width * height)));
         if (originalBitrate < minBitrate) {
