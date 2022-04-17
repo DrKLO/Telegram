@@ -89,6 +89,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
     private int videoRoundBitrateMultRow;
     private int videoLabelRoundSizeRow;
     private int videoRoundSizeMultRow;
+    private int videoRoundUseMainCameraRow;
 
     private int videoLabelMaxResolutionRow;
     private int videoMaxResolutionRow;
@@ -141,6 +142,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         videoRoundBitrateMultRow = rowCount++;
         videoLabelRoundSizeRow = rowCount++;
         videoRoundSizeMultRow = rowCount++;
+        videoRoundUseMainCameraRow = rowCount++;
 
         deviceSpoofingLabelRow = rowCount++;
         deviceSpoofingBrand = rowCount++;
@@ -259,6 +261,12 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                 SharedPreferences.Editor editor = preferences.edit();
                 enabled = preferences.getBoolean("EnableGifHD", false);
                 editor.putBoolean("EnableGifHD", !enabled);
+                editor.commit();
+            } else if (position == videoRoundUseMainCameraRow) {
+                SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
+                SharedPreferences.Editor editor = preferences.edit();
+                enabled = preferences.getBoolean("VideoRoundUseMainCamera", false);
+                editor.putBoolean("VideoRoundUseMainCamera", !enabled);
                 editor.commit();
             } else if (position == killMeLabelRow) {
                 killThatApp();
@@ -419,6 +427,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         checkCell.setTextAndCheck("Full ShadowBan \uD83D\uDE48", localPreps.getBoolean("EnableChatSBFull", false), true);
                     } else if (position == gifHDRow) {
                         checkCell.setTextAndCheck("* Enable HD gifs", globalPreps.getBoolean("EnableGifHD", false), true);
+                    } else if (position == videoRoundUseMainCameraRow) {
+                        checkCell.setTextAndCheck("* Use main camera", globalPreps.getBoolean("VideoRoundUseMainCamera", false), true);
                     }
                     break;
                 }
@@ -547,7 +557,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                     position == voiceHDRow || position == voiceBadmanRow || position == voipHDRow
                             || position == profileUIDRow || position == profileDCIDRow || position == profileSBRow
                             || position == chatDeleteMarkRow || position == accountExtendVanillaRow || position == chatSBFullRow
-                            || position == gifHDRow
+                            || position == gifHDRow || position == videoRoundUseMainCameraRow
             ) {
                 return 1;
             } else if (position == killMeLabelRow) {
