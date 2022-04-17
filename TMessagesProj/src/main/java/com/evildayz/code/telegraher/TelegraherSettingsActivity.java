@@ -418,7 +418,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                     } else if (position == chatSBFullRow) {
                         checkCell.setTextAndCheck("Full ShadowBan \uD83D\uDE48", localPreps.getBoolean("EnableChatSBFull", false), true);
                     } else if (position == gifHDRow) {
-                        checkCell.setTextAndCheck("* Enable HD gifs", localPreps.getBoolean("EnableGifHD", false), true);
+                        checkCell.setTextAndCheck("* Enable HD gifs", globalPreps.getBoolean("EnableGifHD", false), true);
                     }
                     break;
                 }
