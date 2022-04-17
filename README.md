@@ -182,17 +182,17 @@ It's very simple
 * **sdk23** mean for android 6+, the other are working from 4.1+
     * so if you have android 6 or higher, you should download **sdk23** version
 * arm64-v8a (new devices)
-    * `x`  [Telegraher.8.6.2r3.arm64_v8a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r3_arm64_v8a/Telegraher.8.6.2r3.arm64_v8a.apk)
-    * `x`  [Telegraher.8.6.2r3.arm64_v8a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r3_arm64_v8a/Telegraher.8.6.2r3.arm64_v8a_sdk23.apk)
+    * `x`  [Telegraher.8.6.2r4.arm64_v8a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r4_arm64_v8a/Telegraher.8.6.2r4.arm64_v8a.apk)
+    * `x`  [Telegraher.8.6.2r4.arm64_v8a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r4_arm64_v8a/Telegraher.8.6.2r4.arm64_v8a_sdk23.apk)
 * armeabi-v7a (old devices)
-    * `x`  [Telegraher.8.6.2r3.armeabi_v7a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r3_armeabi_v7a/Telegraher.8.6.2r3.armeabi_v7a.apk)
-    * `x`  [Telegraher.8.6.2r3.armeabi_v7a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r3_armeabi_v7a/Telegraher.8.6.2r3.armeabi_v7a_sdk23.apk)
+    * `x`  [Telegraher.8.6.2r4.armeabi_v7a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r4_armeabi_v7a/Telegraher.8.6.2r4.armeabi_v7a.apk)
+    * `x`  [Telegraher.8.6.2r4.armeabi_v7a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r4_armeabi_v7a/Telegraher.8.6.2r4.armeabi_v7a_sdk23.apk)
 * PC x86, 32 bits (for an emulator for example)
-    * `x`  [Telegraher.8.6.2r3.x86.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r3_x86/Telegraher.8.6.2r3.x86.apk)
-    * `x`  [Telegraher.8.6.2r3.x86_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r3_x86/Telegraher.8.6.2r3.x86_sdk23.apk)
+    * `x`  [Telegraher.8.6.2r4.x86.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r4_x86/Telegraher.8.6.2r4.x86.apk)
+    * `x`  [Telegraher.8.6.2r4.x86_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r4_x86/Telegraher.8.6.2r4.x86_sdk23.apk)
 * PC x86, 64 bits (for 64 bits CPU)
-    * `x`  [Telegraher.8.6.2r3.x86_64.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r3_x86_64/Telegraher.8.6.2r3.x86_64.apk)
-    * `x`  [Telegraher.8.6.2r3.x86_64_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r3_x86_64/Telegraher.8.6.2r3.x86_64_sdk23.apk)
+    * `x`  [Telegraher.8.6.2r4.x86_64.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r4_x86_64/Telegraher.8.6.2r4.x86_64.apk)
+    * `x`  [Telegraher.8.6.2r4.x86_64_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r4_x86_64/Telegraher.8.6.2r4.x86_64_sdk23.apk)
 
 ### Issues/Wishlist
 
@@ -201,6 +201,14 @@ Probably it's a good thing 😃
 
 ### Changes
 
+* noshit_8.6.2_release4
+    * changed position for th menu (can be everywhere or disappear in the void and never bring back)
+    * added support upto 8k videos (h264 only, yep, no h265 cause tg doesn't support it from the
+      box)
+    * fixed device spoofing issue (thats the user who reported it, can't find you..)
+    * added HD gifs. Regarding the code desktop consider as gifs all videos w/o sounds upto 1080p,
+      while android app upto 720p.
+    * you can change default camera to main camera for round videos
 * noshit_8.6.2_release3
     * fixed device spoofing issue
     * you can spoof now active sessions too

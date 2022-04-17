@@ -59,7 +59,7 @@ jobs:
           asset_name: ${{ env.ANAME }}${{ env.AARCH }}_sdk23.apk
           asset_content_type: application/gzip
     env:
-      RNAME: Telegraher 8.6.2 release 3
-      TNAME: noshit_8.6.2_r3_
-      ANAME: Telegraher.8.6.2r3.
+      RNAME: Telegraher 8.6.2 release 4
+      TNAME: noshit_8.6.2_r4_
+      ANAME: Telegraher.8.6.2r4.
       AARCH: x86_64
