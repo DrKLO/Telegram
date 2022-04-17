@@ -66,6 +66,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
     @SuppressWarnings("FieldCanBeLocal")
     private LinearLayoutManager layoutManager;
 
+    private int showLabelTelegraherMenuRow;
     private int showTelegraherMenuRow;
 
     private int voiceLabelRow;
@@ -88,6 +89,13 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
     private int videoRoundBitrateMultRow;
     private int videoLabelRoundSizeRow;
     private int videoRoundSizeMultRow;
+    private int videoRoundUseMainCameraRow;
+
+    private int videoLabelMaxResolutionRow;
+    private int videoMaxResolutionRow;
+
+    private int gifLabelHDRow;
+    private int gifHDRow;
 
     private int accountLabelRow;
     private int accountExtendVanillaRow;
@@ -104,6 +112,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
 
     @Override
     public boolean onFragmentCreate() {
+        showLabelTelegraherMenuRow = rowCount++;
         showTelegraherMenuRow = rowCount++;
         voiceLabelRow = rowCount++;
         voiceHDRow = rowCount++;
@@ -124,10 +133,16 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         accountLabelRow = rowCount++;
         accountExtendVanillaRow = rowCount++;
 
+        gifLabelHDRow = rowCount++;
+        gifHDRow = rowCount++;
+
+        videoLabelMaxResolutionRow = rowCount++;
+        videoMaxResolutionRow = rowCount++;
         videoLabelRoundBitrateRow = rowCount++;
         videoRoundBitrateMultRow = rowCount++;
         videoLabelRoundSizeRow = rowCount++;
         videoRoundSizeMultRow = rowCount++;
+        videoRoundUseMainCameraRow = rowCount++;
 
         deviceSpoofingLabelRow = rowCount++;
         deviceSpoofingBrand = rowCount++;
@@ -241,11 +256,17 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                 enabled = preferences.getBoolean("EnableAccountExtendVanilla", false);
                 editor.putBoolean("EnableAccountExtendVanilla", !enabled);
                 editor.commit();
-            } else if (position == showTelegraherMenuRow) {
+            } else if (position == gifHDRow) {
                 SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
                 SharedPreferences.Editor editor = preferences.edit();
-                enabled = preferences.getBoolean("ShowTelegraherMenu", false);
-                editor.putBoolean("ShowTelegraherMenu", !enabled);
+                enabled = preferences.getBoolean("EnableGifHD", false);
+                editor.putBoolean("EnableGifHD", !enabled);
+                editor.commit();
+            } else if (position == videoRoundUseMainCameraRow) {
+                SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
+                SharedPreferences.Editor editor = preferences.edit();
+                enabled = preferences.getBoolean("VideoRoundUseMainCamera", false);
+                editor.putBoolean("VideoRoundUseMainCamera", !enabled);
                 editor.commit();
             } else if (position == killMeLabelRow) {
                 killThatApp();
@@ -361,6 +382,10 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         headerCell.setText("Profile section");
                     } else if (position == chatLabelRow) {
                         headerCell.setText("Chat section");
+                    } else if (position == gifLabelHDRow) {
+                        headerCell.setText("GIF section");
+                    } else if (position == videoLabelMaxResolutionRow) {
+                        headerCell.setText("* Maximum video resolution");
                     } else if (position == videoLabelRoundBitrateRow) {
                         headerCell.setText("* Round video bitrate");
                     } else if (position == videoLabelRoundSizeRow) {
@@ -371,6 +396,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         headerCell.setText("Device spoofing section");
                     } else if (position == deviceSpoofingResetGlobalLabelRow) {
                         headerCell.setText("Reset global spoofing values");
+                    } else if (position == showLabelTelegraherMenuRow) {
+                        headerCell.setText("* Show Telegraher menu");
                     }
                     break;
                 }
@@ -398,8 +425,10 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         checkCell.setTextAndCheck("* 3+", globalPreps.getBoolean("EnableAccountExtendVanilla", false), true);
                     } else if (position == chatSBFullRow) {
                         checkCell.setTextAndCheck("Full ShadowBan \uD83D\uDE48", localPreps.getBoolean("EnableChatSBFull", false), true);
-                    } else if (position == showTelegraherMenuRow) {
-                        checkCell.setTextAndCheck("* Show Telegraher menu", globalPreps.getBoolean("ShowTelegraherMenu", false), true);
+                    } else if (position == gifHDRow) {
+                        checkCell.setTextAndCheck("* Enable HD gifs", globalPreps.getBoolean("EnableGifHD", false), true);
+                    } else if (position == videoRoundUseMainCameraRow) {
+                        checkCell.setTextAndCheck("* Use main camera", globalPreps.getBoolean("VideoRoundUseMainCamera", false), true);
                     }
                     break;
                 }
@@ -460,6 +489,30 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                                         , MessagesController.getMainSettings(currentAccount).getInt("roundAudioBitrate", 64));
                             }
                         });
+                    } else if (position == showTelegraherMenuRow) {
+                        String[] strings = new String[]{"Both", "Settings", "Storage Usage", "The Void"};
+                        slideChooseView.setOptions(MessagesController.getGlobalTelegraherSettings().getInt("ShowTelegraherMenu2", 0), strings);
+                        slideChooseView.setCallback(new SlideChooseView.Callback() {
+                            @Override
+                            public void onOptionSelected(int index) {
+                                SharedPreferences globalTh = MessagesController.getGlobalTelegraherSettings();
+                                SharedPreferences.Editor editor = globalTh.edit();
+                                editor.putInt("ShowTelegraherMenu2", index);
+                                editor.commit();
+                            }
+                        });
+                    } else if (position == videoMaxResolutionRow) {
+                        String[] strings = new String[]{"FullHD", "2k", "4k", "8k"};
+                        slideChooseView.setOptions(MessagesController.getGlobalTelegraherSettings().getInt("VideoMaxResolution", 0), strings);
+                        slideChooseView.setCallback(new SlideChooseView.Callback() {
+                            @Override
+                            public void onOptionSelected(int index) {
+                                SharedPreferences globalTh = MessagesController.getGlobalTelegraherSettings();
+                                SharedPreferences.Editor editor = globalTh.edit();
+                                editor.putInt("VideoMaxResolution", index);
+                                editor.commit();
+                            }
+                        });
                     }
                     break;
                 }
@@ -487,26 +540,33 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         @Override
         public int getItemViewType(int position) {
             if (
-                    position == voiceLabelRow || position == voipLabelRow
+                    position == showLabelTelegraherMenuRow
+                            || position == voiceLabelRow || position == voipLabelRow
                             || position == profileLabelRow
                             || position == chatLabelRow
+                            || position == gifLabelHDRow
                             || position == accountLabelRow
                             || position == deviceSpoofingLabelRow
                             || position == deviceSpoofingResetGlobalLabelRow
+                            || position == videoLabelMaxResolutionRow
                             || position == videoLabelRoundBitrateRow
                             || position == videoLabelRoundSizeRow
             ) {
                 return 0;
             } else if (
-                    position == showTelegraherMenuRow
-                            || position == voiceHDRow || position == voiceBadmanRow || position == voipHDRow
+                    position == voiceHDRow || position == voiceBadmanRow || position == voipHDRow
                             || position == profileUIDRow || position == profileDCIDRow || position == profileSBRow
                             || position == chatDeleteMarkRow || position == accountExtendVanillaRow || position == chatSBFullRow
+                            || position == gifHDRow || position == videoRoundUseMainCameraRow
             ) {
                 return 1;
             } else if (position == killMeLabelRow) {
                 return 5;
-            } else if (position == videoRoundBitrateMultRow || position == videoRoundSizeMultRow) {
+            } else if (
+                    position == showTelegraherMenuRow
+                            || position == videoRoundBitrateMultRow || position == videoRoundSizeMultRow
+                            || position == videoMaxResolutionRow
+            ) {
                 return 6;
             } else if (position == deviceSpoofingBrand || position == deviceSpoofingModel || position == deviceSpoofingOS) {
                 return 7;
