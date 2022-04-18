@@ -220,7 +220,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
         cacheInfoRow = rowCount++;
         databaseRow = rowCount++;
         kaboomButton = rowCount++;
-        switch (MessagesController.getTelegraherSettings(currentAccount).getInt("ShowTelegraherMenu2", 0)) {
+        switch (MessagesController.getGlobalTelegraherSettings().getInt("ShowTelegraherMenu2", 0)) {
             case 0:
             case 2:
                 telegraherRow = rowCount++;
