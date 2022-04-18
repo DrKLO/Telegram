@@ -18,6 +18,10 @@ public class SimpleFloatPropertyCompat<T> extends FloatPropertyCompat<T> {
         return this;
     }
 
+    public float getMultiplier() {
+        return multiplier;
+    }
+
     @Override
     public float getValue(T object) {
         return getter.get(object) * multiplier;

@@ -459,32 +459,12 @@ public class TranslateAlert extends Dialog {
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                 super.onMeasure(widthMeasureSpec, MOST_SPEC);
             }
-            private Paint pressedLinkPaint = null;
-            private Path pressedLinkPath = new Path() {
-                private RectF rectF = new RectF();
-                @Override
-                public void addRect(float left, float top, float right, float bottom, @NonNull Direction dir) {
-                    rectF.set(left - LoadingTextView2.paddingHorizontal / 2, top - LoadingTextView2.paddingVertical, right + LoadingTextView2.paddingHorizontal / 2, bottom + LoadingTextView2.paddingVertical);
-                    addRoundRect(rectF, dp(4), dp(4), Direction.CW);
-                }
-            };
             @Override
             protected void onDraw(Canvas canvas) {
                 super.onDraw(canvas);
                 canvas.translate(getPaddingLeft(), getPaddingTop());
-                if (pressedLink != null) {
-                    try {
-                        Layout layout = getLayout();
-                        int start = allTexts.getSpanStart(pressedLink);
-                        int end = allTexts.getSpanEnd(pressedLink);
-                        layout.getSelectionPath(start, end, pressedLinkPath);
-
-                        if (pressedLinkPaint == null) {
-                            pressedLinkPaint = new Paint();
-                            pressedLinkPaint.setColor(Theme.getColor(Theme.key_chat_linkSelectBackground));
-                        }
-                        canvas.drawPath(pressedLinkPath, pressedLinkPaint);
-                    } catch (Exception e) { }
+                if (links != null && links.draw(canvas)) {
+                    invalidate();
                 }
             }
             @Override
@@ -502,10 +482,12 @@ public class TranslateAlert extends Dialog {
                     BulletinFactory.of(bulletinContainer, null).createCopyBulletin(LocaleController.getString("TextCopied", R.string.TextCopied)).show();
                     clearFocus();
                     return true;
-                } else
+                } else {
                     return super.onTextContextMenuItem(id);
+                }
             }
         };
+        links = new LinkSpanDrawable.LinkCollector(allTextsView);
         allTextsView.setTextColor(0x00000000);
         allTextsView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         allTextsView.setTextIsSelectable(!noforwards);
@@ -621,7 +603,9 @@ public class TranslateAlert extends Dialog {
     private boolean fromTranslateMoreView = false;
     private float fromScrollViewY = 0;
     private Spannable allTexts = null;
-    private ClickableSpan pressedLink;
+    private LinkSpanDrawable pressedLink;
+    private LinkSpanDrawable.LinkCollector links;
+
     @Override
     public boolean dispatchTouchEvent(@NonNull MotionEvent event) {
         try {
@@ -647,20 +631,31 @@ public class TranslateAlert extends Dialog {
                 if (textRect.contains((int) x, (int) y) && !maybeScrolling) {
                     Layout allTextsLayout = allTextsView.getLayout();
                     int tx = (int) (x - allTextsView.getLeft() - container.getLeft()),
-                            ty = (int) (y - allTextsView.getTop() - container.getTop() - scrollView.getTop() + scrollView.getScrollY());
+                        ty = (int) (y - allTextsView.getTop() - container.getTop() - scrollView.getTop() + scrollView.getScrollY());
                     final int line = allTextsLayout.getLineForVertical(ty);
                     final int off = allTextsLayout.getOffsetForHorizontal(line, tx);
 
                     final float left = allTextsLayout.getLineLeft(line);
-                    if (allTexts != null && allTexts instanceof Spannable && left <= tx && left + allTextsLayout.getLineWidth(line) >= tx) {
-                        ClickableSpan[] links = allTexts.getSpans(off, off, ClickableSpan.class);
-                        if (links != null && links.length >= 1) {
-                            if (event.getAction() == MotionEvent.ACTION_UP && pressedLink == links[0]) {
-                                pressedLink.onClick(allTextsView);
+                    if (allTexts instanceof Spannable && left <= tx && left + allTextsLayout.getLineWidth(line) >= tx) {
+                        ClickableSpan[] linkSpans = allTexts.getSpans(off, off, ClickableSpan.class);
+                        if (linkSpans != null && linkSpans.length >= 1) {
+                            if (event.getAction() == MotionEvent.ACTION_UP && pressedLink.getSpan() == linkSpans[0]) {
+                                ((ClickableSpan) pressedLink.getSpan()).onClick(allTextsView);
+                                if (links != null) {
+                                    links.removeLink(pressedLink);
+                                }
                                 pressedLink = null;
                                 allTextsView.setTextIsSelectable(!noforwards);
                             } else if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                                pressedLink = links[0];
+                                pressedLink = new LinkSpanDrawable(linkSpans[0], fragment.getResourceProvider(), tx, ty, false);
+                                if (links != null) {
+                                    links.addLink(pressedLink);
+                                }
+                                LinkPath path = pressedLink.obtainNewPath();
+                                int start = allTexts.getSpanStart(pressedLink.getSpan());
+                                int end = allTexts.getSpanEnd(pressedLink.getSpan());
+                                path.setCurrentLayout(allTextsLayout, start, 0);
+                                allTextsLayout.getSelectionPath(start, end, path);
                             }
                             allTextsView.invalidate();
                             return true;
@@ -668,7 +663,9 @@ public class TranslateAlert extends Dialog {
                     }
                 }
                 if (pressedLink != null) {
-                    allTextsView.invalidate();
+                    if (links != null) {
+                        links.clear();
+                    }
                     pressedLink = null;
                 }
             } catch (Exception e2) {
@@ -904,6 +901,7 @@ public class TranslateAlert extends Dialog {
             if (n == -1) n = maxBlockStr.lastIndexOf("\n\n");
             if (n == -1) n = maxBlockStr.lastIndexOf("\n");
             if (n == -1) n = maxBlockStr.lastIndexOf(". ");
+            if (n == -1) n = Math.min(maxBlockStr.length(), maxBlockSize);
             blocks.add(full.subSequence(0, n + 1));
             full = full.subSequence(n + 1, full.length());
         }

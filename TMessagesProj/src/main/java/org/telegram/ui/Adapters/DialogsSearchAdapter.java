@@ -59,6 +59,14 @@ import androidx.recyclerview.widget.RecyclerView;
 
 public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
 
+    private final int VIEW_TYPE_PROFILE_CELL = 0;
+    private final int VIEW_TYPE_GRAY_SECTION = 1;
+    private final int VIEW_TYPE_DIALOG_CELL = 2;
+    private final int VIEW_TYPE_LOADING = 3;
+    private final int VIEW_TYPE_HASHTAG_CELL = 4;
+    private final int VIEW_TYPE_CATEGORY_LIST = 5;
+    private final int VIEW_TYPE_ADD_BY_PHONE = 6;
+
     private Context mContext;
     private Runnable searchRunnable;
     private Runnable searchRunnable2;
@@ -932,25 +940,25 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View view;
         switch (viewType) {
-            case 0:
+            case VIEW_TYPE_PROFILE_CELL:
                 view = new ProfileSearchCell(mContext);
                 break;
-            case 1:
+            case VIEW_TYPE_GRAY_SECTION:
                 view = new GraySectionCell(mContext);
                 break;
-            case 2:
+            case VIEW_TYPE_DIALOG_CELL:
                 view = new DialogCell(null, mContext, false, true);
                 break;
-            case 3:
+            case VIEW_TYPE_LOADING:
                 FlickerLoadingView flickerLoadingView = new FlickerLoadingView(mContext);
                 flickerLoadingView.setViewType(FlickerLoadingView.DIALOG_TYPE);
                 flickerLoadingView.setIsSingleCell(true);
                 view = flickerLoadingView;
                 break;
-            case 4:
+            case VIEW_TYPE_HASHTAG_CELL:
                 view = new HashtagSearchCell(mContext);
                 break;
-            case 5:
+            case VIEW_TYPE_CATEGORY_LIST:
                 RecyclerListView horizontalListView = new RecyclerListView(mContext) {
                     @Override
                     public boolean onInterceptTouchEvent(MotionEvent e) {
@@ -960,7 +968,6 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                         return super.onInterceptTouchEvent(e);
                     }
                 };
-                horizontalListView.setSelectorRadius(AndroidUtilities.dp(4));
                 horizontalListView.setSelectorDrawableColor(Theme.getColor(Theme.key_listSelector));
                 horizontalListView.setTag(9);
                 horizontalListView.setItemAnimator(null);
@@ -989,7 +996,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 view = horizontalListView;
                 innerListView = horizontalListView;
                 break;
-            case 6:
+            case VIEW_TYPE_ADD_BY_PHONE:
             default:
                 view = new TextCell(mContext, 16, false);
                 break;
@@ -1005,7 +1012,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
         switch (holder.getItemViewType()) {
-            case 0: {
+            case VIEW_TYPE_PROFILE_CELL: {
                 ProfileSearchCell cell = (ProfileSearchCell) holder.itemView;
                 long oldDialogId = cell.getDialogId();
 
@@ -1127,7 +1134,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 cell.setChecked(delegate.isSelected(cell.getDialogId()), oldDialogId == cell.getDialogId());
                 break;
             }
-            case 1: {
+            case VIEW_TYPE_GRAY_SECTION: {
                 GraySectionCell cell = (GraySectionCell) holder.itemView;
                 if (isRecentSearchDisplayed()) {
                     int offset = (!MediaDataController.getInstance(currentAccount).hints.isEmpty() ? 1 : 0);
@@ -1197,25 +1204,25 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 }
                 break;
             }
-            case 2: {
+            case VIEW_TYPE_DIALOG_CELL: {
                 DialogCell cell = (DialogCell) holder.itemView;
                 cell.useSeparator = (position != getItemCount() - 1);
                 MessageObject messageObject = (MessageObject) getItem(position);
                 cell.setDialog(messageObject.getDialogId(), messageObject, messageObject.messageOwner.date, false);
                 break;
             }
-            case 4: {
+            case VIEW_TYPE_HASHTAG_CELL: {
                 HashtagSearchCell cell = (HashtagSearchCell) holder.itemView;
                 cell.setText(searchResultHashtags.get(position - 1));
                 cell.setNeedDivider(position != searchResultHashtags.size());
                 break;
             }
-            case 5: {
+            case VIEW_TYPE_CATEGORY_LIST: {
                 RecyclerListView recyclerListView = (RecyclerListView) holder.itemView;
                 ((CategoryAdapterRecycler) recyclerListView.getAdapter()).setIndex(position / 2);
                 break;
             }
-            case 6: {
+            case VIEW_TYPE_ADD_BY_PHONE: {
                 String str = (String) getItem(position);
                 TextCell cell = (TextCell) holder.itemView;
                 cell.setColors(null, Theme.key_windowBackgroundWhiteBlueText2);
@@ -1233,15 +1240,15 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
         if (isRecentSearchDisplayed()) {
             int offset = (!MediaDataController.getInstance(currentAccount).hints.isEmpty() ? 1 : 0);
             if (i < offset) {
-                return 5;
+                return VIEW_TYPE_CATEGORY_LIST;
             }
             if (i == offset) {
-                return 1;
+                return VIEW_TYPE_GRAY_SECTION;
             }
-            return 0;
+            return VIEW_TYPE_PROFILE_CELL;
         }
         if (!searchResultHashtags.isEmpty()) {
-            return i == 0 ? 1 : 4;
+            return i == 0 ? VIEW_TYPE_GRAY_SECTION : VIEW_TYPE_HASHTAG_CELL;
         }
         ArrayList<TLObject> globalSearch = searchAdapterHelper.getGlobalSearch();
         int localCount = searchResult.size();
@@ -1257,11 +1264,11 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
         int messagesCount = searchResultMessages.isEmpty() ? 0 : searchResultMessages.size() + 1;
 
         if (i >= 0 && i < localCount) {
-            return 0;
+            return VIEW_TYPE_PROFILE_CELL;
         } else {
             i -= localCount;
             if (i >= 0 && i < localServerCount) {
-                return 0;
+                return VIEW_TYPE_PROFILE_CELL;
             } else {
                 i -= localServerCount;
                 if (i >= 0 && i < phoneCount) {
@@ -1269,34 +1276,34 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                     if (object instanceof String) {
                         String str = (String) object;
                         if ("section".equals(str)) {
-                            return 1;
+                            return VIEW_TYPE_GRAY_SECTION;
                         } else {
-                            return 6;
+                            return VIEW_TYPE_ADD_BY_PHONE;
                         }
                     }
-                    return 0;
+                    return VIEW_TYPE_PROFILE_CELL;
                 } else {
                     i -= phoneCount;
                     if (i >= 0 && i < globalCount) {
                         if (i == 0) {
-                            return 1;
+                            return VIEW_TYPE_GRAY_SECTION;
                         } else {
-                            return 0;
+                            return VIEW_TYPE_PROFILE_CELL;
                         }
                     } else {
                         i -= globalCount;
                         if (i >= 0 && i < messagesCount) {
                             if (i == 0) {
-                                return 1;
+                                return VIEW_TYPE_GRAY_SECTION;
                             } else {
-                                return 2;
+                                return VIEW_TYPE_DIALOG_CELL;
                             }
                         }
                     }
                 }
             }
         }
-        return 3;
+        return VIEW_TYPE_LOADING;
     }
 
     public void setFiltersDelegate(FilteredSearchView.Delegate filtersDelegate, boolean update) {

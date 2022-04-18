@@ -6,6 +6,8 @@ import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 
+import androidx.annotation.NonNull;
+
 public class CrossfadeDrawable extends Drawable {
 
     private final Drawable topDrawable;
@@ -16,6 +18,35 @@ public class CrossfadeDrawable extends Drawable {
     public CrossfadeDrawable(Drawable topDrawable, Drawable bottomDrawable) {
         this.topDrawable = topDrawable;
         this.bottomDrawable = bottomDrawable;
+
+        if (topDrawable != null) {
+            topDrawable.setCallback(new Callback() {
+                @Override
+                public void invalidateDrawable(@NonNull Drawable drawable) {
+                    if (progress < 1.0f) {
+                        CrossfadeDrawable.this.invalidateSelf();
+                    }
+                }
+                @Override
+                public void scheduleDrawable(@NonNull Drawable drawable, @NonNull Runnable runnable, long l) {}
+                @Override
+                public void unscheduleDrawable(@NonNull Drawable drawable, @NonNull Runnable runnable) {}
+            });
+        }
+        if (bottomDrawable != null) {
+            bottomDrawable.setCallback(new Callback() {
+                @Override
+                public void invalidateDrawable(@NonNull Drawable drawable) {
+                    if (progress > 0.0f) {
+                        CrossfadeDrawable.this.invalidateSelf();
+                    }
+                }
+                @Override
+                public void scheduleDrawable(@NonNull Drawable drawable, @NonNull Runnable runnable, long l) {}
+                @Override
+                public void unscheduleDrawable(@NonNull Drawable drawable, @NonNull Runnable runnable) {}
+            });
+        }
     }
 
     @Override

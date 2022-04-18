@@ -41,6 +41,9 @@ import org.telegram.messenger.UserObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.ActionBarLayout;
+import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.DrawerLayoutContainer;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -49,6 +52,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.SnowflakesEffect;
+import org.telegram.ui.ThemeActivity;
 
 public class DrawerProfileCell extends FrameLayout {
 
@@ -71,7 +75,7 @@ public class DrawerProfileCell extends FrameLayout {
     private int darkThemeBackgroundColor;
     public static boolean switchingTheme;
 
-    public DrawerProfileCell(Context context) {
+    public DrawerProfileCell(Context context, DrawerLayoutContainer drawerLayoutContainer) {
         super(context);
 
         shadowView = new ImageView(context);
@@ -127,6 +131,7 @@ public class DrawerProfileCell extends FrameLayout {
                 }
             }
         };
+        darkThemeView.setBackground(Theme.createCircleSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector), 0, 0));
         sunDrawable.beginApplyLayerColors();
         int color = Theme.getColor(Theme.key_chats_menuName);
         sunDrawable.setLayerColor("Sunny.**", color);
@@ -179,6 +184,13 @@ public class DrawerProfileCell extends FrameLayout {
                 Theme.cancelAutoNightThemeCallbacks();
             }
             switchTheme(themeInfo, toDark);
+        });
+        darkThemeView.setOnLongClickListener(e -> {
+            if (drawerLayoutContainer != null) {
+                drawerLayoutContainer.presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_BASIC));
+                return true;
+            }
+            return false;
         });
         addView(darkThemeView, LayoutHelper.createFrame(48, 48, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 6, 90));
 

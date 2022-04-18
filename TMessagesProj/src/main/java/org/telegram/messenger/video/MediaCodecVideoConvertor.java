@@ -330,6 +330,12 @@ public class MediaCodecVideoConvertor {
                             long additionalPresentationTime = 0;
                             long minPresentationTime = Integer.MIN_VALUE;
                             long frameDelta = 1000 / framerate * 1000;
+                            long frameDeltaFroSkipFrames;
+                            if (framerate < 30) {
+                                frameDeltaFroSkipFrames = 1000 / (framerate + 5) * 1000;
+                            } else {
+                                frameDeltaFroSkipFrames = 1000 / (framerate + 1) * 1000;
+                            }
 
                             extractor.selectTrack(videoIndex);
                             MediaFormat videoFormat = extractor.getTrackFormat(videoIndex);
@@ -681,7 +687,7 @@ public class MediaCodecVideoConvertor {
                                                 decoder.flush();
                                                 flushed = true;
                                             }
-                                            if (lastFramePts > 0 && info.presentationTimeUs - lastFramePts < frameDelta && (info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) == 0) {
+                                            if (lastFramePts > 0 && info.presentationTimeUs - lastFramePts < frameDeltaFroSkipFrames && (info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) == 0) {
                                                 doRender = false;
                                             }
                                             trueStartTime = avatarStartTime >= 0 ? avatarStartTime : startTime;

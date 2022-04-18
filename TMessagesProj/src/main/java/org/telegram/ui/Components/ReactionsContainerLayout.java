@@ -110,6 +110,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
     private float pressedViewScale;
     private float otherViewsScale;
     private boolean clicked;
+    long lastReactionSentTime;
 
     public ReactionsContainerLayout(@NonNull Context context, int currentAccount, Theme.ResourcesProvider resourcesProvider) {
         super(context);
@@ -299,7 +300,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
             canvas.scale(sc, sc, pivotX, getHeight() / 2f);
         }
 
-        if (transitionProgress != 0) {
+        if (transitionProgress != 0 && getAlpha() == 1f) {
             int delay = 0;
             for (int i = 0; i < recyclerListView.getChildCount(); i++) {
                 ReactionHolderView view = (ReactionHolderView) recyclerListView.getChildAt(i);
@@ -352,6 +353,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         canvas.restore();
     }
 
+
     private void checkPressedProgress(Canvas canvas, ReactionHolderView view) {
         if (view.currentReaction.reaction.equals(pressedReaction)) {
             view.setPivotX(view.getMeasuredWidth() >> 1);
@@ -372,16 +374,19 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
                 }
                 if (pressedProgress == 1f) {
                     clicked = true;
-                    delegate.onReactionClicked(view, view.currentReaction, true);
+                    if (System.currentTimeMillis() - lastReactionSentTime > 300) {
+                        lastReactionSentTime = System.currentTimeMillis();
+                        delegate.onReactionClicked(view, view.currentReaction, true);
+                    }
                 }
             }
 
             canvas.save();
             float x = recyclerListView.getX() + view.getX();
             float additionalWidth = (view.getMeasuredWidth() * view.getScaleX() - view.getMeasuredWidth()) / 2f;
-            if (x - additionalWidth < 0) {
+            if (x - additionalWidth < 0 && view.getTranslationX() >= 0) {
                 view.setTranslationX(-(x - additionalWidth));
-            } else if (x + view.getMeasuredWidth() + additionalWidth > getMeasuredWidth()) {
+            } else if (x + view.getMeasuredWidth() + additionalWidth > getMeasuredWidth() && view.getTranslationX() <= 0) {
                 view.setTranslationX(getMeasuredWidth() - x - view.getMeasuredWidth() - additionalWidth);
             } else {
                 view.setTranslationX(0);
@@ -653,7 +658,11 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
             if (cancelByMove || event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
                 if (event.getAction() == MotionEvent.ACTION_UP && pressed && (pressedReaction == null || pressedProgress > 0.8f) && delegate != null) {
                     clicked = true;
-                    delegate.onReactionClicked(this, currentReaction,  pressedProgress > 0.8f);
+                    if (System.currentTimeMillis() - lastReactionSentTime > 300) {
+                        lastReactionSentTime = System.currentTimeMillis();
+                        delegate.onReactionClicked(this, currentReaction,  pressedProgress > 0.8f);
+                    }
+
                 }
                 if (!clicked) {
                     cancelPressed();
@@ -723,4 +732,15 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         }
     }
 
+    @Override
+    public void setAlpha(float alpha) {
+        if (getAlpha() != alpha && alpha == 0) {
+            lastVisibleViews.clear();
+            for (int i = 0; i < recyclerListView.getChildCount(); i++) {
+                ReactionHolderView view = (ReactionHolderView) recyclerListView.getChildAt(i);
+                view.resetAnimation();
+            }
+        }
+        super.setAlpha(alpha);
+    }
 }

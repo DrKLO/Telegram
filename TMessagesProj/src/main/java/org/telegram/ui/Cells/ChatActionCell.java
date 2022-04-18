@@ -73,7 +73,8 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         default void didClickImage(ChatActionCell cell) {
         }
 
-        default void didLongPress(ChatActionCell cell, float x, float y) {
+        default boolean didLongPress(ChatActionCell cell, float x, float y) {
+            return false;
         }
 
         default void needOpenUserProfile(long uid) {
@@ -283,9 +284,9 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
     @Override
     protected boolean onLongPress() {
         if (delegate != null) {
-            delegate.didLongPress(this, lastTouchX, lastTouchY);
+            return delegate.didLongPress(this, lastTouchX, lastTouchY);
         }
-        return true;
+        return false;
     }
 
     @Override

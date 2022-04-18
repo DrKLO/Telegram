@@ -104,6 +104,7 @@ NetworkManager::~NetworkManager() {
 	_portAllocator.reset();
 	_networkManager.reset();
 	_socketFactory.reset();
+    _networkMonitorFactory.reset();
 }
 
 void NetworkManager::start() {

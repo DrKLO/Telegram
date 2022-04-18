@@ -31,7 +31,7 @@ public class FileLoader extends BaseController {
         void fileUploadProgressChanged(FileUploadOperation operation, String location, long uploadedSize, long totalSize, boolean isEncrypted);
         void fileDidUploaded(String location, TLRPC.InputFile inputFile, TLRPC.InputEncryptedFile inputEncryptedFile, byte[] key, byte[] iv, long totalFileSize);
         void fileDidFailedUpload(String location, boolean isEncrypted);
-        void fileDidLoaded(String location, File finalFile, int type);
+        void fileDidLoaded(String location, File finalFile, Object parentObject, int type);
         void fileDidFailedLoad(String location, int state);
         void fileLoadProgressChanged(FileLoadOperation operation, String location, long uploadedSize, long totalSize);
     }
@@ -41,6 +41,9 @@ public class FileLoader extends BaseController {
     public static final int MEDIA_DIR_VIDEO = 2;
     public static final int MEDIA_DIR_DOCUMENT = 3;
     public static final int MEDIA_DIR_CACHE = 4;
+
+    public static final int MEDIA_DIR_IMAGE_PUBLIC = 100;
+    public static final int MEDIA_DIR_VIDEO_PUBLIC = 101;
 
     public static final int IMAGE_TYPE_LOTTIE = 1;
     public static final int IMAGE_TYPE_ANIMATION = 2;
@@ -707,14 +710,14 @@ public class FileLoader extends BaseController {
                 if (!operation.isPreloadVideoOperation() && operation.isPreloadFinished()) {
                     return;
                 }
-                if (document != null && parentObject instanceof MessageObject) {
+                if (document != null && parentObject instanceof MessageObject && ((MessageObject) parentObject).putInDownloadsStore) {
                     getDownloadController().onDownloadComplete((MessageObject) parentObject);
                 }
 
                 if (!operation.isPreloadVideoOperation()) {
                     loadOperationPathsUI.remove(fileName);
                     if (delegate != null) {
-                        delegate.fileDidLoaded(fileName, finalFile, finalType);
+                        delegate.fileDidLoaded(fileName, finalFile, parentObject, finalType);
                     }
                 }
 

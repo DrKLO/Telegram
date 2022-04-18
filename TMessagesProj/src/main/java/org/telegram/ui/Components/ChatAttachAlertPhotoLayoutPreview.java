@@ -369,7 +369,8 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
                 MessageObject.GroupedMessagePosition position = new MessageObject.GroupedMessagePosition();
                 position.last = a == count - 1;
 
-                int w = photo.width, h = photo.height;
+                int w = photo.cropState != null ? photo.cropState.width : photo.width,
+                    h = photo.cropState != null ? photo.cropState.height : photo.height;
                 boolean rotate;
                 if (photoRotate.containsKey(photo)) {
                     rotate = photoRotate.get(photo);
@@ -868,7 +869,7 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
                 paddingTop = Math.max(0, paddingTop);
                 canvas.save();
                 canvas.clipRect(0, paddingTop, getWidth(), getHeight());
-                chatBackgroundDrawable.setBounds(0, paddingTop, getWidth(), AndroidUtilities.displaySize.y);
+                chatBackgroundDrawable.setBounds(0, paddingTop, getWidth(), paddingTop + AndroidUtilities.displaySize.y);
                 chatBackgroundDrawable.draw(canvas);
                 restore = true;
             }

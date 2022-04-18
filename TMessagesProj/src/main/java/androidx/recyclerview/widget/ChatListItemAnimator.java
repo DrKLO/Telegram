@@ -691,7 +691,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                 @Override
                 public void onAnimationUpdate(ValueAnimator valueAnimator) {
                     float v = (float) valueAnimator.getAnimatedValue();
-                    float top = recyclerListView.getMeasuredHeight() / 2f - botCell.getMeasuredHeight() / 2f + activity.getChatListViewPadding();
+                    float top = (recyclerListView.getMeasuredHeight() - activity.getChatListViewPadding() - activity.blurredViewBottomOffset) / 2f - botCell.getMeasuredHeight() / 2f + activity.getChatListViewPadding();
                     float animateTo = 0;
                     if (botCell.getTop() > top) {
                         animateTo = top - botCell.getTop();

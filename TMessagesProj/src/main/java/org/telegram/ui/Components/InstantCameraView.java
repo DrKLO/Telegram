@@ -29,6 +29,7 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
+import android.graphics.drawable.AnimatedVectorDrawable;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaCodec;
@@ -58,6 +59,7 @@ import android.view.animation.DecelerateInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 
 import com.google.android.exoplayer2.ExoPlayer;
@@ -118,6 +120,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
     private Paint paint;
     private RectF rect;
     private ImageView switchCameraButton;
+    AnimatedVectorDrawable switchCameraDrawable = null;
     private ImageView muteImageView;
     private float progress;
     private CameraInfo selectedCamera;
@@ -204,6 +207,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
     private FloatBuffer textureBuffer;
     private float scaleX;
     private float scaleY;
+    private boolean flipAnimationInProgress;
 
     private View parentView;
     public boolean opened;
@@ -305,7 +309,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             cameraContainer.setLayerType(View.LAYER_TYPE_HARDWARE, null);
         }
 
-        addView(cameraContainer, new FrameLayout.LayoutParams(AndroidUtilities.roundPlayingMessageSize, AndroidUtilities.roundPlayingMessageSize, Gravity.CENTER));
+        addView(cameraContainer, new LayoutParams(AndroidUtilities.roundPlayingMessageSize, AndroidUtilities.roundPlayingMessageSize, Gravity.CENTER));
 
         switchCameraButton = new ImageView(context);
         switchCameraButton.setScaleType(ImageView.ScaleType.CENTER);
@@ -316,15 +320,42 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                 return;
             }
             switchCamera();
-            ObjectAnimator animator = ObjectAnimator.ofFloat(switchCameraButton, View.SCALE_X, 0.0f).setDuration(100);
-            animator.addListener(new AnimatorListenerAdapter() {
+            if (switchCameraDrawable != null) {
+                switchCameraDrawable.start();
+            }
+            flipAnimationInProgress = true;
+            ValueAnimator valueAnimator = ValueAnimator.ofFloat(0, 1f);
+            valueAnimator.setDuration(300);
+            valueAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
+            valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
                 @Override
-                public void onAnimationEnd(Animator animator) {
-                    switchCameraButton.setImageResource(isFrontface ? R.drawable.camera_revert1 : R.drawable.camera_revert2);
-                    ObjectAnimator.ofFloat(switchCameraButton, View.SCALE_X, 1.0f).setDuration(100).start();
+                public void onAnimationUpdate(ValueAnimator valueAnimator) {
+                    float p = (float) valueAnimator.getAnimatedValue();
+                    if (p < 0.5f) {
+                        p = (1f - p / 0.5f);
+                    } else {
+                        p = (p - 0.5f) / 0.5f;
+                    }
+                    float scaleDown = 0.9f + 0.1f * p;
+                    cameraContainer.setScaleX(p * scaleDown);
+                    cameraContainer.setScaleY(scaleDown);
+                    textureOverlayView.setScaleX(p * scaleDown);
+                    textureOverlayView.setScaleY(scaleDown);
                 }
             });
-            animator.start();
+            valueAnimator.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    super.onAnimationEnd(animation);
+                    cameraContainer.setScaleX(1f);
+                    cameraContainer.setScaleY(1f);
+                    textureOverlayView.setScaleY(1f);
+                    textureOverlayView.setScaleX(1f);
+                    flipAnimationInProgress = false;
+                    invalidate();
+                }
+            });
+            valueAnimator.start();
         });
 
         muteImageView = new ImageView(context);
@@ -353,10 +384,10 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                 }
             }
         };
-        addView(textureOverlayView, new FrameLayout.LayoutParams(AndroidUtilities.roundPlayingMessageSize, AndroidUtilities.roundPlayingMessageSize, Gravity.CENTER));
+        addView(textureOverlayView, new LayoutParams(AndroidUtilities.roundPlayingMessageSize, AndroidUtilities.roundPlayingMessageSize, Gravity.CENTER));
 
         setVisibility(INVISIBLE);
-        blurBehindDrawable = new BlurBehindDrawable(parentView, this, 0, null);
+        blurBehindDrawable = new BlurBehindDrawable(parentView, this, 0, resourcesProvider);
     }
 
     @Override
@@ -463,7 +494,9 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
 
         if (progress != 0) {
             canvas.save();
-            canvas.scale(cameraContainer.getScaleX(), cameraContainer.getScaleY(), rect.centerX(), rect.centerY());
+            if (!flipAnimationInProgress) {
+                canvas.scale(cameraContainer.getScaleX(), cameraContainer.getScaleY(), rect.centerX(), rect.centerY());
+            }
             canvas.drawArc(rect, -90, 360 * progress, false, paint);
             canvas.restore();
         }
@@ -521,7 +554,15 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             return;
         }
 
-        switchCameraButton.setImageResource(R.drawable.camera_revert1);
+
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            switchCameraDrawable = (AnimatedVectorDrawable) ContextCompat.getDrawable(getContext(), R.drawable.avd_flip);
+            switchCameraButton.setImageDrawable(switchCameraDrawable);
+        } else {
+            switchCameraButton.setImageResource(R.drawable.vd_flip);
+        }
+
         textureOverlayView.setAlpha(1.0f);
         textureOverlayView.invalidate();
         if (lastBitmap == null) {
@@ -1958,7 +1999,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         }
 
         private void createKeyframeThumb() {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && SharedConfig.getDevicePerformanceClass() != SharedConfig.PERFORMANCE_CLASS_LOW && frameCount % 33 == 0) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_HIGH && frameCount % 33 == 0) {
                 GenerateKeyframeThumbTask task = new GenerateKeyframeThumbTask();
                 generateKeyframeThumbsQueue.postRunnable(task);
             }

@@ -28,6 +28,12 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.core.graphics.ColorUtils;
+import androidx.recyclerview.widget.DefaultItemAnimator;
+import androidx.recyclerview.widget.DiffUtil;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
@@ -57,11 +63,6 @@ import org.telegram.ui.Components.ShareLocationDrawable;
 import org.telegram.ui.Components.UndoView;
 
 import java.util.ArrayList;
-
-import androidx.recyclerview.widget.DefaultItemAnimator;
-import androidx.recyclerview.widget.DiffUtil;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 public class PeopleNearbyActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, LocationController.LocationFetchCallback {
 
@@ -314,9 +315,6 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
         actionBar.setOccupyStatusBar(Build.VERSION.SDK_INT >= 21 && !AndroidUtilities.isTablet());
         actionBar.setTitle(LocaleController.getString("PeopleNearby", R.string.PeopleNearby));
         actionBar.getTitleTextView().setAlpha(0.0f);
-        if (!AndroidUtilities.isTablet()) {
-            actionBar.showActionModeTop();
-        }
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
@@ -1051,6 +1049,12 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
             }
             return 0;
         }
+    }
+
+    @Override
+    public boolean isLightStatusBar() {
+        int color = Theme.getColor(Theme.key_windowBackgroundWhite, null, true);
+        return ColorUtils.calculateLuminance(color) > 0.7f;
     }
 
     @Override
