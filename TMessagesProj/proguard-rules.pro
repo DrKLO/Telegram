@@ -100,3 +100,5 @@
 # Use -keep to explicitly keep any other classes shrinking would remove
 -dontoptimize
 -dontobfuscate
+-dontwarn org.osmdroid.tileprovider.modules.NetworkAvailabliltyCheck
+-dontwarn org.osmdroid.**
