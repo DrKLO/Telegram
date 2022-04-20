@@ -167,7 +167,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
-        actionBar.setTitle("Telegraher settings \uD83D\uDCA6");
+        actionBar.setTitle(LocaleController.getString(R.string.THSettingsLabel));
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
@@ -375,29 +375,29 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                     if (false) {
                         //durov relogin!
                     } else if (position == voiceLabelRow) {
-                        headerCell.setText("Voice message section");
+                        headerCell.setText(LocaleController.getString(R.string.THVoiceLabelRow));
                     } else if (position == voipLabelRow) {
-                        headerCell.setText("VoIP calls section");
+                        headerCell.setText(LocaleController.getString(R.string.THVoipLabelRow));
                     } else if (position == profileLabelRow) {
-                        headerCell.setText("Profile section");
+                        headerCell.setText(LocaleController.getString(R.string.THProfileLabelRow));
                     } else if (position == chatLabelRow) {
-                        headerCell.setText("Chat section");
+                        headerCell.setText(LocaleController.getString(R.string.THChatLabelRow));
                     } else if (position == gifLabelHDRow) {
-                        headerCell.setText("GIF section");
+                        headerCell.setText(LocaleController.getString(R.string.THGifLabelHDRow));
                     } else if (position == videoLabelMaxResolutionRow) {
-                        headerCell.setText("* Maximum video resolution");
+                        headerCell.setText(LocaleController.getString(R.string.THVideoLabelMaxResolutionRow));
                     } else if (position == videoLabelRoundBitrateRow) {
-                        headerCell.setText("* Round video bitrate");
+                        headerCell.setText(LocaleController.getString(R.string.THVideoLabelRoundBitrateRow));
                     } else if (position == videoLabelRoundSizeRow) {
-                        headerCell.setText("* Round video size");
+                        headerCell.setText(LocaleController.getString(R.string.THVideoLabelRoundSizeRow));
                     } else if (position == accountLabelRow) {
-                        headerCell.setText("Account section");
+                        headerCell.setText(LocaleController.getString(R.string.THAccountLabelRow));
                     } else if (position == deviceSpoofingLabelRow) {
-                        headerCell.setText("Device spoofing section");
+                        headerCell.setText(LocaleController.getString(R.string.THDeviceSpoofingLabelRow));
                     } else if (position == deviceSpoofingResetGlobalLabelRow) {
-                        headerCell.setText("Reset global spoofing values");
+                        headerCell.setText(LocaleController.getString(R.string.THDeviceSpoofingResetGlobalLabelRow));
                     } else if (position == showLabelTelegraherMenuRow) {
-                        headerCell.setText("* Show Telegraher menu");
+                        headerCell.setText(LocaleController.getString(R.string.THShowLabelTelegraherMenuRow));
                     }
                     break;
                 }
@@ -408,27 +408,27 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                     if (false) {
                         //durov relogin!
                     } else if (position == voiceHDRow) {
-                        checkCell.setTextAndCheck("* HD Voice", globalPreps.getBoolean("EnableVoiceHD", false), false);
+                        checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableVoiceHD), globalPreps.getBoolean("EnableVoiceHD", false), false);
                     } else if (position == voiceBadmanRow) {
-                        checkCell.setTextAndCheck("* \uD83E\uDD87 Voice (slow)", globalPreps.getBoolean("EnableVoiceBadman", false), true);
+                        checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableVoiceBadman), globalPreps.getBoolean("EnableVoiceBadman", false), true);
                     } else if (position == voipHDRow) {
-                        checkCell.setTextAndCheck("HD calls", localPreps.getBoolean("EnableVoIPHD", false), true);
+                        checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableVoIPHD), localPreps.getBoolean("EnableVoIPHD", false), true);
                     } else if (position == profileUIDRow) {
-                        checkCell.setTextAndCheck("Show numeric ID", localPreps.getBoolean("EnableProfileUID", true), true);
+                        checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableProfileUID), localPreps.getBoolean("EnableProfileUID", true), true);
                     } else if (position == profileDCIDRow) {
-                        checkCell.setTextAndCheck("Show DC ID", localPreps.getBoolean("EnableProfileDCID", true), true);
+                        checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableProfileDCID), localPreps.getBoolean("EnableProfileDCID", true), true);
                     } else if (position == profileSBRow) {
-                        checkCell.setTextAndCheck("Show Shadowban", localPreps.getBoolean("EnableProfileSB", true), true);
+                        checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableProfileSB), localPreps.getBoolean("EnableProfileSB", true), true);
                     } else if (position == chatDeleteMarkRow) {
-                        checkCell.setTextAndCheck(String.format("Show `%s` mark", LocaleController.getString("DeletedMessage", R.string.DeletedMessage)), localPreps.getBoolean("EnableChatDeleteMark", true), true);
+                        checkCell.setTextAndCheck(String.format(LocaleController.getString(R.string.THEnableChatDeleteMark), LocaleController.getString("DeletedMessage", R.string.DeletedMessage)), localPreps.getBoolean("EnableChatDeleteMark", true), true);
                     } else if (position == accountExtendVanillaRow) {
-                        checkCell.setTextAndCheck("* 3+", globalPreps.getBoolean("EnableAccountExtendVanilla", false), true);
+                        checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableAccountExtendVanilla), globalPreps.getBoolean("EnableAccountExtendVanilla", false), true);
                     } else if (position == chatSBFullRow) {
-                        checkCell.setTextAndCheck("Full ShadowBan \uD83D\uDE48", localPreps.getBoolean("EnableChatSBFull", false), true);
+                        checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableChatSBFull), localPreps.getBoolean("EnableChatSBFull", false), true);
                     } else if (position == gifHDRow) {
-                        checkCell.setTextAndCheck("* Enable HD gifs", globalPreps.getBoolean("EnableGifHD", false), true);
+                        checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableGifHD), globalPreps.getBoolean("EnableGifHD", false), true);
                     } else if (position == videoRoundUseMainCameraRow) {
-                        checkCell.setTextAndCheck("* Use main camera", globalPreps.getBoolean("VideoRoundUseMainCamera", false), true);
+                        checkCell.setTextAndCheck(LocaleController.getString(R.string.THVideoRoundUseMainCamera), globalPreps.getBoolean("VideoRoundUseMainCamera", false), true);
                     }
                     break;
                 }
@@ -439,7 +439,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                     } else if (position == killMeLabelRow) {
                         textSettingsCell.setCanDisable(false);
                         textSettingsCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText));
-                        textSettingsCell.setText("Kill the APP", false);
+                        textSettingsCell.setText(LocaleController.getString(R.string.THKillTheAPP), false);
                     }
                     break;
                 }
@@ -490,7 +490,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                             }
                         });
                     } else if (position == showTelegraherMenuRow) {
-                        String[] strings = new String[]{"Both", "Settings", "Storage Usage", "The Void"};
+                        String[] strings = new String[]{LocaleController.getString(R.string.THMenuPositionBoth), LocaleController.getString(R.string.THMenuPositionSettings), LocaleController.getString(R.string.THMenuPositionStorageUsage), LocaleController.getString(R.string.THMenuPositionTheVoid)};
                         slideChooseView.setOptions(MessagesController.getGlobalTelegraherSettings().getInt("ShowTelegraherMenu2", 0), strings);
                         slideChooseView.setCallback(new SlideChooseView.Callback() {
                             @Override
@@ -522,15 +522,15 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         //durov relogin!
                     } else if (position == deviceSpoofingBrand) {
                         textDetailCell.setContentDescriptionValueFirst(true);
-                        textDetailCell.setTextAndValue(UserConfig.hmGetBrand(-1), String.format("Device Brand for current account is `%s`", UserConfig.hmGetBrand(currentAccount)), false);
+                        textDetailCell.setTextAndValue(UserConfig.hmGetBrand(-1), String.format(LocaleController.getString(R.string.THDSBrandCurrentText), UserConfig.hmGetBrand(currentAccount)), false);
                     } else if (position == deviceSpoofingModel) {
                         textDetailCell.setContentDescriptionValueFirst(true);
                         textDetailCell.setImageClickListener(TelegraherSettingsActivity.this::onTextDetailCellImageClicked);
-                        textDetailCell.setTextAndValue(UserConfig.hmGetModel(-1), String.format("Device Model for current account is `%s`", UserConfig.hmGetModel(currentAccount)), false);
+                        textDetailCell.setTextAndValue(UserConfig.hmGetModel(-1), String.format(LocaleController.getString(R.string.THDSModelCurrentText), UserConfig.hmGetModel(currentAccount)), false);
                     } else if (position == deviceSpoofingOS) {
                         textDetailCell.setContentDescriptionValueFirst(true);
                         textDetailCell.setImageClickListener(TelegraherSettingsActivity.this::onTextDetailCellImageClicked);
-                        textDetailCell.setTextAndValue(UserConfig.hmGetOS(-1), String.format("Device OS for current account is `%s`", UserConfig.hmGetOS(currentAccount)), false);
+                        textDetailCell.setTextAndValue(UserConfig.hmGetOS(-1), String.format(LocaleController.getString(R.string.THDSOSCurrentText), UserConfig.hmGetOS(currentAccount)), false);
                     }
                     break;
                 }
@@ -594,16 +594,16 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
 
     private void showDSAlert(int labelId) {
         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-        builder.setTitle("Device spoofing");
-        builder.setMessage(String.format("Override Device %s?", DSMainActivity.DS_LABEL[labelId]));
-        builder.setNeutralButton("Global", (dialogInterface, i) -> {
+        builder.setTitle(LocaleController.getString(R.string.THDSLabel));
+        builder.setMessage(String.format(LocaleController.getString(R.string.THDSOverrideLabel), DSMainActivity.DS_LABEL[labelId]));
+        builder.setNeutralButton(LocaleController.getString(R.string.THDSOverrideGlobal), (dialogInterface, i) -> {
             try {
                 presentFragment(new DSMainActivity(labelId, 0, labelId));
             } catch (Exception durovrelogin) {
                 durovrelogin.printStackTrace();
             }
         });
-        builder.setPositiveButton("Currect account", (dialogInterface, i) -> {
+        builder.setPositiveButton(LocaleController.getString(R.string.THDSOverrideCurrent), (dialogInterface, i) -> {
             try {
                 presentFragment(new DSMainActivity(labelId, 1, labelId));
             } catch (Exception durovrelogin) {
@@ -625,9 +625,9 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
 
     private void showDSResetGlobalAlert() {
         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-        builder.setTitle("Device spoofing");
-        builder.setMessage("Reset global values to the vanilla ones?");
-        builder.setPositiveButton("Yes!", (dialogInterface, i) -> {
+        builder.setTitle(LocaleController.getString(R.string.THDSLabel));
+        builder.setMessage(LocaleController.getString(R.string.THDSResetAlert));
+        builder.setPositiveButton(LocaleController.getString(R.string.THYesYesYes), (dialogInterface, i) -> {
             try {
                 UserConfig.resetHmDevices();
                 UserConfig.syncHmDevices();

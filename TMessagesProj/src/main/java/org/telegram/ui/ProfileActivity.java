@@ -5756,7 +5756,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     filtersRow = rowCount++;
                 }
                 devicesRow = rowCount++;
-                switch (MessagesController.getTelegraherSettings(currentAccount).getInt("ShowTelegraherMenu2", 0)) {
+                switch (MessagesController.getGlobalTelegraherSettings().getInt("ShowTelegraherMenu2", 0)) {
                     case 0:
                     case 1:
                         telegraherRow = rowCount++;
