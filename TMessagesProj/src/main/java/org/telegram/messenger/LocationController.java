@@ -8,6 +8,7 @@
 
 package org.telegram.messenger;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.location.Address;
@@ -21,16 +22,16 @@ import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.SparseIntArray;
 
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GoogleApiAvailability;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.PendingResult;
-import com.google.android.gms.common.api.Status;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.location.LocationSettingsRequest;
-import com.google.android.gms.location.LocationSettingsResult;
-import com.google.android.gms.location.LocationSettingsStatusCodes;
+//import com.google.android.gms.common.ConnectionResult;
+//import com.google.android.gms.common.GoogleApiAvailability;
+//import com.google.android.gms.common.api.GoogleApiClient;
+//import com.google.android.gms.common.api.PendingResult;
+//import com.google.android.gms.common.api.Status;
+//import com.google.android.gms.location.LocationRequest;
+//import com.google.android.gms.location.LocationServices;
+//import com.google.android.gms.location.LocationSettingsRequest;
+//import com.google.android.gms.location.LocationSettingsResult;
+//import com.google.android.gms.location.LocationSettingsStatusCodes;
 
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLitePreparedStatement;
@@ -45,7 +46,8 @@ import java.util.Locale;
 
 import androidx.collection.LongSparseArray;
 
-public class LocationController extends BaseController implements NotificationCenter.NotificationCenterDelegate, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
+//public class LocationController extends BaseController implements NotificationCenter.NotificationCenterDelegate, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
+public class LocationController extends BaseController implements NotificationCenter.NotificationCenterDelegate {
 
     private LongSparseArray<SharingLocationInfo> sharingLocationsMap = new LongSparseArray<>();
     private ArrayList<SharingLocationInfo> sharingLocations = new ArrayList<>();
@@ -55,7 +57,7 @@ public class LocationController extends BaseController implements NotificationCe
     private GpsLocationListener gpsLocationListener = new GpsLocationListener();
     private GpsLocationListener networkLocationListener = new GpsLocationListener();
     private GpsLocationListener passiveLocationListener = new GpsLocationListener();
-    private FusedLocationListener fusedLocationListener = new FusedLocationListener();
+//    private FusedLocationListener fusedLocationListener = new FusedLocationListener();
     private Location lastKnownLocation;
     private long lastLocationSendTime;
     private boolean locationSentSinceLastGoogleMapUpdate = true;
@@ -72,10 +74,10 @@ public class LocationController extends BaseController implements NotificationCe
     public ArrayList<SharingLocationInfo> sharingLocationsUI = new ArrayList<>();
     private LongSparseArray<SharingLocationInfo> sharingLocationsMapUI = new LongSparseArray<>();
 
-    private Boolean playServicesAvailable;
-    private boolean wasConnectedToPlayServices;
-    private GoogleApiClient googleApiClient;
-    private final static int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
+//    private Boolean playServicesAvailable;
+//    private boolean wasConnectedToPlayServices;
+//    private GoogleApiClient googleApiClient;
+//    private final static int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
     private final static long UPDATE_INTERVAL = 1000, FASTEST_INTERVAL = 1000;
     private final static int BACKGROUD_UPDATE_TIME = 30 * 1000;
     private final static int LOCATION_ACQUIRE_TIME = 10 * 1000;
@@ -86,7 +88,7 @@ public class LocationController extends BaseController implements NotificationCe
     private ArrayList<TLRPC.TL_peerLocated> cachedNearbyUsers = new ArrayList<>();
     private ArrayList<TLRPC.TL_peerLocated> cachedNearbyChats = new ArrayList<>();
 
-    private LocationRequest locationRequest;
+//    private LocationRequest locationRequest;
 
     private static volatile LocationController[] Instance = new LocationController[UserConfig.MAX_ACCOUNT_COUNT];
 
@@ -147,30 +149,30 @@ public class LocationController extends BaseController implements NotificationCe
         }
     }
 
-    private class FusedLocationListener implements com.google.android.gms.location.LocationListener {
-
-        @Override
-        public void onLocationChanged(Location location) {
-            if (location == null) {
-                return;
-            }
-            setLastKnownLocation(location);
-        }
-    }
+//    private class FusedLocationListener implements com.google.android.gms.location.LocationListener {
+//
+//        @Override
+//        public void onLocationChanged(Location location) {
+//            if (location == null) {
+//                return;
+//            }
+//            setLastKnownLocation(location);
+//        }
+//    }
 
     public LocationController(int instance) {
         super(instance);
 
         locationManager = (LocationManager) ApplicationLoader.applicationContext.getSystemService(Context.LOCATION_SERVICE);
-        googleApiClient = new GoogleApiClient.Builder(ApplicationLoader.applicationContext).
-                addApi(LocationServices.API).
-                addConnectionCallbacks(this).
-                addOnConnectionFailedListener(this).build();
-
-        locationRequest = new LocationRequest();
-        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-        locationRequest.setInterval(UPDATE_INTERVAL);
-        locationRequest.setFastestInterval(FASTEST_INTERVAL);
+//        googleApiClient = new GoogleApiClient.Builder(ApplicationLoader.applicationContext).
+//                addApi(LocationServices.API).
+//                addConnectionCallbacks(this).
+//                addOnConnectionFailedListener(this).build();
+//
+//        locationRequest = new LocationRequest();
+//        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+//        locationRequest.setInterval(UPDATE_INTERVAL);
+//        locationRequest.setFastestInterval(FASTEST_INTERVAL);
 
         AndroidUtilities.runOnUIThread(() -> {
             LocationController locationController = getAccountInstance().getLocationController();
@@ -283,92 +285,92 @@ public class LocationController extends BaseController implements NotificationCe
         }
     }
 
-    @Override
-    public void onConnected(Bundle bundle) {
-        wasConnectedToPlayServices = true;
-        try {
-            if (Build.VERSION.SDK_INT >= 21) {
-                LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder().addLocationRequest(locationRequest);
-                PendingResult<LocationSettingsResult> result = LocationServices.SettingsApi.checkLocationSettings(googleApiClient, builder.build());
-                result.setResultCallback(locationSettingsResult -> {
-                    final Status status = locationSettingsResult.getStatus();
-                    switch (status.getStatusCode()) {
-                        case LocationSettingsStatusCodes.SUCCESS:
-                            startFusedLocationRequest(true);
-                            break;
-                        case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
-                            Utilities.stageQueue.postRunnable(() -> {
-                                if (lookingForPeopleNearby || !sharingLocations.isEmpty()) {
-                                    AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.needShowPlayServicesAlert, status));
-                                }
-                            });
-                            break;
-                        case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
-                            Utilities.stageQueue.postRunnable(() -> {
-                                playServicesAvailable = false;
-                                try {
-                                    googleApiClient.disconnect();
-                                    start();
-                                } catch (Throwable ignore) {
+//    @Override
+//    public void onConnected(Bundle bundle) {
+//        wasConnectedToPlayServices = true;
+//        try {
+//            if (Build.VERSION.SDK_INT >= 21) {
+//                LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder().addLocationRequest(locationRequest);
+//                PendingResult<LocationSettingsResult> result = LocationServices.SettingsApi.checkLocationSettings(googleApiClient, builder.build());
+//                result.setResultCallback(locationSettingsResult -> {
+//                    final Status status = locationSettingsResult.getStatus();
+//                    switch (status.getStatusCode()) {
+//                        case LocationSettingsStatusCodes.SUCCESS:
+//                            startFusedLocationRequest(true);
+//                            break;
+//                        case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
+//                            Utilities.stageQueue.postRunnable(() -> {
+//                                if (lookingForPeopleNearby || !sharingLocations.isEmpty()) {
+//                                    AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.needShowPlayServicesAlert, status));
+//                                }
+//                            });
+//                            break;
+//                        case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
+//                            Utilities.stageQueue.postRunnable(() -> {
+//                                playServicesAvailable = false;
+//                                try {
+//                                    googleApiClient.disconnect();
+//                                    start();
+//                                } catch (Throwable ignore) {
+//
+//                                }
+//                            });
+//                            break;
+//                    }
+//                });
+//            } else {
+//                startFusedLocationRequest(true);
+//            }
+//        } catch (Throwable e) {
+//            FileLog.e(e);
+//        }
+//    }
+//
+//    public void startFusedLocationRequest(boolean permissionsGranted) {
+//        Utilities.stageQueue.postRunnable(() -> {
+//            if (!permissionsGranted) {
+//                playServicesAvailable = false;
+//            }
+//            if (shareMyCurrentLocation || lookingForPeopleNearby || !sharingLocations.isEmpty()) {
+//                if (permissionsGranted) {
+//                    try {
+//                        setLastKnownLocation(LocationServices.FusedLocationApi.getLastLocation(googleApiClient));
+//                        LocationServices.FusedLocationApi.requestLocationUpdates(googleApiClient, locationRequest, fusedLocationListener);
+//                    } catch (Throwable e) {
+//                        FileLog.e(e);
+//                    }
+//                } else {
+//                    start();
+//                }
+//            }
+//        });
+//    }
+//
+//    @Override
+//    public void onConnectionSuspended(int i) {
+//
+//    }
+//
+//    @Override
+//    public void onConnectionFailed(ConnectionResult connectionResult) {
+//        if (wasConnectedToPlayServices) {
+//            return;
+//        }
+//        playServicesAvailable = false;
+//        if (started) {
+//            started = false;
+//            start();
+//        }
+//    }
 
-                                }
-                            });
-                            break;
-                    }
-                });
-            } else {
-                startFusedLocationRequest(true);
-            }
-        } catch (Throwable e) {
-            FileLog.e(e);
-        }
-    }
-
-    public void startFusedLocationRequest(boolean permissionsGranted) {
-        Utilities.stageQueue.postRunnable(() -> {
-            if (!permissionsGranted) {
-                playServicesAvailable = false;
-            }
-            if (shareMyCurrentLocation || lookingForPeopleNearby || !sharingLocations.isEmpty()) {
-                if (permissionsGranted) {
-                    try {
-                        setLastKnownLocation(LocationServices.FusedLocationApi.getLastLocation(googleApiClient));
-                        LocationServices.FusedLocationApi.requestLocationUpdates(googleApiClient, locationRequest, fusedLocationListener);
-                    } catch (Throwable e) {
-                        FileLog.e(e);
-                    }
-                } else {
-                    start();
-                }
-            }
-        });
-    }
-
-    @Override
-    public void onConnectionSuspended(int i) {
-
-    }
-
-    @Override
-    public void onConnectionFailed(ConnectionResult connectionResult) {
-        if (wasConnectedToPlayServices) {
-            return;
-        }
-        playServicesAvailable = false;
-        if (started) {
-            started = false;
-            start();
-        }
-    }
-
-    private boolean checkPlayServices() {
-        if (playServicesAvailable == null) {
-            GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
-            int resultCode = apiAvailability.isGooglePlayServicesAvailable(ApplicationLoader.applicationContext);
-            playServicesAvailable = resultCode == ConnectionResult.SUCCESS;
-        }
-        return playServicesAvailable;
-    }
+//    private boolean checkPlayServices() {
+//        if (playServicesAvailable == null) {
+//            GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
+//            int resultCode = apiAvailability.isGooglePlayServicesAvailable(ApplicationLoader.applicationContext);
+//            playServicesAvailable = resultCode == ConnectionResult.SUCCESS;
+//        }
+//        return playServicesAvailable;
+//    }
 
     private void broadcastLastKnownLocation(boolean cancelCurrent) {
         if (lastKnownLocation == null) {
@@ -861,22 +863,23 @@ public class LocationController extends BaseController implements NotificationCe
         setLastKnownLocation(location);
     }
 
+    @SuppressLint("MissingPermission")
     private void start() {
         if (started) {
             return;
         }
         lastLocationStartTime = SystemClock.elapsedRealtime();
         started = true;
-        boolean ok = false;
-        if (checkPlayServices()) {
-            try {
-                googleApiClient.connect();
-                ok = true;
-            } catch (Throwable e) {
-                FileLog.e(e);
-            }
-        }
-        if (!ok) {
+//        boolean ok = false;
+//        if (checkPlayServices()) {
+//            try {
+//                googleApiClient.connect();
+//                ok = true;
+//            } catch (Throwable e) {
+//                FileLog.e(e);
+//            }
+//        }
+        if (true) {
             try {
                 locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1, 0, gpsLocationListener);
             } catch (Exception e) {
@@ -910,14 +913,14 @@ public class LocationController extends BaseController implements NotificationCe
             return;
         }
         started = false;
-        if (checkPlayServices()) {
-            try {
-                LocationServices.FusedLocationApi.removeLocationUpdates(googleApiClient, fusedLocationListener);
-                googleApiClient.disconnect();
-            } catch (Throwable e) {
-                FileLog.e(e, false);
-            }
-        }
+//        if (checkPlayServices()) {
+//            try {
+//                LocationServices.FusedLocationApi.removeLocationUpdates(googleApiClient, fusedLocationListener);
+//                googleApiClient.disconnect();
+//            } catch (Throwable e) {
+//                FileLog.e(e, false);
+//            }
+//        }
         locationManager.removeUpdates(gpsLocationListener);
         if (empty) {
             locationManager.removeUpdates(networkLocationListener);

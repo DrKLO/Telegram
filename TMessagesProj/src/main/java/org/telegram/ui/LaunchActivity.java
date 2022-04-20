@@ -67,10 +67,10 @@ import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.gms.common.api.Status;
-import com.google.firebase.appindexing.Action;
-import com.google.firebase.appindexing.FirebaseUserActions;
-import com.google.firebase.appindexing.builders.AssistActionBuilder;
+//import com.google.android.gms.common.api.Status;
+//import com.google.firebase.appindexing.Action;
+//import com.google.firebase.appindexing.FirebaseUserActions;
+//import com.google.firebase.appindexing.builders.AssistActionBuilder;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AccountInstance;
@@ -165,6 +165,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.regex.Matcher;
+import android.graphics.drawable.BitmapDrawable;
+import android.location.Location;
 
 public class LaunchActivity extends BasePermissionsActivity implements ActionBarLayout.ActionBarLayoutDelegate, NotificationCenter.NotificationCenterDelegate, DialogsActivity.DialogsActivityDelegate {
     public static boolean isResumed;
@@ -173,6 +176,8 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
     private static final String EXTRA_ACTION_TOKEN = "actions.fulfillment.extra.ACTION_TOKEN";
 
     private boolean finished;
+    final private Pattern locationRegex = Pattern.compile("geo: ?(-?\\d+\\.\\d+),(-?\\d+\\.\\d+)(,|\\?z=)(-?\\d+)");
+    private Location sendingLocation;
     private String videoPath;
     private String sendingText;
     private ArrayList<SendMessagesHelper.SendingMediaInfo> photoPathsArray;
@@ -245,7 +250,7 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
 
     private Runnable lockRunnable;
 
-    private static final int PLAY_SERVICES_REQUEST_CHECK_SETTINGS = 140;
+//    private static final int PLAY_SERVICES_REQUEST_CHECK_SETTINGS = 140;
     public static final int SCREEN_CAPTURE_REQUEST_CODE = 520;
 
     @Override
@@ -1298,6 +1303,7 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
         photoPathsArray = null;
         videoPath = null;
         sendingText = null;
+        sendingLocation = null;
         documentsPathsArray = null;
         documentsOriginalPathsArray = null;
         documentsMimeType = null;
@@ -1374,7 +1380,28 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
                         String subject = intent.getStringExtra(Intent.EXTRA_SUBJECT);
 
                         if (!TextUtils.isEmpty(text)) {
-                            if ((text.startsWith("http://") || text.startsWith("https://")) && !TextUtils.isEmpty(subject)) {
+                            Matcher m = locationRegex.matcher(text);
+                            if (m.find()) {
+                                String lines[] = text.split("\\n");
+                                String venueTitle = null;
+                                String venueAddress = null;
+                                if (lines[0].equals("My Position")){
+                                    // Use normal GeoPoint message (user position)
+                                }
+                                else if(!lines[0].contains("geo:")){
+                                    venueTitle = lines[0];
+                                    if(!lines[1].contains("geo:")){
+                                        venueAddress = lines[1];
+                                    }
+                                }
+                                sendingLocation = new Location("");
+                                sendingLocation.setLatitude(Double.parseDouble(m.group(1)));
+                                sendingLocation.setLongitude(Double.parseDouble(m.group(2)));
+                                Bundle bundle = new Bundle();
+                                bundle.putCharSequence("venueTitle", venueTitle);
+                                bundle.putCharSequence("venueAddress", venueAddress);
+                                sendingLocation.setExtras(bundle);
+                            } else if ((text.startsWith("http://") || text.startsWith("https://")) && !TextUtils.isEmpty(subject)) {
                                 text = subject + "\n" + text;
                             }
                             sendingText = text;
@@ -1456,7 +1483,7 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
                                     }
                                 }
                             }
-                        } else if (sendingText == null) {
+                        } else if (sendingText == null && sendingLocation == null) {
                             error = true;
                         }
                     }
@@ -2109,11 +2136,11 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
                         }
                         if (intent.hasExtra(EXTRA_ACTION_TOKEN)) {
                             final boolean success = UserConfig.getInstance(currentAccount).isClientActivated() && "tg".equals(scheme) && unsupportedUrl == null;
-                            final Action assistAction = new AssistActionBuilder()
-                                    .setActionToken(intent.getStringExtra(EXTRA_ACTION_TOKEN))
-                                    .setActionStatus(success ? Action.Builder.STATUS_TYPE_COMPLETED : Action.Builder.STATUS_TYPE_FAILED)
-                                    .build();
-                            FirebaseUserActions.getInstance(this).end(assistAction);
+//                            final Action assistAction = new AssistActionBuilder()
+//                                    .setActionToken(intent.getStringExtra(EXTRA_ACTION_TOKEN))
+//                                    .setActionStatus(success ? Action.Builder.STATUS_TYPE_COMPLETED : Action.Builder.STATUS_TYPE_FAILED)
+//                                    .build();
+//                            FirebaseUserActions.getInstance(this).end(assistAction);
                             intent.removeExtra(EXTRA_ACTION_TOKEN);
                         }
                         if (code != null || UserConfig.getInstance(currentAccount).isClientActivated()) {
@@ -2327,7 +2354,7 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
                     }
                 });
                 pushOpened = false;
-            } else if (videoPath != null || photoPathsArray != null || sendingText != null || documentsPathsArray != null || contactsToSend != null || documentsUrisArray != null) {
+            } else if (videoPath != null || photoPathsArray != null || sendingText != null || sendingLocation != null || documentsPathsArray != null || contactsToSend != null || documentsUrisArray != null) {
                 if (!AndroidUtilities.isTablet()) {
                     NotificationCenter.getInstance(intentAccount[0]).postNotificationName(NotificationCenter.closeChats);
                 }
@@ -4235,6 +4262,10 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
                         }
                         SendMessagesHelper.prepareSendingDocuments(accountInstance, documentsPathsArray, documentsOriginalPathsArray, documentsUrisArray, captionToSend, documentsMimeType, did, null, null, null, null, notify, 0);
                     }
+                    if (sendingLocation != null) {
+                        SendMessagesHelper.prepareSendingLocation(accountInstance, sendingLocation, did);
+                        sendingText = null;
+                    }
                     if (sendingText != null) {
                         SendMessagesHelper.prepareSendingText(accountInstance, sendingText, did, true, 0);
                     }
@@ -4257,6 +4288,7 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
         photoPathsArray = null;
         videoPath = null;
         sendingText = null;
+        sendingLocation = null;
         documentsPathsArray = null;
         documentsOriginalPathsArray = null;
         contactsToSend = null;
@@ -4358,8 +4390,8 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
                     service.createCaptureDevice(true);
                 }
             }
-        } else if (requestCode == PLAY_SERVICES_REQUEST_CHECK_SETTINGS) {
-            LocationController.getInstance(currentAccount).startFusedLocationRequest(resultCode == Activity.RESULT_OK);
+//        } else if (requestCode == PLAY_SERVICES_REQUEST_CHECK_SETTINGS) {
+//            LocationController.getInstance(currentAccount).startFusedLocationRequest(resultCode == Activity.RESULT_OK);
         } else {
             ThemeEditorView editorView = ThemeEditorView.getInstance();
             if (editorView != null) {
@@ -4886,13 +4918,13 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
                     }
                 }
             }
-        } else if (id == NotificationCenter.needShowPlayServicesAlert) {
-            try {
-                final Status status = (Status) args[0];
-                status.startResolutionForResult(this, PLAY_SERVICES_REQUEST_CHECK_SETTINGS);
-            } catch (Throwable ignore) {
-
-            }
+//        } else if (id == NotificationCenter.needShowPlayServicesAlert) {
+//            try {
+//                final Status status = (Status) args[0];
+//                status.startResolutionForResult(this, PLAY_SERVICES_REQUEST_CHECK_SETTINGS);
+//            } catch (Throwable ignore) {
+//
+//            }
         } else if (id == NotificationCenter.fileLoaded) {
             String path = (String) args[0];
             if (SharedConfig.isAppUpdateAvailable()) {
