@@ -182,17 +182,17 @@ It's very simple
 * **sdk23** mean for android 6+, the other are working from 4.1+
     * so if you have android 6 or higher, you should download **sdk23** version
 * arm64-v8a (new devices)
-    * `x`  [Telegraher.8.6.2r4.arm64_v8a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r4_arm64_v8a/Telegraher.8.6.2r4.arm64_v8a.apk)
-    * `x`  [Telegraher.8.6.2r4.arm64_v8a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r4_arm64_v8a/Telegraher.8.6.2r4.arm64_v8a_sdk23.apk)
+    * `x`  [Telegraher.8.6.2r5.arm64_v8a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r5_arm64_v8a/Telegraher.8.6.2r5.arm64_v8a.apk)
+    * `x`  [Telegraher.8.6.2r5.arm64_v8a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r5_arm64_v8a/Telegraher.8.6.2r5.arm64_v8a_sdk23.apk)
 * armeabi-v7a (old devices)
-    * `x`  [Telegraher.8.6.2r4.armeabi_v7a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r4_armeabi_v7a/Telegraher.8.6.2r4.armeabi_v7a.apk)
-    * `x`  [Telegraher.8.6.2r4.armeabi_v7a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r4_armeabi_v7a/Telegraher.8.6.2r4.armeabi_v7a_sdk23.apk)
+    * `x`  [Telegraher.8.6.2r5.armeabi_v7a.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r5_armeabi_v7a/Telegraher.8.6.2r5.armeabi_v7a.apk)
+    * `x`  [Telegraher.8.6.2r5.armeabi_v7a_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r5_armeabi_v7a/Telegraher.8.6.2r5.armeabi_v7a_sdk23.apk)
 * PC x86, 32 bits (for an emulator for example)
-    * `x`  [Telegraher.8.6.2r4.x86.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r4_x86/Telegraher.8.6.2r4.x86.apk)
-    * `x`  [Telegraher.8.6.2r4.x86_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r4_x86/Telegraher.8.6.2r4.x86_sdk23.apk)
+    * `x`  [Telegraher.8.6.2r5.x86.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r5_x86/Telegraher.8.6.2r5.x86.apk)
+    * `x`  [Telegraher.8.6.2r5.x86_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r5_x86/Telegraher.8.6.2r5.x86_sdk23.apk)
 * PC x86, 64 bits (for 64 bits CPU)
-    * `x`  [Telegraher.8.6.2r4.x86_64.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r4_x86_64/Telegraher.8.6.2r4.x86_64.apk)
-    * `x`  [Telegraher.8.6.2r4.x86_64_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r4_x86_64/Telegraher.8.6.2r4.x86_64_sdk23.apk)
+    * `x`  [Telegraher.8.6.2r5.x86_64.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r5_x86_64/Telegraher.8.6.2r5.x86_64.apk)
+    * `x`  [Telegraher.8.6.2r5.x86_64_sdk23.apk](https://github.com/nikitasius/Telegraher/releases/download/noshit_8.6.2_r5_x86_64/Telegraher.8.6.2r5.x86_64_sdk23.apk)
 
 ### Issues/Wishlist
 
@@ -201,6 +201,16 @@ Probably it's a good thing 😃
 
 ### Changes
 
+* noshit_8.6.2_release5
+    * google services are removed
+    * TH menu hardcoded values replaced with the values from xml
+        * added russian language, i will add french too. Feel free to commit/add via issues new
+          ones, i will create special issue for this
+    * added osmand maps (from TG FOSS)
+    * notifications background service fix from TG FOSS too
+    * fixed bug with "The Void". Now is you choose "The Void" for our menu it will disappear
+      forever..
+    * updated from packets from gradle, hope it will work fine :)
 * noshit_8.6.2_release4
     * changed position for th menu (can be everywhere or disappear in the void and never bring back)
     * added support upto 8k videos (h264 only, yep, no h265 cause tg doesn't support it from the
