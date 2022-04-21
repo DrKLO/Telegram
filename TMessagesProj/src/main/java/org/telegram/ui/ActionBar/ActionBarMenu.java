@@ -14,10 +14,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 
-import com.google.android.exoplayer2.util.Log;
-
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.R;
 import org.telegram.ui.Adapters.FiltersView;
 import org.telegram.ui.Components.RLottieDrawable;
 
@@ -94,15 +91,7 @@ public class ActionBarMenu extends LinearLayout {
     }
 
     public ActionBarMenuItem addItem(int id, int icon, CharSequence text, int backgroundColor, Drawable drawable, int width, CharSequence title, Theme.ResourcesProvider resourcesProvider) {
-        ActionBarMenuItem menuItem = new ActionBarMenuItem(getContext(), this, backgroundColor, isActionMode ? parentActionBar.itemsActionModeColor : parentActionBar.itemsColor, text != null, resourcesProvider) {
-            @Override
-            public void setVisibility(int visibility) {
-                super.setVisibility(visibility);
-                if (icon == R.drawable.ic_ab_other && (id == 0 || id == 14)) {
-                    Log.d("kek", id + " " + (View.VISIBLE == visibility));
-                }
-            }
-        };
+        ActionBarMenuItem menuItem = new ActionBarMenuItem(getContext(), this, backgroundColor, isActionMode ? parentActionBar.itemsActionModeColor : parentActionBar.itemsColor, text != null, resourcesProvider);
         menuItem.setTag(id);
         if (text != null) {
             menuItem.textView.setText(text);

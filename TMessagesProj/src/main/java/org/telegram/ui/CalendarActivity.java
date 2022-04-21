@@ -312,7 +312,9 @@ public class CalendarActivity extends BaseFragment {
                     @Override
                     public void run(boolean forAll) {
                         finishFragment();
-
+                        if (parentLayout == null) {
+                            return;
+                        }
                         if (parentLayout.fragmentsStack.size() >= 2) {
                             BaseFragment fragment = parentLayout.fragmentsStack.get(parentLayout.fragmentsStack.size() - 2);
                             if (fragment instanceof ChatActivity) {

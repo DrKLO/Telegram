@@ -307,16 +307,15 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     private TextView docNameTextView;
     private TextView docInfoTextView;
     private ActionBarMenuItem menuItem;
-    private ActionBarMenuItem menuItemSpeed;
     private ActionBarMenuSubItem allMediaItem;
     private ActionBarMenuSubItem speedItem;
-    private ActionBarMenuSubItem[] speedItems = new ActionBarMenuSubItem[5];
-    private View speedGap;
+    private ActionBarPopupWindow.GapView speedGap;
     private ActionBarMenuItem sendItem;
     private ActionBarMenuItem pipItem;
     private ActionBarMenuItem masksItem;
     private ActionBarMenuItem shareItem;
     private LinearLayout itemsLayout;
+    ChooseSpeedLayout chooseSpeedLayout;
     private Map<View, Boolean> actionBarItemsVisibility = new HashMap<>(3);
     private LinearLayout bottomButtonsLayout;
     private ImageView shareButton;
@@ -412,7 +411,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         @Override
         public void run() {
             if (videoPlayerControlVisible && isPlaying && !ApplicationLoader.mainInterfacePaused) {
-                if (menuItem != null && menuItem.isSubMenuShowing() || menuItemSpeed != null && menuItemSpeed.isSubMenuShowing()) {
+                if (menuItem != null && menuItem.isSubMenuShowing()) {
                     return;
                 }
                 if (captionScrollView != null && captionScrollView.getScrollY() != 0) {
@@ -1204,12 +1203,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     private final static int gallery_menu_edit_avatar = 17;
     private final static int gallery_menu_share2 = 18;
     private final static int gallery_menu_speed = 19;
-    private final static int gallery_menu_gap = 20;
-    private final static int gallery_menu_speed_veryslow = 21;
-    private final static int gallery_menu_speed_slow = 22;
-    private final static int gallery_menu_speed_normal = 23;
-    private final static int gallery_menu_speed_fast = 24;
-    private final static int gallery_menu_speed_veryfast = 25;
 
     private static DecelerateInterpolator decelerateInterpolator;
     private static Paint progressPaint;
@@ -4189,20 +4182,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     }
                 } else if (id == gallery_menu_share || id == gallery_menu_share2) {
                     onSharePressed();
-                } else if (id == gallery_menu_speed) {
-                    menuItemSpeed.setVisibility(View.VISIBLE);
-                    menuItemSpeed.toggleSubMenu();
-                    for (int a = 0; a < speedItems.length; a++) {
-                        if (a == 0 && Math.abs(currentVideoSpeed - 0.25f) < 0.001f ||
-                                a == 1 && Math.abs(currentVideoSpeed - 0.5f) < 0.001f ||
-                                a == 2 && Math.abs(currentVideoSpeed - 1.0f) < 0.001f ||
-                                a == 3 && Math.abs(currentVideoSpeed - 1.5f) < 0.001f ||
-                                a == 4 && Math.abs(currentVideoSpeed - 2.0f) < 0.001f) {
-                            speedItems[a].setColors(0xff6BB6F9, 0xff6BB6F9);
-                        } else {
-                            speedItems[a].setColors(0xfffafafa, 0xfffafafa);
-                        }
-                    }
                 } else if (id == gallery_menu_openin) {
                     try {
                         if (isEmbedVideo) {
@@ -4403,7 +4382,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
             @Override
             public boolean canOpenMenu() {
-                menuItemSpeed.setVisibility(View.INVISIBLE);
                 if (currentMessageObject != null || currentSecureDocument != null) {
                     return true;
                 } else if (currentFileLocationVideo != null) {
@@ -4428,61 +4406,40 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         shareItem.setContentDescription(LocaleController.getString("ShareFile", R.string.ShareFile));
 
         menuItem = menu.addItem(0, R.drawable.ic_ab_other);
-        menuItemSpeed = new ActionBarMenuItem(parentActivity, null, 0, 0, resourcesProvider);
-        menuItemSpeed.setDelegate(id -> {
-            if (id >= gallery_menu_speed_veryslow && id <= gallery_menu_speed_veryfast) {
-                switch (id) {
-                    case gallery_menu_speed_veryslow:
-                        currentVideoSpeed = 0.25f;
-                        break;
-                    case gallery_menu_speed_slow:
-                        currentVideoSpeed = 0.5f;
-                        break;
-                    case gallery_menu_speed_normal:
-                        currentVideoSpeed = 1.0f;
-                        break;
-                    case gallery_menu_speed_fast:
-                        currentVideoSpeed = 1.5f;
-                        break;
-                    case gallery_menu_speed_veryfast:
-                        currentVideoSpeed = 2.0f;
-                        break;
-                }
-                if (currentMessageObject != null) {
-                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("playback_speed", Activity.MODE_PRIVATE);
-                    if (Math.abs(currentVideoSpeed - 1.0f) < 0.001f) {
-                        preferences.edit().remove("speed" + currentMessageObject.getDialogId() + "_" + currentMessageObject.getId()).commit();
-                    } else {
-                        preferences.edit().putFloat("speed" + currentMessageObject.getDialogId() + "_" + currentMessageObject.getId(), currentVideoSpeed).commit();
+
+        menuItem.getPopupLayout().swipeBackGravityRight = true;
+        chooseSpeedLayout = new ChooseSpeedLayout(activityContext, menuItem.getPopupLayout().getSwipeBack(), new ChooseSpeedLayout.Callback() {
+
+            @Override
+            public void onSpeedSelected(float speed) {
+                menuItem.toggleSubMenu();
+                if (speed != currentVideoSpeed) {
+                    currentVideoSpeed = speed;
+                    if (currentMessageObject != null) {
+                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("playback_speed", Activity.MODE_PRIVATE);
+                        if (Math.abs(currentVideoSpeed - 1.0f) < 0.001f) {
+                            preferences.edit().remove("speed" + currentMessageObject.getDialogId() + "_" + currentMessageObject.getId()).commit();
+                        } else {
+                            preferences.edit().putFloat("speed" + currentMessageObject.getDialogId() + "_" + currentMessageObject.getId(), currentVideoSpeed).commit();
+                        }
                     }
+                    if (videoPlayer != null) {
+                        videoPlayer.setPlaybackSpeed(currentVideoSpeed);
+                    }
+                    if (photoViewerWebView != null) {
+                        photoViewerWebView.setPlaybackSpeed(currentVideoSpeed);
+                    }
+                    setMenuItemIcon();
                 }
-                if (videoPlayer != null) {
-                    videoPlayer.setPlaybackSpeed(currentVideoSpeed);
-                }
-                if (photoViewerWebView != null) {
-                    photoViewerWebView.setPlaybackSpeed(currentVideoSpeed);
-                }
-                setMenuItemIcon();
-                menuItemSpeed.setVisibility(View.INVISIBLE);
             }
         });
-        menuItem.addView(menuItemSpeed);
-        menuItemSpeed.setVisibility(View.INVISIBLE);
-
-        speedItem = menuItem.addSubItem(gallery_menu_speed, R.drawable.msg_speed, null, LocaleController.getString("Speed", R.string.Speed), true, false);
+        speedItem = menuItem.addSwipeBackItem(R.drawable.msg_speed, null, LocaleController.getString("Speed", R.string.Speed), chooseSpeedLayout.speedSwipeBackLayout);
+        menuItem.getPopupLayout().setSwipeBackForegroundColor(0xff222222);
         speedItem.setSubtext(LocaleController.getString("SpeedNormal", R.string.SpeedNormal));
-        speedItem.setItemHeight(56);
-        speedItem.setTag(R.id.width_tag, 240);
         speedItem.setColors(0xfffafafa, 0xfffafafa);
-        speedItem.setRightIcon(R.drawable.msg_arrowright);
-        speedGap = menuItem.addGap(gallery_menu_gap);
+        speedGap = menuItem.addColoredGap();
+        speedGap.setColor(0xff181818);
         menuItem.getPopupLayout().setFitItems(true);
-
-        speedItems[0] = menuItemSpeed.addSubItem(gallery_menu_speed_veryslow, R.drawable.msg_speed_0_2, LocaleController.getString("SpeedVerySlow", R.string.SpeedVerySlow)).setColors(0xfffafafa, 0xfffafafa);
-        speedItems[1] = menuItemSpeed.addSubItem(gallery_menu_speed_slow, R.drawable.msg_speed_0_5, LocaleController.getString("SpeedSlow", R.string.SpeedSlow)).setColors(0xfffafafa, 0xfffafafa);
-        speedItems[2] = menuItemSpeed.addSubItem(gallery_menu_speed_normal, R.drawable.msg_speed_1, LocaleController.getString("SpeedNormal", R.string.SpeedNormal)).setColors(0xfffafafa, 0xfffafafa);
-        speedItems[3] = menuItemSpeed.addSubItem(gallery_menu_speed_fast, R.drawable.msg_speed_1_5, LocaleController.getString("SpeedFast", R.string.SpeedFast)).setColors(0xfffafafa, 0xfffafafa);
-        speedItems[4] = menuItemSpeed.addSubItem(gallery_menu_speed_veryfast, R.drawable.msg_speed_2, LocaleController.getString("SpeedVeryFast", R.string.SpeedVeryFast)).setColors(0xfffafafa, 0xfffafafa);
 
         menuItem.addSubItem(gallery_menu_openin, R.drawable.msg_openin, LocaleController.getString("OpenInExternalApp", R.string.OpenInExternalApp)).setColors(0xfffafafa, 0xfffafafa);
         menuItem.setContentDescription(LocaleController.getString("AccDescrMoreOptions", R.string.AccDescrMoreOptions));
@@ -4498,7 +4455,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         menuItem.addSubItem(gallery_menu_delete, R.drawable.msg_delete, LocaleController.getString("Delete", R.string.Delete)).setColors(0xfffafafa, 0xfffafafa);
         menuItem.addSubItem(gallery_menu_cancel_loading, R.drawable.msg_cancel, LocaleController.getString("StopDownload", R.string.StopDownload)).setColors(0xfffafafa, 0xfffafafa);
         menuItem.redrawPopup(0xf9222222);
-        menuItemSpeed.redrawPopup(0xf9222222);
         setMenuItemIcon();
 
         menuItem.setSubMenuDelegate(new ActionBarMenuItem.ActionBarSubMenuItemDelegate() {
@@ -6161,6 +6117,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             menuItem.setIcon(R.drawable.msg_more_2);
             speedItem.setSubtext(LocaleController.getString("SpeedVeryFast", R.string.SpeedVeryFast));
         }
+        chooseSpeedLayout.update(currentVideoSpeed);
     }
 
     private boolean checkInlinePermissions() {
@@ -9976,7 +9933,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         menuItem.hideSubItem(gallery_menu_edit_avatar);
         menuItem.hideSubItem(gallery_menu_set_as_main);
         menuItem.hideSubItem(gallery_menu_delete);
-        menuItem.hideSubItem(gallery_menu_speed);
+        speedItem.setVisibility(View.GONE);
         speedGap.setVisibility(View.GONE);
         actionBar.setTranslationY(0);
 
@@ -10398,6 +10355,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     }
                     menuItem.checkHideMenuItem();
                 } else {
+                    speedItem.setVisibility(View.GONE);
                     speedGap.setVisibility(View.GONE);
                     menuItem.hideSubItem(gallery_menu_openin);
                     menuItem.checkHideMenuItem();
@@ -10989,10 +10947,11 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 }
             }
             if (isVideo || isEmbedVideo) {
+                speedItem.setVisibility(View.VISIBLE);
                 speedGap.setVisibility(View.VISIBLE);
                 menuItem.showSubItem(gallery_menu_speed);
             } else {
-                menuItem.hideSubItem(gallery_menu_speed);
+                speedItem.setVisibility(View.GONE);
                 speedGap.setVisibility(View.GONE);
                 menuItem.checkHideMenuItem();
             }
@@ -11453,7 +11412,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             Theme.createChatResources(null, true);
             CharSequence str;
             if (messageObject != null && !messageObject.messageOwner.entities.isEmpty()) {
-                Spannable spannableString = SpannableString.valueOf(caption);
+                Spannable spannableString = new SpannableString(caption);
                 messageObject.addEntitiesToText(spannableString, true, false);
                 if (messageObject.isVideo()) {
                     MessageObject.addUrlsByPattern(messageObject.isOutOwner(), spannableString, false, 3, messageObject.getDuration(), false);

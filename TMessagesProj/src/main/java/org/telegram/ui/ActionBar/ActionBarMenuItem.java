@@ -1914,9 +1914,9 @@ public class ActionBarMenuItem extends FrameLayout {
         }
     }
 
-    public View addColoredGap() {
+    public ActionBarPopupWindow.GapView addColoredGap() {
         createPopupLayout();
-        View gap = new ActionBarPopupWindow.GapView(getContext(), Theme.key_graySection);
+        ActionBarPopupWindow.GapView gap = new ActionBarPopupWindow.GapView(getContext(), Theme.key_graySection);
         gap.setTag(R.id.fit_width_tag, 1);
         popupLayout.addView(gap, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
         return gap;

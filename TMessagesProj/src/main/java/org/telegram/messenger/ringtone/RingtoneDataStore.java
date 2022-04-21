@@ -37,7 +37,7 @@ public class RingtoneDataStore {
     public final ArrayList<CachedTone> userRingtones = new ArrayList<>();
     private boolean loaded;
 
-    public final static HashSet<String> ringtoneSupportedMimeType = new HashSet<>(Arrays.asList("audio/mpeg", "audio/ogg", "audio/m4a"));
+    public final static HashSet<String> ringtoneSupportedMimeType = new HashSet<>(Arrays.asList("audio/mpeg3", "audio/mpeg", "audio/ogg", "audio/m4a"));
 
     public RingtoneDataStore(int currentAccount) {
         this.currentAccount = currentAccount;
@@ -49,7 +49,9 @@ public class RingtoneDataStore {
         } catch (Exception e) {
             FileLog.e(e);
         }
-        loadUserRingtones();
+        AndroidUtilities.runOnUIThread(() -> {
+            loadUserRingtones();
+        });
     }
 
     public void loadUserRingtones() {
@@ -251,7 +253,7 @@ public class RingtoneDataStore {
                     File file = FileLoader.getPathToAttach(document);
                     if (file == null || !file.exists()) {
                         AndroidUtilities.runOnUIThread(() -> {
-                            FileLoader.getInstance(currentAccount).loadFile(document, null, 0, 0);
+                            FileLoader.getInstance(currentAccount).loadFile(document, document, 0, 0);
                         });
                     }
                 }

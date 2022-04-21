@@ -37,6 +37,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
+import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
@@ -1247,7 +1248,11 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
                         }
                         if (documentId != 0) {
                             TLRPC.Document document = getMediaDataController().ringtoneDataStore.getDocument(documentId);
-                            value = NotificationsSoundActivity.trimTitle(document, document.file_name_fixed);
+                            if (document == null) {
+                                value = LocaleController.getString("CustomSound", R.string.CustomSound);
+                            } else {
+                                value = NotificationsSoundActivity.trimTitle(document, FileLoader.getDocumentFileName(document));
+                            }
                         } else if (value.equals("NoSound")) {
                             value = LocaleController.getString("NoSound", R.string.NoSound);
                         } else if (value.equals("Default")) {

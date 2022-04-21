@@ -41,6 +41,7 @@ public class PopupSwipeBackLayout extends FrameLayout {
     private boolean isSwipeDisallowed;
     private Paint overlayPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Paint foregroundPaint = new Paint();
+    private int foregroundColor = 0;
 
     private Path mPath = new Path();
     private RectF mRect = new RectF();
@@ -128,7 +129,11 @@ public class PopupSwipeBackLayout extends FrameLayout {
         int i = indexOfChild(child);
         int s = canvas.save();
         if (i != 0) {
-            foregroundPaint.setColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider));
+            if (foregroundColor == 0) {
+                foregroundPaint.setColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider));
+            } else {
+                foregroundPaint.setColor(foregroundColor);
+            }
             canvas.drawRect(child.getX(), 0, child.getX() + child.getMeasuredWidth(), getMeasuredHeight(), foregroundPaint);
         }
         boolean b = super.drawChild(canvas, child, drawingTime);
@@ -442,6 +447,10 @@ public class PopupSwipeBackLayout extends FrameLayout {
         });
         animator.start();
         foregroundAnimator = animator;
+    }
+
+    public void setForegroundColor(int color) {
+        foregroundColor = color;
     }
 
     public interface OnSwipeBackProgressListener {

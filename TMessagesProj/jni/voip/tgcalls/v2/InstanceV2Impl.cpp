@@ -57,6 +57,23 @@
 namespace tgcalls {
 namespace {
 
+enum class SignalingProtocolVersion {
+    V1,
+    V2
+};
+
+SignalingProtocolVersion signalingProtocolVersion(std::string const &version) {
+    if (version == "4.0.1") {
+        return SignalingProtocolVersion::V1;
+    } else if (version == "4.0.2") {
+        return SignalingProtocolVersion::V2;
+    } else {
+        RTC_LOG(LS_ERROR) << "signalingProtocolVersion: unknown version " << version;
+        
+        return SignalingProtocolVersion::V2;
+    }
+}
+
 static VideoCaptureInterfaceObject *GetVideoCaptureAssumingSameThread(VideoCaptureInterface *videoCapture) {
     return videoCapture
         ? static_cast<VideoCaptureInterfaceImpl*>(videoCapture)->object()->getSyncAssumingSameThread()
@@ -777,6 +794,7 @@ struct NetworkBitrateLogRecord {
 class InstanceV2ImplInternal : public std::enable_shared_from_this<InstanceV2ImplInternal> {
 public:
     InstanceV2ImplInternal(Descriptor &&descriptor, std::shared_ptr<Threads> threads) :
+    _signalingProtocolVersion(signalingProtocolVersion(descriptor.version)),
     _threads(threads),
     _rtcServers(descriptor.rtcServers),
     _proxy(std::move(descriptor.proxy)),
@@ -927,7 +945,7 @@ public:
                 _threads->getNetworkThread()
             );
 
-            webrtc::Call::Config callConfig(_eventLog.get());
+            webrtc::Call::Config callConfig(_eventLog.get(), _threads->getNetworkThread());
             callConfig.task_queue_factory = _taskQueueFactory.get();
             callConfig.trials = &_fieldTrials;
             callConfig.audio_state = _channelManager->media_engine()->voice().GetAudioState();
@@ -1033,26 +1051,85 @@ public:
 
     void sendSignalingMessage(signaling::Message const &message) {
         auto data = message.serialize();
-
+        sendRawSignalingMessage(data);
+    }
+    
+    void sendRawSignalingMessage(std::vector<uint8_t> const &data) {
         RTC_LOG(LS_INFO) << "sendSignalingMessage: " << std::string(data.begin(), data.end());
 
-        if (_signalingEncryption) {
-            if (const auto encryptedData = _signalingEncryption->encryptOutgoing(data)) {
-                _signalingDataEmitted(std::vector<uint8_t>(encryptedData->data(), encryptedData->data() + encryptedData->size()));
-            } else {
-                RTC_LOG(LS_ERROR) << "sendSignalingMessage: failed to encrypt payload";
+        if (_signalingEncryptedConnection) {
+            switch (_signalingProtocolVersion) {
+                case SignalingProtocolVersion::V1: {
+                    if (const auto message = _signalingEncryptedConnection->encryptRawPacket(rtc::CopyOnWriteBuffer(data.data(), data.size()))) {
+                        _signalingDataEmitted(std::vector<uint8_t>(message.value().data(), message.value().data() + message.value().size()));
+                    } else {
+                        RTC_LOG(LS_ERROR) << "Could not encrypt signaling message";
+                    }
+                    break;
+                }
+                case SignalingProtocolVersion::V2: {
+                    rtc::CopyOnWriteBuffer message;
+                    message.AppendData(data.data(), data.size());
+                    
+                    commitSendSignalingMessage(_signalingEncryptedConnection->prepareForSendingRawMessage(message, true));
+                    
+                    break;
+                }
+                default: {
+                    RTC_DCHECK_NOTREACHED();
+                    
+                    break;
+                }
             }
         } else {
-            _signalingDataEmitted(data);
+            RTC_LOG(LS_ERROR) << "sendSignalingMessage encryption not available";
         }
+    }
+    
+    void commitSendSignalingMessage(absl::optional<EncryptedConnection::EncryptedPacket> packet) {
+        if (!packet) {
+            return;
+        }
+        
+        _signalingDataEmitted(packet.value().bytes);
     }
 
     void beginSignaling() {
-        _signalingEncryption.reset(new SignalingEncryption(_encryptionKey));
+        const auto weak = std::weak_ptr<InstanceV2ImplInternal>(shared_from_this());
+        
+        _signalingEncryptedConnection = std::make_unique<EncryptedConnection>(
+            EncryptedConnection::Type::Signaling,
+            _encryptionKey,
+            [weak, threads = _threads](int delayMs, int cause) {
+                if (delayMs == 0) {
+                    threads->getMediaThread()->PostTask(RTC_FROM_HERE, [weak, cause]() {
+                        const auto strong = weak.lock();
+                        if (!strong) {
+                            return;
+                        }
+                        
+                        strong->sendPendingSignalingServiceData(cause);
+                    });
+                } else {
+                    threads->getMediaThread()->PostDelayedTask(RTC_FROM_HERE, [weak, cause]() {
+                        const auto strong = weak.lock();
+                        if (!strong) {
+                            return;
+                        }
+                        
+                        strong->sendPendingSignalingServiceData(cause);
+                    }, delayMs);
+                }
+            }
+        );
 
         if (_encryptionKey.isOutgoing) {
             sendInitialSetup();
         }
+    }
+    
+    void sendPendingSignalingServiceData(int cause) {
+        commitSendSignalingMessage(_signalingEncryptedConnection->prepareForSendingService(cause));
     }
 
     void createNegotiatedChannels() {
@@ -1295,8 +1372,9 @@ public:
             auto localIceParams = networking->getLocalIceParameters();
             std::string ufrag = localIceParams.ufrag;
             std::string pwd = localIceParams.pwd;
+            bool supportsRenomination = localIceParams.supportsRenomination;
 
-            threads->getMediaThread()->PostTask(RTC_FROM_HERE, [weak, ufrag, pwd, hash, fingerprint, setup, localIceParams]() {
+            threads->getMediaThread()->PostTask(RTC_FROM_HERE, [weak, ufrag, pwd, supportsRenomination, hash, fingerprint, setup, localIceParams]() {
                 const auto strong = weak.lock();
                 if (!strong) {
                     return;
@@ -1306,6 +1384,7 @@ public:
 
                 data.ufrag = ufrag;
                 data.pwd = pwd;
+                data.supportsRenomination = supportsRenomination;
 
                 signaling::DtlsFingerprint dtlsFingerprint;
                 dtlsFingerprint.hash = hash;
@@ -1335,21 +1414,41 @@ public:
     }
 
     void receiveSignalingData(const std::vector<uint8_t> &data) {
-        std::vector<uint8_t> decryptedData;
-
-        if (_signalingEncryption) {
-            const auto rawDecryptedData = _signalingEncryption->decryptIncoming(data);
-            if (!rawDecryptedData) {
-                RTC_LOG(LS_ERROR) << "receiveSignalingData: could not decrypt payload";
-
-                return;
+        if (_signalingEncryptedConnection) {
+            switch (_signalingProtocolVersion) {
+                case SignalingProtocolVersion::V1: {
+                    if (const auto message = _signalingEncryptedConnection->decryptRawPacket(rtc::CopyOnWriteBuffer(data.data(), data.size()))) {
+                        processSignalingMessage(message.value());
+                    } else {
+                        RTC_LOG(LS_ERROR) << "receiveSignalingData could not decrypt signaling data";
+                    }
+                    
+                    break;
+                }
+                case SignalingProtocolVersion::V2: {
+                    if (const auto packet = _signalingEncryptedConnection->handleIncomingRawPacket((const char *)data.data(), data.size())) {
+                        processSignalingMessage(packet.value().main.message);
+                        
+                        for (const auto &additional : packet.value().additional) {
+                            processSignalingMessage(additional.message);
+                        }
+                    }
+                    
+                    break;
+                }
+                default: {
+                    RTC_DCHECK_NOTREACHED();
+                    
+                    break;
+                }
             }
-
-            decryptedData = std::vector<uint8_t>(rawDecryptedData->data(), rawDecryptedData->data() + rawDecryptedData->size());
         } else {
-            decryptedData = data;
+            RTC_LOG(LS_ERROR) << "receiveSignalingData encryption not available";
         }
-
+    }
+    
+    void processSignalingMessage(rtc::CopyOnWriteBuffer const &data) {
+        std::vector<uint8_t> decryptedData = std::vector<uint8_t>(data.data(), data.data() + data.size());
         processSignalingData(decryptedData);
     }
 
@@ -1365,6 +1464,7 @@ public:
             PeerIceParameters remoteIceParameters;
             remoteIceParameters.ufrag = initialSetup->ufrag;
             remoteIceParameters.pwd = initialSetup->pwd;
+            remoteIceParameters.supportsRenomination = initialSetup->supportsRenomination;
 
             std::unique_ptr<rtc::SSLFingerprint> fingerprint;
             std::string sslSetup;
@@ -1828,6 +1928,7 @@ private:
     }
 
 private:
+    SignalingProtocolVersion _signalingProtocolVersion;
     std::shared_ptr<Threads> _threads;
     std::vector<RtcServer> _rtcServers;
     std::unique_ptr<Proxy> _proxy;
@@ -1843,7 +1944,7 @@ private:
     std::function<rtc::scoped_refptr<webrtc::AudioDeviceModule>(webrtc::TaskQueueFactory*)> _createAudioDeviceModule;
     FilePath _statsLogPath;
 
-    std::unique_ptr<SignalingEncryption> _signalingEncryption;
+    std::unique_ptr<EncryptedConnection> _signalingEncryptedConnection;
     
     int64_t _startTimestamp = 0;
     
@@ -1993,6 +2094,7 @@ void InstanceV2Impl::setEchoCancellationStrength(int strength) {
 std::vector<std::string> InstanceV2Impl::GetVersions() {
     std::vector<std::string> result;
     result.push_back("4.0.1");
+    result.push_back("4.0.2");
     return result;
 }
 

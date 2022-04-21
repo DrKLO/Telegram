@@ -1,6 +1,5 @@
 package org.telegram.ui;
 
-import android.app.NotificationManager;
 import android.content.ClipData;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -284,8 +283,10 @@ public class NotificationsSoundActivity extends BaseFragment implements ChatAtta
                 avatarContainer.setTitle(chatLocal.title);
             } else {
                 TLRPC.User user = getMessagesController().getUser(dialogId);
-                avatarContainer.setUserAvatar(user);
-                avatarContainer.setTitle(ContactsController.formatName(user.first_name, user.last_name));
+                if (user != null) {
+                    avatarContainer.setUserAvatar(user);
+                    avatarContainer.setTitle(ContactsController.formatName(user.first_name, user.last_name));
+                }
             }
             avatarContainer.setSubtitle(LocaleController.getString("NotificationsSound", R.string.NotificationsSound));
         }
@@ -323,7 +324,7 @@ public class NotificationsSoundActivity extends BaseFragment implements ChatAtta
             }
             if (view instanceof ToneCell) {
                 ToneCell cell = (ToneCell) view;
-                if (actionBar.isActionModeShowed()) {
+                if (actionBar.isActionModeShowed() || cell.tone == null) {
                     checkSelection(cell.tone);
                     return;
                 }
@@ -357,14 +358,13 @@ public class NotificationsSoundActivity extends BaseFragment implements ChatAtta
                         lastPlayedRingtone = r;
                         r.play();
                     } else {
-                        getFileLoader().loadFile(cell.tone.document, null, 2, 0);
+                        getFileLoader().loadFile(cell.tone.document, cell.tone.document, 2, 0);
                     }
                 }
                 startSelectedTone = null;
                 selectedTone = cell.tone;
                 selectedToneChanged = true;
                 adapter.notifyItemRangeChanged(0, adapter.getItemCount());
-                checkDisabledBySystem();
             }
 
         });
@@ -415,6 +415,9 @@ public class NotificationsSoundActivity extends BaseFragment implements ChatAtta
 
     private void loadTones() {
         getMediaDataController().ringtoneDataStore.loadUserRingtones();
+        serverTones.clear();
+        systemTones.clear();
+        
         for (int i = 0; i < getMediaDataController().ringtoneDataStore.userRingtones.size(); i++) {
             RingtoneDataStore.CachedTone cachedTone = getMediaDataController().ringtoneDataStore.userRingtones.get(i);
             Tone tone = new Tone();
@@ -439,7 +442,7 @@ public class NotificationsSoundActivity extends BaseFragment implements ChatAtta
         manager.setType(RingtoneManager.TYPE_NOTIFICATION);
         Cursor cursor = manager.getCursor();
 
-        systemTones.clear();
+
 
 
         Tone noSoundTone = new Tone();
@@ -941,16 +944,5 @@ public class NotificationsSoundActivity extends BaseFragment implements ChatAtta
 
             return null;
         }
-    }
-
-    private void checkDisabledBySystem() {
-        NotificationManager manager = (NotificationManager) ApplicationLoader.applicationContext.getSystemService(Context.NOTIFICATION_SERVICE);
-        boolean notificationsEnabled = true;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            notificationsEnabled = manager.areNotificationsEnabled();
-        }
-//        if (!notificationsEnabled) {
-//            BulletinFactory.of(this).createErrorBulletin(LocaleController.getString()).show();
-//        }
     }
 }
