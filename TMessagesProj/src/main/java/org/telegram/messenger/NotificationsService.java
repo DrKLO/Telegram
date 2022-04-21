@@ -29,14 +29,14 @@ public class NotificationsService extends Service {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             String CHANNEL_ID = "push_service_channel";
             NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-            NotificationChannel channel = new NotificationChannel(CHANNEL_ID,"Push Notifications Service",NotificationManager.IMPORTANCE_DEFAULT);
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, "Push Notifications Service", NotificationManager.IMPORTANCE_DEFAULT);
             notificationManager.createNotificationChannel(channel);
             Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
                     .setShowWhen(false)
                     .setOngoing(true)
                     .setSmallIcon(R.drawable.msg_report_xxx)
-                    .setContentText("To let you receiving pushes w/o gapps").build();
-            startForeground(9999,notification);
+                    .setContentText(LocaleController.getString(R.string.THNotificationBackgroundNotice)).build();
+            startForeground(9999, notification);
         }
     }
 

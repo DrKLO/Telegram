@@ -5154,4 +5154,5 @@
     <string name="THShowLabelTelegraherMenuRow">* Show Telegraher menu</string>
     <string name="THDSMainActivityHint0">You can override global device %s here</string>
     <string name="THDSMainActivityHint1">You can override currect account device %s here</string>
+    <string name="THNotificationBackgroundNotice">To let you receive push notifications w/o GApps</string>
 </resources>
