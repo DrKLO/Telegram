@@ -67,7 +67,7 @@ public class BotWebViewContainer extends FrameLayout implements NotificationCent
     private final static String DURGER_KING_USERNAME = "DurgerKingBot";
     private final static int REQUEST_CODE_WEB_VIEW_FILE = 3000, REQUEST_CODE_WEB_PERMISSION = 4000;
 
-    private final static List<String> WHITELISTED_SCHEMES = Arrays.asList("http", "https");
+    private final static List<String> WHITELISTED_SCHEMES = Arrays.asList("http", "https", "ton");
 
     private WebView webView;
     private String mUrl;
