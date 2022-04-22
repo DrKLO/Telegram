@@ -2939,7 +2939,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                 BuildVars.DEBUG_PRIVATE_VERSION ? "Reset suggestions" : null,
                                 BuildVars.DEBUG_PRIVATE_VERSION ? LocaleController.getString(SharedConfig.forceRtmpStream ? R.string.DebugMenuDisableForceRtmpStreamFlag : R.string.DebugMenuEnableForceRtmpStreamFlag) : null,
                                 BuildVars.DEBUG_PRIVATE_VERSION ? LocaleController.getString(R.string.DebugMenuClearWebViewCache) : null,
-                                Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT ? LocaleController.getString(R.string.DebugMenuEnableWebViewDebug) : null
+                                Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT ? (SharedConfig.toggleWebViewDebugs ? LocaleController.getString(R.string.DebugMenuEnableWebViewDebug) : LocaleController.getString(R.string.DebugMenuDisableWebViewDebug)) : null
                         };
                         builder.setItems(items, (dialog, which) -> {
                             if (which == 0) {
@@ -3018,8 +3018,14 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                 WebStorage.getInstance().deleteAllData();
                             } else if (which == 19) {
                                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                                    WebView.setWebContentsDebuggingEnabled(true);
-                                    Toast.makeText(getParentActivity(), LocaleController.getString(R.string.DebugMenuWebViewDebugEnabled), Toast.LENGTH_SHORT).show();
+                                    SharedConfig.toggleWebViewDebug();
+                                    if (SharedConfig.toggleWebViewDebugs){
+                                        WebView.setWebContentsDebuggingEnabled(false);
+                                        Toast.makeText(getParentActivity(), LocaleController.getString(R.string.DebugMenuWebViewDebugDisabled), Toast.LENGTH_SHORT).show();
+                                    } else {
+                                        WebView.setWebContentsDebuggingEnabled(true);
+                                        Toast.makeText(getParentActivity(), LocaleController.getString(R.string.DebugMenuWebViewDebugEnabled), Toast.LENGTH_SHORT).show();
+                                    }
                                 }
                             }
                         });

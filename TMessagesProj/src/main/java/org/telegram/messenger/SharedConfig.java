@@ -88,6 +88,7 @@ public class SharedConfig {
     public static boolean searchMessagesAsListUsed;
     public static boolean stickersReorderingHintUsed;
     public static boolean disableVoiceAudioEffects;
+    public static boolean toggleWebViewDebugs;
     private static int lastLocalId = -210000;
 
     public static String storageCacheDir;
@@ -393,6 +394,7 @@ public class SharedConfig {
             chatSwipeAction = preferences.getInt("ChatSwipeAction", -1);
             messageSeenHintCount = preferences.getInt("messageSeenCount", 3);
             emojiInteractionsHintCount = preferences.getInt("emojiInteractionsHintCount", 3);
+            toggleWebViewDebugs = preferences.getBoolean("toggleWebViewDebug", false);
             dayNightThemeSwitchHintCount = preferences.getInt("dayNightThemeSwitchHintCount", 3);
             mediaColumnsCount = preferences.getInt("mediaColumnsCount", 3);
             fastScrollHintCount = preferences.getInt("fastScrollHintCount", 3);
@@ -736,6 +738,14 @@ public class SharedConfig {
         SharedPreferences.Editor editor = preferences.edit();
         editor.putBoolean("noiseSupression", noiseSupression);
         editor.commit();
+    }
+
+    public static void toggleWebViewDebug() {
+        toggleWebViewDebugs = !toggleWebViewDebugs;
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean("toggleWebViewDebug", toggleWebViewDebugs);
+        editor.apply();
     }
 
     public static void toggleForceRTMPStream() {
