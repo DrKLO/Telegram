@@ -4371,10 +4371,10 @@ public class AlertsCreator {
                     }
                     String cellText = null;
                     if (a == 0) {
-                        if (actionUser.id == banFromId) continue;
+                        if (actionUser != null && actionUser.id == banFromId) continue;
                         cellText = LocaleController.getString("DeleteBanUser", R.string.DeleteBanUser);
                     } else if (a == 1) {
-                        if (actionUser.id == banFromId) continue;
+                        if (actionUser != null && actionUser.id == banFromId) continue;
                         cellText = LocaleController.getString("DeleteReportSpam", R.string.DeleteReportSpam);
                     } else if (a == 2) {
                         if (!canDelete) continue;
