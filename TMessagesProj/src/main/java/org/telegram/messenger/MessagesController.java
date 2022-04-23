@@ -755,8 +755,10 @@ public class MessagesController extends BaseController implements NotificationCe
         return getInstance(0).telegraherSettings;
     }
 
-    public static String getGlobalTelegraherUICustomFont() {
-        return getInstance(0).telegraherSettings.getString("THUICustomFont", "fonts/rmedium.ttf");
+    public static String getGlobalTelegraherUICustomFont(String defaultFontPath, String defaultFontParam) {
+        if (getInstance(0) == null) return defaultFontPath;
+        if (getInstance(0).telegraherSettings == null) return defaultFontPath;
+        return getInstance(0).telegraherSettings.getString("THUICustomFont" + defaultFontParam, defaultFontPath);
     }
 
     public static SharedPreferences getNotificationsSettings(int account) {
