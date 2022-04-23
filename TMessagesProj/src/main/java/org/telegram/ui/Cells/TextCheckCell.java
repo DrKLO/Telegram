@@ -124,6 +124,10 @@ public class TextCheckCell extends FrameLayout {
         setWillNotDraw(!divider);
     }
 
+    public String getText() {
+        return String.valueOf(textView.getText());
+    }
+
     public void setTextAndCheck(String text, boolean checked, boolean divider) {
         textView.setText(text);
         isMultiline = false;
