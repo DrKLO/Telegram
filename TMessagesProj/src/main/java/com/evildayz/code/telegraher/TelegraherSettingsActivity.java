@@ -33,6 +33,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.evildayz.code.telegraher.devicespoofing.DSMainActivity;
+import com.evildayz.code.telegraher.ui.UIFontActivity;
 
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -57,7 +58,9 @@ import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SlideChooseView;
 import org.telegram.ui.QrActivity;
 
+import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class TelegraherSettingsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
     private RecyclerListView listView;
@@ -75,6 +78,9 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
 
     private int voipLabelRow;
     private int voipHDRow;
+
+    private int uiLabelRow;
+    private int uiSystemFontRow;
 
     private int profileLabelRow;
     private int profileUIDRow;
@@ -114,6 +120,10 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
     public boolean onFragmentCreate() {
         showLabelTelegraherMenuRow = rowCount++;
         showTelegraherMenuRow = rowCount++;
+
+        uiLabelRow = rowCount++;
+        uiSystemFontRow = rowCount++;
+
         voiceLabelRow = rowCount++;
         voiceHDRow = rowCount++;
         voiceBadmanRow = rowCount++;
@@ -270,6 +280,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                 editor.commit();
             } else if (position == killMeLabelRow) {
                 killThatApp();
+            } else if (position == uiSystemFontRow) {
+                presentFragment(new UIFontActivity());
             } else if (position == deviceSpoofingBrand) {
                 showDSAlert(0);
             } else if (position == deviceSpoofingModel) {
@@ -374,6 +386,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                     HeaderCell headerCell = (HeaderCell) holder.itemView;
                     if (false) {
                         //durov relogin!
+                    } else if (position == uiLabelRow) {
+                        headerCell.setText(LocaleController.getString(R.string.THUILabelRow));
                     } else if (position == voiceLabelRow) {
                         headerCell.setText(LocaleController.getString(R.string.THVoiceLabelRow));
                     } else if (position == voipLabelRow) {
@@ -440,6 +454,9 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         textSettingsCell.setCanDisable(false);
                         textSettingsCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText));
                         textSettingsCell.setText(LocaleController.getString(R.string.THKillTheAPP), false);
+                    } else if (position == uiSystemFontRow) {
+                        textSettingsCell.setCanDisable(false);
+                        textSettingsCell.setText(LocaleController.getString(R.string.THUIUseCustomFont), false);
                     }
                     break;
                 }
@@ -541,6 +558,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         public int getItemViewType(int position) {
             if (
                     position == showLabelTelegraherMenuRow
+                            || position == uiLabelRow
                             || position == voiceLabelRow || position == voipLabelRow
                             || position == profileLabelRow
                             || position == chatLabelRow
@@ -560,7 +578,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                             || position == gifHDRow || position == videoRoundUseMainCameraRow
             ) {
                 return 1;
-            } else if (position == killMeLabelRow) {
+            } else if (position == killMeLabelRow || position == uiSystemFontRow) {
                 return 5;
             } else if (
                     position == showTelegraherMenuRow
@@ -621,6 +639,20 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         if (button != null) {
             button.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
         }
+    }
+
+    private ArrayList<String> loadSystemFonts() {
+        ArrayList<String> fonts = new ArrayList<>();
+        fonts.add("fonts/rmedium.ttf");
+        try {
+            File dir = new File("/system/fonts");
+            String[] files = dir.list();
+            if (files == null) return fonts;
+            fonts.addAll(Arrays.asList(files));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return fonts;
     }
 
     private void showDSResetGlobalAlert() {

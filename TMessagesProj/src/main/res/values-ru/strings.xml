@@ -46,4 +46,7 @@
     <string name="THDSMainActivityHint0">Здесь можно изменить %s глобально</string>
     <string name="THDSMainActivityHint1">Здесь можно изменить %s для текущего аккаунта</string>
     <string name="THNotificationBackgroundNotice">Чтобы получать уведомления без GApps</string>
+    <string name="THUILabelRow">Секция интерфейса</string>
+    <string name="THUIUseCustomFont">Использовать другой шрифт</string>
+    <string name="THUIUseCustomFontDummy">(%s)</string>
 </resources>

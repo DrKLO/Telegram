@@ -18,6 +18,10 @@
  */
 package com.evildayz.code.telegraher;
 
+import android.graphics.Typeface;
+
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.MessagesController;
 import org.telegram.tgnet.TLRPC;
 
 import java.util.ArrayList;
@@ -70,5 +74,11 @@ public class ThePenisMightierThanTheSword {
             default:
                 return 384;
         }
+    }
+
+    public static Typeface getFont(String font) {
+        if (font.equals("fonts/rmedium.ttf"))
+            return ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont());
+        return Typeface.createFromFile(font);
     }
 }
