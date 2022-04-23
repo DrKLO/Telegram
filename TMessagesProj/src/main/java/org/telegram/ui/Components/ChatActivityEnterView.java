@@ -3487,6 +3487,10 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
         }
     }
 
+    public void forceSmoothKeyboard(boolean smoothKeyboard) {
+        this.smoothKeyboard = smoothKeyboard && SharedConfig.smoothKeyboard && !AndroidUtilities.isInMultiwindow && (parentFragment == null || !parentFragment.isInBubbleMode());
+    }
+
     protected void onLineCountChanged(int oldLineCount, int newLineCount) {
 
     }

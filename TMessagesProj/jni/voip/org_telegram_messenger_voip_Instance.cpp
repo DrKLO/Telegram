@@ -25,6 +25,7 @@
 #include "tgcalls/VideoCaptureInterface.h"
 #include "tgcalls/v2/InstanceV2Impl.h"
 #include "tgcalls/v2_4_0_0/InstanceV2_4_0_0Impl.h"
+#include "tgcalls/v2/InstanceV2ReferenceImpl.h"
 
 using namespace tgcalls;
 
@@ -32,6 +33,7 @@ const auto RegisterTag = Register<InstanceImpl>();
 const auto RegisterTagLegacy = Register<InstanceImplLegacy>();
 const auto RegisterTagV2_4_0_0 = Register<InstanceV2_4_0_0Impl>();
 const auto RegisterTagV2_4_0_1 = Register<InstanceV2Impl>();
+const auto RegisterTagV2_4_1_2 = Register<InstanceV2ReferenceImpl>();
 
 jclass TrafficStatsClass;
 jclass FingerprintClass;

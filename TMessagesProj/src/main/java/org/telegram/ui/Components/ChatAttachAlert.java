@@ -136,6 +136,8 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 ChatAttachAlertBotWebViewLayout webViewLayout = new ChatAttachAlertBotWebViewLayout(this, getContext(), resourcesProvider);
                 botAttachLayouts.put(id, webViewLayout);
                 botAttachLayouts.get(id).setDelegate(new BotWebViewContainer.Delegate() {
+                    private ValueAnimator botButtonAnimator;
+
                     @Override
                     public void onCloseRequested(Runnable callback) {
                         if (currentAttachLayout != webViewLayout) {
@@ -173,8 +175,13 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                         botMainButtonTextView.setTextColor(textColor);
                         botMainButtonTextView.setBackground(BotWebViewContainer.getMainButtonRippleDrawable(color));
                         if (botButtonWasVisible != isVisible) {
-                            ValueAnimator animator = ValueAnimator.ofFloat(isVisible ? 0 : 1, isVisible ? 1 : 0).setDuration(250);
-                            animator.addUpdateListener(animation -> {
+                            botButtonWasVisible = isVisible;
+
+                            if (botButtonAnimator != null) {
+                                botButtonAnimator.cancel();
+                            }
+                            botButtonAnimator = ValueAnimator.ofFloat(isVisible ? 0 : 1, isVisible ? 1 : 0).setDuration(250);
+                            botButtonAnimator.addUpdateListener(animation -> {
                                 float value = (float) animation.getAnimatedValue();
                                 buttonsRecyclerView.setAlpha(1f - value);
                                 botMainButtonTextView.setAlpha(value);
@@ -182,7 +189,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                                 shadow.setTranslationY(botMainButtonOffsetY);
                                 buttonsRecyclerView.setTranslationY(botMainButtonOffsetY);
                             });
-                            animator.addListener(new AnimatorListenerAdapter() {
+                            botButtonAnimator.addListener(new AnimatorListenerAdapter() {
                                 @Override
                                 public void onAnimationStart(Animator animation) {
                                     if (isVisible) {
@@ -201,7 +208,6 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
 
                                 @Override
                                 public void onAnimationEnd(Animator animation) {
-                                    botButtonWasVisible = isVisible;
                                     if (!isVisible) {
                                         botMainButtonTextView.setVisibility(View.GONE);
                                     } else {
@@ -212,9 +218,13 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                                     for (int i = 0; i < botAttachLayouts.size(); i++) {
                                         botAttachLayouts.valueAt(i).setMeasureOffsetY(offsetY);
                                     }
+
+                                    if (botButtonAnimator == animation) {
+                                        botButtonAnimator = null;
+                                    }
                                 }
                             });
-                            animator.start();
+                            botButtonAnimator.start();
                         }
                         botProgressView.setProgressColor(textColor);
                         if (botButtonProgressWasVisible != isProgressVisible) {

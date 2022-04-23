@@ -108,6 +108,8 @@ public class BotWebViewContainer extends FrameLayout implements NotificationCent
 
     private Activity parentActivity;
 
+    private boolean isViewPortByMeasureSuppressed;
+
     public BotWebViewContainer(@NonNull Context context, Theme.ResourcesProvider resourcesProvider, int backgroundColor) {
         super(context);
         this.resourcesProvider = resourcesProvider;
@@ -163,6 +165,10 @@ public class BotWebViewContainer extends FrameLayout implements NotificationCent
         addView(webViewNotAvailableText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
 
         setFocusable(false);
+    }
+
+    public void setViewPortByMeasureSuppressed(boolean viewPortByMeasureSuppressed) {
+        isViewPortByMeasureSuppressed = viewPortByMeasureSuppressed;
     }
 
     private void checkCreateWebView() {
@@ -571,7 +577,9 @@ public class BotWebViewContainer extends FrameLayout implements NotificationCent
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
-        invalidateViewPortHeight(true);
+        if (!isViewPortByMeasureSuppressed) {
+            invalidateViewPortHeight(true);
+        }
     }
 
     public void invalidateViewPortHeight() {

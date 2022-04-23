@@ -12582,7 +12582,7 @@ public class MessagesStorage extends BaseController {
                 state.dispose();
 
                 if (count == 0) {
-                    state = database.executeFast("UPDATE reaction_mentions SET state = 0 WHERE dialog_id ?");
+                    state = database.executeFast("UPDATE reaction_mentions SET state = 0 WHERE dialog_id = ?");
                     state.bindLong(1, dialogId);
                     state.step();
                     state.dispose();

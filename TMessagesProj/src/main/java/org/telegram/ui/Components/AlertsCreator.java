@@ -3061,6 +3061,11 @@ public class AlertsCreator {
 
         int[] values = new int[]{
                 0,
+                30,
+                60,
+                60 * 2,
+                60 * 3,
+                60 * 8,
                 60 * 24,
                 2 * 60 * 24,
                 3 * 60 * 24,
@@ -3084,14 +3089,18 @@ public class AlertsCreator {
             protected CharSequence getContentDescription(int index) {
                 if (values[index] == 0) {
                     return LocaleController.getString("MuteNever", R.string.MuteNever);
+                } else if (values[index] < 60) {
+                    return LocaleController.formatPluralString("Minutes", values[index]);
+                } else if (values[index] < 60 * 24) {
+                    return LocaleController.formatPluralString("Hours", values[index] / 60);
                 } else if (values[index] < 7 * 60 * 24) {
                     return LocaleController.formatPluralString("Days", values[index] / (60 * 24));
                 } else if (values[index] < 31 * 60 * 24) {
-                    return LocaleController.formatPluralString("Weeks", values[index] / (60 * 24));
+                    return LocaleController.formatPluralString("Weeks", values[index] / (7 * 60 * 24));
                 } else if (values[index] <  365 * 60 * 24) {
-                    return LocaleController.formatPluralString("Months", values[index] / (7 * 60 * 24));
+                    return LocaleController.formatPluralString("Months", values[index] / (31 * 60 * 24));
                 } else {
-                    return LocaleController.formatPluralString("Years", values[index] * 5 / 31 * 60 * 24);
+                    return LocaleController.formatPluralString("Years", values[index] / (365 * 60 * 24));
                 }
             }
         };
@@ -3102,6 +3111,10 @@ public class AlertsCreator {
         numberPicker.setFormatter(index -> {
             if (values[index] == 0) {
                 return LocaleController.getString("MuteNever", R.string.MuteNever);
+            } else if (values[index] < 60) {
+                return LocaleController.formatPluralString("Minutes", values[index]);
+            } else if (values[index] < 60 * 24) {
+                return LocaleController.formatPluralString("Hours", values[index] / 60);
             } else if (values[index] < 7 * 60 * 24) {
                 return LocaleController.formatPluralString("Days", values[index] / (60 * 24));
             } else if (values[index] < 31 * 60 * 24) {
