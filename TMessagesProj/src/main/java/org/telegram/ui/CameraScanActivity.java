@@ -31,7 +31,6 @@ import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
-import android.text.StaticLayout;
 import android.text.TextUtils;
 import android.text.style.ClickableSpan;
 import android.util.SparseArray;
@@ -39,9 +38,7 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewConfiguration;
 import android.view.ViewGroup;
-import android.view.Window;
 import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -207,6 +204,7 @@ public class CameraScanActivity extends BaseFragment {
                 actionBarLayout[0] = null;
             }
         };
+        bottomSheet.setUseLightStatusBar(false);
         AndroidUtilities.setLightNavigationBar(bottomSheet.getWindow(), false);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             bottomSheet.getWindow().setNavigationBarColor(0xff000000);
@@ -436,6 +434,7 @@ public class CameraScanActivity extends BaseFragment {
         } else {
             actionBar.setBackgroundDrawable(null);
             actionBar.setAddToContainer(false);
+            actionBar.setTitleColor(0xffffffff);
             actionBar.setItemsColor(0xffffffff, false);
             actionBar.setItemsBackgroundColor(0x22ffffff, false);
             viewGroup.setBackgroundColor(Theme.getColor(Theme.key_wallet_blackBackground));

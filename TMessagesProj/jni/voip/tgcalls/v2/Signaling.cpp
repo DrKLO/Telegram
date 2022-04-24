@@ -366,6 +366,7 @@ std::vector<uint8_t> InitialSetupMessage_serialize(const InitialSetupMessage * c
     object.insert(std::make_pair("@type", json11::Json("InitialSetup")));
     object.insert(std::make_pair("ufrag", json11::Json(message->ufrag)));
     object.insert(std::make_pair("pwd", json11::Json(message->pwd)));
+    object.insert(std::make_pair("renomination", json11::Json(message->supportsRenomination)));
 
     json11::Json::array jsonFingerprints;
     for (const auto &fingerprint : message->fingerprints) {
@@ -392,6 +393,11 @@ absl::optional<InitialSetupMessage> InitialSetupMessage_parse(json11::Json::obje
     if (pwd == object.end() || !pwd->second.is_string()) {
         RTC_LOG(LS_ERROR) << "Signaling: pwd must be a string";
         return absl::nullopt;
+    }
+    const auto renomination = object.find("renomination");
+    bool renominationValue = false;
+    if (renomination != object.end() && renomination->second.is_bool()) {
+        renominationValue = renomination->second.bool_value();
     }
     const auto fingerprints = object.find("fingerprints");
     if (fingerprints == object.end() || !fingerprints->second.is_array()) {
@@ -431,6 +437,7 @@ absl::optional<InitialSetupMessage> InitialSetupMessage_parse(json11::Json::obje
     InitialSetupMessage message;
     message.ufrag = ufrag->second.string_value();
     message.pwd = pwd->second.string_value();
+    message.supportsRenomination = renominationValue;
     message.fingerprints = std::move(parsedFingerprints);
 
     return message;

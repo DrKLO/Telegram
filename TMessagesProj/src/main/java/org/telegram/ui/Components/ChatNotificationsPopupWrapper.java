@@ -69,19 +69,20 @@ public class ChatNotificationsPopupWrapper {
         ActionBarMenuSubItem item = ActionBarMenuItem.addItem(windowLayout, R.drawable.msg_mute_period, LocaleController.getString("MuteForPopup", R.string.MuteForPopup), false, resourcesProvider);
         item.setOnClickListener(view -> {
             dismiss();
-            AlertsCreator.createMuteForPickerDialog(context, (notify, inMinutes) -> {
+            AlertsCreator.createMuteForPickerDialog(context, (notify, inSecond) -> {
                 AndroidUtilities.runOnUIThread(() -> {
-                    SharedPreferences sharedPreferences = MessagesController.getNotificationsSettings(currentAccount);
-                    int time1 = sharedPreferences.getInt(LAST_SELECTED_TIME_KEY_1, 0);
-                    int time2;
-                    int timeInSeconds = inMinutes * 60;
-                    time2 = time1;
-                    time1 = timeInSeconds;
-                    sharedPreferences.edit()
-                            .putInt(LAST_SELECTED_TIME_KEY_1, time1)
-                            .putInt(LAST_SELECTED_TIME_KEY_2, time2)
-                            .apply();
-                    callback.muteFor(timeInSeconds);
+                    if (inSecond != 0) {
+                        SharedPreferences sharedPreferences = MessagesController.getNotificationsSettings(currentAccount);
+                        int time1 = sharedPreferences.getInt(LAST_SELECTED_TIME_KEY_1, 0);
+                        int time2;
+                        time2 = time1;
+                        time1 = inSecond;
+                        sharedPreferences.edit()
+                                .putInt(LAST_SELECTED_TIME_KEY_1, time1)
+                                .putInt(LAST_SELECTED_TIME_KEY_2, time2)
+                                .apply();
+                    }
+                    callback.muteFor(inSecond);
                 }, 16);
             });
         });

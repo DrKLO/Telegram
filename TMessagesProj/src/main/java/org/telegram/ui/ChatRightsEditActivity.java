@@ -201,6 +201,7 @@ public class ChatRightsEditActivity extends BaseFragment {
                     adminRights.ban_users = myAdminRights.ban_users;
                     adminRights.invite_users = myAdminRights.invite_users;
                     adminRights.pin_messages = myAdminRights.pin_messages;
+                    adminRights.other = myAdminRights.other;
                     initialIsSet = false;
                 }
             } else {
@@ -216,10 +217,11 @@ public class ChatRightsEditActivity extends BaseFragment {
                 adminRights.pin_messages = rightsAdmin.pin_messages;
                 adminRights.add_admins = rightsAdmin.add_admins;
                 adminRights.anonymous = rightsAdmin.anonymous;
+                adminRights.other = rightsAdmin.other;
 
                 initialIsSet = adminRights.change_info || adminRights.post_messages || adminRights.edit_messages ||
                         adminRights.delete_messages || adminRights.ban_users || adminRights.invite_users ||
-                        adminRights.pin_messages || adminRights.add_admins || adminRights.manage_call || adminRights.anonymous;
+                        adminRights.pin_messages || adminRights.add_admins || adminRights.manage_call || adminRights.anonymous || adminRights.other;
 
                 if (type == TYPE_ADD_BOT) {
                     asAdmin = isChannel || initialIsSet;

@@ -42,18 +42,18 @@ public class ChatActivityBotWebViewButton extends FrameLayout {
         textView.setAlpha(0f);
         textView.setGravity(Gravity.CENTER);
         textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT, 0, 0, 0, 4));
+        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT, 0, 0, 0, 0));
 
         progressView = new RadialProgressView(context);
         progressView.setSize(AndroidUtilities.dp(18));
         progressView.setAlpha(0f);
         progressView.setScaleX(0);
         progressView.setScaleY(0);
-        addView(progressView, LayoutHelper.createFrame(28, 28, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 12, 4));
+        addView(progressView, LayoutHelper.createFrame(28, 28, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 12, 0));
 
         rippleView = new View(context);
-        rippleView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 2));
-        addView(rippleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT, 0, -4, 0, 0));
+        rippleView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_featuredStickers_addButtonPressed), 2));
+        addView(rippleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT, 0, 0, 0, 0));
 
         setWillNotDraw(false);
     }
@@ -69,6 +69,8 @@ public class ChatActivityBotWebViewButton extends FrameLayout {
         textView.setText(text);
         textView.setTextColor(textColor);
         buttonColor = color;
+
+        rippleView.setBackground(Theme.createSelectorDrawable(BotWebViewContainer.getMainButtonRippleColor(buttonColor), 2));
 
         progressView.setProgressColor(textColor);
         if (progressWasVisible != isProgressVisible) {
@@ -91,6 +93,7 @@ public class ChatActivityBotWebViewButton extends FrameLayout {
                         }
                     }).start();
         }
+        invalidate();
     }
 
     public void setProgress(float progress) {
@@ -110,9 +113,10 @@ public class ChatActivityBotWebViewButton extends FrameLayout {
     @Override
     public void draw(Canvas canvas) {
         canvas.save();
+        float menuY = (getHeight() - AndroidUtilities.dp(32)) / 2f;
         float offset = Math.max(getWidth() - menuButtonWidth - AndroidUtilities.dp(4), getHeight()) * progress;
         float rad = AndroidUtilities.dp(16) + offset;
-        AndroidUtilities.rectTmp.set(AndroidUtilities.dp(14) - offset, AndroidUtilities.dp(8) - offset, AndroidUtilities.dp(6) + menuButtonWidth + offset, getHeight() - AndroidUtilities.dp(12) + offset);
+        AndroidUtilities.rectTmp.set(AndroidUtilities.dp(14) - offset, menuY + AndroidUtilities.dp(4) - offset, AndroidUtilities.dp(6) + menuButtonWidth + offset, getHeight() - AndroidUtilities.dp(12) + offset);
 
         path.rewind();
         path.addRoundRect(AndroidUtilities.rectTmp, rad, rad, Path.Direction.CW);
@@ -120,7 +124,7 @@ public class ChatActivityBotWebViewButton extends FrameLayout {
         canvas.drawColor(backgroundColor);
 
         canvas.saveLayerAlpha(AndroidUtilities.rectTmp, (int) ((1f - Math.min(0.5f, progress) / 0.5f) * 0xFF), Canvas.ALL_SAVE_FLAG);
-        canvas.translate(AndroidUtilities.dp(10), AndroidUtilities.dp(4));
+        canvas.translate(AndroidUtilities.dp(10), menuY);
         if (menuButton != null) {
             menuButton.setDrawBackgroundDrawable(false);
             menuButton.draw(canvas);

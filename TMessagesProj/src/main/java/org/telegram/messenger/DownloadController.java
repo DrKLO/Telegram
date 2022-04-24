@@ -1356,7 +1356,7 @@ public class DownloadController extends BaseController implements NotificationCe
         for (int i = 0; i < messageObjects.size(); i++) {
             boolean found = false;
             for (int j = 0; j < recentDownloadingFiles.size(); j++) {
-                if (messageObjects.get(i).getId() == recentDownloadingFiles.get(j).getId()) {
+                if (messageObjects.get(i).getId() == recentDownloadingFiles.get(j).getId() && recentDownloadingFiles.get(j).getDialogId() == messageObjects.get(i).getDialogId()) {
                     recentDownloadingFiles.remove(j);
                     found = true;
                     break;
@@ -1364,7 +1364,7 @@ public class DownloadController extends BaseController implements NotificationCe
             }
             if (!found) {
                 for (int j = 0; j < downloadingFiles.size(); j++) {
-                    if (messageObjects.get(i).getId() == downloadingFiles.get(j).getId()) {
+                    if (messageObjects.get(i).getId() == downloadingFiles.get(j).getId() && downloadingFiles.get(j).getDialogId() == messageObjects.get(i).getDialogId()) {
                         downloadingFiles.remove(j);
                         found = true;
                         break;

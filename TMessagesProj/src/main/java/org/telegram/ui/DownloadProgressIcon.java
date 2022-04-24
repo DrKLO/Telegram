@@ -3,6 +3,8 @@ package org.telegram.ui;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -34,6 +36,7 @@ public class DownloadProgressIcon extends View implements NotificationCenter.Not
     RLottieDrawable downloadCompleteDrawable;
     boolean showCompletedIcon;
     boolean hasUnviewedDownloads;
+    int currentColor;
 
     public DownloadProgressIcon(int currentAccount, Context context) {
         super(context);
@@ -65,9 +68,14 @@ public class DownloadProgressIcon extends View implements NotificationCenter.Not
             return;
         }
 
-        paint.setColor(Theme.getColor(Theme.key_actionBarDefaultIcon));
-        paint2.setColor(Theme.getColor(Theme.key_actionBarDefaultIcon));
-        paint2.setAlpha(100);
+        if (currentColor != Theme.getColor(Theme.key_actionBarDefaultIcon)) {
+            currentColor = Theme.getColor(Theme.key_actionBarDefaultIcon);
+            paint.setColor(Theme.getColor(Theme.key_actionBarDefaultIcon));
+            paint2.setColor(Theme.getColor(Theme.key_actionBarDefaultIcon));
+            downloadImageReceiver.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultIcon), PorterDuff.Mode.MULTIPLY));
+            downloadCompleteImageReceiver.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultIcon), PorterDuff.Mode.MULTIPLY));
+            paint2.setAlpha(100);
+        }
 
         if (currentProgress != progress) {
             currentProgress += progressDt;

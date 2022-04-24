@@ -21,13 +21,15 @@ public class SharedPrefsHelper {
     }
 
     public static void cleanupAccount(int account) {
-        SharedPreferences.Editor editor = webViewBotsPrefs.edit();
-        for (String key : webViewBotsPrefs.getAll().keySet()) {
-            if (key.startsWith("confirm_shown_" + account + "_")) {
-                editor.remove(key);
+        if (webViewBotsPrefs != null) {
+            SharedPreferences.Editor editor = webViewBotsPrefs.edit();
+            for (String key : webViewBotsPrefs.getAll().keySet()) {
+                if (key.startsWith("confirm_shown_" + account + "_")) {
+                    editor.remove(key);
+                }
             }
+            editor.apply();
         }
-        editor.apply();
     }
 
     public static SharedPreferences getWebViewBotsPrefs() {

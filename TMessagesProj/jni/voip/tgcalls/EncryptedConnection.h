@@ -26,13 +26,19 @@ public:
         uint32_t counter = 0;
     };
     absl::optional<EncryptedPacket> prepareForSending(const Message &message);
+    absl::optional<EncryptedPacket> prepareForSendingRawMessage(rtc::CopyOnWriteBuffer &serialized, bool messageRequiresAck);
     absl::optional<EncryptedPacket> prepareForSendingService(int cause);
 
     struct DecryptedPacket {
         DecryptedMessage main;
         std::vector<DecryptedMessage> additional;
     };
+    struct DecryptedRawPacket {
+        DecryptedRawMessage main;
+        std::vector<DecryptedRawMessage> additional;
+    };
     absl::optional<DecryptedPacket> handleIncomingPacket(const char *bytes, size_t size);
+    absl::optional<DecryptedRawPacket> handleIncomingRawPacket(const char *bytes, size_t size);
 
     absl::optional<rtc::CopyOnWriteBuffer> encryptRawPacket(rtc::CopyOnWriteBuffer const &buffer);
     absl::optional<rtc::CopyOnWriteBuffer> decryptRawPacket(rtc::CopyOnWriteBuffer const &buffer);
@@ -57,6 +63,7 @@ private:
     EncryptedPacket encryptPrepared(const rtc::CopyOnWriteBuffer &buffer);
     bool registerIncomingCounter(uint32_t incomingCounter);
     absl::optional<DecryptedPacket> processPacket(const rtc::Buffer &fullBuffer, uint32_t packetSeq);
+    absl::optional<DecryptedRawPacket> processRawPacket(const rtc::Buffer &fullBuffer, uint32_t packetSeq);
     bool registerSentAck(uint32_t counter, bool firstInPacket);
     void ackMyMessage(uint32_t counter);
     void sendAckPostponed(uint32_t incomingSeq);
@@ -66,6 +73,11 @@ private:
         absl::optional<DecryptedPacket> &to,
         Message &&message,
         uint32_t incomingSeq);
+    void appendReceivedRawMessage(
+        absl::optional<DecryptedRawPacket> &to,
+        rtc::CopyOnWriteBuffer &&message,
+        uint32_t incomingSeq);
+    absl::optional<EncryptedPacket> prepareForSendingMessageInternal(rtc::CopyOnWriteBuffer &serialized, uint32_t seq, bool messageRequiresAck);
 
     const char *logHeader() const;
 

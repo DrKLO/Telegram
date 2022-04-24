@@ -77,6 +77,8 @@ public class SearchDownloadsContainer extends FrameLayout implements Notificatio
     Runnable lastSearchRunnable;
     RecyclerItemsEnterAnimator itemsEnterAnimator;
 
+    boolean checkingFilesExist;
+
     public SearchDownloadsContainer(BaseFragment fragment, int currentAccount) {
         super(fragment.getParentActivity());
         this.parentFragment = fragment;
@@ -177,13 +179,56 @@ public class SearchDownloadsContainer extends FrameLayout implements Notificatio
         recyclerListView.setEmptyView(emptyView);
 
         FileLoader.getInstance(currentAccount).getCurrentLoadingFiles(currentLoadingFiles);
-        update(false);
+    }
+
+    private void checkFilesExist() {
+        if (checkingFilesExist) {
+            return;
+        }
+        checkingFilesExist = true;
+        Utilities.searchQueue.postRunnable(() -> {
+            ArrayList<MessageObject> currentLoadingFiles = new ArrayList<>();
+            ArrayList<MessageObject> recentLoadingFiles = new ArrayList<>();
+
+            ArrayList<MessageObject> moveToRecent = new ArrayList<>();
+            ArrayList<MessageObject> removeFromRecent = new ArrayList<>();
+
+            FileLoader.getInstance(currentAccount).getCurrentLoadingFiles(currentLoadingFiles);
+            FileLoader.getInstance(currentAccount).getRecentLoadingFiles(recentLoadingFiles);
+
+            for (int i = 0; i < currentLoadingFiles.size(); i++) {
+                if (FileLoader.getPathToMessage(currentLoadingFiles.get(i).messageOwner).exists()) {
+                    moveToRecent.add(currentLoadingFiles.get(i));
+                }
+            }
+
+            for (int i = 0; i < recentLoadingFiles.size(); i++) {
+                if (!FileLoader.getPathToMessage(recentLoadingFiles.get(i).messageOwner).exists()) {
+                    removeFromRecent.add(recentLoadingFiles.get(i));
+                }
+            }
+
+            AndroidUtilities.runOnUIThread(() -> {
+                for (int i = 0; i < moveToRecent.size(); i++) {
+                    DownloadController.getInstance(currentAccount).onDownloadComplete(moveToRecent.get(i));
+                }
+                if (!removeFromRecent.isEmpty()) {
+                    DownloadController.getInstance(currentAccount).deleteRecentFiles(removeFromRecent);
+                }
+                checkingFilesExist = false;
+                update(true);
+            });
+        });
     }
 
     public void update(boolean animated) {
         if (TextUtils.isEmpty(searchQuery) || isEmptyDownloads()) {
             if (rowCount == 0) {
                 itemsEnterAnimator.showItemsAnimated(0);
+            }
+            if (checkingFilesExist) {
+                currentLoadingFilesTmp.clear();
+                recentLoadingFilesTmp.clear();
             }
             FileLoader.getInstance(currentAccount).getCurrentLoadingFiles(currentLoadingFilesTmp);
             FileLoader.getInstance(currentAccount).getRecentLoadingFiles(recentLoadingFilesTmp);
@@ -583,6 +628,8 @@ public class SearchDownloadsContainer extends FrameLayout implements Notificatio
         if (getVisibility() == View.VISIBLE) {
             DownloadController.getInstance(currentAccount).clearUnviewedDownloads();
         }
+        checkFilesExist();
+        update(false);
     }
 
     @Override

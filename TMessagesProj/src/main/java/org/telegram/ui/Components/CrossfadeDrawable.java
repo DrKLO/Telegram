@@ -74,7 +74,7 @@ public class CrossfadeDrawable extends Drawable {
 
     @Override
     public void setColorFilter(ColorFilter colorFilter) {
-
+        topDrawable.setColorFilter(colorFilter);
     }
 
     @Override

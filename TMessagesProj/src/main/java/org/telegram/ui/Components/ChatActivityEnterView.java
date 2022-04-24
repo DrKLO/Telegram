@@ -1720,6 +1720,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messageReceivedByServer);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.sendingMessagesChanged);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.audioRecordTooShort);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.updateBotMenuButton);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
 
         parentActivity = context;
@@ -3486,6 +3487,10 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
         }
     }
 
+    public void forceSmoothKeyboard(boolean smoothKeyboard) {
+        this.smoothKeyboard = smoothKeyboard && SharedConfig.smoothKeyboard && !AndroidUtilities.isInMultiwindow && (parentFragment == null || !parentFragment.isInBubbleMode());
+    }
+
     protected void onLineCountChanged(int oldLineCount, int newLineCount) {
 
     }
@@ -4180,6 +4185,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messageReceivedByServer);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.sendingMessagesChanged);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.audioRecordTooShort);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.updateBotMenuButton);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
         if (emojiView != null) {
             emojiView.onDestroy();
@@ -6882,7 +6888,11 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
         }
     }
 
-    private boolean hasBotWebView() {
+    public boolean onBotWebViewBackPressed() {
+        return botWebViewMenuContainer != null && botWebViewMenuContainer.onBackPressed();
+    }
+
+    public boolean hasBotWebView() {
         return botMenuButtonType == BotMenuButtonType.WEB_VIEW;
     }
 
@@ -8356,6 +8366,24 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
             }
         } else if (id == NotificationCenter.audioRecordTooShort) {
             updateRecordIntefrace(RECORD_STATE_CANCEL_BY_TIME);
+        } else if (id == NotificationCenter.updateBotMenuButton) {
+            long botId = (long) args[0];
+            TLRPC.BotMenuButton botMenuButton = (TLRPC.BotMenuButton) args[1];
+
+            if (botId == dialog_id) {
+                if (botMenuButton instanceof TLRPC.TL_botMenuButton) {
+                    TLRPC.TL_botMenuButton webViewButton = (TLRPC.TL_botMenuButton) botMenuButton;
+                    botMenuWebViewTitle = webViewButton.text;
+                    botMenuWebViewUrl = webViewButton.url;
+                    botMenuButtonType = BotMenuButtonType.WEB_VIEW;
+                } else if (hasBotCommands) {
+                    botMenuButtonType = BotMenuButtonType.COMMANDS;
+                } else {
+                    botMenuButtonType = BotMenuButtonType.NO_BUTTON;
+                }
+
+                updateBotButton(false);
+            }
         }
     }
 
@@ -9187,7 +9215,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
             if (botCommandsMenuButton != null) {
                 botWebViewButton.setMeasuredButtonWidth(botCommandsMenuButton.getMeasuredWidth());
             }
-            botWebViewButton.getLayoutParams().height = messageEditText.getMeasuredHeight();
+            botWebViewButton.getLayoutParams().height = getMeasuredHeight() - AndroidUtilities.dp(2);
             measureChild(botWebViewButton, widthMeasureSpec, heightMeasureSpec);
         }
         if (botWebViewMenuContainer != null) {
@@ -9219,13 +9247,13 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
         if (botInfo.size() == 1 && botInfo.valueAt(0).user_id == dialog_id) {
             TLRPC.BotInfo info = botInfo.valueAt(0);
             TLRPC.BotMenuButton menuButton = info.menu_button;
-            if (menuButton instanceof TLRPC.TL_botMenuButtonCommands || menuButton instanceof TLRPC.TL_botMenuButtonDefault) {
-                botMenuButtonType = info.commands.isEmpty() ? BotMenuButtonType.NO_BUTTON : BotMenuButtonType.COMMANDS;
-            } else if (menuButton instanceof TLRPC.TL_botMenuButton) {
+            if (menuButton instanceof TLRPC.TL_botMenuButton) {
                 TLRPC.TL_botMenuButton webViewButton = (TLRPC.TL_botMenuButton) menuButton;
                 botMenuWebViewTitle = webViewButton.text;
                 botMenuWebViewUrl = webViewButton.url;
                 botMenuButtonType = BotMenuButtonType.WEB_VIEW;
+            } else if (!info.commands.isEmpty()) {
+                botMenuButtonType = BotMenuButtonType.COMMANDS;
             } else {
                 botMenuButtonType = BotMenuButtonType.NO_BUTTON;
             }

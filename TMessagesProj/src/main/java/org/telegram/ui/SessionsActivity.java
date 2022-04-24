@@ -904,11 +904,6 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
             colors[6] = 0x212020;
             colors[7] = Theme.getColor(Theme.key_windowBackgroundWhite);
 
-//            imageView.replaceColors(colors);
-//            imageView.setAnimation(R.raw.qr_login, 230, 230, colors);
-//            imageView.setScaleType(ImageView.ScaleType.CENTER);
-//            imageView.playAnimation();
-
             textView = new TextView(context);
             addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 36, 152, 36, 0));
             textView.setGravity(Gravity.CENTER_HORIZONTAL);

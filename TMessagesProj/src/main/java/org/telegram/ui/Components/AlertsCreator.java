@@ -1442,7 +1442,11 @@ public class AlertsCreator {
             if (UserObject.isUserSelf(user)) {
                 messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString("DeleteAllMessagesSavedAlert", R.string.DeleteAllMessagesSavedAlert)));
             } else {
-                messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString("DeleteAllMessagesAlert", R.string.DeleteAllMessagesAlert)));
+                if (chat != null && ChatObject.isChannelAndNotMegaGroup(chat)) {
+                    messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString("DeleteAllMessagesChannelAlert", R.string.DeleteAllMessagesChannelAlert)));
+                } else {
+                    messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString("DeleteAllMessagesAlert", R.string.DeleteAllMessagesAlert)));
+                }
             }
         } else {
             if (clear) {
@@ -1512,7 +1516,7 @@ public class AlertsCreator {
                 if (clearingCache) {
                     actionText = LocaleController.getString("ClearHistoryCache", R.string.ClearHistoryCache);
                 } else {
-                    actionText = LocaleController.getString("ClearHistory", R.string.ClearHistory);
+                    actionText = LocaleController.getString("ClearForMe", R.string.ClearForMe);
                 }
             } else {
                 if (admin) {
@@ -1616,8 +1620,12 @@ public class AlertsCreator {
             if (user != null) {
                 messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("AreYouSureClearHistoryWithUser", R.string.AreYouSureClearHistoryWithUser, UserObject.getUserName(user))));
             } else {
-                if (chat != null && canDeleteHistory) {
-                    messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("AreYouSureClearHistoryWithChat", R.string.AreYouSureClearHistoryWithChat, chat.title)));
+                if (canDeleteHistory) {
+                    if (ChatObject.isChannelAndNotMegaGroup(chat)) {
+                        messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("AreYouSureClearHistoryWithChannel", R.string.AreYouSureClearHistoryWithChannel, chat.title)));
+                    } else {
+                        messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("AreYouSureClearHistoryWithChat", R.string.AreYouSureClearHistoryWithChat, chat.title)));
+                    }
                 } else if (chat.megagroup) {
                     messageTextView.setText(LocaleController.getString("AreYouSureClearHistoryGroup", R.string.AreYouSureClearHistoryGroup));
                 } else {
@@ -1633,7 +1641,7 @@ public class AlertsCreator {
         if (chat != null && canDeleteHistory && !TextUtils.isEmpty(chat.username)) {
             deleteForAll[0] = true;
         }
-        if ((user != null && user.id != selfUserId) || (chat != null && canDeleteHistory && TextUtils.isEmpty(chat.username))) {
+        if ((user != null && user.id != selfUserId) || (chat != null && canDeleteHistory && TextUtils.isEmpty(chat.username) && !ChatObject.isChannelAndNotMegaGroup(chat))) {
             cell[0] = new CheckBoxCell(context, 1, resourcesProvider);
             cell[0].setBackgroundDrawable(Theme.getSelectorDrawable(false));
             if (chat != null) {
@@ -1653,7 +1661,11 @@ public class AlertsCreator {
             });
         }
 
-        builder.setPositiveButton(LocaleController.getString("Delete", R.string.Delete), (dialogInterface, i) -> {
+        String deleteText = LocaleController.getString("Delete", R.string.Delete);
+        if (chat != null && canDeleteHistory && !TextUtils.isEmpty(chat.username) && !ChatObject.isChannelAndNotMegaGroup(chat)) {
+            deleteText = LocaleController.getString("ClearForAll", R.string.ClearForAll);
+        }
+        builder.setPositiveButton(deleteText, (dialogInterface, i) -> {
             onProcessRunnable.run(deleteForAll[0]);
         });
         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
@@ -2803,7 +2815,6 @@ public class AlertsCreator {
         numberPicker.setMaxValue(values.length - 1);
         numberPicker.setTextColor(datePickerColors.textColor);
         numberPicker.setValue(0);
-        numberPicker.setWrapSelectorWheel(false);
         numberPicker.setFormatter(index -> {
             if (values[index] == 0) {
                 return LocaleController.getString("AutoDeleteNever", R.string.AutoDeleteNever);
@@ -3048,18 +3059,72 @@ public class AlertsCreator {
         BottomSheet.Builder builder = new BottomSheet.Builder(context, false);
         builder.setApplyBottomPadding(false);
 
-        final NumberPicker dayPicker = new NumberPicker(context);
-        dayPicker.setTextColor(datePickerColors.textColor);
-        dayPicker.setTextOffset(AndroidUtilities.dp(10));
-        dayPicker.setItemCount(5);
-        final NumberPicker hourPicker = new NumberPicker(context) {
+        int[] values = new int[]{
+                0,
+                30,
+                60,
+                60 * 2,
+                60 * 3,
+                60 * 8,
+                60 * 24,
+                2 * 60 * 24,
+                3 * 60 * 24,
+                4 * 60 * 24,
+                5 * 60 * 24,
+                6 * 60 * 24,
+                7 * 60 * 24,
+                2 * 7 * 60 * 24,
+                3 * 7 * 60 * 24,
+                31 * 60 * 24,
+                2 * 31 * 60 * 24,
+                3 * 31 * 60 * 24,
+                4 * 31 * 60 * 24,
+                5 * 31 * 60 * 24,
+                6 * 31 * 60 * 24,
+                365 * 60 * 24
+        };
+
+        final NumberPicker numberPicker = new NumberPicker(context) {
             @Override
-            protected CharSequence getContentDescription(int value) {
-                return LocaleController.formatPluralString("Hours", value);
+            protected CharSequence getContentDescription(int index) {
+                if (values[index] == 0) {
+                    return LocaleController.getString("MuteNever", R.string.MuteNever);
+                } else if (values[index] < 60) {
+                    return LocaleController.formatPluralString("Minutes", values[index]);
+                } else if (values[index] < 60 * 24) {
+                    return LocaleController.formatPluralString("Hours", values[index] / 60);
+                } else if (values[index] < 7 * 60 * 24) {
+                    return LocaleController.formatPluralString("Days", values[index] / (60 * 24));
+                } else if (values[index] < 31 * 60 * 24) {
+                    return LocaleController.formatPluralString("Weeks", values[index] / (7 * 60 * 24));
+                } else if (values[index] <  365 * 60 * 24) {
+                    return LocaleController.formatPluralString("Months", values[index] / (31 * 60 * 24));
+                } else {
+                    return LocaleController.formatPluralString("Years", values[index] / (365 * 60 * 24));
+                }
             }
         };
-        hourPicker.setItemCount(5);
-        hourPicker.setTextColor(datePickerColors.textColor);
+        numberPicker.setMinValue(0);
+        numberPicker.setMaxValue(values.length - 1);
+        numberPicker.setTextColor(datePickerColors.textColor);
+        numberPicker.setValue(0);
+        numberPicker.setFormatter(index -> {
+            if (values[index] == 0) {
+                return LocaleController.getString("MuteNever", R.string.MuteNever);
+            } else if (values[index] < 60) {
+                return LocaleController.formatPluralString("Minutes", values[index]);
+            } else if (values[index] < 60 * 24) {
+                return LocaleController.formatPluralString("Hours", values[index] / 60);
+            } else if (values[index] < 7 * 60 * 24) {
+                return LocaleController.formatPluralString("Days", values[index] / (60 * 24));
+            } else if (values[index] < 31 * 60 * 24) {
+                return LocaleController.formatPluralString("Weeks", values[index] / (7 * 60 * 24));
+            } else if (values[index] <  365 * 60 * 24) {
+                return LocaleController.formatPluralString("Months", values[index] / (31 * 60 * 24));
+            } else {
+                return LocaleController.formatPluralString("Years", values[index] / (365 * 60 * 24));
+            }
+        });
 
         LinearLayout container = new LinearLayout(context) {
 
@@ -3074,10 +3139,8 @@ public class AlertsCreator {
                 } else {
                     count = 5;
                 }
-                dayPicker.setItemCount(count);
-                hourPicker.setItemCount(count);
-                dayPicker.getLayoutParams().height = AndroidUtilities.dp(NumberPicker.DEFAULT_SIZE_PER_COUNT) * count;
-                hourPicker.getLayoutParams().height = AndroidUtilities.dp(NumberPicker.DEFAULT_SIZE_PER_COUNT) * count;
+                numberPicker.setItemCount(count);
+                numberPicker.getLayoutParams().height = AndroidUtilities.dp(NumberPicker.DEFAULT_SIZE_PER_COUNT) * count;
                 ignoreLayout = false;
                 super.onMeasure(widthMeasureSpec, heightMeasureSpec);
             }
@@ -3115,26 +3178,15 @@ public class AlertsCreator {
             }
         };
 
-        linearLayout.addView(dayPicker, LayoutHelper.createLinear(0, 54 * 5,  0.5f));
-        dayPicker.setMinValue(0);
-        dayPicker.setMaxValue(365);
-        dayPicker.setWrapSelectorWheel(false);
-        dayPicker.setFormatter(value -> LocaleController.formatPluralString("Days", value));
+        linearLayout.addView(numberPicker, LayoutHelper.createLinear(0, 54 * 5, 1f));
         final NumberPicker.OnValueChangeListener onValueChangeListener = (picker, oldVal, newVal) -> {
             try {
                 container.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
             } catch (Exception ignore) {
 
             }
-            checkMuteForButton(dayPicker, hourPicker, buttonTextView, true);
         };
-        dayPicker.setOnValueChangedListener(onValueChangeListener);
-
-        hourPicker.setMinValue(0);
-        hourPicker.setMaxValue(23);
-        linearLayout.addView(hourPicker, LayoutHelper.createLinear(0, 54 * 5, 0.5f));
-        hourPicker.setFormatter(value -> LocaleController.formatPluralString("Hours", value));
-        hourPicker.setOnValueChangedListener(onValueChangeListener);
+        numberPicker.setOnValueChangedListener(onValueChangeListener);
 
         buttonTextView.setPadding(AndroidUtilities.dp(34), 0, AndroidUtilities.dp(34), 0);
         buttonTextView.setGravity(Gravity.CENTER);
@@ -3142,10 +3194,10 @@ public class AlertsCreator {
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         buttonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         buttonTextView.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), datePickerColors.buttonBackgroundColor, datePickerColors.buttonBackgroundPressedColor));
-        buttonTextView.setText(LocaleController.getString("SetTimeLimit", R.string.SetTimeLimit));
+        buttonTextView.setText(LocaleController.getString("AutoDeleteConfirm", R.string.AutoDeleteConfirm));
         container.addView(buttonTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM, 16, 15, 16, 16));
         buttonTextView.setOnClickListener(v -> {
-            int time =  hourPicker.getValue() * 60 + dayPicker.getValue() * 60 * 24;
+            int time = values[numberPicker.getValue()] * 60;
             datePickerDelegate.didSelectDate(true, time);
             builder.getDismissRunnable().run();
         });
@@ -3153,7 +3205,7 @@ public class AlertsCreator {
         builder.setCustomView(container);
         BottomSheet bottomSheet = builder.show();
         bottomSheet.setBackgroundColor(datePickerColors.backgroundColor);
-        checkMuteForButton(dayPicker, hourPicker, buttonTextView, false);
+
         return builder;
     }
 
@@ -3180,46 +3232,6 @@ public class AlertsCreator {
             }
         } else {
             buttonTextView.setText(LocaleController.formatString("MuteForButton", R.string.MuteForButton, stringBuilder.toString()));
-            if (!buttonTextView.isEnabled()) {
-                buttonTextView.setEnabled(true);
-                if (animated) {
-                    buttonTextView.animate().alpha(1f);
-                } else {
-                    buttonTextView.setAlpha(1f);
-                }
-            }
-        }
-    }
-
-    private static void checkAutoDeleteButton(NumberPicker dayPicker, NumberPicker hourPicker, NumberPicker minutePicker, TextView buttonTextView, boolean animated) {
-        StringBuilder stringBuilder = new StringBuilder();
-        if (dayPicker.getValue() != 0) {
-            stringBuilder.append(dayPicker.getValue()).append(LocaleController.getString("SecretChatTimerDays", R.string.SecretChatTimerDays));
-        }
-        if (hourPicker.getValue() != 0) {
-            if (stringBuilder.length() > 0) {
-                stringBuilder.append(" ");
-            }
-            stringBuilder.append(hourPicker.getValue()).append(LocaleController.getString("SecretChatTimerHours", R.string.SecretChatTimerHours));
-        }
-        if (minutePicker.getValue() != 0) {
-            if (stringBuilder.length() > 0) {
-                stringBuilder.append(" ");
-            }
-            stringBuilder.append(minutePicker.getValue() * 5).append(LocaleController.getString("SecretChatTimerMinutes", R.string.SecretChatTimerMinutes));
-        }
-        if (stringBuilder.length() == 0) {
-            buttonTextView.setText(LocaleController.formatString("ChooseTimeForAutoDelete", R.string.ChooseTimeForAutoDelete));
-            if (buttonTextView.isEnabled()) {
-                buttonTextView.setEnabled(false);
-                if (animated) {
-                    buttonTextView.animate().alpha(0.5f);
-                } else {
-                    buttonTextView.setAlpha(0.5f);
-                }
-            }
-        } else {
-            buttonTextView.setText(LocaleController.formatString("AutoDeleteAfter", R.string.AutoDeleteAfter, stringBuilder.toString()));
             if (!buttonTextView.isEnabled()) {
                 buttonTextView.setEnabled(true);
                 if (animated) {

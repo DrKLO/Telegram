@@ -138,6 +138,7 @@ struct MediaContent {
 struct InitialSetupMessage {
     std::string ufrag;
     std::string pwd;
+    bool supportsRenomination = false;
     std::vector<DtlsFingerprint> fingerprints;
 };
 
