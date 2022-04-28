@@ -2153,6 +2153,8 @@
     <string name="DebugMenuClearWebViewCache">Clear WebView cache</string>
     <string name="DebugMenuEnableWebViewDebug">Enable WebView debug</string>
     <string name="DebugMenuWebViewDebugEnabled">Debug enabled!</string>
+    <string name="DebugMenuDisableWebViewDebug">Disable WebView debug</string>
+    <string name="DebugMenuWebViewDebugDisabled">Debug disabled!</string>
     <string name="ChangeLanguageLater">You can change your language later in Settings.</string>
     <string name="ChooseYourLanguage">Choose your language</string>
     <string name="ChooseYourLanguageOther">Other</string>
