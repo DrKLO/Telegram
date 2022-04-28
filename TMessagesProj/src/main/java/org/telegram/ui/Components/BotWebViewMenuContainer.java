@@ -171,9 +171,6 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
                     ignoreLayout = false;
                 }
 
-                if (AndroidUtilities.isTablet() && !AndroidUtilities.isInMultiwindow && !AndroidUtilities.isSmallTablet()) {
-                    widthMeasureSpec = MeasureSpec.makeMeasureSpec((int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * 0.8f), MeasureSpec.EXACTLY);
-                }
                 super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(heightMeasureSpec) - ActionBar.getCurrentActionBarHeight() - AndroidUtilities.statusBarHeight + AndroidUtilities.dp(24) - AndroidUtilities.dp(5), MeasureSpec.EXACTLY));
             }
 
@@ -209,6 +206,7 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
         swipeContainer.setDelegate(this::dismiss);
         swipeContainer.setTopActionBarOffsetY(ActionBar.getCurrentActionBarHeight() + AndroidUtilities.statusBarHeight - AndroidUtilities.dp(24));
         swipeContainer.setSwipeOffsetAnimationDisallowed(true);
+        swipeContainer.setIsKeyboardVisible(obj -> parentEnterView.getSizeNotifierLayout().getKeyboardHeight() >= AndroidUtilities.dp(20));
         addView(swipeContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP, 0, 24, 0, 0));
 
         addView(progressView = new ChatAttachAlertBotWebViewLayout.WebProgressView(context, parentEnterView.getParentFragment().getResourceProvider()), LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 0, 0, 0, 5));
@@ -366,38 +364,47 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
             return;
         }
 
+        boolean doNotScroll = false;
+        float openOffset = -swipeContainer.getOffsetY() + swipeContainer.getTopActionBarOffsetY();
+        if (swipeContainer.getSwipeOffsetY() != openOffset) {
+            swipeContainer.stickTo(openOffset);
+            doNotScroll = true;
+        }
+
         int oldh = contentHeight + parentEnterView.getSizeNotifierLayout().measureKeyboardHeight();
         setMeasuredDimension(getMeasuredWidth(), contentHeight);
         ignoreMeasure = true;
 
-        if (webViewScrollAnimator != null) {
-            webViewScrollAnimator.cancel();
-            webViewScrollAnimator = null;
-        }
+        if (!doNotScroll) {
+            if (webViewScrollAnimator != null) {
+                webViewScrollAnimator.cancel();
+                webViewScrollAnimator = null;
+            }
 
-        if (webViewContainer.getWebView() != null) {
-            int fromY = webViewContainer.getWebView().getScrollY();
-            int toY = fromY + (oldh - contentHeight);
-            webViewScrollAnimator = ValueAnimator.ofInt(fromY, toY).setDuration(250);
-            webViewScrollAnimator.setInterpolator(ChatListItemAnimator.DEFAULT_INTERPOLATOR);
-            webViewScrollAnimator.addUpdateListener(animation -> {
-                int val = (int) animation.getAnimatedValue();
-                if (webViewContainer.getWebView() != null) {
-                    webViewContainer.getWebView().setScrollY(val);
-                }
-            });
-            webViewScrollAnimator.addListener(new AnimatorListenerAdapter() {
-                @Override
-                public void onAnimationEnd(Animator animation) {
+            if (webViewContainer.getWebView() != null) {
+                int fromY = webViewContainer.getWebView().getScrollY();
+                int toY = fromY + (oldh - contentHeight);
+                webViewScrollAnimator = ValueAnimator.ofInt(fromY, toY).setDuration(250);
+                webViewScrollAnimator.setInterpolator(ChatListItemAnimator.DEFAULT_INTERPOLATOR);
+                webViewScrollAnimator.addUpdateListener(animation -> {
+                    int val = (int) animation.getAnimatedValue();
                     if (webViewContainer.getWebView() != null) {
-                        webViewContainer.getWebView().setScrollY(toY);
+                        webViewContainer.getWebView().setScrollY(val);
                     }
-                    if (animation == webViewScrollAnimator) {
-                        webViewScrollAnimator = null;
+                });
+                webViewScrollAnimator.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        if (webViewContainer.getWebView() != null) {
+                            webViewContainer.getWebView().setScrollY(toY);
+                        }
+                        if (animation == webViewScrollAnimator) {
+                            webViewScrollAnimator = null;
+                        }
                     }
-                }
-            });
-            webViewScrollAnimator.start();
+                });
+                webViewScrollAnimator.start();
+            }
         }
     }
 

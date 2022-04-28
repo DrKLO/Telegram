@@ -32,20 +32,16 @@ public class AttachBotIntroTopView extends View {
     public AttachBotIntroTopView(Context context) {
         super(context);
 
-        imageReceiver = new ImageReceiver(this) {
-            @Override
-            protected boolean setImageBitmapByKey(Drawable drawable, String key, int type, boolean memCache, int guid) {
-                boolean set = super.setImageBitmapByKey(drawable, key, type, memCache, guid);
-                ValueAnimator anim = ValueAnimator.ofFloat(0, 1).setDuration(150);
-                anim.addUpdateListener(animation -> {
-                    imageReceiver.setAlpha((Float) animation.getAnimatedValue());
-                    invalidate();
-                });
-                anim.start();
-                return set;
-            }
-        };
+        imageReceiver = new ImageReceiver(this);
         imageReceiver.setAlpha(0);
+        imageReceiver.setDelegate((imageReceiver1, set, thumb, memCache) -> {
+            ValueAnimator anim = ValueAnimator.ofFloat(0, 1).setDuration(150);
+            anim.addUpdateListener(animation -> {
+                imageReceiver.setAlpha((Float) animation.getAnimatedValue());
+                invalidate();
+            });
+            anim.start();
+        });
 
         attachDrawable = ContextCompat.getDrawable(context, R.drawable.input_attach).mutate().getConstantState().newDrawable();
         paint.setStyle(Paint.Style.STROKE);

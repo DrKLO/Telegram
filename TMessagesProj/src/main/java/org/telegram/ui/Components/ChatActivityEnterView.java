@@ -3431,7 +3431,16 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
     private void openWebViewMenu() {
         Runnable onRequestWebView = () -> {
             AndroidUtilities.hideKeyboard(this);
-            botWebViewMenuContainer.show(currentAccount, dialog_id, botMenuWebViewUrl);
+            if (AndroidUtilities.isTablet()) {
+                BotWebViewSheet webViewSheet = new BotWebViewSheet(getContext(), parentFragment.getResourceProvider());
+                webViewSheet.setParentActivity(parentActivity);
+                webViewSheet.requestWebView(currentAccount, dialog_id, dialog_id, botMenuWebViewTitle, botMenuWebViewUrl, BotWebViewSheet.TYPE_BOT_MENU_BUTTON, 0, false);
+                webViewSheet.show();
+
+                botCommandsMenuButton.setOpened(false);
+            } else {
+                botWebViewMenuContainer.show(currentAccount, dialog_id, botMenuWebViewUrl);
+            }
         };
 
         if (SharedPrefsHelper.isWebViewConfirmShown(currentAccount, dialog_id)) {
@@ -7069,7 +7078,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
 
                     BotWebViewSheet webViewSheet = new BotWebViewSheet(getContext(), resourcesProvider);
                     webViewSheet.setParentActivity(parentActivity);
-                    webViewSheet.requestWebView(currentAccount, messageObject.messageOwner.dialog_id, botId, button.text, button.url, button instanceof TLRPC.TL_keyboardButtonSimpleWebView, replyMessageObject != null ? replyMessageObject.messageOwner.id : 0, false);
+                    webViewSheet.requestWebView(currentAccount, messageObject.messageOwner.dialog_id, botId, button.text, button.url, button instanceof TLRPC.TL_keyboardButtonSimpleWebView ? BotWebViewSheet.TYPE_SIMPLE_WEB_VIEW_BUTTON : BotWebViewSheet.TYPE_WEB_VIEW_BUTTON, replyMessageObject != null ? replyMessageObject.messageOwner.id : 0, false);
                     webViewSheet.show();
                 }
             };
