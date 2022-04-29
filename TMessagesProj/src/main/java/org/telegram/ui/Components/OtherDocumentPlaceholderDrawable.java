@@ -11,6 +11,8 @@ import android.text.TextUtils;
 import android.view.View;
 import android.view.animation.DecelerateInterpolator;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.FileLoader;
@@ -76,11 +78,11 @@ public class OtherDocumentPlaceholderDrawable extends RecyclableDrawable impleme
         percentPaint.setColor(0xffffffff);
         openPaint.setColor(0xffffffff);
 
-        docPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        namePaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        buttonPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        percentPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        openPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        docPaint.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
+        namePaint.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
+        buttonPaint.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
+        percentPaint.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
+        openPaint.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
     }
 
     public OtherDocumentPlaceholderDrawable(Context context, View view, MessageObject messageObject) {

@@ -31,6 +31,8 @@ import androidx.core.view.GestureDetectorCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.FileLoader;
@@ -38,7 +40,6 @@ import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
@@ -157,10 +158,10 @@ public class CalendarActivity extends BaseFragment {
 
         textPaint2.setTextSize(AndroidUtilities.dp(11));
         textPaint2.setTextAlign(Paint.Align.CENTER);
-        textPaint2.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textPaint2.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
 
         activeTextPaint.setTextSize(AndroidUtilities.dp(16));
-        activeTextPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        activeTextPaint.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
         activeTextPaint.setTextAlign(Paint.Align.CENTER);
 
         contentView = new FrameLayout(context) {
@@ -284,7 +285,7 @@ public class CalendarActivity extends BaseFragment {
             selectDaysButton = new TextView(context);
             selectDaysButton.setGravity(Gravity.CENTER);
             selectDaysButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-            selectDaysButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            selectDaysButton.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
             selectDaysButton.setOnClickListener(view -> {
                 inSelectionMode = true;
                 updateTitle();
@@ -296,7 +297,7 @@ public class CalendarActivity extends BaseFragment {
             removeDaysButton = new TextView(context);
             removeDaysButton.setGravity(Gravity.CENTER);
             removeDaysButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-            removeDaysButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            removeDaysButton.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
             removeDaysButton.setOnClickListener(view -> {
                 if (lastDaysSelected == 0) {
                     if (selectDaysHint == null) {
@@ -584,7 +585,7 @@ public class CalendarActivity extends BaseFragment {
             }
             titleView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 2));
             titleView.setTextSize(15);
-            titleView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            titleView.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
             titleView.setGravity(Gravity.CENTER);
             titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             addView(titleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 28, 0, 0, 12, 0, 4));

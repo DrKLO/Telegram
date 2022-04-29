@@ -19,6 +19,8 @@ import android.os.Build;
 import android.provider.MediaStore;
 import androidx.core.content.FileProvider;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.FileLoader;

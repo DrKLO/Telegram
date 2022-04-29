@@ -20,12 +20,13 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
@@ -99,7 +100,7 @@ public class JoinGroupAlert extends BottomSheet {
         }
 
         TextView textView = new TextView(context);
-        textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textView.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
         textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
         textView.setText(title);
@@ -150,7 +151,7 @@ public class JoinGroupAlert extends BottomSheet {
             requestTextView.setText(isChannel ? LocaleController.getString("RequestToJoinChannel", R.string.RequestToJoinChannel) : LocaleController.getString("RequestToJoinGroup", R.string.RequestToJoinGroup));
             requestTextView.setTextColor(getThemedColor(Theme.key_featuredStickers_buttonText));
             requestTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-            requestTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            requestTextView.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
             requestTextView.setOnClickListener((view) -> {
                 AndroidUtilities.runOnUIThread(() -> {
                     if (!isDismissed()) {

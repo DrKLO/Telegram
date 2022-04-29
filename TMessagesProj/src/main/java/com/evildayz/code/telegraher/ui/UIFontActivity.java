@@ -30,14 +30,13 @@ import android.widget.FrameLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
@@ -59,10 +58,17 @@ import java.util.ArrayList;
 
 public class UIFontActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
     private RecyclerListView listView;
+    private final String defaultFontPath;
+    private final String defaultFontParam;
 
     private com.evildayz.code.telegraher.ui.UIFontActivity.ListAdapter adapter;
     @SuppressWarnings("FieldCanBeLocal")
     private LinearLayoutManager layoutManager;
+
+    public UIFontActivity(String defaultFontPath, String defaultFontParam) {
+        this.defaultFontPath = defaultFontPath;
+        this.defaultFontParam = defaultFontParam;
+    }
 
 
     private int rowCount = 0;
@@ -88,7 +94,7 @@ public class UIFontActivity extends BaseFragment implements NotificationCenter.N
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
-        String fontName = MessagesController.getGlobalTelegraherSettings().getString("THUICustomFont", "fonts/rmedium.ttf");
+        String fontName = MessagesController.getGlobalTelegraherSettings().getString("THUICustomFont" + defaultFontParam, defaultFontPath);
         actionBar.setTitle(String.format(LocaleController.getString(R.string.THUIUseCustomFontDummy), fontName.substring(fontName.lastIndexOf('/') + 1)));
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -125,7 +131,7 @@ public class UIFontActivity extends BaseFragment implements NotificationCenter.N
             } else if (position >= 0 && position < fonts.size()) {
                 SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
                 SharedPreferences.Editor editor = preferences.edit();
-                editor.putString("THUICustomFont", ((TextCheckCell) view).getText());
+                editor.putString("THUICustomFont" + defaultFontParam, ((TextCheckCell) view).getText());
                 enabled = true;
                 editor.commit();
                 actionBar.setTitle(String.format(LocaleController.getString(R.string.THUIUseCustomFontDummy), ((TextCheckCell) view).getText().substring(((TextCheckCell) view).getText().lastIndexOf('/') + 1)));
@@ -240,7 +246,7 @@ public class UIFontActivity extends BaseFragment implements NotificationCenter.N
                     if (false) {
                         //durov relogin!
                     } else if (position >= 0 && position < fonts.size()) {
-                        checkCell.setTextAndCheck(fonts.get(position), fonts.get(position).equals(MessagesController.getGlobalTelegraherSettings().getString("THUICustomFont", "fonts/rmedium.ttf")), false);
+                        checkCell.setTextAndCheck(fonts.get(position), fonts.get(position).equals(MessagesController.getGlobalTelegraherSettings().getString("THUICustomFont" + defaultFontParam, defaultFontPath)), false);
                         checkCell.setId(position);
                         if (position == 0)
                             checkCell.setTypeface(AndroidUtilities.getTypeface(fonts.get(position)));
@@ -291,7 +297,7 @@ public class UIFontActivity extends BaseFragment implements NotificationCenter.N
 
     private ArrayList<String> loadSystemFonts() {
         ArrayList<String> fonts = new ArrayList<>();
-        fonts.add("fonts/rmedium.ttf");
+        fonts.add(defaultFontPath);
         try {
             File dir = new File("/system/fonts");
             File[] files = dir.listFiles();

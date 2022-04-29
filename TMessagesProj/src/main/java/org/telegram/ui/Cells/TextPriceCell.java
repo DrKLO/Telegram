@@ -16,6 +16,8 @@ import android.view.Gravity;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.Theme;
@@ -42,7 +44,7 @@ public class TextPriceCell extends FrameLayout {
 
         valueTextView = new TextView(context);
         valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        valueTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        valueTextView.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
         valueTextView.setLines(1);
         valueTextView.setMaxLines(1);
         valueTextView.setSingleLine(true);
@@ -84,8 +86,8 @@ public class TextPriceCell extends FrameLayout {
             setTag(Theme.key_windowBackgroundWhiteBlackText);
             textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             valueTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-            textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-            valueTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            textView.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
+            valueTextView.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
         } else {
             setTag(Theme.key_windowBackgroundWhiteGrayText2);
             textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));

@@ -14,6 +14,8 @@ import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.view.animation.DecelerateInterpolator;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.UserConfig;

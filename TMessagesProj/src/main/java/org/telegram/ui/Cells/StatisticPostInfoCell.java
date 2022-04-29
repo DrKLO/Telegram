@@ -10,6 +10,8 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
@@ -45,7 +47,7 @@ public class StatisticPostInfoCell extends FrameLayout {
         linearLayout.setOrientation(LinearLayout.HORIZONTAL);
 
         message = new TextView(context);
-        message.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        message.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
         message.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         message.setTextColor(Color.BLACK);
         message.setLines(1);

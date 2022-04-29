@@ -57,12 +57,13 @@ import com.google.zxing.EncodeHintType;
 import com.google.zxing.qrcode.QRCodeWriter;
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatThemeController;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SvgHelper;
@@ -1033,7 +1034,7 @@ public class QrActivity extends BaseFragment {
             titleView.setSingleLine(true);
             titleView.setTextColor(fragment.getThemedColor(Theme.key_dialogTextBlack));
             titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-            titleView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            titleView.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
             titleView.setPadding(AndroidUtilities.dp(21), AndroidUtilities.dp(6), AndroidUtilities.dp(21), AndroidUtilities.dp(8));
             rootLayout.addView(titleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.START, 0, 0, 62, 0));
 
@@ -1102,7 +1103,7 @@ public class QrActivity extends BaseFragment {
             shareButton.setText(LocaleController.getString("ShareQrCode", R.string.ShareQrCode));
             shareButton.setTextColor(fragment.getThemedColor(Theme.key_featuredStickers_buttonText));
             shareButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-            shareButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            shareButton.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
             rootLayout.addView(shareButton);
         }
 

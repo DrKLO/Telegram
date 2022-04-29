@@ -80,7 +80,11 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
     private int voipHDRow;
 
     private int uiLabelRow;
-    private int uiSystemFontRow;
+    private int uiSystemFontRegularRow;
+    private int uiSystemFontBoldRow;
+    private int uiSystemFontItalicRow;
+    private int uiSystemFontBoldItalicRow;
+    private int uiSystemFontMonoRow;
 
     private int profileLabelRow;
     private int profileUIDRow;
@@ -122,7 +126,11 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         showTelegraherMenuRow = rowCount++;
 
         uiLabelRow = rowCount++;
-        uiSystemFontRow = rowCount++;
+//        uiSystemFontRegularRow = rowCount++;//TODO WTF need the fuck make it work
+        uiSystemFontBoldRow = rowCount++;
+        uiSystemFontItalicRow = rowCount++;
+        uiSystemFontBoldItalicRow = rowCount++;
+        uiSystemFontMonoRow = rowCount++;
 
         voiceLabelRow = rowCount++;
         voiceHDRow = rowCount++;
@@ -280,8 +288,16 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                 editor.commit();
             } else if (position == killMeLabelRow) {
                 killThatApp();
-            } else if (position == uiSystemFontRow) {
-                presentFragment(new UIFontActivity());
+            } else if (position == uiSystemFontRegularRow) {
+                presentFragment(new UIFontActivity("fonts/rmedium.ttf", "regular"));
+            } else if (position == uiSystemFontBoldRow) {
+                presentFragment(new UIFontActivity("fonts/rmedium.ttf", "rmedium"));
+            } else if (position == uiSystemFontItalicRow) {
+                presentFragment(new UIFontActivity("fonts/ritalic.ttf", "ritalic"));
+            } else if (position == uiSystemFontBoldItalicRow) {
+                presentFragment(new UIFontActivity("fonts/rmediumitalic.ttf", "rmediumitalic"));
+            } else if (position == uiSystemFontMonoRow) {
+                presentFragment(new UIFontActivity("fonts/rmono.ttf", "rmono"));
             } else if (position == deviceSpoofingBrand) {
                 showDSAlert(0);
             } else if (position == deviceSpoofingModel) {
@@ -454,9 +470,21 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         textSettingsCell.setCanDisable(false);
                         textSettingsCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText));
                         textSettingsCell.setText(LocaleController.getString(R.string.THKillTheAPP), false);
-                    } else if (position == uiSystemFontRow) {
+                    } else if (position == uiSystemFontRegularRow) {
                         textSettingsCell.setCanDisable(false);
-                        textSettingsCell.setText(LocaleController.getString(R.string.THUIUseCustomFont), false);
+                        textSettingsCell.setText(LocaleController.getString(R.string.THUIUseCustomFontRegular), false);
+                    } else if (position == uiSystemFontBoldRow) {
+                        textSettingsCell.setCanDisable(false);
+                        textSettingsCell.setText(LocaleController.getString(R.string.THUIUseCustomFontBold), false);
+                    } else if (position == uiSystemFontItalicRow) {
+                        textSettingsCell.setCanDisable(false);
+                        textSettingsCell.setText(LocaleController.getString(R.string.THUIUseCustomFontItalic), false);
+                    } else if (position == uiSystemFontBoldItalicRow) {
+                        textSettingsCell.setCanDisable(false);
+                        textSettingsCell.setText(LocaleController.getString(R.string.THUIUseCustomFontBoldItalic), false);
+                    } else if (position == uiSystemFontMonoRow) {
+                        textSettingsCell.setCanDisable(false);
+                        textSettingsCell.setText(LocaleController.getString(R.string.THUIUseCustomFontMono), false);
                     }
                     break;
                 }
@@ -578,7 +606,9 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                             || position == gifHDRow || position == videoRoundUseMainCameraRow
             ) {
                 return 1;
-            } else if (position == killMeLabelRow || position == uiSystemFontRow) {
+            } else if (position == killMeLabelRow
+                    || position == uiSystemFontRegularRow || position == uiSystemFontBoldRow || position == uiSystemFontItalicRow || position == uiSystemFontBoldItalicRow || position == uiSystemFontMonoRow
+            ) {
                 return 5;
             } else if (
                     position == showTelegraherMenuRow

@@ -5,7 +5,6 @@ import android.graphics.PorterDuff;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.text.TextPaint;
-import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -14,6 +13,8 @@ import android.widget.TextView;
 
 import androidx.core.content.ContextCompat;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
@@ -43,12 +44,12 @@ public class ChartHeaderView extends FrameLayout {
         super(context);
         TextPaint textPaint = new TextPaint();
         textPaint.setTextSize(14);
-        textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textPaint.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
         textMargin = (int) textPaint.measureText("00 MMM 0000 - 00 MMM 000");
 
         title = new TextView(context);
         title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        title.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        title.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
         addView(title, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 16, 0, textMargin, 0));
 
         back = new TextView(context);
@@ -59,13 +60,13 @@ public class ChartHeaderView extends FrameLayout {
 
         dates = new TextView(context);
         dates.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-        dates.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        dates.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
         dates.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
         addView(dates, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.END | Gravity.CENTER_VERTICAL, 16, 0, 16, 0));
 
         datesTmp = new TextView(context);
         datesTmp.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-        datesTmp.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        datesTmp.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
         datesTmp.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
         addView(datesTmp, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.END | Gravity.CENTER_VERTICAL, 16, 0, 16, 0));
         datesTmp.setVisibility(View.GONE);

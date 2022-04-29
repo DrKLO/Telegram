@@ -24,6 +24,8 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.LocaleController;
@@ -172,7 +174,7 @@ public class VoIPTextureView extends FrameLayout {
         screencastText.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
         screencastText.setTextColor(0xffffffff);
         screencastText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        screencastText.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        screencastText.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
         screencastView.addView(screencastText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 21, 28, 21, 0));
 
         if (applyRoundRadius) {

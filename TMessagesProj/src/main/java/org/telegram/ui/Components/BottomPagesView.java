@@ -9,6 +9,8 @@ import android.view.animation.DecelerateInterpolator;
 
 import androidx.viewpager.widget.ViewPager;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 

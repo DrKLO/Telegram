@@ -106,7 +106,7 @@ import androidx.viewpager.widget.ViewPager;
 import com.android.internal.telephony.ITelephony;
 //import com.google.android.gms.auth.api.phone.SmsRetriever;
 //import com.google.android.gms.auth.api.phone.SmsRetrieverClient;
-import com.google.android.gms.tasks.Task;
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.browser.Browser;
@@ -1434,30 +1434,47 @@ public class AndroidUtilities {
 
     public static Typeface getTypeface(String assetPath) {
         synchronized (typefaceCache) {
-            if (!typefaceCache.containsKey(assetPath)) {
-                try {
-                    Typeface t;
-                    if (Build.VERSION.SDK_INT >= 26) {
-                        Typeface.Builder builder = new Typeface.Builder(ApplicationLoader.applicationContext.getAssets(), assetPath);
-                        if (assetPath.contains("medium")) {
-                            builder.setWeight(700);
-                        }
-                        if (assetPath.contains("italic")) {
-                            builder.setItalic(true);
-                        }
-                        t = builder.build();
-                    } else {
-                        t = Typeface.createFromAsset(ApplicationLoader.applicationContext.getAssets(), assetPath);
-                    }
-                    typefaceCache.put(assetPath, t);
-                } catch (Exception e) {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.e("Could not get typeface '" + assetPath + "' because " + e.getMessage());
-                    }
-                    return null;
-                }
-            }
-            return typefaceCache.get(assetPath);
+//            return Typeface.create((Typeface) null, Typeface.NORMAL);
+            return ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "regular"));
+//            return Typeface.create(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "regular"), Typeface.NORMAL);
+//            Typeface t=null;
+//                if (assetPath.contains("medium") && assetPath.contains("italic")) {
+//                    return Typeface.create((Typeface) null, Typeface.BOLD_ITALIC);
+//                }
+//                if (assetPath.contains("medium")) {
+//                    return Typeface.create((Typeface) null, Typeface.BOLD);
+//                }
+//                if (assetPath.contains("italic")) {
+//                    return Typeface.create((Typeface) null, Typeface.ITALIC);
+//                }
+//                return Typeface.create((Typeface) null, Typeface.NORMAL);
+
+
+
+
+//            if (!typefaceCache.containsKey(assetPath)) {
+//                try {
+//                    if (Build.VERSION.SDK_INT >= 26) {
+//                        Typeface.Builder builder = new Typeface.Builder(ApplicationLoader.applicationContext.getAssets(), assetPath);
+//                        if (assetPath.contains("medium")) {
+//                            builder.setWeight(700);
+//                        }
+//                        if (assetPath.contains("italic")) {
+//                            builder.setItalic(true);
+//                        }
+//                        t = builder.build();
+//                    } else {
+//                        t = Typeface.createFromAsset(ApplicationLoader.applicationContext.getAssets(), assetPath);
+//                    }
+//                    typefaceCache.put(assetPath, t);
+//                } catch (Exception e) {
+//                    if (BuildVars.LOGS_ENABLED) {
+//                        FileLog.e("Could not get typeface '" + assetPath + "' because " + e.getMessage());
+//                    }
+//                    return null;
+//                }
+//            }
+//            return typefaceCache.get(assetPath);
         }
     }
 
@@ -2265,7 +2282,7 @@ public class AndroidUtilities {
             }
             SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(stringBuilder);
             for (int a = 0; a < bolds.size() / 2; a++) {
-                spannableStringBuilder.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf")), bolds.get(a * 2), bolds.get(a * 2 + 1), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                spannableStringBuilder.setSpan(new TypefaceSpan(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium"))), bolds.get(a * 2), bolds.get(a * 2 + 1), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
             return spannableStringBuilder;
         } catch (Exception e) {

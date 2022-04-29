@@ -14,6 +14,8 @@ import android.graphics.RectF;
 import android.os.Build;
 import android.text.Layout;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 
 import java.util.ArrayList;

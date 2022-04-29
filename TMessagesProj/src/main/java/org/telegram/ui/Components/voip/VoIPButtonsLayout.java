@@ -7,6 +7,8 @@ import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 
 public class VoIPButtonsLayout extends FrameLayout {

@@ -17,6 +17,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
@@ -79,10 +81,10 @@ public class LegendSignatureView extends FrameLayout {
 
         time = new TextView(context);
         time.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        time.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        time.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
         hourTime = new TextView(context);
         hourTime.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        hourTime.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        hourTime.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
 
         chevron = new ImageView(context);
         chevron.setImageResource(R.drawable.ic_chevron_right_black_18dp);
@@ -262,7 +264,7 @@ public class LegendSignatureView extends FrameLayout {
                 root.addView(percentage = new TextView(getContext()));
                 percentage.getLayoutParams().width = AndroidUtilities.dp(36);
                 percentage.setVisibility(GONE);
-                percentage.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                percentage.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
                 percentage.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             }
 
@@ -273,7 +275,7 @@ public class LegendSignatureView extends FrameLayout {
             signature.setGravity(Gravity.START);
             value.setGravity(Gravity.END);
 
-            value.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            value.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
             value.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             value.setMinEms(4);
             value.setMaxEms(4);

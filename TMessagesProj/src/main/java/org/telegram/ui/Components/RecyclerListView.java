@@ -48,6 +48,8 @@ import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
@@ -469,7 +471,7 @@ public class RecyclerListView extends RecyclerView {
             } else {
                 isRtl = false;
                 letterPaint.setTextSize(AndroidUtilities.dp(13));
-                letterPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                letterPaint.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
                 paint2.setColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                 fastScrollBackgroundDrawable = ContextCompat.getDrawable(context, R.drawable.calendar_date).mutate();
                 fastScrollBackgroundDrawable.setColorFilter(new PorterDuffColorFilter(ColorUtils.blendARGB(Theme.getColor(Theme.key_windowBackgroundWhite), Color.WHITE, 0.1f), PorterDuff.Mode.MULTIPLY));

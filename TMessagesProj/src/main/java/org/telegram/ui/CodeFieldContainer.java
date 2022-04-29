@@ -16,6 +16,8 @@ import android.widget.LinearLayout;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.PhoneFormat.PhoneFormat;
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
@@ -163,7 +165,7 @@ public class CodeFieldContainer extends LinearLayout {
                 codeField[a].setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
                 codeField[a].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
                 codeField[a].setMaxLines(1);
-                codeField[a].setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                codeField[a].setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
                 codeField[a].setPadding(0, 0, 0, 0);
                 codeField[a].setGravity(Gravity.CENTER);
                 if (currentType == 3) {

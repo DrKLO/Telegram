@@ -7,6 +7,8 @@ import android.opengl.GLES20;
 import android.opengl.GLUtils;
 import android.os.Looper;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.DispatchQueue;

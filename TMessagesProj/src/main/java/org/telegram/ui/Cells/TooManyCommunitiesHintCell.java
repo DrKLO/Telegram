@@ -14,6 +14,8 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
@@ -36,7 +38,7 @@ public class TooManyCommunitiesHintCell extends FrameLayout {
         headerTextView = new TextView(context);
         headerTextView.setTextColor(Theme.getColor(Theme.key_chats_nameMessage_threeLines));
         headerTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-        headerTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        headerTextView.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
         headerTextView.setGravity(Gravity.CENTER);
         addView(headerTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 52, 75, 52, 0));
 
@@ -49,7 +51,7 @@ public class TooManyCommunitiesHintCell extends FrameLayout {
         TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         textPaint.setColor(Color.WHITE);
         textPaint.setTextSize(AndroidUtilities.dp(12));
-        textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textPaint.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
         String s = "500";

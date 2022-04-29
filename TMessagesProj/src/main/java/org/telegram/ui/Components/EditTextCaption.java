@@ -36,6 +36,8 @@ import android.widget.FrameLayout;
 
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
