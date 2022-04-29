@@ -1434,47 +1434,30 @@ public class AndroidUtilities {
 
     public static Typeface getTypeface(String assetPath) {
         synchronized (typefaceCache) {
-//            return Typeface.create((Typeface) null, Typeface.NORMAL);
-            return ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "regular"));
-//            return Typeface.create(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "regular"), Typeface.NORMAL);
-//            Typeface t=null;
-//                if (assetPath.contains("medium") && assetPath.contains("italic")) {
-//                    return Typeface.create((Typeface) null, Typeface.BOLD_ITALIC);
-//                }
-//                if (assetPath.contains("medium")) {
-//                    return Typeface.create((Typeface) null, Typeface.BOLD);
-//                }
-//                if (assetPath.contains("italic")) {
-//                    return Typeface.create((Typeface) null, Typeface.ITALIC);
-//                }
-//                return Typeface.create((Typeface) null, Typeface.NORMAL);
-
-
-
-
-//            if (!typefaceCache.containsKey(assetPath)) {
-//                try {
-//                    if (Build.VERSION.SDK_INT >= 26) {
-//                        Typeface.Builder builder = new Typeface.Builder(ApplicationLoader.applicationContext.getAssets(), assetPath);
-//                        if (assetPath.contains("medium")) {
-//                            builder.setWeight(700);
-//                        }
-//                        if (assetPath.contains("italic")) {
-//                            builder.setItalic(true);
-//                        }
-//                        t = builder.build();
-//                    } else {
-//                        t = Typeface.createFromAsset(ApplicationLoader.applicationContext.getAssets(), assetPath);
-//                    }
-//                    typefaceCache.put(assetPath, t);
-//                } catch (Exception e) {
-//                    if (BuildVars.LOGS_ENABLED) {
-//                        FileLog.e("Could not get typeface '" + assetPath + "' because " + e.getMessage());
-//                    }
-//                    return null;
-//                }
-//            }
-//            return typefaceCache.get(assetPath);
+            if (!typefaceCache.containsKey(assetPath)) {
+                try {
+                    Typeface t;
+                    if (Build.VERSION.SDK_INT >= 26) {
+                        Typeface.Builder builder = new Typeface.Builder(ApplicationLoader.applicationContext.getAssets(), assetPath);
+                        if (assetPath.contains("medium")) {
+                            builder.setWeight(700);
+                        }
+                        if (assetPath.contains("italic")) {
+                            builder.setItalic(true);
+                        }
+                        t = builder.build();
+                    } else {
+                        t = Typeface.createFromAsset(ApplicationLoader.applicationContext.getAssets(), assetPath);
+                    }
+                    typefaceCache.put(assetPath, t);
+                } catch (Exception e) {
+                    if (BuildVars.LOGS_ENABLED) {
+                        FileLog.e("Could not get typeface '" + assetPath + "' because " + e.getMessage());
+                    }
+                    return null;
+                }
+            }
+            return typefaceCache.get(assetPath);
         }
     }
 
