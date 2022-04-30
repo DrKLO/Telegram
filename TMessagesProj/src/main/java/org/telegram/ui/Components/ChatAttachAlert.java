@@ -71,7 +71,6 @@ import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.ImageLocation;
-import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MediaDataController;
@@ -752,17 +751,14 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
 
             imageView = new BackupImageView(context) {
                 {
-                    imageReceiver = new ImageReceiver(this) {
-                        @Override
-                        protected boolean setImageBitmapByKey(Drawable drawable, String key, int type, boolean memCache, int guid) {
-                            if (drawable instanceof RLottieDrawable) {
-                                ((RLottieDrawable) drawable).setCustomEndFrame(0);
-                                ((RLottieDrawable) drawable).stop();
-                                ((RLottieDrawable) drawable).setProgress(0, false);
-                            }
-                            return super.setImageBitmapByKey(drawable, key, type, memCache, guid);
+                    imageReceiver.setDelegate((imageReceiver1, set, thumb, memCache) -> {
+                        Drawable drawable = imageReceiver1.getDrawable();
+                        if (drawable instanceof RLottieDrawable) {
+                            ((RLottieDrawable) drawable).setCustomEndFrame(0);
+                            ((RLottieDrawable) drawable).stop();
+                            ((RLottieDrawable) drawable).setProgress(0, false);
                         }
-                    };
+                    });
                 }
 
                 @Override

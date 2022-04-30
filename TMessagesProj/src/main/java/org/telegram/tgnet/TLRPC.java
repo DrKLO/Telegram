@@ -52484,6 +52484,23 @@ public class TLRPC {
         }
     }
 
+    public static class TL_phone_saveCallLog extends TLObject {
+        public static int constructor = 0x41248786;
+
+        public TL_inputPhoneCall peer;
+        public InputFile file;
+
+        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+            return Bool.TLdeserialize(stream, constructor, exception);
+        }
+
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            peer.serializeToStream(stream);
+            file.serializeToStream(stream);
+        }
+    }
+
     public static class TL_phone_sendSignalingData extends TLObject {
         public static int constructor = 0xff7a9383;
 
