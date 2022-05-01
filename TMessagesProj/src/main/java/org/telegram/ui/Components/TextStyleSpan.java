@@ -86,6 +86,7 @@ public class TextStyleSpan extends MetricAffectingSpan {
             } else if ((flags & FLAG_STYLE_ITALIC) != 0) {
                 return ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/ritalic.ttf", "ritalic"));
             } else {
+//                return ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "regular"));
                 return null;
             }
         }
