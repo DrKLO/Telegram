@@ -40,6 +40,8 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.Emoji;
@@ -55,7 +57,6 @@ import org.telegram.ui.ActionBar.FloatingToolbar;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ArticleViewer;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.LinkPath;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.RestrictedLanguagesSelectActivity;
 
@@ -482,7 +483,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                         deleteView.setGravity(Gravity.CENTER_VERTICAL);
                         deleteView.setPadding(AndroidUtilities.dp(20), 0, AndroidUtilities.dp(20), 0);
                         deleteView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-                        deleteView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                        deleteView.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
                         deleteView.setText(textSelectionOverlay.getContext().getString(android.R.string.copy));
                         deleteView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
                         deleteView.setOnClickListener(v -> {

@@ -51,6 +51,8 @@ import android.widget.TextView;
 import androidx.annotation.IdRes;
 import androidx.core.os.CancellationSignal;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;

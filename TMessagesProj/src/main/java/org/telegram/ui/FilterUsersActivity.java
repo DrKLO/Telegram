@@ -43,6 +43,8 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.ImageView;
 import android.widget.ScrollView;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;

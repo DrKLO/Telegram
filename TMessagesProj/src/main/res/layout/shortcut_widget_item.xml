@@ -31,7 +31,6 @@
             android:ellipsize="end"
             android:gravity="start"
             android:textSize="17dp"
-            android:fontFamily="sans-serif-medium"
             android:textColor="@color/widget_name"
             android:layout_alignParentStart="true"
             android:layout_marginEnd="4dp"

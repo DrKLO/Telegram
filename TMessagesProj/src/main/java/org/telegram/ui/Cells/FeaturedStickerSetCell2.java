@@ -17,6 +17,7 @@ import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
+import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -26,6 +27,8 @@ import android.view.animation.OvershootInterpolator;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.FileLoader;
@@ -101,11 +104,18 @@ public class FeaturedStickerSetCell2 extends FrameLayout {
         delButton.setGravity(Gravity.CENTER);
         delButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_removeButtonText));
         delButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        delButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        delButton.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
         delButton.setText(LocaleController.getString("StickersRemove", R.string.StickersRemove));
         addView(delButton, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | Gravity.END, 0, 16, 14, 0));
 
         updateColors();
+        setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "regular")));
+    }
+
+    public void setTypeface(Typeface font) {
+        if (this.textView != null) this.textView.setTypeface(font);
+        if (this.valueTextView != null) this.valueTextView.setTypeface(font);
+        if (this.delButton != null) this.delButton.setTypeface(font);
     }
 
     @Override

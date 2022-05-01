@@ -35,6 +35,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
@@ -563,7 +565,7 @@ public class ColorPicker extends FrameLayout {
 
         resetButton = new TextView(context);
         resetButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        resetButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        resetButton.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
         resetButton.setGravity(Gravity.CENTER);
         resetButton.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), 0);
         resetButton.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));

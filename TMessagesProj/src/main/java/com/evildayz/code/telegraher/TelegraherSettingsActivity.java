@@ -33,6 +33,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.evildayz.code.telegraher.devicespoofing.DSMainActivity;
+import com.evildayz.code.telegraher.ui.UIFontActivity;
 
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -57,7 +58,9 @@ import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SlideChooseView;
 import org.telegram.ui.QrActivity;
 
+import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class TelegraherSettingsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
     private RecyclerListView listView;
@@ -76,6 +79,13 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
     private int voipLabelRow;
     private int voipHDRow;
 
+    private int uiLabelRow;
+    private int uiSystemFontRegularRow;
+    private int uiSystemFontBoldRow;
+    private int uiSystemFontItalicRow;
+    private int uiSystemFontBoldItalicRow;
+    private int uiSystemFontMonoRow;
+
     private int profileLabelRow;
     private int profileUIDRow;
     private int profileDCIDRow;
@@ -84,6 +94,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
     private int chatLabelRow;
     private int chatDeleteMarkRow;
     private int chatSBFullRow;
+    private int chatSwapToNextChannelRow;
 
     private int videoLabelRoundBitrateRow;
     private int videoRoundBitrateMultRow;
@@ -114,6 +125,14 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
     public boolean onFragmentCreate() {
         showLabelTelegraherMenuRow = rowCount++;
         showTelegraherMenuRow = rowCount++;
+
+        uiLabelRow = rowCount++;
+        uiSystemFontRegularRow = rowCount++;//TODO WTF need the fuck make it work
+        uiSystemFontBoldRow = rowCount++;
+        uiSystemFontItalicRow = rowCount++;
+        uiSystemFontBoldItalicRow = rowCount++;
+        uiSystemFontMonoRow = rowCount++;
+
         voiceLabelRow = rowCount++;
         voiceHDRow = rowCount++;
         voiceBadmanRow = rowCount++;
@@ -129,6 +148,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         chatLabelRow = rowCount++;
         chatDeleteMarkRow = rowCount++;
         chatSBFullRow = rowCount++;
+        chatSwapToNextChannelRow = rowCount++;
 
         accountLabelRow = rowCount++;
         accountExtendVanillaRow = rowCount++;
@@ -250,6 +270,12 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                 enabled = preferences.getBoolean("EnableChatSBFull", false);
                 editor.putBoolean("EnableChatSBFull", !enabled);
                 editor.commit();
+            } else if (position == chatSwapToNextChannelRow) {
+                SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
+                SharedPreferences.Editor editor = preferences.edit();
+                enabled = preferences.getBoolean("EnableSwapToNextChannel", false);
+                editor.putBoolean("EnableSwapToNextChannel", !enabled);
+                editor.commit();
             } else if (position == accountExtendVanillaRow) {
                 SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
                 SharedPreferences.Editor editor = preferences.edit();
@@ -270,6 +296,16 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                 editor.commit();
             } else if (position == killMeLabelRow) {
                 killThatApp();
+            } else if (position == uiSystemFontRegularRow) {
+                presentFragment(new UIFontActivity("fonts/rmedium.ttf", "regular"));
+            } else if (position == uiSystemFontBoldRow) {
+                presentFragment(new UIFontActivity("fonts/rmedium.ttf", "rmedium"));
+            } else if (position == uiSystemFontItalicRow) {
+                presentFragment(new UIFontActivity("fonts/ritalic.ttf", "ritalic"));
+            } else if (position == uiSystemFontBoldItalicRow) {
+                presentFragment(new UIFontActivity("fonts/rmediumitalic.ttf", "rmediumitalic"));
+            } else if (position == uiSystemFontMonoRow) {
+                presentFragment(new UIFontActivity("fonts/rmono.ttf", "rmono"));
             } else if (position == deviceSpoofingBrand) {
                 showDSAlert(0);
             } else if (position == deviceSpoofingModel) {
@@ -374,6 +410,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                     HeaderCell headerCell = (HeaderCell) holder.itemView;
                     if (false) {
                         //durov relogin!
+                    } else if (position == uiLabelRow) {
+                        headerCell.setText(LocaleController.getString(R.string.THUILabelRow));
                     } else if (position == voiceLabelRow) {
                         headerCell.setText(LocaleController.getString(R.string.THVoiceLabelRow));
                     } else if (position == voipLabelRow) {
@@ -425,6 +463,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableAccountExtendVanilla), globalPreps.getBoolean("EnableAccountExtendVanilla", false), true);
                     } else if (position == chatSBFullRow) {
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableChatSBFull), localPreps.getBoolean("EnableChatSBFull", false), true);
+                    } else if (position == chatSwapToNextChannelRow) {
+                        checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableSwapToNextChannel), globalPreps.getBoolean("EnableSwapToNextChannel", false), true);
                     } else if (position == gifHDRow) {
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableGifHD), globalPreps.getBoolean("EnableGifHD", false), true);
                     } else if (position == videoRoundUseMainCameraRow) {
@@ -440,6 +480,21 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         textSettingsCell.setCanDisable(false);
                         textSettingsCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText));
                         textSettingsCell.setText(LocaleController.getString(R.string.THKillTheAPP), false);
+                    } else if (position == uiSystemFontRegularRow) {
+                        textSettingsCell.setCanDisable(false);
+                        textSettingsCell.setText(LocaleController.getString(R.string.THUIUseCustomFontRegular), false);
+                    } else if (position == uiSystemFontBoldRow) {
+                        textSettingsCell.setCanDisable(false);
+                        textSettingsCell.setText(LocaleController.getString(R.string.THUIUseCustomFontBold), false);
+                    } else if (position == uiSystemFontItalicRow) {
+                        textSettingsCell.setCanDisable(false);
+                        textSettingsCell.setText(LocaleController.getString(R.string.THUIUseCustomFontItalic), false);
+                    } else if (position == uiSystemFontBoldItalicRow) {
+                        textSettingsCell.setCanDisable(false);
+                        textSettingsCell.setText(LocaleController.getString(R.string.THUIUseCustomFontBoldItalic), false);
+                    } else if (position == uiSystemFontMonoRow) {
+                        textSettingsCell.setCanDisable(false);
+                        textSettingsCell.setText(LocaleController.getString(R.string.THUIUseCustomFontMono), false);
                     }
                     break;
                 }
@@ -541,6 +596,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         public int getItemViewType(int position) {
             if (
                     position == showLabelTelegraherMenuRow
+                            || position == uiLabelRow
                             || position == voiceLabelRow || position == voipLabelRow
                             || position == profileLabelRow
                             || position == chatLabelRow
@@ -556,11 +612,13 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
             } else if (
                     position == voiceHDRow || position == voiceBadmanRow || position == voipHDRow
                             || position == profileUIDRow || position == profileDCIDRow || position == profileSBRow
-                            || position == chatDeleteMarkRow || position == accountExtendVanillaRow || position == chatSBFullRow
+                            || position == chatDeleteMarkRow || position == accountExtendVanillaRow || position == chatSBFullRow || position == chatSwapToNextChannelRow
                             || position == gifHDRow || position == videoRoundUseMainCameraRow
             ) {
                 return 1;
-            } else if (position == killMeLabelRow) {
+            } else if (position == killMeLabelRow
+                    || position == uiSystemFontRegularRow || position == uiSystemFontBoldRow || position == uiSystemFontItalicRow || position == uiSystemFontBoldItalicRow || position == uiSystemFontMonoRow
+            ) {
                 return 5;
             } else if (
                     position == showTelegraherMenuRow
@@ -621,6 +679,20 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         if (button != null) {
             button.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
         }
+    }
+
+    private ArrayList<String> loadSystemFonts() {
+        ArrayList<String> fonts = new ArrayList<>();
+        fonts.add("fonts/rmedium.ttf");
+        try {
+            File dir = new File("/system/fonts");
+            String[] files = dir.list();
+            if (files == null) return fonts;
+            fonts.addAll(Arrays.asList(files));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return fonts;
     }
 
     private void showDSResetGlobalAlert() {

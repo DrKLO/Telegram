@@ -12,6 +12,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.content.Context;
+import android.graphics.Typeface;
 import android.os.Build;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -24,9 +25,10 @@ import androidx.annotation.IntDef;
 import androidx.annotation.RawRes;
 import androidx.core.util.Consumer;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
@@ -99,7 +101,7 @@ public class DialogsEmptyCell extends LinearLayout {
         titleView = new TextView(context);
         titleView.setTextColor(Theme.getColor(Theme.key_chats_nameMessage_threeLines));
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-        titleView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        titleView.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
         titleView.setGravity(Gravity.CENTER);
         addView(titleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 52, 10, 52, 0));
 
@@ -115,6 +117,11 @@ public class DialogsEmptyCell extends LinearLayout {
         subtitleView.setInAnimation(context, R.anim.alpha_in);
         subtitleView.setOutAnimation(context, R.anim.alpha_out);
         addView(subtitleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 52, 7, 52, 0));
+        setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "regular")));
+    }
+
+    public void setTypeface(Typeface font) {
+        if (this.titleView != null) this.titleView.setTypeface(font);
     }
 
     public void setOnUtyanAnimationEndListener(Runnable onUtyanAnimationEndListener) {

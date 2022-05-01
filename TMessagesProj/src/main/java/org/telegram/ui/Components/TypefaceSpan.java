@@ -13,6 +13,8 @@ import android.graphics.Typeface;
 import android.text.TextPaint;
 import android.text.style.MetricAffectingSpan;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 
 public class TypefaceSpan extends MetricAffectingSpan {
@@ -51,11 +53,11 @@ public class TypefaceSpan extends MetricAffectingSpan {
     }
 
     public boolean isBold() {
-        return typeface == AndroidUtilities.getTypeface("fonts/rmedium.ttf");
+        return typeface == ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium"));
     }
 
     public boolean isItalic() {
-        return typeface == AndroidUtilities.getTypeface("fonts/ritalic.ttf");
+        return typeface == ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/ritalic.ttf", "ritalic"));
     }
 
     @Override

@@ -22,13 +22,14 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AccountInstance;
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserObject;
@@ -134,7 +135,7 @@ public class JoinCallAlert extends BottomSheet {
                 textView[a].setGravity(Gravity.CENTER);
                 if (hasBackground) {
                     textView[a].setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
-                    textView[a].setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                    textView[a].setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
                 } else {
                     textView[a].setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
                 }
@@ -486,7 +487,7 @@ public class JoinCallAlert extends BottomSheet {
         }
 
         textView = new TextView(context);
-        textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textView.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         if (type == TYPE_DISPLAY) {
             textView.setTextColor(Theme.getColor(Theme.key_voipgroup_nameText));

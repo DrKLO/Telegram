@@ -5155,4 +5155,12 @@
     <string name="THDSMainActivityHint0">You can override global device %s here</string>
     <string name="THDSMainActivityHint1">You can override currect account device %s here</string>
     <string name="THNotificationBackgroundNotice">To let you receive push notifications w/o GApps</string>
+    <string name="THUILabelRow">UI section</string>
+    <string name="THUIUseCustomFontRegular">Change Regular font</string>
+    <string name="THUIUseCustomFontBold">Change Bold font</string>
+    <string name="THUIUseCustomFontItalic">Change Italic font</string>
+    <string name="THUIUseCustomFontBoldItalic">Change Bold Italic font</string>
+    <string name="THUIUseCustomFontMono">Change Mono font</string>
+    <string name="THUIUseCustomFontDummy">(%s)</string>
+    <string name="THEnableSwapToNextChannel">Next channel on swap</string>
 </resources>

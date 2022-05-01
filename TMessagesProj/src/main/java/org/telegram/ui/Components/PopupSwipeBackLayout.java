@@ -21,6 +21,8 @@ import android.widget.FrameLayout;
 import androidx.annotation.NonNull;
 import androidx.core.view.GestureDetectorCompat;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.UserConfig;

@@ -36,6 +36,8 @@ import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.DocumentObject;
@@ -43,7 +45,6 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
-import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
@@ -184,7 +185,7 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
         textView1.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
         textView1.setGravity(Gravity.CENTER);
         textView1.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
-        textView1.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textView1.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
         if (currentType == 0) {
             textView1.setText(LocaleController.getString("NoOtherSessions", R.string.NoOtherSessions));
         } else {
@@ -947,7 +948,7 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
             buttonTextView.setPadding(AndroidUtilities.dp(34), 0, AndroidUtilities.dp(34), 0);
             buttonTextView.setGravity(Gravity.CENTER);
             buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            buttonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            buttonTextView.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
 
             SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
             spannableStringBuilder.append(".  ").append(LocaleController.getString("LinkDesktopDevice", R.string.LinkDesktopDevice));

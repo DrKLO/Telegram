@@ -51,6 +51,8 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
@@ -447,7 +449,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
         buttonTextView.setGravity(Gravity.CENTER);
         buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        buttonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        buttonTextView.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
         buttonTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(6), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
         buttonTextView.setOnClickListener(v -> processNext());
 
@@ -459,7 +461,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
                 titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 24);
                 break;
             default:
-                titleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                titleTextView.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
                 titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
                 break;
         }

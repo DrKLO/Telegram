@@ -25,6 +25,8 @@ import android.view.SoundEffectConstants;
 import android.view.ViewGroup;
 import android.view.accessibility.AccessibilityNodeInfo;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.FileLoader;
@@ -552,7 +554,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                 overrideBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
                 overrideBackgroundPaint.setColor(color);
                 overrideTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-                overrideTextPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                overrideTextPaint.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
                 overrideTextPaint.setTextSize(AndroidUtilities.dp(Math.max(16, SharedConfig.fontSize) - 2));
                 overrideTextPaint.setColor(getThemedColor(overrideText));
             }

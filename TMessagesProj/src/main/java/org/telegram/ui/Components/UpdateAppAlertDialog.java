@@ -21,6 +21,8 @@ import android.widget.TextView;
 
 import androidx.core.widget.NestedScrollView;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.FileLoader;
@@ -87,7 +89,7 @@ public class UpdateAppAlertDialog extends BottomSheet {
                 textView[a].setGravity(Gravity.CENTER);
                 if (hasBackground) {
                     textView[a].setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
-                    textView[a].setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                    textView[a].setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
                 } else {
                     textView[a].setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
                 }
@@ -247,7 +249,7 @@ public class UpdateAppAlertDialog extends BottomSheet {
         }
 
         TextView textView = new TextView(context);
-        textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textView.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
         textView.setSingleLine(true);

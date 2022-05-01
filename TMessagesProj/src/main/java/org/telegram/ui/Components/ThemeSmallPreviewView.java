@@ -23,6 +23,8 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatThemeController;
 import org.telegram.messenger.DocumentObject;
@@ -455,7 +457,7 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
         noThemeTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG + TextPaint.SUBPIXEL_TEXT_FLAG);
         noThemeTextPaint.setColor(getThemedColor(Theme.key_chat_emojiPanelTrendingDescription));
         noThemeTextPaint.setTextSize(AndroidUtilities.dp(14));
-        noThemeTextPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        noThemeTextPaint.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
         textLayout = StaticLayoutEx.createStaticLayout2(
                 LocaleController.getString("ChatNoTheme", R.string.ChatNoTheme),
                 noThemeTextPaint,

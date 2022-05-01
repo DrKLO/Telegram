@@ -13,6 +13,8 @@ import android.graphics.Typeface;
 import android.text.TextPaint;
 import android.text.style.MetricAffectingSpan;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
@@ -78,12 +80,13 @@ public class TextStyleSpan extends MetricAffectingSpan {
             if ((flags & FLAG_STYLE_MONO) != 0 || (flags & FLAG_STYLE_QUOTE) != 0) {
                 return Typeface.MONOSPACE;
             } else if ((flags & FLAG_STYLE_BOLD) != 0 && (flags & FLAG_STYLE_ITALIC) != 0) {
-                return AndroidUtilities.getTypeface("fonts/rmediumitalic.ttf");
+                return ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmediumitalic.ttf", "rmediumitalic"));
             } else if ((flags & FLAG_STYLE_BOLD) != 0) {
-                return AndroidUtilities.getTypeface("fonts/rmedium.ttf");
+                return ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium"));
             } else if ((flags & FLAG_STYLE_ITALIC) != 0) {
-                return AndroidUtilities.getTypeface("fonts/ritalic.ttf");
+                return ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/ritalic.ttf", "ritalic"));
             } else {
+//                return ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "regular"));
                 return null;
             }
         }
@@ -148,15 +151,15 @@ public class TextStyleSpan extends MetricAffectingSpan {
     }
 
     public boolean isBold() {
-        return style.getTypeface() == AndroidUtilities.getTypeface("fonts/rmedium.ttf");
+        return style.getTypeface() == ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium"));
     }
 
     public boolean isItalic() {
-        return style.getTypeface() == AndroidUtilities.getTypeface("fonts/ritalic.ttf");
+        return style.getTypeface() == ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/ritalic.ttf", "ritalic"));
     }
 
     public boolean isBoldItalic() {
-        return style.getTypeface() == AndroidUtilities.getTypeface("fonts/rmediumitalic.ttf");
+        return style.getTypeface() == ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmediumitalic.ttf", "rmediumitalic"));
     }
 
     @Override

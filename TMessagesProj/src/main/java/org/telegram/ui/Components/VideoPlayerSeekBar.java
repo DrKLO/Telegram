@@ -21,6 +21,8 @@ import androidx.core.graphics.ColorUtils;
 
 import com.google.android.exoplayer2.util.Log;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 
 public class VideoPlayerSeekBar {

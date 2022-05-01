@@ -36,6 +36,8 @@ import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AccountInstance;
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
@@ -45,7 +47,6 @@ import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
@@ -178,12 +179,12 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
         castingScreenDrawable = parentContainer.getContext().getResources().getDrawable(R.drawable.screencast_big).mutate();
 
         TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-        textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textPaint.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
         textPaint.setTextSize(AndroidUtilities.dp(13));
         textPaint.setColor(Color.WHITE);
 
         TextPaint textPaint2 = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-        textPaint2.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textPaint2.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
         textPaint2.setTextSize(AndroidUtilities.dp(15));
         textPaint2.setColor(Color.WHITE);
 
@@ -513,7 +514,7 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
         nameView = new SimpleTextView(parentContainer.getContext());
         nameView.setTextSize(13);
         nameView.setTextColor(ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.9f)));
-        nameView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        nameView.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
         nameView.setFullTextMaxLines(1);
         nameView.setBuildFullLayout(true);
         infoContainer = new FrameLayout(parentContainer.getContext());
@@ -545,7 +546,7 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
         };
         stopSharingTextView.setText(LocaleController.getString("VoipVideoScreenStopSharing", R.string.VoipVideoScreenStopSharing));
         stopSharingTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        stopSharingTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        stopSharingTextView.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
         stopSharingTextView.setPadding(AndroidUtilities.dp(21), 0, AndroidUtilities.dp(21), 0);
         stopSharingTextView.setTextColor(0xffffffff);
         stopSharingTextView.setBackground(rippleDrawable);

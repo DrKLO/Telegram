@@ -2,6 +2,7 @@ package org.telegram.ui.Cells;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -10,6 +11,8 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
@@ -45,7 +48,7 @@ public class StatisticPostInfoCell extends FrameLayout {
         linearLayout.setOrientation(LinearLayout.HORIZONTAL);
 
         message = new TextView(context);
-        message.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        message.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
         message.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         message.setTextColor(Color.BLACK);
         message.setLines(1);
@@ -82,6 +85,14 @@ public class StatisticPostInfoCell extends FrameLayout {
         views.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
         date.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3));
         shares.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3));
+        setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "regular")));
+    }
+
+    public void setTypeface(Typeface font) {
+        if (this.message != null) this.message.setTypeface(font);
+        if (this.views != null) this.views.setTypeface(font);
+        if (this.shares != null) this.shares.setTypeface(font);
+        if (this.date != null) this.date.setTypeface(font);
     }
 
     public void setData(StatisticActivity.RecentPostInfo postInfo) {

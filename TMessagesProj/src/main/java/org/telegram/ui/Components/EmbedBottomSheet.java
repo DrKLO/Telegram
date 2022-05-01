@@ -48,13 +48,14 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BringAppForegroundService;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.browser.Browser;
@@ -677,7 +678,7 @@ public class EmbedBottomSheet extends BottomSheet {
             textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
             textView.setText(description);
             textView.setSingleLine(true);
-            textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            textView.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
             textView.setEllipsize(TextUtils.TruncateAt.END);
             textView.setPadding(AndroidUtilities.dp(18), 0, AndroidUtilities.dp(18), 0);
             containerLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 0, 0, 0, 48 + 9 + 20));
@@ -715,7 +716,7 @@ public class EmbedBottomSheet extends BottomSheet {
         textView.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector), 0));
         textView.setPadding(AndroidUtilities.dp(18), 0, AndroidUtilities.dp(18), 0);
         textView.setText(LocaleController.getString("Close", R.string.Close).toUpperCase());
-        textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textView.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
         frameLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
         textView.setOnClickListener(v -> dismiss());
 
@@ -816,7 +817,7 @@ public class EmbedBottomSheet extends BottomSheet {
         copyTextButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector), 0));
         copyTextButton.setPadding(AndroidUtilities.dp(18), 0, AndroidUtilities.dp(18), 0);
         copyTextButton.setText(LocaleController.getString("Copy", R.string.Copy).toUpperCase());
-        copyTextButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        copyTextButton.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
         linearLayout.addView(copyTextButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
         copyTextButton.setOnClickListener(copyClickListener);
 
@@ -829,7 +830,7 @@ public class EmbedBottomSheet extends BottomSheet {
         openInButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector), 0));
         openInButton.setPadding(AndroidUtilities.dp(18), 0, AndroidUtilities.dp(18), 0);
         openInButton.setText(LocaleController.getString("OpenInBrowser", R.string.OpenInBrowser).toUpperCase());
-        openInButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        openInButton.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
         linearLayout.addView(openInButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
         openInButton.setOnClickListener(v -> {
             Browser.openUrl(parentActivity, openUrl);

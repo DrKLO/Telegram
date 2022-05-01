@@ -41,11 +41,12 @@ import androidx.core.math.MathUtils;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MemberRequestsController;
-import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
@@ -474,7 +475,7 @@ public class MemberRequestsDelegate implements MemberRequestCell.OnClickListener
                                 : LocaleController.formatString("HasBeenAddedToGroup", R.string.HasBeenAddedToGroup, userName);
                         SpannableStringBuilder stringBuilder = new SpannableStringBuilder(message);
                         int start = message.indexOf(userName);
-                        stringBuilder.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf")), start, start + userName.length(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+                        stringBuilder.setSpan(new TypefaceSpan(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium"))), start, start + userName.length(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
                         layout.textView.setText(stringBuilder);
                         if (allImporters.isEmpty()) {
                             Bulletin.make(fragment, layout, Bulletin.DURATION_LONG).show();
@@ -699,7 +700,7 @@ public class MemberRequestsDelegate implements MemberRequestCell.OnClickListener
             nameText.setMaxLines(1);
             nameText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, fragment.getResourceProvider()));
             nameText.setTextSize(16);
-            nameText.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            nameText.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
             contentView.addView(nameText);
 
             bioText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, fragment.getResourceProvider()));

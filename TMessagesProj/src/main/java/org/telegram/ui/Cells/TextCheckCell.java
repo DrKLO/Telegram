@@ -25,6 +25,8 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
@@ -102,6 +104,13 @@ public class TextCheckCell extends FrameLayout {
         addView(checkBox, LayoutHelper.createFrame(37, 20, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 22, 0, 22, 0));
 
         setClipChildren(false);
+
+        setTypeface2(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "regular")));
+    }
+
+    public void setTypeface2(Typeface font) {
+        if (this.textView != null) this.textView.setTypeface(font);
+        if (this.valueTextView != null) this.valueTextView.setTypeface(font);
     }
 
     @Override
@@ -122,6 +131,10 @@ public class TextCheckCell extends FrameLayout {
     public void setDivider(boolean divider) {
         needDivider = divider;
         setWillNotDraw(!divider);
+    }
+
+    public String getText() {
+        return String.valueOf(textView.getText());
     }
 
     public void setTextAndCheck(String text, boolean checked, boolean divider) {

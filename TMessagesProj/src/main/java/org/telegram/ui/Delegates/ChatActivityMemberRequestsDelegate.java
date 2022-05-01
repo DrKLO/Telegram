@@ -16,6 +16,8 @@ import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
@@ -91,7 +93,7 @@ public class ChatActivityMemberRequestsDelegate {
             requestsCountTextView.setSingleLine();
             requestsCountTextView.setText(null);
             requestsCountTextView.setTextColor(fragment.getThemedColor(Theme.key_chat_topPanelTitle));
-            requestsCountTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            requestsCountTextView.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
             requestsDataLayout.addView(requestsCountTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP, 0, 0, 0, 0));
 
             closeView = new ImageView(fragment.getParentActivity());

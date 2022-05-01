@@ -12,6 +12,8 @@ import android.content.Context;
 import android.text.TextUtils;
 import android.view.ViewGroup;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.Emoji;

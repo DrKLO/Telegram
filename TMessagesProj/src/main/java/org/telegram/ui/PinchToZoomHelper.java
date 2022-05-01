@@ -25,6 +25,8 @@ import android.widget.FrameLayout;
 
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;

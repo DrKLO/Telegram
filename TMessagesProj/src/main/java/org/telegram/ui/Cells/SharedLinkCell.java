@@ -31,6 +31,8 @@ import android.view.ViewConfiguration;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.ImageLocation;
@@ -187,7 +189,7 @@ public class SharedLinkCell extends FrameLayout {
         urlPath.setUseRoundRect(true);
 
         titleTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-        titleTextPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        titleTextPaint.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
         titleTextPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
 
         descriptionTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);

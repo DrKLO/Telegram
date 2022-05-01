@@ -13,7 +13,7 @@ import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
-import android.provider.Settings;
+
 import androidx.core.content.FileProvider;
 import android.text.SpannableStringBuilder;
 import android.util.TypedValue;
@@ -25,8 +25,8 @@ import android.widget.ImageView;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
-import com.google.android.exoplayer2.util.Log;
-
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildConfig;
@@ -40,7 +40,6 @@ import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.voip.CellFlickerDrawable;
 
@@ -102,7 +101,7 @@ public class BlockingUpdateView extends FrameLayout implements NotificationCente
         titleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         titleTextView.setGravity(Gravity.CENTER_HORIZONTAL | Gravity.TOP);
-        titleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        titleTextView.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
         titleTextView.setText(LocaleController.getString("UpdateTelegram", R.string.UpdateTelegram));
         container.addView(titleTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP));
 
@@ -163,7 +162,7 @@ public class BlockingUpdateView extends FrameLayout implements NotificationCente
 
         acceptTextView = new TextView(context);
         acceptTextView.setGravity(Gravity.CENTER);
-        acceptTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        acceptTextView.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
         acceptTextView.setTextColor(0xffffffff);
         acceptTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         acceptButton.addView(acceptTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));

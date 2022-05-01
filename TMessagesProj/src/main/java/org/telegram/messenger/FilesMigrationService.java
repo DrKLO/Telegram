@@ -23,14 +23,13 @@ import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.core.graphics.ColorUtils;
 
-import com.google.android.exoplayer2.util.Log;
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
 
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.StickerImageView;
-import org.telegram.ui.DialogsActivity;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -252,7 +251,7 @@ public class FilesMigrationService extends Service {
             title.setGravity(Gravity.START);
             title.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
             title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-            title.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            title.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
             title.setText(LocaleController.getString("MigrateOldFolderTitle", R.string.MigrateOldFolderTitle));
             linearLayout.addView(title, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 21, 30, 21, 0));
 
@@ -268,7 +267,7 @@ public class FilesMigrationService extends Service {
             buttonTextView.setPadding(AndroidUtilities.dp(34), 0, AndroidUtilities.dp(34), 0);
             buttonTextView.setGravity(Gravity.CENTER);
             buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            buttonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            buttonTextView.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
             buttonTextView.setText(LocaleController.getString("MigrateOldFolderButton", R.string.MigrateOldFolderButton));
 
             buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));

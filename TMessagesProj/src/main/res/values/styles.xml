@@ -225,7 +225,6 @@
         <item name="android:paddingLeft">7dp</item>
         <item name="android:paddingRight">7dp</item>
         <item name="android:paddingBottom">1dp</item>
-        <item name="android:fontFamily">sans-serif-medium</item>
         <item name="android:gravity">center</item>
         <item name="android:minWidth">23dp</item>
         <item name="android:textSize">13dp</item>

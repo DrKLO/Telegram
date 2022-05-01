@@ -25,10 +25,11 @@ import androidx.dynamicanimation.animation.SpringForce;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
@@ -107,7 +108,7 @@ public class SenderSelectPopup extends ActionBarPopupWindow {
         headerText.setTextColor(Theme.getColor(Theme.key_dialogTextBlue));
         headerText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         headerText.setText(LocaleController.getString("SendMessageAsTitle", R.string.SendMessageAsTitle));
-        headerText.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"), Typeface.BOLD);
+        headerText.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")), Typeface.BOLD);
         int dp = AndroidUtilities.dp(18);
         headerText.setPadding(dp, AndroidUtilities.dp(12), dp, AndroidUtilities.dp(12));
         recyclerContainer.addView(headerText);

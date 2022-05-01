@@ -36,12 +36,13 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.LruCache;
 import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
@@ -412,7 +413,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
 
         TextView loadingTitle = new TextView(context);
         loadingTitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-        loadingTitle.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        loadingTitle.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
         loadingTitle.setTextColor(Theme.getColor(Theme.key_player_actionBarTitle));
         loadingTitle.setTag(Theme.key_player_actionBarTitle);
         loadingTitle.setText(LocaleController.getString("LoadingStats", R.string.LoadingStats));
@@ -2379,7 +2380,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                     secondary[i * 2 + j] = new TextView(context);
                     title[i * 2 + j] = new TextView(context);
 
-                    primary[i * 2 + j].setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                    primary[i * 2 + j].setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
                     primary[i * 2 + j].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
                     title[i * 2 + j].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
                     secondary[i * 2 + j].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);

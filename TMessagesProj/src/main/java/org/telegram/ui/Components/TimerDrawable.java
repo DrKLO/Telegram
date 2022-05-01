@@ -18,6 +18,8 @@ import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
@@ -35,7 +37,7 @@ public class TimerDrawable extends Drawable {
     private int time = 0;
 
     public TimerDrawable(Context context) {
-        timePaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        timePaint.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
         timePaint.setTextSize(AndroidUtilities.dp(11));
 
         linePaint.setStrokeWidth(AndroidUtilities.dp(1));

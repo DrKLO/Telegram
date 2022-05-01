@@ -18,12 +18,13 @@ import android.view.HapticFeedbackConstants;
 import android.view.View;
 
 import org.telegram.messenger.AccountInstance;
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
@@ -104,7 +105,7 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
         counterDrawable.textPaint = textPaint;
 
         textPaint.setTextSize(AndroidUtilities.dp(13));
-        textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textPaint.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
         textPaint2.setTextSize(AndroidUtilities.dp(14));
 
         xRefPaint.setColor(0xff000000);

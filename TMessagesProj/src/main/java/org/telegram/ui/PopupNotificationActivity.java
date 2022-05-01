@@ -37,6 +37,8 @@ import android.widget.RelativeLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
@@ -44,7 +46,6 @@ import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
-import org.telegram.messenger.MessagesController;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.SendMessagesHelper;
@@ -481,7 +482,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         nameTextView.setSingleLine(true);
         nameTextView.setEllipsize(TextUtils.TruncateAt.END);
         nameTextView.setGravity(Gravity.LEFT);
-        nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        nameTextView.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
         avatarContainer.addView(nameTextView);
         layoutParams2 = (FrameLayout.LayoutParams) nameTextView.getLayoutParams();
         layoutParams2.width = LayoutHelper.WRAP_CONTENT;
@@ -811,7 +812,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                         TextView textView = new TextView(this);
                         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                         textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText));
-                        textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                        textView.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
                         textView.setText(button.text.toUpperCase());
                         textView.setTag(button);
                         textView.setGravity(Gravity.CENTER);

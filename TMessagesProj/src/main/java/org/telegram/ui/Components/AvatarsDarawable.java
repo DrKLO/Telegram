@@ -15,6 +15,8 @@ import android.view.animation.Interpolator;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AccountInstance;
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.ImageReceiver;

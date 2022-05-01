@@ -29,6 +29,8 @@ import android.widget.Toast;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
@@ -41,7 +43,6 @@ import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.LruCache;
 import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.ConnectionsManager;
@@ -256,7 +257,7 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
 
         TextView loadingTitle = new TextView(context);
         loadingTitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-        loadingTitle.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        loadingTitle.setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
         loadingTitle.setTextColor(Theme.getColor(Theme.key_player_actionBarTitle));
         loadingTitle.setTag(Theme.key_player_actionBarTitle);
         loadingTitle.setText(LocaleController.getString("LoadingStats", R.string.LoadingStats));
@@ -853,7 +854,7 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
                 primary[j] = new TextView(context);
                 title[j] = new TextView(context);
 
-                primary[j].setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                primary[j].setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "rmedium")));
                 primary[j].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
                 title[j].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
 
