@@ -94,6 +94,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
     private int chatLabelRow;
     private int chatDeleteMarkRow;
     private int chatSBFullRow;
+    private int chatSwapToNextChannelRow;
 
     private int videoLabelRoundBitrateRow;
     private int videoRoundBitrateMultRow;
@@ -147,6 +148,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         chatLabelRow = rowCount++;
         chatDeleteMarkRow = rowCount++;
         chatSBFullRow = rowCount++;
+        chatSwapToNextChannelRow = rowCount++;
 
         accountLabelRow = rowCount++;
         accountExtendVanillaRow = rowCount++;
@@ -267,6 +269,12 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                 SharedPreferences.Editor editor = preferences.edit();
                 enabled = preferences.getBoolean("EnableChatSBFull", false);
                 editor.putBoolean("EnableChatSBFull", !enabled);
+                editor.commit();
+            } else if (position == chatSwapToNextChannelRow) {
+                SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
+                SharedPreferences.Editor editor = preferences.edit();
+                enabled = preferences.getBoolean("EnableSwapToNextChannel", false);
+                editor.putBoolean("EnableSwapToNextChannel", !enabled);
                 editor.commit();
             } else if (position == accountExtendVanillaRow) {
                 SharedPreferences preferences = MessagesController.getGlobalTelegraherSettings();
@@ -455,6 +463,8 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableAccountExtendVanilla), globalPreps.getBoolean("EnableAccountExtendVanilla", false), true);
                     } else if (position == chatSBFullRow) {
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableChatSBFull), localPreps.getBoolean("EnableChatSBFull", false), true);
+                    } else if (position == chatSwapToNextChannelRow) {
+                        checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableSwapToNextChannel), globalPreps.getBoolean("EnableSwapToNextChannel", false), true);
                     } else if (position == gifHDRow) {
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.THEnableGifHD), globalPreps.getBoolean("EnableGifHD", false), true);
                     } else if (position == videoRoundUseMainCameraRow) {
@@ -602,7 +612,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
             } else if (
                     position == voiceHDRow || position == voiceBadmanRow || position == voipHDRow
                             || position == profileUIDRow || position == profileDCIDRow || position == profileSBRow
-                            || position == chatDeleteMarkRow || position == accountExtendVanillaRow || position == chatSBFullRow
+                            || position == chatDeleteMarkRow || position == accountExtendVanillaRow || position == chatSBFullRow || position == chatSwapToNextChannelRow
                             || position == gifHDRow || position == videoRoundUseMainCameraRow
             ) {
                 return 1;

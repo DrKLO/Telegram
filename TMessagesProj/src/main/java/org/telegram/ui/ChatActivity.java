@@ -5528,7 +5528,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 if (!foundTopView) {
                     scrolled = super.scrollVerticallyBy(dy, recycler, state);
                 }
-                if (dy > 0 && scrolled == 0 && ChatObject.isChannel(currentChat) && !currentChat.megagroup && chatListView.getScrollState() == RecyclerView.SCROLL_STATE_DRAGGING && !chatListView.isFastScrollAnimationRunning() && !chatListView.isMultiselect() && reportType < 0) {
+                if (MessagesController.getGlobalTelegraherSettings().getBoolean("EnableSwapToNextChannel", false) && dy > 0 && scrolled == 0 && ChatObject.isChannel(currentChat) && !currentChat.megagroup && chatListView.getScrollState() == RecyclerView.SCROLL_STATE_DRAGGING && !chatListView.isFastScrollAnimationRunning() && !chatListView.isMultiselect() && reportType < 0) {
                     if (pullingDownOffset == 0 && pullingDownDrawable != null) {
                         pullingDownDrawable.updateDialog();
                     }

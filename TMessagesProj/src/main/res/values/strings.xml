@@ -5162,4 +5162,5 @@
     <string name="THUIUseCustomFontBoldItalic">Change Bold Italic font</string>
     <string name="THUIUseCustomFontMono">Change Mono font</string>
     <string name="THUIUseCustomFontDummy">(%s)</string>
+    <string name="THEnableSwapToNextChannel">Next channel on swap</string>
 </resources>

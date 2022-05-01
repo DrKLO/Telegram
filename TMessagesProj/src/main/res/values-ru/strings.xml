@@ -53,4 +53,5 @@
     <string name="THUIUseCustomFontBoldItalic">Выбрать жирный курсив</string>
     <string name="THUIUseCustomFontMono">Выбрать моноширинный шрифт</string>
     <string name="THUIUseCustomFontDummy">(%s)</string>
+    <string name="THEnableSwapToNextChannel">Следующий канал при свайпе</string>
 </resources>
