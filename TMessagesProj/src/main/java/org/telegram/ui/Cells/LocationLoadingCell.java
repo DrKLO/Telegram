@@ -11,6 +11,7 @@ package org.telegram.ui.Cells;
 import android.content.Context;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.Typeface;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.widget.FrameLayout;
@@ -52,6 +53,11 @@ public class LocationLoadingCell extends FrameLayout {
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
         textView.setText(LocaleController.getString("NoPlacesFound", R.string.NoPlacesFound));
         addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 34, 0, 0));
+        setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "regular")));
+    }
+
+    public void setTypeface(Typeface font) {
+        if (this.textView != null) this.textView.setTypeface(font);
     }
 
     @Override

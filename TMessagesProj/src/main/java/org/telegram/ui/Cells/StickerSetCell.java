@@ -14,6 +14,7 @@ import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
+import android.graphics.Typeface;
 import android.os.Build;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -122,6 +123,12 @@ public class StickerSetCell extends FrameLayout {
                 addView(optionsButton, LayoutHelper.createFrame(40, 40, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, (LocaleController.isRTL ? 10 : 0), 9, (LocaleController.isRTL ? 0 : 10), 0));
             }
         }
+        setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "regular")));
+    }
+
+    public void setTypeface(Typeface font) {
+        if (this.textView != null) this.textView.setTypeface(font);
+        if (this.valueTextView != null) this.valueTextView.setTypeface(font);
     }
 
     @Override

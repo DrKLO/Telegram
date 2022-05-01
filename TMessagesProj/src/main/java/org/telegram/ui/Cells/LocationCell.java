@@ -11,6 +11,7 @@ package org.telegram.ui.Cells;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Typeface;
 import android.graphics.drawable.ShapeDrawable;
 import android.os.SystemClock;
 import android.text.TextUtils;
@@ -72,6 +73,12 @@ public class LocationCell extends FrameLayout {
         imageView.setAlpha(enterAlpha);
         nameTextView.setAlpha(enterAlpha);
         addressTextView.setAlpha(enterAlpha);
+        setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "regular")));
+    }
+
+    public void setTypeface(Typeface font) {
+        if (this.nameTextView != null) this.nameTextView.setTypeface(font);
+        if (this.addressTextView != null) this.addressTextView.setTypeface(font);
     }
 
     @Override

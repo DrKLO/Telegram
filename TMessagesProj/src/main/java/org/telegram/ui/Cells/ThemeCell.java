@@ -14,6 +14,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.Typeface;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -87,8 +88,12 @@ public class ThemeCell extends FrameLayout {
         } else {
             addView(checkImage, LayoutHelper.createFrame(19, 14, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 21, 0, 21, 0));
         }
+        setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "regular")));
     }
 
+    public void setTypeface(Typeface font) {
+        if (this.textView != null) this.textView.setTypeface(font);
+    }
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();

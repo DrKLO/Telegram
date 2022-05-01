@@ -17,6 +17,7 @@ import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
+import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -108,6 +109,13 @@ public class FeaturedStickerSetCell2 extends FrameLayout {
         addView(delButton, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | Gravity.END, 0, 16, 14, 0));
 
         updateColors();
+        setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "regular")));
+    }
+
+    public void setTypeface(Typeface font) {
+        if (this.textView != null) this.textView.setTypeface(font);
+        if (this.valueTextView != null) this.valueTextView.setTypeface(font);
+        if (this.delButton != null) this.delButton.setTypeface(font);
     }
 
     @Override

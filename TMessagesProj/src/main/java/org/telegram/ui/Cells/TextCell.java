@@ -12,6 +12,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.view.Gravity;
@@ -73,6 +74,13 @@ public class TextCell extends FrameLayout {
         addView(valueImageView);
 
         setFocusable(true);
+
+        setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "regular")));
+    }
+
+    public void setTypeface(Typeface font) {
+        if (this.textView != null) this.textView.setTypeface(font);
+        if (this.valueTextView != null) this.valueTextView.setTypeface(font);
     }
 
     public void setIsInDialogs() {

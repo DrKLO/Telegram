@@ -1,6 +1,7 @@
 package org.telegram.ui.Cells;
 
 import android.content.Context;
+import android.graphics.Typeface;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
@@ -81,6 +82,12 @@ public class SettingsSuggestionCell extends LinearLayout {
                 noButton.setOnClickListener(v -> onNoClick(currentType));
             }
         }
+        setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "regular")));
+    }
+
+    public void setTypeface(Typeface font) {
+        if (this.textView != null) this.textView.setTypeface(font);
+        if (this.detailTextView != null) this.detailTextView.setTypeface(font);
     }
 
     public void setType(int type) {

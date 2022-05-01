@@ -18,6 +18,7 @@ import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.Layout;
@@ -210,6 +211,12 @@ public class AboutLinkCell extends FrameLayout {
         backgroundPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhite));
 
         setWillNotDraw(false);
+        setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "regular")));
+    }
+
+    public void setTypeface(Typeface font) {
+        if (this.showMoreTextView != null) this.showMoreTextView.setTypeface(font);
+        if (this.valueTextView != null) this.valueTextView.setTypeface(font);
     }
 
     private void setShowMoreMarginBottom(int marginBottom) {

@@ -15,6 +15,7 @@ import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Typeface;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
@@ -131,6 +132,12 @@ public class FeaturedStickerSetInfoCell extends FrameLayout {
 
         setWillNotDraw(false);
         updateColors();
+        setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "regular")));
+    }
+
+    public void setTypeface(Typeface font) {
+        if (this.nameTextView != null) this.nameTextView.setTypeface(font);
+        if (this.infoTextView != null) this.infoTextView.setTypeface(font);
     }
 
     @Override

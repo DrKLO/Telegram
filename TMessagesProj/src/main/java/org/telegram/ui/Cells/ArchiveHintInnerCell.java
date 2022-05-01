@@ -3,6 +3,7 @@ package org.telegram.ui.Cells;
 import android.content.Context;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.Typeface;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.widget.FrameLayout;
@@ -10,6 +11,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.evildayz.code.telegraher.ThePenisMightierThanTheSword;
+
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
@@ -72,5 +74,11 @@ public class ArchiveHintInnerCell extends FrameLayout {
                 imageView.setImageResource(R.drawable.chats_archive_pin);
                 break;
         }
+        setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "regular")));
+    }
+
+    public void setTypeface(Typeface font) {
+        if (this.headerTextView != null) this.headerTextView.setTypeface(font);
+        if (this.messageTextView != null) this.messageTextView.setTypeface(font);
     }
 }

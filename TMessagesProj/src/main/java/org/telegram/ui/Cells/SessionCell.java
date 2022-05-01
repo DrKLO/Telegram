@@ -12,6 +12,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
@@ -132,6 +133,14 @@ public class SessionCell extends FrameLayout {
         detailExTextView.setEllipsize(TextUtils.TruncateAt.END);
         detailExTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
         addView(detailExTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, leftMargin, 59, rightMargin, 0));
+        setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "regular")));
+    }
+
+    public void setTypeface(Typeface font) {
+        if (this.nameTextView != null) this.nameTextView.setTypeface(font);
+        if (this.onlineTextView != null) this.onlineTextView.setTypeface(font);
+        if (this.detailTextView != null) this.detailTextView.setTypeface(font);
+        if (this.detailExTextView != null) this.detailExTextView.setTypeface(font);
     }
 
     @Override

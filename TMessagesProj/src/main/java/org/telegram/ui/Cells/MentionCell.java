@@ -9,6 +9,7 @@
 package org.telegram.ui.Cells;
 
 import android.content.Context;
+import android.graphics.Typeface;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -62,6 +63,12 @@ public class MentionCell extends LinearLayout {
         usernameTextView.setGravity(Gravity.LEFT);
         usernameTextView.setEllipsize(TextUtils.TruncateAt.END);
         addView(usernameTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 12, 0, 8, 0));
+        setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "regular")));
+    }
+
+    public void setTypeface(Typeface font) {
+        if (this.nameTextView != null) this.nameTextView.setTypeface(font);
+        if (this.usernameTextView != null) this.usernameTextView.setTypeface(font);
     }
 
     @Override

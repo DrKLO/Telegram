@@ -11,6 +11,7 @@ package org.telegram.ui.Cells;
 import android.content.Context;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.Typeface;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
@@ -97,6 +98,12 @@ public class StickerSetNameCell extends FrameLayout {
             lp = LayoutHelper.createFrame(24, 24, Gravity.TOP | Gravity.RIGHT, 0, 0, 16, 0);
         }
         addView(buttonView, lp);
+        setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "regular")));
+    }
+
+    public void setTypeface(Typeface font) {
+        if (this.textView != null) this.textView.setTypeface(font);
+        if (this.urlTextView != null) this.urlTextView.setTypeface(font);
     }
 
     public void setUrl(CharSequence text, int searchLength) {

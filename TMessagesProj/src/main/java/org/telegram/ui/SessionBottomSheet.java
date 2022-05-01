@@ -5,6 +5,7 @@ import android.content.DialogInterface;
 import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -399,6 +400,12 @@ public class SessionBottomSheet extends BottomSheet {
                 switchView.setDrawIconType(1);
                 addView(switchView, LayoutHelper.createFrame(37, 40, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 21, 0, 21, 0));
             }
+            setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "regular")));
+        }
+
+        public void setTypeface(Typeface font) {
+            if (this.valueText != null) this.valueText.setTypeface(font);
+            if (this.descriptionText != null) this.descriptionText.setTypeface(font);
         }
 
         @Override

@@ -11,6 +11,7 @@ package org.telegram.ui.Cells;
 import android.animation.Animator;
 import android.animation.ObjectAnimator;
 import android.content.Context;
+import android.graphics.Typeface;
 import android.os.Build;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -76,6 +77,12 @@ public class HeaderCell extends FrameLayout {
         }
 
         ViewCompat.setAccessibilityHeading(this, true);
+        setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "regular")));
+    }
+
+    public void setTypeface(Typeface font) {
+        if (this.textView != null) this.textView.setTypeface(font);
+        if (this.textView2 != null) this.textView2.setTypeface(font);
     }
 
     public void setHeight(int value) {

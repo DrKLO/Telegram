@@ -13,6 +13,7 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.RectF;
+import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -98,6 +99,11 @@ public class PhotoPickerPhotoCell extends FrameLayout {
         checkBox.setVisibility(VISIBLE);
 
         setFocusable(true);
+        setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "regular")));
+    }
+
+    public void setTypeface(Typeface font) {
+        if (this.videoTextView != null) this.videoTextView.setTypeface(font);
     }
 
     @Override

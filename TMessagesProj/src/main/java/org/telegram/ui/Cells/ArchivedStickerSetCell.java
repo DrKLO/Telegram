@@ -15,6 +15,7 @@ import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Typeface;
 import android.os.Build;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -122,6 +123,12 @@ public class ArchivedStickerSetCell extends FrameLayout implements Checkable {
         imageView.setAspectFit(true);
         imageView.setLayerNum(1);
         addView(imageView, LayoutHelper.createFrameRelatively(48, 48, Gravity.START | Gravity.TOP, 12, 8, 0, 0));
+        setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "regular")));
+    }
+
+    public void setTypeface(Typeface font) {
+        if (this.textView != null) this.textView.setTypeface(font);
+        if (this.valueTextView != null) this.valueTextView.setTypeface(font);
     }
 
     @Override

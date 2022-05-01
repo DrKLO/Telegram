@@ -2,6 +2,7 @@ package org.telegram.ui.Cells;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -84,6 +85,14 @@ public class StatisticPostInfoCell extends FrameLayout {
         views.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
         date.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3));
         shares.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3));
+        setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "regular")));
+    }
+
+    public void setTypeface(Typeface font) {
+        if (this.message != null) this.message.setTypeface(font);
+        if (this.views != null) this.views.setTypeface(font);
+        if (this.shares != null) this.shares.setTypeface(font);
+        if (this.date != null) this.date.setTypeface(font);
     }
 
     public void setData(StatisticActivity.RecentPostInfo postInfo) {

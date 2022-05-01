@@ -12,6 +12,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.SpannableStringBuilder;
@@ -244,6 +245,15 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
             dotSpan = new SpannableStringBuilder(".");
             dotSpan.setSpan(new DotDividerSpan(), 0, 1, 0);
         }
+        setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "regular")));
+    }
+
+    public void setTypeface(Typeface font) {
+        if (this.nameTextView != null) this.nameTextView.setTypeface(font);
+        if (this.extTextView != null) this.extTextView.setTypeface(font);
+        if (this.dateTextView != null) this.dateTextView.setTypeface(font);
+        if (this.rightDateTextView != null) this.rightDateTextView.setTypeface(font);
+        if (this.captionTextView != null) this.captionTextView.setTypeface(font);
     }
 
     public void setDrawDownloadIcon(boolean value) {

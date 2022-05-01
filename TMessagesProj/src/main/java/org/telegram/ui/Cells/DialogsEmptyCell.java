@@ -12,6 +12,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.content.Context;
+import android.graphics.Typeface;
 import android.os.Build;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -116,6 +117,11 @@ public class DialogsEmptyCell extends LinearLayout {
         subtitleView.setInAnimation(context, R.anim.alpha_in);
         subtitleView.setOutAnimation(context, R.anim.alpha_out);
         addView(subtitleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 52, 7, 52, 0));
+        setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "regular")));
+    }
+
+    public void setTypeface(Typeface font) {
+        if (this.titleView != null) this.titleView.setTypeface(font);
     }
 
     public void setOnUtyanAnimationEndListener(Runnable onUtyanAnimationEndListener) {

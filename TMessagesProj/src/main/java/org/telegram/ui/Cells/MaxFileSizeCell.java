@@ -12,6 +12,7 @@ import android.animation.Animator;
 import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Typeface;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -120,6 +121,12 @@ public class MaxFileSizeCell extends FrameLayout {
 
         setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
         setAccessibilityDelegate(seekBarView.getSeekBarAccessibilityDelegate());
+        setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "regular")));
+    }
+
+    public void setTypeface(Typeface font) {
+        if (this.textView != null) this.textView.setTypeface(font);
+        if (this.sizeTextView != null) this.sizeTextView.setTypeface(font);
     }
 
     protected void didChangedSizeValue(int value) {

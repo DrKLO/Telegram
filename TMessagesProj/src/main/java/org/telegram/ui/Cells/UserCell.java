@@ -140,6 +140,12 @@ public class UserCell extends FrameLayout {
         }
 
         setFocusable(true);
+        setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "regular")));
+    }
+
+    public void setTypeface(Typeface font) {
+        if (this.adminTextView != null) this.adminTextView.setTypeface(font);
+        if (this.addButton != null) this.addButton.setTypeface(font);
     }
 
     public void setAvatarPadding(int padding) {

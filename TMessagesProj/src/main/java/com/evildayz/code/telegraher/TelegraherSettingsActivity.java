@@ -126,7 +126,7 @@ public class TelegraherSettingsActivity extends BaseFragment implements Notifica
         showTelegraherMenuRow = rowCount++;
 
         uiLabelRow = rowCount++;
-//        uiSystemFontRegularRow = rowCount++;//TODO WTF need the fuck make it work
+        uiSystemFontRegularRow = rowCount++;//TODO WTF need the fuck make it work
         uiSystemFontBoldRow = rowCount++;
         uiSystemFontItalicRow = rowCount++;
         uiSystemFontBoldItalicRow = rowCount++;

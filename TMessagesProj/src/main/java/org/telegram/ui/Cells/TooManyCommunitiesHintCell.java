@@ -7,6 +7,7 @@ import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
+import android.graphics.Typeface;
 import android.text.TextPaint;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -80,6 +81,12 @@ public class TooManyCommunitiesHintCell extends FrameLayout {
         addView(imageLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 12, 0, 6));
         headerTextView.setText(LocaleController.getString("TooManyCommunities", R.string.TooManyCommunities));
         imageView.setImageResource(R.drawable.groups_limit1);
+        setTypeface(ThePenisMightierThanTheSword.getFont(MessagesController.getGlobalTelegraherUICustomFont("fonts/rmedium.ttf", "regular")));
+    }
+
+    public void setTypeface(Typeface font) {
+        if (this.headerTextView != null) this.headerTextView.setTypeface(font);
+        if (this.messageTextView != null) this.messageTextView.setTypeface(font);
     }
 
     public void setMessageText(String message) {
