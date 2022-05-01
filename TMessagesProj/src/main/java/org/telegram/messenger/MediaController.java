@@ -4197,6 +4197,9 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 if (header[0] == 0x1f && header[1] == (byte) 0x8b) {
                     return "tgs";
                 }
+                if (header[0] == 0x1A && header[1] == (byte) 0x45 && header[2] == (byte) 0xDF && header[3] == (byte) 0xA3) {
+                    return "webm";
+                }
                 String str = new String(header);
                 if (str != null) {
                     str = str.toLowerCase();

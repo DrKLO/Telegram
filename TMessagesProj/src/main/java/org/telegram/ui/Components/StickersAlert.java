@@ -288,6 +288,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
             BitmapFactory.Options opts = new BitmapFactory.Options();
             opts.inJustDecodeBounds = true;
             Boolean isAnimated = null;
+            Boolean isVideo = null;
             for (int a = 0, N = uris.size(); a < N; a++) {
                 Object obj = uris.get(a);
                 if (obj instanceof Uri) {
@@ -297,9 +298,11 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
                         continue;
                     }
                     boolean animated = "tgs".equals(ext);
+                    boolean video = "webm".equals(ext);
                     if (isAnimated == null) {
                         isAnimated = animated;
-                    } else if (isAnimated != animated) {
+                        isVideo = video;
+                    } else if (isAnimated != animated || isVideo != video) {
                         continue;
                     }
                     if (isDismissed()) {
@@ -307,19 +310,22 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
                     }
                     SendMessagesHelper.ImportingSticker importingSticker = new SendMessagesHelper.ImportingSticker();
                     importingSticker.animated = animated;
-                    importingSticker.path = MediaController.copyFileToCache(uri, ext, (animated ? 64 : 512) * 1024);
+                    importingSticker.video = video;
+                    importingSticker.path = MediaController.copyFileToCache(uri, ext, (animated ? 64 : video ? 256 : 512) * 1024);
                     if (importingSticker.path == null) {
                         continue;
                     }
-                    if (!animated) {
+                    if (!animated && !video) {
                         BitmapFactory.decodeFile(importingSticker.path, opts);
                         if ((opts.outWidth != 512 || opts.outHeight <= 0 || opts.outHeight > 512) && (opts.outHeight != 512 || opts.outWidth <= 0 || opts.outWidth > 512)) {
                             continue;
                         }
                         importingSticker.mimeType = "image/" + ext;
                         importingSticker.validated = true;
-                    } else {
+                    } else if (animated) {
                         importingSticker.mimeType = "application/x-tgsticker";
+                    } else {
+                        importingSticker.mimeType = "video/webm";
                     }
                     if (emoji != null && emoji.size() == N && emoji.get(a) instanceof String) {
                         importingSticker.emoji = emoji.get(a);

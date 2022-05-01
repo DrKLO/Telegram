@@ -277,6 +277,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         public boolean validated;
         public String mimeType;
         public boolean animated;
+        public boolean video;
         public TLRPC.TL_inputStickerSetItem item;
 
         public void uploadMedia(int account, TLRPC.InputFile inputFile, Runnable onFinish) {
@@ -403,6 +404,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             req.title = title;
             req.short_name = shortName;
             req.animated = uploadMedia.get(0).animated;
+            req.videos = uploadMedia.get(0).video;
             if (software != null) {
                 req.software = software;
                 req.flags |= 8;

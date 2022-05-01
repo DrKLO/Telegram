@@ -52262,6 +52262,7 @@ public class TLRPC {
         public int flags;
         public boolean masks;
         public boolean animated;
+        public boolean videos;
         public InputUser user_id;
         public String title;
         public String short_name;
@@ -52277,6 +52278,7 @@ public class TLRPC {
             stream.writeInt32(constructor);
             flags = masks ? (flags | 1) : (flags &~ 1);
             flags = animated ? (flags | 2) : (flags &~ 2);
+            flags = videos ? (flags | 16) : (flags &~ 16);
             stream.writeInt32(flags);
             user_id.serializeToStream(stream);
             stream.writeString(title);
