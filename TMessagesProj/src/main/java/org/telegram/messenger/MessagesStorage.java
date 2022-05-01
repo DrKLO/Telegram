@@ -9982,20 +9982,20 @@ public class MessagesStorage extends BaseController {
         try {
             String midsStr = TextUtils.join(",", mids);
             database.executeFast(String.format(Locale.US, "UPDATE messages_v2 SET read_state = read_state | 2 WHERE mid IN (%s) AND uid = %d", midsStr, dialogId)).stepThis().dispose();
-            if (date != 0) {
-                SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT mid, ttl FROM messages_v2 WHERE mid IN (%s) AND uid = %d AND ttl > 0", midsStr, dialogId));
-                ArrayList<Integer> arrayList = null;
-                while (cursor.next()) {
-                    if (arrayList == null) {
-                        arrayList = new ArrayList<>();
-                    }
-                    arrayList.add(cursor.intValue(0));
-                }
-                if (arrayList != null) {
-                    emptyMessagesMedia(dialogId, arrayList);
-                }
-                cursor.dispose();
-            }
+//            if (date != 0) {
+//                SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT mid, ttl FROM messages_v2 WHERE mid IN (%s) AND uid = %d AND ttl > 0", midsStr, dialogId));
+//                ArrayList<Integer> arrayList = null;
+//                while (cursor.next()) {
+//                    if (arrayList == null) {
+//                        arrayList = new ArrayList<>();
+//                    }
+//                    arrayList.add(cursor.intValue(0));
+//                }
+//                if (arrayList != null) {
+//                    emptyMessagesMedia(dialogId, arrayList);
+//                }
+//                cursor.dispose();
+//            }
         } catch (Exception e) {
             FileLog.e(e);
         }
